@@ -1,0 +1,255 @@
+name: Build Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - stage
+  workflow_dispatch:
+    inputs:
+      build-api:
+        description: 'Build API image'
+        required: true
+        type: boolean
+        default: true
+      build-api-migrations:
+        description: 'Build API migrations image'
+        required: true
+        type: boolean
+        default: true
+      build-web:
+        description: 'Build web image'
+        required: true
+        type: boolean
+        default: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # Detect which projects are affected using Turbo or manual inputs
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      api: ${{ steps.affected.outputs.api }}
+      api-migrations: ${{ steps.affected.outputs.api-migrations }}
+      web: ${{ steps.affected.outputs.web }}
+    steps:
+      - name: Check manual trigger
+        id: manual
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger detected"
+            echo "api=${{ inputs.build-api }}" >> $GITHUB_OUTPUT
+            echo "api-migrations=${{ inputs.build-api-migrations }}" >> $GITHUB_OUTPUT
+            echo "web=${{ inputs.build-web }}" >> $GITHUB_OUTPUT
+            echo "is_manual=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_manual=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
+        if: steps.manual.outputs.is_manual != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        if: steps.manual.outputs.is_manual != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.manual.outputs.is_manual != 'true'
+        run: npm ci
+
+      - name: Check affected projects
+        id: affected
+        run: |
+          if [ "${{ steps.manual.outputs.is_manual }}" = "true" ]; then
+            echo "Using manual inputs"
+            echo "api=${{ steps.manual.outputs.api }}" >> $GITHUB_OUTPUT
+            echo "api-migrations=${{ steps.manual.outputs.api-migrations }}" >> $GITHUB_OUTPUT
+            echo "web=${{ steps.manual.outputs.web }}" >> $GITHUB_OUTPUT
+          else
+            # Get the list of affected projects
+            AFFECTED=$(npx turbo ls --affected --output=json 2>/dev/null || echo '[]')
+            echo "Affected projects: $AFFECTED"
+
+            # Check if api is affected (also triggers api-migrations build)
+            if echo "$AFFECTED" | grep -q '"api"'; then
+              echo "api=true" >> $GITHUB_OUTPUT
+              echo "api-migrations=true" >> $GITHUB_OUTPUT
+            else
+              echo "api=false" >> $GITHUB_OUTPUT
+              echo "api-migrations=false" >> $GITHUB_OUTPUT
+            fi
+
+            # Check if web is affected
+            if echo "$AFFECTED" | grep -q '"web"'; then
+              echo "web=true" >> $GITHUB_OUTPUT
+            else
+              echo "web=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  # Build api-migrations image first (runs before API)
+  build-migrations:
+    needs: changes
+    if: needs.changes.outputs.api-migrations == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository }}/api-migrations
+        tags: |
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+          type=raw,value=stage,enable=${{ github.ref == 'refs/heads/stage' }}
+          type=sha,prefix={{branch}}-,format=short
+        flavor: |
+          latest=false
+
+    - name: Build and push api-migrations Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./apps/api/Dockerfile.migrations
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha,scope=api-migrations
+        cache-to: type=gha,mode=max,scope=api-migrations
+        build-args: |
+          NODE_ENV=production
+
+    - name: Image digest
+      run: echo "Built api-migrations image with tags ${{ steps.meta.outputs.tags }}"
+
+  # Build API image (waits for migrations to complete)
+  build-api:
+    needs: [changes, build-migrations]
+    if: always() && needs.changes.outputs.api == 'true' && !failure() && !cancelled()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository }}/api
+        tags: |
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+          type=raw,value=stage,enable=${{ github.ref == 'refs/heads/stage' }}
+          type=sha,prefix={{branch}}-,format=short
+        flavor: |
+          latest=false
+
+    - name: Build and push api Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./apps/api/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha,scope=api
+        cache-to: type=gha,mode=max,scope=api
+        build-args: |
+          NODE_ENV=production
+
+    - name: Image digest
+      run: echo "Built api image with tags ${{ steps.meta.outputs.tags }}"
+
+  # Build web image (independent, runs in parallel)
+  build-web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository }}/web
+        tags: |
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+          type=raw,value=stage,enable=${{ github.ref == 'refs/heads/stage' }}
+          type=sha,prefix={{branch}}-,format=short
+        flavor: |
+          latest=false
+
+    - name: Build and push web Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./apps/web/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha,scope=web
+        cache-to: type=gha,mode=max,scope=web
+        build-args: |
+          NODE_ENV=production
+
+    - name: Image digest
+      run: echo "Built web image with tags ${{ steps.meta.outputs.tags }}"

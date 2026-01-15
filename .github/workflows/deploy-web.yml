@@ -1,0 +1,62 @@
+name: Deploy Web
+
+on:
+  workflow_run:
+    workflows: ["Build Docker Images"]
+    types: [completed]
+    branches: [main, develop, stage]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  deploy-web:
+    # Run on successful build workflow or manual trigger
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.workflow_run.head_branch == 'main' && 'production' || github.event.workflow_run.head_branch == 'stage' && 'staging' || 'development' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.workflow_run.head_branch }}
+
+    - name: Set environment variables
+      id: env
+      run: |
+        ENV="${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.workflow_run.head_branch == 'main' && 'production' || github.event.workflow_run.head_branch == 'stage' && 'staging' || 'development' }}"
+        if [ "$ENV" = "production" ]; then
+          echo "values_file=values.prod.yaml" >> $GITHUB_OUTPUT
+        elif [ "$ENV" = "staging" ]; then
+          echo "values_file=values.test.yaml" >> $GITHUB_OUTPUT
+        else
+          echo "values_file=values.dev.yaml" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Install oc CLI
+      uses: redhat-actions/oc-installer@v1
+
+    - name: Login to OpenShift
+      run: |
+        oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ vars.OPENSHIFT_SERVER }}
+
+    - name: Deploy Web with Helm
+      run: |
+        helm upgrade --install csbc-nodejs-starter-web ./infrastructure/helm/web \
+          -n ${{ vars.OPENSHIFT_NAMESPACE }} \
+          -f ./infrastructure/helm/web/${{ steps.env.outputs.values_file }} \
+          --set podAnnotations.deployedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          --set app.apiUri=csbc-nodejs-starter-api \
+          --set app.oidc.issuer="${{ vars.WEB_OIDC_ISSUER }}" \
+          --set app.oidc.clientId="${{ vars.WEB_OIDC_CLIENT_ID }}" \
+          --set app.oidc.redirectUri="https://${{ vars.WEB_BASE_URL }}/callback" \
+          --set app.oidc.postLogoutRedirectUri="https://${{ vars.WEB_BASE_URL }}/" \
+          --labels app.kubernetes.io/part-of=csbc-nodejs-starter
