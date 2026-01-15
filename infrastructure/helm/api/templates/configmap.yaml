@@ -1,0 +1,24 @@
+{{- if .Values.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "api.configMapName" . }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+data:
+  # Application configuration
+  PORT: {{ .Values.app.port | quote }}
+  NODE_ENV: {{ .Values.app.nodeEnv | quote }}
+
+  # Database configuration (non-sensitive)
+  # Note: DB_NAME, DB_HOST, DB_PORT, and DB_USER are provided via secret in deployment
+  DEFAULT_DB_SSL: {{ .Values.app.database.ssl | quote }}
+
+  # OIDC configuration
+  OIDC_ISSUER: {{ .Values.app.oidc.issuer | quote }}
+  OIDC_JWKS_URI: {{ .Values.app.oidc.jwksUri | quote }}
+
+  {{- with .Values.configMap.data }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

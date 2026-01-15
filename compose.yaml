@@ -1,0 +1,20 @@
+services:
+  default_postgres:
+    image: postgres:18
+    restart: unless-stopped
+    ports:
+      - "${DEFAULT_DB_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${DEFAULT_DB_NAME}
+      - POSTGRES_USER=${DEFAULT_DB_USER}
+      - POSTGRES_PASSWORD=${DEFAULT_DB_PASS}
+    volumes:
+      - default-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DEFAULT_DB_USER} -d ${DEFAULT_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  default-postgres-data:

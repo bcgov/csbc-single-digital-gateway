@@ -1,0 +1,14 @@
+apiVersion: v2
+name: gateway
+description: CSBC Gateway Helm chart - nginx reverse proxy for routing to web and API services
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - gateway
+  - nginx
+  - reverse-proxy
+  - openshift
+home: https://github.com/bcgov/csbc-single-digital-gateway
+sources:
+  - https://github.com/bcgov/csbc-single-digital-gateway

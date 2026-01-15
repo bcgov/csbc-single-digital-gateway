@@ -1,0 +1,34 @@
+# Test environment values
+# Override the base values.yaml for test/staging deployments
+
+# Two replicas for HA in test environment
+replicaCount: 2
+
+# Image configuration for test environment
+image:
+  # Use the stage tag for test environment
+  tag: stage
+  pullPolicy: Always
+
+# Application configuration for test
+app:
+  # Database configuration
+  # Inherits defaults from values.yaml (database chart values)
+  database:
+    # SSL enabled for test environment
+    ssl: true
+
+# Standard resources for test
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Database migrations for test
+migrations:
+  enabled: true
+  useDirectConnection: true
+  activeDeadlineSeconds: 180

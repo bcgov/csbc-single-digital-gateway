@@ -1,0 +1,157 @@
+# Default values for gateway.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of replicas for the deployment
+replicaCount: 2
+
+# Image configuration
+image:
+  # Container registry
+  registry: docker.io
+  # Image repository - using nginx unprivileged for OpenShift compatibility
+  repository: nginxinc/nginx-unprivileged
+  # Image pull policy
+  pullPolicy: IfNotPresent
+  # Image tag
+  tag: "1.27-alpine"
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+
+# Override the name of the chart
+nameOverride: ""
+# Override the full name of the resources
+fullnameOverride: ""
+
+# Backend services configuration
+services:
+  # Web service configuration
+  web:
+    # Service name (should match the web chart's service name)
+    name: ""
+    # Service port
+    port: 80
+  # API service configuration
+  api:
+    # Service name (should match the api chart's service name)
+    name: ""
+    # Service port
+    port: 80
+
+# Nginx configuration
+nginx:
+  # Worker processes (auto = number of CPU cores)
+  workerProcesses: auto
+  # Worker connections per process
+  workerConnections: 1024
+  # Client max body size
+  clientMaxBodySize: 10m
+  # Proxy connect timeout
+  proxyConnectTimeout: 60s
+  # Proxy send timeout
+  proxySendTimeout: 60s
+  # Proxy read timeout
+  proxyReadTimeout: 60s
+
+# Security context configuration
+# OpenShift-compatible: UIDs/GIDs are automatically assigned by the platform
+securityContext:
+  # Pod-level security context
+  podSecurityContext:
+    runAsNonRoot: true
+
+  # Container-level security context
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+
+# Service configuration
+service:
+  # Service type (ClusterIP for internal access, Route handles external)
+  type: ClusterIP
+  # Service port
+  port: 80
+  # Target port on the container (nginx-unprivileged uses 8080)
+  targetPort: 8080
+  # Service annotations
+  annotations: {}
+
+# OpenShift Route configuration for external access
+route:
+  # Enable Route creation
+  enabled: true
+  # Hostname for the route (leave empty for auto-generation by OpenShift)
+  host: ""
+  # Path for the route
+  path: "/"
+  # TLS configuration
+  tls:
+    # Enable TLS
+    enabled: true
+    # TLS termination type (edge, passthrough, reencrypt)
+    termination: edge
+    # Policy for HTTP traffic (Redirect, Allow, None)
+    insecureEdgeTerminationPolicy: Redirect
+  # Route annotations
+  annotations: {}
+
+# Resource limits and requests
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Node selector for pod assignment
+nodeSelector: {}
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity rules for pod assignment
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# ConfigMap configuration
+configMap:
+  # Create ConfigMap for nginx configuration
+  create: true

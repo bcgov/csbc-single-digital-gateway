@@ -1,0 +1,111 @@
+# Default values for web.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of replicas for the deployment
+replicaCount: 2
+
+# Image configuration
+image:
+  # Container registry
+  registry: ghcr.io
+  # Image repository (update with your organization/repository)
+  repository: bcgov/csbc-single-digital-gateway/web
+  # Image pull policy
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion
+  tag: ""
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+  # - name: ghcr-secret
+
+# Override the name of the chart
+nameOverride: ""
+# Override the full name of the resources
+fullnameOverride: ""
+
+# Application configuration
+app:
+  # Application port (nginx default)
+  port: 80
+  # Application name displayed in the UI
+  appName: "CSBC Single Digital Gateway"
+
+  # API configuration
+  # URI of the backend API (REQUIRED - must be set during deployment)
+  apiUri: ""
+
+  # OIDC configuration for authentication
+  oidc:
+    # OIDC issuer URL (REQUIRED - must be set during deployment)
+    issuer: ""
+    # OIDC client ID (REQUIRED - must be set during deployment)
+    clientId: ""
+    # OIDC redirect URI after login (REQUIRED - must be set during deployment)
+    redirectUri: ""
+    # OIDC redirect URI after logout (REQUIRED - must be set during deployment)
+    postLogoutRedirectUri: ""
+
+# Security context configuration
+# OpenShift-compatible: UIDs/GIDs are automatically assigned by the platform
+securityContext:
+  # Pod-level security context
+  podSecurityContext:
+    runAsNonRoot: true
+    # runAsUser, runAsGroup, and fsGroup are omitted - OpenShift assigns these automatically
+    # from the namespace's allowed UID/GID range
+
+  # Container-level security context
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+
+# Service configuration
+service:
+  # Service type (ClusterIP for internal access, Route handles external)
+  type: ClusterIP
+  # Service port
+  port: 80
+  # Target port on the container
+  targetPort: 80
+  # Service annotations
+  annotations: {}
+
+# Resource limits and requests
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Node selector for pod assignment
+nodeSelector: {}
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity rules for pod assignment
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# ConfigMap configuration
+configMap:
+  # Create ConfigMap from app values
+  create: true
+  # Additional custom configuration data
+  data: {}

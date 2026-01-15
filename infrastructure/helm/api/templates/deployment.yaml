@@ -1,0 +1,95 @@
+{{- include "api.validateValues" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "api.fullname" . }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # Automatically restart pods when ConfigMap changes
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "api.serviceAccountName" . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ include "api.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          {{- toYaml .Values.securityContext.containerSecurityContext | nindent 10 }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.app.port }}
+          protocol: TCP
+        - name: health
+          containerPort: {{ .Values.app.healthPort }}
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "api.configMapName" . }}
+        env:
+        # Database credentials from secret
+        - name: DEFAULT_DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: dbname
+        - name: DEFAULT_DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: pgbouncer-host
+        - name: DEFAULT_DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: pgbouncer-port
+        - name: DEFAULT_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: user
+        - name: DEFAULT_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: password
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

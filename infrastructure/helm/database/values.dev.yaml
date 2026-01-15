@@ -1,0 +1,92 @@
+# Development environment values
+# Override the base values.yaml for development deployments
+
+fullnameOverride: csbc-single-digital-gateway-postgres
+
+crunchyImage: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+
+postgresVersion: 17
+
+# Single instance for development (no HA)
+instances:
+  name: dev
+  replicas: 1
+  dataVolumeClaimSpec:
+    storage: 240Mi
+    storageClassName: netapp-block-standard
+  requests:
+    cpu: 1m
+    memory: 128Mi
+  limits:
+    cpu: 50m
+    memory: 256Mi
+  replicaCertCopy:
+    requests:
+      cpu: 1m
+      memory: 16Mi
+    limits:
+      cpu: 25m
+      memory: 32Mi
+
+# Minimal backup configuration for development
+pgBackRest:
+  image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+  retention: "2" # Keep only 2 backups in dev
+  retentionFullType: count
+  repos:
+    schedules:
+      full: 0 8 * * 0 # Weekly full backup (Sunday)
+      incremental: 0 8 * * 1-6 # Daily incremental backups
+    volume:
+      accessModes: "ReadWriteOnce"
+      storage: 32Mi
+      storageClassName: netapp-file-backup
+  repoHost:
+    requests:
+      cpu: 1m
+      memory: 32Mi
+    limits:
+      cpu: 25m
+      memory: 64Mi
+  sidecars:
+    requests:
+      cpu: 1m
+      memory: 32Mi
+    limits:
+      cpu: 25m
+      memory: 64Mi
+
+# Minimal Postgres configuration for development
+patroni:
+  postgresql:
+    pg_hba: "host all all 0.0.0.0/0 md5"
+    parameters:
+      shared_buffers: 8MB # Minimal for development
+      wal_buffers: "64kB"
+      min_wal_size: 32MB
+      max_wal_size: 64MB
+      max_slot_wal_keep_size: 128MB
+
+# Single proxy for development
+proxy:
+  pgBouncer:
+    image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+    replicas: 1
+    requests:
+      cpu: 1m
+      memory: 32Mi
+    limits:
+      cpu: 25m
+      memory: 64Mi
+
+# Monitoring disabled by default in development (enable if needed)
+pgmonitor:
+  enabled: false
+  exporter:
+    image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+    requests:
+      cpu: 1m
+      memory: 32Mi
+    limits:
+      cpu: 25m
+      memory: 64Mi

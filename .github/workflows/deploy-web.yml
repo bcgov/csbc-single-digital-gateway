@@ -50,13 +50,13 @@ jobs:
 
     - name: Deploy Web with Helm
       run: |
-        helm upgrade --install csbc-nodejs-starter-web ./infrastructure/helm/web \
+        helm upgrade --install csbc-single-digital-gateway-web ./infrastructure/helm/web \
           -n ${{ vars.OPENSHIFT_NAMESPACE }} \
           -f ./infrastructure/helm/web/${{ steps.env.outputs.values_file }} \
           --set podAnnotations.deployedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          --set app.apiUri=csbc-nodejs-starter-api \
+          --set app.apiUri=csbc-single-digital-gateway-api \
           --set app.oidc.issuer="${{ vars.WEB_OIDC_ISSUER }}" \
           --set app.oidc.clientId="${{ vars.WEB_OIDC_CLIENT_ID }}" \
           --set app.oidc.redirectUri="https://${{ vars.WEB_BASE_URL }}/callback" \
           --set app.oidc.postLogoutRedirectUri="https://${{ vars.WEB_BASE_URL }}/" \
-          --labels app.kubernetes.io/part-of=csbc-nodejs-starter
+          --labels app.kubernetes.io/part-of=csbc-single-digital-gateway

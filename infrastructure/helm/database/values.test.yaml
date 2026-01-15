@@ -1,0 +1,92 @@
+# Test environment values
+# Override the base values.yaml for test/staging deployments
+
+fullnameOverride: csbc-single-digital-gateway-postgres
+
+crunchyImage: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+
+postgresVersion: 17
+
+# Two instances for HA testing
+instances:
+  name: ha
+  replicas: 2
+  dataVolumeClaimSpec:
+    storage: 480Mi
+    storageClassName: netapp-block-standard
+  requests:
+    cpu: 1m
+    memory: 256Mi
+  limits:
+    cpu: 100m
+    memory: 512Mi
+  replicaCertCopy:
+    requests:
+      cpu: 1m
+      memory: 32Mi
+    limits:
+      cpu: 50m
+      memory: 64Mi
+
+# Standard backup configuration for test
+pgBackRest:
+  image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+  retention: "7" # Keep 7 backups for test environment
+  retentionFullType: count
+  repos:
+    schedules:
+      full: 0 8 * * * # Daily full backup
+      incremental: 0 0,4,12,16,20 * * * # Every 4 hours
+    volume:
+      accessModes: "ReadWriteOnce"
+      storage: 64Mi
+      storageClassName: netapp-file-backup
+  repoHost:
+    requests:
+      cpu: 1m
+      memory: 64Mi
+    limits:
+      cpu: 50m
+      memory: 128Mi
+  sidecars:
+    requests:
+      cpu: 1m
+      memory: 64Mi
+    limits:
+      cpu: 50m
+      memory: 128Mi
+
+# Standard Postgres configuration for test
+patroni:
+  postgresql:
+    pg_hba: "host all all 0.0.0.0/0 md5"
+    parameters:
+      shared_buffers: 16MB # 25% of pod memory (256Mi * 0.25 ≈ 64MB, but conservative)
+      wal_buffers: "64kB"
+      min_wal_size: 32MB
+      max_wal_size: 64MB
+      max_slot_wal_keep_size: 128MB
+
+# Two proxies for HA testing
+proxy:
+  pgBouncer:
+    image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+    replicas: 2
+    requests:
+      cpu: 1m
+      memory: 64Mi
+    limits:
+      cpu: 50m
+      memory: 128Mi
+
+# Enable monitoring in test environment
+pgmonitor:
+  enabled: true
+  exporter:
+    image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+    requests:
+      cpu: 1m
+      memory: 64Mi
+    limits:
+      cpu: 50m
+      memory: 128Mi

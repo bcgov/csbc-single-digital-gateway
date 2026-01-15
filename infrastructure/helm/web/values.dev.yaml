@@ -1,0 +1,21 @@
+# Development environment values
+# Override the base values.yaml for development deployments
+
+# Single replica for development
+replicaCount: 1
+
+# Image configuration for development
+image:
+  # Use the develop tag for development environment
+  tag: develop
+  pullPolicy: Always
+
+# Reduced resources for development
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+

@@ -50,11 +50,11 @@ jobs:
 
     - name: Deploy API with Helm
       run: |
-        helm upgrade --install csbc-nodejs-starter-api ./infrastructure/helm/api \
+        helm upgrade --install csbc-single-digital-gateway-api ./infrastructure/helm/api \
           -n ${{ vars.OPENSHIFT_NAMESPACE }} \
           -f ./infrastructure/helm/api/values.yaml \
           -f ./infrastructure/helm/api/${{ steps.env.outputs.values_file }} \
           --set podAnnotations.deployedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           --set app.oidc.issuer="${{ vars.API_OIDC_ISSUER }}" \
           --set app.oidc.jwksUri="${{ vars.API_OIDC_JWKS_URI }}" \
-          --labels app.kubernetes.io/part-of=csbc-nodejs-starter
+          --labels app.kubernetes.io/part-of=csbc-single-digital-gateway

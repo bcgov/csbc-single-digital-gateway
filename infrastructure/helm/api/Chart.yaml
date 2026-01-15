@@ -1,0 +1,14 @@
+apiVersion: v2
+name: api
+description: CSBC NestJS API Helm chart for OpenShift deployment
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - api
+  - nestjs
+  - nodejs
+  - openshift
+home: https://github.com/bcgov/csbc-single-digital-gateway
+sources:
+  - https://github.com/bcgov/csbc-single-digital-gateway

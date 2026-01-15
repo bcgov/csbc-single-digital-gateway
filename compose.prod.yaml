@@ -1,0 +1,58 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    ports:
+      - "${PORT}:4000"
+    env_file:
+      - ./apps/api/.env
+    environment:
+      - DEFAULT_DB_HOST=host.docker.internal
+      - OIDC_ISSUER=http://host.docker.internal:8080/realms/master
+      - OIDC_JWKS_URI=http://host.docker.internal:8080/realms/master/protocol/openid-connect/certs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4000/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    ports:
+      - "${APP_PORT}:5173"
+    env_file:
+      - ./apps/web/.env
+    volumes:
+      - web-files:/usr/share/nginx/html
+    depends_on:
+      web-init:
+        condition: service_completed_successfully
+
+  web-init:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    env_file:
+      - ./apps/web/.env
+    volumes:
+      - web-files:/output
+    command:
+      - sh
+      - -c
+      - |
+        # Copy the built files from /app to the shared volume
+        cp -r /usr/share/nginx/html/* /output/
+
+        # Use envsubst to replace tokens in index.html
+        envsubst < /output/index.html > /output/index.html.tmp
+        mv /output/index.html.tmp /output/index.html
+
+        echo "Environment substitution complete"
+        cat /output/index.html | grep "window.env"
+
+volumes:
+  web-files:

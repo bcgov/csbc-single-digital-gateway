@@ -1,0 +1,98 @@
+# Production environment values
+# Override the base values.yaml for production deployments
+
+fullnameOverride: csbc-single-digital-gateway-postgres
+
+crunchyImage: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+
+postgresVersion: 17
+
+# Three instances for high availability in production
+instances:
+  name: ha
+  replicas: 3
+  dataVolumeClaimSpec:
+    storage: 2Gi
+    storageClassName: netapp-block-standard
+  requests:
+    cpu: 10m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  replicaCertCopy:
+    requests:
+      cpu: 1m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Production-grade backup configuration
+pgBackRest:
+  image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+  retention: "30" # Keep 30 days/backups in production
+  retentionFullType: time # Time-based retention for production
+  repos:
+    schedules:
+      full: 0 1 * * 0 # Weekly full backup (Sunday at 1 AM)
+      differential: 0 1 * * 1-6 # Daily differential backups
+      incremental: 0 */4 * * * # Every 4 hours
+    volume:
+      accessModes: "ReadWriteOnce"
+      storage: 256Mi
+      storageClassName: netapp-file-backup
+  repoHost:
+    requests:
+      cpu: 5m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  sidecars:
+    requests:
+      cpu: 5m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Production-grade Postgres configuration
+patroni:
+  postgresql:
+    pg_hba: "host all all 0.0.0.0/0 md5"
+    parameters:
+      shared_buffers: 128MB # 25% of pod memory (512Mi * 0.25)
+      wal_buffers: "-1" # Automatically set as 1/32 of shared_buffers
+      min_wal_size: 80MB
+      max_wal_size: 1GB
+      max_slot_wal_keep_size: 2GB # Allow for longer replication lag in production
+      # Additional production tuning parameters
+      effective_cache_size: 384MB # 75% of pod memory
+      maintenance_work_mem: 64MB
+      checkpoint_completion_target: "0.9"
+      max_connections: "100"
+
+# Three proxies for high availability in production
+proxy:
+  pgBouncer:
+    image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+    replicas: 3
+    requests:
+      cpu: 5m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Monitoring enabled in production
+pgmonitor:
+  enabled: true
+  exporter:
+    image: # it's not necessary to specify an image as the images specified in the Crunchy Postgres Operator will be pulled by default
+    requests:
+      cpu: 5m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi

@@ -1,0 +1,24 @@
+{{- if .Values.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "web.configMapName" . }}
+  labels:
+    {{- include "web.labels" . | nindent 4 }}
+data:
+  # Application configuration
+  VITE_APP_NAME: {{ .Values.app.appName | quote }}
+
+  # API configuration
+  VITE_API_URI: {{ .Values.app.apiUri | quote }}
+
+  # OIDC configuration
+  VITE_OIDC_ISSUER: {{ .Values.app.oidc.issuer | quote }}
+  VITE_OIDC_CLIENT_ID: {{ .Values.app.oidc.clientId | quote }}
+  VITE_OIDC_REDIRECT_URI: {{ .Values.app.oidc.redirectUri | quote }}
+  VITE_OIDC_POST_LOGOUT_REDIRECT_URI: {{ .Values.app.oidc.postLogoutRedirectUri | quote }}
+
+  {{- with .Values.configMap.data }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

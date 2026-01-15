@@ -1,0 +1,95 @@
+# Production environment values
+# Override the base values.yaml for production deployments
+
+# Three replicas for high availability in production
+replicaCount: 3
+
+# Image configuration for production
+image:
+  # Use the latest tag for production or specify exact version/SHA
+  tag: latest
+  # Always pull in production to ensure latest version
+  pullPolicy: Always
+
+# Application configuration for production
+app:
+  # Database configuration
+  # Inherits defaults from values.yaml (database chart values)
+  database:
+    # SSL enabled for production environment
+    ssl: true
+
+# Production-grade resources
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# Pod Disruption Budget for production HA
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Horizontal Pod Autoscaler for production (optional)
+autoscaling:
+  enabled: false
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Production health check timings (conservative)
+livenessProbe:
+  initialDelaySeconds: 45
+  periodSeconds: 15
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Pod annotations for production monitoring
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "4000"
+  prometheus.io/path: "/metrics"
+
+# Anti-affinity to spread pods across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - api
+        topologyKey: kubernetes.io/hostname
+
+# Database migrations for production
+migrations:
+  enabled: true
+  # Use direct connection for production migrations (bypasses pgbouncer)
+  useDirectConnection: true
+  # Longer timeout for production migrations
+  activeDeadlineSeconds: 600
+  # More retries in production
+  backoffLimit: 5
+  # Keep completed job around longer for debugging
+  ttlSecondsAfterFinished: 600
+  # More resources for production migrations
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi

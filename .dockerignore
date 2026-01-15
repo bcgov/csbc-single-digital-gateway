@@ -1,0 +1,10 @@
+.git/
+.turbo/
+.vscode/
+
+**/dist/
+**/node_modules/
+**/out/
+
+.env*
+Dockerfile

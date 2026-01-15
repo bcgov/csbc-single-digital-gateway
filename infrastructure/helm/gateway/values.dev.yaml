@@ -1,0 +1,22 @@
+# Development environment values
+# Override the base values.yaml for development deployments
+
+# Single replica for development
+replicaCount: 1
+
+# Reduced resources for development
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
+
+# OpenShift Route configuration for development
+route:
+  enabled: true
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

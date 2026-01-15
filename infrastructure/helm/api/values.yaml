@@ -1,0 +1,202 @@
+# Default values for api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of replicas for the deployment
+replicaCount: 2
+
+# Image configuration
+image:
+  # Container registry
+  registry: ghcr.io
+  # Image repository (update with your organization/repository)
+  repository: bcgov/csbc-single-digital-gateway/api
+  # Image pull policy
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion
+  tag: ""
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+  # - name: ghcr-secret
+
+# Override the name of the chart
+nameOverride: ""
+# Override the full name of the resources
+fullnameOverride: ""
+
+# Application configuration
+app:
+  # Application port (must match PORT env var)
+  port: 4000
+  # Health check port (internal only, not exposed via Route)
+  healthPort: 9000
+  # Node environment
+  nodeEnv: production
+
+  # Database configuration
+  database:
+    # Enable SSL for database connection
+    ssl: false
+    # Secret created by database chart containing database credentials
+    # Secret should contain: user, password, dbname, pgbouncer-host, pgbouncer-port
+    secretName: "csbc-single-digital-gateway-postgres-pguser-csbc-single-digital-gateway-postgres"
+
+  # OIDC configuration for authentication
+  oidc:
+    # OIDC issuer URL (REQUIRED - must be set during deployment)
+    issuer: ""
+    # OIDC JWKS URI for JWT validation (REQUIRED - must be set during deployment)
+    jwksUri: ""
+
+# Database migrations configuration
+migrations:
+  # Enable/disable database migrations hook
+  # Set to false to deploy without running migrations
+  enabled: true
+
+  # Migration image configuration (separate image with drizzle-kit)
+  image:
+    # Image repository for migrations
+    repository: bcgov/csbc-single-digital-gateway/api-migrations
+    # Overrides the image tag (defaults to chart appVersion)
+    tag: ""
+
+  # Use direct database connection instead of pgbouncer for migrations
+  # Recommended for DDL operations that pgbouncer may not handle correctly
+  useDirectConnection: false
+
+  # Number of retries before marking migration job as failed
+  backoffLimit: 3
+
+  # Time limit for migration job (in seconds)
+  activeDeadlineSeconds: 300
+
+  # Automatically delete completed job after this many seconds
+  ttlSecondsAfterFinished: 300
+
+  # Resource limits for migration job
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Additional pod annotations for migration job
+  podAnnotations: {}
+
+# Security context configuration
+# OpenShift-compatible: UIDs/GIDs are automatically assigned by the platform
+securityContext:
+  # Pod-level security context
+  podSecurityContext:
+    runAsNonRoot: true
+    # runAsUser, runAsGroup, and fsGroup are omitted - OpenShift assigns these automatically
+    # from the namespace's allowed UID/GID range
+
+  # Container-level security context
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    # Set to false as NestJS may need to write to temp directories
+    readOnlyRootFilesystem: false
+
+# Service configuration
+service:
+  # Service type (ClusterIP for internal access, Route handles external)
+  type: ClusterIP
+  # Service port for main API
+  port: 80
+  # Target port on the container for main API
+  targetPort: 4000
+  # Health check port (internal cluster access only)
+  healthPort: 9000
+  # Service annotations
+  annotations: {}
+
+# Resource limits and requests
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: health
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: health
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Node selector for pod assignment
+nodeSelector: {}
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity rules for pod assignment
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# ConfigMap configuration
+configMap:
+  # Create ConfigMap from app values
+  create: true
+  # Additional custom configuration data
+  data: {}
+
+# Service account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Pod Disruption Budget (for production HA)
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80

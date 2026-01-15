@@ -1,0 +1,15 @@
+apiVersion: v2
+name: web
+description: CSBC Web Application Helm chart for OpenShift deployment
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - web
+  - react
+  - vite
+  - nginx
+  - openshift
+home: https://github.com/bcgov/csbc-single-digital-gateway
+sources:
+  - https://github.com/bcgov/csbc-single-digital-gateway

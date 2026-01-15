@@ -1,0 +1,92 @@
+{{- if .Values.configMap.create }}
+{{- include "gateway.validateValues" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gateway.configMapName" . }}
+  labels:
+    {{- include "gateway.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    worker_processes {{ .Values.nginx.workerProcesses }};
+    error_log /var/log/nginx/error.log warn;
+    pid /tmp/nginx.pid;
+
+    events {
+        worker_connections {{ .Values.nginx.workerConnections }};
+    }
+
+    http {
+        # Temp paths for nginx-unprivileged
+        proxy_temp_path /tmp/proxy_temp;
+        client_body_temp_path /tmp/client_temp;
+        fastcgi_temp_path /tmp/fastcgi_temp;
+        uwsgi_temp_path /tmp/uwsgi_temp;
+        scgi_temp_path /tmp/scgi_temp;
+
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /var/log/nginx/access.log main;
+
+        sendfile on;
+        keepalive_timeout 65;
+        client_max_body_size {{ .Values.nginx.clientMaxBodySize }};
+
+        # Upstream definitions
+        upstream web_backend {
+            server {{ .Values.services.web.name }}:{{ .Values.services.web.port }};
+        }
+
+        upstream api_backend {
+            server {{ .Values.services.api.name }}:{{ .Values.services.api.port }};
+        }
+
+        server {
+            listen 8080;
+            server_name _;
+
+            # Health check endpoint
+            location /health {
+                access_log off;
+                return 200 'healthy';
+                add_header Content-Type text/plain;
+            }
+
+            # API routes - proxy to API service
+            # Matches /api, /api/, and /api/* - strips /api prefix when forwarding
+            location ~ ^/api(/.*)?$ {
+                proxy_pass http://api_backend$1;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header X-Forwarded-Port $server_port;
+                proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout }};
+                proxy_send_timeout {{ .Values.nginx.proxySendTimeout }};
+                proxy_read_timeout {{ .Values.nginx.proxyReadTimeout }};
+            }
+
+            # All other routes - proxy to web service
+            location / {
+                proxy_pass http://web_backend;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header X-Forwarded-Port $server_port;
+                proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout }};
+                proxy_send_timeout {{ .Values.nginx.proxySendTimeout }};
+                proxy_read_timeout {{ .Values.nginx.proxyReadTimeout }};
+            }
+        }
+    }
+{{- end }}

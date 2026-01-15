@@ -1,0 +1,64 @@
+# Stage 0: Base Image
+FROM node:24-alpine AS base
+
+RUN npm install -g turbo
+RUN npx turbo telemetry disable
+
+# Stage 1: Prune project
+FROM base AS pruner
+
+WORKDIR /app
+
+COPY . .
+
+RUN npx turbo prune api --docker
+
+# Stage 2: Install all dependencies (including devDependencies for drizzle-kit)
+FROM base AS dependencies
+
+WORKDIR /app
+
+COPY --from=pruner /app/out/json .
+
+# Install all dependencies (including dev) since drizzle-kit is a devDependency
+RUN npm ci
+
+# Stage 3: Production migrations image
+FROM node:24-alpine AS migrations
+
+# Install postgresql-client for pg_isready
+RUN apk add --no-cache postgresql-client
+
+WORKDIR /app
+
+# Copy all node_modules (includes drizzle-kit)
+COPY --from=dependencies /app/node_modules ./node_modules/
+COPY --from=dependencies /app/apps/api/node_modules ./apps/api/node_modules/
+
+# Copy drizzle configuration, migrations, and db config schema
+COPY --from=pruner /app/out/full/apps/api/drizzle ./apps/api/drizzle
+COPY --from=pruner /app/out/full/apps/api/src/common/dtos/app-config.dto.ts ./apps/api/src/common/dtos/app-config.dto.ts
+
+# Copy package.json for npm scripts
+COPY --from=pruner /app/out/full/apps/api/package.json ./apps/api/package.json
+
+# Copy migration script
+COPY --from=pruner /app/out/full/apps/api/scripts ./apps/api/scripts
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Make migration script executable
+RUN chmod +x ./apps/api/scripts/migrate-all.sh
+
+RUN chown -R nodejs:nodejs /app
+
+USER nodejs
+
+WORKDIR /app/apps/api
+
+ENV NODE_ENV=production
+
+# Auto-discover and run all database migrations
+CMD ["./scripts/migrate-all.sh"]

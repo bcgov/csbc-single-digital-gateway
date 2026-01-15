@@ -1,0 +1,98 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "api.fullname" . }}-migrations
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrations
+  annotations:
+    # Run before install and upgrade
+    "helm.sh/hook": pre-install,pre-upgrade
+    # Weight determines order if multiple hooks exist (lower runs first)
+    "helm.sh/hook-weight": "-5"
+    # Delete previous job before creating new one, delete on success
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit | default 3 }}
+  {{- if .Values.migrations.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  {{- end }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished | default 300 }}
+  template:
+    metadata:
+      labels:
+        {{- include "api.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrations
+      {{- with .Values.migrations.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Never
+      securityContext:
+        {{- toYaml .Values.securityContext.podSecurityContext | nindent 8 }}
+      containers:
+      - name: migrations
+        image: {{ include "api.migrationsImage" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          {{- toYaml .Values.securityContext.containerSecurityContext | nindent 10 }}
+        env:
+        # Database credentials from secret
+        - name: DEFAULT_DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: dbname
+        - name: DEFAULT_DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              {{- if .Values.migrations.useDirectConnection }}
+              key: host
+              {{- else }}
+              key: pgbouncer-host
+              {{- end }}
+        - name: DEFAULT_DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              {{- if .Values.migrations.useDirectConnection }}
+              key: port
+              {{- else }}
+              key: pgbouncer-port
+              {{- end }}
+        - name: DEFAULT_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: user
+        - name: DEFAULT_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: password
+        - name: DEFAULT_DB_SSL
+          value: {{ .Values.app.database.ssl | quote }}
+        - name: NODE_ENV
+          value: {{ .Values.app.nodeEnv | quote }}
+        - name: OIDC_ISSUER
+          value: {{ .Values.app.oidc.issuer | quote }}
+        - name: OIDC_JWKS_URI
+          value: {{ .Values.app.oidc.jwksUri | quote }}
+        resources:
+          {{- toYaml .Values.migrations.resources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

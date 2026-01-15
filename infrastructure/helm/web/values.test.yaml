@@ -1,0 +1,21 @@
+# Test environment values
+# Override the base values.yaml for test/staging deployments
+
+# Two replicas for HA in test environment
+replicaCount: 2
+
+# Image configuration for test environment
+image:
+  # Use the stage tag for test environment
+  tag: stage
+  pullPolicy: Always
+
+# Standard resources for test
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+

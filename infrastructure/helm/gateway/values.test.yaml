@@ -1,0 +1,22 @@
+# Test environment values
+# Override the base values.yaml for test/staging deployments
+
+# Two replicas for HA in test environment
+replicaCount: 2
+
+# Standard resources for test
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# OpenShift Route configuration for test
+route:
+  enabled: true
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

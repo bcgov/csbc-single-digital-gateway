@@ -1,0 +1,41 @@
+# Production environment values
+# Override the base values.yaml for production deployments
+
+# Three replicas for high availability in production
+replicaCount: 3
+
+# Image configuration for production
+image:
+  # Use the latest tag for production or specify exact version/SHA
+  tag: latest
+  # Always pull in production to ensure latest version
+  pullPolicy: Always
+
+# Production-grade resources
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Pod annotations for production monitoring
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "80"
+  prometheus.io/path: "/metrics"
+
+# Anti-affinity to spread pods across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - web
+        topologyKey: kubernetes.io/hostname

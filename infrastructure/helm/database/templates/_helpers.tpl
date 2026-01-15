@@ -1,0 +1,66 @@
+{{/*
+Validate required values
+*/}}
+{{- define "crunchy-postgres.validateValues" -}}
+{{- required "fullnameOverride is required. Please set .Values.fullnameOverride in your values file" .Values.fullnameOverride }}
+{{- end }}
+
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "crunchy-postgres.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+fullnameOverride is required.
+*/}}
+{{- define "crunchy-postgres.fullname" -}}
+{{- required "fullnameOverride is required. Please set .Values.fullnameOverride in your values file" .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "crunchy-postgres.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Common labels
+*/}}
+{{- define "crunchy-postgres.labels" -}}
+helm.sh/chart: {{ include "crunchy-postgres.chart" . }}
+{{ include "crunchy-postgres.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: {{ .Values.partOf | default "csbc-single-digital-gateway" }}
+app.kubernetes.io/component: database
+app.openshift.io/runtime: postgresql
+{{- if .Values.postgresVersion }}
+app.openshift.io/runtime-version: {{ .Values.postgresVersion | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "crunchy-postgres.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "crunchy-postgres.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "crunchy-postgres.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "crunchy-postgres.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
