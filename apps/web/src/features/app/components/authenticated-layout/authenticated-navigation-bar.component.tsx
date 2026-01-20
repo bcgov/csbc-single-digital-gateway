@@ -77,14 +77,16 @@ export const AuthenticatedNavigationBar = () => {
 
         <div className="flex flex-row gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                <Avatar>
-                  <AvatarImage src={user?.picture} />
-                  <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-              </button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                  <Avatar>
+                    <AvatarImage src={user?.picture} />
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              }
+            />
             <DropdownMenuContent align="end" className="min-w-64">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>{displayName}</DropdownMenuLabel>

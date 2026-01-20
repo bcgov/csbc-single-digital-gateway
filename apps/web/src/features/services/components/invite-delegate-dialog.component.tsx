@@ -101,16 +101,14 @@ export function InviteDelegateDialog({ trigger }: InviteDelegateDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          trigger ?? (
-            <Button variant="ghost" size="icon">
-              <IconUserPlus className="size-5" />
-              <span className="sr-only">Invite delegate</span>
-            </Button>
-          )
-        }
-      />
+      <DialogTrigger>
+        {trigger ?? (
+          <Button variant="ghost" size="icon">
+            <IconUserPlus className="size-5" />
+            <span className="sr-only">Invite delegate</span>
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Invite a delegate</DialogTitle>
@@ -205,7 +203,7 @@ export function InviteDelegateDialog({ trigger }: InviteDelegateDialogProps) {
             <p className="text-sm text-muted-foreground">
               How long your delegate can access the service on your behalf.
             </p>
-            <Select value={expiration} onValueChange={setExpiration}>
+            <Select value={expiration} onValueChange={(value) => value && setExpiration(value)}>
               <SelectTrigger className="w-full">
                 <SelectValue>
                   {

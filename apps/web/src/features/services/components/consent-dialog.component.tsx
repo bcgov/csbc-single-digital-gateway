@@ -45,15 +45,13 @@ export function ConsentDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          trigger ?? (
-            <Button className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80">
-              Apply online
-            </Button>
-          )
-        }
-      />
+      <AlertDialogTrigger>
+        {trigger ?? (
+          <Button className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80">
+            Apply online
+          </Button>
+        )}
+      </AlertDialogTrigger>
       <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Consent & Privacy</AlertDialogTitle>
