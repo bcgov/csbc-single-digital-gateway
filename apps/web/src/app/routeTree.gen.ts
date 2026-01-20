@@ -14,6 +14,9 @@ import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
+import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
+import { Route as AppServicesServiceSlugIndexRouteImport } from './routes/app/services/$serviceSlug/index'
+import { Route as AppServicesServiceSlugApplyApplicationIdRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
@@ -39,17 +42,40 @@ const publicCallbackRoute = publicCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => publicRouteRoute,
 } as any)
+const AppServicesIndexRoute = AppServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppServicesServiceSlugIndexRoute =
+  AppServicesServiceSlugIndexRouteImport.update({
+    id: '/services/$serviceSlug/',
+    path: '/services/$serviceSlug/',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppServicesServiceSlugApplyApplicationIdRoute =
+  AppServicesServiceSlugApplyApplicationIdRouteImport.update({
+    id: '/services/$serviceSlug/apply/$applicationId',
+    path: '/services/$serviceSlug/apply/$applicationId',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/app': typeof AppRouteRouteWithChildren
   '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
+  '/app/services': typeof AppServicesIndexRoute
+  '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
+  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdRoute
 }
 export interface FileRoutesByTo {
   '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app': typeof AppIndexRoute
+  '/app/services': typeof AppServicesIndexRoute
+  '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
+  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,12 +84,28 @@ export interface FileRoutesById {
   '/(public)/callback': typeof publicCallbackRoute
   '/(public)/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
+  '/app/services/': typeof AppServicesIndexRoute
+  '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
+  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/app' | '/callback' | '/' | '/app/'
+  fullPaths:
+    | '/app'
+    | '/callback'
+    | '/'
+    | '/app/'
+    | '/app/services'
+    | '/app/services/$serviceSlug'
+    | '/app/services/$serviceSlug/apply/$applicationId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/callback' | '/' | '/app'
+  to:
+    | '/callback'
+    | '/'
+    | '/app'
+    | '/app/services'
+    | '/app/services/$serviceSlug'
+    | '/app/services/$serviceSlug/apply/$applicationId'
   id:
     | '__root__'
     | '/(public)'
@@ -71,6 +113,9 @@ export interface FileRouteTypes {
     | '/(public)/callback'
     | '/(public)/'
     | '/app/'
+    | '/app/services/'
+    | '/app/services/$serviceSlug/'
+    | '/app/services/$serviceSlug/apply/$applicationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -115,6 +160,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicCallbackRouteImport
       parentRoute: typeof publicRouteRoute
     }
+    '/app/services/': {
+      id: '/app/services/'
+      path: '/services'
+      fullPath: '/app/services'
+      preLoaderRoute: typeof AppServicesIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/services/$serviceSlug/': {
+      id: '/app/services/$serviceSlug/'
+      path: '/services/$serviceSlug'
+      fullPath: '/app/services/$serviceSlug'
+      preLoaderRoute: typeof AppServicesServiceSlugIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/services/$serviceSlug/apply/$applicationId': {
+      id: '/app/services/$serviceSlug/apply/$applicationId'
+      path: '/services/$serviceSlug/apply/$applicationId'
+      fullPath: '/app/services/$serviceSlug/apply/$applicationId'
+      preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -134,10 +200,17 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
 
 interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
+  AppServicesIndexRoute: typeof AppServicesIndexRoute
+  AppServicesServiceSlugIndexRoute: typeof AppServicesServiceSlugIndexRoute
+  AppServicesServiceSlugApplyApplicationIdRoute: typeof AppServicesServiceSlugApplyApplicationIdRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
+  AppServicesIndexRoute: AppServicesIndexRoute,
+  AppServicesServiceSlugIndexRoute: AppServicesServiceSlugIndexRoute,
+  AppServicesServiceSlugApplyApplicationIdRoute:
+    AppServicesServiceSlugApplyApplicationIdRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(

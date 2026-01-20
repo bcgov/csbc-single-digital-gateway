@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
+import { AuthenticatedLayout } from "../../../features/app/components/authenticated-layout/authenticated-layout.component";
 
 export const Route = createFileRoute("/app")({
   beforeLoad: ({ context, location }) => {
@@ -40,5 +41,9 @@ function RouteComponent() {
     };
   }, [navigate, auth, location]);
 
-  return <Outlet />;
+  return (
+    <AuthenticatedLayout>
+      <Outlet />
+    </AuthenticatedLayout>
+  );
 }

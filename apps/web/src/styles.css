@@ -1,1 +1,20 @@
-@import "tailwindcss"
+@import "tailwindcss";
+
+@theme {
+    --color-bcgov-blue: #1E5189;
+}
+
+/* CHEFS Form Viewer web component styling */
+chefs-form-viewer {
+    display: block;
+    width: 100%;
+}
+
+chefs-form-viewer .formio-form,
+chefs-form-viewer .formio-component,
+chefs-form-viewer .formio-form > div,
+chefs-form-viewer .card,
+chefs-form-viewer .card-body {
+    max-width: 100% !important;
+    width: 100% !important;
+}

@@ -1,5 +1,5 @@
 import { Helmet, HelmetProvider } from "@dr.pogodin/react-helmet";
-import { Spinner } from "@repo/ui";
+import { Spinner, Toaster } from "@repo/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { AuthProvider, useAuth } from "react-oidc-context";
@@ -39,6 +39,7 @@ export const AppProvider = () => {
         <QueryClientProvider client={queryClient}>
           <InnerAppProvider />
         </QueryClientProvider>
+        <Toaster position="top-right" />
       </AuthProvider>
     </HelmetProvider>
   );
