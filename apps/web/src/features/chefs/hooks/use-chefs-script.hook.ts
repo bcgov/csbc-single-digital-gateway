@@ -4,7 +4,7 @@ import type { ChefsScriptStatus } from "../types/chefs-form-viewer.types";
 // Use PR-1802 preview for headers support
 // TODO: Switch back to production once PR is merged
 const CHEFS_SCRIPT_URL =
-  "https://chefs-dev.apps.silver.devops.gov.bc.ca/pr-1802/embed/chefs-form-viewer.min.js";
+  "https://chefs-dev.apps.silver.devops.gov.bc.ca/app/embed/chefs-form-viewer.min.js";
 const SCRIPT_ID = "chefs-form-viewer-script";
 
 let globalStatus: ChefsScriptStatus = "idle";

@@ -16,16 +16,16 @@ export const services: ServiceDto[] = [
     ],
     applications: [
       {
-        id: "3145c95c-337e-41e5-836c-138cf1256bc9",
+        id: "bcc7a548-1100-432d-82a3-5c0901574a0b",
         name: "Income Assistance",
-        apiKey: "a7464f97-9377-42ee-9f73-7c2d4250c132",
-        baseUrl: "https://chefs-dev.apps.silver.devops.gov.bc.ca/pr-1802",
+        apiKey: "83688c02-59d7-49fc-a25a-462895e37a13",
+        baseUrl: "https://chefs-dev.apps.silver.devops.gov.bc.ca/app",
       },
       {
-        id: "264d7b4d-e05b-4791-99e7-33f3009716e3",
+        id: "bcc7a548-1100-432d-82a3-5c0901574a0b",
         name: "Disability Assistance",
-        apiKey: "",
-        baseUrl: "",
+        apiKey: "83688c02-59d7-49fc-a25a-462895e37a13",
+        baseUrl: "https://chefs-dev.apps.silver.devops.gov.bc.ca/app",
       },
     ],
   },
