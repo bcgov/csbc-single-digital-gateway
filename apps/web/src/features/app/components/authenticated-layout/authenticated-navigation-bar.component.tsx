@@ -16,20 +16,21 @@ import {
   IconLayoutDashboardFilled,
   IconLogout,
 } from "@tabler/icons-react";
-import { Link } from "@tanstack/react-router";
 import { useAuth } from "react-oidc-context";
-import { Container } from "../container.component";
+import { type NavItem, NavigationBar } from "../navigation-bar";
 
-const navigationItems = [
+const navigationItems: NavItem[] = [
   {
+    type: "link",
+    icon: <IconLayoutDashboardFilled />,
     label: "Dashboard",
     to: "/app",
-    icon: <IconLayoutDashboardFilled />,
   },
   {
+    type: "link",
+    icon: <IconBriefcase2Filled />,
     label: "Services",
     to: "/app/services",
-    icon: <IconBriefcase2Filled />,
   },
 ];
 
@@ -54,57 +55,38 @@ export const AuthenticatedNavigationBar = () => {
   const initials = getInitials(user?.name, user?.email);
 
   return (
-    <Container>
-      <div className="flex flex-row  py-4 items-center justify-between gap-2">
-        <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-xl font-extrabold truncate">
-            Single Digital Gateway
-          </h1>
-
-          {navigationItems.map((item) => (
-            <Button
-              key={item.to}
-              variant="link"
-              className="shrink-0 p-0 h-auto"
-            >
-              <Link to={item.to} className="flex flex-row items-center gap-2">
-                {item.icon}
-                {item.label}
-              </Link>
+    <NavigationBar
+      title="Single Digital Gateway"
+      items={navigationItems}
+      extras={
+        <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+              <Avatar>
+                <AvatarImage src={user?.picture} />
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
             </Button>
-          ))}
-        </div>
-
-        <div className="flex flex-row gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                  <Avatar>
-                    <AvatarImage src={user?.picture} />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="min-w-64">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => auth.signoutRedirect()}
-                >
-                  <IconLogout />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    </Container>
+          }
+        />
+        <DropdownMenuContent align="end" className="min-w-64">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => auth.signoutRedirect()}
+            >
+              <IconLogout />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    />
   );
 };
