@@ -8,7 +8,7 @@ export interface RouterContext {
 
 export interface BreadcrumbItemDef {
   label: string;
-  to: string;
+  to?: string;
   params?: Record<string, string>;
 }
 

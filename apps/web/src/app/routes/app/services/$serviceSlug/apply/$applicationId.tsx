@@ -1,18 +1,14 @@
 import { IconHeartHandshake } from "@tabler/icons-react";
-import {
-  createFileRoute,
-  notFound,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { ChefsFormViewer } from "../../../../../../features/chefs";
-import type { ServiceDto } from "../../../../../../features/services/service.dto";
 import { InviteDelegateDialog } from "../../../../../../features/services/components/invite-delegate-dialog.component";
 import { services } from "../../../../../../features/services/data/services.data";
+import type { ServiceDto } from "../../../../../../features/services/service.dto";
 
 export const Route = createFileRoute(
-  "/app/services/$serviceSlug/apply/$applicationId"
+  "/app/services/$serviceSlug/apply/$applicationId",
 )({
   loader: ({ params }) => {
     const service = services.find((s) => s.slug === params.serviceSlug);
@@ -20,7 +16,7 @@ export const Route = createFileRoute(
       throw notFound();
     }
     const application = service.applications?.find(
-      (a) => a.id === params.applicationId
+      (a) => a.id === params.applicationId,
     );
     if (!application) {
       throw notFound();
@@ -28,13 +24,17 @@ export const Route = createFileRoute(
     return { service, application };
   },
   staticData: {
-    breadcrumbs: (loaderData: { service: ServiceDto }) => [
+    breadcrumbs: (loaderData: {
+      service: ServiceDto;
+      application: { name: string };
+    }) => [
       { label: "Services", to: "/app/services" },
       {
         label: loaderData.service.name,
         to: "/app/services/$serviceSlug",
         params: { serviceSlug: loaderData.service.slug },
       },
+      { label: `Apply for ${loaderData.application.name}` },
     ],
   },
   component: RouteComponent,
@@ -80,7 +80,7 @@ function RouteComponent() {
             {
               description:
                 "You will receive updates as your application progresses.",
-            }
+            },
           );
           navigate({
             to: "/app/services/$serviceSlug",

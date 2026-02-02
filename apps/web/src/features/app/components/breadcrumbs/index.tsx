@@ -3,6 +3,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@repo/ui";
 import { Link, useMatches } from "@tanstack/react-router";
@@ -25,14 +26,18 @@ export const Breadcrumbs = () => {
       <Breadcrumb>
         <BreadcrumbList>
           {items.map((item, index) => (
-            <span key={item.to} className="contents">
+            <span key={item.to ?? `page-${index}`} className="contents">
               {index > 0 && <BreadcrumbSeparator />}
               <BreadcrumbItem>
-                <BreadcrumbLink
-                  render={<Link to={item.to} params={item.params ?? {}} />}
-                >
-                  {item.label}
-                </BreadcrumbLink>
+                {item.to ? (
+                  <BreadcrumbLink
+                    render={<Link to={item.to} params={item.params ?? {}} />}
+                  >
+                    {item.label}
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                )}
               </BreadcrumbItem>
             </span>
           ))}
