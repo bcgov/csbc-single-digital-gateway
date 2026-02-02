@@ -3,5 +3,7 @@ export const AuthenticatedHeader = ({
 }: {
   children?: React.ReactNode;
 }) => {
-  return <header>{children}</header>;
+  return (
+    <header className="border-b border-neutral-300 mb-4">{children}</header>
+  );
 };

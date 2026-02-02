@@ -22,27 +22,29 @@ export const Breadcrumbs = () => {
   if (items.length === 0) return null;
 
   return (
-    <Container>
-      <Breadcrumb>
-        <BreadcrumbList>
-          {items.map((item, index) => (
-            <span key={item.to ?? `page-${index}`} className="contents">
-              {index > 0 && <BreadcrumbSeparator />}
-              <BreadcrumbItem>
-                {item.to ? (
-                  <BreadcrumbLink
-                    render={<Link to={item.to} params={item.params ?? {}} />}
-                  >
-                    {item.label}
-                  </BreadcrumbLink>
-                ) : (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                )}
-              </BreadcrumbItem>
-            </span>
-          ))}
-        </BreadcrumbList>
-      </Breadcrumb>
-    </Container>
+    <div className="border-t border-neutral-300 py-2">
+      <Container>
+        <Breadcrumb>
+          <BreadcrumbList>
+            {items.map((item, index) => (
+              <span key={item.to ?? `page-${index}`} className="contents">
+                {index > 0 && <BreadcrumbSeparator />}
+                <BreadcrumbItem>
+                  {item.to ? (
+                    <BreadcrumbLink
+                      render={<Link to={item.to} params={item.params ?? {}} />}
+                    >
+                      {item.label}
+                    </BreadcrumbLink>
+                  ) : (
+                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
+              </span>
+            ))}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </Container>
+    </div>
   );
 };
