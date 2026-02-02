@@ -1,8 +1,10 @@
 import { IconHeartHandshake } from "@tabler/icons-react";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { ChefsFormViewer } from "../../../../../../features/chefs";
+import { ConsentGate } from "../../../../../../features/services/components/consent-dialog.component";
 import { InviteDelegateDialog } from "../../../../../../features/services/components/invite-delegate-dialog.component";
 import { services } from "../../../../../../features/services/data/services.data";
 import type { ServiceDto } from "../../../../../../features/services/service.dto";
@@ -44,6 +46,7 @@ function RouteComponent() {
   const { service, application } = Route.useLoaderData();
   const auth = useAuth();
   const navigate = useNavigate();
+  const [consented, setConsented] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -63,32 +66,45 @@ function RouteComponent() {
         </div>
       </div>
 
-      <ChefsFormViewer
-        formId={application.id}
-        apiKey={application.apiKey}
-        baseUrl={application.baseUrl}
-        headers={
-          auth.user?.access_token
-            ? { Authorization: `Bearer ${auth.user.access_token}` }
-            : undefined
-        }
-        language="en"
-        isolateStyles={false}
-        onSubmissionComplete={() => {
-          toast.success(
-            `Your application for ${service.name} has been submitted successfully.`,
-            {
-              description:
-                "You will receive updates as your application progresses.",
-            },
-          );
+      <ConsentGate
+        open={!consented}
+        onAgree={() => setConsented(true)}
+        onDisagree={() =>
           navigate({
             to: "/app/services/$serviceSlug",
             params: { serviceSlug: service.slug },
-          });
-        }}
-        onSubmissionError={(e) => console.error("Submission error:", e.message)}
+          })
+        }
       />
+
+      {consented && (
+        <ChefsFormViewer
+          formId={application.id}
+          apiKey={application.apiKey}
+          baseUrl={application.baseUrl}
+          headers={
+            auth.user?.access_token
+              ? { Authorization: `Bearer ${auth.user.access_token}` }
+              : undefined
+          }
+          language="en"
+          isolateStyles={false}
+          onSubmissionComplete={() => {
+            toast.success(
+              `Your application for ${service.name} has been submitted successfully.`,
+              {
+                description:
+                  "You will receive updates as your application progresses.",
+              },
+            );
+            navigate({
+              to: "/app/services/$serviceSlug",
+              params: { serviceSlug: service.slug },
+            });
+          }}
+          onSubmissionError={(e) => console.error("Submission error:", e.message)}
+        />
+      )}
     </div>
   );
 }

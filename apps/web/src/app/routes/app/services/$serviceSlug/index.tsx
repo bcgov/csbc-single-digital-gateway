@@ -13,7 +13,6 @@ import {
 } from "@repo/ui";
 import { IconHeartHandshake } from "@tabler/icons-react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ConsentDialog } from "../../../../../features/services/components/consent-dialog.component";
 import { services } from "../../../../../features/services/data/services.data";
 
 export const Route = createFileRoute("/app/services/$serviceSlug/")({
@@ -66,16 +65,21 @@ function RouteComponent() {
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {service.applications?.map((application) => (
-            <ConsentDialog
+            <Button
               key={application.id}
-              serviceSlug={service.slug}
-              applicationId={application.id}
-              trigger={
-                <Button className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80 h-auto whitespace-normal py-2">
-                  Apply for {application.name}
-                </Button>
+              className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80 h-auto whitespace-normal py-2"
+              render={
+                <Link
+                  to="/app/services/$serviceSlug/apply/$applicationId"
+                  params={{
+                    serviceSlug: service.slug,
+                    applicationId: application.id,
+                  }}
+                />
               }
-            />
+            >
+              Apply for {application.name}
+            </Button>
           ))}
         </CardContent>
       </Card>
@@ -188,16 +192,21 @@ function RouteComponent() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {service.applications?.map((application) => (
-                <ConsentDialog
+                <Button
                   key={application.id}
-                  serviceSlug={service.slug}
-                  applicationId={application.id}
-                  trigger={
-                    <Button className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80 h-auto whitespace-normal py-2">
-                      Apply for {application.name}
-                    </Button>
+                  className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80 h-auto whitespace-normal py-2"
+                  render={
+                    <Link
+                      to="/app/services/$serviceSlug/apply/$applicationId"
+                      params={{
+                        serviceSlug: service.slug,
+                        applicationId: application.id,
+                      }}
+                    />
                   }
-                />
+                >
+                  Apply for {application.name}
+                </Button>
               ))}
             </CardContent>
           </Card>

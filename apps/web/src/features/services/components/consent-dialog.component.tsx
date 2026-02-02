@@ -11,47 +11,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@repo/ui";
-import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
-interface ConsentDialogProps {
-  serviceSlug: string;
-  applicationId: string;
-  trigger?: React.ReactNode;
+interface ConsentGateProps {
+  open: boolean;
+  onAgree: () => void;
+  onDisagree: () => void;
 }
 
-export function ConsentDialog({
-  serviceSlug,
-  applicationId,
-  trigger,
-}: ConsentDialogProps) {
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleAgree = () => {
-    setOpen(false);
-    navigate({
-      to: "/app/services/$serviceSlug/apply/$applicationId",
-      params: { serviceSlug, applicationId },
-    });
-  };
-
+export function ConsentGate({ open, onAgree, onDisagree }: ConsentGateProps) {
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger>
-        {trigger ?? (
-          <Button className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80">
-            Apply online
-          </Button>
-        )}
-      </AlertDialogTrigger>
+    <AlertDialog open={open}>
       <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Consent & Privacy</AlertDialogTitle>
@@ -131,10 +105,12 @@ export function ConsentDialog({
         </div>
 
         <AlertDialogFooter className="flex-row gap-2">
-          <AlertDialogCancel className="flex-1">I disagree</AlertDialogCancel>
+          <AlertDialogCancel className="flex-1" onClick={onDisagree}>
+            I disagree
+          </AlertDialogCancel>
           <AlertDialogAction
             className="flex-1 bg-bcgov-blue hover:bg-bcgov-blue/80"
-            onClick={handleAgree}
+            onClick={onAgree}
           >
             I agree
           </AlertDialogAction>
