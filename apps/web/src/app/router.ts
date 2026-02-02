@@ -6,6 +6,12 @@ export interface RouterContext {
   auth: AuthContextProps;
 }
 
+export interface BreadcrumbItemDef {
+  label: string;
+  to: string;
+  params?: Record<string, string>;
+}
+
 export const router = createRouter({
   context: {
     auth: undefined!,
@@ -16,5 +22,9 @@ export const router = createRouter({
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
+  }
+
+  interface StaticDataRouteOption {
+    breadcrumbs?: (loaderData: any) => BreadcrumbItemDef[];
   }
 }

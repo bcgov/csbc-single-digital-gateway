@@ -1,5 +1,6 @@
 import { AppSearch } from "../app-search";
 import { AppSearchProvider } from "../app-search/app-search.context";
+import { Breadcrumbs } from "../breadcrumbs";
 import { Container } from "../container.component";
 import { navigationItems } from "./authenticated-navigation-bar.component";
 import { AuthenticatedFooter } from "./authenticated-footer.component";
@@ -17,6 +18,7 @@ export const AuthenticatedLayout = ({
         <AuthenticatedHeader>
           <AuthenticatedNavigationBar />
         </AuthenticatedHeader>
+        <Breadcrumbs />
         <Container className="flex-auto">{children}</Container>
         <AuthenticatedFooter />
       </div>

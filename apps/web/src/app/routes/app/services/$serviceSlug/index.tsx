@@ -1,9 +1,5 @@
 import {
   Badge,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
   Button,
   Card,
   CardContent,
@@ -28,6 +24,9 @@ export const Route = createFileRoute("/app/services/$serviceSlug/")({
     }
     return { service };
   },
+  staticData: {
+    breadcrumbs: () => [{ label: "Services", to: "/app/services" }],
+  },
   component: RouteComponent,
   notFoundComponent: NotFoundComponent,
 });
@@ -43,16 +42,6 @@ function RouteComponent() {
         </div>
 
         <div className="flex flex-col w-full">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink render={<Link to="/app/services" />}>
-                  Services
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
           <div className="flex items-center gap-4 justify-between">
             <h1 className="text-2xl font-bold">{service.name}</h1>
             <div>

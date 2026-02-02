@@ -1,20 +1,13 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@repo/ui";
 import { IconHeartHandshake } from "@tabler/icons-react";
 import {
   createFileRoute,
-  Link,
   notFound,
   useNavigate,
 } from "@tanstack/react-router";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { ChefsFormViewer } from "../../../../../../features/chefs";
+import type { ServiceDto } from "../../../../../../features/services/service.dto";
 import { InviteDelegateDialog } from "../../../../../../features/services/components/invite-delegate-dialog.component";
 import { services } from "../../../../../../features/services/data/services.data";
 
@@ -34,6 +27,16 @@ export const Route = createFileRoute(
     }
     return { service, application };
   },
+  staticData: {
+    breadcrumbs: (loaderData: { service: ServiceDto }) => [
+      { label: "Services", to: "/app/services" },
+      {
+        label: loaderData.service.name,
+        to: "/app/services/$serviceSlug",
+        params: { serviceSlug: loaderData.service.slug },
+      },
+    ],
+  },
   component: RouteComponent,
 });
 
@@ -50,29 +53,6 @@ function RouteComponent() {
         </div>
 
         <div className="flex flex-col w-full">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink render={<Link to="/app/services" />}>
-                  Services
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  render={
-                    <Link
-                      to="/app/services/$serviceSlug"
-                      params={{ serviceSlug: service.slug }}
-                    />
-                  }
-                >
-                  {service.name}
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">{application.name}</h1>
             {/* Icons */}
