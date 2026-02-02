@@ -8,21 +8,24 @@ import {
 } from "@repo/ui";
 import { IconChevronDown } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
+import type { RegisteredRouter, RouteToPath } from "@tanstack/router-core";
 import type { ReactNode } from "react";
 import { Container } from "../container.component";
 
+type RoutePath = RouteToPath<RegisteredRouter>;
+
 type NavLink = {
   type: "link";
+  icon?: ReactNode;
   label: string;
-  to: string;
-  icon: ReactNode;
+  to: RoutePath;
 };
 
 type NavMenu = {
   type: "menu";
+  icon?: ReactNode;
   label: string;
-  icon: ReactNode;
-  children: { label: string; to: string }[];
+  children: { label: string; to: RoutePath }[];
 };
 
 export type NavItem = NavLink | NavMenu;
@@ -45,7 +48,7 @@ export const NavigationBar = ({ title, items, extras }: NavigationBarProps) => {
               <Button
                 key={item.to}
                 variant="link"
-                className="shrink-0 p-0 h-auto"
+                className="shrink-0 p-0 h-auto font-normal text-base"
               >
                 <Link to={item.to} className="flex flex-row items-center gap-2">
                   {item.icon}
@@ -58,7 +61,7 @@ export const NavigationBar = ({ title, items, extras }: NavigationBarProps) => {
                   render={
                     <Button
                       variant="link"
-                      className="shrink-0 p-0 h-auto flex flex-row items-center gap-2"
+                      className="shrink-0 p-0 h-auto flex flex-row items-center gap-2 font-normal text-base"
                     >
                       {item.icon}
                       {item.label}

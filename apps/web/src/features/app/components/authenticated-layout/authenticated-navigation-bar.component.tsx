@@ -11,26 +11,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui";
-import {
-  IconBriefcase2Filled,
-  IconLayoutDashboardFilled,
-  IconLogout,
-} from "@tabler/icons-react";
+import { IconLogout, IconSearch } from "@tabler/icons-react";
 import { useAuth } from "react-oidc-context";
+import { useAppSearch } from "../app-search/app-search.context";
 import { type NavItem, NavigationBar } from "../navigation-bar";
 
-const navigationItems: NavItem[] = [
+export const navigationItems: NavItem[] = [
   {
     type: "link",
-    icon: <IconLayoutDashboardFilled />,
-    label: "Dashboard",
+    label: "Home",
     to: "/app",
   },
   {
     type: "link",
-    icon: <IconBriefcase2Filled />,
     label: "Services",
     to: "/app/services",
+  },
+  {
+    type: "menu",
+    label: "Help",
+    children: [],
+  },
+  {
+    type: "menu",
+    label: "Settings",
+    children: [],
   },
 ];
 
@@ -50,6 +55,7 @@ const getInitials = (name?: string, email?: string): string => {
 
 export const AuthenticatedNavigationBar = () => {
   const auth = useAuth();
+  const { setOpen } = useAppSearch();
   const user = auth.user?.profile;
   const displayName = user?.name || user?.email || "User";
   const initials = getInitials(user?.name, user?.email);
@@ -59,33 +65,40 @@ export const AuthenticatedNavigationBar = () => {
       title="Single Digital Gateway"
       items={navigationItems}
       extras={
-        <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-              <Avatar>
-                <AvatarImage src={user?.picture} />
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="end" className="min-w-64">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => auth.signoutRedirect()}
-            >
-              <IconLogout />
-              Sign out
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-        </DropdownMenu>
+        <>
+          <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
+            <IconSearch className="size-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" className="rounded-full p-0">
+                  <Avatar>
+                    <AvatarImage src={user?.picture} />
+                    <AvatarFallback className="text-[#3470B1] bg-[#F1F8FE]">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="min-w-64">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => auth.signoutRedirect()}
+                >
+                  <IconLogout />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
       }
     />
   );
