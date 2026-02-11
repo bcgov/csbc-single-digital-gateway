@@ -2,9 +2,13 @@ import { z } from "zod";
 
 export const ApplicationDto = z.object({
   id: z.string(),
-  name: z.string().min(1).max(255),
+  label: z.string(),
+  description: z.string().nullable().optional(),
   apiKey: z.string(),
-  baseUrl: z.string().url(),
+  formId: z.string(),
+  url: z.string().url(),
+  blockName: z.string().nullable().optional(),
+  blockType: z.string().optional(),
 });
 
 export type ApplicationDto = z.infer<typeof ApplicationDto>;
@@ -12,11 +16,33 @@ export type ApplicationDto = z.infer<typeof ApplicationDto>;
 export const ServiceDto = z.object({
   id: z.uuid(),
   name: z.string().min(1).max(255),
-  slug: z.string().regex(/^[a-z0-9-]+-[a-f0-9]+$/, "Must be a URL-safe slug with hash suffix"),
-  description: z.string().max(1000).optional(),
-  tags: z.array(z.string()),
-  eligibility: z.array(z.string()).optional(),
+  slug: z.string(),
+  description: z
+    .object({
+      short: z.string().optional(),
+      long: z.string().optional(),
+    })
+    .optional(),
+  categories: z.array(z.string()).optional(),
+  content: z.record(z.string(), z.unknown()).optional(),
   applications: z.array(ApplicationDto).optional(),
+  settings: z
+    .object({
+      consent: z
+        .array(
+          z.object({
+            id: z.string(),
+            documentId: z.string(),
+          }),
+        )
+        .optional(),
+      delegate: z
+        .object({
+          access: z.boolean().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 export type ServiceDto = z.infer<typeof ServiceDto>;

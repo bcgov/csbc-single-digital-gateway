@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   Accordion,
   AccordionContent,
@@ -5,28 +6,63 @@ import {
   AccordionTrigger,
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+  Checkbox,
+  Label,
 } from "@repo/ui";
+import { useState } from "react";
+import { toast } from "sonner";
+import { consentDocumentsQueryOptions } from "../data/consent-document.query";
+import { useCreateConsentStatements } from "../data/consent-statement.mutation";
+import { LexicalContent } from "./lexical-content.component";
 
 interface ConsentGateProps {
   open: boolean;
   onAgree: () => void;
   onDisagree: () => void;
+  documentIds: string[];
 }
 
-export function ConsentGate({ open, onAgree, onDisagree }: ConsentGateProps) {
+export function ConsentGate({
+  open,
+  onAgree,
+  onDisagree,
+  documentIds,
+}: ConsentGateProps) {
+  const { data: documents } = useSuspenseQuery(
+    consentDocumentsQueryOptions(documentIds),
+  );
+  const mutation = useCreateConsentStatements();
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+
+  const allChecked = documents.every((doc) => checked[doc.id]);
+
+  if (documents.length === 0) {
+    if (open) onAgree();
+    return null;
+  }
+
+  const handleCheckChange = (docId: string, value: boolean) => {
+    setChecked((prev) => ({ ...prev, [docId]: value }));
+  };
+
+  const handleSubmit = async () => {
+    const entries = documents.map((doc) => ({
+      document: doc,
+      status: "granted" as const,
+    }));
+
+    await mutation.mutateAsync(entries);
+    onAgree();
+  };
+
   return (
     <AlertDialog open={open}>
-      <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <AlertDialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Consent & Privacy</AlertDialogTitle>
           <AlertDialogDescription>
@@ -37,82 +73,42 @@ export function ConsentGate({ open, onAgree, onDisagree }: ConsentGateProps) {
         </AlertDialogHeader>
 
         <div className="flex flex-col gap-4">
-          <Card size="sm" className="text-sm">
-            <CardHeader>
-              <CardTitle className="text-sm">Consent</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Accordion>
-                <AccordionItem value="data-collection">
-                  <AccordionTrigger>Data Collection</AccordionTrigger>
-                  <AccordionContent>
-                    <p>
-                      We collect personal information necessary to assess your
-                      eligibility and process your application.
+          <Accordion>
+            {documents.map((doc) => (
+              <AccordionItem key={doc.id} value={doc.id}>
+                <AccordionTrigger>{doc.name}</AccordionTrigger>
+                <AccordionContent>
+                  {doc.content ? (
+                    <LexicalContent content={doc.content} />
+                  ) : (
+                    <p className="text-muted-foreground italic">
+                      No content available.
                     </p>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="data-sharing">
-                  <AccordionTrigger>Data Sharing</AccordionTrigger>
-                  <AccordionContent>
-                    <p>
-                      Your information may be shared with other government
-                      ministries and authorized service providers in accordance
-                      with FOIPPA.
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="data-retention">
-                  <AccordionTrigger>Data Retention</AccordionTrigger>
-                  <AccordionContent>
-                    <p>
-                      Your personal information will be retained as required by
-                      law and securely disposed of afterwards.
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
+                  )}
 
-          <Card size="sm" className="text-sm">
-            <CardHeader>
-              <CardTitle className="text-sm">Privacy Notice</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Accordion>
-                <AccordionItem value="your-rights">
-                  <AccordionTrigger>Your Rights</AccordionTrigger>
-                  <AccordionContent>
-                    <p>
-                      Under FOIPPA, you have the right to access and correct
-                      your personal information held by the government.
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="contact-info">
-                  <AccordionTrigger>Contact Information</AccordionTrigger>
-                  <AccordionContent>
-                    <p>
-                      For privacy questions, contact the ministry's Privacy
-                      Officer or call Service BC at 1-800-663-7867.
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
+                  <div className="mt-4 border-t pt-4 flex items-center gap-2">
+                    <Checkbox
+                      id={`${doc.id}-accept`}
+                      checked={checked[doc.id] ?? false}
+                      onCheckedChange={(value) => handleCheckChange(doc.id, Boolean(value))}
+                    />
+                    <Label htmlFor={`${doc.id}-accept`} className="font-normal cursor-pointer">
+                      {doc.signOff}
+                    </Label>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
 
-        <AlertDialogFooter className="flex-row gap-2">
-          <AlertDialogCancel className="flex-1" onClick={onDisagree}>
-            I disagree
-          </AlertDialogCancel>
+        <AlertDialogFooter>
           <AlertDialogAction
-            className="flex-1 bg-bcgov-blue hover:bg-bcgov-blue/80"
-            onClick={onAgree}
+            className="flex-1 py-3 bg-bcgov-blue hover:bg-bcgov-blue/80"
+            onClick={handleSubmit}
+            disabled={!allChecked || mutation.isPending}
           >
-            I agree
+            Submit Responses
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

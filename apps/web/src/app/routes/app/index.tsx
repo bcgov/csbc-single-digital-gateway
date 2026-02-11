@@ -9,8 +9,6 @@ export const Route = createFileRoute("/app/")({
 function RouteComponent() {
   const auth = useAuth();
 
-  console.log("auth.user.profile: ", auth.user?.profile);
-
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">

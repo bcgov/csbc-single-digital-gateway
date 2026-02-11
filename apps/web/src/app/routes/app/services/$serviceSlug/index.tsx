@@ -1,10 +1,15 @@
+import { Button } from "@repo/ui";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
-import { services } from "../../../../../features/services/data/services.data";
+import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
+import { queryClient } from "../../../../../lib/react-query.client";
 
 export const Route = createFileRoute("/app/services/$serviceSlug/")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
+    const services = await queryClient.ensureQueryData(servicesQueryOptions);
     const service = services.find((s) => s.slug === params.serviceSlug);
     if (!service) {
       throw notFound();
@@ -12,9 +17,9 @@ export const Route = createFileRoute("/app/services/$serviceSlug/")({
     return { service };
   },
   staticData: {
-    breadcrumbs: (loaderData: { service: { name: string } }) => [
+    breadcrumbs: (loaderData?: { service: { name: string } }) => [
       { label: "Services", to: "/app/services" },
-      { label: loaderData.service.name },
+      ...(loaderData?.service ? [{ label: loaderData.service.name }] : []),
     ],
   },
   component: RouteComponent,
@@ -22,7 +27,10 @@ export const Route = createFileRoute("/app/services/$serviceSlug/")({
 });
 
 function RouteComponent() {
-  const { service } = Route.useLoaderData();
+  const { data: services } = useSuspenseQuery(servicesQueryOptions);
+  const { service: loaderService } = Route.useLoaderData();
+  const service =
+    services.find((s) => s.slug === loaderService.slug) ?? loaderService;
   const descriptionRef = useRef<HTMLHeadingElement>(null);
   const [isStickyHeaderVisible, setStickyHeaderVisible] = useState(false);
 
@@ -43,11 +51,28 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold">{service.name}</h1>
-        <p className="text-base" ref={descriptionRef}>
-          {service.description}
-        </p>
+      <div className="flex gap-4">
+        <div className="flex flex-col gap-4 flex-1">
+          <h1 className="text-2xl font-semibold">{service.name}</h1>
+          <p className="text-base" ref={descriptionRef}>
+            {service.description?.short}
+          </p>
+        </div>
+        {service.applications && service.applications.length > 0 && (
+          <div className="flex items-center">
+            <Button>
+              <Link
+                to="/app/services/$serviceSlug/apply/$applicationId"
+                params={{
+                  serviceSlug: service.slug,
+                  applicationId: service.applications[0].id,
+                }}
+              >
+                Apply
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
       <ServicePageNavigation
         serviceName={service.name}
@@ -56,8 +81,7 @@ function RouteComponent() {
       <div className="flex flex-col gap-4">
         {/* Overview */}
         <div id="overview" className="scroll-mt-20 flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">About</h2>
-          <div className="flex flex-col gap-4 min-h-48"></div>
+          {service.content && <LexicalContent content={service.content} />}
         </div>
         {/* Eligibility criteria */}
         <div

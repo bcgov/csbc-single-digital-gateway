@@ -1,4 +1,5 @@
 import { IconHeartHandshake } from "@tabler/icons-react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "react-oidc-context";
@@ -6,13 +7,16 @@ import { toast } from "sonner";
 import { ChefsFormViewer } from "../../../../../../features/chefs";
 import { ConsentGate } from "../../../../../../features/services/components/consent-dialog.component";
 import { InviteDelegateDialog } from "../../../../../../features/services/components/invite-delegate-dialog.component";
-import { services } from "../../../../../../features/services/data/services.data";
+import { consentDocumentsQueryOptions } from "../../../../../../features/services/data/consent-document.query";
+import { servicesQueryOptions } from "../../../../../../features/services/data/services.query";
 import type { ServiceDto } from "../../../../../../features/services/service.dto";
+import { queryClient } from "../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
   "/app/services/$serviceSlug/apply/$applicationId",
 )({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
+    const services = await queryClient.ensureQueryData(servicesQueryOptions);
     const service = services.find((s) => s.slug === params.serviceSlug);
     if (!service) {
       throw notFound();
@@ -23,27 +27,50 @@ export const Route = createFileRoute(
     if (!application) {
       throw notFound();
     }
-    return { service, application };
+    const documentIds =
+      service.settings?.consent?.map((c) => c.documentId) ?? [];
+    if (documentIds.length > 0) {
+      await queryClient.ensureQueryData(
+        consentDocumentsQueryOptions(documentIds),
+      );
+    }
+    return { service, application, documentIds };
   },
   staticData: {
-    breadcrumbs: (loaderData: {
+    breadcrumbs: (loaderData?: {
       service: ServiceDto;
-      application: { name: string };
+      application: { label: string };
     }) => [
       { label: "Services", to: "/app/services" },
-      {
-        label: loaderData.service.name,
-        to: "/app/services/$serviceSlug",
-        params: { serviceSlug: loaderData.service.slug },
-      },
-      { label: `Apply for ${loaderData.application.name}` },
+      ...(loaderData?.service
+        ? [
+            {
+              label: loaderData.service.name,
+              to: "/app/services/$serviceSlug" as const,
+              params: { serviceSlug: loaderData.service.slug },
+            },
+          ]
+        : []),
+      ...(loaderData?.application
+        ? [{ label: `Apply for ${loaderData.application.label}` }]
+        : []),
     ],
   },
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { service, application } = Route.useLoaderData();
+  const { data: services } = useSuspenseQuery(servicesQueryOptions);
+  const {
+    service: loaderService,
+    application: loaderApplication,
+    documentIds,
+  } = Route.useLoaderData();
+  const service =
+    services.find((s) => s.slug === loaderService.slug) ?? loaderService;
+  const application =
+    service.applications?.find((a) => a.id === loaderApplication.id) ??
+    loaderApplication;
   const auth = useAuth();
   const navigate = useNavigate();
   const [consented, setConsented] = useState(false);
@@ -57,7 +84,7 @@ function RouteComponent() {
 
         <div className="flex flex-col w-full">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{application.name}</h1>
+            <h1 className="text-2xl font-bold">{application.label}</h1>
             {/* Icons */}
             <div>
               <InviteDelegateDialog />
@@ -75,13 +102,14 @@ function RouteComponent() {
             params: { serviceSlug: service.slug },
           })
         }
+        documentIds={documentIds}
       />
 
       {consented && (
         <ChefsFormViewer
-          formId={application.id}
+          formId={application.formId}
           apiKey={application.apiKey}
-          baseUrl={application.baseUrl}
+          baseUrl={application.url}
           headers={
             auth.user?.access_token
               ? { Authorization: `Bearer ${auth.user.access_token}` }

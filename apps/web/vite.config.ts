@@ -6,7 +6,7 @@ import runtimeEnv from "vite-plugin-runtime-env";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
+plugins: [
     tanstackRouter({
       autoCodeSplitting: true,
       generatedRouteTree: "./src/app/routeTree.gen.ts",

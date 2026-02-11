@@ -6,14 +6,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { services } from "../../../../features/services/data/services.data";
+import { servicesQueryOptions } from "../../../../features/services/data/services.query";
+import { queryClient } from "../../../../lib/react-query.client";
 
 export const Route = createFileRoute("/app/services/")({
+  loader: () => queryClient.ensureQueryData(servicesQueryOptions),
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { data: services } = useSuspenseQuery(servicesQueryOptions);
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Services</h1>
@@ -27,32 +32,19 @@ function RouteComponent() {
             <CardHeader>
               <CardTitle>{service.name}</CardTitle>
               <CardAction>
-                {service.tags.map((tag) => (
-                  <Badge variant="outline">
-                    {tag.slice(0, 1).toUpperCase()}
-                    {tag.slice(1)}
+                {service.categories?.map((category) => (
+                  <Badge variant="outline" key={category}>
+                    {category.slice(0, 1).toUpperCase()}
+                    {category.slice(1)}
                   </Badge>
                 ))}
               </CardAction>
             </CardHeader>
             <CardContent>
-              <p>{service.description}</p>
+              <p>{service.description?.short}</p>
             </CardContent>
           </Card>
         </Link>
-
-        // <div key={service.id} className="p-4 border rounded-lg">
-        //   <h2 className="text-xl font-bold">{service.name}</h2>
-        //   <p>{service.description}</p>
-        //   <div className="flex gap-2">
-        //     {service.tags.map((tag) => (
-        //       <Badge variant="outline">
-        //         {tag.slice(0, 1).toUpperCase()}
-        //         {tag.slice(1)}
-        //       </Badge>
-        //     ))}
-        //   </div>
-        // </div>
       ))}
     </div>
   );
