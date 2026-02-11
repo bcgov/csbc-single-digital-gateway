@@ -16,7 +16,8 @@ import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
 import { Route as AppServicesServiceSlugIndexRouteImport } from './routes/app/services/$serviceSlug/index'
-import { Route as AppServicesServiceSlugApplyApplicationIdRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId'
+import { Route as AppServicesServiceSlugApplyApplicationIdIndexRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/index'
+import { Route as AppServicesServiceSlugApplyApplicationIdConsentRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/consent'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
@@ -53,10 +54,16 @@ const AppServicesServiceSlugIndexRoute =
     path: '/services/$serviceSlug/',
     getParentRoute: () => AppRouteRoute,
   } as any)
-const AppServicesServiceSlugApplyApplicationIdRoute =
-  AppServicesServiceSlugApplyApplicationIdRouteImport.update({
-    id: '/services/$serviceSlug/apply/$applicationId',
-    path: '/services/$serviceSlug/apply/$applicationId',
+const AppServicesServiceSlugApplyApplicationIdIndexRoute =
+  AppServicesServiceSlugApplyApplicationIdIndexRouteImport.update({
+    id: '/services/$serviceSlug/apply/$applicationId/',
+    path: '/services/$serviceSlug/apply/$applicationId/',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppServicesServiceSlugApplyApplicationIdConsentRoute =
+  AppServicesServiceSlugApplyApplicationIdConsentRouteImport.update({
+    id: '/services/$serviceSlug/apply/$applicationId/consent',
+    path: '/services/$serviceSlug/apply/$applicationId/consent',
     getParentRoute: () => AppRouteRoute,
   } as any)
 
@@ -67,7 +74,8 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/services': typeof AppServicesIndexRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
-  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdRoute
+  '/app/services/$serviceSlug/apply/$applicationId/consent': typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/callback': typeof publicCallbackRoute
@@ -75,7 +83,8 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/app/services': typeof AppServicesIndexRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
-  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdRoute
+  '/app/services/$serviceSlug/apply/$applicationId/consent': typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,7 +95,8 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/services/': typeof AppServicesIndexRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
-  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdRoute
+  '/app/services/$serviceSlug/apply/$applicationId/consent': typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/services'
     | '/app/services/$serviceSlug'
+    | '/app/services/$serviceSlug/apply/$applicationId/consent'
     | '/app/services/$serviceSlug/apply/$applicationId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/services'
     | '/app/services/$serviceSlug'
+    | '/app/services/$serviceSlug/apply/$applicationId/consent'
     | '/app/services/$serviceSlug/apply/$applicationId'
   id:
     | '__root__'
@@ -115,7 +127,8 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/services/'
     | '/app/services/$serviceSlug/'
-    | '/app/services/$serviceSlug/apply/$applicationId'
+    | '/app/services/$serviceSlug/apply/$applicationId/consent'
+    | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -174,11 +187,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicesServiceSlugIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/services/$serviceSlug/apply/$applicationId': {
-      id: '/app/services/$serviceSlug/apply/$applicationId'
+    '/app/services/$serviceSlug/apply/$applicationId/': {
+      id: '/app/services/$serviceSlug/apply/$applicationId/'
       path: '/services/$serviceSlug/apply/$applicationId'
       fullPath: '/app/services/$serviceSlug/apply/$applicationId'
-      preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdRouteImport
+      preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/services/$serviceSlug/apply/$applicationId/consent': {
+      id: '/app/services/$serviceSlug/apply/$applicationId/consent'
+      path: '/services/$serviceSlug/apply/$applicationId/consent'
+      fullPath: '/app/services/$serviceSlug/apply/$applicationId/consent'
+      preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdConsentRouteImport
       parentRoute: typeof AppRouteRoute
     }
   }
@@ -202,15 +222,18 @@ interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppServicesIndexRoute: typeof AppServicesIndexRoute
   AppServicesServiceSlugIndexRoute: typeof AppServicesServiceSlugIndexRoute
-  AppServicesServiceSlugApplyApplicationIdRoute: typeof AppServicesServiceSlugApplyApplicationIdRoute
+  AppServicesServiceSlugApplyApplicationIdConsentRoute: typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  AppServicesServiceSlugApplyApplicationIdIndexRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppServicesIndexRoute: AppServicesIndexRoute,
   AppServicesServiceSlugIndexRoute: AppServicesServiceSlugIndexRoute,
-  AppServicesServiceSlugApplyApplicationIdRoute:
-    AppServicesServiceSlugApplyApplicationIdRoute,
+  AppServicesServiceSlugApplyApplicationIdConsentRoute:
+    AppServicesServiceSlugApplyApplicationIdConsentRoute,
+  AppServicesServiceSlugApplyApplicationIdIndexRoute:
+    AppServicesServiceSlugApplyApplicationIdIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
