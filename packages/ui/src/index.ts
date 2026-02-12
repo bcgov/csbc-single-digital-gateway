@@ -2,6 +2,7 @@ import "./index.css";
 
 // Components
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components/ui/accordion";
+export { AccordionGroup, type AccordionGroupProps } from "./components/accordion-group";
 export { Alert, AlertTitle, AlertDescription, AlertAction } from "./components/ui/alert";
 export { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogOverlay, AlertDialogPortal, AlertDialogTitle, AlertDialogTrigger } from "./components/ui/alert-dialog";
 export { AspectRatio } from "./components/ui/aspect-ratio";
