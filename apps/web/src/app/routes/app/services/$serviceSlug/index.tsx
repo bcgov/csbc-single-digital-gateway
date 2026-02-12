@@ -1,4 +1,11 @@
-import { Button } from "@repo/ui";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@repo/ui";
+import { IconChevronDown } from "@tabler/icons-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -58,7 +65,7 @@ function RouteComponent() {
             {service.description?.short}
           </p>
         </div>
-        {service.applications && service.applications.length > 0 && (
+        {service.applications && service.applications.length === 1 && (
           <div className="flex items-center">
             <Button>
               <Link
@@ -71,6 +78,35 @@ function RouteComponent() {
                 Apply
               </Link>
             </Button>
+          </div>
+        )}
+        {service.applications && service.applications.length > 1 && (
+          <div className="flex items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button>
+                  <span className="flex flex-row align-middle gap-4">
+                    Apply
+                    <IconChevronDown className="my-auto" />
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-50">
+                {service.applications.map((app) => (
+                  <DropdownMenuItem key={app.id}>
+                    <Link
+                      to="/app/services/$serviceSlug/apply/$applicationId"
+                      params={{
+                        serviceSlug: service.slug,
+                        applicationId: app.id,
+                      }}
+                    >
+                      {app.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>

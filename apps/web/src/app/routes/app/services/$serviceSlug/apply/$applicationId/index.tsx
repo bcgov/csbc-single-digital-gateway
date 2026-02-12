@@ -8,7 +8,10 @@ import {
 } from "@tanstack/react-router";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
-import { ChefsFormViewer } from "../../../../../../../features/chefs";
+import {
+  ChefsFormViewer,
+  WorkflowRenderer,
+} from "../../../../../../../features/chefs";
 import { InviteDelegateDialog } from "../../../../../../../features/services/components/invite-delegate-dialog.component";
 import { consentDocumentsQueryOptions } from "../../../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
@@ -101,32 +104,56 @@ function RouteComponent() {
         </div>
       </div>
 
-      <ChefsFormViewer
-        formId={application.formId}
-        apiKey={application.apiKey}
-        baseUrl={application.url}
-        headers={
-          auth.user?.access_token
-            ? { Authorization: `Bearer ${auth.user.access_token}` }
-            : undefined
-        }
-        language="en"
-        isolateStyles={false}
-        onSubmissionComplete={() => {
-          toast.success(
-            `Your application for ${service.name} has been submitted successfully.`,
-            {
-              description:
-                "You will receive updates as your application progresses.",
-            },
-          );
-          navigate({
-            to: "/app/services/$serviceSlug",
-            params: { serviceSlug: service.slug },
-          });
-        }}
-        onSubmissionError={(e) => console.error("Submission error:", e.message)}
-      />
+      {application.blockType === "workflow" ? (
+        <WorkflowRenderer
+          application={application}
+          onSubmissionComplete={() => {
+            toast.success(
+              `Your application for ${service.name} has been submitted successfully.`,
+              {
+                description:
+                  "You will receive updates as your application progresses.",
+              },
+            );
+            navigate({
+              to: "/app/services/$serviceSlug",
+              params: { serviceSlug: service.slug },
+            });
+          }}
+          onSubmissionError={(e) =>
+            console.error("Submission error:", e.message)
+          }
+        />
+      ) : (
+        <ChefsFormViewer
+          formId={application.formId!}
+          apiKey={application.apiKey}
+          baseUrl={application.url}
+          headers={
+            auth.user?.access_token
+              ? { Authorization: `Bearer ${auth.user.access_token}` }
+              : undefined
+          }
+          language="en"
+          isolateStyles={false}
+          onSubmissionComplete={() => {
+            toast.success(
+              `Your application for ${service.name} has been submitted successfully.`,
+              {
+                description:
+                  "You will receive updates as your application progresses.",
+              },
+            );
+            navigate({
+              to: "/app/services/$serviceSlug",
+              params: { serviceSlug: service.slug },
+            });
+          }}
+          onSubmissionError={(e) =>
+            console.error("Submission error:", e.message)
+          }
+        />
+      )}
     </div>
   );
 }

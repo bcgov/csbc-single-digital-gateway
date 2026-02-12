@@ -151,12 +151,10 @@ export function ServicePageNavigation({
           visible ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       >
-        <div className="bg-background border-b py-2">
+        <div className="bg-background border-b-2 py-2 border-bcgov-gold">
           <Container>
             <p className="text-sm font-semibold">{serviceName}</p>
-            <ScrollableRow>
-              {sectionButtons}
-            </ScrollableRow>
+            <ScrollableRow>{sectionButtons}</ScrollableRow>
           </Container>
         </div>
       </div>

@@ -4,11 +4,12 @@ export const ApplicationDto = z.object({
   id: z.string(),
   label: z.string(),
   description: z.string().nullable().optional(),
-  apiKey: z.string(),
-  formId: z.string(),
+  apiKey: z.string().optional(),
+  formId: z.string().optional(),
+  method: z.enum(["GET", "POST"]).optional(),
   url: z.string().url(),
   blockName: z.string().nullable().optional(),
-  blockType: z.string().optional(),
+  blockType: z.enum(["form", "workflow"]).optional(),
 });
 
 export type ApplicationDto = z.infer<typeof ApplicationDto>;

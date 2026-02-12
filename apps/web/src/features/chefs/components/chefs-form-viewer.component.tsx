@@ -70,14 +70,18 @@ export function ChefsFormViewer({
       };
 
       // Check if shadowRoot already exists
-      const existingShadowRoot = (formViewer as HTMLElement & { shadowRoot: ShadowRoot | null }).shadowRoot;
+      const existingShadowRoot = (
+        formViewer as HTMLElement & { shadowRoot: ShadowRoot | null }
+      ).shadowRoot;
       if (existingShadowRoot) {
         injectStyles(existingShadowRoot);
       }
 
       // Watch for shadowRoot creation
       const observer = new MutationObserver(() => {
-        const shadowRoot = (formViewer as HTMLElement & { shadowRoot: ShadowRoot | null }).shadowRoot;
+        const shadowRoot = (
+          formViewer as HTMLElement & { shadowRoot: ShadowRoot | null }
+        ).shadowRoot;
         if (shadowRoot) {
           injectStyles(shadowRoot);
           observer.disconnect();
@@ -146,7 +150,13 @@ export function ChefsFormViewer({
       formViewer.removeEventListener("formio:submit", handleSubmit);
       formViewer.removeEventListener("formio:submitError", handleSubmitError);
     };
-  }, [scriptStatus, headers, onFormReady, onSubmissionComplete, onSubmissionError]);
+  }, [
+    scriptStatus,
+    headers,
+    onFormReady,
+    onSubmissionComplete,
+    onSubmissionError,
+  ]);
 
   if (scriptStatus === "error") {
     return (
@@ -167,10 +177,7 @@ export function ChefsFormViewer({
           <span className="ml-2 text-muted-foreground">Loading form...</span>
         </div>
       )}
-      <div
-        ref={containerRef}
-        className={showSpinner ? "hidden" : "block"}
-      />
+      <div ref={containerRef} className={showSpinner ? "hidden" : "block"} />
     </div>
   );
 }
