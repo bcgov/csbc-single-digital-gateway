@@ -23,6 +23,7 @@ export const ServiceDto = z.object({
       short: z.string().optional(),
       long: z.string().optional(),
     })
+    .nullable()
     .optional(),
   categories: z.array(z.string()).optional(),
   content: z.record(z.string(), z.unknown()).optional(),
