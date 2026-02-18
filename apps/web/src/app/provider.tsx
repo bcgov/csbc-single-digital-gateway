@@ -18,7 +18,7 @@ const InnerAppProvider = () => {
       />
       {auth.isLoading &&
       ["/app", "/callback"].some((prefix) =>
-        window.location.pathname.startsWith(prefix)
+        window.location.pathname.startsWith(prefix),
       ) ? (
         <div className="flex flex-col h-dvh">
           <div className="m-auto">
@@ -44,4 +44,3 @@ export const AppProvider = () => {
     </HelmetProvider>
   );
 };
-
