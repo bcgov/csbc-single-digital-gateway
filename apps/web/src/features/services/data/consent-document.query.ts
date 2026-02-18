@@ -18,7 +18,7 @@ export function consentDocumentsByIdQueryOptions(documentIds: string[]) {
       );
       return results
         .filter(
-          (r): r is PromiseFulfilled<ConsentDocumentDto> =>
+          (r): r is PromiseFulfilledResult<ConsentDocumentDto> =>
             r.status === "fulfilled",
         )
         .map((r) => r.value);
@@ -43,7 +43,7 @@ export function consentDocumentsQueryOptions(documentIds: string[]) {
       );
       const documents = results
         .filter(
-          (r): r is PromiseFulfilled<ConsentDocumentDto> =>
+          (r): r is PromiseFulfilledResult<ConsentDocumentDto> =>
             r.status === "fulfilled",
         )
         .map((r) => r.value);
