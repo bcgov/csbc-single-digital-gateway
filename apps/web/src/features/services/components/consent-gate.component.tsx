@@ -1,6 +1,6 @@
 import {
-  Accordion,
   AccordionContent,
+  AccordionGroup,
   AccordionItem,
   AccordionTrigger,
   Button,
@@ -74,7 +74,7 @@ export function ConsentGate({ onAgree, documentIds }: ConsentGateProps) {
 
       <Separator className="bg-bcgov-gold" />
 
-      <Accordion>
+      <AccordionGroup values={documents.map((doc) => doc.id)}>
         {documents.map((doc) => (
           <AccordionItem key={doc.id} value={doc.id}>
             <AccordionTrigger>
@@ -114,7 +114,7 @@ export function ConsentGate({ onAgree, documentIds }: ConsentGateProps) {
             </AccordionContent>
           </AccordionItem>
         ))}
-      </Accordion>
+      </AccordionGroup>
     </div>
   );
 }

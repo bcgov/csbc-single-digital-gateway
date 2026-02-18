@@ -11,7 +11,7 @@ import type { ServiceDto } from "../../../../../../../features/services/service.
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
-  "/app/services/$serviceSlug/apply/$applicationId/consent",
+  "/app/services/$serviceSlug/apply/$applicationId/data-and-privacy",
 )({
   beforeLoad: async ({ params }) => {
     const services = await queryClient.ensureQueryData(servicesQueryOptions);
@@ -68,13 +68,13 @@ export const Route = createFileRoute(
             },
           ]
         : []),
-      { label: "Consent" },
+      { label: "Data & privacy" },
     ],
   },
-  component: ConsentRouteComponent,
+  component: DataAndPrivacyComponent,
 });
 
-function ConsentRouteComponent() {
+function DataAndPrivacyComponent() {
   const { documentIds } = Route.useLoaderData();
   const navigate = useNavigate();
   const params = Route.useParams();

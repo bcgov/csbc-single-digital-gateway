@@ -78,6 +78,8 @@ Web-specific:
 | WEB_OIDC_ISSUER | OIDC issuer URL for Web |
 | WEB_OIDC_CLIENT_ID | OIDC client ID for Web |
 | WEB_BASE_URL | Web route hostname |
+| WEB_CONSENT_MANAGER_API_URL | Consent Manager API URL |
+| WEB_SERVICE_CATALOGUE_API_URL | Service Catalogue API URL |
 
 Note: Variables use vars.* syntax in workflows, secrets use secrets.*
 

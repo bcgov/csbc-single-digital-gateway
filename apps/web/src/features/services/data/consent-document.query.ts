@@ -2,6 +2,31 @@ import { queryOptions } from "@tanstack/react-query";
 import { consentManagerApi } from "../../../api/consent-manager-api.client";
 import { ConsentDocumentDto } from "../consent-document.dto";
 
+export function consentDocumentsByIdQueryOptions(documentIds: string[]) {
+  const sortedIds = [...documentIds].sort();
+
+  return queryOptions({
+    queryKey: ["consent-documents-by-id", ...sortedIds],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        sortedIds.map(async (id) => {
+          const { data } = await consentManagerApi.get(
+            `/api/v1/consent-documents/${id}`,
+          );
+          return ConsentDocumentDto.parse(data);
+        }),
+      );
+      return results
+        .filter(
+          (r): r is PromiseFulfilled<ConsentDocumentDto> =>
+            r.status === "fulfilled",
+        )
+        .map((r) => r.value);
+    },
+    enabled: sortedIds.length > 0,
+  });
+}
+
 export function consentDocumentsQueryOptions(documentIds: string[]) {
   const sortedIds = [...documentIds].sort();
 

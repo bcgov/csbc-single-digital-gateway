@@ -32,7 +32,7 @@ export const Route = createFileRoute(
       );
       if (unconsented.length > 0) {
         throw redirect({
-          to: "/app/services/$serviceSlug/apply/$applicationId/consent",
+          to: "/app/services/$serviceSlug/apply/$applicationId/data-and-privacy",
           params,
         });
       }

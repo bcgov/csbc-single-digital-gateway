@@ -17,7 +17,7 @@ import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
 import { Route as AppServicesServiceSlugIndexRouteImport } from './routes/app/services/$serviceSlug/index'
 import { Route as AppServicesServiceSlugApplyApplicationIdIndexRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/index'
-import { Route as AppServicesServiceSlugApplyApplicationIdConsentRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/consent'
+import { Route as AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
@@ -60,10 +60,10 @@ const AppServicesServiceSlugApplyApplicationIdIndexRoute =
     path: '/services/$serviceSlug/apply/$applicationId/',
     getParentRoute: () => AppRouteRoute,
   } as any)
-const AppServicesServiceSlugApplyApplicationIdConsentRoute =
-  AppServicesServiceSlugApplyApplicationIdConsentRouteImport.update({
-    id: '/services/$serviceSlug/apply/$applicationId/consent',
-    path: '/services/$serviceSlug/apply/$applicationId/consent',
+const AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute =
+  AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport.update({
+    id: '/services/$serviceSlug/apply/$applicationId/data-and-privacy',
+    path: '/services/$serviceSlug/apply/$applicationId/data-and-privacy',
     getParentRoute: () => AppRouteRoute,
   } as any)
 
@@ -74,7 +74,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/services': typeof AppServicesIndexRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
-  '/app/services/$serviceSlug/apply/$applicationId/consent': typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -83,7 +83,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/app/services': typeof AppServicesIndexRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
-  '/app/services/$serviceSlug/apply/$applicationId/consent': typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesById {
@@ -95,7 +95,7 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/services/': typeof AppServicesIndexRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
-  '/app/services/$serviceSlug/apply/$applicationId/consent': typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -107,7 +107,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/services'
     | '/app/services/$serviceSlug'
-    | '/app/services/$serviceSlug/apply/$applicationId/consent'
+    | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
     | '/app/services/$serviceSlug/apply/$applicationId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,7 +116,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/services'
     | '/app/services/$serviceSlug'
-    | '/app/services/$serviceSlug/apply/$applicationId/consent'
+    | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
     | '/app/services/$serviceSlug/apply/$applicationId'
   id:
     | '__root__'
@@ -127,7 +127,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/services/'
     | '/app/services/$serviceSlug/'
-    | '/app/services/$serviceSlug/apply/$applicationId/consent'
+    | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
     | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesById: FileRoutesById
 }
@@ -194,11 +194,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/app/services/$serviceSlug/apply/$applicationId/consent': {
-      id: '/app/services/$serviceSlug/apply/$applicationId/consent'
-      path: '/services/$serviceSlug/apply/$applicationId/consent'
-      fullPath: '/app/services/$serviceSlug/apply/$applicationId/consent'
-      preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdConsentRouteImport
+    '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': {
+      id: '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
+      path: '/services/$serviceSlug/apply/$applicationId/data-and-privacy'
+      fullPath: '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
+      preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport
       parentRoute: typeof AppRouteRoute
     }
   }
@@ -222,7 +222,7 @@ interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppServicesIndexRoute: typeof AppServicesIndexRoute
   AppServicesServiceSlugIndexRoute: typeof AppServicesServiceSlugIndexRoute
-  AppServicesServiceSlugApplyApplicationIdConsentRoute: typeof AppServicesServiceSlugApplyApplicationIdConsentRoute
+  AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute: typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   AppServicesServiceSlugApplyApplicationIdIndexRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 
@@ -230,8 +230,8 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppServicesIndexRoute: AppServicesIndexRoute,
   AppServicesServiceSlugIndexRoute: AppServicesServiceSlugIndexRoute,
-  AppServicesServiceSlugApplyApplicationIdConsentRoute:
-    AppServicesServiceSlugApplyApplicationIdConsentRoute,
+  AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute:
+    AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute,
   AppServicesServiceSlugApplyApplicationIdIndexRoute:
     AppServicesServiceSlugApplyApplicationIdIndexRoute,
 }

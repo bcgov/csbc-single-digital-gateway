@@ -43,7 +43,7 @@ function AccordionGroup({
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
             {title && (
-              <h3 className="text-base font-semibold leading-none tracking-tight">
+              <h3 className="text-lg font-semibold leading-none tracking-tight">
                 {title}
               </h3>
             )}

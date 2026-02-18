@@ -18,6 +18,10 @@ data:
   VITE_OIDC_REDIRECT_URI: {{ .Values.app.oidc.redirectUri | quote }}
   VITE_OIDC_POST_LOGOUT_REDIRECT_URI: {{ .Values.app.oidc.postLogoutRedirectUri | quote }}
 
+  # External service API configuration
+  VITE_CONSENT_MANAGER_API_URL: {{ .Values.app.consentManagerApiUrl | quote }}
+  VITE_SERVICE_CATALOGUE_API_URL: {{ .Values.app.serviceCatalogueApiUrl | quote }}
+
   {{- with .Values.configMap.data }}
   {{- toYaml . | nindent 2 }}
   {{- end }}

@@ -1,16 +1,21 @@
 import {
+  AccordionContent,
+  AccordionGroup,
+  AccordionItem,
+  AccordionTrigger,
   Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@repo/ui";
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconPlayerPlay } from "@tabler/icons-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
+import { consentDocumentsByIdQueryOptions } from "../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
@@ -58,7 +63,7 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="flex flex-col gap-4 flex-1">
           <h1 className="text-2xl font-semibold">{service.name}</h1>
           <p className="text-base" ref={descriptionRef}>
@@ -67,7 +72,7 @@ function RouteComponent() {
         </div>
         {service.applications && service.applications.length === 1 && (
           <div className="flex items-center">
-            <Button>
+            <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80">
               <Link
                 to="/app/services/$serviceSlug/apply/$applicationId"
                 params={{
@@ -75,7 +80,8 @@ function RouteComponent() {
                   applicationId: service.applications[0].id,
                 }}
               >
-                Apply
+                <IconPlayerPlay />
+                Start online application
               </Link>
             </Button>
           </div>
@@ -83,12 +89,10 @@ function RouteComponent() {
         {service.applications && service.applications.length > 1 && (
           <div className="flex items-center">
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button>
-                  <span className="flex flex-row align-middle gap-4">
-                    Apply
-                    <IconChevronDown className="my-auto" />
-                  </span>
+              <DropdownMenuTrigger className=" w-full md:w-auto">
+                <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80 w-full md:w-auto">
+                  <IconPlayerPlay />
+                  Start online application
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-50">
@@ -119,13 +123,16 @@ function RouteComponent() {
         <div id="overview" className="scroll-mt-20 flex flex-col gap-4">
           {service.content && <LexicalContent content={service.content} />}
         </div>
-        {/* Eligibility criteria */}
-        <div
-          id="eligibility-criteria"
-          className="scroll-mt-20 flex flex-col gap-4"
-        >
-          <h2 className="text-xl font-semibold">Eligibility criteria</h2>
-          <div className="flex flex-col gap-4 min-h-48"></div>
+        {/* Data & privacy */}
+        <div id="data-and-privacy" className="scroll-mt-20 flex flex-col gap-4">
+          <h2 className="text-xl font-semibold">Data & privacy</h2>
+          <div className="flex flex-col gap-4">
+            <ConsentDocumentsAccordion
+              documentIds={(service.settings?.consent ?? []).map(
+                ({ documentId }) => documentId,
+              )}
+            />
+          </div>
         </div>
         {/* Application process */}
         <div
@@ -147,6 +154,35 @@ function RouteComponent() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ConsentDocumentsAccordion({ documentIds }: { documentIds: string[] }) {
+  const { data: documents } = useSuspenseQuery(
+    consentDocumentsByIdQueryOptions(documentIds),
+  );
+
+  if (documents.length === 0) return null;
+
+  return (
+    <AccordionGroup
+      title="Privacy statements"
+      description="Before you proceed with the application, you will be prompted to agree to the following:"
+      values={documents.map((doc) => doc.id)}
+    >
+      {documents.map((doc) => (
+        <AccordionItem key={doc.id} value={doc.id}>
+          <AccordionTrigger>{doc.name}</AccordionTrigger>
+          <AccordionContent>
+            {doc.content ? (
+              <LexicalContent content={doc.content} />
+            ) : (
+              <p className="text-muted-foreground">No content available.</p>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </AccordionGroup>
   );
 }
 
