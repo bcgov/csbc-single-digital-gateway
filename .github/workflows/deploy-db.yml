@@ -50,7 +50,7 @@ jobs:
 
     - name: Deploy Database with Helm
       run: |
-        helm upgrade --install csbc-nodejs-starter-db ./infrastructure/helm/database \
+        helm upgrade --install csbc-single-digital-gateway-db ./infrastructure/helm/database \
           -n ${{ vars.OPENSHIFT_NAMESPACE }} \
           -f ./infrastructure/helm/database/${{ steps.env.outputs.values_file }} \
-          --labels app.kubernetes.io/part-of=csbc-nodejs-starter
+          --labels app.kubernetes.io/part-of=csbc-single-digital-gateway
