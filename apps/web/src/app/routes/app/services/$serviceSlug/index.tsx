@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui";
 import { IconPlayerPlay } from "@tabler/icons-react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/app/services/$serviceSlug/")({
 });
 
 function RouteComponent() {
-  const { data: services } = useSuspenseQuery(servicesQueryOptions);
+  const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService } = Route.useLoaderData();
   const service =
     services.find((s) => s.slug === loaderService.slug) ?? loaderService;
@@ -158,7 +158,7 @@ function RouteComponent() {
 }
 
 function ConsentDocumentsAccordion({ documentIds }: { documentIds: string[] }) {
-  const { data: documents } = useSuspenseQuery(
+  const { data: documents = [] } = useQuery(
     consentDocumentsByIdQueryOptions(documentIds),
   );
 

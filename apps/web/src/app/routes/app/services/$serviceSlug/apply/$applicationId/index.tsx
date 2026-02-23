@@ -1,5 +1,5 @@
 import { IconHeartHandshake } from "@tabler/icons-react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   notFound,
@@ -76,7 +76,7 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
-  const { data: services } = useSuspenseQuery(servicesQueryOptions);
+  const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService, application: loaderApplication } =
     Route.useLoaderData();
   const service =

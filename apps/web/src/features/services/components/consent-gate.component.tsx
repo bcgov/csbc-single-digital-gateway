@@ -13,7 +13,7 @@ import {
   IconCircleXFilled,
   IconPlayerPlay,
 } from "@tabler/icons-react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { consentDocumentsQueryOptions } from "../data/consent-document.query";
 import { useCreateConsentStatements } from "../data/consent-statement.mutation";
@@ -25,7 +25,7 @@ interface ConsentGateProps {
 }
 
 export function ConsentGate({ onAgree, documentIds }: ConsentGateProps) {
-  const { data: documents } = useSuspenseQuery(
+  const { data: documents = [] } = useQuery(
     consentDocumentsQueryOptions(documentIds),
   );
   const mutation = useCreateConsentStatements();
