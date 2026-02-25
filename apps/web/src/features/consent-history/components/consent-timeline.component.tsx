@@ -1,5 +1,6 @@
 import { Badge, Card, CardContent } from "@repo/ui";
 import { IconChevronRight } from "@tabler/icons-react";
+import { Link } from "@tanstack/react-router";
 import type { TimelineDateGroup } from "../data/consent-timeline.query";
 
 interface ConsentTimelineProps {
@@ -87,41 +88,47 @@ export function ConsentTimeline({ groups }: ConsentTimelineProps) {
 
                   <div className={`flex-1 ${index > 0 ? "mt-6" : ""}`}>
                     {group.items.map((item) => (
-                      <Card
+                      <Link
                         key={item.id}
-                        className="mb-2 last:mb-0 cursor-pointer hover:bg-muted/50 transition-colors"
-                        size="sm"
+                        to="/app/settings/consent-history/$statementId"
+                        params={{ statementId: item.id }}
+                        className="block mb-2 last:mb-0"
                       >
-                        <CardContent>
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">
-                              {item.documentName}
-                            </span>
-                            <div className="flex items-center gap-3 shrink-0">
-                              <Badge
-                                variant={
-                                  item.status === "granted"
-                                    ? "default"
-                                    : "destructive"
-                                }
-                                className={
-                                  item.status === "granted"
-                                    ? "bg-green-600 text-white"
-                                    : "bg-red-600 text-white"
-                                }
-                              >
-                                {item.status === "granted"
-                                  ? "Granted"
-                                  : "Revoked"}
-                              </Badge>
-                              <IconChevronRight className="size-5 text-muted-foreground" />
+                        <Card
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          size="sm"
+                        >
+                          <CardContent>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                {item.documentName}
+                              </span>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <Badge
+                                  variant={
+                                    item.status === "granted"
+                                      ? "default"
+                                      : "destructive"
+                                  }
+                                  className={
+                                    item.status === "granted"
+                                      ? "bg-green-600 text-white"
+                                      : "bg-red-600 text-white"
+                                  }
+                                >
+                                  {item.status === "granted"
+                                    ? "Granted"
+                                    : "Revoked"}
+                                </Badge>
+                                <IconChevronRight className="size-5 text-muted-foreground" />
+                              </div>
                             </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {formatTime(item.statementDate)}
-                          </p>
-                        </CardContent>
-                      </Card>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {formatTime(item.statementDate)}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </Link>
                     ))}
                   </div>
                 </div>

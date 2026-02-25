@@ -16,8 +16,10 @@ import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
-import { Route as AppSettingsConsentHistoryRouteImport } from './routes/app/settings/consent-history'
+import { Route as AppSettingsConsentHistoryRouteRouteImport } from './routes/app/settings/consent-history/route'
+import { Route as AppSettingsConsentHistoryIndexRouteImport } from './routes/app/settings/consent-history/index'
 import { Route as AppServicesServiceSlugIndexRouteImport } from './routes/app/services/$serviceSlug/index'
+import { Route as AppSettingsConsentHistoryStatementIdRouteImport } from './routes/app/settings/consent-history/$statementId'
 import { Route as AppServicesServiceSlugApplyApplicationIdIndexRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/index'
 import { Route as AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
 
@@ -55,17 +57,29 @@ const AppServicesIndexRoute = AppServicesIndexRouteImport.update({
   path: '/services/',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppSettingsConsentHistoryRoute =
-  AppSettingsConsentHistoryRouteImport.update({
+const AppSettingsConsentHistoryRouteRoute =
+  AppSettingsConsentHistoryRouteRouteImport.update({
     id: '/consent-history',
     path: '/consent-history',
     getParentRoute: () => AppSettingsRouteRoute,
+  } as any)
+const AppSettingsConsentHistoryIndexRoute =
+  AppSettingsConsentHistoryIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppSettingsConsentHistoryRouteRoute,
   } as any)
 const AppServicesServiceSlugIndexRoute =
   AppServicesServiceSlugIndexRouteImport.update({
     id: '/services/$serviceSlug/',
     path: '/services/$serviceSlug/',
     getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppSettingsConsentHistoryStatementIdRoute =
+  AppSettingsConsentHistoryStatementIdRouteImport.update({
+    id: '/$statementId',
+    path: '/$statementId',
+    getParentRoute: () => AppSettingsConsentHistoryRouteRoute,
   } as any)
 const AppServicesServiceSlugApplyApplicationIdIndexRoute =
   AppServicesServiceSlugApplyApplicationIdIndexRouteImport.update({
@@ -86,9 +100,11 @@ export interface FileRoutesByFullPath {
   '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
-  '/app/settings/consent-history': typeof AppSettingsConsentHistoryRoute
+  '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/app/services': typeof AppServicesIndexRoute
+  '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
+  '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
@@ -97,9 +113,10 @@ export interface FileRoutesByTo {
   '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app': typeof AppIndexRoute
-  '/app/settings/consent-history': typeof AppSettingsConsentHistoryRoute
   '/app/services': typeof AppServicesIndexRoute
+  '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
+  '/app/settings/consent-history': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
@@ -111,9 +128,11 @@ export interface FileRoutesById {
   '/(public)/callback': typeof publicCallbackRoute
   '/(public)/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
-  '/app/settings/consent-history': typeof AppSettingsConsentHistoryRoute
+  '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/app/services/': typeof AppServicesIndexRoute
+  '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
+  '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
@@ -127,7 +146,9 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/settings/consent-history'
     | '/app/services'
+    | '/app/settings/consent-history/$statementId'
     | '/app/services/$serviceSlug'
+    | '/app/settings/consent-history/'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
     | '/app/services/$serviceSlug/apply/$applicationId'
   fileRoutesByTo: FileRoutesByTo
@@ -136,9 +157,10 @@ export interface FileRouteTypes {
     | '/callback'
     | '/'
     | '/app'
-    | '/app/settings/consent-history'
     | '/app/services'
+    | '/app/settings/consent-history/$statementId'
     | '/app/services/$serviceSlug'
+    | '/app/settings/consent-history'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
     | '/app/services/$serviceSlug/apply/$applicationId'
   id:
@@ -151,7 +173,9 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/settings/consent-history'
     | '/app/services/'
+    | '/app/settings/consent-history/$statementId'
     | '/app/services/$serviceSlug/'
+    | '/app/settings/consent-history/'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
     | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesById: FileRoutesById
@@ -216,8 +240,15 @@ declare module '@tanstack/react-router' {
       id: '/app/settings/consent-history'
       path: '/consent-history'
       fullPath: '/app/settings/consent-history'
-      preLoaderRoute: typeof AppSettingsConsentHistoryRouteImport
+      preLoaderRoute: typeof AppSettingsConsentHistoryRouteRouteImport
       parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/app/settings/consent-history/': {
+      id: '/app/settings/consent-history/'
+      path: '/'
+      fullPath: '/app/settings/consent-history/'
+      preLoaderRoute: typeof AppSettingsConsentHistoryIndexRouteImport
+      parentRoute: typeof AppSettingsConsentHistoryRouteRoute
     }
     '/app/services/$serviceSlug/': {
       id: '/app/services/$serviceSlug/'
@@ -225,6 +256,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/services/$serviceSlug'
       preLoaderRoute: typeof AppServicesServiceSlugIndexRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/app/settings/consent-history/$statementId': {
+      id: '/app/settings/consent-history/$statementId'
+      path: '/$statementId'
+      fullPath: '/app/settings/consent-history/$statementId'
+      preLoaderRoute: typeof AppSettingsConsentHistoryStatementIdRouteImport
+      parentRoute: typeof AppSettingsConsentHistoryRouteRoute
     }
     '/app/services/$serviceSlug/apply/$applicationId/': {
       id: '/app/services/$serviceSlug/apply/$applicationId/'
@@ -257,12 +295,30 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
   publicRouteRouteChildren,
 )
 
+interface AppSettingsConsentHistoryRouteRouteChildren {
+  AppSettingsConsentHistoryStatementIdRoute: typeof AppSettingsConsentHistoryStatementIdRoute
+  AppSettingsConsentHistoryIndexRoute: typeof AppSettingsConsentHistoryIndexRoute
+}
+
+const AppSettingsConsentHistoryRouteRouteChildren: AppSettingsConsentHistoryRouteRouteChildren =
+  {
+    AppSettingsConsentHistoryStatementIdRoute:
+      AppSettingsConsentHistoryStatementIdRoute,
+    AppSettingsConsentHistoryIndexRoute: AppSettingsConsentHistoryIndexRoute,
+  }
+
+const AppSettingsConsentHistoryRouteRouteWithChildren =
+  AppSettingsConsentHistoryRouteRoute._addFileChildren(
+    AppSettingsConsentHistoryRouteRouteChildren,
+  )
+
 interface AppSettingsRouteRouteChildren {
-  AppSettingsConsentHistoryRoute: typeof AppSettingsConsentHistoryRoute
+  AppSettingsConsentHistoryRouteRoute: typeof AppSettingsConsentHistoryRouteRouteWithChildren
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
-  AppSettingsConsentHistoryRoute: AppSettingsConsentHistoryRoute,
+  AppSettingsConsentHistoryRouteRoute:
+    AppSettingsConsentHistoryRouteRouteWithChildren,
 }
 
 const AppSettingsRouteRouteWithChildren =

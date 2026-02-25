@@ -15,9 +15,9 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { ConsentHistoryFilters } from "../../../../features/consent-history/components/consent-history-filters.component";
-import { ConsentTimeline } from "../../../../features/consent-history/components/consent-timeline.component";
-import { consentTimelineQueryOptions } from "../../../../features/consent-history/data/consent-timeline.query";
+import { ConsentHistoryFilters } from "../../../../../features/consent-history/components/consent-history-filters.component";
+import { ConsentTimeline } from "../../../../../features/consent-history/components/consent-timeline.component";
+import { consentTimelineQueryOptions } from "../../../../../features/consent-history/data/consent-timeline.query";
 
 const SearchSchema = z.object({
   search: z.string().optional().catch(undefined),
@@ -28,8 +28,8 @@ const SearchSchema = z.object({
   page: z.number().optional().catch(undefined),
 });
 
-export const Route = createFileRoute("/app/settings/consent-history")({
-  validateSearch: SearchSchema,
+export const Route = createFileRoute("/app/settings/consent-history/")({
+  validateSearch: (search) => SearchSchema.parse(search),
   staticData: {
     breadcrumbs: () => [
       { label: "Settings" },
