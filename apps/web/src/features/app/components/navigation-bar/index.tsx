@@ -49,12 +49,16 @@ export const NavigationBar = ({ title, items, extras }: NavigationBarProps) => {
                 key={item.to}
                 variant="link"
                 className="shrink-0 p-0 h-auto font-normal text-base"
-              >
-                <Link to={item.to} className="flex flex-row items-center gap-2">
-                  {item.icon}
-                  {item.label}
-                </Link>
-              </Button>
+                render={() => (
+                  <Link
+                    to={item.to}
+                    className="flex flex-row items-center gap-2"
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                )}
+              ></Button>
             ) : (
               <DropdownMenu key={item.label}>
                 <DropdownMenuTrigger
