@@ -25,7 +25,7 @@ export const Route = createFileRoute(
   },
   staticData: {
     breadcrumbs: (loaderData?: { documentName: string }) => [
-      { label: "Settings" },
+      { label: "Settings", to: "/app/settings" },
       { label: "Consent history", to: "/app/settings/consent-history" },
       ...(loaderData?.documentName
         ? [{ label: `${loaderData.documentName} Statement` }]

@@ -33,15 +33,9 @@ export const navigationItems: NavItem[] = [
     children: [],
   },
   {
-    type: "menu",
+    type: "link",
     label: "Settings",
-    children: [
-      {
-        type: "link",
-        label: "Consent history",
-        to: "/app/settings/consent-history",
-      },
-    ],
+    to: "/app/settings",
   },
 ];
 

@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
+import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
 import { Route as AppSettingsConsentHistoryRouteRouteImport } from './routes/app/settings/consent-history/route'
 import { Route as AppSettingsConsentHistoryIndexRouteImport } from './routes/app/settings/consent-history/index'
@@ -51,6 +52,11 @@ const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppServicesIndexRoute = AppServicesIndexRouteImport.update({
   id: '/services/',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/app/services': typeof AppServicesIndexRoute
+  '/app/settings/': typeof AppSettingsIndexRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
@@ -109,11 +116,11 @@ export interface FileRoutesByFullPath {
   '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app': typeof AppIndexRoute
   '/app/services': typeof AppServicesIndexRoute
+  '/app/settings': typeof AppSettingsIndexRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryIndexRoute
@@ -130,6 +137,7 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/app/services/': typeof AppServicesIndexRoute
+  '/app/settings/': typeof AppSettingsIndexRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
@@ -146,6 +154,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/settings/consent-history'
     | '/app/services'
+    | '/app/settings/'
     | '/app/settings/consent-history/$statementId'
     | '/app/services/$serviceSlug'
     | '/app/settings/consent-history/'
@@ -153,11 +162,11 @@ export interface FileRouteTypes {
     | '/app/services/$serviceSlug/apply/$applicationId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/app/settings'
     | '/callback'
     | '/'
     | '/app'
     | '/app/services'
+    | '/app/settings'
     | '/app/settings/consent-history/$statementId'
     | '/app/services/$serviceSlug'
     | '/app/settings/consent-history'
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/settings/consent-history'
     | '/app/services/'
+    | '/app/settings/'
     | '/app/settings/consent-history/$statementId'
     | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
@@ -228,6 +238,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/settings'
       preLoaderRoute: typeof AppSettingsRouteRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/app/settings/': {
+      id: '/app/settings/'
+      path: '/'
+      fullPath: '/app/settings/'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/app/services/': {
       id: '/app/services/'
@@ -314,11 +331,13 @@ const AppSettingsConsentHistoryRouteRouteWithChildren =
 
 interface AppSettingsRouteRouteChildren {
   AppSettingsConsentHistoryRouteRoute: typeof AppSettingsConsentHistoryRouteRouteWithChildren
+  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
   AppSettingsConsentHistoryRouteRoute:
     AppSettingsConsentHistoryRouteRouteWithChildren,
+  AppSettingsIndexRoute: AppSettingsIndexRoute,
 }
 
 const AppSettingsRouteRouteWithChildren =

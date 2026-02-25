@@ -32,7 +32,7 @@ export const Route = createFileRoute("/app/settings/consent-history/")({
   validateSearch: (search) => SearchSchema.parse(search),
   staticData: {
     breadcrumbs: () => [
-      { label: "Settings" },
+      { label: "Settings", to: "/app/settings" },
       { label: "Consent history" },
     ],
   },
@@ -92,7 +92,7 @@ function ConsentHistoryPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 py-6">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold">Consent history</h1>
         <p className="text-muted-foreground">
