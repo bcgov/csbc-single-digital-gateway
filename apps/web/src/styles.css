@@ -1,8 +1,9 @@
 @import "tailwindcss";
+@import "@repo/ui/styles.css";
 
 @theme {
-  --color-bcgov-blue: #1e5189;
-  --color-bcgov-gold: #fcba19;
+  --color-bcgov-blue: var(--bcds-theme-primary-blue);
+  --color-bcgov-gold: var(--bcds-theme-primary-gold);
 }
 
 .section-heading::before {
