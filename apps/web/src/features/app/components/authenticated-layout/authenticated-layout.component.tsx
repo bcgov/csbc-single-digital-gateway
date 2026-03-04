@@ -21,7 +21,9 @@ export const AuthenticatedLayout = ({
           <AuthenticatedNavigationBar />
           <Breadcrumbs />
         </AuthenticatedHeader>
-        <Container className="flex-auto">{children}</Container>
+        <main id="main-content" className="flex-auto" tabIndex={-1}>
+          <Container>{children}</Container>
+        </main>
         <AuthenticatedFooter />
       </div>
       <AppSearch navigationItems={navigationItems} />
