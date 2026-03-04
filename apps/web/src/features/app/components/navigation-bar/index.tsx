@@ -40,7 +40,9 @@ export const NavigationBar = ({ title, items, extras }: NavigationBarProps) => {
   return (
     <Container>
       <div className="flex flex-row  py-4 items-center justify-between gap-2 h-14">
-        <h1 className="text-xl font-extrabold truncate">{title}</h1>
+        <a href="/app" aria-label={`Go to the ${title} homepage`}>
+          <span className="text-xl font-bold">{title}</span>
+        </a>
 
         <div className="flex flex-row gap-4">
           {items?.map((item) =>
