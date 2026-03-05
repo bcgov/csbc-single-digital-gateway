@@ -6,7 +6,9 @@ export const PublicFooter = () => {
     <footer className="py-4">
       <Container>
         <div className="flex flex-col-reverse md:flex-row justify-between items-center">
-          <span>&copy; 2025 Government of British Columbia</span>
+          <span>
+            &copy; {new Date().getFullYear()} Government of British Columbia
+          </span>
           <div className="flex flex-row gap-4">
             <Button variant="link">
               <a
