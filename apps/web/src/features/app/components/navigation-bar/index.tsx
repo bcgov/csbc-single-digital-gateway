@@ -10,6 +10,7 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import type { RegisteredRouter, RouteToPath } from "@tanstack/router-core";
 import type { ReactNode } from "react";
+import { useAuth } from "react-oidc-context";
 import { Container } from "../container.component";
 
 type RoutePath = RouteToPath<RegisteredRouter>;
@@ -37,11 +38,17 @@ interface NavigationBarProps {
 }
 
 export const NavigationBar = ({ title, items, extras }: NavigationBarProps) => {
+  const { isAuthenticated } = useAuth();
   return (
     <Container>
       <div className="flex flex-row  py-4 items-center justify-between gap-2 h-14">
-        <h1 className="text-xl font-extrabold truncate">{title}</h1>
-
+        {isAuthenticated ? (
+          <Link to="/app" aria-label={`Go to the ${title} homepage`}>
+            <span className="text-xl font-bold">{title}</span>
+          </Link>
+        ) : (
+          <span className="text-xl font-bold">{title}</span>
+        )}
         <div className="flex flex-row gap-4">
           {items?.map((item) =>
             item.type === "link" ? (

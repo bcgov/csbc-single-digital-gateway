@@ -1,14 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-    --color-bcgov-blue: #1E5189;
-    --color-bcgov-gold: #FCBA19;
+  --color-bcgov-blue: #1e5189;
+  --color-bcgov-gold: #fcba19;
+}
+
+.section-heading::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  background-color: var(--color-bcgov-gold);
+  margin-bottom: 8px;
 }
 
 /* CHEFS Form Viewer web component styling */
 chefs-form-viewer {
-    display: block;
-    width: 100%;
+  display: block;
+  width: 100%;
 }
 
 chefs-form-viewer .formio-form,
@@ -16,6 +25,6 @@ chefs-form-viewer .formio-component,
 chefs-form-viewer .formio-form > div,
 chefs-form-viewer .card,
 chefs-form-viewer .card-body {
-    max-width: 100% !important;
-    width: 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
 }
