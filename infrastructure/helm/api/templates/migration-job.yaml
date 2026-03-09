@@ -81,10 +81,6 @@ spec:
           value: {{ .Values.app.database.ssl | quote }}
         - name: NODE_ENV
           value: {{ .Values.app.nodeEnv | quote }}
-        - name: OIDC_ISSUER
-          value: {{ .Values.app.oidc.issuer | quote }}
-        - name: OIDC_JWKS_URI
-          value: {{ .Values.app.oidc.jwksUri | quote }}
         resources:
           {{- toYaml .Values.migrations.resources | nindent 10 }}
       {{- with .Values.nodeSelector }}
