@@ -1,0 +1,93 @@
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Typography                                                              */
+  /* ---------------------------------------------------------------------- */
+
+  /* App typography scale:
+   We've intentionally render HTML heading elements smaller than the BCDS
+   heading scale for better fit in application UI. Utility classes like
+   text-h1/text-h2/etc still expose the original BCDS sizes if needed. */
+
+  h1 {
+    /* App decision: use BCDS h3 for actual page h1s */
+    font-size: var(--app-text-h3);
+    line-height: var(--app-leading-xsparse);
+    font-weight: var(--app-font-weight-bold);
+  }
+
+  h2 {
+    /* App decision: use BCDS h4 for h2s */
+    font-size: var(--app-text-h4);
+    line-height: var(--app-leading-sparse);
+    font-weight: var(--app-font-weight-bold);
+  }
+
+  h3 {
+    /* App decision: use BCDS h5 for h3s */
+    font-size: var(--app-text-h5);
+    line-height: var(--app-leading-regular);
+    font-weight: var(--app-font-weight-bold);
+  }
+
+  h4 {
+    /* App decision: using large body as the closest sensible smaller heading step */
+    font-size: var(--app-text-lg);
+    line-height: var(--app-leading-dense);
+    font-weight: var(--app-font-weight-bold);
+  }
+
+  h5 {
+    /* App decision: same as h4 for resilience/editor content safety */
+    font-size: var(--app-text-lg);
+    line-height: var(--app-leading-dense);
+    font-weight: var(--app-font-weight-bold);
+  }
+
+  h6 {
+    /* App decision: same as h4/h5 for resilience/editor content safety */
+    font-size: var(--app-text-lg);
+    line-height: var(--app-leading-dense);
+    font-weight: var(--app-font-weight-bold);
+  }
+
+  p,
+  li,
+  dd,
+  blockquote {
+    font-size: var(--app-text-base);
+    line-height: var(--app-leading-xdense);
+  }
+
+  small {
+    font-size: var(--app-text-sm);
+    line-height: var(--app-leading-xxdense);
+  }
+
+  a {
+    color: var(--app-link);
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+  }
+
+  strong,
+  b {
+    font-weight: var(--app-font-weight-bold);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--app-placeholder);
+  }
+}
