@@ -58,7 +58,7 @@ migrations:
   # Migration image configuration (separate image with drizzle-kit)
   image:
     # Image repository for migrations
-    repository: bcgov/csbc-single-digital-gateway/api-migrations
+    repository: bcgov/csbc-single-digital-gateway/db-migrations
     # Overrides the image tag (defaults to chart appVersion)
     tag: ""
 

@@ -11,8 +11,8 @@ data:
   NODE_ENV: {{ .Values.app.nodeEnv | quote }}
 
   # Database configuration (non-sensitive)
-  # Note: DB_NAME, DB_HOST, DB_PORT, and DB_USER are provided via secret in deployment
-  DEFAULT_DB_SSL: {{ .Values.app.database.ssl | quote }}
+  # Note: DB_NAME, DB_HOST, DB_PORT, DB_USER, and DB_PASS are provided via secret in deployment
+  DB_SSL: {{ .Values.app.database.ssl | quote }}
 
   # OIDC configuration
   OIDC_ISSUER: {{ .Values.app.oidc.issuer | quote }}

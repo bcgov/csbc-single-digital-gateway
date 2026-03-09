@@ -19,6 +19,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@repo/db": "*",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.1.11",
     "@nestjs/config": "^4.0.2",
@@ -52,7 +53,6 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.3",
-    "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",

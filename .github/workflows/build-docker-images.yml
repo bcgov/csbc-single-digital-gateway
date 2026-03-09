@@ -13,8 +13,8 @@ on:
         required: true
         type: boolean
         default: true
-      build-api-migrations:
-        description: 'Build API migrations image'
+      build-db-migrations:
+        description: 'Build DB migrations image'
         required: true
         type: boolean
         default: true
@@ -35,7 +35,7 @@ jobs:
       contents: read
     outputs:
       api: ${{ steps.affected.outputs.api }}
-      api-migrations: ${{ steps.affected.outputs.api-migrations }}
+      db-migrations: ${{ steps.affected.outputs.db-migrations }}
       web: ${{ steps.affected.outputs.web }}
     steps:
       - name: Check manual trigger
@@ -44,7 +44,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual trigger detected"
             echo "api=${{ inputs.build-api }}" >> $GITHUB_OUTPUT
-            echo "api-migrations=${{ inputs.build-api-migrations }}" >> $GITHUB_OUTPUT
+            echo "db-migrations=${{ inputs.build-db-migrations }}" >> $GITHUB_OUTPUT
             echo "web=${{ inputs.build-web }}" >> $GITHUB_OUTPUT
             echo "is_manual=true" >> $GITHUB_OUTPUT
           else
@@ -74,20 +74,25 @@ jobs:
           if [ "${{ steps.manual.outputs.is_manual }}" = "true" ]; then
             echo "Using manual inputs"
             echo "api=${{ steps.manual.outputs.api }}" >> $GITHUB_OUTPUT
-            echo "api-migrations=${{ steps.manual.outputs.api-migrations }}" >> $GITHUB_OUTPUT
+            echo "db-migrations=${{ steps.manual.outputs.db-migrations }}" >> $GITHUB_OUTPUT
             echo "web=${{ steps.manual.outputs.web }}" >> $GITHUB_OUTPUT
           else
             # Get the list of affected projects
             AFFECTED=$(npx turbo ls --affected --output=json 2>/dev/null || echo '[]')
             echo "Affected projects: $AFFECTED"
 
-            # Check if api is affected (also triggers api-migrations build)
+            # Check if api is affected
             if echo "$AFFECTED" | grep -q '"api"'; then
               echo "api=true" >> $GITHUB_OUTPUT
-              echo "api-migrations=true" >> $GITHUB_OUTPUT
             else
               echo "api=false" >> $GITHUB_OUTPUT
-              echo "api-migrations=false" >> $GITHUB_OUTPUT
+            fi
+
+            # Check if @repo/db is affected (triggers db-migrations build)
+            if echo "$AFFECTED" | grep -q '"@repo/db"'; then
+              echo "db-migrations=true" >> $GITHUB_OUTPUT
+            else
+              echo "db-migrations=false" >> $GITHUB_OUTPUT
             fi
 
             # Check if web is affected
@@ -98,10 +103,10 @@ jobs:
             fi
           fi
 
-  # Build api-migrations image first (runs before API)
+  # Build db-migrations image first (runs before API)
   build-migrations:
     needs: changes
-    if: needs.changes.outputs.api-migrations == 'true'
+    if: needs.changes.outputs.db-migrations == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -125,7 +130,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ${{ env.REGISTRY }}/${{ github.repository }}/api-migrations
+        images: ${{ env.REGISTRY }}/${{ github.repository }}/db-migrations
         tags: |
           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
           type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
@@ -134,21 +139,21 @@ jobs:
         flavor: |
           latest=false
 
-    - name: Build and push api-migrations Docker image
+    - name: Build and push db-migrations Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./apps/api/Dockerfile.migrations
+        file: ./packages/db/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha,scope=api-migrations
-        cache-to: type=gha,mode=max,scope=api-migrations
+        cache-from: type=gha,scope=db-migrations
+        cache-to: type=gha,mode=max,scope=db-migrations
         build-args: |
           NODE_ENV=production
 
     - name: Image digest
-      run: echo "Built api-migrations image with tags ${{ steps.meta.outputs.tags }}"
+      run: echo "Built db-migrations image with tags ${{ steps.meta.outputs.tags }}"
 
   # Build API image (waits for migrations to complete)
   build-api:

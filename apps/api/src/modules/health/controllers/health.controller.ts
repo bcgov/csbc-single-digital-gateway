@@ -7,9 +7,9 @@ import {
 } from '@nestjs/terminus';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { DefaultSchema } from 'src/database/default';
+import { Schema } from '@repo/db';
 import { PublicRoute } from 'src/modules/auth/decorators/public-route.decorator';
-import { InjectDefaultDb } from 'src/modules/database/decorators/inject-default-database.decorator';
+import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
 import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 
 @Controller({
@@ -18,8 +18,8 @@ import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 export class HealthController {
   constructor(
     private readonly configService: ConfigService<AppConfigDto, true>,
-    @InjectDefaultDb()
-    private readonly defaultDb: NodePgDatabase<DefaultSchema>,
+    @InjectDb()
+    private readonly db: NodePgDatabase<Schema>,
     private readonly drizzle: DrizzleHealthIndicator,
     private readonly healthCheckService: HealthCheckService,
     private readonly http: HttpHealthIndicator,
@@ -37,7 +37,7 @@ export class HealthController {
   @PublicRoute()
   checkReadiness() {
     return this.healthCheckService.check([
-      () => this.drizzle.isHealthy('default_database', this.defaultDb),
+      () => this.drizzle.isHealthy('database', this.db),
       () =>
         this.http.pingCheck(
           'identity_provider',

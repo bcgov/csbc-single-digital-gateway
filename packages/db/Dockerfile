@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN npx turbo prune api --docker
+RUN npx turbo prune @repo/db --docker
 
 # Stage 2: Install all dependencies (including devDependencies for drizzle-kit)
 FROM base AS dependencies
@@ -33,32 +33,28 @@ WORKDIR /app
 
 # Copy all node_modules (includes drizzle-kit)
 COPY --from=dependencies /app/node_modules ./node_modules/
-COPY --from=dependencies /app/apps/api/node_modules ./apps/api/node_modules/
+COPY --from=dependencies /app/packages/db/node_modules ./packages/db/node_modules/
 
-# Copy drizzle configuration, migrations, and db config schema
-COPY --from=pruner /app/out/full/apps/api/drizzle ./apps/api/drizzle
-COPY --from=pruner /app/out/full/apps/api/src/common/dtos/app-config.dto.ts ./apps/api/src/common/dtos/app-config.dto.ts
+# Copy drizzle configuration and migrations
+COPY --from=pruner /app/out/full/packages/db/drizzle ./packages/db/drizzle
+
+# Copy source (config schema needed by drizzle.config.ts at runtime)
+COPY --from=pruner /app/out/full/packages/db/src ./packages/db/src
 
 # Copy package.json for npm scripts
-COPY --from=pruner /app/out/full/apps/api/package.json ./apps/api/package.json
-
-# Copy migration script
-COPY --from=pruner /app/out/full/apps/api/scripts ./apps/api/scripts
+COPY --from=pruner /app/out/full/packages/db/package.json ./packages/db/package.json
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Make migration script executable
-RUN chmod +x ./apps/api/scripts/migrate-all.sh
-
 RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
-WORKDIR /app/apps/api
+WORKDIR /app/packages/db
 
 ENV NODE_ENV=production
 
-# Auto-discover and run all database migrations
-CMD ["./scripts/migrate-all.sh"]
+# Run database migrations
+CMD ["npx", "drizzle-kit", "migrate", "--config=./drizzle/drizzle.config.ts"]
