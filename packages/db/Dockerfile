@@ -33,7 +33,6 @@ WORKDIR /app
 
 # Copy all node_modules (includes drizzle-kit)
 COPY --from=dependencies /app/node_modules ./node_modules/
-COPY --from=dependencies /app/packages/db/node_modules ./packages/db/node_modules/
 
 # Copy drizzle configuration and migrations
 COPY --from=pruner /app/out/full/packages/db/drizzle ./packages/db/drizzle
