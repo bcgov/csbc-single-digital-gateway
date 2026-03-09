@@ -21,7 +21,7 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Services</h1>
+      <h1>Services</h1>
       {services.map((service) => (
         <Link
           to="/app/services/$serviceSlug"

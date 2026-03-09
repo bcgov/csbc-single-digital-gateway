@@ -94,15 +94,15 @@ function ConsentHistoryPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">Consent history</h1>
-        <p className="text-muted-foreground">
+        <h1>Consent history</h1>
+        <p className="text-muted">
           Review your current and past consents for services.
         </p>
       </div>
 
       <InputGroup>
         <InputGroupAddon align="inline-start">
-          <IconSearch className="size-4 text-muted-foreground" />
+          <IconSearch className="size-4 text-muted" />
         </InputGroupAddon>
         <InputGroupInput
           placeholder="Search consents..."

@@ -19,7 +19,7 @@ export function NavLinkItem({
       to={to}
       className="flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors"
     >
-      <div className="shrink-0 flex items-center justify-center w-10 h-10 bg-blue-100">
+      <div className="shrink-0 flex items-center justify-center w-10 h-10 bg-blue-10">
         {icon}
       </div>
 

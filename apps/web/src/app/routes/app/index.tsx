@@ -11,9 +11,7 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">
-        Hello, {auth.user?.profile.given_name}
-      </h1>
+      <h1>Hello, {auth.user?.profile.given_name}</h1>
       <Skeleton className="h-30 rounded-xl" />
       <Skeleton className="h-60 rounded-xl" />
       <Skeleton className="h-10 rounded-xl" />

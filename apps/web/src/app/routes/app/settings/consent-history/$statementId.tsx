@@ -49,7 +49,7 @@ function ConsentStatementPage() {
   if (isLoading) return <p className="py-8 text-center">Loading…</p>;
   if (error)
     return (
-      <p className="py-8 text-center text-red-600">Error: {error.message}</p>
+      <p className="py-8 text-center text-danger">Error: {error.message}</p>
     );
   if (!statement) return null;
 
@@ -71,8 +71,8 @@ function ConsentStatementPage() {
   return (
     <div className="flex flex-col gap-6 py-6">
       <div>
-        <h1 className="text-2xl font-bold">{statement.document.name}</h1>
-        <p className="text-muted-foreground">{formattedDate}</p>
+        <h1>{statement.document.name}</h1>
+        <p className="text-muted">{formattedDate}</p>
       </div>
 
       <Separator className="bg-bcgov-gold" />
@@ -81,25 +81,19 @@ function ConsentStatementPage() {
         <div className="col-span-3 flex flex-col gap-4">
           <h2 className="text-lg font-bold">Overview</h2>
 
-          <div className="flex flex-col gap-px bg-neutral-200 border-neutral-200 border">
+          <div className="flex flex-col gap-px border bg-border">
             <div className="grid grid-cols-2 gap-px">
               <div className="bg-white p-4">
-                <p className="text-muted-foreground text-sm font-bold">
-                  Signed
-                </p>
+                <p className="text-muted text-sm font-bold">Signed</p>
                 <p className="font-medium">{formattedStatementDate}</p>
               </div>
               <div className="bg-white p-4">
-                <p className="text-muted-foreground text-sm font-bold">
-                  Valid until
-                </p>
+                <p className="text-muted text-sm font-bold">Valid until</p>
                 <p className="font-medium">Until the program concludes</p>
               </div>
             </div>
             <div className="bg-white p-4">
-              <p className="text-muted-foreground text-sm font-bold">
-                Managed by
-              </p>
+              <p className="text-muted text-sm font-bold">Managed by</p>
               <p className="font-medium">{organizationName}</p>
             </div>
           </div>

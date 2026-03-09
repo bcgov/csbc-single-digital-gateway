@@ -70,8 +70,8 @@ function RouteComponent() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex flex-col gap-4 flex-1">
-          <h1 className="text-2xl font-semibold">{service.name}</h1>
-          <p className="text-base" ref={descriptionRef}>
+          <h1>{service.name}</h1>
+          <p className="text-muted" ref={descriptionRef}>
             {service.description?.short}
           </p>
         </div>
@@ -202,13 +202,13 @@ function RouteComponent() {
                   </li>
                 </ol>
                 <p>You can apply in two ways:</p>
-                <div className="flex flex-col gap-px bg-neutral-200 border-neutral-200 border">
+                <div className="flex flex-col gap-px border bg-border">
                   <div className="grid grid-cols-2 gap-px">
                     <Link
                       to={"#foo" as string}
                       className="flex flex-col items-center bg-white p-4"
                     >
-                      <span className="p-4 bg-blue-100 inline-flex">
+                      <span className="p-4 bg-blue-10 inline-flex">
                         <IconCake
                           className="shrink-0 pb-2"
                           size={42}
@@ -223,7 +223,7 @@ function RouteComponent() {
                       to={"#bar" as string}
                       className="flex flex-col items-center bg-white p-4"
                     >
-                      <span className="p-4 bg-blue-100 inline-flex">
+                      <span className="p-4 bg-blue-10 inline-flex">
                         <IconCake
                           className="shrink-0 pb-2"
                           size={42}
@@ -248,7 +248,7 @@ function RouteComponent() {
               </h2>
               <div className="flex flex-col gap-4 min-h-48">
                 <p>Track your applications and view updates in one place.</p>
-                <div className="flex flex-col gap-px bg-neutral-200 border-neutral-200 border">
+                <div className="flex flex-col gap-px border bg-border">
                   <div className="grid gap-px">
                     <div className="flex flex-col items-center bg-white p-4">
                       <IconCake
@@ -313,7 +313,7 @@ function ConsentDocumentsAccordion({ documentIds }: { documentIds: string[] }) {
             {doc.content ? (
               <LexicalContent content={doc.content} />
             ) : (
-              <p className="text-muted-foreground">No content available.</p>
+              <p className="text-muted">No content available.</p>
             )}
           </AccordionContent>
         </AccordionItem>
@@ -326,12 +326,10 @@ function NotFoundComponent() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-extrabold">Service not found</h1>
-      <p className="text-muted-foreground">
+      <p className="text-muted">
         The service you're looking for doesn't exist.
       </p>
-      <Link to="/app/services" className="text-primary hover:underline">
-        Back to services
-      </Link>
+      <Link to="/app/services">Back to services</Link>
     </div>
   );
 }
