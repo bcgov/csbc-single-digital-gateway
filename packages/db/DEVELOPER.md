@@ -38,7 +38,7 @@ The package loads `dotenv/config` at runtime to ensure env vars are available wh
 ## Usage
 
 ```ts
-import { db, DbConfigSchema } from '@repo/db';
+import { db } from '@repo/db';
 import type { Schema, Database } from '@repo/db';
 ```
 

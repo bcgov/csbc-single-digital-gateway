@@ -1,16 +1,29 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import type { DbConfig } from './config.js';
-import * as schema from './schema/index.js';
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import * as schema from "./schema/index.js";
 
-export function createDatabase(config: DbConfig) {
+export function createDatabase({
+  DB_NAME,
+  DB_HOST,
+  DB_PORT,
+  DB_USER,
+  DB_PASS,
+  DB_SSL,
+}: {
+  DB_NAME: string;
+  DB_HOST: string;
+  DB_PORT: number;
+  DB_USER: string;
+  DB_PASS: string;
+  DB_SSL: boolean;
+}) {
   const pool = new Pool({
-    database: config.DB_NAME,
-    host: config.DB_HOST,
-    port: config.DB_PORT,
-    user: config.DB_USER,
-    password: config.DB_PASS,
-    ssl: config.DB_SSL,
+    database: DB_NAME,
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASS,
+    ssl: DB_SSL,
   });
   return drizzle(pool, { schema });
 }
