@@ -82,7 +82,7 @@ export class AuthGuard implements CanActivate {
           this.jwksClient
             .getSigningKey(header.kid)
             .then((key) => callback(null, key.getPublicKey()))
-            .catch((err) => callback(err));
+            .catch((err: Error) => callback(err));
         },
         {
           algorithms: ['RS256'],
