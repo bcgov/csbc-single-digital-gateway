@@ -12,8 +12,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+<<<<<<< HEAD
 import { AuthService } from './auth.service';
 import { PublicRoute } from './decorators/public-route.decorator';
+=======
+import { PublicRoute } from './decorators/public-route.decorator';
+import { AuthService } from './auth.service';
+>>>>>>> 9853f7a (EL-428 - Implement BFF pattern)
 
 @Controller('auth')
 export class AuthController {
@@ -36,9 +41,13 @@ export class AuthController {
     const authUrl = await this.authService.buildAuthorizationUrl(req.session);
 
     await new Promise<void>((resolve, reject) => {
+<<<<<<< HEAD
       req.session.save((err: Error | undefined) =>
         err ? reject(err) : resolve(),
       );
+=======
+      req.session.save((err) => (err ? reject(err) : resolve()));
+>>>>>>> 9853f7a (EL-428 - Implement BFF pattern)
     });
 
     res.redirect(authUrl);
@@ -66,9 +75,7 @@ export class AuthController {
     delete req.session.returnTo;
 
     await new Promise<void>((resolve, reject) => {
-      req.session.save((err: Error | undefined) =>
-        err ? reject(err) : resolve(),
-      );
+      req.session.save((err) => (err ? reject(err) : resolve()));
     });
 
     res.redirect(returnTo as string);
@@ -76,13 +83,14 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async logout(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     const logoutUrl = this.authService.buildLogoutUrl(req.session);
 
     await new Promise<void>((resolve, reject) => {
-      req.session.destroy((err: Error | undefined) =>
-        err ? reject(err) : resolve(),
-      );
+      req.session.destroy((err) => (err ? reject(err) : resolve()));
     });
 
     res.clearCookie('connect.sid');
