@@ -11,8 +11,8 @@ import type { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { AuthService } from '../auth.service';
 import { PUBLIC_ROUTE_KEY } from '../decorators/public-route.decorator';
+import { AuthService } from '../services/auth.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {

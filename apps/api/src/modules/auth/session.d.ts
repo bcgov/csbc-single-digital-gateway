@@ -1,4 +1,4 @@
-import type { UserProfile } from './auth.service';
+import type { UserProfile } from './services/auth.service';
 
 declare module 'express-session' {
   interface SessionData {

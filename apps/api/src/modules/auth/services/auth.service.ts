@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { type Session, type SessionData } from 'express-session';
 import * as client from 'openid-client';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { OIDC_CLIENT, type OidcClient } from './auth.config';
+import { OIDC_CLIENT, type OidcClient } from '../auth.config';
 
 export interface UserProfile {
   sub: string;
