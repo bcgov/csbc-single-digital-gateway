@@ -1,9 +1,9 @@
 import { createRouter } from "@tanstack/react-router";
-import type { AuthContextProps } from "react-oidc-context";
+import type { AuthState } from "../features/auth/auth.types";
 import { routeTree } from "./routeTree.gen";
 
 export interface RouterContext {
-  auth: AuthContextProps;
+  auth: AuthState;
 }
 
 export interface BreadcrumbItemDef {

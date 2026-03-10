@@ -10,7 +10,7 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import type { RegisteredRouter, RouteToPath } from "@tanstack/router-core";
 import type { ReactNode } from "react";
-import { useAuth } from "react-oidc-context";
+import { useAuth } from "../../../auth/auth.context";
 import { Container } from "../container.component";
 
 type RoutePath = RouteToPath<RegisteredRouter>;

@@ -41,7 +41,7 @@ export class HealthController {
       () =>
         this.http.pingCheck(
           'identity_provider',
-          this.configService.get('OIDC_JWKS_URI'),
+          `${this.configService.get('OIDC_ISSUER')}/.well-known/openid-configuration`,
         ),
     ]);
   }

@@ -57,9 +57,7 @@ export function consentTimelineQueryOptions(params: ConsentTimelineParams) {
             documentType: params.documentType?.length
               ? params.documentType.join(",")
               : undefined,
-            status: params.status?.length
-              ? params.status.join(",")
-              : undefined,
+            status: params.status?.length ? params.status.join(",") : undefined,
             from: params.from || undefined,
             to: params.to || undefined,
             page: params.page ?? 1,

@@ -6,7 +6,6 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import {
   ChefsFormViewer,
@@ -84,7 +83,6 @@ function RouteComponent() {
   const application =
     service.applications?.find((a) => a.id === loaderApplication.id) ??
     loaderApplication;
-  const auth = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -129,11 +127,6 @@ function RouteComponent() {
           formId={application.formId!}
           apiKey={application.apiKey}
           baseUrl={application.url}
-          headers={
-            auth.user?.access_token
-              ? { Authorization: `Bearer ${auth.user.access_token}` }
-              : undefined
-          }
           language="en"
           isolateStyles={false}
           onSubmissionComplete={() => {
