@@ -14,7 +14,7 @@ export const Breadcrumbs = () => {
   const matches = useMatches();
 
   const items: BreadcrumbItemDef[] = matches.flatMap((match) => {
-    const resolver = (match.staticData as any)?.breadcrumbs;
+    const resolver = (match.staticData as Record<string, unknown>)?.breadcrumbs;
     if (typeof resolver !== "function") return [];
     return resolver(match.loaderData);
   });

@@ -16,6 +16,7 @@ import { useAuth } from "../../../auth/auth.context";
 import { useAppSearch } from "../app-search/app-search.context";
 import { type NavItem, NavigationBar } from "../navigation-bar";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const navigationItems: NavItem[] = [
   {
     type: "link",

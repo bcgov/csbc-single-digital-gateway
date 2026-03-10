@@ -43,11 +43,12 @@ function ConsentHistoryPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/app/settings/consent-history" });
 
-  const [searchInput, setSearchInput] = useState(search.search ?? "");
+  const searchValue = search.search ?? "";
+  const [searchInput, setSearchInput] = useState(searchValue);
 
-  useEffect(() => {
-    setSearchInput(search.search ?? "");
-  }, [search.search]);
+  if (searchInput !== searchValue && searchValue !== (searchInput.trim() || undefined)) {
+    setSearchInput(searchValue);
+  }
 
   useEffect(() => {
     const timeout = setTimeout(() => {
