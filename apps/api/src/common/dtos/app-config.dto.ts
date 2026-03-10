@@ -17,7 +17,19 @@ export const AppConfigSchema = z.object({
 
   // Identity Provider
   OIDC_ISSUER: z.string(),
-  OIDC_JWKS_URI: z.string(),
+  OIDC_CLIENT_ID: z.string(),
+  OIDC_CLIENT_SECRET: z.string(),
+  OIDC_REDIRECT_URI: z.string(),
+  OIDC_POST_LOGOUT_REDIRECT_URI: z.string(),
+
+  // Session
+  SESSION_SECRET: z.string(),
+
+  // Frontend
+  FRONTEND_URL: z.string(),
+
+  // Consent Manager
+  CONSENT_MANAGER_API_URL: z.string().optional(),
 });
 
 export class AppConfigDto extends createZodDto(AppConfigSchema) {}

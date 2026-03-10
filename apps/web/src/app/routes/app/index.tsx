@@ -1,6 +1,6 @@
 import { Skeleton } from "@repo/ui";
 import { createFileRoute } from "@tanstack/react-router";
-import { useAuth } from "react-oidc-context";
+import { useAuth } from "../../../features/auth/auth.context";
 
 export const Route = createFileRoute("/app/")({
   component: RouteComponent,
@@ -12,7 +12,7 @@ function RouteComponent() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">
-        Hello, {auth.user?.profile.given_name}
+        Hello, {auth.user?.given_name}
       </h1>
       <Skeleton className="h-30 rounded-xl" />
       <Skeleton className="h-60 rounded-xl" />
