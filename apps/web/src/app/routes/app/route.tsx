@@ -6,7 +6,7 @@ import {
 import { AuthenticatedLayout } from "../../../features/app/components/authenticated-layout/authenticated-layout.component";
 
 export const Route = createFileRoute("/app")({
-  beforeLoad: ({ context, location }) => {
+  beforeLoad: ({ context }) => {
     if (!context.auth.isAuthenticated) {
       throw redirect({
         replace: true,

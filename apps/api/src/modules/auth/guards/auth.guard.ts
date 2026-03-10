@@ -49,9 +49,7 @@ export class AuthGuard implements CanActivate {
     // Session-based auth (BFF)
     if (request.session?.accessToken) {
       if (this.authService.isTokenExpiringSoon(request.session)) {
-        const refreshed = await this.authService.refreshTokens(
-          request.session,
-        );
+        const refreshed = await this.authService.refreshTokens(request.session);
         if (!refreshed) {
           throw new UnauthorizedException('Session expired');
         }
@@ -84,7 +82,7 @@ export class AuthGuard implements CanActivate {
           this.jwksClient
             .getSigningKey(header.kid)
             .then((key) => callback(null, key.getPublicKey()))
-            .catch((err) => callback(err));
+            .catch((err: Error) => callback(err));
         },
         {
           algorithms: ['RS256'],
