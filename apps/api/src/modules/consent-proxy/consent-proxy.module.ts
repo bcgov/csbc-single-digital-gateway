@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { ConsentProxyController } from './consent-proxy.controller';
+import { ConsentProxyController } from './controllers/consent-proxy.controller';
 
 @Module({
   imports: [HttpModule],

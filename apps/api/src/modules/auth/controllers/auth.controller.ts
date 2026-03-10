@@ -12,8 +12,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { AuthService } from './auth.service';
-import { PublicRoute } from './decorators/public-route.decorator';
+import { AuthService } from '../services/auth.service';
+import { PublicRoute } from '../decorators/public-route.decorator';
 
 @Controller('auth')
 export class AuthController {

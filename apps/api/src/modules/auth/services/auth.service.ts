@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as client from 'openid-client';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { OIDC_CLIENT, type OidcClient } from './auth.config';
+import { OIDC_CLIENT, type OidcClient } from '../auth.config';
 import { type Session, type SessionData } from 'express-session';
 
 export interface UserProfile {
