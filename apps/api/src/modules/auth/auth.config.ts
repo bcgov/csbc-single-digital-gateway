@@ -13,9 +13,9 @@ export const oidcClientProvider = {
     configService: ConfigService<AppConfigDto, true>,
   ): Promise<OidcClient> => {
     const logger = new Logger('OidcClientProvider');
-    const issuer = configService.get('OIDC_ISSUER');
-    const clientId = configService.get('OIDC_CLIENT_ID');
-    const clientSecret = configService.get('OIDC_CLIENT_SECRET');
+    const issuer = configService.get<string>('OIDC_ISSUER');
+    const clientId = configService.get<string>('OIDC_CLIENT_ID');
+    const clientSecret = configService.get<string>('OIDC_CLIENT_SECRET');
 
     const config = await client.discovery(
       new URL(issuer),

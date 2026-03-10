@@ -25,6 +25,6 @@ declare module "@tanstack/react-router" {
   }
 
   interface StaticDataRouteOption {
-    breadcrumbs?: (loaderData: any) => BreadcrumbItemDef[];
+    breadcrumbs?: (loaderData: unknown) => BreadcrumbItemDef[];
   }
 }

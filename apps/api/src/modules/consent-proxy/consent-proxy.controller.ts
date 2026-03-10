@@ -40,7 +40,7 @@ export class ConsentProxyController {
           method: req.method,
           url: targetUrl,
           params: req.query,
-          data: req.body,
+          data: req.body as unknown,
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': req.headers['content-type'] ?? 'application/json',

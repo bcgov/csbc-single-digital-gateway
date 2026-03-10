@@ -28,8 +28,7 @@ export class AuthService {
     session: Session & Partial<SessionData>,
   ): Promise<string> {
     const codeVerifier = client.randomPKCECodeVerifier();
-    const codeChallenge =
-      await client.calculatePKCECodeChallenge(codeVerifier);
+    const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
     const state = client.randomState();
 
     session.oidcState = state;
@@ -130,14 +129,14 @@ export class AuthService {
       const redirectTo = client.buildEndSessionUrl(this.oidcClient, params);
       return redirectTo.href;
     } catch {
-      this.logger.warn('Failed to build logout URL — end_session_endpoint may not be configured');
+      this.logger.warn(
+        'Failed to build logout URL — end_session_endpoint may not be configured',
+      );
       return null;
     }
   }
 
-  getUserProfile(
-    session: Session & Partial<SessionData>,
-  ): UserProfile | null {
+  getUserProfile(session: Session & Partial<SessionData>): UserProfile | null {
     return session.userProfile ?? null;
   }
 
