@@ -25,7 +25,7 @@ export function createDatabase({
     password: DB_PASS,
     ssl: DB_SSL,
   });
-  return drizzle(pool, { schema });
+  return drizzle(pool, { casing: "snake_case", schema });
 }
 
 export type Schema = typeof schema;
