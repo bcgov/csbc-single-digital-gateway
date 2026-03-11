@@ -3,8 +3,7 @@ import {
   HealthIndicatorResult,
   HealthIndicatorService,
 } from '@nestjs/terminus';
-import { sql } from 'drizzle-orm';
-import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { type Database, sql } from '@repo/db';
 
 @Injectable()
 export class DrizzleHealthIndicator {
@@ -14,7 +13,7 @@ export class DrizzleHealthIndicator {
 
   async isHealthy(
     key: string,
-    db: NodePgDatabase,
+    db: Database,
   ): Promise<HealthIndicatorResult> {
     const indicator = this.healthIndicatorService.check(key);
 

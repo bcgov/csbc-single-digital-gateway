@@ -10,5 +10,6 @@ declare module 'express-session' {
     oidcState?: string;
     oidcCodeVerifier?: string;
     returnTo?: string;
+    userId?: string;
   }
 }

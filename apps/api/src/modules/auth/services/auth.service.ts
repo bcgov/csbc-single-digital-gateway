@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { type Session, type SessionData } from 'express-session';
 import * as client from 'openid-client';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+import { UsersService } from 'src/modules/users/services/users.service';
 import { OIDC_CLIENT, type OidcClient } from '../auth.config';
-import { type Session, type SessionData } from 'express-session';
 
 export interface UserProfile {
   sub: string;
@@ -22,6 +23,7 @@ export class AuthService {
     @Inject(OIDC_CLIENT)
     private readonly oidcClient: OidcClient,
     private readonly configService: ConfigService<AppConfigDto, true>,
+    private readonly usersService: UsersService,
   ) {}
 
   async buildAuthorizationUrl(
@@ -75,6 +77,18 @@ export class AuthService {
       family_name: claims?.family_name as string | undefined,
       picture: claims?.picture as string | undefined,
     };
+
+    const issuer: string = this.configService.get('OIDC_ISSUER');
+    const { userId } = await this.usersService.syncFromOidc(
+      issuer,
+      claims?.sub ?? '',
+      claims as unknown as Record<string, unknown>,
+      {
+        name: claims?.display_name as string | undefined,
+        email: claims?.email as string | undefined,
+      },
+    );
+    session.userId = userId;
 
     delete session.oidcState;
     delete session.oidcCodeVerifier;
