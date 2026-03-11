@@ -2,11 +2,13 @@ import { HealthIndicatorService, TerminusModule } from '@nestjs/terminus';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppHealthModule } from 'src/modules/app-health.module';
 import { DatabaseModule } from 'src/modules/database/database.module';
+import { HealthController } from 'src/modules/health/controllers/health.controller';
 import { HealthModule } from 'src/modules/health/health.module';
-import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
-import { HealthController } from './health.controller';
+import { DrizzleHealthIndicator } from 'src/modules/health/indicators/drizzle-health.indicator';
 
-describe('HealthController', () => {
+// Specify the title and the type of test in the syntax below
+// The unit test file name should be health.controller.example.spec.ts
+describe('HealthControllerExample (unit)', () => {
   let controller: HealthController;
 
   beforeEach(async () => {
@@ -19,7 +21,10 @@ describe('HealthController', () => {
     controller = module.get<HealthController>(HealthController);
   });
 
-  it('should be defined', () => {
+  // Test case: should expect the controller to be defined
+  // The comments are not required in an actual test file.
+  // Make sure to capitalize the first letter to make it consistent across all test files.
+  it('Should expect the controller to be defined', () => {
     expect(controller).toBeDefined();
   });
 });

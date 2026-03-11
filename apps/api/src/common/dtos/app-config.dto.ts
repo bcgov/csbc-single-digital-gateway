@@ -3,7 +3,9 @@ import { z } from 'zod';
 
 export const AppConfigSchema = z.object({
   // Server
-  NODE_ENV: z.enum(['development', 'production']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'test', 'production'])
+    .default('development'),
   PORT: z.coerce.number().default(4000),
   HEALTH_PORT: z.coerce.number().default(9000),
 
