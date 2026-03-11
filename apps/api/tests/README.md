@@ -6,14 +6,14 @@ The API project uses Jest for QA testing, which is the preferred framework for i
 
 ## Files and Folders
 
-Unit test files with file name suffix `**/*.spec.ts` should be created and stored inside the [unit](./unit/) folder, whereas E2E test files with file name suffix `**/*.e2e-spec.ts` should be placed inside the [e2e](./e2e/) folder. 
+Unit test files with file name suffix `**/*.spec.ts` should be placed alongside the code they test for easy access, whereas E2E test files with file name suffix `**/*.e2e-spec.ts` should be placed inside the [e2e](./e2e/) folder. 
 
-|Testing Content| File Format| Folder|
+|Testing Content| File Format| Folder (example)|
 |:-:|:-:|:-:|
-|Unit test| `**/*.spec.ts`| [unit](./unit/)|
+|Unit test| `**/*.spec.ts`| [health/controllers](../src/modules/health/controllers/)|
 |E2E test| `**/*.e2e-spec.ts` | [e2e](./e2e/)|
 
-- Use [health.controller.example.spec.ts](./unit/example/health.controller.example.spec.ts) as an example for unit test
+- Use [health.controller.spec.ts](../src/modules/health/controllers/health.controller.spec.ts) as an example for unit test
 - Use [app.controller.example.e2e-spec.ts](./e2e/example/app.controller.example.e2e-spec.ts) as an example for E2E test
 
 ## Configuration

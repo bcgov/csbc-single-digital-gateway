@@ -1,5 +1,5 @@
-import { NavigationBar } from "../../../src/features/app/components/navigation-bar";
-import { TestType, writeFileHelper } from "../../utils/writeFileHelper";
+import { TestType, writeFileHelper } from "@tests/utils/writeFileHelper";
+import { NavigationBar } from ".";
 
 // Specify the title and the type of test in the syntax below
 // Note that the file extension is .tsx for TS compiler to parse the file for JSX syntax

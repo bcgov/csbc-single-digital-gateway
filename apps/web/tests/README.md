@@ -6,14 +6,14 @@ The Web project uses Cypress for QA testing, which covers both component-level i
 
 ## Files and Folders
 
-Component test files with file name suffix `**/*.cy.tsx` should be created and stored inside the [component](./component/) folder, whereas E2E test files with file name suffix `**/*.e2e-cy.ts` should be placed inside the [e2e](./e2e/) folder. The component test files hav a `.tsx` extension, not just `.ts`. The `.tsx` extension tells the TypeScript compiler to parse the file for JSX syntax. 
+Component test files with file name suffix `**/*.cy.tsx` should be placed alongside the code they test for easy access, whereas E2E test files with file name suffix `**/*.e2e-cy.ts` should be placed inside the [e2e](./e2e/) folder. The component test files hav a `.tsx` extension, not just `.ts`. The `.tsx` extension tells the TypeScript compiler to parse the file for JSX syntax. 
 
-|Testing Content| File Format| Folder|
+|Testing Content| File Format| Folder (example)|
 |:-:|:-:|:-:|
-|Component test| `**/*.cy.ts`| [component](./component/)|
+|Component test| `**/*.cy.tsx`| [navigation-bar](../src/features/app/components/navigation-bar/)|
 |E2E test| `**/*.e2e-cy.ts` | [e2e](./e2e/)|
 
-- Use [navigationBar.example.cy.tsx](./component/example/navigationBar.example.cy.tsx) as an example for component test
+- Use [navigationBar.cy.tsx](../src/features/app/components/navigation-bar/navigationBar.cy.tsx) as an example for component test
 - Use [homePage.example.e2e-cy.ts](./e2e/example/homePage.example.e2e-cy.ts) as an example for E2E test
 
 ## Configuration

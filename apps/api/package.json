@@ -14,7 +14,7 @@
     "start:prod": "node dist/main",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage --coverageDirectory=./tests/coverage",
+    "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./tests/e2e/jest-e2e.json"
   },
@@ -90,6 +90,9 @@
       "^src/common/(.*)$": "<rootDir>/src/common/$1",
       "^src/database/(.*)$": "<rootDir>/src/database/$1",
       "^src/modules/(.*)$": "<rootDir>/src/modules/$1"
-    }
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@repo/db)"
+    ]
   }
 }

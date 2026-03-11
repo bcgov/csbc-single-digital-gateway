@@ -5,7 +5,7 @@
       "name": "API Unit Test - Current File",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${fileDirname}",
+      "cwd": "${workspaceFolder}",
       "command": "npm run test -- ${fileBasename}",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
@@ -14,8 +14,8 @@
       "name": "API Unit Test - All Files",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${fileDirname}",
-      "command": "npm run test --env-mode=loose",
+      "cwd": "${workspaceFolder}",
+      "command": "npm run test",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },
@@ -23,7 +23,7 @@
       "name": "API E2E Test - Current File",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${fileDirname}",
+      "cwd": "${workspaceFolder}",
       "command": "npm run test:e2e -- ${fileBasename}",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
@@ -32,7 +32,7 @@
       "name": "API E2E Test - All Files",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${fileDirname}",
+      "cwd": "${workspaceFolder}",
       "command": "npm run test:e2e",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
