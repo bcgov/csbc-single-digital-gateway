@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { TokenRefreshMiddleware } from './auth/middleware/token-refresh.middleware';
 import { ConsentProxyModule } from './consent-proxy/consent-proxy.module';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ConsentProxyModule } from './consent-proxy/consent-proxy.module';
       },
       inject: [ConfigService],
     }),
+    DatabaseModule,
     AuthModule,
     ConsentProxyModule,
   ],
