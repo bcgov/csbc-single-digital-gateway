@@ -1,3 +1,23 @@
+# AI Artifacts
+.aider*
+.bolt/
+.claude/
+.codium/
+.codex/
+.cody/
+.continue/
+.copilot/
+.cursor/
+.mdd/
+.openai/
+.v0/
+.windsurf/
+.cursorignore
+.cursorrules
+.github/copilot-instructions.md
+AGENTS*.md
+CLAUDE*.md
+
 # compiled output
 dist
 node_modules
@@ -43,6 +63,7 @@ lerna-debug.log*
 .env.local
 
 # temp directory
+_ai_temp/
 .temp
 .tmp
 
@@ -57,6 +78,35 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # turborepo
 .turbo
+
+# Build output (additional)
+.next/
+out/
+project-docs/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing (additional)
+test-results/
+playwright-report/
+
+# Environment & Secrets (additional)
+.env.production
+.env.staging
+secrets.json
+credentials.json
+service-account.json
+
+# Editor (additional)
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# Backup files
+*.bak
+*.conf
 
 # Cypress test files and folders
 *.component-test.txt

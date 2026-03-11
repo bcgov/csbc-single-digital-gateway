@@ -8,7 +8,7 @@ services:
     env_file:
       - ./apps/api/.env
     environment:
-      - DEFAULT_DB_HOST=host.docker.internal
+      - DB_HOST=host.docker.internal
       - OIDC_ISSUER=http://host.docker.internal:8080/realms/master
       - OIDC_JWKS_URI=http://host.docker.internal:8080/realms/master/protocol/openid-connect/certs
     healthcheck:

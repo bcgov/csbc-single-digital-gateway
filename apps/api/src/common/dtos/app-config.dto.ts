@@ -10,14 +10,12 @@ export const AppConfigSchema = z.object({
   HEALTH_PORT: z.coerce.number().default(9000),
 
   // Database
-  DEFAULT_DB_NAME: z.string(),
-  DEFAULT_DB_HOST: z.string(),
-  DEFAULT_DB_PORT: z.coerce.number(),
-  DEFAULT_DB_USER: z.string(),
-  DEFAULT_DB_PASS: z.string(),
-  DEFAULT_DB_SSL: z
-    .enum(['true', 'false'])
-    .transform((value) => (value === 'true' ? true : false)),
+  DB_NAME: z.string(),
+  DB_HOST: z.string(),
+  DB_PORT: z.coerce.number(),
+  DB_USER: z.string(),
+  DB_PASS: z.string(),
+  DB_SSL: z.enum(['true', 'false']).transform((value) => value === 'true'),
 
   // Identity Provider
   OIDC_ISSUER: z.string(),

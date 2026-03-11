@@ -48,6 +48,10 @@ COPY --from=dependencies /app/apps/api/node_modules ./apps/api/node_modules/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 
+# Copy built @repo/db package (workspace dependency)
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
+COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
@@ -60,4 +64,4 @@ WORKDIR /app/apps/api
 
 ENV NODE_ENV=production
 
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/main.js"]

@@ -9,7 +9,9 @@ export const PublicLayout = ({ children }: { children: React.ReactNode }) => {
       <PublicHeader>
         <PublicNavigationBar />
       </PublicHeader>
-      <Container className="flex-auto">{children}</Container>
+      <main id="main-content" className="flex-auto" tabIndex={-1}>
+        <Container>{children}</Container>
+      </main>
       <PublicFooter />
     </div>
   );

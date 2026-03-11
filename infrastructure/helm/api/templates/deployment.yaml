@@ -50,27 +50,27 @@ spec:
             name: {{ include "api.configMapName" . }}
         env:
         # Database credentials from secret
-        - name: DEFAULT_DB_NAME
+        - name: DB_NAME
           valueFrom:
             secretKeyRef:
               name: {{ .Values.app.database.secretName | quote }}
               key: dbname
-        - name: DEFAULT_DB_HOST
+        - name: DB_HOST
           valueFrom:
             secretKeyRef:
               name: {{ .Values.app.database.secretName | quote }}
               key: pgbouncer-host
-        - name: DEFAULT_DB_PORT
+        - name: DB_PORT
           valueFrom:
             secretKeyRef:
               name: {{ .Values.app.database.secretName | quote }}
               key: pgbouncer-port
-        - name: DEFAULT_DB_USER
+        - name: DB_USER
           valueFrom:
             secretKeyRef:
               name: {{ .Values.app.database.secretName | quote }}
               key: user
-        - name: DEFAULT_DB_PASS
+        - name: DB_PASS
           valueFrom:
             secretKeyRef:
               name: {{ .Values.app.database.secretName | quote }}
