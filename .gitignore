@@ -107,3 +107,9 @@ Thumbs.db
 # Backup files
 *.bak
 *.conf
+
+# Cypress test files and folders
+*.component-test.txt
+*.e2e-test.txt
+**/cypress/tests
+**/cypress/screenshots

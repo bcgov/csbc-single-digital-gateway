@@ -4,13 +4,20 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "build:api": "turbo run build --filter=api",
+    "build:web": "turbo run build --filter=web",
     "dev": "turbo run dev",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "test:e2e": "turbo run test:e2e"
+    "test:e2e": "turbo run test:e2e",
+    "test:cov": "turbo run test:cov",
+    "cy:component": "cypress run --component",
+    "cy:e2e": "cypress run --e2e",
+    "cy:open": "cypress open"
   },
   "devDependencies": {
+    "cypress": "^15.11.0",
     "turbo": "^2.7.3"
   },
   "engines": {

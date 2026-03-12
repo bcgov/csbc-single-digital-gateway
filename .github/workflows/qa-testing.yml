@@ -1,0 +1,74 @@
+name: CSBC SDG Quality Assurance Testing
+# This workflow is executed during pull requests triggered by a user.
+
+on: 
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  api-qa-testing:
+    name: API QA Testing
+    runs-on: ubuntu-latest
+    env:
+      PORT: 4000
+      NODE_ENV: test
+      DB_NAME: sdg-qa-testing
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_SSL: false
+      OIDC_ISSUER: ${{secrets.API_OIDC_ISSUER }}
+      OIDC_JWKS_URI: ${{ secrets.API_OIDC_JWKS_URI }}
+      OIDC_CLIENT_ID: ${{ secrets.WEB_OIDC_CLIENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build API Components
+        run: |
+          npm run build:api
+
+      - name: Run API Unit Tests
+        run: |
+          npm run test
+
+      - name: Run API E2E Tests
+        run: |
+          npm run test:e2e
+
+  web-qa-testing:
+    name: Web QA Testing
+    runs-on: ubuntu-latest
+    env:
+      APP_PORT: 5173
+      NODE_ENV: test
+      VITE_API_URI: http://localhost:4000
+      VITE_APP_NAME: "Single Digital Gateway"
+      VITE_OIDC_ISSUER: ${{ secrets.WEB_OIDC_ISSUER }}
+      VITE_OIDC_CLIENT_ID: $${ secrets.WEB_OIDC_CLIENT_ID }
+      VITE_OIDC_REDIRECT_URI: http://localhost:5173/callback
+      VITE_OIDC_POST_LOGOUT_REDIRECT_URI: http://localhost:5173
+      VITE_CONSENT_MANAGER_API_URL: ${{ secrets.WEB_CONSENT_MANAGER_API_URL }}
+      VITE_SERVICE_CATALOGUE_API_URL: ${{ secrets.WEB_SERVICE_CATALOGUE_API_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Web Components
+        run: |
+          npm run build:web
+
+      - name: Run Cypress Component Tests
+        uses: cypress-io/github-action@v7
+        with:
+          component: true
+          command: npm run cy:component
+
+      - name: Run Cypress E2E Tests
+        uses: cypress-io/github-action@v7
+        with:
+          browser: chrome
+          headless: true
+          start: npm run cy:e2e

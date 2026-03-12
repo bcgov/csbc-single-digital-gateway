@@ -16,7 +16,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./tests/e2e/jest-e2e.json"
   },
   "dependencies": {
     "@repo/db": "*",
@@ -76,7 +76,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -85,6 +85,14 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/common/(.*)$": "<rootDir>/src/common/$1",
+      "^src/database/(.*)$": "<rootDir>/src/database/$1",
+      "^src/modules/(.*)$": "<rootDir>/src/modules/$1"
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@repo/db)"
+    ]
   }
 }

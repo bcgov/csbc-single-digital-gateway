@@ -5,7 +5,7 @@
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "types": ["vite/client"],
+    "types": ["vite/client", "cypress"],
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -22,7 +22,12 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": "./",
+    "paths": {
+      "@tests": ["tests"],
+      "@tests/*": ["tests/*"]
+    }
   },
-  "include": ["src", "env.d.ts"]
+  "include": ["src", "tests", "env.d.ts"]
 }
