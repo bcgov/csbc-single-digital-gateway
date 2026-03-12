@@ -6,27 +6,35 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "vite build",
     "db:generate": "drizzle-kit generate --config=./drizzle/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=./drizzle/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=./drizzle/drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config=./drizzle/drizzle.config.ts"
   },
-  "dependencies": {
-    "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.45.1",
-    "pg": "^8.16.3",
-    "zod": "^4.3.5"
-  },
   "devDependencies": {
-    "@types/node": "^25.0.3",
-    "@types/pg": "^8.16.0",
-    "drizzle-kit": "^0.31.8",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.45.1",
+    "pg": "^8.20.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4",
+    "vite-plugin-dts": "^4.4.1",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "drizzle-orm": "^0.45.1",
+    "pg": "^8.20.0",
+    "zod": "^4.3.6"
   }
 }
