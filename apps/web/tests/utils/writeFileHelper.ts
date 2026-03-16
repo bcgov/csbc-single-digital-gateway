@@ -20,7 +20,7 @@ const formatTimestamp = () => {
   const minutes = date.getMinutes();
   const seconds = date.getSeconds();
 
-  // Helper function to pad single digits with a leading zero
+  // Helper function to pad single digits with a leading zero.
   const pad = (day: number) => String(day).padStart(2, "0");
 
   return `${year}/${pad(month)}/${pad(day)}-${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
@@ -28,8 +28,9 @@ const formatTimestamp = () => {
 
 /**
  * Helper function to write the title of each test case to a file for testing in local environment.
- * @param testType test type to determine the file name.
- * @param filePrefix file prefix to add to the file name.
+ * @param {TestType} testType The type of the test, either Component or E2E.
+ * @param {string} filePrefix The file prefix to add to the file name.
+ * @returns void.
  */
 export const writeFileHelper = (testType: TestType, filePrefix: string) => {
   let fileName: string;
@@ -38,8 +39,8 @@ export const writeFileHelper = (testType: TestType, filePrefix: string) => {
   } else if (testType === TestType.E2E) {
     fileName = `${filePrefix}.e2e-test.txt`;
   }
-  cy.env(["nodeEnv"]).then(({ nodeEnv }) => {
-    if (nodeEnv === "local") {
+  cy.env(["NODE_ENV"]).then(({ NODE_ENV }) => {
+    if (NODE_ENV === "local") {
       const fullTitlePath = Cypress.currentTest.titlePath;
       const content = `${testType} Test | ${formatTimestamp()} | ${fullTitlePath.join(" | ")}\n`;
       cy.writeFile(`cypress/tests/${fileName}`, `${content}`, {

@@ -26,6 +26,7 @@ Cypress supports a variety of ways to run tests on local environments. These tes
 
 ```
 NODE_ENV=local
+APP_PORT=5173
 ```
 
 ### Terminal Testing

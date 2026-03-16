@@ -43,14 +43,14 @@ jobs:
       - name: Install dependencies with npm ci
         run: npm ci
 
-      - name: Database Migration
-        run: npm run db:migrate
-
       - name: Build API Components
         run: npm run build:api
 
       - name: Build @Repo/DB Components
         run: npm run build:@repo/db
+
+      - name: Database Migration
+        run: npm run db:migrate
 
       - name: Run API Unit Tests
         run: npm run test:unit

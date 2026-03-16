@@ -53,10 +53,7 @@
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/cypress/bin/cypress",
       "args": ["run", "--component", "--spec", "${file}"],
-      "env": {
-        "allowCypressEnv": "true",
-        "NODE_ENV": "local"
-      },
+      "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
@@ -67,10 +64,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/node_modules/cypress/bin/cypress",
       "args": ["run", "--component"],
-      "env": {
-        "allowCypressEnv": "true",
-        "NODE_ENV": "local"
-      },
+      "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
@@ -82,10 +76,7 @@
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/cypress/bin/cypress",
       "args": ["run", "--e2e", "--spec", "${file}"],
-      "env": {
-        "allowCypressEnv": "true",
-        "NODE_ENV": "local"
-      },
+      "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
@@ -97,10 +88,7 @@
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/cypress/bin/cypress",
       "args": ["run", "--e2e"],
-      "env": {
-        "allowCypressEnv": "true",
-        "NODE_ENV": "local"
-      },
+      "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
