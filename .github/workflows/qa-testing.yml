@@ -8,16 +8,30 @@ on:
 
 jobs:
   api-qa-testing:
-    name: API QA Testing
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    name: API QA Testing
     env:
       PORT: 4000
       NODE_ENV: test
-      DB_NAME: sdg-qa-testing
-      DB_HOST: localhost
+      DB_NAME: test_db
+      DB_HOST: postgres
+      DB_USER: test_user
+      DB_PASS: test_password
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASS: postgres
       DB_SSL: false
       OIDC_ISSUER: ${{secrets.API_OIDC_ISSUER }}
       OIDC_JWKS_URI: ${{ secrets.API_OIDC_JWKS_URI }}
@@ -28,6 +42,9 @@ jobs:
 
       - name: Install dependencies with npm ci
         run: npm ci
+
+      - name: Database Migration
+        run: npm run db:migrate
 
       - name: Build API Components
         run: npm run build:api
@@ -65,21 +82,18 @@ jobs:
       - name: Install dependencies with npm ci
         run: npm ci
 
-      - name: Build Web Components
-        run: npm run build:web
-
-      - name: Build @Repo/UI Components
-        run: npm run build:@repo/ui
-
       - name: Run Cypress Component Tests
         uses: cypress-io/github-action@v7
         with:
+          build: npm run build:web
           component: true
           command: npm run cy:component
 
       - name: Run Cypress E2E Tests
         uses: cypress-io/github-action@v7
         with:
+          build: npm run build:web
+          start: npm run dev:web
+          wait-on: 'http://localhost:5173'
           browser: chrome
-          headless: true
-          start: npm run cy:e2e
+          command: npm run cy:e2e
