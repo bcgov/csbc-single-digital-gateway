@@ -51,6 +51,13 @@ jobs:
 
       - name: Database Migration
         run: npm run db:migrate
+        env:
+          DB_NAME: test_db
+          DB_HOST: postgres
+          DB_USER: test_user
+          DB_PASS: test_password
+          DB_PORT: 5432
+          DB_SSL: false    
 
       - name: Run API Unit Tests
         run: npm run test:unit

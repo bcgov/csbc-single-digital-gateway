@@ -59,7 +59,7 @@ VSCode supports custom scripts [launch.json](/.vscode/launch.json) to run local 
 
 1. Single File Testing
 
-   While the **current test file is selected** (the tab window is open), select either "API Unit Test - Current File" or "API integration Test - Current File" and click Run button.
+   While the **current test file is selected** (the file tab is open), select either "API Unit Test - Current File" or "API integration Test - Current File" and click Run button.
 
 2. All Files Testing
 

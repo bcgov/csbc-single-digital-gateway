@@ -40,7 +40,7 @@ export const writeFileHelper = (testType: TestType, filePrefix: string) => {
     fileName = `${filePrefix}.e2e-test.txt`;
   }
   cy.env(["NODE_ENV"]).then(({ NODE_ENV }) => {
-    if (NODE_ENV === "local") {
+    if (NODE_ENV === "development") {
       const fullTitlePath = Cypress.currentTest.titlePath;
       const content = `${testType} Test | ${formatTimestamp()} | ${fullTitlePath.join(" | ")}\n`;
       cy.writeFile(`cypress/tests/${fileName}`, `${content}`, {

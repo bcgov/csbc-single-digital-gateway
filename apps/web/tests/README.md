@@ -25,7 +25,7 @@ The primary configuration file for Cypress with TypeScript is [cypress.config.ts
 Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Cypress supports writing specific contents to a file. Add `.env` file in the project root to use this functionality to keep testing records in local environments. 
 
 ```
-NODE_ENV=local
+NODE_ENV=development
 APP_PORT=5173
 ```
 
@@ -66,7 +66,7 @@ VSCode supports custom scripts [launch.json](/.vscode/launch.json) to run local 
 
 #### Single File Testing
 
-While the **current test file is selected** (the tab window is open), select either "Web Component Test - Current File" or "Web E2E Test - Current File" and click Run button. E2E tests require the application to be running concurrently.
+While the **current test file is selected** (the file tab is open), select either "Web Component Test - Current File" or "Web E2E Test - Current File" and click Run button. E2E tests require the application to be running concurrently.
 
 #### All Files Testing
 

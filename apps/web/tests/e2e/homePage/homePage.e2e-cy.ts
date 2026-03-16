@@ -20,6 +20,7 @@ context("HomePage (e2e)", () => {
   it("Should redirect to the IDIR login page upon clicking on the sign-in button", () => {
     // Click on the sign-in button
     cy.get("button").contains("Sign In").click();
+    cy.wait(1000);
     cy.url().should("include", "dev.loginproxy.gov.bc.ca");
   });
 
