@@ -34,6 +34,7 @@
   --color-destructive-foreground: var(--app-destructive-foreground);
 
   --color-border: var(--app-border);
+  --color-border-dark: var(--app-border-dark);
   --color-input: var(--app-input);
   --color-ring: var(--app-ring);
 
@@ -78,6 +79,19 @@
   --color-gray-20: var(--bcds-theme-gray-20);
   --color-gray-10: var(--bcds-theme-gray-10);
 
+  /* Uses BCDS gray, but here to support shadcn defaults */
+  --color-neutral-50: var(--bcds-theme-gray-10);
+  --color-neutral-100: var(--bcds-theme-gray-20);
+  --color-neutral-200: var(--bcds-theme-gray-30);
+  --color-neutral-300: var(--bcds-theme-gray-40);
+  --color-neutral-400: var(--bcds-theme-gray-50);
+  --color-neutral-500: var(--bcds-theme-gray-60);
+  --color-neutral-600: var(--bcds-theme-gray-70);
+  --color-neutral-700: var(--bcds-theme-gray-80);
+  --color-neutral-800: var(--bcds-theme-gray-90);
+  --color-neutral-900: var(--bcds-theme-gray-100);
+  --color-neutral-950: var(--bcds-theme-gray-110);
+
   /* ------------------------------------------------------------------------ */
   /* Project-specific text + state colors                                      */
   /* ------------------------------------------------------------------------ */
@@ -103,7 +117,7 @@
   --color-warning-border: var(--app-warning-border);
 
   --color-info-text: var(--app-info-text);
-  --color-danger-surface-text: var(--app-danger-surface-text);
+  --color-danger-surface-text: var(--app-danger-text);
   --color-success-text: var(--app-success-text);
   --color-warning-text: var(--app-warning-text);
 
@@ -139,6 +153,7 @@
   --text-sm: var(--app-text-sm);
   --text-base: var(--app-text-base);
   --text-lg: var(--app-text-lg);
+  --text-h6: var(--app-text-h6);
   --text-h5: var(--app-text-h5);
   --text-h4: var(--app-text-h4);
   --text-h3: var(--app-text-h3);

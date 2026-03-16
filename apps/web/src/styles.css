@@ -19,3 +19,9 @@
 
 /* Tell Tailwind to scan the UI package for classes */
 @source "../../../packages/ui/src/";
+
+@theme {
+  --breakpoint-md: 36rem; /* 576px */
+  --breakpoint-lg: 62rem; /* 992px */
+  --breakpoint-xl: 75rem; /* 1200px */
+}

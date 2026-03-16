@@ -9,7 +9,7 @@
   /* Core semantic surfaces + text                                             */
   /* ------------------------------------------------------------------------ */
 
-  --app-background: var(--bcds-surface-color-background-light-gray);
+  --app-background: var(--bcds-surface-color-background-white);
   --app-foreground: var(--bcds-typography-color-primary);
 
   --app-card: var(--bcds-surface-color-background-white);
@@ -26,10 +26,10 @@
   --app-primary-foreground: var(--bcds-typography-color-primary-invert);
 
   --app-secondary: var(--bcds-surface-color-secondary-button-default);
-  --app-secondary-foreground: var(--bcds-typography-color-secondary-invert);
+  --app-secondary-foreground: var(--bcds-typography-color-secondary);
 
-  --app-muted: var(--bcds-typography-color-secondary);
-  --app-muted-foreground: var(--bcds-typography-color-secondary-invert);
+  --app-muted: var(--bcds-typography-color-primary-invert);
+  --app-muted-foreground: var(--bcds-typography-color-secondary);
 
   --app-accent: var(--bcds-surface-color-background-light-blue);
   --app-accent-foreground: var(--bcds-typography-color-primary);
@@ -42,6 +42,7 @@
   /* ------------------------------------------------------------------------ */
 
   --app-border: var(--bcds-surface-color-border-default);
+  --app-border-dark: var(--bcds-surface-color-border-dark);
   --app-input: var(--bcds-surface-color-border-default);
   --app-ring: var(--bcds-surface-color-border-active);
 
@@ -119,9 +120,8 @@
   --app-success-border: var(--bcds-support-border-color-success);
   --app-warning-border: var(--bcds-support-border-color-warning);
 
-  /* Guess: useful to have matching text tokens for alerts */
   --app-info-text: var(--bcds-typography-color-primary);
-  --app-danger-surface-text: var(--bcds-typography-color-primary);
+  --app-danger-text: var(--bcds-typography-color-primary);
   --app-success-text: var(--bcds-typography-color-primary);
   --app-warning-text: var(--bcds-typography-color-primary);
 
@@ -200,11 +200,12 @@
   --app-text-lg: var(--bcds-typography-font-size-large-body);
   --app-text-xl: var(--bcds-typography-font-size-h4);
   --app-text-2xl: var(--bcds-typography-font-size-h3);
-  --app-text-h5: var(--bcds-typography-font-size-h5);
-  --app-text-h4: var(--bcds-typography-font-size-h4);
-  --app-text-h3: var(--bcds-typography-font-size-h3);
-  --app-text-h2: var(--bcds-typography-font-size-h2);
-  --app-text-h1: var(--bcds-typography-font-size-h1);
+  --app-text-h6: var(--bcds-typography-font-size-large-body);
+  --app-text-h5: var(--bcds-typography-font-size-large-body);
+  --app-text-h4: var(--bcds-typography-font-size-large-body);
+  --app-text-h3: var(--bcds-typography-font-size-h5);
+  --app-text-h2: var(--bcds-typography-font-size-h4);
+  --app-text-h1: var(--bcds-typography-font-size-h3);
   --app-text-display: var(--bcds-typography-font-size-display);
 
   --app-leading-xxxdense: var(--bcds-typography-line-heights-xxxdense);

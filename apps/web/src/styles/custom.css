@@ -1,12 +1,18 @@
 /* One-off custom overrides */
 
+.section-heading {
+  position: relative;
+  margin-top: 3rem;
+}
+
 .section-heading::before {
   content: "";
-  display: block;
+  position: absolute;
+  top: -16px;
+  left: 0;
   width: 36px;
   height: 4px;
   background-color: var(--color-bcgov-gold);
-  margin-bottom: 8px;
 }
 
 /* CHEFS Form Viewer web component styling */
