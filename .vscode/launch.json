@@ -5,8 +5,8 @@
       "name": "API Unit Test - Current File",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "command": "npm run test -- ${fileBasename}",
+      "cwd": "${fileDirname}",
+      "command": "npm run test:unit -- ${fileBasename}",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },
@@ -15,25 +15,34 @@
       "type": "node-terminal",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "command": "npm run test",
+      "command": "npm run test:unit",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "name": "API E2E Test - Current File",
+      "name": "API Integration Test - Current File",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "command": "npm run test:e2e -- ${fileBasename}",
+      "cwd": "${fileDirname}",
+      "command": "npm run test:int -- ${fileBasename}",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "name": "API E2E Test - All Files",
+      "name": "API Integration Test - All Files",
       "type": "node-terminal",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "command": "npm run test:e2e",
+      "command": "npm run test:int",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "API Coverage Test",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "command": "npm run test:cov",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },

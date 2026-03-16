@@ -31,8 +31,8 @@
       "persistent": true
     },
     "lint": {},
-    "test": {},
-    "test:e2e": {},
+    "test:unit": {},
+    "test:int": {},
     "test:cov": {}
   }
 }

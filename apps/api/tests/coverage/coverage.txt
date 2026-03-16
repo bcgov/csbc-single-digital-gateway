@@ -1,0 +1,37 @@
+-------------------------------------|---------|----------|---------|---------|-------------------
+File                                 | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------------------------|---------|----------|---------|---------|-------------------
+All files                            |   39.88 |    41.66 |   28.57 |   37.25 |                   
+ src                                 |       0 |      100 |       0 |       0 |                   
+  main.ts                            |       0 |      100 |       0 |       0 | 1-37              
+ src/common/dtos                     |     100 |      100 |     100 |     100 |                   
+  app-config.dto.ts                  |     100 |      100 |     100 |     100 |                   
+ src/common/filters                  |       0 |        0 |       0 |       0 |                   
+  http-exception.filter.ts           |       0 |        0 |       0 |       0 | 1-18              
+ src/modules                         |      44 |       25 |      50 |   42.85 |                   
+  app-health.module.ts               |     100 |       50 |     100 |     100 | 30-32             
+  app.module.ts                      |       0 |        0 |       0 |       0 | 1-53              
+ src/modules/auth                    |       0 |      100 |     100 |       0 |                   
+  auth.module.ts                     |       0 |      100 |     100 |       0 | 1-10              
+ src/modules/auth/decorators         |     100 |      100 |     100 |     100 |                   
+  public-route.decorator.ts          |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/guards             |       0 |        0 |       0 |       0 |                   
+  jwt.guard.ts                       |       0 |        0 |       0 |       0 | 1-22              
+ src/modules/auth/strategies         |       0 |        0 |       0 |       0 |                   
+  jwt.strategy.ts                    |       0 |        0 |       0 |       0 | 1-33              
+ src/modules/database                |     100 |      100 |     100 |     100 |                   
+  database.constants.ts              |     100 |      100 |     100 |     100 |                   
+  database.module.ts                 |     100 |      100 |     100 |     100 |                   
+ src/modules/database/decorators     |     100 |      100 |     100 |     100 |                   
+  inject-database.decorator.ts       |     100 |      100 |     100 |     100 |                   
+ src/modules/database/providers      |     100 |      100 |     100 |     100 |                   
+  database.provider.ts               |     100 |      100 |     100 |     100 |                   
+ src/modules/health                  |     100 |      100 |     100 |     100 |                   
+  health.module.ts                   |     100 |      100 |     100 |     100 |                   
+ src/modules/health/controllers      |   80.95 |       75 |      20 |   78.94 |                   
+  health.controller.ts               |   80.95 |       75 |      20 |   78.94 | 32,39-42          
+ src/modules/health/indicators       |   58.33 |       75 |      50 |      50 |                   
+  drizzle-health.indicator.ts        |   58.33 |       75 |      50 |      50 | 19-25             
+ tests/integration/example           |       0 |      100 |       0 |       0 |                   
+  app.controller.example.int-spec.ts |       0 |      100 |       0 |       0 | 1-32              
+-------------------------------------|---------|----------|---------|---------|-------------------

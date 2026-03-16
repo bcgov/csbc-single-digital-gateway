@@ -1,5 +1,5 @@
 export const TestType = {
-  Component: "COMPONENT",
+  Component: "Component",
   E2E: "E2E",
 } as const;
 
@@ -39,9 +39,9 @@ export const writeFileHelper = (testType: TestType, filePrefix: string) => {
     fileName = `${filePrefix}.e2e-test.txt`;
   }
   cy.env(["nodeEnv"]).then(({ nodeEnv }) => {
-    const fullTitlePath = Cypress.currentTest.titlePath;
-    const content = `${formatTimestamp()} | ${fullTitlePath.join(" | ")}\n`;
     if (nodeEnv === "local") {
+      const fullTitlePath = Cypress.currentTest.titlePath;
+      const content = `${testType} Test | ${formatTimestamp()} | ${fullTitlePath.join(" | ")}\n`;
       cy.writeFile(`cypress/tests/${fileName}`, `${content}`, {
         flag: "a+",
       });

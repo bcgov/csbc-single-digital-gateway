@@ -26,17 +26,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install dependencies with npm ci
+        run: npm ci
+
       - name: Build API Components
-        run: |
-          npm run build:api
+        run: npm run build:api
+
+      - name: Build @Repo/DB Components
+        run: npm run build:@repo/db
 
       - name: Run API Unit Tests
-        run: |
-          npm run test
+        run: npm run test:unit
 
-      - name: Run API E2E Tests
-        run: |
-          npm run test:e2e
+      - name: Run API Integration Tests
+        run: npm run test:int
+      
+      - name: Run Coverage Test
+        run: npm run test:cov
 
   web-qa-testing:
     name: Web QA Testing
@@ -56,9 +62,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install dependencies with npm ci
+        run: npm ci
+
       - name: Build Web Components
-        run: |
-          npm run build:web
+        run: npm run build:web
+
+      - name: Build @Repo/UI Components
+        run: npm run build:@repo/ui
 
       - name: Run Cypress Component Tests
         uses: cypress-io/github-action@v7

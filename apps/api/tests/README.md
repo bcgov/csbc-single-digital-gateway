@@ -2,19 +2,20 @@
 
 ## Jest
 
-The API project uses Jest for QA testing, which is the preferred framework for its zero-config setup, mocking capabilities, and broad ecosystem support for this Node.js based project. The main focuses of QA testing for the backend application are unit and end-to-end (E2E) tests.
+The API project uses Jest for QA testing, which is the preferred framework for its zero-config setup, mocking capabilities, and broad ecosystem support for this Node.js based project. The main focuses of QA testing for the backend application are unit and integration tests. Coverage test is also available with coverage threshold that increases as the project expands.
 
 ## Files and Folders
 
-Unit test files with file name suffix `**/*.spec.ts` should be placed alongside the code they test for easy access, whereas E2E test files with file name suffix `**/*.e2e-spec.ts` should be placed inside the [e2e](./e2e/) folder. 
+Unit test files with file name suffix `**/*.spec.ts` should be placed inside `__tests__` folder alongside the code they test for easy access, whereas integration test files with file name suffix `**/*.int-spec.ts` should be placed inside the [integration](./integration/) folder. 
 
 |Testing Content| File Format| Folder (example)|
 |:-:|:-:|:-:|
 |Unit test| `**/*.spec.ts`| [health/controllers](../src/modules/health/controllers/)|
-|E2E test| `**/*.e2e-spec.ts` | [e2e](./e2e/)|
+|Integration test| `**/*.int-spec.ts` | [integration](./integration/)|
+|Coverage test| | coverage.txt [coverage](./coverage/)|
 
 - Use [health.controller.spec.ts](../src/modules/health/controllers/health.controller.spec.ts) as an example for unit test
-- Use [app.controller.example.e2e-spec.ts](./e2e/example/app.controller.example.e2e-spec.ts) as an example for E2E test
+- Use [app.controller.int-spec.ts](./integration/app/app.controller.int-spec.ts) as an example for integration test
 
 ## Configuration
 
@@ -31,19 +32,25 @@ Scripts are added to `package.json` for quick access. Use one of the following c
 Run unit test on all files with the following command line:
 
 ```bash
-npm run test
+npm run test:unit
 ```
 
-Run E2E test on E2E files with the following command line:
+Run integration test on integration files with the following command line:
 
 ```bash
-npm run test:e2e
+npm run test:int
 ```
 
-Change directory to `apps/api` and run unit test on a specific test file (same for E2E test) with the following command line:
+Change directory to `apps/api` and run unit test on a specific test file (same for integration test) with the following command line:
 
 ```bash
 npm run test "path/to/your/testfile.spec.ts"
+```
+
+Run coverage test on with the following command line:
+
+```bash
+npm run test:cov
 ```
 
 ### VSCode Testing
@@ -52,11 +59,15 @@ VSCode supports custom scripts [launch.json](/.vscode/launch.json) to run local 
 
 1. Single File Testing
 
-   While the **current test file is selected** (the tab window is open), select either "API Unit Test - Current File" or "API E2E Test - Current File" and click Run button.
+   While the **current test file is selected** (the tab window is open), select either "API Unit Test - Current File" or "API integration Test - Current File" and click Run button.
 
 2. All Files Testing
 
-   To run all test files on VSCode, select either "API Unit Test - All Files" or "API E2E Test - All Files" and click Run button.
+   To run all test files on VSCode, select either "API Unit Test - All Files" or "API integration Test - All Files" and click Run button.
+
+3. Coverage Testing
+
+   To run coverage test on VSCode, select "API Coverage Test" and click Run button.
 
 **Note**: although VSCode testing offers convenience and quick access to run testings, the debugger session itself is waiting for an explicit closure command even though the program's execution has finished. While using `turbo` with `ts-jest` for `launch.json` scripts may need further improvements for better integration, manually stop the debugger is required by clicking the "Stop" button or pressing "Shift + F5" on the keyboard.
 

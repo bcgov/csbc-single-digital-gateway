@@ -5,8 +5,8 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 
 // Specify the title and the type of test in the syntax below
-// The E2E test file name should be app.controller.example.e2e-spec.ts
-describe('AppControllerExample (e2e)', () => {
+// The integration test file name should be app.controller.example.int-spec.ts
+describe('AppControllerExample (integration)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {

@@ -26,6 +26,6 @@ context("HomePageExample (e2e)", () => {
     // exploit this functionality to keep testing records in their local environments.
     // The test files are stored in the folder /cypress/tests/ which is ignored by Git.
     // The writeFileHelper function writes the title of each test case after it is finished.
-    writeFileHelper(TestType.E2E, "example");
+    writeFileHelper(TestType.E2E, "homePage");
   });
 });
