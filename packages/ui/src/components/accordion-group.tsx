@@ -42,11 +42,7 @@ function AccordionGroup({
       {(title || description || values.length > 0) && (
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
-            {title && (
-              <h3 className="text-lg font-semibold leading-none tracking-tight">
-                {title}
-              </h3>
-            )}
+            {title && <h3 className="text-lg leading-none">{title}</h3>}
             {description && (
               <p className="text-muted-foreground text-sm">{description}</p>
             )}
@@ -55,7 +51,7 @@ function AccordionGroup({
             <button
               type="button"
               onClick={toggleAll}
-              className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer text-sm underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center"
+              className="text-muted shrink-0 cursor-pointer text-sm hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center"
             >
               {allExpanded ? (
                 <IconChevronsUp size="20" />
