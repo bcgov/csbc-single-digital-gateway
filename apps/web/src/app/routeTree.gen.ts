@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as publicRouteRouteImport } from './routes/(public)/route'
+import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
@@ -31,6 +32,11 @@ const AppRouteRoute = AppRouteRouteImport.update({
 } as any)
 const publicRouteRoute = publicRouteRouteImport.update({
   id: '/(public)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevIndexRoute = DevIndexRouteImport.update({
+  id: '/dev/',
+  path: '/dev/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
+  '/dev': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/app/services': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app': typeof AppIndexRoute
+  '/dev': typeof DevIndexRoute
   '/app/services': typeof AppServicesIndexRoute
   '/app/settings': typeof AppSettingsIndexRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/(public)/callback': typeof publicCallbackRoute
   '/(public)/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
+  '/dev/': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/callback'
     | '/'
     | '/app/'
+    | '/dev'
     | '/app/settings/consent-history'
     | '/app/services'
     | '/app/settings/'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/callback'
     | '/'
     | '/app'
+    | '/dev'
     | '/app/services'
     | '/app/settings'
     | '/app/settings/consent-history/$statementId'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/(public)/callback'
     | '/(public)/'
     | '/app/'
+    | '/dev/'
     | '/app/settings/consent-history'
     | '/app/services/'
     | '/app/settings/'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   publicRouteRoute: typeof publicRouteRouteWithChildren
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  DevIndexRoute: typeof DevIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -209,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof publicRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/': {
+      id: '/dev/'
+      path: '/dev'
+      fullPath: '/dev'
+      preLoaderRoute: typeof DevIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -370,6 +390,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   publicRouteRoute: publicRouteRouteWithChildren,
   AppRouteRoute: AppRouteRouteWithChildren,
+  DevIndexRoute: DevIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
