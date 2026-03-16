@@ -66,8 +66,14 @@ export const AuthenticatedNavigationBar = () => {
       items={navigationItems}
       extras={
         <>
-          <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
-            <IconSearch className="size-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setOpen(true)}
+            type="button"
+            aria-label="Open search"
+          >
+            <IconSearch className="size-4" aria-hidden="true" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger
