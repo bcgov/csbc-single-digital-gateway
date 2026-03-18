@@ -112,4 +112,5 @@ Thumbs.db
 *.component-test.txt
 *.e2e-test.txt
 **/cypress/tests
+**/cypress/reports
 **/cypress/screenshots

@@ -57,7 +57,7 @@ jobs:
           DB_USER: test_user
           DB_PASS: test_password
           DB_PORT: 5432
-          DB_SSL: false    
+          DB_SSL: false
 
       - name: Run API Unit Tests
         run: npm run test:unit

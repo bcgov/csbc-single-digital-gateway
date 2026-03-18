@@ -16,13 +16,13 @@
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
     "test:cov": "turbo run test:cov",
-    "cy:component": "cypress run --component",
-    "cy:e2e": "cypress run --e2e",
-    "cy:open": "cypress open"
+    "cy:component": "turbo run cy:component",
+    "cy:component:report": "turbo run cy:component:report",
+    "cy:e2e": "turbo run cy:e2e",
+    "cy:e2e:report": "turbo run cy:e2e:report",
+    "cy:open": "turbo run cy:open"
   },
   "devDependencies": {
-    "cypress": "^15.11.0",
-    "dotenv": "^17.3.1",
     "turbo": "^2.7.3"
   },
   "engines": {

@@ -33,6 +33,11 @@
     "lint": {},
     "test:unit": {},
     "test:int": {},
-    "test:cov": {}
+    "test:cov": {},
+    "cy:component": {},
+    "cy:component:report": {},
+    "cy:e2e": {},
+    "cy:e2e:report": {},
+    "cy:open": {}
   }
 }

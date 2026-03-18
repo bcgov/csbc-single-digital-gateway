@@ -22,10 +22,9 @@ The primary configuration file for Cypress with TypeScript is [cypress.config.ts
 
 ## Local Testing
 
-Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Cypress supports writing specific contents to a file. Add `.env` file in the project root to use this functionality to keep testing records in local environments. 
+Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Add `.env` file in the project root.
 
 ```
-NODE_ENV=development
 APP_PORT=5173
 ```
 
@@ -75,3 +74,11 @@ To run all test files on VSCode, select either "Web Component Test - All Files" 
 ## CI/CD Testing
 
 CI/CD workflows for web quality assurance testing are added to the file [qa-testing.yml](/.github/workflows/qa-testing.yml) for GitHub actions. Automated workflows will be triggered upon creating a pull request from devs' current working branch into the `develop` branch.
+
+## Test Reports
+
+Test reports are available for the web project in dev's local environments. Refer to [cypress.config.ts](../cypress.config.ts) for configurations. Run the following commands to generate a component test report file `report-component.html` (same for E2E test) in the folder `cypress/reports/html`, which is ignored by Git.
+
+```bash
+npm run cy:report:component
+```

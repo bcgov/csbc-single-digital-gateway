@@ -24,5 +24,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "tests", "env.d.ts"]
+  "include": [
+    "src",
+    "tests",
+    "env.d.ts",
+    "cypress.config.ts",
+    "cypress/support/component.ts"
+  ]
 }
