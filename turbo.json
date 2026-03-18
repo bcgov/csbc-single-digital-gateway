@@ -80,7 +80,11 @@
     },
     "cy:component": {},
     "cy:component:report": {},
-    "cy:e2e": {},
+    "cy:e2e": {
+      "passThroughEnv": [
+        "APP_PORT"
+      ]
+    },
     "cy:e2e:report": {},
     "cy:open": {}
   }

@@ -23,6 +23,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      oidc:
+        issuer: "https://mock-auth.com"
+        jwksUri: "https://mock-auth.com/jwks"
+        clientId: "mock-client-id"
     name: API QA Testing
     env:
       PORT: 4000
@@ -33,9 +37,9 @@ jobs:
       DB_PASS: test_password
       DB_PORT: 5432
       DB_SSL: false
-      OIDC_ISSUER: ${{ vars.API_OIDC_ISSUER }}
-      OIDC_JWKS_URI: ${{ vars.API_OIDC_JWKS_URI }}
-      OIDC_CLIENT_ID: ${{ vars.WEB_OIDC_CLIENT_ID }}
+      OIDC_ISSUER: "https://mock-auth.com"
+      OIDC_JWKS_URI: "https://mock-auth.com/jwks"
+      OIDC_CLIENT_ID: "mock-client-id"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,7 +62,7 @@ jobs:
           DB_PASS: test_password
           DB_PORT: 5432
           DB_SSL: false
-
+          
       - name: Run API Unit Tests
         run: npm run test:unit
 
