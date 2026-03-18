@@ -9,6 +9,7 @@ on:
 jobs:
   api-qa-testing:
     runs-on: ubuntu-latest
+    environment: development
     services:
       postgres:
         image: postgres:18
