@@ -13,7 +13,15 @@
       ]
     },
     "db:migrate": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL"
+      ]
     },
     "dev": {
       "cache": false,
