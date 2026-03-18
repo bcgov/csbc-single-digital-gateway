@@ -9,6 +9,9 @@ export default defineConfig({
       formats: ["es", "cjs"],
       fileName: (format) => (format === "es" ? "index.js" : "index.cjs"),
     },
+    rollupOptions: {
+      external: ["drizzle-orm", "pg", "zod", /^drizzle-orm\/.*/],
+    },
   },
   plugins: [
     dts({
