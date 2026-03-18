@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
   Button,
+  buttonVariants,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -70,11 +71,24 @@ function RouteComponent() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex flex-col gap-4 flex-1">
-          <h1 className="text-2xl font-semibold">{service.name}</h1>
-          <p className="text-base" ref={descriptionRef}>
+          <h1>{service.name}</h1>
+          <p className="text-muted-foreground" ref={descriptionRef}>
             {service.description?.short}
           </p>
         </div>
+        <Link
+          to="/app/services"
+          className={buttonVariants({ variant: "default", size: "default" })}
+        >
+          <IconPlayerPlay size={16} />
+          Internal button
+        </Link>
+        <a
+          href="https://www2.gov.bc.ca"
+          className={buttonVariants({ variant: "default", size: "default" })}
+        >
+          <IconPlayerPlay size={16} /> External button
+        </a>
         {service.applications && service.applications.length === 1 && (
           <div className="flex items-center">
             <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80">
@@ -124,8 +138,8 @@ function RouteComponent() {
         serviceName={service.name}
         visible={isStickyHeaderVisible}
       />
-      <div className="grid grid-cols-4 gap-6">
-        <div className="col-span-3">
+      <div className="lg:grid lg:grid-cols-3 gap-12">
+        <div className="col-span-2">
           <div className="flex flex-col gap-4">
             {/* Overview */}
             <div
@@ -133,7 +147,7 @@ function RouteComponent() {
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
               {/* placeholder - having an h2 would be good here as we're recommending the RTE content only use h3-h6 */}
-              <h2 className="text-xl font-semibold">About</h2>
+              <h2>About</h2>
               <p>
                 Income Assistance provides temporary financial support to help
                 you meet basic needs while you work toward employment or other
@@ -147,9 +161,7 @@ function RouteComponent() {
               id="data-and-privacy"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              <h2 className="section-heading text-xl font-semibold">
-                Data & privacy
-              </h2>
+              <h2 className="section-heading">Data & privacy</h2>
               <div className="flex flex-col gap-4">
                 <ConsentDocumentsAccordion
                   documentIds={(service.settings?.consent ?? []).map(
@@ -163,9 +175,7 @@ function RouteComponent() {
               id="eligibility-criteria"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              <h2 className="section-heading text-xl font-semibold">
-                Eligibility criteria
-              </h2>
+              <h2 className="section-heading">Eligibility criteria</h2>
               <div className="flex flex-col gap-4 min-h-48">
                 <p>
                   Income Assistance provides temporary financial support to help
@@ -181,9 +191,7 @@ function RouteComponent() {
               id="application-process"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              <h2 className="section-heading text-xl font-semibold">
-                Application process
-              </h2>
+              <h2 className="section-heading">Application process</h2>
               <div className="flex flex-col gap-4 min-h-48">
                 <p>
                   The application requires you to submit a lot of documents and
@@ -202,13 +210,13 @@ function RouteComponent() {
                   </li>
                 </ol>
                 <p>You can apply in two ways:</p>
-                <div className="flex flex-col gap-px bg-neutral-200 border-neutral-200 border">
+                <div className="flex flex-col gap-px border bg-border">
                   <div className="grid grid-cols-2 gap-px">
                     <Link
                       to={"#foo" as string}
                       className="flex flex-col items-center bg-white p-4"
                     >
-                      <span className="p-4 bg-blue-100 inline-flex">
+                      <span className="p-4 bg-blue-10 inline-flex">
                         <IconCake
                           className="shrink-0 pb-2"
                           size={42}
@@ -223,7 +231,7 @@ function RouteComponent() {
                       to={"#bar" as string}
                       className="flex flex-col items-center bg-white p-4"
                     >
-                      <span className="p-4 bg-blue-100 inline-flex">
+                      <span className="p-4 bg-blue-10 inline-flex">
                         <IconCake
                           className="shrink-0 pb-2"
                           size={42}
@@ -243,12 +251,10 @@ function RouteComponent() {
               id="your-activity"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              <h2 className="section-heading text-xl font-semibold">
-                Your activity
-              </h2>
+              <h2 className="section-heading">Your activity</h2>
               <div className="flex flex-col gap-4 min-h-48">
                 <p>Track your applications and view updates in one place.</p>
-                <div className="flex flex-col gap-px bg-neutral-200 border-neutral-200 border">
+                <div className="flex flex-col gap-px border bg-border">
                   <div className="grid gap-px">
                     <div className="flex flex-col items-center bg-white p-4">
                       <IconCake
@@ -274,9 +280,7 @@ function RouteComponent() {
               id="more-information"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              <h2 className="section-heading text-xl font-semibold">
-                More information
-              </h2>
+              <h2 className="section-heading">More information</h2>
               <div className="flex flex-col gap-4 min-h-48"></div>
             </div>
           </div>
@@ -329,9 +333,7 @@ function NotFoundComponent() {
       <p className="text-muted-foreground">
         The service you're looking for doesn't exist.
       </p>
-      <Link to="/app/services" className="text-primary hover:underline">
-        Back to services
-      </Link>
+      <Link to="/app/services">Back to services</Link>
     </div>
   );
 }

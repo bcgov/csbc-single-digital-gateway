@@ -8,7 +8,7 @@ export const SignOut = () => {
   return (
     <Button
       onClick={() => auth.logout()}
-      className="bg-red-500 hover:bg-red-500/80"
+      className="bg-danger hover:bg-danger/80"
     >
       <IconLogout />
       Sign Out

@@ -1,0 +1,244 @@
+:root {
+  /* ------------------------------------------------------------------------ */
+  /* Fonts                                                                     */
+  /* ------------------------------------------------------------------------ */
+
+  --app-font-sans: "BC Sans", "Noto Sans", "Verdana", "Arial", sans-serif;
+
+  /* ------------------------------------------------------------------------ */
+  /* Core semantic surfaces + text                                             */
+  /* ------------------------------------------------------------------------ */
+
+  --app-background: var(--bcds-surface-color-background-white);
+  --app-foreground: var(--bcds-typography-color-primary);
+
+  --app-card: var(--bcds-surface-color-background-white);
+  --app-card-foreground: var(--bcds-typography-color-primary);
+
+  --app-popover: var(--bcds-surface-color-background-white);
+  --app-popover-foreground: var(--bcds-typography-color-primary);
+
+  /* ------------------------------------------------------------------------ */
+  /* Actions                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  --app-primary: var(--bcds-surface-color-primary-button-default);
+  --app-primary-foreground: var(--bcds-typography-color-primary-invert);
+
+  --app-secondary: var(--bcds-surface-color-secondary-button-default);
+  --app-secondary-foreground: var(--bcds-typography-color-secondary);
+
+  --app-muted: var(--bcds-typography-color-primary-invert);
+  --app-muted-foreground: var(--bcds-typography-color-secondary);
+
+  --app-accent: var(--bcds-surface-color-background-light-blue);
+  --app-accent-foreground: var(--bcds-typography-color-primary);
+
+  --app-destructive: var(--bcds-surface-color-primary-danger-button-default);
+  --app-destructive-foreground: var(--bcds-typography-color-primary-invert);
+
+  /* ------------------------------------------------------------------------ */
+  /* Borders / inputs / focus                                                  */
+  /* ------------------------------------------------------------------------ */
+
+  --app-border: var(--bcds-surface-color-border-default);
+  --app-border-dark: var(--bcds-surface-color-border-dark);
+  --app-input: var(--bcds-surface-color-border-default);
+  --app-ring: var(--bcds-surface-color-border-active);
+
+  /* ------------------------------------------------------------------------ */
+  /* Brand colors                                                              */
+  /* ------------------------------------------------------------------------ */
+
+  --app-bcgov-blue: var(--bcds-theme-primary-blue);
+  --app-bcgov-gold: var(--bcds-theme-primary-gold);
+
+  --app-blue-100: var(--bcds-theme-blue-100);
+  --app-blue-90: var(--bcds-theme-blue-90);
+  --app-blue-80: var(--bcds-theme-blue-80);
+  --app-blue-70: var(--bcds-theme-blue-70);
+  --app-blue-60: var(--bcds-theme-blue-60);
+  --app-blue-50: var(--bcds-theme-blue-50);
+  --app-blue-40: var(--bcds-theme-blue-40);
+  --app-blue-30: var(--bcds-theme-blue-30);
+  --app-blue-20: var(--bcds-theme-blue-20);
+  --app-blue-10: var(--bcds-theme-blue-10);
+
+  --app-gold-100: var(--bcds-theme-gold-100);
+  --app-gold-90: var(--bcds-theme-gold-90);
+  --app-gold-80: var(--bcds-theme-gold-80);
+  --app-gold-70: var(--bcds-theme-gold-70);
+  --app-gold-60: var(--bcds-theme-gold-60);
+  --app-gold-50: var(--bcds-theme-gold-50);
+  --app-gold-40: var(--bcds-theme-gold-40);
+  --app-gold-30: var(--bcds-theme-gold-30);
+  --app-gold-20: var(--bcds-theme-gold-20);
+  --app-gold-10: var(--bcds-theme-gold-10);
+
+  --app-gray-110: var(--bcds-theme-gray-110);
+  --app-gray-100: var(--bcds-theme-gray-100);
+  --app-gray-90: var(--bcds-theme-gray-90);
+  --app-gray-80: var(--bcds-theme-gray-80);
+  --app-gray-70: var(--bcds-theme-gray-70);
+  --app-gray-60: var(--bcds-theme-gray-60);
+  --app-gray-50: var(--bcds-theme-gray-50);
+  --app-gray-40: var(--bcds-theme-gray-40);
+  --app-gray-30: var(--bcds-theme-gray-30);
+  --app-gray-20: var(--bcds-theme-gray-20);
+  --app-gray-10: var(--bcds-theme-gray-10);
+
+  /* ------------------------------------------------------------------------ */
+  /* Link / text states                                                        */
+  /* ------------------------------------------------------------------------ */
+
+  --app-link: var(--bcds-typography-color-link);
+  --app-danger: var(--bcds-typography-color-danger);
+  --app-placeholder: var(--bcds-typography-color-placeholder);
+  --app-disabled: var(--bcds-typography-color-disabled);
+
+  /* ------------------------------------------------------------------------ */
+  /* Surface interaction states                                                */
+  /* ------------------------------------------------------------------------ */
+
+  --app-primary-hover: var(--bcds-surface-color-primary-hover);
+  --app-primary-pressed: var(--bcds-surface-color-primary-pressed);
+
+  --app-secondary-hover: var(--bcds-surface-color-secondary-hover);
+  --app-secondary-pressed: var(--bcds-surface-color-secondary-pressed);
+
+  /* ------------------------------------------------------------------------ */
+  /* Support / status surfaces                                                 */
+  /* ------------------------------------------------------------------------ */
+
+  --app-info-surface: var(--bcds-support-surface-color-info);
+  --app-danger-surface: var(--bcds-support-surface-color-danger);
+  --app-success-surface: var(--bcds-support-surface-color-success);
+  --app-warning-surface: var(--bcds-support-surface-color-warning);
+
+  --app-info-border: var(--bcds-support-border-color-info);
+  --app-danger-border: var(--bcds-support-border-color-danger);
+  --app-success-border: var(--bcds-support-border-color-success);
+  --app-warning-border: var(--bcds-support-border-color-warning);
+
+  --app-info-text: var(--bcds-typography-color-primary);
+  --app-danger-text: var(--bcds-typography-color-primary);
+  --app-success-text: var(--bcds-typography-color-primary);
+  --app-warning-text: var(--bcds-typography-color-primary);
+
+  /* ------------------------------------------------------------------------ */
+  /* Charts                                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  --app-chart-1: var(--bcds-theme-blue-80);
+  --app-chart-2: var(--bcds-theme-blue-90);
+  --app-chart-3: var(--bcds-theme-blue-70);
+  --app-chart-4: var(--bcds-theme-gold-90);
+  --app-chart-5: var(--bcds-theme-gold-100);
+
+  /* ------------------------------------------------------------------------ */
+  /* Sidebar                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  --app-sidebar: var(--bcds-surface-color-background-white);
+  --app-sidebar-foreground: var(--bcds-typography-color-primary);
+  --app-sidebar-primary: var(--bcds-surface-color-primary-default);
+  --app-sidebar-primary-foreground: var(--bcds-typography-color-primary-invert);
+  --app-sidebar-accent: var(--bcds-theme-gray-20);
+  --app-sidebar-accent-foreground: var(--bcds-typography-color-primary);
+  --app-sidebar-border: var(--bcds-surface-color-border-default);
+  --app-sidebar-ring: var(--bcds-surface-color-border-active);
+
+  /* ------------------------------------------------------------------------ */
+  /* Radius                                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  --app-radius-none: var(--bcds-layout-border-radius-none);
+  --app-radius-xs: var(--bcds-layout-border-radius-small);
+  --app-radius-sm: var(--bcds-layout-border-radius-medium);
+  --app-radius-base: var(--bcds-layout-border-radius-medium);
+  --app-radius-lg: var(--bcds-layout-border-radius-large);
+  --app-radius-full: var(--bcds-layout-border-radius-circular);
+
+  /* ------------------------------------------------------------------------ */
+  /* Border widths                                                             */
+  /* ------------------------------------------------------------------------ */
+
+  --app-border-width-0: var(--bcds-layout-border-width-none);
+  --app-border-width-1: var(--bcds-layout-border-width-small);
+  --app-border-width-2: var(--bcds-layout-border-width-medium);
+  --app-border-width-4: var(--bcds-layout-border-width-large);
+
+  /* ------------------------------------------------------------------------ */
+  /* Shadows                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  --app-shadow-none: var(--bcds-surface-shadow-none);
+  --app-shadow-sm: var(--bcds-surface-shadow-small);
+  --app-shadow-md: var(--bcds-surface-shadow-medium);
+  --app-shadow-lg: var(--bcds-surface-shadow-large);
+
+  /* ------------------------------------------------------------------------ */
+  /* Spacing                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  /* For semantic/layout use. Favour standard Tailwind helpers. */
+  --app-space-hair: var(--bcds-layout-padding-hair);
+  --app-space-xs: var(--bcds-layout-padding-xsmall);
+  --app-space-sm: var(--bcds-layout-padding-small);
+  --app-space-md: var(--bcds-layout-padding-medium);
+  --app-space-lg: var(--bcds-layout-padding-large);
+  --app-space-xl: var(--bcds-layout-padding-xlarge);
+
+  /* ------------------------------------------------------------------------ */
+  /* Typography                                                                */
+  /* ------------------------------------------------------------------------ */
+
+  --app-text-label: var(--bcds-typography-font-size-label);
+  --app-text-xs: var(--bcds-typography-font-size-label);
+  --app-text-sm: var(--bcds-typography-font-size-small-body);
+  --app-text-base: var(--bcds-typography-font-size-body);
+  --app-text-lg: var(--bcds-typography-font-size-large-body);
+  --app-text-xl: var(--bcds-typography-font-size-h4);
+  --app-text-2xl: var(--bcds-typography-font-size-h3);
+  --app-text-h6: var(--bcds-typography-font-size-large-body);
+  --app-text-h5: var(--bcds-typography-font-size-large-body);
+  --app-text-h4: var(--bcds-typography-font-size-large-body);
+  --app-text-h3: var(--bcds-typography-font-size-h5);
+  --app-text-h2: var(--bcds-typography-font-size-h4);
+  --app-text-h1: var(--bcds-typography-font-size-h3);
+  --app-text-display: var(--bcds-typography-font-size-display);
+
+  --app-leading-xxxdense: var(--bcds-typography-line-heights-xxxdense);
+  --app-leading-xxdense: var(--bcds-typography-line-heights-xxdense);
+  --app-leading-xdense: var(--bcds-typography-line-heights-xdense);
+  --app-leading-dense: var(--bcds-typography-line-heights-dense);
+  --app-leading-regular: var(--bcds-typography-line-heights-regular);
+  --app-leading-sparse: var(--bcds-typography-line-heights-sparse);
+  --app-leading-xsparse: var(--bcds-typography-line-heights-xsparse);
+  --app-leading-xxsparse: var(--bcds-typography-line-heights-xxsparse);
+
+  /* BC Sans lacks a semibold, mapped to bold for safety */
+  --app-font-weight-normal: var(--bcds-typography-font-weights-regular);
+  --app-font-weight-medium: var(--bcds-typography-font-weights-regular);
+  --app-font-weight-semibold: var(--bcds-typography-font-weights-bold);
+  --app-font-weight-bold: var(--bcds-typography-font-weights-bold);
+
+  /* ------------------------------------------------------------------------ */
+  /* Icon tokens                                                               */
+  /* ------------------------------------------------------------------------ */
+
+  --app-icon-primary: var(--bcds-icons-color-primary);
+  --app-icon-secondary: var(--bcds-icons-color-secondary);
+  --app-icon-disabled: var(--bcds-icons-color-disabled);
+  --app-icon-link: var(--bcds-icons-color-link);
+  --app-icon-danger: var(--bcds-icons-color-danger);
+  --app-icon-success: var(--bcds-icons-color-success);
+  --app-icon-warning: var(--bcds-icons-color-warning);
+  --app-icon-invert: var(--bcds-icons-color-primary-invert);
+
+  --app-icon-size-xs: var(--bcds-icons-size-xsmall);
+  --app-icon-size-sm: var(--bcds-icons-size-small);
+  --app-icon-size-md: var(--bcds-icons-size-medium);
+  --app-icon-size-lg: var(--bcds-icons-size-large);
+  --app-icon-size-xl: var(--bcds-icons-size-xlarge);
+}

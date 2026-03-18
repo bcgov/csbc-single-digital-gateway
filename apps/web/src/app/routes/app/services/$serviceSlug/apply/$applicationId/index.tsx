@@ -94,7 +94,7 @@ function RouteComponent() {
 
         <div className="flex flex-col w-full">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{application.label}</h1>
+            <h1>{application.label}</h1>
             <div>
               <InviteDelegateDialog />
             </div>

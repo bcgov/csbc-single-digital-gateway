@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { AuthController } from './controllers/auth.controller';
-import { AuthService } from './services/auth.service';
-import { oidcClientProvider } from './auth.config';
-import { AuthGuard } from './guards/auth.guard';
 import { UsersModule } from '../users/users.module';
+import { oidcClientProvider } from './auth.config';
+import { AuthController } from './controllers/auth.controller';
+import { AuthGuard } from './guards/auth.guard';
+import { AuthService } from './services/auth.service';
 
 @Module({
   imports: [UsersModule],

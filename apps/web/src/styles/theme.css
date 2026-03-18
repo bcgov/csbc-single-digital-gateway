@@ -1,0 +1,211 @@
+@theme inline {
+  /* ------------------------------------------------------------------------ */
+  /* Fonts                                                                     */
+  /* ------------------------------------------------------------------------ */
+
+  --font-sans: var(--app-font-sans);
+
+  /* ------------------------------------------------------------------------ */
+  /* Core shadcn semantic colors                                               */
+  /* ------------------------------------------------------------------------ */
+
+  --color-background: var(--app-background);
+  --color-foreground: var(--app-foreground);
+
+  --color-card: var(--app-card);
+  --color-card-foreground: var(--app-card-foreground);
+
+  --color-popover: var(--app-popover);
+  --color-popover-foreground: var(--app-popover-foreground);
+
+  --color-primary: var(--app-primary);
+  --color-primary-foreground: var(--app-primary-foreground);
+
+  --color-secondary: var(--app-secondary);
+  --color-secondary-foreground: var(--app-secondary-foreground);
+
+  --color-muted: var(--app-muted);
+  --color-muted-foreground: var(--app-muted-foreground);
+
+  --color-accent: var(--app-accent);
+  --color-accent-foreground: var(--app-accent-foreground);
+
+  --color-destructive: var(--app-destructive);
+  --color-destructive-foreground: var(--app-destructive-foreground);
+
+  --color-border: var(--app-border);
+  --color-border-dark: var(--app-border-dark);
+  --color-input: var(--app-input);
+  --color-ring: var(--app-ring);
+
+  /* ------------------------------------------------------------------------ */
+  /* Brand colors                                                              */
+  /* ------------------------------------------------------------------------ */
+
+  --color-bcgov-blue: var(--app-bcgov-blue);
+  --color-bcgov-gold: var(--app-bcgov-gold);
+
+  --color-blue-100: var(--bcds-theme-blue-100);
+  --color-blue-90: var(--bcds-theme-blue-90);
+  --color-blue-80: var(--bcds-theme-blue-80);
+  --color-blue-70: var(--bcds-theme-blue-70);
+  --color-blue-60: var(--bcds-theme-blue-60);
+  --color-blue-50: var(--bcds-theme-blue-50);
+  --color-blue-40: var(--bcds-theme-blue-40);
+  --color-blue-30: var(--bcds-theme-blue-30);
+  --color-blue-20: var(--bcds-theme-blue-20);
+  --color-blue-10: var(--bcds-theme-blue-10);
+
+  --color-gold-100: var(--bcds-theme-gold-100);
+  --color-gold-90: var(--bcds-theme-gold-90);
+  --color-gold-80: var(--bcds-theme-gold-80);
+  --color-gold-70: var(--bcds-theme-gold-70);
+  --color-gold-60: var(--bcds-theme-gold-60);
+  --color-gold-50: var(--bcds-theme-gold-50);
+  --color-gold-40: var(--bcds-theme-gold-40);
+  --color-gold-30: var(--bcds-theme-gold-30);
+  --color-gold-20: var(--bcds-theme-gold-20);
+  --color-gold-10: var(--bcds-theme-gold-10);
+
+  --color-gray-110: var(--bcds-theme-gray-110);
+  --color-gray-100: var(--bcds-theme-gray-100);
+  --color-gray-90: var(--bcds-theme-gray-90);
+  --color-gray-80: var(--bcds-theme-gray-80);
+  --color-gray-70: var(--bcds-theme-gray-70);
+  --color-gray-60: var(--bcds-theme-gray-60);
+  --color-gray-50: var(--bcds-theme-gray-50);
+  --color-gray-40: var(--bcds-theme-gray-40);
+  --color-gray-30: var(--bcds-theme-gray-30);
+  --color-gray-20: var(--bcds-theme-gray-20);
+  --color-gray-10: var(--bcds-theme-gray-10);
+
+  /* Uses BCDS gray, but here to support shadcn defaults */
+  --color-neutral-50: var(--bcds-theme-gray-10);
+  --color-neutral-100: var(--bcds-theme-gray-20);
+  --color-neutral-200: var(--bcds-theme-gray-30);
+  --color-neutral-300: var(--bcds-theme-gray-40);
+  --color-neutral-400: var(--bcds-theme-gray-50);
+  --color-neutral-500: var(--bcds-theme-gray-60);
+  --color-neutral-600: var(--bcds-theme-gray-70);
+  --color-neutral-700: var(--bcds-theme-gray-80);
+  --color-neutral-800: var(--bcds-theme-gray-90);
+  --color-neutral-900: var(--bcds-theme-gray-100);
+  --color-neutral-950: var(--bcds-theme-gray-110);
+
+  /* ------------------------------------------------------------------------ */
+  /* Project-specific text + state colors                                      */
+  /* ------------------------------------------------------------------------ */
+
+  --color-link: var(--app-link);
+  --color-danger: var(--app-danger);
+  --color-placeholder: var(--app-placeholder);
+  --color-disabled: var(--app-disabled);
+
+  --color-primary-hover: var(--app-primary-hover);
+  --color-primary-pressed: var(--app-primary-pressed);
+  --color-secondary-hover: var(--app-secondary-hover);
+  --color-secondary-pressed: var(--app-secondary-pressed);
+
+  --color-info-surface: var(--app-info-surface);
+  --color-danger-surface: var(--app-danger-surface);
+  --color-success-surface: var(--app-success-surface);
+  --color-warning-surface: var(--app-warning-surface);
+
+  --color-info-border: var(--app-info-border);
+  --color-danger-border: var(--app-danger-border);
+  --color-success-border: var(--app-success-border);
+  --color-warning-border: var(--app-warning-border);
+
+  --color-info-text: var(--app-info-text);
+  --color-danger-surface-text: var(--app-danger-text);
+  --color-success-text: var(--app-success-text);
+  --color-warning-text: var(--app-warning-text);
+
+  /* ------------------------------------------------------------------------ */
+  /* Sidebar                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  --color-sidebar: var(--app-sidebar);
+  --color-sidebar-foreground: var(--app-sidebar-foreground);
+  --color-sidebar-primary: var(--app-sidebar-primary);
+  --color-sidebar-primary-foreground: var(--app-sidebar-primary-foreground);
+  --color-sidebar-accent: var(--app-sidebar-accent);
+  --color-sidebar-accent-foreground: var(--app-sidebar-accent-foreground);
+  --color-sidebar-border: var(--app-sidebar-border);
+  --color-sidebar-ring: var(--app-sidebar-ring);
+
+  /* ------------------------------------------------------------------------ */
+  /* Charts                                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  --color-chart-1: var(--app-chart-1);
+  --color-chart-2: var(--app-chart-2);
+  --color-chart-3: var(--app-chart-3);
+  --color-chart-4: var(--app-chart-4);
+  --color-chart-5: var(--app-chart-5);
+
+  /* ------------------------------------------------------------------------ */
+  /* Typography                                                                */
+  /* ------------------------------------------------------------------------ */
+
+  /* Text sizes -> gives you utilities like text-h1, text-base, etc. */
+  --text-label: var(--app-text-label);
+  --text-sm: var(--app-text-sm);
+  --text-base: var(--app-text-base);
+  --text-lg: var(--app-text-lg);
+  --text-h6: var(--app-text-h6);
+  --text-h5: var(--app-text-h5);
+  --text-h4: var(--app-text-h4);
+  --text-h3: var(--app-text-h3);
+  --text-h2: var(--app-text-h2);
+  --text-h1: var(--app-text-h1);
+  --text-display: var(--app-text-display);
+
+  /* Line heights -> utilities like leading-dense, leading-regular, etc. */
+  --leading-xxxdense: var(--app-leading-xxxdense);
+  --leading-xxdense: var(--app-leading-xxdense);
+  --leading-xdense: var(--app-leading-xdense);
+  --leading-dense: var(--app-leading-dense);
+  --leading-regular: var(--app-leading-regular);
+  --leading-sparse: var(--app-leading-sparse);
+  --leading-xsparse: var(--app-leading-xsparse);
+  --leading-xxsparse: var(--app-leading-xxsparse);
+
+  --font-weight-normal: var(--app-font-weight-normal);
+  --font-weight-medium: var(--app-font-weight-medium);
+  --font-weight-semibold: var(--app-font-weight-semibold);
+  --font-weight-bold: var(--app-font-weight-bold);
+
+  /* ------------------------------------------------------------------------ */
+  /* Radius                                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  --radius-none: var(--app-radius-none);
+  --radius-xs: var(--app-radius-xs);
+  --radius-sm: var(--app-radius-sm);
+  --radius-md: var(--app-radius-base);
+  --radius-lg: var(--app-radius-lg);
+  --radius-xl: calc(var(--app-radius-lg) + 4px);
+  --radius-2xl: calc(var(--app-radius-lg) + 8px);
+  --radius-3xl: calc(var(--app-radius-lg) + 12px);
+  --radius-4xl: calc(var(--app-radius-lg) + 16px);
+  --radius-full: var(--app-radius-full);
+
+  /* ------------------------------------------------------------------------ */
+  /* Border widths                                                             */
+  /* ------------------------------------------------------------------------ */
+
+  --border-width-0: var(--app-border-width-0);
+  --border-width: var(--app-border-width-1);
+  --border-width-2: var(--app-border-width-2);
+  --border-width-4: var(--app-border-width-4);
+
+  /* ------------------------------------------------------------------------ */
+  /* Shadows                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  --shadow-none: var(--app-shadow-none);
+  --shadow-sm: var(--app-shadow-sm);
+  --shadow-md: var(--app-shadow-md);
+  --shadow-lg: var(--app-shadow-lg);
+}
