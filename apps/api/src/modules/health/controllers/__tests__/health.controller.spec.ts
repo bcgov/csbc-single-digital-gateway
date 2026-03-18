@@ -24,7 +24,7 @@ describe('HealthController', () => {
   // Test case: should expect the health controller as defined
   // The comments are not required in an actual test file.
   // Make sure to capitalize the first letter to make it consistent across all test files.
-  it('Should be defined', () => {
+  it('Should expect the health controller to be defined', () => {
     expect(controller).toBeDefined();
   });
 });

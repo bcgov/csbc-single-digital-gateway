@@ -23,9 +23,7 @@ describe('AppControllerExample (integration)', () => {
   // Make sure to capitalize the first letter to make it consistent across all test files.
   it('Should throw not found error when the endpoint does not exist.', () => {
     const endpoint = '/';
-    return request(app.getHttpServer())
-      .get(endpoint)
-      .expect(HttpStatus.NOT_FOUND);
+    request(app.getHttpServer()).get(endpoint).expect(HttpStatus.NOT_FOUND);
   });
 
   afterAll(async () => {

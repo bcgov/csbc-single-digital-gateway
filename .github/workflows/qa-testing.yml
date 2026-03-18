@@ -33,9 +33,9 @@ jobs:
       DB_PASS: test_password
       DB_PORT: 5432
       DB_SSL: false
-      OIDC_ISSUER: ${{secrets.API_OIDC_ISSUER }}
-      OIDC_JWKS_URI: ${{ secrets.API_OIDC_JWKS_URI }}
-      OIDC_CLIENT_ID: ${{ secrets.WEB_OIDC_CLIENT_ID }}
+      OIDC_ISSUER: ${{ vars.API_OIDC_ISSUER }}
+      OIDC_JWKS_URI: ${{ vars.API_OIDC_JWKS_URI }}
+      OIDC_CLIENT_ID: ${{ vars.WEB_OIDC_CLIENT_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

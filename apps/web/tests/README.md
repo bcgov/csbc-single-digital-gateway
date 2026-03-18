@@ -77,8 +77,8 @@ CI/CD workflows for web quality assurance testing are added to the file [qa-test
 
 ## Test Reports
 
-Test reports are available for the web project in dev's local environments. Refer to [cypress.config.ts](../cypress.config.ts) for configurations. Run the following commands to generate a component test report file `report-component.html` (same for E2E test) in the folder `cypress/reports/html`, which is ignored by Git.
+Test reports are available for the web project in developers' local environments. Refer to [cypress.config.ts](../cypress.config.ts) for configurations. Run the following commands to generate a component test report file `report-component.html` (same for E2E test) in the folder `cypress/reports/html`.
 
 ```bash
-npm run cy:report:component
+npm run cy:component:report
 ```

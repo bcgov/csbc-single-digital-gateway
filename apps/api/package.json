@@ -13,10 +13,10 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "test:unit": "jest",
+    "test:int": "jest --config ./tests/config/jest-integration.json",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage > ./tests/coverage/coverage.txt",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:int": "jest --silent --config ./tests/config/jest-integration.json"
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",

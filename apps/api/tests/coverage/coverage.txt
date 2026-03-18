@@ -33,5 +33,5 @@ All files                        |   39.88 |    41.66 |   28.57 |   37.25 |
  src/modules/health/indicators   |   58.33 |       75 |      50 |      50 |                   
   drizzle-health.indicator.ts    |   58.33 |       75 |      50 |      50 | 19-25             
  tests/integration/app           |       0 |      100 |       0 |       0 |                   
-  app.controller.int-spec.ts     |       0 |      100 |       0 |       0 | 1-32              
+  app.controller.int-spec.ts     |       0 |      100 |       0 |       0 | 1-30              
 ---------------------------------|---------|----------|---------|---------|-------------------
