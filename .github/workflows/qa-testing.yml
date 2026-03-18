@@ -28,7 +28,7 @@ jobs:
       PORT: 4000
       NODE_ENV: test
       DB_NAME: test_db
-      DB_HOST: postgres
+      DB_HOST: localhost
       DB_USER: test_user
       DB_PASS: test_password
       DB_PORT: 5432
@@ -53,7 +53,7 @@ jobs:
         run: npm run db:migrate
         env:
           DB_NAME: test_db
-          DB_HOST: postgres
+          DB_HOST: localhost
           DB_USER: test_user
           DB_PASS: test_password
           DB_PORT: 5432
