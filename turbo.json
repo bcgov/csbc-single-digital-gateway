@@ -39,8 +39,44 @@
       "persistent": true
     },
     "lint": {},
-    "test:unit": {},
-    "test:int": {},
-    "test:cov": {}
+    "test:unit": {
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL",
+        "OIDC_ISSUER",
+        "OIDC_JWKS_URI",
+        "OIDC_CLIENT_ID"
+      ]
+    },
+    "test:int": {
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL",
+        "OIDC_ISSUER",
+        "OIDC_JWKS_URI",
+        "OIDC_CLIENT_ID"
+      ]
+    },
+    "test:cov": {
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL",
+        "OIDC_ISSUER",
+        "OIDC_JWKS_URI",
+        "OIDC_CLIENT_ID"
+      ]
+    }
   }
 }
