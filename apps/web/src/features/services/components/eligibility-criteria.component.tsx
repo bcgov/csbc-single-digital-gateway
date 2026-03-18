@@ -12,7 +12,7 @@ interface EligibilityCriteriaProps {
 
 export function EligibilityCriteria({ criteria }: EligibilityCriteriaProps) {
   return (
-    <div className="flex flex-col gap-px bg-neutral-200 border-neutral-200 border">
+    <div className="flex flex-col gap-px border bg-border">
       <div className="grid grid-cols-3 gap-px">
         {criteria.map((criterion) => (
           <React.Fragment key={criterion.title}>

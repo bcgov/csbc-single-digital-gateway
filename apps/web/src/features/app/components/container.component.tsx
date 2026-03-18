@@ -7,7 +7,7 @@ export const Container = ({
 }) => {
   return (
     <div className={`@container ${className}`}>
-      <div className="mx-4 md:mx-12 lg:mx-24 xl:mx-40">{children}</div>
+      <div className="mx-4 md:mx-8 xl:mx-auto max-w-280">{children}</div>
     </div>
   );
 };

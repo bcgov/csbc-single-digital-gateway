@@ -94,7 +94,7 @@ function ConsentHistoryPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">Consent history</h1>
+        <h1>Consent history</h1>
         <p className="text-muted-foreground">
           Review your current and past consents for services.
         </p>
