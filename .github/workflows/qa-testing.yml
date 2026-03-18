@@ -52,41 +52,31 @@ jobs:
 
       - name: Database Migration
         run: npm run db:migrate
-        env:
-          DB_NAME: test_db
-          DB_HOST: localhost
-          DB_USER: test_user
-          DB_PASS: test_password
-          DB_PORT: 5432
-          DB_SSL: false
 
       - name: Run API Unit Tests
         run: npm run test:unit
 
       - name: Run API Integration Tests
         run: npm run test:int
-        env:
-          OIDC_ISSUER: ${{ vars.API_OIDC_ISSUER }}
-          OIDC_JWKS_URI: ${{ vars.API_OIDC_JWKS_URI }}
-          OIDC_CLIENT_ID: ${{ vars.WEB_OIDC_CLIENT_ID }}
-      
+
       - name: Run Coverage Test
         run: npm run test:cov
 
   web-qa-testing:
     name: Web QA Testing
     runs-on: ubuntu-latest
+    environment: development
     env:
       APP_PORT: 5173
       NODE_ENV: test
       VITE_API_URI: http://localhost:4000
       VITE_APP_NAME: "Single Digital Gateway"
-      VITE_OIDC_ISSUER: ${{ secrets.WEB_OIDC_ISSUER }}
-      VITE_OIDC_CLIENT_ID: $${ secrets.WEB_OIDC_CLIENT_ID }
+      VITE_OIDC_ISSUER: ${{ vars.WEB_OIDC_ISSUER }}
+      VITE_OIDC_CLIENT_ID: $${ vars.WEB_OIDC_CLIENT_ID }
       VITE_OIDC_REDIRECT_URI: http://localhost:5173/callback
       VITE_OIDC_POST_LOGOUT_REDIRECT_URI: http://localhost:5173
-      VITE_CONSENT_MANAGER_API_URL: ${{ secrets.WEB_CONSENT_MANAGER_API_URL }}
-      VITE_SERVICE_CATALOGUE_API_URL: ${{ secrets.WEB_SERVICE_CATALOGUE_API_URL }}
+      VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
+      VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
