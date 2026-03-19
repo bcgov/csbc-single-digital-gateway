@@ -1,14 +1,14 @@
 /**
  * Generate SCHEMA.md from Drizzle ORM schema definitions.
  *
- * Usage: npx tsx scripts/document-schema.ts
+ * Usage: npx tsx scripts/generate-db-docs.ts
  */
 
+import { getTableConfig, type PgTable } from "drizzle-orm/pg-core";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as ts from "typescript";
-import { getTableConfig, type PgTable } from "drizzle-orm/pg-core";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA_DIR = path.resolve(__dirname, "../src/schema");
@@ -64,7 +64,9 @@ function getJSDocComment(node: ts.Node): string | undefined {
     if (typeof doc.comment === "string") {
       parts.push(doc.comment);
     } else if (Array.isArray(doc.comment)) {
-      parts.push(doc.comment.map((p) => (typeof p === "string" ? p : p.text)).join(""));
+      parts.push(
+        doc.comment.map((p) => (typeof p === "string" ? p : p.text)).join(""),
+      );
     }
   }
   return parts.length > 0 ? parts.join("\n").trim() : undefined;
@@ -75,7 +77,12 @@ function extractJSDocFromFile(filePath: string): SourceJSDoc {
   const columnComments = new Map<string, Map<string, string>>();
 
   const source = fs.readFileSync(filePath, "utf-8");
-  const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
+  const sf = ts.createSourceFile(
+    filePath,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
 
   for (const stmt of sf.statements) {
     if (!ts.isVariableStatement(stmt)) continue;
@@ -194,7 +201,10 @@ async function loadSchema(): Promise<{
           values: value.enumValues,
           _comments: jsdoc.comments.get(key),
         });
-        enumsByValues.set(JSON.stringify([...value.enumValues]), value.enumName);
+        enumsByValues.set(
+          JSON.stringify([...value.enumValues]),
+          value.enumName,
+        );
       }
     }
 
@@ -262,8 +272,7 @@ async function loadSchema(): Promise<{
           isPK:
             (col as unknown as Record<string, unknown>).primary === true ||
             compositePK.includes(col.name),
-          isUnique:
-            !!(c.isUnique ?? c.uniqueName),
+          isUnique: !!(c.isUnique ?? c.uniqueName),
           hasDefault: col.hasDefault,
           defaultDesc: describeDefault(c),
           hasOnUpdate: typeof c.onUpdateFn === "function",
@@ -276,10 +285,8 @@ async function loadSchema(): Promise<{
       const indexes: TableData["indexes"] = [];
       for (const idx of config.indexes ?? []) {
         try {
-          const ic = (idx as unknown as Record<string, unknown>).config as Record<
-            string,
-            unknown
-          >;
+          const ic = (idx as unknown as Record<string, unknown>)
+            .config as Record<string, unknown>;
           if (ic) {
             indexes.push({
               name: String(ic.name ?? ""),
@@ -327,7 +334,8 @@ function mdEnums(enums: EnumInfo[]): string {
 function mdTable(t: TableData): string {
   let md = `### ${t.pgName}\n\n`;
   if (t._comments) md += `${t._comments}\n\n`;
-  md += "| Column | Type | Nullable | Default | Notes | Comments |\n| --- | --- | --- | --- | --- | --- |\n";
+  md +=
+    "| Column | Type | Nullable | Default | Notes | Comments |\n| --- | --- | --- | --- | --- | --- |\n";
 
   for (const col of t.columns) {
     const notes: string[] = [];
@@ -335,8 +343,7 @@ function mdTable(t: TableData): string {
     if (col.fk) notes.push("FK");
     if (col.isUnique) notes.push("unique");
     if (col.hasOnUpdate) notes.push("auto-updated");
-    if (col.enumValues)
-      notes.push(`enum(${[...col.enumValues].join(",")})`);
+    if (col.enumValues) notes.push(`enum(${[...col.enumValues].join(",")})`);
 
     const def = col.defaultDesc ? `\`${col.defaultDesc}\`` : "";
     const desc = (col._comments ?? "").replace(/\n/g, " ");
@@ -402,7 +409,8 @@ function mdRelationshipSummary(tables: TableData[]): string {
 
 function mermaidComment(col: ColInfo): string {
   if (col.isPK && !col.fk && col.hasDefault) return col.defaultDesc;
-  if (col.isPK && !col.fk && !col.hasDefault) return "no default - caller supplied";
+  if (col.isPK && !col.fk && !col.hasDefault)
+    return "no default - caller supplied";
 
   const parts: string[] = [col.notNull ? "not null" : "nullable"];
 
