@@ -19,6 +19,7 @@ npm install
 | `npm run db:migrate` | Run pending migrations |
 | `npm run db:push` | Push schema changes directly (no migration file) |
 | `npm run db:studio` | Open Drizzle Studio GUI |
+| `npm run db:generate-docs` | Regenerate [`SCHEMA.md`](./SCHEMA.md) from schema source files |
 
 All `db:*` scripts require database env vars to be set (see below).
 
@@ -40,6 +41,26 @@ The package loads `dotenv/config` at runtime to ensure env vars are available wh
 ```ts
 import { db } from '@repo/db';
 import type { Schema, Database } from '@repo/db';
+```
+
+## Schema Documentation
+
+[`SCHEMA.md`](./SCHEMA.md) is auto-generated from the Drizzle schema source files. Regenerate it after schema changes:
+
+```sh
+npm run generate:docs
+```
+
+The generator extracts standard JSDoc comments (`/** ... */`) from enums, tables, and columns and includes them in the output. For example:
+
+```ts
+/** Core user accounts */
+export const users = pgTable("users", {
+  /** Auto-generated unique identifier */
+  id: uuid().primaryKey().defaultRandom(),
+  /** Display name shown in the UI */
+  name: text(),
+});
 ```
 
 ## Adding Schema

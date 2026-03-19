@@ -22,7 +22,8 @@
     "db:migrate": "drizzle-kit migrate --config=./drizzle/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=./drizzle/drizzle.config.ts",
     "db:migrate:run": "tsx ./drizzle/migrate.ts",
-    "db:studio": "drizzle-kit studio --config=./drizzle/drizzle.config.ts"
+    "db:studio": "drizzle-kit studio --config=./drizzle/drizzle.config.ts",
+    "db:generate-docs": "npx tsx scripts/generate-db-docs.ts"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",
