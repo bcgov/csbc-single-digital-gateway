@@ -14,7 +14,6 @@ import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
-import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
@@ -47,11 +46,6 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const publicIndexRoute = publicIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => publicRouteRoute,
-} as any)
-const publicCallbackRoute = publicCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
   getParentRoute: () => publicRouteRoute,
 } as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
@@ -109,21 +103,19 @@ const AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute =
 export interface FileRoutesByFullPath {
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
-  '/dev': typeof DevIndexRoute
+  '/dev/': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
-  '/app/services': typeof AppServicesIndexRoute
+  '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
-  '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
+  '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
-  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
+  '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
   '/app': typeof AppIndexRoute
   '/dev': typeof DevIndexRoute
@@ -140,7 +132,6 @@ export interface FileRoutesById {
   '/(public)': typeof publicRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/(public)/callback': typeof publicCallbackRoute
   '/(public)/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
@@ -158,21 +149,19 @@ export interface FileRouteTypes {
   fullPaths:
     | '/app'
     | '/app/settings'
-    | '/callback'
     | '/'
     | '/app/'
-    | '/dev'
+    | '/dev/'
     | '/app/settings/consent-history'
-    | '/app/services'
+    | '/app/services/'
     | '/app/settings/'
     | '/app/settings/consent-history/$statementId'
-    | '/app/services/$serviceSlug'
+    | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
-    | '/app/services/$serviceSlug/apply/$applicationId'
+    | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/callback'
     | '/'
     | '/app'
     | '/dev'
@@ -188,7 +177,6 @@ export interface FileRouteTypes {
     | '/(public)'
     | '/app'
     | '/app/settings'
-    | '/(public)/callback'
     | '/(public)/'
     | '/app/'
     | '/dev/'
@@ -227,7 +215,7 @@ declare module '@tanstack/react-router' {
     '/dev/': {
       id: '/dev/'
       path: '/dev'
-      fullPath: '/dev'
+      fullPath: '/dev/'
       preLoaderRoute: typeof DevIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -243,13 +231,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof publicIndexRouteImport
-      parentRoute: typeof publicRouteRoute
-    }
-    '/(public)/callback': {
-      id: '/(public)/callback'
-      path: '/callback'
-      fullPath: '/callback'
-      preLoaderRoute: typeof publicCallbackRouteImport
       parentRoute: typeof publicRouteRoute
     }
     '/app/settings': {
@@ -269,7 +250,7 @@ declare module '@tanstack/react-router' {
     '/app/services/': {
       id: '/app/services/'
       path: '/services'
-      fullPath: '/app/services'
+      fullPath: '/app/services/'
       preLoaderRoute: typeof AppServicesIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -290,7 +271,7 @@ declare module '@tanstack/react-router' {
     '/app/services/$serviceSlug/': {
       id: '/app/services/$serviceSlug/'
       path: '/services/$serviceSlug'
-      fullPath: '/app/services/$serviceSlug'
+      fullPath: '/app/services/$serviceSlug/'
       preLoaderRoute: typeof AppServicesServiceSlugIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -304,7 +285,7 @@ declare module '@tanstack/react-router' {
     '/app/services/$serviceSlug/apply/$applicationId/': {
       id: '/app/services/$serviceSlug/apply/$applicationId/'
       path: '/services/$serviceSlug/apply/$applicationId'
-      fullPath: '/app/services/$serviceSlug/apply/$applicationId'
+      fullPath: '/app/services/$serviceSlug/apply/$applicationId/'
       preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -319,12 +300,10 @@ declare module '@tanstack/react-router' {
 }
 
 interface publicRouteRouteChildren {
-  publicCallbackRoute: typeof publicCallbackRoute
   publicIndexRoute: typeof publicIndexRoute
 }
 
 const publicRouteRouteChildren: publicRouteRouteChildren = {
-  publicCallbackRoute: publicCallbackRoute,
   publicIndexRoute: publicIndexRoute,
 }
 

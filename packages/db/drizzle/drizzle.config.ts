@@ -19,6 +19,7 @@ export default defineConfig({
   dialect: "postgresql",
   out: "./drizzle/migrations",
   schema: "./src/schema",
+  casing: "snake_case",
   dbCredentials: {
     database: parsed.DB_NAME,
     host: parsed.DB_HOST,

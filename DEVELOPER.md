@@ -68,24 +68,23 @@ API-specific:
 
 | Variable | Description |
 | -------- | ----------- |
-| API_OIDC_ISSUER | OIDC issuer URL for API |
-| API_OIDC_JWKS_URI | OIDC JWKS URI for API |
+| API_OIDC_ISSUER | OIDC issuer URL |
+| API_OIDC_CLIENT_ID | OIDC confidential client ID |
+| API_OIDC_CLIENT_SECRET | OIDC client secret (use secrets.*) |
+| API_OIDC_REDIRECT_URI | OAuth callback URL (e.g. `https://api.example.com/auth/callback`) |
+| API_OIDC_POST_LOGOUT_REDIRECT_URI | Redirect after logout (e.g. `https://app.example.com`) |
+| API_SESSION_SECRET | Session cookie signing secret (use secrets.*) |
+| API_FRONTEND_URL | Frontend origin for CORS |
+| API_CONSENT_MANAGER_API_URL | Consent Manager API URL (optional) |
 
 Web-specific:
 
 | Variable | Description |
 | -------- | ----------- |
-| WEB_OIDC_ISSUER | OIDC issuer URL for Web |
-| WEB_OIDC_CLIENT_ID | OIDC client ID for Web |
 | WEB_BASE_URL | Web route hostname |
-| WEB_CONSENT_MANAGER_API_URL | Consent Manager API URL |
-| WEB_SERVICE_CATALOGUE_API_URL | Service Catalogue API URL |
+| WEB_AUTH_URL | Direct API URL for auth redirects |
 
 Note: Variables use vars.* syntax in workflows, secrets use secrets.*
-
-The redirect URIs are constructed from WEB_BASE_URL:
-- redirectUri = https://${WEB_BASE_URL}/callback
-- postLogoutRedirectUri = https://${WEB_BASE_URL}/
 
 Getting the OpenShift Token
 

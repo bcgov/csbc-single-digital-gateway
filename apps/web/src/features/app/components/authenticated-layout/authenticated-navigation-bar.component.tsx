@@ -12,10 +12,11 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui";
 import { IconLogout, IconSearch } from "@tabler/icons-react";
-import { useAuth } from "react-oidc-context";
+import { useAuth } from "../../../auth/auth.context";
 import { useAppSearch } from "../app-search/app-search.context";
 import { type NavItem, NavigationBar } from "../navigation-bar";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const navigationItems: NavItem[] = [
   {
     type: "link",
@@ -56,7 +57,7 @@ const getInitials = (name?: string, email?: string): string => {
 export const AuthenticatedNavigationBar = () => {
   const auth = useAuth();
   const { setOpen } = useAppSearch();
-  const user = auth.user?.profile;
+  const user = auth.user;
   const displayName = user?.name || user?.email || "User";
   const initials = getInitials(user?.name, user?.email);
 
@@ -96,7 +97,7 @@ export const AuthenticatedNavigationBar = () => {
               <DropdownMenuGroup>
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={() => auth.signoutRedirect()}
+                  onClick={() => auth.logout()}
                 >
                   <IconLogout />
                   Sign out

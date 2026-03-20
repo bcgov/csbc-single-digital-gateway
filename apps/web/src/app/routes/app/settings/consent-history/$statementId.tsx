@@ -24,13 +24,16 @@ export const Route = createFileRoute(
     return { documentName: statement.document.name };
   },
   staticData: {
-    breadcrumbs: (loaderData?: { documentName: string }) => [
-      { label: "Settings", to: "/app/settings" },
-      { label: "Consent history", to: "/app/settings/consent-history" },
-      ...(loaderData?.documentName
-        ? [{ label: `${loaderData.documentName} Statement` }]
-        : []),
-    ],
+    breadcrumbs: (loaderData: unknown) => {
+      const data = loaderData as { documentName: string } | undefined;
+      return [
+        { label: "Settings", to: "/app/settings" },
+        { label: "Consent history", to: "/app/settings/consent-history" },
+        ...(data?.documentName
+          ? [{ label: `${data.documentName} Statement` }]
+          : []),
+      ];
+    },
   },
   component: ConsentStatementPage,
 });

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
@@ -6,7 +6,9 @@ import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AppConfigDto, AppConfigSchema } from 'src/common/dtos/app-config.dto';
 import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
-import { JwtGuard } from './auth/guards/jwt.guard';
+import { AuthGuard } from './auth/guards/auth.guard';
+import { TokenRefreshMiddleware } from './auth/middleware/token-refresh.middleware';
+import { ConsentProxyModule } from './consent-proxy/consent-proxy.module';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { JwtGuard } from './auth/guards/jwt.guard';
       inject: [ConfigService],
     }),
     AuthModule,
+    ConsentProxyModule,
   ],
   providers: [
     {
@@ -38,7 +41,7 @@ import { JwtGuard } from './auth/guards/jwt.guard';
     },
     {
       provide: APP_GUARD,
-      useClass: JwtGuard,
+      useClass: AuthGuard,
     },
     {
       provide: APP_INTERCEPTOR,
@@ -50,4 +53,8 @@ import { JwtGuard } from './auth/guards/jwt.guard';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TokenRefreshMiddleware).forRoutes('*');
+  }
+}

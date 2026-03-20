@@ -35,10 +35,13 @@ export const Route = createFileRoute("/app/services/$serviceSlug/")({
     return { service };
   },
   staticData: {
-    breadcrumbs: (loaderData?: { service: { name: string } }) => [
-      { label: "Services", to: "/app/services" },
-      ...(loaderData?.service ? [{ label: loaderData.service.name }] : []),
-    ],
+    breadcrumbs: (loaderData: unknown) => {
+      const data = loaderData as { service: { name: string } } | undefined;
+      return [
+        { label: "Services", to: "/app/services" },
+        ...(data?.service ? [{ label: data.service.name }] : []),
+      ];
+    },
   },
   component: RouteComponent,
   notFoundComponent: NotFoundComponent,
