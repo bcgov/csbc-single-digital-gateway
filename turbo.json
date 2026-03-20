@@ -1,26 +1,91 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": [
+    "**/.env.*local"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     },
     "db:migrate": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL"
+      ]
     },
     "dev": {
       "cache": false,
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "persistent": true
     },
     "api#dev": {
       "cache": false,
-      "dependsOn": ["^build", "db:migrate"],
+      "dependsOn": [
+        "^build",
+        "db:migrate"
+      ],
       "persistent": true
     },
     "lint": {},
-    "test": {},
-    "test:e2e": {}
+    "test:unit": {
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL",
+        "OIDC_ISSUER",
+        "OIDC_JWKS_URI",
+        "OIDC_CLIENT_ID"
+      ]
+    },
+    "test:int": {
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL",
+        "OIDC_ISSUER",
+        "OIDC_JWKS_URI",
+        "OIDC_CLIENT_ID"
+      ]
+    },
+    "test:cov": {
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL",
+        "OIDC_ISSUER",
+        "OIDC_JWKS_URI",
+        "OIDC_CLIENT_ID"
+      ]
+    },
+    "cy:component": {},
+    "cy:component:report": {},
+    "cy:e2e": {
+      "passThroughEnv": [
+        "APP_PORT"
+      ]
+    },
+    "cy:e2e:report": {},
+    "cy:open": {}
   }
 }

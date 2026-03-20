@@ -1,0 +1,101 @@
+name: CSBC SDG Quality Assurance Testing
+# This workflow is executed during pull requests triggered by a user.
+
+on: 
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  api-qa-testing:
+    runs-on: ubuntu-latest
+    environment: development
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    name: API QA Testing
+    env:
+      PORT: 4000
+      NODE_ENV: test
+      DB_NAME: test_db
+      DB_HOST: localhost
+      DB_USER: test_user
+      DB_PASS: test_password
+      DB_PORT: 5432
+      DB_SSL: false
+      OIDC_ISSUER: ${{ vars.API_OIDC_ISSUER }}
+      OIDC_JWKS_URI: ${{ vars.API_OIDC_JWKS_URI }}
+      OIDC_CLIENT_ID: ${{ vars.WEB_OIDC_CLIENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies with npm ci
+        run: npm ci
+
+      - name: Build API Components
+        run: npm run build:api
+
+      - name: Build @Repo/DB Components
+        run: npm run build:@repo/db
+
+      - name: Database Migration
+        run: npm run db:migrate
+
+      - name: Run API Unit Tests
+        run: npm run test:unit
+
+      - name: Run API Integration Tests
+        run: npm run test:int
+
+      - name: Run Coverage Test
+        run: npm run test:cov
+
+  web-qa-testing:
+    name: Web QA Testing
+    runs-on: ubuntu-latest
+    environment: development
+    env:
+      APP_PORT: 5173
+      NODE_ENV: test
+      VITE_API_URI: http://localhost:4000
+      VITE_APP_NAME: "Single Digital Gateway"
+      VITE_OIDC_ISSUER: ${{ vars.WEB_OIDC_ISSUER }}
+      VITE_OIDC_CLIENT_ID: $${ vars.WEB_OIDC_CLIENT_ID }
+      VITE_OIDC_REDIRECT_URI: http://localhost:5173/callback
+      VITE_OIDC_POST_LOGOUT_REDIRECT_URI: http://localhost:5173
+      VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
+      VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies with npm ci
+        run: npm ci
+
+      - name: Run Cypress Component Tests
+        uses: cypress-io/github-action@v7
+        with:
+          build: npm run build:web
+          component: true
+          command: npm run cy:component
+
+      - name: Run Cypress E2E Tests
+        uses: cypress-io/github-action@v7
+        with:
+          build: npm run build:web
+          start: npm run dev:web
+          wait-on: 'http://localhost:5173'
+          browser: chrome
+          command: npm run cy:e2e
