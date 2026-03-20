@@ -42,7 +42,6 @@ WORKDIR /app
 
 # Copy production dependencies
 COPY --from=dependencies /app/node_modules ./node_modules/
-COPY --from=dependencies /app/apps/api/node_modules ./apps/api/node_modules/
 
 # Copy built application
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
