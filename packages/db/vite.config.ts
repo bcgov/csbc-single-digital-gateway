@@ -1,3 +1,4 @@
+import { builtinModules } from "module";
 import path from "path";
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
@@ -10,7 +11,15 @@ export default defineConfig({
       fileName: (format) => (format === "es" ? "index.js" : "index.cjs"),
     },
     rollupOptions: {
-      external: ["drizzle-orm", "pg", "zod", /^drizzle-orm\/.*/],
+      external: [
+        ...builtinModules,
+        ...builtinModules.map((m) => `node:${m}`),
+        "pg",
+        "drizzle-orm",
+        /^drizzle-orm\//,
+        "zod",
+        /^zod\//,
+      ],
     },
   },
   plugins: [

@@ -106,3 +106,7 @@ For app-specific documentation, see the following files:
 For package-specific documentation, see the following files:
 - [./packages/db/DEVELOPER.md](./packages/db/DEVELOPER.md)
 - [./packages/ui/DEVELOPER.md](./packages/ui/DEVELOPER.md)
+
+For QA testing-specific documentation, see the following files:
+- [./apps/api/tests/README.md](./apps/api/tests/README.md)
+- [./apps/web/tests/README.md](./apps/web/tests/README.md)
