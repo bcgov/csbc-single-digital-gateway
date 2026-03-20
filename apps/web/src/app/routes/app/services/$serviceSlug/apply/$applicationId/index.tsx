@@ -52,24 +52,26 @@ export const Route = createFileRoute(
     return { service, application };
   },
   staticData: {
-    breadcrumbs: (loaderData?: {
-      service: ServiceDto;
-      application: { label: string };
-    }) => [
-      { label: "Services", to: "/app/services" },
-      ...(loaderData?.service
-        ? [
-            {
-              label: loaderData.service.name,
-              to: "/app/services/$serviceSlug" as const,
-              params: { serviceSlug: loaderData.service.slug },
-            },
-          ]
-        : []),
-      ...(loaderData?.application
-        ? [{ label: `Apply for ${loaderData.application.label}` }]
-        : []),
-    ],
+    breadcrumbs: (loaderData: unknown) => {
+      const data = loaderData as
+        | { service: ServiceDto; application: { label: string } }
+        | undefined;
+      return [
+        { label: "Services", to: "/app/services" },
+        ...(data?.service
+          ? [
+              {
+                label: data.service.name,
+                to: "/app/services/$serviceSlug" as const,
+                params: { serviceSlug: data.service.slug },
+              },
+            ]
+          : []),
+        ...(data?.application
+          ? [{ label: `Apply for ${data.application.label}` }]
+          : []),
+      ];
+    },
   },
   component: RouteComponent,
 });

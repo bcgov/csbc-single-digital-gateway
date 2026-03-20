@@ -57,19 +57,22 @@ export const Route = createFileRoute(
     return { service, application, documentIds };
   },
   staticData: {
-    breadcrumbs: (loaderData?: { service: ServiceDto }) => [
-      { label: "Services", to: "/app/services" },
-      ...(loaderData?.service
-        ? [
-            {
-              label: loaderData.service.name,
-              to: "/app/services/$serviceSlug" as const,
-              params: { serviceSlug: loaderData.service.slug },
-            },
-          ]
-        : []),
-      { label: "Data & privacy" },
-    ],
+    breadcrumbs: (loaderData: unknown) => {
+      const data = loaderData as { service: ServiceDto } | undefined;
+      return [
+        { label: "Services", to: "/app/services" },
+        ...(data?.service
+          ? [
+              {
+                label: data.service.name,
+                to: "/app/services/$serviceSlug" as const,
+                params: { serviceSlug: data.service.slug },
+              },
+            ]
+          : []),
+        { label: "Data & privacy" },
+      ];
+    },
   },
   component: DataAndPrivacyComponent,
 });
