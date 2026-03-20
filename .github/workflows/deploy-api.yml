@@ -57,4 +57,10 @@ jobs:
           --set podAnnotations.deployedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           --set app.oidc.issuer="${{ vars.API_OIDC_ISSUER }}" \
           --set app.oidc.jwksUri="${{ vars.API_OIDC_JWKS_URI }}" \
+          --set app.oidc.clientId="${{ vars.API_OIDC_CLIENT_ID }}" \
+          --set app.oidc.clientSecret="${{ secrets.API_OIDC_CLIENT_SECRET }}" \
+          --set app.oidc.redirectUri="https://${{ vars.API_BASE_URL }}/auth/callback" \
+          --set app.oidc.postLogoutRedirectUri="https://${{ vars.WEB_BASE_URL }}/" \
+          --set app.session.secret="${{ secrets.API_SESSION_SECRET }}" \
+          --set app.frontendUrl="https://${{ vars.WEB_BASE_URL }}" \
           --labels app.kubernetes.io/part-of=csbc-single-digital-gateway

@@ -75,21 +75,9 @@ This template will fail the deployment if required values are not set
 {{- define "web.validateValues" -}}
 {{- $errors := list -}}
 
-{{/* Validate OIDC configuration */}}
-{{- if not .Values.app.oidc.issuer }}
-{{- $errors = append $errors "app.oidc.issuer is required. Please set the OIDC issuer URL." }}
-{{- end }}
-
-{{- if not .Values.app.oidc.clientId }}
-{{- $errors = append $errors "app.oidc.clientId is required. Please set the OIDC client ID." }}
-{{- end }}
-
-{{- if not .Values.app.oidc.redirectUri }}
-{{- $errors = append $errors "app.oidc.redirectUri is required. Please set the OIDC redirect URI." }}
-{{- end }}
-
-{{- if not .Values.app.oidc.postLogoutRedirectUri }}
-{{- $errors = append $errors "app.oidc.postLogoutRedirectUri is required. Please set the OIDC post-logout redirect URI." }}
+{{/* Validate auth configuration */}}
+{{- if not .Values.app.authUrl }}
+{{- $errors = append $errors "app.authUrl is required. Please set the API auth URL." }}
 {{- end }}
 
 {{/* Validate API configuration */}}
@@ -103,7 +91,7 @@ This template will fail the deployment if required values are not set
 {{- range $errors }}
 {{- $errorMessage = printf "%s\n  - %s" $errorMessage . }}
 {{- end }}
-{{- $errorMessage = printf "%s\n\nPlease provide these values via:\n  - values file: -f values.dev.yaml\n  - command line: --set app.oidc.issuer=https://example.com --set app.oidc.clientId=my-client\n" $errorMessage }}
+{{- $errorMessage = printf "%s\n\nPlease provide these values via:\n  - values file: -f values.dev.yaml\n  - command line: --set app.authUrl=https://api.example.com\n" $errorMessage }}
 {{- fail $errorMessage }}
 {{- end }}
 

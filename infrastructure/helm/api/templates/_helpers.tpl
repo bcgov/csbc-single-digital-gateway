@@ -111,6 +111,30 @@ This template will fail the deployment if required values are not set
 {{- $errors = append $errors "app.oidc.jwksUri is required. Please set the OIDC JWKS URI." }}
 {{- end }}
 
+{{- if not .Values.app.oidc.clientId }}
+{{- $errors = append $errors "app.oidc.clientId is required. Please set the OIDC client ID." }}
+{{- end }}
+
+{{- if not .Values.app.oidc.clientSecret }}
+{{- $errors = append $errors "app.oidc.clientSecret is required. Please set the OIDC client secret." }}
+{{- end }}
+
+{{- if not .Values.app.oidc.redirectUri }}
+{{- $errors = append $errors "app.oidc.redirectUri is required. Please set the OIDC redirect URI." }}
+{{- end }}
+
+{{- if not .Values.app.oidc.postLogoutRedirectUri }}
+{{- $errors = append $errors "app.oidc.postLogoutRedirectUri is required. Please set the OIDC post-logout redirect URI." }}
+{{- end }}
+
+{{- if not .Values.app.session.secret }}
+{{- $errors = append $errors "app.session.secret is required. Please set the session secret." }}
+{{- end }}
+
+{{- if not .Values.app.frontendUrl }}
+{{- $errors = append $errors "app.frontendUrl is required. Please set the frontend URL." }}
+{{- end }}
+
 {{/* Output all errors */}}
 {{- if $errors }}
 {{- $errorMessage := "\n\nVALIDATION ERRORS - Required values are missing:\n" }}

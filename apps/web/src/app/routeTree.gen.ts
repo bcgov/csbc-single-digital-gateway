@@ -105,15 +105,15 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/': typeof publicIndexRoute
   '/app/': typeof AppIndexRoute
-  '/dev': typeof DevIndexRoute
+  '/dev/': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
-  '/app/services': typeof AppServicesIndexRoute
+  '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
-  '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
+  '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
-  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
+  '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof publicIndexRoute
@@ -151,15 +151,15 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/'
     | '/app/'
-    | '/dev'
+    | '/dev/'
     | '/app/settings/consent-history'
-    | '/app/services'
+    | '/app/services/'
     | '/app/settings/'
     | '/app/settings/consent-history/$statementId'
-    | '/app/services/$serviceSlug'
+    | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
-    | '/app/services/$serviceSlug/apply/$applicationId'
+    | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -215,7 +215,7 @@ declare module '@tanstack/react-router' {
     '/dev/': {
       id: '/dev/'
       path: '/dev'
-      fullPath: '/dev'
+      fullPath: '/dev/'
       preLoaderRoute: typeof DevIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -250,7 +250,7 @@ declare module '@tanstack/react-router' {
     '/app/services/': {
       id: '/app/services/'
       path: '/services'
-      fullPath: '/app/services'
+      fullPath: '/app/services/'
       preLoaderRoute: typeof AppServicesIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -271,7 +271,7 @@ declare module '@tanstack/react-router' {
     '/app/services/$serviceSlug/': {
       id: '/app/services/$serviceSlug/'
       path: '/services/$serviceSlug'
-      fullPath: '/app/services/$serviceSlug'
+      fullPath: '/app/services/$serviceSlug/'
       preLoaderRoute: typeof AppServicesServiceSlugIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -285,7 +285,7 @@ declare module '@tanstack/react-router' {
     '/app/services/$serviceSlug/apply/$applicationId/': {
       id: '/app/services/$serviceSlug/apply/$applicationId/'
       path: '/services/$serviceSlug/apply/$applicationId'
-      fullPath: '/app/services/$serviceSlug/apply/$applicationId'
+      fullPath: '/app/services/$serviceSlug/apply/$applicationId/'
       preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }

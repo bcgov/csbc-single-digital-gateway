@@ -18,10 +18,7 @@ The following parameters **must** be provided during installation. The chart wil
 | Parameter | Description | Example |
 |-----------|-------------|---------|
 | `app.apiUri` | Backend API URI | `https://api-dev.apps.example.com` |
-| `app.oidc.issuer` | OIDC issuer URL | `https://sso-dev.apps.silver.devops.gov.bc.ca/auth/realms/csbc` |
-| `app.oidc.clientId` | OIDC client ID | `csbc-web` |
-| `app.oidc.redirectUri` | OIDC redirect URI after login | `https://web-dev.apps.example.com/callback` |
-| `app.oidc.postLogoutRedirectUri` | OIDC redirect URI after logout | `https://web-dev.apps.example.com` |
+| `app.authUrl` | API URL for auth redirects (BFF pattern) | `https://api-dev.apps.example.com` |
 
 ## Installation
 
@@ -33,10 +30,7 @@ helm upgrade --install web ./infrastructure/helm/web \
   --create-namespace \
   -f ./infrastructure/helm/web/values.dev.yaml \
   --set app.apiUri=https://api-dev.apps.example.com \
-  --set app.oidc.issuer=https://sso-dev.example.com/auth/realms/csbc \
-  --set app.oidc.clientId=csbc-web \
-  --set app.oidc.redirectUri=https://web-dev.apps.example.com/callback \
-  --set app.oidc.postLogoutRedirectUri=https://web-dev.apps.example.com \
+  --set app.authUrl=https://api-dev.apps.example.com \
   --set route.host=web-dev.apps.example.com
 ```
 
@@ -47,10 +41,7 @@ helm upgrade --install web ./infrastructure/helm/web \
   --namespace csbc-test \
   -f ./infrastructure/helm/web/values.test.yaml \
   --set app.apiUri=https://api-test.apps.example.com \
-  --set app.oidc.issuer=https://sso-test.example.com/auth/realms/csbc \
-  --set app.oidc.clientId=csbc-web \
-  --set app.oidc.redirectUri=https://web-test.apps.example.com/callback \
-  --set app.oidc.postLogoutRedirectUri=https://web-test.apps.example.com \
+  --set app.authUrl=https://api-test.apps.example.com \
   --set route.host=web-test.apps.example.com
 ```
 
@@ -62,10 +53,7 @@ helm upgrade --install web ./infrastructure/helm/web \
   -f ./infrastructure/helm/web/values.prod.yaml \
   --set image.tag=${IMAGE_TAG} \
   --set app.apiUri=https://api.example.com \
-  --set app.oidc.issuer=https://sso.example.com/auth/realms/csbc \
-  --set app.oidc.clientId=csbc-web \
-  --set app.oidc.redirectUri=https://web.example.com/callback \
-  --set app.oidc.postLogoutRedirectUri=https://web.example.com \
+  --set app.authUrl=https://api.example.com \
   --set route.host=web.example.com
 ```
 
@@ -76,8 +64,7 @@ The chart includes built-in validation for required parameters. If any required 
 ```
 VALIDATION ERRORS - Required values are missing:
 
-  - app.oidc.issuer is required. Please set the OIDC issuer URL.
-  - app.oidc.clientId is required. Please set the OIDC client ID.
+  - app.authUrl is required. Please set the API auth URL.
   ...
 ```
 
@@ -89,10 +76,7 @@ VALIDATION ERRORS - Required values are missing:
 helm lint ./infrastructure/helm/web \
   -f ./infrastructure/helm/web/values.dev.yaml \
   --set app.apiUri=https://api.example.com \
-  --set app.oidc.issuer=https://sso.example.com/realms/test \
-  --set app.oidc.clientId=test-client \
-  --set app.oidc.redirectUri=https://web.example.com/callback \
-  --set app.oidc.postLogoutRedirectUri=https://web.example.com
+  --set app.authUrl=https://api.example.com
 ```
 
 ### Render templates locally
@@ -101,10 +85,7 @@ helm lint ./infrastructure/helm/web \
 helm template test ./infrastructure/helm/web \
   -f ./infrastructure/helm/web/values.dev.yaml \
   --set app.apiUri=https://api.example.com \
-  --set app.oidc.issuer=https://sso.example.com/realms/test \
-  --set app.oidc.clientId=test-client \
-  --set app.oidc.redirectUri=https://web.example.com/callback \
-  --set app.oidc.postLogoutRedirectUri=https://web.example.com
+  --set app.authUrl=https://api.example.com
 ```
 
 ### Dry-run installation
@@ -115,10 +96,7 @@ helm install test ./infrastructure/helm/web \
   --namespace csbc-dev \
   -f ./infrastructure/helm/web/values.dev.yaml \
   --set app.apiUri=https://api.example.com \
-  --set app.oidc.issuer=https://sso.example.com/realms/test \
-  --set app.oidc.clientId=test-client \
-  --set app.oidc.redirectUri=https://web.example.com/callback \
-  --set app.oidc.postLogoutRedirectUri=https://web.example.com
+  --set app.authUrl=https://api.example.com
 ```
 
 ## Configuration
@@ -135,6 +113,7 @@ helm install test ./infrastructure/helm/web \
 | `app.port` | Application port | `80` |
 | `app.appName` | Application name displayed in UI | `CSBC Single Digital Gateway` |
 | `app.apiUri` | Backend API URI | `""` (required) |
+| `app.authUrl` | API URL for auth redirects | `""` (required) |
 | `resources.requests.cpu` | CPU request | `50m` |
 | `resources.requests.memory` | Memory request | `128Mi` |
 | `resources.limits.cpu` | CPU limit | `250m` |
@@ -207,10 +186,7 @@ helm upgrade web ./infrastructure/helm/web \
   -n csbc-dev \
   -f ./infrastructure/helm/web/values.dev.yaml \
   --set app.apiUri=https://api.example.com \
-  --set app.oidc.issuer=https://sso.example.com/auth/realms/csbc \
-  --set app.oidc.clientId=csbc-web \
-  --set app.oidc.redirectUri=https://web.example.com/callback \
-  --set app.oidc.postLogoutRedirectUri=https://web.example.com
+  --set app.authUrl=https://api.example.com
 ```
 
 ## Uninstall

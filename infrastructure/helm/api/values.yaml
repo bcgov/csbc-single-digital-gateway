@@ -48,6 +48,22 @@ app:
     issuer: ""
     # OIDC JWKS URI for JWT validation (REQUIRED - must be set during deployment)
     jwksUri: ""
+    # OIDC client ID for BFF auth (REQUIRED - must be set during deployment)
+    clientId: ""
+    # OIDC client secret for BFF auth (REQUIRED - sensitive, stored in Secret)
+    clientSecret: ""
+    # OIDC redirect URI after login (REQUIRED - must be set during deployment)
+    redirectUri: ""
+    # OIDC redirect URI after logout (REQUIRED - must be set during deployment)
+    postLogoutRedirectUri: ""
+
+  # Session configuration
+  session:
+    # Express session secret (REQUIRED - sensitive, stored in Secret)
+    secret: ""
+
+  # Frontend URL for CORS and redirects (REQUIRED - must be set during deployment)
+  frontendUrl: ""
 
 # Database migrations configuration
 migrations:
