@@ -7,7 +7,7 @@ import {
 import { ConsentGate } from "../../../../../../../features/services/components/consent-gate.component";
 import { consentDocumentsQueryOptions } from "../../../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
-import type { ServiceDto } from "../../../../../../../features/services/service.dto";
+import type { ApplicationDto, ServiceDto } from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
@@ -41,8 +41,8 @@ export const Route = createFileRoute(
     if (!service) {
       throw notFound();
     }
-    const application = service.applications?.find(
-      (a) => a.id === params.applicationId,
+    const application = service.application?.applications?.find(
+      (a: ApplicationDto) => a.id === params.applicationId,
     );
     if (!application) {
       throw notFound();

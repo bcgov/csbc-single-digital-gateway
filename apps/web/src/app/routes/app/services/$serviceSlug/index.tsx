@@ -14,6 +14,7 @@ import { IconCake, IconPlayerPlay } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "../../../../../../../../packages/ui/src/lib/utils";
 import { EligibilityCriteria } from "../../../../../features/services/components/eligibility-criteria.component";
 import { eligibilityCriteria } from "../../../../../features/services/components/eligibility-criteria.placeholder";
 import { LegalInformationAccordion } from "../../../../../features/services/components/legal-information-accordion.component";
@@ -75,67 +76,65 @@ function RouteComponent() {
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex flex-col gap-4 flex-1">
           <h1>{service.name}</h1>
-          <p className="text-muted-foreground" ref={descriptionRef}>
-            {service.description?.short}
-          </p>
+          {service.description?.short && (
+            <p className="text-muted-foreground" ref={descriptionRef}>
+              {service.description.short}
+            </p>
+          )}
         </div>
-        <Link
-          to="/app/services"
-          className={buttonVariants({ variant: "default", size: "default" })}
-        >
-          <IconPlayerPlay size={16} />
-          Internal button
-        </Link>
-        <a
-          href="https://www2.gov.bc.ca"
-          className={buttonVariants({ variant: "default", size: "default" })}
-        >
-          <IconPlayerPlay size={16} /> External button
-        </a>
-        {service.applications && service.applications.length === 1 && (
-          <div className="flex items-center">
-            <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80">
+        {service.application?.applications &&
+          service.application.applications.length === 1 && (
+            <span>
               <Link
-                className="flex items-center gap-2"
                 to="/app/services/$serviceSlug/apply/$applicationId"
+                className={buttonVariants({
+                  variant: "default",
+                  size: "default",
+                })}
                 params={{
                   serviceSlug: service.slug,
-                  applicationId: service.applications[0].id,
+                  applicationId: service.application.applications[0].id,
                 }}
               >
                 <IconPlayerPlay size={16} />
                 Start online application
               </Link>
-            </Button>
-          </div>
-        )}
-        {service.applications && service.applications.length > 1 && (
-          <div className="flex items-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger className=" w-full md:w-auto">
-                <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80 w-full md:w-auto">
-                  <IconPlayerPlay />
-                  Start online application
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-50">
-                {service.applications.map((app) => (
-                  <DropdownMenuItem key={app.id}>
-                    <Link
-                      to="/app/services/$serviceSlug/apply/$applicationId"
-                      params={{
-                        serviceSlug: service.slug,
-                        applicationId: app.id,
-                      }}
-                    >
-                      {app.label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
+            </span>
+          )}
+        {service.application?.applications &&
+          service.application.applications.length > 1 && (
+            <div className="flex items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger className=" w-full md:w-auto">
+                  <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80 w-full md:w-auto">
+                    <IconPlayerPlay />
+                    Start online application
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-50">
+                  {service.application.applications
+                    .filter((app) => app.blockType === "form")
+                    .map((app) => {
+                      const online = app.online[0];
+                      if (!online) return null;
+                      return (
+                        <DropdownMenuItem key={app.id}>
+                          <Link
+                            to="/app/services/$serviceSlug/apply/$applicationId"
+                            params={{
+                              serviceSlug: service.slug,
+                              applicationId: app.id,
+                            }}
+                          >
+                            {online.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
       </div>
       <ServicePageNavigation
         serviceName={service.name}
@@ -149,15 +148,16 @@ function RouteComponent() {
               id="overview"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              {/* placeholder - having an h2 would be good here as we're recommending the RTE content only use h3-h6 */}
+              {/* having an h2 would be good here as we're recommending the RTE content only use h3-h6 */}
               <h2>About</h2>
-              <p>
-                Income Assistance provides temporary financial support to help
-                you meet basic needs while you work toward employment or other
-                sources of income.
-              </p>
-
-              {service.content && <LexicalContent content={service.content} />}
+              <span>
+                {service.description?.long && <p>{service.description.long}</p>}
+              </span>
+              <span>
+                {service.content && (
+                  <LexicalContent content={service.content} />
+                )}
+              </span>
             </div>
             {/* Data & privacy */}
             <div
@@ -166,11 +166,13 @@ function RouteComponent() {
             >
               <h2 className="section-heading">Data & privacy</h2>
               <div className="flex flex-col gap-4">
-                <ConsentDocumentsAccordion
-                  documentIds={(service.settings?.consent ?? []).map(
-                    ({ documentId }) => documentId,
-                  )}
-                />
+                <span>
+                  <ConsentDocumentsAccordion
+                    documentIds={(service.settings?.consent ?? []).map(
+                      ({ documentId }) => documentId,
+                    )}
+                  />
+                </span>
               </div>
             </div>
             {/* Eligibility criteria */}
@@ -186,7 +188,9 @@ function RouteComponent() {
                   sources of income.
                 </p>
                 <h3>Criteria</h3>
-                <EligibilityCriteria criteria={eligibilityCriteria} />
+                <span className="border">
+                  <EligibilityCriteria criteria={eligibilityCriteria} />
+                </span>
               </div>
             </div>
             {/* Application process */}
@@ -196,57 +200,64 @@ function RouteComponent() {
             >
               <h2 className="section-heading">Application process</h2>
               <div className="flex flex-col gap-4 min-h-48">
-                <p>
-                  The application requires you to submit a lot of documents and
-                  the forms could be lengthy. You don't have to do this alone,
-                  you could seek the help of:
-                </p>
-                <ol className="list-inside pl-2 list-decimal">
-                  <li>
-                    <a href="#">Staff at our offices</a>
-                  </li>
-                  <li>
-                    <a href="#">Other organizations that provide support</a>
-                  </li>
-                  <li>
-                    <a href="#">A family member or friend</a>
-                  </li>
-                </ol>
-                <p>You can apply in two ways:</p>
-                <div className="flex flex-col gap-px border bg-border">
-                  <div className="grid grid-cols-2 gap-px">
-                    <Link
-                      to={"#foo" as string}
-                      className="flex flex-col items-center bg-white p-4"
-                    >
-                      <span className="p-4 bg-blue-10 inline-flex">
-                        <IconCake
-                          className="shrink-0 pb-2"
-                          size={42}
-                          stroke={1.5}
-                          color="#1e5189"
-                        />
-                      </span>
-                      <p className="font-bold py-2">Online application</p>
-                      <p>Apply online through MyBC</p>
-                    </Link>
-                    <Link
-                      to={"#bar" as string}
-                      className="flex flex-col items-center bg-white p-4"
-                    >
-                      <span className="p-4 bg-blue-10 inline-flex">
-                        <IconCake
-                          className="shrink-0 pb-2"
-                          size={42}
-                          stroke={1.5}
-                          color="#1e5189"
-                        />
-                      </span>
-                      <p className="font-bold py-2">Paper form</p>
-                      <p>You can apply by mail or in person</p>
-                    </Link>
-                  </div>
-                </div>
+                {!service.application?.description &&
+                  (!service.application?.applications ||
+                    service.application.applications.length === 0) && (
+                    <p className="text-muted-foreground">
+                      No application process information is available.
+                    </p>
+                  )}
+
+                {service.application?.description && (
+                  <span>
+                    <LexicalContent content={service.application.description} />
+                  </span>
+                )}
+
+                {service.application?.applications &&
+                  service.application.applications.length > 0 && (
+                    <div className="flex flex-col gap-px border bg-border">
+                      <div
+                        className={cn(
+                          "grid gap-px",
+                          service.application.applications.length > 1 &&
+                            "grid-cols-2 md:grid-cols-3",
+                        )}
+                      >
+                        {service.application.applications
+                          .filter((app) => app.online?.[0]?.url)
+                          .map((app) => {
+                            const online = app.online?.[0];
+
+                            if (!online?.url) return null; // satisfies TS/linter
+
+                            return (
+                              <a
+                                key={online.id}
+                                href={online.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center bg-white p-4 text-center no-underline hover:bg-accent"
+                              >
+                                <span className="p-4 bg-blue-10 inline-flex">
+                                  <IconCake
+                                    size={42}
+                                    stroke={1.5}
+                                    color="#1e5189"
+                                  />
+                                </span>
+
+                                <p className="font-bold py-2">{online.label}</p>
+
+                                {online.description && (
+                                  <p>{online.description}</p>
+                                )}
+                              </a>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
             {/* Your activity */}
@@ -284,15 +295,30 @@ function RouteComponent() {
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
               <h2 className="section-heading">More information</h2>
-              <div className="flex flex-col gap-4 min-h-48"></div>
+              <div className="flex flex-col gap-4 min-h-48">
+                {service.faq && service.faq.length > 0 && (
+                  <AccordionGroup values={service.faq.map((item) => item.id)}>
+                    {service.faq.map((item) => (
+                      <AccordionItem key={item.id} value={item.id}>
+                        <AccordionTrigger>{item.question}</AccordionTrigger>
+                        <AccordionContent>
+                          <p>{item.answer}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </AccordionGroup>
+                )}
+              </div>
             </div>
           </div>
         </div>
         <div className="col-span-1">
           <div className="flex flex-col gap-6">
-            <ResourcesSupportAccordion />
-            <OtherServicesAccordion />
-            <LegalInformationAccordion />
+            <span>
+              <ResourcesSupportAccordion service={service} />
+              <OtherServicesAccordion service={service} />
+              <LegalInformationAccordion service={service} />
+            </span>
           </div>
         </div>
       </div>

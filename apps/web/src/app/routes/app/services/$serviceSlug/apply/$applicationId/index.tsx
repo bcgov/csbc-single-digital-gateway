@@ -46,8 +46,8 @@ export const Route = createFileRoute(
     if (!service) {
       throw notFound();
     }
-    const application = service.applications?.find(
-      (a) => a.id === params.applicationId,
+    const application = service.application?.applications?.find(
+      (a: ApplicationDto) => a.id === params.applicationId,
     );
     if (!application) {
       throw notFound();
@@ -89,7 +89,7 @@ function RouteComponent() {
   const service =
     services.find((s) => s.slug === loaderService.slug) ?? loaderService;
   const application =
-    service.applications?.find(
+    service.application?.applications?.find(
       (a: ApplicationDto) => a.id === loaderApplication.id,
     ) ?? loaderApplication;
   const navigate = useNavigate();
