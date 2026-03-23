@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthGuard } from '../guards/auth.guard';
-import { AuthService } from '../auth.service';
+import { AuthService } from '../services/auth.service';
 
 jest.mock('jwks-rsa', () => ({
   JwksClient: jest.fn().mockImplementation(() => ({

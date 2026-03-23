@@ -12,8 +12,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { AuthService } from '../services/auth.service';
 import { PublicRoute } from '../decorators/public-route.decorator';
+import { AuthService } from '../services/auth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -54,7 +54,11 @@ export class AuthController {
     try {
       await this.authService.handleCallback(callbackUrl, req.session);
     } catch (error) {
-      this.logger.error('OIDC callback failed', (error as Error).message);
+      this.logger.error(
+        `OIDC callback failed: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+
       res.redirect(
         `${this.configService.get('FRONTEND_URL')}?error=auth_failed`,
       );

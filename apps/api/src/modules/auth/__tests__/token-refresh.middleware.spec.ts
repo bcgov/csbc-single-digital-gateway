@@ -1,5 +1,5 @@
 import { TokenRefreshMiddleware } from '../middleware/token-refresh.middleware';
-import { AuthService } from '../auth.service';
+import { AuthService } from '../services/auth.service';
 
 const mockAuthService = {
   isTokenExpiringSoon: jest.fn(),

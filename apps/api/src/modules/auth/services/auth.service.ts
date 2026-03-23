@@ -51,14 +51,26 @@ export class AuthService {
     callbackUrl: URL,
     session: Session & Partial<SessionData>,
   ): Promise<void> {
-    const tokens = await client.authorizationCodeGrant(
-      this.oidcClient,
-      callbackUrl,
-      {
-        pkceCodeVerifier: session.oidcCodeVerifier,
-        expectedState: session.oidcState,
-      },
-    );
+    let tokens: Awaited<ReturnType<typeof client.authorizationCodeGrant>>;
+    try {
+      tokens = await client.authorizationCodeGrant(
+        this.oidcClient,
+        callbackUrl,
+        {
+          pkceCodeVerifier: session.oidcCodeVerifier,
+          expectedState: session.oidcState,
+        },
+      );
+    } catch (error) {
+      const cause = (error as Error).cause;
+      if (cause instanceof Response) {
+        const body = await cause.text();
+        this.logger.error(
+          `Token exchange failed: HTTP ${cause.status} — ${body}`,
+        );
+      }
+      throw error;
+    }
 
     const claims = tokens.claims();
     const expiresAt = tokens.expiresIn()

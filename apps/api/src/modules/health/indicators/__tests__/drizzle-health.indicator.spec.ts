@@ -23,7 +23,9 @@ describe('DrizzleHealthIndicator', () => {
   });
 
   it('Should return up when database responds', async () => {
-    const mockDb = { execute: jest.fn().mockResolvedValue([{ '?column?': 1 }]) };
+    const mockDb = {
+      execute: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+    };
     const result = await indicator.isHealthy('database', mockDb as never);
     expect(result).toEqual({ database: { status: 'up' } });
     expect(mockDb.execute).toHaveBeenCalled();

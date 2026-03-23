@@ -1,8 +1,8 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from '../auth.controller';
-import { AuthService } from '../auth.service';
+import { AuthController } from '../controllers/auth.controller';
+import { AuthService } from '../services/auth.service';
 
 const mockAuthService = {
   buildAuthorizationUrl: jest.fn(),
@@ -122,9 +122,7 @@ describe('AuthController', () => {
     });
 
     it('Should redirect with error when callback fails', async () => {
-      mockAuthService.handleCallback.mockRejectedValue(
-        new Error('OIDC error'),
-      );
+      mockAuthService.handleCallback.mockRejectedValue(new Error('OIDC error'));
       const req = createMockRequest();
       const res = createMockResponse();
 
@@ -168,9 +166,7 @@ describe('AuthController', () => {
       mockAuthService.getUserProfile.mockReturnValue(null);
       const req = createMockRequest();
 
-      expect(() => controller.me(req as never)).toThrow(
-        UnauthorizedException,
-      );
+      expect(() => controller.me(req as never)).toThrow(UnauthorizedException);
     });
   });
 });

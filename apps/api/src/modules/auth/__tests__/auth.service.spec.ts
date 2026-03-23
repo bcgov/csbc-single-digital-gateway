@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as client from 'openid-client';
-import { AuthService } from '../auth.service';
+import { AuthService } from '../services/auth.service';
 import { OIDC_CLIENT } from '../auth.config';
 
 jest.mock('openid-client');
