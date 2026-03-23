@@ -44,7 +44,7 @@ async function bootstrapMain() {
     session({
       store: new PgSession({
         conString: `postgresql://${configService.get('DB_USER')}:${configService.get('DB_PASS')}@${configService.get('DB_HOST')}:${configService.get('DB_PORT')}/${configService.get('DB_NAME')}${configService.get('DB_SSL') ? '?sslmode=require' : ''}`,
-        createTableIfMissing: true,
+        createTableIfMissing: false,
       }),
       secret: sessionSecret,
       resave: false,
