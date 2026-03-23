@@ -5,6 +5,17 @@ CREATE TYPE "public"."org_unit_member_role" AS ENUM('admin', 'member');--> state
 CREATE TYPE "public"."org_unit_type" AS ENUM('org', 'division', 'branch', 'team');--> statement-breakpoint
 CREATE TYPE "public"."service_contributor_role" AS ENUM('owner');--> statement-breakpoint
 CREATE TYPE "public"."service_version_status" AS ENUM('draft', 'published', 'archived');--> statement-breakpoint
+CREATE TYPE "public"."role" AS ENUM('admin', 'staff', 'citizen');--> statement-breakpoint
+CREATE TABLE "identities" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid,
+	"issuer" text NOT NULL,
+	"sub" text NOT NULL,
+	"claims" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "consent_document_contributors" (
 	"consent_document_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -154,6 +165,22 @@ CREATE TABLE "services" (
 	CONSTRAINT "services_serviceTypeId_unique" UNIQUE("service_type_id")
 );
 --> statement-breakpoint
+CREATE TABLE "user_roles" (
+	"user_id" uuid NOT NULL,
+	"role" "role" NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "user_roles_user_id_role_pk" PRIMARY KEY("user_id","role")
+);
+--> statement-breakpoint
+CREATE TABLE "users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text,
+	"email" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "identities" ADD CONSTRAINT "identities_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "consent_document_contributors" ADD CONSTRAINT "consent_document_contributors_consent_document_id_consent_documents_id_fk" FOREIGN KEY ("consent_document_id") REFERENCES "public"."consent_documents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "consent_document_contributors" ADD CONSTRAINT "consent_document_contributors_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "consent_document_types" ADD CONSTRAINT "consent_document_types_schema_id_schemas_id_fk" FOREIGN KEY ("schema_id") REFERENCES "public"."schemas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -180,6 +207,8 @@ ALTER TABLE "service_versions" ADD CONSTRAINT "service_versions_service_id_servi
 ALTER TABLE "services" ADD CONSTRAINT "services_org_unit_id_org_units_id_fk" FOREIGN KEY ("org_unit_id") REFERENCES "public"."org_units"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "services" ADD CONSTRAINT "services_published_service_version_id_service_versions_id_fk" FOREIGN KEY ("published_service_version_id") REFERENCES "public"."service_versions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "services" ADD CONSTRAINT "services_service_type_id_service_types_id_fk" FOREIGN KEY ("service_type_id") REFERENCES "public"."service_types"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "identities_issuer_sub_unique" ON "identities" USING btree ("issuer","sub");--> statement-breakpoint
 CREATE UNIQUE INDEX "consent_document_version_translations_consent_document_version_locale_unique" ON "consent_document_version_translations" USING btree ("consent_document_version_id","locale");--> statement-breakpoint
 CREATE UNIQUE INDEX "consent_document_versions_consent_document_version_unique" ON "consent_document_versions" USING btree ("consent_document_id","version");--> statement-breakpoint
 CREATE UNIQUE INDEX "schema_versions_schema_version_unique" ON "schema_versions" USING btree ("schema_id","version");--> statement-breakpoint
