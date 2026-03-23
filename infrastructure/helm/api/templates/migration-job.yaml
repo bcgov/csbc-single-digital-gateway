@@ -47,12 +47,12 @@ spec:
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.app.database.secretName | quote }}
+              name: {{ .Values.migrations.database.secretName | quote }}
               key: dbname
         - name: DB_HOST
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.app.database.secretName | quote }}
+              name: {{ .Values.migrations.database.secretName | quote }}
               {{- if .Values.migrations.useDirectConnection }}
               key: host
               {{- else }}
@@ -61,7 +61,7 @@ spec:
         - name: DB_PORT
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.app.database.secretName | quote }}
+              name: {{ .Values.migrations.database.secretName | quote }}
               {{- if .Values.migrations.useDirectConnection }}
               key: port
               {{- else }}
@@ -70,12 +70,12 @@ spec:
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.app.database.secretName | quote }}
+              name: {{ .Values.migrations.database.secretName | quote }}
               key: user
         - name: DB_PASS
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.app.database.secretName | quote }}
+              name: {{ .Values.migrations.database.secretName | quote }}
               key: password
         - name: DB_SSL
           value: {{ .Values.app.database.ssl | quote }}

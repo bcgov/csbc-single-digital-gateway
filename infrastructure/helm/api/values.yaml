@@ -78,6 +78,10 @@ migrations:
     # Overrides the image tag (defaults to chart appVersion)
     tag: ""
 
+  # Database configuration for migrations (uses postgres superuser for DDL privileges)
+  database:
+    secretName: "csbc-single-digital-gateway-postgres-pguser-postgres"
+
   # Use direct database connection instead of pgbouncer for migrations
   # Recommended for DDL operations that pgbouncer may not handle correctly
   useDirectConnection: false
