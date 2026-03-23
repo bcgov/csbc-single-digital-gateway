@@ -15,6 +15,7 @@ const mockConfigService = {
   get: jest.fn((key: string) => {
     const config: Record<string, string> = {
       FRONTEND_URL: 'https://frontend.example.com',
+      OIDC_REDIRECT_URI: 'https://api.example.com/api/auth/callback',
     };
     return config[key];
   }),

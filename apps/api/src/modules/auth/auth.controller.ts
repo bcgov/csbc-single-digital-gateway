@@ -47,10 +47,9 @@ export class AuthController {
   @Get('callback')
   @PublicRoute()
   async callback(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const redirectUri = new URL(this.configService.get('OIDC_REDIRECT_URI'));
-    const callbackUrl = new URL(
-      `${redirectUri.origin}${req.originalUrl}`,
-    );
+    const callbackUrl = new URL(this.configService.get('OIDC_REDIRECT_URI'));
+    const incomingUrl = new URL(req.originalUrl, callbackUrl.origin);
+    callbackUrl.search = incomingUrl.search;
 
     try {
       await this.authService.handleCallback(callbackUrl, req.session);
