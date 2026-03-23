@@ -81,6 +81,12 @@ spec:
           value: {{ .Values.app.database.ssl | quote }}
         - name: NODE_ENV
           value: {{ .Values.app.nodeEnv | quote }}
+        # Application database user to grant DML privileges after migrations
+        - name: APP_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.app.database.secretName | quote }}
+              key: user
         resources:
           {{- toYaml .Values.migrations.resources | nindent 10 }}
       {{- with .Values.nodeSelector }}
