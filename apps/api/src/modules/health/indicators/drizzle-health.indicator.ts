@@ -14,7 +14,7 @@ export class DrizzleHealthIndicator {
 
   async isHealthy(
     key: string,
-    db: NodePgDatabase,
+    db: NodePgDatabase<Record<string, unknown>>,
   ): Promise<HealthIndicatorResult> {
     const indicator = this.healthIndicatorService.check(key);
 
