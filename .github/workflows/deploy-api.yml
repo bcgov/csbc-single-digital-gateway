@@ -2,7 +2,7 @@ name: Deploy API
 
 on:
   workflow_run:
-    workflows: ["Deploy Database"]
+    workflows: ["Build Docker Images"]
     types: [completed]
     branches: [main, develop, stage]
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
 
 jobs:
   deploy-api:
-    # Run on successful db deploy workflow or manual trigger
+    # Run on successful build workflow or manual trigger
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.workflow_run.head_branch == 'main' && 'production' || github.event.workflow_run.head_branch == 'stage' && 'staging' || 'development' }}
@@ -56,5 +56,18 @@ jobs:
           -f ./infrastructure/helm/api/${{ steps.env.outputs.values_file }} \
           --set podAnnotations.deployedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           --set app.oidc.issuer="${{ vars.API_OIDC_ISSUER }}" \
-          --set app.oidc.jwksUri="${{ vars.API_OIDC_JWKS_URI }}" \
+          --set app.oidc.clientId="${{ vars.API_OIDC_CLIENT_ID }}" \
+          --set app.oidc.clientSecret="${{ secrets.API_OIDC_CLIENT_SECRET }}" \
+          --set app.oidc.redirectUri="https://${{ vars.API_BASE_URL }}/auth/bcsc/callback" \
+          --set app.oidc.postLogoutRedirectUri="https://${{ vars.WEB_BASE_URL }}/" \
+          --set app.oidc.clientAuthMethod="${{ vars.API_OIDC_CLIENT_AUTH_METHOD }}" \
+          --set app.authOidc.issuer="${{ vars.API_AUTH_OIDC_ISSUER }}" \
+          --set app.authOidc.clientId="${{ vars.API_AUTH_OIDC_CLIENT_ID }}" \
+          --set app.authOidc.clientSecret="${{ secrets.API_AUTH_OIDC_CLIENT_SECRET }}" \
+          --set app.authOidc.redirectUri="https://${{ vars.API_BASE_URL }}/auth/idir/callback" \
+          --set app.authOidc.postLogoutRedirectUri="https://${{ vars.WEB_BASE_URL }}/admin" \
+          --set app.authOidc.clientAuthMethod="${{ vars.API_AUTH_OIDC_CLIENT_AUTH_METHOD }}" \
+          --set app.session.secret="${{ secrets.API_SESSION_SECRET }}" \
+          --set app.frontendUrl="https://${{ vars.WEB_BASE_URL }}" \
+          --set app.adminFrontendUrl="https://${{ vars.WEB_BASE_URL }}/admin" \
           --labels app.kubernetes.io/part-of=csbc-single-digital-gateway

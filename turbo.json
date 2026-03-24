@@ -48,8 +48,20 @@
         "DB_PASS",
         "DB_SSL",
         "OIDC_ISSUER",
-        "OIDC_JWKS_URI",
-        "OIDC_CLIENT_ID"
+        "OIDC_CLIENT_ID",
+        "OIDC_CLIENT_SECRET",
+        "OIDC_REDIRECT_URI",
+        "OIDC_POST_LOGOUT_REDIRECT_URI",
+        "OIDC_CLIENT_AUTH_METHOD",
+        "AUTH_OIDC_ISSUER",
+        "AUTH_OIDC_CLIENT_ID",
+        "AUTH_OIDC_CLIENT_SECRET",
+        "AUTH_OIDC_REDIRECT_URI",
+        "AUTH_OIDC_POST_LOGOUT_REDIRECT_URI",
+        "AUTH_OIDC_CLIENT_AUTH_METHOD",
+        "SESSION_SECRET",
+        "FRONTEND_URL",
+        "ADMIN_FRONTEND_URL"
       ]
     },
     "test:int": {
@@ -61,8 +73,20 @@
         "DB_PASS",
         "DB_SSL",
         "OIDC_ISSUER",
-        "OIDC_JWKS_URI",
-        "OIDC_CLIENT_ID"
+        "OIDC_CLIENT_ID",
+        "OIDC_CLIENT_SECRET",
+        "OIDC_REDIRECT_URI",
+        "OIDC_POST_LOGOUT_REDIRECT_URI",
+        "OIDC_CLIENT_AUTH_METHOD",
+        "AUTH_OIDC_ISSUER",
+        "AUTH_OIDC_CLIENT_ID",
+        "AUTH_OIDC_CLIENT_SECRET",
+        "AUTH_OIDC_REDIRECT_URI",
+        "AUTH_OIDC_POST_LOGOUT_REDIRECT_URI",
+        "AUTH_OIDC_CLIENT_AUTH_METHOD",
+        "SESSION_SECRET",
+        "FRONTEND_URL",
+        "ADMIN_FRONTEND_URL"
       ]
     },
     "test:cov": {
@@ -74,8 +98,20 @@
         "DB_PASS",
         "DB_SSL",
         "OIDC_ISSUER",
-        "OIDC_JWKS_URI",
-        "OIDC_CLIENT_ID"
+        "OIDC_CLIENT_ID",
+        "OIDC_CLIENT_SECRET",
+        "OIDC_REDIRECT_URI",
+        "OIDC_POST_LOGOUT_REDIRECT_URI",
+        "OIDC_CLIENT_AUTH_METHOD",
+        "AUTH_OIDC_ISSUER",
+        "AUTH_OIDC_CLIENT_ID",
+        "AUTH_OIDC_CLIENT_SECRET",
+        "AUTH_OIDC_REDIRECT_URI",
+        "AUTH_OIDC_POST_LOGOUT_REDIRECT_URI",
+        "AUTH_OIDC_CLIENT_AUTH_METHOD",
+        "SESSION_SECRET",
+        "FRONTEND_URL",
+        "ADMIN_FRONTEND_URL"
       ]
     },
     "cy:component": {},

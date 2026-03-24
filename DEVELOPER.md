@@ -32,12 +32,12 @@ npm run dev -- --filter=web
 Test the production Dockerfiles using the following command.
 
 ```sh
-docker compose 
-    --env-file=./apps/api/.env 
-    --env-file=./apps/web/.env 
-    -f compose.yaml 
-    -f compose.prod.yaml 
-    up -d       
+docker compose
+    --env-file=./apps/api/.env
+    --env-file=./apps/web/.env
+    -f compose.yaml
+    -f compose.prod.yaml
+    up -d
 ```
 
 ## Deploy
@@ -54,6 +54,9 @@ Secrets (per environment)
 | Secret | Description |
 | ------ | ----------- |
 | OPENSHIFT_TOKEN | Service account token (sensitive) |
+| API_OIDC_CLIENT_SECRET | BCSC OIDC client secret |
+| API_AUTH_OIDC_CLIENT_SECRET | IDIR OIDC client secret |
+| API_SESSION_SECRET | Session cookie signing secret |
 
 Variables (per environment)
 
@@ -68,24 +71,24 @@ API-specific:
 
 | Variable | Description |
 | -------- | ----------- |
-| API_OIDC_ISSUER | OIDC issuer URL for API |
-| API_OIDC_JWKS_URI | OIDC JWKS URI for API |
+| API_BASE_URL | API route hostname (used to construct redirect URIs) |
+| API_OIDC_ISSUER | BCSC OIDC issuer URL |
+| API_OIDC_CLIENT_ID | BCSC OIDC confidential client ID |
+| API_OIDC_CLIENT_AUTH_METHOD | BCSC OIDC client auth method (e.g. `client_secret_post`) |
+| API_AUTH_OIDC_ISSUER | IDIR OIDC issuer URL |
+| API_AUTH_OIDC_CLIENT_ID | IDIR OIDC confidential client ID |
+| API_AUTH_OIDC_CLIENT_AUTH_METHOD | IDIR OIDC client auth method (e.g. `client_secret_post`) |
+
+Note: OIDC redirect URIs are constructed automatically from `API_BASE_URL` (e.g. `https://{API_BASE_URL}/auth/bcsc/callback`). Post-logout redirect URIs are constructed from `WEB_BASE_URL`.
 
 Web-specific:
 
 | Variable | Description |
 | -------- | ----------- |
-| WEB_OIDC_ISSUER | OIDC issuer URL for Web |
-| WEB_OIDC_CLIENT_ID | OIDC client ID for Web |
-| WEB_BASE_URL | Web route hostname |
-| WEB_CONSENT_MANAGER_API_URL | Consent Manager API URL |
-| WEB_SERVICE_CATALOGUE_API_URL | Service Catalogue API URL |
+| WEB_BASE_URL | Web route hostname (also used to construct frontend/admin URLs) |
+| WEB_AUTH_URL | Direct API URL for auth redirects |
 
 Note: Variables use vars.* syntax in workflows, secrets use secrets.*
-
-The redirect URIs are constructed from WEB_BASE_URL:
-- redirectUri = https://${WEB_BASE_URL}/callback
-- postLogoutRedirectUri = https://${WEB_BASE_URL}/
 
 Getting the OpenShift Token
 

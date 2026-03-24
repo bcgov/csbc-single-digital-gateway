@@ -56,4 +56,4 @@ WORKDIR /app/packages/db
 ENV NODE_ENV=production
 
 # Run database migrations
-CMD ["npx", "drizzle-kit", "migrate", "--config=./drizzle/drizzle.config.ts"]
+CMD ["npx", "tsx", "./drizzle/migrate.ts"]

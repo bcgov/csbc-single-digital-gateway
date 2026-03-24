@@ -1,19 +1,94 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import connectPgSimple from 'connect-pg-simple';
+import cookieParser from 'cookie-parser';
+import { doubleCsrf } from 'csrf-csrf';
+import type { NextFunction, Request, Response } from 'express';
+import session from 'express-session';
 import { Logger } from 'nestjs-pino';
 import { AppConfigDto } from './common/dtos/app-config.dto';
 import { AppHealthModule } from './modules/app-health.module';
 import { AppModule } from './modules/app.module';
 
 async function bootstrapMain() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
   const configService: ConfigService<AppConfigDto, true> =
     app.get(ConfigService);
   const logger = app.get(Logger);
 
   app.useLogger(logger);
-  app.enableCors();
   app.enableVersioning();
+
+  // Trust proxy for secure cookies behind reverse proxy
+  app.set('trust proxy', 1);
+
+  // CORS with credentials
+  const frontendUrl = configService.get<string>('FRONTEND_URL');
+  app.enableCors({
+    origin: frontendUrl,
+    credentials: true,
+  });
+
+  // Cookie parser
+  app.use(cookieParser());
+
+  // Session middleware with PostgreSQL store
+  const PgSession = connectPgSimple(session);
+  const sessionSecret = configService.get<string>('SESSION_SECRET');
+  const nodeEnv = configService.get<string>('NODE_ENV');
+
+  app.use(
+    session({
+      store: new PgSession({
+        conString: `postgresql://${configService.get('DB_USER')}:${configService.get('DB_PASS')}@${configService.get('DB_HOST')}:${configService.get('DB_PORT')}/${configService.get('DB_NAME')}${configService.get('DB_SSL') ? '?sslmode=require' : ''}`,
+        createTableIfMissing: false,
+      }),
+      secret: sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: nodeEnv === 'production',
+        sameSite: 'lax',
+        maxAge: 8 * 60 * 60 * 1000, // 8 hours
+      },
+    }),
+  );
+
+  // CSRF protection (Double Submit Cookie)
+  const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
+    getSecret: () => sessionSecret,
+    getSessionIdentifier: (req) => req.session?.id ?? '',
+    cookieName: 'csrf-token',
+    cookieOptions: {
+      httpOnly: false, // Frontend must read this cookie
+      secure: nodeEnv === 'production',
+      sameSite: 'lax',
+    },
+    getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'],
+  });
+
+  // Generate CSRF token on all responses so the frontend can read the cookie
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      generateCsrfToken(req, res);
+    }
+    next();
+  });
+
+  // Apply CSRF protection (skip safe methods and /auth/callback)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (
+      ['GET', 'HEAD', 'OPTIONS'].includes(req.method) ||
+      req.path === '/auth/callback'
+    ) {
+      return next();
+    }
+    doubleCsrfProtection(req, res, next);
+  });
 
   const port = configService.get<number>('PORT');
   await app.listen(port, '0.0.0.0');
@@ -36,24 +111,3 @@ void (async () => {
   await bootstrapMain();
   await bootstrapHealth();
 })();
-
-// async function bootstrap() {
-//   await bootstrap();
-//   // Create main API application
-
-//   // // Create separate health check application on port 9000
-//   // const healthApp = await NestFactory.create(HealthOnlyModule, {
-//   //   bufferLogs: true,
-//   // });
-//   // healthApp.useLogger(healthApp.get(Logger));
-
-//   // // Start health server on port 9000 (internal only)
-//   // await healthApp.listen(9000, '0.0.0.0');
-//   // logger.log('Health check server listening on http://0.0.0.0:9000');
-
-//   // Start main API server on configured port (default 4000)
-
-//   // Create health API application
-// }
-
-// void bootstrap();

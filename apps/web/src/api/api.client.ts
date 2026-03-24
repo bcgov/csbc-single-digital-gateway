@@ -1,23 +1,45 @@
 import axios from "axios";
-import type { User } from "oidc-client-ts";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URI,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
-// Apply Authorization header if token is available
+// CSRF: read csrf-token cookie and set X-CSRF-Token header on mutating requests
 api.interceptors.request.use((request) => {
-  const sessionString = sessionStorage.getItem(
-    `oidc.user:${import.meta.env.VITE_OIDC_ISSUER}:${import.meta.env.VITE_OIDC_CLIENT_ID}`
-  );
-  const session: User = sessionString ? JSON.parse(sessionString) : undefined;
+  if (
+    request.method &&
+    ["post", "put", "patch", "delete"].includes(request.method.toLowerCase())
+  ) {
+    const csrfToken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrf-token="))
+      ?.split("=")[1];
 
-  if (session) {
-    request.headers["Authorization"] = `Bearer ${session.access_token}`;
+    if (csrfToken) {
+      request.headers["X-CSRF-Token"] = csrfToken;
+    }
   }
 
   return request;
 });
+
+// 401 response interceptor: redirect to home on auth failure
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      // Don't redirect if we're already checking auth state
+      const url = error.config?.url ?? "";
+      if (!url.includes("/auth/bcsc/me") && !url.includes("/auth/idir/me")) {
+        window.location.href = window.location.pathname.startsWith("/admin")
+          ? "/admin"
+          : "/";
+      }
+    }
+    return Promise.reject(error);
+  },
+);

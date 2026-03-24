@@ -1,0 +1,115 @@
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Request, Response } from 'express';
+import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+import { PublicRoute } from '../decorators/public-route.decorator';
+import { AuthService } from '../services/auth.service';
+import { IdpType } from '../types/idp';
+
+@Controller('auth/bcsc')
+export class BcscAuthController {
+  private readonly logger = new Logger(BcscAuthController.name);
+  private readonly idpType = IdpType.BCSC;
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService<AppConfigDto, true>,
+  ) {}
+
+  @Get('login')
+  @PublicRoute()
+  async login(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const returnTo =
+      (req.query['returnTo'] as string) ||
+      this.configService.get('FRONTEND_URL');
+
+    req.session.returnTo = returnTo;
+
+    const authUrl = await this.authService.buildAuthorizationUrl(
+      this.idpType,
+      req.session,
+    );
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err: Error | undefined) =>
+        err ? reject(err) : resolve(),
+      );
+    });
+
+    res.redirect(authUrl);
+  }
+
+  @Get('callback')
+  @PublicRoute()
+  async callback(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const callbackUrl = new URL(
+      `${req.protocol}://${req.get('host')}${req.originalUrl}`,
+    );
+
+    try {
+      await this.authService.handleCallback(
+        this.idpType,
+        callbackUrl,
+        req.session,
+      );
+    } catch (error) {
+      this.logger.error('BCSC OIDC callback failed', (error as Error).message);
+      res.redirect(
+        `${this.configService.get('FRONTEND_URL')}?error=auth_failed`,
+      );
+      return;
+    }
+
+    const returnTo =
+      req.session.returnTo ?? this.configService.get('FRONTEND_URL');
+    delete req.session.returnTo;
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err: Error | undefined) =>
+        err ? reject(err) : resolve(),
+      );
+    });
+
+    res.redirect(returnTo as string);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const logoutUrl = this.authService.buildLogoutUrl(
+      this.idpType,
+      req.session,
+    );
+
+    delete req.session.bcsc;
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err: Error | undefined) =>
+        err ? reject(err) : resolve(),
+      );
+    });
+
+    res.json({ logoutUrl });
+  }
+
+  @Get('me')
+  me(@Req() req: Request) {
+    const profile = this.authService.getUserProfile(this.idpType, req.session);
+
+    if (!profile) {
+      throw new UnauthorizedException();
+    }
+
+    return profile;
+  }
+}

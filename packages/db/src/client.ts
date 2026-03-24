@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import * as schema from "./schema/index.js";
+import * as schema from "./schema/index.ts";
 
 export function createDatabase({
   DB_NAME,
@@ -25,7 +25,7 @@ export function createDatabase({
     password: DB_PASS,
     ssl: DB_SSL,
   });
-  return drizzle(pool, { schema });
+  return drizzle(pool, { casing: "snake_case", schema });
 }
 
 export type Schema = typeof schema;

@@ -75,6 +75,22 @@ spec:
             secretKeyRef:
               name: {{ .Values.app.database.secretName | quote }}
               key: password
+        # Auth secrets
+        - name: OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "api.fullname" . }}-auth
+              key: OIDC_CLIENT_SECRET
+        - name: AUTH_OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "api.fullname" . }}-auth
+              key: AUTH_OIDC_CLIENT_SECRET
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "api.fullname" . }}-auth
+              key: SESSION_SECRET
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 10 }}
         readinessProbe:

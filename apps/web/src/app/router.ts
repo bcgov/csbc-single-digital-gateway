@@ -1,9 +1,10 @@
 import { createRouter } from "@tanstack/react-router";
-import type { AuthContextProps } from "react-oidc-context";
+import type { AuthState } from "../features/auth/auth.types";
 import { routeTree } from "./routeTree.gen";
 
 export interface RouterContext {
-  auth: AuthContextProps;
+  bcscAuth: AuthState;
+  idirAuth: AuthState;
 }
 
 export interface BreadcrumbItemDef {
@@ -14,7 +15,8 @@ export interface BreadcrumbItemDef {
 
 export const router = createRouter({
   context: {
-    auth: undefined!,
+    bcscAuth: undefined!,
+    idirAuth: undefined!,
   },
   routeTree,
 });
@@ -25,6 +27,6 @@ declare module "@tanstack/react-router" {
   }
 
   interface StaticDataRouteOption {
-    breadcrumbs?: (loaderData: any) => BreadcrumbItemDef[];
+    breadcrumbs?: (loaderData: unknown) => BreadcrumbItemDef[];
   }
 }

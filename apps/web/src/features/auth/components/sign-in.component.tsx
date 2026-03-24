@@ -1,13 +1,27 @@
 import { Button } from "@repo/ui";
-import { IconLogin2 } from "@tabler/icons-react";
-import { useAuth } from "react-oidc-context";
+import { IconArrowRight, IconLogin2 } from "@tabler/icons-react";
+import { useNavigate } from "@tanstack/react-router";
+import { useBcscAuth } from "../auth.context";
 
 export const SignIn = () => {
-  const auth = useAuth();
+  const auth = useBcscAuth();
+  const navigate = useNavigate();
+
+  if (auth.isAuthenticated) {
+    return (
+      <Button
+        onClick={() => navigate({ to: "/app" })}
+        className="bg-bcgov-blue hover:bg-bcgov-blue/80"
+      >
+        <IconArrowRight />
+        Go to App
+      </Button>
+    );
+  }
 
   return (
     <Button
-      onClick={() => auth.signinRedirect()}
+      onClick={() => auth.login()}
       className="bg-bcgov-blue hover:bg-bcgov-blue/80"
     >
       <IconLogin2 />

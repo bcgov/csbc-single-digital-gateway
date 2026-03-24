@@ -5,9 +5,8 @@ import {
   HealthCheckService,
   HttpHealthIndicator,
 } from '@nestjs/terminus';
-import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { Schema } from '@repo/db';
+import { type Database } from '@repo/db';
 import { PublicRoute } from 'src/modules/auth/decorators/public-route.decorator';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
 import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
@@ -19,7 +18,7 @@ export class HealthController {
   constructor(
     private readonly configService: ConfigService<AppConfigDto, true>,
     @InjectDb()
-    private readonly db: NodePgDatabase<Schema>,
+    private readonly db: Database,
     private readonly drizzle: DrizzleHealthIndicator,
     private readonly healthCheckService: HealthCheckService,
     private readonly http: HttpHealthIndicator,
@@ -41,7 +40,7 @@ export class HealthController {
       () =>
         this.http.pingCheck(
           'identity_provider',
-          this.configService.get('OIDC_JWKS_URI'),
+          `${this.configService.get('OIDC_ISSUER')}/.well-known/openid-configuration`,
         ),
     ]);
   }

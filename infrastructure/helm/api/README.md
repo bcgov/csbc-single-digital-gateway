@@ -55,12 +55,35 @@ Database connection details now have sensible defaults that reference the databa
 
 **Note**: The chart automatically references the database secret created by the database chart. You do not need to provide database credentials manually.
 
-### OIDC Configuration
+### OIDC Configuration (BCSC — citizen-facing)
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `app.oidc.issuer` | OIDC issuer URL | `https://sso-dev.apps.silver.devops.gov.bc.ca/auth/realms/csbc` |
-| `app.oidc.jwksUri` | OIDC JWKS URI for JWT validation | `https://sso-dev.apps.silver.devops.gov.bc.ca/auth/realms/csbc/protocol/openid-connect/certs` |
+| `app.oidc.issuer` | BCSC OIDC issuer URL | `https://sso-dev.example.com/auth/realms/bcsc` |
+| `app.oidc.clientId` | BCSC OIDC client ID | `sdg-api` |
+| `app.oidc.clientSecret` | BCSC OIDC client secret (stored in Secret) | — |
+| `app.oidc.redirectUri` | BCSC callback URL (e.g. `https://api.example.com/auth/bcsc/callback`) | — |
+| `app.oidc.postLogoutRedirectUri` | Redirect after BCSC logout | `https://app.example.com/` |
+| `app.oidc.clientAuthMethod` | BCSC client auth method | `client_secret_post` |
+
+### OIDC Configuration (IDIR — internal staff)
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `app.authOidc.issuer` | IDIR OIDC issuer URL | `https://sso-dev.example.com/auth/realms/idir` |
+| `app.authOidc.clientId` | IDIR OIDC client ID | `sdg-api-idir` |
+| `app.authOidc.clientSecret` | IDIR OIDC client secret (stored in Secret) | — |
+| `app.authOidc.redirectUri` | IDIR callback URL (e.g. `https://api.example.com/auth/idir/callback`) | — |
+| `app.authOidc.postLogoutRedirectUri` | Redirect after IDIR logout | `https://app.example.com/admin` |
+| `app.authOidc.clientAuthMethod` | IDIR client auth method | `client_secret_post` |
+
+### Session & Frontend Configuration
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `app.session.secret` | Express session secret (stored in Secret) | — |
+| `app.frontendUrl` | Frontend URL for CORS and redirects | `https://app.example.com` |
+| `app.adminFrontendUrl` | Admin frontend URL for IDIR redirects | `https://app.example.com/admin` |
 
 ### Database Secrets
 
@@ -98,12 +121,21 @@ kubectl get service csbc-single-digital-gateway-postgres-pgbouncer -n csbc-dev
 helm upgrade --install api ./infrastructure/helm/api \
   --namespace csbc-dev \
   -f ./infrastructure/helm/api/values.dev.yaml \
-  --set app.oidc.issuer=https://sso-dev.example.com/auth/realms/csbc \
-  --set app.oidc.jwksUri=https://sso-dev.example.com/auth/realms/csbc/protocol/openid-connect/certs \
+  --set app.oidc.issuer=https://sso-dev.example.com/auth/realms/bcsc \
+  --set app.oidc.clientId=sdg-api \
+  --set app.oidc.clientSecret=<bcsc-client-secret> \
+  --set app.oidc.redirectUri=https://api-dev.example.com/auth/bcsc/callback \
+  --set app.oidc.postLogoutRedirectUri=https://app-dev.example.com/ \
+  --set app.authOidc.issuer=https://sso-dev.example.com/auth/realms/idir \
+  --set app.authOidc.clientId=sdg-api-idir \
+  --set app.authOidc.clientSecret=<idir-client-secret> \
+  --set app.authOidc.redirectUri=https://api-dev.example.com/auth/idir/callback \
+  --set app.authOidc.postLogoutRedirectUri=https://app-dev.example.com/admin \
+  --set app.session.secret=<session-secret> \
+  --set app.frontendUrl=https://app-dev.example.com \
+  --set app.adminFrontendUrl=https://app-dev.example.com/admin \
   --set route.host=api-dev.apps.example.com
 ```
-
-**Note**: Database configuration is automatically set via defaults. Only OIDC and route parameters are required.
 
 ### Test Environment
 
@@ -118,8 +150,19 @@ helm upgrade --install database ./infrastructure/helm/database \
 helm upgrade --install api ./infrastructure/helm/api \
   --namespace csbc-test \
   -f ./infrastructure/helm/api/values.test.yaml \
-  --set app.oidc.issuer=https://sso-test.example.com/auth/realms/csbc \
-  --set app.oidc.jwksUri=https://sso-test.example.com/auth/realms/csbc/protocol/openid-connect/certs \
+  --set app.oidc.issuer=https://sso-test.example.com/auth/realms/bcsc \
+  --set app.oidc.clientId=sdg-api \
+  --set app.oidc.clientSecret=<bcsc-client-secret> \
+  --set app.oidc.redirectUri=https://api-test.example.com/auth/bcsc/callback \
+  --set app.oidc.postLogoutRedirectUri=https://app-test.example.com/ \
+  --set app.authOidc.issuer=https://sso-test.example.com/auth/realms/idir \
+  --set app.authOidc.clientId=sdg-api-idir \
+  --set app.authOidc.clientSecret=<idir-client-secret> \
+  --set app.authOidc.redirectUri=https://api-test.example.com/auth/idir/callback \
+  --set app.authOidc.postLogoutRedirectUri=https://app-test.example.com/admin \
+  --set app.session.secret=<session-secret> \
+  --set app.frontendUrl=https://app-test.example.com \
+  --set app.adminFrontendUrl=https://app-test.example.com/admin \
   --set route.host=api-test.apps.example.com
 ```
 
@@ -136,8 +179,19 @@ helm upgrade --install api ./infrastructure/helm/api \
   --namespace csbc-prod \
   -f ./infrastructure/helm/api/values.prod.yaml \
   --set image.tag=${IMAGE_TAG} \
-  --set app.oidc.issuer=https://sso.example.com/auth/realms/csbc \
-  --set app.oidc.jwksUri=https://sso.example.com/auth/realms/csbc/protocol/openid-connect/certs \
+  --set app.oidc.issuer=https://sso.example.com/auth/realms/bcsc \
+  --set app.oidc.clientId=sdg-api \
+  --set app.oidc.clientSecret=<bcsc-client-secret> \
+  --set app.oidc.redirectUri=https://api.example.com/auth/bcsc/callback \
+  --set app.oidc.postLogoutRedirectUri=https://app.example.com/ \
+  --set app.authOidc.issuer=https://sso.example.com/auth/realms/idir \
+  --set app.authOidc.clientId=sdg-api-idir \
+  --set app.authOidc.clientSecret=<idir-client-secret> \
+  --set app.authOidc.redirectUri=https://api.example.com/auth/idir/callback \
+  --set app.authOidc.postLogoutRedirectUri=https://app.example.com/admin \
+  --set app.session.secret=<session-secret> \
+  --set app.frontendUrl=https://app.example.com \
+  --set app.adminFrontendUrl=https://app.example.com/admin \
   --set route.host=api.example.com
 ```
 
@@ -150,9 +204,10 @@ The chart includes built-in validation for required parameters. If any required 
 ```
 VALIDATION ERRORS - Required values are missing:
 
-  ❌ app.database.secretName is required. This should reference the secret created by the database chart.
-  ❌ app.oidc.issuer is required. Please set the OIDC issuer URL.
-  ❌ app.oidc.jwksUri is required. Please set the OIDC JWKS URI.
+  ❌ app.oidc.issuer is required. Please set the BCSC OIDC issuer URL.
+  ❌ app.authOidc.issuer is required. Please set the IDIR OIDC issuer URL.
+  ❌ app.session.secret is required. Please set the session secret.
+  ❌ app.frontendUrl is required. Please set the frontend URL.
   ...
 ```
 
@@ -164,19 +219,39 @@ VALIDATION ERRORS - Required values are missing:
 ```bash
 helm lint ./infrastructure/helm/api \
   -f ./infrastructure/helm/api/values.dev.yaml \
-  --set app.oidc.issuer=https://sso.example.com/realms/test \
-  --set app.oidc.jwksUri=https://sso.example.com/realms/test/certs
+  --set app.oidc.issuer=https://sso.example.com/realms/bcsc \
+  --set app.oidc.clientId=test \
+  --set app.oidc.clientSecret=test \
+  --set app.oidc.redirectUri=https://api.example.com/auth/bcsc/callback \
+  --set app.oidc.postLogoutRedirectUri=https://app.example.com/ \
+  --set app.authOidc.issuer=https://sso.example.com/realms/idir \
+  --set app.authOidc.clientId=test \
+  --set app.authOidc.clientSecret=test \
+  --set app.authOidc.redirectUri=https://api.example.com/auth/idir/callback \
+  --set app.authOidc.postLogoutRedirectUri=https://app.example.com/admin \
+  --set app.session.secret=test \
+  --set app.frontendUrl=https://app.example.com \
+  --set app.adminFrontendUrl=https://app.example.com/admin
 ```
-
-**Note**: Database configuration now uses defaults, so no database parameters are required for testing.
 
 ### Render templates locally
 
 ```bash
 helm template test ./infrastructure/helm/api \
   -f ./infrastructure/helm/api/values.dev.yaml \
-  --set app.oidc.issuer=https://sso.example.com/realms/test \
-  --set app.oidc.jwksUri=https://sso.example.com/realms/test/certs
+  --set app.oidc.issuer=https://sso.example.com/realms/bcsc \
+  --set app.oidc.clientId=test \
+  --set app.oidc.clientSecret=test \
+  --set app.oidc.redirectUri=https://api.example.com/auth/bcsc/callback \
+  --set app.oidc.postLogoutRedirectUri=https://app.example.com/ \
+  --set app.authOidc.issuer=https://sso.example.com/realms/idir \
+  --set app.authOidc.clientId=test \
+  --set app.authOidc.clientSecret=test \
+  --set app.authOidc.redirectUri=https://api.example.com/auth/idir/callback \
+  --set app.authOidc.postLogoutRedirectUri=https://app.example.com/admin \
+  --set app.session.secret=test \
+  --set app.frontendUrl=https://app.example.com \
+  --set app.adminFrontendUrl=https://app.example.com/admin
 ```
 
 ### Dry-run installation
@@ -186,8 +261,19 @@ helm install test ./infrastructure/helm/api \
   --dry-run --debug \
   --namespace csbc-dev \
   -f ./infrastructure/helm/api/values.dev.yaml \
-  --set app.oidc.issuer=https://sso.example.com/realms/test \
-  --set app.oidc.jwksUri=https://sso.example.com/realms/test/certs
+  --set app.oidc.issuer=https://sso.example.com/realms/bcsc \
+  --set app.oidc.clientId=test \
+  --set app.oidc.clientSecret=test \
+  --set app.oidc.redirectUri=https://api.example.com/auth/bcsc/callback \
+  --set app.oidc.postLogoutRedirectUri=https://app.example.com/ \
+  --set app.authOidc.issuer=https://sso.example.com/realms/idir \
+  --set app.authOidc.clientId=test \
+  --set app.authOidc.clientSecret=test \
+  --set app.authOidc.redirectUri=https://api.example.com/auth/idir/callback \
+  --set app.authOidc.postLogoutRedirectUri=https://app.example.com/admin \
+  --set app.session.secret=test \
+  --set app.frontendUrl=https://app.example.com \
+  --set app.adminFrontendUrl=https://app.example.com/admin
 ```
 
 ## Configuration
@@ -202,13 +288,25 @@ helm install test ./infrastructure/helm/api \
 | `image.tag` | Image tag | `""` (uses appVersion) |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `app.port` | Application port | `4000` |
+| `app.healthPort` | Health check port | `9000` |
 | `app.nodeEnv` | Node environment | `production` |
-| `app.database.name` | Database name | `csbc-single-digital-gateway-postgres` |
-| `app.database.host` | Database host | `csbc-single-digital-gateway-postgres-pgbouncer` |
-| `app.database.port` | Database port | `5432` |
-| `app.database.user` | Database user | `postgres` |
 | `app.database.ssl` | Enable database SSL | `false` (true in test/prod) |
 | `app.database.secretName` | Database secret name | `csbc-single-digital-gateway-postgres-pguser-postgres` |
+| `app.oidc.issuer` | BCSC OIDC issuer URL | `""` |
+| `app.oidc.clientId` | BCSC OIDC client ID | `""` |
+| `app.oidc.clientSecret` | BCSC OIDC client secret | `""` |
+| `app.oidc.redirectUri` | BCSC OIDC redirect URI | `""` |
+| `app.oidc.postLogoutRedirectUri` | BCSC post-logout redirect URI | `""` |
+| `app.oidc.clientAuthMethod` | BCSC client auth method | `client_secret_post` |
+| `app.authOidc.issuer` | IDIR OIDC issuer URL | `""` |
+| `app.authOidc.clientId` | IDIR OIDC client ID | `""` |
+| `app.authOidc.clientSecret` | IDIR OIDC client secret | `""` |
+| `app.authOidc.redirectUri` | IDIR OIDC redirect URI | `""` |
+| `app.authOidc.postLogoutRedirectUri` | IDIR post-logout redirect URI | `""` |
+| `app.authOidc.clientAuthMethod` | IDIR client auth method | `client_secret_post` |
+| `app.session.secret` | Express session secret | `""` |
+| `app.frontendUrl` | Frontend URL for CORS and redirects | `""` |
+| `app.adminFrontendUrl` | Admin frontend URL | `""` |
 | `resources.requests.cpu` | CPU request | `100m` |
 | `resources.requests.memory` | Memory request | `256Mi` |
 | `resources.limits.cpu` | CPU limit | `500m` |
@@ -301,12 +399,23 @@ If you see validation errors, ensure all required parameters are provided:
 # Check what values will be used
 helm get values api -n csbc-dev
 
-# Update with missing values (typically only OIDC config needed)
+# Update with missing values
 helm upgrade api ./infrastructure/helm/api \
   -n csbc-dev \
   -f ./infrastructure/helm/api/values.dev.yaml \
-  --set app.oidc.issuer=https://sso-dev.example.com/auth/realms/csbc \
-  --set app.oidc.jwksUri=https://sso-dev.example.com/auth/realms/csbc/protocol/openid-connect/certs
+  --set app.oidc.issuer=https://sso-dev.example.com/auth/realms/bcsc \
+  --set app.oidc.clientId=sdg-api \
+  --set app.oidc.clientSecret=<secret> \
+  --set app.oidc.redirectUri=https://api-dev.example.com/auth/bcsc/callback \
+  --set app.oidc.postLogoutRedirectUri=https://app-dev.example.com/ \
+  --set app.authOidc.issuer=https://sso-dev.example.com/auth/realms/idir \
+  --set app.authOidc.clientId=sdg-api-idir \
+  --set app.authOidc.clientSecret=<secret> \
+  --set app.authOidc.redirectUri=https://api-dev.example.com/auth/idir/callback \
+  --set app.authOidc.postLogoutRedirectUri=https://app-dev.example.com/admin \
+  --set app.session.secret=<secret> \
+  --set app.frontendUrl=https://app-dev.example.com \
+  --set app.adminFrontendUrl=https://app-dev.example.com/admin
 ```
 
 ### Database connection issues

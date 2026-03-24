@@ -1,17 +1,17 @@
 import { Skeleton } from "@repo/ui";
 import { createFileRoute } from "@tanstack/react-router";
-import { useAuth } from "react-oidc-context";
+import { useBcscAuth } from "../../../features/auth/auth.context";
 
 export const Route = createFileRoute("/app/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const auth = useAuth();
+  const auth = useBcscAuth();
 
   return (
     <div className="flex flex-col gap-4">
-      <h1>Hello, {auth.user?.profile.given_name}</h1>
+      <h1>Hello, {auth.user?.given_name}</h1>
       <Skeleton className="h-30 rounded-xl" />
       <Skeleton className="h-60 rounded-xl" />
       <Skeleton className="h-10 rounded-xl" />

@@ -35,17 +35,8 @@ app:
   # API configuration
   # URI of the backend API (REQUIRED - must be set during deployment)
   apiUri: ""
-
-  # OIDC configuration for authentication
-  oidc:
-    # OIDC issuer URL (REQUIRED - must be set during deployment)
-    issuer: ""
-    # OIDC client ID (REQUIRED - must be set during deployment)
-    clientId: ""
-    # OIDC redirect URI after login (REQUIRED - must be set during deployment)
-    redirectUri: ""
-    # OIDC redirect URI after logout (REQUIRED - must be set during deployment)
-    postLogoutRedirectUri: ""
+  # API URL for auth redirects via BFF pattern (REQUIRED - must be set during deployment)
+  authUrl: ""
 
   # Consent Manager API URL (REQUIRED - must be set during deployment)
   consentManagerApiUrl: ""

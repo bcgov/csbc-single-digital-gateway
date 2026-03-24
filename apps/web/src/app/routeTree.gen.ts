@@ -10,11 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
-import { Route as publicCallbackRouteImport } from './routes/(public)/callback'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
@@ -28,6 +29,11 @@ import { Route as AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImp
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const publicRouteRoute = publicRouteRouteImport.update({
@@ -44,14 +50,14 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const publicIndexRoute = publicIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => publicRouteRoute,
-} as any)
-const publicCallbackRoute = publicCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
   getParentRoute: () => publicRouteRoute,
 } as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
@@ -107,24 +113,25 @@ const AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
-  '/dev': typeof DevIndexRoute
+  '/dev/': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
-  '/app/services': typeof AppServicesIndexRoute
+  '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
-  '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
+  '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
-  '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
+  '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/callback': typeof publicCallbackRoute
   '/': typeof publicIndexRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/dev': typeof DevIndexRoute
   '/app/services': typeof AppServicesIndexRoute
@@ -138,10 +145,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(public)': typeof publicRouteRouteWithChildren
+  '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/(public)/callback': typeof publicCallbackRoute
   '/(public)/': typeof publicIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
@@ -156,24 +164,25 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/admin'
     | '/app'
     | '/app/settings'
-    | '/callback'
     | '/'
+    | '/admin/'
     | '/app/'
-    | '/dev'
+    | '/dev/'
     | '/app/settings/consent-history'
-    | '/app/services'
+    | '/app/services/'
     | '/app/settings/'
     | '/app/settings/consent-history/$statementId'
-    | '/app/services/$serviceSlug'
+    | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
-    | '/app/services/$serviceSlug/apply/$applicationId'
+    | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/callback'
     | '/'
+    | '/admin'
     | '/app'
     | '/dev'
     | '/app/services'
@@ -186,10 +195,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/(public)'
+    | '/admin'
     | '/app'
     | '/app/settings'
-    | '/(public)/callback'
     | '/(public)/'
+    | '/admin/'
     | '/app/'
     | '/dev/'
     | '/app/settings/consent-history'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   publicRouteRoute: typeof publicRouteRouteWithChildren
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AppRouteRoute: typeof AppRouteRouteWithChildren
   DevIndexRoute: typeof DevIndexRoute
 }
@@ -217,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(public)': {
       id: '/(public)'
       path: ''
@@ -227,7 +245,7 @@ declare module '@tanstack/react-router' {
     '/dev/': {
       id: '/dev/'
       path: '/dev'
-      fullPath: '/dev'
+      fullPath: '/dev/'
       preLoaderRoute: typeof DevIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -238,18 +256,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/(public)/': {
       id: '/(public)/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof publicIndexRouteImport
-      parentRoute: typeof publicRouteRoute
-    }
-    '/(public)/callback': {
-      id: '/(public)/callback'
-      path: '/callback'
-      fullPath: '/callback'
-      preLoaderRoute: typeof publicCallbackRouteImport
       parentRoute: typeof publicRouteRoute
     }
     '/app/settings': {
@@ -269,7 +287,7 @@ declare module '@tanstack/react-router' {
     '/app/services/': {
       id: '/app/services/'
       path: '/services'
-      fullPath: '/app/services'
+      fullPath: '/app/services/'
       preLoaderRoute: typeof AppServicesIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -290,7 +308,7 @@ declare module '@tanstack/react-router' {
     '/app/services/$serviceSlug/': {
       id: '/app/services/$serviceSlug/'
       path: '/services/$serviceSlug'
-      fullPath: '/app/services/$serviceSlug'
+      fullPath: '/app/services/$serviceSlug/'
       preLoaderRoute: typeof AppServicesServiceSlugIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -304,7 +322,7 @@ declare module '@tanstack/react-router' {
     '/app/services/$serviceSlug/apply/$applicationId/': {
       id: '/app/services/$serviceSlug/apply/$applicationId/'
       path: '/services/$serviceSlug/apply/$applicationId'
-      fullPath: '/app/services/$serviceSlug/apply/$applicationId'
+      fullPath: '/app/services/$serviceSlug/apply/$applicationId/'
       preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -319,17 +337,27 @@ declare module '@tanstack/react-router' {
 }
 
 interface publicRouteRouteChildren {
-  publicCallbackRoute: typeof publicCallbackRoute
   publicIndexRoute: typeof publicIndexRoute
 }
 
 const publicRouteRouteChildren: publicRouteRouteChildren = {
-  publicCallbackRoute: publicCallbackRoute,
   publicIndexRoute: publicIndexRoute,
 }
 
 const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
   publicRouteRouteChildren,
+)
+
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
 )
 
 interface AppSettingsConsentHistoryRouteRouteChildren {
@@ -389,6 +417,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   publicRouteRoute: publicRouteRouteWithChildren,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   AppRouteRoute: AppRouteRouteWithChildren,
   DevIndexRoute: DevIndexRoute,
 }

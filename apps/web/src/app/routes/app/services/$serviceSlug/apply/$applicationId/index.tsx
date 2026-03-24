@@ -6,7 +6,6 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import {
   ChefsFormViewer,
@@ -15,7 +14,10 @@ import {
 import { InviteDelegateDialog } from "../../../../../../../features/services/components/invite-delegate-dialog.component";
 import { consentDocumentsQueryOptions } from "../../../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
-import type { ServiceDto } from "../../../../../../../features/services/service.dto";
+import type {
+  ApplicationDto,
+  ServiceDto,
+} from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
@@ -53,24 +55,26 @@ export const Route = createFileRoute(
     return { service, application };
   },
   staticData: {
-    breadcrumbs: (loaderData?: {
-      service: ServiceDto;
-      application: { label: string };
-    }) => [
-      { label: "Services", to: "/app/services" },
-      ...(loaderData?.service
-        ? [
-            {
-              label: loaderData.service.name,
-              to: "/app/services/$serviceSlug" as const,
-              params: { serviceSlug: loaderData.service.slug },
-            },
-          ]
-        : []),
-      ...(loaderData?.application
-        ? [{ label: `Apply for ${loaderData.application.label}` }]
-        : []),
-    ],
+    breadcrumbs: (loaderData: unknown) => {
+      const data = loaderData as
+        | { service: ServiceDto; application: { label: string } }
+        | undefined;
+      return [
+        { label: "Services", to: "/app/services" },
+        ...(data?.service
+          ? [
+              {
+                label: data.service.name,
+                to: "/app/services/$serviceSlug" as const,
+                params: { serviceSlug: data.service.slug },
+              },
+            ]
+          : []),
+        ...(data?.application
+          ? [{ label: `Apply for ${data.application.label}` }]
+          : []),
+      ];
+    },
   },
   component: RouteComponent,
 });
@@ -78,13 +82,16 @@ export const Route = createFileRoute(
 function RouteComponent() {
   const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService, application: loaderApplication } =
-    Route.useLoaderData();
+    Route.useLoaderData() as {
+      service: ServiceDto;
+      application: ApplicationDto;
+    };
   const service =
     services.find((s) => s.slug === loaderService.slug) ?? loaderService;
   const application =
-    service.applications?.find((a) => a.id === loaderApplication.id) ??
-    loaderApplication;
-  const auth = useAuth();
+    service.applications?.find(
+      (a: ApplicationDto) => a.id === loaderApplication.id,
+    ) ?? loaderApplication;
   const navigate = useNavigate();
 
   return (
@@ -129,11 +136,6 @@ function RouteComponent() {
           formId={application.formId!}
           apiKey={application.apiKey}
           baseUrl={application.url}
-          headers={
-            auth.user?.access_token
-              ? { Authorization: `Bearer ${auth.user.access_token}` }
-              : undefined
-          }
           language="en"
           isolateStyles={false}
           onSubmissionComplete={() => {

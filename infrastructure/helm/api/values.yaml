@@ -42,12 +42,46 @@ app:
     # Secret should contain: user, password, dbname, pgbouncer-host, pgbouncer-port
     secretName: "csbc-single-digital-gateway-postgres-pguser-csbc-single-digital-gateway-postgres"
 
-  # OIDC configuration for authentication
+  # OIDC configuration for BCSC authentication
   oidc:
     # OIDC issuer URL (REQUIRED - must be set during deployment)
     issuer: ""
-    # OIDC JWKS URI for JWT validation (REQUIRED - must be set during deployment)
-    jwksUri: ""
+    # OIDC client ID for BFF auth (REQUIRED - must be set during deployment)
+    clientId: ""
+    # OIDC client secret for BFF auth (REQUIRED - sensitive, stored in Secret)
+    clientSecret: ""
+    # OIDC redirect URI after login (REQUIRED - must be set during deployment)
+    redirectUri: ""
+    # OIDC redirect URI after logout (REQUIRED - must be set during deployment)
+    postLogoutRedirectUri: ""
+    # OIDC client authentication method (default: client_secret_post)
+    clientAuthMethod: "client_secret_post"
+
+  # OIDC configuration for IDIR authentication
+  authOidc:
+    # IDIR OIDC issuer URL (REQUIRED - must be set during deployment)
+    issuer: ""
+    # IDIR OIDC client ID (REQUIRED - must be set during deployment)
+    clientId: ""
+    # IDIR OIDC client secret (REQUIRED - sensitive, stored in Secret)
+    clientSecret: ""
+    # IDIR OIDC redirect URI after login (REQUIRED - must be set during deployment)
+    redirectUri: ""
+    # IDIR OIDC redirect URI after logout (REQUIRED - must be set during deployment)
+    postLogoutRedirectUri: ""
+    # IDIR OIDC client authentication method (default: client_secret_post)
+    clientAuthMethod: "client_secret_post"
+
+  # Session configuration
+  session:
+    # Express session secret (REQUIRED - sensitive, stored in Secret)
+    secret: ""
+
+  # Frontend URL for CORS and redirects (REQUIRED - must be set during deployment)
+  frontendUrl: ""
+
+  # Admin frontend URL (REQUIRED - must be set during deployment)
+  adminFrontendUrl: ""
 
 # Database migrations configuration
 migrations:
@@ -61,6 +95,10 @@ migrations:
     repository: bcgov/csbc-single-digital-gateway/db-migrations
     # Overrides the image tag (defaults to chart appVersion)
     tag: ""
+
+  # Database configuration for migrations (uses postgres superuser for DDL privileges)
+  database:
+    secretName: "csbc-single-digital-gateway-postgres-pguser-postgres"
 
   # Use direct database connection instead of pgbouncer for migrations
   # Recommended for DDL operations that pgbouncer may not handle correctly

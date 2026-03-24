@@ -102,13 +102,58 @@ This template will fail the deployment if required values are not set
 {{- $errors = append $errors "app.database.secretName is required. This should reference the secret created by the database chart (e.g., csbc-single-digital-gateway-postgres-pguser-postgres)." }}
 {{- end }}
 
-{{/* Validate OIDC configuration */}}
+{{/* Validate BCSC OIDC configuration */}}
 {{- if not .Values.app.oidc.issuer }}
-{{- $errors = append $errors "app.oidc.issuer is required. Please set the OIDC issuer URL." }}
+{{- $errors = append $errors "app.oidc.issuer is required. Please set the BCSC OIDC issuer URL." }}
 {{- end }}
 
-{{- if not .Values.app.oidc.jwksUri }}
-{{- $errors = append $errors "app.oidc.jwksUri is required. Please set the OIDC JWKS URI." }}
+{{- if not .Values.app.oidc.clientId }}
+{{- $errors = append $errors "app.oidc.clientId is required. Please set the BCSC OIDC client ID." }}
+{{- end }}
+
+{{- if not .Values.app.oidc.clientSecret }}
+{{- $errors = append $errors "app.oidc.clientSecret is required. Please set the BCSC OIDC client secret." }}
+{{- end }}
+
+{{- if not .Values.app.oidc.redirectUri }}
+{{- $errors = append $errors "app.oidc.redirectUri is required. Please set the BCSC OIDC redirect URI." }}
+{{- end }}
+
+{{- if not .Values.app.oidc.postLogoutRedirectUri }}
+{{- $errors = append $errors "app.oidc.postLogoutRedirectUri is required. Please set the BCSC OIDC post-logout redirect URI." }}
+{{- end }}
+
+{{/* Validate IDIR OIDC configuration */}}
+{{- if not .Values.app.authOidc.issuer }}
+{{- $errors = append $errors "app.authOidc.issuer is required. Please set the IDIR OIDC issuer URL." }}
+{{- end }}
+
+{{- if not .Values.app.authOidc.clientId }}
+{{- $errors = append $errors "app.authOidc.clientId is required. Please set the IDIR OIDC client ID." }}
+{{- end }}
+
+{{- if not .Values.app.authOidc.clientSecret }}
+{{- $errors = append $errors "app.authOidc.clientSecret is required. Please set the IDIR OIDC client secret." }}
+{{- end }}
+
+{{- if not .Values.app.authOidc.redirectUri }}
+{{- $errors = append $errors "app.authOidc.redirectUri is required. Please set the IDIR OIDC redirect URI." }}
+{{- end }}
+
+{{- if not .Values.app.authOidc.postLogoutRedirectUri }}
+{{- $errors = append $errors "app.authOidc.postLogoutRedirectUri is required. Please set the IDIR OIDC post-logout redirect URI." }}
+{{- end }}
+
+{{- if not .Values.app.session.secret }}
+{{- $errors = append $errors "app.session.secret is required. Please set the session secret." }}
+{{- end }}
+
+{{- if not .Values.app.frontendUrl }}
+{{- $errors = append $errors "app.frontendUrl is required. Please set the frontend URL." }}
+{{- end }}
+
+{{- if not .Values.app.adminFrontendUrl }}
+{{- $errors = append $errors "app.adminFrontendUrl is required. Please set the admin frontend URL." }}
 {{- end }}
 
 {{/* Output all errors */}}
@@ -117,7 +162,7 @@ This template will fail the deployment if required values are not set
 {{- range $errors }}
 {{- $errorMessage = printf "%s\n  ❌ %s" $errorMessage . }}
 {{- end }}
-{{- $errorMessage = printf "%s\n\nPlease provide these values via:\n  - values file: -f values.dev.yaml\n  - command line: --set app.oidc.issuer=https://example.com --set app.oidc.jwksUri=https://example.com/jwks\n" $errorMessage }}
+{{- $errorMessage = printf "%s\n\nPlease provide these values via:\n  - values file: -f values.dev.yaml\n  - command line: --set app.oidc.issuer=https://example.com --set app.authOidc.issuer=https://example.com\n" $errorMessage }}
 {{- fail $errorMessage }}
 {{- end }}
 
