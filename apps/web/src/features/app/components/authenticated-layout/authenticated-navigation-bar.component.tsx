@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui";
 import { IconLogout, IconSearch } from "@tabler/icons-react";
-import { useAuth } from "../../../auth/auth.context";
+import { useBcscAuth } from "../../../auth/auth.context";
 import { useAppSearch } from "../app-search/app-search.context";
 import { type NavItem, NavigationBar } from "../navigation-bar";
 
@@ -55,7 +55,7 @@ const getInitials = (name?: string, email?: string): string => {
 };
 
 export const AuthenticatedNavigationBar = () => {
-  const auth = useAuth();
+  const auth = useBcscAuth();
   const { setOpen } = useAppSearch();
   const user = auth.user;
   const displayName = user?.name || user?.email || "User";

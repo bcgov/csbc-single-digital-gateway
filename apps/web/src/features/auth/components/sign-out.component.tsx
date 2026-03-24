@@ -1,9 +1,9 @@
 import { Button } from "@repo/ui";
 import { IconLogout } from "@tabler/icons-react";
-import { useAuth } from "../auth.context";
+import { useBcscAuth } from "../auth.context";
 
 export const SignOut = () => {
-  const auth = useAuth();
+  const auth = useBcscAuth();
 
   return (
     <Button

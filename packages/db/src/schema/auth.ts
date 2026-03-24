@@ -1,4 +1,6 @@
 import { index, json, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { jsonb, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { users } from "./users.ts";
 
 export const session = pgTable(
   "session",
@@ -9,9 +11,6 @@ export const session = pgTable(
   },
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
-
-import { jsonb, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import { users } from "./users.ts";
 
 export const identities = pgTable(
   "identities",

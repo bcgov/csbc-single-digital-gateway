@@ -32,9 +32,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      // Don't redirect if we're already checking auth state (e.g. /auth/me)
-      if (!error.config?.url?.includes("/auth/me")) {
-        window.location.href = "/";
+      // Don't redirect if we're already checking auth state
+      const url = error.config?.url ?? "";
+      if (!url.includes("/auth/bcsc/me") && !url.includes("/auth/idir/me")) {
+        window.location.href = window.location.pathname.startsWith("/admin")
+          ? "/admin"
+          : "/";
       }
     }
     return Promise.reject(error);

@@ -79,11 +79,11 @@ export const Route = createFileRoute(
 function RouteComponent() {
   const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService, application: loaderApplication } =
-    Route.useLoaderData();
+    Route.useLoaderData() as { service: ServiceDto; application: ApplicationDto };
   const service =
     services.find((s) => s.slug === loaderService.slug) ?? loaderService;
   const application =
-    service.applications?.find((a) => a.id === loaderApplication.id) ??
+    service.applications?.find((a: ApplicationDto) => a.id === loaderApplication.id) ??
     loaderApplication;
   const navigate = useNavigate();
 

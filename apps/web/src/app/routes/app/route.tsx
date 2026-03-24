@@ -1,13 +1,9 @@
-import {
-  createFileRoute,
-  Outlet,
-  redirect,
-} from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AuthenticatedLayout } from "../../../features/app/components/authenticated-layout/authenticated-layout.component";
 
 export const Route = createFileRoute("/app")({
   beforeLoad: ({ context }) => {
-    if (!context.auth.isAuthenticated) {
+    if (!context.bcscAuth.isAuthenticated) {
       throw redirect({
         replace: true,
         to: "/",

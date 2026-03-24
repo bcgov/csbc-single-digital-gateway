@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
@@ -29,6 +31,11 @@ const AppRouteRoute = AppRouteRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const publicRouteRoute = publicRouteRouteImport.update({
   id: '/(public)',
   getParentRoute: () => rootRouteImport,
@@ -42,6 +49,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const publicIndexRoute = publicIndexRouteImport.update({
   id: '/',
@@ -101,9 +113,11 @@ const AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/': typeof publicIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
@@ -117,6 +131,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof publicIndexRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/dev': typeof DevIndexRoute
   '/app/services': typeof AppServicesIndexRoute
@@ -130,9 +145,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(public)': typeof publicRouteRouteWithChildren
+  '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/(public)/': typeof publicIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
@@ -147,9 +164,11 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/admin'
     | '/app'
     | '/app/settings'
     | '/'
+    | '/admin/'
     | '/app/'
     | '/dev/'
     | '/app/settings/consent-history'
@@ -163,6 +182,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/app'
     | '/dev'
     | '/app/services'
@@ -175,9 +195,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/(public)'
+    | '/admin'
     | '/app'
     | '/app/settings'
     | '/(public)/'
+    | '/admin/'
     | '/app/'
     | '/dev/'
     | '/app/settings/consent-history'
@@ -192,6 +214,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   publicRouteRoute: typeof publicRouteRouteWithChildren
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AppRouteRoute: typeof AppRouteRouteWithChildren
   DevIndexRoute: typeof DevIndexRoute
 }
@@ -203,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(public)': {
@@ -225,6 +255,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/(public)/': {
       id: '/(public)/'
@@ -311,6 +348,18 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
   publicRouteRouteChildren,
 )
 
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 interface AppSettingsConsentHistoryRouteRouteChildren {
   AppSettingsConsentHistoryStatementIdRoute: typeof AppSettingsConsentHistoryStatementIdRoute
   AppSettingsConsentHistoryIndexRoute: typeof AppSettingsConsentHistoryIndexRoute
@@ -368,6 +417,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   publicRouteRoute: publicRouteRouteWithChildren,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   AppRouteRoute: AppRouteRouteWithChildren,
   DevIndexRoute: DevIndexRoute,
 }
