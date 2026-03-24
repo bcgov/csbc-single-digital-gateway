@@ -32,12 +32,12 @@ npm run dev -- --filter=web
 Test the production Dockerfiles using the following command.
 
 ```sh
-docker compose 
-    --env-file=./apps/api/.env 
-    --env-file=./apps/web/.env 
-    -f compose.yaml 
-    -f compose.prod.yaml 
-    up -d       
+docker compose
+    --env-file=./apps/api/.env
+    --env-file=./apps/web/.env
+    -f compose.yaml
+    -f compose.prod.yaml
+    up -d
 ```
 
 ## Deploy
@@ -54,6 +54,9 @@ Secrets (per environment)
 | Secret | Description |
 | ------ | ----------- |
 | OPENSHIFT_TOKEN | Service account token (sensitive) |
+| API_OIDC_CLIENT_SECRET | BCSC OIDC client secret |
+| API_AUTH_OIDC_CLIENT_SECRET | IDIR OIDC client secret |
+| API_SESSION_SECRET | Session cookie signing secret |
 
 Variables (per environment)
 
@@ -68,20 +71,21 @@ API-specific:
 
 | Variable | Description |
 | -------- | ----------- |
-| API_OIDC_ISSUER | OIDC issuer URL |
-| API_OIDC_CLIENT_ID | OIDC confidential client ID |
-| API_OIDC_CLIENT_SECRET | OIDC client secret (use secrets.*) |
-| API_OIDC_REDIRECT_URI | OAuth callback URL (e.g. `https://api.example.com/auth/callback`) |
-| API_OIDC_POST_LOGOUT_REDIRECT_URI | Redirect after logout (e.g. `https://app.example.com`) |
-| API_SESSION_SECRET | Session cookie signing secret (use secrets.*) |
-| API_FRONTEND_URL | Frontend origin for CORS |
-| API_CONSENT_MANAGER_API_URL | Consent Manager API URL (optional) |
+| API_BASE_URL | API route hostname (used to construct redirect URIs) |
+| API_OIDC_ISSUER | BCSC OIDC issuer URL |
+| API_OIDC_CLIENT_ID | BCSC OIDC confidential client ID |
+| API_OIDC_CLIENT_AUTH_METHOD | BCSC OIDC client auth method (e.g. `client_secret_post`) |
+| API_AUTH_OIDC_ISSUER | IDIR OIDC issuer URL |
+| API_AUTH_OIDC_CLIENT_ID | IDIR OIDC confidential client ID |
+| API_AUTH_OIDC_CLIENT_AUTH_METHOD | IDIR OIDC client auth method (e.g. `client_secret_post`) |
+
+Note: OIDC redirect URIs are constructed automatically from `API_BASE_URL` (e.g. `https://{API_BASE_URL}/auth/bcsc/callback`). Post-logout redirect URIs are constructed from `WEB_BASE_URL`.
 
 Web-specific:
 
 | Variable | Description |
 | -------- | ----------- |
-| WEB_BASE_URL | Web route hostname |
+| WEB_BASE_URL | Web route hostname (also used to construct frontend/admin URLs) |
 | WEB_AUTH_URL | Direct API URL for auth redirects |
 
 Note: Variables use vars.* syntax in workflows, secrets use secrets.*

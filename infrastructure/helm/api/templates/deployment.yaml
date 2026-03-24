@@ -81,6 +81,11 @@ spec:
             secretKeyRef:
               name: {{ include "api.fullname" . }}-auth
               key: OIDC_CLIENT_SECRET
+        - name: AUTH_OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "api.fullname" . }}-auth
+              key: AUTH_OIDC_CLIENT_SECRET
         - name: SESSION_SECRET
           valueFrom:
             secretKeyRef:
