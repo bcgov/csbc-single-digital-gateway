@@ -1,9 +1,14 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthGuard } from '../guards/auth.guard';
 import { AuthService } from '../services/auth.service';
+import {
+  OIDC_PROVIDER_REGISTRY,
+  type OidcProviderConfig,
+  type OidcProviderRegistry,
+} from '../auth.config';
+import { IdpType } from '../types/idp';
 
 jest.mock('jwks-rsa', () => ({
   JwksClient: jest.fn().mockImplementation(() => ({
@@ -13,6 +18,7 @@ jest.mock('jwks-rsa', () => ({
 
 jest.mock('jsonwebtoken', () => ({
   verify: jest.fn(),
+  decode: jest.fn(),
 }));
 
 const mockReflector = {
@@ -22,21 +28,39 @@ const mockReflector = {
 const mockAuthService = {
   isTokenExpiringSoon: jest.fn(),
   refreshTokens: jest.fn(),
+  hasActiveSession: jest.fn(),
+  hasAnyActiveSession: jest.fn(),
 };
 
-const mockConfigService = {
-  get: jest.fn((key: string) => {
-    const config: Record<string, string> = {
-      OIDC_ISSUER: 'https://idp.example.com',
-    };
-    return config[key];
-  }),
-};
+function createMockRegistry(): OidcProviderRegistry {
+  const mockServerMetadata = () => ({
+    jwks_uri: 'https://idp.example.com/.well-known/jwks.json',
+    issuer: 'https://idp.example.com',
+  });
+
+  const registry: OidcProviderRegistry = new Map();
+  registry.set(IdpType.BCSC, {
+    client: { serverMetadata: mockServerMetadata } as unknown,
+    issuer: 'https://bcsc.example.com',
+    redirectUri: 'https://example.com/auth/bcsc/callback',
+    postLogoutRedirectUri: 'https://example.com',
+    scopes: 'openid profile email',
+  } as OidcProviderConfig);
+  registry.set(IdpType.IDIR, {
+    client: { serverMetadata: mockServerMetadata } as unknown,
+    issuer: 'https://idir.example.com',
+    redirectUri: 'https://example.com/auth/idir/callback',
+    postLogoutRedirectUri: 'https://example.com/admin',
+    scopes: 'openid profile email',
+  } as OidcProviderConfig);
+  return registry;
+}
 
 function createMockExecutionContext(
   overrides: {
     session?: Record<string, unknown>;
     headers?: Record<string, string>;
+    path?: string;
   } = {},
 ): ExecutionContext {
   return {
@@ -46,6 +70,7 @@ function createMockExecutionContext(
       getRequest: () => ({
         session: overrides.session ?? {},
         headers: overrides.headers ?? {},
+        path: overrides.path ?? '/api/resource',
       }),
       getResponse: jest.fn(),
       getNext: jest.fn(),
@@ -69,7 +94,7 @@ describe('AuthGuard', () => {
         AuthGuard,
         { provide: Reflector, useValue: mockReflector },
         { provide: AuthService, useValue: mockAuthService },
-        { provide: ConfigService, useValue: mockConfigService },
+        { provide: OIDC_PROVIDER_REGISTRY, useFactory: createMockRegistry },
       ],
     }).compile();
 
@@ -87,34 +112,50 @@ describe('AuthGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('Should allow session-based auth with valid token', async () => {
+  it('Should allow session-based auth with valid BCSC token', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockAuthService.hasAnyActiveSession.mockReturnValue(true);
+    mockAuthService.hasActiveSession.mockReturnValue(true);
     mockAuthService.isTokenExpiringSoon.mockReturnValue(false);
+
     const context = createMockExecutionContext({
-      session: { accessToken: 'valid-token' },
+      session: { bcsc: { accessToken: 'valid-token' } },
     });
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
+    expect(mockAuthService.hasActiveSession).toHaveBeenCalledWith(
+      IdpType.BCSC,
+      expect.anything(),
+    );
   });
 
   it('Should refresh expiring session token', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockAuthService.hasAnyActiveSession.mockReturnValue(true);
+    mockAuthService.hasActiveSession.mockReturnValue(true);
     mockAuthService.isTokenExpiringSoon.mockReturnValue(true);
     mockAuthService.refreshTokens.mockResolvedValue(true);
+
     const context = createMockExecutionContext({
-      session: { accessToken: 'expiring-token' },
+      session: { bcsc: { accessToken: 'expiring-token' } },
     });
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
-    expect(mockAuthService.refreshTokens).toHaveBeenCalled();
+    expect(mockAuthService.refreshTokens).toHaveBeenCalledWith(
+      IdpType.BCSC,
+      expect.anything(),
+    );
   });
 
   it('Should throw when session token refresh fails', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockAuthService.hasAnyActiveSession.mockReturnValue(true);
+    mockAuthService.hasActiveSession.mockReturnValue(true);
     mockAuthService.isTokenExpiringSoon.mockReturnValue(true);
     mockAuthService.refreshTokens.mockResolvedValue(false);
+
     const context = createMockExecutionContext({
-      session: { accessToken: 'expiring-token' },
+      session: { bcsc: { accessToken: 'expiring-token' } },
     });
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,
@@ -123,7 +164,40 @@ describe('AuthGuard', () => {
 
   it('Should throw when no auth is provided', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockAuthService.hasAnyActiveSession.mockReturnValue(false);
     const context = createMockExecutionContext();
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('Should require IDIR for /admin paths', async () => {
+    mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockAuthService.hasAnyActiveSession.mockReturnValue(true);
+    mockAuthService.hasActiveSession.mockReturnValue(true);
+    mockAuthService.isTokenExpiringSoon.mockReturnValue(false);
+
+    const context = createMockExecutionContext({
+      session: { idir: { accessToken: 'idir-token' } },
+      path: '/admin/dashboard',
+    });
+    const result = await guard.canActivate(context);
+    expect(result).toBe(true);
+    expect(mockAuthService.hasActiveSession).toHaveBeenCalledWith(
+      IdpType.IDIR,
+      expect.anything(),
+    );
+  });
+
+  it('Should throw when wrong IDP session for route', async () => {
+    mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockAuthService.hasAnyActiveSession.mockReturnValue(true);
+    mockAuthService.hasActiveSession.mockReturnValue(false);
+
+    const context = createMockExecutionContext({
+      session: { bcsc: { accessToken: 'bcsc-token' } },
+      path: '/admin/dashboard',
+    });
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,
     );
