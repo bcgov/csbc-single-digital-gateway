@@ -15,7 +15,7 @@
     "test:unit": "jest",
     "test:int": "jest --config ./tests/config/jest-integration.json",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage > ./tests/coverage/coverage.txt",
+    "test:cov": "jest --coverage > ./tests/coverage/coverage.txt && echo \"Coverage Report\" && cat ./tests/coverage/coverage.txt",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {

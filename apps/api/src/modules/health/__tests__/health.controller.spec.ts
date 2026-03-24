@@ -3,8 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppHealthModule } from 'src/modules/app-health.module';
 import { DatabaseModule } from 'src/modules/database/database.module';
 import { HealthModule } from 'src/modules/health/health.module';
-import { DrizzleHealthIndicator } from '../../indicators/drizzle-health.indicator';
-import { HealthController } from '../health.controller';
+import { HealthController } from '../controllers/health.controller';
+import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 
 // Specify the title and the type of test in the syntax below
 // The integration test file name should be health.controller.spec.ts

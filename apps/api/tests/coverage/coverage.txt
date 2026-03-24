@@ -1,7 +1,7 @@
 ---------------------------------|---------|----------|---------|---------|-------------------
 File                             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
 ---------------------------------|---------|----------|---------|---------|-------------------
-All files                        |   39.88 |    41.66 |   28.57 |   37.25 |                   
+All files                        |   44.94 |    41.66 |   46.42 |   43.13 |                   
  src                             |       0 |      100 |       0 |       0 |                   
   main.ts                        |       0 |      100 |       0 |       0 | 1-37              
  src/common/dtos                 |     100 |      100 |     100 |     100 |                   
@@ -28,10 +28,10 @@ All files                        |   39.88 |    41.66 |   28.57 |   37.25 |
   database.provider.ts           |     100 |      100 |     100 |     100 |                   
  src/modules/health              |     100 |      100 |     100 |     100 |                   
   health.module.ts               |     100 |      100 |     100 |     100 |                   
- src/modules/health/controllers  |   80.95 |       75 |      20 |   78.94 |                   
-  health.controller.ts           |   80.95 |       75 |      20 |   78.94 | 32,39-42          
- src/modules/health/indicators   |   58.33 |       75 |      50 |      50 |                   
-  drizzle-health.indicator.ts    |   58.33 |       75 |      50 |      50 | 19-25             
+ src/modules/health/controllers  |     100 |       75 |     100 |     100 |                   
+  health.controller.ts           |     100 |       75 |     100 |     100 | 20-24             
+ src/modules/health/indicators   |     100 |       75 |     100 |     100 |                   
+  drizzle-health.indicator.ts    |     100 |       75 |     100 |     100 | 12                
  tests/integration/app           |       0 |      100 |       0 |       0 |                   
   app.controller.int-spec.ts     |       0 |      100 |       0 |       0 | 1-30              
 ---------------------------------|---------|----------|---------|---------|-------------------
