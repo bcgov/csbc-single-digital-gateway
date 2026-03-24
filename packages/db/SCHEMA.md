@@ -6,20 +6,6 @@
 
 ```mermaid
 erDiagram
-    user_roles {
-        uuid userId PK,FK "not null, → users.id (cascade)"
-        role role PK "no default - caller supplied"
-        timestamptz createdAt "not null, defaultNow()"
-    }
-
-    users {
-        uuid id PK "defaultRandom()"
-        text name "nullable"
-        text email "nullable"
-        timestamptz createdAt "not null, defaultNow()"
-        timestamptz updatedAt "not null, defaultNow(), auto-updated"
-    }
-
     identities {
         uuid id PK "defaultRandom()"
         uuid userId FK "nullable, → users.id (cascade)"
@@ -28,6 +14,12 @@ erDiagram
         jsonb claims "not null, {}"
         timestamptz createdAt "not null, defaultNow()"
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
+    }
+
+    session {
+        varchar sid PK "no default - caller supplied"
+        json sess "not null"
+        timestamp (6) expire "not null"
     }
 
     org_unit_members {
@@ -173,7 +165,20 @@ erDiagram
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
     }
 
-    users ||--o{ user_roles : "has many"
+    user_roles {
+        uuid userId PK,FK "not null, → users.id (cascade)"
+        role role PK "no default - caller supplied"
+        timestamptz createdAt "not null, defaultNow()"
+    }
+
+    users {
+        uuid id PK "defaultRandom()"
+        text name "nullable"
+        text email "nullable"
+        timestamptz createdAt "not null, defaultNow()"
+        timestamptz updatedAt "not null, defaultNow(), auto-updated"
+    }
+
     users ||--o{ identities : "has many"
     org_units ||--o{ org_unit_members : "has many"
     users ||--o{ org_unit_members : "has many"
@@ -200,15 +205,15 @@ erDiagram
     org_units ||--o{ services : "has many"
     service_versions ||--o{ services : "has many"
     service_types ||--o{ services : "has many"
+    users ||--o{ user_roles : "has many"
 ```
 
 ## Overview
 
 | Table | Source File |
 | --- | --- |
-| `user_roles` | `schema/users.ts` |
-| `users` | `schema/users.ts` |
 | `identities` | `schema/auth.ts` |
+| `session` | `schema/auth.ts` |
 | `org_unit_members` | `schema/organizations.ts` |
 | `org_unit_relations` | `schema/organizations.ts` |
 | `org_units` | `schema/organizations.ts` |
@@ -225,11 +230,10 @@ erDiagram
 | `service_version_translations` | `schema/service-catalogue.ts` |
 | `service_versions` | `schema/service-catalogue.ts` |
 | `services` | `schema/service-catalogue.ts` |
+| `user_roles` | `schema/users.ts` |
+| `users` | `schema/users.ts` |
 
 ## Enums
-
-### role
-**Values:** `admin`, `staff`, `citizen`
 
 ### org_unit_member_role
 **Values:** `admin`, `member`
@@ -252,35 +256,10 @@ erDiagram
 ### service_version_status
 **Values:** `draft`, `published`, `archived`
 
+### role
+**Values:** `admin`, `staff`, `citizen`
+
 ## Tables
-
-### user_roles
-
-| Column | Type | Nullable | Default | Notes | Comments |
-| --- | --- | --- | --- | --- | --- |
-| `userId` | uuid | NO |  | PK, FK |  |
-| `role` | role | NO |  | PK, enum(admin,staff,citizen) |  |
-| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
-
-**Primary Key:** (`userId`, `role`) — composite
-**Foreign Keys:**
-- `userId` → `users.id` (on delete: cascade)
-
----
-
-### users
-
-| Column | Type | Nullable | Default | Notes | Comments |
-| --- | --- | --- | --- | --- | --- |
-| `id` | uuid | NO | `defaultRandom()` | PK |  |
-| `name` | text | YES |  |  |  |
-| `email` | text | YES |  |  |  |
-| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
-| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
-
-**Primary Key:** `id`
-
----
 
 ### identities
 
@@ -300,6 +279,21 @@ erDiagram
 
 **Indexes:**
 - `identities_issuer_sub_unique` — unique on (`issuer`, `sub`)
+
+---
+
+### session
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `sid` | varchar | NO |  | PK |  |
+| `sess` | json | NO |  |  |  |
+| `expire` | timestamp (6) | NO |  |  |  |
+
+**Primary Key:** `sid`
+
+**Indexes:**
+- `IDX_session_expire` — index on (`expire`)
 
 ---
 
@@ -598,15 +592,42 @@ erDiagram
 
 ---
 
+### user_roles
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `userId` | uuid | NO |  | PK, FK |  |
+| `role` | role | NO |  | PK, enum(admin,staff,citizen) |  |
+| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
+
+**Primary Key:** (`userId`, `role`) — composite
+**Foreign Keys:**
+- `userId` → `users.id` (on delete: cascade)
+
+---
+
+### users
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `id` | uuid | NO | `defaultRandom()` | PK |  |
+| `name` | text | YES |  |  |  |
+| `email` | text | YES |  |  |  |
+| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
+| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
+
+**Primary Key:** `id`
+
+---
+
 ## Relationships
 
 ### Entity Relationship Summary
 
 | Table | Has Many | Belongs To |
 | --- | --- | --- |
-| `user_roles` | — | users |
-| `users` | user_roles, identities, org_unit_members, consent_document_contributors, consent_statements, service_contributors | — |
 | `identities` | — | users |
+| `session` | — | — |
 | `org_unit_members` | — | org_units, users |
 | `org_unit_relations` | — | org_units |
 | `org_units` | org_unit_members, org_unit_relations, consent_documents, services | — |
@@ -623,7 +644,9 @@ erDiagram
 | `service_version_translations` | — | service_versions |
 | `service_versions` | service_version_translations, services | schema_versions, services |
 | `services` | service_contributors, service_versions | org_units, service_versions, service_types |
+| `user_roles` | — | users |
+| `users` | identities, org_unit_members, consent_document_contributors, consent_statements, service_contributors, user_roles | — |
 
 ---
 
-*Generated on 2026-03-19*
+*Generated on 2026-03-24*

@@ -21,13 +21,21 @@ cp .env.example .env
 | `DB_USER` | PostgreSQL user | — |
 | `DB_PASS` | PostgreSQL password | — |
 | `DB_SSL` | Enable SSL (`true`/`false`) | — |
-| `OIDC_ISSUER` | OIDC provider issuer URL (e.g. Keycloak realm) | — |
-| `OIDC_CLIENT_ID` | OIDC confidential client ID | — |
-| `OIDC_CLIENT_SECRET` | OIDC client secret | — |
-| `OIDC_REDIRECT_URI` | OAuth callback URL (e.g. `http://localhost:4000/auth/callback`) | — |
-| `OIDC_POST_LOGOUT_REDIRECT_URI` | Redirect after logout (e.g. `http://localhost:5173`) | — |
+| `OIDC_ISSUER` | BCSC OIDC provider issuer URL (e.g. Keycloak realm) | — |
+| `OIDC_CLIENT_ID` | BCSC OIDC confidential client ID | — |
+| `OIDC_CLIENT_SECRET` | BCSC OIDC client secret | — |
+| `OIDC_REDIRECT_URI` | BCSC OAuth callback URL (e.g. `http://localhost:4000/auth/bcsc/callback`) | — |
+| `OIDC_POST_LOGOUT_REDIRECT_URI` | BCSC redirect after logout (e.g. `http://localhost:5173`) | — |
+| `OIDC_CLIENT_AUTH_METHOD` | BCSC OIDC client auth method | `client_secret_post` |
+| `AUTH_OIDC_ISSUER` | IDIR OIDC provider issuer URL | — |
+| `AUTH_OIDC_CLIENT_ID` | IDIR OIDC confidential client ID | — |
+| `AUTH_OIDC_CLIENT_SECRET` | IDIR OIDC client secret | — |
+| `AUTH_OIDC_REDIRECT_URI` | IDIR OAuth callback URL (e.g. `http://localhost:4000/auth/idir/callback`) | — |
+| `AUTH_OIDC_POST_LOGOUT_REDIRECT_URI` | IDIR redirect after logout (e.g. `http://localhost:5173`) | — |
+| `AUTH_OIDC_CLIENT_AUTH_METHOD` | IDIR OIDC client auth method | `client_secret_post` |
 | `SESSION_SECRET` | Secret for signing session cookies | — |
 | `FRONTEND_URL` | Frontend origin for CORS and redirects (e.g. `http://localhost:5173`) | — |
+| `ADMIN_FRONTEND_URL` | Admin frontend URL for IDIR redirects (e.g. `http://localhost:5173/admin`) | — |
 | `CONSENT_MANAGER_API_URL` | Consent Manager API base URL (optional) | — |
 
 Database env vars (`DB_*`) are also documented in the [`@repo/db` package](../../packages/db/DEVELOPER.md).
@@ -40,22 +48,29 @@ Sessions are stored in PostgreSQL via `connect-pg-simple` (the `session` table i
 
 ## Authentication
 
-The API implements a **BFF (Backend-For-Frontend)** authentication pattern using `openid-client` v6.
+The API implements a **BFF (Backend-For-Frontend)** authentication pattern using `openid-client` v6. Two identity providers are supported:
+
+- **BCSC** (BC Services Card) — citizen-facing authentication (`/auth/bcsc/*`)
+- **IDIR** — internal staff authentication (`/auth/idir/*`)
+
+Each provider has its own controller (`BcscAuthController`, `IdirAuthController`) and OIDC configuration, but they share the same `AuthService` logic with an `IdpType` parameter.
 
 ### How It Works
 
-1. **Login** — `GET /auth/login` redirects the user to the OIDC provider with PKCE. An optional `?returnTo=` query parameter controls where to redirect after login.
-2. **Callback** — `GET /auth/callback` exchanges the authorization code for tokens and stores them in the server-side session.
-3. **Session** — Tokens (access, refresh, ID) and the user profile are stored in an encrypted server-side session cookie (`connect.sid`).
-4. **Token Refresh** — The `AuthGuard` automatically refreshes expired access tokens using the refresh token.
-5. **Logout** — `POST /auth/logout` destroys the session and returns the OIDC end-session URL.
-6. **User Profile** — `GET /auth/me` returns the authenticated user's profile from the session.
+1. **Login** — `GET /auth/{idpType}/login` redirects the user to the corresponding OIDC provider with PKCE. An optional `?returnTo=` query parameter controls where to redirect after login. BCSC defaults to `FRONTEND_URL`; IDIR defaults to `ADMIN_FRONTEND_URL`.
+2. **Callback** — `GET /auth/{idpType}/callback` exchanges the authorization code for tokens and stores them in the server-side session under the provider's namespace.
+3. **Session** — Tokens (access, refresh, ID) and the user profile are stored per-provider in an encrypted server-side session cookie (`connect.sid`).
+4. **Token Refresh** — The `AuthGuard` automatically refreshes expired access tokens using the refresh token for the relevant provider.
+5. **Logout** — `POST /auth/{idpType}/logout` clears the provider's session data and returns the OIDC end-session URL.
+6. **User Profile** — `GET /auth/{idpType}/me` returns the authenticated user's profile for that provider from the session.
+
+Where `{idpType}` is either `bcsc` or `idir`.
 
 ### Auth Guard (Dual Mode)
 
 The global `AuthGuard` supports two authentication methods:
 
-- **Session cookies** (primary) — Used by the web frontend via the BFF flow.
+- **Session cookies** (primary) — Used by the web frontend via the BFF flow. The guard is provider-aware and will refresh tokens for the correct identity provider.
 - **Bearer JWT** (fallback) — Used by Postman, machine-to-machine clients, or external consumers. Tokens are verified against the OIDC provider's JWKS endpoint.
 
 Routes can be made public using the `@PublicRoute()` decorator.
@@ -67,4 +82,4 @@ State-changing requests (POST, PUT, DELETE, PATCH) are protected by Double Submi
 1. Read the `csrf-token` cookie value.
 2. Send it in the `X-CSRF-Token` header on mutating requests.
 
-The `/auth/callback` route is exempt from CSRF checks.
+The `/auth/*/callback` routes are exempt from CSRF checks.

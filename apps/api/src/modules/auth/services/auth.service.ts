@@ -1,10 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { type Session, type SessionData } from 'express-session';
 import * as client from 'openid-client';
-import { AppConfigDto } from 'src/common/dtos/app-config.dto';
 import { UsersService } from 'src/modules/users/services/users.service';
-import { OIDC_CLIENT, type OidcClient } from '../auth.config';
+import {
+  OIDC_PROVIDER_REGISTRY,
+  type OidcProviderConfig,
+  type OidcProviderRegistry,
+} from '../auth.config';
+import { IdpType } from '../types/idp';
 
 export interface UserProfile {
   sub: string;
@@ -20,25 +23,35 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @Inject(OIDC_CLIENT)
-    private readonly oidcClient: OidcClient,
-    private readonly configService: ConfigService<AppConfigDto, true>,
+    @Inject(OIDC_PROVIDER_REGISTRY)
+    private readonly registry: OidcProviderRegistry,
     private readonly usersService: UsersService,
   ) {}
 
+  private getProvider(idpType: IdpType): OidcProviderConfig {
+    const provider = this.registry.get(idpType);
+    if (!provider) {
+      throw new Error(`Unknown IDP type: ${idpType}`);
+    }
+    return provider;
+  }
+
   async buildAuthorizationUrl(
+    idpType: IdpType,
     session: Session & Partial<SessionData>,
   ): Promise<string> {
+    const provider = this.getProvider(idpType);
     const codeVerifier = client.randomPKCECodeVerifier();
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
     const state = client.randomState();
 
     session.oidcState = state;
     session.oidcCodeVerifier = codeVerifier;
+    session.oidcIdpType = idpType;
 
-    const redirectTo = client.buildAuthorizationUrl(this.oidcClient, {
-      redirect_uri: this.configService.get('OIDC_REDIRECT_URI'),
-      scope: 'openid profile email',
+    const redirectTo = client.buildAuthorizationUrl(provider.client, {
+      redirect_uri: provider.redirectUri,
+      scope: provider.scopes,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       state,
@@ -48,40 +61,27 @@ export class AuthService {
   }
 
   async handleCallback(
+    idpType: IdpType,
     callbackUrl: URL,
     session: Session & Partial<SessionData>,
   ): Promise<void> {
-    let tokens: Awaited<ReturnType<typeof client.authorizationCodeGrant>>;
-    try {
-      tokens = await client.authorizationCodeGrant(
-        this.oidcClient,
-        callbackUrl,
-        {
-          pkceCodeVerifier: session.oidcCodeVerifier,
-          expectedState: session.oidcState,
-        },
-      );
-    } catch (error) {
-      const cause = (error as Error).cause;
-      if (cause instanceof Response) {
-        const body = await cause.text();
-        this.logger.error(
-          `Token exchange failed: HTTP ${cause.status} — ${body}`,
-        );
-      }
-      throw error;
-    }
+    const provider = this.getProvider(idpType);
+
+    const tokens = await client.authorizationCodeGrant(
+      provider.client,
+      callbackUrl,
+      {
+        pkceCodeVerifier: session.oidcCodeVerifier,
+        expectedState: session.oidcState,
+      },
+    );
 
     const claims = tokens.claims();
     const expiresAt = tokens.expiresIn()
       ? Date.now() + tokens.expiresIn()! * 1000
       : undefined;
 
-    session.accessToken = tokens.access_token;
-    session.refreshToken = tokens.refresh_token;
-    session.idToken = tokens.id_token;
-    session.tokenExpiresAt = expiresAt;
-    session.userProfile = {
+    const userProfile: UserProfile = {
       sub: claims?.sub ?? '',
       name: claims?.name as string | undefined,
       email: claims?.email as string | undefined,
@@ -90,9 +90,8 @@ export class AuthService {
       picture: claims?.picture as string | undefined,
     };
 
-    const issuer: string = this.configService.get('OIDC_ISSUER');
     const { userId } = await this.usersService.syncFromOidc(
-      issuer,
+      provider.issuer,
       claims?.sub ?? '',
       claims as unknown as Record<string, unknown>,
       {
@@ -100,79 +99,118 @@ export class AuthService {
         email: claims?.email as string | undefined,
       },
     );
-    session.userId = userId;
+
+    session[idpType] = {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      idToken: tokens.id_token,
+      tokenExpiresAt: expiresAt,
+      userProfile,
+      userId,
+    };
 
     delete session.oidcState;
     delete session.oidcCodeVerifier;
+    delete session.oidcIdpType;
   }
 
   async refreshTokens(
+    idpType: IdpType,
     session: Session & Partial<SessionData>,
   ): Promise<boolean> {
-    if (!session.refreshToken) {
+    const idpSession = session[idpType];
+    if (!idpSession?.refreshToken) {
       return false;
     }
 
+    const provider = this.getProvider(idpType);
+
     try {
       const tokens = await client.refreshTokenGrant(
-        this.oidcClient,
-        session.refreshToken,
+        provider.client,
+        idpSession.refreshToken,
       );
 
       const expiresAt = tokens.expiresIn()
         ? Date.now() + tokens.expiresIn()! * 1000
         : undefined;
 
-      session.accessToken = tokens.access_token;
-      session.tokenExpiresAt = expiresAt;
+      idpSession.accessToken = tokens.access_token;
+      idpSession.tokenExpiresAt = expiresAt;
 
       if (tokens.refresh_token) {
-        session.refreshToken = tokens.refresh_token;
+        idpSession.refreshToken = tokens.refresh_token;
       }
       if (tokens.id_token) {
-        session.idToken = tokens.id_token;
+        idpSession.idToken = tokens.id_token;
       }
 
       return true;
     } catch (error) {
-      this.logger.warn('Token refresh failed', (error as Error).message);
+      this.logger.warn(
+        `Token refresh failed for ${idpType}`,
+        (error as Error).message,
+      );
       return false;
     }
   }
 
-  buildLogoutUrl(session: Session & Partial<SessionData>): string | null {
+  buildLogoutUrl(
+    idpType: IdpType,
+    session: Session & Partial<SessionData>,
+  ): string | null {
+    const provider = this.getProvider(idpType);
+    const idpSession = session[idpType];
+
     try {
       const params: Record<string, string> = {
-        post_logout_redirect_uri: this.configService.get(
-          'OIDC_POST_LOGOUT_REDIRECT_URI',
-        ),
+        post_logout_redirect_uri: provider.postLogoutRedirectUri,
       };
 
-      if (session.idToken) {
-        params.id_token_hint = session.idToken;
+      if (idpSession?.idToken) {
+        params.id_token_hint = idpSession.idToken;
       }
 
-      const redirectTo = client.buildEndSessionUrl(this.oidcClient, params);
+      const redirectTo = client.buildEndSessionUrl(provider.client, params);
       return redirectTo.href;
     } catch {
       this.logger.warn(
-        'Failed to build logout URL — end_session_endpoint may not be configured',
+        `Failed to build logout URL for ${idpType} — end_session_endpoint may not be configured`,
       );
       return null;
     }
   }
 
-  getUserProfile(session: Session & Partial<SessionData>): UserProfile | null {
-    return session.userProfile ?? null;
+  getUserProfile(
+    idpType: IdpType,
+    session: Session & Partial<SessionData>,
+  ): UserProfile | null {
+    return session[idpType]?.userProfile ?? null;
   }
 
   isTokenExpiringSoon(
+    idpType: IdpType,
     session: Session & Partial<SessionData>,
     thresholdMs = 30_000,
   ): boolean {
-    if (!session.tokenExpiresAt) {
+    const expiresAt = session[idpType]?.tokenExpiresAt;
+    if (!expiresAt) {
       return false;
     }
-    return session.tokenExpiresAt - Date.now() < thresholdMs;
+    return expiresAt - Date.now() < thresholdMs;
+  }
+
+  hasActiveSession(
+    idpType: IdpType,
+    session: Session & Partial<SessionData>,
+  ): boolean {
+    return !!session[idpType]?.accessToken;
+  }
+
+  hasAnyActiveSession(session: Session & Partial<SessionData>): boolean {
+    return (
+      this.hasActiveSession(IdpType.BCSC, session) ||
+      this.hasActiveSession(IdpType.IDIR, session)
+    );
   }
 }

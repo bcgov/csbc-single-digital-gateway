@@ -1,11 +1,8 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { ZodSerializationException } from 'nestjs-zod';
 import { ZodError } from 'zod';
 import { HttpExceptionFilter } from '../http-exception.filter';
-
-// Spy on super.catch to avoid needing a real applicationRef
-jest.spyOn(BaseExceptionFilter.prototype, 'catch').mockImplementation(() => {});
 
 function createMockHost() {
   return {
@@ -24,11 +21,11 @@ function createMockHost() {
 
 describe('HttpExceptionFilter', () => {
   let filter: HttpExceptionFilter;
+  let superCatchSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Re-apply the spy after clearAllMocks
-    jest
+    superCatchSpy = jest
       .spyOn(BaseExceptionFilter.prototype, 'catch')
       .mockImplementation(() => {});
     filter = new HttpExceptionFilter();
@@ -44,18 +41,18 @@ describe('HttpExceptionFilter', () => {
 
     filter.catch(exception, host as never);
 
-    expect(BaseExceptionFilter.prototype.catch).toHaveBeenCalledWith(
-      exception,
-      host,
-    );
+    expect(superCatchSpy).toHaveBeenCalledWith(exception, host);
   });
 
   it('Should log ZodSerializationException and delegate to super.catch', () => {
+    const loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => {});
+
     const zodError = new ZodError([
       {
         code: 'invalid_type',
         expected: 'string',
-        received: 'number',
         path: ['field'],
         message: 'Expected string, received number',
       },
@@ -65,9 +62,11 @@ describe('HttpExceptionFilter', () => {
 
     filter.catch(exception, host as never);
 
-    expect(BaseExceptionFilter.prototype.catch).toHaveBeenCalledWith(
-      exception,
-      host,
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ZodSerializationException:'),
     );
+    expect(superCatchSpy).toHaveBeenCalledWith(exception, host);
+
+    loggerErrorSpy.mockRestore();
   });
 });

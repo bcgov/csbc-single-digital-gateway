@@ -26,7 +26,7 @@ export class ConsentProxyController {
 
   @All('*path')
   async proxy(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const accessToken = req.session?.accessToken;
+    const accessToken = req.session?.bcsc?.accessToken;
     if (!accessToken) {
       throw new UnauthorizedException('No session token available');
     }

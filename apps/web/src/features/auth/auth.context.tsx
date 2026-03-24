@@ -8,31 +8,50 @@ import {
   type ReactNode,
 } from "react";
 import { api } from "../../api/api.client";
-import type { AuthState, UserProfile } from "./auth.types";
+import type { AuthState, IdpType, UserProfile } from "./auth.types";
 
-const AuthContext = createContext<AuthState | null>(null);
+const BcscAuthContext = createContext<AuthState | null>(null);
+const IdirAuthContext = createContext<AuthState | null>(null);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+interface AuthProviderProps {
+  idpType: IdpType;
+  defaultRedirectPath: string;
+  lazy?: boolean;
+  children: ReactNode;
+}
+
+export const AuthProvider = ({
+  idpType,
+  defaultRedirectPath,
+  lazy = false,
+  children,
+}: AuthProviderProps) => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!lazy);
 
   useEffect(() => {
+    if (lazy) return;
+
     api
-      .get<UserProfile>("/auth/me")
+      .get<UserProfile>(`/auth/${idpType}/me`)
       .then((res) => setUser(res.data))
       .catch(() => setUser(null))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [idpType, lazy]);
 
-  const login = useCallback((returnTo?: string) => {
-    const target = returnTo ?? `${window.location.origin}/app`;
-    window.location.href = `${import.meta.env.VITE_AUTH_URL}/auth/login?returnTo=${encodeURIComponent(target)}`;
-  }, []);
+  const login = useCallback(
+    (returnTo?: string) => {
+      const target =
+        returnTo ?? `${window.location.origin}${defaultRedirectPath}`;
+      window.location.href = `${import.meta.env.VITE_AUTH_URL}/auth/${idpType}/login?returnTo=${encodeURIComponent(target)}`;
+    },
+    [idpType, defaultRedirectPath],
+  );
 
   const logout = useCallback(async () => {
     try {
       const { data } = await api.post<{ logoutUrl: string | null }>(
-        "/auth/logout",
+        `/auth/${idpType}/logout`,
       );
       if (data.logoutUrl) {
         window.location.href = data.logoutUrl;
@@ -42,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch {
       window.location.href = "/";
     }
-  }, []);
+  }, [idpType]);
 
   const value = useMemo<AuthState>(
     () => ({
@@ -55,14 +74,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [user, isLoading, login, logout],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  const Context = idpType === "bcsc" ? BcscAuthContext : IdirAuthContext;
+
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = (): AuthState => {
-  const context = useContext(AuthContext);
+export const useBcscAuth = (): AuthState => {
+  const context = useContext(BcscAuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useBcscAuth must be used within a BCSC AuthProvider");
   }
   return context;
 };
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useIdirAuth = (): AuthState => {
+  const context = useContext(IdirAuthContext);
+  if (!context) {
+    throw new Error("useIdirAuth must be used within an IDIR AuthProvider");
+  }
+  return context;
+};
+
+/** @deprecated Use useBcscAuth() instead */
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = useBcscAuth;

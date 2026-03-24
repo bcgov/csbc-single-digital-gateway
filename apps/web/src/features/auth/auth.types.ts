@@ -1,3 +1,5 @@
+export type IdpType = "bcsc" | "idir";
+
 export interface UserProfile {
   sub: string;
   name?: string;

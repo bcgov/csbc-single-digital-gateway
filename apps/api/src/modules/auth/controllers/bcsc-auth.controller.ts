@@ -14,10 +14,12 @@ import type { Request, Response } from 'express';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
 import { PublicRoute } from '../decorators/public-route.decorator';
 import { AuthService } from '../services/auth.service';
+import { IdpType } from '../types/idp';
 
-@Controller('auth')
-export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
+@Controller('auth/bcsc')
+export class BcscAuthController {
+  private readonly logger = new Logger(BcscAuthController.name);
+  private readonly idpType = IdpType.BCSC;
 
   constructor(
     private readonly authService: AuthService,
@@ -33,7 +35,10 @@ export class AuthController {
 
     req.session.returnTo = returnTo;
 
-    const authUrl = await this.authService.buildAuthorizationUrl(req.session);
+    const authUrl = await this.authService.buildAuthorizationUrl(
+      this.idpType,
+      req.session,
+    );
 
     await new Promise<void>((resolve, reject) => {
       req.session.save((err: Error | undefined) =>
@@ -47,18 +52,18 @@ export class AuthController {
   @Get('callback')
   @PublicRoute()
   async callback(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const callbackUrl = new URL(this.configService.get('OIDC_REDIRECT_URI'));
-    const incomingUrl = new URL(req.originalUrl, callbackUrl.origin);
-    callbackUrl.search = incomingUrl.search;
+    const callbackUrl = new URL(
+      `${req.protocol}://${req.get('host')}${req.originalUrl}`,
+    );
 
     try {
-      await this.authService.handleCallback(callbackUrl, req.session);
-    } catch (error) {
-      this.logger.error(
-        `OIDC callback failed: ${(error as Error).message}`,
-        (error as Error).stack,
+      await this.authService.handleCallback(
+        this.idpType,
+        callbackUrl,
+        req.session,
       );
-
+    } catch (error) {
+      this.logger.error('BCSC OIDC callback failed', (error as Error).message);
       res.redirect(
         `${this.configService.get('FRONTEND_URL')}?error=auth_failed`,
       );
@@ -81,21 +86,25 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const logoutUrl = this.authService.buildLogoutUrl(req.session);
+    const logoutUrl = this.authService.buildLogoutUrl(
+      this.idpType,
+      req.session,
+    );
+
+    delete req.session.bcsc;
 
     await new Promise<void>((resolve, reject) => {
-      req.session.destroy((err: Error | undefined) =>
+      req.session.save((err: Error | undefined) =>
         err ? reject(err) : resolve(),
       );
     });
 
-    res.clearCookie('connect.sid');
     res.json({ logoutUrl });
   }
 
   @Get('me')
   me(@Req() req: Request) {
-    const profile = this.authService.getUserProfile(req.session);
+    const profile = this.authService.getUserProfile(this.idpType, req.session);
 
     if (!profile) {
       throw new UnauthorizedException();

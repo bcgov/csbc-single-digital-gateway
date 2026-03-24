@@ -1,13 +1,13 @@
 import { Skeleton } from "@repo/ui";
 import { createFileRoute } from "@tanstack/react-router";
-import { useAuth } from "../../../features/auth/auth.context";
+import { useBcscAuth } from "../../../features/auth/auth.context";
 
 export const Route = createFileRoute("/app/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const auth = useAuth();
+  const auth = useBcscAuth();
 
   return (
     <div className="flex flex-col gap-4">

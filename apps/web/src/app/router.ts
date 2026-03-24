@@ -3,7 +3,8 @@ import type { AuthState } from "../features/auth/auth.types";
 import { routeTree } from "./routeTree.gen";
 
 export interface RouterContext {
-  auth: AuthState;
+  bcscAuth: AuthState;
+  idirAuth: AuthState;
 }
 
 export interface BreadcrumbItemDef {
@@ -14,7 +15,8 @@ export interface BreadcrumbItemDef {
 
 export const router = createRouter({
   context: {
-    auth: undefined!,
+    bcscAuth: undefined!,
+    idirAuth: undefined!,
   },
   routeTree,
 });

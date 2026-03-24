@@ -17,18 +17,28 @@ export const AppConfigSchema = z.object({
   DB_PASS: z.string(),
   DB_SSL: z.enum(['true', 'false']).transform((value) => value === 'true'),
 
-  // Identity Provider
+  // Identity Provider — BCSC
   OIDC_ISSUER: z.string(),
   OIDC_CLIENT_ID: z.string(),
   OIDC_CLIENT_SECRET: z.string(),
   OIDC_REDIRECT_URI: z.string(),
   OIDC_POST_LOGOUT_REDIRECT_URI: z.string(),
+  OIDC_CLIENT_AUTH_METHOD: z.string().default('client_secret_post'),
+
+  // Identity Provider — IDIR
+  AUTH_OIDC_ISSUER: z.string(),
+  AUTH_OIDC_CLIENT_ID: z.string(),
+  AUTH_OIDC_CLIENT_SECRET: z.string(),
+  AUTH_OIDC_REDIRECT_URI: z.string(),
+  AUTH_OIDC_POST_LOGOUT_REDIRECT_URI: z.string(),
+  AUTH_OIDC_CLIENT_AUTH_METHOD: z.string().default('client_secret_post'),
 
   // Session
   SESSION_SECRET: z.string(),
 
   // Frontend
   FRONTEND_URL: z.string(),
+  ADMIN_FRONTEND_URL: z.string(),
 
   // Consent Manager
   CONSENT_MANAGER_API_URL: z.string().optional(),

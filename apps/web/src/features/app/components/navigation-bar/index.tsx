@@ -10,7 +10,7 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import type { RegisteredRouter, RouteToPath } from "@tanstack/router-core";
 import type { ReactNode } from "react";
-import { useAuth } from "../../../auth/auth.context";
+import { useBcscAuth } from "../../../auth/auth.context";
 import { Container } from "../container.component";
 
 type RoutePath = RouteToPath<RegisteredRouter>;
@@ -38,7 +38,7 @@ interface NavigationBarProps {
 }
 
 export const NavigationBar = ({ title, items, extras }: NavigationBarProps) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useBcscAuth();
   return (
     <Container>
       <div className="flex flex-row  py-4 items-center justify-between gap-2 h-14">
