@@ -14,7 +14,10 @@ import {
 import { InviteDelegateDialog } from "../../../../../../../features/services/components/invite-delegate-dialog.component";
 import { consentDocumentsQueryOptions } from "../../../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
-import type { ServiceDto } from "../../../../../../../features/services/service.dto";
+import type {
+  ApplicationDto,
+  ServiceDto,
+} from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
@@ -79,12 +82,16 @@ export const Route = createFileRoute(
 function RouteComponent() {
   const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService, application: loaderApplication } =
-    Route.useLoaderData() as { service: ServiceDto; application: ApplicationDto };
+    Route.useLoaderData() as {
+      service: ServiceDto;
+      application: ApplicationDto;
+    };
   const service =
     services.find((s) => s.slug === loaderService.slug) ?? loaderService;
   const application =
-    service.applications?.find((a: ApplicationDto) => a.id === loaderApplication.id) ??
-    loaderApplication;
+    service.applications?.find(
+      (a: ApplicationDto) => a.id === loaderApplication.id,
+    ) ?? loaderApplication;
   const navigate = useNavigate();
 
   return (
