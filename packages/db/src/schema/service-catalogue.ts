@@ -11,12 +11,16 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { orgUnits } from "./organizations.ts";
-import { schemas, schemaVersions } from "./schemas.ts";
 import { users } from "./users.ts";
 
 export const serviceContributorRoleEnum = pgEnum("service_contributor_role", [
   "owner",
 ]);
+
+export const serviceTypeVersionStatusEnum = pgEnum(
+  "service_type_version_status",
+  ["draft", "published", "archived"],
+);
 
 export const serviceVersionStatusEnum = pgEnum("service_version_status", [
   "draft",
@@ -67,12 +71,10 @@ export const serviceContributors = pgTable(
 
 export const serviceTypes = pgTable("service_types", {
   id: uuid().primaryKey().defaultRandom(),
-  schemaId: uuid()
-    .notNull()
-    .references(() => schemas.id),
-
-  name: text().notNull(),
-  description: text(),
+  publishedServiceTypeVersionId: uuid().references(
+    (): AnyPgColumn => serviceTypeVersions.id,
+    { onDelete: "set null" },
+  ),
 
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true })
@@ -81,13 +83,67 @@ export const serviceTypes = pgTable("service_types", {
     .$onUpdate(() => new Date()),
 });
 
+export const serviceTypeVersions = pgTable(
+  "service_type_versions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    serviceTypeId: uuid()
+      .notNull()
+      .references(() => serviceTypes.id, { onDelete: "cascade" }),
+
+    version: integer().notNull(),
+    status: serviceTypeVersionStatusEnum().notNull(),
+
+    archivedAt: timestamp({ withTimezone: true }),
+    publishedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("service_type_versions_service_type_version_unique").on(
+      t.serviceTypeId,
+      t.version,
+    ),
+  ],
+);
+
+export const serviceTypeVersionTranslations = pgTable(
+  "service_type_version_translations",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    serviceTypeVersionId: uuid()
+      .notNull()
+      .references(() => serviceTypeVersions.id, { onDelete: "cascade" }),
+
+    locale: text().notNull(),
+    name: text().notNull(),
+    description: text().notNull(),
+    schema: jsonb().notNull().default(`{}`),
+    uiSchema: jsonb().notNull().default(`{}`),
+
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex(
+      "service_type_version_translations_version_locale_unique",
+    ).on(t.serviceTypeVersionId, t.locale),
+  ],
+);
+
 export const serviceVersions = pgTable(
   "service_versions",
   {
     id: uuid().primaryKey().defaultRandom(),
-    schemaVersionId: uuid()
+    serviceTypeVersionId: uuid()
       .notNull()
-      .references(() => schemaVersions.id),
+      .references(() => serviceTypeVersions.id),
     serviceId: uuid()
       .notNull()
       .references((): AnyPgColumn => services.id, { onDelete: "cascade" }),
