@@ -12,6 +12,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+import { UsersService } from 'src/modules/users/services/users.service';
 import { PublicRoute } from '../decorators/public-route.decorator';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
@@ -24,6 +25,7 @@ export class IdirAuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService<AppConfigDto, true>,
+    private readonly usersService: UsersService,
   ) {}
 
   @Get('login')
@@ -99,13 +101,18 @@ export class IdirAuthController {
   }
 
   @Get('me')
-  me(@Req() req: Request) {
+  async me(@Req() req: Request) {
     const profile = this.authService.getUserProfile(this.idpType, req.session);
 
     if (!profile) {
       throw new UnauthorizedException();
     }
 
-    return profile;
+    const userId = req.session.idir?.userId;
+    const roles = userId
+      ? await this.usersService.getUserRoles(userId)
+      : [];
+
+    return { ...profile, roles };
   }
 }

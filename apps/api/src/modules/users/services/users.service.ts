@@ -76,4 +76,13 @@ export class UsersService {
     this.logger.log(`Created new user ${result.userId} for ${issuer}/${sub}`);
     return result;
   }
+
+  async getUserRoles(userId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ role: schema.userRoles.role })
+      .from(schema.userRoles)
+      .where(eq(schema.userRoles.userId, userId));
+
+    return rows.map((r) => r.role);
+  }
 }

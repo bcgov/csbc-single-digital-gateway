@@ -16,6 +16,7 @@ import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
@@ -59,6 +60,11 @@ const publicIndexRoute = publicIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => publicRouteRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   id: '/settings',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
+  '/admin/settings': typeof AdminSettingsRoute
   '/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/admin/settings': typeof AdminSettingsRoute
   '/': typeof publicIndexRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
+  '/admin/settings': typeof AdminSettingsRoute
   '/(public)/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/app/settings'
+    | '/admin/settings'
     | '/'
     | '/admin/'
     | '/app/'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/admin/settings'
     | '/'
     | '/admin'
     | '/app'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/app/settings'
+    | '/admin/settings'
     | '/(public)/'
     | '/admin/'
     | '/app/'
@@ -269,6 +281,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof publicIndexRouteImport
       parentRoute: typeof publicRouteRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/app/settings': {
       id: '/app/settings'
@@ -349,10 +368,12 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
 )
 
 interface AdminRouteRouteChildren {
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

@@ -7,6 +7,7 @@ export interface UserProfile {
   given_name?: string;
   family_name?: string;
   picture?: string;
+  roles?: string[];
 }
 
 export interface AuthState {
