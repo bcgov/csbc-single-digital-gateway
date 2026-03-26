@@ -14,7 +14,7 @@ Unit test files with file name suffix `**/*.spec.ts` should be placed inside `__
 |Integration test| `**/*.int-spec.ts` | [integration](./integration/)|
 |Coverage test| | coverage.txt [coverage](./coverage/)|
 
-- Use [health.controller.spec.ts](../src/modules/health/__tests__/health.controller.spec.ts) as an example for unit test
+- Use [health.controller.example.spec.ts](../src/modules/health/__tests__/health.controller.example.spec.ts) as an example for unit test
 - Use [app.controller.int-spec.ts](./integration/app/app.controller.int-spec.ts) as an example for integration test
 
 ## Configuration
@@ -23,7 +23,7 @@ Jest is available to use with low-to-zero configurations. Small adjustments are 
 
 ## Local Testing
 
-The API project offers two main methods to run tests using Jest. These tests are categorized into two main methods: using command lines in terminal or using VSCode debugger.
+The API project offers two main methods to run tests using Jest. These tests are categorized into two main methods: using command lines in terminal, VSCode debugger or VScode Jest extension.
 
 ### Terminal Testing
 
@@ -53,9 +53,9 @@ Run coverage test on with the following command line:
 npm run test:cov
 ```
 
-### VSCode Testing
+### Debug Testing
 
-VSCode supports custom scripts [launch.json](/.vscode/launch.json) to run local tests using the Run and Debug. 
+Debug supports custom scripts [launch.json](/.vscode/launch.json) to run local tests using the "Run and Debug" functionality. 
 
 1. Single File Testing
 
@@ -70,6 +70,20 @@ VSCode supports custom scripts [launch.json](/.vscode/launch.json) to run local 
    To run coverage test on VSCode, select "API Coverage Test" and click Run button.
 
 **Note**: although VSCode testing offers convenience and quick access to run testings, the debugger session itself is waiting for an explicit closure command even though the program's execution has finished. While using `turbo` with `ts-jest` for `launch.json` scripts may need further improvements for better integration, manually stop the debugger is required by clicking the "Stop" button or pressing "Shift + F5" on the keyboard.
+
+### VSCode Jest Extension
+
+VSCode Jest extension (vscode-jest) supports full jest features in vscode environment to make testing accessible for developers. Install "Jest" from the VSCode extension marketplace, and it should be available to use. In case it is not available, follow the setup steps below:
+
+- Open the VS Code Command Palette (press Ctrl+Shift+P or Cmd+Shift+P on Mac).
+- Type and select "Jest: Setup Extension".
+- Choose "Setup Jest Command" and enter the following the prompts.
+  - "csbc-single-digital-gateway"
+  - edit rootPath: `apps/api`
+  - edit jestCommandLine: `npm run test:unit --`
+  - Click "Save Settings"
+
+Open a test file and click on the green Run button next any test suite or test case to run tests.
 
 ## CI/CD Testing
 

@@ -1,5 +1,5 @@
 import { HealthIndicatorService } from '@nestjs/terminus';
-import { DrizzleHealthIndicator } from '../drizzle-health.indicator';
+import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 
 describe('DrizzleHealthIndicator', () => {
   let indicator: DrizzleHealthIndicator;

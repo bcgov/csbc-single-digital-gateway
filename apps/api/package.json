@@ -104,7 +104,10 @@
     },
     "coveragePathIgnorePatterns": [
       "<rootDir>/dist/",
-      "<rootDir>/node_modules/"
+      "<rootDir>/node_modules/",
+      "<rootDir>/tests/integration/",
+      "<rootDir>/.*\\.d\\.ts$",
+      "<rootDir>/src/main.ts"
     ],
     "testEnvironment": "node",
     "moduleNameMapper": {

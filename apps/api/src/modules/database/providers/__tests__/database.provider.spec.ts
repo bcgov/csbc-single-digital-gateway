@@ -1,30 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/unbound-method */
-import { ConfigService } from '@nestjs/config';
 import { createDatabase } from '@repo/db';
-import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { DatabaseProvider } from '../providers/database.provider';
+import { DatabaseProvider } from '../database.provider';
 
 jest.mock('@repo/db');
 jest.mock('@nestjs/config');
 
 describe('DatabaseProvider', () => {
-  let mockConfigService: jest.Mocked<ConfigService<AppConfigDto, true>>;
+  const mockConfigService = { get: jest.fn() };
   let mockCreateDatabase: jest.MockedFunction<typeof createDatabase>;
 
   beforeEach(() => {
-    mockConfigService = {
-      get: jest.fn(),
-    } as never;
-
+    jest.clearAllMocks();
     mockCreateDatabase = jest.fn();
     (
       createDatabase as jest.MockedFunction<typeof createDatabase>
     ).mockImplementation(mockCreateDatabase);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   it('Should call createDatabase with correct parameters from configService', () => {
@@ -124,7 +113,9 @@ describe('DatabaseProvider', () => {
 
     const factory = DatabaseProvider.useFactory;
 
-    expect(() => factory(mockConfigService)).toThrow('Config error');
+    expect(() => {
+      factory(mockConfigService);
+    }).toThrow('Config error');
     expect(mockCreateDatabase).not.toHaveBeenCalled();
   });
 
@@ -136,13 +127,17 @@ describe('DatabaseProvider', () => {
 
     const factory = DatabaseProvider.useFactory;
 
-    expect(() => factory(mockConfigService)).toThrow('Create DB error');
+    expect(() => {
+      factory(mockConfigService);
+    }).toThrow('Create DB error');
   });
 
   it('Should handle configService being null', () => {
     const factory = DatabaseProvider.useFactory;
 
-    expect(() => factory(null as any)).toThrow();
+    expect(() => {
+      factory(null as any);
+    }).toThrow();
   });
 
   it('Should handle configService.get returning objects', () => {

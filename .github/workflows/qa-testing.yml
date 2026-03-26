@@ -65,13 +65,10 @@ jobs:
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Run API Unit Tests
-        run: npm run test:unit
-
       - name: Run API Integration Tests
         run: npm run test:int
 
-      - name: Run Coverage Test
+      - name: Run Unit Tests with Coverage
         run: npm run test:cov
 
   web-qa-testing:

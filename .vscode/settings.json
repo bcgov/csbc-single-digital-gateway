@@ -26,5 +26,7 @@
   "search.exclude": {
     "**/routeTree.gen.ts": true
   },
-  "typescript.format.semicolons": "insert"
+  "typescript.format.semicolons": "insert",
+  "jest.jestCommandLine": "npm run test:unit --",
+  "jest.rootPath": "apps/api"
 }
