@@ -14,7 +14,7 @@ jest.mock('openid-client', () => ({
   ClientSecretPost: jest.fn(),
 }));
 
-describe('auth.config - oidcProviderRegistryProvider', () => {
+describe('AuthConfig', () => {
   const mockedClient = client as unknown as {
     discovery: jest.Mock<
       Promise<unknown>,

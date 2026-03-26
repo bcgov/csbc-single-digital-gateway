@@ -1,64 +1,20 @@
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Request, Response } from 'express';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+import {
+  buildMockRequest,
+  buildMockResponse,
+  mockAuthService,
+  mockConfigService,
+} from 'tests/utils/auth.controllers.mock';
 import { IdirAuthController } from '../controllers/idir-auth.controller';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
-
-type MockSession = {
-  save: jest.Mock;
-  [key: string]: unknown;
-};
-
-type MockAuthService = {
-  buildAuthorizationUrl: jest.Mock<Promise<string>, [IdpType, MockSession]>;
-  handleCallback: jest.Mock<Promise<void>, [IdpType, URL, MockSession]>;
-  buildLogoutUrl: jest.Mock<string, [IdpType, MockSession]>;
-  getUserProfile: jest.Mock<unknown, [IdpType, MockSession]>;
-};
 
 describe('IdirAuthController', () => {
   let controller: IdirAuthController;
 
   const adminFrontendUrl = 'https://admin.example.com';
-
-  const mockAuthService: MockAuthService = {
-    buildAuthorizationUrl: jest.fn<Promise<string>, [IdpType, MockSession]>(),
-    handleCallback: jest.fn<Promise<void>, [IdpType, URL, MockSession]>(),
-    buildLogoutUrl: jest.fn<string, [IdpType, MockSession]>(),
-    getUserProfile: jest.fn<unknown, [IdpType, MockSession]>(),
-  };
-
-  const mockConfigService = {
-    get: jest.fn(),
-  };
-
-  const buildMockRequest = (
-    overrides: Partial<{
-      query: Record<string, string>;
-      session: Record<string, unknown>;
-      protocol: string;
-      host: string;
-      originalUrl: string;
-    }> = {},
-  ) =>
-    ({
-      query: overrides.query ?? {},
-      session: {
-        save: jest.fn((cb: (err?: Error) => void) => cb()),
-        ...overrides.session,
-      } as MockSession,
-      protocol: overrides.protocol ?? 'https',
-      get: jest.fn().mockReturnValue(overrides.host ?? 'api.example.com'),
-      originalUrl: overrides.originalUrl ?? '/auth/idir/callback?code=abc',
-    }) as unknown as Request & { session: MockSession };
-
-  const buildMockResponse = () =>
-    ({
-      redirect: jest.fn(),
-      json: jest.fn(),
-    }) as unknown as Response & { redirect: jest.Mock; json: jest.Mock };
 
   beforeEach(() => {
     jest.clearAllMocks();

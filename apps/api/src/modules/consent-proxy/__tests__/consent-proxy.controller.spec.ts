@@ -4,6 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { of, throwError } from 'rxjs';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+import {
+  buildMockResponse,
+  mockConfigService,
+} from 'tests/utils/auth.controllers.mock';
 import { ConsentProxyController } from '../controllers/consent-proxy.controller';
 
 type MockSession = {
@@ -15,11 +19,6 @@ type MockSession = {
 
 type MockRequest = Request & {
   session?: MockSession;
-};
-
-type MockResponse = Response & {
-  status: jest.Mock;
-  json: jest.Mock;
 };
 
 type ProxyRequestConfig = {
@@ -41,10 +40,6 @@ describe('ConsentProxyController', () => {
     request: jest.Mock<unknown, [ProxyRequestConfig]>;
   } = {
     request: jest.fn<unknown, [ProxyRequestConfig]>(),
-  };
-
-  const mockConfigService = {
-    get: jest.fn(),
   };
 
   const getFirstRequestArg = (): ProxyRequestConfig => {
@@ -73,16 +68,6 @@ describe('ConsentProxyController', () => {
       body: overrides.body ?? { test: true },
       headers: overrides.headers ?? { 'content-type': 'application/json' },
     }) as unknown as MockRequest;
-
-  const buildMockResponse = () => {
-    const res = {
-      status: jest.fn(),
-      json: jest.fn(),
-    } as unknown as MockResponse;
-
-    res.status.mockReturnValue(res);
-    return res;
-  };
 
   beforeEach(() => {
     jest.clearAllMocks();

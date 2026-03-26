@@ -1,57 +1,61 @@
-[32m[Nest] 21436  - [39m03/26/2026, 10:33:02 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 21436  - [39m03/26/2026, 10:33:02 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 21436  - [39m03/26/2026, 10:33:02 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 21436  - [39m03/26/2026, 10:33:02 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 21436  - [39m03/26/2026, 10:33:02 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 21436  - [39m03/26/2026, 10:33:02 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 21436  - [39m03/26/2026, 10:33:02 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
------------------------------------|---------|----------|---------|---------|-------------------
-File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
------------------------------------|---------|----------|---------|---------|-------------------
-All files                          |   95.15 |    81.48 |      96 |   95.14 |                   
- common/dtos                       |     100 |      100 |     100 |     100 |                   
-  app-config.dto.ts                |     100 |      100 |     100 |     100 |                   
- common/filters                    |     100 |      100 |     100 |     100 |                   
-  http-exception.filter.ts         |     100 |      100 |     100 |     100 |                   
- modules                           |     100 |      100 |     100 |     100 |                   
-  app-health.module.ts             |     100 |      100 |     100 |     100 |                   
-  app.module.ts                    |     100 |      100 |     100 |     100 |                   
- modules/auth                      |     100 |      100 |     100 |     100 |                   
-  auth.config.ts                   |     100 |      100 |     100 |     100 |                   
-  auth.module.ts                   |     100 |      100 |     100 |     100 |                   
- modules/auth/controllers          |     100 |    84.37 |     100 |     100 |                   
-  bcsc-auth.controller.ts          |     100 |    84.37 |     100 |     100 | 25-31,54,88       
-  idir-auth.controller.ts          |     100 |    84.37 |     100 |     100 | 25-31,54,88       
- modules/auth/decorators           |     100 |      100 |     100 |     100 |                   
-  public-route.decorator.ts        |     100 |      100 |     100 |     100 |                   
- modules/auth/guards               |     100 |    94.44 |     100 |     100 |                   
-  auth.guard.ts                    |     100 |    94.44 |     100 |     100 | 33                
- modules/auth/middleware           |     100 |     87.5 |     100 |     100 |                   
-  token-refresh.middleware.ts      |     100 |     87.5 |     100 |     100 | 8                 
- modules/auth/services             |     100 |    96.55 |     100 |     100 |                   
-  auth.service.ts                  |     100 |    96.55 |     100 |     100 | 28                
- modules/auth/types                |     100 |      100 |     100 |     100 |                   
-  idp.ts                           |     100 |      100 |     100 |     100 |                   
- modules/consent-proxy             |   21.42 |        0 |       0 |   16.66 |                   
-  consent-proxy.controller.ts      |       0 |        0 |       0 |       0 | 1-58              
-  consent-proxy.module.ts          |     100 |      100 |     100 |     100 |                   
- modules/consent-proxy/controllers |     100 |    83.33 |     100 |     100 |                   
-  consent-proxy.controller.ts      |     100 |    83.33 |     100 |     100 | 21,28             
- modules/database                  |     100 |      100 |     100 |     100 |                   
-  database.constants.ts            |     100 |      100 |     100 |     100 |                   
-  database.module.ts               |     100 |      100 |     100 |     100 |                   
- modules/database/decorators       |     100 |      100 |     100 |     100 |                   
-  inject-database.decorator.ts     |     100 |      100 |     100 |     100 |                   
- modules/database/providers        |     100 |      100 |     100 |     100 |                   
-  database.provider.ts             |     100 |      100 |     100 |     100 |                   
- modules/health                    |     100 |      100 |     100 |     100 |                   
-  health.module.ts                 |     100 |      100 |     100 |     100 |                   
- modules/health/controllers        |     100 |       75 |     100 |     100 |                   
-  health.controller.ts             |     100 |       75 |     100 |     100 | 19-23             
- modules/health/indicators         |     100 |       75 |     100 |     100 |                   
-  drizzle-health.indicator.ts      |     100 |       75 |     100 |     100 | 11                
- modules/users                     |     100 |      100 |     100 |     100 |                   
-  users.module.ts                  |     100 |      100 |     100 |     100 |                   
- modules/users/services            |     100 |      100 |     100 |     100 |                   
-  users.service.ts                 |     100 |      100 |     100 |     100 |                   
------------------------------------|---------|----------|---------|---------|-------------------
+[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+---------------------------------------|---------|----------|---------|---------|-------------------
+File                                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+---------------------------------------|---------|----------|---------|---------|-------------------
+All files                              |   95.38 |    81.49 |   96.29 |   95.35 |                   
+ src/common/dtos                       |     100 |      100 |     100 |     100 |                   
+  app-config.dto.ts                    |     100 |      100 |     100 |     100 |                   
+ src/common/filters                    |     100 |      100 |     100 |     100 |                   
+  http-exception.filter.ts             |     100 |      100 |     100 |     100 |                   
+ src/modules                           |     100 |      100 |     100 |     100 |                   
+  app-health.module.ts                 |     100 |      100 |     100 |     100 |                   
+  app.module.ts                        |     100 |      100 |     100 |     100 |                   
+ src/modules/auth                      |     100 |      100 |     100 |     100 |                   
+  auth.config.ts                       |     100 |      100 |     100 |     100 |                   
+  auth.module.ts                       |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/controllers          |     100 |    84.37 |     100 |     100 |                   
+  bcsc-auth.controller.ts              |     100 |    84.37 |     100 |     100 | 25-31,54,88       
+  idir-auth.controller.ts              |     100 |    84.37 |     100 |     100 | 25-31,54,88       
+ src/modules/auth/decorators           |     100 |      100 |     100 |     100 |                   
+  public-route.decorator.ts            |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/guards               |     100 |    94.44 |     100 |     100 |                   
+  auth.guard.ts                        |     100 |    94.44 |     100 |     100 | 33                
+ src/modules/auth/middleware           |     100 |     87.5 |     100 |     100 |                   
+  token-refresh.middleware.ts          |     100 |     87.5 |     100 |     100 | 8                 
+ src/modules/auth/services             |     100 |    96.55 |     100 |     100 |                   
+  auth.service.ts                      |     100 |    96.55 |     100 |     100 | 28                
+ src/modules/auth/types                |     100 |      100 |     100 |     100 |                   
+  idp.ts                               |     100 |      100 |     100 |     100 |                   
+ src/modules/consent-proxy             |   21.42 |        0 |       0 |   16.66 |                   
+  consent-proxy.controller.ts          |       0 |        0 |       0 |       0 | 1-58              
+  consent-proxy.module.ts              |     100 |      100 |     100 |     100 |                   
+ src/modules/consent-proxy/controllers |     100 |    83.33 |     100 |     100 |                   
+  consent-proxy.controller.ts          |     100 |    83.33 |     100 |     100 | 21,28             
+ src/modules/database                  |     100 |      100 |     100 |     100 |                   
+  database.constants.ts                |     100 |      100 |     100 |     100 |                   
+  database.module.ts                   |     100 |      100 |     100 |     100 |                   
+ src/modules/database/decorators       |     100 |      100 |     100 |     100 |                   
+  inject-database.decorator.ts         |     100 |      100 |     100 |     100 |                   
+ src/modules/database/providers        |     100 |      100 |     100 |     100 |                   
+  database.provider.ts                 |     100 |      100 |     100 |     100 |                   
+ src/modules/health                    |     100 |      100 |     100 |     100 |                   
+  health.module.ts                     |     100 |      100 |     100 |     100 |                   
+ src/modules/health/controllers        |     100 |       75 |     100 |     100 |                   
+  health.controller.ts                 |     100 |       75 |     100 |     100 | 19-23             
+ src/modules/health/indicators         |     100 |       75 |     100 |     100 |                   
+  drizzle-health.indicator.ts          |     100 |       75 |     100 |     100 | 11                
+ src/modules/users                     |     100 |      100 |     100 |     100 |                   
+  users.module.ts                      |     100 |      100 |     100 |     100 |                   
+ src/modules/users/services            |     100 |      100 |     100 |     100 |                   
+  users.service.ts                     |     100 |      100 |     100 |     100 |                   
+ tests/utils                           |     100 |    81.81 |     100 |     100 |                   
+  app.module.mock.ts                   |     100 |      100 |     100 |     100 |                   
+  auth.controllers.mock.ts             |     100 |      100 |     100 |     100 |                   
+  auth.module.mock.ts                  |     100 |        0 |     100 |     100 | 19-20             
+---------------------------------------|---------|----------|---------|---------|-------------------

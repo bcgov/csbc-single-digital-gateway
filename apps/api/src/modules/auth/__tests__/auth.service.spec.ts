@@ -1,35 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import * as client from 'openid-client';
 import { UsersService } from 'src/modules/users/services/users.service';
+import { createMockRegistry } from 'tests/utils/auth.module.mock';
 import {
   OIDC_PROVIDER_REGISTRY,
   type OidcProviderConfig,
-  type OidcProviderRegistry,
 } from '../auth.config';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
 
 const mockBcscClient = {} as client.Configuration;
 const mockIdirClient = {} as client.Configuration;
-
-function createMockRegistry(): OidcProviderRegistry {
-  const registry: OidcProviderRegistry = new Map();
-  registry.set(IdpType.BCSC, {
-    client: mockBcscClient,
-    issuer: 'https://bcsc.example.com',
-    redirectUri: 'https://example.com/auth/bcsc/callback',
-    postLogoutRedirectUri: 'https://example.com',
-    scopes: 'openid profile email',
-  } satisfies OidcProviderConfig);
-  registry.set(IdpType.IDIR, {
-    client: mockIdirClient,
-    issuer: 'https://idir.example.com',
-    redirectUri: 'https://example.com/auth/idir/callback',
-    postLogoutRedirectUri: 'https://example.com/admin',
-    scopes: 'openid profile email',
-  } satisfies OidcProviderConfig);
-  return registry;
-}
 
 const mockUsersService = {
   syncFromOidc: jest.fn().mockResolvedValue({ userId: 'user-1' }),
@@ -60,7 +41,10 @@ describe('AuthService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: OIDC_PROVIDER_REGISTRY, useFactory: createMockRegistry },
+        {
+          provide: OIDC_PROVIDER_REGISTRY,
+          useFactory: () => createMockRegistry(mockBcscClient, mockIdirClient),
+        },
         { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();

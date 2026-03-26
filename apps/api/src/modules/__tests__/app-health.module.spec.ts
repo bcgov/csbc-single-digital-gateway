@@ -1,18 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import 'reflect-metadata';
 import { AppConfigSchema } from 'src/common/dtos/app-config.dto';
-
-const mockConfigForRoot = jest.fn((options: unknown) => ({
-  module: class MockConfigModule {},
-  options,
-  __dynamicType: 'config',
-}));
-
-const mockLoggerForRootAsync = jest.fn((options: unknown) => ({
-  module: class MockLoggerModule {},
-  options,
-  __dynamicType: 'logger',
-}));
+import {
+  mockConfigForRoot,
+  MockDatabaseModule,
+  MockHealthModule,
+  mockLoggerForRootAsync,
+} from 'tests/utils/app.module.mock';
 
 jest.mock('@nestjs/config', () => {
   const actual = jest.requireActual('@nestjs/config') as unknown as Record<
@@ -38,13 +32,14 @@ jest.mock('nestjs-pino', () => ({
 }));
 
 jest.mock('../database/database.module', () => ({
-  DatabaseModule: class DatabaseModule {},
+  DatabaseModule: MockDatabaseModule,
 }));
 
 jest.mock('../health/health.module', () => ({
-  HealthModule: class HealthModule {},
+  HealthModule: MockHealthModule,
 }));
 
+import { mockConfigService } from 'tests/utils/auth.controllers.mock';
 import { AppHealthModule } from '../app-health.module';
 import { DatabaseModule } from '../database/database.module';
 import { HealthModule } from '../health/health.module';
@@ -111,9 +106,7 @@ describe('AppHealthModule', () => {
       };
     };
 
-    const mockConfigService = {
-      get: jest.fn().mockReturnValue('development'),
-    };
+    mockConfigService.get.mockReturnValue('development');
 
     const result = options.useFactory(mockConfigService);
 
@@ -129,9 +122,7 @@ describe('AppHealthModule', () => {
       };
     };
 
-    const mockConfigService = {
-      get: jest.fn().mockReturnValue('production'),
-    };
+    mockConfigService.get.mockReturnValue('production');
 
     const result = options.useFactory(mockConfigService);
 

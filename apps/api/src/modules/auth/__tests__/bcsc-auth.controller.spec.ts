@@ -2,6 +2,12 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+import {
+  buildMockRequest,
+  buildMockResponse,
+  mockAuthService,
+  mockConfigService,
+} from 'tests/utils/auth.controllers.mock';
 import { BcscAuthController } from '../controllers/bcsc-auth.controller';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
@@ -9,44 +15,8 @@ import { IdpType } from '../types/idp';
 describe('BcscAuthController', () => {
   let controller: BcscAuthController;
 
-  const mockAuthService = {
-    buildAuthorizationUrl: jest.fn(),
-    handleCallback: jest.fn(),
-    buildLogoutUrl: jest.fn(),
-    getUserProfile: jest.fn(),
-  };
-
-  const mockConfigService = {
-    get: jest.fn(),
-  };
-
   const authUrl = 'https://idp.example.com/auth';
   const frontendUrl = 'https://frontend.example.com';
-
-  const buildMockRequest = (
-    overrides: Partial<{
-      query: Record<string, string>;
-      session: Record<string, unknown>;
-      protocol: string;
-      host: string;
-      originalUrl: string;
-    }> = {},
-  ) => ({
-    query: overrides.query ?? {},
-    session: {
-      save: jest.fn((cb: (err?: Error) => void) => cb()),
-      returnTo: undefined,
-      ...overrides.session,
-    },
-    protocol: overrides.protocol ?? 'https',
-    get: jest.fn().mockReturnValue(overrides.host ?? 'api.example.com'),
-    originalUrl: overrides.originalUrl ?? '/auth/bcsc/callback?code=abc',
-  });
-
-  const buildMockResponse = () => ({
-    redirect: jest.fn(),
-    json: jest.fn(),
-  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -137,12 +107,10 @@ describe('BcscAuthController', () => {
     it('Should call res.redirect after saving the session', async () => {
       const callOrder: string[] = [];
       const req = buildMockRequest();
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => {
-          callOrder.push('save');
-          cb();
-        },
-      );
+      req.session.save.mockImplementation((cb: (err?: Error) => void) => {
+        callOrder.push('save');
+        cb();
+      });
       const res = buildMockResponse();
       res.redirect.mockImplementation(() => {
         callOrder.push('redirect');
@@ -160,8 +128,8 @@ describe('BcscAuthController', () => {
     it('Should reject when session.save returns an error', async () => {
       const req = buildMockRequest();
       const saveError = new Error('Session save failed');
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => cb(saveError),
+      req.session.save.mockImplementation((cb: (err?: Error) => void) =>
+        cb(saveError),
       );
       const res = buildMockResponse();
       mockAuthService.buildAuthorizationUrl.mockResolvedValue(authUrl);
@@ -264,12 +232,10 @@ describe('BcscAuthController', () => {
     it('Should save the session before redirecting on success', async () => {
       const callOrder: string[] = [];
       const req = buildMockRequest({ session: { returnTo: '/home' } });
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => {
-          callOrder.push('save');
-          cb();
-        },
-      );
+      req.session.save.mockImplementation((cb: (err?: Error) => void) => {
+        callOrder.push('save');
+        cb();
+      });
       const res = buildMockResponse();
       res.redirect.mockImplementation(() => {
         callOrder.push('redirect');
@@ -287,8 +253,8 @@ describe('BcscAuthController', () => {
     it('Should reject when session.save returns an error on success path', async () => {
       const req = buildMockRequest({ session: { returnTo: '/home' } });
       const saveError = new Error('Save failed');
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => cb(saveError),
+      req.session.save.mockImplementation((cb: (err?: Error) => void) =>
+        cb(saveError),
       );
       const res = buildMockResponse();
       mockAuthService.handleCallback.mockResolvedValue(undefined);
@@ -389,12 +355,10 @@ describe('BcscAuthController', () => {
       const req = buildMockRequest({
         session: { bcsc: { accessToken: 'tok' } },
       });
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => {
-          callOrder.push('save');
-          cb();
-        },
-      );
+      req.session.save.mockImplementation((cb: (err?: Error) => void) => {
+        callOrder.push('save');
+        cb();
+      });
       const res = buildMockResponse();
       mockAuthService.buildLogoutUrl.mockReturnValue(
         'https://idp.example.com/logout',
@@ -411,12 +375,10 @@ describe('BcscAuthController', () => {
     it('Should save the session before calling res.json', async () => {
       const callOrder: string[] = [];
       const req = buildMockRequest({ session: { bcsc: {} } });
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => {
-          callOrder.push('save');
-          cb();
-        },
-      );
+      req.session.save.mockImplementation((cb: (err?: Error) => void) => {
+        callOrder.push('save');
+        cb();
+      });
       const res = buildMockResponse();
       res.json.mockImplementation(() => {
         callOrder.push('json');
@@ -451,8 +413,8 @@ describe('BcscAuthController', () => {
     it('Should reject when session.save returns an error', async () => {
       const req = buildMockRequest({ session: { bcsc: {} } });
       const saveError = new Error('Cannot save session');
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => cb(saveError),
+      req.session.save.mockImplementation((cb: (err?: Error) => void) =>
+        cb(saveError),
       );
       const res = buildMockResponse();
       mockAuthService.buildLogoutUrl.mockReturnValue(
@@ -469,8 +431,8 @@ describe('BcscAuthController', () => {
 
     it('Should not call res.json when session.save errors', async () => {
       const req = buildMockRequest({ session: { bcsc: {} } });
-      (req.session.save as jest.Mock).mockImplementation(
-        (cb: (err?: Error) => void) => cb(new Error('fail')),
+      req.session.save.mockImplementation((cb: (err?: Error) => void) =>
+        cb(new Error('fail')),
       );
       const res = buildMockResponse();
       mockAuthService.buildLogoutUrl.mockReturnValue(
@@ -535,7 +497,7 @@ describe('BcscAuthController', () => {
       );
     });
 
-    it.skip('Should not throw when authService.getUserProfile returns a non-null profile', () => {
+    it('Should not throw when authService.getUserProfile returns a non-null profile', () => {
       const req = buildMockRequest();
       mockAuthService.getUserProfile.mockReturnValue({ sub: 'user-789' });
 

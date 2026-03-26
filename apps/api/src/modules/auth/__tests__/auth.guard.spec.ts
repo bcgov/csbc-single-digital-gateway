@@ -5,11 +5,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  OIDC_PROVIDER_REGISTRY,
-  type OidcProviderConfig,
-  type OidcProviderRegistry,
-} from '../auth.config';
+import { createMockRegistry } from 'tests/utils/auth.module.mock';
+import { OIDC_PROVIDER_REGISTRY } from '../auth.config';
 import { AuthGuard } from '../guards/auth.guard';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
@@ -65,7 +62,7 @@ const getConstructedJwksClients = (): JwksClientMock[] =>
         typeof value === 'object' && value !== null && 'getSigningKey' in value,
     );
 
-function createBearerContext(
+function createMockExecutionContext(
   request: Record<string, unknown>,
 ): ExecutionContext {
   return {
@@ -84,55 +81,31 @@ function createBearerContext(
   } as unknown as ExecutionContext;
 }
 
-function createMockRegistry(): OidcProviderRegistry {
-  const mockServerMetadata = () => ({
-    jwks_uri: 'https://idp.example.com/.well-known/jwks.json',
-    issuer: 'https://idp.example.com',
-  });
-
-  const registry: OidcProviderRegistry = new Map();
-  registry.set(IdpType.BCSC, {
-    client: { serverMetadata: mockServerMetadata } as unknown,
-    issuer: 'https://bcsc.example.com',
-    redirectUri: 'https://example.com/auth/bcsc/callback',
-    postLogoutRedirectUri: 'https://example.com',
-    scopes: 'openid profile email',
-  } as OidcProviderConfig);
-  registry.set(IdpType.IDIR, {
-    client: { serverMetadata: mockServerMetadata } as unknown,
-    issuer: 'https://idir.example.com',
-    redirectUri: 'https://example.com/auth/idir/callback',
-    postLogoutRedirectUri: 'https://example.com/admin',
-    scopes: 'openid profile email',
-  } as OidcProviderConfig);
-  return registry;
-}
-
-function createMockExecutionContext(
-  overrides: {
-    session?: Record<string, unknown>;
-    headers?: Record<string, string>;
-    path?: string;
-  } = {},
-): ExecutionContext {
-  return {
-    getHandler: jest.fn(),
-    getClass: jest.fn(),
-    switchToHttp: () => ({
-      getRequest: () => ({
-        session: overrides.session ?? {},
-        headers: overrides.headers ?? {},
-        path: overrides.path ?? '/api/resource',
-      }),
-      getResponse: jest.fn(),
-      getNext: jest.fn(),
-    }),
-    getArgs: jest.fn(),
-    getArgByIndex: jest.fn(),
-    switchToRpc: jest.fn(),
-    switchToWs: jest.fn(),
-    getType: jest.fn(),
-  } as unknown as ExecutionContext;
+function jwtMockVerifyMockImplementation(
+  jwtMock: JwtModuleMock,
+  decodedPayload: { sub?: string },
+  returnError?: string,
+): void {
+  jwtMock.verify.mockImplementation(
+    (
+      _token: string,
+      getKey: (
+        header: { kid: string },
+        cb: (err: Error | null, key?: string) => void,
+      ) => void,
+      _options: unknown,
+      done: (err: Error | null, decoded?: unknown) => void,
+    ) => {
+      if (returnError) {
+        return done(new Error(returnError));
+      }
+      getKey({ kid: 'kid-1' }, (err, key) => {
+        if (err) return done(err);
+        if (!key) return done(new Error('Missing key'));
+        return done(null, decodedPayload);
+      });
+    },
+  );
 }
 
 describe('AuthGuard', () => {
@@ -140,13 +113,23 @@ describe('AuthGuard', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-
+    const mockServerMetadata = () => ({
+      jwks_uri: 'https://idp.example.com/.well-known/jwks.json',
+      issuer: 'https://idp.example.com',
+    });
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthGuard,
         { provide: Reflector, useValue: mockReflector },
         { provide: AuthService, useValue: mockAuthService },
-        { provide: OIDC_PROVIDER_REGISTRY, useFactory: createMockRegistry },
+        {
+          provide: OIDC_PROVIDER_REGISTRY,
+          useFactory: () =>
+            createMockRegistry(
+              { serverMetadata: mockServerMetadata } as never,
+              { serverMetadata: mockServerMetadata } as never,
+            ),
+        },
       ],
     }).compile();
 
@@ -160,7 +143,7 @@ describe('AuthGuard', () => {
   describe('Session-based authentication', () => {
     it('Should allow public routes', async () => {
       mockReflector.getAllAndOverride.mockReturnValue(true);
-      const context = createMockExecutionContext();
+      const context = createMockExecutionContext({});
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
     });
@@ -173,6 +156,7 @@ describe('AuthGuard', () => {
 
       const context = createMockExecutionContext({
         session: { bcsc: { accessToken: 'valid-token' } },
+        path: '/api/resource',
       });
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
@@ -191,6 +175,7 @@ describe('AuthGuard', () => {
 
       const context = createMockExecutionContext({
         session: { bcsc: { accessToken: 'expiring-token' } },
+        path: '/api/resource',
       });
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
@@ -209,6 +194,7 @@ describe('AuthGuard', () => {
 
       const context = createMockExecutionContext({
         session: { bcsc: { accessToken: 'expiring-token' } },
+        path: '/api/resource',
       });
       await expect(guard.canActivate(context)).rejects.toThrow(
         UnauthorizedException,
@@ -218,7 +204,11 @@ describe('AuthGuard', () => {
     it('Should throw when no auth is provided', async () => {
       mockReflector.getAllAndOverride.mockReturnValue(false);
       mockAuthService.hasAnyActiveSession.mockReturnValue(false);
-      const context = createMockExecutionContext();
+      const context = createMockExecutionContext({
+        session: {},
+        headers: {},
+        path: '/api/resource',
+      });
       await expect(guard.canActivate(context)).rejects.toThrow(
         UnauthorizedException,
       );
@@ -280,25 +270,9 @@ describe('AuthGuard', () => {
         });
       }
 
-      jwtMock.verify.mockImplementation(
-        (
-          _token: string,
-          getKey: (
-            header: { kid: string },
-            cb: (err: Error | null, key?: string) => void,
-          ) => void,
-          _options: unknown,
-          done: (err: Error | null, decoded?: unknown) => void,
-        ) => {
-          getKey({ kid: 'kid-1' }, (err, key) => {
-            if (err) return done(err);
-            if (!key) return done(new Error('Missing key'));
-            return done(null, { sub: 'jwt-user-1' });
-          });
-        },
-      );
+      jwtMockVerifyMockImplementation(jwtMock, { sub: 'jwt-user-1' });
 
-      const context = createBearerContext(request);
+      const context = createMockExecutionContext(request);
       const result = await guard.canActivate(context);
 
       expect(result).toBe(true);
@@ -329,24 +303,9 @@ describe('AuthGuard', () => {
         });
       }
 
-      jwtMock.verify.mockImplementation(
-        (
-          _token: string,
-          getKey: (
-            header: { kid: string },
-            cb: (err: Error | null, key?: string) => void,
-          ) => void,
-          _options: unknown,
-          done: (err: Error | null, decoded?: unknown) => void,
-        ) => {
-          getKey({ kid: 'kid-1' }, (err) => {
-            if (err) return done(err);
-            return done(null, { sub: 'jwt-user-1' });
-          });
-        },
-      );
+      jwtMockVerifyMockImplementation(jwtMock, { sub: 'jwt-user-1' });
 
-      const context = createBearerContext(request);
+      const context = createMockExecutionContext(request);
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         'IDIR authentication required',
@@ -371,7 +330,7 @@ describe('AuthGuard', () => {
 
       jwtMock.decode.mockReturnValue({ payload: {} });
 
-      const context = createBearerContext(request);
+      const context = createMockExecutionContext(request);
 
       await expect(guard.canActivate(context)).rejects.toThrow('Invalid token');
       expect(debugSpy).toHaveBeenCalledWith(
@@ -426,24 +385,7 @@ describe('AuthGuard', () => {
         });
       }
 
-      jwtMock.verify.mockImplementation(
-        (
-          _token: string,
-          getKey: (
-            header: { kid: string },
-            cb: (err: Error | null, key?: string) => void,
-          ) => void,
-          options: { issuer: string },
-          done: (err: Error | null, decoded?: unknown) => void,
-        ) => {
-          getKey({ kid: 'kid-1' }, (err, key) => {
-            if (err) return done(err);
-            if (!key) return done(new Error('Missing key'));
-            expect(options.issuer).toBe('https://bcsc.example.com');
-            return done(null, { sub: 'decoded-sub' });
-          });
-        },
-      );
+      jwtMockVerifyMockImplementation(jwtMock, { sub: 'decoded-sub' });
 
       const verifyJwt = (
         guard as unknown as {
@@ -472,22 +414,7 @@ describe('AuthGuard', () => {
         );
       }
 
-      jwtMock.verify.mockImplementation(
-        (
-          _token: string,
-          getKey: (
-            header: { kid: string },
-            cb: (err: Error | null, key?: string) => void,
-          ) => void,
-          _options: unknown,
-          done: (err: Error | null, decoded?: unknown) => void,
-        ) => {
-          getKey({ kid: 'kid-1' }, (err) => {
-            if (err) return done(err);
-            return done(null, { sub: 'should-not-happen' });
-          });
-        },
-      );
+      jwtMockVerifyMockImplementation(jwtMock, { sub: 'should-not-happen' });
 
       const verifyJwt = (
         guard as unknown as {
@@ -510,16 +437,8 @@ describe('AuthGuard', () => {
         });
       }
 
-      jwtMock.verify.mockImplementation(
-        (
-          _token: string,
-          _getKey: unknown,
-          _options: unknown,
-          done: (err: Error | null, decoded?: unknown) => void,
-        ) => {
-          done(new Error('jwt signature invalid'));
-        },
-      );
+      const returnError = 'jwt signature invalid';
+      jwtMockVerifyMockImplementation(jwtMock, {}, returnError);
 
       const verifyJwt = (
         guard as unknown as {
@@ -527,7 +446,7 @@ describe('AuthGuard', () => {
         }
       ).verifyJwt.bind(guard);
 
-      await expect(verifyJwt('token')).rejects.toThrow('jwt signature invalid');
+      await expect(verifyJwt('token')).rejects.toThrow(returnError);
     });
   });
 
@@ -540,21 +459,10 @@ describe('AuthGuard', () => {
         jwks_uri: 'https://idir.example.com/.well-known/jwks.json',
       }));
 
-      const registry: OidcProviderRegistry = new Map();
-      registry.set(IdpType.BCSC, {
-        client: { serverMetadata: bcscServerMetadata } as unknown,
-        issuer: 'https://bcsc.example.com',
-        redirectUri: 'https://example.com/auth/bcsc/callback',
-        postLogoutRedirectUri: 'https://example.com',
-        scopes: 'openid profile email',
-      } as OidcProviderConfig);
-      registry.set(IdpType.IDIR, {
-        client: { serverMetadata: idirServerMetadata } as unknown,
-        issuer: 'https://idir.example.com',
-        redirectUri: 'https://example.com/auth/idir/callback',
-        postLogoutRedirectUri: 'https://example.com/admin',
-        scopes: 'openid profile email',
-      } as OidcProviderConfig);
+      const registry = createMockRegistry(
+        { serverMetadata: bcscServerMetadata } as never,
+        { serverMetadata: idirServerMetadata } as never,
+      );
 
       const guardInstance = new AuthGuard(
         mockReflector as unknown as Reflector,
@@ -608,21 +516,10 @@ describe('AuthGuard', () => {
         jwks_uri: 'https://idir.example.com/.well-known/jwks.json',
       }));
 
-      const registry: OidcProviderRegistry = new Map();
-      registry.set(IdpType.BCSC, {
-        client: { serverMetadata: noJwksServerMetadata } as unknown,
-        issuer: 'https://bcsc.example.com',
-        redirectUri: 'https://example.com/auth/bcsc/callback',
-        postLogoutRedirectUri: 'https://example.com',
-        scopes: 'openid profile email',
-      } as OidcProviderConfig);
-      registry.set(IdpType.IDIR, {
-        client: { serverMetadata: validServerMetadata } as unknown,
-        issuer: 'https://idir.example.com',
-        redirectUri: 'https://example.com/auth/idir/callback',
-        postLogoutRedirectUri: 'https://example.com/admin',
-        scopes: 'openid profile email',
-      } as OidcProviderConfig);
+      const registry = createMockRegistry(
+        { serverMetadata: noJwksServerMetadata } as never,
+        { serverMetadata: validServerMetadata } as never,
+      );
 
       const guardInstance = new AuthGuard(
         mockReflector as unknown as Reflector,

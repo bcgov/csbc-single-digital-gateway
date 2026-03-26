@@ -1,27 +1,18 @@
 import { ConfigService } from '@nestjs/config';
 import 'reflect-metadata';
 import { AppConfigSchema } from 'src/common/dtos/app-config.dto';
-
-const mockConfigForRoot = jest.fn((options: unknown) => ({
-  module: class MockConfigModule {},
-  options,
-  __dynamicType: 'config',
-}));
-
-const mockLoggerForRootAsync = jest.fn((options: unknown) => ({
-  module: class MockLoggerModule {},
-  options,
-  __dynamicType: 'logger',
-}));
+import {
+  mockConfigForRoot,
+  MockDatabaseModule,
+  mockLoggerForRootAsync,
+} from 'tests/utils/app.module.mock';
 
 jest.mock('@nestjs/config', () => {
   const actual = jest.requireActual('@nestjs/config') as unknown as Record<
     string,
     unknown
   >;
-
   class MockConfigService {}
-
   return {
     ...actual,
     ConfigService: MockConfigService,
@@ -38,17 +29,18 @@ jest.mock('nestjs-pino', () => ({
 }));
 
 jest.mock('../database/database.module', () => ({
-  DatabaseModule: class DatabaseModule {},
+  DatabaseModule: MockDatabaseModule,
 }));
 
 jest.mock('../auth/auth.module', () => ({
-  AuthModule: class AuthModule {},
+  AuthModule: class MockAuthModule {},
 }));
 
 jest.mock('../consent-proxy/consent-proxy.module', () => ({
-  ConsentProxyModule: class ConsentProxyModule {},
+  ConsentProxyModule: class MockConsentProxyModule {},
 }));
 
+import { mockConfigService } from 'tests/utils/auth.controllers.mock';
 import { AppModule } from '../app.module';
 import { AuthModule } from '../auth/auth.module';
 import { ConsentProxyModule } from '../consent-proxy/consent-proxy.module';
@@ -112,9 +104,7 @@ describe('AppModule-Imports', () => {
       };
     };
 
-    const mockConfigService = {
-      get: jest.fn().mockReturnValue('development'),
-    };
+    mockConfigService.get.mockReturnValue('development');
 
     const result = options.useFactory(mockConfigService);
 
@@ -130,9 +120,7 @@ describe('AppModule-Imports', () => {
       };
     };
 
-    const mockConfigService = {
-      get: jest.fn().mockReturnValue('production'),
-    };
+    mockConfigService.get.mockReturnValue('production');
 
     const result = options.useFactory(mockConfigService);
 

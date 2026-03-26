@@ -3,10 +3,12 @@ import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 
 describe('DrizzleHealthIndicator', () => {
   let indicator: DrizzleHealthIndicator;
+
   const mockUp = jest.fn().mockReturnValue({ database: { status: 'up' } });
   const mockDown = jest
     .fn()
     .mockReturnValue({ database: { status: 'down', message: 'Error' } });
+
   const mockHealthIndicatorService = {
     check: jest.fn().mockReturnValue({ up: mockUp, down: mockDown }),
   };
