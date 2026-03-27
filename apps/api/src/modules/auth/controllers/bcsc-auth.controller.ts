@@ -52,14 +52,10 @@ export class BcscAuthController {
   @Get('callback')
   @PublicRoute()
   async callback(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const callbackUrl = new URL(
-      `${req.protocol}://${req.get('host')}${req.originalUrl}`,
-    );
-
     try {
       await this.authService.handleCallback(
         this.idpType,
-        callbackUrl,
+        req.query as Record<string, string>,
         req.session,
       );
     } catch (error) {

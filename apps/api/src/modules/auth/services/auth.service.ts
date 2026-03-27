@@ -62,10 +62,17 @@ export class AuthService {
 
   async handleCallback(
     idpType: IdpType,
-    callbackUrl: URL,
+    requestQuery: Record<string, string>,
     session: Session & Partial<SessionData>,
   ): Promise<void> {
     const provider = this.getProvider(idpType);
+
+    const callbackUrl = new URL(provider.redirectUri);
+    for (const [key, value] of Object.entries(requestQuery)) {
+      if (typeof value === 'string') {
+        callbackUrl.searchParams.set(key, value);
+      }
+    }
 
     const tokens = await client.authorizationCodeGrant(
       provider.client,

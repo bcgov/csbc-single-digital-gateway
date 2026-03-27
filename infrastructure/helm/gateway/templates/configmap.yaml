@@ -33,6 +33,13 @@ data:
 
         access_log /var/log/nginx/access.log main;
 
+        # Preserve X-Forwarded-Proto from upstream (e.g. OpenShift Route),
+        # fall back to $scheme only when the header is absent.
+        map $http_x_forwarded_proto $forwarded_proto {
+            default $http_x_forwarded_proto;
+            ""      $scheme;
+        }
+
         sendfile on;
         keepalive_timeout 65;
         client_max_body_size {{ .Values.nginx.clientMaxBodySize }};
@@ -65,7 +72,7 @@ data:
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Proto $forwarded_proto;
                 proxy_set_header X-Forwarded-Host $host;
                 proxy_set_header X-Forwarded-Port $server_port;
                 proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout }};
@@ -80,7 +87,7 @@ data:
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Proto $forwarded_proto;
                 proxy_set_header X-Forwarded-Host $host;
                 proxy_set_header X-Forwarded-Port $server_port;
                 proxy_connect_timeout {{ .Values.nginx.proxyConnectTimeout }};
