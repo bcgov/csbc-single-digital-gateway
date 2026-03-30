@@ -89,9 +89,15 @@ describe('AuthService', () => {
       });
       const requestQuery = { code: 'abc' };
 
-      await service.handleCallback(IdpType.BCSC, requestQuery, session as never);
+      await service.handleCallback(
+        IdpType.BCSC,
+        requestQuery,
+        session as never,
+      );
 
-      const expectedUrl = new URL('https://example.com/auth/bcsc/callback?code=abc');
+      const expectedUrl = new URL(
+        'https://example.com/auth/bcsc/callback?code=abc',
+      );
       expect(client.authorizationCodeGrant).toHaveBeenCalledWith(
         mockBcscClient,
         expectedUrl,
@@ -123,7 +129,11 @@ describe('AuthService', () => {
       });
       const requestQuery = { code: 'abc' };
 
-      await service.handleCallback(IdpType.BCSC, requestQuery, session as never);
+      await service.handleCallback(
+        IdpType.BCSC,
+        requestQuery,
+        session as never,
+      );
 
       expect(mockUsersService.syncFromOidc).toHaveBeenCalledWith(
         'https://bcsc.example.com',

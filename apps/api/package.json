@@ -14,6 +14,7 @@
     "start:prod": "node dist/main",
     "test:unit": "jest",
     "test:int": "jest --config ./tests/config/jest-integration.json",
+    "test:vscode": "node ./tests/config/jest-vscode.cjs",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage > ./tests/coverage/coverage.txt && echo \"Coverage Report\" && cat ./tests/coverage/coverage.txt",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
@@ -83,7 +84,7 @@
       "ts"
     ],
     "rootDir": ".",
-    "testRegex": ".*\\.spec\\.ts$",
+    "testRegex": ".*\\.(spec|int-spec)\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
@@ -96,16 +97,16 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 20,
-        "functions": 20,
-        "lines": 20,
-        "statements": 20
+        "statements": 90,
+        "branches": 80,
+        "functions": 90,
+        "lines": 90
       }
     },
     "coveragePathIgnorePatterns": [
       "<rootDir>/dist/",
       "<rootDir>/node_modules/",
-      "<rootDir>/tests/integration/",
+      "<rootDir>/tests/utils/",
       "<rootDir>/.*\\.d\\.ts$",
       "<rootDir>/src/main.ts"
     ],

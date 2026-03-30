@@ -27,6 +27,6 @@
     "**/routeTree.gen.ts": true
   },
   "typescript.format.semicolons": "insert",
-  "jest.jestCommandLine": "npm run test:unit --",
+  "jest.jestCommandLine": "npm run test:vscode --",
   "jest.rootPath": "apps/api"
 }

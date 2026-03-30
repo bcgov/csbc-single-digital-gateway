@@ -1,61 +1,592 @@
-[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 16092  - [39m03/26/2026, 2:34:12 PM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
----------------------------------------|---------|----------|---------|---------|-------------------
-File                                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
----------------------------------------|---------|----------|---------|---------|-------------------
-All files                              |   95.38 |    81.49 |   96.29 |   95.35 |                   
- src/common/dtos                       |     100 |      100 |     100 |     100 |                   
-  app-config.dto.ts                    |     100 |      100 |     100 |     100 |                   
- src/common/filters                    |     100 |      100 |     100 |     100 |                   
-  http-exception.filter.ts             |     100 |      100 |     100 |     100 |                   
- src/modules                           |     100 |      100 |     100 |     100 |                   
-  app-health.module.ts                 |     100 |      100 |     100 |     100 |                   
-  app.module.ts                        |     100 |      100 |     100 |     100 |                   
- src/modules/auth                      |     100 |      100 |     100 |     100 |                   
-  auth.config.ts                       |     100 |      100 |     100 |     100 |                   
-  auth.module.ts                       |     100 |      100 |     100 |     100 |                   
- src/modules/auth/controllers          |     100 |    84.37 |     100 |     100 |                   
-  bcsc-auth.controller.ts              |     100 |    84.37 |     100 |     100 | 25-31,54,88       
-  idir-auth.controller.ts              |     100 |    84.37 |     100 |     100 | 25-31,54,88       
- src/modules/auth/decorators           |     100 |      100 |     100 |     100 |                   
-  public-route.decorator.ts            |     100 |      100 |     100 |     100 |                   
- src/modules/auth/guards               |     100 |    94.44 |     100 |     100 |                   
-  auth.guard.ts                        |     100 |    94.44 |     100 |     100 | 33                
- src/modules/auth/middleware           |     100 |     87.5 |     100 |     100 |                   
-  token-refresh.middleware.ts          |     100 |     87.5 |     100 |     100 | 8                 
- src/modules/auth/services             |     100 |    96.55 |     100 |     100 |                   
-  auth.service.ts                      |     100 |    96.55 |     100 |     100 | 28                
- src/modules/auth/types                |     100 |      100 |     100 |     100 |                   
-  idp.ts                               |     100 |      100 |     100 |     100 |                   
- src/modules/consent-proxy             |   21.42 |        0 |       0 |   16.66 |                   
-  consent-proxy.controller.ts          |       0 |        0 |       0 |       0 | 1-58              
-  consent-proxy.module.ts              |     100 |      100 |     100 |     100 |                   
- src/modules/consent-proxy/controllers |     100 |    83.33 |     100 |     100 |                   
-  consent-proxy.controller.ts          |     100 |    83.33 |     100 |     100 | 21,28             
- src/modules/database                  |     100 |      100 |     100 |     100 |                   
-  database.constants.ts                |     100 |      100 |     100 |     100 |                   
-  database.module.ts                   |     100 |      100 |     100 |     100 |                   
- src/modules/database/decorators       |     100 |      100 |     100 |     100 |                   
-  inject-database.decorator.ts         |     100 |      100 |     100 |     100 |                   
- src/modules/database/providers        |     100 |      100 |     100 |     100 |                   
-  database.provider.ts                 |     100 |      100 |     100 |     100 |                   
- src/modules/health                    |     100 |      100 |     100 |     100 |                   
-  health.module.ts                     |     100 |      100 |     100 |     100 |                   
- src/modules/health/controllers        |     100 |       75 |     100 |     100 |                   
-  health.controller.ts                 |     100 |       75 |     100 |     100 | 19-23             
- src/modules/health/indicators         |     100 |       75 |     100 |     100 |                   
-  drizzle-health.indicator.ts          |     100 |       75 |     100 |     100 | 11                
- src/modules/users                     |     100 |      100 |     100 |     100 |                   
-  users.module.ts                      |     100 |      100 |     100 |     100 |                   
- src/modules/users/services            |     100 |      100 |     100 |     100 |                   
-  users.service.ts                     |     100 |      100 |     100 |     100 |                   
- tests/utils                           |     100 |    81.81 |     100 |     100 |                   
-  app.module.mock.ts                   |     100 |      100 |     100 |     100 |                   
-  auth.controllers.mock.ts             |     100 |      100 |     100 |     100 |                   
-  auth.module.mock.ts                  |     100 |        0 |     100 |     100 | 19-20             
----------------------------------------|---------|----------|---------|---------|-------------------
+[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[09:15:23.047] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/health/live",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "live"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62657",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62660
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "28",
+        "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
+      }
+    }
+    [35mresponseTime[39m: 10
+[09:15:23.085] [32mINFO[39m (18256): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "GET",
+      "url": "/health/live",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "live"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62661",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62662
+    }
+    [35mres[39m: {
+      "statusCode": 500,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "52",
+        "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
+      }
+    }
+    [35mresponseTime[39m: 5
+    err: {
+      "type": "Error",
+      "message": "failed with status code 500",
+      "stack":
+          Error: failed with status code 500
+              at onResFinished (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:531:35)
+              at onFinish (node:_http_outgoing:1082:10)
+              at callback (node:internal/streams/writable:766:21)
+              at afterWrite (node:internal/streams/writable:710:5)
+              at afterWriteTick (node:internal/streams/writable:696:10)
+              at processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[09:15:23.111] [32mINFO[39m (18256): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/health/live",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "live"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62663",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62664
+    }
+    [35mres[39m: {
+      "statusCode": 500,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "52",
+        "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
+      }
+    }
+    [35mresponseTime[39m: 4
+    err: {
+      "type": "Error",
+      "message": "failed with status code 500",
+      "stack":
+          Error: failed with status code 500
+              at onResFinished (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:531:35)
+              at onFinish (node:_http_outgoing:1082:10)
+              at callback (node:internal/streams/writable:766:21)
+              at afterWrite (node:internal/streams/writable:710:5)
+              at afterWriteTick (node:internal/streams/writable:696:10)
+              at processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[09:15:23.147] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/health/live",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "live"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62665",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62666
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "28",
+        "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
+      }
+    }
+    [35mresponseTime[39m: 2
+[09:15:23.151] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "GET",
+      "url": "/health/live",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "live"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62665",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62667
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "28",
+        "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[09:15:23.155] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "GET",
+      "url": "/health/live",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "live"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62665",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62668
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "28",
+        "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[09:15:23.174] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62669",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62670
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "90",
+        "etag": "W/\"5a-pIA30cZKVvOyUAWcGd/MoLRd1p8\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[09:15:23.201] [32mINFO[39m (18256): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62671",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62672
+    }
+    [35mres[39m: {
+      "statusCode": 500,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "52",
+        "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
+      }
+    }
+    [35mresponseTime[39m: 8
+    err: {
+      "type": "Error",
+      "message": "failed with status code 500",
+      "stack":
+          Error: failed with status code 500
+              at onResFinished (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:531:35)
+              at onFinish (node:_http_outgoing:1082:10)
+              at callback (node:internal/streams/writable:766:21)
+              at afterWrite (node:internal/streams/writable:710:5)
+              at afterWriteTick (node:internal/streams/writable:696:10)
+              at processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[09:15:23.228] [32mINFO[39m (18256): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62673",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62674
+    }
+    [35mres[39m: {
+      "statusCode": 500,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "52",
+        "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
+      }
+    }
+    [35mresponseTime[39m: 7
+    err: {
+      "type": "Error",
+      "message": "failed with status code 500",
+      "stack":
+          Error: failed with status code 500
+              at onResFinished (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:531:35)
+              at onFinish (node:_http_outgoing:1082:10)
+              at callback (node:internal/streams/writable:766:21)
+              at afterWrite (node:internal/streams/writable:710:5)
+              at afterWriteTick (node:internal/streams/writable:696:10)
+              at processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[09:15:23.255] [32mINFO[39m (18256): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62675",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62676
+    }
+    [35mres[39m: {
+      "statusCode": 500,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "52",
+        "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
+      }
+    }
+    [35mresponseTime[39m: 1
+    err: {
+      "type": "Error",
+      "message": "failed with status code 500",
+      "stack":
+          Error: failed with status code 500
+              at onResFinished (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:531:35)
+              at onFinish (node:_http_outgoing:1082:10)
+              at callback (node:internal/streams/writable:766:21)
+              at afterWrite (node:internal/streams/writable:710:5)
+              at afterWriteTick (node:internal/streams/writable:696:10)
+              at processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[09:15:23.273] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62677",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62678
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "28",
+        "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[09:15:23.289] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62679",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62680
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "28",
+        "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
+      }
+    }
+    [35mresponseTime[39m: 1
+[09:15:23.302] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62681",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62682
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "90",
+        "etag": "W/\"5a-pIA30cZKVvOyUAWcGd/MoLRd1p8\""
+      }
+    }
+    [35mresponseTime[39m: 3
+[09:15:23.304] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62681",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62683
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "90",
+        "etag": "W/\"5a-pIA30cZKVvOyUAWcGd/MoLRd1p8\""
+      }
+    }
+    [35mresponseTime[39m: 2
+[09:15:23.306] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:62681",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 62684
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "90",
+        "etag": "W/\"5a-pIA30cZKVvOyUAWcGd/MoLRd1p8\""
+      }
+    }
+    [35mresponseTime[39m: 1
+-----------------------------------|---------|----------|---------|---------|-------------------
+File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-----------------------------------|---------|----------|---------|---------|-------------------
+All files                          |   95.17 |    81.19 |      96 |   95.16 |                   
+ common/dtos                       |     100 |      100 |     100 |     100 |                   
+  app-config.dto.ts                |     100 |      100 |     100 |     100 |                   
+ common/filters                    |     100 |      100 |     100 |     100 |                   
+  http-exception.filter.ts         |     100 |      100 |     100 |     100 |                   
+ modules                           |     100 |      100 |     100 |     100 |                   
+  app-health.module.ts             |     100 |      100 |     100 |     100 |                   
+  app.module.ts                    |     100 |      100 |     100 |     100 |                   
+ modules/auth                      |     100 |      100 |     100 |     100 |                   
+  auth.config.ts                   |     100 |      100 |     100 |     100 |                   
+  auth.module.ts                   |     100 |      100 |     100 |     100 |                   
+ modules/auth/controllers          |     100 |    84.37 |     100 |     100 |                   
+  bcsc-auth.controller.ts          |     100 |    84.37 |     100 |     100 | 25-31,54,84       
+  idir-auth.controller.ts          |     100 |    84.37 |     100 |     100 | 25-31,54,84       
+ modules/auth/decorators           |     100 |      100 |     100 |     100 |                   
+  public-route.decorator.ts        |     100 |      100 |     100 |     100 |                   
+ modules/auth/guards               |     100 |    94.44 |     100 |     100 |                   
+  auth.guard.ts                    |     100 |    94.44 |     100 |     100 | 33                
+ modules/auth/middleware           |     100 |     87.5 |     100 |     100 |                   
+  token-refresh.middleware.ts      |     100 |     87.5 |     100 |     100 | 8                 
+ modules/auth/services             |     100 |    93.54 |     100 |     100 |                   
+  auth.service.ts                  |     100 |    93.54 |     100 |     100 | 28,72             
+ modules/auth/types                |     100 |      100 |     100 |     100 |                   
+  idp.ts                           |     100 |      100 |     100 |     100 |                   
+ modules/consent-proxy             |   21.42 |        0 |       0 |   16.66 |                   
+  consent-proxy.controller.ts      |       0 |        0 |       0 |       0 | 1-58              
+  consent-proxy.module.ts          |     100 |      100 |     100 |     100 |                   
+ modules/consent-proxy/controllers |     100 |    83.33 |     100 |     100 |                   
+  consent-proxy.controller.ts      |     100 |    83.33 |     100 |     100 | 21,28             
+ modules/database                  |     100 |      100 |     100 |     100 |                   
+  database.constants.ts            |     100 |      100 |     100 |     100 |                   
+  database.module.ts               |     100 |      100 |     100 |     100 |                   
+ modules/database/decorators       |     100 |      100 |     100 |     100 |                   
+  inject-database.decorator.ts     |     100 |      100 |     100 |     100 |                   
+ modules/database/providers        |     100 |      100 |     100 |     100 |                   
+  database.provider.ts             |     100 |      100 |     100 |     100 |                   
+ modules/health                    |     100 |      100 |     100 |     100 |                   
+  health.module.ts                 |     100 |      100 |     100 |     100 |                   
+ modules/health/controllers        |     100 |       75 |     100 |     100 |                   
+  health.controller.ts             |     100 |       75 |     100 |     100 | 19-23             
+ modules/health/indicators         |     100 |       75 |     100 |     100 |                   
+  drizzle-health.indicator.ts      |     100 |       75 |     100 |     100 | 11                
+ modules/users                     |     100 |      100 |     100 |     100 |                   
+  users.module.ts                  |     100 |      100 |     100 |     100 |                   
+ modules/users/services            |     100 |      100 |     100 |     100 |                   
+  users.service.ts                 |     100 |      100 |     100 |     100 |                   
+-----------------------------------|---------|----------|---------|---------|-------------------

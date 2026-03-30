@@ -16,6 +16,7 @@
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
     "test:cov": "turbo run test:cov",
+    "test:vscode": "turbo run test:vscode",
     "cy:component": "turbo run cy:component",
     "cy:component:report": "turbo run cy:component:report",
     "cy:e2e": "turbo run cy:e2e",

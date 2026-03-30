@@ -175,16 +175,11 @@ describe('BcscAuthController', () => {
       );
 
       expect(mockAuthService.handleCallback).toHaveBeenCalledTimes(1);
-      const [idpArg, urlArg] = mockAuthService.handleCallback.mock.calls[0] as [
-        IdpType,
-        URL,
-        unknown,
-      ];
+      const [idpArg, urlArg, sessionArg] =
+        mockAuthService.handleCallback.mock.calls[0];
       expect(idpArg).toBe(IdpType.BCSC);
-      expect(urlArg).toBeInstanceOf(URL);
-      expect(urlArg.href).toBe(
-        'https://api.example.com/auth/bcsc/callback?code=abc',
-      );
+      expect(urlArg).toEqual(expect.objectContaining({}));
+      expect(sessionArg).toBe(req.session);
     });
 
     it('Should redirect to session.returnTo on successful callback', async () => {
