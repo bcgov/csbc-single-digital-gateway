@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { and, type Database, eq, schema } from '@repo/db';
+import { and, type Database, eq, ilike, notExists, schema, sql } from '@repo/db';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
 
 @Injectable()
@@ -75,6 +75,42 @@ export class UsersService {
 
     this.logger.log(`Created new user ${result.userId} for ${issuer}/${sub}`);
     return result;
+  }
+
+  async searchStaffUsers(
+    q: string,
+    excludeOrgUnitId: string,
+    limit: number,
+  ) {
+    return this.db
+      .select({
+        id: schema.users.id,
+        name: schema.users.name,
+        email: schema.users.email,
+      })
+      .from(schema.users)
+      .innerJoin(
+        schema.userRoles,
+        eq(schema.userRoles.userId, schema.users.id),
+      )
+      .where(
+        and(
+          eq(schema.userRoles.role, 'staff'),
+          ilike(schema.users.name, `%${q}%`),
+          notExists(
+            this.db
+              .select({ one: sql`1` })
+              .from(schema.orgUnitMembers)
+              .where(
+                and(
+                  eq(schema.orgUnitMembers.userId, schema.users.id),
+                  eq(schema.orgUnitMembers.orgUnitId, excludeOrgUnitId),
+                ),
+              ),
+          ),
+        ),
+      )
+      .limit(limit);
   }
 
   async getUserRoles(userId: string): Promise<string[]> {

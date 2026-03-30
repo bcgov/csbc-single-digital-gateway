@@ -16,14 +16,18 @@ import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
-import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
+import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
+import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
 import { Route as AppSettingsConsentHistoryRouteRouteImport } from './routes/app/settings/consent-history/route'
+import { Route as AdminSettingsOrgUnitsRouteRouteImport } from './routes/admin/settings/org-units/route'
 import { Route as AppSettingsConsentHistoryIndexRouteImport } from './routes/app/settings/consent-history/index'
 import { Route as AppServicesServiceSlugIndexRouteImport } from './routes/app/services/$serviceSlug/index'
+import { Route as AdminSettingsOrgUnitsIndexRouteImport } from './routes/admin/settings/org-units/index'
 import { Route as AppSettingsConsentHistoryStatementIdRouteImport } from './routes/app/settings/consent-history/$statementId'
+import { Route as AdminSettingsOrgUnitsOrgUnitIdRouteImport } from './routes/admin/settings/org-units/$orgUnitId'
 import { Route as AppServicesServiceSlugApplyApplicationIdIndexRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/index'
 import { Route as AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
 
@@ -61,15 +65,15 @@ const publicIndexRoute = publicIndexRouteImport.update({
   path: '/',
   getParentRoute: () => publicRouteRoute,
 } as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const AdminSettingsRouteRoute = AdminSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
@@ -81,11 +85,22 @@ const AppServicesIndexRoute = AppServicesIndexRouteImport.update({
   path: '/services/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AppSettingsConsentHistoryRouteRoute =
   AppSettingsConsentHistoryRouteRouteImport.update({
     id: '/consent-history',
     path: '/consent-history',
     getParentRoute: () => AppSettingsRouteRoute,
+  } as any)
+const AdminSettingsOrgUnitsRouteRoute =
+  AdminSettingsOrgUnitsRouteRouteImport.update({
+    id: '/org-units',
+    path: '/org-units',
+    getParentRoute: () => AdminSettingsRouteRoute,
   } as any)
 const AppSettingsConsentHistoryIndexRoute =
   AppSettingsConsentHistoryIndexRouteImport.update({
@@ -99,11 +114,23 @@ const AppServicesServiceSlugIndexRoute =
     path: '/services/$serviceSlug/',
     getParentRoute: () => AppRouteRoute,
   } as any)
+const AdminSettingsOrgUnitsIndexRoute =
+  AdminSettingsOrgUnitsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminSettingsOrgUnitsRouteRoute,
+  } as any)
 const AppSettingsConsentHistoryStatementIdRoute =
   AppSettingsConsentHistoryStatementIdRouteImport.update({
     id: '/$statementId',
     path: '/$statementId',
     getParentRoute: () => AppSettingsConsentHistoryRouteRoute,
+  } as any)
+const AdminSettingsOrgUnitsOrgUnitIdRoute =
+  AdminSettingsOrgUnitsOrgUnitIdRouteImport.update({
+    id: '/$orgUnitId',
+    path: '/$orgUnitId',
+    getParentRoute: () => AdminSettingsOrgUnitsRouteRoute,
   } as any)
 const AppServicesServiceSlugApplyApplicationIdIndexRoute =
   AppServicesServiceSlugApplyApplicationIdIndexRouteImport.update({
@@ -121,30 +148,36 @@ const AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute =
 export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
+  '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/admin/settings': typeof AdminSettingsRoute
   '/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
+  '/admin/settings/org-units': typeof AdminSettingsOrgUnitsRouteRouteWithChildren
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
+  '/admin/settings/': typeof AdminSettingsIndexRoute
   '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
+  '/admin/settings/org-units/$orgUnitId': typeof AdminSettingsOrgUnitsOrgUnitIdRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
+  '/admin/settings/org-units/': typeof AdminSettingsOrgUnitsIndexRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
   '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/admin/settings': typeof AdminSettingsRoute
   '/': typeof publicIndexRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/dev': typeof DevIndexRoute
+  '/admin/settings': typeof AdminSettingsIndexRoute
   '/app/services': typeof AppServicesIndexRoute
   '/app/settings': typeof AppSettingsIndexRoute
+  '/admin/settings/org-units/$orgUnitId': typeof AdminSettingsOrgUnitsOrgUnitIdRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
+  '/admin/settings/org-units': typeof AdminSettingsOrgUnitsIndexRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
@@ -155,16 +188,20 @@ export interface FileRoutesById {
   '/(public)': typeof publicRouteRouteWithChildren
   '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
+  '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/admin/settings': typeof AdminSettingsRoute
   '/(public)/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
+  '/admin/settings/org-units': typeof AdminSettingsOrgUnitsRouteRouteWithChildren
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
+  '/admin/settings/': typeof AdminSettingsIndexRoute
   '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
+  '/admin/settings/org-units/$orgUnitId': typeof AdminSettingsOrgUnitsOrgUnitIdRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
+  '/admin/settings/org-units/': typeof AdminSettingsOrgUnitsIndexRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
@@ -175,30 +212,36 @@ export interface FileRouteTypes {
   fullPaths:
     | '/admin'
     | '/app'
-    | '/app/settings'
     | '/admin/settings'
+    | '/app/settings'
     | '/'
     | '/admin/'
     | '/app/'
     | '/dev/'
+    | '/admin/settings/org-units'
     | '/app/settings/consent-history'
+    | '/admin/settings/'
     | '/app/services/'
     | '/app/settings/'
+    | '/admin/settings/org-units/$orgUnitId'
     | '/app/settings/consent-history/$statementId'
+    | '/admin/settings/org-units/'
     | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
     | '/app/services/$serviceSlug/apply/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/admin/settings'
     | '/'
     | '/admin'
     | '/app'
     | '/dev'
+    | '/admin/settings'
     | '/app/services'
     | '/app/settings'
+    | '/admin/settings/org-units/$orgUnitId'
     | '/app/settings/consent-history/$statementId'
+    | '/admin/settings/org-units'
     | '/app/services/$serviceSlug'
     | '/app/settings/consent-history'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
@@ -208,16 +251,20 @@ export interface FileRouteTypes {
     | '/(public)'
     | '/admin'
     | '/app'
-    | '/app/settings'
     | '/admin/settings'
+    | '/app/settings'
     | '/(public)/'
     | '/admin/'
     | '/app/'
     | '/dev/'
+    | '/admin/settings/org-units'
     | '/app/settings/consent-history'
+    | '/admin/settings/'
     | '/app/services/'
     | '/app/settings/'
+    | '/admin/settings/org-units/$orgUnitId'
     | '/app/settings/consent-history/$statementId'
+    | '/admin/settings/org-units/'
     | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
@@ -282,19 +329,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicIndexRouteImport
       parentRoute: typeof publicRouteRoute
     }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
     '/app/settings': {
       id: '/app/settings'
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AppSettingsRouteRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/app/settings/': {
       id: '/app/settings/'
@@ -310,12 +357,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicesIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/admin/settings/': {
+      id: '/admin/settings/'
+      path: '/'
+      fullPath: '/admin/settings/'
+      preLoaderRoute: typeof AdminSettingsIndexRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
     '/app/settings/consent-history': {
       id: '/app/settings/consent-history'
       path: '/consent-history'
       fullPath: '/app/settings/consent-history'
       preLoaderRoute: typeof AppSettingsConsentHistoryRouteRouteImport
       parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/admin/settings/org-units': {
+      id: '/admin/settings/org-units'
+      path: '/org-units'
+      fullPath: '/admin/settings/org-units'
+      preLoaderRoute: typeof AdminSettingsOrgUnitsRouteRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
     }
     '/app/settings/consent-history/': {
       id: '/app/settings/consent-history/'
@@ -331,12 +392,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicesServiceSlugIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/admin/settings/org-units/': {
+      id: '/admin/settings/org-units/'
+      path: '/'
+      fullPath: '/admin/settings/org-units/'
+      preLoaderRoute: typeof AdminSettingsOrgUnitsIndexRouteImport
+      parentRoute: typeof AdminSettingsOrgUnitsRouteRoute
+    }
     '/app/settings/consent-history/$statementId': {
       id: '/app/settings/consent-history/$statementId'
       path: '/$statementId'
       fullPath: '/app/settings/consent-history/$statementId'
       preLoaderRoute: typeof AppSettingsConsentHistoryStatementIdRouteImport
       parentRoute: typeof AppSettingsConsentHistoryRouteRoute
+    }
+    '/admin/settings/org-units/$orgUnitId': {
+      id: '/admin/settings/org-units/$orgUnitId'
+      path: '/$orgUnitId'
+      fullPath: '/admin/settings/org-units/$orgUnitId'
+      preLoaderRoute: typeof AdminSettingsOrgUnitsOrgUnitIdRouteImport
+      parentRoute: typeof AdminSettingsOrgUnitsRouteRoute
     }
     '/app/services/$serviceSlug/apply/$applicationId/': {
       id: '/app/services/$serviceSlug/apply/$applicationId/'
@@ -367,13 +442,42 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
   publicRouteRouteChildren,
 )
 
+interface AdminSettingsOrgUnitsRouteRouteChildren {
+  AdminSettingsOrgUnitsOrgUnitIdRoute: typeof AdminSettingsOrgUnitsOrgUnitIdRoute
+  AdminSettingsOrgUnitsIndexRoute: typeof AdminSettingsOrgUnitsIndexRoute
+}
+
+const AdminSettingsOrgUnitsRouteRouteChildren: AdminSettingsOrgUnitsRouteRouteChildren =
+  {
+    AdminSettingsOrgUnitsOrgUnitIdRoute: AdminSettingsOrgUnitsOrgUnitIdRoute,
+    AdminSettingsOrgUnitsIndexRoute: AdminSettingsOrgUnitsIndexRoute,
+  }
+
+const AdminSettingsOrgUnitsRouteRouteWithChildren =
+  AdminSettingsOrgUnitsRouteRoute._addFileChildren(
+    AdminSettingsOrgUnitsRouteRouteChildren,
+  )
+
+interface AdminSettingsRouteRouteChildren {
+  AdminSettingsOrgUnitsRouteRoute: typeof AdminSettingsOrgUnitsRouteRouteWithChildren
+  AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
+}
+
+const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
+  AdminSettingsOrgUnitsRouteRoute: AdminSettingsOrgUnitsRouteRouteWithChildren,
+  AdminSettingsIndexRoute: AdminSettingsIndexRoute,
+}
+
+const AdminSettingsRouteRouteWithChildren =
+  AdminSettingsRouteRoute._addFileChildren(AdminSettingsRouteRouteChildren)
+
 interface AdminRouteRouteChildren {
-  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
-  AdminSettingsRoute: AdminSettingsRoute,
+  AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 

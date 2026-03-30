@@ -10,6 +10,7 @@ import { AuthGuard } from './auth/guards/auth.guard';
 import { TokenRefreshMiddleware } from './auth/middleware/token-refresh.middleware';
 import { ConsentProxyModule } from './consent-proxy/consent-proxy.module';
 import { DatabaseModule } from './database/database.module';
+import { OrgUnitsModule } from './org-units/org-units.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { DatabaseModule } from './database/database.module';
     DatabaseModule,
     AuthModule,
     ConsentProxyModule,
+    OrgUnitsModule,
   ],
   providers: [
     {
