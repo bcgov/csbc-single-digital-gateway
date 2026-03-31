@@ -18,18 +18,30 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/route'
+import { Route as AdminConsentRouteRouteImport } from './routes/admin/consent/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
 import { Route as AppServicesIndexRouteImport } from './routes/app/services/index'
 import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
 import { Route as AppSettingsConsentHistoryRouteRouteImport } from './routes/app/settings/consent-history/route'
 import { Route as AdminSettingsOrgUnitsRouteRouteImport } from './routes/admin/settings/org-units/route'
+import { Route as AdminSettingsConsentRouteRouteImport } from './routes/admin/settings/consent/route'
+import { Route as AdminConsentDocumentsRouteRouteImport } from './routes/admin/consent/documents/route'
 import { Route as AppSettingsConsentHistoryIndexRouteImport } from './routes/app/settings/consent-history/index'
 import { Route as AppServicesServiceSlugIndexRouteImport } from './routes/app/services/$serviceSlug/index'
 import { Route as AdminSettingsOrgUnitsIndexRouteImport } from './routes/admin/settings/org-units/index'
+import { Route as AdminConsentDocumentsIndexRouteImport } from './routes/admin/consent/documents/index'
 import { Route as AppSettingsConsentHistoryStatementIdRouteImport } from './routes/app/settings/consent-history/$statementId'
 import { Route as AdminSettingsOrgUnitsOrgUnitIdRouteImport } from './routes/admin/settings/org-units/$orgUnitId'
+import { Route as AdminSettingsConsentDocumentTypesRouteRouteImport } from './routes/admin/settings/consent/document-types/route'
+import { Route as AdminConsentDocumentsDocIdRouteRouteImport } from './routes/admin/consent/documents/$docId/route'
+import { Route as AdminSettingsConsentDocumentTypesIndexRouteImport } from './routes/admin/settings/consent/document-types/index'
+import { Route as AdminConsentDocumentsDocIdIndexRouteImport } from './routes/admin/consent/documents/$docId/index'
+import { Route as AdminSettingsConsentDocumentTypesTypeIdRouteRouteImport } from './routes/admin/settings/consent/document-types/$typeId/route'
 import { Route as AppServicesServiceSlugApplyApplicationIdIndexRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/index'
+import { Route as AdminSettingsConsentDocumentTypesTypeIdIndexRouteImport } from './routes/admin/settings/consent/document-types/$typeId/index'
 import { Route as AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport } from './routes/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
+import { Route as AdminConsentDocumentsDocIdVersionsVersionIdRouteImport } from './routes/admin/consent/documents/$docId/versions/$versionId'
+import { Route as AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRouteImport } from './routes/admin/settings/consent/document-types/$typeId/versions/$versionId'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
@@ -75,6 +87,11 @@ const AdminSettingsRouteRoute = AdminSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminConsentRouteRoute = AdminConsentRouteRouteImport.update({
+  id: '/consent',
+  path: '/consent',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -102,6 +119,18 @@ const AdminSettingsOrgUnitsRouteRoute =
     path: '/org-units',
     getParentRoute: () => AdminSettingsRouteRoute,
   } as any)
+const AdminSettingsConsentRouteRoute =
+  AdminSettingsConsentRouteRouteImport.update({
+    id: '/consent',
+    path: '/consent',
+    getParentRoute: () => AdminSettingsRouteRoute,
+  } as any)
+const AdminConsentDocumentsRouteRoute =
+  AdminConsentDocumentsRouteRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AdminConsentRouteRoute,
+  } as any)
 const AppSettingsConsentHistoryIndexRoute =
   AppSettingsConsentHistoryIndexRouteImport.update({
     id: '/',
@@ -120,6 +149,12 @@ const AdminSettingsOrgUnitsIndexRoute =
     path: '/',
     getParentRoute: () => AdminSettingsOrgUnitsRouteRoute,
   } as any)
+const AdminConsentDocumentsIndexRoute =
+  AdminConsentDocumentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminConsentDocumentsRouteRoute,
+  } as any)
 const AppSettingsConsentHistoryStatementIdRoute =
   AppSettingsConsentHistoryStatementIdRouteImport.update({
     id: '/$statementId',
@@ -132,11 +167,47 @@ const AdminSettingsOrgUnitsOrgUnitIdRoute =
     path: '/$orgUnitId',
     getParentRoute: () => AdminSettingsOrgUnitsRouteRoute,
   } as any)
+const AdminSettingsConsentDocumentTypesRouteRoute =
+  AdminSettingsConsentDocumentTypesRouteRouteImport.update({
+    id: '/document-types',
+    path: '/document-types',
+    getParentRoute: () => AdminSettingsConsentRouteRoute,
+  } as any)
+const AdminConsentDocumentsDocIdRouteRoute =
+  AdminConsentDocumentsDocIdRouteRouteImport.update({
+    id: '/$docId',
+    path: '/$docId',
+    getParentRoute: () => AdminConsentDocumentsRouteRoute,
+  } as any)
+const AdminSettingsConsentDocumentTypesIndexRoute =
+  AdminSettingsConsentDocumentTypesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminSettingsConsentDocumentTypesRouteRoute,
+  } as any)
+const AdminConsentDocumentsDocIdIndexRoute =
+  AdminConsentDocumentsDocIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminConsentDocumentsDocIdRouteRoute,
+  } as any)
+const AdminSettingsConsentDocumentTypesTypeIdRouteRoute =
+  AdminSettingsConsentDocumentTypesTypeIdRouteRouteImport.update({
+    id: '/$typeId',
+    path: '/$typeId',
+    getParentRoute: () => AdminSettingsConsentDocumentTypesRouteRoute,
+  } as any)
 const AppServicesServiceSlugApplyApplicationIdIndexRoute =
   AppServicesServiceSlugApplyApplicationIdIndexRouteImport.update({
     id: '/services/$serviceSlug/apply/$applicationId/',
     path: '/services/$serviceSlug/apply/$applicationId/',
     getParentRoute: () => AppRouteRoute,
+  } as any)
+const AdminSettingsConsentDocumentTypesTypeIdIndexRoute =
+  AdminSettingsConsentDocumentTypesTypeIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminSettingsConsentDocumentTypesTypeIdRouteRoute,
   } as any)
 const AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute =
   AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport.update({
@@ -144,131 +215,207 @@ const AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute =
     path: '/services/$serviceSlug/apply/$applicationId/data-and-privacy',
     getParentRoute: () => AppRouteRoute,
   } as any)
+const AdminConsentDocumentsDocIdVersionsVersionIdRoute =
+  AdminConsentDocumentsDocIdVersionsVersionIdRouteImport.update({
+    id: '/versions/$versionId',
+    path: '/versions/$versionId',
+    getParentRoute: () => AdminConsentDocumentsDocIdRouteRoute,
+  } as any)
+const AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute =
+  AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRouteImport.update({
+    id: '/versions/$versionId',
+    path: '/versions/$versionId',
+    getParentRoute: () => AdminSettingsConsentDocumentTypesTypeIdRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
+  '/admin/consent': typeof AdminConsentRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
+  '/admin/consent/documents': typeof AdminConsentDocumentsRouteRouteWithChildren
+  '/admin/settings/consent': typeof AdminSettingsConsentRouteRouteWithChildren
   '/admin/settings/org-units': typeof AdminSettingsOrgUnitsRouteRouteWithChildren
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
+  '/admin/consent/documents/$docId': typeof AdminConsentDocumentsDocIdRouteRouteWithChildren
+  '/admin/settings/consent/document-types': typeof AdminSettingsConsentDocumentTypesRouteRouteWithChildren
   '/admin/settings/org-units/$orgUnitId': typeof AdminSettingsOrgUnitsOrgUnitIdRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
+  '/admin/consent/documents/': typeof AdminConsentDocumentsIndexRoute
   '/admin/settings/org-units/': typeof AdminSettingsOrgUnitsIndexRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
+  '/admin/settings/consent/document-types/$typeId': typeof AdminSettingsConsentDocumentTypesTypeIdRouteRouteWithChildren
+  '/admin/consent/documents/$docId/': typeof AdminConsentDocumentsDocIdIndexRoute
+  '/admin/settings/consent/document-types/': typeof AdminSettingsConsentDocumentTypesIndexRoute
+  '/admin/consent/documents/$docId/versions/$versionId': typeof AdminConsentDocumentsDocIdVersionsVersionIdRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
+  '/admin/settings/consent/document-types/$typeId/': typeof AdminSettingsConsentDocumentTypesTypeIdIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
+  '/admin/settings/consent/document-types/$typeId/versions/$versionId': typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute
 }
 export interface FileRoutesByTo {
+  '/admin/consent': typeof AdminConsentRouteRouteWithChildren
   '/': typeof publicIndexRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/dev': typeof DevIndexRoute
+  '/admin/settings/consent': typeof AdminSettingsConsentRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsIndexRoute
   '/app/services': typeof AppServicesIndexRoute
   '/app/settings': typeof AppSettingsIndexRoute
   '/admin/settings/org-units/$orgUnitId': typeof AdminSettingsOrgUnitsOrgUnitIdRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
+  '/admin/consent/documents': typeof AdminConsentDocumentsIndexRoute
   '/admin/settings/org-units': typeof AdminSettingsOrgUnitsIndexRoute
   '/app/services/$serviceSlug': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryIndexRoute
+  '/admin/consent/documents/$docId': typeof AdminConsentDocumentsDocIdIndexRoute
+  '/admin/settings/consent/document-types': typeof AdminSettingsConsentDocumentTypesIndexRoute
+  '/admin/consent/documents/$docId/versions/$versionId': typeof AdminConsentDocumentsDocIdVersionsVersionIdRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
+  '/admin/settings/consent/document-types/$typeId': typeof AdminSettingsConsentDocumentTypesTypeIdIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
+  '/admin/settings/consent/document-types/$typeId/versions/$versionId': typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(public)': typeof publicRouteRouteWithChildren
   '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
+  '/admin/consent': typeof AdminConsentRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/(public)/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/dev/': typeof DevIndexRoute
+  '/admin/consent/documents': typeof AdminConsentDocumentsRouteRouteWithChildren
+  '/admin/settings/consent': typeof AdminSettingsConsentRouteRouteWithChildren
   '/admin/settings/org-units': typeof AdminSettingsOrgUnitsRouteRouteWithChildren
   '/app/settings/consent-history': typeof AppSettingsConsentHistoryRouteRouteWithChildren
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/app/services/': typeof AppServicesIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
+  '/admin/consent/documents/$docId': typeof AdminConsentDocumentsDocIdRouteRouteWithChildren
+  '/admin/settings/consent/document-types': typeof AdminSettingsConsentDocumentTypesRouteRouteWithChildren
   '/admin/settings/org-units/$orgUnitId': typeof AdminSettingsOrgUnitsOrgUnitIdRoute
   '/app/settings/consent-history/$statementId': typeof AppSettingsConsentHistoryStatementIdRoute
+  '/admin/consent/documents/': typeof AdminConsentDocumentsIndexRoute
   '/admin/settings/org-units/': typeof AdminSettingsOrgUnitsIndexRoute
   '/app/services/$serviceSlug/': typeof AppServicesServiceSlugIndexRoute
   '/app/settings/consent-history/': typeof AppSettingsConsentHistoryIndexRoute
+  '/admin/settings/consent/document-types/$typeId': typeof AdminSettingsConsentDocumentTypesTypeIdRouteRouteWithChildren
+  '/admin/consent/documents/$docId/': typeof AdminConsentDocumentsDocIdIndexRoute
+  '/admin/settings/consent/document-types/': typeof AdminSettingsConsentDocumentTypesIndexRoute
+  '/admin/consent/documents/$docId/versions/$versionId': typeof AdminConsentDocumentsDocIdVersionsVersionIdRoute
   '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRoute
+  '/admin/settings/consent/document-types/$typeId/': typeof AdminSettingsConsentDocumentTypesTypeIdIndexRoute
   '/app/services/$serviceSlug/apply/$applicationId/': typeof AppServicesServiceSlugApplyApplicationIdIndexRoute
+  '/admin/settings/consent/document-types/$typeId/versions/$versionId': typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/admin'
     | '/app'
+    | '/admin/consent'
     | '/admin/settings'
     | '/app/settings'
     | '/'
     | '/admin/'
     | '/app/'
     | '/dev/'
+    | '/admin/consent/documents'
+    | '/admin/settings/consent'
     | '/admin/settings/org-units'
     | '/app/settings/consent-history'
     | '/admin/settings/'
     | '/app/services/'
     | '/app/settings/'
+    | '/admin/consent/documents/$docId'
+    | '/admin/settings/consent/document-types'
     | '/admin/settings/org-units/$orgUnitId'
     | '/app/settings/consent-history/$statementId'
+    | '/admin/consent/documents/'
     | '/admin/settings/org-units/'
     | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
+    | '/admin/settings/consent/document-types/$typeId'
+    | '/admin/consent/documents/$docId/'
+    | '/admin/settings/consent/document-types/'
+    | '/admin/consent/documents/$docId/versions/$versionId'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
+    | '/admin/settings/consent/document-types/$typeId/'
     | '/app/services/$serviceSlug/apply/$applicationId/'
+    | '/admin/settings/consent/document-types/$typeId/versions/$versionId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/admin/consent'
     | '/'
     | '/admin'
     | '/app'
     | '/dev'
+    | '/admin/settings/consent'
     | '/admin/settings'
     | '/app/services'
     | '/app/settings'
     | '/admin/settings/org-units/$orgUnitId'
     | '/app/settings/consent-history/$statementId'
+    | '/admin/consent/documents'
     | '/admin/settings/org-units'
     | '/app/services/$serviceSlug'
     | '/app/settings/consent-history'
+    | '/admin/consent/documents/$docId'
+    | '/admin/settings/consent/document-types'
+    | '/admin/consent/documents/$docId/versions/$versionId'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
+    | '/admin/settings/consent/document-types/$typeId'
     | '/app/services/$serviceSlug/apply/$applicationId'
+    | '/admin/settings/consent/document-types/$typeId/versions/$versionId'
   id:
     | '__root__'
     | '/(public)'
     | '/admin'
     | '/app'
+    | '/admin/consent'
     | '/admin/settings'
     | '/app/settings'
     | '/(public)/'
     | '/admin/'
     | '/app/'
     | '/dev/'
+    | '/admin/consent/documents'
+    | '/admin/settings/consent'
     | '/admin/settings/org-units'
     | '/app/settings/consent-history'
     | '/admin/settings/'
     | '/app/services/'
     | '/app/settings/'
+    | '/admin/consent/documents/$docId'
+    | '/admin/settings/consent/document-types'
     | '/admin/settings/org-units/$orgUnitId'
     | '/app/settings/consent-history/$statementId'
+    | '/admin/consent/documents/'
     | '/admin/settings/org-units/'
     | '/app/services/$serviceSlug/'
     | '/app/settings/consent-history/'
+    | '/admin/settings/consent/document-types/$typeId'
+    | '/admin/consent/documents/$docId/'
+    | '/admin/settings/consent/document-types/'
+    | '/admin/consent/documents/$docId/versions/$versionId'
     | '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
+    | '/admin/settings/consent/document-types/$typeId/'
     | '/app/services/$serviceSlug/apply/$applicationId/'
+    | '/admin/settings/consent/document-types/$typeId/versions/$versionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -343,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/consent': {
+      id: '/admin/consent'
+      path: '/consent'
+      fullPath: '/admin/consent'
+      preLoaderRoute: typeof AdminConsentRouteRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/app/settings/': {
       id: '/app/settings/'
       path: '/'
@@ -378,6 +532,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsOrgUnitsRouteRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
+    '/admin/settings/consent': {
+      id: '/admin/settings/consent'
+      path: '/consent'
+      fullPath: '/admin/settings/consent'
+      preLoaderRoute: typeof AdminSettingsConsentRouteRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/consent/documents': {
+      id: '/admin/consent/documents'
+      path: '/documents'
+      fullPath: '/admin/consent/documents'
+      preLoaderRoute: typeof AdminConsentDocumentsRouteRouteImport
+      parentRoute: typeof AdminConsentRouteRoute
+    }
     '/app/settings/consent-history/': {
       id: '/app/settings/consent-history/'
       path: '/'
@@ -399,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsOrgUnitsIndexRouteImport
       parentRoute: typeof AdminSettingsOrgUnitsRouteRoute
     }
+    '/admin/consent/documents/': {
+      id: '/admin/consent/documents/'
+      path: '/'
+      fullPath: '/admin/consent/documents/'
+      preLoaderRoute: typeof AdminConsentDocumentsIndexRouteImport
+      parentRoute: typeof AdminConsentDocumentsRouteRoute
+    }
     '/app/settings/consent-history/$statementId': {
       id: '/app/settings/consent-history/$statementId'
       path: '/$statementId'
@@ -413,6 +588,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsOrgUnitsOrgUnitIdRouteImport
       parentRoute: typeof AdminSettingsOrgUnitsRouteRoute
     }
+    '/admin/settings/consent/document-types': {
+      id: '/admin/settings/consent/document-types'
+      path: '/document-types'
+      fullPath: '/admin/settings/consent/document-types'
+      preLoaderRoute: typeof AdminSettingsConsentDocumentTypesRouteRouteImport
+      parentRoute: typeof AdminSettingsConsentRouteRoute
+    }
+    '/admin/consent/documents/$docId': {
+      id: '/admin/consent/documents/$docId'
+      path: '/$docId'
+      fullPath: '/admin/consent/documents/$docId'
+      preLoaderRoute: typeof AdminConsentDocumentsDocIdRouteRouteImport
+      parentRoute: typeof AdminConsentDocumentsRouteRoute
+    }
+    '/admin/settings/consent/document-types/': {
+      id: '/admin/settings/consent/document-types/'
+      path: '/'
+      fullPath: '/admin/settings/consent/document-types/'
+      preLoaderRoute: typeof AdminSettingsConsentDocumentTypesIndexRouteImport
+      parentRoute: typeof AdminSettingsConsentDocumentTypesRouteRoute
+    }
+    '/admin/consent/documents/$docId/': {
+      id: '/admin/consent/documents/$docId/'
+      path: '/'
+      fullPath: '/admin/consent/documents/$docId/'
+      preLoaderRoute: typeof AdminConsentDocumentsDocIdIndexRouteImport
+      parentRoute: typeof AdminConsentDocumentsDocIdRouteRoute
+    }
+    '/admin/settings/consent/document-types/$typeId': {
+      id: '/admin/settings/consent/document-types/$typeId'
+      path: '/$typeId'
+      fullPath: '/admin/settings/consent/document-types/$typeId'
+      preLoaderRoute: typeof AdminSettingsConsentDocumentTypesTypeIdRouteRouteImport
+      parentRoute: typeof AdminSettingsConsentDocumentTypesRouteRoute
+    }
     '/app/services/$serviceSlug/apply/$applicationId/': {
       id: '/app/services/$serviceSlug/apply/$applicationId/'
       path: '/services/$serviceSlug/apply/$applicationId'
@@ -420,12 +630,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/admin/settings/consent/document-types/$typeId/': {
+      id: '/admin/settings/consent/document-types/$typeId/'
+      path: '/'
+      fullPath: '/admin/settings/consent/document-types/$typeId/'
+      preLoaderRoute: typeof AdminSettingsConsentDocumentTypesTypeIdIndexRouteImport
+      parentRoute: typeof AdminSettingsConsentDocumentTypesTypeIdRouteRoute
+    }
     '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy': {
       id: '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
       path: '/services/$serviceSlug/apply/$applicationId/data-and-privacy'
       fullPath: '/app/services/$serviceSlug/apply/$applicationId/data-and-privacy'
       preLoaderRoute: typeof AppServicesServiceSlugApplyApplicationIdDataAndPrivacyRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/admin/consent/documents/$docId/versions/$versionId': {
+      id: '/admin/consent/documents/$docId/versions/$versionId'
+      path: '/versions/$versionId'
+      fullPath: '/admin/consent/documents/$docId/versions/$versionId'
+      preLoaderRoute: typeof AdminConsentDocumentsDocIdVersionsVersionIdRouteImport
+      parentRoute: typeof AdminConsentDocumentsDocIdRouteRoute
+    }
+    '/admin/settings/consent/document-types/$typeId/versions/$versionId': {
+      id: '/admin/settings/consent/document-types/$typeId/versions/$versionId'
+      path: '/versions/$versionId'
+      fullPath: '/admin/settings/consent/document-types/$typeId/versions/$versionId'
+      preLoaderRoute: typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRouteImport
+      parentRoute: typeof AdminSettingsConsentDocumentTypesTypeIdRouteRoute
     }
   }
 }
@@ -441,6 +672,102 @@ const publicRouteRouteChildren: publicRouteRouteChildren = {
 const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
   publicRouteRouteChildren,
 )
+
+interface AdminConsentDocumentsDocIdRouteRouteChildren {
+  AdminConsentDocumentsDocIdIndexRoute: typeof AdminConsentDocumentsDocIdIndexRoute
+  AdminConsentDocumentsDocIdVersionsVersionIdRoute: typeof AdminConsentDocumentsDocIdVersionsVersionIdRoute
+}
+
+const AdminConsentDocumentsDocIdRouteRouteChildren: AdminConsentDocumentsDocIdRouteRouteChildren =
+  {
+    AdminConsentDocumentsDocIdIndexRoute: AdminConsentDocumentsDocIdIndexRoute,
+    AdminConsentDocumentsDocIdVersionsVersionIdRoute:
+      AdminConsentDocumentsDocIdVersionsVersionIdRoute,
+  }
+
+const AdminConsentDocumentsDocIdRouteRouteWithChildren =
+  AdminConsentDocumentsDocIdRouteRoute._addFileChildren(
+    AdminConsentDocumentsDocIdRouteRouteChildren,
+  )
+
+interface AdminConsentDocumentsRouteRouteChildren {
+  AdminConsentDocumentsDocIdRouteRoute: typeof AdminConsentDocumentsDocIdRouteRouteWithChildren
+  AdminConsentDocumentsIndexRoute: typeof AdminConsentDocumentsIndexRoute
+}
+
+const AdminConsentDocumentsRouteRouteChildren: AdminConsentDocumentsRouteRouteChildren =
+  {
+    AdminConsentDocumentsDocIdRouteRoute:
+      AdminConsentDocumentsDocIdRouteRouteWithChildren,
+    AdminConsentDocumentsIndexRoute: AdminConsentDocumentsIndexRoute,
+  }
+
+const AdminConsentDocumentsRouteRouteWithChildren =
+  AdminConsentDocumentsRouteRoute._addFileChildren(
+    AdminConsentDocumentsRouteRouteChildren,
+  )
+
+interface AdminConsentRouteRouteChildren {
+  AdminConsentDocumentsRouteRoute: typeof AdminConsentDocumentsRouteRouteWithChildren
+}
+
+const AdminConsentRouteRouteChildren: AdminConsentRouteRouteChildren = {
+  AdminConsentDocumentsRouteRoute: AdminConsentDocumentsRouteRouteWithChildren,
+}
+
+const AdminConsentRouteRouteWithChildren =
+  AdminConsentRouteRoute._addFileChildren(AdminConsentRouteRouteChildren)
+
+interface AdminSettingsConsentDocumentTypesTypeIdRouteRouteChildren {
+  AdminSettingsConsentDocumentTypesTypeIdIndexRoute: typeof AdminSettingsConsentDocumentTypesTypeIdIndexRoute
+  AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute: typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute
+}
+
+const AdminSettingsConsentDocumentTypesTypeIdRouteRouteChildren: AdminSettingsConsentDocumentTypesTypeIdRouteRouteChildren =
+  {
+    AdminSettingsConsentDocumentTypesTypeIdIndexRoute:
+      AdminSettingsConsentDocumentTypesTypeIdIndexRoute,
+    AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute:
+      AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute,
+  }
+
+const AdminSettingsConsentDocumentTypesTypeIdRouteRouteWithChildren =
+  AdminSettingsConsentDocumentTypesTypeIdRouteRoute._addFileChildren(
+    AdminSettingsConsentDocumentTypesTypeIdRouteRouteChildren,
+  )
+
+interface AdminSettingsConsentDocumentTypesRouteRouteChildren {
+  AdminSettingsConsentDocumentTypesTypeIdRouteRoute: typeof AdminSettingsConsentDocumentTypesTypeIdRouteRouteWithChildren
+  AdminSettingsConsentDocumentTypesIndexRoute: typeof AdminSettingsConsentDocumentTypesIndexRoute
+}
+
+const AdminSettingsConsentDocumentTypesRouteRouteChildren: AdminSettingsConsentDocumentTypesRouteRouteChildren =
+  {
+    AdminSettingsConsentDocumentTypesTypeIdRouteRoute:
+      AdminSettingsConsentDocumentTypesTypeIdRouteRouteWithChildren,
+    AdminSettingsConsentDocumentTypesIndexRoute:
+      AdminSettingsConsentDocumentTypesIndexRoute,
+  }
+
+const AdminSettingsConsentDocumentTypesRouteRouteWithChildren =
+  AdminSettingsConsentDocumentTypesRouteRoute._addFileChildren(
+    AdminSettingsConsentDocumentTypesRouteRouteChildren,
+  )
+
+interface AdminSettingsConsentRouteRouteChildren {
+  AdminSettingsConsentDocumentTypesRouteRoute: typeof AdminSettingsConsentDocumentTypesRouteRouteWithChildren
+}
+
+const AdminSettingsConsentRouteRouteChildren: AdminSettingsConsentRouteRouteChildren =
+  {
+    AdminSettingsConsentDocumentTypesRouteRoute:
+      AdminSettingsConsentDocumentTypesRouteRouteWithChildren,
+  }
+
+const AdminSettingsConsentRouteRouteWithChildren =
+  AdminSettingsConsentRouteRoute._addFileChildren(
+    AdminSettingsConsentRouteRouteChildren,
+  )
 
 interface AdminSettingsOrgUnitsRouteRouteChildren {
   AdminSettingsOrgUnitsOrgUnitIdRoute: typeof AdminSettingsOrgUnitsOrgUnitIdRoute
@@ -459,11 +786,13 @@ const AdminSettingsOrgUnitsRouteRouteWithChildren =
   )
 
 interface AdminSettingsRouteRouteChildren {
+  AdminSettingsConsentRouteRoute: typeof AdminSettingsConsentRouteRouteWithChildren
   AdminSettingsOrgUnitsRouteRoute: typeof AdminSettingsOrgUnitsRouteRouteWithChildren
   AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
 }
 
 const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
+  AdminSettingsConsentRouteRoute: AdminSettingsConsentRouteRouteWithChildren,
   AdminSettingsOrgUnitsRouteRoute: AdminSettingsOrgUnitsRouteRouteWithChildren,
   AdminSettingsIndexRoute: AdminSettingsIndexRoute,
 }
@@ -472,11 +801,13 @@ const AdminSettingsRouteRouteWithChildren =
   AdminSettingsRouteRoute._addFileChildren(AdminSettingsRouteRouteChildren)
 
 interface AdminRouteRouteChildren {
+  AdminConsentRouteRoute: typeof AdminConsentRouteRouteWithChildren
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminConsentRouteRoute: AdminConsentRouteRouteWithChildren,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }

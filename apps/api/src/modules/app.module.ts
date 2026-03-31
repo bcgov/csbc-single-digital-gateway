@@ -8,6 +8,7 @@ import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { TokenRefreshMiddleware } from './auth/middleware/token-refresh.middleware';
+import { ConsentModule } from './consent/consent.module';
 import { ConsentProxyModule } from './consent-proxy/consent-proxy.module';
 import { DatabaseModule } from './database/database.module';
 import { OrgUnitsModule } from './org-units/org-units.module';
@@ -35,6 +36,7 @@ import { OrgUnitsModule } from './org-units/org-units.module';
     }),
     DatabaseModule,
     AuthModule,
+    ConsentModule,
     ConsentProxyModule,
     OrgUnitsModule,
   ],
