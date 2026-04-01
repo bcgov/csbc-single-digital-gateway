@@ -12,7 +12,7 @@ import {
   mockConfigService,
 } from 'tests/utils/auth.controllers.mock';
 
-describe('BCSCAuthController - Integration Tests', () => {
+describe('BCSCAuthController Integration Test', () => {
   let app: INestApplication;
   let server: http.Server;
   let controller: BcscAuthController;

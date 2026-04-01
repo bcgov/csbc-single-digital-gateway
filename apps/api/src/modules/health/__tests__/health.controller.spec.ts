@@ -12,7 +12,7 @@ import { mockConfigService } from 'tests/utils/auth.controllers.mock';
 import { HealthController } from '../controllers/health.controller';
 import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 
-describe('HealthController', () => {
+describe('HealthController Unit Test', () => {
   let controller: HealthController;
   const mockDb = {} as Database;
   const mockDrizzle = { isHealthy: jest.fn() };

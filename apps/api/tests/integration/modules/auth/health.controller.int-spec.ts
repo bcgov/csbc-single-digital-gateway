@@ -13,7 +13,7 @@ import { HealthModule } from 'src/modules/health/health.module';
 import { DrizzleHealthIndicator } from 'src/modules/health/indicators/drizzle-health.indicator';
 import request from 'supertest';
 
-describe('HealthController - Integration Tests', () => {
+describe('HealthController Integration Test', () => {
   let app: INestApplication;
   let server: http.Server;
   const mockHealthCheckService = { check: jest.fn() };

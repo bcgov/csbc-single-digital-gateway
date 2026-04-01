@@ -33,7 +33,7 @@ type ProxyRequestConfig = {
   validateStatus: (status: number) => boolean;
 };
 
-describe('ConsentProxyController', () => {
+describe('ConsentProxyController Unit Test', () => {
   let controller: ConsentProxyController;
 
   const mockHttpService: {

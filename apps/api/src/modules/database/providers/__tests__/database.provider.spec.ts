@@ -5,7 +5,7 @@ import { DatabaseProvider } from '../database.provider';
 jest.mock('@repo/db');
 jest.mock('@nestjs/config');
 
-describe('DatabaseProvider', () => {
+describe('DatabaseProvider Unit Test', () => {
   let mockCreateDatabase: jest.MockedFunction<typeof createDatabase>;
 
   beforeEach(() => {

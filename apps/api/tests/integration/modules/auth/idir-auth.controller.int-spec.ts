@@ -12,7 +12,7 @@ import {
   mockConfigService,
 } from 'tests/utils/auth.controllers.mock';
 
-describe('IdirAuthController - Integration Tests', () => {
+describe('IdirAuthController Integration Test', () => {
   let app: INestApplication;
   let server: http.Server;
   let controller: IdirAuthController;

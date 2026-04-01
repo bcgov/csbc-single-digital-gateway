@@ -7,8 +7,8 @@ import { HealthController } from '../controllers/health.controller';
 import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 
 // Specify the title and the type of test in the syntax below
-// The integration test file name should be health.controller.spec.ts
-describe('HealthControllerExample', () => {
+// The unit test file name should be health.controller.spec.ts
+describe('HealthControllerExample Unit Test', () => {
   let controller: HealthController;
 
   beforeEach(async () => {

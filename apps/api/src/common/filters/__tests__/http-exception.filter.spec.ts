@@ -19,7 +19,7 @@ function createMockHost() {
   };
 }
 
-describe('HttpExceptionFilter', () => {
+describe('HttpExceptionFilter Unit Test', () => {
   let filter: HttpExceptionFilter;
   let superCatchSpy: jest.SpyInstance;
 

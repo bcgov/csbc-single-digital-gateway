@@ -44,7 +44,7 @@ import { AppHealthModule } from '../app-health.module';
 import { DatabaseModule } from '../database/database.module';
 import { HealthModule } from '../health/health.module';
 
-describe('AppHealthModule', () => {
+describe('AppHealthModule Unit Test', () => {
   it('Should validate that AppHealthModule is defined', () => {
     expect(AppHealthModule).toBeDefined();
   });

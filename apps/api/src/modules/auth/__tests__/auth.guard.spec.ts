@@ -108,7 +108,7 @@ function jwtMockVerifyMockImplementation(
   );
 }
 
-describe('AuthGuard', () => {
+describe('AuthGuard Unit Test', () => {
   let guard: AuthGuard;
 
   beforeEach(async () => {

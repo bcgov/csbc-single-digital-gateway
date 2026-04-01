@@ -11,7 +11,7 @@ import { IdirAuthController } from '../controllers/idir-auth.controller';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
 
-describe('IdirAuthController', () => {
+describe('IdirAuthController Unit Test', () => {
   let controller: IdirAuthController;
 
   const adminFrontendUrl = 'https://admin.example.com';

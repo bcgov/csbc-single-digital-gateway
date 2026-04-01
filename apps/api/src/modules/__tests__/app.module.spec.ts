@@ -8,7 +8,7 @@ import { AppModule } from '../app.module';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { TokenRefreshMiddleware } from '../auth/middleware/token-refresh.middleware';
 
-describe('AppModule', () => {
+describe('AppModule Unit Test', () => {
   let appModule: AppModule;
 
   beforeEach(() => {

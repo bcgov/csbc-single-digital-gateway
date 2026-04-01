@@ -13,7 +13,7 @@ import type { AuthState, IdpType, UserProfile } from "./auth.types";
 const BcscAuthContext = createContext<AuthState | null>(null);
 const IdirAuthContext = createContext<AuthState | null>(null);
 
-interface AuthProviderProps {
+export interface AuthProviderProps {
   idpType: IdpType;
   defaultRedirectPath: string;
   lazy?: boolean;

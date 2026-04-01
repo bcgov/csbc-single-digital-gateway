@@ -1,7 +1,7 @@
 import { HealthIndicatorService } from '@nestjs/terminus';
 import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 
-describe('DrizzleHealthIndicator', () => {
+describe('DrizzleHealthIndicator Unit Test', () => {
   let indicator: DrizzleHealthIndicator;
 
   const mockUp = jest.fn().mockReturnValue({ database: { status: 'up' } });

@@ -32,7 +32,7 @@ function createMockSession(
   };
 }
 
-describe('AuthService', () => {
+describe('AuthService Unit Test', () => {
   let service: AuthService;
 
   beforeEach(async () => {

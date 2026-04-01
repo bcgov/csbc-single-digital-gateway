@@ -80,7 +80,7 @@ const createDbMock = (options?: {
   };
 };
 
-describe('UsersService', () => {
+describe('UsersService Unit Test', () => {
   let logSpy: jest.SpyInstance;
   let debugSpy: jest.SpyInstance;
 

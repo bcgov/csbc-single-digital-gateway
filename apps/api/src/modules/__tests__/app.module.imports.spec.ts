@@ -46,7 +46,7 @@ import { AuthModule } from '../auth/auth.module';
 import { ConsentProxyModule } from '../consent-proxy/consent-proxy.module';
 import { DatabaseModule } from '../database/database.module';
 
-describe('AppModule-Imports', () => {
+describe('AppModule-Imports Unit Test', () => {
   it('Should call ConfigModule.forRoot exactly once', () => {
     expect(mockConfigForRoot).toHaveBeenCalledTimes(1);
   });

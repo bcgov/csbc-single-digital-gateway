@@ -9,6 +9,7 @@ export default defineConfig({
       framework: "react",
       bundler: "vite",
     },
+    fixturesFolder: "tests/fixtures",
     supportFile: "cypress/support/component.ts",
     indexHtmlFile: "cypress/support/component-index.html",
     specPattern: [
