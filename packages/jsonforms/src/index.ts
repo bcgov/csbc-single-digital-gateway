@@ -11,6 +11,7 @@ import {
   booleanControlEntry,
   enumControlEntry,
   oneOfEnumControlEntry,
+  oneOfControlEntry,
   multiLineControlEntry,
   dateControlEntry,
   jsonControlEntry,
@@ -21,6 +22,8 @@ import {
   verticalLayoutEntry,
   horizontalLayoutEntry,
   groupLayoutEntry,
+  categorizationLayoutEntry,
+  arrayLayoutEntry,
 } from "./layouts/index.js";
 import {
   textCellEntry,
@@ -43,9 +46,12 @@ export const repoRenderers: JsonFormsRendererRegistryEntry[] = [
   jsonControlEntry,
   richTextControlEntry,
   asyncSelectControlEntry,
+  oneOfControlEntry,
   verticalLayoutEntry,
   horizontalLayoutEntry,
   groupLayoutEntry,
+  categorizationLayoutEntry,
+  arrayLayoutEntry,
 ];
 
 export const repoCells: JsonFormsCellRendererRegistryEntry[] = [

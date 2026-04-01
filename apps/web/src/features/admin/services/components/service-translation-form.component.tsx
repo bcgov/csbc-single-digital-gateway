@@ -2,10 +2,40 @@ import { JsonForms } from "@jsonforms/react";
 import type { JsonSchema, UISchemaElement } from "@jsonforms/core";
 import { repoAjv, repoCells, repoRenderers } from "@repo/jsonforms";
 import { Button, Input, Label, Textarea } from "@repo/ui";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useUpsertServiceTranslation } from "../data/services.mutations";
 import type { ServiceVersionTranslation } from "../data/services.query";
+
+const SDG_CATEGORIES = [
+  { value: "culture", label: "Culture" },
+  { value: "education", label: "Education" },
+  { value: "employment", label: "Employment" },
+  { value: "environment", label: "Environment" },
+  { value: "family", label: "Family" },
+  { value: "health", label: "Health" },
+  { value: "housing", label: "Housing" },
+  { value: "justice", label: "Justice" },
+  { value: "social-protection", label: "Social Protection" },
+  { value: "transport", label: "Transport" },
+];
+
+const asyncSelectLoaders = {
+  categories: {
+    loadOptions: async (query: string) => ({
+      options: SDG_CATEGORIES.filter((c) =>
+        c.label.toLowerCase().includes(query.toLowerCase()),
+      ),
+      hasMore: false,
+    }),
+    resolveValue: async (value: string | string[]) => {
+      const values = Array.isArray(value) ? value : [value];
+      return values
+        .map((v) => SDG_CATEGORIES.find((c) => c.value === v))
+        .filter(Boolean) as { value: string; label: string }[];
+    },
+  },
+};
 
 interface ServiceTranslationFormProps {
   serviceId: string;
@@ -43,6 +73,8 @@ export function ServiceTranslationForm({
 
   const hasSchema =
     contentSchema && Object.keys(contentSchema).length > 0;
+
+  const jsonFormsConfig = useMemo(() => ({ asyncSelectLoaders }), []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +140,7 @@ export function ServiceTranslationForm({
           ajv={repoAjv}
           renderers={repoRenderers}
           cells={repoCells}
+          config={jsonFormsConfig}
           readonly={!isDraft}
           onChange={({ data }) => setContentData(data)}
         />

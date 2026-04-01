@@ -53,3 +53,8 @@ export {
   asyncSelectControlTester,
   asyncSelectControlEntry,
 } from "./AsyncSelectControl.js";
+export {
+  OneOfControl,
+  oneOfControlTester,
+  oneOfControlEntry,
+} from "./OneOfControl.js";

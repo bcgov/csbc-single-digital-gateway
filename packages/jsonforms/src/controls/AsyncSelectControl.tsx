@@ -1,5 +1,5 @@
 import type { ControlProps } from "@jsonforms/core";
-import { and, isStringControl, optionIs, rankWith } from "@jsonforms/core";
+import { and, uiTypeIs, optionIs, rankWith } from "@jsonforms/core";
 import { withJsonFormsControlProps } from "@jsonforms/react";
 import { AsyncSelect, type AsyncSelectProps } from "@repo/ui";
 
@@ -72,7 +72,7 @@ function AsyncSelectControlRenderer({
 
 export const asyncSelectControlTester = rankWith(
   5,
-  and(isStringControl, optionIs("format", "asyncSelect")),
+  and(uiTypeIs("Control"), optionIs("format", "asyncSelect")),
 );
 export const AsyncSelectControl = withJsonFormsControlProps(
   AsyncSelectControlRenderer,

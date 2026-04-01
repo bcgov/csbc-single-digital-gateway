@@ -13,3 +13,13 @@ export {
   groupLayoutTester,
   groupLayoutEntry,
 } from "./GroupLayout.js";
+export {
+  CategorizationLayout,
+  categorizationLayoutTester,
+  categorizationLayoutEntry,
+} from "./CategorizationLayout.js";
+export {
+  ArrayLayoutComponent,
+  arrayLayoutTester,
+  arrayLayoutEntry,
+} from "./ArrayLayout.js";
