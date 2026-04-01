@@ -5,75 +5,75 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArchiveVersionDialog } from "../../../../../../../features/admin/components/archive-version-dialog.component";
-import { PublishVersionDialog } from "../../../../../../../features/admin/components/publish-version-dialog.component";
-import { VersionStatusBadge } from "../../../../../../../features/admin/components/version-status-badge.component";
-import { documentTypeVersionQueryOptions } from "../../../../../../../features/admin/consent-document-types/data/consent-document-types.query";
-import { AddDocTranslationDialog } from "../../../../../../../features/admin/consent-documents/components/add-doc-translation-dialog.component";
-import { DocTranslationForm } from "../../../../../../../features/admin/consent-documents/components/doc-translation-form.component";
+import { ArchiveVersionDialog } from "../../../../../../features/admin/components/archive-version-dialog.component";
+import { PublishVersionDialog } from "../../../../../../features/admin/components/publish-version-dialog.component";
+import { VersionStatusBadge } from "../../../../../../features/admin/components/version-status-badge.component";
+import { serviceTypeVersionQueryOptions } from "../../../../../../features/admin/service-types/data/service-types.query";
+import { AddServiceTranslationDialog } from "../../../../../../features/admin/services/components/add-service-translation-dialog.component";
+import { ServiceTranslationForm } from "../../../../../../features/admin/services/components/service-translation-form.component";
 import {
-  useArchiveDocVersion,
-  usePublishDocVersion,
-} from "../../../../../../../features/admin/consent-documents/data/consent-documents.mutations";
+  useArchiveServiceVersion,
+  usePublishServiceVersion,
+} from "../../../../../../features/admin/services/data/services.mutations";
 import {
-  consentDocumentQueryOptions,
-  consentDocumentVersionQueryOptions,
-} from "../../../../../../../features/admin/consent-documents/data/consent-documents.query";
-import { queryClient } from "../../../../../../../lib/react-query.client";
+  serviceQueryOptions,
+  serviceVersionQueryOptions,
+} from "../../../../../../features/admin/services/data/services.query";
+import { queryClient } from "../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
-  "/admin/consent/documents/$docId/versions/$versionId",
+  "/admin/services/$serviceId/versions/$versionId",
 )({
   loader: async ({ params }) => {
-    const [version, doc] = await Promise.all([
+    const [version, svc] = await Promise.all([
       queryClient.ensureQueryData(
-        consentDocumentVersionQueryOptions(params.docId, params.versionId),
+        serviceVersionQueryOptions(params.serviceId, params.versionId),
       ),
       queryClient.ensureQueryData(
-        consentDocumentQueryOptions(params.docId),
+        serviceQueryOptions(params.serviceId),
       ),
     ]);
     return {
-      docId: params.docId,
-      docName: doc.name,
+      serviceId: params.serviceId,
+      serviceName: svc.name,
       versionNumber: version.version,
     };
   },
   staticData: {
     breadcrumbs: (loaderData: unknown) => {
-      const data = loaderData as { docId: string; docName: string | null; versionNumber: number };
+      const data = loaderData as { serviceId: string; serviceName: string | null; versionNumber: number };
       return [
-        { label: "Consent Documents", to: "/admin/consent/documents" },
+        { label: "Services", to: "/admin/services" },
         {
-          label: data?.docName ?? "Detail",
-          to: `/admin/consent/documents/${data.docId}`,
+          label: data?.serviceName ?? "Detail",
+          to: `/admin/services/${data.serviceId}`,
         },
         { label: `Version ${data.versionNumber}` },
       ];
     },
   },
-  component: DocVersionDetailPage,
+  component: ServiceVersionDetailPage,
 });
 
-function DocVersionDetailPage() {
-  const { docId, versionId } = Route.useParams();
+function ServiceVersionDetailPage() {
+  const { serviceId, versionId } = Route.useParams();
   const [showPublish, setShowPublish] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
 
   const { data: version, isLoading, error } = useQuery(
-    consentDocumentVersionQueryOptions(docId, versionId),
+    serviceVersionQueryOptions(serviceId, versionId),
   );
 
-  const { data: doc } = useQuery({
-    ...consentDocumentQueryOptions(docId),
+  const { data: svc } = useQuery({
+    ...serviceQueryOptions(serviceId),
     enabled: !!version,
   });
 
-  const typeVersionId = version?.consentDocumentTypeVersionId;
-  const typeId = doc?.consentDocumentTypeId;
+  const typeVersionId = version?.serviceTypeVersionId;
+  const typeId = svc?.serviceTypeId;
 
   const { data: typeVersion } = useQuery({
-    ...documentTypeVersionQueryOptions(typeId!, typeVersionId!),
+    ...serviceTypeVersionQueryOptions(typeId!, typeVersionId!),
     enabled: !!typeId && !!typeVersionId,
   });
 
@@ -93,8 +93,8 @@ function DocVersionDetailPage() {
     };
   }, [typeVersion]);
 
-  const publishMutation = usePublishDocVersion(docId);
-  const archiveMutation = useArchiveDocVersion(docId);
+  const publishMutation = usePublishServiceVersion(serviceId);
+  const archiveMutation = useArchiveServiceVersion(serviceId);
 
   const handlePublish = () => {
     publishMutation.mutate(versionId, {
@@ -170,8 +170,8 @@ function DocVersionDetailPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">Translations</h2>
           {isDraft && (
-            <AddDocTranslationDialog
-              docId={docId}
+            <AddServiceTranslationDialog
+              serviceId={serviceId}
               versionId={versionId}
               existingLocales={version.translations.map((t) => t.locale)}
               trigger={
@@ -193,8 +193,8 @@ function DocVersionDetailPage() {
         {version.translations.map((t) => (
           <div key={t.locale} className="rounded border p-4">
             <h3 className="mb-4 font-bold">{t.locale}</h3>
-            <DocTranslationForm
-              docId={docId}
+            <ServiceTranslationForm
+              serviceId={serviceId}
               versionId={versionId}
               locale={t.locale}
               translation={t}

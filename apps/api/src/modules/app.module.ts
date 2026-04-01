@@ -12,6 +12,7 @@ import { ConsentModule } from './consent/consent.module';
 import { ConsentProxyModule } from './consent-proxy/consent-proxy.module';
 import { DatabaseModule } from './database/database.module';
 import { OrgUnitsModule } from './org-units/org-units.module';
+import { ServicesModule } from './services/services.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { OrgUnitsModule } from './org-units/org-units.module';
     ConsentModule,
     ConsentProxyModule,
     OrgUnitsModule,
+    ServicesModule,
   ],
   providers: [
     {

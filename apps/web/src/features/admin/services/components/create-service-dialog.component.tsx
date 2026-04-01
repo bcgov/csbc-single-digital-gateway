@@ -20,27 +20,27 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { documentTypeQueryOptions } from "../../../admin/consent-document-types/data/consent-document-types.query";
+import { serviceTypeQueryOptions } from "../../../admin/service-types/data/service-types.query";
 import {
-  loadDocumentTypes,
+  loadServiceTypes,
   loadOrgUnits,
-  resolveDocumentType,
+  resolveServiceType,
   resolveOrgUnit,
 } from "../data/async-select-loaders";
-import { useCreateConsentDocument } from "../data/consent-documents.mutations";
+import { useCreateService } from "../data/services.mutations";
 
-interface CreateDocumentDialogProps {
+interface CreateServiceDialogProps {
   trigger?: React.ReactNode;
-  onCreated?: (doc: { id: string }) => void;
+  onCreated?: (svc: { id: string }) => void;
 }
 
 const selectorSchema: JsonSchema = {
   type: "object",
   properties: {
     orgUnitId: { type: "string", minLength: 1 },
-    consentDocumentTypeId: { type: "string", minLength: 1 },
+    serviceTypeId: { type: "string", minLength: 1 },
   },
-  required: ["orgUnitId", "consentDocumentTypeId"],
+  required: ["orgUnitId", "serviceTypeId"],
 };
 
 const selectorUiSchema: UISchemaElement = {
@@ -58,23 +58,23 @@ const selectorUiSchema: UISchemaElement = {
     },
     {
       type: "Control",
-      scope: "#/properties/consentDocumentTypeId",
-      label: "Document Type",
+      scope: "#/properties/serviceTypeId",
+      label: "Service Type",
       options: {
         format: "asyncSelect",
-        asyncSelectKey: "documentTypes",
-        placeholder: "Search document types…",
+        asyncSelectKey: "serviceTypes",
+        placeholder: "Search service types…",
       },
     },
   ],
 };
 
-const initialData = { orgUnitId: "", consentDocumentTypeId: "" };
+const initialData = { orgUnitId: "", serviceTypeId: "" };
 
-export function CreateDocumentDialog({
+export function CreateServiceDialog({
   trigger,
   onCreated,
-}: CreateDocumentDialogProps) {
+}: CreateServiceDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState(initialData);
   const [name, setName] = useState("");
@@ -82,12 +82,12 @@ export function CreateDocumentDialog({
   const [contentData, setContentData] = useState<Record<string, unknown>>({});
   const [resetKey, setResetKey] = useState(0);
 
-  const createMutation = useCreateConsentDocument();
+  const createMutation = useCreateService();
 
-  const typeId = formData.consentDocumentTypeId;
+  const typeId = formData.serviceTypeId;
 
   const { data: typeDetail, isLoading: isLoadingType } = useQuery({
-    ...documentTypeQueryOptions(typeId),
+    ...serviceTypeQueryOptions(typeId),
     enabled: !!typeId,
   });
 
@@ -105,7 +105,6 @@ export function CreateDocumentDialog({
     | UISchemaElement
     | undefined;
 
-  // Derive content data with schema defaults applied (avoids setState-in-useEffect)
   const contentDataWithDefaults = useMemo(() => {
     if (!contentSchema || Object.keys(contentData).length > 0) return contentData;
     return applySchemaDefaults(contentSchema as Record<string, unknown>, contentData);
@@ -119,9 +118,9 @@ export function CreateDocumentDialog({
     () => ({
       asyncSelectLoaders: {
         orgUnits: { loadOptions: loadOrgUnits, resolveValue: resolveOrgUnit },
-        documentTypes: {
-          loadOptions: loadDocumentTypes,
-          resolveValue: resolveDocumentType,
+        serviceTypes: {
+          loadOptions: loadServiceTypes,
+          resolveValue: resolveServiceType,
         },
       },
     }),
@@ -142,7 +141,7 @@ export function CreateDocumentDialog({
   };
 
   const handleSelectorChange = (data: typeof initialData) => {
-    if (data.consentDocumentTypeId !== formData.consentDocumentTypeId) {
+    if (data.serviceTypeId !== formData.serviceTypeId) {
       setContentData({});
     }
     setFormData(data);
@@ -150,12 +149,12 @@ export function CreateDocumentDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.orgUnitId || !formData.consentDocumentTypeId || !name.trim())
+    if (!formData.orgUnitId || !formData.serviceTypeId || !name.trim())
       return;
 
     createMutation.mutate(
       {
-        consentDocumentTypeId: formData.consentDocumentTypeId,
+        serviceTypeId: formData.serviceTypeId,
         orgUnitId: formData.orgUnitId,
         name: name.trim(),
         description: description.trim() || undefined,
@@ -163,7 +162,7 @@ export function CreateDocumentDialog({
       },
       {
         onSuccess: (result) => {
-          toast.success("Document created");
+          toast.success("Service created");
           setOpen(false);
           reset();
           onCreated?.(result);
@@ -180,7 +179,7 @@ export function CreateDocumentDialog({
       <DialogTrigger>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Consent Document</DialogTitle>
+          <DialogTitle>Create Service</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -194,29 +193,28 @@ export function CreateDocumentDialog({
             cells={repoCells}
             config={config}
             onChange={({ data }) => {
-              console.log("data: ", data);
               handleSelectorChange(data);
             }}
           />
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="doc-name">Name</Label>
+            <Label htmlFor="svc-name">Name</Label>
             <Input
-              id="doc-name"
+              id="svc-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter document name"
+              placeholder="Enter service name"
               required
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="doc-description">Description</Label>
+            <Label htmlFor="svc-description">Description</Label>
             <Textarea
-              id="doc-description"
+              id="svc-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter document description (optional)"
+              placeholder="Enter service description (optional)"
               rows={3}
             />
           </div>
@@ -229,7 +227,7 @@ export function CreateDocumentDialog({
 
           {typeId && !isLoadingType && !hasPublishedVersion && (
             <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
-              This document type has no published version. A version and
+              This service type has no published version. A version and
               translation cannot be auto-created.
             </div>
           )}
@@ -260,7 +258,7 @@ export function CreateDocumentDialog({
             className="w-full bg-bcgov-blue hover:bg-bcgov-blue/80"
             disabled={createMutation.isPending}
           >
-            {createMutation.isPending ? "Creating…" : "Create Document"}
+            {createMutation.isPending ? "Creating…" : "Create Service"}
           </Button>
         </form>
       </DialogContent>

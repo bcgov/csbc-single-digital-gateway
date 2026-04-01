@@ -6,7 +6,7 @@ import {
   CardTitle,
   Separator,
 } from "@repo/ui";
-import { IconBuildingCommunity, IconFileDescription } from "@tabler/icons-react";
+import { IconBuildingCommunity, IconFileDescription, IconServer } from "@tabler/icons-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/settings/")({
@@ -66,6 +66,28 @@ function AdminSettingsPage() {
             <CardContent>
               <CardDescription>
                 Manage consent document type definitions and schemas.
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold">Services</h2>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link to="/admin/settings/services/service-types">
+          <Card className="transition-shadow hover:shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <IconServer className="size-5" />
+                Service Types
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Manage service type definitions and schemas.
               </CardDescription>
             </CardContent>
           </Card>

@@ -4,68 +4,68 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { api } from "../../../../../../api/api.client";
-import { AddContributorDialog } from "../../../../../../features/admin/consent-documents/components/add-contributor-dialog.component";
-import { ContributorsTable } from "../../../../../../features/admin/consent-documents/components/contributors-table.component";
-import { DocVersionsTable } from "../../../../../../features/admin/consent-documents/components/doc-versions-table.component";
-import { RemoveContributorDialog } from "../../../../../../features/admin/consent-documents/components/remove-contributor-dialog.component";
+import { api } from "../../../../../api/api.client";
+import { AddServiceContributorDialog } from "../../../../../features/admin/services/components/add-service-contributor-dialog.component";
+import { ServiceContributorsTable } from "../../../../../features/admin/services/components/service-contributors-table.component";
+import { ServiceVersionsTable } from "../../../../../features/admin/services/components/service-versions-table.component";
+import { RemoveServiceContributorDialog } from "../../../../../features/admin/services/components/remove-service-contributor-dialog.component";
 import {
-  useCreateDocVersion,
-  useRemoveContributor,
-} from "../../../../../../features/admin/consent-documents/data/consent-documents.mutations";
+  useCreateServiceVersion,
+  useRemoveServiceContributor,
+} from "../../../../../features/admin/services/data/services.mutations";
 import {
-  consentDocumentContributorsQueryOptions,
-  consentDocumentQueryOptions,
-} from "../../../../../../features/admin/consent-documents/data/consent-documents.query";
-import type { Contributor } from "../../../../../../features/admin/consent-documents/data/consent-documents.query";
-import { queryClient } from "../../../../../../lib/react-query.client";
+  serviceContributorsQueryOptions,
+  serviceQueryOptions,
+} from "../../../../../features/admin/services/data/services.query";
+import type { Contributor } from "../../../../../features/admin/services/data/services.query";
+import { queryClient } from "../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
-  "/admin/consent/documents/$docId/",
+  "/admin/services/$serviceId/",
 )({
   loader: async ({ params }) => {
-    const doc = await queryClient.ensureQueryData(
-      consentDocumentQueryOptions(params.docId),
+    const svc = await queryClient.ensureQueryData(
+      serviceQueryOptions(params.serviceId),
     );
-    return { docName: doc.name };
+    return { serviceName: svc.name };
   },
   staticData: {
     breadcrumbs: (loaderData: unknown) => [
-      { label: "Consent Documents", to: "/admin/consent/documents" },
-      { label: (loaderData as { docName: string | null })?.docName ?? "Detail" },
+      { label: "Services", to: "/admin/services" },
+      { label: (loaderData as { serviceName: string | null })?.serviceName ?? "Detail" },
     ],
   },
-  component: DocumentDetailPage,
+  component: ServiceDetailPage,
 });
 
-function DocumentDetailPage() {
-  const { docId } = Route.useParams();
+function ServiceDetailPage() {
+  const { serviceId } = Route.useParams();
   const navigate = useNavigate();
   const [contributorToRemove, setContributorToRemove] =
     useState<Contributor | null>(null);
 
-  const { data: doc, isLoading, error } = useQuery(
-    consentDocumentQueryOptions(docId),
+  const { data: svc, isLoading, error } = useQuery(
+    serviceQueryOptions(serviceId),
   );
 
   const { data: contributors } = useQuery(
-    consentDocumentContributorsQueryOptions(docId),
+    serviceContributorsQueryOptions(serviceId),
   );
 
   const { data: orgUnit } = useQuery({
-    queryKey: ["org-units", doc?.orgUnitId],
+    queryKey: ["org-units", svc?.orgUnitId],
     queryFn: async () => {
-      const { data } = await api.get(`/admin/org-units/${doc!.orgUnitId}`);
+      const { data } = await api.get(`/admin/org-units/${svc!.orgUnitId}`);
       return data as { id: string; name: string };
     },
-    enabled: !!doc?.orgUnitId,
+    enabled: !!svc?.orgUnitId,
   });
 
-  const { data: docType } = useQuery({
-    queryKey: ["consent-document-types", doc?.consentDocumentTypeId],
+  const { data: svcType } = useQuery({
+    queryKey: ["service-types", svc?.serviceTypeId],
     queryFn: async () => {
       const { data } = await api.get(
-        `/admin/consent/document-types/${doc!.consentDocumentTypeId}`,
+        `/admin/service-types/${svc!.serviceTypeId}`,
       );
       const enTranslation = data.publishedVersion?.translations?.find(
         (t: { locale: string }) => t.locale === "en",
@@ -75,19 +75,19 @@ function DocumentDetailPage() {
         name: string;
       };
     },
-    enabled: !!doc?.consentDocumentTypeId,
+    enabled: !!svc?.serviceTypeId,
   });
 
-  const createVersionMutation = useCreateDocVersion(docId);
-  const removeMutation = useRemoveContributor(docId);
+  const createVersionMutation = useCreateServiceVersion(serviceId);
+  const removeMutation = useRemoveServiceContributor(serviceId);
 
   const handleCreateVersion = () => {
     createVersionMutation.mutate(undefined, {
       onSuccess: (result) => {
         toast.success(`Version v${result.version} created`);
         void navigate({
-          to: "/admin/consent/documents/$docId/versions/$versionId",
-          params: { docId, versionId: result.id },
+          to: "/admin/services/$serviceId/versions/$versionId",
+          params: { serviceId, versionId: result.id },
         });
       },
       onError: (err) => {
@@ -118,22 +118,22 @@ function DocumentDetailPage() {
         Error: {error.message}
       </p>
     );
-  if (!doc) return null;
+  if (!svc) return null;
 
-  const latestVersion = doc.versions.length
-    ? doc.versions.reduce((a, b) => (b.version > a.version ? b : a))
+  const latestVersion = svc.versions.length
+    ? svc.versions.reduce((a, b) => (b.version > a.version ? b : a))
     : null;
   const title =
-    doc.publishedVersion?.name ??
+    svc.publishedVersion?.name ??
     latestVersion?.name ??
-    doc.name ??
-    "Consent Document";
+    svc.name ??
+    "Service";
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1>{title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">ID: {doc.id}</p>
+        <p className="mt-1 text-sm text-muted-foreground">ID: {svc.id}</p>
       </div>
 
       <Separator className="bg-bcgov-gold" />
@@ -152,10 +152,10 @@ function DocumentDetailPage() {
             </div>
             <div className="bg-white p-4">
               <p className="text-sm font-bold text-muted-foreground">
-                Document Type
+                Service Type
               </p>
               <p className="font-medium text-sm break-all">
-                {docType ? docType.name : <Spinner className="mt-1" />}
+                {svcType ? svcType.name : <Spinner className="mt-1" />}
               </p>
             </div>
             <div className="bg-white p-4">
@@ -163,7 +163,7 @@ function DocumentDetailPage() {
                 Created
               </p>
               <p className="font-medium">
-                {new Date(doc.createdAt).toLocaleDateString([], {
+                {new Date(svc.createdAt).toLocaleDateString([], {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -189,7 +189,7 @@ function DocumentDetailPage() {
           </Button>
         </div>
 
-        <DocVersionsTable docId={docId} versions={doc.versions} />
+        <ServiceVersionsTable serviceId={serviceId} versions={svc.versions} />
       </div>
 
       <Separator />
@@ -197,8 +197,8 @@ function DocumentDetailPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">Contributors</h2>
-          <AddContributorDialog
-            docId={docId}
+          <AddServiceContributorDialog
+            serviceId={serviceId}
             trigger={
               <Button variant="outline">
                 <IconUserPlus className="size-4" />
@@ -209,14 +209,14 @@ function DocumentDetailPage() {
         </div>
 
         {contributors && (
-          <ContributorsTable
+          <ServiceContributorsTable
             contributors={contributors}
             onRemove={(c) => setContributorToRemove(c)}
           />
         )}
       </div>
 
-      <RemoveContributorDialog
+      <RemoveServiceContributorDialog
         contributor={contributorToRemove}
         isPending={removeMutation.isPending}
         onConfirm={handleRemoveConfirm}
