@@ -183,6 +183,8 @@ export const consentDocumentVersionTranslations = pgTable(
       .references(() => consentDocumentVersions.id, { onDelete: "cascade" }),
 
     locale: text().notNull(),
+    name: text().notNull(),
+    description: text(),
     content: jsonb().notNull().default(`{}`),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

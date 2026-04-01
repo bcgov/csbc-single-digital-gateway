@@ -6,6 +6,8 @@ export const ConsentDocumentVersionTranslationDto = z.object({
   id: z.string().uuid(),
   consentDocumentVersionId: z.string().uuid(),
   locale: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
   content: z.record(z.string(), z.unknown()),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -20,6 +22,8 @@ export const ConsentDocumentVersionSummaryDto = z.object({
   version: z.number(),
   status: z.enum(["draft", "published", "archived"]),
   consentDocumentTypeVersionId: z.string().uuid(),
+  name: z.string().nullable(),
+  description: z.string().nullable(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
   createdAt: z.string(),
@@ -55,6 +59,8 @@ const ConsentDocumentListItemDto = z.object({
   consentDocumentTypeId: z.string().uuid(),
   orgUnitId: z.string().uuid(),
   publishedConsentDocumentVersionId: z.string().uuid().nullable(),
+  name: z.string().nullable(),
+  description: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -83,7 +89,7 @@ export type ConsentDocumentsPage = z.infer<typeof ConsentDocumentsPageDto>;
 export function consentDocumentsQueryOptions(
   page = 1,
   limit = 10,
-  filters?: { orgUnitId?: string; consentDocumentTypeId?: string },
+  filters?: { orgUnitId?: string },
 ) {
   return queryOptions({
     queryKey: ["consent-documents", { page, limit, ...filters }],

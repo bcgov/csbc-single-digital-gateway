@@ -1,0 +1,43 @@
+{
+  "name": "@repo/jsonforms",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build"
+  },
+  "peerDependencies": {
+    "@jsonforms/core": "^3.7.0",
+    "@jsonforms/react": "^3.7.0",
+    "@repo/ui": "*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "dependencies": {
+    "ajv": "^8.6.1"
+  },
+  "devDependencies": {
+    "@jsonforms/core": "^3.7.0",
+    "@jsonforms/react": "^3.7.0",
+    "@repo/ui": "*",
+    "@vitejs/plugin-react": "^5.1.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4",
+    "vite-plugin-dts": "^4.4.1"
+  }
+}

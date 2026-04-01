@@ -1,8 +1,46 @@
-import { Button, Input, Label, Textarea } from "@repo/ui";
+import type { JsonSchema, UISchemaElement } from "@jsonforms/core";
+import { JsonForms } from "@jsonforms/react";
+import { repoAjv, repoCells, repoRenderers } from "@repo/jsonforms";
+import { Button } from "@repo/ui";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useUpsertTypeVersionTranslation } from "../data/consent-document-types.mutations";
 import type { ConsentDocumentTypeVersionTranslation } from "../data/consent-document-types.query";
+
+const schema: JsonSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string", minLength: 1 },
+    description: { type: "string", minLength: 1 },
+    schema: { type: "object" },
+    uiSchema: { type: "object" },
+  },
+  required: ["name", "description"],
+};
+
+const uiSchema: UISchemaElement = {
+  type: "VerticalLayout",
+  elements: [
+    { type: "Control", scope: "#/properties/name" },
+    {
+      type: "Control",
+      scope: "#/properties/description",
+      options: { height: "200px" },
+    },
+    {
+      type: "Control",
+      scope: "#/properties/schema",
+      label: "JSON Schema",
+      options: { format: "json", height: "200px" },
+    },
+    {
+      type: "Control",
+      scope: "#/properties/uiSchema",
+      label: "UI Schema",
+      options: { format: "json", height: "200px" },
+    },
+  ],
+};
 
 interface TypeVersionTranslationFormProps {
   typeId: string;
@@ -12,6 +50,17 @@ interface TypeVersionTranslationFormProps {
   isDraft: boolean;
 }
 
+function buildInitialData(
+  translation?: ConsentDocumentTypeVersionTranslation,
+): Record<string, unknown> {
+  return {
+    name: translation?.name ?? "",
+    description: translation?.description ?? "",
+    schema: translation?.schema ?? {},
+    uiSchema: translation?.uiSchema ?? {},
+  };
+}
+
 export function TypeVersionTranslationForm({
   typeId,
   versionId,
@@ -19,17 +68,8 @@ export function TypeVersionTranslationForm({
   translation,
   isDraft,
 }: TypeVersionTranslationFormProps) {
-  const [name, setName] = useState(translation?.name ?? "");
-  const [description, setDescription] = useState(
-    translation?.description ?? "",
-  );
-  const [schemaStr, setSchemaStr] = useState(
-    translation?.schema ? JSON.stringify(translation.schema, null, 2) : "{}",
-  );
-  const [uiSchemaStr, setUiSchemaStr] = useState(
-    translation?.uiSchema
-      ? JSON.stringify(translation.uiSchema, null, 2)
-      : "{}",
+  const [formData, setFormData] = useState<Record<string, unknown>>(() =>
+    buildInitialData(translation),
   );
 
   const upsertMutation = useUpsertTypeVersionTranslation(typeId, versionId);
@@ -37,25 +77,27 @@ export function TypeVersionTranslationForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    let schema: Record<string, unknown>;
-    let uiSchema: Record<string, unknown>;
+    const name = formData.name;
+    const description = formData.description;
 
-    try {
-      schema = JSON.parse(schemaStr) as Record<string, unknown>;
-    } catch {
-      toast.error("Invalid JSON in schema field");
+    if (typeof name !== "string" || !name.trim()) {
+      toast.error("Name is required");
       return;
     }
 
-    try {
-      uiSchema = JSON.parse(uiSchemaStr) as Record<string, unknown>;
-    } catch {
-      toast.error("Invalid JSON in uiSchema field");
+    if (typeof description !== "string" || !description.trim()) {
+      toast.error("Description is required");
       return;
     }
 
     upsertMutation.mutate(
-      { locale, name, description, schema, uiSchema },
+      {
+        locale,
+        name,
+        description,
+        schema: formData.schema as Record<string, unknown> | undefined,
+        uiSchema: formData.uiSchema as Record<string, unknown> | undefined,
+      },
       {
         onSuccess: () => toast.success("Translation saved"),
         onError: (err) => toast.error(`Save failed: ${err.message}`),
@@ -65,47 +107,16 @@ export function TypeVersionTranslationForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <Label>Name</Label>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={!isDraft}
-          required
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label>Description</Label>
-        <Textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          disabled={!isDraft}
-          required
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label>Schema (JSON)</Label>
-        <Textarea
-          value={schemaStr}
-          onChange={(e) => setSchemaStr(e.target.value)}
-          disabled={!isDraft}
-          rows={6}
-          className="font-mono text-sm"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label>UI Schema (JSON)</Label>
-        <Textarea
-          value={uiSchemaStr}
-          onChange={(e) => setUiSchemaStr(e.target.value)}
-          disabled={!isDraft}
-          rows={6}
-          className="font-mono text-sm"
-        />
-      </div>
+      <JsonForms
+        schema={schema}
+        uischema={uiSchema}
+        data={formData}
+        ajv={repoAjv}
+        renderers={repoRenderers}
+        cells={repoCells}
+        readonly={!isDraft}
+        onChange={({ data }) => setFormData(data as Record<string, unknown>)}
+      />
 
       {isDraft && (
         <Button

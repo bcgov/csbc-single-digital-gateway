@@ -1,3 +1,6 @@
+import { JsonForms } from "@jsonforms/react";
+import type { JsonSchema, UISchemaElement } from "@jsonforms/core";
+import { repoAjv, repoCells, repoRenderers } from "@repo/jsonforms";
 import {
   Button,
   Dialog,
@@ -5,13 +8,45 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  Input,
-  Label,
-  Textarea,
 } from "@repo/ui";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCreateDocumentType } from "../data/consent-document-types.mutations";
+
+const schema: JsonSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string", minLength: 1 },
+    description: { type: "string", minLength: 1 },
+    schema: { type: "object" },
+    uiSchema: { type: "object" },
+  },
+  required: ["name", "description"],
+};
+
+const uiSchema: UISchemaElement = {
+  type: "VerticalLayout",
+  elements: [
+    { type: "Control", scope: "#/properties/name" },
+    {
+      type: "Control",
+      scope: "#/properties/description",
+      options: { multi: true },
+    },
+    {
+      type: "Control",
+      scope: "#/properties/schema",
+      label: "JSON Schema",
+      options: { format: "json", height: "200px" },
+    },
+    {
+      type: "Control",
+      scope: "#/properties/uiSchema",
+      label: "UI Schema",
+      options: { format: "json", height: "200px" },
+    },
+  ],
+};
 
 interface CreateDocumentTypeDialogProps {
   trigger?: React.ReactNode;
@@ -23,18 +58,14 @@ export function CreateDocumentTypeDialog({
   onCreated,
 }: CreateDocumentTypeDialogProps) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [schemaStr, setSchemaStr] = useState("{}");
-  const [uiSchemaStr, setUiSchemaStr] = useState("{}");
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [resetKey, setResetKey] = useState(0);
 
   const createMutation = useCreateDocumentType();
 
   const reset = () => {
-    setName("");
-    setDescription("");
-    setSchemaStr("{}");
-    setUiSchemaStr("{}");
+    setFormData({});
+    setResetKey((k) => k + 1);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -45,45 +76,45 @@ export function CreateDocumentTypeDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    let schema: Record<string, unknown>;
-    let uiSchema: Record<string, unknown>;
+    const name = formData.name;
+    const description = formData.description;
 
-    try {
-      schema = JSON.parse(schemaStr) as Record<string, unknown>;
-    } catch {
-      toast.error("Invalid JSON in schema field");
+    if (typeof name !== "string" || !name.trim()) {
+      toast.error("Name is required");
       return;
     }
 
-    try {
-      uiSchema = JSON.parse(uiSchemaStr) as Record<string, unknown>;
-    } catch {
-      toast.error("Invalid JSON in uiSchema field");
+    if (typeof description !== "string" || !description.trim()) {
+      toast.error("Description is required");
       return;
     }
 
     createMutation.mutate(
-      { name, description, schema, uiSchema },
       {
-        onSuccess: (result) => {
-          toast.success("Document type created");
-          setOpen(false);
-          reset();
-          onCreated?.(result);
-        },
-        onError: (err) => {
-          toast.error(`Failed to create: ${err.message}`);
-        },
+        name,
+        description,
+        schema: formData.schema as Record<string, unknown> | undefined,
+        uiSchema: formData.uiSchema as Record<string, unknown> | undefined,
       },
-    );
+      {
+      onSuccess: (result) => {
+        toast.success("Document type created");
+        setOpen(false);
+        reset();
+        onCreated?.(result);
+      },
+      onError: (err) => {
+        toast.error(`Failed to create: ${err.message}`);
+      },
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Document Type</DialogTitle>
+          <DialogTitle>Create Document Type (JSON Forms)</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -92,45 +123,16 @@ export function CreateDocumentTypeDialog({
             and English (en) translation.
           </p>
 
-          <div className="flex flex-col gap-2">
-            <Label>Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Privacy Consent"
-              required
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe this consent document type…"
-              required
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>Schema (JSON)</Label>
-            <Textarea
-              value={schemaStr}
-              onChange={(e) => setSchemaStr(e.target.value)}
-              rows={4}
-              className="font-mono text-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>UI Schema (JSON)</Label>
-            <Textarea
-              value={uiSchemaStr}
-              onChange={(e) => setUiSchemaStr(e.target.value)}
-              rows={4}
-              className="font-mono text-sm"
-            />
-          </div>
+          <JsonForms
+            key={resetKey}
+            schema={schema}
+            uischema={uiSchema}
+            data={formData}
+            ajv={repoAjv}
+            renderers={repoRenderers}
+            cells={repoCells}
+            onChange={({ data }) => setFormData(data as Record<string, unknown>)}
+          />
 
           <Button
             type="submit"

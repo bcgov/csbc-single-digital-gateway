@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { type Database, and, asc, eq, schema, sql } from '@repo/db';
+import { type Database, and, asc, eq, ilike, schema, sql } from '@repo/db';
 import { firstValueFrom } from 'rxjs';
 import type { AppConfigDto } from 'src/common/dtos/app-config.dto';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
@@ -43,7 +43,7 @@ export class OrgUnitsService {
   async findAll(
     page: number,
     limit: number,
-    user: { userId: string; isGlobalAdmin: boolean },
+    user: { userId: string; isGlobalAdmin: boolean; search?: string },
   ) {
     const offset = (page - 1) * limit;
 
@@ -59,18 +59,24 @@ export class OrgUnitsService {
           WHERE ${schema.orgUnitMembers.userId} = ${user.userId}
         )`;
 
+    const searchFilter = user.search
+      ? ilike(schema.orgUnits.name, `%${user.search}%`)
+      : undefined;
+
+    const whereClause = and(accessFilter, searchFilter);
+
     const [docs, countResult] = await Promise.all([
       this.db
         .select()
         .from(schema.orgUnits)
-        .where(accessFilter)
+        .where(whereClause)
         .orderBy(asc(schema.orgUnits.name))
         .limit(limit)
         .offset(offset),
       this.db
         .select({ count: sql<number>`count(*)::int` })
         .from(schema.orgUnits)
-        .where(accessFilter),
+        .where(whereClause),
     ]);
 
     const totalDocs = countResult[0].count;

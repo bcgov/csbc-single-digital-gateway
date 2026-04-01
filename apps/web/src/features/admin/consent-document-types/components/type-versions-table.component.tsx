@@ -31,6 +31,8 @@ export function TypeVersionsTable({
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Description</TableHead>
           <TableHead>Version</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
@@ -46,9 +48,13 @@ export function TypeVersionsTable({
                 params={{ typeId, versionId: v.id }}
                 className="font-medium text-bcgov-blue hover:underline"
               >
-                v{v.version}
+                {v.name ?? `v${v.version}`}
               </Link>
             </TableCell>
+            <TableCell className="max-w-[300px] truncate text-muted-foreground">
+              {v.description ?? "—"}
+            </TableCell>
+            <TableCell>v{v.version}</TableCell>
             <TableCell>
               <VersionStatusBadge status={v.status} />
             </TableCell>

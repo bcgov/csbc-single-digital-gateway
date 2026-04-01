@@ -3,7 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { type Database, and, asc, eq, schema, sql } from '@repo/db';
+import {
+  type Database,
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  schema,
+  sql,
+} from '@repo/db';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
 
 @Injectable()
@@ -53,31 +63,214 @@ export class ConsentDocumentTypesService {
     });
   }
 
-  async findAll(page: number, limit: number, isAdmin: boolean) {
+  async findAllPublished(page: number, limit: number, search?: string) {
+    const offset = (page - 1) * limit;
+
+    const publishedFilter = sql`${schema.consentDocumentTypes.publishedConsentDocumentTypeVersionId} IS NOT NULL`;
+
+    const searchFilter = search
+      ? sql`${schema.consentDocumentTypes.id} IN (
+          SELECT ${schema.consentDocumentTypeVersions.consentDocumentTypeId}
+          FROM ${schema.consentDocumentTypeVersions}
+          INNER JOIN ${schema.consentDocumentTypeVersionTranslations}
+            ON ${schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId} = ${schema.consentDocumentTypeVersions.id}
+          WHERE ${ilike(schema.consentDocumentTypeVersionTranslations.name, `%${search}%`)}
+            AND ${eq(schema.consentDocumentTypeVersionTranslations.locale, 'en')}
+        )`
+      : undefined;
+
+    const whereClause = and(publishedFilter, searchFilter);
+
+    const [rows, countResult] = await Promise.all([
+      this.db
+        .select({
+          id: schema.consentDocumentTypes.id,
+          name: schema.consentDocumentTypeVersionTranslations.name,
+        })
+        .from(schema.consentDocumentTypes)
+        .innerJoin(
+          schema.consentDocumentTypeVersions,
+          eq(
+            schema.consentDocumentTypeVersions.id,
+            schema.consentDocumentTypes.publishedConsentDocumentTypeVersionId,
+          ),
+        )
+        .innerJoin(
+          schema.consentDocumentTypeVersionTranslations,
+          and(
+            eq(
+              schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+              schema.consentDocumentTypeVersions.id,
+            ),
+            eq(schema.consentDocumentTypeVersionTranslations.locale, 'en'),
+          ),
+        )
+        .where(whereClause)
+        .orderBy(asc(schema.consentDocumentTypeVersionTranslations.name))
+        .limit(limit)
+        .offset(offset),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(schema.consentDocumentTypes)
+        .where(whereClause),
+    ]);
+
+    const totalDocs = countResult[0].count;
+    const totalPages = Math.ceil(totalDocs / limit);
+
+    return { docs: rows, totalDocs, totalPages, page, limit };
+  }
+
+  async findAll(
+    page: number,
+    limit: number,
+    isAdmin: boolean,
+    search?: string,
+  ) {
     const offset = (page - 1) * limit;
 
     const publishedFilter = isAdmin
       ? undefined
       : sql`${schema.consentDocumentTypes.publishedConsentDocumentTypeVersionId} IS NOT NULL`;
 
+    const searchFilter = search
+      ? sql`${schema.consentDocumentTypes.id} IN (
+          SELECT ${schema.consentDocumentTypeVersions.consentDocumentTypeId}
+          FROM ${schema.consentDocumentTypeVersions}
+          INNER JOIN ${schema.consentDocumentTypeVersionTranslations}
+            ON ${schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId} = ${schema.consentDocumentTypeVersions.id}
+          WHERE ${ilike(schema.consentDocumentTypeVersionTranslations.name, `%${search}%`)}
+            AND ${eq(schema.consentDocumentTypeVersionTranslations.locale, 'en')}
+        )`
+      : undefined;
+
+    const whereClause = and(publishedFilter, searchFilter);
+
     const [docs, countResult] = await Promise.all([
       this.db
         .select()
         .from(schema.consentDocumentTypes)
-        .where(publishedFilter)
+        .where(whereClause)
         .orderBy(asc(schema.consentDocumentTypes.createdAt))
         .limit(limit)
         .offset(offset),
       this.db
         .select({ count: sql<number>`count(*)::int` })
         .from(schema.consentDocumentTypes)
-        .where(publishedFilter),
+        .where(whereClause),
     ]);
 
     const totalDocs = countResult[0].count;
     const totalPages = Math.ceil(totalDocs / limit);
 
-    return { docs, totalDocs, totalPages, page, limit };
+    const enrichedDocs = await this.enrichTypesWithTranslations(docs);
+
+    return { docs: enrichedDocs, totalDocs, totalPages, page, limit };
+  }
+
+  private async enrichTypesWithTranslations(
+    docs: (typeof schema.consentDocumentTypes.$inferSelect)[],
+  ) {
+    if (docs.length === 0) return [];
+
+    const typeIds = docs.map((d) => d.id);
+
+    // Fetch all versions for these types
+    const versions = await this.db
+      .select()
+      .from(schema.consentDocumentTypeVersions)
+      .where(
+        inArray(
+          schema.consentDocumentTypeVersions.consentDocumentTypeId,
+          typeIds,
+        ),
+      )
+      .orderBy(desc(schema.consentDocumentTypeVersions.version));
+
+    // Determine which version IDs we need translations for:
+    // published version (if any) or latest version per type
+    const versionIdsByType = new Map<
+      string,
+      { displayVersionId: string; updatesPending: boolean }
+    >();
+
+    for (const type of docs) {
+      const typeVersions = versions.filter(
+        (v) => v.consentDocumentTypeId === type.id,
+      );
+      if (typeVersions.length === 0) {
+        versionIdsByType.set(type.id, {
+          displayVersionId: '',
+          updatesPending: false,
+        });
+        continue;
+      }
+
+      const publishedVersion = type.publishedConsentDocumentTypeVersionId
+        ? typeVersions.find(
+            (v) => v.id === type.publishedConsentDocumentTypeVersionId,
+          )
+        : null;
+
+      const latestVersion = typeVersions[0]; // already sorted desc
+      const hasDraft = typeVersions.some((v) => v.status === 'draft');
+
+      versionIdsByType.set(type.id, {
+        displayVersionId: publishedVersion
+          ? publishedVersion.id
+          : latestVersion.id,
+        updatesPending: !!publishedVersion && hasDraft,
+      });
+    }
+
+    const relevantVersionIds = [
+      ...new Set(
+        [...versionIdsByType.values()]
+          .map((v) => v.displayVersionId)
+          .filter(Boolean),
+      ),
+    ];
+
+    if (relevantVersionIds.length === 0) {
+      return docs.map((d) => ({
+        ...d,
+        name: null,
+        description: null,
+        updatesPending: false,
+      }));
+    }
+
+    // Fetch 'en' translations for the relevant versions
+    const translations = await this.db
+      .select()
+      .from(schema.consentDocumentTypeVersionTranslations)
+      .where(
+        and(
+          inArray(
+            schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+            relevantVersionIds,
+          ),
+          eq(schema.consentDocumentTypeVersionTranslations.locale, 'en'),
+        ),
+      );
+
+    const translationByVersionId = new Map(
+      translations.map((t) => [t.consentDocumentTypeVersionId, t]),
+    );
+
+    return docs.map((d) => {
+      const info = versionIdsByType.get(d.id);
+      const translation = info
+        ? translationByVersionId.get(info.displayVersionId)
+        : null;
+
+      return {
+        ...d,
+        name: translation?.name ?? null,
+        description: translation?.description ?? null,
+        updatesPending: info?.updatesPending ?? false,
+      };
+    });
   }
 
   async findById(typeId: string, isAdmin: boolean) {
@@ -148,7 +341,41 @@ export class ConsentDocumentTypesService {
       )
       .orderBy(asc(schema.consentDocumentTypeVersions.version));
 
-    return { ...type, publishedVersion, versions };
+    // Enrich versions with 'en' translation name/description
+    const versionIds = versions.map((v) => v.id);
+    const enTranslations =
+      versionIds.length > 0
+        ? await this.db
+            .select()
+            .from(schema.consentDocumentTypeVersionTranslations)
+            .where(
+              and(
+                inArray(
+                  schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+                  versionIds,
+                ),
+                eq(
+                  schema.consentDocumentTypeVersionTranslations.locale,
+                  'en',
+                ),
+              ),
+            )
+        : [];
+
+    const translationByVersionId = new Map(
+      enTranslations.map((t) => [t.consentDocumentTypeVersionId, t]),
+    );
+
+    const enrichedVersions = versions.map((v) => {
+      const t = translationByVersionId.get(v.id);
+      return {
+        ...v,
+        name: t?.name ?? null,
+        description: t?.description ?? null,
+      };
+    });
+
+    return { ...type, publishedVersion, versions: enrichedVersions };
   }
 
   async createVersion(typeId: string) {
@@ -350,6 +577,22 @@ export class ConsentDocumentTypesService {
 
       return published;
     });
+  }
+
+  async delete(typeId: string) {
+    const results = await this.db
+      .select()
+      .from(schema.consentDocumentTypes)
+      .where(eq(schema.consentDocumentTypes.id, typeId))
+      .limit(1);
+
+    if (results.length === 0) {
+      throw new NotFoundException(`Consent document type ${typeId} not found`);
+    }
+
+    await this.db
+      .delete(schema.consentDocumentTypes)
+      .where(eq(schema.consentDocumentTypes.id, typeId));
   }
 
   async archiveVersion(typeId: string, versionId: string) {

@@ -18,7 +18,6 @@ import { RequiresOwner } from '../decorators/requires-owner.decorator';
 import {
   AddContributorBodyDto,
   CreateDocBodyDto,
-  CreateDocVersionBodyDto,
   DocContributorParamDto,
   DocIdParamDto,
   DocVersionIdParamDto,
@@ -71,14 +70,8 @@ export class ConsentDocumentsAdminV1Controller {
 
   @Post(':docId/versions')
   @UseGuards(ConsentDocumentContributorGuard)
-  createVersion(
-    @Param() params: DocIdParamDto,
-    @Body() body: CreateDocVersionBodyDto,
-  ) {
-    return this.documentsService.createVersion(
-      params.docId,
-      body.consentDocumentTypeVersionId,
-    );
+  createVersion(@Param() params: DocIdParamDto) {
+    return this.documentsService.createVersion(params.docId);
   }
 
   @Get(':docId/versions/:versionId')
@@ -133,6 +126,12 @@ export class ConsentDocumentsAdminV1Controller {
       body.userId,
       body.role,
     );
+  }
+
+  @Delete(':docId')
+  @Roles('admin')
+  deleteDocument(@Param() params: DocIdParamDto) {
+    return this.documentsService.delete(params.docId);
   }
 
   @Delete(':docId/contributors/:userId')

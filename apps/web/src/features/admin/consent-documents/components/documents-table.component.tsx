@@ -1,4 +1,5 @@
 import {
+  Button,
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -12,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui";
+import { IconTrash } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import type { ConsentDocumentListItem } from "../data/consent-documents.query";
 
@@ -20,6 +22,7 @@ interface DocumentsTableProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onDelete: (docId: string) => void;
 }
 
 export function DocumentsTable({
@@ -27,6 +30,7 @@ export function DocumentsTable({
   currentPage,
   totalPages,
   onPageChange,
+  onDelete,
 }: DocumentsTableProps) {
   if (documents.length === 0 && currentPage === 1) {
     return (
@@ -41,10 +45,11 @@ export function DocumentsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead>Updated</TableHead>
+            <TableHead className="w-[80px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,8 +61,11 @@ export function DocumentsTable({
                   params={{ docId: doc.id }}
                   className="font-medium text-bcgov-blue hover:underline"
                 >
-                  {doc.id.slice(0, 8)}…
+                  {doc.name ?? doc.id.slice(0, 8) + "…"}
                 </Link>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {doc.description ?? "—"}
               </TableCell>
               <TableCell>
                 {doc.publishedConsentDocumentVersionId
@@ -72,11 +80,16 @@ export function DocumentsTable({
                 })}
               </TableCell>
               <TableCell>
-                {new Date(doc.updatedAt).toLocaleDateString([], {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(doc.id);
+                  }}
+                >
+                  <IconTrash className="size-4 text-destructive" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}

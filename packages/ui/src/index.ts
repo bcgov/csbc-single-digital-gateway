@@ -27,6 +27,9 @@ export { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMe
 export { Field, FieldLabel, FieldDescription, FieldError, FieldGroup, FieldLegend, FieldSeparator, FieldSet, FieldContent, FieldTitle } from "./components/ui/field";
 export { HoverCard, HoverCardTrigger, HoverCardContent } from "./components/ui/hover-card";
 export { Input } from "./components/ui/input";
+export { JsonInput, type JsonInputProps } from "./components/ui/json-input";
+export { RichTextInput, type RichTextInputProps } from "./components/ui/rich-text-input";
+export { AsyncSelect, type AsyncSelectProps, type AsyncSelectOption } from "./components/ui/async-select";
 export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupInput, InputGroupTextarea } from "./components/ui/input-group";
 export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "./components/ui/input-otp";
 export { Item, ItemMedia, ItemContent, ItemActions, ItemGroup, ItemSeparator, ItemTitle, ItemDescription, ItemHeader, ItemFooter } from "./components/ui/item";

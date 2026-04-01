@@ -67,6 +67,8 @@ CREATE TABLE "consent_document_version_translations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"consent_document_version_id" uuid NOT NULL,
 	"locale" text NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
 	"content" jsonb DEFAULT '{}' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL

@@ -25,6 +25,21 @@ export function useCreateDocumentType() {
   });
 }
 
+export function useDeleteDocumentType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (typeId: string) => {
+      await api.delete(`/admin/consent/document-types/${typeId}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["consent-document-types"],
+      });
+    },
+  });
+}
+
 export function useCreateTypeVersion(typeId: string) {
   const queryClient = useQueryClient();
 

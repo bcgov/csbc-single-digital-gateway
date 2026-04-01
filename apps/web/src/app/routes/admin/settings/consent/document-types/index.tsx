@@ -2,9 +2,13 @@ import { Button, Separator } from "@repo/ui";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 import { CreateDocumentTypeDialog } from "../../../../../../features/admin/consent-document-types/components/create-document-type-dialog.component";
+import { DeleteDocumentTypeDialog } from "../../../../../../features/admin/consent-document-types/components/delete-document-type-dialog.component";
 import { DocumentTypesTable } from "../../../../../../features/admin/consent-document-types/components/document-types-table.component";
+import { useDeleteDocumentType } from "../../../../../../features/admin/consent-document-types/data/consent-document-types.mutations";
 import { documentTypesQueryOptions } from "../../../../../../features/admin/consent-document-types/data/consent-document-types.query";
 
 const SearchSchema = z.object({
@@ -44,6 +48,9 @@ function DocumentTypesListPage() {
       replace: true,
     });
   };
+
+  const [deletingTypeId, setDeletingTypeId] = useState<string | null>(null);
+  const deleteMutation = useDeleteDocumentType();
 
   const handleCreated = (result: { id: string }) => {
     void navigate({
@@ -86,8 +93,26 @@ function DocumentTypesListPage() {
           currentPage={data.page}
           totalPages={data.totalPages}
           onPageChange={goToPage}
+          onDelete={setDeletingTypeId}
         />
       )}
+      <DeleteDocumentTypeDialog
+        typeId={deletingTypeId}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deletingTypeId) return;
+          deleteMutation.mutate(deletingTypeId, {
+            onSuccess: () => {
+              toast.success("Document type deleted.");
+              setDeletingTypeId(null);
+            },
+            onError: (error) => {
+              toast.error(error.message || "Failed to delete document type.");
+            },
+          });
+        }}
+        onCancel={() => setDeletingTypeId(null)}
+      />
     </div>
   );
 }

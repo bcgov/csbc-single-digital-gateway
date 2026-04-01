@@ -42,6 +42,7 @@ export class OrgUnitsAdminV1Controller {
     return this.orgUnitsService.findAll(query.page, query.limit, {
       userId: userId ?? '',
       isGlobalAdmin,
+      search: query.search,
     });
   }
 

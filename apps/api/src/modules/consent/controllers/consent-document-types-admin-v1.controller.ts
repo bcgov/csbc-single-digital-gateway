@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -41,13 +42,29 @@ export class ConsentDocumentTypesAdminV1Controller {
   @Get()
   async findAll(@Query() query: PaginationQueryDto, @Req() req: Request) {
     const isAdmin = await this.isAdmin(req);
-    return this.typesService.findAll(query.page, query.limit, isAdmin);
+    return this.typesService.findAll(
+      query.page,
+      query.limit,
+      isAdmin,
+      query.search,
+    );
+  }
+
+  @Get('published')
+  findAllPublished(@Query() query: PaginationQueryDto) {
+    return this.typesService.findAllPublished(query.page, query.limit, query.search);
   }
 
   @Get(':typeId')
   async findOne(@Param() params: TypeIdParamDto, @Req() req: Request) {
     const isAdmin = await this.isAdmin(req);
     return this.typesService.findById(params.typeId, isAdmin);
+  }
+
+  @Delete(':typeId')
+  @Roles('admin')
+  delete(@Param() params: TypeIdParamDto) {
+    return this.typesService.delete(params.typeId);
   }
 
   @Post(':typeId/versions')

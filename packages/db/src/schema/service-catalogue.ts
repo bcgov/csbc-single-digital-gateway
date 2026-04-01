@@ -131,9 +131,10 @@ export const serviceTypeVersionTranslations = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    uniqueIndex(
-      "service_type_version_translations_version_locale_unique",
-    ).on(t.serviceTypeVersionId, t.locale),
+    uniqueIndex("service_type_version_translations_version_locale_unique").on(
+      t.serviceTypeVersionId,
+      t.locale,
+    ),
   ],
 );
 
@@ -176,6 +177,8 @@ export const serviceVersionTranslations = pgTable(
       .references(() => serviceVersions.id, { onDelete: "cascade" }),
 
     locale: text().notNull(),
+    name: text().notNull(),
+    description: text(),
     content: jsonb().notNull().default(`{}`),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

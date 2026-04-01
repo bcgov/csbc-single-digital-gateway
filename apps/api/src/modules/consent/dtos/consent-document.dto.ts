@@ -30,19 +30,16 @@ export class DocVersionLocaleParamDto extends createZodDto(
 export const CreateDocBodySchema = z.object({
   consentDocumentTypeId: z.string().uuid(),
   orgUnitId: z.string().uuid(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  content: z.record(z.string(), z.unknown()).optional(),
 });
 
 export class CreateDocBodyDto extends createZodDto(CreateDocBodySchema) {}
 
-export const CreateDocVersionBodySchema = z.object({
-  consentDocumentTypeVersionId: z.string().uuid(),
-});
-
-export class CreateDocVersionBodyDto extends createZodDto(
-  CreateDocVersionBodySchema,
-) {}
-
 export const UpsertDocTranslationBodySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
   content: z.record(z.string(), z.unknown()),
 });
 

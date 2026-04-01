@@ -3,16 +3,18 @@ import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 import { CreateDocumentDialog } from "../../../../../features/admin/consent-documents/components/create-document-dialog.component";
+import { DeleteDocumentDialog } from "../../../../../features/admin/consent-documents/components/delete-document-dialog.component";
 import { DocumentsFilterBar } from "../../../../../features/admin/consent-documents/components/documents-filter-bar.component";
 import { DocumentsTable } from "../../../../../features/admin/consent-documents/components/documents-table.component";
+import { useDeleteConsentDocument } from "../../../../../features/admin/consent-documents/data/consent-documents.mutations";
 import { consentDocumentsQueryOptions } from "../../../../../features/admin/consent-documents/data/consent-documents.query";
 
 const SearchSchema = z.object({
   page: z.number().int().min(1).optional().catch(undefined),
   orgUnitId: z.string().optional().catch(undefined),
-  consentDocumentTypeId: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/admin/consent/documents/")({
@@ -31,16 +33,12 @@ function DocumentsListPage() {
   const [orgUnitFilter, setOrgUnitFilter] = useState(
     search.orgUnitId ?? "",
   );
-  const [typeFilter, setTypeFilter] = useState(
-    search.consentDocumentTypeId ?? "",
-  );
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
 
   const filters = {
     orgUnitId: search.orgUnitId,
-    consentDocumentTypeId: search.consentDocumentTypeId,
   };
 
   const { data, isLoading, error } = useQuery(
@@ -69,14 +67,6 @@ function DocumentsListPage() {
     }, 400);
   };
 
-  const handleTypeChange = (value: string) => {
-    setTypeFilter(value);
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      updateSearch({ consentDocumentTypeId: value || undefined });
-    }, 400);
-  };
-
   useEffect(() => {
     return () => clearTimeout(timerRef.current);
   }, []);
@@ -90,6 +80,9 @@ function DocumentsListPage() {
       replace: true,
     });
   };
+
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const deleteMutation = useDeleteConsentDocument();
 
   const handleCreated = (doc: { id: string }) => {
     void navigate({
@@ -122,9 +115,7 @@ function DocumentsListPage() {
 
       <DocumentsFilterBar
         orgUnitId={orgUnitFilter}
-        consentDocumentTypeId={typeFilter}
         onOrgUnitIdChange={handleOrgUnitChange}
-        onConsentDocumentTypeIdChange={handleTypeChange}
       />
 
       {isLoading && <p className="py-8 text-center">Loading…</p>}
@@ -139,8 +130,26 @@ function DocumentsListPage() {
           currentPage={data.page}
           totalPages={data.totalPages}
           onPageChange={goToPage}
+          onDelete={setDeletingDocId}
         />
       )}
+      <DeleteDocumentDialog
+        docId={deletingDocId}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deletingDocId) return;
+          deleteMutation.mutate(deletingDocId, {
+            onSuccess: () => {
+              toast.success("Document deleted.");
+              setDeletingDocId(null);
+            },
+            onError: (error) => {
+              toast.error(error.message || "Failed to delete document.");
+            },
+          });
+        }}
+        onCancel={() => setDeletingDocId(null)}
+      />
     </div>
   );
 }

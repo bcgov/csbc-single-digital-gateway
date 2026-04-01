@@ -22,6 +22,8 @@ export const ConsentDocumentTypeVersionSummaryDto = z.object({
   id: z.string().uuid(),
   version: z.number(),
   status: z.enum(["draft", "published", "archived"]),
+  name: z.string().nullable(),
+  description: z.string().nullable(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
   createdAt: z.string(),
@@ -34,6 +36,8 @@ export type ConsentDocumentTypeVersionSummary = z.infer<
 
 export const ConsentDocumentTypeVersionDto =
   ConsentDocumentTypeVersionSummaryDto.extend({
+    name: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
     consentDocumentTypeId: z.string().uuid(),
     translations: z.array(ConsentDocumentTypeVersionTranslationDto),
   });
@@ -56,6 +60,9 @@ export type ConsentDocumentType = z.infer<typeof ConsentDocumentTypeDto>;
 const ConsentDocumentTypeListItemDto = z.object({
   id: z.string().uuid(),
   publishedConsentDocumentTypeVersionId: z.string().uuid().nullable(),
+  name: z.string().nullable(),
+  description: z.string().nullable(),
+  updatesPending: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

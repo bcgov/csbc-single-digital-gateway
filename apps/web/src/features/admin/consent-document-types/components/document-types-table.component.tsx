@@ -1,4 +1,5 @@
 import {
+  Button,
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -12,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui";
+import { IconTrash } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import type { ConsentDocumentTypeListItem } from "../data/consent-document-types.query";
 
@@ -20,6 +22,7 @@ interface DocumentTypesTableProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onDelete: (typeId: string) => void;
 }
 
 export function DocumentTypesTable({
@@ -27,6 +30,7 @@ export function DocumentTypesTable({
   currentPage,
   totalPages,
   onPageChange,
+  onDelete,
 }: DocumentTypesTableProps) {
   if (types.length === 0 && currentPage === 1) {
     return (
@@ -41,10 +45,11 @@ export function DocumentTypesTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead>Updated</TableHead>
+            <TableHead className="w-[80px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,13 +61,23 @@ export function DocumentTypesTable({
                   params={{ typeId: type.id }}
                   className="font-medium text-bcgov-blue hover:underline"
                 >
-                  {type.id.slice(0, 8)}…
+                  {type.name ?? type.id.slice(0, 8)}
                 </Link>
               </TableCell>
+              <TableCell className="max-w-[300px] truncate text-muted-foreground">
+                {type.description ?? "—"}
+              </TableCell>
               <TableCell>
-                {type.publishedConsentDocumentTypeVersionId
-                  ? "Published"
-                  : "Unpublished"}
+                <span className="flex items-center gap-1.5">
+                  {type.publishedConsentDocumentTypeVersionId
+                    ? "Published"
+                    : "Draft"}
+                  {type.updatesPending && (
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                      Updates pending
+                    </span>
+                  )}
+                </span>
               </TableCell>
               <TableCell>
                 {new Date(type.createdAt).toLocaleDateString([], {
@@ -72,11 +87,17 @@ export function DocumentTypesTable({
                 })}
               </TableCell>
               <TableCell>
-                {new Date(type.updatedAt).toLocaleDateString([], {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(type.id);
+                  }}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <IconTrash className="size-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}

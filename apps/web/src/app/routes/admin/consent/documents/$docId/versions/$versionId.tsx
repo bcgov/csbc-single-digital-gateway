@@ -1,33 +1,56 @@
+import type { JsonSchema, UISchemaElement } from "@jsonforms/core";
 import { Button, Separator } from "@repo/ui";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArchiveVersionDialog } from "../../../../../../../features/admin/components/archive-version-dialog.component";
 import { PublishVersionDialog } from "../../../../../../../features/admin/components/publish-version-dialog.component";
 import { VersionStatusBadge } from "../../../../../../../features/admin/components/version-status-badge.component";
+import { documentTypeVersionQueryOptions } from "../../../../../../../features/admin/consent-document-types/data/consent-document-types.query";
 import { AddDocTranslationDialog } from "../../../../../../../features/admin/consent-documents/components/add-doc-translation-dialog.component";
 import { DocTranslationForm } from "../../../../../../../features/admin/consent-documents/components/doc-translation-form.component";
 import {
   useArchiveDocVersion,
   usePublishDocVersion,
 } from "../../../../../../../features/admin/consent-documents/data/consent-documents.mutations";
-import { consentDocumentVersionQueryOptions } from "../../../../../../../features/admin/consent-documents/data/consent-documents.query";
+import {
+  consentDocumentQueryOptions,
+  consentDocumentVersionQueryOptions,
+} from "../../../../../../../features/admin/consent-documents/data/consent-documents.query";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
   "/admin/consent/documents/$docId/versions/$versionId",
 )({
   loader: async ({ params }) => {
-    await queryClient.ensureQueryData(
-      consentDocumentVersionQueryOptions(params.docId, params.versionId),
-    );
+    const [version, doc] = await Promise.all([
+      queryClient.ensureQueryData(
+        consentDocumentVersionQueryOptions(params.docId, params.versionId),
+      ),
+      queryClient.ensureQueryData(
+        consentDocumentQueryOptions(params.docId),
+      ),
+    ]);
+    return {
+      docId: params.docId,
+      docName: doc.name,
+      versionNumber: version.version,
+    };
   },
   staticData: {
-    breadcrumbs: () => [
+    breadcrumbs: (loaderData: {
+      docId: string;
+      docName: string | null;
+      versionNumber: number;
+    }) => [
       { label: "Consent Documents", to: "/admin/consent/documents" },
-      { label: "Version" },
+      {
+        label: loaderData?.docName ?? "Detail",
+        to: `/admin/consent/documents/${loaderData.docId}`,
+      },
+      { label: `Version ${loaderData.versionNumber}` },
     ],
   },
   component: DocVersionDetailPage,
@@ -41,6 +64,35 @@ function DocVersionDetailPage() {
   const { data: version, isLoading, error } = useQuery(
     consentDocumentVersionQueryOptions(docId, versionId),
   );
+
+  const { data: doc } = useQuery({
+    ...consentDocumentQueryOptions(docId),
+    enabled: !!version,
+  });
+
+  const typeVersionId = version?.consentDocumentTypeVersionId;
+  const typeId = doc?.consentDocumentTypeId;
+
+  const { data: typeVersion } = useQuery({
+    ...documentTypeVersionQueryOptions(typeId!, typeVersionId!),
+    enabled: !!typeId && !!typeVersionId,
+  });
+
+  const { contentSchema, contentUiSchema } = useMemo(() => {
+    if (!typeVersion?.translations) {
+      return { contentSchema: undefined, contentUiSchema: undefined };
+    }
+    const enTranslation =
+      typeVersion.translations.find((t) => t.locale === "en") ??
+      typeVersion.translations[0];
+    if (!enTranslation) {
+      return { contentSchema: undefined, contentUiSchema: undefined };
+    }
+    return {
+      contentSchema: enTranslation.schema as JsonSchema | undefined,
+      contentUiSchema: enTranslation.uiSchema as UISchemaElement | undefined,
+    };
+  }, [typeVersion]);
 
   const publishMutation = usePublishDocVersion(docId);
   const archiveMutation = useArchiveDocVersion(docId);
@@ -77,11 +129,18 @@ function DocVersionDetailPage() {
   const isDraft = version.status === "draft";
   const isPublished = version.status === "published";
 
+  const translationName = version.translations.find(
+    (t) => t.locale === "en",
+  )?.name ?? version.translations[0]?.name;
+  const title = translationName
+    ? `${translationName} - Version ${version.version}`
+    : `Version ${version.version}`;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1>Version {version.version}</h1>
+          <h1>{title}</h1>
           <div className="mt-1 flex items-center gap-2">
             <VersionStatusBadge status={version.status} />
           </div>
@@ -141,6 +200,8 @@ function DocVersionDetailPage() {
               locale={t.locale}
               translation={t}
               isDraft={isDraft}
+              contentSchema={contentSchema}
+              contentUiSchema={contentUiSchema}
             />
           </div>
         ))}

@@ -18,6 +18,10 @@
   },
   "dependencies": {
     "@dr.pogodin/react-helmet": "^3.0.5",
+    "@jsonforms/core": "^3.7.0",
+    "@jsonforms/react": "^3.7.0",
+    "@monaco-editor/react": "^4.7.0",
+    "@repo/jsonforms": "*",
     "@repo/ui": "^0.0.0",
     "@tabler/icons-react": "^3.36.1",
     "@tailwindcss/vite": "^4.1.18",
@@ -26,6 +30,7 @@
     "@tanstack/react-router": "^1.145.11",
     "@tanstack/react-router-devtools": "^1.145.11",
     "axios": "^1.13.2",
+    "monaco-editor": "^0.55.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "tailwindcss": "^4.1.18",

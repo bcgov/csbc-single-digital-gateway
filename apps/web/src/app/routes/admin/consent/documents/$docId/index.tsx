@@ -1,9 +1,10 @@
-import { Button, Input, Label, Separator } from "@repo/ui";
+import { Button, Separator, Spinner } from "@repo/ui";
 import { IconPlus, IconUserPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { api } from "../../../../../../api/api.client";
 import { AddContributorDialog } from "../../../../../../features/admin/consent-documents/components/add-contributor-dialog.component";
 import { ContributorsTable } from "../../../../../../features/admin/consent-documents/components/contributors-table.component";
 import { DocVersionsTable } from "../../../../../../features/admin/consent-documents/components/doc-versions-table.component";
@@ -23,14 +24,15 @@ export const Route = createFileRoute(
   "/admin/consent/documents/$docId/",
 )({
   loader: async ({ params }) => {
-    await queryClient.ensureQueryData(
+    const doc = await queryClient.ensureQueryData(
       consentDocumentQueryOptions(params.docId),
     );
+    return { docName: doc.name };
   },
   staticData: {
-    breadcrumbs: () => [
+    breadcrumbs: (loaderData: { docName: string | null }) => [
       { label: "Consent Documents", to: "/admin/consent/documents" },
-      { label: "Detail" },
+      { label: loaderData?.docName ?? "Detail" },
     ],
   },
   component: DocumentDetailPage,
@@ -39,7 +41,6 @@ export const Route = createFileRoute(
 function DocumentDetailPage() {
   const { docId } = Route.useParams();
   const navigate = useNavigate();
-  const [typeVersionId, setTypeVersionId] = useState("");
   const [contributorToRemove, setContributorToRemove] =
     useState<Contributor | null>(null);
 
@@ -51,30 +52,48 @@ function DocumentDetailPage() {
     consentDocumentContributorsQueryOptions(docId),
   );
 
+  const { data: orgUnit } = useQuery({
+    queryKey: ["org-units", doc?.orgUnitId],
+    queryFn: async () => {
+      const { data } = await api.get(`/admin/org-units/${doc!.orgUnitId}`);
+      return data as { id: string; name: string };
+    },
+    enabled: !!doc?.orgUnitId,
+  });
+
+  const { data: docType } = useQuery({
+    queryKey: ["consent-document-types", doc?.consentDocumentTypeId],
+    queryFn: async () => {
+      const { data } = await api.get(
+        `/admin/consent/document-types/${doc!.consentDocumentTypeId}`,
+      );
+      const enTranslation = data.publishedVersion?.translations?.find(
+        (t: { locale: string }) => t.locale === "en",
+      );
+      return { id: data.id, name: enTranslation?.name ?? data.id } as {
+        id: string;
+        name: string;
+      };
+    },
+    enabled: !!doc?.consentDocumentTypeId,
+  });
+
   const createVersionMutation = useCreateDocVersion(docId);
   const removeMutation = useRemoveContributor(docId);
 
   const handleCreateVersion = () => {
-    if (!typeVersionId.trim()) {
-      toast.error("Please enter a type version ID");
-      return;
-    }
-    createVersionMutation.mutate(
-      { consentDocumentTypeVersionId: typeVersionId.trim() },
-      {
-        onSuccess: (result) => {
-          toast.success(`Version v${result.version} created`);
-          setTypeVersionId("");
-          void navigate({
-            to: "/admin/consent/documents/$docId/versions/$versionId",
-            params: { docId, versionId: result.id },
-          });
-        },
-        onError: (err) => {
-          toast.error(`Failed to create version: ${err.message}`);
-        },
+    createVersionMutation.mutate(undefined, {
+      onSuccess: (result) => {
+        toast.success(`Version v${result.version} created`);
+        void navigate({
+          to: "/admin/consent/documents/$docId/versions/$versionId",
+          params: { docId, versionId: result.id },
+        });
       },
-    );
+      onError: (err) => {
+        toast.error(`Failed to create version: ${err.message}`);
+      },
+    });
   };
 
   const handleRemoveConfirm = () => {
@@ -101,10 +120,19 @@ function DocumentDetailPage() {
     );
   if (!doc) return null;
 
+  const latestVersion = doc.versions.length
+    ? doc.versions.reduce((a, b) => (b.version > a.version ? b : a))
+    : null;
+  const title =
+    doc.publishedVersion?.name ??
+    latestVersion?.name ??
+    doc.name ??
+    "Consent Document";
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1>Consent Document</h1>
+        <h1>{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">ID: {doc.id}</p>
       </div>
 
@@ -116,18 +144,18 @@ function DocumentDetailPage() {
           <div className="grid grid-cols-3 gap-px">
             <div className="bg-white p-4">
               <p className="text-sm font-bold text-muted-foreground">
-                Type ID
+                Org Unit
               </p>
               <p className="font-medium text-sm break-all">
-                {doc.consentDocumentTypeId}
+                {orgUnit ? orgUnit.name : <Spinner className="mt-1" />}
               </p>
             </div>
             <div className="bg-white p-4">
               <p className="text-sm font-bold text-muted-foreground">
-                Org Unit ID
+                Document Type
               </p>
               <p className="font-medium text-sm break-all">
-                {doc.orgUnitId}
+                {docType ? docType.name : <Spinner className="mt-1" />}
               </p>
             </div>
             <div className="bg-white p-4">
@@ -151,18 +179,6 @@ function DocumentDetailPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">Versions</h2>
-        </div>
-
-        <div className="flex items-end gap-2">
-          <div className="flex flex-col gap-1">
-            <Label className="text-sm">Type Version ID</Label>
-            <Input
-              value={typeVersionId}
-              onChange={(e) => setTypeVersionId(e.target.value)}
-              placeholder="Enter type version ID"
-              className="w-80"
-            />
-          </div>
           <Button
             onClick={handleCreateVersion}
             disabled={createVersionMutation.isPending}

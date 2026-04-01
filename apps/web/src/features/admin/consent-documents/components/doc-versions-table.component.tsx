@@ -31,6 +31,8 @@ export function DocVersionsTable({
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Description</TableHead>
           <TableHead>Version</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
@@ -46,9 +48,17 @@ export function DocVersionsTable({
                 params={{ docId, versionId: v.id }}
                 className="font-medium text-bcgov-blue hover:underline"
               >
-                v{v.version}
+                {v.name ?? `v${v.version}`}
               </Link>
             </TableCell>
+            <TableCell className="text-muted-foreground">
+              {v.description
+                ? v.description.length > 50
+                  ? v.description.slice(0, 50) + "…"
+                  : v.description
+                : "—"}
+            </TableCell>
+            <TableCell>v{v.version}</TableCell>
             <TableCell>
               <VersionStatusBadge status={v.status} />
             </TableCell>
