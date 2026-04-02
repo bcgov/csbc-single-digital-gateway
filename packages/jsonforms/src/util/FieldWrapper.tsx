@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
   Field,
   FieldContent,
@@ -6,6 +5,7 @@ import {
   FieldError,
   FieldLabel,
 } from "@repo/ui";
+import type { ReactNode } from "react";
 
 interface FieldWrapperProps {
   label: string;
@@ -38,17 +38,14 @@ export function FieldWrapper({
     : undefined;
 
   return (
-    <Field
-      orientation={orientation}
-      data-invalid={!!errors || undefined}
-    >
+    <Field orientation={orientation} data-invalid={!!errors || undefined}>
       <FieldLabel>
         {label}
         {required && " *"}
       </FieldLabel>
       <FieldContent>
-        {children}
         {description && <FieldDescription>{description}</FieldDescription>}
+        {children}
         {errorMessages && errorMessages.length > 0 && (
           <FieldError errors={errorMessages} />
         )}
