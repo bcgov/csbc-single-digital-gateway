@@ -8,7 +8,7 @@ import {
 } from '@nestjs/terminus';
 import { Database } from '@repo/db';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
-import { mockConfigService } from 'tests/utils/auth.controllers.mock';
+import { mockConfigService } from 'tests/utils/mock.auth.controllers';
 import { HealthController } from '../controllers/health.controller';
 import { DrizzleHealthIndicator } from '../indicators/drizzle-health.indicator';
 

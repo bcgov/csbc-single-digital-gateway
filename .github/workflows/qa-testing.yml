@@ -65,11 +65,11 @@ jobs:
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Run API Integration Tests
+      - name: Run API Integration Test
         run: npm run test:int
 
-      - name: Run Unit Tests with Coverage
-        run: npm run test:cov
+      - name: Run API Unit Test with Coverage
+        run: npm run test:cov:api
 
   web-qa-testing:
     name: Web QA Testing
@@ -90,18 +90,14 @@ jobs:
       - name: Install dependencies with npm ci
         run: npm ci
 
-      - name: Run Cypress Component Tests
-        uses: cypress-io/github-action@v7
-        with:
-          build: npm run build:web
-          component: true
-          command: npm run cy:component
+      - name: Build Web Components
+        run: npm run build:web
 
-      - name: Run Cypress E2E Tests
-        uses: cypress-io/github-action@v7
-        with:
-          build: npm run build:web
-          start: npm run dev:web
-          wait-on: 'http://localhost:5173'
-          browser: chrome
-          command: npm run cy:e2e
+      - name: Build @Repo/UI Components
+        run: npm run build:@repo/ui
+
+      - name: Run Web E2E Test
+        run: npm run test:e2e
+
+      - name: Run Web Component Test with Coverage
+        run: npm run test:cov:web

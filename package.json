@@ -15,13 +15,11 @@
     "lint": "turbo run lint",
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
-    "test:cov": "turbo run test:cov",
+    "test:cov:api": "turbo run test:cov:api",
     "test:vscode": "turbo run test:vscode",
-    "cy:component": "turbo run cy:component",
-    "cy:component:report": "turbo run cy:component:report",
-    "cy:e2e": "turbo run cy:e2e",
-    "cy:e2e:report": "turbo run cy:e2e:report",
-    "cy:open": "turbo run cy:open"
+    "test:component": "turbo run test:component",
+    "test:e2e": "turbo run test:e2e",
+    "test:cov:web": "turbo run test:cov:web"
   },
   "devDependencies": {
     "turbo": "^2.7.3"

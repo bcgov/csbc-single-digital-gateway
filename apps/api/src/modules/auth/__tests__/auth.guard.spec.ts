@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
-import { createMockRegistry } from 'tests/utils/auth.module.mock';
+import { createMockRegistry } from 'tests/utils/mock.auth.module';
 import { OIDC_PROVIDER_REGISTRY } from '../auth.config';
 import { AuthGuard } from '../guards/auth.guard';
 import { AuthService } from '../services/auth.service';

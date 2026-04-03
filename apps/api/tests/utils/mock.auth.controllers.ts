@@ -1,5 +1,5 @@
 /**
- * Mock implementations for auth-related tests
+ * Mock implementations for auth-controller-related tests
  */
 
 import type { Request, Response } from 'express';

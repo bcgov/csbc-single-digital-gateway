@@ -23,7 +23,7 @@ Jest is available to use with low-to-zero configurations. Small adjustments are 
 
 ## Local Testing
 
-The API project offers two main methods to run tests using Jest. These tests are categorized into two main methods: using command lines in terminal, VSCode debugger or VScode Jest extension.
+The API project offers three methods to run tests using Jest. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or VScode Jest extension.
 
 ### Terminal Testing
 

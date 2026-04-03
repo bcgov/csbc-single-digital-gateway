@@ -1,75 +1,66 @@
 # Web Project Quality Assurance Testing Documentation
 
-## Cypress
+## Jest with React testing library
 
-The Web project uses Cypress for QA testing, which covers both component-level isolation tests and full E2E browser flows, with a single unified toolchain. The main focuses of QA testing for the frontend application are component and end-to-end (E2E) tests. 
+The Web project uses Jest with React testing library for QA testing, which covers both component-level isolation tests and full E2E browser flows, with a single unified toolchain. The main focuses of QA testing for the frontend application are component and end-to-end (E2E) tests. 
 
 ## Files and Folders
 
-Component test files with file name suffix `**/*.cy.tsx` should be placed inside `__tests__` folder alongside the code they test for easy access, whereas E2E test files with file name suffix `**/*.e2e-cy.ts` should be placed inside the [e2e](./e2e/) folder. The component test files hav a `.tsx` extension, not just `.ts`. The `.tsx` extension tells the TypeScript compiler to parse the file for JSX syntax. 
+Component test files with file name suffix `**/*.spec.tsx` should be placed inside `__tests__` folder alongside the code they test for easy access, whereas E2E test files with file name suffix `**/*.e2e-spec.tsx` should be placed inside the [e2e](./e2e/) folder. The component test files hav a `.tsx` extension, not just `.ts`. The `.tsx` extension tells the TypeScript compiler to parse the file for JSX syntax. 
 
 |Testing Content| File Format| Folder (example)|
 |:-:|:-:|:-:|
-|Component test| `**/*.cy.tsx`| [navigation-bar](../src/features/app/components/__tests__/)|
-|E2E test| `**/*.e2e-cy.ts` | [e2e](./e2e/)|
+|Component test| `**/*.spec.tsx`| [navigation-bar](../src/features/app/components/__tests__/)|
+|E2E test| `**/*.e2e-spec.ts` | [e2e](./e2e/)|
 
-- Use [navigationBar.cy.tsx](../src/features/app/components/navigation-bar/navigationBar.cy.tsx) as an example for component test
-- Use [homePage.e2e-cy.ts](./e2e/homePage/homePage.e2e-cy.ts) as an example for E2E test
+- Use [navigationBar.spec.tsx](../src/features/app/components/navigation-bar/navigationBar.spec.tsx) as an example for component test
+- Use [homePage.e2e-spec.ts](./e2e/homePage/homePage.e2e-spec.ts) as an example for E2E test
 
 ## Configuration
 
-The primary configuration file for Cypress with TypeScript is [cypress.config.ts](/cypress.config.ts), which allows you to specify global settings, test type-specific options (end-to-end or component testing), and define Node events for interacting with the file system or other backend tasks. Visit [link](https://docs.cypress.io/app/references/configuration) for more information about Cypress configuration.
+Jest is available to use with low-to-zero configurations. Small adjustments are in place to allow running tests in terminal from the project root and VSCode. 
 
 ## Local Testing
 
-Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Add `.env` file in the project root.
-
-```
-APP_PORT=5173
-```
+The web project offers two main methods to run tests using Jest. These tests are categorized into two main methods: using command lines in terminal, VSCode debugger or VScode Jest extension.
 
 ### Terminal Testing
 
 Scripts are added to `package.json` for quick access. Use one of the following commands in the project root.
 
-Run component test on all files with the following command line:
+Run unit test on all files with the following command line:
 
 ```bash
-npm run cy:component
+npm run test:component
 ```
 
-Cypress E2E tests require the application to be running locally because they act as a user interacting with a real browser. Run E2E test on E2E files with the following command line:
+Run integration test on integration files with the following command line:
 
 ```bash
-npm run dev
-npm run cy:e2e
+npm run test:e2e
 ```
 
-Run component test on a specific test file (same for E2E test) with the following command line:
+Change directory to `apps/web` and run unit test on a specific test file (same for integration test) with the following command line:
 
 ```bash
-npm run cy:component -- --spec "path/to/your/testFile.cy.ts"
+npm run test:component "path/to/your/testfile.spec.ts"
 ```
 
-### Cypress Launchpad
+### Debug Testing
 
-Cypress supports an interactive launchpad to run either E2E or component tests. Open the launchpad with the following command line and follow the instructions. Visit [open the app](https://docs.cypress.io/app/get-started/open-the-app) for more information about the launchpad.
+Debug supports custom scripts [launch.json](/.vscode/launch.json) to run local tests using the "Run and Debug" functionality. 
 
-```bash
-npm run cypress:open
-```
+1. Single File Testing
 
-### VSCode Testing
+   While the **current test file is selected** (the file tab is open), select either "Web Component Test - Current File" or "Web E2E Test - Current File" and click Run button.
 
-VSCode supports custom scripts [launch.json](/.vscode/launch.json) to run local tests using the Run and Debug. 
+2. All Files Testing
 
-#### Single File Testing
+   To run all test files on VSCode, select either "Web Component Test - All Files" or "Web E2E Test - All Files" and click Run button.
 
-While the **current test file is selected** (the file tab is open), select either "Web Component Test - Current File" or "Web E2E Test - Current File" and click Run button. E2E tests require the application to be running concurrently.
-
-#### All Files Testing
-
-To run all test files on VSCode, select either "Web Component Test - All Files" or "Web E2E Test - All Files" and click Run button. E2E tests require the application to be running concurrently.
+3. Shortcut F5
+   
+   Press F5 after having selected the test method to quickly run testing in VSCode.
 
 ## CI/CD Testing
 

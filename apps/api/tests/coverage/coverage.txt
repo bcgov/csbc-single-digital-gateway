@@ -1,11 +1,11 @@
-[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
-[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[32m[Nest] 8660  - [39m03/30/2026, 9:15:23 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
-[09:15:23.047] [32mINFO[39m (18256): [36mrequest completed[39m
+[32m[Nest] 26552  - [39m04/02/2026, 9:40:35 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 26552  - [39m04/02/2026, 9:40:35 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 26552  - [39m04/02/2026, 9:40:35 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 26552  - [39m04/02/2026, 9:40:35 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 26552  - [39m04/02/2026, 9:40:35 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for BCSC: https://bcsc.example.com[39m
+[32m[Nest] 26552  - [39m04/02/2026, 9:40:35 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[32m[Nest] 26552  - [39m04/02/2026, 9:40:35 AM [32m    LOG[39m [38;5;3m[OidcProviderRegistry] [39m[32mOIDC discovery completed for IDIR: https://idir.example.com[39m
+[09:40:35.208] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 1,
       "method": "GET",
@@ -18,12 +18,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62657",
+        "host": "127.0.0.1:64793",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62660
+      "remotePort": 64799
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -35,8 +35,8 @@
         "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
       }
     }
-    [35mresponseTime[39m: 10
-[09:15:23.085] [32mINFO[39m (18256): [36mrequest errored[39m
+    [35mresponseTime[39m: 8
+[09:40:35.243] [32mINFO[39m (12472): [36mrequest errored[39m
     [35mreq[39m: {
       "id": 2,
       "method": "GET",
@@ -49,57 +49,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62661",
+        "host": "127.0.0.1:64808",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62662
-    }
-    [35mres[39m: {
-      "statusCode": 500,
-      "headers": {
-        "x-powered-by": "Express",
-        "cache-control": "no-cache, no-store, must-revalidate",
-        "content-type": "application/json; charset=utf-8",
-        "content-length": "52",
-        "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
-      }
-    }
-    [35mresponseTime[39m: 5
-    err: {
-      "type": "Error",
-      "message": "failed with status code 500",
-      "stack":
-          Error: failed with status code 500
-              at onResFinished (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:115:39)
-              at ServerResponse.onResponseComplete (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:178:14)
-              at ServerResponse.emit (node:events:531:35)
-              at onFinish (node:_http_outgoing:1082:10)
-              at callback (node:internal/streams/writable:766:21)
-              at afterWrite (node:internal/streams/writable:710:5)
-              at afterWriteTick (node:internal/streams/writable:696:10)
-              at processTicksAndRejections (node:internal/process/task_queues:89:21)
-    }
-[09:15:23.111] [32mINFO[39m (18256): [36mrequest errored[39m
-    [35mreq[39m: {
-      "id": 3,
-      "method": "GET",
-      "url": "/health/live",
-      "query": {},
-      "params": {
-        "path": [
-          "health",
-          "live"
-        ]
-      },
-      "headers": {
-        "host": "127.0.0.1:62663",
-        "accept-encoding": "gzip, deflate",
-        "connection": "close"
-      },
-      "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62664
+      "remotePort": 64809
     }
     [35mres[39m: {
       "statusCode": 500,
@@ -126,7 +81,52 @@
               at afterWriteTick (node:internal/streams/writable:696:10)
               at processTicksAndRejections (node:internal/process/task_queues:89:21)
     }
-[09:15:23.147] [32mINFO[39m (18256): [36mrequest completed[39m
+[09:40:35.260] [32mINFO[39m (12472): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "GET",
+      "url": "/health/live",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "live"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:64814",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 64815
+    }
+    [35mres[39m: {
+      "statusCode": 500,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "52",
+        "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
+      }
+    }
+    [35mresponseTime[39m: 2
+    err: {
+      "type": "Error",
+      "message": "failed with status code 500",
+      "stack":
+          Error: failed with status code 500
+              at onResFinished (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Lewis Chen\dev\csbc\csbc-single-digital-gateway\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:531:35)
+              at onFinish (node:_http_outgoing:1082:10)
+              at callback (node:internal/streams/writable:766:21)
+              at afterWrite (node:internal/streams/writable:710:5)
+              at afterWriteTick (node:internal/streams/writable:696:10)
+              at processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[09:40:35.280] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 4,
       "method": "GET",
@@ -139,12 +139,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62665",
+        "host": "127.0.0.1:64818",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62666
+      "remotePort": 64821
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -157,7 +157,7 @@
       }
     }
     [35mresponseTime[39m: 2
-[09:15:23.151] [32mINFO[39m (18256): [36mrequest completed[39m
+[09:40:35.282] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 5,
       "method": "GET",
@@ -170,12 +170,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62665",
+        "host": "127.0.0.1:64818",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62667
+      "remotePort": 64822
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -187,8 +187,8 @@
         "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
       }
     }
-    [35mresponseTime[39m: 3
-[09:15:23.155] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[09:40:35.285] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 6,
       "method": "GET",
@@ -201,12 +201,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62665",
+        "host": "127.0.0.1:64818",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62668
+      "remotePort": 64823
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -218,8 +218,8 @@
         "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
       }
     }
-    [35mresponseTime[39m: 3
-[09:15:23.174] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[09:40:35.306] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 7,
       "method": "GET",
@@ -232,12 +232,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62669",
+        "host": "127.0.0.1:64827",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62670
+      "remotePort": 64829
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -250,7 +250,7 @@
       }
     }
     [35mresponseTime[39m: 1
-[09:15:23.201] [32mINFO[39m (18256): [36mrequest errored[39m
+[09:40:35.320] [32mINFO[39m (12472): [36mrequest errored[39m
     [35mreq[39m: {
       "id": 8,
       "method": "GET",
@@ -263,12 +263,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62671",
+        "host": "127.0.0.1:64832",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62672
+      "remotePort": 64833
     }
     [35mres[39m: {
       "statusCode": 500,
@@ -280,7 +280,7 @@
         "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
       }
     }
-    [35mresponseTime[39m: 8
+    [35mresponseTime[39m: 3
     err: {
       "type": "Error",
       "message": "failed with status code 500",
@@ -295,7 +295,7 @@
               at afterWriteTick (node:internal/streams/writable:696:10)
               at processTicksAndRejections (node:internal/process/task_queues:89:21)
     }
-[09:15:23.228] [32mINFO[39m (18256): [36mrequest errored[39m
+[09:40:35.340] [32mINFO[39m (12472): [36mrequest errored[39m
     [35mreq[39m: {
       "id": 9,
       "method": "GET",
@@ -308,12 +308,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62673",
+        "host": "127.0.0.1:64837",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62674
+      "remotePort": 64839
     }
     [35mres[39m: {
       "statusCode": 500,
@@ -325,7 +325,7 @@
         "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
       }
     }
-    [35mresponseTime[39m: 7
+    [35mresponseTime[39m: 3
     err: {
       "type": "Error",
       "message": "failed with status code 500",
@@ -340,7 +340,7 @@
               at afterWriteTick (node:internal/streams/writable:696:10)
               at processTicksAndRejections (node:internal/process/task_queues:89:21)
     }
-[09:15:23.255] [32mINFO[39m (18256): [36mrequest errored[39m
+[09:40:35.360] [32mINFO[39m (12472): [36mrequest errored[39m
     [35mreq[39m: {
       "id": 10,
       "method": "GET",
@@ -353,12 +353,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62675",
+        "host": "127.0.0.1:64842",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62676
+      "remotePort": 64843
     }
     [35mres[39m: {
       "statusCode": 500,
@@ -370,7 +370,7 @@
         "etag": "W/\"34-rlKccw1E+/fV8niQk4oFitDfPro\""
       }
     }
-    [35mresponseTime[39m: 1
+    [35mresponseTime[39m: 4
     err: {
       "type": "Error",
       "message": "failed with status code 500",
@@ -385,7 +385,7 @@
               at afterWriteTick (node:internal/streams/writable:696:10)
               at processTicksAndRejections (node:internal/process/task_queues:89:21)
     }
-[09:15:23.273] [32mINFO[39m (18256): [36mrequest completed[39m
+[09:40:35.376] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 11,
       "method": "GET",
@@ -398,12 +398,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62677",
+        "host": "127.0.0.1:64847",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62678
+      "remotePort": 64849
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -415,8 +415,8 @@
         "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
       }
     }
-    [35mresponseTime[39m: 1
-[09:15:23.289] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[09:40:35.387] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 12,
       "method": "GET",
@@ -429,12 +429,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62679",
+        "host": "127.0.0.1:64852",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62680
+      "remotePort": 64853
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -446,8 +446,8 @@
         "etag": "W/\"1c-Sjr0AWTwCOVh6JN26mw0QyuIXjE\""
       }
     }
-    [35mresponseTime[39m: 1
-[09:15:23.302] [32mINFO[39m (18256): [36mrequest completed[39m
+    [35mresponseTime[39m: 2
+[09:40:35.404] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 13,
       "method": "GET",
@@ -460,43 +460,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62681",
+        "host": "127.0.0.1:64856",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62682
-    }
-    [35mres[39m: {
-      "statusCode": 200,
-      "headers": {
-        "x-powered-by": "Express",
-        "cache-control": "no-cache, no-store, must-revalidate",
-        "content-type": "application/json; charset=utf-8",
-        "content-length": "90",
-        "etag": "W/\"5a-pIA30cZKVvOyUAWcGd/MoLRd1p8\""
-      }
-    }
-    [35mresponseTime[39m: 3
-[09:15:23.304] [32mINFO[39m (18256): [36mrequest completed[39m
-    [35mreq[39m: {
-      "id": 14,
-      "method": "GET",
-      "url": "/health/ready",
-      "query": {},
-      "params": {
-        "path": [
-          "health",
-          "ready"
-        ]
-      },
-      "headers": {
-        "host": "127.0.0.1:62681",
-        "accept-encoding": "gzip, deflate",
-        "connection": "close"
-      },
-      "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62683
+      "remotePort": 64857
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -509,7 +478,38 @@
       }
     }
     [35mresponseTime[39m: 2
-[09:15:23.306] [32mINFO[39m (18256): [36mrequest completed[39m
+[09:40:35.407] [32mINFO[39m (12472): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "GET",
+      "url": "/health/ready",
+      "query": {},
+      "params": {
+        "path": [
+          "health",
+          "ready"
+        ]
+      },
+      "headers": {
+        "host": "127.0.0.1:64856",
+        "accept-encoding": "gzip, deflate",
+        "connection": "close"
+      },
+      "remoteAddress": "::ffff:127.0.0.1",
+      "remotePort": 64858
+    }
+    [35mres[39m: {
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "90",
+        "etag": "W/\"5a-pIA30cZKVvOyUAWcGd/MoLRd1p8\""
+      }
+    }
+    [35mresponseTime[39m: 2
+[09:40:35.444] [32mINFO[39m (12472): [36mrequest completed[39m
     [35mreq[39m: {
       "id": 15,
       "method": "GET",
@@ -522,12 +522,12 @@
         ]
       },
       "headers": {
-        "host": "127.0.0.1:62681",
+        "host": "127.0.0.1:64856",
         "accept-encoding": "gzip, deflate",
         "connection": "close"
       },
       "remoteAddress": "::ffff:127.0.0.1",
-      "remotePort": 62684
+      "remotePort": 64859
     }
     [35mres[39m: {
       "statusCode": 200,
@@ -539,7 +539,7 @@
         "etag": "W/\"5a-pIA30cZKVvOyUAWcGd/MoLRd1p8\""
       }
     }
-    [35mresponseTime[39m: 1
+    [35mresponseTime[39m: 36
 -----------------------------------|---------|----------|---------|---------|-------------------
 File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
 -----------------------------------|---------|----------|---------|---------|-------------------

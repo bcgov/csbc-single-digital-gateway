@@ -10,7 +10,7 @@ import request from 'supertest';
 import {
   mockAuthService,
   mockConfigService,
-} from 'tests/utils/auth.controllers.mock';
+} from 'tests/utils/mock.auth.controllers';
 
 describe('IdirAuthController Integration Test', () => {
   let app: INestApplication;

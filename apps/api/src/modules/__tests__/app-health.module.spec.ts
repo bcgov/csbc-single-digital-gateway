@@ -6,7 +6,7 @@ import {
   MockDatabaseModule,
   MockHealthModule,
   mockLoggerForRootAsync,
-} from 'tests/utils/app.module.mock';
+} from 'tests/utils/mock.app.module';
 
 jest.mock('@nestjs/config', () => {
   const actual = jest.requireActual('@nestjs/config') as unknown as Record<
@@ -39,7 +39,7 @@ jest.mock('../health/health.module', () => ({
   HealthModule: MockHealthModule,
 }));
 
-import { mockConfigService } from 'tests/utils/auth.controllers.mock';
+import { mockConfigService } from 'tests/utils/mock.auth.controllers';
 import { AppHealthModule } from '../app-health.module';
 import { DatabaseModule } from '../database/database.module';
 import { HealthModule } from '../health/health.module';

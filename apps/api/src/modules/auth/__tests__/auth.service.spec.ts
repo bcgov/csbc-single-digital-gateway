@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import * as client from 'openid-client';
 import { UsersService } from 'src/modules/users/services/users.service';
-import { createMockRegistry } from 'tests/utils/auth.module.mock';
+import { createMockRegistry } from 'tests/utils/mock.auth.module';
 import {
   OIDC_PROVIDER_REGISTRY,
   type OidcProviderConfig,

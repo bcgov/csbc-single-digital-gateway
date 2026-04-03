@@ -1,5 +1,5 @@
 import { createDatabase } from '@repo/db';
-import { mockConfigService } from 'tests/utils/auth.controllers.mock';
+import { mockConfigService } from 'tests/utils/mock.auth.controllers';
 import { DatabaseProvider } from '../database.provider';
 
 jest.mock('@repo/db');

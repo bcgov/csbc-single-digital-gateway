@@ -89,7 +89,7 @@
         "ADMIN_FRONTEND_URL"
       ]
     },
-    "test:cov": {
+    "test:cov:api": {
       "passThroughEnv": [
         "DB_NAME",
         "DB_HOST",
@@ -139,14 +139,16 @@
         "ADMIN_FRONTEND_URL"
       ]
     },
-    "cy:component": {},
-    "cy:component:report": {},
-    "cy:e2e": {
+    "test:component": {},
+    "test:e2e": {
       "passThroughEnv": [
         "APP_PORT"
       ]
     },
-    "cy:e2e:report": {},
-    "cy:open": {}
+    "test:cov:web": {
+      "passThroughEnv": [
+        "APP_PORT"
+      ]
+    }
   }
 }

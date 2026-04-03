@@ -7,7 +7,7 @@ import {
   buildMockResponse,
   mockAuthService,
   mockConfigService,
-} from 'tests/utils/auth.controllers.mock';
+} from 'tests/utils/mock.auth.controllers';
 import { BcscAuthController } from '../controllers/bcsc-auth.controller';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';

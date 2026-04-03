@@ -1,0 +1,23 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts",
+    "tsx"
+  ],
+  "rootDir": "../../",
+  "testRegex": ".*\\.e2e-spec\\.tsx$",
+  "transform": {
+    "^.+\\.(ts|tsx)$": "babel-jest"
+  },
+  "testEnvironment": "jest-environment-jsdom",
+  "setupFilesAfterEnv": [
+    "<rootDir>/tests/setupTests.ts"
+  ],
+  "moduleNameMapper": {
+    "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/tests/config/fileMock.js",
+    "\\.(css|less|sass|scss)$": "identity-obj-proxy",
+    "^tests/(.*)$": "<rootDir>/tests/$1",
+    "^src/(.*)$": "<rootDir>/src/$1"
+  }
+}

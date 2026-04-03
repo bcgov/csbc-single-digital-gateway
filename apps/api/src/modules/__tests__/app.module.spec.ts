@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter';
-import { mockConfigService } from 'tests/utils/auth.controllers.mock';
+import { mockConfigService } from 'tests/utils/mock.auth.controllers';
 import { AppModule } from '../app.module';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { TokenRefreshMiddleware } from '../auth/middleware/token-refresh.middleware';

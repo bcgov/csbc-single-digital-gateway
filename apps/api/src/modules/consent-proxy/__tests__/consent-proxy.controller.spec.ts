@@ -7,7 +7,7 @@ import { AppConfigDto } from 'src/common/dtos/app-config.dto';
 import {
   buildMockResponse,
   mockConfigService,
-} from 'tests/utils/auth.controllers.mock';
+} from 'tests/utils/mock.auth.controllers';
 import { ConsentProxyController } from '../controllers/consent-proxy.controller';
 
 type MockSession = {

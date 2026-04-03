@@ -6,7 +6,7 @@ import {
   buildMockResponse,
   mockAuthService,
   mockConfigService,
-} from 'tests/utils/auth.controllers.mock';
+} from 'tests/utils/mock.auth.controllers';
 import { IdirAuthController } from '../controllers/idir-auth.controller';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
