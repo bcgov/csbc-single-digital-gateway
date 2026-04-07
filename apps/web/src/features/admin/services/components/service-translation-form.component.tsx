@@ -4,36 +4,17 @@ import { repoAjv, repoCells, repoRenderers } from "@repo/jsonforms";
 import { Button, Input, Label, Textarea } from "@repo/ui";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  loadCategories,
+  resolveCategory,
+} from "../data/async-select-loaders";
 import { useUpsertServiceTranslation } from "../data/services.mutations";
 import type { ServiceVersionTranslation } from "../data/services.query";
 
-const SDG_CATEGORIES = [
-  { value: "culture", label: "Culture" },
-  { value: "education", label: "Education" },
-  { value: "employment", label: "Employment" },
-  { value: "environment", label: "Environment" },
-  { value: "family", label: "Family" },
-  { value: "health", label: "Health" },
-  { value: "housing", label: "Housing" },
-  { value: "justice", label: "Justice" },
-  { value: "social-protection", label: "Social Protection" },
-  { value: "transport", label: "Transport" },
-];
-
 const asyncSelectLoaders = {
   categories: {
-    loadOptions: async (query: string) => ({
-      options: SDG_CATEGORIES.filter((c) =>
-        c.label.toLowerCase().includes(query.toLowerCase()),
-      ),
-      hasMore: false,
-    }),
-    resolveValue: async (value: string | string[]) => {
-      const values = Array.isArray(value) ? value : [value];
-      return values
-        .map((v) => SDG_CATEGORIES.find((c) => c.value === v))
-        .filter(Boolean) as { value: string; label: string }[];
-    },
+    loadOptions: loadCategories,
+    resolveValue: resolveCategory,
   },
 };
 

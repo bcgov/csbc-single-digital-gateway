@@ -1,5 +1,5 @@
 import type { ControlProps } from "@jsonforms/core";
-import { and, uiTypeIs, optionIs, rankWith } from "@jsonforms/core";
+import { and, optionIs, rankWith, uiTypeIs } from "@jsonforms/core";
 import { withJsonFormsControlProps } from "@jsonforms/react";
 import { AsyncSelect, type AsyncSelectProps } from "@repo/ui";
 
@@ -33,6 +33,8 @@ function AsyncSelectControlRenderer({
   const loaderConfig = asyncSelectKey
     ? appConfig?.asyncSelectLoaders?.[asyncSelectKey]
     : undefined;
+
+  console.log("loaderConfig: ", loaderConfig);
 
   if (!loaderConfig) {
     return (

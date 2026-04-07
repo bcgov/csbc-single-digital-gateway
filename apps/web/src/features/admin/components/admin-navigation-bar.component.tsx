@@ -14,7 +14,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@repo/ui";
-import { IconChevronDown, IconMenu2 } from "@tabler/icons-react";
+import { IconChevronDown, IconLogout, IconMenu2 } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import icon from "../../../assets/brand/icon.svg";
 import { useIdirAuth } from "../../auth/auth.context";
@@ -159,7 +159,8 @@ const AccountMenu = () => {
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => void logout()}>
+        <DropdownMenuItem onClick={() => void logout()}>
+          <IconLogout className="size-4" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

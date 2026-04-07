@@ -15,6 +15,35 @@ type AsyncLoadOptions = LoadOptions<
   PageAdditional
 >;
 
+const SDG_CATEGORIES: SelectOption[] = [
+  { value: "culture", label: "Culture" },
+  { value: "education", label: "Education" },
+  { value: "employment", label: "Employment" },
+  { value: "environment", label: "Environment" },
+  { value: "family", label: "Family" },
+  { value: "health", label: "Health" },
+  { value: "housing", label: "Housing" },
+  { value: "justice", label: "Justice" },
+  { value: "social-protection", label: "Social Protection" },
+  { value: "transport", label: "Transport" },
+];
+
+export const loadCategories: AsyncLoadOptions = async (search) => ({
+  options: SDG_CATEGORIES.filter((c) =>
+    c.label.toLowerCase().includes(search.toLowerCase()),
+  ),
+  hasMore: false,
+});
+
+export async function resolveCategory(
+  value: string | string[],
+): Promise<SelectOption[]> {
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .map((v) => SDG_CATEGORIES.find((c) => c.value === v))
+    .filter(Boolean) as SelectOption[];
+}
+
 export const loadOrgUnits: AsyncLoadOptions = async (
   search,
   _loadedOptions,

@@ -128,8 +128,8 @@ export const consentDocumentTypeVersionTranslations = pgTable(
     locale: text().notNull(),
     name: text().notNull(),
     description: text().notNull(),
-    schema: jsonb().notNull().default(`{}`),
-    uiSchema: jsonb().notNull().default(`{}`),
+    schema: jsonb().notNull().default({}),
+    uiSchema: jsonb().notNull().default({}),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })
@@ -185,7 +185,7 @@ export const consentDocumentVersionTranslations = pgTable(
     locale: text().notNull(),
     name: text().notNull(),
     description: text(),
-    content: jsonb().notNull().default(`{}`),
+    content: jsonb().notNull().default({}),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })

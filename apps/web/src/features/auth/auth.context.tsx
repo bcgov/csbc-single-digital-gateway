@@ -41,8 +41,10 @@ export const AuthProvider = ({
 
   const login = useCallback(
     (returnTo?: string) => {
-      const target =
-        returnTo ?? `${window.location.origin}${defaultRedirectPath}`;
+      const path = returnTo ?? defaultRedirectPath;
+      const target = path.startsWith("http")
+        ? path
+        : `${window.location.origin}${path}`;
       window.location.href = `${import.meta.env.VITE_AUTH_URL}/auth/${idpType}/login?returnTo=${encodeURIComponent(target)}`;
     },
     [idpType, defaultRedirectPath],

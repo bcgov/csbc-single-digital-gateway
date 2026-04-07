@@ -22,10 +22,12 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { serviceTypeQueryOptions } from "../../../admin/service-types/data/service-types.query";
 import {
-  loadServiceTypes,
+  loadCategories,
   loadOrgUnits,
-  resolveServiceType,
+  loadServiceTypes,
+  resolveCategory,
   resolveOrgUnit,
+  resolveServiceType,
 } from "../data/async-select-loaders";
 import { useCreateService } from "../data/services.mutations";
 
@@ -106,8 +108,12 @@ export function CreateServiceDialog({
     | undefined;
 
   const contentDataWithDefaults = useMemo(() => {
-    if (!contentSchema || Object.keys(contentData).length > 0) return contentData;
-    return applySchemaDefaults(contentSchema as Record<string, unknown>, contentData);
+    if (!contentSchema || Object.keys(contentData).length > 0)
+      return contentData;
+    return applySchemaDefaults(
+      contentSchema as Record<string, unknown>,
+      contentData,
+    );
   }, [contentSchema, contentData]);
 
   const hasPublishedVersion = !!typeDetail?.publishedVersion;
@@ -121,6 +127,10 @@ export function CreateServiceDialog({
         serviceTypes: {
           loadOptions: loadServiceTypes,
           resolveValue: resolveServiceType,
+        },
+        categories: {
+          loadOptions: loadCategories,
+          resolveValue: resolveCategory,
         },
       },
     }),
@@ -149,8 +159,7 @@ export function CreateServiceDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.orgUnitId || !formData.serviceTypeId || !name.trim())
-      return;
+    if (!formData.orgUnitId || !formData.serviceTypeId || !name.trim()) return;
 
     createMutation.mutate(
       {
@@ -158,7 +167,10 @@ export function CreateServiceDialog({
         orgUnitId: formData.orgUnitId,
         name: name.trim(),
         description: description.trim() || undefined,
-        content: Object.keys(contentDataWithDefaults).length > 0 ? contentDataWithDefaults : undefined,
+        content:
+          Object.keys(contentDataWithDefaults).length > 0
+            ? contentDataWithDefaults
+            : undefined,
       },
       {
         onSuccess: (result) => {
@@ -248,6 +260,7 @@ export function CreateServiceDialog({
                   ajv={repoAjv}
                   renderers={repoRenderers}
                   cells={repoCells}
+                  config={config}
                   onChange={({ data }) => setContentData(data)}
                 />
               </div>

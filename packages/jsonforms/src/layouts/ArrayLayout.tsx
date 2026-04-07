@@ -1,7 +1,7 @@
-import type { ArrayLayoutProps, JsonSchema } from "@jsonforms/core";
+import type { ArrayLayoutProps, ControlElement } from "@jsonforms/core";
 import {
   composePaths,
-  Generate,
+  findUISchema,
   isObjectArrayControl,
   rankWith,
 } from "@jsonforms/core";
@@ -17,6 +17,9 @@ function ArrayLayoutRenderer({
   data,
   path,
   schema,
+  uischema,
+  rootSchema,
+  uischemas,
   enabled,
   visible,
   label,
@@ -32,8 +35,15 @@ function ArrayLayoutRenderer({
     return null;
   }
 
-  const itemSchema = schema.items as Record<string, unknown> | undefined;
-  const itemUiSchema = itemSchema ? Generate.uiSchema(itemSchema) : undefined;
+  const itemUiSchema = findUISchema(
+    uischemas ?? [],
+    schema,
+    uischema.scope,
+    path,
+    "VerticalLayout",
+    uischema as ControlElement,
+    rootSchema,
+  );
   const itemCount = data ?? 0;
 
   return (
@@ -50,9 +60,9 @@ function ArrayLayoutRenderer({
             <CardContent className="pt-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
-                  {itemUiSchema && (
+                  {itemUiSchema != null && (
                     <JsonFormsDispatch
-                      schema={itemSchema as JsonSchema}
+                      schema={schema}
                       uischema={itemUiSchema}
                       path={composePaths(path, `${index}`)}
                       enabled={enabled}

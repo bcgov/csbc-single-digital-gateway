@@ -121,8 +121,8 @@ export const serviceTypeVersionTranslations = pgTable(
     locale: text().notNull(),
     name: text().notNull(),
     description: text().notNull(),
-    schema: jsonb().notNull().default(`{}`),
-    uiSchema: jsonb().notNull().default(`{}`),
+    schema: jsonb().notNull().default({}),
+    uiSchema: jsonb().notNull().default({}),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })
@@ -179,7 +179,7 @@ export const serviceVersionTranslations = pgTable(
     locale: text().notNull(),
     name: text().notNull(),
     description: text(),
-    content: jsonb().notNull().default(`{}`),
+    content: jsonb().notNull().default({}),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })
