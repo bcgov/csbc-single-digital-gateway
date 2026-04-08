@@ -17,12 +17,15 @@ import {
   jsonControlEntry,
   richTextControlEntry,
   asyncSelectControlEntry,
+  selectControlEntry,
 } from "./controls/index.js";
 import {
   verticalLayoutEntry,
   horizontalLayoutEntry,
   groupLayoutEntry,
   categorizationLayoutEntry,
+  accordionLayoutEntry,
+  accordionItemLayoutEntry,
   arrayLayoutEntry,
 } from "./layouts/index.js";
 import {
@@ -46,11 +49,14 @@ export const repoRenderers: JsonFormsRendererRegistryEntry[] = [
   jsonControlEntry,
   richTextControlEntry,
   asyncSelectControlEntry,
+  selectControlEntry,
   oneOfControlEntry,
   verticalLayoutEntry,
   horizontalLayoutEntry,
   groupLayoutEntry,
   categorizationLayoutEntry,
+  accordionLayoutEntry,
+  accordionItemLayoutEntry,
   arrayLayoutEntry,
 ];
 

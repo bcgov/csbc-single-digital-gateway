@@ -19,6 +19,16 @@ export {
   categorizationLayoutEntry,
 } from "./CategorizationLayout.js";
 export {
+  AccordionLayout,
+  accordionLayoutTester,
+  accordionLayoutEntry,
+} from "./AccordionLayout.js";
+export {
+  AccordionItemLayout,
+  accordionItemLayoutTester,
+  accordionItemLayoutEntry,
+} from "./AccordionItemLayout.js";
+export {
   ArrayLayoutComponent,
   arrayLayoutTester,
   arrayLayoutEntry,

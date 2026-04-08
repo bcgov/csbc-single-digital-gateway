@@ -16,6 +16,7 @@ import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as AdminStudioRouteImport } from './routes/admin/studio'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/route'
 import { Route as AdminServicesRouteRouteImport } from './routes/admin/services/route'
@@ -87,6 +88,11 @@ const publicIndexRoute = publicIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => publicRouteRoute,
+} as any)
+const AdminStudioRoute = AdminStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   id: '/settings',
@@ -310,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/admin/services': typeof AdminServicesRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
+  '/admin/studio': typeof AdminStudioRoute
   '/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/admin/consent': typeof AdminConsentRouteRouteWithChildren
+  '/admin/studio': typeof AdminStudioRoute
   '/': typeof publicIndexRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
@@ -388,6 +396,7 @@ export interface FileRoutesById {
   '/admin/services': typeof AdminServicesRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/app/settings': typeof AppSettingsRouteRouteWithChildren
+  '/admin/studio': typeof AdminStudioRoute
   '/(public)/': typeof publicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -435,6 +444,7 @@ export interface FileRouteTypes {
     | '/admin/services'
     | '/admin/settings'
     | '/app/settings'
+    | '/admin/studio'
     | '/'
     | '/admin/'
     | '/app/'
@@ -475,6 +485,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/admin/consent'
+    | '/admin/studio'
     | '/'
     | '/admin'
     | '/app'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '/admin/services'
     | '/admin/settings'
     | '/app/settings'
+    | '/admin/studio'
     | '/(public)/'
     | '/admin/'
     | '/app/'
@@ -608,6 +620,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof publicIndexRouteImport
       parentRoute: typeof publicRouteRoute
+    }
+    '/admin/studio': {
+      id: '/admin/studio'
+      path: '/studio'
+      fullPath: '/admin/studio'
+      preLoaderRoute: typeof AdminStudioRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/app/settings': {
       id: '/app/settings'
@@ -1098,6 +1117,7 @@ interface AdminRouteRouteChildren {
   AdminConsentRouteRoute: typeof AdminConsentRouteRouteWithChildren
   AdminServicesRouteRoute: typeof AdminServicesRouteRouteWithChildren
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
+  AdminStudioRoute: typeof AdminStudioRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1105,6 +1125,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminConsentRouteRoute: AdminConsentRouteRouteWithChildren,
   AdminServicesRouteRoute: AdminServicesRouteRouteWithChildren,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
+  AdminStudioRoute: AdminStudioRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

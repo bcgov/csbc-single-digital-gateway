@@ -373,30 +373,64 @@ export class ServiceTypesService {
   }
 
   async createVersion(typeId: string) {
-    const type = await this.db
-      .select()
-      .from(schema.serviceTypes)
-      .where(eq(schema.serviceTypes.id, typeId))
-      .limit(1);
+    return this.db.transaction(async (tx) => {
+      const type = await tx
+        .select()
+        .from(schema.serviceTypes)
+        .where(eq(schema.serviceTypes.id, typeId))
+        .limit(1);
 
-    if (type.length === 0) {
-      throw new NotFoundException(`Service type ${typeId} not found`);
-    }
+      if (type.length === 0) {
+        throw new NotFoundException(`Service type ${typeId} not found`);
+      }
 
-    const [version] = await this.db
-      .insert(schema.serviceTypeVersions)
-      .values({
-        serviceTypeId: typeId,
-        version: sql<number>`COALESCE((
-          SELECT MAX(${schema.serviceTypeVersions.version})
-          FROM ${schema.serviceTypeVersions}
-          WHERE ${schema.serviceTypeVersions.serviceTypeId} = ${typeId}
-        ), 0) + 1`,
-        status: 'draft',
-      })
-      .returning();
+      const [sourceVersion] = await tx
+        .select({ id: schema.serviceTypeVersions.id })
+        .from(schema.serviceTypeVersions)
+        .where(eq(schema.serviceTypeVersions.serviceTypeId, typeId))
+        .orderBy(desc(schema.serviceTypeVersions.version))
+        .limit(1);
 
-    return version;
+      const [version] = await tx
+        .insert(schema.serviceTypeVersions)
+        .values({
+          serviceTypeId: typeId,
+          version: sql<number>`COALESCE((
+            SELECT MAX(${schema.serviceTypeVersions.version})
+            FROM ${schema.serviceTypeVersions}
+            WHERE ${schema.serviceTypeVersions.serviceTypeId} = ${typeId}
+          ), 0) + 1`,
+          status: 'draft',
+        })
+        .returning();
+
+      if (sourceVersion) {
+        const sourceTranslations = await tx
+          .select()
+          .from(schema.serviceTypeVersionTranslations)
+          .where(
+            eq(
+              schema.serviceTypeVersionTranslations.serviceTypeVersionId,
+              sourceVersion.id,
+            ),
+          );
+
+        if (sourceTranslations.length > 0) {
+          await tx.insert(schema.serviceTypeVersionTranslations).values(
+            sourceTranslations.map((t) => ({
+              serviceTypeVersionId: version.id,
+              locale: t.locale,
+              name: t.name,
+              description: t.description,
+              schema: t.schema,
+              uiSchema: t.uiSchema,
+            })),
+          );
+        }
+      }
+
+      return version;
+    });
   }
 
   async getVersion(typeId: string, versionId: string) {

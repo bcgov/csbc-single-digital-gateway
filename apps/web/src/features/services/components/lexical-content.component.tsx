@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 
 interface LexicalNode {
   type: string;
@@ -6,7 +6,12 @@ interface LexicalNode {
   text?: string;
   format?: number;
   listType?: string;
+  indent?: number;
   children?: LexicalNode[];
+}
+
+function indentStyle(indent: number | undefined): CSSProperties | undefined {
+  return indent && indent > 0 ? { paddingInlineStart: `${indent * 2}rem` } : undefined;
 }
 
 interface LexicalContentProps {
@@ -33,7 +38,7 @@ function renderNode(node: LexicalNode, index: number): JSX.Element | string | nu
     case "heading": {
       const Tag = (node.tag ?? "h2") as keyof JSX.IntrinsicElements;
       return (
-        <Tag key={index} className="text-lg font-semibold">
+        <Tag key={index} className="text-lg font-semibold" style={indentStyle(node.indent)}>
           {node.children?.map(renderNode)}
         </Tag>
       );
@@ -42,17 +47,40 @@ function renderNode(node: LexicalNode, index: number): JSX.Element | string | nu
     case "list": {
       const Tag = node.listType === "number" ? "ol" : "ul";
       return (
-        <Tag key={index} className="list-inside pl-2" style={{ listStyleType: node.listType === "number" ? "decimal" : "disc" }}>
+        <Tag
+          key={index}
+          className="list-inside pl-2"
+          style={{
+            listStyleType: node.listType === "number" ? "decimal" : "disc",
+            ...indentStyle(node.indent),
+          }}
+        >
           {node.children?.map(renderNode)}
         </Tag>
       );
     }
 
     case "paragraph":
-      return <p key={index}>{node.children?.map(renderNode)}</p>;
+      return (
+        <p key={index} style={indentStyle(node.indent)}>
+          {node.children?.map(renderNode)}
+        </p>
+      );
 
-    case "listitem":
-      return <li key={index}>{node.children?.map(renderNode)}</li>;
+    case "listitem": {
+      const hasNestedList = node.children?.some((child) => child.type === "list");
+      return (
+        <li
+          key={index}
+          style={{
+            ...indentStyle(node.indent),
+            ...(hasNestedList ? { listStyle: "none" } : undefined),
+          }}
+        >
+          {node.children?.map(renderNode)}
+        </li>
+      );
+    }
 
     case "text":
       return (

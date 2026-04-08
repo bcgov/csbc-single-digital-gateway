@@ -54,12 +54,12 @@ function ArrayLayoutRenderer({
       visible={visible}
       required={required}
     >
-      <FieldGroup>
+      <FieldGroup className="gap-2">
         {Array.from({ length: itemCount }, (_, index) => (
-          <Card key={index}>
-            <CardContent className="pt-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
+          <Card key={index} className="py-2 gap-2">
+            <CardContent className="p-2">
+              <div className="flex items-start gap-1">
+                <div className="flex-1 min-w-0 [&_[data-slot=field-group]]:gap-2">
                   {itemUiSchema != null && (
                     <JsonFormsDispatch
                       schema={schema}
@@ -75,11 +75,12 @@ function ArrayLayoutRenderer({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
-                    className="shrink-0 text-destructive hover:text-destructive"
+                    size="icon-xs"
+                    aria-label="Remove"
+                    className="size-5 p-0 shrink-0 text-destructive hover:text-destructive"
                     onClick={() => removeItems?.(path, [index])()}
                   >
-                    Remove
+                    ✕
                   </Button>
                 )}
               </div>

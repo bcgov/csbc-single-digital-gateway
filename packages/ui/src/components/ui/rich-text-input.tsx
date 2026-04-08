@@ -5,6 +5,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
@@ -14,6 +15,8 @@ import {
   $getSelection,
   $isRangeSelection,
   FORMAT_TEXT_COMMAND,
+  INDENT_CONTENT_COMMAND,
+  OUTDENT_CONTENT_COMMAND,
   type TextFormatType,
 } from "lexical";
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
@@ -38,6 +41,8 @@ import {
   IconList,
   IconListNumbers,
   IconBlockquote,
+  IconIndentIncrease,
+  IconIndentDecrease,
 } from "@tabler/icons-react";
 import { cn } from "../../lib/utils";
 
@@ -61,6 +66,9 @@ const theme = {
     ul: "list-disc ml-4 mb-1",
     ol: "list-decimal ml-4 mb-1",
     listitem: "mb-0.5",
+    nested: {
+      listitem: "list-none",
+    },
   },
   quote: "border-l-4 border-muted-foreground/30 pl-3 italic text-muted-foreground",
   text: {
@@ -245,6 +253,27 @@ function ToolbarPlugin({ disabled }: { disabled: boolean }) {
       >
         <IconListNumbers size={iconSize} />
       </ToolbarButton>
+
+      <div className="bg-border mx-1 h-5 w-px" />
+
+      <ToolbarButton
+        disabled={disabled}
+        onClick={() =>
+          editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
+        }
+        ariaLabel="Decrease indent"
+      >
+        <IconIndentDecrease size={iconSize} />
+      </ToolbarButton>
+      <ToolbarButton
+        disabled={disabled}
+        onClick={() =>
+          editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
+        }
+        ariaLabel="Increase indent"
+      >
+        <IconIndentIncrease size={iconSize} />
+      </ToolbarButton>
     </div>
   );
 }
@@ -360,6 +389,7 @@ export function RichTextInput({
         </div>
         <HistoryPlugin />
         <ListPlugin />
+        <TabIndentationPlugin />
         <HtmlImportPlugin html={value} />
         <OnChangePlugin onChange={onChange} />
         <ReadOnlyPlugin disabled={disabled} />

@@ -54,6 +54,16 @@ export {
   asyncSelectControlEntry,
 } from "./AsyncSelectControl.js";
 export {
+  SelectControl,
+  selectControlTester,
+  selectControlEntry,
+} from "./SelectControl.js";
+export {
+  buildUrlAsyncLoader,
+  type AsyncSelectUrlMapping,
+  type AsyncSelectUrlLoader,
+} from "./async-select-url-loader.js";
+export {
   OneOfControl,
   oneOfControlTester,
   oneOfControlEntry,

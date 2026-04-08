@@ -379,30 +379,69 @@ export class ConsentDocumentTypesService {
   }
 
   async createVersion(typeId: string) {
-    const type = await this.db
-      .select()
-      .from(schema.consentDocumentTypes)
-      .where(eq(schema.consentDocumentTypes.id, typeId))
-      .limit(1);
+    return this.db.transaction(async (tx) => {
+      const type = await tx
+        .select()
+        .from(schema.consentDocumentTypes)
+        .where(eq(schema.consentDocumentTypes.id, typeId))
+        .limit(1);
 
-    if (type.length === 0) {
-      throw new NotFoundException(`Consent document type ${typeId} not found`);
-    }
+      if (type.length === 0) {
+        throw new NotFoundException(
+          `Consent document type ${typeId} not found`,
+        );
+      }
 
-    const [version] = await this.db
-      .insert(schema.consentDocumentTypeVersions)
-      .values({
-        consentDocumentTypeId: typeId,
-        version: sql<number>`COALESCE((
-          SELECT MAX(${schema.consentDocumentTypeVersions.version})
-          FROM ${schema.consentDocumentTypeVersions}
-          WHERE ${schema.consentDocumentTypeVersions.consentDocumentTypeId} = ${typeId}
-        ), 0) + 1`,
-        status: 'draft',
-      })
-      .returning();
+      const [sourceVersion] = await tx
+        .select({ id: schema.consentDocumentTypeVersions.id })
+        .from(schema.consentDocumentTypeVersions)
+        .where(eq(schema.consentDocumentTypeVersions.consentDocumentTypeId, typeId))
+        .orderBy(desc(schema.consentDocumentTypeVersions.version))
+        .limit(1);
 
-    return version;
+      const [version] = await tx
+        .insert(schema.consentDocumentTypeVersions)
+        .values({
+          consentDocumentTypeId: typeId,
+          version: sql<number>`COALESCE((
+            SELECT MAX(${schema.consentDocumentTypeVersions.version})
+            FROM ${schema.consentDocumentTypeVersions}
+            WHERE ${schema.consentDocumentTypeVersions.consentDocumentTypeId} = ${typeId}
+          ), 0) + 1`,
+          status: 'draft',
+        })
+        .returning();
+
+      if (sourceVersion) {
+        const sourceTranslations = await tx
+          .select()
+          .from(schema.consentDocumentTypeVersionTranslations)
+          .where(
+            eq(
+              schema.consentDocumentTypeVersionTranslations
+                .consentDocumentTypeVersionId,
+              sourceVersion.id,
+            ),
+          );
+
+        if (sourceTranslations.length > 0) {
+          await tx
+            .insert(schema.consentDocumentTypeVersionTranslations)
+            .values(
+              sourceTranslations.map((t) => ({
+                consentDocumentTypeVersionId: version.id,
+                locale: t.locale,
+                name: t.name,
+                description: t.description,
+                schema: t.schema,
+                uiSchema: t.uiSchema,
+              })),
+            );
+        }
+      }
+
+      return version;
+    });
   }
 
   async getVersion(typeId: string, versionId: string) {
