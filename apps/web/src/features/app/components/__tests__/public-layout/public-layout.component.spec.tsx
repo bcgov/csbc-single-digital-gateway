@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import React from "react";
-import { mockUseBcscAuth } from "tests/utils/mock-functions/auth/mock.auth.context.useBcscAuth";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
 import { PublicLayout } from "../../public-layout/public-layout.component";
 
 jest.mock("../../container.component", () => ({
@@ -48,7 +48,7 @@ jest.mock("@tanstack/react-router", () => ({
 describe("PublicLayout Component Test", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseBcscAuth.mockReturnValue({
+    mockedUseBcscAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
     });

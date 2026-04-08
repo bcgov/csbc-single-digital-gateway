@@ -1,17 +1,41 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import {
-  mockAppSearch,
-  mockAppSearchProvider,
-} from "tests/utils/mock-components/app/mock.app-search";
-import {
-  mockAuthenticatedFooter,
-  mockAuthenticatedHeader,
-  mockAuthenticatedNavigationBar,
-} from "tests/utils/mock-components/app/mock.authenticated-layout";
-import { mockBreadcrumbs } from "tests/utils/mock-components/app/mock.breadcrumbs";
-import { mockContainer } from "tests/utils/mock-components/app/mock.container.component";
 import { AuthenticatedLayout } from "../../authenticated-layout/authenticated-layout.component";
 import type { NavItem } from "../../navigation-bar";
+
+const mockAppSearch = jest.fn(
+  ({ navigationItems }: { navigationItems: NavItem[] }) => (
+    <div
+      data-testid="app-search"
+      data-navigation-items={JSON.stringify(navigationItems)}
+    />
+  ),
+);
+
+const mockAppSearchProvider = jest.fn(
+  ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="app-search-provider">{children}</div>
+  ),
+);
+
+const mockAuthenticatedFooter = jest.fn(() => (
+  <footer data-testid="authenticated-footer" />
+));
+
+const mockAuthenticatedHeader = jest.fn(
+  ({ children }: { children: React.ReactNode }) => (
+    <header data-testid="authenticated-header">{children}</header>
+  ),
+);
+
+const mockAuthenticatedNavigationBar = jest.fn(() => (
+  <div data-testid="authenticated-navigation-bar" />
+));
+
+const mockBreadcrumbs = jest.fn(() => <nav data-testid="breadcrumbs" />);
+
+const mockContainer = jest.fn(({ children }: { children: React.ReactNode }) => (
+  <div data-testid="container">{children}</div>
+));
 
 jest.mock("../../app-search", () => ({
   AppSearch: (props: { navigationItems: NavItem[] }) => mockAppSearch(props),

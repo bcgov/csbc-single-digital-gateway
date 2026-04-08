@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { mockUseAppSearch } from "tests/utils/mock-functions/app/mock.app-search";
+import { mockedUseAppSearch } from "tests/utils/mocks/app/features/mock.app-search";
 import { AppSearch } from "../../app-search";
 import type { NavItem } from "../../navigation-bar";
 
@@ -80,7 +80,7 @@ describe("AppSearch Component Test", () => {
   const mountAppSearch = (open = false) => {
     const setOpen = jest.fn();
 
-    mockUseAppSearch.mockReturnValue({
+    mockedUseAppSearch.mockReturnValue({
       open,
       setOpen,
     });

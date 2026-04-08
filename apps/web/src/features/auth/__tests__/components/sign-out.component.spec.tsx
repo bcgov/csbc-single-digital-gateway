@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { mockUseBcscAuth } from "tests/utils/mock-functions/auth/mock.auth.context.useBcscAuth";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
 import { SignOut } from "../../components/sign-out.component";
 
 jest.mock("@repo/ui", () => ({
@@ -27,7 +27,7 @@ describe("SignOut Component Test", () => {
 
   it("Should render Sign Out button with icon and danger classes", () => {
     const logout = jest.fn();
-    mockUseBcscAuth.mockReturnValue({ logout });
+    mockedUseBcscAuth.mockReturnValue({ logout });
 
     render(<SignOut />);
 
@@ -41,7 +41,7 @@ describe("SignOut Component Test", () => {
   it("Should call logout when Sign Out button is clicked", async () => {
     const user = userEvent.setup();
     const logout = jest.fn();
-    mockUseBcscAuth.mockReturnValue({ logout });
+    mockedUseBcscAuth.mockReturnValue({ logout });
 
     render(<SignOut />);
 

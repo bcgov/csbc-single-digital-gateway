@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { mockUseAppSearch } from "tests/utils/mock-functions/app/mock.app-search";
-import { mockUseBcscAuth } from "tests/utils/mock-functions/auth/mock.auth.context.useBcscAuth";
+import { mockedUseAppSearch } from "tests/utils/mocks/app/features/mock.app-search";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
 import { AuthenticatedNavigationBar } from "../../authenticated-layout/authenticated-navigation-bar.component";
 
 jest.mock("@tabler/icons-react", () => ({
@@ -83,8 +83,8 @@ describe("AuthenticatedNavigationBar Component Test", () => {
     const setOpen = jest.fn();
     const logout = jest.fn();
 
-    mockUseAppSearch.mockReturnValue({ setOpen });
-    mockUseBcscAuth.mockReturnValue({
+    mockedUseAppSearch.mockReturnValue({ setOpen });
+    mockedUseBcscAuth.mockReturnValue({
       user: {
         name: "Jane Doe",
         email: "jane.doe@example.com",

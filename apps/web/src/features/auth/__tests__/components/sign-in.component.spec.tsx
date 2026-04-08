@@ -1,7 +1,7 @@
-import { useNavigate } from "@tanstack/react-router";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { mockUseBcscAuth } from "tests/utils/mock-functions/auth/mock.auth.context.useBcscAuth";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
+import { mockedUseNavigate } from "tests/utils/mocks/tankstack/mock.useNavigate";
 import { SignIn } from "../../components/sign-in.component";
 
 jest.mock("@repo/ui", () => ({
@@ -18,12 +18,6 @@ jest.mock("@tabler/icons-react", () => ({
   IconLogin2: () => <svg data-testid="icon-login-2" />,
 }));
 
-jest.mock("@tanstack/react-router", () => ({
-  useNavigate: jest.fn(),
-}));
-
-const mockUseNavigate = useNavigate as jest.Mock;
-
 describe("SignIn Component Test", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,8 +32,8 @@ describe("SignIn Component Test", () => {
     const navigate = jest.fn();
     const login = jest.fn();
 
-    mockUseNavigate.mockReturnValue(navigate);
-    mockUseBcscAuth.mockReturnValue({
+    mockedUseNavigate.mockReturnValue(navigate);
+    mockedUseBcscAuth.mockReturnValue({
       isAuthenticated: false,
       login,
     });
@@ -64,8 +58,8 @@ describe("SignIn Component Test", () => {
     const navigate = jest.fn();
     const login = jest.fn();
 
-    mockUseNavigate.mockReturnValue(navigate);
-    mockUseBcscAuth.mockReturnValue({
+    mockedUseNavigate.mockReturnValue(navigate);
+    mockedUseBcscAuth.mockReturnValue({
       isAuthenticated: true,
       login,
     });

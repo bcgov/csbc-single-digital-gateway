@@ -163,4 +163,156 @@ describe("ChefsFormViewer Component Test", () => {
     expect(viewer).toBeInTheDocument();
     expect(viewer.headers).toEqual(headers);
   });
+
+  it("Should inject custom shadow styles when shadowRoot appears via MutationObserver and disconnect observer", async () => {
+    mockedUseChefsScript.mockReturnValue("loading");
+
+    const OriginalMutationObserver = global.MutationObserver;
+
+    class MockMutationObserver {
+      static instances: MockMutationObserver[] = [];
+      private callback: MutationCallback;
+      observe = jest.fn((target: Node) => {
+        const targetEl = target as Element | null;
+
+        const host =
+          targetEl?.tagName?.toLowerCase() === "chefs-form-viewer"
+            ? (targetEl as HTMLElement)
+            : ((targetEl?.querySelector?.(
+                "chefs-form-viewer",
+              ) as HTMLElement | null) ?? null);
+
+        if (
+          host &&
+          !host.shadowRoot &&
+          typeof host.attachShadow === "function"
+        ) {
+          host.attachShadow({ mode: "open" });
+        }
+
+        this.callback([], this as unknown as MutationObserver);
+      });
+      disconnect = jest.fn();
+      takeRecords = jest.fn(() => []);
+
+      constructor(callback: MutationCallback) {
+        this.callback = callback;
+        MockMutationObserver.instances.push(this);
+      }
+    }
+
+    global.MutationObserver =
+      MockMutationObserver as unknown as typeof MutationObserver;
+
+    const { container } = render(
+      <ChefsFormViewer formId="shadow-style-form" authToken="token" />,
+    );
+
+    const viewer = getViewer(container) as HTMLElement;
+    expect(viewer).toBeInTheDocument();
+
+    await waitFor(() => {
+      const styleEl = viewer.shadowRoot?.querySelector("#chefs-custom-styles");
+      expect(styleEl).toBeInTheDocument();
+    });
+
+    const styleEls = viewer.shadowRoot?.querySelectorAll(
+      "#chefs-custom-styles",
+    );
+    expect(styleEls).toHaveLength(1);
+    expect(styleEls?.[0].textContent).toContain("transition: none !important");
+    expect(styleEls?.[0].textContent).toContain(".v-container.main");
+
+    expect(MockMutationObserver.instances[0].observe).toHaveBeenCalled();
+    expect(MockMutationObserver.instances[0].disconnect).toHaveBeenCalled();
+
+    global.MutationObserver = OriginalMutationObserver;
+  });
+
+  it("Should safely return when ready state has no chefs-form-viewer node", () => {
+    mockedUseChefsScript.mockReturnValue("ready");
+
+    const originalQuerySelector = Element.prototype.querySelector;
+    const querySpy = jest
+      .spyOn(Element.prototype, "querySelector")
+      .mockImplementation(function (this: Element, selectors: string) {
+        if (selectors === "chefs-form-viewer") {
+          return null;
+        }
+        return originalQuerySelector.call(this, selectors);
+      });
+
+    render(<ChefsFormViewer formId="no-viewer-form" authToken="token" />);
+
+    expect(screen.getByText("Loading form...")).toBeInTheDocument();
+    expect(screen.getByTestId("spinner")).toBeInTheDocument();
+
+    querySpy.mockRestore();
+  });
+
+  it("Should mark form mounted from existing shadowRoot children without formio:ready event", async () => {
+    mockedUseChefsScript.mockReturnValue("ready");
+
+    const onFormReadyA = jest.fn();
+    const onFormReadyB = jest.fn();
+
+    const { container, rerender } = render(
+      <ChefsFormViewer
+        formId="existing-shadow-root-form"
+        authToken="token"
+        onFormReady={onFormReadyA}
+      />,
+    );
+
+    const viewer = getViewer(container) as HTMLElement;
+    expect(viewer).toBeInTheDocument();
+
+    const shadowRoot = viewer.attachShadow({ mode: "open" });
+    shadowRoot.appendChild(document.createElement("div"));
+
+    rerender(
+      <ChefsFormViewer
+        formId="existing-shadow-root-form"
+        authToken="token"
+        onFormReady={onFormReadyB}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(viewer.parentElement).toHaveClass("block");
+    });
+
+    expect(onFormReadyA).not.toHaveBeenCalled();
+    expect(onFormReadyB).not.toHaveBeenCalled();
+  });
+
+  it("Should call load() and swallow rejected promise without crashing", async () => {
+    mockedUseChefsScript.mockReturnValue("ready");
+
+    const { container, rerender } = render(
+      <ChefsFormViewer formId="load-reject-form" authToken="token" />,
+    );
+
+    const viewer = getViewer(container) as HTMLElement & {
+      load?: () => Promise<void>;
+    };
+    expect(viewer).toBeInTheDocument();
+
+    const loadMock = jest.fn().mockRejectedValue(new Error("load failed"));
+    viewer.load = loadMock;
+
+    rerender(
+      <ChefsFormViewer
+        formId="load-reject-form"
+        authToken="token"
+        onSubmissionError={jest.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(loadMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByText("Loading form...")).toBeInTheDocument();
+  });
 });

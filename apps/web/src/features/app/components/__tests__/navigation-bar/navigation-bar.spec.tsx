@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import React from "react";
-import { mockUseBcscAuth } from "tests/utils/mock-functions/auth/mock.auth.context.useBcscAuth";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
 import { NavigationBar, type NavItem } from "../../navigation-bar";
 
 jest.mock("../../container.component", () => ({
@@ -78,7 +78,7 @@ describe("NavigationBar Component Test", () => {
   ];
 
   const renderNavigationBar = (isAuthenticated: boolean) => {
-    mockUseBcscAuth.mockReturnValue({
+    mockedUseBcscAuth.mockReturnValue({
       isAuthenticated,
     });
 

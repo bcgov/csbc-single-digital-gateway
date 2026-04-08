@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import React from "react";
-import { mockUseMatches } from "tests/utils/mock-functions/tankstack/mock.useMatches";
+import { mockedUseMatches } from "tests/utils/mocks/tankstack/mock.useMatches";
 import { Breadcrumbs } from "../../breadcrumbs";
 
 jest.mock("../../container.component", () => ({
@@ -41,11 +41,11 @@ jest.mock("@repo/ui", () => {
 
 describe("Breadcrumbs", () => {
   beforeEach(() => {
-    mockUseMatches.mockReset();
+    mockedUseMatches.mockReset();
   });
 
   it("Should render nothing when there are no breadcrumb items", () => {
-    mockUseMatches.mockReturnValue([]);
+    mockedUseMatches.mockReturnValue([]);
 
     const { container } = render(<Breadcrumbs />);
 
@@ -53,7 +53,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("Should ignore matches without a breadcrumb resolver and flatten valid breadcrumb items", () => {
-    mockUseMatches.mockReturnValue([
+    mockedUseMatches.mockReturnValue([
       {
         staticData: {},
         loaderData: { ignored: true },
@@ -89,7 +89,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("Should render links for items with `to` and a page for items without `to`", () => {
-    mockUseMatches.mockReturnValue([
+    mockedUseMatches.mockReturnValue([
       {
         staticData: {
           breadcrumbs: () => [
@@ -115,7 +115,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("Should pass explicit params and default missing params to an empty object", () => {
-    mockUseMatches.mockReturnValue([
+    mockedUseMatches.mockReturnValue([
       {
         staticData: {
           breadcrumbs: () => [
@@ -141,7 +141,7 @@ describe("Breadcrumbs", () => {
   });
 
   it("Should render one separator between each breadcrumb item", () => {
-    mockUseMatches.mockReturnValue([
+    mockedUseMatches.mockReturnValue([
       {
         staticData: {
           breadcrumbs: () => [
