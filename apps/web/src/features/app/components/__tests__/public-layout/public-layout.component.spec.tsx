@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import React from "react";
-import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.useBcscAuth";
 import { PublicLayout } from "../../public-layout/public-layout.component";
 
 jest.mock("../../container.component", () => ({

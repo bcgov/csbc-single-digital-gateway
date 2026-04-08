@@ -96,8 +96,11 @@ jobs:
       - name: Build @Repo/UI Components
         run: npm run build:@repo/ui
 
-      - name: Run Web E2E Test
-        run: npm run test:e2e
-
       - name: Run Web Component Test with Coverage
         run: npm run test:cov:web
+
+      - name: Run Web Application (Background)
+        run: npm run dev:web &
+
+      - name: Run Web E2E Test
+        run: npm run test:e2e

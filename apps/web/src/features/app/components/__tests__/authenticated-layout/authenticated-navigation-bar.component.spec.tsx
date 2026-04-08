@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { mockedUseAppSearch } from "tests/utils/mocks/app/features/mock.app-search";
-import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
+import { mockedUseAppSearch } from "tests/utils/mocks/app/features/mock.useAppSearch";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.useBcscAuth";
 import { AuthenticatedNavigationBar } from "../../authenticated-layout/authenticated-navigation-bar.component";
 
 jest.mock("@tabler/icons-react", () => ({

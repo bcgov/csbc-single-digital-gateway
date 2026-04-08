@@ -6,14 +6,15 @@
     "tsx"
   ],
   "rootDir": "../../",
-  "testRegex": ".*\\.e2e-spec\\.tsx$",
+  "testRegex": "\\.e2e-spec\\.ts$",
   "transform": {
     "^.+\\.(ts|tsx)$": "babel-jest"
   },
-  "testEnvironment": "jest-environment-jsdom",
-  "setupFilesAfterEnv": [
-    "<rootDir>/tests/setupTests.ts"
-  ],
+  "testEnvironment": "node",
+  "testTimeout": 30000,
+  "globals": {
+    "APP_PORT": "5173"
+  },
   "moduleNameMapper": {
     "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/tests/config/fileMock.js",
     "\\.(css|less|sass|scss)$": "identity-obj-proxy",

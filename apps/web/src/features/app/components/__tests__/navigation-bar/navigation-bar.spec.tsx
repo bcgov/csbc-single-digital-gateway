@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import React from "react";
-import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.useBcscAuth";
 import { NavigationBar, type NavItem } from "../../navigation-bar";
 
 jest.mock("../../container.component", () => ({

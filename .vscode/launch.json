@@ -70,6 +70,7 @@
       "request": "launch",
       "cwd": "${fileDirname}",
       "command": "npm run test:e2e -- ${fileBasename}",
+      "envFile": "${workspaceFolder}/.env",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },
@@ -79,6 +80,7 @@
       "request": "launch",
       "cwd": "${workspaceFolder}",
       "command": "npm run test:e2e",
+      "envFile": "${workspaceFolder}/.env",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },

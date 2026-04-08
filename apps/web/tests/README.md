@@ -10,11 +10,12 @@ Component test files with file name suffix `**/*.spec.tsx` should be placed insi
 
 |Testing Content| File Format| Folder (example)|
 |:-:|:-:|:-:|
-|Component test| `**/*.spec.tsx`| [navigation-bar](../src/features/app/components/__tests__/)|
+|Component test| `**/*.spec.tsx`| [app](../src/app/__tests__/)|
 |E2E test| `**/*.e2e-spec.ts` | [e2e](./e2e/)|
+|Coverage test| | coverage.txt [coverage](./coverage/coverage.txt)|
 
-- Use [navigationBar.spec.tsx](../src/features/app/components/navigation-bar/navigationBar.spec.tsx) as an example for component test
-- Use [homePage.e2e-spec.ts](./e2e/homePage/homePage.e2e-spec.ts) as an example for E2E test
+- Use [app.provider.spec.tsx](../src/app/__tests__/app.provider.spec.tsx) as an example for component test
+- Use [home-page.e2e-spec](./e2e/homePage/home-page.e2e-spec.ts) as an example for E2E test
 
 ## Configuration
 

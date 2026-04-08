@@ -12,7 +12,7 @@ Unit test files with file name suffix `**/*.spec.ts` should be placed inside `__
 |:-:|:-:|:-:|
 |Unit test| `**/*.spec.ts`| [health/__tests__](../src/modules/health/__tests__/)|
 |Integration test| `**/*.int-spec.ts` | [integration](./integration/)|
-|Coverage test| | coverage.txt [coverage](./coverage/)|
+|Coverage test| | coverage.txt [coverage](./coverage/coverage.txt)|
 
 - Use [health.controller.example.spec.ts](../src/modules/health/__tests__/health.controller.example.spec.ts) as an example for unit test
 - Use [app.controller.int-spec.ts](./integration/app/app.controller.int-spec.ts) as an example for integration test

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import "@testing-library/jest-dom";
 import { cleanup, render, screen } from "@testing-library/react";
 import type { ComponentType } from "react";
-import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.auth.context.useBcscAuth";
+import { mockedUseBcscAuth } from "tests/utils/mocks/auth/mock.useBcscAuth";
 
 jest.mock("@tanstack/react-router", () => ({
   createFileRoute: jest.fn((path: string) => {

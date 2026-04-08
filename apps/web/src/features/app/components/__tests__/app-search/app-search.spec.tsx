@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { mockedUseAppSearch } from "tests/utils/mocks/app/features/mock.app-search";
+import { mockedUseAppSearch } from "tests/utils/mocks/app/features/mock.useAppSearch";
 import { AppSearch } from "../../app-search";
 import type { NavItem } from "../../navigation-bar";
 
