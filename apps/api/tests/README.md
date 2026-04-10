@@ -50,7 +50,7 @@ npm run test "path/to/your/testfile.spec.ts"
 Run coverage test on with the following command line:
 
 ```bash
-npm run test:cov
+npm run test:cov:api
 ```
 
 ### Debug Testing

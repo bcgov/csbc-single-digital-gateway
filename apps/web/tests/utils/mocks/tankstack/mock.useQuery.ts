@@ -8,4 +8,4 @@ jest.mock("@tanstack/react-query", () => ({
   useQuery: jest.fn(),
 }));
 
-export const mockedUseQuery = useQuery as jest.Mock;
+export const mockUseQuery = useQuery as jest.Mock;

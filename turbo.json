@@ -140,14 +140,33 @@
       ]
     },
     "test:component": {},
-    "test:e2e": {
+    "test:cov:web": {
       "passThroughEnv": [
         "APP_PORT"
       ]
     },
-    "test:cov:web": {
+    "test:open": {
       "passThroughEnv": [
-        "APP_PORT"
+        "APP_PORT",
+        "BCSC_TEST_USERNAME",
+        "BCSC_TEST_PASSWORD",
+        "IDTEST_URL"
+      ]
+    },
+    "test:e2e": {
+      "passThroughEnv": [
+        "APP_PORT",
+        "BCSC_TEST_USERNAME",
+        "BCSC_TEST_PASSWORD",
+        "IDTEST_URL"
+      ]
+    },
+    "test:e2e:report": {
+      "passThroughEnv": [
+        "APP_PORT",
+        "BCSC_TEST_USERNAME",
+        "BCSC_TEST_PASSWORD",
+        "IDTEST_URL"
       ]
     }
   }

@@ -65,31 +65,41 @@
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "name": "Web E2E Test - Current File",
+      "name": "Web Coverage Test",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${fileDirname}",
-      "command": "npm run test:e2e -- ${fileBasename}",
+      "cwd": "${workspaceFolder}",
+      "command": "npm run test:cov:web",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Cypress E2E Test - Current File",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/cypress",
+      "command": "npm run test:e2e -- --spec \"${file}\"",
       "envFile": "${workspaceFolder}/.env",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "name": "Web E2E Test - All Files",
+      "name": "Cypress E2E Test - All Files",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/cypress",
       "command": "npm run test:e2e",
       "envFile": "${workspaceFolder}/.env",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "name": "Web Coverage Test",
+      "name": "Cypress E2E Test with Report",
       "type": "node-terminal",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "command": "npm run test:cov:web",
+      "cwd": "${workspaceFolder}/cypress",
+      "command": "npm run test:e2e:report",
+      "envFile": "${workspaceFolder}/.env",
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"]
     }

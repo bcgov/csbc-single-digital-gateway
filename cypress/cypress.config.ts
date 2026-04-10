@@ -1,0 +1,45 @@
+import { defineConfig } from "cypress";
+import dotenv from "dotenv";
+import fs from "node:fs";
+
+dotenv.config();
+
+export default defineConfig({
+  allowCypressEnv: false,
+  defaultBrowser: "chrome",
+  e2e: {
+    setupNodeEvents(on, config) {
+      on("task", {
+        fileExists(filePath) {
+          return fs.existsSync(filePath);
+        },
+      });
+      config.env.APP_URL = `http://localhost:${process.env.APP_PORT}`;
+      config.env.BCSC_TEST_USERNAME = process.env.BCSC_TEST_USERNAME;
+      config.env.BCSC_TEST_PASSWORD = process.env.BCSC_TEST_PASSWORD;
+      config.env.IDTEST_URL = "https://idtest.gov.bc.ca";
+      if (process.env.REPORT === "true") {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require("./node_modules/cypress-mochawesome-reporter/plugin")(on);
+      }
+      return config;
+    },
+    specPattern: ["cypress/e2e/**/*.e2e-cy.ts"],
+    fixturesFolder: "fixtures",
+    reporter:
+      process.env.REPORT === "true"
+        ? "./node_modules/cypress-mochawesome-reporter"
+        : "spec",
+    reporterOptions: {
+      charts: true,
+      reportPageTitle: "E2E Test Report",
+      reportFilename: "report-e2e",
+      embeddedScreenshots: true,
+      inlineAssets: true,
+      saveAllAttempts: false,
+      video: false,
+      screenshotOnRunFailure: false,
+    },
+    screenshotOnRunFailure: false,
+  },
+});

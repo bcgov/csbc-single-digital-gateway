@@ -1,5 +1,4 @@
 name: CSBC SDG Quality Assurance Testing
-# This workflow is executed during pull requests triggered by a user.
 
 on: 
   pull_request:
@@ -11,6 +10,7 @@ permissions:
 
 jobs:
   api-qa-testing:
+    name: API QA Testing
     runs-on: ubuntu-latest
     environment: development
     services:
@@ -27,7 +27,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    name: API QA Testing
     env:
       PORT: 4000
       NODE_ENV: test
@@ -78,14 +77,52 @@ jobs:
     name: Web QA Testing
     runs-on: ubuntu-latest
     environment: development
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
-      APP_PORT: 5173
+      PORT: 4000
       NODE_ENV: test
+      DB_NAME: test_db
+      DB_HOST: localhost
+      DB_USER: test_user
+      DB_PASS: test_password
+      DB_PORT: 5432
+      DB_SSL: false
+      OIDC_ISSUER: ${{ vars.API_OIDC_ISSUER }}
+      OIDC_CLIENT_ID: ${{ vars.API_OIDC_CLIENT_ID }}
+      OIDC_CLIENT_SECRET: ${{ secrets.API_OIDC_CLIENT_SECRET }}
+      OIDC_REDIRECT_URI: ${{ vars.API_OIDC_REDIRECT_URI }}
+      OIDC_POST_LOGOUT_REDIRECT_URI: ${{ vars.API_OIDC_POST_LOGOUT_REDIRECT_URI }}
+      OIDC_CLIENT_AUTH_METHOD: ${{ vars.API_OIDC_CLIENT_AUTH_METHOD }}
+      AUTH_OIDC_ISSUER: ${{ vars.API_AUTH_OIDC_ISSUER }}
+      AUTH_OIDC_CLIENT_ID: ${{ vars.API_AUTH_OIDC_CLIENT_ID }}
+      AUTH_OIDC_CLIENT_SECRET: ${{ secrets.API_AUTH_OIDC_CLIENT_SECRET }}
+      AUTH_OIDC_REDIRECT_URI: ${{ vars.API_AUTH_OIDC_REDIRECT_URI }}
+      AUTH_OIDC_POST_LOGOUT_REDIRECT_URI: ${{ vars.API_AUTH_OIDC_POST_LOGOUT_REDIRECT_URI }}
+      AUTH_OIDC_CLIENT_AUTH_METHOD: ${{ vars.API_AUTH_OIDC_CLIENT_AUTH_METHOD }}
+      SESSION_SECRET: ${{ secrets.API_SESSION_SECRET }}
+      FRONTEND_URL: ${{ vars.API_FRONTEND_URL }}
+      ADMIN_FRONTEND_URL: ${{ vars.API_ADMIN_FRONTEND_URL }}
+      APP_PORT: 5173
       VITE_API_URI: http://localhost:4000
       VITE_APP_NAME: "Single Digital Gateway"
       VITE_AUTH_URL: http://localhost:4000
       VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
       VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
+      BCSC_TEST_USERNAME: ${{ vars.BCSC_TEST_USERNAME }}
+      BCSC_TEST_PASSWORD: ${{ vars.BCSC_TEST_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -102,8 +139,11 @@ jobs:
       - name: Run Web Component Test with Coverage
         run: npm run test:cov:web
 
-      - name: Run Web Application (Background)
-        run: npm run dev:web &
-
-      - name: Run Web E2E Test
-        run: npm run test:e2e
+      - name: Run Web E2E Tests
+        uses: cypress-io/github-action@v7
+        with:
+          build: npm run build && npm run db:migrate
+          start: npm run dev
+          wait-on: 'http://localhost:5173'
+          browser: chrome
+          command: npm run test:e2e

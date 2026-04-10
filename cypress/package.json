@@ -1,0 +1,19 @@
+{
+  "name": "cypress",
+  "license": "Apache-2.0",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "npm run report:delete && cypress run --e2e",
+    "test:e2e:report": "npm run report:delete && cross-env REPORT=true cypress run --e2e",
+    "test:open": "npm run report:delete && cypress open",
+    "report:delete": "rm -rf cypress/reports/* || true",
+    "cookies:delete": "rm -r cypress/fixtures/auth-cookies.json || true"
+  },
+  "devDependencies": {
+    "cypress": "^15.13.1",
+    "cypress-mochawesome-reporter": "^4.0.2",
+    "dotenv": "^17.4.1"
+  }
+}
