@@ -5,7 +5,7 @@
     "path": "/",
     "secure": false,
     "httpOnly": true,
-    "expiry": 1775873597,
+    "expiry": 1775902292,
     "domain": "localhost",
     "sameSite": "lax"
   },

@@ -111,3 +111,4 @@ Thumbs.db
 # Cypress test files and folders
 **/cypress/reports
 **/cypress/screenshots
+**/cypress/fixtures/auth-cookies.json
