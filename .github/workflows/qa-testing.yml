@@ -135,20 +135,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build API Components
-        run: npm run build:api
-
-      - name: Build @Repo/DB Components
-        run: npm run build:@repo/db
+      - name: Build Components
+        run: npm run build
 
       - name: Database Migration
         run: npm run db:migrate
-
-      - name: Build Web Components
-        run: npm run build:web
-
-      - name: Build @Repo/UI Components
-        run: npm run build:@repo/ui
 
       - name: Run Web Component Test with Coverage
         run: npm run test:cov:web
@@ -158,6 +149,6 @@ jobs:
         with:
           install: false
           start: npm run dev
-          wait-on: 'http://localhost:5173'
+          wait-on: 'http://localhost:4000'
           browser: chrome
           command: npm run test:e2e
