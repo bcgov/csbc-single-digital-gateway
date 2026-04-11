@@ -73,8 +73,39 @@ jobs:
       - name: Run API Unit Test with Coverage
         run: npm run test:cov:api
 
-  web-qa-testing:
-    name: Web QA Testing
+  web-component-testing:
+    name: Web Component Testing
+    runs-on: ubuntu-latest
+    environment: development
+    env:
+      APP_PORT: 5173
+      NODE_ENV: test
+      VITE_API_URI: http://localhost:4000
+      VITE_APP_NAME: "Single Digital Gateway"
+      VITE_OIDC_ISSUER: ${{ vars.WEB_OIDC_ISSUER }}
+      VITE_OIDC_CLIENT_ID: $${ vars.WEB_OIDC_CLIENT_ID }
+      VITE_OIDC_REDIRECT_URI: http://localhost:5173/callback
+      VITE_OIDC_POST_LOGOUT_REDIRECT_URI: http://localhost:5173
+      VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
+      VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web Components
+        run: npm run build:web
+
+      - name: Build @Repo/UI Components
+        run: npm run build:@repo/ui
+
+      - name: Run Web Component Test with Coverage
+        run: npm run test:cov:web
+
+  web-e2e-testing:
+    name: Web E2E Testing
     runs-on: ubuntu-latest
     environment: development
     services:
@@ -127,23 +158,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Components
-        run: npm run build
-
-      - name: Database Migration
-        run: npm run db:migrate
-
-      - name: Run Web Component Test with Coverage
-        run: npm run test:cov:web
-
       - name: Run Web E2E Tests
         uses: cypress-io/github-action@v7
         with:
-          build: npm run build
-          start: npx turbo run dev -- --filter=api --filter=web
+          build: npm run build && npm run db:migrate
+          start: npm run dev
           wait-on: 'http://localhost:5173, http://localhost:4000'
           browser: chrome
-          command: npx turbo run test:e2e
+          command: npm run test:e2e
