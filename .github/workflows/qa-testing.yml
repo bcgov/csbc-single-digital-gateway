@@ -145,10 +145,14 @@ jobs:
         run: npm run test:cov:web
 
       - name: Start Apps for E2E
-        run: npm run dev
+        run: npm run dev > /tmp/dev.log 2>&1 &
 
-      - name: Wait for API
-        run: npx wait-on@8.0.1 http://localhost:4000
+      - name: Wait for API and Web
+        run: npx wait-on@8.0.1 http://localhost:4000 http://localhost:5173
 
       - name: Run Web E2E Tests
         run: npm run test:e2e
+
+      - name: Print dev logs on failure
+        if: failure()
+        run: cat /tmp/dev.log
