@@ -144,11 +144,11 @@ jobs:
       - name: Run Web Component Test with Coverage
         run: npm run test:cov:web
 
+      - name: Start Apps for E2E
+        run: npm run dev
+
+      - name: Wait for API
+        run: npx wait-on@8.0.1 http://localhost:4000
+
       - name: Run Web E2E Tests
-        uses: cypress-io/github-action@v7
-        with:
-          install: false
-          start: npm run dev
-          wait-on: 'http://localhost:4000'
-          browser: chrome
-          command: npm run test:e2e
+        run: npm run test:e2e
