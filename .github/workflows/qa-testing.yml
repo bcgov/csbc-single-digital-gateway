@@ -142,7 +142,7 @@ jobs:
           install: false
           working-directory: cypress
           start: npm --prefix .. run dev
-          wait-on: 'http://localhost:4000, http://localhost:5173'
+          wait-on: 'http://localhost:9000/health/live, http://localhost:5173'
           wait-on-timeout: 600
           browser: chrome
           command: npm run test:e2e
