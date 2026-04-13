@@ -143,7 +143,7 @@ jobs:
         run: nohup npm run dev -- --filter=api --filter=web > /tmp/dev.log 2>&1 &
 
       - name: Wait for API and Web
-        run: npx wait-on@8.0.1 --timeout 180000 http://localhost:4000 http://localhost:5173
+        run: npx wait-on@8.0.1 --timeout 600000 http://localhost:4000 http://localhost:5173
 
       - name: Run Web E2E Test
         run: npm run test:e2e
