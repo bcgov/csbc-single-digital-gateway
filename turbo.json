@@ -168,6 +168,7 @@
         "BCSC_TEST_PASSWORD",
         "IDTEST_URL"
       ]
-    }
+    },
+    "cookies:delete": {}
   }
 }

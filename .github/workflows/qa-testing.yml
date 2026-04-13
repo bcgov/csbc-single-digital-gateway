@@ -121,8 +121,8 @@ jobs:
       VITE_AUTH_URL: http://localhost:4000
       VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
       VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
-      BCSC_TEST_USERNAME: ${{ vars.BCSC_TEST_USERNAME }}
-      BCSC_TEST_PASSWORD: ${{ vars.BCSC_TEST_PASSWORD }}
+      BCSC_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
+      BCSC_TEST_PASSWORD: ${{ secrets.BCSC_TEST_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -155,3 +155,6 @@ jobs:
             tail -n 300 /tmp/dev.log \
               | sed -E 's/(CLIENT_SECRET|SESSION_SECRET|PASSWORD|TOKEN|KEY)=([^[:space:]]+)/\1=***REDACTED***/g'
           fi
+
+      - name: Remove Auth-Cookies File
+        run: npm run cookies:delete
