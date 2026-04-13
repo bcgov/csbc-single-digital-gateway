@@ -122,8 +122,6 @@ jobs:
       VITE_AUTH_URL: http://localhost:4000
       VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
       VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
-      BCSC_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
-      BCSC_TEST_PASSWORD: ${{ secrets.BCSC_TEST_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -150,6 +148,10 @@ jobs:
 
       - name: Run Web E2E Tests
         uses: cypress-io/github-action@v7
+        env:
+          APP_PORT: 5173
+          BCSC_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
+          BCSC_TEST_PASSWORD: ${{ secrets.BCSC_TEST_PASSWORD }}
         with:
           install: false
           working-directory: cypress
