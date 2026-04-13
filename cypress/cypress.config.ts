@@ -2,7 +2,7 @@ import { defineConfig } from "cypress";
 import { config as dotenvConfig } from "dotenv";
 import { existsSync } from "node:fs";
 
-dotenvConfig();
+dotenvConfig({ path: "../.env" });
 
 export default defineConfig({
   allowCypressEnv: false,

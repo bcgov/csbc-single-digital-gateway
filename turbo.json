@@ -157,16 +157,14 @@
       "passThroughEnv": [
         "APP_PORT",
         "BCSC_TEST_USERNAME",
-        "BCSC_TEST_PASSWORD",
-        "IDTEST_URL"
+        "BCSC_TEST_PASSWORD"
       ]
     },
     "test:e2e:report": {
       "passThroughEnv": [
         "APP_PORT",
         "BCSC_TEST_USERNAME",
-        "BCSC_TEST_PASSWORD",
-        "IDTEST_URL"
+        "BCSC_TEST_PASSWORD"
       ]
     },
     "cookies:delete": {}

@@ -9,7 +9,7 @@
     "test:e2e:report": "npm run report:delete && cross-env REPORT=true cypress run --e2e",
     "test:open": "npm run report:delete && cypress open",
     "report:delete": "rm -rf cypress/reports/* || true",
-    "cookies:delete": "rm -r cypress/fixtures/auth-cookies.json || true"
+    "cookies:delete": "rm -r cypress/cookies/auth-cookies.json || true"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

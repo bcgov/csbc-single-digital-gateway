@@ -2,7 +2,7 @@
  * Custom Cypress commands for handling authentication cookies.
  */
 Cypress.Commands.add("restoreCookiesFromFile", () => {
-  cy.readFile("cypress/fixtures/auth-cookies.json", { log: false }).then(
+  cy.readFile("cypress/cookies/auth-cookies.json", { log: false }).then(
     (cookies) => {
       cookies.forEach((cookie: any) => {
         cy.setCookie(cookie.name, cookie.value, {
@@ -63,7 +63,7 @@ Cypress.Commands.add("loginToObtainCookies", () => {
 
     // Save the cookies to a file for later use
     cy.getCookies().then((cookies) => {
-      cy.writeFile("cypress/fixtures/auth-cookies.json", cookies);
+      cy.writeFile("cypress/cookies/auth-cookies.json", cookies);
       cookies.forEach((cookie: any) => {
         cy.setCookie(cookie.name, cookie.value, {
           domain: cookie.domain,

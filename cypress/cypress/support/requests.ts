@@ -5,7 +5,7 @@
  * If the cookies are invalid, obtain new cookies by logging in.
  */
 export const restoreCookies = () => {
-  cy.task("fileExists", "cypress/fixtures/auth-cookies.json").then((exists) => {
+  cy.task("fileExists", "cypress/cookies/auth-cookies.json").then((exists) => {
     if (exists) {
       cy.env(["APP_URL"]).then(({ APP_URL }) => {
         cy.restoreCookiesFromFile();
