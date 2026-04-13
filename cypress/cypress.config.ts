@@ -14,10 +14,10 @@ export default defineConfig({
           return existsSync(filePath);
         },
       });
-      config.env.APP_URL = `http://localhost:5173`;
+      config.env.APP_URL = `http://localhost:${process.env.APP_PORT}`;
       config.env.IDTEST_URL = "https://idtest.gov.bc.ca";
-      config.env.TEST_USERNAME = "T00004267";
-      config.env.TEST_PASSWORD = "Rainy4@Day";
+      config.env.TEST_USERNAME = process.env.CYPRESS_TEST_USERNAME;
+      config.env.TEST_PASSWORD = process.env.CYPRESS_TEST_PASSWORD;
       if (process.env.REPORT === "true") {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("./node_modules/cypress-mochawesome-reporter/plugin")(on);
