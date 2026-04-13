@@ -136,11 +136,10 @@ jobs:
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Start API for E2E
-        run: nohup npm run dev -- --filter=api > /tmp/api-dev.log 2>&1 &
-
-      - name: Start Web for E2E
-        run: nohup npm run dev -- --filter=web > /tmp/web-dev.log 2>&1 &
+      - name: Start API and Web for E2E
+        run: |
+          nohup npm run dev -- --filter=api > /tmp/api-dev.log 2>&1 &
+          nohup npm run dev -- --filter=web > /tmp/web-dev.log 2>&1 &
 
       - name: Wait for API and Web
         run: npx wait-on@8.0.1 --timeout 600000 http://localhost:4000 http://localhost:5173
@@ -151,8 +150,14 @@ jobs:
       - name: Print dev logs on failure
         if: failure()
         run: |
-          if [ -f /tmp/dev.log ]; then
-            tail -n 300 /tmp/dev.log \
+          echo "=== API LOG ===" 
+          if [ -f /tmp/api-dev.log ]; then
+            tail -n 300 /tmp/api-dev.log \
+              | sed -E 's/(CLIENT_SECRET|SESSION_SECRET|PASSWORD|TOKEN|KEY)=([^[:space:]]+)/\1=***REDACTED***/g'
+          fi
+          echo "=== WEB LOG ==="
+          if [ -f /tmp/web-dev.log ]; then
+            tail -n 300 /tmp/web-dev.log \
               | sed -E 's/(CLIENT_SECRET|SESSION_SECRET|PASSWORD|TOKEN|KEY)=([^[:space:]]+)/\1=***REDACTED***/g'
           fi
 
