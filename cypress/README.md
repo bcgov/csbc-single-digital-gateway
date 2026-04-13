@@ -23,8 +23,8 @@ Cypress supports a variety of ways to run tests on local environments. These tes
 
 ```
 APP_PORT=5173
-BCSC_TEST_USERNAME=
-BCSC_TEST_PASSWORD=
+CYPRESS_TEST_USERNAME=
+CYPRESS_TEST_PASSWORD=
 ```
 
 ### Terminal Testing

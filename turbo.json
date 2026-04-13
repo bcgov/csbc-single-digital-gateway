@@ -148,23 +148,22 @@
     "test:open": {
       "passThroughEnv": [
         "APP_PORT",
-        "BCSC_TEST_USERNAME",
-        "BCSC_TEST_PASSWORD",
-        "IDTEST_URL"
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD"
       ]
     },
     "test:e2e": {
       "passThroughEnv": [
         "APP_PORT",
-        "BCSC_TEST_USERNAME",
-        "BCSC_TEST_PASSWORD"
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD"
       ]
     },
     "test:e2e:report": {
       "passThroughEnv": [
         "APP_PORT",
-        "BCSC_TEST_USERNAME",
-        "BCSC_TEST_PASSWORD"
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD"
       ]
     },
     "cookies:delete": {}

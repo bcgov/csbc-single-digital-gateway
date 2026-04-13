@@ -15,9 +15,9 @@ export default defineConfig({
         },
       });
       config.env.APP_URL = `http://localhost:${process.env.APP_PORT}`;
-      config.env.BCSC_TEST_USERNAME = process.env.BCSC_TEST_USERNAME;
-      config.env.BCSC_TEST_PASSWORD = process.env.BCSC_TEST_PASSWORD;
       config.env.IDTEST_URL = "https://idtest.gov.bc.ca";
+      config.env.TEST_USERNAME = process.env.CYPRESS_TEST_USERNAME;
+      config.env.TEST_PASSWORD = process.env.CYPRESS_TEST_PASSWORD;
       if (process.env.REPORT === "true") {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("./node_modules/cypress-mochawesome-reporter/plugin")(on);

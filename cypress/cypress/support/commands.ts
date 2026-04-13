@@ -33,14 +33,14 @@ Cypress.Commands.add("loginToObtainCookies", () => {
 
         // Wait for the URL to change to the login form page
         cy.origin(IDTEST_URL, () => {
-          cy.env(["BCSC_TEST_USERNAME", "BCSC_TEST_PASSWORD"]).then(
-            ({ BCSC_TEST_USERNAME, BCSC_TEST_PASSWORD }) => {
+          cy.env(["TEST_USERNAME", "TEST_PASSWORD"]).then(
+            ({ TEST_USERNAME, TEST_PASSWORD }) => {
               cy.contains("Test with username and password").click();
 
               // Wait for the URL to change to the login auth page
               cy.url({ timeout: 20000 });
-              cy.get('input[name="username"]').type(BCSC_TEST_USERNAME);
-              cy.get('input[name="password"]').type(BCSC_TEST_PASSWORD);
+              cy.get('input[name="username"]').type(TEST_USERNAME);
+              cy.get('input[name="password"]').type(TEST_PASSWORD);
               cy.contains("Continue").click();
 
               // Wait for the URL to change to the login username page
