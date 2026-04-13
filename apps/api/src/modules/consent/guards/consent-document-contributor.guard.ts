@@ -37,8 +37,10 @@ export class ConsentDocumentContributorGuard implements CanActivate {
       throw new ForbiddenException('Insufficient permissions');
     }
 
-    const contributorRole =
-      await this.contributorsService.getContributorRole(docId, userId);
+    const contributorRole = await this.contributorsService.getContributorRole(
+      docId,
+      userId,
+    );
 
     if (!contributorRole) {
       throw new ForbiddenException('Insufficient permissions');

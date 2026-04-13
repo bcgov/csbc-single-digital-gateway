@@ -5,8 +5,33 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { type Database, and, asc, desc, eq, schema, sql } from '@repo/db';
+import {
+  type Database,
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  schema,
+  sql,
+} from '@repo/db';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
+
+export interface FlatService {
+  id: string;
+  serviceTypeId: string;
+  orgUnitId: string;
+  versionId: string;
+  publishedAt: string;
+  locale: string;
+  name: string;
+  description: string | null;
+  content: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const FALLBACK_LOCALE = 'en';
 
 @Injectable()
 export class ServicesService {
@@ -82,10 +107,7 @@ export class ServicesService {
         .from(schema.serviceTypeVersions)
         .where(
           and(
-            eq(
-              schema.serviceTypeVersions.serviceTypeId,
-              body.serviceTypeId,
-            ),
+            eq(schema.serviceTypeVersions.serviceTypeId, body.serviceTypeId),
             eq(schema.serviceTypeVersions.status, 'published'),
           ),
         )
@@ -146,12 +168,7 @@ export class ServicesService {
     }
 
     if (filters.serviceTypeId) {
-      conditions.push(
-        eq(
-          schema.services.serviceTypeId,
-          filters.serviceTypeId,
-        ),
-      );
+      conditions.push(eq(schema.services.serviceTypeId, filters.serviceTypeId));
     }
 
     // Staff: only services where they are a contributor
@@ -167,7 +184,7 @@ export class ServicesService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const [docs, countResult] = await Promise.all([
+    const [rows, countResult] = await Promise.all([
       this.db
         .select()
         .from(schema.services)
@@ -181,11 +198,11 @@ export class ServicesService {
         .where(where),
     ]);
 
-    const totalDocs = countResult[0].count;
-    const totalPages = Math.ceil(totalDocs / limit);
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
 
-    const enrichedDocs = await Promise.all(
-      docs.map(async (doc) => {
+    const data = await Promise.all(
+      rows.map(async (doc) => {
         const targetVersionId = doc.publishedServiceVersionId;
 
         let translation: { name: string; description: string | null } | null =
@@ -195,14 +212,12 @@ export class ServicesService {
           const rows = await this.db
             .select({
               name: schema.serviceVersionTranslations.name,
-              description:
-                schema.serviceVersionTranslations.description,
+              description: schema.serviceVersionTranslations.description,
             })
             .from(schema.serviceVersionTranslations)
             .where(
               eq(
-                schema.serviceVersionTranslations
-                  .serviceVersionId,
+                schema.serviceVersionTranslations.serviceVersionId,
                 targetVersionId,
               ),
             )
@@ -214,24 +229,17 @@ export class ServicesService {
           const rows = await this.db
             .select({
               name: schema.serviceVersionTranslations.name,
-              description:
-                schema.serviceVersionTranslations.description,
+              description: schema.serviceVersionTranslations.description,
             })
             .from(schema.serviceVersionTranslations)
             .innerJoin(
               schema.serviceVersions,
               eq(
-                schema.serviceVersionTranslations
-                  .serviceVersionId,
+                schema.serviceVersionTranslations.serviceVersionId,
                 schema.serviceVersions.id,
               ),
             )
-            .where(
-              eq(
-                schema.serviceVersions.serviceId,
-                doc.id,
-              ),
-            )
+            .where(eq(schema.serviceVersions.serviceId, doc.id))
             .orderBy(desc(schema.serviceVersions.version))
             .limit(1);
           translation = rows[0] ?? null;
@@ -245,7 +253,7 @@ export class ServicesService {
       }),
     );
 
-    return { docs: enrichedDocs, totalDocs, totalPages, page, limit };
+    return { data, total, totalPages, page, limit };
   }
 
   async findById(serviceId: string) {
@@ -266,12 +274,7 @@ export class ServicesService {
       const versionResults = await this.db
         .select()
         .from(schema.serviceVersions)
-        .where(
-          eq(
-            schema.serviceVersions.id,
-            doc.publishedServiceVersionId,
-          ),
-        )
+        .where(eq(schema.serviceVersions.id, doc.publishedServiceVersionId))
         .limit(1);
 
       if (versionResults.length > 0) {
@@ -280,8 +283,7 @@ export class ServicesService {
           .from(schema.serviceVersionTranslations)
           .where(
             eq(
-              schema.serviceVersionTranslations
-                .serviceVersionId,
+              schema.serviceVersionTranslations.serviceVersionId,
               versionResults[0].id,
             ),
           );
@@ -301,8 +303,7 @@ export class ServicesService {
         id: schema.serviceVersions.id,
         version: schema.serviceVersions.version,
         status: schema.serviceVersions.status,
-        serviceTypeVersionId:
-          schema.serviceVersions.serviceTypeVersionId,
+        serviceTypeVersionId: schema.serviceVersions.serviceTypeVersionId,
         publishedAt: schema.serviceVersions.publishedAt,
         archivedAt: schema.serviceVersions.archivedAt,
         createdAt: schema.serviceVersions.createdAt,
@@ -317,17 +318,10 @@ export class ServicesService {
         const rows = await this.db
           .select({
             name: schema.serviceVersionTranslations.name,
-            description:
-              schema.serviceVersionTranslations.description,
+            description: schema.serviceVersionTranslations.description,
           })
           .from(schema.serviceVersionTranslations)
-          .where(
-            eq(
-              schema.serviceVersionTranslations
-                .serviceVersionId,
-              v.id,
-            ),
-          )
+          .where(eq(schema.serviceVersionTranslations.serviceVersionId, v.id))
           .limit(1);
         return {
           ...v,
@@ -394,10 +388,7 @@ export class ServicesService {
       .from(schema.serviceTypeVersions)
       .where(
         and(
-          eq(
-            schema.serviceTypeVersions.serviceTypeId,
-            doc[0].serviceTypeId,
-          ),
+          eq(schema.serviceTypeVersions.serviceTypeId, doc[0].serviceTypeId),
           eq(schema.serviceTypeVersions.status, 'published'),
         ),
       )
@@ -446,17 +437,15 @@ export class ServicesService {
         );
 
       if (previousTranslations.length > 0) {
-        await this.db
-          .insert(schema.serviceVersionTranslations)
-          .values(
-            previousTranslations.map((t) => ({
-              serviceVersionId: version.id,
-              locale: t.locale,
-              name: t.name,
-              description: t.description,
-              content: t.content,
-            })),
-          );
+        await this.db.insert(schema.serviceVersionTranslations).values(
+          previousTranslations.map((t) => ({
+            serviceVersionId: version.id,
+            locale: t.locale,
+            name: t.name,
+            description: t.description,
+            content: t.content,
+          })),
+        );
       }
     }
 
@@ -482,12 +471,7 @@ export class ServicesService {
     const translations = await this.db
       .select()
       .from(schema.serviceVersionTranslations)
-      .where(
-        eq(
-          schema.serviceVersionTranslations.serviceVersionId,
-          versionId,
-        ),
-      );
+      .where(eq(schema.serviceVersionTranslations.serviceVersionId, versionId));
 
     const firstTranslation = translations[0];
     return {
@@ -502,7 +486,11 @@ export class ServicesService {
     serviceId: string,
     versionId: string,
     locale: string,
-    body: { name: string; description?: string; content: Record<string, unknown> },
+    body: {
+      name: string;
+      description?: string;
+      content: Record<string, unknown>;
+    },
   ) {
     const version = await this.db
       .select()
@@ -575,10 +563,7 @@ export class ServicesService {
         .select({ id: schema.serviceVersionTranslations.id })
         .from(schema.serviceVersionTranslations)
         .where(
-          eq(
-            schema.serviceVersionTranslations.serviceVersionId,
-            versionId,
-          ),
+          eq(schema.serviceVersionTranslations.serviceVersionId, versionId),
         )
         .limit(1);
 
@@ -602,10 +587,7 @@ export class ServicesService {
           .update(schema.serviceVersions)
           .set({ status: 'archived', archivedAt: new Date() })
           .where(
-            eq(
-              schema.serviceVersions.id,
-              doc[0].publishedServiceVersionId,
-            ),
+            eq(schema.serviceVersions.id, doc[0].publishedServiceVersionId),
           );
       }
 
@@ -659,15 +641,216 @@ export class ServicesService {
         .where(
           and(
             eq(schema.services.id, serviceId),
-            eq(
-              schema.services.publishedServiceVersionId,
-              versionId,
-            ),
+            eq(schema.services.publishedServiceVersionId, versionId),
           ),
         );
 
       return archived;
     });
+  }
+
+  async findAllPublished(
+    page: number,
+    limit: number,
+    locale: string,
+    filters: {
+      serviceTypeId?: string;
+      orgUnitId?: string;
+      search?: string;
+    },
+  ): Promise<{
+    data: FlatService[];
+    total: number;
+    totalPages: number;
+    page: number;
+    limit: number;
+  }> {
+    const offset = (page - 1) * limit;
+
+    const conditions = [
+      sql`${schema.services.publishedServiceVersionId} IS NOT NULL`,
+    ];
+
+    if (filters.serviceTypeId) {
+      conditions.push(eq(schema.services.serviceTypeId, filters.serviceTypeId));
+    }
+    if (filters.orgUnitId) {
+      conditions.push(eq(schema.services.orgUnitId, filters.orgUnitId));
+    }
+    if (filters.search) {
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM ${schema.serviceVersionTranslations} svt
+          WHERE svt.${sql.identifier('service_version_id')} = ${schema.services.publishedServiceVersionId}
+            AND svt.${sql.identifier('name')} ILIKE ${`%${filters.search}%`}
+        )`,
+      );
+    }
+
+    const where = and(...conditions);
+
+    const [rows, countResult] = await Promise.all([
+      this.db
+        .select({
+          id: schema.services.id,
+          serviceTypeId: schema.services.serviceTypeId,
+          orgUnitId: schema.services.orgUnitId,
+          createdAt: schema.services.createdAt,
+          updatedAt: schema.services.updatedAt,
+          versionId: schema.serviceVersions.id,
+          publishedAt: schema.serviceVersions.publishedAt,
+        })
+        .from(schema.services)
+        .innerJoin(
+          schema.serviceVersions,
+          eq(
+            schema.serviceVersions.id,
+            schema.services.publishedServiceVersionId,
+          ),
+        )
+        .where(where)
+        .orderBy(asc(schema.services.createdAt))
+        .limit(limit)
+        .offset(offset),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(schema.services)
+        .where(where),
+    ]);
+
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
+
+    if (rows.length === 0) {
+      return { data: [], total, totalPages, page, limit };
+    }
+
+    const versionIds = rows.map((r) => r.versionId);
+    const translations = await this.db
+      .select()
+      .from(schema.serviceVersionTranslations)
+      .where(
+        and(
+          inArray(
+            schema.serviceVersionTranslations.serviceVersionId,
+            versionIds,
+          ),
+          inArray(schema.serviceVersionTranslations.locale, [
+            locale,
+            FALLBACK_LOCALE,
+          ]),
+        ),
+      );
+
+    const byVersion = new Map<
+      string,
+      Map<string, (typeof translations)[number]>
+    >();
+    for (const t of translations) {
+      let inner = byVersion.get(t.serviceVersionId);
+      if (!inner) {
+        inner = new Map();
+        byVersion.set(t.serviceVersionId, inner);
+      }
+      inner.set(t.locale, t);
+    }
+
+    const data: FlatService[] = [];
+    for (const r of rows) {
+      const localeMap = byVersion.get(r.versionId);
+      const translation =
+        localeMap?.get(locale) ?? localeMap?.get(FALLBACK_LOCALE);
+      if (!translation || !r.publishedAt) continue;
+      data.push(this.toFlatService(r, translation));
+    }
+
+    return { data, total, totalPages, page, limit };
+  }
+
+  async findOnePublished(
+    serviceId: string,
+    locale: string,
+  ): Promise<FlatService> {
+    const rows = await this.db
+      .select({
+        id: schema.services.id,
+        serviceTypeId: schema.services.serviceTypeId,
+        orgUnitId: schema.services.orgUnitId,
+        createdAt: schema.services.createdAt,
+        updatedAt: schema.services.updatedAt,
+        versionId: schema.serviceVersions.id,
+        publishedAt: schema.serviceVersions.publishedAt,
+      })
+      .from(schema.services)
+      .innerJoin(
+        schema.serviceVersions,
+        eq(
+          schema.serviceVersions.id,
+          schema.services.publishedServiceVersionId,
+        ),
+      )
+      .where(
+        and(
+          eq(schema.services.id, serviceId),
+          sql`${schema.services.publishedServiceVersionId} IS NOT NULL`,
+        ),
+      )
+      .limit(1);
+
+    if (rows.length === 0) {
+      throw new NotFoundException(`Service ${serviceId} not found`);
+    }
+
+    const row = rows[0];
+    const translation = await this.resolveTranslation(row.versionId, locale);
+    if (!translation || !row.publishedAt) {
+      throw new NotFoundException(`Service ${serviceId} not found`);
+    }
+
+    return this.toFlatService(row, translation);
+  }
+
+  async findOneVersion(
+    serviceId: string,
+    versionId: string,
+    locale: string,
+  ): Promise<FlatService> {
+    const rows = await this.db
+      .select({
+        id: schema.services.id,
+        serviceTypeId: schema.services.serviceTypeId,
+        orgUnitId: schema.services.orgUnitId,
+        createdAt: schema.services.createdAt,
+        updatedAt: schema.services.updatedAt,
+        versionId: schema.serviceVersions.id,
+        versionStatus: schema.serviceVersions.status,
+        publishedAt: schema.serviceVersions.publishedAt,
+      })
+      .from(schema.serviceVersions)
+      .innerJoin(
+        schema.services,
+        eq(schema.services.id, schema.serviceVersions.serviceId),
+      )
+      .where(
+        and(
+          eq(schema.serviceVersions.id, versionId),
+          eq(schema.serviceVersions.serviceId, serviceId),
+          inArray(schema.serviceVersions.status, ['published', 'archived']),
+        ),
+      )
+      .limit(1);
+
+    if (rows.length === 0) {
+      throw new NotFoundException(`Version ${versionId} not found`);
+    }
+
+    const row = rows[0];
+    const translation = await this.resolveTranslation(row.versionId, locale);
+    if (!translation || !row.publishedAt) {
+      throw new NotFoundException(`Version ${versionId} not found`);
+    }
+
+    return this.toFlatService(row, translation);
   }
 
   async delete(serviceId: string) {
@@ -690,5 +873,58 @@ export class ServicesService {
     await this.db
       .delete(schema.services)
       .where(eq(schema.services.id, serviceId));
+  }
+
+  private async resolveTranslation(versionId: string, locale: string) {
+    const translations = await this.db
+      .select()
+      .from(schema.serviceVersionTranslations)
+      .where(
+        and(
+          eq(schema.serviceVersionTranslations.serviceVersionId, versionId),
+          inArray(schema.serviceVersionTranslations.locale, [
+            locale,
+            FALLBACK_LOCALE,
+          ]),
+        ),
+      );
+
+    return (
+      translations.find((t) => t.locale === locale) ??
+      translations.find((t) => t.locale === FALLBACK_LOCALE) ??
+      null
+    );
+  }
+
+  private toFlatService(
+    row: {
+      id: string;
+      serviceTypeId: string;
+      orgUnitId: string;
+      createdAt: Date;
+      updatedAt: Date;
+      versionId: string;
+      publishedAt: Date | null;
+    },
+    translation: {
+      locale: string;
+      name: string;
+      description: string | null;
+      content: unknown;
+    },
+  ): FlatService {
+    return {
+      id: row.id,
+      serviceTypeId: row.serviceTypeId,
+      orgUnitId: row.orgUnitId,
+      versionId: row.versionId,
+      publishedAt: row.publishedAt!.toISOString(),
+      locale: translation.locale,
+      name: translation.name,
+      description: translation.description,
+      content: translation.content as Record<string, unknown>,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
   }
 }

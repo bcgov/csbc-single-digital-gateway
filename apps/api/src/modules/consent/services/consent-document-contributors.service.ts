@@ -28,16 +28,10 @@ export class ConsentDocumentContributorsService {
         schema.users,
         eq(schema.consentDocumentContributors.userId, schema.users.id),
       )
-      .where(
-        eq(schema.consentDocumentContributors.consentDocumentId, docId),
-      );
+      .where(eq(schema.consentDocumentContributors.consentDocumentId, docId));
   }
 
-  async addContributor(
-    docId: string,
-    userId: string,
-    role: 'owner',
-  ) {
+  async addContributor(docId: string, userId: string, role: 'owner') {
     try {
       const [result] = await this.db
         .insert(schema.consentDocumentContributors)

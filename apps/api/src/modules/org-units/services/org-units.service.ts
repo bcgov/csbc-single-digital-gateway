@@ -65,7 +65,7 @@ export class OrgUnitsService {
 
     const whereClause = and(accessFilter, searchFilter);
 
-    const [docs, countResult] = await Promise.all([
+    const [data, countResult] = await Promise.all([
       this.db
         .select()
         .from(schema.orgUnits)
@@ -79,10 +79,10 @@ export class OrgUnitsService {
         .where(whereClause),
     ]);
 
-    const totalDocs = countResult[0].count;
-    const totalPages = Math.ceil(totalDocs / limit);
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
 
-    return { docs, totalDocs, totalPages, page, limit };
+    return { data, total, totalPages, page, limit };
   }
 
   async findById(id: string) {

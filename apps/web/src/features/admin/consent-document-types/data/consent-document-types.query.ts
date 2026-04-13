@@ -68,8 +68,8 @@ const ConsentDocumentTypeListItemDto = z.object({
 });
 
 const ConsentDocumentTypesPageDto = z.object({
-  docs: z.array(ConsentDocumentTypeListItemDto),
-  totalDocs: z.number(),
+  data: z.array(ConsentDocumentTypeListItemDto),
+  total: z.number(),
   totalPages: z.number(),
   page: z.number(),
   limit: z.number(),

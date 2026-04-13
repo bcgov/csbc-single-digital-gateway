@@ -126,7 +126,7 @@ function DocumentsListPage() {
       )}
       {data && (
         <DocumentsTable
-          documents={data.docs}
+          documents={data.data}
           currentPage={data.page}
           totalPages={data.totalPages}
           onPageChange={goToPage}

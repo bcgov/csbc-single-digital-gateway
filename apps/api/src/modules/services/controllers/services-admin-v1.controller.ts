@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { IdirRoles } from 'src/common/decorators/idir-roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UsersService } from '../../users/services/users.service';
 import { RequiresOwner } from '../decorators/requires-owner.decorator';
@@ -31,7 +31,7 @@ import { ServicesService } from '../services/services.service';
 
 @Controller('admin/services')
 @UseGuards(RolesGuard)
-@Roles('admin', 'staff')
+@IdirRoles('admin', 'staff')
 export class ServicesAdminV1Controller {
   constructor(
     private readonly servicesService: ServicesService,
@@ -98,14 +98,20 @@ export class ServicesAdminV1Controller {
   @UseGuards(ServiceContributorGuard)
   @RequiresOwner()
   publishVersion(@Param() params: ServiceVersionIdParamDto) {
-    return this.servicesService.publishVersion(params.serviceId, params.versionId);
+    return this.servicesService.publishVersion(
+      params.serviceId,
+      params.versionId,
+    );
   }
 
   @Post(':serviceId/versions/:versionId/archive')
   @UseGuards(ServiceContributorGuard)
   @RequiresOwner()
   archiveVersion(@Param() params: ServiceVersionIdParamDto) {
-    return this.servicesService.archiveVersion(params.serviceId, params.versionId);
+    return this.servicesService.archiveVersion(
+      params.serviceId,
+      params.versionId,
+    );
   }
 
   @Get(':serviceId/contributors')
@@ -129,7 +135,7 @@ export class ServicesAdminV1Controller {
   }
 
   @Delete(':serviceId')
-  @Roles('admin')
+  @IdirRoles('admin')
   deleteService(@Param() params: ServiceIdParamDto) {
     return this.servicesService.delete(params.serviceId);
   }

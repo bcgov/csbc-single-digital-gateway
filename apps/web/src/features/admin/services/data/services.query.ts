@@ -77,8 +77,8 @@ export const ServiceDto = ServiceListItemDto.extend({
 export type Service = z.infer<typeof ServiceDto>;
 
 const ServicesPageDto = z.object({
-  docs: z.array(ServiceListItemDto),
-  totalDocs: z.number(),
+  data: z.array(ServiceListItemDto),
+  total: z.number(),
   totalPages: z.number(),
   page: z.number(),
   limit: z.number(),

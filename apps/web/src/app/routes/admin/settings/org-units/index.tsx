@@ -85,7 +85,7 @@ function OrgUnitsListPage() {
       )}
       {data && (
         <OrgUnitsTable
-          orgUnits={data.docs}
+          orgUnits={data.data}
           currentPage={data.page}
           totalPages={data.totalPages}
           onPageChange={goToPage}

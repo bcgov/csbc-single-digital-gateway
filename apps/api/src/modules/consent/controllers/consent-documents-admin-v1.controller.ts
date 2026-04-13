@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { IdirRoles } from 'src/common/decorators/idir-roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UsersService } from '../../users/services/users.service';
 import { RequiresOwner } from '../decorators/requires-owner.decorator';
@@ -31,7 +31,7 @@ import { ConsentDocumentsService } from '../services/consent-documents.service';
 
 @Controller('admin/consent/documents')
 @UseGuards(RolesGuard)
-@Roles('admin', 'staff')
+@IdirRoles('admin', 'staff')
 export class ConsentDocumentsAdminV1Controller {
   constructor(
     private readonly documentsService: ConsentDocumentsService,
@@ -129,7 +129,7 @@ export class ConsentDocumentsAdminV1Controller {
   }
 
   @Delete(':docId')
-  @Roles('admin')
+  @IdirRoles('admin')
   deleteDocument(@Param() params: DocIdParamDto) {
     return this.documentsService.delete(params.docId);
   }

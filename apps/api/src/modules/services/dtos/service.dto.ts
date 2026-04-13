@@ -35,7 +35,9 @@ export const CreateServiceBodySchema = z.object({
   content: z.record(z.string(), z.unknown()).optional(),
 });
 
-export class CreateServiceBodyDto extends createZodDto(CreateServiceBodySchema) {}
+export class CreateServiceBodyDto extends createZodDto(
+  CreateServiceBodySchema,
+) {}
 
 export const UpsertServiceTranslationBodySchema = z.object({
   name: z.string().min(1),

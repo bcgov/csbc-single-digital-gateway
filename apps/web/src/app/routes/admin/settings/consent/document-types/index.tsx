@@ -89,7 +89,7 @@ function DocumentTypesListPage() {
       )}
       {data && (
         <DocumentTypesTable
-          types={data.docs}
+          types={data.data}
           currentPage={data.page}
           totalPages={data.totalPages}
           onPageChange={goToPage}

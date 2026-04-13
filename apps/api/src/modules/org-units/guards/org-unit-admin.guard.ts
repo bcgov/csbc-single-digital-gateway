@@ -57,8 +57,10 @@ export class OrgUnitAdminGuard implements CanActivate {
     }
 
     // Check if admin of any ancestor org unit
-    const isAncestorAdmin =
-      await this.orgUnitsService.isAncestorAdmin(orgUnitId, userId);
+    const isAncestorAdmin = await this.orgUnitsService.isAncestorAdmin(
+      orgUnitId,
+      userId,
+    );
     if (isAncestorAdmin) {
       return true;
     }

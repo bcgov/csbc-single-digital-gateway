@@ -1,15 +1,4 @@
-import {
-  AccordionContent,
-  AccordionGroup,
-  AccordionItem,
-  AccordionTrigger,
-  Button,
-  buttonVariants,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@repo/ui";
+import { buttonVariants } from "@repo/ui";
 import { IconCake, IconPlayerPlay } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
@@ -21,14 +10,13 @@ import { LexicalContent } from "../../../../../features/services/components/lexi
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
 import { ResourcesSupportAccordion } from "../../../../../features/services/components/resources-support-accordion.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
-import { consentDocumentsByIdQueryOptions } from "../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
-export const Route = createFileRoute("/app/services/$serviceSlug/")({
+export const Route = createFileRoute("/app/services/$serviceId/")({
   loader: async ({ params }) => {
     const services = await queryClient.ensureQueryData(servicesQueryOptions);
-    const service = services.find((s) => s.slug === params.serviceSlug);
+    const service = services.find((s) => s.id === params.serviceId);
     if (!service) {
       throw notFound();
     }
@@ -51,7 +39,7 @@ function RouteComponent() {
   const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService } = Route.useLoaderData();
   const service =
-    services.find((s) => s.slug === loaderService.slug) ?? loaderService;
+    services.find((s) => s.id === loaderService.id) ?? loaderService;
   const descriptionRef = useRef<HTMLHeadingElement>(null);
   const [isStickyHeaderVisible, setStickyHeaderVisible] = useState(false);
 
@@ -76,7 +64,7 @@ function RouteComponent() {
         <div className="flex flex-col gap-4 flex-1">
           <h1>{service.name}</h1>
           <p className="text-muted-foreground" ref={descriptionRef}>
-            {service.description?.short}
+            {service.description}
           </p>
         </div>
         <Link
@@ -92,50 +80,6 @@ function RouteComponent() {
         >
           <IconPlayerPlay size={16} /> External button
         </a>
-        {service.applications && service.applications.length === 1 && (
-          <div className="flex items-center">
-            <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80">
-              <Link
-                className="flex items-center gap-2"
-                to="/app/services/$serviceSlug/apply/$applicationId"
-                params={{
-                  serviceSlug: service.slug,
-                  applicationId: service.applications[0].id,
-                }}
-              >
-                <IconPlayerPlay size={16} />
-                Start online application
-              </Link>
-            </Button>
-          </div>
-        )}
-        {service.applications && service.applications.length > 1 && (
-          <div className="flex items-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger className=" w-full md:w-auto">
-                <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80 w-full md:w-auto">
-                  <IconPlayerPlay />
-                  Start online application
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-50">
-                {service.applications.map((app) => (
-                  <DropdownMenuItem key={app.id}>
-                    <Link
-                      to="/app/services/$serviceSlug/apply/$applicationId"
-                      params={{
-                        serviceSlug: service.slug,
-                        applicationId: app.id,
-                      }}
-                    >
-                      {app.label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
       </div>
       <ServicePageNavigation
         serviceName={service.name}
@@ -149,7 +93,6 @@ function RouteComponent() {
               id="overview"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              {/* placeholder - having an h2 would be good here as we're recommending the RTE content only use h3-h6 */}
               <h2>About</h2>
               <p>
                 Income Assistance provides temporary financial support to help
@@ -158,20 +101,6 @@ function RouteComponent() {
               </p>
 
               {service.content && <LexicalContent content={service.content} />}
-            </div>
-            {/* Data & privacy */}
-            <div
-              id="data-and-privacy"
-              className="scroll-mt-20 flex flex-col gap-4 mb-4"
-            >
-              <h2 className="section-heading">Data & privacy</h2>
-              <div className="flex flex-col gap-4">
-                <ConsentDocumentsAccordion
-                  documentIds={(service.settings?.consent ?? []).map(
-                    ({ documentId }) => documentId,
-                  )}
-                />
-              </div>
             </div>
             {/* Eligibility criteria */}
             <div
@@ -297,35 +226,6 @@ function RouteComponent() {
         </div>
       </div>
     </div>
-  );
-}
-
-function ConsentDocumentsAccordion({ documentIds }: { documentIds: string[] }) {
-  const { data: documents = [] } = useQuery(
-    consentDocumentsByIdQueryOptions(documentIds),
-  );
-
-  if (documents.length === 0) return null;
-
-  return (
-    <AccordionGroup
-      title="Privacy statements"
-      description="Before you proceed with the application, you will be prompted to agree to the following:"
-      values={documents.map((doc) => doc.id)}
-    >
-      {documents.map((doc) => (
-        <AccordionItem key={doc.id} value={doc.id}>
-          <AccordionTrigger>{doc.name}</AccordionTrigger>
-          <AccordionContent>
-            {doc.content ? (
-              <LexicalContent content={doc.content} />
-            ) : (
-              <p className="text-muted-foreground">No content available.</p>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      ))}
-    </AccordionGroup>
   );
 }
 

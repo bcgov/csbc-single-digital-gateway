@@ -126,7 +126,7 @@ function ServicesListPage() {
       )}
       {data && (
         <ServicesTable
-          services={data.docs}
+          services={data.data}
           currentPage={data.page}
           totalPages={data.totalPages}
           onPageChange={goToPage}

@@ -29,9 +29,7 @@ export const SearchUsersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
-export class SearchUsersQueryDto extends createZodDto(
-  SearchUsersQuerySchema,
-) {}
+export class SearchUsersQueryDto extends createZodDto(SearchUsersQuerySchema) {}
 
 export const AddMemberBodySchema = z.object({
   userId: z.string().uuid(),

@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { IdirRoles } from 'src/common/decorators/idir-roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UsersService } from '../../users/services/users.service';
 import { PaginationQueryDto } from '../dtos/common.dto';
@@ -26,7 +26,7 @@ import { ServiceTypesService } from '../services/service-types.service';
 
 @Controller('admin/service-types')
 @UseGuards(RolesGuard)
-@Roles('admin', 'staff')
+@IdirRoles('admin', 'staff')
 export class ServiceTypesAdminV1Controller {
   constructor(
     private readonly typesService: ServiceTypesService,
@@ -34,7 +34,7 @@ export class ServiceTypesAdminV1Controller {
   ) {}
 
   @Post()
-  @Roles('admin')
+  @IdirRoles('admin')
   create(@Body() body: CreateTypeBodyDto) {
     return this.typesService.create(body);
   }
@@ -52,7 +52,11 @@ export class ServiceTypesAdminV1Controller {
 
   @Get('published')
   findAllPublished(@Query() query: PaginationQueryDto) {
-    return this.typesService.findAllPublished(query.page, query.limit, query.search);
+    return this.typesService.findAllPublished(
+      query.page,
+      query.limit,
+      query.search,
+    );
   }
 
   @Get(':typeId')
@@ -62,25 +66,25 @@ export class ServiceTypesAdminV1Controller {
   }
 
   @Delete(':typeId')
-  @Roles('admin')
+  @IdirRoles('admin')
   delete(@Param() params: TypeIdParamDto) {
     return this.typesService.delete(params.typeId);
   }
 
   @Post(':typeId/versions')
-  @Roles('admin')
+  @IdirRoles('admin')
   createVersion(@Param() params: TypeIdParamDto) {
     return this.typesService.createVersion(params.typeId);
   }
 
   @Get(':typeId/versions/:versionId')
-  @Roles('admin')
+  @IdirRoles('admin')
   getVersion(@Param() params: TypeVersionIdParamDto) {
     return this.typesService.getVersion(params.typeId, params.versionId);
   }
 
   @Put(':typeId/versions/:versionId/translations/:locale')
-  @Roles('admin')
+  @IdirRoles('admin')
   upsertTranslation(
     @Param() params: TypeVersionLocaleParamDto,
     @Body() body: UpsertTypeVersionTranslationBodyDto,
@@ -94,13 +98,13 @@ export class ServiceTypesAdminV1Controller {
   }
 
   @Post(':typeId/versions/:versionId/publish')
-  @Roles('admin')
+  @IdirRoles('admin')
   publishVersion(@Param() params: TypeVersionIdParamDto) {
     return this.typesService.publishVersion(params.typeId, params.versionId);
   }
 
   @Post(':typeId/versions/:versionId/archive')
-  @Roles('admin')
+  @IdirRoles('admin')
   archiveVersion(@Param() params: TypeVersionIdParamDto) {
     return this.typesService.archiveVersion(params.typeId, params.versionId);
   }

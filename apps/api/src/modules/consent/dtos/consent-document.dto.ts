@@ -52,9 +52,7 @@ export const FindAllDocsQuerySchema = PaginationQuerySchema.extend({
   consentDocumentTypeId: z.string().uuid().optional(),
 });
 
-export class FindAllDocsQueryDto extends createZodDto(
-  FindAllDocsQuerySchema,
-) {}
+export class FindAllDocsQueryDto extends createZodDto(FindAllDocsQuerySchema) {}
 
 export const AddContributorBodySchema = z.object({
   userId: z.string().uuid(),

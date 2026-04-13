@@ -87,7 +87,7 @@ describe('AuthGuard', () => {
   let guard: AuthGuard;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -105,15 +105,28 @@ describe('AuthGuard', () => {
     expect(guard).toBeDefined();
   });
 
+  // Reflector reads PUBLIC_ROUTE_KEY first, then IDP_KEY.
+  function mockMetadata({
+    isPublic = false,
+    requiredIdp,
+  }: {
+    isPublic?: boolean;
+    requiredIdp?: IdpType;
+  }) {
+    mockReflector.getAllAndOverride
+      .mockReturnValueOnce(isPublic)
+      .mockReturnValueOnce(requiredIdp);
+  }
+
   it('Should allow public routes', async () => {
-    mockReflector.getAllAndOverride.mockReturnValue(true);
+    mockMetadata({ isPublic: true });
     const context = createMockExecutionContext();
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
   });
 
   it('Should allow session-based auth with valid BCSC token', async () => {
-    mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockMetadata({ requiredIdp: IdpType.BCSC });
     mockAuthService.hasAnyActiveSession.mockReturnValue(true);
     mockAuthService.hasActiveSession.mockReturnValue(true);
     mockAuthService.isTokenExpiringSoon.mockReturnValue(false);
@@ -130,7 +143,7 @@ describe('AuthGuard', () => {
   });
 
   it('Should refresh expiring session token', async () => {
-    mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockMetadata({ requiredIdp: IdpType.BCSC });
     mockAuthService.hasAnyActiveSession.mockReturnValue(true);
     mockAuthService.hasActiveSession.mockReturnValue(true);
     mockAuthService.isTokenExpiringSoon.mockReturnValue(true);
@@ -148,7 +161,7 @@ describe('AuthGuard', () => {
   });
 
   it('Should throw when session token refresh fails', async () => {
-    mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockMetadata({ requiredIdp: IdpType.BCSC });
     mockAuthService.hasAnyActiveSession.mockReturnValue(true);
     mockAuthService.hasActiveSession.mockReturnValue(true);
     mockAuthService.isTokenExpiringSoon.mockReturnValue(true);
@@ -163,7 +176,7 @@ describe('AuthGuard', () => {
   });
 
   it('Should throw when no auth is provided', async () => {
-    mockReflector.getAllAndOverride.mockReturnValue(false);
+    mockMetadata({ requiredIdp: IdpType.BCSC });
     mockAuthService.hasAnyActiveSession.mockReturnValue(false);
     const context = createMockExecutionContext();
     await expect(guard.canActivate(context)).rejects.toThrow(
@@ -171,15 +184,22 @@ describe('AuthGuard', () => {
     );
   });
 
-  it('Should require IDIR for /admin paths', async () => {
-    mockReflector.getAllAndOverride.mockReturnValue(false);
+  it('Should fail closed when route declares no IDP and is not public', async () => {
+    mockMetadata({});
+    const context = createMockExecutionContext();
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('Should accept IDIR session when IDIR is required', async () => {
+    mockMetadata({ requiredIdp: IdpType.IDIR });
     mockAuthService.hasAnyActiveSession.mockReturnValue(true);
     mockAuthService.hasActiveSession.mockReturnValue(true);
     mockAuthService.isTokenExpiringSoon.mockReturnValue(false);
 
     const context = createMockExecutionContext({
       session: { idir: { accessToken: 'idir-token' } },
-      path: '/admin/dashboard',
     });
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
@@ -189,14 +209,13 @@ describe('AuthGuard', () => {
     );
   });
 
-  it('Should throw when wrong IDP session for route', async () => {
-    mockReflector.getAllAndOverride.mockReturnValue(false);
+  it('Should throw when BCSC session present but route requires IDIR', async () => {
+    mockMetadata({ requiredIdp: IdpType.IDIR });
     mockAuthService.hasAnyActiveSession.mockReturnValue(true);
     mockAuthService.hasActiveSession.mockReturnValue(false);
 
     const context = createMockExecutionContext({
       session: { bcsc: { accessToken: 'bcsc-token' } },
-      path: '/admin/dashboard',
     });
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,

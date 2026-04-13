@@ -77,8 +77,8 @@ export const ConsentDocumentDto = ConsentDocumentListItemDto.extend({
 export type ConsentDocument = z.infer<typeof ConsentDocumentDto>;
 
 const ConsentDocumentsPageDto = z.object({
-  docs: z.array(ConsentDocumentListItemDto),
-  totalDocs: z.number(),
+  data: z.array(ConsentDocumentListItemDto),
+  total: z.number(),
   totalPages: z.number(),
   page: z.number(),
   limit: z.number(),

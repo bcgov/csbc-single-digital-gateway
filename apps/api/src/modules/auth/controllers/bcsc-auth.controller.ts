@@ -11,12 +11,14 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
+import { RequireIdp } from 'src/common/decorators/idp.decorator';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
 import { PublicRoute } from '../decorators/public-route.decorator';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
 
 @Controller('auth/bcsc')
+@RequireIdp(IdpType.BCSC)
 export class BcscAuthController {
   private readonly logger = new Logger(BcscAuthController.name);
   private readonly idpType = IdpType.BCSC;

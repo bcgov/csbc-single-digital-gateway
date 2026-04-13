@@ -105,9 +105,15 @@ describe('AuthService', () => {
       });
       const requestQuery = { code: 'abc' };
 
-      await service.handleCallback(IdpType.BCSC, requestQuery, session as never);
+      await service.handleCallback(
+        IdpType.BCSC,
+        requestQuery,
+        session as never,
+      );
 
-      const expectedUrl = new URL('https://example.com/auth/bcsc/callback?code=abc');
+      const expectedUrl = new URL(
+        'https://example.com/auth/bcsc/callback?code=abc',
+      );
       expect(client.authorizationCodeGrant).toHaveBeenCalledWith(
         mockBcscClient,
         expectedUrl,
@@ -124,9 +130,9 @@ describe('AuthService', () => {
           userId: 'user-1',
         }),
       );
-      expect(
-        (session.bcsc as Record<string, unknown>).userProfile,
-      ).toEqual(expect.objectContaining({ sub: 'mock-sub' }));
+      expect((session.bcsc as Record<string, unknown>).userProfile).toEqual(
+        expect.objectContaining({ sub: 'mock-sub' }),
+      );
       expect(session.oidcState).toBeUndefined();
       expect(session.oidcCodeVerifier).toBeUndefined();
       expect(session.oidcIdpType).toBeUndefined();
@@ -139,7 +145,11 @@ describe('AuthService', () => {
       });
       const requestQuery = { code: 'abc' };
 
-      await service.handleCallback(IdpType.BCSC, requestQuery, session as never);
+      await service.handleCallback(
+        IdpType.BCSC,
+        requestQuery,
+        session as never,
+      );
 
       expect(mockUsersService.syncFromOidc).toHaveBeenCalledWith(
         'https://bcsc.example.com',
@@ -231,36 +241,34 @@ describe('AuthService', () => {
 
     it('Should return null when no profile exists', () => {
       const session = createMockSession();
-      expect(
-        service.getUserProfile(IdpType.BCSC, session as never),
-      ).toBeNull();
+      expect(service.getUserProfile(IdpType.BCSC, session as never)).toBeNull();
     });
   });
 
   describe('isTokenExpiringSoon', () => {
     it('Should return false when no tokenExpiresAt', () => {
       const session = createMockSession();
-      expect(
-        service.isTokenExpiringSoon(IdpType.BCSC, session as never),
-      ).toBe(false);
+      expect(service.isTokenExpiringSoon(IdpType.BCSC, session as never)).toBe(
+        false,
+      );
     });
 
     it('Should return true when token expires within threshold', () => {
       const session = createMockSession({
         bcsc: { tokenExpiresAt: Date.now() + 10_000 },
       });
-      expect(
-        service.isTokenExpiringSoon(IdpType.BCSC, session as never),
-      ).toBe(true);
+      expect(service.isTokenExpiringSoon(IdpType.BCSC, session as never)).toBe(
+        true,
+      );
     });
 
     it('Should return false when token is not expiring soon', () => {
       const session = createMockSession({
         bcsc: { tokenExpiresAt: Date.now() + 60_000 },
       });
-      expect(
-        service.isTokenExpiringSoon(IdpType.BCSC, session as never),
-      ).toBe(false);
+      expect(service.isTokenExpiringSoon(IdpType.BCSC, session as never)).toBe(
+        false,
+      );
     });
   });
 

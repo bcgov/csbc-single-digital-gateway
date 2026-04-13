@@ -115,10 +115,10 @@ export class ServiceTypesService {
         .where(whereClause),
     ]);
 
-    const totalDocs = countResult[0].count;
-    const totalPages = Math.ceil(totalDocs / limit);
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
 
-    return { docs: rows, totalDocs, totalPages, page, limit };
+    return { data: rows, total, totalPages, page, limit };
   }
 
   async findAll(
@@ -146,7 +146,7 @@ export class ServiceTypesService {
 
     const whereClause = and(publishedFilter, searchFilter);
 
-    const [docs, countResult] = await Promise.all([
+    const [rows, countResult] = await Promise.all([
       this.db
         .select()
         .from(schema.serviceTypes)
@@ -160,30 +160,25 @@ export class ServiceTypesService {
         .where(whereClause),
     ]);
 
-    const totalDocs = countResult[0].count;
-    const totalPages = Math.ceil(totalDocs / limit);
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
 
-    const enrichedDocs = await this.enrichTypesWithTranslations(docs);
+    const data = await this.enrichTypesWithTranslations(rows);
 
-    return { docs: enrichedDocs, totalDocs, totalPages, page, limit };
+    return { data, total, totalPages, page, limit };
   }
 
   private async enrichTypesWithTranslations(
-    docs: (typeof schema.serviceTypes.$inferSelect)[],
+    types: (typeof schema.serviceTypes.$inferSelect)[],
   ) {
-    if (docs.length === 0) return [];
+    if (types.length === 0) return [];
 
-    const typeIds = docs.map((d) => d.id);
+    const typeIds = types.map((d) => d.id);
 
     const versions = await this.db
       .select()
       .from(schema.serviceTypeVersions)
-      .where(
-        inArray(
-          schema.serviceTypeVersions.serviceTypeId,
-          typeIds,
-        ),
-      )
+      .where(inArray(schema.serviceTypeVersions.serviceTypeId, typeIds))
       .orderBy(desc(schema.serviceTypeVersions.version));
 
     const versionIdsByType = new Map<
@@ -191,10 +186,8 @@ export class ServiceTypesService {
       { displayVersionId: string; updatesPending: boolean }
     >();
 
-    for (const type of docs) {
-      const typeVersions = versions.filter(
-        (v) => v.serviceTypeId === type.id,
-      );
+    for (const type of types) {
+      const typeVersions = versions.filter((v) => v.serviceTypeId === type.id);
       if (typeVersions.length === 0) {
         versionIdsByType.set(type.id, {
           displayVersionId: '',
@@ -204,9 +197,7 @@ export class ServiceTypesService {
       }
 
       const publishedVersion = type.publishedServiceTypeVersionId
-        ? typeVersions.find(
-            (v) => v.id === type.publishedServiceTypeVersionId,
-          )
+        ? typeVersions.find((v) => v.id === type.publishedServiceTypeVersionId)
         : null;
 
       const latestVersion = typeVersions[0];
@@ -229,7 +220,7 @@ export class ServiceTypesService {
     ];
 
     if (relevantVersionIds.length === 0) {
-      return docs.map((d) => ({
+      return types.map((d) => ({
         ...d,
         name: null,
         description: null,
@@ -254,7 +245,7 @@ export class ServiceTypesService {
       translations.map((t) => [t.serviceTypeVersionId, t]),
     );
 
-    return docs.map((d) => {
+    return types.map((d) => {
       const info = versionIdsByType.get(d.id);
       const translation = info
         ? translationByVersionId.get(info.displayVersionId)
@@ -282,10 +273,7 @@ export class ServiceTypesService {
 
     const type = results[0];
 
-    if (
-      !isAdmin &&
-      type.publishedServiceTypeVersionId === null
-    ) {
+    if (!isAdmin && type.publishedServiceTypeVersionId === null) {
       throw new NotFoundException(`Service type ${typeId} not found`);
     }
 
@@ -295,10 +283,7 @@ export class ServiceTypesService {
         .select()
         .from(schema.serviceTypeVersions)
         .where(
-          eq(
-            schema.serviceTypeVersions.id,
-            type.publishedServiceTypeVersionId,
-          ),
+          eq(schema.serviceTypeVersions.id, type.publishedServiceTypeVersionId),
         )
         .limit(1);
 
@@ -328,12 +313,7 @@ export class ServiceTypesService {
         updatedAt: schema.serviceTypeVersions.updatedAt,
       })
       .from(schema.serviceTypeVersions)
-      .where(
-        eq(
-          schema.serviceTypeVersions.serviceTypeId,
-          typeId,
-        ),
-      )
+      .where(eq(schema.serviceTypeVersions.serviceTypeId, typeId))
       .orderBy(asc(schema.serviceTypeVersions.version));
 
     const versionIds = versions.map((v) => v.id);
@@ -348,10 +328,7 @@ export class ServiceTypesService {
                   schema.serviceTypeVersionTranslations.serviceTypeVersionId,
                   versionIds,
                 ),
-                eq(
-                  schema.serviceTypeVersionTranslations.locale,
-                  'en',
-                ),
+                eq(schema.serviceTypeVersionTranslations.locale, 'en'),
               ),
             )
         : [];
@@ -440,10 +417,7 @@ export class ServiceTypesService {
       .where(
         and(
           eq(schema.serviceTypeVersions.id, versionId),
-          eq(
-            schema.serviceTypeVersions.serviceTypeId,
-            typeId,
-          ),
+          eq(schema.serviceTypeVersions.serviceTypeId, typeId),
         ),
       )
       .limit(1);
@@ -482,10 +456,7 @@ export class ServiceTypesService {
       .where(
         and(
           eq(schema.serviceTypeVersions.id, versionId),
-          eq(
-            schema.serviceTypeVersions.serviceTypeId,
-            typeId,
-          ),
+          eq(schema.serviceTypeVersions.serviceTypeId, typeId),
         ),
       )
       .limit(1);
@@ -535,10 +506,7 @@ export class ServiceTypesService {
         .where(
           and(
             eq(schema.serviceTypeVersions.id, versionId),
-            eq(
-              schema.serviceTypeVersions.serviceTypeId,
-              typeId,
-            ),
+            eq(schema.serviceTypeVersions.serviceTypeId, typeId),
           ),
         )
         .limit(1);
@@ -628,10 +596,7 @@ export class ServiceTypesService {
         .where(
           and(
             eq(schema.serviceTypeVersions.id, versionId),
-            eq(
-              schema.serviceTypeVersions.serviceTypeId,
-              typeId,
-            ),
+            eq(schema.serviceTypeVersions.serviceTypeId, typeId),
           ),
         )
         .limit(1);
@@ -658,10 +623,7 @@ export class ServiceTypesService {
         .where(
           and(
             eq(schema.serviceTypes.id, typeId),
-            eq(
-              schema.serviceTypes.publishedServiceTypeVersionId,
-              versionId,
-            ),
+            eq(schema.serviceTypes.publishedServiceTypeVersionId, versionId),
           ),
         );
 

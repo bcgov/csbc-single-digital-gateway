@@ -55,7 +55,7 @@ export const loadOrgUnits: AsyncLoadOptions = async (
   });
 
   return {
-    options: data.docs.map((u: { id: string; name: string }) => ({
+    options: data.data.map((u: { id: string; name: string }) => ({
       value: u.id,
       label: u.name,
     })),
@@ -84,7 +84,7 @@ export const loadServiceTypes: AsyncLoadOptions = async (
   });
 
   return {
-    options: data.docs.map(
+    options: data.data.map(
       (t: { id: string; name: string | null }) => ({
         value: t.id,
         label: t.name ?? t.id,

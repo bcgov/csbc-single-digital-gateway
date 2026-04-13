@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
+import { RequireIdp } from 'src/common/decorators/idp.decorator';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
 import { UsersService } from 'src/modules/users/services/users.service';
 import { PublicRoute } from '../decorators/public-route.decorator';
@@ -18,6 +19,7 @@ import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
 
 @Controller('auth/idir')
+@RequireIdp(IdpType.IDIR)
 export class IdirAuthController {
   private readonly logger = new Logger(IdirAuthController.name);
   private readonly idpType = IdpType.IDIR;
@@ -109,9 +111,7 @@ export class IdirAuthController {
     }
 
     const userId = req.session.idir?.userId;
-    const roles = userId
-      ? await this.usersService.getUserRoles(userId)
-      : [];
+    const roles = userId ? await this.usersService.getUserRoles(userId) : [];
 
     return { ...profile, roles };
   }

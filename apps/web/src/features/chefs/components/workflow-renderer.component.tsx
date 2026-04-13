@@ -1,4 +1,14 @@
-import type { ApplicationDto } from "../../services/service.dto";
+interface ApplicationDto {
+  id: string;
+  label: string;
+  description?: string | null;
+  apiKey?: string;
+  formId?: string;
+  method?: "GET" | "POST";
+  url: string;
+  blockName?: string | null;
+  blockType?: "form" | "workflow";
+}
 
 interface WorkflowRendererProps {
   application: ApplicationDto;

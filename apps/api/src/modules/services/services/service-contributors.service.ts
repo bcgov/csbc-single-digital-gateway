@@ -28,16 +28,10 @@ export class ServiceContributorsService {
         schema.users,
         eq(schema.serviceContributors.userId, schema.users.id),
       )
-      .where(
-        eq(schema.serviceContributors.serviceId, serviceId),
-      );
+      .where(eq(schema.serviceContributors.serviceId, serviceId));
   }
 
-  async addContributor(
-    serviceId: string,
-    userId: string,
-    role: 'owner',
-  ) {
+  async addContributor(serviceId: string, userId: string, role: 'owner') {
     try {
       const [result] = await this.db
         .insert(schema.serviceContributors)

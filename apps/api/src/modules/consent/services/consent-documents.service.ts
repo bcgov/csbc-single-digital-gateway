@@ -167,7 +167,7 @@ export class ConsentDocumentsService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const [docs, countResult] = await Promise.all([
+    const [rows, countResult] = await Promise.all([
       this.db
         .select()
         .from(schema.consentDocuments)
@@ -181,13 +181,13 @@ export class ConsentDocumentsService {
         .where(where),
     ]);
 
-    const totalDocs = countResult[0].count;
-    const totalPages = Math.ceil(totalDocs / limit);
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
 
-    // Enrich each doc with name/description from its published version translation,
+    // Enrich each row with name/description from its published version translation,
     // falling back to the latest version's translation
-    const enrichedDocs = await Promise.all(
-      docs.map(async (doc) => {
+    const data = await Promise.all(
+      rows.map(async (doc) => {
         const targetVersionId = doc.publishedConsentDocumentVersionId;
 
         let translation: { name: string; description: string | null } | null =
@@ -229,12 +229,7 @@ export class ConsentDocumentsService {
                 schema.consentDocumentVersions.id,
               ),
             )
-            .where(
-              eq(
-                schema.consentDocumentVersions.consentDocumentId,
-                doc.id,
-              ),
-            )
+            .where(eq(schema.consentDocumentVersions.consentDocumentId, doc.id))
             .orderBy(desc(schema.consentDocumentVersions.version))
             .limit(1);
           translation = rows[0] ?? null;
@@ -248,7 +243,7 @@ export class ConsentDocumentsService {
       }),
     );
 
-    return { docs: enrichedDocs, totalDocs, totalPages, page, limit };
+    return { data, total, totalPages, page, limit };
   }
 
   async findById(docId: string) {
@@ -321,8 +316,7 @@ export class ConsentDocumentsService {
         const rows = await this.db
           .select({
             name: schema.consentDocumentVersionTranslations.name,
-            description:
-              schema.consentDocumentVersionTranslations.description,
+            description: schema.consentDocumentVersionTranslations.description,
           })
           .from(schema.consentDocumentVersionTranslations)
           .where(
@@ -453,17 +447,15 @@ export class ConsentDocumentsService {
         );
 
       if (previousTranslations.length > 0) {
-        await this.db
-          .insert(schema.consentDocumentVersionTranslations)
-          .values(
-            previousTranslations.map((t) => ({
-              consentDocumentVersionId: version.id,
-              locale: t.locale,
-              name: t.name,
-              description: t.description,
-              content: t.content,
-            })),
-          );
+        await this.db.insert(schema.consentDocumentVersionTranslations).values(
+          previousTranslations.map((t) => ({
+            consentDocumentVersionId: version.id,
+            locale: t.locale,
+            name: t.name,
+            description: t.description,
+            content: t.content,
+          })),
+        );
       }
     }
 
@@ -509,7 +501,11 @@ export class ConsentDocumentsService {
     docId: string,
     versionId: string,
     locale: string,
-    body: { name: string; description?: string; content: Record<string, unknown> },
+    body: {
+      name: string;
+      description?: string;
+      content: Record<string, unknown>;
+    },
   ) {
     const version = await this.db
       .select()

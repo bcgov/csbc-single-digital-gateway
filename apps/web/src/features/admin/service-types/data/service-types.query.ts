@@ -68,8 +68,8 @@ const ServiceTypeListItemDto = z.object({
 });
 
 const ServiceTypesPageDto = z.object({
-  docs: z.array(ServiceTypeListItemDto),
-  totalDocs: z.number(),
+  data: z.array(ServiceTypeListItemDto),
+  total: z.number(),
   totalPages: z.number(),
   page: z.number(),
   limit: z.number(),

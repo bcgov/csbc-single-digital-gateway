@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { IdirRoles } from 'src/common/decorators/idir-roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UsersService } from '../../users/services/users.service';
 import {
@@ -26,7 +26,7 @@ import { OrgUnitsService } from '../services/org-units.service';
 
 @Controller('admin/org-units')
 @UseGuards(RolesGuard)
-@Roles('admin', 'org-admin')
+@IdirRoles('admin', 'org-admin')
 export class OrgUnitsAdminV1Controller {
   constructor(
     private readonly orgUnitsService: OrgUnitsService,

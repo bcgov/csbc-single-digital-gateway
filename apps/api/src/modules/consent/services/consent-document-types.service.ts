@@ -99,7 +99,8 @@ export class ConsentDocumentTypesService {
           schema.consentDocumentTypeVersionTranslations,
           and(
             eq(
-              schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+              schema.consentDocumentTypeVersionTranslations
+                .consentDocumentTypeVersionId,
               schema.consentDocumentTypeVersions.id,
             ),
             eq(schema.consentDocumentTypeVersionTranslations.locale, 'en'),
@@ -115,10 +116,10 @@ export class ConsentDocumentTypesService {
         .where(whereClause),
     ]);
 
-    const totalDocs = countResult[0].count;
-    const totalPages = Math.ceil(totalDocs / limit);
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
 
-    return { docs: rows, totalDocs, totalPages, page, limit };
+    return { data: rows, total, totalPages, page, limit };
   }
 
   async findAll(
@@ -146,7 +147,7 @@ export class ConsentDocumentTypesService {
 
     const whereClause = and(publishedFilter, searchFilter);
 
-    const [docs, countResult] = await Promise.all([
+    const [rows, countResult] = await Promise.all([
       this.db
         .select()
         .from(schema.consentDocumentTypes)
@@ -160,20 +161,20 @@ export class ConsentDocumentTypesService {
         .where(whereClause),
     ]);
 
-    const totalDocs = countResult[0].count;
-    const totalPages = Math.ceil(totalDocs / limit);
+    const total = countResult[0].count;
+    const totalPages = Math.ceil(total / limit);
 
-    const enrichedDocs = await this.enrichTypesWithTranslations(docs);
+    const data = await this.enrichTypesWithTranslations(rows);
 
-    return { docs: enrichedDocs, totalDocs, totalPages, page, limit };
+    return { data, total, totalPages, page, limit };
   }
 
   private async enrichTypesWithTranslations(
-    docs: (typeof schema.consentDocumentTypes.$inferSelect)[],
+    types: (typeof schema.consentDocumentTypes.$inferSelect)[],
   ) {
-    if (docs.length === 0) return [];
+    if (types.length === 0) return [];
 
-    const typeIds = docs.map((d) => d.id);
+    const typeIds = types.map((d) => d.id);
 
     // Fetch all versions for these types
     const versions = await this.db
@@ -194,7 +195,7 @@ export class ConsentDocumentTypesService {
       { displayVersionId: string; updatesPending: boolean }
     >();
 
-    for (const type of docs) {
+    for (const type of types) {
       const typeVersions = versions.filter(
         (v) => v.consentDocumentTypeId === type.id,
       );
@@ -232,7 +233,7 @@ export class ConsentDocumentTypesService {
     ];
 
     if (relevantVersionIds.length === 0) {
-      return docs.map((d) => ({
+      return types.map((d) => ({
         ...d,
         name: null,
         description: null,
@@ -247,7 +248,8 @@ export class ConsentDocumentTypesService {
       .where(
         and(
           inArray(
-            schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+            schema.consentDocumentTypeVersionTranslations
+              .consentDocumentTypeVersionId,
             relevantVersionIds,
           ),
           eq(schema.consentDocumentTypeVersionTranslations.locale, 'en'),
@@ -258,7 +260,7 @@ export class ConsentDocumentTypesService {
       translations.map((t) => [t.consentDocumentTypeVersionId, t]),
     );
 
-    return docs.map((d) => {
+    return types.map((d) => {
       const info = versionIdsByType.get(d.id);
       const translation = info
         ? translationByVersionId.get(info.displayVersionId)
@@ -286,10 +288,7 @@ export class ConsentDocumentTypesService {
 
     const type = results[0];
 
-    if (
-      !isAdmin &&
-      type.publishedConsentDocumentTypeVersionId === null
-    ) {
+    if (!isAdmin && type.publishedConsentDocumentTypeVersionId === null) {
       throw new NotFoundException(`Consent document type ${typeId} not found`);
     }
 
@@ -312,7 +311,8 @@ export class ConsentDocumentTypesService {
           .from(schema.consentDocumentTypeVersionTranslations)
           .where(
             eq(
-              schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+              schema.consentDocumentTypeVersionTranslations
+                .consentDocumentTypeVersionId,
               versionResults[0].id,
             ),
           );
@@ -334,10 +334,7 @@ export class ConsentDocumentTypesService {
       })
       .from(schema.consentDocumentTypeVersions)
       .where(
-        eq(
-          schema.consentDocumentTypeVersions.consentDocumentTypeId,
-          typeId,
-        ),
+        eq(schema.consentDocumentTypeVersions.consentDocumentTypeId, typeId),
       )
       .orderBy(asc(schema.consentDocumentTypeVersions.version));
 
@@ -351,13 +348,11 @@ export class ConsentDocumentTypesService {
             .where(
               and(
                 inArray(
-                  schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+                  schema.consentDocumentTypeVersionTranslations
+                    .consentDocumentTypeVersionId,
                   versionIds,
                 ),
-                eq(
-                  schema.consentDocumentTypeVersionTranslations.locale,
-                  'en',
-                ),
+                eq(schema.consentDocumentTypeVersionTranslations.locale, 'en'),
               ),
             )
         : [];
@@ -395,7 +390,9 @@ export class ConsentDocumentTypesService {
       const [sourceVersion] = await tx
         .select({ id: schema.consentDocumentTypeVersions.id })
         .from(schema.consentDocumentTypeVersions)
-        .where(eq(schema.consentDocumentTypeVersions.consentDocumentTypeId, typeId))
+        .where(
+          eq(schema.consentDocumentTypeVersions.consentDocumentTypeId, typeId),
+        )
         .orderBy(desc(schema.consentDocumentTypeVersions.version))
         .limit(1);
 
@@ -425,18 +422,16 @@ export class ConsentDocumentTypesService {
           );
 
         if (sourceTranslations.length > 0) {
-          await tx
-            .insert(schema.consentDocumentTypeVersionTranslations)
-            .values(
-              sourceTranslations.map((t) => ({
-                consentDocumentTypeVersionId: version.id,
-                locale: t.locale,
-                name: t.name,
-                description: t.description,
-                schema: t.schema,
-                uiSchema: t.uiSchema,
-              })),
-            );
+          await tx.insert(schema.consentDocumentTypeVersionTranslations).values(
+            sourceTranslations.map((t) => ({
+              consentDocumentTypeVersionId: version.id,
+              locale: t.locale,
+              name: t.name,
+              description: t.description,
+              schema: t.schema,
+              uiSchema: t.uiSchema,
+            })),
+          );
         }
       }
 
@@ -451,10 +446,7 @@ export class ConsentDocumentTypesService {
       .where(
         and(
           eq(schema.consentDocumentTypeVersions.id, versionId),
-          eq(
-            schema.consentDocumentTypeVersions.consentDocumentTypeId,
-            typeId,
-          ),
+          eq(schema.consentDocumentTypeVersions.consentDocumentTypeId, typeId),
         ),
       )
       .limit(1);
@@ -468,7 +460,8 @@ export class ConsentDocumentTypesService {
       .from(schema.consentDocumentTypeVersionTranslations)
       .where(
         eq(
-          schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+          schema.consentDocumentTypeVersionTranslations
+            .consentDocumentTypeVersionId,
           versionId,
         ),
       );
@@ -493,10 +486,7 @@ export class ConsentDocumentTypesService {
       .where(
         and(
           eq(schema.consentDocumentTypeVersions.id, versionId),
-          eq(
-            schema.consentDocumentTypeVersions.consentDocumentTypeId,
-            typeId,
-          ),
+          eq(schema.consentDocumentTypeVersions.consentDocumentTypeId, typeId),
         ),
       )
       .limit(1);
@@ -523,7 +513,8 @@ export class ConsentDocumentTypesService {
       })
       .onConflictDoUpdate({
         target: [
-          schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+          schema.consentDocumentTypeVersionTranslations
+            .consentDocumentTypeVersionId,
           schema.consentDocumentTypeVersionTranslations.locale,
         ],
         set: {
@@ -567,7 +558,8 @@ export class ConsentDocumentTypesService {
         .from(schema.consentDocumentTypeVersionTranslations)
         .where(
           eq(
-            schema.consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+            schema.consentDocumentTypeVersionTranslations
+              .consentDocumentTypeVersionId,
             versionId,
           ),
         )

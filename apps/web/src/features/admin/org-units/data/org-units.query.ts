@@ -13,8 +13,8 @@ export const OrgUnitDto = z.object({
 export type OrgUnit = z.infer<typeof OrgUnitDto>;
 
 const OrgUnitsPageDto = z.object({
-  docs: z.array(OrgUnitDto),
-  totalDocs: z.number(),
+  data: z.array(OrgUnitDto),
+  total: z.number(),
   totalPages: z.number(),
   page: z.number(),
   limit: z.number(),

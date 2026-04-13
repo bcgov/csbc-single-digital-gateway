@@ -1,7 +1,5 @@
 import {
-  Badge,
   Card,
-  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -24,24 +22,16 @@ function RouteComponent() {
       <h1>Services</h1>
       {services.map((service) => (
         <Link
-          to="/app/services/$serviceSlug"
-          params={{ serviceSlug: service.slug }}
-          key={service.slug}
+          to="/app/services/$serviceId"
+          params={{ serviceId: service.id }}
+          key={service.id}
         >
           <Card>
             <CardHeader>
               <CardTitle>{service.name}</CardTitle>
-              <CardAction>
-                {service.categories?.map((category) => (
-                  <Badge variant="outline" key={category}>
-                    {category.slice(0, 1).toUpperCase()}
-                    {category.slice(1)}
-                  </Badge>
-                ))}
-              </CardAction>
             </CardHeader>
             <CardContent>
-              <p>{service.description?.short}</p>
+              <p>{service.description}</p>
             </CardContent>
           </Card>
         </Link>
