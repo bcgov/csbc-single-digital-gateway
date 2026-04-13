@@ -152,6 +152,7 @@ jobs:
           CYPRESS_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
           CYPRESS_TEST_PASSWORD: ${{ secrets.BCSC_TEST_PASSWORD }}
         with:
+          install: false
           build: npm --prefix .. run build
           start: npm --prefix .. run dev
           working-directory: cypress
