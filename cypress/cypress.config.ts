@@ -1,8 +1,8 @@
 import { defineConfig } from "cypress";
-import dotenv from "dotenv";
-import fs from "node:fs";
+import { config as dotenvConfig } from "dotenv";
+import { existsSync } from "node:fs";
 
-dotenv.config();
+dotenvConfig();
 
 export default defineConfig({
   allowCypressEnv: false,
@@ -11,7 +11,7 @@ export default defineConfig({
     setupNodeEvents(on, config) {
       on("task", {
         fileExists(filePath) {
-          return fs.existsSync(filePath);
+          return existsSync(filePath);
         },
       });
       config.env.APP_URL = `http://localhost:${process.env.APP_PORT}`;
