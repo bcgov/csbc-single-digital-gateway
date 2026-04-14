@@ -144,10 +144,10 @@ jobs:
       
       - name: Start API for E2E
         run: |
-          nohup npm run dev --filter=api > /tmp/api-dev.log 2>&1 &
+          nohup npm run dev:api > /tmp/api-dev.log 2>&1 &
 
       - name: Wait for Web to be ready
-        run: npx wait-on@8.0.1 --timeout 600000 http://localhost:5173
+        run: npx wait-on@8.0.1 --timeout 600000 http://localhost:5173 http://localhost:9000/health/live
 
       - name: Run E2E Tests
         run: nohup npm run test:e2e > /tmp/e2e-test.log 2>&1

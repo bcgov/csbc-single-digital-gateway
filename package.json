@@ -10,6 +10,7 @@
     "build:@repo/ui": "turbo run build --filter=@repo/ui",
     "db:migrate": "turbo run db:migrate",
     "dev": "turbo run dev",
+    "dev:api": "turbo run dev --filter=api",
     "dev:web": "turbo run dev --filter=web",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
