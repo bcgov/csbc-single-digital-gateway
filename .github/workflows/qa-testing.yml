@@ -156,7 +156,7 @@ jobs:
           build: npm --prefix .. run build
           start: npm --prefix .. run dev -- --filter=api --filter=web
           wait-on: 'http://localhost:9000/health/live, http://localhost:5173'
-          wait-on-timeout: 300
+          wait-on-timeout: 600
           working-directory: cypress
           browser: chrome
           command: npm run test:e2e
