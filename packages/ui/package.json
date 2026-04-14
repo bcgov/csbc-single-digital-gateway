@@ -34,7 +34,6 @@
     "@bcgov/bc-sans": "^2.1.0",
     "@bcgov/design-tokens": "^3.2.0",
     "@fontsource-variable/noto-sans": "^5.2.10",
-    "@lexical/html": "^0.42.0",
     "@lexical/link": "^0.42.0",
     "@lexical/list": "^0.42.0",
     "@lexical/react": "^0.42.0",

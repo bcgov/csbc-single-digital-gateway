@@ -19,7 +19,6 @@ import {
   OUTDENT_CONTENT_COMMAND,
   type TextFormatType,
 } from "lexical";
-import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
@@ -278,24 +277,18 @@ function ToolbarPlugin({ disabled }: { disabled: boolean }) {
   );
 }
 
-function HtmlImportPlugin({ html }: { html: string | undefined }) {
+function JsonImportPlugin({ json }: { json: string | undefined }) {
   const [editor] = useLexicalComposerContext();
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (initialized) return;
     setInitialized(true);
-    if (!html) return;
+    if (!json) return;
 
-    editor.update(() => {
-      const parser = new DOMParser();
-      const dom = parser.parseFromString(html, "text/html");
-      const nodes = $generateNodesFromDOM(editor, dom);
-      const root = $getRoot();
-      root.clear();
-      root.append(...nodes);
-    });
-  }, [editor, html, initialized]);
+    const parsed = editor.parseEditorState(json);
+    editor.setEditorState(parsed);
+  }, [editor, json, initialized]);
 
   return null;
 }
@@ -303,7 +296,7 @@ function HtmlImportPlugin({ html }: { html: string | undefined }) {
 function OnChangePlugin({
   onChange,
 }: {
-  onChange: (html: string | undefined) => void;
+  onChange: (value: string | undefined) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const onChangeRef = useRef(onChange);
@@ -317,8 +310,8 @@ function OnChangePlugin({
           onChangeRef.current(undefined);
           return;
         }
-        const html = $generateHtmlFromNodes(editor, null);
-        onChangeRef.current(html);
+        const json = JSON.stringify(editorState.toJSON());
+        onChangeRef.current(json);
       });
     });
   }, [editor]);
@@ -390,7 +383,7 @@ export function RichTextInput({
         <HistoryPlugin />
         <ListPlugin />
         <TabIndentationPlugin />
-        <HtmlImportPlugin html={value} />
+        <JsonImportPlugin json={value} />
         <OnChangePlugin onChange={onChange} />
         <ReadOnlyPlugin disabled={disabled} />
       </div>

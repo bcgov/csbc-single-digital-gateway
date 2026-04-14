@@ -9,7 +9,15 @@ export const ServiceDto = z.object({
   locale: z.string().nullable().optional(),
   name: z.string().min(1).max(255),
   description: z.string().nullable().optional(),
-  content: z.record(z.string(), z.unknown()).optional(),
+  // content: z.record(z.string(), z.unknown()).optional(),
+  content: z
+    .object({
+      about: z.string().optional(),
+      audience: z.string().optional(),
+      considerations: z.string().optional(),
+      outcomes: z.string().optional(),
+    })
+    .optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

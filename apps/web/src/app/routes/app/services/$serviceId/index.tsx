@@ -93,14 +93,49 @@ function RouteComponent() {
               id="overview"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
-              <h2>About</h2>
-              <p>
-                Income Assistance provides temporary financial support to help
-                you meet basic needs while you work toward employment or other
-                sources of income.
-              </p>
+              {service.content?.about && (
+                <>
+                  <h2>About</h2>
+                  <p>
+                    <LexicalContent
+                      content={JSON.parse(service.content?.about)}
+                    />
+                  </p>
+                </>
+              )}
 
-              {service.content && <LexicalContent content={service.content} />}
+              {service.content?.audience && (
+                <>
+                  <h2>Who is it for?</h2>
+                  <p>
+                    <LexicalContent
+                      content={JSON.parse(service.content?.audience)}
+                    />
+                  </p>
+                </>
+              )}
+
+              {service.content?.considerations && (
+                <>
+                  <h2>What to consider</h2>
+                  <p>
+                    <LexicalContent
+                      content={JSON.parse(service.content?.considerations)}
+                    />
+                  </p>
+                </>
+              )}
+
+              {service.content?.outcomes && (
+                <>
+                  <h2>What you'll get</h2>
+                  <p>
+                    <LexicalContent
+                      content={JSON.parse(service.content?.outcomes)}
+                    />
+                  </p>
+                </>
+              )}
             </div>
             {/* Eligibility criteria */}
             <div

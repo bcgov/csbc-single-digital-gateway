@@ -11,7 +11,9 @@ interface LexicalNode {
 }
 
 function indentStyle(indent: number | undefined): CSSProperties | undefined {
-  return indent && indent > 0 ? { paddingInlineStart: `${indent * 2}rem` } : undefined;
+  return indent && indent > 0
+    ? { paddingInlineStart: `${indent * 2}rem` }
+    : undefined;
 }
 
 interface LexicalContentProps {
@@ -30,7 +32,10 @@ function renderTextFormat(text: string, format: number): JSX.Element | string {
   return result;
 }
 
-function renderNode(node: LexicalNode, index: number): JSX.Element | string | null {
+function renderNode(
+  node: LexicalNode,
+  index: number,
+): JSX.Element | string | null {
   switch (node.type) {
     case "root":
       return <>{node.children?.map(renderNode)}</>;
@@ -38,7 +43,11 @@ function renderNode(node: LexicalNode, index: number): JSX.Element | string | nu
     case "heading": {
       const Tag = (node.tag ?? "h2") as keyof JSX.IntrinsicElements;
       return (
-        <Tag key={index} className="text-lg font-semibold" style={indentStyle(node.indent)}>
+        <Tag
+          key={index}
+          className="text-lg font-semibold"
+          style={indentStyle(node.indent)}
+        >
           {node.children?.map(renderNode)}
         </Tag>
       );
@@ -68,7 +77,9 @@ function renderNode(node: LexicalNode, index: number): JSX.Element | string | nu
       );
 
     case "listitem": {
-      const hasNestedList = node.children?.some((child) => child.type === "list");
+      const hasNestedList = node.children?.some(
+        (child) => child.type === "list",
+      );
       return (
         <li
           key={index}
@@ -85,7 +96,9 @@ function renderNode(node: LexicalNode, index: number): JSX.Element | string | nu
     case "text":
       return (
         <span key={index}>
-          {node.format ? renderTextFormat(node.text ?? "", node.format) : node.text}
+          {node.format
+            ? renderTextFormat(node.text ?? "", node.format)
+            : node.text}
         </span>
       );
 
