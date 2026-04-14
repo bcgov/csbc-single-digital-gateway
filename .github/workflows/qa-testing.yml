@@ -144,7 +144,7 @@ jobs:
       
       - name: Start API for E2E
         run: |
-          nohup npm run dev:api > /tmp/api-dev.log 2>&1 &
+          npm run dev:api &
 
       - name: Wait for Web to be ready
         run: npx wait-on@8.0.1 --timeout 600000 http://localhost:5173 http://localhost:9000/health/live
@@ -155,10 +155,6 @@ jobs:
       - name: Print dev logs on failure
         if: failure()
         run: |
-          echo "=== API LOG ==="
-          if [ -f /tmp/api-dev.log ]; then
-            tail -n 300 /tmp/api-dev.log
-          fi
           echo "=== E2E TEST LOG ==="
           if [ -f /tmp/e2e-test.log ]; then
             tail -n 300 /tmp/e2e-test.log
