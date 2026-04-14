@@ -6,74 +6,8 @@ on:
       - develop
 
 jobs:
-  api-qa-testing:
-    name: API QA Testing
-    runs-on: ubuntu-latest
-    environment: development
-    permissions:
-      contents: read
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      PORT: 4000
-      NODE_ENV: test
-      DB_NAME: test_db
-      DB_HOST: localhost
-      DB_USER: test_user
-      DB_PASS: test_password
-      DB_PORT: 5432
-      DB_SSL: false
-      OIDC_ISSUER: ${{ vars.API_OIDC_ISSUER }}
-      OIDC_CLIENT_ID: ${{ vars.API_OIDC_CLIENT_ID }}
-      OIDC_CLIENT_SECRET: ${{ secrets.API_OIDC_CLIENT_SECRET }}
-      OIDC_REDIRECT_URI: ${{ vars.API_OIDC_REDIRECT_URI }}
-      OIDC_POST_LOGOUT_REDIRECT_URI: ${{ vars.API_OIDC_POST_LOGOUT_REDIRECT_URI }}
-      OIDC_CLIENT_AUTH_METHOD: ${{ vars.API_OIDC_CLIENT_AUTH_METHOD }}
-      AUTH_OIDC_ISSUER: ${{ vars.API_AUTH_OIDC_ISSUER }}
-      AUTH_OIDC_CLIENT_ID: ${{ vars.API_AUTH_OIDC_CLIENT_ID }}
-      AUTH_OIDC_CLIENT_SECRET: ${{ secrets.API_AUTH_OIDC_CLIENT_SECRET }}
-      AUTH_OIDC_REDIRECT_URI: ${{ vars.API_AUTH_OIDC_REDIRECT_URI }}
-      AUTH_OIDC_POST_LOGOUT_REDIRECT_URI: ${{ vars.API_AUTH_OIDC_POST_LOGOUT_REDIRECT_URI }}
-      AUTH_OIDC_CLIENT_AUTH_METHOD: ${{ vars.API_AUTH_OIDC_CLIENT_AUTH_METHOD }}
-      SESSION_SECRET: ${{ secrets.API_SESSION_SECRET }}
-      FRONTEND_URL: ${{ vars.API_FRONTEND_URL }}
-      ADMIN_FRONTEND_URL: ${{ vars.API_ADMIN_FRONTEND_URL }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build API Components
-        run: npm run build:api
-
-      - name: Build @Repo/DB Components
-        run: npm run build:@repo/db
-
-      - name: Database Migration
-        run: npm run db:migrate
-
-      - name: Run API Integration Test
-        run: npm run test:int
-
-      - name: Run API Unit Test with Coverage
-        run: npm run test:cov:api
-
-  web-qa-testing:
-    name: Web QA Testing
+  sdg-qa-testing:
+    name: SDG QA Testing
     runs-on: ubuntu-latest
     environment: development
     permissions:
@@ -125,10 +59,10 @@ jobs:
       CYPRESS_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
       CYPRESS_TEST_PASSWORD: ${{ secrets.BCSC_TEST_PASSWORD }}
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
 
       - name: Build Components
@@ -137,24 +71,24 @@ jobs:
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Start API for E2E
+      - name: Start API Server
         run: |
           nohup npm run dev:api > /tmp/api-dev.log 2>&1 &
           npx wait-on --timeout 300000 http://127.0.0.1:5173 &
 
-      - name: Start Web for E2E
+      - name: Start Web Server
         run: |
           nohup npm run dev:web > /tmp/web-dev.log 2>&1 &
           npx wait-on --timeout 300000 http://127.0.0.1:4000 &
 
-      # - name: Run API Integration Test
-      #   run: npm run test:int
+      - name: Run API Integration Test
+        run: npm run test:int
 
-      # - name: Run API Unit Test with Coverage
-      #   run: npm run test:cov:api
+      - name: Run API Unit Test with Coverage
+        run: npm run test:cov:api
 
-      # - name: Run Web Component Test with Coverage
-      #   run: npm run test:cov:web
+      - name: Run Web Component Test with Coverage
+        run: npm run test:cov:web
 
       - name: Run Web E2E Test
         run: nohup npm run test:e2e > /tmp/e2e-test.log 2>&1 &
