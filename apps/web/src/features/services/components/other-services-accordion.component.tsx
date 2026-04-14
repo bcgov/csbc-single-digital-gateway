@@ -5,81 +5,83 @@ import {
   AccordionTrigger,
 } from "@repo/ui";
 import { IconCake } from "@tabler/icons-react";
+import type { ServiceDto } from "../../../features/services/service.dto";
 import { NavLinkItem } from "./nav-link.component";
 
-export function OtherServicesAccordion() {
+type Props = {
+  service: ServiceDto;
+};
+
+export function OtherServicesAccordion({ service }: Props) {
+  const relatedServices = service.resources?.otherServices?.relatedServices;
+  const recommendedServices =
+    service.resources?.otherServices?.recommendedServices;
+
+  const hasRelatedServices = !!relatedServices && relatedServices.length > 0;
+  const hasRecommendedServices =
+    !!recommendedServices && recommendedServices.length > 0;
+
+  if (!hasRelatedServices && !hasRecommendedServices) {
+    return null;
+  }
+
   return (
     <AccordionGroup
       title="Other services"
-      values={["related-services", "recommended-services"]}
+      values={[
+        ...(hasRelatedServices ? ["related-services"] : []),
+        ...(hasRecommendedServices ? ["recommended-services"] : []),
+      ]}
     >
-      <AccordionItem value="related-services">
-        <AccordionTrigger>Related services</AccordionTrigger>
-        <AccordionContent className="p-0">
-          <ul className="divide-y divide-neutral-300">
-            <li>
-              <NavLinkItem
-                to="#"
-                icon={
-                  <IconCake
-                    size={20}
-                    stroke={1.5}
-                    className="text-bcgov-blue"
+      {hasRelatedServices && (
+        <AccordionItem value="related-services">
+          <AccordionTrigger>Related services</AccordionTrigger>
+          <AccordionContent className="p-0">
+            <ul className="divide-y divide-neutral-300">
+              {relatedServices.map((item, index) => (
+                <li key={index}>
+                  <NavLinkItem
+                    to="#"
+                    icon={
+                      <IconCake
+                        size={20}
+                        stroke={1.5}
+                        className="text-bcgov-blue"
+                      />
+                    }
+                    title="Related service"
                   />
-                }
-                title="Disability Assistance"
-              />
-            </li>
-            <li>
-              <NavLinkItem
-                to="#"
-                icon={
-                  <IconCake
-                    size={20}
-                    stroke={1.5}
-                    className="text-bcgov-blue"
-                  />
-                }
-                title="Call us"
-              />
-            </li>
-          </ul>
-        </AccordionContent>
-      </AccordionItem>
+                </li>
+              ))}
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+      )}
 
-      <AccordionItem value="recommended-services">
-        <AccordionTrigger>Recommended services</AccordionTrigger>
-        <AccordionContent className="p-0">
-          <ul className="divide-y divide-neutral-300">
-            <li>
-              <NavLinkItem
-                to="#"
-                icon={
-                  <IconCake
-                    size={20}
-                    stroke={1.5}
-                    className="text-bcgov-blue"
+      {hasRecommendedServices && (
+        <AccordionItem value="recommended-services">
+          <AccordionTrigger>Recommended services</AccordionTrigger>
+          <AccordionContent className="p-0">
+            <ul className="divide-y divide-neutral-300">
+              {recommendedServices.map((item, index) => (
+                <li key={index}>
+                  <NavLinkItem
+                    to="#"
+                    icon={
+                      <IconCake
+                        size={20}
+                        stroke={1.5}
+                        className="text-bcgov-blue"
+                      />
+                    }
+                    title="Recommended service"
                   />
-                }
-                title="Persons with Persistent Multiple Barriers"
-              />
-            </li>
-            <li>
-              <NavLinkItem
-                to="#"
-                icon={
-                  <IconCake
-                    size={20}
-                    stroke={1.5}
-                    className="text-bcgov-blue"
-                  />
-                }
-                title="Hardship Assistance"
-              />
-            </li>
-          </ul>
-        </AccordionContent>
-      </AccordionItem>
+                </li>
+              ))}
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+      )}
     </AccordionGroup>
   );
 }

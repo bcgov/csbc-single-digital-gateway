@@ -1,9 +1,6 @@
 import { IconHeartHandshake } from "@tabler/icons-react";
-import {
-  createFileRoute,
-  notFound,
-  useNavigate,
-} from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   ChefsFormViewer,
@@ -11,7 +8,10 @@ import {
 } from "../../../../../../../features/chefs";
 import { InviteDelegateDialog } from "../../../../../../../features/services/components/invite-delegate-dialog.component";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
-import type { ServiceDto } from "../../../../../../../features/services/service.dto";
+import type {
+  ApplicationDto,
+  ServiceDto,
+} from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
 export const Route = createFileRoute(
@@ -31,9 +31,12 @@ export const Route = createFileRoute(
     if (!service) {
       throw notFound();
     }
-    // TODO: Restore application lookup once service.applications is available on ServiceDto
-    // const application = service.applications?.find((a) => a.id === params.applicationId);
-    const application = { id: params.applicationId, label: "Application", url: "" };
+    const application = service.application?.applications?.find(
+      (a: ApplicationDto) => a.id === params.applicationId,
+    );
+    if (!application) {
+      throw notFound();
+    }
     return { service, application };
   },
   staticData: {
@@ -62,7 +65,18 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
-  const { service, application } = Route.useLoaderData();
+  const { data: services = [] } = useQuery(servicesQueryOptions);
+  const { service: loaderService, application: loaderApplication } =
+    Route.useLoaderData() as {
+      service: ServiceDto;
+      application: ApplicationDto;
+    };
+  const service =
+    services.find((s) => s.id === loaderService.id) ?? loaderService;
+  const application =
+    service.application?.applications?.find(
+      (a: ApplicationDto) => a.id === loaderApplication.id,
+    ) ?? loaderApplication;
   const navigate = useNavigate();
 
   // TODO: Restore application type check once ApplicationDto is available

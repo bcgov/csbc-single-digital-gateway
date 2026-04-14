@@ -10,8 +10,9 @@ export const eligibilityCriteria: EligibilityCriterion[] = [
     description: (
       <div className="flex flex-col gap-1">
         <p>
-          Income Assistance is designed to support adults who are legally able
-          to enter into agreements and manage financial assistance.
+          This is from the placeholder. Income Assistance is designed to support
+          adults who are legally able to enter into agreements and manage
+          financial assistance.
         </p>
         <p>Eligibility is based on the following factors:</p>
         <ul className="list-disc list-inside">

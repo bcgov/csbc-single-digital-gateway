@@ -1,5 +1,10 @@
-import { buttonVariants } from "@repo/ui";
-import { IconCake, IconPlayerPlay } from "@tabler/icons-react";
+import {
+  AccordionContent,
+  AccordionGroup,
+  AccordionItem,
+  AccordionTrigger,
+} from "@repo/ui";
+import { IconCake } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +15,7 @@ import { LexicalContent } from "../../../../../features/services/components/lexi
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
 import { ResourcesSupportAccordion } from "../../../../../features/services/components/resources-support-accordion.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
+import { consentDocumentsByIdQueryOptions } from "../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
@@ -63,23 +69,65 @@ function RouteComponent() {
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex flex-col gap-4 flex-1">
           <h1>{service.name}</h1>
-          <p className="text-muted-foreground" ref={descriptionRef}>
-            {service.description}
-          </p>
+          {service.description && (
+            <p className="text-muted-foreground" ref={descriptionRef}>
+              {service.description}
+            </p>
+          )}
         </div>
-        <Link
-          to="/app/services"
-          className={buttonVariants({ variant: "default", size: "default" })}
-        >
-          <IconPlayerPlay size={16} />
-          Internal button
-        </Link>
-        <a
-          href="https://www2.gov.bc.ca"
-          className={buttonVariants({ variant: "default", size: "default" })}
-        >
-          <IconPlayerPlay size={16} /> External button
-        </a>
+        {/* {service.application?.applications &&
+          service.application.applications.length === 1 && (
+            <span>
+              <Link
+                to="/app/services/$serviceSlug/apply/$applicationId"
+                className={buttonVariants({
+                  variant: "default",
+                  size: "default",
+                })}
+                params={{
+                  serviceSlug: service.slug,
+                  applicationId: service.application.applications[0].id,
+                }}
+              >
+                <IconPlayerPlay size={16} />
+                Start online application
+              </Link>
+            </span>
+          )} */}
+        {/* {service.application?.applications &&
+          service.application.applications.length > 1 && (
+            <div className="flex items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger className=" w-full md:w-auto">
+                  <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80 w-full md:w-auto">
+                    <IconPlayerPlay />
+                    Start online application
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-50">
+                  {service.application.applications
+                    .filter((app) => app.blockType === "form")
+                    .map((app) => {
+                      const online = app.online[0];
+                      if (!online) return null;
+                      return (
+                        <DropdownMenuItem key={app.id}>
+                          <Link
+                            to="/app/services/$serviceSlug/apply/$applicationId"
+                            params={{
+                              serviceSlug: service.slug,
+                              applicationId: app.id,
+                            }}
+                          >
+                            {online.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )} */}
       </div>
       <ServicePageNavigation
         serviceName={service.name}
@@ -137,6 +185,24 @@ function RouteComponent() {
                 </>
               )}
             </div>
+            {/* Data & privacy */}
+            {/* {service.settings?.consent && (
+              <div
+                id="data-and-privacy"
+                className="scroll-mt-20 flex flex-col gap-4 mb-4"
+              >
+                <h2 className="section-heading">Data & privacy</h2>
+                <div className="flex flex-col gap-4">
+                  <span>
+                    <ConsentDocumentsAccordion
+                      documentIds={(service.settings?.consent ?? []).map(
+                        ({ documentId }) => documentId,
+                      )}
+                    />
+                  </span>
+                </div>
+              </div>
+            )} */}
             {/* Eligibility criteria */}
             <div
               id="eligibility-criteria"
@@ -150,7 +216,9 @@ function RouteComponent() {
                   sources of income.
                 </p>
                 <h3>Criteria</h3>
-                <EligibilityCriteria criteria={eligibilityCriteria} />
+                <span className="border">
+                  <EligibilityCriteria criteria={eligibilityCriteria} />
+                </span>
               </div>
             </div>
             {/* Application process */}
@@ -160,57 +228,64 @@ function RouteComponent() {
             >
               <h2 className="section-heading">Application process</h2>
               <div className="flex flex-col gap-4 min-h-48">
-                <p>
-                  The application requires you to submit a lot of documents and
-                  the forms could be lengthy. You don't have to do this alone,
-                  you could seek the help of:
-                </p>
-                <ol className="list-inside pl-2 list-decimal">
-                  <li>
-                    <a href="#">Staff at our offices</a>
-                  </li>
-                  <li>
-                    <a href="#">Other organizations that provide support</a>
-                  </li>
-                  <li>
-                    <a href="#">A family member or friend</a>
-                  </li>
-                </ol>
-                <p>You can apply in two ways:</p>
-                <div className="flex flex-col gap-px border bg-border">
-                  <div className="grid grid-cols-2 gap-px">
-                    <Link
-                      to={"#foo" as string}
-                      className="flex flex-col items-center bg-white p-4"
-                    >
-                      <span className="p-4 bg-blue-10 inline-flex">
-                        <IconCake
-                          className="shrink-0 pb-2"
-                          size={42}
-                          stroke={1.5}
-                          color="#1e5189"
-                        />
-                      </span>
-                      <p className="font-bold py-2">Online application</p>
-                      <p>Apply online through MyBC</p>
-                    </Link>
-                    <Link
-                      to={"#bar" as string}
-                      className="flex flex-col items-center bg-white p-4"
-                    >
-                      <span className="p-4 bg-blue-10 inline-flex">
-                        <IconCake
-                          className="shrink-0 pb-2"
-                          size={42}
-                          stroke={1.5}
-                          color="#1e5189"
-                        />
-                      </span>
-                      <p className="font-bold py-2">Paper form</p>
-                      <p>You can apply by mail or in person</p>
-                    </Link>
-                  </div>
-                </div>
+                {/* {!service.application?.description &&
+                  (!service.application?.applications ||
+                    service.application.applications.length === 0) && (
+                    <p className="text-muted-foreground">
+                      No application process information is available.
+                    </p>
+                  )} */}
+
+                {/* {service.application?.description && (
+                  <span>
+                    <LexicalContent content={service.application.description} />
+                  </span>
+                )} */}
+
+                {/* {service.application?.applications &&
+                  service.application.applications.length > 0 && (
+                    <div className="flex flex-col gap-px border bg-border">
+                      <div
+                        className={cn(
+                          "grid gap-px",
+                          service.application.applications.length > 1 &&
+                            "grid-cols-2 md:grid-cols-3",
+                        )}
+                      >
+                        {service.application.applications
+                          .filter((app) => app.online?.[0]?.url)
+                          .map((app) => {
+                            const online = app.online?.[0];
+
+                            if (!online?.url) return null; // satisfies TS/linter
+
+                            return (
+                              <a
+                                key={online.id}
+                                href={online.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center bg-white p-4 text-center no-underline hover:bg-accent"
+                              >
+                                <span className="p-4 bg-blue-10 inline-flex">
+                                  <IconCake
+                                    size={42}
+                                    stroke={1.5}
+                                    color="#1e5189"
+                                  />
+                                </span>
+
+                                <p className="font-bold py-2">{online.label}</p>
+
+                                {online.description && (
+                                  <p>{online.description}</p>
+                                )}
+                              </a>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )} */}
               </div>
             </div>
             {/* Your activity */}
@@ -248,19 +323,63 @@ function RouteComponent() {
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
               <h2 className="section-heading">More information</h2>
-              <div className="flex flex-col gap-4 min-h-48"></div>
+              <div className="flex flex-col gap-4 min-h-48">
+                {/* {service.faq && service.faq.length > 0 && (
+                  <AccordionGroup values={service.faq.map((item) => item.id)}>
+                    {service.faq.map((item) => (
+                      <AccordionItem key={item.id} value={item.id}>
+                        <AccordionTrigger>{item.question}</AccordionTrigger>
+                        <AccordionContent>
+                          <p>{item.answer}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </AccordionGroup>
+                )} */}
+              </div>
             </div>
           </div>
         </div>
         <div className="col-span-1">
           <div className="flex flex-col gap-6">
-            <ResourcesSupportAccordion />
-            <OtherServicesAccordion />
-            <LegalInformationAccordion />
+            <span>
+              <ResourcesSupportAccordion service={service} />
+              <OtherServicesAccordion service={service} />
+              <LegalInformationAccordion service={service} />
+            </span>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function ConsentDocumentsAccordion({ documentIds }: { documentIds: string[] }) {
+  const { data: documents = [] } = useQuery(
+    consentDocumentsByIdQueryOptions(documentIds),
+  );
+
+  if (documents.length === 0) return null;
+
+  return (
+    <AccordionGroup
+      title="Privacy statements"
+      description="Before you proceed with the application, you will be prompted to agree to the following:"
+      values={documents.map((doc) => doc.id)}
+    >
+      {documents.map((doc) => (
+        <AccordionItem key={doc.id} value={doc.id}>
+          <AccordionTrigger>{doc.name}</AccordionTrigger>
+          <AccordionContent>
+            {doc.content ? (
+              <LexicalContent content={doc.content} />
+            ) : (
+              <p className="text-muted-foreground">No content available.</p>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </AccordionGroup>
   );
 }
 
