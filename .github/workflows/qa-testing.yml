@@ -91,7 +91,7 @@ jobs:
         run: npm run test:cov:web
 
       - name: Run Web E2E Test
-        run: nohup npm run test:e2e > /tmp/e2e-test.log 2>&1 &
+        run: nohup npm run test:e2e > /tmp/e2e-test.log 2>&1
 
       - name: Print dev logs on failure
         if: failure()
