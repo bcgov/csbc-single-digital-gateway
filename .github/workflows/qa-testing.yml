@@ -30,7 +30,7 @@ jobs:
       PORT: 4000
       NODE_ENV: test
       DB_NAME: test_db
-      DB_HOST: 127.0.0.1
+      DB_HOST: localhost
       DB_USER: test_user
       DB_PASS: test_password
       DB_PORT: 5432
@@ -52,8 +52,8 @@ jobs:
       ADMIN_FRONTEND_URL: ${{ vars.API_ADMIN_FRONTEND_URL }}
       APP_PORT: 5173
       VITE_APP_NAME: "Single Digital Gateway"
-      VITE_API_URI: http://127.0.0.1:4000
-      VITE_AUTH_URL: http://127.0.0.1:4000
+      VITE_API_URI: http://localhost:4000
+      VITE_AUTH_URL: http://localhost:4000
       VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
       VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
       WEB_APP_URL: ${{ vars.WEB_APP_URL }}
@@ -82,7 +82,12 @@ jobs:
         run: npm run test:cov:web
 
       - name: Run Web E2E Test
-        run: npm run test:e2e
+        uses: cypress-io/github-action@v7
+        with:
+          install: false
+          working-directory: cypress
+          browser: chrome
+          command: npm run test:e2e
 
       - name: Remove Cookies File
         run: npm run cookies:delete
