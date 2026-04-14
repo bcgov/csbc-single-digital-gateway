@@ -137,14 +137,14 @@ jobs:
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Start Web for E2E
-        run: |
-          npm run dev:web &
-          npx wait-on --timeout 300000 http://127.0.0.1:5173 &
-      
       - name: Start API for E2E
         run: |
-          npm run dev:api &
+          nohup npm run dev:api > /tmp/api-dev.log 2>&1 &
+          npx wait-on --timeout 300000 http://127.0.0.1:5173 &
+
+      - name: Start Web for E2E
+        run: |
+          nohup npm run dev:web > /tmp/web-dev.log 2>&1 &
           npx wait-on --timeout 300000 http://127.0.0.1:4000 &
 
       # - name: Run API Integration Test
@@ -157,11 +157,19 @@ jobs:
       #   run: npm run test:cov:web
 
       - name: Run Web E2E Test
-        run: nohup npm run test:e2e > /tmp/e2e-test.log 2>&1
+        run: nohup npm run test:e2e > /tmp/e2e-test.log 2>&1 &
 
       - name: Print dev logs on failure
         if: failure()
         run: |
+          echo "=== API LOG ==="
+          if [ -f /tmp/api-dev.log ]; then
+            tail -n 300 /tmp/api-dev.log
+          fi
+          echo "=== WEB LOG ==="
+          if [ -f /tmp/web-dev.log ]; then
+            tail -n 300 /tmp/web-dev.log
+          fi
           echo "=== E2E TEST LOG ==="
           if [ -f /tmp/e2e-test.log ]; then
             tail -n 300 /tmp/e2e-test.log
