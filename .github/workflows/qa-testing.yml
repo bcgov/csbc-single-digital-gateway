@@ -96,7 +96,7 @@ jobs:
       PORT: 4000
       NODE_ENV: test
       DB_NAME: test_db
-      DB_HOST: localhost
+      DB_HOST: 127.0.0.1
       DB_USER: test_user
       DB_PASS: test_password
       DB_PORT: 5432
@@ -117,9 +117,9 @@ jobs:
       FRONTEND_URL: ${{ vars.API_FRONTEND_URL }}
       ADMIN_FRONTEND_URL: ${{ vars.API_ADMIN_FRONTEND_URL }}
       APP_PORT: 5173
-      VITE_API_URI: http://localhost:4000
       VITE_APP_NAME: "Single Digital Gateway"
-      VITE_AUTH_URL: http://localhost:4000
+      VITE_API_URI: http://127.0.0.1:4000
+      VITE_AUTH_URL: http://127.0.0.1:4000
       VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
       VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
       CYPRESS_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
@@ -137,9 +137,6 @@ jobs:
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Run Web Component Test with Coverage
-        run: npm run test:cov:web
-
       - name: Start Web for E2E
         run: |
           npm run dev:web &
@@ -149,6 +146,15 @@ jobs:
         run: |
           npm run dev:api &
           npx wait-on --timeout 300000 http://127.0.0.1:4000 &
+
+      # - name: Run API Integration Test
+      #   run: npm run test:int
+
+      # - name: Run API Unit Test with Coverage
+      #   run: npm run test:cov:api
+
+      # - name: Run Web Component Test with Coverage
+      #   run: npm run test:cov:web
 
       - name: Run Web E2E Test
         run: nohup npm run test:e2e > /tmp/e2e-test.log 2>&1
