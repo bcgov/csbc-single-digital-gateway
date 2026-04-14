@@ -22,17 +22,17 @@ Cypress.Commands.add("restoreCookiesFromFile", () => {
  * Custom command to log in and obtain authentication cookies, then save them to a file for later use.
  */
 Cypress.Commands.add("loginToObtainCookies", () => {
-  cy.env(["APP_URL"]).then(({ APP_URL }) => {
-    cy.visit(APP_URL);
+  cy.env(["WEB_APP_URL"]).then(({ WEB_APP_URL }) => {
+    cy.visit(WEB_APP_URL);
     cy.contains("Sign In").click();
 
     // Sign in using the test credentials and save the cookies to a file for later use
     cy.url({ timeout: 20000 }).then((url) => {
-      cy.env(["IDTEST_URL"]).then(({ IDTEST_URL }) => {
+      cy.env(["LOGIN_URL"]).then(({ LOGIN_URL }) => {
         expect(url).to.include("/login/entry");
 
         // Wait for the URL to change to the login form page
-        cy.origin(IDTEST_URL, () => {
+        cy.origin(LOGIN_URL, () => {
           cy.env(["TEST_USERNAME", "TEST_PASSWORD"]).then(
             ({ TEST_USERNAME, TEST_PASSWORD }) => {
               cy.contains("Test with username and password").click();
@@ -56,8 +56,8 @@ Cypress.Commands.add("loginToObtainCookies", () => {
     });
 
     // Visit the app page and verify the csrf-token cookie exists
-    cy.env(["APP_URL"]).then(({ APP_URL }) => {
-      cy.visit(`${APP_URL}/app`);
+    cy.env(["WEB_APP_URL"]).then(({ WEB_APP_URL }) => {
+      cy.visit(`${WEB_APP_URL}/app`);
       cy.getCookie("csrf-token").should("exist");
     });
 

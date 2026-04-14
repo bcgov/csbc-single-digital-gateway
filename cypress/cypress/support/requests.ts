@@ -7,10 +7,10 @@
 export const restoreCookies = () => {
   cy.task("fileExists", "cypress/cookies/auth-cookies.json").then((exists) => {
     if (exists) {
-      cy.env(["APP_URL"]).then(({ APP_URL }) => {
+      cy.env(["WEB_APP_URL"]).then(({ WEB_APP_URL }) => {
         cy.restoreCookiesFromFile();
         cy.request({
-          url: `${APP_URL}/api/auth/bcsc/me`,
+          url: `${WEB_APP_URL}/api/auth/bcsc/me`,
           method: "GET",
           failOnStatusCode: false,
         }).then((response) => {
@@ -30,12 +30,12 @@ export const restoreCookies = () => {
 /**
  * Executes a custom request after optionally restoring cookies.
  * @param requireLogin - Whether to require login cookies before making the request.
- * @param func - The function to execute with the APP_URL.
+ * @param func - The function to execute with the WEB_APP_URL.
  */
 export const customRequest = (requireLogin: boolean, func: Function) => {
-  cy.env(["APP_URL"]).then(({ APP_URL }) => {
-    cy.visit(APP_URL);
+  cy.env(["WEB_APP_URL"]).then(({ WEB_APP_URL }) => {
+    cy.visit(WEB_APP_URL);
     if (requireLogin) restoreCookies();
-    func(APP_URL);
+    func(WEB_APP_URL);
   });
 };

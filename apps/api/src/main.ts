@@ -71,14 +71,6 @@ async function bootstrapMain() {
     getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'],
   });
 
-  // Basic route to verify server is running in test environment
-  app.use('/', (req: Request, res: Response, next: NextFunction) => {
-    if (nodeEnv === 'test') {
-      res.status(200).send('Welcome to the API');
-    }
-    doubleCsrfProtection(req, res, next);
-  });
-
   // Generate CSRF token on all responses so the frontend can read the cookie
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {

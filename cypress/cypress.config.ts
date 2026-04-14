@@ -14,8 +14,8 @@ export default defineConfig({
           return existsSync(filePath);
         },
       });
-      config.env.APP_URL = `http://localhost:${process.env.APP_PORT}`;
-      config.env.IDTEST_URL = "https://idtest.gov.bc.ca";
+      config.env.WEB_APP_URL = process.env.WEB_APP_URL;
+      config.env.LOGIN_URL = "https://idtest.gov.bc.ca";
       config.env.TEST_USERNAME = process.env.CYPRESS_TEST_USERNAME;
       config.env.TEST_PASSWORD = process.env.CYPRESS_TEST_PASSWORD;
       if (process.env.REPORT === "true") {

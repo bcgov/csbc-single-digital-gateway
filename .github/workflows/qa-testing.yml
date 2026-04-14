@@ -56,6 +56,7 @@ jobs:
       VITE_AUTH_URL: http://127.0.0.1:4000
       VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
       VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
+      WEB_APP_URL: ${{ vars.WEB_APP_URL }}
       CYPRESS_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
       CYPRESS_TEST_PASSWORD: ${{ secrets.BCSC_TEST_PASSWORD }}
     steps:
@@ -71,16 +72,6 @@ jobs:
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Start API Server
-        run: |
-          nohup npm run dev:api > /tmp/api-dev.log 2>&1 &
-          npx wait-on --timeout 300000 http://127.0.0.1:5173 &
-
-      - name: Start Web Server
-        run: |
-          nohup npm run dev:web > /tmp/web-dev.log 2>&1 &
-          npx wait-on --timeout 300000 http://127.0.0.1:4000 &
-
       - name: Run API Integration Test
         run: npm run test:int
 
@@ -90,27 +81,8 @@ jobs:
       - name: Run Web Component Test with Coverage
         run: npm run test:cov:web
 
-      - name: Run Web E2E Tests
-        uses: cypress-io/github-action@v7
-        with:
-          install: false
-          wait-on: 'http://localhost:4000, http://localhost:5173'
-          wait-on-timeout: 600
-          working-directory: cypress
-          browser: chrome
-          command: npm run test:e2e
-
-      - name: Print dev logs on failure
-        if: failure()
-        run: |
-          echo "=== API LOG ==="
-          if [ -f /tmp/api-dev.log ]; then
-            tail -n 300 /tmp/api-dev.log
-          fi
-          echo "=== WEB LOG ==="
-          if [ -f /tmp/web-dev.log ]; then
-            tail -n 300 /tmp/web-dev.log
-          fi
+      - name: Run Web E2E Test
+        run: npm run test:e2e
 
       - name: Remove Cookies File
         run: npm run cookies:delete

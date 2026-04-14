@@ -8,23 +8,23 @@ describe("BCSC Authentication E2E Test", () => {
 
   describe("@Get('login')", () => {
     it("Should return redirect URI to the IDTEST login page when calling the endpoint", () => {
-      customRequest(false, (APP_URL: any) => {
+      customRequest(false, (WEB_APP_URL: any) => {
         cy.request({
-          url: `${APP_URL}${loginEndpoint}`,
+          url: `${WEB_APP_URL}${loginEndpoint}`,
           method: "GET",
           followRedirect: false,
         }).then((response) => {
           expect(response.status).to.equal(302);
           expect(response.redirectedToUrl).to.include(
-            encodeURIComponent("http://localhost:4000/auth/bcsc/callback"),
+            encodeURIComponent(`${WEB_APP_URL}/api/auth/bcsc/callback`),
           );
         });
       });
     });
 
     it("Should display the correct user information when cookies are saved and available", () => {
-      customRequest(true, (APP_URL: any) => {
-        cy.visit(`${APP_URL}/app`);
+      customRequest(true, (WEB_APP_URL: any) => {
+        cy.visit(`${WEB_APP_URL}/app`);
         cy.url({ timeout: 20000 });
         cy.contains("Hello, CHASE").should("be.visible");
       });
@@ -33,9 +33,9 @@ describe("BCSC Authentication E2E Test", () => {
 
   describe("@Get('callback')", () => {
     it("Should return 200 OK when calling the endpoint without valid cookies", () => {
-      customRequest(false, (APP_URL: any) => {
+      customRequest(false, (WEB_APP_URL: any) => {
         cy.request({
-          url: `${APP_URL}${callbackEndpoint}?code=auth_code`,
+          url: `${WEB_APP_URL}${callbackEndpoint}?code=auth_code`,
           method: "GET",
           failOnStatusCode: false,
         }).then((response) => {
@@ -45,9 +45,9 @@ describe("BCSC Authentication E2E Test", () => {
     });
 
     it("Should return 200 OK when calling the endpoint with valid cookies", () => {
-      customRequest(true, (APP_URL: any) => {
+      customRequest(true, (WEB_APP_URL: any) => {
         cy.request({
-          url: `${APP_URL}${callbackEndpoint}`,
+          url: `${WEB_APP_URL}${callbackEndpoint}`,
           method: "GET",
         }).then((response) => {
           expect(response.status).to.equal(200);
@@ -58,9 +58,9 @@ describe("BCSC Authentication E2E Test", () => {
 
   describe("@Get('me')", () => {
     it("Should return 401 Unauthorized when calling the endpoint without valid cookies", () => {
-      customRequest(false, (APP_URL: any) => {
+      customRequest(false, (WEB_APP_URL: any) => {
         cy.request({
-          url: `${APP_URL}${meEndpoint}`,
+          url: `${WEB_APP_URL}${meEndpoint}`,
           method: "GET",
           failOnStatusCode: false,
         }).then((response) => {
@@ -71,9 +71,9 @@ describe("BCSC Authentication E2E Test", () => {
     });
 
     it("Should return 200 OK when calling the endpoint with valid cookies", () => {
-      customRequest(true, (APP_URL: any) => {
+      customRequest(true, (WEB_APP_URL: any) => {
         cy.request({
-          url: `${APP_URL}${meEndpoint}`,
+          url: `${WEB_APP_URL}${meEndpoint}`,
           method: "GET",
           failOnStatusCode: false,
         }).then((response) => {
@@ -85,9 +85,9 @@ describe("BCSC Authentication E2E Test", () => {
 
   describe("@Post('logout')", () => {
     it("Should return 403 Forbidden when calling the endpoint without valid cookies", () => {
-      customRequest(false, (APP_URL: any) => {
+      customRequest(false, (WEB_APP_URL: any) => {
         cy.request({
-          url: `${APP_URL}${logoutEndpoint}`,
+          url: `${WEB_APP_URL}${logoutEndpoint}`,
           method: "POST",
           failOnStatusCode: false,
         }).then((response) => {
@@ -98,9 +98,9 @@ describe("BCSC Authentication E2E Test", () => {
     });
 
     it("Should return 403 Forbidden when calling the endpoint with valid cookies on forbidden origin", () => {
-      customRequest(true, (APP_URL: any) => {
+      customRequest(true, (WEB_APP_URL: any) => {
         cy.request({
-          url: `${APP_URL}${logoutEndpoint}`,
+          url: `${WEB_APP_URL}${logoutEndpoint}`,
           method: "POST",
           failOnStatusCode: false,
         }).then((response) => {
@@ -111,8 +111,8 @@ describe("BCSC Authentication E2E Test", () => {
     });
 
     it("Should sign out successfully when clicking on the button with valid cookies on the app page", () => {
-      customRequest(true, (APP_URL: any) => {
-        cy.visit(`${APP_URL}/app`);
+      customRequest(true, (WEB_APP_URL: any) => {
+        cy.visit(`${WEB_APP_URL}/app`);
         cy.get(
           'button[data-slot="dropdown-menu-trigger"] [data-slot="avatar-fallback"]',
         ).click({ force: true });
