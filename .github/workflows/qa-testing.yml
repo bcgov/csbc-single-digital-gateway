@@ -160,7 +160,7 @@ jobs:
         with:
           install: false
           start: npm --prefix .. run dev:api, npm --prefix .. run dev:web
-          wait-on: http://localhost:4000 http://localhost:5173
+          wait-on: 'http://localhost:4000, http://localhost:5173'
           wait-on-timeout: 600
           working-directory: cypress
           browser: chrome
