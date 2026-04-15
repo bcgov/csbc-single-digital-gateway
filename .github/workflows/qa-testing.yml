@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     permissions:
-      contents: write
+      contents: read
     services:
       postgres:
         image: postgres:18
@@ -82,7 +82,7 @@ jobs:
         run: npm run test:cov:web
 
       # The E2E test step is currently disabled in this story and  
-      # will be resumed once the hosting server issue is resolved.
+      # will be resumed once the server hosting issue is resolved.
       # - name: Run Web E2E Test
       #   uses: cypress-io/github-action@v7
       #   with:
