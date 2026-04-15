@@ -81,13 +81,15 @@ jobs:
       - name: Run Web Component Test with Coverage
         run: npm run test:cov:web
 
-      - name: Run Web E2E Test
-        uses: cypress-io/github-action@v7
-        with:
-          install: false
-          working-directory: cypress
-          browser: chrome
-          command: npm run test:e2e
+      # The E2E test step is currently disabled in this story and  
+      # will be resumed once the hosting server issue is resolved.
+      # - name: Run Web E2E Test
+      #   uses: cypress-io/github-action@v7
+      #   with:
+      #     install: false
+      #     working-directory: cypress
+      #     browser: chrome
+      #     command: npm run test:e2e
 
-      - name: Remove Cookies File
-        run: npm run cookies:delete
+      # - name: Remove Cookies File
+      #   run: npm run cookies:delete
