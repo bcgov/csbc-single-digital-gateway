@@ -253,6 +253,18 @@ export function buildLeafSchema(fieldType: FieldType): JsonSchema {
         type: "array",
         items: { type: "object", properties: {} },
       };
+    case "faqArray":
+      return {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            question: { type: "string" },
+            answer: { type: "string" },
+          },
+          required: ["question", "answer"],
+        },
+      };
   }
 }
 
@@ -266,6 +278,11 @@ export function buildControlOptions(
       return { multi: true };
     case "json":
       return { format: "json" };
+    case "faqArray":
+      return {
+        format: "accordion",
+        accordionTriggerScope: "#/properties/question",
+      };
     default:
       return undefined;
   }
@@ -297,6 +314,28 @@ export function addNewField(
   } as UISchemaElement;
 
   const nextUi = insertNode(uiSchema, parentPath, index, control);
+
+  // FAQ array needs an inline item uischema so the answer renders as rich text
+  if (fieldType === "faqArray") {
+    const inserted = getNodeAt(nextUi, [...parentPath, index]) as {
+      options?: Record<string, unknown>;
+    } | undefined;
+    if (inserted?.options) {
+      inserted.options.detail = {
+        type: "VerticalLayout",
+        elements: [
+          { type: "Control", scope: "#/properties/question", label: "Question" },
+          {
+            type: "Control",
+            scope: "#/properties/answer",
+            label: "Answer",
+            options: { format: "richtext" },
+          },
+        ],
+      };
+    }
+  }
+
   return { schema: nextSchema, uiSchema: nextUi, propertyKey: key };
 }
 
@@ -406,7 +445,10 @@ export function detectFieldType(
   if (t === "integer") return "integer";
   if (t === "boolean") return "boolean";
   if (t === "object") return "json";
-  if (t === "array") return "objectArray";
+  if (t === "array") {
+    if (optFormat === "accordion") return "faqArray";
+    return "objectArray";
+  }
   return undefined;
 }
 

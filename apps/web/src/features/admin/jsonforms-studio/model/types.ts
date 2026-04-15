@@ -47,7 +47,8 @@ export type FieldType =
   | "richtext"
   | "json"
   | "multiline"
-  | "objectArray";
+  | "objectArray"
+  | "faqArray";
 
 export type RendererKey = "richtext" | "asyncSelect" | "select" | "json" | "multiline";
 

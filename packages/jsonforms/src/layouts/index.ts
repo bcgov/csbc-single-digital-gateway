@@ -33,3 +33,8 @@ export {
   arrayLayoutTester,
   arrayLayoutEntry,
 } from "./ArrayLayout.js";
+export {
+  AccordionArrayLayout,
+  accordionArrayLayoutTester,
+  accordionArrayLayoutEntry,
+} from "./AccordionArrayLayout.js";

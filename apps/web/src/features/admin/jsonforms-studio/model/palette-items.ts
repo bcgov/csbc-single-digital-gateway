@@ -37,6 +37,7 @@ const NEW_FIELDS: { type: FieldType; label: string }[] = [
   { type: "enum", label: "Enum" },
   { type: "json", label: "JSON object" },
   { type: "objectArray", label: "Object array" },
+  { type: "faqArray", label: "FAQ" },
 ];
 
 const CUSTOM_RENDERERS: { key: RendererKey; label: string }[] = [

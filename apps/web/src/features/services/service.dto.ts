@@ -11,10 +11,21 @@ export const ServiceDto = z.object({
   description: z.string().nullable().optional(),
   content: z
     .object({
+      // Details
       about: z.string().optional(),
       audience: z.string().optional(),
       considerations: z.string().optional(),
       outcomes: z.string().optional(),
+      // Contact Methods
+      // Resources
+      faq: z
+        .array(
+          z.object({
+            question: z.string(),
+            answer: z.string(),
+          }),
+        )
+        .optional(),
     })
     .optional(),
   createdAt: z.string(),

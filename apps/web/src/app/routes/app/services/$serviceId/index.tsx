@@ -4,12 +4,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@repo/ui";
+import slugify from "@sindresorhus/slugify";
 import { IconCake } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { EligibilityCriteria } from "../../../../../features/services/components/eligibility-criteria.component";
-import { eligibilityCriteria } from "../../../../../features/services/components/eligibility-criteria.placeholder";
 import { LegalInformationAccordion } from "../../../../../features/services/components/legal-information-accordion.component";
 import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
@@ -204,7 +203,7 @@ function RouteComponent() {
               </div>
             )} */}
             {/* Eligibility criteria */}
-            <div
+            {/* <div
               id="eligibility-criteria"
               className="scroll-mt-20 flex flex-col gap-4 mb-4"
             >
@@ -220,7 +219,7 @@ function RouteComponent() {
                   <EligibilityCriteria criteria={eligibilityCriteria} />
                 </span>
               </div>
-            </div>
+            </div> */}
             {/* Application process */}
             <div
               id="application-process"
@@ -324,18 +323,26 @@ function RouteComponent() {
             >
               <h2 className="section-heading">More information</h2>
               <div className="flex flex-col gap-4 min-h-48">
-                {/* {service.faq && service.faq.length > 0 && (
-                  <AccordionGroup values={service.faq.map((item) => item.id)}>
-                    {service.faq.map((item) => (
-                      <AccordionItem key={item.id} value={item.id}>
+                {service.content?.faq && service.content.faq.length > 0 && (
+                  <AccordionGroup
+                    title="FAQs"
+                    values={service.content.faq.map((item) =>
+                      slugify(item.question),
+                    )}
+                  >
+                    {service.content?.faq.map((item) => (
+                      <AccordionItem
+                        key={slugify(item.question)}
+                        value={slugify(item.question)}
+                      >
                         <AccordionTrigger>{item.question}</AccordionTrigger>
                         <AccordionContent>
-                          <p>{item.answer}</p>
+                          <LexicalContent content={JSON.parse(item.answer)} />
                         </AccordionContent>
                       </AccordionItem>
                     ))}
                   </AccordionGroup>
-                )} */}
+                )}
               </div>
             </div>
           </div>

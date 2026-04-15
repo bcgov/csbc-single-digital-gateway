@@ -54,6 +54,8 @@ export class BcscAuthController {
   @Get('callback')
   @PublicRoute()
   async callback(@Req() req: Request, @Res() res: Response): Promise<void> {
+    console.log('req.headers: ', req.headers.authorization);
+
     try {
       await this.authService.handleCallback(
         this.idpType,

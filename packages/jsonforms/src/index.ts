@@ -27,6 +27,7 @@ import {
   accordionLayoutEntry,
   accordionItemLayoutEntry,
   arrayLayoutEntry,
+  accordionArrayLayoutEntry,
 } from "./layouts/index.js";
 import {
   textCellEntry,
@@ -58,6 +59,7 @@ export const repoRenderers: JsonFormsRendererRegistryEntry[] = [
   accordionLayoutEntry,
   accordionItemLayoutEntry,
   arrayLayoutEntry,
+  accordionArrayLayoutEntry,
 ];
 
 export const repoCells: JsonFormsCellRendererRegistryEntry[] = [
