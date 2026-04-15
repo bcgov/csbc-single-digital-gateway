@@ -22,7 +22,8 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "src/*": ["src/*"]
+      "src/*": ["src/*"],
+      "tests/*": ["tests/*"]
     }
   }
 }

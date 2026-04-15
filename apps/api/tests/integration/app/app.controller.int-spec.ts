@@ -35,8 +35,8 @@ function createMockRegistry(): OidcProviderRegistry {
 }
 
 // Specify the title and the type of test in the syntax below
-// The integration test file name should be app.controller.example.int-spec.ts
-describe('AppControllerExample (integration)', () => {
+// The integration test file name should be app.controller.int-spec.ts
+describe('AppController Integration Test', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {

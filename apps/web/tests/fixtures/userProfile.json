@@ -1,0 +1,9 @@
+{
+  "sub": "sub-123",
+  "name": "Legal Name",
+  "display_name": "Display Name",
+  "email": "person@example.com",
+  "given_name": "Given",
+  "family_name": "Family",
+  "picture": "https: //example.com/avatar.png"
+}

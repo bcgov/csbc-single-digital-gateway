@@ -19,7 +19,7 @@ function createMockHost() {
   };
 }
 
-describe('HttpExceptionFilter', () => {
+describe('HttpExceptionFilter Unit Test', () => {
   let filter: HttpExceptionFilter;
   let superCatchSpy: jest.SpyInstance;
 
@@ -65,6 +65,30 @@ describe('HttpExceptionFilter', () => {
     expect(loggerErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('ZodSerializationException:'),
     );
+    expect(superCatchSpy).toHaveBeenCalledWith(exception, host);
+
+    loggerErrorSpy.mockRestore();
+  });
+
+  it('Should not log when ZodSerializationException contains a non-ZodError', () => {
+    const loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => {});
+
+    const fakeZodError = new Error('not a real ZodError');
+    const exception = new ZodSerializationException(
+      fakeZodError as unknown as ZodError,
+    );
+    const host = createMockHost();
+
+    // Override getZodError so it returns a plain Error, not a ZodError instance
+    jest
+      .spyOn(exception, 'getZodError')
+      .mockReturnValue(fakeZodError as unknown as ZodError);
+
+    filter.catch(exception, host as never);
+
+    expect(loggerErrorSpy).not.toHaveBeenCalled();
     expect(superCatchSpy).toHaveBeenCalledWith(exception, host);
 
     loggerErrorSpy.mockRestore();

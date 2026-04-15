@@ -10,17 +10,20 @@
     "build:@repo/ui": "turbo run build --filter=@repo/ui",
     "db:migrate": "turbo run db:migrate",
     "dev": "turbo run dev",
+    "dev:api": "turbo run dev --filter=api",
     "dev:web": "turbo run dev --filter=web",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
-    "test:cov": "turbo run test:cov",
-    "cy:component": "turbo run cy:component",
-    "cy:component:report": "turbo run cy:component:report",
-    "cy:e2e": "turbo run cy:e2e",
-    "cy:e2e:report": "turbo run cy:e2e:report",
-    "cy:open": "turbo run cy:open"
+    "test:cov:api": "turbo run test:cov:api",
+    "test:vscode": "turbo run test:vscode",
+    "test:component": "turbo run test:component",
+    "test:cov:web": "turbo run test:cov:web",
+    "test:open": "turbo run test:open",
+    "test:e2e": "turbo run test:e2e",
+    "test:e2e:report": "turbo run test:e2e:report",
+    "cookies:delete": "turbo run cookies:delete"
   },
   "devDependencies": {
     "turbo": "^2.7.3"
@@ -31,6 +34,7 @@
   "packageManager": "npm@11.6.2",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "cypress"
   ]
 }
