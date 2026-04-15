@@ -1,5 +1,4 @@
 name: CSBC SDG Quality Assurance Testing
-# This workflow is executed during pull requests triggered by a user.
 
 on: 
   pull_request:
@@ -7,9 +6,12 @@ on:
       - develop
 
 jobs:
-  api-qa-testing:
+  sdg-qa-testing:
+    name: SDG QA Testing
     runs-on: ubuntu-latest
     environment: development
+    permissions:
+      contents: read
     services:
       postgres:
         image: postgres:18
@@ -24,7 +26,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    name: API QA Testing
     env:
       PORT: 4000
       NODE_ENV: test
@@ -49,62 +50,46 @@ jobs:
       SESSION_SECRET: ${{ secrets.API_SESSION_SECRET }}
       FRONTEND_URL: ${{ vars.API_FRONTEND_URL }}
       ADMIN_FRONTEND_URL: ${{ vars.API_ADMIN_FRONTEND_URL }}
+      APP_PORT: 5173
+      VITE_APP_NAME: "Single Digital Gateway"
+      VITE_API_URI: http://localhost:4000
+      VITE_AUTH_URL: http://localhost:4000
+      VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
+      VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
+      WEB_APP_URL: ${{ vars.WEB_APP_URL }}
+      CYPRESS_TEST_USERNAME: ${{ secrets.BCSC_TEST_USERNAME }}
+      CYPRESS_TEST_PASSWORD: ${{ secrets.BCSC_TEST_PASSWORD }}
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies with npm ci
+      - name: Install Dependencies
         run: npm ci
 
-      - name: Build API Components
-        run: npm run build:api
-
-      - name: Build @Repo/DB Components
-        run: npm run build:@repo/db
+      - name: Build Components
+        run: npm run build
 
       - name: Database Migration
         run: npm run db:migrate
 
-      - name: Run API Unit Tests
-        run: npm run test:unit
-
-      - name: Run API Integration Tests
+      - name: Run API Integration Test
         run: npm run test:int
 
-      - name: Run Coverage Test
-        run: npm run test:cov
+      - name: Run API Unit Test with Coverage
+        run: npm run test:cov:api
 
-  web-qa-testing:
-    name: Web QA Testing
-    runs-on: ubuntu-latest
-    environment: development
-    env:
-      APP_PORT: 5173
-      NODE_ENV: test
-      VITE_API_URI: http://localhost:4000
-      VITE_APP_NAME: "Single Digital Gateway"
-      VITE_AUTH_URL: http://localhost:4000
-      VITE_CONSENT_MANAGER_API_URL: ${{ vars.WEB_CONSENT_MANAGER_API_URL }}
-      VITE_SERVICE_CATALOGUE_API_URL: ${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Run Web Component Test with Coverage
+        run: npm run test:cov:web
 
-      - name: Install dependencies with npm ci
-        run: npm ci
+      # The E2E test step is currently disabled in this story and  
+      # will be resumed once the server hosting issue is resolved.
+      # - name: Run Web E2E Test
+      #   uses: cypress-io/github-action@v7
+      #   with:
+      #     install: false
+      #     working-directory: cypress
+      #     browser: chrome
+      #     command: npm run test:e2e
 
-      - name: Run Cypress Component Tests
-        uses: cypress-io/github-action@v7
-        with:
-          build: npm run build:web
-          component: true
-          command: npm run cy:component
-
-      - name: Run Cypress E2E Tests
-        uses: cypress-io/github-action@v7
-        with:
-          build: npm run build:web
-          start: npm run dev:web
-          wait-on: 'http://localhost:5173'
-          browser: chrome
-          command: npm run cy:e2e
+      # - name: Remove Cookies File
+      #   run: npm run cookies:delete

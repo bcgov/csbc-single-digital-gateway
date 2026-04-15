@@ -1,35 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import * as client from 'openid-client';
-import { AuthService } from '../services/auth.service';
+import { UsersService } from 'src/modules/users/services/users.service';
+import { createMockRegistry } from 'tests/utils/mock.auth.module';
 import {
   OIDC_PROVIDER_REGISTRY,
   type OidcProviderConfig,
-  type OidcProviderRegistry,
 } from '../auth.config';
+import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
-import { UsersService } from 'src/modules/users/services/users.service';
 
 const mockBcscClient = {} as client.Configuration;
 const mockIdirClient = {} as client.Configuration;
-
-function createMockRegistry(): OidcProviderRegistry {
-  const registry: OidcProviderRegistry = new Map();
-  registry.set(IdpType.BCSC, {
-    client: mockBcscClient,
-    issuer: 'https://bcsc.example.com',
-    redirectUri: 'https://example.com/auth/bcsc/callback',
-    postLogoutRedirectUri: 'https://example.com',
-    scopes: 'openid profile email',
-  } satisfies OidcProviderConfig);
-  registry.set(IdpType.IDIR, {
-    client: mockIdirClient,
-    issuer: 'https://idir.example.com',
-    redirectUri: 'https://example.com/auth/idir/callback',
-    postLogoutRedirectUri: 'https://example.com/admin',
-    scopes: 'openid profile email',
-  } satisfies OidcProviderConfig);
-  return registry;
-}
 
 const mockUsersService = {
   syncFromOidc: jest.fn().mockResolvedValue({ userId: 'user-1' }),
@@ -51,7 +32,7 @@ function createMockSession(
   };
 }
 
-describe('AuthService', () => {
+describe('AuthService Unit Test', () => {
   let service: AuthService;
 
   beforeEach(async () => {
@@ -60,7 +41,10 @@ describe('AuthService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: OIDC_PROVIDER_REGISTRY, useFactory: createMockRegistry },
+        {
+          provide: OIDC_PROVIDER_REGISTRY,
+          useFactory: () => createMockRegistry(mockBcscClient, mockIdirClient),
+        },
         { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
@@ -105,9 +89,15 @@ describe('AuthService', () => {
       });
       const requestQuery = { code: 'abc' };
 
-      await service.handleCallback(IdpType.BCSC, requestQuery, session as never);
+      await service.handleCallback(
+        IdpType.BCSC,
+        requestQuery,
+        session as never,
+      );
 
-      const expectedUrl = new URL('https://example.com/auth/bcsc/callback?code=abc');
+      const expectedUrl = new URL(
+        'https://example.com/auth/bcsc/callback?code=abc',
+      );
       expect(client.authorizationCodeGrant).toHaveBeenCalledWith(
         mockBcscClient,
         expectedUrl,
@@ -124,9 +114,9 @@ describe('AuthService', () => {
           userId: 'user-1',
         }),
       );
-      expect(
-        (session.bcsc as Record<string, unknown>).userProfile,
-      ).toEqual(expect.objectContaining({ sub: 'mock-sub' }));
+      expect((session.bcsc as Record<string, unknown>).userProfile).toEqual(
+        expect.objectContaining({ sub: 'mock-sub' }),
+      );
       expect(session.oidcState).toBeUndefined();
       expect(session.oidcCodeVerifier).toBeUndefined();
       expect(session.oidcIdpType).toBeUndefined();
@@ -139,7 +129,11 @@ describe('AuthService', () => {
       });
       const requestQuery = { code: 'abc' };
 
-      await service.handleCallback(IdpType.BCSC, requestQuery, session as never);
+      await service.handleCallback(
+        IdpType.BCSC,
+        requestQuery,
+        session as never,
+      );
 
       expect(mockUsersService.syncFromOidc).toHaveBeenCalledWith(
         'https://bcsc.example.com',
@@ -147,6 +141,98 @@ describe('AuthService', () => {
         expect.objectContaining({ sub: 'mock-sub' }),
         { name: undefined, email: undefined },
       );
+    });
+
+    it('Should map full claims into userProfile and use display_name/email for syncFromOidc', async () => {
+      const callbackUrl = new URL(
+        'https://example.com/auth/bcsc/callback?code=abc&state=mock-state',
+      );
+      const session = createMockSession({
+        oidcState: 'mock-state',
+        oidcCodeVerifier: 'mock-code-verifier',
+      });
+
+      const claims = {
+        sub: 'sub-123',
+        name: 'Legal Name',
+        display_name: 'Display Name',
+        email: 'person@example.com',
+        given_name: 'Given',
+        family_name: 'Family',
+        picture: 'https://example.com/avatar.png',
+      };
+
+      (client.authorizationCodeGrant as jest.Mock).mockResolvedValueOnce({
+        access_token: 'access-123',
+        refresh_token: 'refresh-123',
+        id_token: 'id-123',
+        claims: jest.fn(() => claims),
+        expiresIn: jest.fn(() => 120),
+      });
+
+      await service.handleCallback(IdpType.BCSC, callbackUrl, session as never);
+
+      expect(mockUsersService.syncFromOidc).toHaveBeenCalledWith(
+        'https://bcsc.example.com',
+        'sub-123',
+        claims,
+        { name: 'Display Name', email: 'person@example.com' },
+      );
+
+      const bcsc = session.bcsc as Record<string, unknown>;
+      expect(bcsc.accessToken).toBe('access-123');
+      expect(bcsc.refreshToken).toBe('refresh-123');
+      expect(bcsc.idToken).toBe('id-123');
+      expect(bcsc.userProfile).toEqual({
+        sub: 'sub-123',
+        name: 'Legal Name',
+        email: 'person@example.com',
+        given_name: 'Given',
+        family_name: 'Family',
+        picture: 'https://example.com/avatar.png',
+      });
+      expect(typeof bcsc.tokenExpiresAt).toBe('number');
+    });
+
+    it('Should handle missing claims and undefined expiresIn with safe fallbacks', async () => {
+      const callbackUrl = new URL(
+        'https://example.com/auth/idir/callback?code=abc&state=mock-state',
+      );
+      const session = createMockSession({
+        oidcState: 'mock-state',
+        oidcCodeVerifier: 'mock-code-verifier',
+      });
+
+      (client.authorizationCodeGrant as jest.Mock).mockResolvedValueOnce({
+        access_token: 'idir-access',
+        refresh_token: 'idir-refresh',
+        id_token: 'idir-id',
+        claims: jest.fn(() => undefined),
+        expiresIn: jest.fn(() => undefined),
+      });
+
+      await service.handleCallback(IdpType.IDIR, callbackUrl, session as never);
+
+      expect(mockUsersService.syncFromOidc).toHaveBeenCalledWith(
+        'https://idir.example.com',
+        '',
+        undefined,
+        { name: undefined, email: undefined },
+      );
+
+      const idir = session.idir as Record<string, unknown>;
+      expect(idir.accessToken).toBe('idir-access');
+      expect(idir.refreshToken).toBe('idir-refresh');
+      expect(idir.idToken).toBe('idir-id');
+      expect(idir.tokenExpiresAt).toBeUndefined();
+      expect(idir.userProfile).toEqual({
+        sub: '',
+        name: undefined,
+        email: undefined,
+        given_name: undefined,
+        family_name: undefined,
+        picture: undefined,
+      });
     });
   });
 
@@ -188,6 +274,63 @@ describe('AuthService', () => {
         session as never,
       );
       expect(result).toBe(false);
+    });
+
+    it('Should compute tokenExpiresAt and update access/refresh/id tokens when present', async () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+
+      (client.refreshTokenGrant as jest.Mock).mockResolvedValueOnce({
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        id_token: 'new-id-token',
+        expiresIn: jest.fn(() => 120),
+      });
+
+      const session = createMockSession({
+        bcsc: { refreshToken: 'old-refresh-token' },
+      });
+
+      const result = await service.refreshTokens(
+        IdpType.BCSC,
+        session as never,
+      );
+
+      const bcsc = session.bcsc as Record<string, unknown>;
+      expect(result).toBe(true);
+      expect(bcsc.accessToken).toBe('new-access-token');
+      expect(bcsc.tokenExpiresAt).toBe(1_120_000);
+      expect(bcsc.refreshToken).toBe('new-refresh-token');
+      expect(bcsc.idToken).toBe('new-id-token');
+
+      nowSpy.mockRestore();
+    });
+
+    it('Should set tokenExpiresAt undefined and keep existing refresh/id tokens when omitted', async () => {
+      (client.refreshTokenGrant as jest.Mock).mockResolvedValueOnce({
+        access_token: 'rotated-access-token',
+        refresh_token: undefined,
+        id_token: undefined,
+        expiresIn: jest.fn(() => 0),
+      });
+
+      const session = createMockSession({
+        bcsc: {
+          refreshToken: 'existing-refresh-token',
+          idToken: 'existing-id-token',
+        },
+      });
+
+      const result = await service.refreshTokens(
+        IdpType.BCSC,
+        session as never,
+      );
+
+      const bcsc = session.bcsc as Record<string, unknown>;
+      expect(result).toBe(true);
+      expect(bcsc.accessToken).toBe('rotated-access-token');
+      expect(bcsc.tokenExpiresAt).toBeUndefined();
+      expect(bcsc.refreshToken).toBe('existing-refresh-token');
+      expect(bcsc.idToken).toBe('existing-id-token');
     });
   });
 
@@ -231,36 +374,34 @@ describe('AuthService', () => {
 
     it('Should return null when no profile exists', () => {
       const session = createMockSession();
-      expect(
-        service.getUserProfile(IdpType.BCSC, session as never),
-      ).toBeNull();
+      expect(service.getUserProfile(IdpType.BCSC, session as never)).toBeNull();
     });
   });
 
   describe('isTokenExpiringSoon', () => {
     it('Should return false when no tokenExpiresAt', () => {
       const session = createMockSession();
-      expect(
-        service.isTokenExpiringSoon(IdpType.BCSC, session as never),
-      ).toBe(false);
+      expect(service.isTokenExpiringSoon(IdpType.BCSC, session as never)).toBe(
+        false,
+      );
     });
 
     it('Should return true when token expires within threshold', () => {
       const session = createMockSession({
         bcsc: { tokenExpiresAt: Date.now() + 10_000 },
       });
-      expect(
-        service.isTokenExpiringSoon(IdpType.BCSC, session as never),
-      ).toBe(true);
+      expect(service.isTokenExpiringSoon(IdpType.BCSC, session as never)).toBe(
+        true,
+      );
     });
 
     it('Should return false when token is not expiring soon', () => {
       const session = createMockSession({
         bcsc: { tokenExpiresAt: Date.now() + 60_000 },
       });
-      expect(
-        service.isTokenExpiringSoon(IdpType.BCSC, session as never),
-      ).toBe(false);
+      expect(service.isTokenExpiringSoon(IdpType.BCSC, session as never)).toBe(
+        false,
+      );
     });
   });
 
@@ -300,6 +441,47 @@ describe('AuthService', () => {
     it('Should return false when no session is active', () => {
       const session = createMockSession();
       expect(service.hasAnyActiveSession(session as never)).toBe(false);
+    });
+  });
+
+  describe('getProvider', () => {
+    const getProvider = (
+      svc: AuthService,
+    ): ((idpType: IdpType) => OidcProviderConfig) =>
+      (
+        svc as unknown as {
+          getProvider: (idpType: IdpType) => OidcProviderConfig;
+        }
+      ).getProvider.bind(svc);
+
+    it('Should return BCSC provider when idpType is BCSC', () => {
+      const provider = getProvider(service)(IdpType.BCSC);
+
+      expect(provider).toEqual({
+        client: mockBcscClient,
+        issuer: 'https://bcsc.example.com',
+        redirectUri: 'https://example.com/auth/bcsc/callback',
+        postLogoutRedirectUri: 'https://example.com',
+        scopes: 'openid profile email',
+      });
+    });
+
+    it('Should return IDIR provider when idpType is IDIR', () => {
+      const provider = getProvider(service)(IdpType.IDIR);
+
+      expect(provider).toEqual({
+        client: mockIdirClient,
+        issuer: 'https://idir.example.com',
+        redirectUri: 'https://example.com/auth/idir/callback',
+        postLogoutRedirectUri: 'https://example.com/admin',
+        scopes: 'openid profile email',
+      });
+    });
+
+    it('Should throw when idpType is unknown', () => {
+      expect(() => getProvider(service)('unknown' as IdpType)).toThrow(
+        'Unknown IDP type: unknown',
+      );
     });
   });
 });

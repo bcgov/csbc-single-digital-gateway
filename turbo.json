@@ -89,7 +89,7 @@
         "ADMIN_FRONTEND_URL"
       ]
     },
-    "test:cov": {
+    "test:cov:api": {
       "passThroughEnv": [
         "DB_NAME",
         "DB_HOST",
@@ -114,14 +114,58 @@
         "ADMIN_FRONTEND_URL"
       ]
     },
-    "cy:component": {},
-    "cy:component:report": {},
-    "cy:e2e": {
+    "test:vscode": {
+      "passThroughEnv": [
+        "DB_NAME",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASS",
+        "DB_SSL",
+        "OIDC_ISSUER",
+        "OIDC_CLIENT_ID",
+        "OIDC_CLIENT_SECRET",
+        "OIDC_REDIRECT_URI",
+        "OIDC_POST_LOGOUT_REDIRECT_URI",
+        "OIDC_CLIENT_AUTH_METHOD",
+        "AUTH_OIDC_ISSUER",
+        "AUTH_OIDC_CLIENT_ID",
+        "AUTH_OIDC_CLIENT_SECRET",
+        "AUTH_OIDC_REDIRECT_URI",
+        "AUTH_OIDC_POST_LOGOUT_REDIRECT_URI",
+        "AUTH_OIDC_CLIENT_AUTH_METHOD",
+        "SESSION_SECRET",
+        "FRONTEND_URL",
+        "ADMIN_FRONTEND_URL"
+      ]
+    },
+    "test:component": {},
+    "test:cov:web": {
       "passThroughEnv": [
         "APP_PORT"
       ]
     },
-    "cy:e2e:report": {},
-    "cy:open": {}
+    "test:open": {
+      "passThroughEnv": [
+        "APP_PORT",
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD"
+      ]
+    },
+    "test:e2e": {
+      "passThroughEnv": [
+        "APP_PORT",
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD"
+      ]
+    },
+    "test:e2e:report": {
+      "passThroughEnv": [
+        "APP_PORT",
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD"
+      ]
+    },
+    "cookies:delete": {}
   }
 }

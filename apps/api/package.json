@@ -14,8 +14,9 @@
     "start:prod": "node dist/main",
     "test:unit": "jest",
     "test:int": "jest --config ./tests/config/jest-integration.json",
+    "test:vscode": "node ./tests/config/jest-vscode.cjs",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage > ./tests/coverage/coverage.txt",
+    "test:cov:api": "jest --coverage > ./tests/coverage/coverage.txt && echo \"Coverage Report\" && cat ./tests/coverage/coverage.txt",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
@@ -83,9 +84,17 @@
       "ts"
     ],
     "rootDir": ".",
-    "testRegex": ".*\\.spec\\.ts$",
+    "testRegex": ".*\\.(spec|int-spec)\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/common/(.*)$": "<rootDir>/src/common/$1",
+      "^src/database/(.*)$": "<rootDir>/src/database/$1",
+      "^src/modules/(.*)$": "<rootDir>/src/modules/$1",
+      "^tests/utils/(.*)$": "<rootDir>/tests/utils/$1",
+      "^openid-client$": "<rootDir>/tests/__mocks__/openid-client.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
@@ -96,22 +105,18 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 20,
-        "functions": 20,
-        "lines": 20,
-        "statements": 20
+        "statements": 90,
+        "branches": 80,
+        "functions": 90,
+        "lines": 90
       }
     },
     "coveragePathIgnorePatterns": [
       "<rootDir>/dist/",
-      "<rootDir>/node_modules/"
-    ],
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^src/common/(.*)$": "<rootDir>/src/common/$1",
-      "^src/database/(.*)$": "<rootDir>/src/database/$1",
-      "^src/modules/(.*)$": "<rootDir>/src/modules/$1",
-      "^openid-client$": "<rootDir>/tests/__mocks__/openid-client.ts"
-    }
+      "<rootDir>/node_modules/",
+      "<rootDir>/tests/utils/",
+      "<rootDir>/.*\\.d\\.ts$",
+      "<rootDir>/src/main.ts"
+    ]
   }
 }

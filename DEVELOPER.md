@@ -114,3 +114,4 @@ For package-specific documentation, see the following files:
 For QA testing-specific documentation, see the following files:
 - [./apps/api/tests/README.md](./apps/api/tests/README.md)
 - [./apps/web/tests/README.md](./apps/web/tests/README.md)
+- [./cypress/README.md](./cypress/README.md)

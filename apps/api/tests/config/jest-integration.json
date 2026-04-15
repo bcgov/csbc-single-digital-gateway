@@ -14,6 +14,7 @@
     "^src/common/(.*)$": "<rootDir>/src/common/$1",
     "^src/database/(.*)$": "<rootDir>/src/database/$1",
     "^src/modules/(.*)$": "<rootDir>/src/modules/$1",
+    "^tests/utils/(.*)$": "<rootDir>/tests/utils/$1",
     "^openid-client$": "<rootDir>/tests/__mocks__/openid-client.ts"
   }
 }
