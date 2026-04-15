@@ -1,6 +1,7 @@
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfigDto } from 'src/common/dtos/app-config.dto';
+import { UsersService } from 'src/modules/users/services/users.service';
 import {
   buildMockRequest,
   buildMockResponse,
@@ -11,6 +12,10 @@ import { IdirAuthController } from '../controllers/idir-auth.controller';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
 
+const mockUsersService = {
+  getUserRoles: jest.fn().mockResolvedValue([]),
+};
+
 describe('IdirAuthController Unit Test', () => {
   let controller: IdirAuthController;
 
@@ -20,9 +25,11 @@ describe('IdirAuthController Unit Test', () => {
     jest.clearAllMocks();
     mockConfigService.get.mockReturnValue(adminFrontendUrl);
 
+    mockUsersService.getUserRoles.mockResolvedValue([]);
     controller = new IdirAuthController(
       mockAuthService as unknown as AuthService,
       mockConfigService as unknown as ConfigService<AppConfigDto, true>,
+      mockUsersService as unknown as UsersService,
     );
   });
 
@@ -271,12 +278,12 @@ describe('IdirAuthController Unit Test', () => {
       expect(controller).toHaveProperty('me');
     });
 
-    it('Should call authService.getUserProfile with IdpType.IDIR and session', () => {
+    it('Should call authService.getUserProfile with IdpType.IDIR and session', async () => {
       const req = buildMockRequest();
       const profile = { sub: 'user-1', name: 'Admin User' };
       mockAuthService.getUserProfile.mockReturnValue(profile);
 
-      controller.me(req);
+      await controller.me(req);
 
       expect(mockAuthService.getUserProfile).toHaveBeenCalledTimes(1);
       expect(mockAuthService.getUserProfile).toHaveBeenCalledWith(
@@ -285,28 +292,28 @@ describe('IdirAuthController Unit Test', () => {
       );
     });
 
-    it('Should return profile when it exists', () => {
+    it('Should return profile with roles when it exists', async () => {
       const req = buildMockRequest();
       const profile = { sub: 'user-2', name: 'Jane' };
       mockAuthService.getUserProfile.mockReturnValue(profile);
 
-      const result = controller.me(req);
+      const result = await controller.me(req);
 
-      expect(result).toEqual(profile);
+      expect(result).toEqual({ ...profile, roles: [] });
     });
 
-    it('Should throw UnauthorizedException when profile is null', () => {
+    it('Should throw UnauthorizedException when profile is null', async () => {
       const req = buildMockRequest();
       mockAuthService.getUserProfile.mockReturnValue(null);
 
-      expect(() => controller.me(req)).toThrow(UnauthorizedException);
+      await expect(controller.me(req)).rejects.toThrow(UnauthorizedException);
     });
 
-    it('Should throw UnauthorizedException when profile is undefined', () => {
+    it('Should throw UnauthorizedException when profile is undefined', async () => {
       const req = buildMockRequest();
       mockAuthService.getUserProfile.mockReturnValue(undefined);
 
-      expect(() => controller.me(req)).toThrow(UnauthorizedException);
+      await expect(controller.me(req)).rejects.toThrow(UnauthorizedException);
     });
   });
 });

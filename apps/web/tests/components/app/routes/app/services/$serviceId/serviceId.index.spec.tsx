@@ -49,7 +49,6 @@ jest.mock("@repo/ui", () => ({
     asChild?: boolean;
   }) =>
     asChild ? (
-      // Link is not wrapped in an extra <button> that duplicates the label
       <>{children}</>
     ) : (
       <button className={className}>{children}</button>
@@ -105,6 +104,11 @@ jest.mock("@repo/ui", () => ({
   ),
 }));
 
+jest.mock("@sindresorhus/slugify", () => ({
+  __esModule: true,
+  default: (str: string) => str.toLowerCase().replace(/\s+/g, "-"),
+}));
+
 jest.mock("@tabler/icons-react", () => ({
   IconCake: () => <svg data-testid="icon-cake" />,
   IconPlayerPlay: () => <svg data-testid="icon-player-play" />,
@@ -126,20 +130,6 @@ jest.mock(
         data-visible={String(visible)}
       />
     ),
-  }),
-);
-
-jest.mock(
-  "src/features/services/components/eligibility-criteria.component",
-  () => ({
-    EligibilityCriteria: () => <div data-testid="eligibility-criteria" />,
-  }),
-);
-
-jest.mock(
-  "src/features/services/components/eligibility-criteria.placeholder",
-  () => ({
-    eligibilityCriteria: [],
   }),
 );
 
@@ -188,7 +178,7 @@ jest.mock("src/features/services/data/consent-document.query", () => ({
 
 // ─── Route import (after mocks) ───────────────────────────────────────────────
 
-import { Route } from "src/app/routes/app/services/$serviceSlug/index";
+import { Route } from "src/app/routes/app/services/$serviceId/index";
 
 const { servicesQueryOptions: mockServicesQueryOptions } = jest.requireMock(
   "src/features/services/data/services.query",
@@ -201,16 +191,16 @@ const typedRoute = Route as unknown as RouteLike;
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const buildService = (overrides?: Partial<Service>): Service => ({
-  slug: "income-assistance",
+  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   name: "Income Assistance",
-  description: { short: "Temporary financial support." },
+  description: "Temporary financial support.",
   applications: [],
   ...overrides,
 });
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-describe("ServiceSlug Index Route Test", () => {
+describe("ServiceId Index Route Test", () => {
   beforeAll(() => {
     if (!globalThis.IntersectionObserver) {
       globalThis.IntersectionObserver = class {
@@ -245,9 +235,9 @@ describe("ServiceSlug Index Route Test", () => {
 
       expect(mockedCreateFileRoute).toHaveBeenCalledTimes(1);
       expect(mockedCreateFileRoute).toHaveBeenCalledWith(
-        "/app/services/$serviceSlug/",
+        "/app/services/$serviceId/",
       );
-      expect(typedRoute.path).toBe("/app/services/$serviceSlug/");
+      expect(typedRoute.path).toBe("/app/services/$serviceId/");
       expect(typeof typedRoute.options.component).toBe("function");
       expect(typeof typedRoute.options.notFoundComponent).toBe("function");
     });
@@ -261,7 +251,7 @@ describe("ServiceSlug Index Route Test", () => {
       mockedEnsureQueryData.mockResolvedValueOnce([service]);
 
       const result = await typedRoute.options.loader({
-        params: { serviceSlug: "income-assistance" },
+        params: { serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
       });
 
       expect(mockedEnsureQueryData).toHaveBeenCalledWith(
@@ -270,11 +260,11 @@ describe("ServiceSlug Index Route Test", () => {
       expect(result).toEqual({ service });
     });
 
-    it("Should throw notFound when service slug does not match", async () => {
+    it("Should throw notFound when service id does not match", async () => {
       mockedEnsureQueryData.mockResolvedValueOnce([]);
 
       await expect(
-        typedRoute.options.loader({ params: { serviceSlug: "unknown" } }),
+        typedRoute.options.loader({ params: { serviceId: "unknown" } }),
       ).rejects.toEqual({ type: "not-found" });
 
       expect(mockNotFound).toHaveBeenCalledTimes(1);
@@ -317,7 +307,7 @@ describe("ServiceSlug Index Route Test", () => {
       ).toBeInTheDocument();
     });
 
-    it("Should render the service short description", () => {
+    it("Should render the service description", () => {
       render(<RouteComponent />);
       expect(
         screen.getByText("Temporary financial support."),
@@ -332,18 +322,9 @@ describe("ServiceSlug Index Route Test", () => {
       expect(nav).toHaveAttribute("data-visible", "false");
     });
 
-    it("Should render all section headings", () => {
+    it("Should render always-visible section headings", () => {
       render(<RouteComponent />);
 
-      expect(
-        screen.getByRole("heading", { name: "About" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("heading", { name: "Data & privacy" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("heading", { name: "Eligibility criteria" }),
-      ).toBeInTheDocument();
       expect(
         screen.getByRole("heading", { name: "Application process" }),
       ).toBeInTheDocument();
@@ -369,9 +350,9 @@ describe("ServiceSlug Index Route Test", () => {
       ).toBeInTheDocument();
     });
 
-    it("Should render LexicalContent when service has content", () => {
+    it("Should render LexicalContent when service has content.about", () => {
       mockRouteUseLoaderData.mockReturnValue({
-        service: buildService({ content: { root: {} } }),
+        service: buildService({ content: { about: '{"root":{}}' } }),
       });
       mockUseQuery.mockReturnValue({ data: [] });
 
@@ -380,29 +361,10 @@ describe("ServiceSlug Index Route Test", () => {
       expect(screen.getByTestId("lexical-content")).toBeInTheDocument();
     });
 
-    it("Should render a dropdown when the service has multiple applications", () => {
-      const serviceWithMultipleApps = buildService({
-        applications: [
-          { id: "app-1", label: "Option A" },
-          { id: "app-2", label: "Option B" },
-        ],
-      });
-      mockRouteUseLoaderData.mockReturnValue({
-        service: serviceWithMultipleApps,
-      });
-      mockUseQuery.mockReturnValue({ data: [serviceWithMultipleApps] });
-
-      render(<RouteComponent />);
-
-      expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
-      expect(screen.getByText("Option A")).toBeInTheDocument();
-      expect(screen.getByText("Option B")).toBeInTheDocument();
-    });
-
     it("Should use live service data from useQuery when it returns a matching entry", () => {
       const liveService = buildService({
         name: "Updated Service Name",
-        description: { short: "Updated description." },
+        description: "Updated description.",
       });
       mockUseQuery.mockReturnValue({ data: [liveService] });
 
@@ -480,67 +442,6 @@ describe("ServiceSlug Index Route Test", () => {
       expect(
         screen.getByRole("link", { name: "Back to services" }),
       ).toBeInTheDocument();
-    });
-  });
-
-  // ─── ConsentDocumentsAccordion ──────────────────────────────────────────
-
-  describe("ConsentDocumentsAccordion", () => {
-    it("Should not render when consent documents are empty", () => {
-      mockRouteUseLoaderData.mockReturnValue({
-        service: buildService({ settings: { consent: [] } }),
-      });
-      mockUseQuery.mockReturnValue({ data: [] });
-
-      render(<typedRoute.options.component />);
-
-      expect(screen.queryByTestId("accordion-group")).not.toBeInTheDocument();
-    });
-
-    it("Should render accordion when consent documents are returned", () => {
-      mockRouteUseLoaderData.mockReturnValue({
-        service: buildService({
-          settings: { consent: [{ documentId: "doc-1" }] },
-        }),
-      });
-      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
-        if (opts.queryKey[0] === "consent-documents") {
-          return {
-            data: [{ id: "doc-1", name: "Privacy Policy", content: null }],
-          };
-        }
-        return { data: [] };
-      });
-
-      render(<typedRoute.options.component />);
-
-      expect(screen.getByTestId("accordion-group")).toBeInTheDocument();
-      expect(screen.getByTestId("accordion-trigger")).toHaveTextContent(
-        "Privacy Policy",
-      );
-      expect(screen.getByText("No content available.")).toBeInTheDocument();
-    });
-
-    it("Should render LexicalContent inside accordion when document has content", () => {
-      mockRouteUseLoaderData.mockReturnValue({
-        service: buildService({
-          settings: { consent: [{ documentId: "doc-1" }] },
-        }),
-      });
-      mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
-        if (opts.queryKey[0] === "consent-documents") {
-          return {
-            data: [
-              { id: "doc-1", name: "Privacy Policy", content: { root: {} } },
-            ],
-          };
-        }
-        return { data: [] };
-      });
-
-      render(<typedRoute.options.component />);
-
-      expect(screen.getByTestId("lexical-content")).toBeInTheDocument();
     });
   });
 });

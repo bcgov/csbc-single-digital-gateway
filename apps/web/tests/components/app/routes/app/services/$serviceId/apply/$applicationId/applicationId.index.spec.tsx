@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentType } from "react";
-import { mockConsentDocumentsQueryOptions } from "tests/utils/mocks/app/mock.consentDocumentsQueryOptions";
 import { mockedEnsureQueryData } from "tests/utils/mocks/tankstack/mock.ensureQueryData";
 import { mockUseQuery } from "tests/utils/mocks/tankstack/mock.useQuery";
 import type {
@@ -105,7 +104,7 @@ jest.mock("src/features/services/data/services.query", () => ({
 
 // ─── Route import (after mocks) ───────────────────────────────────────────────
 
-import { Route } from "src/app/routes/app/services/$serviceSlug/apply/$applicationId/index";
+import { Route } from "src/app/routes/app/services/$serviceId/apply/$applicationId/index";
 
 const { servicesQueryOptions: mockServicesQueryOptions } = jest.requireMock(
   "src/features/services/data/services.query",
@@ -118,7 +117,7 @@ const typedRoute = Route as unknown as RouteLike;
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const params: Params = {
-  serviceSlug: "income-assistance",
+  serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   applicationId: "app-1",
 };
 
@@ -133,10 +132,10 @@ const buildApplication = (overrides?: Partial<Application>): Application => ({
 });
 
 const buildService = (overrides?: Partial<Service>): Service => ({
-  slug: "income-assistance",
+  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   name: "Income Assistance",
   settings: { consent: [] },
-  applications: [buildApplication()],
+  application: { applications: [buildApplication()] },
   ...overrides,
 });
 
@@ -168,10 +167,10 @@ describe("ApplicationId Index Route Test", () => {
 
       expect(mockedCreateFileRoute).toHaveBeenCalledTimes(1);
       expect(mockedCreateFileRoute).toHaveBeenCalledWith(
-        "/app/services/$serviceSlug/apply/$applicationId/",
+        "/app/services/$serviceId/apply/$applicationId/",
       );
       expect(typedRoute.path).toBe(
-        "/app/services/$serviceSlug/apply/$applicationId/",
+        "/app/services/$serviceId/apply/$applicationId/",
       );
       expect(typeof typedRoute.options.component).toBe("function");
     });
@@ -181,54 +180,11 @@ describe("ApplicationId Index Route Test", () => {
 
   describe("beforeLoad", () => {
     it("Should pass through when service has no consent documents", async () => {
-      mockedEnsureQueryData.mockResolvedValueOnce([
-        buildService({ settings: { consent: [] } }),
-      ]);
-
       await expect(
         typedRoute.options.beforeLoad({ params }),
       ).resolves.toBeUndefined();
 
       expect(mockRedirect).not.toHaveBeenCalled();
-      expect(mockConsentDocumentsQueryOptions).not.toHaveBeenCalled();
-    });
-
-    it("Should pass through when all consent documents are already consented", async () => {
-      mockedEnsureQueryData
-        .mockResolvedValueOnce([
-          buildService({
-            settings: { consent: [{ documentId: "doc-1" }] },
-          }),
-        ])
-        .mockResolvedValueOnce([]);
-
-      await expect(
-        typedRoute.options.beforeLoad({ params }),
-      ).resolves.toBeUndefined();
-
-      expect(mockConsentDocumentsQueryOptions).toHaveBeenCalledWith(["doc-1"]);
-      expect(mockRedirect).not.toHaveBeenCalled();
-    });
-
-    it("Should redirect to data-and-privacy when unconsented documents exist", async () => {
-      mockedEnsureQueryData
-        .mockResolvedValueOnce([
-          buildService({
-            settings: { consent: [{ documentId: "doc-1" }] },
-          }),
-        ])
-        .mockResolvedValueOnce([{ id: "doc-1" }]);
-
-      await expect(typedRoute.options.beforeLoad({ params })).rejects.toEqual({
-        type: "redirect",
-        to: "/app/services/$serviceSlug/apply/$applicationId/data-and-privacy",
-        params,
-      });
-
-      expect(mockRedirect).toHaveBeenCalledWith({
-        to: "/app/services/$serviceSlug/apply/$applicationId/data-and-privacy",
-        params,
-      });
     });
   });
 
@@ -262,7 +218,7 @@ describe("ApplicationId Index Route Test", () => {
 
     it("Should throw notFound when application does not exist on service", async () => {
       mockedEnsureQueryData.mockResolvedValueOnce([
-        buildService({ applications: [{ id: "other-app" }] }),
+        buildService({ application: { applications: [{ id: "other-app" }] } }),
       ]);
 
       await expect(typedRoute.options.loader({ params })).rejects.toEqual({
@@ -278,7 +234,7 @@ describe("ApplicationId Index Route Test", () => {
   describe("staticData.breadcrumbs", () => {
     it("Should build breadcrumbs with service and application labels", () => {
       const breadcrumbs = typedRoute.options.staticData.breadcrumbs({
-        service: { name: "Income Assistance", slug: "income-assistance" },
+        service: { name: "Income Assistance", id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
         application: { label: "Income Support Application" },
       });
 
@@ -286,8 +242,8 @@ describe("ApplicationId Index Route Test", () => {
         { label: "Services", to: "/app/services" },
         {
           label: "Income Assistance",
-          to: "/app/services/$serviceSlug",
-          params: { serviceSlug: "income-assistance" },
+          to: "/app/services/$serviceId",
+          params: { serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
         },
         { label: "Apply for Income Support Application" },
       ]);
@@ -295,15 +251,15 @@ describe("ApplicationId Index Route Test", () => {
 
     it("Should build breadcrumbs with service only when application is missing", () => {
       const breadcrumbs = typedRoute.options.staticData.breadcrumbs({
-        service: { name: "Income Assistance", slug: "income-assistance" },
+        service: { name: "Income Assistance", id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
       });
 
       expect(breadcrumbs).toEqual([
         { label: "Services", to: "/app/services" },
         {
           label: "Income Assistance",
-          to: "/app/services/$serviceSlug",
-          params: { serviceSlug: "income-assistance" },
+          to: "/app/services/$serviceId",
+          params: { serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
         },
       ]);
     });
@@ -338,7 +294,7 @@ describe("ApplicationId Index Route Test", () => {
       expect(screen.getByTestId("invite-delegate-dialog")).toBeInTheDocument();
     });
 
-    it("Should render ChefsFormViewer when blockType is chefs", () => {
+    it("Should render ChefsFormViewer by default", () => {
       const service = buildService();
       mockUseQuery.mockReturnValue({ data: [service] });
       mockRouteUseLoaderData.mockReturnValue({
@@ -354,25 +310,8 @@ describe("ApplicationId Index Route Test", () => {
       expect(screen.getByTestId("chefs-form-viewer")).toBeInTheDocument();
       expect(screen.getByTestId("chefs-form-viewer")).toHaveAttribute(
         "data-form-id",
-        "form-123",
+        "app-1",
       );
-      expect(screen.queryByTestId("workflow-renderer")).not.toBeInTheDocument();
-    });
-
-    it("Should render WorkflowRenderer when blockType is workflow", () => {
-      const service = buildService({
-        applications: [buildApplication({ blockType: "workflow" })],
-      });
-      mockUseQuery.mockReturnValue({ data: [service] });
-      mockRouteUseLoaderData.mockReturnValue({
-        service,
-        application: buildApplication({ blockType: "workflow" }),
-      });
-
-      render(<typedRoute.options.component />);
-
-      expect(screen.getByTestId("workflow-renderer")).toBeInTheDocument();
-      expect(screen.queryByTestId("chefs-form-viewer")).not.toBeInTheDocument();
     });
 
     it("Should call toast.success and navigate on chefs submission complete", () => {
@@ -388,32 +327,8 @@ describe("ApplicationId Index Route Test", () => {
         expect.objectContaining({ description: expect.any(String) }),
       );
       expect(mockNavigate).toHaveBeenCalledWith({
-        to: "/app/services/$serviceSlug",
-        params: { serviceSlug: service.slug },
-      });
-    });
-
-    it("Should call toast.success and navigate on workflow submission complete", () => {
-      const service = buildService({
-        applications: [buildApplication({ blockType: "workflow" })],
-      });
-      mockUseQuery.mockReturnValue({ data: [service] });
-      mockRouteUseLoaderData.mockReturnValue({
-        service,
-        application: buildApplication({ blockType: "workflow" }),
-      });
-
-      render(<typedRoute.options.component />);
-
-      fireEvent.click(screen.getByRole("button", { name: "Submit Workflow" }));
-
-      expect(mockToastSuccess).toHaveBeenCalledWith(
-        `Your application for ${service.name} has been submitted successfully.`,
-        expect.objectContaining({ description: expect.any(String) }),
-      );
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: "/app/services/$serviceSlug",
-        params: { serviceSlug: service.slug },
+        to: "/app/services/$serviceId",
+        params: { serviceId: service.id },
       });
     });
 
@@ -431,30 +346,6 @@ describe("ApplicationId Index Route Test", () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         "Submission error:",
         "chefs error",
-      );
-      consoleSpy.mockRestore();
-    });
-
-    it("Should log error on workflow submission error without crashing", () => {
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-      const service = buildService({
-        applications: [buildApplication({ blockType: "workflow" })],
-      });
-      mockUseQuery.mockReturnValue({ data: [service] });
-      mockRouteUseLoaderData.mockReturnValue({
-        service,
-        application: buildApplication({ blockType: "workflow" }),
-      });
-
-      render(<typedRoute.options.component />);
-
-      fireEvent.click(screen.getByRole("button", { name: "Error Workflow" }));
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Submission error:",
-        "workflow error",
       );
       consoleSpy.mockRestore();
     });

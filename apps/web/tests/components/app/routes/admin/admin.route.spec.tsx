@@ -66,6 +66,12 @@ jest.mock("src/features/auth/auth.context", () => ({
 
 jest.mock("src/assets/brand/icon.svg", () => "mocked-icon.svg");
 
+jest.mock("src/features/admin/components/admin-layout.component", () => ({
+  AdminLayout: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="admin-layout">{children}</div>
+  ),
+}));
+
 import { Route as AdminRoute } from "src/app/routes/admin/route";
 
 type RootRouteLike = {
@@ -173,6 +179,8 @@ describe("Admin Route Component Test", () => {
     mockedUseIdirAuth.mockReturnValue({
       isAuthenticated: true,
       login: jest.fn(),
+      user: { name: "Admin" },
+      logout: jest.fn(),
     });
     mockUseSearch.mockReturnValue({ returnTo: "/admin" });
 

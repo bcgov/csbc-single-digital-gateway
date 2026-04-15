@@ -71,7 +71,6 @@ import { ServicePageNavigation } from "src/features/services/components/service-
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
-  { id: "data-and-privacy", label: "Data & privacy" },
   { id: "eligibility-criteria", label: "Eligibility criteria" },
   { id: "application-process", label: "Application process" },
   { id: "your-activity", label: "Your activity" },
@@ -98,13 +97,12 @@ describe("ServicePageNavigation Component Test", () => {
     });
   });
 
-  it("Should render all six section buttons", () => {
+  it("Should render all five section buttons", () => {
     render(
       <ServicePageNavigation serviceName="Income Assistance" visible={false} />,
     );
 
     expect(screen.getAllByText("Overview")).toHaveLength(2);
-    expect(screen.getAllByText("Data & privacy")).toHaveLength(2);
     expect(screen.getAllByText("Eligibility criteria")).toHaveLength(2);
     expect(screen.getAllByText("Application process")).toHaveLength(2);
     expect(screen.getAllByText("Your activity")).toHaveLength(2);
@@ -133,7 +131,6 @@ describe("ServicePageNavigation Component Test", () => {
     // All other sections should be inactive
     const inactiveLabels = [
       "Overview",
-      "Data & privacy",
       "Eligibility criteria",
       "Application process",
       "Your activity",
@@ -195,10 +192,9 @@ describe("ServicePageNavigation Component Test", () => {
       });
     };
 
-    // Make "Data & privacy" the latest section that should be active after scroll.
+    // Make "Eligibility criteria" the latest section that should be active after scroll.
     setRect("overview", -40);
-    setRect("data-and-privacy", 40);
-    setRect("eligibility-criteria", 400);
+    setRect("eligibility-criteria", 40);
     setRect("application-process", 700);
     setRect("your-activity", 1000);
     setRect("more-information", 1300);
@@ -214,11 +210,11 @@ describe("ServicePageNavigation Component Test", () => {
 
     const inlineButtons = Array.from(inlineNav.querySelectorAll("button"));
 
-    const dataPrivacyButton = inlineButtons.find(
-      (btn) => btn.textContent?.trim() === "Data & privacy",
+    const eligibilityButton = inlineButtons.find(
+      (btn) => btn.textContent?.trim() === "Eligibility criteria",
     );
-    expect(dataPrivacyButton).toBeDefined();
-    expect(dataPrivacyButton).toHaveAttribute("data-variant", "default");
+    expect(eligibilityButton).toBeDefined();
+    expect(eligibilityButton).toHaveAttribute("data-variant", "default");
 
     const overviewButton = inlineButtons.find(
       (btn) => btn.textContent?.trim() === "Overview",

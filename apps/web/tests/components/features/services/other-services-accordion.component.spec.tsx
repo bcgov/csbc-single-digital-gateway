@@ -72,13 +72,27 @@ jest.mock("src/features/services/components/nav-link.component", () => ({
 
 import { OtherServicesAccordion } from "src/features/services/components/other-services-accordion.component";
 
+const service = {
+  id: "svc-1",
+  name: "Income Assistance",
+  description: null,
+  createdAt: "2024-01-01",
+  updatedAt: "2024-01-01",
+  resources: {
+    otherServices: {
+      relatedServices: [{ id: "rs-1" }, { id: "rs-2" }],
+      recommendedServices: [{ id: "rec-1" }, { id: "rec-2" }],
+    },
+  },
+} as any;
+
 describe("OtherServicesAccordion Component Test", () => {
   afterEach(() => {
     cleanup();
   });
 
   it("Should render the accordion heading and both section triggers", () => {
-    render(<OtherServicesAccordion />);
+    render(<OtherServicesAccordion service={service} />);
 
     expect(
       screen.getByRole("heading", { name: "Other services" }),
@@ -94,24 +108,27 @@ describe("OtherServicesAccordion Component Test", () => {
   });
 
   it("Should render related service nav links with correct titles", () => {
-    render(<OtherServicesAccordion />);
+    render(<OtherServicesAccordion service={service} />);
 
-    expect(screen.getByText("Disability Assistance")).toBeInTheDocument();
-    expect(screen.getByText("Call us")).toBeInTheDocument();
+    const navLinks = screen.getAllByTestId("nav-link-item");
+    const relatedLinks = navLinks.filter(
+      (link) => link.getAttribute("aria-label") === "Related service",
+    );
+    expect(relatedLinks).toHaveLength(2);
   });
 
   it("Should render recommended service nav links with correct titles", () => {
-    render(<OtherServicesAccordion />);
+    render(<OtherServicesAccordion service={service} />);
 
-    expect(
-      screen.getByText("Persons with Persistent Multiple Barriers"),
-    ).toBeInTheDocument();
-
-    expect(screen.getByText("Hardship Assistance")).toBeInTheDocument();
+    const navLinks = screen.getAllByTestId("nav-link-item");
+    const recommendedLinks = navLinks.filter(
+      (link) => link.getAttribute("aria-label") === "Recommended service",
+    );
+    expect(recommendedLinks).toHaveLength(2);
   });
 
   it("Should render all nav link items inside list items", () => {
-    render(<OtherServicesAccordion />);
+    render(<OtherServicesAccordion service={service} />);
 
     const listItems = screen.getAllByRole("listitem");
     expect(listItems).toHaveLength(4);
@@ -124,7 +141,7 @@ describe("OtherServicesAccordion Component Test", () => {
   });
 
   it("Should render all four icons with correct size and stroke props", () => {
-    render(<OtherServicesAccordion />);
+    render(<OtherServicesAccordion service={service} />);
 
     const icons = screen.getAllByTestId("icon-cake");
 
@@ -138,14 +155,14 @@ describe("OtherServicesAccordion Component Test", () => {
   });
 
   it("Should render a total of four nav link items across both accordion sections", () => {
-    render(<OtherServicesAccordion />);
+    render(<OtherServicesAccordion service={service} />);
 
     const navLinks = screen.getAllByTestId("nav-link-item");
     expect(navLinks).toHaveLength(4);
   });
 
   it("Should render nav links pointing to the placeholder href", () => {
-    render(<OtherServicesAccordion />);
+    render(<OtherServicesAccordion service={service} />);
 
     const navLinks = screen.getAllByTestId("nav-link-item");
 
