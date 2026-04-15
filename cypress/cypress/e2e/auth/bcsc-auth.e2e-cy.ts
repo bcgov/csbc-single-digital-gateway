@@ -26,7 +26,7 @@ describe("BCSC Authentication E2E Test", () => {
       customRequest(true, (WEB_APP_URL: any) => {
         cy.visit(`${WEB_APP_URL}/app`);
         cy.url({ timeout: 20000 });
-        cy.contains("Hello, CHASE").should("be.visible");
+        cy.contains("Hello").should("be.visible");
       });
     });
   });

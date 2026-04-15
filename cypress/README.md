@@ -4,6 +4,8 @@
 
 The Web project uses Cypress for end-to-end (E2E) testing, which covers full E2E browser flows, with a single unified toolchain.
 
+End-to-end tests are not able to run on GitHub Actions for two possible reasons: the API or web servers cannot be hosted on GitHub Actions, and the E2E testing with Cypress cannot communicate to the servers. As a result, the best practice for E2E tests is to use development URL as the test URL, and developers are asked to write E2E test for their implementation after the implementation branch is merged to the development branch. The downside of this approach is that developers will need two branches for their tasks instead of one: one for the implementation and one for the E2E test. On the other hand, the advantage is that developers are encouraged to verify once again that the implementation runs correctly on the development environment.
+
 ## Files and Folders
 
 E2E test files with file name suffix `**/*.e2e-cy.ts` should be placed inside `cypress/e2e` folder.
@@ -19,10 +21,10 @@ The primary configuration file for Cypress with TypeScript is [cypress.config.ts
 
 ## Local Testing
 
-Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Add the following variables in the `.env` file in the root folder. Consult the [test account page](https://citz-do.atlassian.net/wiki/spaces/Elidya/pages/606208240/BCSC+Test+Accounts) for test user credentials. Make sure to activate the test user before continuing.
+Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Add the following variables in the `.env` file in the root folder. Refer to the [test account page](https://citz-do.atlassian.net/wiki/spaces/Elidya/pages/606208240/BCSC+Test+Accounts) for test user credentials. Make sure to activate the test user before continuing.
 
 ```
-APP_PORT=5173
+WEB_APP_URL=
 CYPRESS_TEST_USERNAME=
 CYPRESS_TEST_PASSWORD=
 ```
