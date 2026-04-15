@@ -1,4 +1,4 @@
-import { useStudioStore } from "./studio-store";
+import { useStudioStore } from "../../../../../../src/features/admin/jsonforms-studio/state/studio-store";
 
 const samplePayload = (overrides: Partial<{ readonly: boolean }> = {}) => ({
   schema: { type: "object", properties: { name: { type: "string" } } },
@@ -18,16 +18,16 @@ describe("jsonforms-studio / studio-store", () => {
     it("should hydrate schema, uiSchema, readonly from a handoff payload", () => {
       useStudioStore.getState().initialize(samplePayload());
       const state = useStudioStore.getState();
-      expect(state.hydrated).to.equal(true);
-      expect(state.readonly).to.equal(false);
-      expect(state.schema.properties).to.have.property("name");
+      expect(state.hydrated).toBe(true);
+      expect(state.readonly).toBe(false);
+      expect(state.schema.properties).toHaveProperty("name");
     });
 
     it("should start with an empty selection and empty history", () => {
       useStudioStore.getState().initialize(samplePayload());
       const state = useStudioStore.getState();
-      expect(state.selection).to.equal(null);
-      expect(state.history.past).to.have.length(0);
+      expect(state.selection).toBeNull();
+      expect(state.history.past).toHaveLength(0);
     });
   });
 
@@ -40,10 +40,10 @@ describe("jsonforms-studio / studio-store", () => {
         1,
       );
       const state = useStudioStore.getState();
-      expect(Object.keys(state.schema.properties ?? {}).length).to.equal(2);
+      expect(Object.keys(state.schema.properties ?? {}).length).toBe(2);
       const elements = (state.uiSchema as unknown as { elements: unknown[] }).elements;
-      expect(elements).to.have.length(2);
-      expect(state.history.past).to.have.length(1);
+      expect(elements).toHaveLength(2);
+      expect(state.history.past).toHaveLength(1);
     });
 
     it("should add a layout palette item as a new container at the drop path", () => {
@@ -55,7 +55,7 @@ describe("jsonforms-studio / studio-store", () => {
       );
       const state = useStudioStore.getState();
       const elements = (state.uiSchema as unknown as { elements: { type: string }[] }).elements;
-      expect(elements[1].type).to.equal("Group");
+      expect(elements[1].type).toBe("Group");
     });
 
     it("should be a no-op when the store is readonly", () => {
@@ -66,7 +66,7 @@ describe("jsonforms-studio / studio-store", () => {
         [],
         1,
       );
-      expect(useStudioStore.getState().uiSchema).to.equal(before);
+      expect(useStudioStore.getState().uiSchema).toBe(before);
     });
   });
 
@@ -76,22 +76,22 @@ describe("jsonforms-studio / studio-store", () => {
       useStudioStore.getState().select([0]);
       useStudioStore.getState().deleteAt([0]);
       const state = useStudioStore.getState();
-      expect((state.uiSchema as unknown as { elements: unknown[] }).elements).to.have.length(0);
-      expect(state.selection).to.equal(null);
+      expect((state.uiSchema as unknown as { elements: unknown[] }).elements).toHaveLength(0);
+      expect(state.selection).toBeNull();
     });
 
     it("should remove the bound schema property on deleteAt", () => {
       useStudioStore.getState().initialize(samplePayload());
       useStudioStore.getState().deleteAt([0]);
-      expect(useStudioStore.getState().schema.properties).to.not.have.property("name");
+      expect(useStudioStore.getState().schema.properties).not.toHaveProperty("name");
     });
 
     it("should restore the deleted schema property on undo", () => {
       useStudioStore.getState().initialize(samplePayload());
       useStudioStore.getState().deleteAt([0]);
-      expect(useStudioStore.getState().schema.properties).to.not.have.property("name");
+      expect(useStudioStore.getState().schema.properties).not.toHaveProperty("name");
       useStudioStore.getState().undo();
-      expect(useStudioStore.getState().schema.properties).to.have.property("name");
+      expect(useStudioStore.getState().schema.properties).toHaveProperty("name");
     });
   });
 
@@ -103,9 +103,9 @@ describe("jsonforms-studio / studio-store", () => {
         [],
         1,
       );
-      expect(((useStudioStore.getState().uiSchema as unknown as { elements: unknown[] }).elements)).to.have.length(2);
+      expect(((useStudioStore.getState().uiSchema as unknown as { elements: unknown[] }).elements)).toHaveLength(2);
       useStudioStore.getState().undo();
-      expect(((useStudioStore.getState().uiSchema as unknown as { elements: unknown[] }).elements)).to.have.length(1);
+      expect(((useStudioStore.getState().uiSchema as unknown as { elements: unknown[] }).elements)).toHaveLength(1);
     });
 
     it("should redo after an undo", () => {
@@ -117,20 +117,20 @@ describe("jsonforms-studio / studio-store", () => {
       );
       useStudioStore.getState().undo();
       useStudioStore.getState().redo();
-      expect(((useStudioStore.getState().uiSchema as unknown as { elements: unknown[] }).elements)).to.have.length(2);
+      expect(((useStudioStore.getState().uiSchema as unknown as { elements: unknown[] }).elements)).toHaveLength(2);
     });
 
     it("should not push selection changes onto history", () => {
       useStudioStore.getState().initialize(samplePayload());
       useStudioStore.getState().select([0]);
-      expect(useStudioStore.getState().history.past).to.have.length(0);
+      expect(useStudioStore.getState().history.past).toHaveLength(0);
     });
   });
 
   describe("canApply", () => {
     it("should be true when every Control scope resolves", () => {
       useStudioStore.getState().initialize(samplePayload());
-      expect(useStudioStore.getState().canApply()).to.equal(true);
+      expect(useStudioStore.getState().canApply()).toBe(true);
     });
 
     it("should be false while any Control has a dangling scope", () => {
@@ -139,12 +139,12 @@ describe("jsonforms-studio / studio-store", () => {
         uiSchema: { type: "VerticalLayout", elements: [{ type: "Control", scope: "#/properties/missing" }] },
         readonly: false,
       });
-      expect(useStudioStore.getState().canApply()).to.equal(false);
+      expect(useStudioStore.getState().canApply()).toBe(false);
     });
 
     it("should be false when readonly", () => {
       useStudioStore.getState().initialize(samplePayload({ readonly: true }));
-      expect(useStudioStore.getState().canApply()).to.equal(false);
+      expect(useStudioStore.getState().canApply()).toBe(false);
     });
   });
 
@@ -153,9 +153,9 @@ describe("jsonforms-studio / studio-store", () => {
       useStudioStore.getState().initialize(samplePayload());
       useStudioStore.getState().renamePropertyKey("name", "fullName");
       const state = useStudioStore.getState();
-      expect(state.schema.properties).to.have.property("fullName");
+      expect(state.schema.properties).toHaveProperty("fullName");
       const control = (state.uiSchema as unknown as { elements: { scope: string }[] }).elements[0];
-      expect(control.scope).to.equal("#/properties/fullName");
+      expect(control.scope).toBe("#/properties/fullName");
     });
   });
 });

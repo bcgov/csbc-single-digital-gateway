@@ -1,6 +1,3 @@
-// MDD test skeleton — 02-jsonforms-studio
-// End-to-end-ish component tests for the Studio shell wired to a fake handoff.
-
 describe("jsonforms-studio / Studio", () => {
   beforeEach(() => {
     window.sessionStorage.clear();

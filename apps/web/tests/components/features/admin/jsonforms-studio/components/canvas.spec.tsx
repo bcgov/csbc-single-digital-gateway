@@ -1,7 +1,3 @@
-// MDD test skeleton — 02-jsonforms-studio
-// Component tests for the center canvas: live JsonForms preview plus drop zones
-// and selection overlay.
-
 describe("jsonforms-studio / Canvas", () => {
   it.skip("should render a live JsonForms preview of the current schema and uiSchema", () => {
     throw new Error("Not implemented — MDD skeleton");

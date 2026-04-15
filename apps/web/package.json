@@ -81,7 +81,7 @@
       "tsx"
     ],
     "rootDir": ".",
-    "testRegex": ".*\\.spec\\.tsx$",
+    "testRegex": ".*\\.spec\\.tsx?$",
     "transform": {
       "^.+\\.(ts|tsx)$": "babel-jest"
     },
@@ -93,7 +93,8 @@
       "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/tests/config/fileMock.js",
       "\\.(css|less|sass|scss)$": "identity-obj-proxy",
       "^tests/(.*)$": "<rootDir>/tests/$1",
-      "^src/(.*)$": "<rootDir>/src/$1"
+      "^src/(.*)$": "<rootDir>/src/$1",
+      "^(.*)\\.js$": "$1"
     },
     "collectCoverageFrom": [
       "**/*.tsx"
