@@ -92,7 +92,10 @@ function ArrayLayoutRenderer({
             type="button"
             variant="outline"
             size="sm"
-            onClick={addItem(path, {})}
+            onClick={addItem(path, {
+              id: crypto.randomUUID(),
+              ...((uischema as ControlElement).options?.defaultItem as Record<string, unknown> ?? {}),
+            })}
           >
             + Add {label ? label.replace(/s$/, "") : "Item"}
           </Button>

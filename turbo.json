@@ -29,6 +29,10 @@
       "persistent": true
     },
     "lint": {},
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
     "test:unit": {
       "passThroughEnv": [
         "DB_NAME",

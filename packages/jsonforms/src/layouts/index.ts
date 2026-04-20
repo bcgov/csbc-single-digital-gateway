@@ -38,3 +38,8 @@ export {
   accordionArrayLayoutTester,
   accordionArrayLayoutEntry,
 } from "./AccordionArrayLayout.js";
+export {
+  OneOfArrayLayout,
+  oneOfArrayLayoutTester,
+  oneOfArrayLayoutEntry,
+} from "./OneOfArrayLayout.js";

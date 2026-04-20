@@ -13,9 +13,10 @@ type Props = {
 };
 
 export function OtherServicesAccordion({ service }: Props) {
-  const relatedServices = service.resources?.otherServices?.relatedServices;
+  const relatedServices =
+    service.content?.resources?.otherServices?.relatedServices;
   const recommendedServices =
-    service.resources?.otherServices?.recommendedServices;
+    service.content?.resources?.otherServices?.recommendedServices;
 
   const hasRelatedServices = !!relatedServices && relatedServices.length > 0;
   const hasRecommendedServices =
@@ -38,7 +39,7 @@ export function OtherServicesAccordion({ service }: Props) {
           <AccordionTrigger>Related services</AccordionTrigger>
           <AccordionContent className="p-0">
             <ul className="divide-y divide-neutral-300">
-              {relatedServices.map((item, index) => (
+              {relatedServices.map((_, index) => (
                 <li key={index}>
                   <NavLinkItem
                     to="#"
@@ -63,7 +64,7 @@ export function OtherServicesAccordion({ service }: Props) {
           <AccordionTrigger>Recommended services</AccordionTrigger>
           <AccordionContent className="p-0">
             <ul className="divide-y divide-neutral-300">
-              {recommendedServices.map((item, index) => (
+              {recommendedServices.map((_, index) => (
                 <li key={index}>
                   <NavLinkItem
                     to="#"

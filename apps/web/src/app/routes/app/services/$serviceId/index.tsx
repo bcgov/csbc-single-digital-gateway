@@ -14,7 +14,6 @@ import { LexicalContent } from "../../../../../features/services/components/lexi
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
 import { ResourcesSupportAccordion } from "../../../../../features/services/components/resources-support-accordion.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
-import { consentDocumentsByIdQueryOptions } from "../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
@@ -361,34 +360,34 @@ function RouteComponent() {
   );
 }
 
-function ConsentDocumentsAccordion({ documentIds }: { documentIds: string[] }) {
-  const { data: documents = [] } = useQuery(
-    consentDocumentsByIdQueryOptions(documentIds),
-  );
+// function ConsentDocumentsAccordion({ documentIds }: { documentIds: string[] }) {
+//   const { data: documents = [] } = useQuery(
+//     consentDocumentsByIdQueryOptions(documentIds),
+//   );
 
-  if (documents.length === 0) return null;
+//   if (documents.length === 0) return null;
 
-  return (
-    <AccordionGroup
-      title="Privacy statements"
-      description="Before you proceed with the application, you will be prompted to agree to the following:"
-      values={documents.map((doc) => doc.id)}
-    >
-      {documents.map((doc) => (
-        <AccordionItem key={doc.id} value={doc.id}>
-          <AccordionTrigger>{doc.name}</AccordionTrigger>
-          <AccordionContent>
-            {doc.content ? (
-              <LexicalContent content={doc.content} />
-            ) : (
-              <p className="text-muted-foreground">No content available.</p>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      ))}
-    </AccordionGroup>
-  );
-}
+//   return (
+//     <AccordionGroup
+//       title="Privacy statements"
+//       description="Before you proceed with the application, you will be prompted to agree to the following:"
+//       values={documents.map((doc) => doc.id)}
+//     >
+//       {documents.map((doc) => (
+//         <AccordionItem key={doc.id} value={doc.id}>
+//           <AccordionTrigger>{doc.name}</AccordionTrigger>
+//           <AccordionContent>
+//             {doc.content ? (
+//               <LexicalContent content={doc.content} />
+//             ) : (
+//               <p className="text-muted-foreground">No content available.</p>
+//             )}
+//           </AccordionContent>
+//         </AccordionItem>
+//       ))}
+//     </AccordionGroup>
+//   );
+// }
 
 function NotFoundComponent() {
   return (

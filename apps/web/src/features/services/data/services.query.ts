@@ -7,6 +7,7 @@ export const servicesQueryOptions = queryOptions({
   queryKey: ["services"],
   queryFn: async () => {
     const { data } = await api.get("/v1/services");
+    console.log("data: ", data);
     return z.array(ServiceDto).parse(data.data);
   },
 });

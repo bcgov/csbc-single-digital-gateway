@@ -5,7 +5,6 @@ import {
   AccordionTrigger,
 } from "@repo/ui";
 import { IconCake } from "@tabler/icons-react";
-import { ExternalLink } from "./external-link.component";
 import { NavLinkItem } from "./nav-link.component";
 
 import type { ServiceDto } from "../../../features/services/service.dto";
@@ -15,61 +14,64 @@ type Props = {
 };
 
 export function ResourcesSupportAccordion({ service }: Props) {
-  const hasRecommendedReading = !!service.resources?.recommendedReading?.length;
+  const hasRecommendedReading =
+    !!service.content?.resources?.recommendedReading?.length;
 
-  const rawContactMethods = service.resources?.contactMethods;
-
-  const contactMethods = [
-    ...(rawContactMethods?.web?.map((item) => ({
-      id: item.id,
-      title: item.label ?? "Website",
-      description: item.description ?? undefined,
-      meta: undefined,
-      to: item.value,
-    })) ?? []),
-
-    ...(rawContactMethods?.email?.map((item) => ({
-      id: item.id,
-      title: item.label ?? "Email",
-      description: item.description ?? undefined,
-      meta: undefined,
-      to: item.value ? `mailto:${item.value}` : undefined,
-    })) ?? []),
-
-    ...(rawContactMethods?.phone?.map((item) => ({
-      id: item.id,
-      title: item.label ?? "Phone",
-      description: item.description ?? undefined,
-      meta: undefined,
-      to: item.value ? `tel:${item.value}` : undefined,
-    })) ?? []),
-
-    ...(rawContactMethods?.fax?.map((item) => ({
-      id: item.id,
-      title: item.label ?? "Fax",
-      description: item.description ?? undefined,
-      meta: undefined,
-      to: item.value ? `fax:${item.value}` : undefined,
-    })) ?? []),
-
-    ...(rawContactMethods?.address?.map((item) => ({
-      id: item.id,
-      title: item.label ?? "Address",
-      description: item.description ?? undefined,
-      meta: [
-        item.addressOne,
-        item.addressTwo,
-        [item.city, item.province].filter(Boolean).join(", "),
-        item.country,
-      ]
-        .filter(Boolean)
-        .join(", "),
-      to: undefined,
-    })) ?? []),
-  ];
+  const contactMethods = (service.content?.contactMethods ?? []).map((item) => {
+    switch (item.type) {
+      case "link":
+        return {
+          id: item.id,
+          title: item.label ?? "Website",
+          description: item.description ?? undefined,
+          meta: undefined,
+          to: item.url,
+        };
+      case "value":
+        return {
+          id: item.id,
+          title: item.label ?? "Email",
+          description: item.description ?? undefined,
+          meta: undefined,
+          to: item.value ? `mailto:${item.value}` : undefined,
+        };
+      case "phone":
+        return {
+          id: item.id,
+          title: item.label ?? "Phone",
+          description: item.description ?? undefined,
+          meta: undefined,
+          to: item.value ? `tel:${item.value}` : undefined,
+        };
+      case "fax":
+        return {
+          id: item.id,
+          title: item.label ?? "Fax",
+          description: item.description ?? undefined,
+          meta: undefined,
+          to: item.value ? `fax:${item.value}` : undefined,
+        };
+      case "address":
+        return {
+          id: item.id,
+          title: item.label ?? "Address",
+          description: item.description ?? undefined,
+          meta: [
+            item.addressOne,
+            item.addressTwo,
+            [item.city, item.province].filter(Boolean).join(", "),
+            item.country,
+          ]
+            .filter(Boolean)
+            .join(", "),
+          to: undefined,
+        };
+    }
+  });
 
   const hasContactMethods = contactMethods.length > 0;
-  const hasApplicationSupport = !!service.resources?.applicationSupport?.length;
+  const hasApplicationSupport = false;
+  // const hasApplicationSupport = !!service.resources?.applicationSupport?.length;
 
   if (!hasRecommendedReading && !hasContactMethods && !hasApplicationSupport) {
     return null;
@@ -90,11 +92,11 @@ export function ResourcesSupportAccordion({ service }: Props) {
           <AccordionContent className="p-0">
             <div className="px-4 py-3">
               <ul className="space-y-2">
-                {service.resources?.recommendedReading?.map((item) => (
+                {/* {service.resources?.recommendedReading?.map((item) => (
                   <li key={item.id}>
                     <ExternalLink href={item.url}>{item.label}</ExternalLink>
                   </li>
-                ))}
+                ))} */}
               </ul>
             </div>
           </AccordionContent>
@@ -133,7 +135,7 @@ export function ResourcesSupportAccordion({ service }: Props) {
           <AccordionTrigger>Application support</AccordionTrigger>
           <AccordionContent className="p-0">
             <ul className="divide-y divide-neutral-300">
-              {service.resources?.applicationSupport?.map((item) => (
+              {/* {service.resources?.applicationSupport?.map((item) => (
                 <li key={item.id}>
                   <NavLinkItem
                     to={item.value}
@@ -148,7 +150,7 @@ export function ResourcesSupportAccordion({ service }: Props) {
                     description={item.description ?? undefined}
                   />
                 </li>
-              ))}
+              ))} */}
             </ul>
           </AccordionContent>
         </AccordionItem>

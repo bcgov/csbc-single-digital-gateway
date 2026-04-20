@@ -13,7 +13,7 @@ type Props = {
 };
 
 export function LegalInformationAccordion({ service }: Props) {
-  const hasLegalInformation = !!service.resources?.legal?.length;
+  const hasLegalInformation = !!service.content?.resources?.legal?.length;
 
   if (!hasLegalInformation) {
     return null;
@@ -29,9 +29,9 @@ export function LegalInformationAccordion({ service }: Props) {
         <AccordionContent className="p-0">
           <div className="px-4 py-3">
             <ul className="space-y-2">
-              {service.resources?.legal?.map((item) => (
+              {service.content?.resources?.legal?.map((item) => (
                 <li key={item.id}>
-                  <ExternalLink href={item.value}>{item.label}</ExternalLink>
+                  <ExternalLink href={item.url}>{item.label}</ExternalLink>
                 </li>
               ))}
             </ul>

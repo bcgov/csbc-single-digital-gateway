@@ -23,6 +23,7 @@
   "scripts": {
     "build": "vite build",
     "lint": "eslint .",
+    "typecheck": "tsc -b",
     "preview": "vite preview"
   },
   "peerDependencies": {

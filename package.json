@@ -14,6 +14,7 @@
     "dev:web": "turbo run dev --filter=web",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "test:unit": "turbo run test:unit",
     "test:int": "turbo run test:int",
     "test:cov:api": "turbo run test:cov:api",

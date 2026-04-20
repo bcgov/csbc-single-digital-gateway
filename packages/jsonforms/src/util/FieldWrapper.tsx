@@ -30,15 +30,16 @@ export function FieldWrapper({
     return null;
   }
 
-  const errorMessages = errors
-    ? errors
+  const trimmedErrors = errors?.trim() || undefined;
+  const errorMessages = trimmedErrors
+    ? trimmedErrors
         .split("\n")
         .filter(Boolean)
         .map((message) => ({ message }))
     : undefined;
 
   return (
-    <Field orientation={orientation} data-invalid={!!errors || undefined}>
+    <Field orientation={orientation} data-invalid={!!trimmedErrors || undefined}>
       <FieldLabel>
         {label}
         {required && " *"}

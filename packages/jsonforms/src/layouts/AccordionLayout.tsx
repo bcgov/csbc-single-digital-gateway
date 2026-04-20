@@ -1,9 +1,6 @@
 import type { Layout, LayoutProps, UISchemaElement } from "@jsonforms/core";
 import { rankWith, uiTypeIs } from "@jsonforms/core";
-import {
-  JsonFormsDispatch,
-  withJsonFormsLayoutProps,
-} from "@jsonforms/react";
+import { JsonFormsDispatch, withJsonFormsLayoutProps } from "@jsonforms/react";
 import {
   Accordion,
   AccordionContent,
@@ -12,10 +9,10 @@ import {
   FieldGroup,
 } from "@repo/ui";
 
-interface AccordionItemElement extends UISchemaElement {
+type AccordionItemElement = UISchemaElement & {
   label?: string;
   elements?: UISchemaElement[];
-}
+};
 
 function AccordionLayoutRenderer({
   uischema,
@@ -43,33 +40,37 @@ function AccordionLayoutRenderer({
         <div className="text-sm font-medium">{layout.label}</div>
       )}
       <Accordion defaultValue={items.map((_, i) => i)}>
-      {items.map((item, index) => (
-        <AccordionItem key={index} value={index}>
-          <AccordionTrigger>{item.label ?? `Section ${index + 1}`}</AccordionTrigger>
-          <AccordionContent>
-            <FieldGroup>
-              {(item.elements ?? []).map((element, elementIndex) => (
-                <JsonFormsDispatch
-                  key={elementIndex}
-                  uischema={element}
-                  schema={schema}
-                  path={path}
-                  enabled={enabled}
-                  renderers={renderers}
-                  cells={cells}
-                />
-              ))}
-            </FieldGroup>
-          </AccordionContent>
-        </AccordionItem>
-      ))}
+        {items.map((item, index) => (
+          <AccordionItem key={index} value={index}>
+            <AccordionTrigger>
+              {item.label ?? `Section ${index + 1}`}
+            </AccordionTrigger>
+            <AccordionContent>
+              <FieldGroup>
+                {(item.elements ?? []).map((element, elementIndex) => (
+                  <JsonFormsDispatch
+                    key={elementIndex}
+                    uischema={element}
+                    schema={schema}
+                    path={path}
+                    enabled={enabled}
+                    renderers={renderers}
+                    cells={cells}
+                  />
+                ))}
+              </FieldGroup>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
       </Accordion>
     </div>
   );
 }
 
 export const accordionLayoutTester = rankWith(3, uiTypeIs("Accordion"));
-export const AccordionLayout = withJsonFormsLayoutProps(AccordionLayoutRenderer);
+export const AccordionLayout = withJsonFormsLayoutProps(
+  AccordionLayoutRenderer,
+);
 export const accordionLayoutEntry = {
   tester: accordionLayoutTester,
   renderer: AccordionLayout,

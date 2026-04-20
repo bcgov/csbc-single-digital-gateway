@@ -1,5 +1,118 @@
 import { z } from "zod";
 
+export const BaseItemDto = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  description: z.string().optional(),
+});
+
+export type BaseItemDto = z.infer<typeof BaseItemDto>;
+
+export const AddressItemDto = BaseItemDto.extend({
+  type: z.literal("address"),
+  addressOne: z.string(),
+  addressTwo: z.string().optional(),
+  city: z.string(),
+  province: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+});
+
+export type AddressItemDto = z.infer<typeof AddressItemDto>;
+
+export const LinkItemDto = BaseItemDto.extend({
+  type: z.literal("link"),
+  url: z.url(),
+});
+
+export type LinkItemDto = z.infer<typeof LinkItemDto>;
+
+export const PhoneItemDto = BaseItemDto.extend({
+  type: z.literal("phone"),
+  value: z.string(),
+});
+
+export type PhoneItemDto = z.infer<typeof PhoneItemDto>;
+
+export const FaxItemDto = BaseItemDto.extend({
+  type: z.literal("fax"),
+  value: z.string(),
+});
+
+export type FaxItemDto = z.infer<typeof FaxItemDto>;
+
+export const ValueItemDto = BaseItemDto.extend({
+  type: z.literal("value"),
+  value: z.string(),
+});
+export type ValueItemDto = z.infer<typeof ValueItemDto>;
+
+export const ItemDto = z.discriminatedUnion("type", [
+  AddressItemDto,
+  LinkItemDto,
+  PhoneItemDto,
+  FaxItemDto,
+  ValueItemDto,
+]);
+
+const BaseApplicationDto = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  description: z.string().optional(),
+});
+
+export const ServiceApplicationExternalDto = BaseApplicationDto.extend({
+  type: z.literal("external"),
+});
+
+export type ServiceApplicationExternalDto = z.infer<
+  typeof ServiceApplicationExternalDto
+>;
+
+export const isExternalApplication = (
+  application: ServiceApplicationDto,
+): application is ServiceApplicationExternalDto =>
+  application.type === "external";
+
+export const ServiceApplicationWorkflowDto = BaseApplicationDto.extend({
+  type: z.literal("workflow"),
+});
+
+export type ServiceApplicationWorkflowDto = z.infer<
+  typeof ServiceApplicationWorkflowDto
+>;
+
+export const isWorkflowApplication = (
+  application: ServiceApplicationDto,
+): application is ServiceApplicationWorkflowDto =>
+  application.type === "workflow";
+
+export const ServiceApplicationDto = z.discriminatedUnion("type", [
+  ServiceApplicationExternalDto,
+  ServiceApplicationWorkflowDto,
+]);
+
+export type ServiceApplicationDto = z.infer<typeof ServiceApplicationDto>;
+
+export const ServiceConsentDocumentDto = z.object({});
+
+export type ServiceConsentDocumentDto = z.infer<
+  typeof ServiceConsentDocumentDto
+>;
+
+export const ServiceContactMethodsDto = z.array(ItemDto).default([]);
+
+export const ServiceResourceDto = z.object({
+  legal: z.array(LinkItemDto),
+  otherServices: z.object({
+    recommendedServices: z.array(LinkItemDto),
+    relatedServices: z.array(LinkItemDto),
+  }),
+  recommendedReading: z.array(LinkItemDto),
+});
+
+export type ServiceResourceDto = z.infer<typeof ServiceResourceDto>;
+
 export const ServiceDto = z.object({
   id: z.uuid(),
   serviceTypeId: z.uuid().nullable().optional(),
@@ -11,12 +124,15 @@ export const ServiceDto = z.object({
   description: z.string().nullable().optional(),
   content: z
     .object({
+      // Applications
+      applications: z.array(ServiceApplicationDto).default([]),
       // Details
       about: z.string().optional(),
       audience: z.string().optional(),
       considerations: z.string().optional(),
       outcomes: z.string().optional(),
       // Contact Methods
+      contactMethods: ServiceContactMethodsDto.default([]),
       // Resources
       faq: z
         .array(
@@ -26,6 +142,13 @@ export const ServiceDto = z.object({
           }),
         )
         .optional(),
+      // Settings
+      consents: z.array(ServiceConsentDocumentDto).default([]),
+      resources: ServiceResourceDto.default({
+        legal: [],
+        otherServices: { recommendedServices: [], relatedServices: [] },
+        recommendedReading: [],
+      }),
     })
     .optional(),
   createdAt: z.string(),

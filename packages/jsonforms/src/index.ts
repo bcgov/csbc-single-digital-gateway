@@ -3,6 +3,7 @@ import type {
   JsonFormsRendererRegistryEntry,
 } from "@jsonforms/core";
 import Ajv from "ajv";
+import addFormats from "ajv-formats";
 
 import {
   inputControlEntry,
@@ -28,6 +29,7 @@ import {
   accordionItemLayoutEntry,
   arrayLayoutEntry,
   accordionArrayLayoutEntry,
+  oneOfArrayLayoutEntry,
 } from "./layouts/index.js";
 import {
   textCellEntry,
@@ -60,6 +62,7 @@ export const repoRenderers: JsonFormsRendererRegistryEntry[] = [
   accordionItemLayoutEntry,
   arrayLayoutEntry,
   accordionArrayLayoutEntry,
+  oneOfArrayLayoutEntry,
 ];
 
 export const repoCells: JsonFormsCellRendererRegistryEntry[] = [
@@ -72,8 +75,10 @@ export const repoCells: JsonFormsCellRendererRegistryEntry[] = [
 ];
 
 export const repoAjv = new Ajv({ allErrors: true });
+addFormats(repoAjv);
 
 const defaultsAjv = new Ajv({ useDefaults: true });
+addFormats(defaultsAjv);
 
 /**
  * Apply JSON Schema `default` values to a data object (one-time, returns a new object).

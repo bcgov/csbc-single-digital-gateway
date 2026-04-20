@@ -8,7 +8,7 @@ import { ConsentGate } from "../../../../../../../features/services/components/c
 import { consentDocumentsQueryOptions } from "../../../../../../../features/services/data/consent-document.query";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
 import type {
-  ApplicationDto,
+  ServiceApplicationDto,
   ServiceDto,
 } from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
@@ -33,14 +33,14 @@ export const Route = createFileRoute(
     if (!service) {
       throw notFound();
     }
-    const application = service.application?.applications?.find(
-      (a: ApplicationDto) => a.id === params.applicationId,
+    const application = service.content?.applications?.find(
+      (a: ServiceApplicationDto) => a.id === params.applicationId,
     );
     if (!application) {
       throw notFound();
     }
     const documentIds =
-      service.settings?.consent?.map((c) => c.documentId) ?? [];
+      service.content?.consents?.map((c) => c.documentId) ?? [];
     if (documentIds.length > 0) {
       await queryClient.ensureQueryData(
         consentDocumentsQueryOptions(documentIds),

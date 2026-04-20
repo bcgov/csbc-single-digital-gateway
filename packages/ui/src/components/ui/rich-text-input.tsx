@@ -1,16 +1,40 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
-import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
 import { LinkNode } from "@lexical/link";
 import {
+  INSERT_ORDERED_LIST_COMMAND,
+  INSERT_UNORDERED_LIST_COMMAND,
+  ListItemNode,
+  ListNode,
+} from "@lexical/list";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
+import {
+  $createHeadingNode,
+  HeadingNode,
+  QuoteNode,
+  type HeadingTagType,
+} from "@lexical/rich-text";
+import { $setBlocksType } from "@lexical/selection";
+import {
+  IconBold,
+  IconH1,
+  IconH2,
+  IconH3,
+  IconIndentDecrease,
+  IconIndentIncrease,
+  IconItalic,
+  IconList,
+  IconListNumbers,
+  IconStrikethrough,
+  IconUnderline,
+} from "@tabler/icons-react";
+import {
+  $createParagraphNode,
   $getRoot,
   $getSelection,
   $isRangeSelection,
@@ -19,30 +43,7 @@ import {
   OUTDENT_CONTENT_COMMAND,
   type TextFormatType,
 } from "lexical";
-import {
-  INSERT_ORDERED_LIST_COMMAND,
-  INSERT_UNORDERED_LIST_COMMAND,
-} from "@lexical/list";
-import {
-  $createHeadingNode,
-  type HeadingTagType,
-} from "@lexical/rich-text";
-import { $setBlocksType } from "@lexical/selection";
-import { $createParagraphNode } from "lexical";
-import {
-  IconBold,
-  IconItalic,
-  IconUnderline,
-  IconStrikethrough,
-  IconH1,
-  IconH2,
-  IconH3,
-  IconList,
-  IconListNumbers,
-  IconBlockquote,
-  IconIndentIncrease,
-  IconIndentDecrease,
-} from "@tabler/icons-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
 export interface RichTextInputProps {
@@ -69,7 +70,8 @@ const theme = {
       listitem: "list-none",
     },
   },
-  quote: "border-l-4 border-muted-foreground/30 pl-3 italic text-muted-foreground",
+  quote:
+    "border-l-4 border-muted-foreground/30 pl-3 italic text-muted-foreground",
   text: {
     bold: "font-bold",
     italic: "italic",
@@ -370,6 +372,7 @@ export function RichTextInput({
                 className="prose prose-sm dark:prose-invert max-w-none px-3 py-2 text-sm outline-none"
                 style={{ minHeight: height }}
                 aria-placeholder={placeholder}
+                placeholder={<div>{placeholder}</div>}
               />
             }
             placeholder={

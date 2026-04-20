@@ -8,9 +8,10 @@ import {
 } from "../../../../../../../features/chefs";
 import { InviteDelegateDialog } from "../../../../../../../features/services/components/invite-delegate-dialog.component";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
-import type {
-  ApplicationDto,
-  ServiceDto,
+import {
+  isWorkflowApplication,
+  type ServiceApplicationDto,
+  type ServiceDto,
 } from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
@@ -31,8 +32,8 @@ export const Route = createFileRoute(
     if (!service) {
       throw notFound();
     }
-    const application = service.application?.applications?.find(
-      (a: ApplicationDto) => a.id === params.applicationId,
+    const application = service.content?.applications?.find(
+      (a: ServiceApplicationDto) => a.id === params.applicationId,
     );
     if (!application) {
       throw notFound();
@@ -69,20 +70,18 @@ function RouteComponent() {
   const { service: loaderService, application: loaderApplication } =
     Route.useLoaderData() as {
       service: ServiceDto;
-      application: ApplicationDto;
+      application: ServiceApplicationDto;
     };
   const service =
     services.find((s) => s.id === loaderService.id) ?? loaderService;
   const application =
-    service.application?.applications?.find(
-      (a: ApplicationDto) => a.id === loaderApplication.id,
+    service.content?.applications?.find(
+      (a: ServiceApplicationDto) => a.id === loaderApplication.id,
     ) ?? loaderApplication;
   const navigate = useNavigate();
 
-  // TODO: Restore application type check once ApplicationDto is available
+  // TODO: Restore application type check once ServiceApplicationDto is available
   // For now, render ChefsFormViewer as default
-  const isWorkflow = false;
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-row gap-4">
@@ -100,9 +99,9 @@ function RouteComponent() {
         </div>
       </div>
 
-      {isWorkflow ? (
+      {isWorkflowApplication(application) ? (
         <WorkflowRenderer
-          application={application}
+          workflow={application}
           onSubmissionComplete={() => {
             toast.success(
               `Your application for ${service.name} has been submitted successfully.`,

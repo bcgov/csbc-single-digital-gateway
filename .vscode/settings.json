@@ -28,5 +28,6 @@
   },
   "typescript.format.semicolons": "insert",
   "jest.jestCommandLine": "npm run test:vscode --",
-  "jest.rootPath": "apps/api"
+  "jest.rootPath": "apps/api",
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }
