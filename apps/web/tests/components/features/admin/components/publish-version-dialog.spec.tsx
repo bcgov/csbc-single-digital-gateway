@@ -1,0 +1,48 @@
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+
+jest.mock("@repo/ui", () => ({
+  AlertDialog: ({ open, children }: { open?: boolean; children?: React.ReactNode }) =>
+    open ? <div data-testid="alert-dialog">{children}</div> : null,
+  AlertDialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }: { children?: React.ReactNode }) => <h2>{children}</h2>,
+  AlertDialogDescription: ({ children }: { children?: React.ReactNode }) => <p>{children}</p>,
+  AlertDialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogCancel: ({ children, disabled, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button type="button" disabled={disabled} {...props}>{children}</button>
+  ),
+  AlertDialogAction: ({ children, disabled, onClick, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button type="button" disabled={disabled} onClick={onClick} {...props}>{children}</button>
+  ),
+}));
+
+import { PublishVersionDialog } from "src/features/admin/components/publish-version-dialog.component";
+
+describe("PublishVersionDialog", () => {
+  afterEach(cleanup);
+  const onConfirm = jest.fn();
+  const onCancel = jest.fn();
+
+  it("Should not render when open is false", () => {
+    render(<PublishVersionDialog open={false} isPending={false} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.queryByTestId("alert-dialog")).not.toBeInTheDocument();
+  });
+
+  it("Should render title and description when open", () => {
+    render(<PublishVersionDialog open={true} isPending={false} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByText("Publish Version")).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure you want to publish/)).toBeInTheDocument();
+  });
+
+  it("Should call onConfirm when Publish is clicked", () => {
+    render(<PublishVersionDialog open={true} isPending={false} onConfirm={onConfirm} onCancel={onCancel} />);
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("Should show Publishing text when isPending", () => {
+    render(<PublishVersionDialog open={true} isPending={true} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByRole("button", { name: "Publishing…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  });
+});

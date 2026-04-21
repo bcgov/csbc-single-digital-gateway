@@ -59,11 +59,13 @@ const service = {
   description: null,
   createdAt: "2024-01-01",
   updatedAt: "2024-01-01",
-  resources: {
-    legal: [
-      { id: "l-1", label: "Employment and Assistance Act", value: "https://gov.bc.ca/ea-act" },
-      { id: "l-2", label: "Persons with Disabilities Act", value: "https://gov.bc.ca/pwd-act" },
-    ],
+  content: {
+    resources: {
+      legal: [
+        { id: "l-1", label: "Employment and Assistance Act", url: "https://gov.bc.ca/ea-act" },
+        { id: "l-2", label: "Persons with Disabilities Act", url: "https://gov.bc.ca/pwd-act" },
+      ],
+    },
   },
 } as any;
 

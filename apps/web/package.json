@@ -118,7 +118,9 @@
       "<rootDir>/tests/utils/",
       "<rootDir>/.*\\.d\\.ts$",
       "<rootDir>/src/main.tsx",
-      "<rootDir>/src/features/auth/auth.context.tsx"
+      "<rootDir>/src/features/auth/auth.context.tsx",
+      "<rootDir>/src/features/admin/jsonforms-studio/components/",
+      "<rootDir>/src/app/routes/dev/"
     ]
   }
 }

@@ -78,10 +78,12 @@ const service = {
   description: null,
   createdAt: "2024-01-01",
   updatedAt: "2024-01-01",
-  resources: {
-    otherServices: {
-      relatedServices: [{ id: "rs-1" }, { id: "rs-2" }],
-      recommendedServices: [{ id: "rec-1" }, { id: "rec-2" }],
+  content: {
+    resources: {
+      otherServices: {
+        relatedServices: [{ id: "rs-1" }, { id: "rs-2" }],
+        recommendedServices: [{ id: "rec-1" }, { id: "rec-2" }],
+      },
     },
   },
 } as any;

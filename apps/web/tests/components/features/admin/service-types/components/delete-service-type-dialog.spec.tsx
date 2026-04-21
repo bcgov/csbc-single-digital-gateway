@@ -1,0 +1,46 @@
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+
+jest.mock("@repo/ui", () => ({
+  AlertDialog: ({ open, children }: { open?: boolean; children?: React.ReactNode }) =>
+    open ? <div data-testid="alert-dialog">{children}</div> : null,
+  AlertDialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }: { children?: React.ReactNode }) => <h2>{children}</h2>,
+  AlertDialogDescription: ({ children }: { children?: React.ReactNode }) => <p>{children}</p>,
+  AlertDialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogCancel: ({ children, disabled, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button type="button" disabled={disabled} {...props}>{children}</button>
+  ),
+  AlertDialogAction: ({ children, disabled, onClick, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button type="button" disabled={disabled} onClick={onClick} {...props}>{children}</button>
+  ),
+}));
+
+import { DeleteServiceTypeDialog } from "src/features/admin/service-types/components/delete-service-type-dialog.component";
+
+describe("DeleteServiceTypeDialog", () => {
+  afterEach(cleanup);
+  const onConfirm = jest.fn();
+  const onCancel = jest.fn();
+
+  it("Should not render when typeId is null", () => {
+    render(<DeleteServiceTypeDialog typeId={null} isPending={false} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.queryByTestId("alert-dialog")).not.toBeInTheDocument();
+  });
+
+  it("Should render when typeId is set", () => {
+    render(<DeleteServiceTypeDialog typeId="t1" isPending={false} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByText("Delete Service Type")).toBeInTheDocument();
+  });
+
+  it("Should call onConfirm when Delete is clicked", () => {
+    render(<DeleteServiceTypeDialog typeId="t1" isPending={false} onConfirm={onConfirm} onCancel={onCancel} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("Should show Deleting text when isPending", () => {
+    render(<DeleteServiceTypeDialog typeId="t1" isPending={true} onConfirm={onConfirm} onCancel={onCancel} />);
+    expect(screen.getByRole("button", { name: "Deleting…" })).toBeDisabled();
+  });
+});

@@ -88,10 +88,10 @@ const params: Params = {
 const buildService = (overrides?: Partial<Service>): Service => ({
   id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   name: "Income Assistance",
-  settings: {
-    consent: [{ documentId: "doc-1" }, { documentId: "doc-2" }],
+  content: {
+    applications: [{ id: "app-1" }],
+    consents: [{ documentId: "doc-1" }, { documentId: "doc-2" }],
   },
-  application: { applications: [{ id: "app-1" }] },
   ...overrides,
 });
 
@@ -167,7 +167,7 @@ describe("DataAndPrivacy Route Test", () => {
 
   it("Should throw notFound when the application does not exist", async () => {
     mockEnsureQueryData.mockResolvedValueOnce([
-      buildService({ application: { applications: [{ id: "other-app" }] } }),
+      buildService({ content: { applications: [{ id: "other-app" }], consents: [] } }),
     ]);
 
     await expect(typedRoute.options.loader({ params })).rejects.toEqual({

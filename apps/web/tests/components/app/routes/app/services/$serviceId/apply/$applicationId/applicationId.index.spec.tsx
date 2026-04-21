@@ -123,19 +123,15 @@ const params: Params = {
 
 const buildApplication = (overrides?: Partial<Application>): Application => ({
   id: "app-1",
+  type: "external",
   label: "Income Support Application",
-  formId: "form-123",
-  apiKey: "key-abc",
-  url: "https://chefs.example.com",
-  blockType: "chefs",
   ...overrides,
 });
 
 const buildService = (overrides?: Partial<Service>): Service => ({
   id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   name: "Income Assistance",
-  settings: { consent: [] },
-  application: { applications: [buildApplication()] },
+  content: { applications: [buildApplication()] },
   ...overrides,
 });
 
@@ -218,7 +214,7 @@ describe("ApplicationId Index Route Test", () => {
 
     it("Should throw notFound when application does not exist on service", async () => {
       mockedEnsureQueryData.mockResolvedValueOnce([
-        buildService({ application: { applications: [{ id: "other-app" }] } }),
+        buildService({ content: { applications: [{ id: "other-app" }] } }),
       ]);
 
       await expect(typedRoute.options.loader({ params })).rejects.toEqual({
