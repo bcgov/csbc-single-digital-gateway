@@ -40,8 +40,6 @@ app:
 
   # Consent Manager API URL (REQUIRED - must be set during deployment)
   consentManagerApiUrl: ""
-  # Service Catalogue API URL (REQUIRED - must be set during deployment)
-  serviceCatalogueApiUrl: ""
 
 # Security context configuration
 # OpenShift-compatible: UIDs/GIDs are automatically assigned by the platform

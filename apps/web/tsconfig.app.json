@@ -28,5 +28,5 @@
       "tests/*": ["./tests/*"]
     }
   },
-  "include": ["src", "tests", "env.d.ts", "tests/config/setupTests.ts"]
+  "include": ["src", "env.d.ts"]
 }

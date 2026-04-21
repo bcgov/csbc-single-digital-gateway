@@ -57,5 +57,4 @@ jobs:
           --set app.apiUri=/api \
           --set app.authUrl="${{ vars.WEB_AUTH_URL }}" \
           --set app.consentManagerApiUrl="${{ vars.WEB_CONSENT_MANAGER_API_URL }}" \
-          --set app.serviceCatalogueApiUrl="${{ vars.WEB_SERVICE_CATALOGUE_API_URL }}" \
           --labels app.kubernetes.io/part-of=csbc-single-digital-gateway

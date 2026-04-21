@@ -10,7 +10,7 @@ import { Link, useMatches } from "@tanstack/react-router";
 import type { BreadcrumbItemDef } from "../../../../app/router";
 import { Container } from "../container.component";
 
-export const Breadcrumbs = () => {
+export const Breadcrumbs = ({ contained = true }: { contained?: boolean }) => {
   const matches = useMatches();
 
   const items: BreadcrumbItemDef[] = matches.flatMap((match) => {
@@ -21,30 +21,32 @@ export const Breadcrumbs = () => {
 
   if (items.length === 0) return null;
 
+  const content = (
+    <Breadcrumb>
+      <BreadcrumbList>
+        {items.map((item, index) => (
+          <span key={item.to ?? `page-${index}`} className="contents">
+            {index > 0 && <BreadcrumbSeparator />}
+            <BreadcrumbItem>
+              {item.to ? (
+                <BreadcrumbLink
+                  render={<Link to={item.to} params={item.params ?? {}} />}
+                >
+                  {item.label}
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+          </span>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+
   return (
     <div className="border-t border-neutral-300 py-2">
-      <Container>
-        <Breadcrumb>
-          <BreadcrumbList>
-            {items.map((item, index) => (
-              <span key={item.to ?? `page-${index}`} className="contents">
-                {index > 0 && <BreadcrumbSeparator />}
-                <BreadcrumbItem>
-                  {item.to ? (
-                    <BreadcrumbLink
-                      render={<Link to={item.to} params={item.params ?? {}} />}
-                    >
-                      {item.label}
-                    </BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                  )}
-                </BreadcrumbItem>
-              </span>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </Container>
+      {contained ? <Container>{content}</Container> : <div className="px-4 md:px-8">{content}</div>}
     </div>
   );
 };

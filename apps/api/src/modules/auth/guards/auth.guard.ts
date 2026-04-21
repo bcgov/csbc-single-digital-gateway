@@ -14,6 +14,7 @@ import {
   OIDC_PROVIDER_REGISTRY,
   type OidcProviderRegistry,
 } from '../auth.config';
+import { IDP_KEY } from 'src/common/decorators/idp.decorator';
 import { PUBLIC_ROUTE_KEY } from '../decorators/public-route.decorator';
 import { AuthService } from '../services/auth.service';
 import { IdpType } from '../types/idp';
@@ -66,7 +67,19 @@ export class AuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<Request>();
-    const requiredIdp = this.resolveRequiredIdp(request.path);
+    const requiredIdp = this.reflector.getAllAndOverride<IdpType | undefined>(
+      IDP_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (!requiredIdp) {
+      // Every protected route must declare its IDP via @IdirRoles, @BcscRoles,
+      // or @RequireIdp. Routes that should be unauthenticated must use
+      // @PublicRoute(). Fail closed if neither is present.
+      throw new UnauthorizedException(
+        'Route does not declare a required IDP — use @IdirRoles, @BcscRoles, @RequireIdp, or @PublicRoute',
+      );
+    }
 
     // Session-based auth (BFF)
     if (this.authService.hasAnyActiveSession(request.session)) {
@@ -110,13 +123,6 @@ export class AuthGuard implements CanActivate {
     }
 
     throw new UnauthorizedException();
-  }
-
-  private resolveRequiredIdp(path: string): IdpType {
-    if (path.startsWith('/admin') || path.startsWith('/auth/idir')) {
-      return IdpType.IDIR;
-    }
-    return IdpType.BCSC;
   }
 
   private verifyJwt(

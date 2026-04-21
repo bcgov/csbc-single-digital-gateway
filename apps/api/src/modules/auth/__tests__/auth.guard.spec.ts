@@ -149,7 +149,9 @@ describe('AuthGuard Unit Test', () => {
     });
 
     it('Should allow session-based auth with valid BCSC token', async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.BCSC);
       mockAuthService.hasAnyActiveSession.mockReturnValue(true);
       mockAuthService.hasActiveSession.mockReturnValue(true);
       mockAuthService.isTokenExpiringSoon.mockReturnValue(false);
@@ -167,7 +169,9 @@ describe('AuthGuard Unit Test', () => {
     });
 
     it('Should refresh expiring session token', async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.BCSC);
       mockAuthService.hasAnyActiveSession.mockReturnValue(true);
       mockAuthService.hasActiveSession.mockReturnValue(true);
       mockAuthService.isTokenExpiringSoon.mockReturnValue(true);
@@ -186,7 +190,9 @@ describe('AuthGuard Unit Test', () => {
     });
 
     it('Should throw when session token refresh fails', async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.BCSC);
       mockAuthService.hasAnyActiveSession.mockReturnValue(true);
       mockAuthService.hasActiveSession.mockReturnValue(true);
       mockAuthService.isTokenExpiringSoon.mockReturnValue(true);
@@ -202,7 +208,9 @@ describe('AuthGuard Unit Test', () => {
     });
 
     it('Should throw when no auth is provided', async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.BCSC);
       mockAuthService.hasAnyActiveSession.mockReturnValue(false);
       const context = createMockExecutionContext({
         session: {},
@@ -215,7 +223,9 @@ describe('AuthGuard Unit Test', () => {
     });
 
     it('Should require IDIR for /admin paths', async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.IDIR);
       mockAuthService.hasAnyActiveSession.mockReturnValue(true);
       mockAuthService.hasActiveSession.mockReturnValue(true);
       mockAuthService.isTokenExpiringSoon.mockReturnValue(false);
@@ -233,7 +243,9 @@ describe('AuthGuard Unit Test', () => {
     });
 
     it('Should throw when wrong IDP session for route', async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.IDIR);
       mockAuthService.hasAnyActiveSession.mockReturnValue(true);
       mockAuthService.hasActiveSession.mockReturnValue(false);
 
@@ -251,7 +263,9 @@ describe('AuthGuard Unit Test', () => {
     it('Should allow valid bearer JWT and attach decoded user', async () => {
       const jwtMock = getJwtMock();
 
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.BCSC);
       mockAuthService.hasAnyActiveSession.mockReturnValue(false);
 
       const request = {
@@ -284,7 +298,9 @@ describe('AuthGuard Unit Test', () => {
     it('Should throw required IDP UnauthorizedException when bearer token IDP mismatches route', async () => {
       const jwtMock = getJwtMock();
 
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.IDIR);
       mockAuthService.hasAnyActiveSession.mockReturnValue(false);
 
       const request = {
@@ -315,7 +331,9 @@ describe('AuthGuard Unit Test', () => {
     it('Should log debug and throw Invalid token when bearer JWT verification fails with non-Unauthorized error', async () => {
       const jwtMock = getJwtMock();
 
-      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockReflector.getAllAndOverride
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(IdpType.BCSC);
       mockAuthService.hasAnyActiveSession.mockReturnValue(false);
 
       const request = {

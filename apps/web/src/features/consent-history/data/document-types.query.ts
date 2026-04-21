@@ -16,7 +16,7 @@ export function documentTypesQueryOptions() {
       const { data } = await consentManagerApi.get(
         "/api/v1/lookups/document-types",
       );
-      return z.object({ docs: z.array(DocumentTypeDto) }).parse(data).docs;
+      return z.object({ data: z.array(DocumentTypeDto) }).parse(data).data;
     },
   });
 }

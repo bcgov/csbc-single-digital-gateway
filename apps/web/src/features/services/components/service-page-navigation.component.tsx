@@ -5,7 +5,6 @@ import { Container } from "../../app/components/container.component";
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
-  { id: "data-and-privacy", label: "Data & privacy" },
   { id: "eligibility-criteria", label: "Eligibility criteria" },
   { id: "application-process", label: "Application process" },
   { id: "your-activity", label: "Your activity" },

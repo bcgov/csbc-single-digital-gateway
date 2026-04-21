@@ -53,13 +53,29 @@ jest.mock("src/features/services/components/external-link.component", () => ({
 
 import { LegalInformationAccordion } from "src/features/services/components/legal-information-accordion.component";
 
+const service = {
+  id: "svc-1",
+  name: "Income Assistance",
+  description: null,
+  createdAt: "2024-01-01",
+  updatedAt: "2024-01-01",
+  content: {
+    resources: {
+      legal: [
+        { id: "l-1", label: "Employment and Assistance Act", url: "https://gov.bc.ca/ea-act" },
+        { id: "l-2", label: "Persons with Disabilities Act", url: "https://gov.bc.ca/pwd-act" },
+      ],
+    },
+  },
+} as any;
+
 describe("LegalInformationAccordion Component Test", () => {
   afterEach(() => {
     cleanup();
   });
 
   it("Should render the accordion heading and policy trigger", () => {
-    render(<LegalInformationAccordion />);
+    render(<LegalInformationAccordion service={service} />);
 
     expect(
       screen.getByRole("heading", { name: "Legal information" }),
@@ -71,30 +87,25 @@ describe("LegalInformationAccordion Component Test", () => {
   });
 
   it("Should render both external links with correct text and href", () => {
-    render(<LegalInformationAccordion />);
+    render(<LegalInformationAccordion service={service} />);
 
     const links = screen.getAllByTestId("external-link");
     expect(links).toHaveLength(2);
 
     expect(
-      screen.getByText(
-        /BC Government Services Employment and Assistance Act and Regulations/i,
-      ),
+      screen.getByText("Employment and Assistance Act"),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText(
-        /Employment and Assistance for Persons with Disabilities Act and Regulations/i,
-      ),
+      screen.getByText("Persons with Disabilities Act"),
     ).toBeInTheDocument();
 
-    links.forEach((link) => {
-      expect(link).toHaveAttribute("href", "https://gov.bc.ca");
-    });
+    expect(links[0]).toHaveAttribute("href", "https://gov.bc.ca/ea-act");
+    expect(links[1]).toHaveAttribute("href", "https://gov.bc.ca/pwd-act");
   });
 
   it("Should render links inside a list", () => {
-    render(<LegalInformationAccordion />);
+    render(<LegalInformationAccordion service={service} />);
 
     const listItems = screen.getAllByRole("listitem");
     expect(listItems).toHaveLength(2);

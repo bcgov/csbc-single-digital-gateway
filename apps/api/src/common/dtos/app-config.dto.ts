@@ -42,6 +42,9 @@ export const AppConfigSchema = z.object({
 
   // Consent Manager
   CONSENT_MANAGER_API_URL: z.string().optional(),
+
+  // Public Bodies API
+  PUBLIC_BODIES_API_URL: z.string().optional(),
 });
 
 export class AppConfigDto extends createZodDto(AppConfigSchema) {}

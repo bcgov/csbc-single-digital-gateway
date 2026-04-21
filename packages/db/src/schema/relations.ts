@@ -4,6 +4,8 @@ import {
   consentDocumentContributors,
   consentDocuments,
   consentDocumentTypes,
+  consentDocumentTypeVersions,
+  consentDocumentTypeVersionTranslations,
   consentDocumentVersions,
   consentDocumentVersionTranslations,
   consentStatements,
@@ -13,11 +15,12 @@ import {
   orgUnitRelations as orgUnitRelationsTable,
   orgUnits,
 } from "./organizations.ts";
-import { schemas, schemaVersions } from "./schemas.ts";
 import {
   serviceContributors,
   services,
   serviceTypes,
+  serviceTypeVersions,
+  serviceTypeVersionTranslations,
   serviceVersions,
   serviceVersionTranslations,
 } from "./service-catalogue.ts";
@@ -82,31 +85,6 @@ export const orgUnitRelationsRelations = relations(
   }),
 );
 
-// Schema relations
-
-export const schemasRelations = relations(schemas, ({ one, many }) => ({
-  publishedVersion: one(schemaVersions, {
-    fields: [schemas.publishedSchemaVersionId],
-    references: [schemaVersions.id],
-    relationName: "publishedVersion",
-  }),
-  versions: many(schemaVersions, { relationName: "schemaVersions" }),
-  consentDocumentTypes: many(consentDocumentTypes),
-  serviceTypes: many(serviceTypes),
-}));
-
-export const schemaVersionsRelations = relations(
-  schemaVersions,
-  ({ one, many }) => ({
-    schema: one(schemas, {
-      fields: [schemaVersions.schemaId],
-      references: [schemas.id],
-      relationName: "schemaVersions",
-    }),
-    serviceVersions: many(serviceVersions),
-  }),
-);
-
 // Consent management relations
 
 export const consentDocumentsRelations = relations(
@@ -149,11 +127,40 @@ export const consentDocumentContributorsRelations = relations(
 export const consentDocumentTypesRelations = relations(
   consentDocumentTypes,
   ({ one, many }) => ({
-    schema: one(schemas, {
-      fields: [consentDocumentTypes.schemaId],
-      references: [schemas.id],
+    publishedVersion: one(consentDocumentTypeVersions, {
+      fields: [consentDocumentTypes.publishedConsentDocumentTypeVersionId],
+      references: [consentDocumentTypeVersions.id],
+      relationName: "publishedConsentDocumentTypeVersion",
     }),
     consentDocuments: many(consentDocuments),
+    versions: many(consentDocumentTypeVersions, {
+      relationName: "consentDocumentTypeVersions",
+    }),
+  }),
+);
+
+export const consentDocumentTypeVersionsRelations = relations(
+  consentDocumentTypeVersions,
+  ({ one, many }) => ({
+    consentDocumentType: one(consentDocumentTypes, {
+      fields: [consentDocumentTypeVersions.consentDocumentTypeId],
+      references: [consentDocumentTypes.id],
+      relationName: "consentDocumentTypeVersions",
+    }),
+    translations: many(consentDocumentTypeVersionTranslations),
+    consentDocumentVersions: many(consentDocumentVersions),
+  }),
+);
+
+export const consentDocumentTypeVersionTranslationsRelations = relations(
+  consentDocumentTypeVersionTranslations,
+  ({ one }) => ({
+    consentDocumentTypeVersion: one(consentDocumentTypeVersions, {
+      fields: [
+        consentDocumentTypeVersionTranslations.consentDocumentTypeVersionId,
+      ],
+      references: [consentDocumentTypeVersions.id],
+    }),
   }),
 );
 
@@ -165,9 +172,9 @@ export const consentDocumentVersionsRelations = relations(
       references: [consentDocuments.id],
       relationName: "consentDocumentVersions",
     }),
-    schemaVersion: one(schemas, {
-      fields: [consentDocumentVersions.schemaVersionId],
-      references: [schemas.id],
+    consentDocumentTypeVersion: one(consentDocumentTypeVersions, {
+      fields: [consentDocumentVersions.consentDocumentTypeVersionId],
+      references: [consentDocumentTypeVersions.id],
     }),
     translations: many(consentDocumentVersionTranslations),
     consentStatements: many(consentStatements),
@@ -235,20 +242,47 @@ export const serviceContributorsRelations = relations(
 export const serviceTypesRelations = relations(
   serviceTypes,
   ({ one, many }) => ({
-    schema: one(schemas, {
-      fields: [serviceTypes.schemaId],
-      references: [schemas.id],
+    publishedVersion: one(serviceTypeVersions, {
+      fields: [serviceTypes.publishedServiceTypeVersionId],
+      references: [serviceTypeVersions.id],
+      relationName: "publishedServiceTypeVersion",
     }),
     services: many(services),
+    versions: many(serviceTypeVersions, {
+      relationName: "serviceTypeVersions",
+    }),
+  }),
+);
+
+export const serviceTypeVersionsRelations = relations(
+  serviceTypeVersions,
+  ({ one, many }) => ({
+    serviceType: one(serviceTypes, {
+      fields: [serviceTypeVersions.serviceTypeId],
+      references: [serviceTypes.id],
+      relationName: "serviceTypeVersions",
+    }),
+    translations: many(serviceTypeVersionTranslations),
+    serviceVersions: many(serviceVersions),
+  }),
+);
+
+export const serviceTypeVersionTranslationsRelations = relations(
+  serviceTypeVersionTranslations,
+  ({ one }) => ({
+    serviceTypeVersion: one(serviceTypeVersions, {
+      fields: [serviceTypeVersionTranslations.serviceTypeVersionId],
+      references: [serviceTypeVersions.id],
+    }),
   }),
 );
 
 export const serviceVersionsRelations = relations(
   serviceVersions,
   ({ one, many }) => ({
-    schemaVersion: one(schemaVersions, {
-      fields: [serviceVersions.schemaVersionId],
-      references: [schemaVersions.id],
+    serviceTypeVersion: one(serviceTypeVersions, {
+      fields: [serviceVersions.serviceTypeVersionId],
+      references: [serviceTypeVersions.id],
     }),
     service: one(services, {
       fields: [serviceVersions.serviceId],

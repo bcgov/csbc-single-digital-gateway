@@ -76,81 +76,62 @@ jest.mock("src/features/services/components/nav-link.component", () => ({
     to,
     title,
     description,
+    meta,
     icon,
   }: {
-    to: string;
+    to?: string;
     title: string;
     description?: string;
+    meta?: string;
     icon?: ReactNode;
   }) => (
-    <a data-testid="nav-link-item" href={to} aria-label={title}>
+    <a data-testid="nav-link-item" href={to ?? "#"} aria-label={title}>
       {icon}
       <span data-testid="nav-link-title">{title}</span>
       {description && (
         <span data-testid="nav-link-description">{description}</span>
       )}
+      {meta && <span data-testid="nav-link-meta">{meta}</span>}
     </a>
   ),
 }));
 
 import { ResourcesSupportAccordion } from "src/features/services/components/resources-support-accordion.component";
 
+const service = {
+  id: "svc-1",
+  name: "Income Assistance",
+  description: null,
+  createdAt: "2024-01-01",
+  updatedAt: "2024-01-01",
+  content: {
+    contactMethods: [
+      { id: "cm-w1", type: "link", label: "Help center", description: "Help and support resources.", url: "https://gov.bc.ca/help" },
+      { id: "cm-e1", type: "value", label: "Report fraud", description: "reportfraud@gov.bc.ca", value: "reportfraud@gov.bc.ca" },
+      { id: "cm-p1", type: "phone", label: "Income Assistance Office", description: "Run by the Ministry of Social Development and Poverty Reduction", value: "1-800-000-0000" },
+    ],
+  },
+} as any;
+
 describe("ResourcesSupportAccordion Component Test", () => {
   afterEach(() => {
     cleanup();
   });
 
-  it("Should render the accordion heading and all three section triggers", () => {
-    render(<ResourcesSupportAccordion />);
+  it("Should render the accordion heading and contact methods trigger", () => {
+    render(<ResourcesSupportAccordion service={service} />);
 
     expect(
       screen.getByRole("heading", { name: "Resources & Support" }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole("button", { name: "Recommended reading" }),
-    ).toBeInTheDocument();
-
-    expect(
       screen.getByRole("button", { name: "Get help" }),
     ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole("button", { name: "Application support" }),
-    ).toBeInTheDocument();
-  });
-
-  it("Should render all four recommended reading external links with correct text and href", () => {
-    render(<ResourcesSupportAccordion />);
-
-    expect(screen.getByText("Apply for assistance")).toBeInTheDocument();
-    expect(screen.getByText("On assistance")).toBeInTheDocument();
-    expect(screen.getByText("Payment dates")).toBeInTheDocument();
-    expect(screen.getByText("Access services")).toBeInTheDocument();
-
-    const externalLinks = screen.getAllByTestId("external-link");
-    expect(externalLinks).toHaveLength(4);
-
-    externalLinks.forEach((link) => {
-      expect(link).toHaveAttribute("href", "https://gov.bc.ca");
-    });
-  });
-
-  it("Should render recommended reading links inside list items", () => {
-    render(<ResourcesSupportAccordion />);
-
-    const listItems = screen.getAllByRole("listitem");
-    const externalLinks = screen.getAllByTestId("external-link");
-
-    const externalListItems = listItems.filter((item) =>
-      item.querySelector("[data-testid='external-link']"),
-    );
-
-    expect(externalListItems).toHaveLength(externalLinks.length);
   });
 
   it("Should render get help nav links with correct titles and descriptions", () => {
-    render(<ResourcesSupportAccordion />);
+    render(<ResourcesSupportAccordion service={service} />);
 
     expect(screen.getByText("Help center")).toBeInTheDocument();
     expect(screen.getByText("Help and support resources.")).toBeInTheDocument();
@@ -166,41 +147,25 @@ describe("ResourcesSupportAccordion Component Test", () => {
     expect(screen.getByText("reportfraud@gov.bc.ca")).toBeInTheDocument();
   });
 
-  it("Should render application support nav links with correct titles and descriptions", () => {
-    render(<ResourcesSupportAccordion />);
-
-    expect(screen.getByText("Call us")).toBeInTheDocument();
-    expect(screen.getByText("Toll Free: 1-866-866-08666")).toBeInTheDocument();
-
-    expect(screen.getByText("Service B.C.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Run by the Ministry of Citizens' Services"),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Public Guardian and Trustee of BC"),
-    ).toBeInTheDocument();
-  });
-
-  it("Should render all six nav link items inside list items", () => {
-    render(<ResourcesSupportAccordion />);
+  it("Should render all three nav link items inside list items", () => {
+    render(<ResourcesSupportAccordion service={service} />);
 
     const navLinks = screen.getAllByTestId("nav-link-item");
-    expect(navLinks).toHaveLength(6);
+    expect(navLinks).toHaveLength(3);
 
     const listItems = screen.getAllByRole("listitem");
     const navListItems = listItems.filter((item) =>
       item.querySelector("[data-testid='nav-link-item']"),
     );
 
-    expect(navListItems).toHaveLength(6);
+    expect(navListItems).toHaveLength(3);
   });
 
-  it("Should render all six icons with correct size, stroke, and class", () => {
-    render(<ResourcesSupportAccordion />);
+  it("Should render all three icons with correct size, stroke, and class", () => {
+    render(<ResourcesSupportAccordion service={service} />);
 
     const icons = screen.getAllByTestId("icon-cake");
-    expect(icons).toHaveLength(6);
+    expect(icons).toHaveLength(3);
 
     icons.forEach((icon) => {
       expect(icon).toHaveAttribute("data-size", "20");
@@ -209,18 +174,20 @@ describe("ResourcesSupportAccordion Component Test", () => {
     });
   });
 
-  it("Should render a total of four external links and six nav link items", () => {
-    render(<ResourcesSupportAccordion />);
+  it("Should render nav link hrefs computed from contact method types", () => {
+    render(<ResourcesSupportAccordion service={service} />);
 
-    expect(screen.getAllByTestId("external-link")).toHaveLength(4);
-    expect(screen.getAllByTestId("nav-link-item")).toHaveLength(6);
+    const navLinks = screen.getAllByTestId("nav-link-item");
+    expect(navLinks).toHaveLength(3);
+    const hrefs = navLinks.map((link) => link.getAttribute("href"));
+    expect(hrefs).toContain("https://gov.bc.ca/help");
+    expect(hrefs).toContain("mailto:reportfraud@gov.bc.ca");
+    expect(hrefs).toContain("tel:1-800-000-0000");
   });
 
-  it("Should render all nav link items pointing to the placeholder href", () => {
-    render(<ResourcesSupportAccordion />);
-
-    screen.getAllByTestId("nav-link-item").forEach((link) => {
-      expect(link).toHaveAttribute("href", "#");
-    });
+  it("Should return null when there are no contact methods", () => {
+    const emptyService = { ...service, content: { contactMethods: [] } } as any;
+    const { container } = render(<ResourcesSupportAccordion service={emptyService} />);
+    expect(container.innerHTML).toBe("");
   });
 });

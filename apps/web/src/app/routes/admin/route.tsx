@@ -8,6 +8,7 @@ import {
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { z } from "zod";
 import icon from "../../../assets/brand/icon.svg";
+import { AdminLayout } from "../../../features/admin/components/admin-layout.component";
 import { useIdirAuth } from "../../../features/auth/auth.context";
 
 const adminSearchSchema = z.object({
@@ -48,5 +49,9 @@ function AdminRouteComponent() {
     );
   }
 
-  return <Outlet />;
+  return (
+    <AdminLayout>
+      <Outlet />
+    </AdminLayout>
+  );
 }

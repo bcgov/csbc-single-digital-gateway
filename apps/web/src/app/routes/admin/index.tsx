@@ -9,7 +9,7 @@ function AdminDashboard() {
   const { user } = useIdirAuth();
 
   return (
-    <div className="p-8">
+    <div className="py-8">
       <h1 className="text-2xl font-bold">
         Hello, {user?.name ?? user?.given_name ?? "Admin"}
       </h1>

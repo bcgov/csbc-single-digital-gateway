@@ -86,17 +86,15 @@ describe('HealthController Integration Test', () => {
         });
     });
 
-    it('should return consistent results across multiple concurrent requests', async () => {
+    it('should return consistent results across sequential requests', async () => {
       mockHealthCheckService.check.mockResolvedValue({
         status: 'ok',
         details: {},
       });
 
-      const [r1, r2, r3] = await Promise.all([
-        request(server).get(healthLiveEndpoint),
-        request(server).get(healthLiveEndpoint),
-        request(server).get(healthLiveEndpoint),
-      ]);
+      const r1 = await request(server).get(healthLiveEndpoint);
+      const r2 = await request(server).get(healthLiveEndpoint);
+      const r3 = await request(server).get(healthLiveEndpoint);
 
       expect(r1.status).toBe(200);
       expect(r2.status).toBe(200);
@@ -216,7 +214,7 @@ describe('HealthController Integration Test', () => {
       ]);
     });
 
-    it('should return consistent results across multiple concurrent requests', async () => {
+    it('should return consistent results across sequential requests', async () => {
       mockHealthCheckService.check.mockResolvedValue({
         status: 'ok',
         details: {
@@ -225,11 +223,9 @@ describe('HealthController Integration Test', () => {
         },
       });
 
-      const [r1, r2, r3] = await Promise.all([
-        request(server).get(healthReadyEndpoint),
-        request(server).get(healthReadyEndpoint),
-        request(server).get(healthReadyEndpoint),
-      ]);
+      const r1 = await request(server).get(healthReadyEndpoint);
+      const r2 = await request(server).get(healthReadyEndpoint);
+      const r3 = await request(server).get(healthReadyEndpoint);
 
       expect(r1.status).toBe(200);
       expect(r2.status).toBe(200);

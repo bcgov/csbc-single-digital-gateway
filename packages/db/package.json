@@ -18,6 +18,7 @@
   ],
   "scripts": {
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config=./drizzle/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=./drizzle/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=./drizzle/drizzle.config.ts",

@@ -36,15 +36,30 @@ jest.mock('../auth/auth.module', () => ({
   AuthModule: class MockAuthModule {},
 }));
 
+jest.mock('../consent/consent.module', () => ({
+  ConsentModule: class MockConsentModule {},
+}));
+
 jest.mock('../consent-proxy/consent-proxy.module', () => ({
   ConsentProxyModule: class MockConsentProxyModule {},
+}));
+
+jest.mock('../org-units/org-units.module', () => ({
+  OrgUnitsModule: class MockOrgUnitsModule {},
+}));
+
+jest.mock('../services/services.module', () => ({
+  ServicesModule: class MockServicesModule {},
 }));
 
 import { mockConfigService } from 'tests/utils/mock.auth.controllers';
 import { AppModule } from '../app.module';
 import { AuthModule } from '../auth/auth.module';
+import { ConsentModule } from '../consent/consent.module';
 import { ConsentProxyModule } from '../consent-proxy/consent-proxy.module';
 import { DatabaseModule } from '../database/database.module';
+import { OrgUnitsModule } from '../org-units/org-units.module';
+import { ServicesModule } from '../services/services.module';
 
 describe('AppModule-Imports Unit Test', () => {
   it('Should call ConfigModule.forRoot exactly once', () => {
@@ -136,10 +151,13 @@ describe('AppModule-Imports Unit Test', () => {
     ) as unknown[];
 
     expect(Array.isArray(importsMetadata)).toBe(true);
-    expect(importsMetadata).toHaveLength(5);
+    expect(importsMetadata).toHaveLength(8);
     expect(importsMetadata).toContain(DatabaseModule);
     expect(importsMetadata).toContain(AuthModule);
+    expect(importsMetadata).toContain(ConsentModule);
     expect(importsMetadata).toContain(ConsentProxyModule);
+    expect(importsMetadata).toContain(OrgUnitsModule);
+    expect(importsMetadata).toContain(ServicesModule);
   });
 
   it('Should include dynamic ConfigModule and LoggerModule imports in metadata', () => {

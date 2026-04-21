@@ -6,11 +6,16 @@ import * as http from 'node:http';
 import { IdirAuthController } from 'src/modules/auth/controllers/idir-auth.controller';
 import { AuthService } from 'src/modules/auth/services/auth.service';
 import { IdpType } from 'src/modules/auth/types/idp';
+import { UsersService } from 'src/modules/users/services/users.service';
 import request from 'supertest';
 import {
   mockAuthService,
   mockConfigService,
 } from 'tests/utils/mock.auth.controllers';
+
+const mockUsersService = {
+  getUserRoles: jest.fn().mockResolvedValue([]),
+};
 
 describe('IdirAuthController Integration Test', () => {
   let app: INestApplication;
@@ -42,6 +47,7 @@ describe('IdirAuthController Integration Test', () => {
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
     app = module.createNestApplication();
@@ -351,7 +357,7 @@ describe('IdirAuthController Integration Test', () => {
 
       const response = await agent.get(meEndpoint).expect(200);
 
-      expect(response.body).toEqual(profile);
+      expect(response.body).toEqual({ ...profile, roles: [] });
     });
 
     it('should return 401 when user is not authenticated', async () => {
@@ -387,10 +393,10 @@ describe('IdirAuthController Integration Test', () => {
       await agent.get(`${callbackEndpoint}?code=ok`).expect(302);
 
       const response1 = await agent.get(meEndpoint).expect(200);
-      expect(response1.body).toEqual(profile);
+      expect(response1.body).toEqual({ ...profile, roles: [] });
 
       const response2 = await agent.get(meEndpoint).expect(200);
-      expect(response2.body).toEqual(profile);
+      expect(response2.body).toEqual({ ...profile, roles: [] });
     });
 
     it('should return 401 after logout', async () => {

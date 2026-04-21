@@ -6,7 +6,19 @@ import {
 } from "@repo/ui";
 import { ExternalLink } from "./external-link.component";
 
-export function LegalInformationAccordion() {
+import type { ServiceDto } from "../../../features/services/service.dto";
+
+type Props = {
+  service: ServiceDto;
+};
+
+export function LegalInformationAccordion({ service }: Props) {
+  const hasLegalInformation = !!service.content?.resources?.legal?.length;
+
+  if (!hasLegalInformation) {
+    return null;
+  }
+
   return (
     <AccordionGroup
       title="Legal information"
@@ -17,18 +29,11 @@ export function LegalInformationAccordion() {
         <AccordionContent className="p-0">
           <div className="px-4 py-3">
             <ul className="space-y-2">
-              <li>
-                <ExternalLink href="https://gov.bc.ca">
-                  BC Government Services Employment and Assistance Act and
-                  Regulations
-                </ExternalLink>
-              </li>
-              <li>
-                <ExternalLink href="https://gov.bc.ca">
-                  Employment and Assistance for Persons with Disabilities Act
-                  and Regulations
-                </ExternalLink>
-              </li>
+              {service.content?.resources?.legal?.map((item) => (
+                <li key={item.id}>
+                  <ExternalLink href={item.url}>{item.label}</ExternalLink>
+                </li>
+              ))}
             </ul>
           </div>
         </AccordionContent>

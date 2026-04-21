@@ -8,14 +8,23 @@
     "build": "tsc -b && vite build",
     "dev": "vite",
     "lint": "eslint .",
+    "typecheck": "tsc -b && tsc -p tsconfig.test.json --noEmit",
     "preview": "vite preview",
     "test:component": "jest",
     "test:watch": "jest --watch",
-    "test:cov:web": "jest --coverage > ./tests/coverage/coverage.txt && echo \"Coverage Report\" && cat ./tests/coverage/coverage.txt"
+    "test:cov:web": "mkdir -p ./tests/coverage && jest --coverage > ./tests/coverage/coverage.txt && echo \"Coverage Report\" && cat ./tests/coverage/coverage.txt"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@dr.pogodin/react-helmet": "^3.0.5",
+    "@jsonforms/core": "^3.7.0",
+    "@jsonforms/react": "^3.7.0",
+    "@monaco-editor/react": "^4.7.0",
+    "@repo/jsonforms": "*",
     "@repo/ui": "^0.0.0",
+    "@sindresorhus/slugify": "^3.0.0",
     "@tabler/icons-react": "^3.36.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.16",
@@ -23,10 +32,12 @@
     "@tanstack/react-router": "^1.145.11",
     "@tanstack/react-router-devtools": "^1.145.11",
     "axios": "^1.13.2",
+    "monaco-editor": "^0.55.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "tailwindcss": "^4.1.18",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
@@ -71,7 +82,7 @@
       "tsx"
     ],
     "rootDir": ".",
-    "testRegex": ".*\\.spec\\.tsx$",
+    "testRegex": ".*\\.spec\\.tsx?$",
     "transform": {
       "^.+\\.(ts|tsx)$": "babel-jest"
     },
@@ -83,7 +94,8 @@
       "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/tests/config/fileMock.js",
       "\\.(css|less|sass|scss)$": "identity-obj-proxy",
       "^tests/(.*)$": "<rootDir>/tests/$1",
-      "^src/(.*)$": "<rootDir>/src/$1"
+      "^src/(.*)$": "<rootDir>/src/$1",
+      "^(.*)\\.js$": "$1"
     },
     "collectCoverageFrom": [
       "**/*.tsx"
@@ -106,7 +118,9 @@
       "<rootDir>/tests/utils/",
       "<rootDir>/.*\\.d\\.ts$",
       "<rootDir>/src/main.tsx",
-      "<rootDir>/src/features/auth/auth.context.tsx"
+      "<rootDir>/src/features/auth/auth.context.tsx",
+      "<rootDir>/src/features/admin/jsonforms-studio/components/",
+      "<rootDir>/src/app/routes/dev/"
     ]
   }
 }

@@ -56,6 +56,7 @@ export const buildMockRequest = (
     protocol: string;
     host: string;
     originalUrl: string;
+    headers: Record<string, string>;
   }> = {},
 ) =>
   ({
@@ -68,6 +69,7 @@ export const buildMockRequest = (
     protocol: overrides.protocol ?? 'https',
     get: jest.fn().mockReturnValue(overrides.host ?? 'api.example.com'),
     originalUrl: overrides.originalUrl ?? '/auth/idir/callback?code=abc',
+    headers: overrides.headers ?? {},
   }) as unknown as Request & { session: MockSession };
 
 /**
