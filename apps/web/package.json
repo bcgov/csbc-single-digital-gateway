@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "test:component": "jest",
     "test:watch": "jest --watch",
-    "test:cov:web": "jest --coverage > ./tests/coverage/coverage.txt && echo \"Coverage Report\" && cat ./tests/coverage/coverage.txt"
+    "test:cov:web": "mkdir -p ./tests/coverage && jest --coverage > ./tests/coverage/coverage.txt && echo \"Coverage Report\" && cat ./tests/coverage/coverage.txt"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
