@@ -1,5 +1,4 @@
 export { ChefsFormViewer } from "./components/chefs-form-viewer.component";
-export { WorkflowRenderer } from "./components/workflow-renderer.component";
 export { useChefsScript } from "./hooks/use-chefs-script.hook";
 export type {
   ChefsFormReadyEvent,

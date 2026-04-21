@@ -2,10 +2,7 @@ import { IconHeartHandshake } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import {
-  ChefsFormViewer,
-  WorkflowRenderer,
-} from "../../../../../../../features/chefs";
+import { ChefsFormViewer } from "../../../../../../../features/chefs";
 import { InviteDelegateDialog } from "../../../../../../../features/services/components/invite-delegate-dialog.component";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
 import {
@@ -100,25 +97,7 @@ function RouteComponent() {
       </div>
 
       {isWorkflowApplication(application) ? (
-        <WorkflowRenderer
-          workflow={application}
-          onSubmissionComplete={() => {
-            toast.success(
-              `Your application for ${service.name} has been submitted successfully.`,
-              {
-                description:
-                  "You will receive updates as your application progresses.",
-              },
-            );
-            navigate({
-              to: "/app/services/$serviceId",
-              params: { serviceId: service.id },
-            });
-          }}
-          onSubmissionError={(e) =>
-            console.error("Submission error:", e.message)
-          }
-        />
+        <></>
       ) : (
         <ChefsFormViewer
           formId={application.id}

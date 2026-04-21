@@ -144,8 +144,8 @@ describe('AuthService Unit Test', () => {
     });
 
     it('Should map full claims into userProfile and use display_name/email for syncFromOidc', async () => {
-      const callbackUrl = new URL(
-        'https://example.com/auth/bcsc/callback?code=abc&state=mock-state',
+      const callbackUrl = Object.fromEntries(
+        new URL('https://example.com/auth/bcsc/callback?code=abc&state=mock-state').searchParams,
       );
       const session = createMockSession({
         oidcState: 'mock-state',
@@ -195,8 +195,8 @@ describe('AuthService Unit Test', () => {
     });
 
     it('Should handle missing claims and undefined expiresIn with safe fallbacks', async () => {
-      const callbackUrl = new URL(
-        'https://example.com/auth/idir/callback?code=abc&state=mock-state',
+      const callbackUrl = Object.fromEntries(
+        new URL('https://example.com/auth/idir/callback?code=abc&state=mock-state').searchParams,
       );
       const session = createMockSession({
         oidcState: 'mock-state',
