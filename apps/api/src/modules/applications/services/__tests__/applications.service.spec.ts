@@ -34,7 +34,7 @@ const WORKFLOW_APP = {
   config: {
     apiKey: 'api-key-xyz',
     tenantId: TENANT_ID,
-    triggerUrl: 'https://n8n.example.com/webhook/trigger',
+    triggerEndpoint: '/webhook/trigger',
   },
 };
 
@@ -102,10 +102,8 @@ const makeQueue = () => {
 };
 
 const thenableLeaf = (q: ReturnType<typeof makeQueue>) => ({
-  then: (
-    resolve: (v: unknown[]) => unknown,
-    reject: (e: unknown) => unknown,
-  ) => q.dequeue().then(resolve as (v: unknown) => unknown, reject),
+  then: (resolve: (v: unknown[]) => unknown, reject: (e: unknown) => unknown) =>
+    q.dequeue().then(resolve as (v: unknown) => unknown, reject),
 });
 
 const createDbMock = () => {
@@ -149,13 +147,10 @@ const createDbMock = () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const buildService = (opts?: {
-  triggerImpl?: jest.Mock;
-}) => {
+const buildService = (opts?: { triggerImpl?: jest.Mock }) => {
   const mocks = createDbMock();
   const trigger =
-    opts?.triggerImpl ??
-    jest.fn().mockResolvedValue({ executionId: '129' });
+    opts?.triggerImpl ?? jest.fn().mockResolvedValue({ executionId: '129' });
   const workflowTrigger = { trigger } as unknown as WorkflowTriggerService;
   const service = new ApplicationsService(
     mocks.db as unknown as Database,

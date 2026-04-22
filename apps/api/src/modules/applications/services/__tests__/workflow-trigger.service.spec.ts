@@ -7,12 +7,17 @@ import { WorkflowTriggerService } from '../workflow-trigger.service';
 describe('WorkflowTriggerService', () => {
   let service: WorkflowTriggerService;
   let httpService: { post: jest.Mock };
+  let configService: { get: jest.Mock };
+
+  const WORKFLOW_API_URL = 'https://n8n.example.com';
 
   const config = {
     apiKey: 'api-key-123',
     tenantId: '11111111-1111-1111-1111-111111111111',
-    triggerUrl: 'https://n8n.example.com/webhook/trigger',
+    triggerEndpoint: '/webhook/trigger',
   };
+
+  const expectedUrl = `${WORKFLOW_API_URL}${config.triggerEndpoint}`;
 
   const actor = {
     actorId: 'abc123',
@@ -34,7 +39,15 @@ describe('WorkflowTriggerService', () => {
 
   beforeEach(() => {
     httpService = { post: jest.fn() };
-    service = new WorkflowTriggerService(httpService as unknown as HttpService);
+    configService = {
+      get: jest.fn((key: string) =>
+        key === 'WORKFLOW_API_URL' ? WORKFLOW_API_URL : undefined,
+      ),
+    };
+    service = new WorkflowTriggerService(
+      httpService as unknown as HttpService,
+      configService as never,
+    );
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
 
@@ -43,13 +56,13 @@ describe('WorkflowTriggerService', () => {
   });
 
   describe('trigger — request construction', () => {
-    it('should POST to config.triggerUrl', async () => {
+    it('should POST to WORKFLOW_API_URL + config.triggerEndpoint', async () => {
       httpService.post.mockReturnValue(
         of(mockResponse(200, { WorkflowInstance: '129' })),
       );
       await service.trigger(config, actor);
       expect(httpService.post).toHaveBeenCalledWith(
-        config.triggerUrl,
+        expectedUrl,
         expect.anything(),
         expect.anything(),
       );

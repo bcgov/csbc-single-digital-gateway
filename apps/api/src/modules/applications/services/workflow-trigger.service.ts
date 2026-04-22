@@ -1,12 +1,14 @@
 import { HttpService } from '@nestjs/axios';
 import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AxiosError } from 'axios';
 import { firstValueFrom } from 'rxjs';
+import type { AppConfigDto } from 'src/common/dtos/app-config.dto';
 
 export interface WorkflowTriggerConfig {
   apiKey: string;
   tenantId: string;
-  triggerUrl: string;
+  triggerEndpoint: string;
 }
 
 export interface WorkflowTriggerActor {
@@ -21,16 +23,22 @@ const TIMEOUT_MS = 10_000;
 export class WorkflowTriggerService {
   private readonly logger = new Logger(WorkflowTriggerService.name);
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService<AppConfigDto, true>,
+  ) {}
 
   async trigger(
     config: WorkflowTriggerConfig,
     actor: WorkflowTriggerActor,
   ): Promise<{ executionId: string }> {
+    const baseUrl = this.configService.get('WORKFLOW_API_URL') ?? '';
+    const url = `${baseUrl.replace(/\/$/, '')}${config.triggerEndpoint.startsWith('/') ? '' : '/'}${config.triggerEndpoint}`;
+
     let response;
     try {
       response = await firstValueFrom(
-        this.httpService.post<unknown>(config.triggerUrl, actor, {
+        this.httpService.post<unknown>(url, actor, {
           headers: {
             'Content-Type': 'application/json',
             'X-N8N-API-KEY': config.apiKey,

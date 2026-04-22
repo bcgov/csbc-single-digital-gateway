@@ -83,7 +83,7 @@ const WorkflowApplicationSchema = BaseApplicationSchema.extend({
   config: z.object({
     apiKey: z.string(),
     tenantId: z.string().uuid(),
-    triggerUrl: z.string(),
+    triggerEndpoint: z.string(),
   }),
 });
 

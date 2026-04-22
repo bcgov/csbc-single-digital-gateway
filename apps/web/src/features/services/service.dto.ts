@@ -80,7 +80,7 @@ export const ServiceApplicationWorkflowDto = BaseApplicationDto.extend({
     .object({
       apiKey: z.string(),
       tenantId: z.uuid(),
-      triggerUrl: z.url(),
+      triggerEndpoint: z.string(),
     })
     .optional(),
 });

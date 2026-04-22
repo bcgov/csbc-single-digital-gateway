@@ -45,6 +45,9 @@ export const AppConfigSchema = z.object({
 
   // Public Bodies API
   PUBLIC_BODIES_API_URL: z.string().optional(),
+
+  // Workflow API
+  WORKFLOW_API_URL: z.string().optional(),
 });
 
 export class AppConfigDto extends createZodDto(AppConfigSchema) {}
