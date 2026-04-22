@@ -107,8 +107,15 @@ const createDbMock = () => {
 
     // We build the chain bottom-up: offset → limit → orderBy → where → from → select
     const offsetMock = jest.fn(() => terminal());
-    const limitMock = jest.fn(() => ({ offset: offsetMock, ...asTerminal(terminal) }));
-    const orderByMock = jest.fn(() => ({ limit: limitMock, offset: offsetMock, ...asTerminal(terminal) }));
+    const limitMock = jest.fn(() => ({
+      offset: offsetMock,
+      ...asTerminal(terminal),
+    }));
+    const orderByMock = jest.fn(() => ({
+      limit: limitMock,
+      offset: offsetMock,
+      ...asTerminal(terminal),
+    }));
     const whereMock = jest.fn(() => ({
       limit: limitMock,
       orderBy: orderByMock,
@@ -149,8 +156,10 @@ const createDbMock = () => {
 
   // Helper: attach then/catch/finally so the object is thenable (resolves via terminal())
   const asTerminal = (terminal: () => Promise<unknown>) => ({
-    then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) =>
-      terminal().then(onFulfilled, onRejected),
+    then: (
+      onFulfilled: (v: unknown) => unknown,
+      onRejected?: (e: unknown) => unknown,
+    ) => terminal().then(onFulfilled, onRejected),
     catch: (onRejected: (e: unknown) => unknown) =>
       terminal().catch(onRejected),
     finally: (onFinally: () => void) => terminal().finally(onFinally),
@@ -179,7 +188,9 @@ const createDbMock = () => {
 
   // ---- db update chain ----
   const updateReturningMock = jest.fn().mockResolvedValue([makeVersion()]);
-  const updateWhereMock = jest.fn().mockReturnValue({ returning: updateReturningMock });
+  const updateWhereMock = jest
+    .fn()
+    .mockReturnValue({ returning: updateReturningMock });
   const updateSetMock = jest.fn().mockReturnValue({ where: updateWhereMock });
   const updateMock = jest.fn().mockReturnValue({ set: updateSetMock });
 
@@ -196,12 +207,20 @@ const createDbMock = () => {
     returning: txInsertReturningMock,
     onConflictDoUpdate: txInsertOnConflictMock,
   });
-  const txInsertMock = jest.fn().mockReturnValue({ values: txInsertValuesMock });
+  const txInsertMock = jest
+    .fn()
+    .mockReturnValue({ values: txInsertValuesMock });
 
   // ---- tx update chain ----
-  const txUpdateReturningMock = jest.fn().mockResolvedValue([makeVersion({ status: 'archived' })]);
-  const txUpdateWhereMock = jest.fn().mockReturnValue({ returning: txUpdateReturningMock });
-  const txUpdateSetMock = jest.fn().mockReturnValue({ where: txUpdateWhereMock });
+  const txUpdateReturningMock = jest
+    .fn()
+    .mockResolvedValue([makeVersion({ status: 'archived' })]);
+  const txUpdateWhereMock = jest
+    .fn()
+    .mockReturnValue({ returning: txUpdateReturningMock });
+  const txUpdateSetMock = jest
+    .fn()
+    .mockReturnValue({ where: txUpdateWhereMock });
   const txUpdateMock = jest.fn().mockReturnValue({ set: txUpdateSetMock });
 
   const tx = {
@@ -310,7 +329,10 @@ describe('ConsentDocumentTypesService', () => {
       const bundle = createDbMock();
       const service = buildService(bundle);
 
-      const translationWithDefaults = makeTranslation({ schema: {}, uiSchema: {} });
+      const translationWithDefaults = makeTranslation({
+        schema: {},
+        uiSchema: {},
+      });
 
       bundle.txInsertReturningMock
         .mockResolvedValueOnce([makeType()])
@@ -322,15 +344,17 @@ describe('ConsentDocumentTypesService', () => {
         description: 'No schema provided',
       });
 
-      const translationValuesCall =
-        bundle.txInsertValuesMock.mock.calls[2][0] as Record<string, unknown>;
+      const translationValuesCall = bundle.txInsertValuesMock.mock
+        .calls[2][0] as Record<string, unknown>;
       expect(translationValuesCall.schema).toEqual({});
       expect(translationValuesCall.uiSchema).toEqual({});
     });
 
     it('should propagate transaction errors', async () => {
       const bundle = createDbMock();
-      bundle.transactionMock.mockRejectedValueOnce(new Error('DB connection lost'));
+      bundle.transactionMock.mockRejectedValueOnce(
+        new Error('DB connection lost'),
+      );
       const service = buildService(bundle);
 
       await expect(
@@ -429,11 +453,18 @@ describe('ConsentDocumentTypesService', () => {
       // enrichTypesWithTranslations: versions query
       bundle.selectResults.push([
         makeVersion({ consentDocumentTypeId: 'cdt-draft-001' }),
-        makeVersion({ id: VERSION_ID, consentDocumentTypeId: 'cdt-pub-001', status: 'published' }),
+        makeVersion({
+          id: VERSION_ID,
+          consentDocumentTypeId: 'cdt-pub-001',
+          status: 'published',
+        }),
       ]);
       // enrichTypesWithTranslations: translations query
       bundle.selectResults.push([
-        makeTranslation({ consentDocumentTypeVersionId: VERSION_ID, name: 'Published Consent' }),
+        makeTranslation({
+          consentDocumentTypeVersionId: VERSION_ID,
+          name: 'Published Consent',
+        }),
       ]);
 
       const result = await service.findAll(1, 10, true);
@@ -452,8 +483,12 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.selectResults.push([publishedType]);
       bundle.selectResults.push([{ count: 1 }]);
-      bundle.selectResults.push([makeVersion({ id: VERSION_ID, status: 'published' })]);
-      bundle.selectResults.push([makeTranslation({ name: 'Published Consent' })]);
+      bundle.selectResults.push([
+        makeVersion({ id: VERSION_ID, status: 'published' }),
+      ]);
+      bundle.selectResults.push([
+        makeTranslation({ name: 'Published Consent' }),
+      ]);
 
       const result = await service.findAll(1, 10, false);
 
@@ -534,8 +569,18 @@ describe('ConsentDocumentTypesService', () => {
       bundle.selectResults.push([{ count: 1 }]);
       // versions sorted desc: draft (newer) first, published second
       bundle.selectResults.push([
-        makeVersion({ id: draftVersionId, consentDocumentTypeId: 'cdt-with-pub-001', version: 2, status: 'draft' }),
-        makeVersion({ id: publishedVersionId, consentDocumentTypeId: 'cdt-with-pub-001', version: 1, status: 'published' }),
+        makeVersion({
+          id: draftVersionId,
+          consentDocumentTypeId: 'cdt-with-pub-001',
+          version: 2,
+          status: 'draft',
+        }),
+        makeVersion({
+          id: publishedVersionId,
+          consentDocumentTypeId: 'cdt-with-pub-001',
+          version: 1,
+          status: 'published',
+        }),
       ]);
       bundle.selectResults.push([
         makeTranslation({
@@ -567,8 +612,18 @@ describe('ConsentDocumentTypesService', () => {
       bundle.selectResults.push([typeWithBoth]);
       bundle.selectResults.push([{ count: 1 }]);
       bundle.selectResults.push([
-        makeVersion({ id: draftVersionId, consentDocumentTypeId: 'cdt-updates-pending-001', version: 2, status: 'draft' }),
-        makeVersion({ id: publishedVersionId, consentDocumentTypeId: 'cdt-updates-pending-001', version: 1, status: 'published' }),
+        makeVersion({
+          id: draftVersionId,
+          consentDocumentTypeId: 'cdt-updates-pending-001',
+          version: 2,
+          status: 'draft',
+        }),
+        makeVersion({
+          id: publishedVersionId,
+          consentDocumentTypeId: 'cdt-updates-pending-001',
+          version: 1,
+          status: 'published',
+        }),
       ]);
       bundle.selectResults.push([
         makeTranslation({ consentDocumentTypeVersionId: publishedVersionId }),
@@ -593,7 +648,12 @@ describe('ConsentDocumentTypesService', () => {
       bundle.selectResults.push([typePublishedOnly]);
       bundle.selectResults.push([{ count: 1 }]);
       bundle.selectResults.push([
-        makeVersion({ id: publishedVersionId, consentDocumentTypeId: 'cdt-no-pending-001', version: 1, status: 'published' }),
+        makeVersion({
+          id: publishedVersionId,
+          consentDocumentTypeId: 'cdt-no-pending-001',
+          version: 1,
+          status: 'published',
+        }),
       ]);
       bundle.selectResults.push([
         makeTranslation({ consentDocumentTypeVersionId: publishedVersionId }),
@@ -618,7 +678,12 @@ describe('ConsentDocumentTypesService', () => {
       bundle.selectResults.push([typeUnpublished]);
       bundle.selectResults.push([{ count: 1 }]);
       bundle.selectResults.push([
-        makeVersion({ id: draftVersionId, consentDocumentTypeId: 'cdt-unpublished-001', version: 1, status: 'draft' }),
+        makeVersion({
+          id: draftVersionId,
+          consentDocumentTypeId: 'cdt-unpublished-001',
+          version: 1,
+          status: 'draft',
+        }),
       ]);
       bundle.selectResults.push([
         makeTranslation({
@@ -685,7 +750,9 @@ describe('ConsentDocumentTypesService', () => {
       const bundle = createDbMock();
       const service = buildService(bundle);
 
-      bundle.selectResults.push([makeType({ publishedConsentDocumentTypeVersionId: null })]);
+      bundle.selectResults.push([
+        makeType({ publishedConsentDocumentTypeVersionId: null }),
+      ]);
 
       await expect(service.findById(TYPE_ID, false)).rejects.toThrow(
         NotFoundException,
@@ -696,7 +763,9 @@ describe('ConsentDocumentTypesService', () => {
       const bundle = createDbMock();
       const service = buildService(bundle);
 
-      bundle.selectResults.push([makeType({ publishedConsentDocumentTypeVersionId: null })]);
+      bundle.selectResults.push([
+        makeType({ publishedConsentDocumentTypeVersionId: null }),
+      ]);
       // versions list query (no versions)
       bundle.selectResults.push([]);
 
@@ -713,21 +782,26 @@ describe('ConsentDocumentTypesService', () => {
       const typeWithPublished = makeType({
         publishedConsentDocumentTypeVersionId: VERSION_ID,
       });
-      const publishedVersion = makeVersion({ id: VERSION_ID, status: 'published' });
+      const publishedVersion = makeVersion({
+        id: VERSION_ID,
+        status: 'published',
+      });
       const translation = makeTranslation({ name: 'Published Translation' });
 
-      bundle.selectResults.push([typeWithPublished]);   // type lookup
-      bundle.selectResults.push([publishedVersion]);    // published version lookup
-      bundle.selectResults.push([translation]);         // translations for published version
-      bundle.selectResults.push([publishedVersion]);    // all versions list
-      bundle.selectResults.push([translation]);         // en translations for versions list
+      bundle.selectResults.push([typeWithPublished]); // type lookup
+      bundle.selectResults.push([publishedVersion]); // published version lookup
+      bundle.selectResults.push([translation]); // translations for published version
+      bundle.selectResults.push([publishedVersion]); // all versions list
+      bundle.selectResults.push([translation]); // en translations for versions list
 
       const result = await service.findById(TYPE_ID, true);
 
       expect(result.publishedVersion).not.toBeNull();
       expect(result.publishedVersion!.id).toBe(VERSION_ID);
       expect(result.publishedVersion!.translations).toHaveLength(1);
-      expect(result.publishedVersion!.translations[0].name).toBe('Published Translation');
+      expect(result.publishedVersion!.translations[0].name).toBe(
+        'Published Translation',
+      );
     });
 
     it('should return enriched versions list with name and description from en translations', async () => {
@@ -737,10 +811,21 @@ describe('ConsentDocumentTypesService', () => {
       const typeWithPublished = makeType({
         publishedConsentDocumentTypeVersionId: VERSION_ID,
       });
-      const v1 = makeVersion({ id: VERSION_ID, version: 1, status: 'published' });
+      const v1 = makeVersion({
+        id: VERSION_ID,
+        version: 1,
+        status: 'published',
+      });
       const v2 = makeVersion({ id: VERSION_ID_2, version: 2, status: 'draft' });
-      const t1 = makeTranslation({ consentDocumentTypeVersionId: VERSION_ID, name: 'Version 1 Name' });
-      const t2 = makeTranslation({ id: 'cdtt-2', consentDocumentTypeVersionId: VERSION_ID_2, name: 'Version 2 Name' });
+      const t1 = makeTranslation({
+        consentDocumentTypeVersionId: VERSION_ID,
+        name: 'Version 1 Name',
+      });
+      const t2 = makeTranslation({
+        id: 'cdtt-2',
+        consentDocumentTypeVersionId: VERSION_ID_2,
+        name: 'Version 2 Name',
+      });
 
       bundle.selectResults.push([typeWithPublished]);
       bundle.selectResults.push([v1]);
@@ -759,7 +844,9 @@ describe('ConsentDocumentTypesService', () => {
       const bundle = createDbMock();
       const service = buildService(bundle);
 
-      bundle.selectResults.push([makeType({ publishedConsentDocumentTypeVersionId: null })]);
+      bundle.selectResults.push([
+        makeType({ publishedConsentDocumentTypeVersionId: null }),
+      ]);
       bundle.selectResults.push([]); // versions list empty
 
       const result = await service.findById(TYPE_ID, true);
@@ -861,7 +948,9 @@ describe('ConsentDocumentTypesService', () => {
       // Two inserts: version + translation copy
       expect(bundle.txInsertMock).toHaveBeenCalledTimes(2);
 
-      const copyCall = bundle.txInsertValuesMock.mock.calls[1][0] as Array<Record<string, unknown>>;
+      const copyCall = bundle.txInsertValuesMock.mock.calls[1][0] as Array<
+        Record<string, unknown>
+      >;
       expect(copyCall[0].consentDocumentTypeVersionId).toBe(newVersionId);
       expect(copyCall[0].locale).toBe('en');
       expect(copyCall[0].name).toBe('Copied Name');
@@ -899,9 +988,9 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.selectResults.push([]);
 
-      await expect(service.getVersion(TYPE_ID, 'nonexistent-ver')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.getVersion(TYPE_ID, 'nonexistent-ver'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should include the versionId in the NotFoundException message', async () => {
@@ -910,9 +999,9 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.selectResults.push([]);
 
-      await expect(service.getVersion(TYPE_ID, 'bad-version-id')).rejects.toThrow(
-        'bad-version-id',
-      );
+      await expect(
+        service.getVersion(TYPE_ID, 'bad-version-id'),
+      ).rejects.toThrow('bad-version-id');
     });
 
     it('should return version with translations when found', async () => {
@@ -1026,12 +1115,17 @@ describe('ConsentDocumentTypesService', () => {
         returning: jest.fn().mockResolvedValueOnce([upsertedTranslation]),
       });
 
-      const result = await service.upsertTranslation(TYPE_ID, VERSION_ID, 'en', {
-        name: 'Updated Name',
-        description: 'Updated Description',
-        schema: { type: 'object' },
-        uiSchema: { 'ui:order': ['*'] },
-      });
+      const result = await service.upsertTranslation(
+        TYPE_ID,
+        VERSION_ID,
+        'en',
+        {
+          name: 'Updated Name',
+          description: 'Updated Description',
+          schema: { type: 'object' },
+          uiSchema: { 'ui:order': ['*'] },
+        },
+      );
 
       expect(result.name).toBe('Updated Name');
       expect(result.description).toBe('Updated Description');
@@ -1054,7 +1148,10 @@ describe('ConsentDocumentTypesService', () => {
         description: 'French Description',
       });
 
-      const insertedValues = bundle.insertValuesMock.mock.calls[0][0] as Record<string, unknown>;
+      const insertedValues = bundle.insertValuesMock.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
       expect(insertedValues.schema).toEqual({});
       expect(insertedValues.uiSchema).toEqual({});
       expect(insertedValues.locale).toBe('fr');
@@ -1072,9 +1169,9 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.txSelectResults.push([]);
 
-      await expect(service.publishVersion(TYPE_ID, 'nonexistent-ver')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.publishVersion(TYPE_ID, 'nonexistent-ver'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when version is already published', async () => {
@@ -1094,7 +1191,9 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.txSelectResults.push([makeVersion({ status: 'archived' })]);
 
-      await expect(service.publishVersion(TYPE_ID, VERSION_ID)).rejects.toThrow('draft');
+      await expect(service.publishVersion(TYPE_ID, VERSION_ID)).rejects.toThrow(
+        'draft',
+      );
     });
 
     it('should throw BadRequestException when no translations exist', async () => {
@@ -1129,7 +1228,10 @@ describe('ConsentDocumentTypesService', () => {
       const typeWithPrevPublished = makeType({
         publishedConsentDocumentTypeVersionId: previousPublishedVersionId,
       });
-      const publishedResult = makeVersion({ id: VERSION_ID, status: 'published' });
+      const publishedResult = makeVersion({
+        id: VERSION_ID,
+        status: 'published',
+      });
 
       bundle.txSelectResults.push([makeVersion({ status: 'draft' })]);
       bundle.txSelectResults.push([{ id: TRANSLATION_ID }]);
@@ -1141,7 +1243,10 @@ describe('ConsentDocumentTypesService', () => {
       // Three updates: archive previous + publish new + update parent FK
       expect(bundle.txUpdateMock).toHaveBeenCalledTimes(3);
 
-      const archiveSetCall = bundle.txUpdateSetMock.mock.calls[0][0] as Record<string, unknown>;
+      const archiveSetCall = bundle.txUpdateSetMock.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
       expect(archiveSetCall.status).toBe('archived');
       expect(archiveSetCall.archivedAt).toBeInstanceOf(Date);
     });
@@ -1169,7 +1274,10 @@ describe('ConsentDocumentTypesService', () => {
       // Only 2 updates: publish version + update parent FK
       expect(bundle.txUpdateMock).toHaveBeenCalledTimes(2);
 
-      const publishSetCall = bundle.txUpdateSetMock.mock.calls[0][0] as Record<string, unknown>;
+      const publishSetCall = bundle.txUpdateSetMock.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
       expect(publishSetCall.status).toBe('published');
       expect(publishSetCall.publishedAt).toBeInstanceOf(Date);
 
@@ -1185,7 +1293,10 @@ describe('ConsentDocumentTypesService', () => {
       const typePointingSelf = makeType({
         publishedConsentDocumentTypeVersionId: VERSION_ID,
       });
-      const publishedResult = makeVersion({ id: VERSION_ID, status: 'published' });
+      const publishedResult = makeVersion({
+        id: VERSION_ID,
+        status: 'published',
+      });
 
       bundle.txSelectResults.push([makeVersion({ status: 'draft' })]);
       bundle.txSelectResults.push([{ id: TRANSLATION_ID }]);
@@ -1221,7 +1332,9 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.selectResults.push([]);
 
-      await expect(service.delete('ghost-type-abc')).rejects.toThrow('ghost-type-abc');
+      await expect(service.delete('ghost-type-abc')).rejects.toThrow(
+        'ghost-type-abc',
+      );
     });
 
     it('should delete the type when it exists', async () => {
@@ -1263,9 +1376,9 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.txSelectResults.push([]);
 
-      await expect(service.archiveVersion(TYPE_ID, 'nonexistent-ver')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.archiveVersion(TYPE_ID, 'nonexistent-ver'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should include the versionId in the NotFoundException message', async () => {
@@ -1296,7 +1409,9 @@ describe('ConsentDocumentTypesService', () => {
 
       bundle.txSelectResults.push([makeVersion({ status: 'draft' })]);
 
-      await expect(service.archiveVersion(TYPE_ID, VERSION_ID)).rejects.toThrow('published');
+      await expect(service.archiveVersion(TYPE_ID, VERSION_ID)).rejects.toThrow(
+        'published',
+      );
     });
 
     it('should throw BadRequestException when version is already archived', async () => {
@@ -1329,11 +1444,17 @@ describe('ConsentDocumentTypesService', () => {
       // Two updates: archive version + null out parent FK
       expect(bundle.txUpdateMock).toHaveBeenCalledTimes(2);
 
-      const archiveSetCall = bundle.txUpdateSetMock.mock.calls[0][0] as Record<string, unknown>;
+      const archiveSetCall = bundle.txUpdateSetMock.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
       expect(archiveSetCall.status).toBe('archived');
       expect(archiveSetCall.archivedAt).toBeInstanceOf(Date);
 
-      const nullFkSetCall = bundle.txUpdateSetMock.mock.calls[1][0] as Record<string, unknown>;
+      const nullFkSetCall = bundle.txUpdateSetMock.mock.calls[1][0] as Record<
+        string,
+        unknown
+      >;
       expect(nullFkSetCall.publishedConsentDocumentTypeVersionId).toBeNull();
 
       expect(result.id).toBe(VERSION_ID);
@@ -1345,7 +1466,11 @@ describe('ConsentDocumentTypesService', () => {
       const service = buildService(bundle);
 
       const now = new Date('2024-06-15T10:00:00Z');
-      const archivedVersion = makeVersion({ id: VERSION_ID, status: 'archived', archivedAt: now });
+      const archivedVersion = makeVersion({
+        id: VERSION_ID,
+        status: 'archived',
+        archivedAt: now,
+      });
 
       bundle.txSelectResults.push([makeVersion({ status: 'published' })]);
       bundle.txUpdateReturningMock.mockResolvedValueOnce([archivedVersion]);

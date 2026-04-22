@@ -15,6 +15,8 @@ export type Params = {
 export type Application = {
   id: string;
   label?: string;
+  description?: string;
+  type?: "external" | "workflow";
   formId?: string;
   apiKey?: string;
   url?: string;
