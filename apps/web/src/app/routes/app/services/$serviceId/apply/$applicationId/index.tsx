@@ -1,14 +1,13 @@
-import { IconHeartHandshake } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { ChefsFormViewer } from "../../../../../../../features/chefs";
-import { InviteDelegateDialog } from "../../../../../../../features/services/components/invite-delegate-dialog.component";
+import { StartingApplicationLoader } from "../../../../../../../features/services/components/starting-application-loader.component";
+import { submitApplication } from "../../../../../../../features/services/data/applications.mutation";
 import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
-import {
-  isWorkflowApplication,
-  type ServiceApplicationDto,
-  type ServiceDto,
+import type {
+  ServiceApplicationDto,
+  ServiceDto,
 } from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
@@ -75,52 +74,51 @@ function RouteComponent() {
     service.content?.applications?.find(
       (a: ServiceApplicationDto) => a.id === loaderApplication.id,
     ) ?? loaderApplication;
+
   const navigate = useNavigate();
+  const hasFiredRef = useRef(false);
 
-  // TODO: Restore application type check once ServiceApplicationDto is available
-  // For now, render ChefsFormViewer as default
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-row gap-4">
-        <div className="flex items-center justify-center">
-          <IconHeartHandshake className="size-6" />
-        </div>
+  useEffect(() => {
+    if (hasFiredRef.current) return;
+    hasFiredRef.current = true;
 
-        <div className="flex flex-col w-full">
-          <div className="flex items-center justify-between">
-            <h1>{application.label}</h1>
-            <div>
-              <InviteDelegateDialog />
-            </div>
-          </div>
-        </div>
-      </div>
+    if (!service.versionId) {
+      toast.error("We couldn't start your application.", {
+        description: "This service is not currently accepting applications.",
+      });
+      navigate({
+        to: "/app/services/$serviceId",
+        params: { serviceId: service.id },
+        replace: true,
+      });
+      return;
+    }
 
-      {isWorkflowApplication(application) ? (
-        <></>
-      ) : (
-        <ChefsFormViewer
-          formId={application.id}
-          language="en"
-          isolateStyles={false}
-          onSubmissionComplete={() => {
-            toast.success(
-              `Your application for ${service.name} has been submitted successfully.`,
-              {
-                description:
-                  "You will receive updates as your application progresses.",
-              },
-            );
-            navigate({
-              to: "/app/services/$serviceId",
-              params: { serviceId: service.id },
-            });
-          }}
-          onSubmissionError={(e) =>
-            console.error("Submission error:", e.message)
-          }
-        />
-      )}
-    </div>
-  );
+    submitApplication({
+      serviceId: service.id,
+      versionId: service.versionId,
+      applicationId: application.id,
+    })
+      .then((row) => {
+        navigate({
+          to: "/app/services/$serviceId/applications/$applicationId",
+          params: { serviceId: service.id, applicationId: row.id },
+          replace: true,
+        });
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : "Please try again.";
+        toast.error("We couldn't start your application.", {
+          description: message,
+        });
+        navigate({
+          to: "/app/services/$serviceId",
+          params: { serviceId: service.id },
+          replace: true,
+        });
+      });
+  }, [application.id, navigate, service.id, service.versionId]);
+
+  return <StartingApplicationLoader />;
 }

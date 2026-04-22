@@ -48,7 +48,7 @@ export class ServicesV1Controller {
 
   @Get(':serviceId/versions/:versionId')
   @UseGuards(RolesGuard)
-  @BcscRoles('user')
+  @BcscRoles('citizen')
   findOneVersion(
     @Param() params: ServiceVersionIdParamDto,
     @Query() query: PublicServiceDetailQueryDto,

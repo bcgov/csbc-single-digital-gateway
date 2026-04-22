@@ -14,6 +14,7 @@ import { LexicalContent } from "../../../../../features/services/components/lexi
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
 import { ResourcesSupportAccordion } from "../../../../../features/services/components/resources-support-accordion.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
+import { StartApplicationButton } from "../../../../../features/services/components/start-application-button.component";
 import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
@@ -73,59 +74,7 @@ function RouteComponent() {
             </p>
           )}
         </div>
-        {/* {service.application?.applications &&
-          service.application.applications.length === 1 && (
-            <span>
-              <Link
-                to="/app/services/$serviceSlug/apply/$applicationId"
-                className={buttonVariants({
-                  variant: "default",
-                  size: "default",
-                })}
-                params={{
-                  serviceSlug: service.slug,
-                  applicationId: service.application.applications[0].id,
-                }}
-              >
-                <IconPlayerPlay size={16} />
-                Start online application
-              </Link>
-            </span>
-          )} */}
-        {/* {service.application?.applications &&
-          service.application.applications.length > 1 && (
-            <div className="flex items-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger className=" w-full md:w-auto">
-                  <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80 w-full md:w-auto">
-                    <IconPlayerPlay />
-                    Start online application
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-50">
-                  {service.application.applications
-                    .filter((app) => app.blockType === "form")
-                    .map((app) => {
-                      const online = app.online[0];
-                      if (!online) return null;
-                      return (
-                        <DropdownMenuItem key={app.id}>
-                          <Link
-                            to="/app/services/$serviceSlug/apply/$applicationId"
-                            params={{
-                              serviceSlug: service.slug,
-                              applicationId: app.id,
-                            }}
-                          >
-                            {online.label}
-                          </Link>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )} */}
+        <StartApplicationButton service={service} />
       </div>
       <ServicePageNavigation
         serviceName={service.name}

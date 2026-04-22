@@ -25,7 +25,7 @@ export class ApplicationsV1Controller {
 
   @Post(':serviceId/versions/:versionId/apply/:applicationId')
   @UseGuards(RolesGuard)
-  @BcscRoles('user')
+  @BcscRoles('citizen')
   async submit(
     @Param() params: SubmitApplicationParamDto,
     @Query() query: SubmitApplicationQueryDto,
