@@ -52,8 +52,13 @@ jest.mock('../services/services.module', () => ({
   ServicesModule: class MockServicesModule {},
 }));
 
+jest.mock('../applications/applications.module', () => ({
+  ApplicationsModule: class MockApplicationsModule {},
+}));
+
 import { mockConfigService } from 'tests/utils/mock.auth.controllers';
 import { AppModule } from '../app.module';
+import { ApplicationsModule } from '../applications/applications.module';
 import { AuthModule } from '../auth/auth.module';
 import { ConsentModule } from '../consent/consent.module';
 import { ConsentProxyModule } from '../consent-proxy/consent-proxy.module';
@@ -151,13 +156,14 @@ describe('AppModule-Imports Unit Test', () => {
     ) as unknown[];
 
     expect(Array.isArray(importsMetadata)).toBe(true);
-    expect(importsMetadata).toHaveLength(8);
+    expect(importsMetadata).toHaveLength(9);
     expect(importsMetadata).toContain(DatabaseModule);
     expect(importsMetadata).toContain(AuthModule);
     expect(importsMetadata).toContain(ConsentModule);
     expect(importsMetadata).toContain(ConsentProxyModule);
     expect(importsMetadata).toContain(OrgUnitsModule);
     expect(importsMetadata).toContain(ServicesModule);
+    expect(importsMetadata).toContain(ApplicationsModule);
   });
 
   it('Should include dynamic ConfigModule and LoggerModule imports in metadata', () => {

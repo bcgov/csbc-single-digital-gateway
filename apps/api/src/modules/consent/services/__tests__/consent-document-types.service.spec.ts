@@ -95,7 +95,7 @@ const createDbMock = () => {
 
     // A terminal node: resolves from queue when awaited, and exposes .limit()
     // so callers that chain further still work.
-    const terminal = (): Record<string, unknown> => {
+    const terminal = () => {
       const p = drain();
       // Make it thenable so `await` works directly
       return Object.assign(p, {

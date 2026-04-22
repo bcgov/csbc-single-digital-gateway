@@ -1,0 +1,14 @@
+import { HttpModule } from '@nestjs/axios';
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from '../database/database.module';
+import { UsersModule } from '../users/users.module';
+import { ApplicationsV1Controller } from './controllers/applications-v1.controller';
+import { ApplicationsService } from './services/applications.service';
+import { WorkflowTriggerService } from './services/workflow-trigger.service';
+
+@Module({
+  imports: [DatabaseModule, HttpModule, UsersModule],
+  controllers: [ApplicationsV1Controller],
+  providers: [ApplicationsService, WorkflowTriggerService],
+})
+export class ApplicationsModule {}
