@@ -76,6 +76,13 @@ export const isExternalApplication = (
 
 export const ServiceApplicationWorkflowDto = BaseApplicationDto.extend({
   type: z.literal("workflow"),
+  config: z
+    .object({
+      apiKey: z.string(),
+      tenantId: z.uuid(),
+      triggerUrl: z.url(),
+    })
+    .optional(),
 });
 
 export type ServiceApplicationWorkflowDto = z.infer<
@@ -93,6 +100,10 @@ export const ServiceApplicationDto = z.discriminatedUnion("type", [
 ]);
 
 export type ServiceApplicationDto = z.infer<typeof ServiceApplicationDto>;
+
+export const ServiceApplicationsDto = z
+  .array(ServiceApplicationDto)
+  .default([]);
 
 export const ServiceConsentDocumentDto = z.object({});
 
@@ -125,14 +136,14 @@ export const ServiceDto = z.object({
   content: z
     .object({
       // Applications
-      applications: z.array(ServiceApplicationDto).default([]),
+      applications: ServiceApplicationsDto,
       // Details
       about: z.string().optional(),
       audience: z.string().optional(),
       considerations: z.string().optional(),
       outcomes: z.string().optional(),
       // Contact Methods
-      contactMethods: ServiceContactMethodsDto.default([]),
+      contactMethods: ServiceContactMethodsDto,
       // Resources
       faq: z
         .array(
