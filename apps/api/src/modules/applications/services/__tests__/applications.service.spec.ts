@@ -3,7 +3,26 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { type Database } from '@repo/db';
+
+jest.mock('@repo/db', () => {
+  const actual = jest.requireActual('@repo/db');
+  return {
+    ...actual,
+    eq: jest.fn((col: unknown, val: unknown) => ({ _op: 'eq', col, val })),
+    and: jest.fn((...conds: unknown[]) => ({
+      _op: 'and',
+      conds: conds.filter(Boolean),
+    })),
+    desc: jest.fn((col: unknown) => ({ _op: 'desc', col })),
+    inArray: jest.fn((col: unknown, vals: unknown) => ({
+      _op: 'inArray',
+      col,
+      vals,
+    })),
+  };
+});
+
+import { type Database, schema } from '@repo/db';
 import { ApplicationsService, type SubmitActor } from '../applications.service';
 import { WorkflowTriggerService } from '../workflow-trigger.service';
 
@@ -110,23 +129,31 @@ const createDbMock = () => {
   const selectQ = makeQueue();
   const insertQ = makeQueue();
 
-  const buildSelectChain = () => {
-    const limitNode = jest.fn(() => thenableLeaf(selectQ));
-    const whereNode = jest.fn(() =>
-      Object.assign({ limit: limitNode }, thenableLeaf(selectQ)),
-    );
-    const innerJoinNode = jest.fn(() => ({ where: whereNode }));
-    const fromNode = jest.fn(() => ({
-      where: whereNode,
-      innerJoin: innerJoinNode,
-    }));
-    return { fromNode };
-  };
+  const offsetNode = jest.fn((..._args: unknown[]) => thenableLeaf(selectQ));
+  const limitNode = jest.fn((..._args: unknown[]) =>
+    Object.assign({ offset: offsetNode }, thenableLeaf(selectQ)),
+  );
+  const orderByNode = jest.fn((..._args: unknown[]) =>
+    Object.assign(
+      { limit: limitNode, offset: offsetNode },
+      thenableLeaf(selectQ),
+    ),
+  );
+  const whereNode = jest.fn((..._args: unknown[]) =>
+    Object.assign(
+      { limit: limitNode, orderBy: orderByNode, offset: offsetNode },
+      thenableLeaf(selectQ),
+    ),
+  );
+  const innerJoinNode = jest.fn((..._args: unknown[]) => ({
+    where: whereNode,
+  }));
+  const fromNode = jest.fn((..._args: unknown[]) => ({
+    where: whereNode,
+    innerJoin: innerJoinNode,
+  }));
 
-  const selectMock = jest.fn(() => {
-    const chain = buildSelectChain();
-    return { from: chain.fromNode };
-  });
+  const selectMock = jest.fn((..._args: unknown[]) => ({ from: fromNode }));
 
   const insertReturning = jest.fn(() => insertQ.dequeue());
   const insertValues = jest.fn(() => ({ returning: insertReturning }));
@@ -138,6 +165,12 @@ const createDbMock = () => {
     db,
     enqueueSelect: (...results: unknown[][]) => selectQ.enqueue(...results),
     enqueueInsert: (...results: unknown[][]) => insertQ.enqueue(...results),
+    selectMock,
+    fromNode,
+    whereNode,
+    orderByNode,
+    limitNode,
+    offsetNode,
     insertValues,
     insertMock,
   };
@@ -562,6 +595,352 @@ describe('ApplicationsService', () => {
 
       const call = trigger.mock.calls[0][1];
       expect(call.displayName).toBe('Jane Doe');
+    });
+  });
+
+  describe('listForUser', () => {
+    const makeRow = (overrides: Partial<Record<string, unknown>> = {}) => ({
+      id: 'row-1',
+      serviceId: SERVICE_ID,
+      serviceVersionId: VERSION_ID,
+      serviceVersionTranslationId: TRANSLATION_ID_EN,
+      serviceApplicationId: APP_ID_EXTERNAL,
+      serviceApplicationType: 'external',
+      userId: USER_ID,
+      delegateUserId: null,
+      metadata: {},
+      createdAt: new Date('2026-04-22T12:00:00Z'),
+      updatedAt: new Date('2026-04-22T12:00:00Z'),
+      ...overrides,
+    });
+
+    const warnSpy = () =>
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+    describe('filtering', () => {
+      it('should filter by userId only when no serviceId is passed', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]); // data rows
+        mocks.enqueueSelect([{ count: 0 }]); // count
+
+        await service.listForUser({ userId: USER_ID, page: 1, limit: 20 });
+
+        const dataWhereArg = mocks.whereNode.mock.calls[0][0] as {
+          _op: string;
+          conds: { _op: string; col: unknown; val: unknown }[];
+        };
+        expect(dataWhereArg._op).toBe('and');
+        expect(dataWhereArg.conds).toHaveLength(1);
+        expect(dataWhereArg.conds[0]).toEqual({
+          _op: 'eq',
+          col: schema.applications.userId,
+          val: USER_ID,
+        });
+      });
+
+      it('should additionally filter by serviceId when one is passed', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        await service.listForUser({
+          userId: USER_ID,
+          serviceId: SERVICE_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        const dataWhereArg = mocks.whereNode.mock.calls[0][0] as {
+          _op: string;
+          conds: { _op: string; col: unknown; val: unknown }[];
+        };
+        expect(dataWhereArg.conds).toHaveLength(2);
+        expect(dataWhereArg.conds).toEqual(
+          expect.arrayContaining([
+            {
+              _op: 'eq',
+              col: schema.applications.userId,
+              val: USER_ID,
+            },
+            {
+              _op: 'eq',
+              col: schema.applications.serviceId,
+              val: SERVICE_ID,
+            },
+          ]),
+        );
+      });
+
+      it('should apply the same filter to both the data query and the count query', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        await service.listForUser({
+          userId: USER_ID,
+          serviceId: SERVICE_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        const dataWhere = mocks.whereNode.mock.calls[0][0];
+        const countWhere = mocks.whereNode.mock.calls[1][0];
+        expect(countWhere).toEqual(dataWhere);
+      });
+
+      it('should NOT include rows where the session user is only the delegate (delegateUserId)', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        await service.listForUser({ userId: USER_ID, page: 1, limit: 20 });
+
+        const dataWhereArg = mocks.whereNode.mock.calls[0][0] as {
+          _op: string;
+          conds: { _op: string; col: unknown; val: unknown }[];
+        };
+        const delegateCondition = dataWhereArg.conds.find(
+          (c) => c.col === schema.applications.delegateUserId,
+        );
+        expect(delegateCondition).toBeUndefined();
+      });
+    });
+
+    describe('ordering', () => {
+      it('should order by createdAt DESC with id DESC as a stable tiebreaker', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        await service.listForUser({ userId: USER_ID, page: 1, limit: 20 });
+
+        expect(mocks.orderByNode).toHaveBeenCalledTimes(1);
+        const args = mocks.orderByNode.mock.calls[0];
+        expect(args).toHaveLength(2);
+        expect(args[0]).toEqual({
+          _op: 'desc',
+          col: schema.applications.createdAt,
+        });
+        expect(args[1]).toEqual({
+          _op: 'desc',
+          col: schema.applications.id,
+        });
+      });
+    });
+
+    describe('pagination', () => {
+      it('should apply LIMIT=limit and OFFSET=0 for page=1', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        await service.listForUser({ userId: USER_ID, page: 1, limit: 20 });
+
+        expect(mocks.limitNode).toHaveBeenCalledWith(20);
+        expect(mocks.offsetNode).toHaveBeenCalledWith(0);
+      });
+
+      it('should apply LIMIT=10 and OFFSET=20 for page=3, limit=10', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        await service.listForUser({ userId: USER_ID, page: 3, limit: 10 });
+
+        expect(mocks.limitNode).toHaveBeenCalledWith(10);
+        expect(mocks.offsetNode).toHaveBeenCalledWith(20);
+      });
+
+      it('should return total from a separate COUNT(*) query', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 42 }]);
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        expect(result.total).toBe(42);
+        // Two select() invocations when there are zero rows (data + count)
+        expect(mocks.selectMock).toHaveBeenCalledTimes(2);
+      });
+
+      it('should return the page and limit supplied by the caller in the response envelope', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 3,
+          limit: 7,
+        });
+
+        expect(result.page).toBe(3);
+        expect(result.limit).toBe(7);
+      });
+    });
+
+    describe('enrichment', () => {
+      it('should enrich each row with serviceTitle and serviceApplicationTitle from the translation snapshot', async () => {
+        const { service, mocks } = buildService();
+        const row = makeRow();
+        mocks.enqueueSelect([row]);
+        mocks.enqueueSelect([{ count: 1 }]);
+        mocks.enqueueSelect([
+          {
+            id: TRANSLATION_ID_EN,
+            name: 'Small Business Grant',
+            content: baseContent(),
+          },
+        ]);
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0].serviceTitle).toBe('Small Business Grant');
+        expect(result.items[0].serviceApplicationTitle).toBe('Apply Online');
+      });
+
+      it('should emit empty enrichment and a logger.warn when the translation row is missing', async () => {
+        const warn = warnSpy();
+        const { service, mocks } = buildService();
+        const row = makeRow();
+        mocks.enqueueSelect([row]);
+        mocks.enqueueSelect([{ count: 1 }]);
+        mocks.enqueueSelect([]); // no translation returned
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        expect(result.items[0].serviceTitle).toBe('');
+        expect(result.items[0].serviceApplicationTitle).toBe('');
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn.mock.calls[0][0]).toContain('row-1');
+      });
+
+      it('should emit empty enrichment and a logger.warn when translation.content fails ServiceContentSchema.safeParse', async () => {
+        const warn = warnSpy();
+        const { service, mocks } = buildService();
+        const row = makeRow();
+        mocks.enqueueSelect([row]);
+        mocks.enqueueSelect([{ count: 1 }]);
+        mocks.enqueueSelect([
+          {
+            id: TRANSLATION_ID_EN,
+            name: 'Some Title',
+            content: { notApplications: 'nope' },
+          },
+        ]);
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        expect(result.items[0].serviceTitle).toBe('');
+        expect(result.items[0].serviceApplicationTitle).toBe('');
+        expect(warn).toHaveBeenCalledTimes(1);
+      });
+
+      it('should emit empty enrichment and a logger.warn when the serviceApplicationId is not in content.applications[]', async () => {
+        const warn = warnSpy();
+        const { service, mocks } = buildService();
+        const row = makeRow({ serviceApplicationId: UNKNOWN_APP_ID });
+        mocks.enqueueSelect([row]);
+        mocks.enqueueSelect([{ count: 1 }]);
+        mocks.enqueueSelect([
+          {
+            id: TRANSLATION_ID_EN,
+            name: 'Some Title',
+            content: baseContent(),
+          },
+        ]);
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        expect(result.items[0].serviceTitle).toBe('');
+        expect(result.items[0].serviceApplicationTitle).toBe('');
+        expect(warn).toHaveBeenCalledTimes(1);
+      });
+
+      it('should NOT drop a row from the result set when enrichment fails', async () => {
+        warnSpy();
+        const { service, mocks } = buildService();
+        const rowOk = makeRow({ id: 'row-ok' });
+        const rowBad = makeRow({
+          id: 'row-bad',
+          serviceVersionTranslationId: TRANSLATION_ID_FR,
+        });
+        mocks.enqueueSelect([rowOk, rowBad]);
+        mocks.enqueueSelect([{ count: 2 }]);
+        // Only the 'en' translation is returned — 'fr' (rowBad) is missing
+        mocks.enqueueSelect([
+          {
+            id: TRANSLATION_ID_EN,
+            name: 'OK Title',
+            content: baseContent(),
+          },
+        ]);
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 1,
+          limit: 20,
+        });
+
+        expect(result.items).toHaveLength(2);
+        const okItem = result.items.find((i) => i.id === 'row-ok')!;
+        const badItem = result.items.find((i) => i.id === 'row-bad')!;
+        expect(okItem.serviceTitle).toBe('OK Title');
+        expect(badItem.serviceTitle).toBe('');
+      });
+    });
+
+    describe('empty result', () => {
+      it('should return { items: [], total: 0, page, limit } when no rows match (never 404)', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        const result = await service.listForUser({
+          userId: USER_ID,
+          page: 2,
+          limit: 50,
+        });
+
+        expect(result).toEqual({
+          items: [],
+          total: 0,
+          page: 2,
+          limit: 50,
+        });
+      });
+
+      it('should NOT run the translations query when there are zero rows', async () => {
+        const { service, mocks } = buildService();
+        mocks.enqueueSelect([]);
+        mocks.enqueueSelect([{ count: 0 }]);
+
+        await service.listForUser({ userId: USER_ID, page: 1, limit: 20 });
+
+        // Only two selects: data + count. No translation query.
+        expect(mocks.selectMock).toHaveBeenCalledTimes(2);
+      });
     });
   });
 });

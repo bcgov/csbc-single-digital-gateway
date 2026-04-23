@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Param,
   Post,
   Query,
@@ -11,6 +12,8 @@ import type { Request } from 'express';
 import { BcscRoles } from 'src/common/decorators/bcsc-roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import {
+  ListApplicationsByServiceParamDto,
+  ListApplicationsQueryDto,
   SubmitApplicationParamDto,
   SubmitApplicationQueryDto,
 } from '../dtos/application.dto';
@@ -50,6 +53,27 @@ export class ApplicationsV1Controller {
         given_name: profile.given_name,
         family_name: profile.family_name,
       },
+    });
+  }
+
+  @Get(':serviceId/applications')
+  @UseGuards(RolesGuard)
+  @BcscRoles('citizen')
+  async listForService(
+    @Param() params: ListApplicationsByServiceParamDto,
+    @Query() query: ListApplicationsQueryDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.session?.bcsc?.userId;
+    if (!userId) {
+      throw new UnauthorizedException('Active BCSC session required');
+    }
+
+    return this.applicationsService.listForUser({
+      userId,
+      serviceId: params.serviceId,
+      page: query.page,
+      limit: query.limit,
     });
   }
 }

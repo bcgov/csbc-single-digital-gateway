@@ -18,3 +18,20 @@ export const SubmitApplicationQuerySchema = z.object({
 export class SubmitApplicationQueryDto extends createZodDto(
   SubmitApplicationQuerySchema,
 ) {}
+
+export const ListApplicationsByServiceParamSchema = z.object({
+  serviceId: z.string().uuid(),
+});
+
+export class ListApplicationsByServiceParamDto extends createZodDto(
+  ListApplicationsByServiceParamSchema,
+) {}
+
+export const ListApplicationsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export class ListApplicationsQueryDto extends createZodDto(
+  ListApplicationsQuerySchema,
+) {}

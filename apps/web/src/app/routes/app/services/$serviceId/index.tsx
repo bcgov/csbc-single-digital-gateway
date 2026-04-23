@@ -5,7 +5,6 @@ import {
   AccordionTrigger,
 } from "@repo/ui";
 import slugify from "@sindresorhus/slugify";
-import { IconCake } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -15,6 +14,7 @@ import { OtherServicesAccordion } from "../../../../../features/services/compone
 import { ResourcesSupportAccordion } from "../../../../../features/services/components/resources-support-accordion.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
 import { StartApplicationButton } from "../../../../../features/services/components/start-application-button.component";
+import { YourActivitySection } from "../../../../../features/services/components/your-activity-section.component";
 import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
@@ -236,34 +236,7 @@ function RouteComponent() {
               </div>
             </div>
             {/* Your activity */}
-            <div
-              id="your-activity"
-              className="scroll-mt-20 flex flex-col gap-4 mb-4"
-            >
-              <h2 className="section-heading">Your activity</h2>
-              <div className="flex flex-col gap-4 min-h-48">
-                <p>Track your applications and view updates in one place.</p>
-                <div className="flex flex-col gap-px border bg-border">
-                  <div className="grid gap-px">
-                    <div className="flex flex-col items-center bg-white p-4">
-                      <IconCake
-                        className="shrink-0 pb-4"
-                        size={48}
-                        stroke={1.5}
-                        color="#1e5189"
-                      />
-                      <p className="font-bold pb-2">No applications yet</p>
-                      <p className="pb-3">
-                        You have not applied for Income Assistance.
-                      </p>
-                      <p>
-                        <a href="#">Start online application</a>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <YourActivitySection serviceId={service.id} />
             {/* More information */}
             <div
               id="more-information"

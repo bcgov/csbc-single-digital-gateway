@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { type Database, and, eq, inArray, schema } from '@repo/db';
+import { type Database, and, desc, eq, inArray, schema, sql } from '@repo/db';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
 import { ServiceContentSchema } from 'src/modules/services/dtos/public-service.dto';
 import { WorkflowTriggerService } from './workflow-trigger.service';
@@ -16,6 +16,20 @@ export interface SubmitActor {
   name?: string;
   given_name?: string;
   family_name?: string;
+}
+
+type ApplicationRow = typeof schema.applications.$inferSelect;
+
+export interface EnrichedApplication extends ApplicationRow {
+  serviceTitle: string;
+  serviceApplicationTitle: string;
+}
+
+export interface ListApplicationsResult {
+  items: EnrichedApplication[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 @Injectable()
@@ -153,5 +167,104 @@ export class ApplicationsService {
       .trim()
       .replace(/\s+/g, ' ');
     return composed;
+  }
+
+  async listForUser(args: {
+    userId: string;
+    serviceId?: string;
+    page: number;
+    limit: number;
+  }): Promise<ListApplicationsResult> {
+    const { userId, serviceId, page, limit } = args;
+    const offset = (page - 1) * limit;
+
+    const conditions = [eq(schema.applications.userId, userId)];
+    if (serviceId) {
+      conditions.push(eq(schema.applications.serviceId, serviceId));
+    }
+    const where = and(...conditions);
+
+    const [rows, countResult] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.applications)
+        .where(where)
+        .orderBy(
+          desc(schema.applications.createdAt),
+          desc(schema.applications.id),
+        )
+        .limit(limit)
+        .offset(offset),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(schema.applications)
+        .where(where),
+    ]);
+
+    const total = countResult[0]?.count ?? 0;
+
+    if (rows.length === 0) {
+      return { items: [], total, page, limit };
+    }
+
+    const translationIds = Array.from(
+      new Set(rows.map((r) => r.serviceVersionTranslationId)),
+    );
+
+    const translations = await this.db
+      .select({
+        id: schema.serviceVersionTranslations.id,
+        name: schema.serviceVersionTranslations.name,
+        content: schema.serviceVersionTranslations.content,
+      })
+      .from(schema.serviceVersionTranslations)
+      .where(inArray(schema.serviceVersionTranslations.id, translationIds));
+
+    const byTranslationId = new Map(translations.map((t) => [t.id, t]));
+
+    const items: EnrichedApplication[] = rows.map((row) =>
+      this.enrichApplication(
+        row,
+        byTranslationId.get(row.serviceVersionTranslationId),
+      ),
+    );
+
+    return { items, total, page, limit };
+  }
+
+  private enrichApplication(
+    row: ApplicationRow,
+    translation: { id: string; name: string; content: unknown } | undefined,
+  ): EnrichedApplication {
+    if (!translation) {
+      this.logger.warn(
+        `Missing translation ${row.serviceVersionTranslationId} for application ${row.id}; returning empty enrichment`,
+      );
+      return { ...row, serviceTitle: '', serviceApplicationTitle: '' };
+    }
+
+    const parsed = ServiceContentSchema.safeParse(translation.content);
+    if (!parsed.success) {
+      this.logger.warn(
+        `Failed to parse translation content for application ${row.id}; returning empty enrichment`,
+      );
+      return { ...row, serviceTitle: '', serviceApplicationTitle: '' };
+    }
+
+    const app = parsed.data.applications.find(
+      (a) => a.id === row.serviceApplicationId,
+    );
+    if (!app) {
+      this.logger.warn(
+        `ServiceApplicationDto ${row.serviceApplicationId} not present in translation ${row.serviceVersionTranslationId} for application ${row.id}; returning empty enrichment`,
+      );
+      return { ...row, serviceTitle: '', serviceApplicationTitle: '' };
+    }
+
+    return {
+      ...row,
+      serviceTitle: translation.name,
+      serviceApplicationTitle: app.label,
+    };
   }
 }
