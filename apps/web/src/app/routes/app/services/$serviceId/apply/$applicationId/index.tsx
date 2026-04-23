@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import axios from "axios";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { StartingApplicationLoader } from "../../../../../../../features/services/components/starting-application-loader.component";
 import { submitApplication } from "../../../../../../../features/services/data/applications.mutation";
-import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
+import { serviceQueryOptions } from "../../../../../../../features/services/data/services.query";
 import type {
   ServiceApplicationDto,
   ServiceDto,
@@ -23,10 +24,16 @@ export const Route = createFileRoute(
     }
   },
   loader: async ({ params }) => {
-    const services = await queryClient.ensureQueryData(servicesQueryOptions);
-    const service = services.find((s) => s.id === params.serviceId);
-    if (!service) {
-      throw notFound();
+    let service;
+    try {
+      service = await queryClient.ensureQueryData(
+        serviceQueryOptions(params.serviceId),
+      );
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        throw notFound();
+      }
+      throw err;
     }
     const application = service.content?.applications?.find(
       (a: ServiceApplicationDto) => a.id === params.applicationId,
@@ -62,14 +69,14 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
-  const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService, application: loaderApplication } =
     Route.useLoaderData() as {
       service: ServiceDto;
       application: ServiceApplicationDto;
     };
-  const service =
-    services.find((s) => s.id === loaderService.id) ?? loaderService;
+  const { data: service = loaderService } = useQuery(
+    serviceQueryOptions(loaderService.id),
+  );
   const application =
     service.content?.applications?.find(
       (a: ServiceApplicationDto) => a.id === loaderApplication.id,

@@ -943,4 +943,151 @@ describe('ApplicationsService', () => {
       });
     });
   });
+
+  // -------------------------------------------------------------------------
+  // findOneForUser
+  // -------------------------------------------------------------------------
+
+  describe('findOneForUser', () => {
+    const APPLICATION_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const OTHER_USER_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+
+    const makeRow = (overrides: Partial<Record<string, unknown>> = {}) => ({
+      id: APPLICATION_ID,
+      serviceId: SERVICE_ID,
+      serviceVersionId: VERSION_ID,
+      serviceVersionTranslationId: TRANSLATION_ID_EN,
+      serviceApplicationId: APP_ID_EXTERNAL,
+      serviceApplicationType: 'external',
+      userId: USER_ID,
+      delegateUserId: null,
+      metadata: {},
+      createdAt: new Date('2026-04-22T12:00:00Z'),
+      updatedAt: new Date('2026-04-22T12:00:00Z'),
+      ...overrides,
+    });
+
+    const warnSpy = () =>
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+    it('should filter by both id AND userId (AND condition) so other users cannot read it', async () => {
+      const { service, mocks } = buildService();
+      mocks.enqueueSelect([]); // row lookup — empty
+
+      await expect(
+        service.findOneForUser({
+          userId: USER_ID,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      const whereArg = mocks.whereNode.mock.calls[0][0] as {
+        _op: string;
+        conds: { _op: string; col: unknown; val: unknown }[];
+      };
+      expect(whereArg._op).toBe('and');
+      expect(whereArg.conds).toHaveLength(2);
+      expect(whereArg.conds).toEqual(
+        expect.arrayContaining([
+          { _op: 'eq', col: schema.applications.id, val: APPLICATION_ID },
+          { _op: 'eq', col: schema.applications.userId, val: USER_ID },
+        ]),
+      );
+    });
+
+    it('should return an enriched row when the application is owned by the user', async () => {
+      const { service, mocks } = buildService();
+      const row = makeRow();
+      mocks.enqueueSelect([row]);
+      mocks.enqueueSelect([
+        {
+          id: TRANSLATION_ID_EN,
+          name: 'Small Business Grant',
+          content: baseContent(),
+        },
+      ]);
+
+      const result = await service.findOneForUser({
+        userId: USER_ID,
+        applicationId: APPLICATION_ID,
+      });
+
+      expect(result.id).toBe(APPLICATION_ID);
+      expect(result.serviceTitle).toBe('Small Business Grant');
+      expect(result.serviceApplicationTitle).toBe('Apply Online');
+    });
+
+    it('should throw NotFoundException and NOT run the translations query when no row matches', async () => {
+      const { service, mocks } = buildService();
+      mocks.enqueueSelect([]);
+
+      await expect(
+        service.findOneForUser({
+          userId: USER_ID,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      // Only one select — the row lookup. No translation query.
+      expect(mocks.selectMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw NotFoundException when the id exists but belongs to a different user (userId filter excludes it)', async () => {
+      const { service, mocks } = buildService();
+      // Row filtered out by the WHERE clause — the DB returns no rows
+      mocks.enqueueSelect([]);
+
+      await expect(
+        service.findOneForUser({
+          userId: OTHER_USER_ID,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      const whereArg = mocks.whereNode.mock.calls[0][0] as {
+        _op: string;
+        conds: { _op: string; col: unknown; val: unknown }[];
+      };
+      const userIdCond = whereArg.conds.find(
+        (c) => c.col === schema.applications.userId,
+      );
+      expect(userIdCond?.val).toBe(OTHER_USER_ID);
+    });
+
+    it('should return empty enrichment and logger.warn when the translation row is missing', async () => {
+      const warn = warnSpy();
+      const { service, mocks } = buildService();
+      mocks.enqueueSelect([makeRow()]);
+      mocks.enqueueSelect([]); // translation missing
+
+      const result = await service.findOneForUser({
+        userId: USER_ID,
+        applicationId: APPLICATION_ID,
+      });
+
+      expect(result.serviceTitle).toBe('');
+      expect(result.serviceApplicationTitle).toBe('');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain(APPLICATION_ID);
+    });
+
+    it('should LIMIT 1 on the row lookup', async () => {
+      const { service, mocks } = buildService();
+      mocks.enqueueSelect([makeRow()]);
+      mocks.enqueueSelect([
+        {
+          id: TRANSLATION_ID_EN,
+          name: 'Some Title',
+          content: baseContent(),
+        },
+      ]);
+
+      await service.findOneForUser({
+        userId: USER_ID,
+        applicationId: APPLICATION_ID,
+      });
+
+      expect(mocks.limitNode).toHaveBeenCalledWith(1);
+    });
+  });
 });

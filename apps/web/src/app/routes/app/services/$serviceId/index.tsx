@@ -7,6 +7,7 @@ import {
 import slugify from "@sindresorhus/slugify";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { LegalInformationAccordion } from "../../../../../features/services/components/legal-information-accordion.component";
 import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
@@ -15,17 +16,22 @@ import { ResourcesSupportAccordion } from "../../../../../features/services/comp
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
 import { StartApplicationButton } from "../../../../../features/services/components/start-application-button.component";
 import { YourActivitySection } from "../../../../../features/services/components/your-activity-section.component";
-import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
+import { serviceQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
 export const Route = createFileRoute("/app/services/$serviceId/")({
   loader: async ({ params }) => {
-    const services = await queryClient.ensureQueryData(servicesQueryOptions);
-    const service = services.find((s) => s.id === params.serviceId);
-    if (!service) {
-      throw notFound();
+    try {
+      const service = await queryClient.ensureQueryData(
+        serviceQueryOptions(params.serviceId),
+      );
+      return { service };
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        throw notFound();
+      }
+      throw err;
     }
-    return { service };
   },
   staticData: {
     breadcrumbs: (loaderData: unknown) => {
@@ -41,10 +47,10 @@ export const Route = createFileRoute("/app/services/$serviceId/")({
 });
 
 function RouteComponent() {
-  const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService } = Route.useLoaderData();
-  const service =
-    services.find((s) => s.id === loaderService.id) ?? loaderService;
+  const { data: service = loaderService } = useQuery(
+    serviceQueryOptions(loaderService.id),
+  );
   const descriptionRef = useRef<HTMLHeadingElement>(null);
   const [isStickyHeaderVisible, setStickyHeaderVisible] = useState(false);
 

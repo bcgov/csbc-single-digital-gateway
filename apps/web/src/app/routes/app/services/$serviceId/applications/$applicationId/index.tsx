@@ -1,6 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import axios from "axios";
 import { ApplicationPlaceholder } from "../../../../../../../features/services/components/application-placeholder.component";
-import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
+import { applicationQueryOptions } from "../../../../../../../features/services/data/applications.query";
+import { serviceQueryOptions } from "../../../../../../../features/services/data/services.query";
 import type { ServiceDto } from "../../../../../../../features/services/service.dto";
 import { queryClient } from "../../../../../../../lib/react-query.client";
 
@@ -8,12 +11,20 @@ export const Route = createFileRoute(
   "/app/services/$serviceId/applications/$applicationId/",
 )({
   loader: async ({ params }) => {
-    const services = await queryClient.ensureQueryData(servicesQueryOptions);
-    const service = services.find((s) => s.id === params.serviceId);
-    if (!service) {
-      throw notFound();
+    try {
+      const [service, application] = await Promise.all([
+        queryClient.ensureQueryData(serviceQueryOptions(params.serviceId)),
+        queryClient.ensureQueryData(
+          applicationQueryOptions(params.applicationId),
+        ),
+      ]);
+      return { service, application };
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        throw notFound();
+      }
+      throw err;
     }
-    return { service };
   },
   staticData: {
     breadcrumbs: (loaderData: unknown) => {
@@ -38,5 +49,17 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const { applicationId } = Route.useParams();
-  return <ApplicationPlaceholder applicationId={applicationId} />;
+  const { application: loaderApplication } = Route.useLoaderData();
+  const { data: application = loaderApplication } = useQuery(
+    applicationQueryOptions(applicationId),
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <pre className="text-xs bg-muted p-4 rounded overflow-auto">
+        {JSON.stringify(application, null, 2)}
+      </pre>
+      <ApplicationPlaceholder applicationId={applicationId} />
+    </div>
+  );
 }

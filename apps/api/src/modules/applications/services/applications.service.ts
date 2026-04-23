@@ -232,6 +232,47 @@ export class ApplicationsService {
     return { items, total, page, limit };
   }
 
+  async findOneForUser(args: {
+    userId: string;
+    applicationId: string;
+  }): Promise<EnrichedApplication> {
+    const { userId, applicationId } = args;
+
+    const rows = await this.db
+      .select()
+      .from(schema.applications)
+      .where(
+        and(
+          eq(schema.applications.id, applicationId),
+          eq(schema.applications.userId, userId),
+        ),
+      )
+      .limit(1);
+
+    if (rows.length === 0) {
+      throw new NotFoundException(`Application ${applicationId} not found`);
+    }
+
+    const row = rows[0];
+
+    const translations = await this.db
+      .select({
+        id: schema.serviceVersionTranslations.id,
+        name: schema.serviceVersionTranslations.name,
+        content: schema.serviceVersionTranslations.content,
+      })
+      .from(schema.serviceVersionTranslations)
+      .where(
+        eq(
+          schema.serviceVersionTranslations.id,
+          row.serviceVersionTranslationId,
+        ),
+      )
+      .limit(1);
+
+    return this.enrichApplication(row, translations[0]);
+  }
+
   private enrichApplication(
     row: ApplicationRow,
     translation: { id: string; name: string; content: unknown } | undefined,

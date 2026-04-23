@@ -35,3 +35,11 @@ export const ListApplicationsQuerySchema = z.object({
 export class ListApplicationsQueryDto extends createZodDto(
   ListApplicationsQuerySchema,
 ) {}
+
+export const ApplicationIdParamSchema = z.object({
+  applicationId: z.string().uuid(),
+});
+
+export class ApplicationIdParamDto extends createZodDto(
+  ApplicationIdParamSchema,
+) {}
