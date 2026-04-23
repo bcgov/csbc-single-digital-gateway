@@ -31,7 +31,7 @@ export class WorkflowTriggerService {
   async trigger(
     config: WorkflowTriggerConfig,
     actor: WorkflowTriggerActor,
-  ): Promise<{ executionId: string }> {
+  ): Promise<{ workflowId: string; executionId: string }> {
     const baseUrl = this.configService.get('WORKFLOW_API_URL') ?? '';
     const url = `${baseUrl.replace(/\/$/, '')}${config.triggerEndpoint.startsWith('/') ? '' : '/'}${config.triggerEndpoint}`;
 
@@ -68,14 +68,16 @@ export class WorkflowTriggerService {
       throw new BadGatewayException('Workflow trigger failed');
     }
 
-    const instance = (body as Record<string, unknown>).WorkflowInstance;
-    if (typeof instance !== 'string' || instance.length === 0) {
+    const workflowId = (body as Record<string, string>).WorkflowId;
+
+    const instance = (body as Record<string, string>).WorkflowInstance;
+    if (instance.length === 0) {
       this.logger.warn(
         'Workflow trigger response missing or invalid WorkflowInstance',
       );
       throw new BadGatewayException('Workflow trigger failed');
     }
 
-    return { executionId: instance };
+    return { workflowId, executionId: instance };
   }
 }

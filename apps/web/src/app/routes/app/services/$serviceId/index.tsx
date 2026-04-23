@@ -13,8 +13,8 @@ import { LegalInformationAccordion } from "../../../../../features/services/comp
 import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
 import { ResourcesSupportAccordion } from "../../../../../features/services/components/resources-support-accordion.component";
+import { ServiceApplicationCta } from "../../../../../features/services/components/service-application-cta.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
-import { StartApplicationButton } from "../../../../../features/services/components/start-application-button.component";
 import { YourActivitySection } from "../../../../../features/services/components/your-activity-section.component";
 import { serviceQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
@@ -80,7 +80,7 @@ function RouteComponent() {
             </p>
           )}
         </div>
-        <StartApplicationButton service={service} />
+        <ServiceApplicationCta service={service} />
       </div>
       <ServicePageNavigation
         serviceName={service.name}
@@ -242,7 +242,7 @@ function RouteComponent() {
               </div>
             </div>
             {/* Your activity */}
-            <YourActivitySection serviceId={service.id} />
+            <YourActivitySection service={service} />
             {/* More information */}
             <div
               id="more-information"

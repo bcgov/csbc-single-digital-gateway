@@ -1,18 +1,21 @@
+import { IconCake } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useBcscAuth } from "../../auth/auth.context";
 import { applicationsForServiceQueryOptions } from "../data/applications.query";
+import type { ServiceDto } from "../service.dto";
+import { StartApplicationButton } from "./start-application-button.component";
 import { YourActivityError } from "./your-activity-error.component";
 import { YourActivityList } from "./your-activity-list.component";
 import { YourActivitySkeleton } from "./your-activity-skeleton.component";
 
 interface YourActivitySectionProps {
-  serviceId: string;
+  service: ServiceDto;
 }
 
 const PAGE = 1;
 const LIMIT = 5;
 
-export function YourActivitySection({ serviceId }: YourActivitySectionProps) {
+export function YourActivitySection({ service }: YourActivitySectionProps) {
   const { isAuthenticated } = useBcscAuth();
 
   const {
@@ -22,7 +25,7 @@ export function YourActivitySection({ serviceId }: YourActivitySectionProps) {
     refetch,
   } = useQuery({
     ...applicationsForServiceQueryOptions({
-      serviceId,
+      serviceId: service.id,
       page: PAGE,
       limit: LIMIT,
     }),
@@ -46,10 +49,24 @@ export function YourActivitySection({ serviceId }: YourActivitySectionProps) {
         ) : isError ? (
           <YourActivityError onRetry={() => refetch()} />
         ) : data.items.length === 0 ? (
-          <p className="text-muted-foreground">No applications yet.</p>
+          <div className="flex flex-col gap-px border bg-border">
+            <div className="grid gap-px">
+              <div className="flex flex-col items-center bg-white p-4">
+                <IconCake
+                  className="shrink-0 pb-4"
+                  size={48}
+                  stroke={1.5}
+                  color="#1e5189"
+                />
+                <p className="font-bold pb-2">No applications yet</p>
+                <p className="pb-3">You have not applied for {service.name}.</p>
+                <StartApplicationButton service={service} variant="link" />
+              </div>
+            </div>
+          </div>
         ) : (
           <>
-            <YourActivityList items={data.items} serviceId={serviceId} />
+            <YourActivityList items={data.items} serviceId={service.id} />
             {data.total > data.items.length && (
               <p className="text-sm text-muted-foreground">
                 Showing the {data.items.length} most recent of {data.total}{" "}

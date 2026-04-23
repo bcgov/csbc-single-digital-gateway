@@ -53,7 +53,19 @@ jest.mock(
   }),
 );
 
+jest.mock(
+  "src/features/services/components/start-application-button.component",
+  () => ({
+    StartApplicationButton: ({ service }: { service: { id: string } }) => (
+      <div data-testid="start-application-button" data-service-id={service.id}>
+        start
+      </div>
+    ),
+  }),
+);
+
 import { YourActivitySection } from "src/features/services/components/your-activity-section.component";
+import type { ServiceDto } from "src/features/services/service.dto";
 
 const makeAuth = (isAuthenticated: boolean) => ({
   isAuthenticated,
@@ -62,6 +74,14 @@ const makeAuth = (isAuthenticated: boolean) => ({
   login: jest.fn(),
   logout: jest.fn(),
 });
+
+const fakeService = {
+  id: "svc-1",
+  name: "Test Service",
+  content: { applications: [] },
+  createdAt: "2026-04-22T12:00:00Z",
+  updatedAt: "2026-04-22T12:00:00Z",
+} as unknown as ServiceDto;
 
 describe("YourActivitySection Component Test", () => {
   beforeEach(() => {
@@ -82,7 +102,7 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    const { container } = render(<YourActivitySection serviceId="svc-1" />);
+    const { container } = render(<YourActivitySection service={fakeService} />);
 
     expect(container).toBeEmptyDOMElement();
     expect(screen.queryByText("Your activity")).not.toBeInTheDocument();
@@ -97,7 +117,7 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
     const queryArg = mockUseQuery.mock.calls[0][0];
     expect(queryArg.enabled).toBe(false);
@@ -112,7 +132,7 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
     expect(screen.getByTestId("skeleton")).toBeInTheDocument();
     expect(screen.queryByTestId("list")).not.toBeInTheDocument();
@@ -128,7 +148,7 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
     expect(screen.getByTestId("error")).toBeInTheDocument();
     expect(screen.queryByTestId("skeleton")).not.toBeInTheDocument();
@@ -144,13 +164,13 @@ describe("YourActivitySection Component Test", () => {
       refetch,
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
     fireEvent.click(screen.getByTestId("error"));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
-  it("Should render the empty-state copy 'No applications yet.' when items.length is 0", () => {
+  it("Should render the higher-fidelity empty state (heading, personalized copy, start-application link) when items.length is 0", () => {
     mockUseBcscAuth.mockReturnValue(makeAuth(true));
     mockUseQuery.mockReturnValue({
       data: { items: [], total: 0, page: 1, limit: 5 },
@@ -159,9 +179,15 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
-    expect(screen.getByText("No applications yet.")).toBeInTheDocument();
+    expect(screen.getByText("No applications yet")).toBeInTheDocument();
+    expect(
+      screen.getByText("You have not applied for Test Service."),
+    ).toBeInTheDocument();
+    const cta = screen.getByTestId("start-application-button");
+    expect(cta).toBeInTheDocument();
+    expect(cta).toHaveAttribute("data-service-id", "svc-1");
     expect(screen.queryByTestId("list")).not.toBeInTheDocument();
   });
 
@@ -181,7 +207,7 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
     const list = screen.getByTestId("list");
     expect(list).toBeInTheDocument();
@@ -203,7 +229,7 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
     expect(
       screen.getByText(/Showing the 5 most recent of 12 applications\./),
@@ -224,7 +250,7 @@ describe("YourActivitySection Component Test", () => {
       refetch: jest.fn(),
     });
 
-    render(<YourActivitySection serviceId="svc-1" />);
+    render(<YourActivitySection service={fakeService} />);
 
     expect(
       screen.queryByText(/Showing the .* most recent of/),

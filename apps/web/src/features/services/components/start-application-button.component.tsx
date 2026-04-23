@@ -12,18 +12,22 @@ import type { ServiceDto } from "../service.dto";
 
 interface StartApplicationButtonProps {
   service: ServiceDto;
+  variant?: "button" | "link";
 }
 
 const CTA_COPY = "Start online application";
 
 export function StartApplicationButton({
   service,
+  variant = "button",
 }: StartApplicationButtonProps) {
   const applications = service.content?.applications ?? [];
 
   if (applications.length === 0) {
     return null;
   }
+
+  const isLink = variant === "link";
 
   if (applications.length === 1) {
     const [only] = applications;
@@ -32,9 +36,15 @@ export function StartApplicationButton({
         <Link
           to="/app/services/$serviceId/apply/$applicationId"
           params={{ serviceId: service.id, applicationId: only.id }}
-          className={buttonVariants({ variant: "default", size: "default" })}
+          className={
+            isLink
+              ? undefined
+              : buttonVariants({ variant: "default", size: "default" })
+          }
         >
-          <IconPlayerPlay size={16} stroke={1.5} aria-hidden="true" />
+          {!isLink && (
+            <IconPlayerPlay size={16} stroke={1.5} aria-hidden="true" />
+          )}
           {CTA_COPY}
         </Link>
       </span>
@@ -44,10 +54,14 @@ export function StartApplicationButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button variant="default" size="default">
-          <IconPlayerPlay size={16} stroke={1.5} aria-hidden="true" />
-          {CTA_COPY}
-        </Button>
+        {isLink ? (
+          <span className="underline cursor-pointer">{CTA_COPY}</span>
+        ) : (
+          <Button variant="default" size="default">
+            <IconPlayerPlay size={16} stroke={1.5} aria-hidden="true" />
+            {CTA_COPY}
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         {applications.map((application) => (

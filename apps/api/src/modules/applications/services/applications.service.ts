@@ -119,7 +119,7 @@ export class ApplicationsService {
     let metadata: Record<string, unknown> = {};
 
     if (application.type === 'workflow') {
-      const { executionId } = await this.workflowTrigger.trigger(
+      const { workflowId, executionId } = await this.workflowTrigger.trigger(
         application.config,
         {
           actorId: profile.sub.split('@')[0],
@@ -127,7 +127,7 @@ export class ApplicationsService {
           displayName: this.buildDisplayName(profile),
         },
       );
-      metadata = { executionId, submissionIds: [] };
+      metadata = { workflowId, executionId };
     }
 
     try {
