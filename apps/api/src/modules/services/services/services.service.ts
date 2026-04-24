@@ -16,7 +16,16 @@ import {
   sql,
 } from '@repo/db';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
-import { sanitizeContentForPublic } from '../dtos/public-service.dto';
+import {
+  ServiceContentSchema,
+  sanitizeContentForPublic,
+} from '../dtos/public-service.dto';
+
+export interface ResolvedWorkflowApplicationConfig {
+  apiKey: string;
+  tenantId: string;
+  workflowId: string;
+}
 
 export interface FlatService {
   id: string;
@@ -856,6 +865,73 @@ export class ServicesService {
     }
 
     return this.toFlatService(row, translation);
+  }
+
+  async resolveWorkflowApplicationConfig(params: {
+    serviceId: string;
+    versionId: string;
+    applicationId: string;
+    locale: string;
+  }): Promise<ResolvedWorkflowApplicationConfig> {
+    const { serviceId, versionId, applicationId, locale } = params;
+
+    const rows = await this.db
+      .select({ id: schema.serviceVersions.id })
+      .from(schema.serviceVersions)
+      .innerJoin(
+        schema.services,
+        eq(schema.services.id, schema.serviceVersions.serviceId),
+      )
+      .where(
+        and(
+          eq(schema.serviceVersions.id, versionId),
+          eq(schema.serviceVersions.serviceId, serviceId),
+          inArray(schema.serviceVersions.status, ['published', 'archived']),
+        ),
+      )
+      .limit(1);
+
+    if (rows.length === 0) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    const translation = await this.resolveTranslation(versionId, locale);
+    if (!translation) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    const parsed = ServiceContentSchema.safeParse(translation.content);
+    if (!parsed.success) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    const application = parsed.data.applications.find(
+      (a) => a.id === applicationId,
+    );
+
+    if (!application) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    if (application.type !== 'workflow') {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    return {
+      apiKey: application.config.apiKey,
+      tenantId: application.config.tenantId,
+      workflowId: application.config.workflowId,
+    };
   }
 
   async delete(serviceId: string) {

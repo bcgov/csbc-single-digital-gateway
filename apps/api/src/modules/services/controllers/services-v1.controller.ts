@@ -1,7 +1,19 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Header,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { BcscRoles } from 'src/common/decorators/bcsc-roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { PublicRoute } from '../../auth/decorators/public-route.decorator';
+import {
+  ApplicationProcessParamDto,
+  ApplicationProcessQueryDto,
+  type ApplicationProcessResponse,
+} from '../dtos/application-process.dto';
 import {
   PublicServiceDetailQueryDto,
   PublicServiceListQueryDto,
@@ -11,13 +23,17 @@ import {
   ServiceVersionIdParamDto,
 } from '../dtos/service.dto';
 import { ServicesService } from '../services/services.service';
+import { WorkflowProcessService } from '../services/workflow-process.service';
 
 @Controller({
   path: 'services',
   version: '1',
 })
 export class ServicesV1Controller {
-  constructor(private readonly servicesService: ServicesService) {}
+  constructor(
+    private readonly servicesService: ServicesService,
+    private readonly workflowProcessService: WorkflowProcessService,
+  ) {}
 
   @Get()
   @PublicRoute()
@@ -58,5 +74,33 @@ export class ServicesV1Controller {
       params.versionId,
       query.locale,
     );
+  }
+
+  @Get(':serviceId/versions/:versionId/application-process')
+  @PublicRoute()
+  @Header('Cache-Control', 'no-store')
+  async getApplicationProcess(
+    @Param() params: ApplicationProcessParamDto,
+    @Query() query: ApplicationProcessQueryDto,
+  ): Promise<ApplicationProcessResponse> {
+    const config = await this.servicesService.resolveWorkflowApplicationConfig({
+      serviceId: params.serviceId,
+      versionId: params.versionId,
+      applicationId: query.applicationId,
+      locale: query.locale,
+    });
+
+    const result = await this.workflowProcessService.fetch({
+      apiKey: config.apiKey,
+      tenantId: config.tenantId,
+      workflowId: config.workflowId,
+    });
+
+    return {
+      applicationId: query.applicationId,
+      workflowId: result.workflowId,
+      name: result.name,
+      steps: result.steps,
+    };
   }
 }

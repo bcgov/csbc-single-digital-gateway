@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { ApplicationProcessWidget } from "../../../../../features/services/components/application-process-widget.component";
 import { LegalInformationAccordion } from "../../../../../features/services/components/legal-information-accordion.component";
 import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
@@ -175,72 +176,7 @@ function RouteComponent() {
               </div>
             </div> */}
             {/* Application process */}
-            <div
-              id="application-process"
-              className="scroll-mt-20 flex flex-col gap-4 mb-4"
-            >
-              <h2 className="section-heading">Application process</h2>
-              <div className="flex flex-col gap-4 min-h-48">
-                {/* {!service.application?.description &&
-                  (!service.application?.applications ||
-                    service.application.applications.length === 0) && (
-                    <p className="text-muted-foreground">
-                      No application process information is available.
-                    </p>
-                  )} */}
-
-                {/* {service.application?.description && (
-                  <span>
-                    <LexicalContent content={service.application.description} />
-                  </span>
-                )} */}
-
-                {/* {service.application?.applications &&
-                  service.application.applications.length > 0 && (
-                    <div className="flex flex-col gap-px border bg-border">
-                      <div
-                        className={cn(
-                          "grid gap-px",
-                          service.application.applications.length > 1 &&
-                            "grid-cols-2 md:grid-cols-3",
-                        )}
-                      >
-                        {service.application.applications
-                          .filter((app) => app.online?.[0]?.url)
-                          .map((app) => {
-                            const online = app.online?.[0];
-
-                            if (!online?.url) return null; // satisfies TS/linter
-
-                            return (
-                              <a
-                                key={online.id}
-                                href={online.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex flex-col items-center bg-white p-4 text-center no-underline hover:bg-accent"
-                              >
-                                <span className="p-4 bg-blue-10 inline-flex">
-                                  <IconCake
-                                    size={42}
-                                    stroke={1.5}
-                                    color="#1e5189"
-                                  />
-                                </span>
-
-                                <p className="font-bold py-2">{online.label}</p>
-
-                                {online.description && (
-                                  <p>{online.description}</p>
-                                )}
-                              </a>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )} */}
-              </div>
-            </div>
+            <ApplicationProcessWidget service={service} />
             {/* Your activity */}
             <YourActivitySection service={service} />
             {/* More information */}

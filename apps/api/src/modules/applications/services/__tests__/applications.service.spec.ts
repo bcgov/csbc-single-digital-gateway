@@ -54,6 +54,7 @@ const WORKFLOW_APP = {
     apiKey: 'api-key-xyz',
     tenantId: TENANT_ID,
     triggerEndpoint: '/webhook/trigger',
+    workflowId: 'wf-test-123',
   },
 };
 
