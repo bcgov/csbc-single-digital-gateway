@@ -164,6 +164,24 @@ describe('WorkflowTriggerService', () => {
       );
     });
 
+    it('should throw BadGatewayException when WorkflowInstance is missing from the response body', async () => {
+      httpService.post.mockReturnValue(
+        of(mockResponse(200, { WorkflowId: 'x', WorkflowName: 'y' })),
+      );
+      await expect(service.trigger(config, actor)).rejects.toBeInstanceOf(
+        BadGatewayException,
+      );
+    });
+
+    it('should throw BadGatewayException when WorkflowInstance is present but not a string', async () => {
+      httpService.post.mockReturnValue(
+        of(mockResponse(200, { WorkflowId: 'x', WorkflowInstance: 129 })),
+      );
+      await expect(service.trigger(config, actor)).rejects.toBeInstanceOf(
+        BadGatewayException,
+      );
+    });
+
     it('should throw BadGatewayException on network error', async () => {
       httpService.post.mockReturnValue(
         throwError(() => new AxiosError('Network error')),

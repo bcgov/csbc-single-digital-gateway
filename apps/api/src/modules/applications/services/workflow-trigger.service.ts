@@ -68,16 +68,17 @@ export class WorkflowTriggerService {
       throw new BadGatewayException('Workflow trigger failed');
     }
 
-    const workflowId = (body as Record<string, string>).WorkflowId;
+    const record = body as Record<string, unknown>;
+    const workflowId = record.WorkflowId;
+    const instance = record.WorkflowInstance;
 
-    const instance = (body as Record<string, string>).WorkflowInstance;
-    if (instance.length === 0) {
+    if (typeof instance !== 'string' || instance.length === 0) {
       this.logger.warn(
         'Workflow trigger response missing or invalid WorkflowInstance',
       );
       throw new BadGatewayException('Workflow trigger failed');
     }
 
-    return { workflowId, executionId: instance };
+    return { workflowId: workflowId as string, executionId: instance };
   }
 }
