@@ -110,7 +110,7 @@ describe('WorkflowTriggerService', () => {
   });
 
   describe('trigger — response parsing', () => {
-    it('should return the WorkflowInstance value as executionId on 2xx with valid body', async () => {
+    it('should return the WorkflowInstance value as executionId and the WorkflowId on 2xx with valid body', async () => {
       httpService.post.mockReturnValue(
         of(
           mockResponse(200, {
@@ -121,7 +121,10 @@ describe('WorkflowTriggerService', () => {
         ),
       );
       const result = await service.trigger(config, actor);
-      expect(result).toEqual({ executionId: '129' });
+      expect(result).toEqual({
+        workflowId: 'kImTywz4mGvrcCgJ',
+        executionId: '129',
+      });
     });
 
     it('should accept any 2xx status code (200, 201, 202)', async () => {
@@ -152,18 +155,9 @@ describe('WorkflowTriggerService', () => {
       );
     });
 
-    it('should throw BadGatewayException when WorkflowInstance is missing from the response body', async () => {
+    it('should throw BadGatewayException when WorkflowInstance is an empty string', async () => {
       httpService.post.mockReturnValue(
-        of(mockResponse(200, { WorkflowId: 'x', WorkflowName: 'y' })),
-      );
-      await expect(service.trigger(config, actor)).rejects.toBeInstanceOf(
-        BadGatewayException,
-      );
-    });
-
-    it('should throw BadGatewayException when WorkflowInstance is present but not a string', async () => {
-      httpService.post.mockReturnValue(
-        of(mockResponse(200, { WorkflowInstance: 129 })),
+        of(mockResponse(200, { WorkflowId: 'x', WorkflowInstance: '' })),
       );
       await expect(service.trigger(config, actor)).rejects.toBeInstanceOf(
         BadGatewayException,

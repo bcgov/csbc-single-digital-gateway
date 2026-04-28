@@ -472,9 +472,11 @@ describe('ApplicationsService', () => {
       });
     });
 
-    it('should insert a row with serviceApplicationType="workflow" and metadata={ executionId, submissionIds: [] } on success', async () => {
+    it('should insert a row with serviceApplicationType="workflow" and metadata={ workflowId, executionId } on success', async () => {
       const { service, mocks } = buildService({
-        triggerImpl: jest.fn().mockResolvedValue({ executionId: '129' }),
+        triggerImpl: jest
+          .fn()
+          .mockResolvedValue({ workflowId: 'wf-test-123', executionId: '129' }),
       });
       mocks.enqueueSelect([{ id: VERSION_ID, status: 'published' }]);
       mocks.enqueueSelect([makeTranslation('en', TRANSLATION_ID_EN)]);
@@ -485,7 +487,7 @@ describe('ApplicationsService', () => {
       expect(mocks.insertValues).toHaveBeenCalledWith(
         expect.objectContaining({
           serviceApplicationType: 'workflow',
-          metadata: { executionId: '129', submissionIds: [] },
+          metadata: { workflowId: 'wf-test-123', executionId: '129' },
         }),
       );
     });

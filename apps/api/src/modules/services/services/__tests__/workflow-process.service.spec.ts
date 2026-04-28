@@ -125,10 +125,10 @@ describe('WorkflowProcessService', () => {
       expect(result.steps).toEqual([
         {
           id: 'node-a',
-          label: 'Submit Form Applicant Info',
+          label: 'State:Applicant Info',
           description: 'Applicant completes the intake form.',
         },
-        { id: 'node-b', label: 'Submit Form Review' },
+        { id: 'node-b', label: 'State:Review' },
       ]);
     });
 
@@ -365,7 +365,7 @@ describe('WorkflowProcessService', () => {
     });
   });
 
-  describe('step filter — keep only "Request Form *" relabelled to "Submit Form *"', () => {
+  describe('step filter — keep only "Request Form *" relabelled to "State:*"', () => {
     const filterWorkflowBody = {
       id: WORKFLOW_ID,
       name: 'Filtered Workflow',
@@ -422,12 +422,12 @@ describe('WorkflowProcessService', () => {
       expect(ids).not.toContain('node-d');
     });
 
-    it('should keep every matching step and relabel prefix "Request Form " → "Submit Form "', async () => {
+    it('should keep every matching step and relabel prefix "Request Form " → "State:"', async () => {
       httpService.get.mockReturnValue(of(mockResponse(200, filterWorkflowBody)));
       const result = await service.fetch(baseConfig);
       expect(result.steps).toEqual([
-        { id: 'node-a', label: 'Submit Form Applicant Info' },
-        { id: 'node-c', label: 'Submit Form Documents' },
+        { id: 'node-a', label: 'State:Applicant Info' },
+        { id: 'node-c', label: 'State:Documents' },
       ]);
     });
 
@@ -506,7 +506,7 @@ describe('WorkflowProcessService', () => {
       expect(result.steps).toEqual([
         {
           id: 'node-a',
-          label: 'Submit Form Applicant Info',
+          label: 'State:Applicant Info',
           description: 'Applicant provides their info.',
         },
       ]);
