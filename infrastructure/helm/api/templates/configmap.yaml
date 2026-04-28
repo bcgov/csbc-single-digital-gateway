@@ -32,6 +32,10 @@ data:
   FRONTEND_URL: {{ .Values.app.frontendUrl | quote }}
   ADMIN_FRONTEND_URL: {{ .Values.app.adminFrontendUrl | quote }}
 
+  # External APIs (optional)
+  PUBLIC_BODIES_API_URL: {{ .Values.app.publicBodiesApiUrl | quote }}
+  WORKFLOW_API_URL: {{ .Values.app.workflowApiUrl | quote }}
+
   {{- with .Values.configMap.data }}
   {{- toYaml . | nindent 2 }}
   {{- end }}

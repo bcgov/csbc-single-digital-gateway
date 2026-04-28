@@ -62,6 +62,13 @@ const BASE_PROPS = {
   isDraft: true,
 };
 
+const TRANSLATION_BASE = {
+  id: "tr-111",
+  serviceTypeVersionId: "ver-222",
+  createdAt: "2024-07-01T00:00:00.000Z",
+  updatedAt: "2024-07-01T00:00:00.000Z",
+};
+
 function submitForm() {
   fireEvent.submit(
     screen.getByRole("button", { name: "Save Translation" }).closest("form")!,
@@ -138,6 +145,7 @@ describe("ServiceTypeVersionTranslationForm", () => {
         <ServiceTypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Service Type",
             description: "A service type",
@@ -168,6 +176,7 @@ describe("ServiceTypeVersionTranslationForm", () => {
         <ServiceTypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Employment Services",
             description: "",
@@ -188,6 +197,7 @@ describe("ServiceTypeVersionTranslationForm", () => {
         <ServiceTypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Employment Services",
             description: "Provincial employment portal",
@@ -218,6 +228,7 @@ describe("ServiceTypeVersionTranslationForm", () => {
         <ServiceTypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "My Service Type",
             description: "Type description",
@@ -240,6 +251,7 @@ describe("ServiceTypeVersionTranslationForm", () => {
         <ServiceTypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Old Name",
             description: "Old Description",
@@ -269,6 +281,7 @@ describe("ServiceTypeVersionTranslationForm", () => {
         <ServiceTypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "My Type",
             description: "Type description",
@@ -295,6 +308,7 @@ describe("ServiceTypeVersionTranslationForm", () => {
           {...BASE_PROPS}
           isDraft={false}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "My Type",
             description: "Type description",

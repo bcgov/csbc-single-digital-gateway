@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
 import { UsersModule } from '../users/users.module';
@@ -8,9 +9,10 @@ import { ServiceContributorGuard } from './guards/service-contributor.guard';
 import { ServiceContributorsService } from './services/service-contributors.service';
 import { ServiceTypesService } from './services/service-types.service';
 import { ServicesService } from './services/services.service';
+import { WorkflowProcessService } from './services/workflow-process.service';
 
 @Module({
-  imports: [DatabaseModule, UsersModule],
+  imports: [DatabaseModule, UsersModule, HttpModule],
   controllers: [
     ServiceTypesAdminV1Controller,
     ServicesAdminV1Controller,
@@ -21,6 +23,7 @@ import { ServicesService } from './services/services.service';
     ServicesService,
     ServiceContributorsService,
     ServiceContributorGuard,
+    WorkflowProcessService,
   ],
 })
 export class ServicesModule {}

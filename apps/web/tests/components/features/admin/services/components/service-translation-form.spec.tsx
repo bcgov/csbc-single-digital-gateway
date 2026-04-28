@@ -73,6 +73,13 @@ const BASE_PROPS = {
   isDraft: true,
 };
 
+const TRANSLATION_BASE = {
+  id: "tr-111",
+  serviceVersionId: "ver-456",
+  createdAt: "2024-07-01T00:00:00.000Z",
+  updatedAt: "2024-07-01T00:00:00.000Z",
+};
+
 // DOM field order (getAllByRole("textbox")):
 //   [0] = <input>        → Name
 //   [1] = <textarea>     → Description
@@ -111,6 +118,7 @@ describe("ServiceTranslationForm", () => {
         <ServiceTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "BC Services Card",
             description: "Provincial identity card",
@@ -127,6 +135,7 @@ describe("ServiceTranslationForm", () => {
         <ServiceTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "BC Services Card",
             description: "Provincial identity card",
@@ -180,6 +189,7 @@ describe("ServiceTranslationForm", () => {
         <ServiceTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "My Service",
             description: "",
@@ -230,6 +240,7 @@ describe("ServiceTranslationForm", () => {
         <ServiceTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "  Natural Resources Portal  ",
             description: "  A portal for NR services  ",
@@ -286,6 +297,7 @@ describe("ServiceTranslationForm", () => {
         <ServiceTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "My Service",
             description: "",

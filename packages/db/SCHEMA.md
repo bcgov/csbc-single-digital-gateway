@@ -6,6 +6,20 @@
 
 ```mermaid
 erDiagram
+    applications {
+        uuid id PK "defaultRandom()"
+        uuid serviceId FK "not null, → services.id (no action)"
+        uuid serviceVersionId FK "not null, → service_versions.id (no action)"
+        uuid serviceVersionTranslationId FK "not null, → service_version_translations.id (no action)"
+        uuid serviceApplicationId "not null"
+        text serviceApplicationType "not null"
+        uuid userId FK "not null, → users.id (no action)"
+        uuid delegateUserId FK "nullable, → users.id (set null)"
+        jsonb metadata "not null, {}"
+        timestamptz createdAt "not null, defaultNow()"
+        timestamptz updatedAt "not null, defaultNow(), auto-updated"
+    }
+
     identities {
         uuid id PK "defaultRandom()"
         uuid userId FK "nullable, → users.id (cascade)"
@@ -41,24 +55,7 @@ erDiagram
     org_units {
         uuid id PK "defaultRandom()"
         text name "not null"
-        org_unit_type type "not null, enum(org,division,branch,team)"
-        timestamptz createdAt "not null, defaultNow()"
-        timestamptz updatedAt "not null, defaultNow(), auto-updated"
-    }
-
-    schema_versions {
-        uuid id PK "defaultRandom()"
-        uuid schemaId FK "not null, → schemas.id (cascade)"
-        integer version "not null"
-        jsonb schema "not null, {}"
-        jsonb uiSchema "not null, {}"
-        timestamptz createdAt "not null, defaultNow()"
-        timestamptz updatedAt "not null, defaultNow(), auto-updated"
-    }
-
-    schemas {
-        uuid id PK "defaultRandom()"
-        uuid publishedSchemaVersionId FK "nullable, → schema_versions.id (set null)"
+        org_unit_type type "not null, enum(org,ministry,division,branch,team)"
         timestamptz createdAt "not null, defaultNow()"
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
     }
@@ -71,11 +68,32 @@ erDiagram
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
     }
 
+    consent_document_type_version_translations {
+        uuid id PK "defaultRandom()"
+        uuid consentDocumentTypeVersionId FK "not null, → consent_document_type_versions.id (cascade)"
+        text locale "not null"
+        text name "not null"
+        text description "not null"
+        jsonb schema "not null, {}"
+        jsonb uiSchema "not null, {}"
+        timestamptz createdAt "not null, defaultNow()"
+        timestamptz updatedAt "not null, defaultNow(), auto-updated"
+    }
+
+    consent_document_type_versions {
+        uuid id PK "defaultRandom()"
+        uuid consentDocumentTypeId FK "not null, → consent_document_types.id (cascade)"
+        integer version "not null"
+        consent_document_type_version_status status "not null, enum(draft,published,archived)"
+        timestamptz archivedAt "nullable"
+        timestamptz publishedAt "nullable"
+        timestamptz createdAt "not null, defaultNow()"
+        timestamptz updatedAt "not null, defaultNow(), auto-updated"
+    }
+
     consent_document_types {
         uuid id PK "defaultRandom()"
-        uuid schemaId FK "nullable, unique, → schemas.id (no action)"
-        text name "not null"
-        text description "nullable"
+        uuid publishedConsentDocumentTypeVersionId FK "nullable, → consent_document_type_versions.id (set null)"
         timestamptz createdAt "not null, defaultNow()"
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
     }
@@ -84,6 +102,8 @@ erDiagram
         uuid id PK "defaultRandom()"
         uuid consentDocumentVersionId FK "not null, → consent_document_versions.id (cascade)"
         text locale "not null"
+        text name "not null"
+        text description "nullable"
         jsonb content "not null, {}"
         timestamptz createdAt "not null, defaultNow()"
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
@@ -92,7 +112,7 @@ erDiagram
     consent_document_versions {
         uuid id PK "defaultRandom()"
         uuid consentDocumentId FK "not null, → consent_documents.id (cascade)"
-        uuid schemaVersionId FK "not null, → schema_versions.id (no action)"
+        uuid consentDocumentTypeVersionId FK "not null, → consent_document_type_versions.id (no action)"
         integer version "not null"
         consent_document_version_status status "not null, enum(draft,published,archived)"
         timestamptz archivedAt "nullable"
@@ -126,11 +146,32 @@ erDiagram
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
     }
 
+    service_type_version_translations {
+        uuid id PK "defaultRandom()"
+        uuid serviceTypeVersionId FK "not null, → service_type_versions.id (cascade)"
+        text locale "not null"
+        text name "not null"
+        text description "not null"
+        jsonb schema "not null, {}"
+        jsonb uiSchema "not null, {}"
+        timestamptz createdAt "not null, defaultNow()"
+        timestamptz updatedAt "not null, defaultNow(), auto-updated"
+    }
+
+    service_type_versions {
+        uuid id PK "defaultRandom()"
+        uuid serviceTypeId FK "not null, → service_types.id (cascade)"
+        integer version "not null"
+        service_type_version_status status "not null, enum(draft,published,archived)"
+        timestamptz archivedAt "nullable"
+        timestamptz publishedAt "nullable"
+        timestamptz createdAt "not null, defaultNow()"
+        timestamptz updatedAt "not null, defaultNow(), auto-updated"
+    }
+
     service_types {
         uuid id PK "defaultRandom()"
-        uuid schemaId FK "not null, → schemas.id (no action)"
-        text name "not null"
-        text description "nullable"
+        uuid publishedServiceTypeVersionId FK "nullable, → service_type_versions.id (set null)"
         timestamptz createdAt "not null, defaultNow()"
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
     }
@@ -139,6 +180,8 @@ erDiagram
         uuid id PK "defaultRandom()"
         uuid serviceVersionId FK "not null, → service_versions.id (cascade)"
         text locale "not null"
+        text name "not null"
+        text description "nullable"
         jsonb content "not null, {}"
         timestamptz createdAt "not null, defaultNow()"
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
@@ -146,7 +189,7 @@ erDiagram
 
     service_versions {
         uuid id PK "defaultRandom()"
-        uuid schemaVersionId FK "not null, → schema_versions.id (no action)"
+        uuid serviceTypeVersionId FK "not null, → service_type_versions.id (no action)"
         uuid serviceId FK "not null, → services.id (cascade)"
         integer version "not null"
         service_version_status status "not null, enum(draft,published,archived)"
@@ -179,18 +222,22 @@ erDiagram
         timestamptz updatedAt "not null, defaultNow(), auto-updated"
     }
 
+    services ||--o{ applications : "has many"
+    service_versions ||--o{ applications : "has many"
+    service_version_translations ||--o{ applications : "has many"
+    users ||--o{ applications : "has many"
     users ||--o{ identities : "has many"
     org_units ||--o{ org_unit_members : "has many"
     users ||--o{ org_unit_members : "has many"
     org_units ||--o{ org_unit_relations : "has many"
-    schemas ||--o{ schema_versions : "has many"
-    schema_versions ||--o{ schemas : "has many"
     consent_documents ||--o{ consent_document_contributors : "has many"
     users ||--o{ consent_document_contributors : "has many"
-    schemas ||--o{ consent_document_types : "has many"
+    consent_document_type_versions ||--o{ consent_document_type_version_translations : "has many"
+    consent_document_types ||--o{ consent_document_type_versions : "has many"
+    consent_document_type_versions ||--o{ consent_document_types : "has many"
     consent_document_versions ||--o{ consent_document_version_translations : "has many"
     consent_documents ||--o{ consent_document_versions : "has many"
-    schema_versions ||--o{ consent_document_versions : "has many"
+    consent_document_type_versions ||--o{ consent_document_versions : "has many"
     consent_document_types ||--o{ consent_documents : "has many"
     org_units ||--o{ consent_documents : "has many"
     consent_document_versions ||--o{ consent_documents : "has many"
@@ -198,9 +245,11 @@ erDiagram
     users ||--o{ consent_statements : "has many"
     services ||--o{ service_contributors : "has many"
     users ||--o{ service_contributors : "has many"
-    schemas ||--o{ service_types : "has many"
+    service_type_versions ||--o{ service_type_version_translations : "has many"
+    service_types ||--o{ service_type_versions : "has many"
+    service_type_versions ||--o{ service_types : "has many"
     service_versions ||--o{ service_version_translations : "has many"
-    schema_versions ||--o{ service_versions : "has many"
+    service_type_versions ||--o{ service_versions : "has many"
     services ||--o{ service_versions : "has many"
     org_units ||--o{ services : "has many"
     service_versions ||--o{ services : "has many"
@@ -212,20 +261,23 @@ erDiagram
 
 | Table | Source File |
 | --- | --- |
+| `applications` | `schema/applications.ts` |
 | `identities` | `schema/auth.ts` |
 | `session` | `schema/auth.ts` |
 | `org_unit_members` | `schema/organizations.ts` |
 | `org_unit_relations` | `schema/organizations.ts` |
 | `org_units` | `schema/organizations.ts` |
-| `schema_versions` | `schema/schemas.ts` |
-| `schemas` | `schema/schemas.ts` |
 | `consent_document_contributors` | `schema/consent-management.ts` |
+| `consent_document_type_version_translations` | `schema/consent-management.ts` |
+| `consent_document_type_versions` | `schema/consent-management.ts` |
 | `consent_document_types` | `schema/consent-management.ts` |
 | `consent_document_version_translations` | `schema/consent-management.ts` |
 | `consent_document_versions` | `schema/consent-management.ts` |
 | `consent_documents` | `schema/consent-management.ts` |
 | `consent_statements` | `schema/consent-management.ts` |
 | `service_contributors` | `schema/service-catalogue.ts` |
+| `service_type_version_translations` | `schema/service-catalogue.ts` |
+| `service_type_versions` | `schema/service-catalogue.ts` |
 | `service_types` | `schema/service-catalogue.ts` |
 | `service_version_translations` | `schema/service-catalogue.ts` |
 | `service_versions` | `schema/service-catalogue.ts` |
@@ -239,10 +291,13 @@ erDiagram
 **Values:** `admin`, `member`
 
 ### org_unit_type
-**Values:** `org`, `division`, `branch`, `team`
+**Values:** `org`, `ministry`, `division`, `branch`, `team`
 
 ### consent_document_contributor_role
 **Values:** `owner`
+
+### consent_document_type_version_status
+**Values:** `draft`, `published`, `archived`
 
 ### consent_document_version_status
 **Values:** `draft`, `published`, `archived`
@@ -253,6 +308,9 @@ erDiagram
 ### service_contributor_role
 **Values:** `owner`
 
+### service_type_version_status
+**Values:** `draft`, `published`, `archived`
+
 ### service_version_status
 **Values:** `draft`, `published`, `archived`
 
@@ -260,6 +318,36 @@ erDiagram
 **Values:** `admin`, `staff`, `citizen`
 
 ## Tables
+
+### applications
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `id` | uuid | NO | `defaultRandom()` | PK |  |
+| `serviceId` | uuid | NO |  | FK |  |
+| `serviceVersionId` | uuid | NO |  | FK |  |
+| `serviceVersionTranslationId` | uuid | NO |  | FK |  |
+| `serviceApplicationId` | uuid | NO |  |  |  |
+| `serviceApplicationType` | text | NO |  |  |  |
+| `userId` | uuid | NO |  | FK |  |
+| `delegateUserId` | uuid | YES |  | FK |  |
+| `metadata` | jsonb | NO | `{}` |  |  |
+| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
+| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
+
+**Primary Key:** `id`
+**Foreign Keys:**
+- `serviceId` → `services.id` (on delete: no action)
+- `serviceVersionId` → `service_versions.id` (on delete: no action)
+- `serviceVersionTranslationId` → `service_version_translations.id` (on delete: no action)
+- `userId` → `users.id` (on delete: no action)
+- `delegateUserId` → `users.id` (on delete: set null)
+
+**Indexes:**
+- `applications_user_id_idx` — index on (`userId`)
+- `applications_service_id_idx` — index on (`serviceId`)
+
+---
 
 ### identities
 
@@ -337,47 +425,11 @@ erDiagram
 | --- | --- | --- | --- | --- | --- |
 | `id` | uuid | NO | `defaultRandom()` | PK |  |
 | `name` | text | NO |  |  |  |
-| `type` | org_unit_type | NO |  | enum(org,division,branch,team) |  |
+| `type` | org_unit_type | NO |  | enum(org,ministry,division,branch,team) |  |
 | `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
 | `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
 
 **Primary Key:** `id`
-
----
-
-### schema_versions
-
-| Column | Type | Nullable | Default | Notes | Comments |
-| --- | --- | --- | --- | --- | --- |
-| `id` | uuid | NO | `defaultRandom()` | PK |  |
-| `schemaId` | uuid | NO |  | FK |  |
-| `version` | integer | NO |  |  |  |
-| `schema` | jsonb | NO | `{}` |  |  |
-| `uiSchema` | jsonb | NO | `{}` |  |  |
-| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
-| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
-
-**Primary Key:** `id`
-**Foreign Keys:**
-- `schemaId` → `schemas.id` (on delete: cascade)
-
-**Indexes:**
-- `schema_versions_schema_version_unique` — unique on (`schemaId`, `version`)
-
----
-
-### schemas
-
-| Column | Type | Nullable | Default | Notes | Comments |
-| --- | --- | --- | --- | --- | --- |
-| `id` | uuid | NO | `defaultRandom()` | PK |  |
-| `publishedSchemaVersionId` | uuid | YES |  | FK |  |
-| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
-| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
-
-**Primary Key:** `id`
-**Foreign Keys:**
-- `publishedSchemaVersionId` → `schema_versions.id` (on delete: set null)
 
 ---
 
@@ -398,20 +450,63 @@ erDiagram
 
 ---
 
-### consent_document_types
+### consent_document_type_version_translations
 
 | Column | Type | Nullable | Default | Notes | Comments |
 | --- | --- | --- | --- | --- | --- |
 | `id` | uuid | NO | `defaultRandom()` | PK |  |
-| `schemaId` | uuid | YES |  | FK, unique |  |
+| `consentDocumentTypeVersionId` | uuid | NO |  | FK |  |
+| `locale` | text | NO |  |  |  |
 | `name` | text | NO |  |  |  |
-| `description` | text | YES |  |  |  |
+| `description` | text | NO |  |  |  |
+| `schema` | jsonb | NO | `{}` |  |  |
+| `uiSchema` | jsonb | NO | `{}` |  |  |
 | `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
 | `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
 
 **Primary Key:** `id`
 **Foreign Keys:**
-- `schemaId` → `schemas.id` (on delete: no action)
+- `consentDocumentTypeVersionId` → `consent_document_type_versions.id` (on delete: cascade)
+
+**Indexes:**
+- `consent_document_type_version_translations_version_locale_unique` — unique on (`consentDocumentTypeVersionId`, `locale`)
+
+---
+
+### consent_document_type_versions
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `id` | uuid | NO | `defaultRandom()` | PK |  |
+| `consentDocumentTypeId` | uuid | NO |  | FK |  |
+| `version` | integer | NO |  |  |  |
+| `status` | consent_document_type_version_status | NO |  | enum(draft,published,archived) |  |
+| `archivedAt` | timestamptz | YES |  |  |  |
+| `publishedAt` | timestamptz | YES |  |  |  |
+| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
+| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
+
+**Primary Key:** `id`
+**Foreign Keys:**
+- `consentDocumentTypeId` → `consent_document_types.id` (on delete: cascade)
+
+**Indexes:**
+- `consent_document_type_versions_consent_document_type_version_unique` — unique on (`consentDocumentTypeId`, `version`)
+
+---
+
+### consent_document_types
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `id` | uuid | NO | `defaultRandom()` | PK |  |
+| `publishedConsentDocumentTypeVersionId` | uuid | YES |  | FK |  |
+| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
+| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
+
+**Primary Key:** `id`
+**Foreign Keys:**
+- `publishedConsentDocumentTypeVersionId` → `consent_document_type_versions.id` (on delete: set null)
 
 ---
 
@@ -422,6 +517,8 @@ erDiagram
 | `id` | uuid | NO | `defaultRandom()` | PK |  |
 | `consentDocumentVersionId` | uuid | NO |  | FK |  |
 | `locale` | text | NO |  |  |  |
+| `name` | text | NO |  |  |  |
+| `description` | text | YES |  |  |  |
 | `content` | jsonb | NO | `{}` |  |  |
 | `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
 | `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
@@ -441,7 +538,7 @@ erDiagram
 | --- | --- | --- | --- | --- | --- |
 | `id` | uuid | NO | `defaultRandom()` | PK |  |
 | `consentDocumentId` | uuid | NO |  | FK |  |
-| `schemaVersionId` | uuid | NO |  | FK |  |
+| `consentDocumentTypeVersionId` | uuid | NO |  | FK |  |
 | `version` | integer | NO |  |  |  |
 | `status` | consent_document_version_status | NO |  | enum(draft,published,archived) |  |
 | `archivedAt` | timestamptz | YES |  |  |  |
@@ -452,7 +549,7 @@ erDiagram
 **Primary Key:** `id`
 **Foreign Keys:**
 - `consentDocumentId` → `consent_documents.id` (on delete: cascade)
-- `schemaVersionId` → `schema_versions.id` (on delete: no action)
+- `consentDocumentTypeVersionId` → `consent_document_type_versions.id` (on delete: no action)
 
 **Indexes:**
 - `consent_document_versions_consent_document_version_unique` — unique on (`consentDocumentId`, `version`)
@@ -512,20 +609,63 @@ erDiagram
 
 ---
 
-### service_types
+### service_type_version_translations
 
 | Column | Type | Nullable | Default | Notes | Comments |
 | --- | --- | --- | --- | --- | --- |
 | `id` | uuid | NO | `defaultRandom()` | PK |  |
-| `schemaId` | uuid | NO |  | FK |  |
+| `serviceTypeVersionId` | uuid | NO |  | FK |  |
+| `locale` | text | NO |  |  |  |
 | `name` | text | NO |  |  |  |
-| `description` | text | YES |  |  |  |
+| `description` | text | NO |  |  |  |
+| `schema` | jsonb | NO | `{}` |  |  |
+| `uiSchema` | jsonb | NO | `{}` |  |  |
 | `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
 | `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
 
 **Primary Key:** `id`
 **Foreign Keys:**
-- `schemaId` → `schemas.id` (on delete: no action)
+- `serviceTypeVersionId` → `service_type_versions.id` (on delete: cascade)
+
+**Indexes:**
+- `service_type_version_translations_version_locale_unique` — unique on (`serviceTypeVersionId`, `locale`)
+
+---
+
+### service_type_versions
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `id` | uuid | NO | `defaultRandom()` | PK |  |
+| `serviceTypeId` | uuid | NO |  | FK |  |
+| `version` | integer | NO |  |  |  |
+| `status` | service_type_version_status | NO |  | enum(draft,published,archived) |  |
+| `archivedAt` | timestamptz | YES |  |  |  |
+| `publishedAt` | timestamptz | YES |  |  |  |
+| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
+| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
+
+**Primary Key:** `id`
+**Foreign Keys:**
+- `serviceTypeId` → `service_types.id` (on delete: cascade)
+
+**Indexes:**
+- `service_type_versions_service_type_version_unique` — unique on (`serviceTypeId`, `version`)
+
+---
+
+### service_types
+
+| Column | Type | Nullable | Default | Notes | Comments |
+| --- | --- | --- | --- | --- | --- |
+| `id` | uuid | NO | `defaultRandom()` | PK |  |
+| `publishedServiceTypeVersionId` | uuid | YES |  | FK |  |
+| `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
+| `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
+
+**Primary Key:** `id`
+**Foreign Keys:**
+- `publishedServiceTypeVersionId` → `service_type_versions.id` (on delete: set null)
 
 ---
 
@@ -536,6 +676,8 @@ erDiagram
 | `id` | uuid | NO | `defaultRandom()` | PK |  |
 | `serviceVersionId` | uuid | NO |  | FK |  |
 | `locale` | text | NO |  |  |  |
+| `name` | text | NO |  |  |  |
+| `description` | text | YES |  |  |  |
 | `content` | jsonb | NO | `{}` |  |  |
 | `createdAt` | timestamptz | NO | `defaultNow()` |  |  |
 | `updatedAt` | timestamptz | NO | `defaultNow()` | auto-updated |  |
@@ -554,7 +696,7 @@ erDiagram
 | Column | Type | Nullable | Default | Notes | Comments |
 | --- | --- | --- | --- | --- | --- |
 | `id` | uuid | NO | `defaultRandom()` | PK |  |
-| `schemaVersionId` | uuid | NO |  | FK |  |
+| `serviceTypeVersionId` | uuid | NO |  | FK |  |
 | `serviceId` | uuid | NO |  | FK |  |
 | `version` | integer | NO |  |  |  |
 | `status` | service_version_status | NO |  | enum(draft,published,archived) |  |
@@ -565,7 +707,7 @@ erDiagram
 
 **Primary Key:** `id`
 **Foreign Keys:**
-- `schemaVersionId` → `schema_versions.id` (on delete: no action)
+- `serviceTypeVersionId` → `service_type_versions.id` (on delete: no action)
 - `serviceId` → `services.id` (on delete: cascade)
 
 **Indexes:**
@@ -626,27 +768,30 @@ erDiagram
 
 | Table | Has Many | Belongs To |
 | --- | --- | --- |
+| `applications` | — | services, service_versions, service_version_translations, users |
 | `identities` | — | users |
 | `session` | — | — |
 | `org_unit_members` | — | org_units, users |
 | `org_unit_relations` | — | org_units |
 | `org_units` | org_unit_members, org_unit_relations, consent_documents, services | — |
-| `schema_versions` | schemas, consent_document_versions, service_versions | schemas |
-| `schemas` | schema_versions, consent_document_types, service_types | schema_versions |
 | `consent_document_contributors` | — | consent_documents, users |
-| `consent_document_types` | consent_documents | schemas |
+| `consent_document_type_version_translations` | — | consent_document_type_versions |
+| `consent_document_type_versions` | consent_document_type_version_translations, consent_document_types, consent_document_versions | consent_document_types |
+| `consent_document_types` | consent_document_type_versions, consent_documents | consent_document_type_versions |
 | `consent_document_version_translations` | — | consent_document_versions |
-| `consent_document_versions` | consent_document_version_translations, consent_documents, consent_statements | consent_documents, schema_versions |
+| `consent_document_versions` | consent_document_version_translations, consent_documents, consent_statements | consent_documents, consent_document_type_versions |
 | `consent_documents` | consent_document_contributors, consent_document_versions | consent_document_types, org_units, consent_document_versions |
 | `consent_statements` | — | consent_document_versions, users |
 | `service_contributors` | — | services, users |
-| `service_types` | services | schemas |
-| `service_version_translations` | — | service_versions |
-| `service_versions` | service_version_translations, services | schema_versions, services |
-| `services` | service_contributors, service_versions | org_units, service_versions, service_types |
+| `service_type_version_translations` | — | service_type_versions |
+| `service_type_versions` | service_type_version_translations, service_types, service_versions | service_types |
+| `service_types` | service_type_versions, services | service_type_versions |
+| `service_version_translations` | applications | service_versions |
+| `service_versions` | applications, service_version_translations, services | service_type_versions, services |
+| `services` | applications, service_contributors, service_versions | org_units, service_versions, service_types |
 | `user_roles` | — | users |
-| `users` | identities, org_unit_members, consent_document_contributors, consent_statements, service_contributors, user_roles | — |
+| `users` | applications, identities, org_unit_members, consent_document_contributors, consent_statements, service_contributors, user_roles | — |
 
 ---
 
-*Generated on 2026-03-24*
+*Generated on 2026-04-22*

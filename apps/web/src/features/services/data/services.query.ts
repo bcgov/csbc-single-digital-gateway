@@ -11,3 +11,13 @@ export const servicesQueryOptions = queryOptions({
     return z.array(ServiceDto).parse(data.data);
   },
 });
+
+export function serviceQueryOptions(serviceId: string) {
+  return queryOptions({
+    queryKey: ["services", serviceId],
+    queryFn: async () => {
+      const { data } = await api.get(`/v1/services/${serviceId}`);
+      return ServiceDto.parse(data);
+    },
+  });
+}

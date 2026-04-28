@@ -28,7 +28,7 @@ jest.mock("@repo/ui", () => ({
       </button>
     );
   },
-  Sheet: ({ children, open, onOpenChange }: any) => (
+  Sheet: ({ children, open }: any) => (
     <div data-testid="sheet" data-open={String(open ?? false)}>
       {children}
     </div>

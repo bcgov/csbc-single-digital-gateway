@@ -68,3 +68,8 @@ export {
   oneOfControlTester,
   oneOfControlEntry,
 } from "./OneOfControl.js";
+export {
+  ObjectControl,
+  objectControlTester,
+  objectControlEntry,
+} from "./ObjectControl.js";

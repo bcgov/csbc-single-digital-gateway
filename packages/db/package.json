@@ -24,7 +24,10 @@
     "db:push": "drizzle-kit push --config=./drizzle/drizzle.config.ts",
     "db:migrate:run": "tsx ./drizzle/migrate.ts",
     "db:studio": "drizzle-kit studio --config=./drizzle/drizzle.config.ts",
-    "db:generate-docs": "npx tsx scripts/generate-db-docs.ts"
+    "db:generate-docs": "npx tsx scripts/generate-db-docs.ts",
+    "db:seed": "tsx ./scripts/seed.ts",
+    "db:seed:export": "tsx ./scripts/seed-export.ts",
+    "test:unit": "vitest run"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",
@@ -35,6 +38,7 @@
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vite-plugin-dts": "^4.4.1",
+    "vitest": "^2.1.8",
     "zod": "^4.3.6"
   },
   "peerDependencies": {

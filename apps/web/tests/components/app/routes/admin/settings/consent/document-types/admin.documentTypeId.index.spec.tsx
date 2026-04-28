@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { cleanup, render, screen } from "@testing-library/react";
 import type { ComponentType } from "react";
 
-let mockNavigate: jest.Mock;
 const mockUseQuery = jest.fn();
 let mockEnsureQueryData: jest.Mock;
 let mockRouteUseParams: jest.Mock;
@@ -82,12 +81,10 @@ jest.mock("src/features/admin/components/version-status-badge.component", () => 
 }));
 
 
-const { __mockRouteUseParams, __mockNavigate } = jest.requireMock("@tanstack/react-router") as {
+const { __mockRouteUseParams } = jest.requireMock("@tanstack/react-router") as {
   __mockRouteUseParams: jest.Mock;
-  __mockNavigate: jest.Mock;
 };
 mockRouteUseParams = __mockRouteUseParams;
-mockNavigate = __mockNavigate;
 const { __mockEnsureQueryData } = jest.requireMock("src/lib/react-query.client") as {
   __mockEnsureQueryData: jest.Mock;
 };

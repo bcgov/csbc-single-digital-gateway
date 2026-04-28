@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AppConfigDto, AppConfigSchema } from 'src/common/dtos/app-config.dto';
 import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter';
+import { ApplicationsModule } from './applications/applications.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { TokenRefreshMiddleware } from './auth/middleware/token-refresh.middleware';
@@ -41,6 +42,7 @@ import { ServicesModule } from './services/services.module';
     ConsentProxyModule,
     OrgUnitsModule,
     ServicesModule,
+    ApplicationsModule,
   ],
   providers: [
     {

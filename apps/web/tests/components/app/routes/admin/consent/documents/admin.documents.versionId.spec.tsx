@@ -5,7 +5,6 @@ import type { ComponentType } from "react";
 const mockUseQuery = jest.fn();
 let mockEnsureQueryData: jest.Mock;
 let mockRouteUseParams: jest.Mock;
-let mockNavigate: jest.Mock;
 
 jest.mock("@tanstack/react-router", () => {
   const _mockRouteUseParams = jest.fn();
@@ -129,12 +128,10 @@ jest.mock("src/features/admin/consent-documents/data/consent-documents.query", (
 }));
 
 
-const { __mockRouteUseParams, __mockNavigate } = jest.requireMock("@tanstack/react-router") as {
+const { __mockRouteUseParams } = jest.requireMock("@tanstack/react-router") as {
   __mockRouteUseParams: jest.Mock;
-  __mockNavigate: jest.Mock;
 };
 mockRouteUseParams = __mockRouteUseParams;
-mockNavigate = __mockNavigate;
 const { __mockEnsureQueryData } = jest.requireMock("src/lib/react-query.client") as {
   __mockEnsureQueryData: jest.Mock;
 };

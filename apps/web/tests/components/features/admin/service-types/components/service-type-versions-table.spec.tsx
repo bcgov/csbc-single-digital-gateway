@@ -28,9 +28,11 @@ type ServiceTypeVersionSummary = {
   name: string | null;
   description: string | null;
   version: number;
-  status: string;
+  status: "draft" | "published" | "archived";
   createdAt: string;
+  updatedAt: string;
   publishedAt: string | null;
+  archivedAt: string | null;
 };
 
 const makeVersion = (overrides: Partial<ServiceTypeVersionSummary> = {}): ServiceTypeVersionSummary => ({
@@ -40,7 +42,9 @@ const makeVersion = (overrides: Partial<ServiceTypeVersionSummary> = {}): Servic
   version: 1,
   status: "draft",
   createdAt: "2024-06-15T11:00:00.000Z",
+  updatedAt: "2024-06-15T11:00:00.000Z",
   publishedAt: null,
+  archivedAt: null,
   ...overrides,
 });
 

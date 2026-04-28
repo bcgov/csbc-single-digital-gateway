@@ -5,26 +5,34 @@ import {
   AccordionTrigger,
 } from "@repo/ui";
 import slugify from "@sindresorhus/slugify";
-import { IconCake } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { ApplicationProcessWidget } from "../../../../../features/services/components/application-process-widget.component";
 import { LegalInformationAccordion } from "../../../../../features/services/components/legal-information-accordion.component";
 import { LexicalContent } from "../../../../../features/services/components/lexical-content.component";
 import { OtherServicesAccordion } from "../../../../../features/services/components/other-services-accordion.component";
 import { ResourcesSupportAccordion } from "../../../../../features/services/components/resources-support-accordion.component";
+import { ServiceApplicationCta } from "../../../../../features/services/components/service-application-cta.component";
 import { ServicePageNavigation } from "../../../../../features/services/components/service-page-navigation.component";
-import { servicesQueryOptions } from "../../../../../features/services/data/services.query";
+import { YourActivitySection } from "../../../../../features/services/components/your-activity-section.component";
+import { serviceQueryOptions } from "../../../../../features/services/data/services.query";
 import { queryClient } from "../../../../../lib/react-query.client";
 
 export const Route = createFileRoute("/app/services/$serviceId/")({
   loader: async ({ params }) => {
-    const services = await queryClient.ensureQueryData(servicesQueryOptions);
-    const service = services.find((s) => s.id === params.serviceId);
-    if (!service) {
-      throw notFound();
+    try {
+      const service = await queryClient.ensureQueryData(
+        serviceQueryOptions(params.serviceId),
+      );
+      return { service };
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        throw notFound();
+      }
+      throw err;
     }
-    return { service };
   },
   staticData: {
     breadcrumbs: (loaderData: unknown) => {
@@ -40,10 +48,10 @@ export const Route = createFileRoute("/app/services/$serviceId/")({
 });
 
 function RouteComponent() {
-  const { data: services = [] } = useQuery(servicesQueryOptions);
   const { service: loaderService } = Route.useLoaderData();
-  const service =
-    services.find((s) => s.id === loaderService.id) ?? loaderService;
+  const { data: service = loaderService } = useQuery(
+    serviceQueryOptions(loaderService.id),
+  );
   const descriptionRef = useRef<HTMLHeadingElement>(null);
   const [isStickyHeaderVisible, setStickyHeaderVisible] = useState(false);
 
@@ -73,59 +81,7 @@ function RouteComponent() {
             </p>
           )}
         </div>
-        {/* {service.application?.applications &&
-          service.application.applications.length === 1 && (
-            <span>
-              <Link
-                to="/app/services/$serviceSlug/apply/$applicationId"
-                className={buttonVariants({
-                  variant: "default",
-                  size: "default",
-                })}
-                params={{
-                  serviceSlug: service.slug,
-                  applicationId: service.application.applications[0].id,
-                }}
-              >
-                <IconPlayerPlay size={16} />
-                Start online application
-              </Link>
-            </span>
-          )} */}
-        {/* {service.application?.applications &&
-          service.application.applications.length > 1 && (
-            <div className="flex items-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger className=" w-full md:w-auto">
-                  <Button className="bg-bcgov-blue hover:bg-bcgov-blue/80 w-full md:w-auto">
-                    <IconPlayerPlay />
-                    Start online application
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-50">
-                  {service.application.applications
-                    .filter((app) => app.blockType === "form")
-                    .map((app) => {
-                      const online = app.online[0];
-                      if (!online) return null;
-                      return (
-                        <DropdownMenuItem key={app.id}>
-                          <Link
-                            to="/app/services/$serviceSlug/apply/$applicationId"
-                            params={{
-                              serviceSlug: service.slug,
-                              applicationId: app.id,
-                            }}
-                          >
-                            {online.label}
-                          </Link>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )} */}
+        <ServiceApplicationCta service={service} />
       </div>
       <ServicePageNavigation
         serviceName={service.name}
@@ -220,101 +176,9 @@ function RouteComponent() {
               </div>
             </div> */}
             {/* Application process */}
-            <div
-              id="application-process"
-              className="scroll-mt-20 flex flex-col gap-4 mb-4"
-            >
-              <h2 className="section-heading">Application process</h2>
-              <div className="flex flex-col gap-4 min-h-48">
-                {/* {!service.application?.description &&
-                  (!service.application?.applications ||
-                    service.application.applications.length === 0) && (
-                    <p className="text-muted-foreground">
-                      No application process information is available.
-                    </p>
-                  )} */}
-
-                {/* {service.application?.description && (
-                  <span>
-                    <LexicalContent content={service.application.description} />
-                  </span>
-                )} */}
-
-                {/* {service.application?.applications &&
-                  service.application.applications.length > 0 && (
-                    <div className="flex flex-col gap-px border bg-border">
-                      <div
-                        className={cn(
-                          "grid gap-px",
-                          service.application.applications.length > 1 &&
-                            "grid-cols-2 md:grid-cols-3",
-                        )}
-                      >
-                        {service.application.applications
-                          .filter((app) => app.online?.[0]?.url)
-                          .map((app) => {
-                            const online = app.online?.[0];
-
-                            if (!online?.url) return null; // satisfies TS/linter
-
-                            return (
-                              <a
-                                key={online.id}
-                                href={online.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex flex-col items-center bg-white p-4 text-center no-underline hover:bg-accent"
-                              >
-                                <span className="p-4 bg-blue-10 inline-flex">
-                                  <IconCake
-                                    size={42}
-                                    stroke={1.5}
-                                    color="#1e5189"
-                                  />
-                                </span>
-
-                                <p className="font-bold py-2">{online.label}</p>
-
-                                {online.description && (
-                                  <p>{online.description}</p>
-                                )}
-                              </a>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )} */}
-              </div>
-            </div>
+            <ApplicationProcessWidget service={service} />
             {/* Your activity */}
-            <div
-              id="your-activity"
-              className="scroll-mt-20 flex flex-col gap-4 mb-4"
-            >
-              <h2 className="section-heading">Your activity</h2>
-              <div className="flex flex-col gap-4 min-h-48">
-                <p>Track your applications and view updates in one place.</p>
-                <div className="flex flex-col gap-px border bg-border">
-                  <div className="grid gap-px">
-                    <div className="flex flex-col items-center bg-white p-4">
-                      <IconCake
-                        className="shrink-0 pb-4"
-                        size={48}
-                        stroke={1.5}
-                        color="#1e5189"
-                      />
-                      <p className="font-bold pb-2">No applications yet</p>
-                      <p className="pb-3">
-                        You have not applied for Income Assistance.
-                      </p>
-                      <p>
-                        <a href="#">Start online application</a>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <YourActivitySection service={service} />
             {/* More information */}
             <div
               id="more-information"

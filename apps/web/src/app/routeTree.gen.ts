@@ -48,6 +48,7 @@ import { Route as AdminServicesServiceIdVersionsVersionIdRouteImport } from './r
 import { Route as AdminSettingsServicesServiceTypesTypeIdRouteRouteImport } from './routes/admin/settings/services/service-types/$typeId/route'
 import { Route as AdminSettingsConsentDocumentTypesTypeIdRouteRouteImport } from './routes/admin/settings/consent/document-types/$typeId/route'
 import { Route as AppServicesServiceIdApplyApplicationIdIndexRouteImport } from './routes/app/services/$serviceId/apply/$applicationId/index'
+import { Route as AppServicesServiceIdApplicationsApplicationIdIndexRouteImport } from './routes/app/services/$serviceId/applications/$applicationId/index'
 import { Route as AdminSettingsServicesServiceTypesTypeIdIndexRouteImport } from './routes/admin/settings/services/service-types/$typeId/index'
 import { Route as AdminSettingsConsentDocumentTypesTypeIdIndexRouteImport } from './routes/admin/settings/consent/document-types/$typeId/index'
 import { Route as AppServicesServiceIdApplyApplicationIdDataAndPrivacyRouteImport } from './routes/app/services/$serviceId/apply/$applicationId/data-and-privacy'
@@ -272,6 +273,12 @@ const AppServicesServiceIdApplyApplicationIdIndexRoute =
     path: '/services/$serviceId/apply/$applicationId/',
     getParentRoute: () => AppRouteRoute,
   } as any)
+const AppServicesServiceIdApplicationsApplicationIdIndexRoute =
+  AppServicesServiceIdApplicationsApplicationIdIndexRouteImport.update({
+    id: '/services/$serviceId/applications/$applicationId/',
+    path: '/services/$serviceId/applications/$applicationId/',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
 const AdminSettingsServicesServiceTypesTypeIdIndexRoute =
   AdminSettingsServicesServiceTypesTypeIdIndexRouteImport.update({
     id: '/',
@@ -351,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/app/services/$serviceId/apply/$applicationId/data-and-privacy': typeof AppServicesServiceIdApplyApplicationIdDataAndPrivacyRoute
   '/admin/settings/consent/document-types/$typeId/': typeof AdminSettingsConsentDocumentTypesTypeIdIndexRoute
   '/admin/settings/services/service-types/$typeId/': typeof AdminSettingsServicesServiceTypesTypeIdIndexRoute
+  '/app/services/$serviceId/applications/$applicationId/': typeof AppServicesServiceIdApplicationsApplicationIdIndexRoute
   '/app/services/$serviceId/apply/$applicationId/': typeof AppServicesServiceIdApplyApplicationIdIndexRoute
   '/admin/settings/consent/document-types/$typeId/versions/$versionId': typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute
   '/admin/settings/services/service-types/$typeId/versions/$versionId': typeof AdminSettingsServicesServiceTypesTypeIdVersionsVersionIdRoute
@@ -383,6 +391,7 @@ export interface FileRoutesByTo {
   '/app/services/$serviceId/apply/$applicationId/data-and-privacy': typeof AppServicesServiceIdApplyApplicationIdDataAndPrivacyRoute
   '/admin/settings/consent/document-types/$typeId': typeof AdminSettingsConsentDocumentTypesTypeIdIndexRoute
   '/admin/settings/services/service-types/$typeId': typeof AdminSettingsServicesServiceTypesTypeIdIndexRoute
+  '/app/services/$serviceId/applications/$applicationId': typeof AppServicesServiceIdApplicationsApplicationIdIndexRoute
   '/app/services/$serviceId/apply/$applicationId': typeof AppServicesServiceIdApplyApplicationIdIndexRoute
   '/admin/settings/consent/document-types/$typeId/versions/$versionId': typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute
   '/admin/settings/services/service-types/$typeId/versions/$versionId': typeof AdminSettingsServicesServiceTypesTypeIdVersionsVersionIdRoute
@@ -431,6 +440,7 @@ export interface FileRoutesById {
   '/app/services/$serviceId/apply/$applicationId/data-and-privacy': typeof AppServicesServiceIdApplyApplicationIdDataAndPrivacyRoute
   '/admin/settings/consent/document-types/$typeId/': typeof AdminSettingsConsentDocumentTypesTypeIdIndexRoute
   '/admin/settings/services/service-types/$typeId/': typeof AdminSettingsServicesServiceTypesTypeIdIndexRoute
+  '/app/services/$serviceId/applications/$applicationId/': typeof AppServicesServiceIdApplicationsApplicationIdIndexRoute
   '/app/services/$serviceId/apply/$applicationId/': typeof AppServicesServiceIdApplyApplicationIdIndexRoute
   '/admin/settings/consent/document-types/$typeId/versions/$versionId': typeof AdminSettingsConsentDocumentTypesTypeIdVersionsVersionIdRoute
   '/admin/settings/services/service-types/$typeId/versions/$versionId': typeof AdminSettingsServicesServiceTypesTypeIdVersionsVersionIdRoute
@@ -479,6 +489,7 @@ export interface FileRouteTypes {
     | '/app/services/$serviceId/apply/$applicationId/data-and-privacy'
     | '/admin/settings/consent/document-types/$typeId/'
     | '/admin/settings/services/service-types/$typeId/'
+    | '/app/services/$serviceId/applications/$applicationId/'
     | '/app/services/$serviceId/apply/$applicationId/'
     | '/admin/settings/consent/document-types/$typeId/versions/$versionId'
     | '/admin/settings/services/service-types/$typeId/versions/$versionId'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/app/services/$serviceId/apply/$applicationId/data-and-privacy'
     | '/admin/settings/consent/document-types/$typeId'
     | '/admin/settings/services/service-types/$typeId'
+    | '/app/services/$serviceId/applications/$applicationId'
     | '/app/services/$serviceId/apply/$applicationId'
     | '/admin/settings/consent/document-types/$typeId/versions/$versionId'
     | '/admin/settings/services/service-types/$typeId/versions/$versionId'
@@ -558,6 +570,7 @@ export interface FileRouteTypes {
     | '/app/services/$serviceId/apply/$applicationId/data-and-privacy'
     | '/admin/settings/consent/document-types/$typeId/'
     | '/admin/settings/services/service-types/$typeId/'
+    | '/app/services/$serviceId/applications/$applicationId/'
     | '/app/services/$serviceId/apply/$applicationId/'
     | '/admin/settings/consent/document-types/$typeId/versions/$versionId'
     | '/admin/settings/services/service-types/$typeId/versions/$versionId'
@@ -843,6 +856,13 @@ declare module '@tanstack/react-router' {
       path: '/services/$serviceId/apply/$applicationId'
       fullPath: '/app/services/$serviceId/apply/$applicationId/'
       preLoaderRoute: typeof AppServicesServiceIdApplyApplicationIdIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/services/$serviceId/applications/$applicationId/': {
+      id: '/app/services/$serviceId/applications/$applicationId/'
+      path: '/services/$serviceId/applications/$applicationId'
+      fullPath: '/app/services/$serviceId/applications/$applicationId/'
+      preLoaderRoute: typeof AppServicesServiceIdApplicationsApplicationIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/admin/settings/services/service-types/$typeId/': {
@@ -1170,6 +1190,7 @@ interface AppRouteRouteChildren {
   AppServicesIndexRoute: typeof AppServicesIndexRoute
   AppServicesServiceIdIndexRoute: typeof AppServicesServiceIdIndexRoute
   AppServicesServiceIdApplyApplicationIdDataAndPrivacyRoute: typeof AppServicesServiceIdApplyApplicationIdDataAndPrivacyRoute
+  AppServicesServiceIdApplicationsApplicationIdIndexRoute: typeof AppServicesServiceIdApplicationsApplicationIdIndexRoute
   AppServicesServiceIdApplyApplicationIdIndexRoute: typeof AppServicesServiceIdApplyApplicationIdIndexRoute
 }
 
@@ -1180,6 +1201,8 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppServicesServiceIdIndexRoute: AppServicesServiceIdIndexRoute,
   AppServicesServiceIdApplyApplicationIdDataAndPrivacyRoute:
     AppServicesServiceIdApplyApplicationIdDataAndPrivacyRoute,
+  AppServicesServiceIdApplicationsApplicationIdIndexRoute:
+    AppServicesServiceIdApplicationsApplicationIdIndexRoute,
   AppServicesServiceIdApplyApplicationIdIndexRoute:
     AppServicesServiceIdApplyApplicationIdIndexRoute,
 }

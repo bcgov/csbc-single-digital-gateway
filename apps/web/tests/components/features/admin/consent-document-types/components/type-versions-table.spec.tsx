@@ -28,9 +28,11 @@ type ConsentDocumentTypeVersionSummary = {
   name: string | null;
   description: string | null;
   version: number;
-  status: string;
+  status: "draft" | "published" | "archived";
   createdAt: string;
+  updatedAt: string;
   publishedAt: string | null;
+  archivedAt: string | null;
 };
 
 const makeVersion = (overrides: Partial<ConsentDocumentTypeVersionSummary> = {}): ConsentDocumentTypeVersionSummary => ({
@@ -40,7 +42,9 @@ const makeVersion = (overrides: Partial<ConsentDocumentTypeVersionSummary> = {})
   version: 1,
   status: "draft",
   createdAt: "2024-07-10T14:00:00.000Z",
+  updatedAt: "2024-07-10T14:00:00.000Z",
   publishedAt: null,
+  archivedAt: null,
   ...overrides,
 });
 

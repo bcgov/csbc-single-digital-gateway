@@ -25,22 +25,28 @@ import { ServiceVersionsTable } from "src/features/admin/services/components/ser
 
 type ServiceVersionSummary = {
   id: string;
+  serviceTypeVersionId: string;
   name: string | null;
   description: string | null;
   version: number;
-  status: string;
+  status: "draft" | "published" | "archived";
   createdAt: string;
+  updatedAt: string;
   publishedAt: string | null;
+  archivedAt: string | null;
 };
 
 const makeVersion = (overrides: Partial<ServiceVersionSummary> = {}): ServiceVersionSummary => ({
   id: "ver1aaaa-1111-2222-3333-bbbbccccdddd",
+  serviceTypeVersionId: "stypev11-1111-1111-1111-111111111111",
   name: "Initial Release",
   description: "First version of the service",
   version: 1,
   status: "draft",
   createdAt: "2024-08-01T10:00:00.000Z",
+  updatedAt: "2024-08-01T10:00:00.000Z",
   publishedAt: null,
+  archivedAt: null,
   ...overrides,
 });
 

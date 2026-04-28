@@ -166,6 +166,15 @@ jest.mock(
   }),
 );
 
+jest.mock(
+  "src/features/services/components/your-activity-section.component",
+  () => ({
+    YourActivitySection: ({ serviceId }: { serviceId: string }) => (
+      <div data-testid="your-activity-section" data-service-id={serviceId} />
+    ),
+  }),
+);
+
 jest.mock("src/features/services/data/services.query", () => ({
   servicesQueryOptions: { queryKey: ["services"] },
 }));
@@ -322,15 +331,16 @@ describe("ServiceId Index Route Test", () => {
       expect(nav).toHaveAttribute("data-visible", "false");
     });
 
-    it("Should render always-visible section headings", () => {
+    it("Should render always-visible section headings and the Your activity section", () => {
       render(<RouteComponent />);
 
       expect(
         screen.getByRole("heading", { name: "Application process" }),
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole("heading", { name: "Your activity" }),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("your-activity-section")).toHaveAttribute(
+        "data-service-id",
+        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      );
       expect(
         screen.getByRole("heading", { name: "More information" }),
       ).toBeInTheDocument();

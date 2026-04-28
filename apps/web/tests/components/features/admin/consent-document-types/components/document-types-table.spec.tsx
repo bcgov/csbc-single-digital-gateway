@@ -45,6 +45,7 @@ type ConsentDocumentTypeListItem = {
   publishedConsentDocumentTypeVersionId: string | null;
   updatesPending: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 const makeDocumentType = (overrides: Partial<ConsentDocumentTypeListItem> = {}): ConsentDocumentTypeListItem => ({
@@ -54,6 +55,7 @@ const makeDocumentType = (overrides: Partial<ConsentDocumentTypeListItem> = {}):
   publishedConsentDocumentTypeVersionId: null,
   updatesPending: false,
   createdAt: "2024-07-01T09:00:00.000Z",
+  updatedAt: "2024-07-01T09:00:00.000Z",
   ...overrides,
 });
 
