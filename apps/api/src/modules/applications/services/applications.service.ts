@@ -3,10 +3,12 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { type Database, and, desc, eq, inArray, schema, sql } from '@repo/db';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
 import { ServiceContentSchema } from 'src/modules/services/dtos/public-service.dto';
+import type { UserProfile } from 'src/modules/auth/services/auth.service';
 import { WorkflowTriggerService } from './workflow-trigger.service';
 
 const FALLBACK_LOCALE = 'en';
@@ -271,6 +273,91 @@ export class ApplicationsService {
       .limit(1);
 
     return this.enrichApplication(row, translations[0]);
+  }
+
+  async getActorReadContext(args: {
+    userId: string;
+    userProfile: UserProfile;
+    applicationId: string;
+  }): Promise<{
+    actorId: string;
+    executionId: string;
+    workflowConfig: { apiKey: string; tenantId: string };
+  }> {
+    const { userId, userProfile, applicationId } = args;
+
+    if (!userProfile?.sub) {
+      throw new UnprocessableEntityException(
+        'User session is missing the OIDC sub required to derive an actorId',
+      );
+    }
+
+    const enriched = await this.findOneForUser({ userId, applicationId });
+
+    if (enriched.serviceApplicationType !== 'workflow') {
+      throw new NotFoundException(`Application ${applicationId} not found`);
+    }
+
+    const executionId = (enriched.metadata as { executionId?: unknown })
+      ?.executionId;
+    if (typeof executionId !== 'string' || executionId.length === 0) {
+      throw new NotFoundException(`Application ${applicationId} not found`);
+    }
+
+    const workflowConfig = await this.resolveWorkflowConfig(enriched);
+
+    return {
+      actorId: userProfile.sub.split('@')[0],
+      executionId,
+      workflowConfig,
+    };
+  }
+
+  private async resolveWorkflowConfig(
+    enriched: EnrichedApplication,
+  ): Promise<{ apiKey: string; tenantId: string }> {
+    const translations = await this.db
+      .select({
+        content: schema.serviceVersionTranslations.content,
+      })
+      .from(schema.serviceVersionTranslations)
+      .where(
+        eq(
+          schema.serviceVersionTranslations.id,
+          enriched.serviceVersionTranslationId,
+        ),
+      )
+      .limit(1);
+
+    if (translations.length === 0) {
+      this.logger.warn(
+        `Translation ${enriched.serviceVersionTranslationId} missing for application ${enriched.id}; cannot resolve workflow config`,
+      );
+      throw new NotFoundException(`Application ${enriched.id} not found`);
+    }
+
+    const parsed = ServiceContentSchema.safeParse(translations[0].content);
+    if (!parsed.success) {
+      this.logger.warn(
+        `Failed to parse content for application ${enriched.id}; cannot resolve workflow config`,
+      );
+      throw new NotFoundException(`Application ${enriched.id} not found`);
+    }
+
+    const app = parsed.data.applications.find(
+      (a) => a.id === enriched.serviceApplicationId,
+    );
+    if (!app || app.type !== 'workflow') {
+      this.logger.warn(
+        `ServiceApplicationDto ${enriched.serviceApplicationId} not workflow type or missing for application ${enriched.id}`,
+      );
+      throw new NotFoundException(`Application ${enriched.id} not found`);
+    }
+
+    return {
+      apiKey: app.config.apiKey,
+      tenantId: app.config.tenantId,
+    };
   }
 
   private enrichApplication(

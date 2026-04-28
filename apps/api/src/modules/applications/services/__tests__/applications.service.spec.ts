@@ -2,7 +2,9 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
+import type { UserProfile } from 'src/modules/auth/services/auth.service';
 
 jest.mock('@repo/db', () => {
   const actual = jest.requireActual('@repo/db');
@@ -1089,6 +1091,224 @@ describe('ApplicationsService', () => {
       });
 
       expect(mocks.limitNode).toHaveBeenCalledWith(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getActorReadContext  (doc 09)
+  // ---------------------------------------------------------------------------
+  describe('getActorReadContext (doc 09)', () => {
+    const APPLICATION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+    const PROFILE: UserProfile = {
+      sub: 'xzhs52istyggbt6q2jinalncwmirlhg6@bcsc',
+      name: 'Jane Doe',
+    };
+
+    const baseRow = (overrides: Record<string, unknown> = {}) => ({
+      id: APPLICATION_ID,
+      serviceId: SERVICE_ID,
+      serviceVersionId: VERSION_ID,
+      serviceVersionTranslationId: TRANSLATION_ID_EN,
+      serviceApplicationId: APP_ID_WORKFLOW,
+      serviceApplicationType: 'workflow',
+      userId: USER_ID,
+      delegateUserId: null,
+      metadata: { workflowId: 'wf-test-123', executionId: '197' },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    });
+
+    const enqueueWorkflowApp = (
+      mocks: ReturnType<typeof createDbMock>,
+      opts: {
+        rowOverrides?: Record<string, unknown>;
+        translation?: { id: string; name: string; content: unknown } | null;
+        configContent?: { content: unknown } | null;
+      } = {},
+    ) => {
+      // findOneForUser: select applications row
+      mocks.enqueueSelect([baseRow(opts.rowOverrides)]);
+      // findOneForUser: select translation row
+      const translation =
+        opts.translation === undefined
+          ? {
+              id: TRANSLATION_ID_EN,
+              name: 'Some Title',
+              content: baseContent(),
+            }
+          : opts.translation;
+      mocks.enqueueSelect(translation === null ? [] : [translation]);
+      // resolveWorkflowConfig: select translation content
+      if (opts.configContent !== undefined) {
+        mocks.enqueueSelect(
+          opts.configContent === null ? [] : [opts.configContent],
+        );
+      } else {
+        mocks.enqueueSelect([{ content: baseContent() }]);
+      }
+    };
+
+    it('returns { actorId, executionId, workflowConfig } on the happy path', async () => {
+      const { service, mocks } = buildService();
+      enqueueWorkflowApp(mocks);
+
+      const result = await service.getActorReadContext({
+        userId: USER_ID,
+        userProfile: PROFILE,
+        applicationId: APPLICATION_ID,
+      });
+
+      expect(result.actorId).toBe('xzhs52istyggbt6q2jinalncwmirlhg6');
+      expect(result.executionId).toBe('197');
+      expect(result.workflowConfig).toEqual({
+        apiKey: 'api-key-xyz',
+        tenantId: TENANT_ID,
+      });
+    });
+
+    it('derives actorId by stripping the suffix at the first @ in userProfile.sub', async () => {
+      const { service, mocks } = buildService();
+      enqueueWorkflowApp(mocks);
+
+      const result = await service.getActorReadContext({
+        userId: USER_ID,
+        userProfile: { sub: 'abc123@bcsc' },
+        applicationId: APPLICATION_ID,
+      });
+
+      expect(result.actorId).toBe('abc123');
+    });
+
+    it('returns the workflow app config (apiKey, tenantId) from the matched ServiceApplicationDto.config', async () => {
+      const { service, mocks } = buildService();
+      enqueueWorkflowApp(mocks);
+
+      const result = await service.getActorReadContext({
+        userId: USER_ID,
+        userProfile: PROFILE,
+        applicationId: APPLICATION_ID,
+      });
+
+      expect(result.workflowConfig.apiKey).toBe('api-key-xyz');
+      expect(result.workflowConfig.tenantId).toBe(TENANT_ID);
+    });
+
+    it('throws NotFoundException when the application is not found / owned by a different user', async () => {
+      const { service, mocks } = buildService();
+      mocks.enqueueSelect([]); // findOneForUser → no rows
+
+      await expect(
+        service.getActorReadContext({
+          userId: USER_ID,
+          userProfile: PROFILE,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws NotFoundException when serviceApplicationType !== "workflow"', async () => {
+      const { service, mocks } = buildService();
+      // findOneForUser: external-typed row
+      mocks.enqueueSelect([
+        baseRow({
+          serviceApplicationType: 'external',
+          serviceApplicationId: APP_ID_EXTERNAL,
+          metadata: {},
+        }),
+      ]);
+      // findOneForUser: translation row
+      mocks.enqueueSelect([
+        { id: TRANSLATION_ID_EN, name: 'Some Title', content: baseContent() },
+      ]);
+
+      await expect(
+        service.getActorReadContext({
+          userId: USER_ID,
+          userProfile: PROFILE,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws NotFoundException when metadata.executionId is missing', async () => {
+      const { service, mocks } = buildService();
+      enqueueWorkflowApp(mocks, {
+        rowOverrides: { metadata: { workflowId: 'wf-test-123' } },
+      });
+
+      await expect(
+        service.getActorReadContext({
+          userId: USER_ID,
+          userProfile: PROFILE,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws NotFoundException when metadata.executionId is an empty string', async () => {
+      const { service, mocks } = buildService();
+      enqueueWorkflowApp(mocks, {
+        rowOverrides: { metadata: { executionId: '' } },
+      });
+
+      await expect(
+        service.getActorReadContext({
+          userId: USER_ID,
+          userProfile: PROFILE,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws UnprocessableEntityException when userProfile.sub is missing', async () => {
+      const { service } = buildService();
+
+      await expect(
+        service.getActorReadContext({
+          userId: USER_ID,
+          userProfile: { sub: '' },
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    it('throws UnprocessableEntityException when userProfile is missing entirely', async () => {
+      const { service } = buildService();
+
+      await expect(
+        service.getActorReadContext({
+          userId: USER_ID,
+          userProfile: undefined as unknown as UserProfile,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    it('throws NotFoundException when resolveWorkflowConfig cannot find the matching ServiceApplicationDto', async () => {
+      const { service, mocks } = buildService();
+      // findOneForUser: workflow row (passes type/exec check)
+      mocks.enqueueSelect([baseRow()]);
+      // findOneForUser: translation
+      mocks.enqueueSelect([
+        { id: TRANSLATION_ID_EN, name: 'T', content: baseContent() },
+      ]);
+      // resolveWorkflowConfig: content with no matching app id
+      mocks.enqueueSelect([
+        {
+          content: baseContent([
+            { ...EXTERNAL_APP, id: 'other-id-not-matching' },
+          ]),
+        },
+      ]);
+
+      await expect(
+        service.getActorReadContext({
+          userId: USER_ID,
+          userProfile: PROFILE,
+          applicationId: APPLICATION_ID,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Header,
   Param,
   Query,
   Req,
@@ -15,13 +16,17 @@ import {
   ListApplicationsQueryDto,
 } from '../dtos/application.dto';
 import { ApplicationsService } from '../services/applications.service';
+import { WorkflowActorClientService } from '../services/workflow-actor-client.service';
 
 @Controller({
   path: 'me/applications',
   version: '1',
 })
 export class MyApplicationsV1Controller {
-  constructor(private readonly applicationsService: ApplicationsService) {}
+  constructor(
+    private readonly applicationsService: ApplicationsService,
+    private readonly workflowActorClient: WorkflowActorClientService,
+  ) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -57,6 +62,43 @@ export class MyApplicationsV1Controller {
     return this.applicationsService.findOneForUser({
       userId,
       applicationId: params.applicationId,
+    });
+  }
+
+  @Get(':applicationId/actions')
+  @UseGuards(RolesGuard)
+  @BcscRoles('citizen')
+  @Header('Cache-Control', 'no-store')
+  async getActions(
+    @Param() params: ApplicationIdParamDto,
+    @Req() req: Request,
+  ) {
+    const ctx = await this.resolveActorContext(req, params.applicationId);
+    return this.workflowActorClient.fetchActions(ctx);
+  }
+
+  @Get(':applicationId/messages')
+  @UseGuards(RolesGuard)
+  @BcscRoles('citizen')
+  @Header('Cache-Control', 'no-store')
+  async getMessages(
+    @Param() params: ApplicationIdParamDto,
+    @Req() req: Request,
+  ) {
+    const ctx = await this.resolveActorContext(req, params.applicationId);
+    return this.workflowActorClient.fetchMessages(ctx);
+  }
+
+  private async resolveActorContext(req: Request, applicationId: string) {
+    const userId = req.session?.bcsc?.userId;
+    const userProfile = req.session?.bcsc?.userProfile;
+    if (!userId || !userProfile) {
+      throw new UnauthorizedException('Active BCSC session required');
+    }
+    return this.applicationsService.getActorReadContext({
+      userId,
+      userProfile,
+      applicationId,
     });
   }
 }
