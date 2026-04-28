@@ -35,7 +35,7 @@ export function ApplicationProcessEntry({
       <header className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">{applicationLabel}</p>
         <h3 className="text-lg font-semibold">
-          {/* {isPending ? "Loading…" : data.name} */}
+          {isPending ? "Loading…" : data.name}
         </h3>
       </header>
       {isPending ? (

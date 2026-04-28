@@ -62,16 +62,14 @@ jest.mock(
 );
 
 jest.mock("src/features/services/data/services.query", () => ({
-  servicesQueryOptions: { queryKey: ["services"] },
+  serviceQueryOptions: jest.fn((id: string) => ({
+    queryKey: ["services", id],
+  })),
 }));
 
 // ─── Route import (after mocks) ───────────────────────────────────────────────
 
 import { Route } from "src/app/routes/app/services/$serviceId/apply/$applicationId/index";
-
-const { servicesQueryOptions: mockServicesQueryOptions } = jest.requireMock(
-  "src/features/services/data/services.query",
-) as { servicesQueryOptions: { queryKey: string[] } };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -110,7 +108,7 @@ const buildService = (overrides?: Partial<Service>): Service =>
 describe("ApplicationId Index Route (apply loader) Test", () => {
   beforeEach(() => {
     mockUseNavigate.mockReturnValue(mockNavigate);
-    mockUseQuery.mockReturnValue({ data: [] });
+    mockUseQuery.mockReturnValue({ data: undefined });
     mockRouteUseLoaderData.mockReturnValue({
       service: buildService(),
       application: buildApplication(),
@@ -159,21 +157,24 @@ describe("ApplicationId Index Route (apply loader) Test", () => {
   describe("loader", () => {
     it("Should return service and application", async () => {
       const service = buildService();
-      mockedEnsureQueryData.mockResolvedValueOnce([service]);
+      mockedEnsureQueryData.mockResolvedValueOnce(service);
 
       const result = await typedRoute.options.loader({ params });
 
-      expect(mockedEnsureQueryData).toHaveBeenCalledWith(
-        mockServicesQueryOptions,
-      );
+      expect(mockedEnsureQueryData).toHaveBeenCalledWith({
+        queryKey: ["services", SERVICE_ID],
+      });
       expect(result).toEqual({
         service,
         application: buildApplication(),
       });
     });
 
-    it("Should throw notFound when service does not exist", async () => {
-      mockedEnsureQueryData.mockResolvedValueOnce([]);
+    it("Should throw notFound when the service request returns 404", async () => {
+      mockedEnsureQueryData.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: { status: 404 },
+      });
 
       await expect(typedRoute.options.loader({ params })).rejects.toEqual({
         type: "not-found",
@@ -183,9 +184,9 @@ describe("ApplicationId Index Route (apply loader) Test", () => {
     });
 
     it("Should throw notFound when application does not exist on service", async () => {
-      mockedEnsureQueryData.mockResolvedValueOnce([
+      mockedEnsureQueryData.mockResolvedValueOnce(
         buildService({ content: { applications: [{ id: "other-app" }] } }),
-      ]);
+      );
 
       await expect(typedRoute.options.loader({ params })).rejects.toEqual({
         type: "not-found",
