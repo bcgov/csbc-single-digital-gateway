@@ -1,0 +1,399 @@
+[
+  {
+    "id": "ff0068ed-4915-4e59-b419-d82739e2b735",
+    "serviceTypeVersionId": "432e863b-dc11-4520-9e81-e5c53b476863",
+    "locale": "en",
+    "name": "Default Service",
+    "description": "The default Single Digital Gateway service type.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "faq": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "question",
+              "answer"
+            ],
+            "properties": {
+              "answer": {
+                "type": "string"
+              },
+              "question": {
+                "type": "string"
+              }
+            }
+          },
+          "default": []
+        },
+        "about": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "outcomes": {
+          "type": "string"
+        },
+        "applications": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "title": "External",
+                "required": [
+                  "type",
+                  "label",
+                  "url"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "external"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "title": "Workflow",
+                "required": [
+                  "type",
+                  "label",
+                  "config"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "workflow"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object",
+                    "required": [
+                      "apiKey",
+                      "tenantId",
+                      "triggerEndpoint",
+                      "workflowId"
+                    ],
+                    "properties": {
+                      "apiKey": {
+                        "type": "string"
+                      },
+                      "tenantId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "workflowId": {
+                        "type": "string"
+                      },
+                      "triggerEndpoint": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "considerations": {
+          "type": "string"
+        },
+        "contactMethods": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "title": "Address",
+                "required": [
+                  "label",
+                  "type",
+                  "addressOne",
+                  "city",
+                  "province",
+                  "postalCode",
+                  "country"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "address"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "province": {
+                    "type": "string"
+                  },
+                  "addressOne": {
+                    "type": "string"
+                  },
+                  "addressTwo": {
+                    "type": "string"
+                  },
+                  "postalCode": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "title": "Email",
+                "required": [
+                  "label",
+                  "type",
+                  "value"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "value"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "title": "Phone",
+                "required": [
+                  "label",
+                  "type",
+                  "value"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "phone"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "title": "Fax",
+                "required": [
+                  "label",
+                  "type",
+                  "value"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "fax"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "title": "Website",
+                "required": [
+                  "label",
+                  "type",
+                  "url"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "link"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "uiSchema": {
+      "type": "VerticalLayout",
+      "elements": [
+        {
+          "type": "Categorization",
+          "elements": [
+            {
+              "type": "Category",
+              "label": "Details",
+              "elements": [
+                {
+                  "type": "Control",
+                  "label": "About",
+                  "scope": "#/properties/about",
+                  "options": {
+                    "format": "richtext"
+                  }
+                },
+                {
+                  "type": "Control",
+                  "label": "Who is it for",
+                  "scope": "#/properties/audience",
+                  "options": {
+                    "format": "richtext"
+                  }
+                },
+                {
+                  "type": "Control",
+                  "label": "What you'll get",
+                  "scope": "#/properties/outcomes",
+                  "options": {
+                    "format": "richtext"
+                  }
+                },
+                {
+                  "type": "Control",
+                  "label": "What to consider",
+                  "scope": "#/properties/considerations",
+                  "options": {
+                    "format": "richtext"
+                  }
+                },
+                {
+                  "type": "Control",
+                  "label": "Applications",
+                  "scope": "#/properties/applications",
+                  "options": {}
+                }
+              ]
+            },
+            {
+              "type": "Category",
+              "label": "Contact Methods",
+              "elements": [
+                {
+                  "type": "Control",
+                  "label": "Contact Methods",
+                  "scope": "#/properties/contactMethods",
+                  "options": {}
+                }
+              ]
+            },
+            {
+              "type": "Category",
+              "label": "Resources",
+              "elements": [
+                {
+                  "type": "Control",
+                  "label": "Frequently Asked Questions",
+                  "scope": "#/properties/faq",
+                  "options": {
+                    "detail": {
+                      "type": "VerticalLayout",
+                      "elements": [
+                        {
+                          "type": "Control",
+                          "label": "Question",
+                          "scope": "#/properties/question"
+                        },
+                        {
+                          "type": "Control",
+                          "label": "Answer",
+                          "scope": "#/properties/answer",
+                          "options": {
+                            "format": "richtext"
+                          }
+                        }
+                      ]
+                    },
+                    "format": "accordion",
+                    "accordionTriggerScope": "#/properties/question"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdAt": "2026-04-28T17:28:02.826Z",
+    "updatedAt": "2026-04-28T17:28:02.826Z"
+  }
+]

@@ -47,7 +47,7 @@ interface N8nWorkflowBody {
 
 const TIMEOUT_MS = 10_000;
 const REQUEST_FORM_PREFIX = 'Request Form ';
-const SUBMIT_FORM_PREFIX = 'Submit Form ';
+const SUBMIT_FORM_PREFIX = 'State:';
 
 @Injectable()
 export class WorkflowProcessService {
@@ -61,7 +61,7 @@ export class WorkflowProcessService {
   async fetch(
     config: WorkflowProcessFetchConfig,
   ): Promise<WorkflowProcessFetchResult> {
-    const baseUrl = this.configService.get('WORKFLOW_API_URL') ?? '';
+    const baseUrl = this.configService.get<string>('WORKFLOW_API_URL') ?? '';
     const url = `${baseUrl.replace(/\/$/, '')}/api/v1/workflows/${encodeURIComponent(config.workflowId)}`;
 
     let response;
@@ -128,7 +128,11 @@ export class WorkflowProcessService {
     const nodesById = new Map<string, N8nNode>();
     const nodesByName = new Map<string, N8nNode>();
     for (const node of body.nodes) {
-      if (!node || typeof node.id !== 'string' || typeof node.name !== 'string') {
+      if (
+        !node ||
+        typeof node.id !== 'string' ||
+        typeof node.name !== 'string'
+      ) {
         continue;
       }
       nodesById.set(node.id, node);
@@ -139,7 +143,9 @@ export class WorkflowProcessService {
       (n) => n && n.disabled !== true && this.isTriggerType(n.type),
     );
     if (!trigger) {
-      this.logger.warn('Workflow fetch response has no detectable trigger node');
+      this.logger.warn(
+        'Workflow fetch response has no detectable trigger node',
+      );
       throw new BadGatewayException('Workflow fetch failed');
     }
 
@@ -156,7 +162,11 @@ export class WorkflowProcessService {
         steps.push(this.toStep(current));
       }
 
-      const next = this.resolveSuccessors(current, body.connections, nodesByName);
+      const next = this.resolveSuccessors(
+        current,
+        body.connections,
+        nodesByName,
+      );
       for (const node of next) {
         if (!visited.has(node.id)) {
           queue.push(node);

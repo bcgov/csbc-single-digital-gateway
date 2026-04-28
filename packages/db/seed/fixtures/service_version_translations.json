@@ -1,0 +1,91 @@
+[
+  {
+    "id": "e8552e3a-4fd3-47af-8ab3-d8981625cc52",
+    "serviceVersionId": "19e0be66-2c68-49c2-8be8-4728275ad55d",
+    "locale": "en",
+    "name": "Person with Disabilities (PWD) Designation",
+    "description": "The Persons with Disabilities (PWD) Designation",
+    "content": {
+      "faq": [
+        {
+          "id": "263ff80b-e6ab-4d31-8c98-b43694d7a31f",
+          "answer": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"British Columbia has one of the world’s only inland temperate rainforests — the Great Bear Rainforest — where rare white “spirit bears” (Kermode bears) live, a subspecies of black bear with creamy-white fur found almost nowhere else on Earth.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+          "question": "What can I do wit SDG right now"
+        },
+        {
+          "id": "3ab7a6c2-30b9-4936-b14c-62761ad50900",
+          "answer": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"British Columbia has one of the world’s only inland temperate rainforests — the Great Bear Rainforest — where rare white “spirit bears” (Kermode bears) live, a subspecies of black bear with creamy-white fur found almost nowhere else on Earth.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+          "question": "Which services and applications are connected to my account?"
+        },
+        {
+          "id": "a8eab125-ea93-4b05-bd46-c6446963be6a",
+          "answer": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"British Columbia has one of the world’s only inland temperate rainforests — the Great Bear Rainforest — where rare white “spirit bears” (Kermode bears) live, a subspecies of black bear with creamy-white fur found almost nowhere else on Earth.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+          "question": "How is my information used and shared across services?"
+        },
+        {
+          "id": "335cfda7-9605-42a6-b0c0-2d5cd16e5cc2",
+          "answer": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"British Columbia has one of the world’s only inland temperate rainforests — the Great Bear Rainforest — where rare white “spirit bears” (Kermode bears) live, a subspecies of black bear with creamy-white fur found almost nowhere else on Earth.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+          "question": "Can someone else access my SDG account?"
+        },
+        {
+          "id": "5756c7c1-8989-45eb-9e84-3b0c07a5f67a",
+          "answer": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"British Columbia has one of the world’s only inland temperate rainforests — the Great Bear Rainforest — where rare white “spirit bears” (Kermode bears) live, a subspecies of black bear with creamy-white fur found almost nowhere else on Earth.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+          "question": "How do I track the status of my appliations and activity?"
+        },
+        {
+          "id": "7b275b49-3104-4946-8764-f395cc443728",
+          "answer": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"British Columbia has one of the world’s only inland temperate rainforests — the Great Bear Rainforest — where rare white “spirit bears” (Kermode bears) live, a subspecies of black bear with creamy-white fur found almost nowhere else on Earth.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+          "question": "What should I do if something doesn't look right or feels wrong?"
+        },
+        {
+          "id": "96938626-4cf1-4b80-8b72-f1474c688ab8",
+          "answer": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"British Columbia has one of the world’s only inland temperate rainforests — the Great Bear Rainforest — where rare white “spirit bears” (Kermode bears) live, a subspecies of black bear with creamy-white fur found almost nowhere else on Earth.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+          "question": "How can I update my information on the profie page?"
+        }
+      ],
+      "about": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"The Persons with Disabilities (PWD) designation application (HR2883) is used to collect information pertaining to the applicant’s disability that will allow the ministry to make evidence-based decisions consistent with legislation. The \",\"type\":\"text\",\"version\":1},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"PWD designation application (HR2883)\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"link\",\"version\":1,\"rel\":null,\"target\":null,\"title\":null,\"url\":\"https://www2.gov.bc.ca/gov/content/governments/policies-for-government/bcea-policy-and-procedure-manual/master-lists/additional-resources-master-list#2883_app\"},{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\" has three-parts: \",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"},{\"children\":[{\"children\":[{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Section 1 is client information to be completed by the applicant\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":1,\"type\":\"listitem\",\"version\":1,\"value\":1},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Section 2 is a medical report to be completed by either a medical practitioner or nurse practitioner\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":1,\"type\":\"listitem\",\"version\":1,\"value\":2},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Section 3 is an assessor report to be completed by a medical practitioner, nurse practitioner or other prescribed professional\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":1,\"type\":\"listitem\",\"version\":1,\"value\":3}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"list\",\"version\":1,\"listType\":\"bullet\",\"start\":1,\"tag\":\"ul\"}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"listitem\",\"version\":1,\"value\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"list\",\"version\":1,\"listType\":\"bullet\",\"start\":1,\"tag\":\"ul\"},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"A PWD designation application (HR2883) is provided only to new applicants or recipients of income assistance who intend to apply for disability assistance. \",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+      "audience": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Determine if the applicant or recipient of income assistance intends to apply for disability assistance. A PWD designation application (HR2883) should not be provided where it is established that the individual has no intention to apply for disability assistance.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"A PWD designation application (HR2883) should only be provided where the client is financially eligible (meets the income and asset test) or is likely to be financially eligible within six months, including eligible clients who are in the process of transferring assets into a trust or registered disability savings plan (RDSP). (Six months is the approximate combined length of time it takes for an individual to complete the PWD Application Form and the ministry to adjudicate the application.) For further information, review \",\"type\":\"text\",\"version\":1},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"eligibility and trusts\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"link\",\"version\":1,\"rel\":null,\"target\":null,\"title\":null,\"url\":\"https://www2.gov.bc.ca/gov/content/governments/policies-for-government/bcea-policy-and-procedure-manual/eligibility/trusts#eligibilityandtrusts\"},{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\".\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Examples of where ministry staff may determine a situation for a client may change within six months include, but are not limited to: \",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"},{\"children\":[{\"children\":[{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Individuals on EI or EI medical, whose benefits will expire within that time period\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":1,\"type\":\"listitem\",\"version\":1,\"value\":1},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Individuals whose employment is seasonal or intermittent\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":1,\"type\":\"listitem\",\"version\":1,\"value\":2}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"list\",\"version\":1,\"listType\":\"bullet\",\"start\":1,\"tag\":\"ul\"}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"listitem\",\"version\":1,\"value\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"list\",\"version\":1,\"listType\":\"bullet\",\"start\":1,\"tag\":\"ul\"},{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Providing a PWD designation application within six months will allow for a streamlined transition for these individuals.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"start\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+      "outcomes": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"If the applicant is not currently receiving income assistance, ministry staff must ensure the applicant has first completed the intake process, signed the HR0080 and has an open Employment and Assistance (EA) case (whether in pay or not) in order for the PWD application to be adjudicated by Health Assistance (HA). If the client is currently receiving income assistance, no additional financial assessment is required. If the EA case is open and cheque production is off, HA will return the service request (SR) to ministry staff unless there is an explanation as to why the client has applied for PWD and is not eligible for assistance.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":0,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+      "applications": [
+        {
+          "id": "835a26f7-7934-412c-8327-46435a0fa424",
+          "type": "workflow",
+          "label": "Apply Online",
+          "config": {
+            "apiKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTg5YTRkMi0zMDMzLTRhZmUtYjc4Ny1lYmEzM2U4MjFiMTUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiY2YyYjcxODYtNTdhOS00NzdkLWJhOTItOWZiMTM5NjQ4ZTA5IiwiaWF0IjoxNzc2MTE2NjIxfQ.x8SCn1AoCD8X_gfwH8bJ9XjWUUPEFj3O-lVhEF9UH7w",
+            "tenantId": "f7eeb720-380a-48d9-859f-98aaac91f88a",
+            "workflowId": "kImTywz4mGvrcCgJ",
+            "triggerEndpoint": "webhook/a62e6e86-b7ce-43cb-bd83-0aec462d03c5"
+          },
+          "description": "Apply for the Persons with Disabilities (PWD) designation"
+        }
+      ],
+      "considerations": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":1,\"mode\":\"normal\",\"style\":\"\",\"text\":\"When a client is denied the PWD designation, or if a client's designation is rescinded, \",\"type\":\"text\",\"version\":1},{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"HA will send a decision letter and decision summary to the client to advise the client of the reasons for the denial and the right to reconsideration.\",\"type\":\"text\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1,\"textFormat\":1,\"textStyle\":\"\"}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+      "contactMethods": [
+        {
+          "id": "d9dc1437-1de1-48f4-b676-28a7afa8da0f",
+          "url": "https://gov.bc.ca",
+          "type": "link",
+          "label": "Help Centre",
+          "description": "Help and Support Resources"
+        },
+        {
+          "id": "744a86e6-e5b2-4d56-8f82-d11a0e9e5105",
+          "type": "phone",
+          "label": "Call Us",
+          "value": "+12505551234",
+          "description": "Toll Free: +12505551234"
+        },
+        {
+          "id": "c0179b18-a7f6-420e-8345-9d957e7da653",
+          "type": "value",
+          "label": "Report fraud",
+          "value": "reportfraud@gov.bc.ca",
+          "description": "reportfraud@gov.bc.ca"
+        }
+      ]
+    },
+    "createdAt": "2026-04-28T17:43:05.067Z",
+    "updatedAt": "2026-04-28T17:43:05.067Z"
+  }
+]
