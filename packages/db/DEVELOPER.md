@@ -20,6 +20,9 @@ npm install
 | `npm run db:push` | Push schema changes directly (no migration file) |
 | `npm run db:studio` | Open Drizzle Studio GUI |
 | `npm run db:generate-docs` | Regenerate [`SCHEMA.md`](./SCHEMA.md) from schema source files |
+| `npm run db:seed:export` | Export catalogue + org-unit rows from a live DB into `seed/fixtures/*.json` |
+| `npm run db:seed` | Import the committed fixtures into a target DB (requires `ALLOW_DB_SEED=true`) |
+| `npm run test:unit` | Run vitest unit tests (`scripts/__tests__/**/*.test.ts`) |
 
 All `db:*` scripts require database env vars to be set (see below).
 
@@ -62,6 +65,49 @@ export const users = pgTable("users", {
   name: text(),
 });
 ```
+
+## Seeding
+
+The seed system populates a fresh database with the curated **service catalogue** and **org units** from an existing environment, so developer machines and dev/test deployments have realistic data without hand-crafting fixtures.
+
+User-owned tables (`service_contributors`, `org_unit_members`) are deliberately excluded — they hold `userId` foreign keys that won't resolve until users are seeded by a separate flow.
+
+### Tables in scope
+
+`org_units`, `org_unit_relations`, `service_types`, `service_type_versions`, `service_type_version_translations`, `services`, `service_versions`, `service_version_translations`.
+
+### Workflow
+
+1. **Export** (point env at the source DB — typically `dev`):
+
+   ```sh
+   DB_HOST=… DB_NAME=… npm run db:seed:export
+   ```
+
+   Reads each in-scope table sorted by `createdAt ASC` and writes one JSON file per table to `seed/fixtures/`. Re-running with unchanged data produces a byte-identical fixture file.
+
+2. **Commit** the resulting `seed/fixtures/*.json` files to git.
+
+3. **Seed** a target DB (point env at the destination — typically a fresh local DB):
+
+   ```sh
+   ALLOW_DB_SEED=true DB_HOST=… DB_NAME=… npm run db:seed
+   ```
+
+   Runs everything in a single transaction:
+
+   - `TRUNCATE … RESTART IDENTITY CASCADE` on the eight in-scope tables. **Precondition:** `CASCADE` will also wipe `service_contributors`, `org_unit_members`, and `applications` (FK chain) — only run against a DB you're willing to reset.
+   - Inserts in dependency order, deferring `services.publishedServiceVersionId` and `service_types.publishedServiceTypeVersionId` to a second-pass `UPDATE` (these create FK cycles with their version tables).
+   - Prints row counts on success; rolls back on any failure.
+
+### Guards
+
+- `db:seed` refuses to run unless `ALLOW_DB_SEED=true`. `NODE_ENV` is **not** consulted because production-style envs (e.g. dev tier) set `NODE_ENV=production`.
+- `db:seed:export` is read-only and does not require the guard.
+
+### Verifying locally
+
+After running `db:seed` against a fresh local DB, the row counts printed to stdout should match the lengths of the committed fixture arrays. UUIDs are preserved verbatim from the source DB, so re-running the seed against a freshly-truncated DB yields identical IDs.
 
 ## Adding Schema
 

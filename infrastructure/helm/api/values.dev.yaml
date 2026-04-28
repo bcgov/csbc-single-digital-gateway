@@ -43,6 +43,9 @@ migrations:
   useDirectConnection: true
   # Shorter timeout for dev
   activeDeadlineSeconds: 120
+  # Reseed fixtures on every deploy in dev
+  seed:
+    enabled: true
   # Minimal resources for dev
   resources:
     requests:

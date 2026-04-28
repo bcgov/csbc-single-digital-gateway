@@ -16,6 +16,16 @@ import {
   sql,
 } from '@repo/db';
 import { InjectDb } from 'src/modules/database/decorators/inject-database.decorator';
+import {
+  ServiceContentSchema,
+  sanitizeContentForPublic,
+} from '../dtos/public-service.dto';
+
+export interface ResolvedWorkflowApplicationConfig {
+  apiKey: string;
+  tenantId: string;
+  workflowId: string;
+}
 
 export interface FlatService {
   id: string;
@@ -761,7 +771,9 @@ export class ServicesService {
       const translation =
         localeMap?.get(locale) ?? localeMap?.get(FALLBACK_LOCALE);
       if (!translation || !r.publishedAt) continue;
-      data.push(this.toFlatService(r, translation));
+      const flat = this.toFlatService(r, translation);
+      flat.content = sanitizeContentForPublic(flat.content);
+      data.push(flat);
     }
 
     return { data, total, totalPages, page, limit };
@@ -807,7 +819,9 @@ export class ServicesService {
       throw new NotFoundException(`Service ${serviceId} not found`);
     }
 
-    return this.toFlatService(row, translation);
+    const flat = this.toFlatService(row, translation);
+    flat.content = sanitizeContentForPublic(flat.content);
+    return flat;
   }
 
   async findOneVersion(
@@ -851,6 +865,73 @@ export class ServicesService {
     }
 
     return this.toFlatService(row, translation);
+  }
+
+  async resolveWorkflowApplicationConfig(params: {
+    serviceId: string;
+    versionId: string;
+    applicationId: string;
+    locale: string;
+  }): Promise<ResolvedWorkflowApplicationConfig> {
+    const { serviceId, versionId, applicationId, locale } = params;
+
+    const rows = await this.db
+      .select({ id: schema.serviceVersions.id })
+      .from(schema.serviceVersions)
+      .innerJoin(
+        schema.services,
+        eq(schema.services.id, schema.serviceVersions.serviceId),
+      )
+      .where(
+        and(
+          eq(schema.serviceVersions.id, versionId),
+          eq(schema.serviceVersions.serviceId, serviceId),
+          inArray(schema.serviceVersions.status, ['published', 'archived']),
+        ),
+      )
+      .limit(1);
+
+    if (rows.length === 0) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    const translation = await this.resolveTranslation(versionId, locale);
+    if (!translation) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    const parsed = ServiceContentSchema.safeParse(translation.content);
+    if (!parsed.success) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    const application = parsed.data.applications.find(
+      (a) => a.id === applicationId,
+    );
+
+    if (!application) {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    if (application.type !== 'workflow') {
+      throw new NotFoundException(
+        `Application ${applicationId} not found in version ${versionId}`,
+      );
+    }
+
+    return {
+      apiKey: application.config.apiKey,
+      tenantId: application.config.tenantId,
+      workflowId: application.config.workflowId,
+    };
   }
 
   async delete(serviceId: string) {

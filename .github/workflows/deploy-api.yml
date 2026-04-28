@@ -70,4 +70,6 @@ jobs:
           --set app.session.secret="${{ secrets.API_SESSION_SECRET }}" \
           --set app.frontendUrl="https://${{ vars.WEB_BASE_URL }}" \
           --set app.adminFrontendUrl="https://${{ vars.WEB_BASE_URL }}/admin" \
+          --set app.publicBodiesApiUrl="${{ vars.API_PUBLIC_BODIES_API_URL }}" \
+          --set app.workflowApiUrl="${{ vars.API_WORKFLOW_API_URL }}" \
           --labels app.kubernetes.io/part-of=csbc-single-digital-gateway

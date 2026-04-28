@@ -4,9 +4,10 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
+import axios from "axios";
 import { ConsentGate } from "../../../../../../../features/services/components/consent-gate.component";
 import { consentDocumentsQueryOptions } from "../../../../../../../features/services/data/consent-document.query";
-import { servicesQueryOptions } from "../../../../../../../features/services/data/services.query";
+import { serviceQueryOptions } from "../../../../../../../features/services/data/services.query";
 import type {
   ServiceApplicationDto,
   ServiceDto,
@@ -28,10 +29,16 @@ export const Route = createFileRoute(
     }
   },
   loader: async ({ params }) => {
-    const services = await queryClient.ensureQueryData(servicesQueryOptions);
-    const service = services.find((s) => s.id === params.serviceId);
-    if (!service) {
-      throw notFound();
+    let service;
+    try {
+      service = await queryClient.ensureQueryData(
+        serviceQueryOptions(params.serviceId),
+      );
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        throw notFound();
+      }
+      throw err;
     }
     const application = service.content?.applications?.find(
       (a: ServiceApplicationDto) => a.id === params.applicationId,

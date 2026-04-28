@@ -40,18 +40,24 @@ import { DocumentsTable } from "src/features/admin/consent-documents/components/
 
 type ConsentDocumentListItem = {
   id: string;
+  consentDocumentTypeId: string;
+  orgUnitId: string;
   name: string | null;
   description: string | null;
   publishedConsentDocumentVersionId: string | null;
   createdAt: string;
+  updatedAt: string;
 };
 
 const makeDocument = (overrides: Partial<ConsentDocumentListItem> = {}): ConsentDocumentListItem => ({
   id: "ddddeeee-1111-2222-3333-aabbccddeeff",
+  consentDocumentTypeId: "cdtype11-1111-1111-1111-111111111111",
+  orgUnitId: "orgu1111-1111-1111-1111-111111111111",
   name: "Privacy Consent Form",
   description: "Standard privacy consent for BC services",
   publishedConsentDocumentVersionId: null,
   createdAt: "2024-04-20T08:00:00.000Z",
+  updatedAt: "2024-04-20T08:00:00.000Z",
   ...overrides,
 });
 

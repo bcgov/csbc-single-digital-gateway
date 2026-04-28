@@ -40,18 +40,24 @@ import { ServicesTable } from "src/features/admin/services/components/services-t
 
 type ServiceListItem = {
   id: string;
+  serviceTypeId: string;
+  orgUnitId: string;
   name: string | null;
   description: string | null;
   publishedServiceVersionId: string | null;
   createdAt: string;
+  updatedAt: string;
 };
 
 const makeService = (overrides: Partial<ServiceListItem> = {}): ServiceListItem => ({
   id: "aaaabbbb-1111-2222-3333-ccccddddeeee",
+  serviceTypeId: "stype111-1111-1111-1111-111111111111",
+  orgUnitId: "orgu1111-1111-1111-1111-111111111111",
   name: "Drivers Licence Renewal",
   description: "Renew your drivers licence online",
   publishedServiceVersionId: null,
   createdAt: "2024-03-15T10:00:00.000Z",
+  updatedAt: "2024-03-15T10:00:00.000Z",
   ...overrides,
 });
 

@@ -52,7 +52,9 @@ jest.mock("src/features/services/components/consent-gate.component", () => ({
 }));
 
 jest.mock("src/features/services/data/services.query", () => ({
-  servicesQueryOptions: { queryKey: ["services"] },
+  serviceQueryOptions: jest.fn((id: string) => ({
+    queryKey: ["services", id],
+  })),
 }));
 
 jest.mock("src/features/services/data/consent-document.query", () => ({
@@ -73,10 +75,6 @@ jest.mock("src/lib/react-query.client", () => ({
 // ─── Route import (after mocks) ───────────────────────────────────────────────
 
 import { Route } from "src/app/routes/app/services/$serviceId/apply/$applicationId/data-and-privacy";
-
-const { servicesQueryOptions: mockServicesQueryOptions } = jest.requireMock(
-  "src/features/services/data/services.query",
-) as { servicesQueryOptions: { queryKey: string[] } };
 
 const typedRoute = Route as unknown as RouteLike;
 
@@ -139,7 +137,7 @@ describe("DataAndPrivacy Route Test", () => {
   it("Should load service, application, and documentIds", async () => {
     const service = buildService();
     mockEnsureQueryData
-      .mockResolvedValueOnce([service])
+      .mockResolvedValueOnce(service)
       .mockResolvedValueOnce([{ id: "doc-1" }]);
 
     const result = await typedRoute.options.loader({ params });
@@ -149,14 +147,16 @@ describe("DataAndPrivacy Route Test", () => {
       application: { id: "app-1" },
       documentIds: ["doc-1", "doc-2"],
     });
-    expect(mockEnsureQueryData).toHaveBeenNthCalledWith(
-      1,
-      mockServicesQueryOptions,
-    );
+    expect(mockEnsureQueryData).toHaveBeenNthCalledWith(1, {
+      queryKey: ["services", params.serviceId],
+    });
   });
 
-  it("Should throw notFound when the service does not exist", async () => {
-    mockEnsureQueryData.mockResolvedValueOnce([]);
+  it("Should throw notFound when the service request returns 404", async () => {
+    mockEnsureQueryData.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 404 },
+    });
 
     await expect(typedRoute.options.loader({ params })).rejects.toEqual({
       type: "not-found",
@@ -166,9 +166,11 @@ describe("DataAndPrivacy Route Test", () => {
   });
 
   it("Should throw notFound when the application does not exist", async () => {
-    mockEnsureQueryData.mockResolvedValueOnce([
-      buildService({ content: { applications: [{ id: "other-app" }], consents: [] } }),
-    ]);
+    mockEnsureQueryData.mockResolvedValueOnce(
+      buildService({
+        content: { applications: [{ id: "other-app" }], consents: [] },
+      }),
+    );
 
     await expect(typedRoute.options.loader({ params })).rejects.toEqual({
       type: "not-found",

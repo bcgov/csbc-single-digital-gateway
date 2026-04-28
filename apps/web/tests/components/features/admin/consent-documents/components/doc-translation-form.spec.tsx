@@ -57,6 +57,13 @@ const BASE_PROPS = {
   isDraft: true,
 };
 
+const TRANSLATION_BASE = {
+  id: "tr-111",
+  consentDocumentVersionId: "ver-xyz",
+  createdAt: "2024-07-01T00:00:00.000Z",
+  updatedAt: "2024-07-01T00:00:00.000Z",
+};
+
 // DOM field order (getAllByRole("textbox")):
 //   [0] = <input>    → Name
 //   [1] = <textarea> → Description
@@ -95,6 +102,7 @@ describe("DocTranslationForm", () => {
         <DocTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Patient Consent Form",
             description: "Standard patient consent",
@@ -111,6 +119,7 @@ describe("DocTranslationForm", () => {
         <DocTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Patient Consent Form",
             description: "Standard patient consent",
@@ -164,6 +173,7 @@ describe("DocTranslationForm", () => {
         <DocTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Data Sharing Agreement",
             description: "",
@@ -214,6 +224,7 @@ describe("DocTranslationForm", () => {
         <DocTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "  Organ Donor Consent  ",
             description: "  Consent for organ donation  ",
@@ -270,6 +281,7 @@ describe("DocTranslationForm", () => {
         <DocTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Consent Doc",
             description: "",

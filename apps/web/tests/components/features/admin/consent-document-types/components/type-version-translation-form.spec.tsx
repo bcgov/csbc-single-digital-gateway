@@ -62,6 +62,13 @@ const BASE_PROPS = {
   isDraft: true,
 };
 
+const TRANSLATION_BASE = {
+  id: "tr-111",
+  consentDocumentTypeVersionId: "ver-444",
+  createdAt: "2024-07-01T00:00:00.000Z",
+  updatedAt: "2024-07-01T00:00:00.000Z",
+};
+
 function submitForm() {
   fireEvent.submit(
     screen.getByRole("button", { name: "Save Translation" }).closest("form")!,
@@ -138,6 +145,7 @@ describe("TypeVersionTranslationForm", () => {
         <TypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Consent Type",
             description: "Describes consent doc type",
@@ -168,6 +176,7 @@ describe("TypeVersionTranslationForm", () => {
         <TypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Privacy Policy Type",
             description: "",
@@ -188,6 +197,7 @@ describe("TypeVersionTranslationForm", () => {
         <TypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "FOIPPA Consent",
             description: "Freedom of Information consent",
@@ -222,6 +232,7 @@ describe("TypeVersionTranslationForm", () => {
         <TypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Data Use Agreement",
             description: "Agreement for data use",
@@ -244,6 +255,7 @@ describe("TypeVersionTranslationForm", () => {
         <TypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "Old Name",
             description: "Old Description",
@@ -273,6 +285,7 @@ describe("TypeVersionTranslationForm", () => {
         <TypeVersionTranslationForm
           {...BASE_PROPS}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "My Type",
             description: "Type desc",
@@ -299,6 +312,7 @@ describe("TypeVersionTranslationForm", () => {
           {...BASE_PROPS}
           isDraft={false}
           translation={{
+            ...TRANSLATION_BASE,
             locale: "en",
             name: "My Type",
             description: "Type desc",

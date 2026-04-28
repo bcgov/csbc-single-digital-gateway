@@ -166,8 +166,37 @@ jest.mock(
   }),
 );
 
+jest.mock(
+  "src/features/services/components/your-activity-section.component",
+  () => ({
+    YourActivitySection: ({ service }: { service: { id: string } }) => (
+      <div data-testid="your-activity-section" data-service-id={service.id} />
+    ),
+  }),
+);
+
+jest.mock(
+  "src/features/services/components/application-process-widget.component",
+  () => ({
+    ApplicationProcessWidget: () => (
+      <div data-testid="application-process-widget" />
+    ),
+  }),
+);
+
+jest.mock(
+  "src/features/services/components/service-application-cta.component",
+  () => ({
+    ServiceApplicationCta: () => (
+      <div data-testid="service-application-cta" />
+    ),
+  }),
+);
+
 jest.mock("src/features/services/data/services.query", () => ({
-  servicesQueryOptions: { queryKey: ["services"] },
+  serviceQueryOptions: jest.fn((id: string) => ({
+    queryKey: ["services", id],
+  })),
 }));
 
 jest.mock("src/features/services/data/consent-document.query", () => ({
@@ -179,10 +208,6 @@ jest.mock("src/features/services/data/consent-document.query", () => ({
 // ─── Route import (after mocks) ───────────────────────────────────────────────
 
 import { Route } from "src/app/routes/app/services/$serviceId/index";
-
-const { servicesQueryOptions: mockServicesQueryOptions } = jest.requireMock(
-  "src/features/services/data/services.query",
-) as { servicesQueryOptions: { queryKey: string[] } };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -246,28 +271,42 @@ describe("ServiceId Index Route Test", () => {
   // ─── Loader ─────────────────────────────────────────────────────────────
 
   describe("loader", () => {
-    it("Should return the matching service from query data", async () => {
+    it("Should return the service fetched by id", async () => {
       const service = buildService();
-      mockedEnsureQueryData.mockResolvedValueOnce([service]);
+      mockedEnsureQueryData.mockResolvedValueOnce(service);
 
       const result = await typedRoute.options.loader({
         params: { serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
       });
 
-      expect(mockedEnsureQueryData).toHaveBeenCalledWith(
-        mockServicesQueryOptions,
-      );
+      expect(mockedEnsureQueryData).toHaveBeenCalledWith({
+        queryKey: ["services", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"],
+      });
       expect(result).toEqual({ service });
     });
 
-    it("Should throw notFound when service id does not match", async () => {
-      mockedEnsureQueryData.mockResolvedValueOnce([]);
+    it("Should throw notFound when the service request returns 404", async () => {
+      mockedEnsureQueryData.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: { status: 404 },
+      });
 
       await expect(
         typedRoute.options.loader({ params: { serviceId: "unknown" } }),
       ).rejects.toEqual({ type: "not-found" });
 
       expect(mockNotFound).toHaveBeenCalledTimes(1);
+    });
+
+    it("Should rethrow non-404 errors from the service request", async () => {
+      const networkError = new Error("network down");
+      mockedEnsureQueryData.mockRejectedValueOnce(networkError);
+
+      await expect(
+        typedRoute.options.loader({ params: { serviceId: "x" } }),
+      ).rejects.toBe(networkError);
+
+      expect(mockNotFound).not.toHaveBeenCalled();
     });
   });
 
@@ -322,15 +361,16 @@ describe("ServiceId Index Route Test", () => {
       expect(nav).toHaveAttribute("data-visible", "false");
     });
 
-    it("Should render always-visible section headings", () => {
+    it("Should render the Application process widget, Your activity section, and More information heading", () => {
       render(<RouteComponent />);
 
       expect(
-        screen.getByRole("heading", { name: "Application process" }),
+        screen.getByTestId("application-process-widget"),
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole("heading", { name: "Your activity" }),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("your-activity-section")).toHaveAttribute(
+        "data-service-id",
+        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      );
       expect(
         screen.getByRole("heading", { name: "More information" }),
       ).toBeInTheDocument();
@@ -354,19 +394,19 @@ describe("ServiceId Index Route Test", () => {
       mockRouteUseLoaderData.mockReturnValue({
         service: buildService({ content: { about: '{"root":{}}' } }),
       });
-      mockUseQuery.mockReturnValue({ data: [] });
+      mockUseQuery.mockReturnValue({ data: undefined });
 
       render(<RouteComponent />);
 
       expect(screen.getByTestId("lexical-content")).toBeInTheDocument();
     });
 
-    it("Should use live service data from useQuery when it returns a matching entry", () => {
+    it("Should use live service data from useQuery when it returns a service", () => {
       const liveService = buildService({
         name: "Updated Service Name",
         description: "Updated description.",
       });
-      mockUseQuery.mockReturnValue({ data: [liveService] });
+      mockUseQuery.mockReturnValue({ data: liveService });
 
       render(<RouteComponent />);
 

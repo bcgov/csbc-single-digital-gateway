@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm";
+import { applications } from "./applications.ts";
 import { identities } from "./auth.ts";
 import {
   consentDocumentContributors,
@@ -32,6 +33,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   consentDocumentContributions: many(consentDocumentContributors),
   consentStatements: many(consentStatements),
   serviceContributions: many(serviceContributors),
+  applications: many(applications, { relationName: "applicant" }),
+  delegatedApplications: many(applications, { relationName: "delegate" }),
 }));
 
 export const identitiesRelations = relations(identities, ({ one }) => ({
@@ -223,6 +226,7 @@ export const servicesRelations = relations(services, ({ one, many }) => ({
   }),
   contributors: many(serviceContributors),
   versions: many(serviceVersions, { relationName: "serviceVersions" }),
+  applications: many(applications),
 }));
 
 export const serviceContributorsRelations = relations(
@@ -290,15 +294,42 @@ export const serviceVersionsRelations = relations(
       relationName: "serviceVersions",
     }),
     translations: many(serviceVersionTranslations),
+    applications: many(applications),
   }),
 );
 
 export const serviceVersionTranslationsRelations = relations(
   serviceVersionTranslations,
-  ({ one }) => ({
+  ({ one, many }) => ({
     serviceVersion: one(serviceVersions, {
       fields: [serviceVersionTranslations.serviceVersionId],
       references: [serviceVersions.id],
     }),
+    applications: many(applications),
   }),
 );
+
+export const applicationsRelations = relations(applications, ({ one }) => ({
+  service: one(services, {
+    fields: [applications.serviceId],
+    references: [services.id],
+  }),
+  serviceVersion: one(serviceVersions, {
+    fields: [applications.serviceVersionId],
+    references: [serviceVersions.id],
+  }),
+  serviceVersionTranslation: one(serviceVersionTranslations, {
+    fields: [applications.serviceVersionTranslationId],
+    references: [serviceVersionTranslations.id],
+  }),
+  applicant: one(users, {
+    fields: [applications.userId],
+    references: [users.id],
+    relationName: "applicant",
+  }),
+  delegate: one(users, {
+    fields: [applications.delegateUserId],
+    references: [users.id],
+    relationName: "delegate",
+  }),
+}));

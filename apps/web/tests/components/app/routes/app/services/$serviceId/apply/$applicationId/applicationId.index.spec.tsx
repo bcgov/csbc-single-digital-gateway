@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentType } from "react";
 import { mockedEnsureQueryData } from "tests/utils/mocks/tankstack/mock.ensureQueryData";
 import { mockUseQuery } from "tests/utils/mocks/tankstack/mock.useQuery";
@@ -21,7 +21,9 @@ const mockRedirect = jest.fn((value: unknown) => ({
   ...(value as object),
 }));
 const mockNotFound = jest.fn(() => ({ type: "not-found" }));
-const mockToastSuccess = jest.fn();
+const mockToastError = jest.fn();
+
+const mockSubmitApplication = jest.fn();
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
 
@@ -42,73 +44,32 @@ jest.mock("@tanstack/react-router", () => ({
 
 jest.mock("sonner", () => ({
   toast: {
-    success: (...args: unknown[]) => mockToastSuccess(...args),
+    error: (...args: unknown[]) => mockToastError(...args),
   },
 }));
 
-jest.mock("src/features/chefs", () => ({
-  ChefsFormViewer: ({
-    formId,
-    onSubmissionComplete,
-    onSubmissionError,
-  }: {
-    formId: string;
-    onSubmissionComplete?: () => void;
-    onSubmissionError?: (e: { message: string }) => void;
-  }) => (
-    <div data-testid="chefs-form-viewer" data-form-id={formId}>
-      <button type="button" onClick={onSubmissionComplete}>
-        Submit Chefs
-      </button>
-      <button
-        type="button"
-        onClick={() => onSubmissionError?.({ message: "chefs error" })}
-      >
-        Error Chefs
-      </button>
-    </div>
-  ),
-  WorkflowRenderer: ({
-    application,
-    onSubmissionComplete,
-    onSubmissionError,
-  }: {
-    application: { id: string };
-    onSubmissionComplete?: () => void;
-    onSubmissionError?: (e: { message: string }) => void;
-  }) => (
-    <div data-testid="workflow-renderer" data-application-id={application.id}>
-      <button type="button" onClick={onSubmissionComplete}>
-        Submit Workflow
-      </button>
-      <button
-        type="button"
-        onClick={() => onSubmissionError?.({ message: "workflow error" })}
-      >
-        Error Workflow
-      </button>
-    </div>
-  ),
+jest.mock("src/features/services/data/applications.mutation", () => ({
+  submitApplication: (...args: unknown[]) => mockSubmitApplication(...args),
 }));
 
 jest.mock(
-  "src/features/services/components/invite-delegate-dialog.component",
+  "src/features/services/components/starting-application-loader.component",
   () => ({
-    InviteDelegateDialog: () => <div data-testid="invite-delegate-dialog" />,
+    StartingApplicationLoader: ({ message }: { message?: string }) => (
+      <div data-testid="starting-application-loader" data-message={message} />
+    ),
   }),
 );
 
 jest.mock("src/features/services/data/services.query", () => ({
-  servicesQueryOptions: { queryKey: ["services"] },
+  serviceQueryOptions: jest.fn((id: string) => ({
+    queryKey: ["services", id],
+  })),
 }));
 
 // ─── Route import (after mocks) ───────────────────────────────────────────────
 
 import { Route } from "src/app/routes/app/services/$serviceId/apply/$applicationId/index";
-
-const { servicesQueryOptions: mockServicesQueryOptions } = jest.requireMock(
-  "src/features/services/data/services.query",
-) as { servicesQueryOptions: { queryKey: string[] } };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -116,31 +77,38 @@ const typedRoute = Route as unknown as RouteLike;
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
+const SERVICE_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+const APPLICATION_ID = "b2c3d4e5-f6a7-8901-bcde-f23456789012";
+const VERSION_ID = "c3d4e5f6-a7b8-9012-cdef-345678901234";
+const NEW_ROW_ID = "d4e5f6a7-b8c9-0123-defa-456789012345";
+
 const params: Params = {
-  serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  applicationId: "app-1",
+  serviceId: SERVICE_ID,
+  applicationId: APPLICATION_ID,
 };
 
 const buildApplication = (overrides?: Partial<Application>): Application => ({
-  id: "app-1",
+  id: APPLICATION_ID,
   type: "external",
   label: "Income Support Application",
   ...overrides,
 });
 
-const buildService = (overrides?: Partial<Service>): Service => ({
-  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  name: "Income Assistance",
-  content: { applications: [buildApplication()] },
-  ...overrides,
-});
+const buildService = (overrides?: Partial<Service>): Service =>
+  ({
+    id: SERVICE_ID,
+    versionId: VERSION_ID,
+    name: "Income Assistance",
+    content: { applications: [buildApplication()] },
+    ...overrides,
+  }) as Service;
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-describe("ApplicationId Index Route Test", () => {
+describe("ApplicationId Index Route (apply loader) Test", () => {
   beforeEach(() => {
     mockUseNavigate.mockReturnValue(mockNavigate);
-    mockUseQuery.mockReturnValue({ data: [] });
+    mockUseQuery.mockReturnValue({ data: undefined });
     mockRouteUseLoaderData.mockReturnValue({
       service: buildService(),
       application: buildApplication(),
@@ -189,21 +157,24 @@ describe("ApplicationId Index Route Test", () => {
   describe("loader", () => {
     it("Should return service and application", async () => {
       const service = buildService();
-      mockedEnsureQueryData.mockResolvedValueOnce([service]);
+      mockedEnsureQueryData.mockResolvedValueOnce(service);
 
       const result = await typedRoute.options.loader({ params });
 
-      expect(mockedEnsureQueryData).toHaveBeenCalledWith(
-        mockServicesQueryOptions,
-      );
+      expect(mockedEnsureQueryData).toHaveBeenCalledWith({
+        queryKey: ["services", SERVICE_ID],
+      });
       expect(result).toEqual({
         service,
         application: buildApplication(),
       });
     });
 
-    it("Should throw notFound when service does not exist", async () => {
-      mockedEnsureQueryData.mockResolvedValueOnce([]);
+    it("Should throw notFound when the service request returns 404", async () => {
+      mockedEnsureQueryData.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: { status: 404 },
+      });
 
       await expect(typedRoute.options.loader({ params })).rejects.toEqual({
         type: "not-found",
@@ -213,9 +184,9 @@ describe("ApplicationId Index Route Test", () => {
     });
 
     it("Should throw notFound when application does not exist on service", async () => {
-      mockedEnsureQueryData.mockResolvedValueOnce([
+      mockedEnsureQueryData.mockResolvedValueOnce(
         buildService({ content: { applications: [{ id: "other-app" }] } }),
-      ]);
+      );
 
       await expect(typedRoute.options.loader({ params })).rejects.toEqual({
         type: "not-found",
@@ -230,7 +201,7 @@ describe("ApplicationId Index Route Test", () => {
   describe("staticData.breadcrumbs", () => {
     it("Should build breadcrumbs with service and application labels", () => {
       const breadcrumbs = typedRoute.options.staticData.breadcrumbs({
-        service: { name: "Income Assistance", id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+        service: { name: "Income Assistance", id: SERVICE_ID },
         application: { label: "Income Support Application" },
       });
 
@@ -239,7 +210,7 @@ describe("ApplicationId Index Route Test", () => {
         {
           label: "Income Assistance",
           to: "/app/services/$serviceId",
-          params: { serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+          params: { serviceId: SERVICE_ID },
         },
         { label: "Apply for Income Support Application" },
       ]);
@@ -247,7 +218,7 @@ describe("ApplicationId Index Route Test", () => {
 
     it("Should build breadcrumbs with service only when application is missing", () => {
       const breadcrumbs = typedRoute.options.staticData.breadcrumbs({
-        service: { name: "Income Assistance", id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+        service: { name: "Income Assistance", id: SERVICE_ID },
       });
 
       expect(breadcrumbs).toEqual([
@@ -255,7 +226,7 @@ describe("ApplicationId Index Route Test", () => {
         {
           label: "Income Assistance",
           to: "/app/services/$serviceId",
-          params: { serviceId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+          params: { serviceId: SERVICE_ID },
         },
       ]);
     });
@@ -270,92 +241,99 @@ describe("ApplicationId Index Route Test", () => {
   // ─── RouteComponent ───────────────────────────────────────────────────────
 
   describe("RouteComponent", () => {
-    it("Should render application label as heading", () => {
-      mockUseQuery.mockReturnValue({ data: [buildService()] });
+    it("Should render the StartingApplicationLoader while the request is in flight", () => {
+      // Return a promise that never resolves so the component stays in the pending state.
+      mockSubmitApplication.mockReturnValueOnce(new Promise(() => {}));
 
       render(<typedRoute.options.component />);
 
       expect(
-        screen.getByRole("heading", {
-          name: "Income Support Application",
-        }),
+        screen.getByTestId("starting-application-loader"),
       ).toBeInTheDocument();
     });
 
-    it("Should render InviteDelegateDialog", () => {
-      mockUseQuery.mockReturnValue({ data: [buildService()] });
+    it("Should call submitApplication once on mount with the service, version, and application ids", () => {
+      mockSubmitApplication.mockReturnValueOnce(new Promise(() => {}));
 
       render(<typedRoute.options.component />);
 
-      expect(screen.getByTestId("invite-delegate-dialog")).toBeInTheDocument();
+      expect(mockSubmitApplication).toHaveBeenCalledTimes(1);
+      expect(mockSubmitApplication).toHaveBeenCalledWith({
+        serviceId: SERVICE_ID,
+        versionId: VERSION_ID,
+        applicationId: APPLICATION_ID,
+      });
     });
 
-    it("Should render ChefsFormViewer by default", () => {
-      const service = buildService();
-      mockUseQuery.mockReturnValue({ data: [service] });
+    it("Should navigate to the new applications/<row id> route with replace:true on resolution", async () => {
+      mockSubmitApplication.mockResolvedValueOnce({ id: NEW_ROW_ID });
+
+      render(<typedRoute.options.component />);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: "/app/services/$serviceId/applications/$applicationId",
+          params: { serviceId: SERVICE_ID, applicationId: NEW_ROW_ID },
+          replace: true,
+        });
+      });
+    });
+
+    it("Should toast an error and navigate back to the service detail on rejection", async () => {
+      mockSubmitApplication.mockRejectedValueOnce(
+        new Error("workflow engine unavailable"),
+      );
+
+      render(<typedRoute.options.component />);
+
+      await waitFor(() => {
+        expect(mockToastError).toHaveBeenCalledWith(
+          "We couldn't start your application.",
+          expect.objectContaining({
+            description: "workflow engine unavailable",
+          }),
+        );
+      });
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: "/app/services/$serviceId",
+        params: { serviceId: SERVICE_ID },
+        replace: true,
+      });
+    });
+
+    it("Should short-circuit with a toast and redirect when service.versionId is null", () => {
       mockRouteUseLoaderData.mockReturnValue({
-        service,
-        application: buildApplication({
-          blockType: "chefs",
-          formId: "form-123",
-        }),
+        service: buildService({ versionId: null } as Partial<Service>),
+        application: buildApplication(),
       });
 
       render(<typedRoute.options.component />);
 
-      expect(screen.getByTestId("chefs-form-viewer")).toBeInTheDocument();
-      expect(screen.getByTestId("chefs-form-viewer")).toHaveAttribute(
-        "data-form-id",
-        "app-1",
-      );
-    });
-
-    it("Should call toast.success and navigate on chefs submission complete", () => {
-      const service = buildService();
-      mockUseQuery.mockReturnValue({ data: [service] });
-
-      render(<typedRoute.options.component />);
-
-      fireEvent.click(screen.getByRole("button", { name: "Submit Chefs" }));
-
-      expect(mockToastSuccess).toHaveBeenCalledWith(
-        `Your application for ${service.name} has been submitted successfully.`,
-        expect.objectContaining({ description: expect.any(String) }),
+      expect(mockSubmitApplication).not.toHaveBeenCalled();
+      expect(mockToastError).toHaveBeenCalledWith(
+        "We couldn't start your application.",
+        expect.objectContaining({
+          description: "This service is not currently accepting applications.",
+        }),
       );
       expect(mockNavigate).toHaveBeenCalledWith({
         to: "/app/services/$serviceId",
-        params: { serviceId: service.id },
+        params: { serviceId: SERVICE_ID },
+        replace: true,
       });
     });
 
-    it("Should log error on chefs submission error without crashing", () => {
-      const consoleSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-      const service = buildService();
-      mockUseQuery.mockReturnValue({ data: [service] });
+    it("Should fall back to a generic description when the rejection is not an Error instance", async () => {
+      mockSubmitApplication.mockRejectedValueOnce("string error");
 
       render(<typedRoute.options.component />);
 
-      fireEvent.click(screen.getByRole("button", { name: "Error Chefs" }));
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Submission error:",
-        "chefs error",
-      );
-      consoleSpy.mockRestore();
-    });
-
-    it("Should fall back to loader service when useQuery returns empty", () => {
-      mockUseQuery.mockReturnValue({ data: [] });
-
-      render(<typedRoute.options.component />);
-
-      expect(
-        screen.getByRole("heading", {
-          name: "Income Support Application",
-        }),
-      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(mockToastError).toHaveBeenCalledWith(
+          "We couldn't start your application.",
+          expect.objectContaining({ description: "Please try again." }),
+        );
+      });
     });
   });
 });

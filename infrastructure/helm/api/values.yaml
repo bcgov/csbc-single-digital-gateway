@@ -83,6 +83,12 @@ app:
   # Admin frontend URL (REQUIRED - must be set during deployment)
   adminFrontendUrl: ""
 
+  # Public Bodies API URL (optional)
+  publicBodiesApiUrl: ""
+
+  # Workflow API URL (optional)
+  workflowApiUrl: ""
+
 # Database migrations configuration
 migrations:
   # Enable/disable database migrations hook
@@ -112,6 +118,13 @@ migrations:
 
   # Automatically delete completed job after this many seconds
   ttlSecondsAfterFinished: 300
+
+  # Database seeding (post-migration hook)
+  # When enabled, runs `npm run db:seed` against the database after migrations.
+  # The seed script TRUNCATEs target tables before inserting fixtures, so this
+  # will wipe any UI-created data on every deploy. Keep disabled in production.
+  seed:
+    enabled: false
 
   # Resource limits for migration job
   resources:

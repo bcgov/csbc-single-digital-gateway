@@ -25,22 +25,28 @@ import { DocVersionsTable } from "src/features/admin/consent-documents/component
 
 type ConsentDocumentVersionSummary = {
   id: string;
+  consentDocumentTypeVersionId: string;
   name: string | null;
   description: string | null;
   version: number;
-  status: string;
+  status: "draft" | "published" | "archived";
   createdAt: string;
+  updatedAt: string;
   publishedAt: string | null;
+  archivedAt: string | null;
 };
 
 const makeVersion = (overrides: Partial<ConsentDocumentVersionSummary> = {}): ConsentDocumentVersionSummary => ({
   id: "cdver111-aaaa-bbbb-cccc-ddddeeeeffff",
+  consentDocumentTypeVersionId: "cdtypev1-1111-1111-1111-111111111111",
   name: "Version One",
   description: "First version of the consent document",
   version: 1,
   status: "draft",
   createdAt: "2024-05-20T09:00:00.000Z",
+  updatedAt: "2024-05-20T09:00:00.000Z",
   publishedAt: null,
+  archivedAt: null,
   ...overrides,
 });
 

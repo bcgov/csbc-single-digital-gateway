@@ -45,6 +45,7 @@ type ServiceTypeListItem = {
   publishedServiceTypeVersionId: string | null;
   updatesPending: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 const makeServiceType = (overrides: Partial<ServiceTypeListItem> = {}): ServiceTypeListItem => ({
@@ -54,6 +55,7 @@ const makeServiceType = (overrides: Partial<ServiceTypeListItem> = {}): ServiceT
   publishedServiceTypeVersionId: null,
   updatesPending: false,
   createdAt: "2024-05-10T12:00:00.000Z",
+  updatedAt: "2024-05-10T12:00:00.000Z",
   ...overrides,
 });
 
