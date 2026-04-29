@@ -18,7 +18,7 @@ api.interceptors.request.use((request) => {
       .split("; ")
       .find((row) => row.startsWith("csrf-token="))
       ?.split("=")[1];
-    console.info("csrfToken: ", csrfToken);
+
     if (csrfToken) {
       request.headers["X-CSRF-Token"] = csrfToken;
     }
@@ -31,7 +31,6 @@ api.interceptors.request.use((request) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.info("error: ", error);
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       // Don't redirect if we're already checking auth state
       const url = error.config?.url ?? "";

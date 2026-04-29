@@ -125,4 +125,4 @@ http_req_failed................: 0.00%  0 out of 3
 http_reqs......................: 3      0.487317/s
 ```
 
-`p(95)` and `http_req_failed` are two metrics that play an important role in this project. `p(95)` measures the response time for 95% of total requests, and `http_req_failed` measures the failed rate for those requests. Depending on the type of tests and real-world scenarios, the values of these metrics vary accordingly, and different thresholds are in place to ensure applications' performance surpassing minimum expectations.
+`p(95)` and `http_req_failed` are two metrics that play an important role in this project. `p(95)` measures the response time for 95% of total requests, and `http_req_failed` measures the failed rate for those requests. Depending on the type of tests and real-world scenarios, the values of these metrics vary, and developers should adjust thresholds to meet new expectations accordingly.
