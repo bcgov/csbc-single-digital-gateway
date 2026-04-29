@@ -77,6 +77,6 @@ export const setCookies = (cookieData: JarCookie[]) => {
         http_only: cookie.httpOnly,
       };
     }
-    jar.set(__ENV.WEB_URL, cookie.name, cookie.value, expiresOption);
+    jar.set(__ENV.WEB_APP_URL, cookie.name, cookie.value, expiresOption);
   });
 };

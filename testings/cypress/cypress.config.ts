@@ -20,7 +20,7 @@ export default defineConfig({
       config.env.TEST_PASSWORD = process.env.CYPRESS_TEST_PASSWORD;
       if (process.env.REPORT === "true") {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        require("./node_modules/cypress-mochawesome-reporter/plugin")(on);
+        require("../../node_modules/cypress-mochawesome-reporter/plugin")(on);
       }
       return config;
     },
@@ -28,7 +28,7 @@ export default defineConfig({
     fixturesFolder: "fixtures",
     reporter:
       process.env.REPORT === "true"
-        ? "./node_modules/cypress-mochawesome-reporter"
+        ? "../../node_modules/cypress-mochawesome-reporter"
         : "spec",
     reporterOptions: {
       charts: true,

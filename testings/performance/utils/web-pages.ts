@@ -7,7 +7,7 @@ import http from "k6/http";
  * returns a 200 status code, and contains expected text.
  */
 export const homePage = async () => {
-  const response = http.get(`${__ENV.WEB_URL}/`);
+  const response = http.get(`${__ENV.WEB_APP_URL}/`);
   check(response, {
     "Home page returns status 200": (res) => res.status === 200,
     "Home page contains expected text": (res) =>
@@ -22,7 +22,7 @@ export const homePage = async () => {
  */
 export const appPage = async (page: Page) => {
   await page
-    .goto(`${__ENV.WEB_URL}/app`, {
+    .goto(`${__ENV.WEB_APP_URL}/app`, {
       waitUntil: "networkidle",
     })
     .then((response) => {

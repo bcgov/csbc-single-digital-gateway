@@ -7,7 +7,7 @@ import http from "k6/http";
  * responds successfully and returns a 200 status code.
  */
 export const bcscMeEndpoint = () => {
-  const response = http.get(`${__ENV.WEB_URL}/api/auth/bcsc/me`);
+  const response = http.get(`${__ENV.WEB_APP_URL}/api/auth/bcsc/me`);
   if (response.error) {
     exec.test.abort(`BCSC/Me endpoint failed to load: ${response.error}`);
   }

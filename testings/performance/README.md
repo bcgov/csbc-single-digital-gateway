@@ -77,10 +77,10 @@ npm run test:login
 
 ## Configuration
 
-Performance testing only runs on developer's local machine. The default testing environment is the development environment. Should there be any change in the development, update the tester's IP address secret on the project's GitHub settings. Add an `.env` file in the performance folder with the variable `WEB_URL` and set its value to the development URL.
+Performance testing only runs on developer's local machine. The default testing environment is the development environment. Should there be any change in the development, update the tester's IP address secret on the project's GitHub settings. Add an `.env` file in the performance folder with the variable `WEB_APP_URL` and set its value to the development URL.
 
 ```
-WEB_URL=
+WEB_APP_URL=
 ```
 
 ## Testing Commands 

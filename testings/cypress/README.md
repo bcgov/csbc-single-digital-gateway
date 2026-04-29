@@ -21,7 +21,7 @@ The primary configuration file for Cypress with TypeScript is [cypress.config.ts
 
 ## Local Testing
 
-Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Add the following variables in the `.env` file in the cypress folder. Refer to the [test account page](https://citz-do.atlassian.net/wiki/spaces/Elidya/pages/606208240/BCSC+Test+Accounts) for test user credentials. Make sure to activate the test user before continuing.
+Cypress supports a variety of ways to run tests on local environments. These tests are categorized into three main methods: using command lines in terminal, VSCode debugger or the Cypress launchpad. Add the following variables in the `.env` file in the root folder. Refer to the [test account page](https://citz-do.atlassian.net/wiki/spaces/Elidya/pages/606208240/BCSC+Test+Accounts) for test user credentials. Make sure to activate the test user before continuing.
 
 ```
 WEB_APP_URL=
