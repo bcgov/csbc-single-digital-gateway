@@ -7,7 +7,7 @@
 import type { ComponentType } from "react";
 
 export type Params = {
-  serviceSlug?: string;
+  serviceId?: string;
   applicationId?: string;
   statementId?: string;
 };
@@ -15,6 +15,8 @@ export type Params = {
 export type Application = {
   id: string;
   label?: string;
+  description?: string;
+  type?: "external" | "workflow";
   formId?: string;
   apiKey?: string;
   url?: string;
@@ -26,14 +28,17 @@ export type ConsentSetting = {
 };
 
 export type Service = {
-  slug: string;
+  id: string;
   name: string;
   settings?: {
     consent?: ConsentSetting[];
   };
   categories?: string[];
   applications?: Application[];
-  description?: { short?: string };
+  application?: {
+    applications?: Application[];
+  };
+  description?: string | null;
   content?: unknown;
 };
 

@@ -15,8 +15,8 @@ const TimelineDateGroupDto = z.object({
 });
 
 const TimelineResponseDto = z.object({
-  docs: z.array(TimelineDateGroupDto),
-  totalDocs: z.number(),
+  data: z.array(TimelineDateGroupDto),
+  total: z.number(),
   totalPages: z.number(),
   page: z.number(),
   limit: z.number(),

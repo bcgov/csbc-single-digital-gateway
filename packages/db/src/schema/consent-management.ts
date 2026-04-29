@@ -11,12 +11,16 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { orgUnits } from "./organizations.ts";
-import { schemas, schemaVersions } from "./schemas.ts";
 import { users } from "./users.ts";
 
 export const consentDocumentContributorRoleEnum = pgEnum(
   "consent_document_contributor_role",
   ["owner"],
+);
+
+export const consentDocumentTypeVersionStatusEnum = pgEnum(
+  "consent_document_type_version_status",
+  ["draft", "published", "archived"],
 );
 
 export const consentDocumentVersionStatusEnum = pgEnum(
@@ -73,12 +77,10 @@ export const consentDocumentContributors = pgTable(
 
 export const consentDocumentTypes = pgTable("consent_document_types", {
   id: uuid().primaryKey().defaultRandom(),
-  schemaId: uuid()
-    .references(() => schemas.id)
-    .unique(),
-
-  name: text().notNull(),
-  description: text(),
+  publishedConsentDocumentTypeVersionId: uuid().references(
+    (): AnyPgColumn => consentDocumentTypeVersions.id,
+    { onDelete: "set null" },
+  ),
 
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true })
@@ -87,6 +89,61 @@ export const consentDocumentTypes = pgTable("consent_document_types", {
     .$onUpdate(() => new Date()),
 });
 
+export const consentDocumentTypeVersions = pgTable(
+  "consent_document_type_versions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    consentDocumentTypeId: uuid()
+      .notNull()
+      .references(() => consentDocumentTypes.id, { onDelete: "cascade" }),
+
+    version: integer().notNull(),
+    status: consentDocumentTypeVersionStatusEnum().notNull(),
+
+    archivedAt: timestamp({ withTimezone: true }),
+    publishedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex(
+      "consent_document_type_versions_consent_document_type_version_unique",
+    ).on(t.consentDocumentTypeId, t.version),
+  ],
+);
+
+export const consentDocumentTypeVersionTranslations = pgTable(
+  "consent_document_type_version_translations",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    consentDocumentTypeVersionId: uuid()
+      .notNull()
+      .references(() => consentDocumentTypeVersions.id, {
+        onDelete: "cascade",
+      }),
+
+    locale: text().notNull(),
+    name: text().notNull(),
+    description: text().notNull(),
+    schema: jsonb().notNull().default({}),
+    uiSchema: jsonb().notNull().default({}),
+
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex(
+      "consent_document_type_version_translations_version_locale_unique",
+    ).on(t.consentDocumentTypeVersionId, t.locale),
+  ],
+);
+
 export const consentDocumentVersions = pgTable(
   "consent_document_versions",
   {
@@ -94,9 +151,9 @@ export const consentDocumentVersions = pgTable(
     consentDocumentId: uuid()
       .notNull()
       .references(() => consentDocuments.id, { onDelete: "cascade" }),
-    schemaVersionId: uuid()
+    consentDocumentTypeVersionId: uuid()
       .notNull()
-      .references(() => schemaVersions.id),
+      .references(() => consentDocumentTypeVersions.id),
 
     version: integer().notNull(),
     status: consentDocumentVersionStatusEnum().notNull(),
@@ -126,7 +183,9 @@ export const consentDocumentVersionTranslations = pgTable(
       .references(() => consentDocumentVersions.id, { onDelete: "cascade" }),
 
     locale: text().notNull(),
-    content: jsonb().notNull().default(`{}`),
+    name: text().notNull(),
+    description: text(),
+    content: jsonb().notNull().default({}),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })

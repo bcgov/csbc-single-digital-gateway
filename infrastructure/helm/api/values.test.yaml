@@ -32,3 +32,6 @@ migrations:
   enabled: true
   useDirectConnection: true
   activeDeadlineSeconds: 180
+  # Reseed fixtures on every deploy in test/staging
+  seed:
+    enabled: true

@@ -51,7 +51,7 @@ function AccordionGroup({
             <button
               type="button"
               onClick={toggleAll}
-              className="text-muted shrink-0 cursor-pointer text-sm hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center"
+              className="text-muted-foreground shrink-0 cursor-pointer text-sm hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center"
             >
               {allExpanded ? (
                 <IconChevronsUp size="20" />

@@ -32,9 +32,7 @@ async function bootstrapMain() {
 
   app.enableCors({
     origin:
-      nodeEnv === 'development'
-        ? [frontendUrl, 'http://localhost:5173', testerIPAddress]
-        : frontendUrl,
+      nodeEnv === 'development' ? [frontendUrl, testerIPAddress] : frontendUrl,
     credentials: true,
   });
 

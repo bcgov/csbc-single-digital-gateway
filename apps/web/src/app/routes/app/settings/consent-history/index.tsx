@@ -78,7 +78,7 @@ function ConsentHistoryPage() {
     }),
   );
 
-  const groups = data?.docs ?? [];
+  const groups = data?.data ?? [];
   const totalPages = data?.totalPages ?? 1;
   const currentPage = data?.page ?? 1;
 

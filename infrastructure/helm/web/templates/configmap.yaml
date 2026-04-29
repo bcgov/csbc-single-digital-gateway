@@ -17,7 +17,6 @@ data:
 
   # External service API configuration
   VITE_CONSENT_MANAGER_API_URL: {{ .Values.app.consentManagerApiUrl | quote }}
-  VITE_SERVICE_CATALOGUE_API_URL: {{ .Values.app.serviceCatalogueApiUrl | quote }}
 
   {{- with .Values.configMap.data }}
   {{- toYaml . | nindent 2 }}

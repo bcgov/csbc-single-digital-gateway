@@ -40,6 +40,10 @@ COPY --from=pruner /app/out/full/packages/db/drizzle ./packages/db/drizzle
 # Copy source (config schema needed by drizzle.config.ts at runtime)
 COPY --from=pruner /app/out/full/packages/db/src ./packages/db/src
 
+# Copy seed scripts and fixtures (required when the seed Helm hook is enabled)
+COPY --from=pruner /app/out/full/packages/db/scripts ./packages/db/scripts
+COPY --from=pruner /app/out/full/packages/db/seed ./packages/db/seed
+
 # Copy package.json for npm scripts
 COPY --from=pruner /app/out/full/packages/db/package.json ./packages/db/package.json
 

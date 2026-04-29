@@ -16,6 +16,7 @@ export const orgUnitMemberRoleEnum = pgEnum("org_unit_member_role", [
 
 export const orgUnitTypeEnum = pgEnum("org_unit_type", [
   "org",
+  "ministry",
   "division",
   "branch",
   "team",

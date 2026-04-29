@@ -26,11 +26,11 @@ jest.mock("@tanstack/react-router", () => ({
   }: {
     children?: ReactNode;
     to: string;
-    params?: { serviceSlug?: string };
+    params?: { serviceId?: string };
   }) => {
     const href =
-      params?.serviceSlug && to.includes("$serviceSlug")
-        ? to.replace("$serviceSlug", params.serviceSlug)
+      params?.serviceId && to.includes("$serviceId")
+        ? to.replace("$serviceId", params.serviceId)
         : to;
     return (
       <a href={href} data-testid="service-link">
@@ -41,9 +41,6 @@ jest.mock("@tanstack/react-router", () => ({
 }));
 
 jest.mock("@repo/ui", () => ({
-  Badge: ({ children }: { children?: ReactNode }) => (
-    <span data-testid="badge">{children}</span>
-  ),
   Card: ({ children }: { children?: ReactNode }) => (
     <article data-testid="card">{children}</article>
   ),
@@ -88,7 +85,7 @@ describe("Services Index Component Test", () => {
   });
 
   it("Should call loader with servicesQueryOptions", async () => {
-    const services: Service[] = [{ slug: "income", name: "Income Assistance" }];
+    const services: Service[] = [{ id: "svc-1", name: "Income Assistance" }];
     mockedEnsureQueryData.mockResolvedValueOnce(services);
 
     const result = await typedRoute.options.loader({ params: {} });
@@ -123,14 +120,14 @@ describe("Services Index Component Test", () => {
   it("Should render service cards, links, names, and descriptions", () => {
     const services: Service[] = [
       {
-        slug: "income-assistance",
+        id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         name: "Income Assistance",
-        description: { short: "Temporary financial support." },
+        description: "Temporary financial support.",
       },
       {
-        slug: "housing-support",
+        id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
         name: "Housing Support",
-        description: { short: "Housing stabilization support." },
+        description: "Housing stabilization support.",
       },
     ];
     mockedUseQuery.mockReturnValue({ data: services });
@@ -149,44 +146,9 @@ describe("Services Index Component Test", () => {
 
     expect(
       screen.getByRole("link", { name: /income assistance/i }),
-    ).toHaveAttribute("href", "/app/services/income-assistance");
+    ).toHaveAttribute("href", "/app/services/a1b2c3d4-e5f6-7890-abcd-ef1234567890");
     expect(
       screen.getByRole("link", { name: /housing support/i }),
-    ).toHaveAttribute("href", "/app/services/housing-support");
-  });
-
-  it("Should render category badges with capitalized labels", () => {
-    const services: Service[] = [
-      {
-        slug: "income-assistance",
-        name: "Income Assistance",
-        categories: ["health", "employment"],
-        description: { short: "Temporary financial support." },
-      },
-    ];
-    mockedUseQuery.mockReturnValue({ data: services });
-
-    const Component = typedRoute.options.component;
-    render(<Component />);
-
-    expect(screen.getByText("Health")).toBeInTheDocument();
-    expect(screen.getByText("Employment")).toBeInTheDocument();
-    expect(screen.getAllByTestId("badge")).toHaveLength(2);
-  });
-
-  it("Should not render badges when categories are missing", () => {
-    const services: Service[] = [
-      {
-        slug: "income-assistance",
-        name: "Income Assistance",
-        description: { short: "Temporary financial support." },
-      },
-    ];
-    mockedUseQuery.mockReturnValue({ data: services });
-
-    const Component = typedRoute.options.component;
-    render(<Component />);
-
-    expect(screen.queryAllByTestId("badge")).toHaveLength(0);
+    ).toHaveAttribute("href", "/app/services/b2c3d4e5-f6a7-8901-bcde-f12345678901");
   });
 });

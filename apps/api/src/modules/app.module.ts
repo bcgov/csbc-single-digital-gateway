@@ -5,11 +5,15 @@ import { LoggerModule } from 'nestjs-pino';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AppConfigDto, AppConfigSchema } from 'src/common/dtos/app-config.dto';
 import { HttpExceptionFilter } from 'src/common/filters/http-exception.filter';
+import { ApplicationsModule } from './applications/applications.module';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { TokenRefreshMiddleware } from './auth/middleware/token-refresh.middleware';
+import { ConsentModule } from './consent/consent.module';
 import { ConsentProxyModule } from './consent-proxy/consent-proxy.module';
 import { DatabaseModule } from './database/database.module';
+import { OrgUnitsModule } from './org-units/org-units.module';
+import { ServicesModule } from './services/services.module';
 
 @Module({
   imports: [
@@ -34,7 +38,11 @@ import { DatabaseModule } from './database/database.module';
     }),
     DatabaseModule,
     AuthModule,
+    ConsentModule,
     ConsentProxyModule,
+    OrgUnitsModule,
+    ServicesModule,
+    ApplicationsModule,
   ],
   providers: [
     {

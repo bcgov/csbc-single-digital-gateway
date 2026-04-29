@@ -53,7 +53,7 @@ export function consentDocumentsQueryOptions(documentIds: string[]) {
           const { data } = await consentManagerApi.get(`/api/v1/statements`, {
             params: { documentId: doc.id, limit: 1 },
           });
-          const statements = Array.isArray(data.docs) ? data.docs : [];
+          const statements = Array.isArray(data.data) ? data.data : [];
           const latest = statements[0];
 
           if (

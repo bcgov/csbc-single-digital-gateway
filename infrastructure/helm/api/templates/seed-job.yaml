@@ -1,0 +1,100 @@
+{{- if and .Values.migrations.enabled .Values.migrations.seed.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "api.fullname" . }}-seed
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seed
+  annotations:
+    # Run after migrations have applied the schema (post-install/upgrade)
+    "helm.sh/hook": post-install,post-upgrade
+    # Higher weight than migrations so it runs after them
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit | default 3 }}
+  {{- if .Values.migrations.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  {{- end }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished | default 300 }}
+  template:
+    metadata:
+      labels:
+        {{- include "api.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: seed
+      {{- with .Values.migrations.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Never
+      securityContext:
+        {{- toYaml .Values.securityContext.podSecurityContext | nindent 8 }}
+      containers:
+      - name: seed
+        image: {{ include "api.migrationsImage" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          {{- toYaml .Values.securityContext.containerSecurityContext | nindent 10 }}
+        # Override the migrations image's default CMD to run the seed script.
+        # The seed script TRUNCATEs target tables before inserting fixtures, so
+        # this owner-level connection (postgres superuser) is required.
+        command: ["npm", "run", "db:seed"]
+        env:
+        # Database credentials from secret (postgres superuser — seed needs DDL/owner privileges to TRUNCATE)
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.migrations.database.secretName | quote }}
+              key: dbname
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.migrations.database.secretName | quote }}
+              {{- if .Values.migrations.useDirectConnection }}
+              key: host
+              {{- else }}
+              key: pgbouncer-host
+              {{- end }}
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.migrations.database.secretName | quote }}
+              {{- if .Values.migrations.useDirectConnection }}
+              key: port
+              {{- else }}
+              key: pgbouncer-port
+              {{- end }}
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.migrations.database.secretName | quote }}
+              key: user
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.migrations.database.secretName | quote }}
+              key: password
+        - name: DB_SSL
+          value: {{ .Values.app.database.ssl | quote }}
+        - name: NODE_ENV
+          value: {{ .Values.app.nodeEnv | quote }}
+        # Required confirmation flag for the seed script
+        - name: ALLOW_DB_SEED
+          value: "true"
+        resources:
+          {{- toYaml .Values.migrations.resources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

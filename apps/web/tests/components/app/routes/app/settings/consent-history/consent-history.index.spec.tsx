@@ -197,7 +197,7 @@ type TimelineGroup = {
 };
 
 type TimelineData = {
-  docs: TimelineGroup[];
+  data: TimelineGroup[];
   totalPages: number;
   page: number;
 };
@@ -232,7 +232,7 @@ const buildSearch = (overrides?: Partial<SearchShape>): SearchShape => ({
 const buildTimelineData = (
   overrides?: Partial<TimelineData>,
 ): TimelineData => ({
-  docs: [],
+  data: [],
   totalPages: 1,
   page: 1,
   ...overrides,
@@ -385,7 +385,7 @@ describe("ConsentHistory Route Test", () => {
     it("Should pass query groups to ConsentTimeline", () => {
       mockUseQuery.mockReturnValue({
         data: buildTimelineData({
-          docs: [
+          data: [
             { id: "group-1", label: "Privacy Policy" },
             { id: "group-2", label: "Terms of Use" },
           ],
@@ -436,7 +436,7 @@ describe("ConsentHistory Route Test", () => {
     it("Should not render pagination when there is only one page", () => {
       mockUseQuery.mockReturnValue({
         data: buildTimelineData({
-          docs: [{ id: "group-1", label: "Privacy Policy" }],
+          data: [{ id: "group-1", label: "Privacy Policy" }],
           totalPages: 1,
           page: 1,
         }),
@@ -450,7 +450,7 @@ describe("ConsentHistory Route Test", () => {
     it("Should render pagination when there are multiple pages", () => {
       mockUseQuery.mockReturnValue({
         data: buildTimelineData({
-          docs: [{ id: "group-1", label: "Privacy Policy" }],
+          data: [{ id: "group-1", label: "Privacy Policy" }],
           totalPages: 3,
           page: 2,
         }),

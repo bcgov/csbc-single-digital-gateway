@@ -85,6 +85,9 @@ migrations:
   backoffLimit: 5
   # Keep completed job around longer for debugging
   ttlSecondsAfterFinished: 600
+  # Never reseed in production — TRUNCATEs would destroy real data
+  seed:
+    enabled: false
   # More resources for production migrations
   resources:
     requests:
