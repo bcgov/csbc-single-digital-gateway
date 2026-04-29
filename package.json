@@ -23,6 +23,13 @@
     "test:open": "turbo run test:open",
     "test:e2e": "turbo run test:e2e",
     "test:e2e:report": "turbo run test:e2e:report",
+    "test:login": "turbo run test:login",
+    "test:load:api": "turbo run test:load:api",
+    "test:load:web": "turbo run test:load:web",
+    "test:smoke:api": "turbo run test:smoke:api",
+    "test:smoke:web": "turbo run test:smoke:web",
+    "test:stress:api": "turbo run test:stress:api",
+    "test:stress:web": "turbo run test:stress:web",
     "cookies:delete": "turbo run cookies:delete"
   },
   "devDependencies": {
@@ -35,6 +42,6 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "cypress"
+    "testings/*"
   ]
 }

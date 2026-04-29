@@ -16,7 +16,7 @@ describe("BCSC Authentication E2E Test", () => {
         }).then((response) => {
           expect(response.status).to.equal(302);
           expect(response.redirectedToUrl).to.include(
-            encodeURIComponent(`${WEB_APP_URL}/api/auth/bcsc/callback`),
+            encodeURIComponent("/auth/bcsc/callback"),
           );
         });
       });

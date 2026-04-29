@@ -1,5 +1,5 @@
 {
-  "name": "cypress",
+  "name": "cypress-testing",
   "license": "Apache-2.0",
   "version": "0.0.0",
   "private": true,
@@ -8,8 +8,10 @@
     "test:e2e": "npm run report:delete && cypress run --e2e",
     "test:e2e:report": "npm run report:delete && cross-env REPORT=true cypress run --e2e",
     "test:open": "npm run report:delete && cypress open",
+    "test:login": "npm run report:delete && cypress run --e2e --spec \"cypress/e2e/auth/user-sign-in.e2e-cy.ts\" && npm run cookies:copy",
     "report:delete": "rm -rf cypress/reports/* || true",
-    "cookies:delete": "rm -r cypress/cookies/auth-cookies.json || true"
+    "cookies:delete": "rm -r cypress/cookies/auth-cookies.json || true",
+    "cookies:copy": "cp cypress/cookies/auth-cookies.json ../performance/cookies/auth-cookies.json"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

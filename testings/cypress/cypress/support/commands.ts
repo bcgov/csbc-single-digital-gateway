@@ -61,7 +61,7 @@ Cypress.Commands.add("loginToObtainCookies", () => {
       cy.getCookie("csrf-token").should("exist");
     });
 
-    // Save the cookies to a file for later use
+    // Save the auth cookies to a file for later use
     cy.getCookies().then((cookies) => {
       cy.writeFile("cypress/cookies/auth-cookies.json", cookies);
       cookies.forEach((cookie: any) => {
@@ -74,7 +74,7 @@ Cypress.Commands.add("loginToObtainCookies", () => {
           sameSite: cookie.sameSite,
         });
       });
-      cy.log("Cookies saved to file after login.");
+      cy.log("Auth cookies saved to file after login.");
     });
   });
 });

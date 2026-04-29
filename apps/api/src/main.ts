@@ -26,9 +26,15 @@ async function bootstrapMain() {
   app.set('trust proxy', 1);
 
   // CORS with credentials
+  const nodeEnv = configService.get<string>('NODE_ENV');
   const frontendUrl = configService.get<string>('FRONTEND_URL');
+  const testerIPAddress = configService.get<string>('TESTER_IP_ADDRESS');
+
   app.enableCors({
-    origin: frontendUrl,
+    origin:
+      nodeEnv === 'development'
+        ? [frontendUrl, 'http://localhost:5173', testerIPAddress]
+        : frontendUrl,
     credentials: true,
   });
 
@@ -38,7 +44,6 @@ async function bootstrapMain() {
   // Session middleware with PostgreSQL store
   const PgSession = connectPgSimple(session);
   const sessionSecret = configService.get<string>('SESSION_SECRET');
-  const nodeEnv = configService.get<string>('NODE_ENV');
 
   app.use(
     session({

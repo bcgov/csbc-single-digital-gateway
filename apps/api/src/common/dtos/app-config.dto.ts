@@ -42,6 +42,9 @@ export const AppConfigSchema = z.object({
 
   // Consent Manager
   CONSENT_MANAGER_API_URL: z.string().optional(),
+
+  // Performance Tester IP Address (for CORS during development)
+  TESTER_IP_ADDRESS: z.string().optional(),
 });
 
 export class AppConfigDto extends createZodDto(AppConfigSchema) {}

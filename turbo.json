@@ -147,25 +147,38 @@
     },
     "test:open": {
       "passThroughEnv": [
-        "APP_PORT",
+        "WEB_APP_URL",
         "CYPRESS_TEST_USERNAME",
         "CYPRESS_TEST_PASSWORD"
       ]
     },
     "test:e2e": {
       "passThroughEnv": [
-        "APP_PORT",
+        "WEB_APP_URL",
         "CYPRESS_TEST_USERNAME",
         "CYPRESS_TEST_PASSWORD"
       ]
     },
     "test:e2e:report": {
       "passThroughEnv": [
-        "APP_PORT",
+        "WEB_APP_URL",
         "CYPRESS_TEST_USERNAME",
         "CYPRESS_TEST_PASSWORD"
       ]
     },
+    "test:login": {
+      "passThroughEnv": [
+        "WEB_APP_URL",
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD"
+      ]
+    },
+    "test:load:api": {},
+    "test:load:web": {},
+    "test:smoke:api": {},
+    "test:smoke:web": {},
+    "test:stress:api": {},
+    "test:stress:web": {},
     "cookies:delete": {}
   }
 }

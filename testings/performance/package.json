@@ -1,0 +1,20 @@
+{
+  "name": "performance-testing",
+  "license": "Apache-2.0",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:load:api": "dotenv -e .env k6 run load-test/api.ts",
+    "test:load:web": "dotenv -e .env k6 run load-test/web.ts",
+    "test:smoke:api": "dotenv -e .env k6 run smoke-test/api.ts",
+    "test:smoke:web": "dotenv -e .env k6 run smoke-test/web.ts",
+    "test:stress:api": "dotenv -e .env k6 run stress-test/api.ts",
+    "test:stress:web": "dotenv -e .env k6 run stress-test/web.ts",
+    "cookies:delete": "rm -r cookies/auth-cookies.json || true"
+  },
+  "devDependencies": {
+    "@types/k6": "^1.7.0",
+    "dotenv-cli": "^11.0.0"
+  }
+}
