@@ -48,7 +48,7 @@ export const AppConfigSchema = z.object({
 
   // Workflow API
   WORKFLOW_API_URL: z.string().optional(),
-  
+
   // Performance Tester's IP Address (for CORS in development)
   TESTER_IP_ADDRESS: z.string().optional(),
 });

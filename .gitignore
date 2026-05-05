@@ -111,4 +111,7 @@ Thumbs.db
 # Cypress test files and folders
 **/cypress/reports
 **/cypress/screenshots
-**/cypress/cookies/auth-cookies.json
+
+# Performance test files and folders
+**/cookies/*.*
+**/performance/**/*.html

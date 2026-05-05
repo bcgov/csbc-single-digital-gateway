@@ -1,0 +1,26 @@
+{
+  "name": "performance-testing",
+  "license": "Apache-2.0",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:admin:api-load-test": "dotenv -e .env k6 run admin/api-load-test.ts",
+    "test:admin:api-smoke-test": "dotenv -e .env k6 run admin/api-smoke-test.ts",
+    "test:admin:api-stress-test": "dotenv -e .env k6 run admin/api-stress-test.ts",
+    "test:admin:web-load-test": "dotenv -e .env k6 run admin/web-load-test.ts",
+    "test:admin:web-smoke-test": "dotenv -e .env k6 run admin/web-smoke-test.ts",
+    "test:admin:web-stress-test": "dotenv -e .env k6 run admin/web-stress-test.ts",
+    "test:client:api-load-test": "dotenv -e .env k6 run client/api-load-test.ts",
+    "test:client:api-smoke-test": "dotenv -e .env k6 run client/api-smoke-test.ts",
+    "test:client:api-stress-test": "dotenv -e .env k6 run client/api-stress-test.ts",
+    "test:client:web-load-test": "dotenv -e .env k6 run client/web-load-test.ts",
+    "test:client:web-smoke-test": "dotenv -e .env k6 run client/web-smoke-test.ts",
+    "test:client:web-stress-test": "dotenv -e .env k6 run client/web-stress-test.ts",
+    "cookies:delete": "rm -r cookies/bcsc-auth-cookies.json && rm -r cookies/idir-auth-cookies.json || true"
+  },
+  "devDependencies": {
+    "@types/k6": "^1.7.0",
+    "dotenv-cli": "^11.0.0"
+  }
+}

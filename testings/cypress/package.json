@@ -1,0 +1,23 @@
+{
+  "name": "cypress-testing",
+  "license": "Apache-2.0",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "npm run report:delete && cypress run --e2e",
+    "test:e2e:report": "npm run report:delete && cross-env REPORT=true cypress run --e2e",
+    "test:open": "npm run report:delete && cypress open",
+    "test:login": "npm run report:delete && cypress run --e2e --spec \"cypress/e2e/client/bcsc-sign-in.e2e-cy.ts\" && npm run cookies:copy:bcsc",
+    "cookies:delete": "rm -r cypress/cookies/bcsc-auth-cookies.json && rm -r cypress/cookies/idir-auth-cookies.json || true",
+    "cookies:copy:bcsc": "cp cypress/cookies/bcsc-auth-cookies.json ../performance/cookies/",
+    "cookies:copy": "cp cypress/cookies/idir-auth-cookies.json ../performance/cookies/",
+    "report:delete": "rm -rf cypress/reports/* || true"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "cypress": "^15.13.1",
+    "cypress-mochawesome-reporter": "^3.6.0",
+    "dotenv": "^17.4.1"
+  }
+}
