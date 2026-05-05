@@ -1,3 +1,4 @@
+import { Cookie } from "k6/browser";
 import http from "k6/http";
 
 interface CookieOptions {
@@ -17,6 +18,20 @@ interface JarCookie {
   httpOnly?: boolean;
   secure?: boolean;
 }
+
+export enum UserType {
+  Admin = "admin",
+  Client = "client",
+}
+
+// Load cookies from JSON file
+export const bcscCookieData: Cookie[] = JSON.parse(
+  open("../cookies/bcsc-auth-cookies.json"),
+);
+
+export const idirCookieData: Cookie[] = JSON.parse(
+  open("../cookies/idir-auth-cookies.json"),
+);
 
 /**
  * Formats a timestamp into a cookie expiry string.
@@ -56,9 +71,9 @@ const formattedExpiry = (timestamp: number) => {
 /**
  * Utility function to set cookies from a JSON file into the k6 Cookie Jar.
  * @param {JarCookie[]} cookieData - An array of cookie objects loaded from the JSON file.
- * @returns void
+ * @param {UserType} userType - User type as either admin or client.
  */
-export const setCookies = (cookieData: JarCookie[]) => {
+export const setCookies = (cookieData: JarCookie[], userType: UserType) => {
   const jar = http.cookieJar();
   cookieData.forEach((cookie) => {
     let expiresOption: CookieOptions = {
@@ -77,6 +92,10 @@ export const setCookies = (cookieData: JarCookie[]) => {
         http_only: cookie.httpOnly,
       };
     }
-    jar.set(__ENV.WEB_APP_URL, cookie.name, cookie.value, expiresOption);
+    const webUrl =
+      userType === UserType.Admin
+        ? `${__ENV.WEB_APP_URL}/admin`
+        : __ENV.WEB_APP_URL;
+    jar.set(webUrl, cookie.name, cookie.value, expiresOption);
   });
 };

@@ -70,14 +70,18 @@ Stress testing assesses how the system performs when loads are heavier than usua
 
 The Single Digital Gateway project uses test user credentials to sign in to its applications via BC Services Card Login development URL. Performance tests with K6 requires authentication tokens and cookies to access its frontend and backend applications. To obtain the authentication cookies, we use Cypress sign in with test username and password and store the cookies in a temporary folder. Refer to the Cypress function [`loginToObtainCookies`](/testings/cypress/cypress/support/commands.ts) for more details. Navigate to the root directory and enter the following command.
 
-Obtain the cookies
+Obtain cookies for a BCSC test user
 ```bash
 npm run test:login
 ```
 
+### IDIR Authentication
+
+Running performance tests on the Admin site requires IDIR authentication. To sign in an IDIR user with developer's IDIR credentials, you must use the Cypress Launchpad application and run an E2E test for file `idir-sign-in.e2e-cy`. Then authorize user login by entering two digits on your authentication app. Once a new `idir-auth-cookies.json` file is generated upon E2E test completion, manually copy this file from the [`cypress/cookies`](/testings/cypress/cypress/cookies/) folder to the [`performance/cookies`](/testings/performance/cookies/) folder, or type the command `npm run cookies:copy` from root directory. Run performance test on the development admin site with any of the admin related commands on your console, e.g., `npm run test:admin:web-smoke-test`. 
+
 ## Configuration
 
-Performance testing only runs on developer's local machine. The default testing environment is the development environment. Should there be any change in the development, update the tester's IP address secret on the project's GitHub settings. Add an `.env` file in the performance folder with the variable `WEB_APP_URL` and set its value to the development URL.
+Performance testing only runs on developer's local machine. The default testing environment is the development environment. Should there be any change in the development, update the tester's IP address secret on the project's GitHub settings. Add an `.env` file in the performance/root folder with the variable `WEB_APP_URL` and set its value to the development URL.
 
 ```
 WEB_APP_URL=
@@ -85,24 +89,18 @@ WEB_APP_URL=
 
 ## Testing Commands 
 
-Each type of performance test consists of two parts: API and web. Commands corresponding each type are available on the root directory. 
+Each type of performance test consists of two parts: API and web. The commands below are available on the root directory, and the rest are executed in the performance folder.
 
-### Smoke Testing for Web
+### Web Smoke Testing for Client User
 
 ```bash
-npm run test:smoke:web
+test:client:web-smoke-test
 ```
 
-### Load Testing for Web
+### API Smoke Testing for Admin User
 
 ```bash
-npm run test:load:web
-```
-
-### Stress Testing for Web
-
-```bash
-npm run test:stress:web
+test:admin:api-load-test
 ```
 
 ## Test Reports
@@ -110,7 +108,7 @@ npm run test:stress:web
 Test reports are available for the K6 in developers' local environments. Refer to [reports page]([./cypress.config.ts](https://grafana.com/docs/k6/latest/results-output/web-dashboard/)) for more details. NPM scripts for reports are not included in `package.json` file as generating reports varies according to requirements. Smoke tests will not generate reports as the test durations were short. Run the command below to generate a HTML report file after running either a load test or a stress test. 
 
 ```bash
-K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=html-report.html dotenv -e .env k6 run web.js
+K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=html-report.html dotenv -e .env k6 run web-load-test.js
 ```
 
 ## Test Interpretation
@@ -125,4 +123,4 @@ http_req_failed................: 0.00%  0 out of 3
 http_reqs......................: 3      0.487317/s
 ```
 
-`p(95)` and `http_req_failed` are two metrics that play an important role in this project. `p(95)` measures the response time for 95% of total requests, and `http_req_failed` measures the failed rate for those requests. Depending on the type of tests and real-world scenarios, the values of these metrics vary, and developers should adjust thresholds to meet new expectations accordingly.
+`p(95)` and `http_req_failed` are two metrics that play an important role in this project. `p(95)` measures the response time for 95% of total requests, and `http_req_failed` measures the failed rate for those requests. Depending on the type of tests, user roles and real-world scenarios, the values of these metrics vary, and developers should adjust thresholds to meet new expectations accordingly.

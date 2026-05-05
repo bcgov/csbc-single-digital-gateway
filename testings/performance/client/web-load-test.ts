@@ -1,5 +1,4 @@
-import { browser, Cookie } from "k6/browser";
-import { appPage, homePage } from "../utils/web-pages.ts";
+import clientWebTest from "./tests/client-web-test.ts";
 
 export const options = {
   scenarios: {
@@ -32,27 +31,14 @@ export const options = {
   },
 };
 
-// Load cookies from JSON file
-const cookieData: Cookie[] = JSON.parse(open("../cookies/auth-cookies.json"));
-
 /**
- * This is the main entry point for the web load tests. The purpose of these load
- * tests is to simulate real-world usage scenarios and measure the performance
+ * This is the main entry point for the client web load tests. The purpose of these
+ * load tests is to simulate real-world usage scenarios and measure the performance
  * of the application under load.
  */
-export default async function webLoadTest() {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await context.addCookies(cookieData);
+export default async function clientWebLoadTest() {
+  const testHomePage = false;
+  const testAppPage = false;
 
-  try {
-    // Home page
-    await homePage();
-
-    // App page
-    await appPage(page);
-  } finally {
-    await page.close();
-    await context.close();
-  }
+  clientWebTest(testHomePage, testAppPage);
 }

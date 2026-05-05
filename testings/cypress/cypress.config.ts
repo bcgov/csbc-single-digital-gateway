@@ -16,11 +16,13 @@ export default defineConfig({
       });
       config.env.LOGIN_URL = "https://idtest.gov.bc.ca";
       config.env.WEB_APP_URL = process.env.WEB_APP_URL;
-      config.env.TEST_USERNAME = process.env.CYPRESS_TEST_USERNAME;
-      config.env.TEST_PASSWORD = process.env.CYPRESS_TEST_PASSWORD;
+      config.env.BCSC_USERNAME = process.env.CYPRESS_BCSC_USERNAME;
+      config.env.BCSC_PASSWORD = process.env.CYPRESS_BCSC_PASSWORD;
+      config.env.IDIR_USERNAME = process.env.CYPRESS_IDIR_USERNAME;
+      config.env.IDIR_PASSWORD = process.env.CYPRESS_IDIR_PASSWORD;
       if (process.env.REPORT === "true") {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        require("../../node_modules/cypress-mochawesome-reporter/plugin")(on);
+        require("./node_modules/cypress-mochawesome-reporter/plugin")(on);
       }
       return config;
     },
@@ -28,7 +30,7 @@ export default defineConfig({
     fixturesFolder: "fixtures",
     reporter:
       process.env.REPORT === "true"
-        ? "../../node_modules/cypress-mochawesome-reporter"
+        ? "./node_modules/cypress-mochawesome-reporter"
         : "spec",
     reporterOptions: {
       charts: true,
@@ -41,5 +43,6 @@ export default defineConfig({
       screenshotOnRunFailure: false,
     },
     screenshotOnRunFailure: false,
+    experimentalModifyObstructiveThirdPartyCode: true,
   },
 });

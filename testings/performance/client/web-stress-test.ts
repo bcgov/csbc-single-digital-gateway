@@ -1,5 +1,4 @@
-import { browser, Cookie } from "k6/browser";
-import { appPage, homePage } from "../utils/web-pages.ts";
+import clientWebTest from "./tests/client-web-test.ts";
 
 export const options = {
   scenarios: {
@@ -32,27 +31,14 @@ export const options = {
   },
 };
 
-// Load cookies from JSON file
-const cookieData: Cookie[] = JSON.parse(open("../cookies/auth-cookies.json"));
-
 /**
- * This is the main entry point for the web stress tests. The purpose of these stress
+ * This is the main entry point for the client web stress tests. The purpose of these stress
  * tests is to simulate high-load scenarios and measure the performance of the application
  * under stress.
  */
-export default async function webStressTest() {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await context.addCookies(cookieData);
+export default async function clientWebStressTest() {
+  const testHomePage = false;
+  const testAppPage = false;
 
-  try {
-    // Home page
-    await homePage();
-
-    // App page
-    await appPage(page);
-  } finally {
-    await page.close();
-    await context.close();
-  }
+  clientWebTest(testHomePage, testAppPage);
 }

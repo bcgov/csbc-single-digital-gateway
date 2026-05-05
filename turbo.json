@@ -1,11 +1,17 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": [
+    "**/.env.*local"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     },
     "db:migrate": {
       "cache": false,
@@ -20,17 +26,24 @@
     },
     "dev": {
       "cache": false,
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "persistent": true
     },
     "api#dev": {
       "cache": false,
-      "dependsOn": ["^build", "db:migrate"],
+      "dependsOn": [
+        "^build",
+        "db:migrate"
+      ],
       "persistent": true
     },
     "lint": {},
     "typecheck": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": []
     },
     "test:unit": {
@@ -135,42 +148,49 @@
     },
     "test:component": {},
     "test:cov:web": {
-      "passThroughEnv": ["APP_PORT"]
-    },
-    "test:open": {
       "passThroughEnv": [
-        "WEB_APP_URL",
-        "CYPRESS_TEST_USERNAME",
-        "CYPRESS_TEST_PASSWORD"
+        "APP_PORT"
       ]
     },
     "test:e2e": {
       "passThroughEnv": [
         "WEB_APP_URL",
         "CYPRESS_TEST_USERNAME",
-        "CYPRESS_TEST_PASSWORD"
+        "CYPRESS_TEST_PASSWORD",
+        "CYPRESS_IDIR_USERNAME",
+        "CYPRESS_IDIR_PASSWORD"
       ]
     },
     "test:e2e:report": {
       "passThroughEnv": [
         "WEB_APP_URL",
         "CYPRESS_TEST_USERNAME",
-        "CYPRESS_TEST_PASSWORD"
+        "CYPRESS_TEST_PASSWORD",
+        "CYPRESS_IDIR_USERNAME",
+        "CYPRESS_IDIR_PASSWORD"
       ]
     },
     "test:login": {
       "passThroughEnv": [
         "WEB_APP_URL",
         "CYPRESS_TEST_USERNAME",
-        "CYPRESS_TEST_PASSWORD"
+        "CYPRESS_TEST_PASSWORD",
+        "CYPRESS_IDIR_USERNAME",
+        "CYPRESS_IDIR_PASSWORD"
       ]
     },
-    "test:load:api": {},
-    "test:load:web": {},
-    "test:smoke:api": {},
-    "test:smoke:web": {},
-    "test:stress:api": {},
-    "test:stress:web": {},
+    "test:open": {
+      "passThroughEnv": [
+        "WEB_APP_URL",
+        "CYPRESS_TEST_USERNAME",
+        "CYPRESS_TEST_PASSWORD",
+        "CYPRESS_IDIR_USERNAME",
+        "CYPRESS_IDIR_PASSWORD"
+      ]
+    },
+    "test:client:api-smoke-test": {},
+    "test:client:web-smoke-test": {},
+    "cookies:copy": {},
     "cookies:delete": {}
   }
 }

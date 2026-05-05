@@ -1,8 +1,11 @@
+import { IdpType } from "../utils/idp";
+
 declare global {
   namespace Cypress {
     interface Chainable {
-      loginToObtainCookies(): Chainable<void>;
-      restoreCookiesFromFile(): Chainable<void>;
+      bcscLoginToObtainCookies(): Chainable<void>;
+      idirLoginToObtainCookies(): Chainable<void>;
+      restoreCookiesFromFile(idpType: IdpType): Chainable<void>;
     }
   }
 }

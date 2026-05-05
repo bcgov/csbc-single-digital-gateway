@@ -5,13 +5,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:load:api": "dotenv -e .env k6 run load-test/api.ts",
-    "test:load:web": "dotenv -e .env k6 run load-test/web.ts",
-    "test:smoke:api": "dotenv -e .env k6 run smoke-test/api.ts",
-    "test:smoke:web": "dotenv -e .env k6 run smoke-test/web.ts",
-    "test:stress:api": "dotenv -e .env k6 run stress-test/api.ts",
-    "test:stress:web": "dotenv -e .env k6 run stress-test/web.ts",
-    "cookies:delete": "rm -r cookies/auth-cookies.json || true"
+    "test:admin:api-load-test": "dotenv -e .env k6 run admin/api-load-test.ts",
+    "test:admin:api-smoke-test": "dotenv -e .env k6 run admin/api-smoke-test.ts",
+    "test:admin:api-stress-test": "dotenv -e .env k6 run admin/api-stress-test.ts",
+    "test:admin:web-load-test": "dotenv -e .env k6 run admin/web-load-test.ts",
+    "test:admin:web-smoke-test": "dotenv -e .env k6 run admin/web-smoke-test.ts",
+    "test:admin:web-stress-test": "dotenv -e .env k6 run admin/web-stress-test.ts",
+    "test:client:api-load-test": "dotenv -e .env k6 run client/api-load-test.ts",
+    "test:client:api-smoke-test": "dotenv -e .env k6 run client/api-smoke-test.ts",
+    "test:client:api-stress-test": "dotenv -e .env k6 run client/api-stress-test.ts",
+    "test:client:web-load-test": "dotenv -e .env k6 run client/web-load-test.ts",
+    "test:client:web-smoke-test": "dotenv -e .env k6 run client/web-smoke-test.ts",
+    "test:client:web-stress-test": "dotenv -e .env k6 run client/web-stress-test.ts",
+    "cookies:delete": "rm -r cookies/bcsc-auth-cookies.json && rm -r cookies/idir-auth-cookies.json || true"
   },
   "devDependencies": {
     "@types/k6": "^1.7.0",
