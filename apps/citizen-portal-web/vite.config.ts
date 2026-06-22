@@ -14,5 +14,5 @@ export default defineConfig({
   resolve: {
     alias: { '@': resolve(import.meta.dirname, 'src') },
   },
-  server: { port: 3001 },
+  server: { port: 3000 },
 });
