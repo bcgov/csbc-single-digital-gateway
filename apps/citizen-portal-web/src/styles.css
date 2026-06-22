@@ -1,0 +1,6 @@
+/* @repo/ui ships Tailwind v4 + the Mira theme tokens + Noto Sans. */
+@import '@repo/ui/styles.css';
+
+/* Generate utilities for this app's source and the consumed @repo/ui components. */
+@source '../**/*.{ts,tsx,html}';
+@source '../../../packages/ui/src/**/*.{ts,tsx}';
