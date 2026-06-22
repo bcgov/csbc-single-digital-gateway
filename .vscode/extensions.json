@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "oxc.oxc-vscode",
+    "editorconfig.editorconfig",
+    "vitest.explorer"
+  ],
+  "unwantedRecommendations": [
+    "dbaeumer.vscode-eslint",
+    "rvest.vs-code-prettier-eslint",
+    "hookyqr.beautify"
+  ]
+}

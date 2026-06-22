@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+coverage
+.turbo
+*.tsbuildinfo
+package-lock.json
+
+# Tool / workflow-managed — not project source
+.claude
+.mdd
+CLAUDE.md
+CLAUDE.local.md
