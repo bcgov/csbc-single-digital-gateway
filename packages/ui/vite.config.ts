@@ -1,4 +1,4 @@
-import { copyFileSync, readFileSync } from 'node:fs';
+import { copyFileSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -20,6 +20,15 @@ const external = [
   ...Object.keys(pkg.peerDependencies ?? {}),
   ...Object.keys(pkg.dependencies ?? {}),
 ].map((dep) => new RegExp(`^${dep}(/.*)?$`));
+
+// One library entry per flat re-export file in src/ (index + one per component).
+// Regenerate the re-exports with `npm run gen:entries` after adding components.
+const srcDir = resolve(import.meta.dirname, 'src');
+const entry = Object.fromEntries(
+  readdirSync(srcDir)
+    .filter((f) => f.endsWith('.ts'))
+    .map((f) => [f.replace(/\.ts$/, ''), resolve(srcDir, f)]),
+);
 
 // Ship the theme-token stylesheet verbatim; consumers run Tailwind v4 against it.
 const copyStyles = (): Plugin => ({
@@ -49,11 +58,7 @@ export default defineConfig({
   build: {
     sourcemap: true,
     lib: {
-      // One entry per public component (flat re-export files) + the barrel.
-      entry: {
-        index: resolve(import.meta.dirname, 'src/index.ts'),
-        button: resolve(import.meta.dirname, 'src/button.ts'),
-      },
+      entry,
       formats: ['es', 'cjs'],
     },
     rollupOptions: { external },

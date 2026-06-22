@@ -10,5 +10,14 @@
     "node": true,
     "es2024": true
   },
-  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**", ".turbo/**"]
+  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**", ".turbo/**"],
+  "overrides": [
+    {
+      "files": ["packages/ui/src/components/ui/**/*.tsx"],
+      "rules": {
+        "no-shadow": "off",
+        "no-underscore-dangle": "off"
+      }
+    }
+  ]
 }
