@@ -10,7 +10,13 @@
     "node": true,
     "es2024": true
   },
-  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**", ".turbo/**"],
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "coverage/**",
+    ".turbo/**",
+    "**/routeTree.gen.ts"
+  ],
   "overrides": [
     {
       "files": ["packages/ui/src/components/ui/**/*.tsx"],
