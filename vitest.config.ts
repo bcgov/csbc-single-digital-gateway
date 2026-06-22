@@ -12,7 +12,8 @@ export default defineConfig({
           include: ['tests/**/*.test.ts'],
         },
       },
-      'packages/*',
+      'packages/*/vitest.config.ts',
+      'apps/*/vitest.config.ts',
     ],
   },
 });

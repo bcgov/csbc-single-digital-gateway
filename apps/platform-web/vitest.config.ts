@@ -1,0 +1,18 @@
+import { resolve } from 'node:path';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), react()],
+  resolve: {
+    alias: { '@': resolve(import.meta.dirname, 'src') },
+  },
+  test: {
+    name: 'platform-web',
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./test/setup.ts'],
+    include: ['test/**/*.test.{ts,tsx}'],
+  },
+});
