@@ -3,6 +3,14 @@ import './auth.session-data';
 export { AuthModule } from './auth.module';
 export type { AuthModuleAsyncOptions } from './auth.module';
 export { AuthController } from './auth.controller';
+export {
+  CurrentUser,
+  IS_PUBLIC_KEY,
+  Public,
+  ROLES_KEY,
+  Roles,
+  currentUser,
+} from './auth.decorators';
 export { buildLoginUrl, completeLogin } from './auth.flow';
 export type { OidcLoginOptions, OidcTransaction } from './auth.flow';
 export { AUTH_OPTIONS, OIDC_CONFIG, AUTH_USER_SYNC } from './auth.constants';
