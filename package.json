@@ -20,6 +20,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && turbo run typecheck"
   },
+  "overrides": {
+    "multer": "^2.2.0"
+  },
   "devDependencies": {
     "@types/node": "26.0.0",
     "lefthook": "2.1.9",
