@@ -9,285 +9,344 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
     "./accordion": {
       "types": "./dist/accordion.d.ts",
+      "development": "./src/accordion.ts",
       "import": "./dist/accordion.js",
       "require": "./dist/accordion.cjs"
     },
     "./alert": {
       "types": "./dist/alert.d.ts",
+      "development": "./src/alert.ts",
       "import": "./dist/alert.js",
       "require": "./dist/alert.cjs"
     },
     "./alert-dialog": {
       "types": "./dist/alert-dialog.d.ts",
+      "development": "./src/alert-dialog.ts",
       "import": "./dist/alert-dialog.js",
       "require": "./dist/alert-dialog.cjs"
     },
     "./aspect-ratio": {
       "types": "./dist/aspect-ratio.d.ts",
+      "development": "./src/aspect-ratio.ts",
       "import": "./dist/aspect-ratio.js",
       "require": "./dist/aspect-ratio.cjs"
     },
     "./avatar": {
       "types": "./dist/avatar.d.ts",
+      "development": "./src/avatar.ts",
       "import": "./dist/avatar.js",
       "require": "./dist/avatar.cjs"
     },
     "./badge": {
       "types": "./dist/badge.d.ts",
+      "development": "./src/badge.ts",
       "import": "./dist/badge.js",
       "require": "./dist/badge.cjs"
     },
     "./breadcrumb": {
       "types": "./dist/breadcrumb.d.ts",
+      "development": "./src/breadcrumb.ts",
       "import": "./dist/breadcrumb.js",
       "require": "./dist/breadcrumb.cjs"
     },
     "./button": {
       "types": "./dist/button.d.ts",
+      "development": "./src/button.ts",
       "import": "./dist/button.js",
       "require": "./dist/button.cjs"
     },
     "./button-group": {
       "types": "./dist/button-group.d.ts",
+      "development": "./src/button-group.ts",
       "import": "./dist/button-group.js",
       "require": "./dist/button-group.cjs"
     },
     "./calendar": {
       "types": "./dist/calendar.d.ts",
+      "development": "./src/calendar.ts",
       "import": "./dist/calendar.js",
       "require": "./dist/calendar.cjs"
     },
     "./card": {
       "types": "./dist/card.d.ts",
+      "development": "./src/card.ts",
       "import": "./dist/card.js",
       "require": "./dist/card.cjs"
     },
     "./carousel": {
       "types": "./dist/carousel.d.ts",
+      "development": "./src/carousel.ts",
       "import": "./dist/carousel.js",
       "require": "./dist/carousel.cjs"
     },
     "./chart": {
       "types": "./dist/chart.d.ts",
+      "development": "./src/chart.ts",
       "import": "./dist/chart.js",
       "require": "./dist/chart.cjs"
     },
     "./checkbox": {
       "types": "./dist/checkbox.d.ts",
+      "development": "./src/checkbox.ts",
       "import": "./dist/checkbox.js",
       "require": "./dist/checkbox.cjs"
     },
     "./collapsible": {
       "types": "./dist/collapsible.d.ts",
+      "development": "./src/collapsible.ts",
       "import": "./dist/collapsible.js",
       "require": "./dist/collapsible.cjs"
     },
     "./combobox": {
       "types": "./dist/combobox.d.ts",
+      "development": "./src/combobox.ts",
       "import": "./dist/combobox.js",
       "require": "./dist/combobox.cjs"
     },
     "./command": {
       "types": "./dist/command.d.ts",
+      "development": "./src/command.ts",
       "import": "./dist/command.js",
       "require": "./dist/command.cjs"
     },
     "./context-menu": {
       "types": "./dist/context-menu.d.ts",
+      "development": "./src/context-menu.ts",
       "import": "./dist/context-menu.js",
       "require": "./dist/context-menu.cjs"
     },
     "./dialog": {
       "types": "./dist/dialog.d.ts",
+      "development": "./src/dialog.ts",
       "import": "./dist/dialog.js",
       "require": "./dist/dialog.cjs"
     },
     "./direction": {
       "types": "./dist/direction.d.ts",
+      "development": "./src/direction.ts",
       "import": "./dist/direction.js",
       "require": "./dist/direction.cjs"
     },
     "./drawer": {
       "types": "./dist/drawer.d.ts",
+      "development": "./src/drawer.ts",
       "import": "./dist/drawer.js",
       "require": "./dist/drawer.cjs"
     },
     "./dropdown-menu": {
       "types": "./dist/dropdown-menu.d.ts",
+      "development": "./src/dropdown-menu.ts",
       "import": "./dist/dropdown-menu.js",
       "require": "./dist/dropdown-menu.cjs"
     },
     "./empty": {
       "types": "./dist/empty.d.ts",
+      "development": "./src/empty.ts",
       "import": "./dist/empty.js",
       "require": "./dist/empty.cjs"
     },
     "./field": {
       "types": "./dist/field.d.ts",
+      "development": "./src/field.ts",
       "import": "./dist/field.js",
       "require": "./dist/field.cjs"
     },
     "./hover-card": {
       "types": "./dist/hover-card.d.ts",
+      "development": "./src/hover-card.ts",
       "import": "./dist/hover-card.js",
       "require": "./dist/hover-card.cjs"
     },
     "./input": {
       "types": "./dist/input.d.ts",
+      "development": "./src/input.ts",
       "import": "./dist/input.js",
       "require": "./dist/input.cjs"
     },
     "./input-group": {
       "types": "./dist/input-group.d.ts",
+      "development": "./src/input-group.ts",
       "import": "./dist/input-group.js",
       "require": "./dist/input-group.cjs"
     },
     "./input-otp": {
       "types": "./dist/input-otp.d.ts",
+      "development": "./src/input-otp.ts",
       "import": "./dist/input-otp.js",
       "require": "./dist/input-otp.cjs"
     },
     "./item": {
       "types": "./dist/item.d.ts",
+      "development": "./src/item.ts",
       "import": "./dist/item.js",
       "require": "./dist/item.cjs"
     },
     "./kbd": {
       "types": "./dist/kbd.d.ts",
+      "development": "./src/kbd.ts",
       "import": "./dist/kbd.js",
       "require": "./dist/kbd.cjs"
     },
     "./label": {
       "types": "./dist/label.d.ts",
+      "development": "./src/label.ts",
       "import": "./dist/label.js",
       "require": "./dist/label.cjs"
     },
     "./menubar": {
       "types": "./dist/menubar.d.ts",
+      "development": "./src/menubar.ts",
       "import": "./dist/menubar.js",
       "require": "./dist/menubar.cjs"
     },
     "./native-select": {
       "types": "./dist/native-select.d.ts",
+      "development": "./src/native-select.ts",
       "import": "./dist/native-select.js",
       "require": "./dist/native-select.cjs"
     },
     "./navigation-menu": {
       "types": "./dist/navigation-menu.d.ts",
+      "development": "./src/navigation-menu.ts",
       "import": "./dist/navigation-menu.js",
       "require": "./dist/navigation-menu.cjs"
     },
     "./pagination": {
       "types": "./dist/pagination.d.ts",
+      "development": "./src/pagination.ts",
       "import": "./dist/pagination.js",
       "require": "./dist/pagination.cjs"
     },
     "./popover": {
       "types": "./dist/popover.d.ts",
+      "development": "./src/popover.ts",
       "import": "./dist/popover.js",
       "require": "./dist/popover.cjs"
     },
     "./progress": {
       "types": "./dist/progress.d.ts",
+      "development": "./src/progress.ts",
       "import": "./dist/progress.js",
       "require": "./dist/progress.cjs"
     },
     "./radio-group": {
       "types": "./dist/radio-group.d.ts",
+      "development": "./src/radio-group.ts",
       "import": "./dist/radio-group.js",
       "require": "./dist/radio-group.cjs"
     },
     "./resizable": {
       "types": "./dist/resizable.d.ts",
+      "development": "./src/resizable.ts",
       "import": "./dist/resizable.js",
       "require": "./dist/resizable.cjs"
     },
     "./scroll-area": {
       "types": "./dist/scroll-area.d.ts",
+      "development": "./src/scroll-area.ts",
       "import": "./dist/scroll-area.js",
       "require": "./dist/scroll-area.cjs"
     },
     "./select": {
       "types": "./dist/select.d.ts",
+      "development": "./src/select.ts",
       "import": "./dist/select.js",
       "require": "./dist/select.cjs"
     },
     "./separator": {
       "types": "./dist/separator.d.ts",
+      "development": "./src/separator.ts",
       "import": "./dist/separator.js",
       "require": "./dist/separator.cjs"
     },
     "./sheet": {
       "types": "./dist/sheet.d.ts",
+      "development": "./src/sheet.ts",
       "import": "./dist/sheet.js",
       "require": "./dist/sheet.cjs"
     },
     "./sidebar": {
       "types": "./dist/sidebar.d.ts",
+      "development": "./src/sidebar.ts",
       "import": "./dist/sidebar.js",
       "require": "./dist/sidebar.cjs"
     },
     "./skeleton": {
       "types": "./dist/skeleton.d.ts",
+      "development": "./src/skeleton.ts",
       "import": "./dist/skeleton.js",
       "require": "./dist/skeleton.cjs"
     },
     "./slider": {
       "types": "./dist/slider.d.ts",
+      "development": "./src/slider.ts",
       "import": "./dist/slider.js",
       "require": "./dist/slider.cjs"
     },
     "./sonner": {
       "types": "./dist/sonner.d.ts",
+      "development": "./src/sonner.ts",
       "import": "./dist/sonner.js",
       "require": "./dist/sonner.cjs"
     },
     "./spinner": {
       "types": "./dist/spinner.d.ts",
+      "development": "./src/spinner.ts",
       "import": "./dist/spinner.js",
       "require": "./dist/spinner.cjs"
     },
     "./switch": {
       "types": "./dist/switch.d.ts",
+      "development": "./src/switch.ts",
       "import": "./dist/switch.js",
       "require": "./dist/switch.cjs"
     },
     "./table": {
       "types": "./dist/table.d.ts",
+      "development": "./src/table.ts",
       "import": "./dist/table.js",
       "require": "./dist/table.cjs"
     },
     "./tabs": {
       "types": "./dist/tabs.d.ts",
+      "development": "./src/tabs.ts",
       "import": "./dist/tabs.js",
       "require": "./dist/tabs.cjs"
     },
     "./textarea": {
       "types": "./dist/textarea.d.ts",
+      "development": "./src/textarea.ts",
       "import": "./dist/textarea.js",
       "require": "./dist/textarea.cjs"
     },
     "./toggle": {
       "types": "./dist/toggle.d.ts",
+      "development": "./src/toggle.ts",
       "import": "./dist/toggle.js",
       "require": "./dist/toggle.cjs"
     },
     "./toggle-group": {
       "types": "./dist/toggle-group.d.ts",
+      "development": "./src/toggle-group.ts",
       "import": "./dist/toggle-group.js",
       "require": "./dist/toggle-group.cjs"
     },
     "./tooltip": {
       "types": "./dist/tooltip.d.ts",
+      "development": "./src/tooltip.ts",
       "import": "./dist/tooltip.js",
       "require": "./dist/tooltip.cjs"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": {
+      "development": "./src/styles.css",
+      "default": "./dist/styles.css"
+    }
   },
   "files": [
     "dist"

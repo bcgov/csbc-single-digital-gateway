@@ -29,17 +29,30 @@ writeFileSync(
 // 3. package.json exports map: '.', then each component subpath, then styles.css
 const pkgPath = resolve(root, 'package.json');
 const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+// The `development` condition points at source so consuming apps compile @repo/ui
+// straight from src in dev (instant HMR, no library build). Bundlers resolve `import`/
+// `require` → dist for production builds. Condition order matters: types, then
+// development, then import/require.
 const exportsMap = {
-  '.': { types: './dist/index.d.ts', import: './dist/index.js', require: './dist/index.cjs' },
+  '.': {
+    types: './dist/index.d.ts',
+    development: './src/index.ts',
+    import: './dist/index.js',
+    require: './dist/index.cjs',
+  },
 };
 for (const name of names) {
   exportsMap[`./${name}`] = {
     types: `./dist/${name}.d.ts`,
+    development: `./src/${name}.ts`,
     import: `./dist/${name}.js`,
     require: `./dist/${name}.cjs`,
   };
 }
-exportsMap['./styles.css'] = './dist/styles.css';
+exportsMap['./styles.css'] = {
+  development: './src/styles.css',
+  default: './dist/styles.css',
+};
 pkg.exports = exportsMap;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
