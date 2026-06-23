@@ -46,6 +46,11 @@ export interface AuthModuleOptions {
   scopes?: string[];
   postLoginRedirect: string;
   session: AuthSessionOptions;
+  /**
+   * Extra public path prefixes the global guard allows without auth, beyond the package's own
+   * intrinsically-public `/auth` routes (e.g. `['/health']`). Boundary-matched.
+   */
+  publicPaths?: string[];
   /** Pre-built OIDC `Configuration`; when set, discovery is skipped (tests / advanced wiring). */
   config?: Configuration;
 }

@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import type { DynamicModule, InjectionToken, ModuleMetadata, Provider } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 
 import { AUTH_OPTIONS, AUTH_USER_SYNC, OIDC_CONFIG } from './auth.constants';
 import { AuthController } from './auth.controller';
+import { AuthGuard } from './auth.guard';
 import { passthroughUserSync } from './auth.user-sync';
 import type { AuthModuleOptions } from './auth.types';
 import { resolveOidcConfig } from './oidc.provider';
@@ -62,7 +64,13 @@ export class AuthModule {
       global: true,
       imports,
       controllers: [AuthController],
-      providers: [optionsProvider, oidcProvider, syncProvider],
+      providers: [
+        optionsProvider,
+        oidcProvider,
+        syncProvider,
+        // Global, protected-by-default (fail-closed) the moment AuthModule is imported.
+        { provide: APP_GUARD, useClass: AuthGuard },
+      ],
       exports: [AUTH_OPTIONS, OIDC_CONFIG, AUTH_USER_SYNC],
     };
   }
