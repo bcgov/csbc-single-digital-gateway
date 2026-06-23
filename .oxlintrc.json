@@ -17,6 +17,9 @@
     ".turbo/**",
     "**/routeTree.gen.ts"
   ],
+  "rules": {
+    "no-extraneous-class": ["warn", { "allowWithDecorator": true }]
+  },
   "overrides": [
     {
       "files": ["packages/ui/src/components/ui/**/*.tsx"],
