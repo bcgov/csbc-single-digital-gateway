@@ -3,6 +3,9 @@ import { z } from 'zod';
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(4001),
+  // Required, fail-fast: there is no safe universal default for a DB connection string,
+  // and a silent localhost fallback in production is worse than failing at boot.
+  DATABASE_URL: z.url(),
 });
 
 export type Env = z.infer<typeof envSchema>;

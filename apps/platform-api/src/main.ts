@@ -10,6 +10,8 @@ async function bootstrap(): Promise<void> {
   // (`@Controller({ path, version: '1' })` -> /v1/...); unversioned controllers
   // (health, auth, ...) stay at the root.
   app.enableVersioning({ type: VersioningType.URI });
+  // Drain DB pools (and other onDestroy hooks) on SIGTERM/SIGINT.
+  app.enableShutdownHooks();
   const config = app.get(ConfigService<Env, true>);
   await app.listen(config.get('PORT', { infer: true }));
 }
