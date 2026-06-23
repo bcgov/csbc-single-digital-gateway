@@ -1,0 +1,31 @@
+{
+  "realm": "citizens",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "citizen-portal-api",
+      "name": "citizen-portal-api (BFF)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "test-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:4000/auth/callback"],
+      "webOrigins": ["http://localhost:4000"]
+    }
+  ],
+  "users": [
+    {
+      "username": "citizen1",
+      "enabled": true,
+      "email": "citizen1@example.com",
+      "emailVerified": true,
+      "firstName": "Casey",
+      "lastName": "Citizen",
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+    }
+  ]
+}
