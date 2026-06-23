@@ -5,7 +5,9 @@ export type { AuthModuleAsyncOptions } from './auth.module';
 export { AuthController } from './auth.controller';
 export { AuthGuard } from './auth.guard';
 export { CsrfGuard } from './csrf.guard';
+export { TokenRefreshGuard } from './token-refresh.guard';
 export {
+  AccessToken,
   CurrentUser,
   IS_PUBLIC_KEY,
   Public,
@@ -13,9 +15,16 @@ export {
   Roles,
   SKIP_CSRF_KEY,
   SkipCsrf,
+  accessToken,
   currentUser,
 } from './auth.decorators';
-export { buildLoginUrl, buildLogoutUrl, completeLogin } from './auth.flow';
+export {
+  buildLoginUrl,
+  buildLogoutUrl,
+  completeLogin,
+  refreshTokens,
+  toSessionTokens,
+} from './auth.flow';
 export type {
   CompletedLogin,
   LogoutUrlOptions,
@@ -35,4 +44,5 @@ export type {
   AuthUser,
   AuthUserSync,
   OidcClaims,
+  SessionTokens,
 } from './auth.types';

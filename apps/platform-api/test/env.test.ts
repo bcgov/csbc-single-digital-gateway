@@ -38,6 +38,14 @@ describe('env validation', () => {
     );
   });
 
+  it('defaults AUTH_TOKEN_REFRESH_SKEW_SECONDS to 30 and coerces from a string', () => {
+    expect(validateEnv({ ...base }).AUTH_TOKEN_REFRESH_SKEW_SECONDS).toBe(30);
+    expect(
+      validateEnv({ ...base, AUTH_TOKEN_REFRESH_SKEW_SECONDS: '120' })
+        .AUTH_TOKEN_REFRESH_SKEW_SECONDS,
+    ).toBe(120);
+  });
+
   it('parses AUTH_ALLOWED_ORIGINS into a trimmed, comma-split list (default: local SPA)', () => {
     expect(validateEnv({ ...base }).AUTH_ALLOWED_ORIGINS).toEqual(['http://localhost:3000']);
     expect(

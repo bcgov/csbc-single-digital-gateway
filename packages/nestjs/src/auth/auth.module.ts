@@ -6,6 +6,7 @@ import { AUTH_OPTIONS, AUTH_USER_SYNC, OIDC_CONFIG, SESSION_REGISTRY } from './a
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
 import { CsrfGuard } from './csrf.guard';
+import { TokenRefreshGuard } from './token-refresh.guard';
 import { passthroughUserSync } from './auth.user-sync';
 import { noopSessionRegistry } from './session-registry';
 import type { AuthModuleOptions } from './auth.types';
@@ -96,6 +97,8 @@ export class AuthModule {
         { provide: APP_GUARD, useClass: CsrfGuard },
         // Global, protected-by-default (fail-closed) the moment AuthModule is imported.
         { provide: APP_GUARD, useClass: AuthGuard },
+        // Lazy access-token refresh for authenticated sessions (fail-closed on refresh failure).
+        { provide: APP_GUARD, useClass: TokenRefreshGuard },
       ],
       exports: [AUTH_OPTIONS, OIDC_CONFIG, AUTH_USER_SYNC, SESSION_REGISTRY],
     };

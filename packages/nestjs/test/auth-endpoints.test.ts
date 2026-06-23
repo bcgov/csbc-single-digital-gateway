@@ -12,6 +12,9 @@ vi.mock('openid-client', () => ({
     Promise.resolve({
       claims: () => ({ sub: 'user-1', email: 'u@e.com' }),
       id_token: 'id-token-1',
+      access_token: 'access-1',
+      refresh_token: 'refresh-1',
+      expires_in: 300,
     }),
   buildEndSessionUrl: (_config: unknown, params: Record<string, string>) =>
     new URL(`https://idp.example.com/logout?${new URLSearchParams(params).toString()}`),
@@ -72,6 +75,7 @@ describe('AuthController.callback', () => {
 
     expect((session.authUser as AuthUser).id).toBe('user-1');
     expect(session.idToken).toBe('id-token-1');
+    expect((session.tokens as { accessToken: string }).accessToken).toBe('access-1');
     expect(registry.track).toHaveBeenCalledWith('user-1', 'sid-1');
     expect(res.redirect).toHaveBeenCalledWith(options.postLoginRedirect);
   });

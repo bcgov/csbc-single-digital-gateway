@@ -41,13 +41,15 @@ export class AuthController {
     // Resolve the full callback URL from the configured redirect origin (avoids trusting the
     // Host header). originalUrl carries `?code&state`.
     const currentUrl = new URL(req.originalUrl, this.options.redirectUri);
-    const { claims, idToken } = await completeLogin(this.config, currentUrl, req.session);
+    const { claims, idToken, tokens } = await completeLogin(this.config, currentUrl, req.session);
     const user = await this.userSync.onSignIn(claims);
     req.session.authUser = user;
     // Keep the id_token solely as the `id_token_hint` for RP-initiated logout.
     if (idToken !== undefined) {
       req.session.idToken = idToken;
     }
+    // Store the token set server-side for lazy refresh + future downstream calls.
+    req.session.tokens = tokens;
     // Index this session under the user so it can be revoked by "logout everywhere".
     await this.registry.track(user.id, req.sessionID);
     res.redirect(this.options.postLoginRedirect);

@@ -78,6 +78,8 @@ import { validateEnv, type Env } from './config/env.schema';
           ...(postLogoutRedirect !== undefined && { postLogoutRedirect }),
           // CSRF: only allow mutating requests from these origins (defense-in-depth on SameSite=lax).
           allowedOrigins: config.get('AUTH_ALLOWED_ORIGINS', { infer: true }),
+          // Refresh the access token this many seconds before expiry (lazy, on-request).
+          tokenRefreshSkewSeconds: config.get('AUTH_TOKEN_REFRESH_SKEW_SECONDS', { infer: true }),
         };
         if (nodeEnv === 'test') {
           return { ...options, config: {} as unknown as NonNullable<AuthModuleOptions['config']> };
