@@ -1,5 +1,10 @@
+import './auth.session-data';
+
 export { AuthModule } from './auth.module';
 export type { AuthModuleAsyncOptions } from './auth.module';
+export { AuthController } from './auth.controller';
+export { buildLoginUrl, completeLogin } from './auth.flow';
+export type { OidcLoginOptions, OidcTransaction } from './auth.flow';
 export { AUTH_OPTIONS, OIDC_CONFIG, AUTH_USER_SYNC } from './auth.constants';
 export { buildSessionOptions } from './auth.session';
 export type { AuthSessionConfig } from './auth.session';

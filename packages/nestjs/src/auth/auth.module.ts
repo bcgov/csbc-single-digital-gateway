@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import type { DynamicModule, InjectionToken, ModuleMetadata, Provider } from '@nestjs/common';
 
 import { AUTH_OPTIONS, AUTH_USER_SYNC, OIDC_CONFIG } from './auth.constants';
+import { AuthController } from './auth.controller';
 import { passthroughUserSync } from './auth.user-sync';
 import type { AuthModuleOptions } from './auth.types';
 import { resolveOidcConfig } from './oidc.provider';
@@ -60,6 +61,7 @@ export class AuthModule {
       module: AuthModule,
       global: true,
       imports,
+      controllers: [AuthController],
       providers: [optionsProvider, oidcProvider, syncProvider],
       exports: [AUTH_OPTIONS, OIDC_CONFIG, AUTH_USER_SYNC],
     };
