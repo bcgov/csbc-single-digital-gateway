@@ -8,6 +8,15 @@ export const envSchema = z.object({
   DATABASE_URL: z.url(),
   // pino log level; operators tune verbosity without code changes.
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
+  // OIDC (BFF) — required, fail-fast (no safe defaults for an IdP / secret).
+  OIDC_ISSUER: z.url(),
+  OIDC_CLIENT_ID: z.string().min(1),
+  OIDC_CLIENT_SECRET: z.string().min(1),
+  OIDC_REDIRECT_URI: z.url(),
+  AUTH_SESSION_SECRET: z.string().min(16),
+  AUTH_POST_LOGIN_REDIRECT: z.url(),
+  // Session store (Valkey, Redis wire protocol); defaults to the local compose service.
+  VALKEY_URL: z.string().default('redis://localhost:6380'),
 });
 
 export type Env = z.infer<typeof envSchema>;

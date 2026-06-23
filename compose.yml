@@ -22,5 +22,41 @@ services:
       timeout: 5s
       retries: 5
 
+  # Session store for the BFF (Redis wire protocol). Host port 6380 to avoid 6379 conflicts.
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: sdg-valkey
+    restart: unless-stopped
+    ports:
+      - '${VALKEY_PORT:-6380}:6379'
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # OIDC IdP for local/CI. Dev mode + realm import (confidential client + seeded test user).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: sdg-keycloak
+    restart: unless-stopped
+    command: ['start-dev', '--import-realm', '--http-port=8080']
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - '${KEYCLOAK_PORT:-8080}:8080'
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'exec 3<>/dev/tcp/localhost/8080 && echo -e "GET /realms/sdg HTTP/1.0\\n\\n" >&3 && cat <&3 | grep -q "200 OK"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
 volumes:
   sdg-postgres-data:
