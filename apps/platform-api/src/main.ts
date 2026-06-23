@@ -19,6 +19,14 @@ async function bootstrap(): Promise<void> {
   // Drain DB pools (and other onDestroy hooks) on SIGTERM/SIGINT.
   app.enableShutdownHooks();
   const config = app.get(ConfigService<Env, true>);
+  // Let the browser SPA (its own origin) make credentialed cross-origin calls to the BFF
+  // (`/auth/me`, `/auth/logout`). The allowlist is the CSRF Origin allowlist — never `*`, which
+  // the Fetch spec forbids alongside credentials. Empty list => CORS closed (same opt-in posture
+  // as the CSRF guard).
+  app.enableCors({
+    origin: config.get('AUTH_ALLOWED_ORIGINS', { infer: true }),
+    credentials: true,
+  });
   const nodeEnv = config.get('NODE_ENV', { infer: true });
   // BFF server session: Valkey-backed in production, in-memory otherwise. Behind a TLS proxy,
   // also `app.set('trust proxy', 1)` so `secure` cookies are honoured.
