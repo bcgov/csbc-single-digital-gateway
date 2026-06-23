@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createDatabase, type Database } from '@repo/database';
 import { DatabaseModule } from '@repo/nestjs/database';
+import { DatabaseHealthIndicator } from '@repo/nestjs/database-health';
 import { HealthModule } from '@repo/nestjs/health';
 import { validateEnv, type Env } from './config/env.schema';
 
@@ -23,7 +24,8 @@ import { validateEnv, type Env } from './config/env.schema';
     }),
     // Cross-cutting modules (health, auth, ...) are imported here and stay at the
     // unversioned root. Feature modules live under src/modules/<feature>/.
-    HealthModule,
+    // /health/ready reports the database via DatabaseHealthIndicator (select 1).
+    HealthModule.forRoot({ readiness: [DatabaseHealthIndicator] }),
   ],
 })
 export class AppModule {}
