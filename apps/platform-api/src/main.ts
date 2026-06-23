@@ -2,7 +2,9 @@ import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@repo/nestjs/logger';
+import session from 'express-session';
 import { AppModule } from './app.module';
+import { buildAppSessionOptions } from './auth/session.factory';
 import type { Env } from './config/env.schema';
 
 async function bootstrap(): Promise<void> {
@@ -17,6 +19,19 @@ async function bootstrap(): Promise<void> {
   // Drain DB pools (and other onDestroy hooks) on SIGTERM/SIGINT.
   app.enableShutdownHooks();
   const config = app.get(ConfigService<Env, true>);
+  const nodeEnv = config.get('NODE_ENV', { infer: true });
+  // BFF server session: Valkey-backed in production, in-memory otherwise. Behind a TLS proxy,
+  // also `app.set('trust proxy', 1)` so `secure` cookies are honoured.
+  app.use(
+    session(
+      buildAppSessionOptions({
+        secret: config.get('AUTH_SESSION_SECRET', { infer: true }),
+        secure: nodeEnv === 'production',
+        useStore: nodeEnv === 'production',
+        valkeyUrl: config.get('VALKEY_URL', { infer: true }),
+      }),
+    ),
+  );
   await app.listen(config.get('PORT', { infer: true }));
 }
 

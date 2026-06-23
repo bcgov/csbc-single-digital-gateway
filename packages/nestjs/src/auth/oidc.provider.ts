@@ -14,6 +14,17 @@ export async function resolveOidcConfig(options: AuthModuleOptions): Promise<Con
     return options.config;
   }
   const oidc = await import('openid-client');
+  const server = new URL(options.issuer);
+  // openid-client v6 forbids non-HTTPS issuers by default; opt in ONLY for http:// issuers
+  // (local/dev IdPs like a dockerized Keycloak). Production issuers are https and unaffected.
+  const discoveryOptions =
+    server.protocol === 'http:' ? { execute: [oidc.allowInsecureRequests] } : undefined;
   // Confidential client: the secret as the 3rd arg selects client_secret_* auth.
-  return oidc.discovery(new URL(options.issuer), options.clientId, options.clientSecret);
+  return oidc.discovery(
+    server,
+    options.clientId,
+    options.clientSecret,
+    undefined,
+    discoveryOptions,
+  );
 }

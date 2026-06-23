@@ -1,17 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { validateEnv } from '../src/config/env.schema';
 
-// DATABASE_URL is required (no default), so a valid base env must always supply it.
+// Required (no-default) vars a valid base env must always supply.
 const DB_URL = 'postgresql://postgres:postgres@localhost:5432/sdg';
-const base = { DATABASE_URL: DB_URL };
+const base = {
+  DATABASE_URL: DB_URL,
+  OIDC_ISSUER: 'http://localhost:8080/realms/sdg',
+  OIDC_CLIENT_ID: 'platform-api',
+  OIDC_CLIENT_SECRET: 'secret',
+  OIDC_REDIRECT_URI: 'http://localhost:4001/auth/callback',
+  AUTH_SESSION_SECRET: 'a-long-enough-session-secret',
+  AUTH_POST_LOGIN_REDIRECT: 'http://localhost:3000/app',
+};
 
 describe('env validation', () => {
-  it('applies defaults for NODE_ENV, PORT, and LOG_LEVEL', () => {
+  it('applies defaults for NODE_ENV, PORT, LOG_LEVEL, and VALKEY_URL', () => {
     const env = validateEnv({ ...base });
     expect(env.NODE_ENV).toBe('development');
     expect(env.PORT).toBe(4001);
     expect(env.DATABASE_URL).toBe(DB_URL);
     expect(env.LOG_LEVEL).toBe('info');
+    expect(env.VALKEY_URL).toBe('redis://localhost:6380');
+  });
+
+  it('requires the OIDC settings (fail-fast)', () => {
+    expect(() => validateEnv({ DATABASE_URL: DB_URL })).toThrow(/Invalid environment/);
+  });
+
+  it('rejects too-short AUTH_SESSION_SECRET', () => {
+    expect(() => validateEnv({ ...base, AUTH_SESSION_SECRET: 'short' })).toThrow(
+      /Invalid environment/,
+    );
   });
 
   it('accepts a valid LOG_LEVEL', () => {
