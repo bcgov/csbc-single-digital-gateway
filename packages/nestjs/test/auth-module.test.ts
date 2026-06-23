@@ -6,10 +6,12 @@ import {
   AUTH_USER_SYNC,
   AuthModule,
   OIDC_CONFIG,
+  SESSION_REGISTRY,
   buildSessionOptions,
+  noopSessionRegistry,
   passthroughUserSync,
 } from '../src/auth';
-import type { AuthUserSync, OidcClaims } from '../src/auth';
+import type { AuthUserSync, OidcClaims, SessionRegistry } from '../src/auth';
 
 // A pre-built OIDC Configuration skips network discovery in unit tests.
 const baseOptions = {
@@ -65,6 +67,24 @@ describe('AuthModule', () => {
     expect(moduleRef.get(OIDC_CONFIG)).toBeDefined();
     const sync = moduleRef.get<AuthUserSync>(AUTH_USER_SYNC);
     expect(typeof sync.onSignIn).toBe('function');
+    expect(moduleRef.get(SESSION_REGISTRY)).toBe(noopSessionRegistry);
+  });
+
+  it('forRootAsync lets a consumer override the session registry', async () => {
+    const custom: SessionRegistry = {
+      track: () => Promise.resolve(),
+      revokeAll: () => Promise.resolve(),
+    };
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        AuthModule.forRootAsync({
+          useFactory: () => baseOptions,
+          sessionRegistry: { provide: SESSION_REGISTRY, useValue: custom },
+        }),
+      ],
+    }).compile();
+
+    expect(moduleRef.get(SESSION_REGISTRY)).toBe(custom);
   });
 
   it('forRootAsync lets a consumer override the sync port', async () => {

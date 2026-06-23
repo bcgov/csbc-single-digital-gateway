@@ -51,6 +51,15 @@ export interface AuthModuleOptions {
    * intrinsically-public `/auth` routes (e.g. `['/health']`). Boundary-matched.
    */
   publicPaths?: string[];
+  /** Enable RP-initiated logout (redirect to the IdP `end_session_endpoint`). Default false. */
+  rpLogout?: boolean;
+  /** Where the IdP returns the browser after RP-initiated logout (pre-registered at the IdP). */
+  postLogoutRedirect?: string;
+  /**
+   * Allowed `Origin`s for state-changing (mutating) requests — the CSRF Origin guard's allowlist
+   * (e.g. `['https://app.sdg.gov']`). When omitted/empty the CSRF guard is inert (opt-in).
+   */
+  allowedOrigins?: string[];
   /** Pre-built OIDC `Configuration`; when set, discovery is skipped (tests / advanced wiring). */
   config?: Configuration;
 }

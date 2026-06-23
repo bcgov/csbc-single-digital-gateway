@@ -1,12 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createDatabase, type Database } from '@repo/database';
-import { AUTH_USER_SYNC, AuthModule, type AuthModuleOptions } from '@repo/nestjs/auth';
+import {
+  AUTH_USER_SYNC,
+  AuthModule,
+  SESSION_REGISTRY,
+  type AuthModuleOptions,
+} from '@repo/nestjs/auth';
 import { DatabaseModule } from '@repo/nestjs/database';
 import { DatabaseHealthIndicator } from '@repo/nestjs/database-health';
 import { HealthModule } from '@repo/nestjs/health';
 import { LoggerModule } from '@repo/nestjs/logger';
+import Valkey from 'iovalkey';
 import { OidcUserSyncService } from './auth/oidc-user-sync.service';
+import { ValkeySessionRegistry } from './auth/valkey-session-registry';
 import { validateEnv, type Env } from './config/env.schema';
 
 @Module({
@@ -44,8 +51,19 @@ import { validateEnv, type Env } from './config/env.schema';
       inject: [ConfigService],
       // Override the passthrough sync: persist users/identities and source roles from the DB.
       userSync: { provide: AUTH_USER_SYNC, useClass: OidcUserSyncService },
+      // Index sessions per user (Valkey) so "logout everywhere" can revoke them all. lazyConnect
+      // keeps the client from dialing Valkey at boot (e.g. under test) until first used.
+      sessionRegistry: {
+        provide: SESSION_REGISTRY,
+        inject: [ConfigService],
+        useFactory: (config: ConfigService<Env, true>) =>
+          new ValkeySessionRegistry(
+            new Valkey(config.get('VALKEY_URL', { infer: true }), { lazyConnect: true }),
+          ),
+      },
       useFactory: (config: ConfigService<Env, true>): AuthModuleOptions => {
         const nodeEnv = config.get('NODE_ENV', { infer: true });
+        const postLogoutRedirect = config.get('AUTH_POST_LOGOUT_REDIRECT', { infer: true });
         const options: AuthModuleOptions = {
           issuer: config.get('OIDC_ISSUER', { infer: true }),
           clientId: config.get('OIDC_CLIENT_ID', { infer: true }),
@@ -56,6 +74,10 @@ import { validateEnv, type Env } from './config/env.schema';
           session: { secret: config.get('AUTH_SESSION_SECRET', { infer: true }) },
           // /auth is intrinsically public; health probes must be reachable unauthenticated.
           publicPaths: ['/health'],
+          rpLogout: config.get('AUTH_RP_LOGOUT', { infer: true }),
+          ...(postLogoutRedirect !== undefined && { postLogoutRedirect }),
+          // CSRF: only allow mutating requests from these origins (defense-in-depth on SameSite=lax).
+          allowedOrigins: config.get('AUTH_ALLOWED_ORIGINS', { infer: true }),
         };
         if (nodeEnv === 'test') {
           return { ...options, config: {} as unknown as NonNullable<AuthModuleOptions['config']> };

@@ -19,6 +19,17 @@ interface FlowSession {
   oidcTx?: OidcTransaction;
 }
 
+/** Result of a successful callback: the id-token claims plus the raw id_token (logout hint). */
+export interface CompletedLogin {
+  claims: OidcClaims;
+  idToken: string | undefined;
+}
+
+export interface LogoutUrlOptions {
+  idToken?: string;
+  postLogoutRedirect?: string;
+}
+
 const DEFAULT_SCOPES = ['openid', 'profile', 'email'];
 
 /**
@@ -58,11 +69,14 @@ export async function completeLogin(
   config: Configuration,
   currentUrl: URL,
   session: FlowSession,
-): Promise<OidcClaims> {
+): Promise<CompletedLogin> {
   const tx = session.oidcTx;
   if (tx === undefined) {
     throw new Error('auth: no OIDC transaction in session (missing state/PKCE)');
   }
+  // One-time use: consume the transaction BEFORE the exchange, so a failed or replayed callback
+  // can't be retried against the same verifier/state/nonce (fail-closed).
+  delete session.oidcTx;
 
   const oidc = await import('openid-client');
   const tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
@@ -76,6 +90,21 @@ export async function completeLogin(
     throw new Error('auth: token response has no id_token claims');
   }
 
-  delete session.oidcTx;
-  return claims as OidcClaims;
+  return { claims: claims as OidcClaims, idToken: tokens.id_token };
+}
+
+/** Build the IdP `end_session_endpoint` URL for RP-initiated logout. */
+export async function buildLogoutUrl(
+  config: Configuration,
+  options: LogoutUrlOptions,
+): Promise<URL> {
+  const oidc = await import('openid-client');
+  const params: Record<string, string> = {};
+  if (options.idToken !== undefined) {
+    params.id_token_hint = options.idToken;
+  }
+  if (options.postLogoutRedirect !== undefined) {
+    params.post_logout_redirect_uri = options.postLogoutRedirect;
+  }
+  return oidc.buildEndSessionUrl(config, params);
 }
