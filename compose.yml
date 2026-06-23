@@ -1,0 +1,26 @@
+# Local development services. Not for any non-local environment — the credentials are
+# intentionally trivial. Start with `docker compose up -d`, then run migrations:
+#   npm run db:migrate -w @repo/database
+# Host port defaults to 5432; override with POSTGRES_PORT if another Postgres already
+# holds it (and update DATABASE_URL's port to match).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sdg-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sdg
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - sdg-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d sdg']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sdg-postgres-data:
