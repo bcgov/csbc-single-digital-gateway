@@ -15,6 +15,10 @@
     "./database": {
       "types": "./dist/database/index.d.ts",
       "default": "./dist/database/index.js"
+    },
+    "./database-health": {
+      "types": "./dist/database-health/index.d.ts",
+      "default": "./dist/database-health/index.js"
     }
   },
   "files": [
