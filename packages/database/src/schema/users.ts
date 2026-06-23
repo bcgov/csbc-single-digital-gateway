@@ -1,6 +1,9 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { citext, createdAt, timestamptz, updatedAt, uuidPk } from './_shared';
+
+/** Global, platform-level roles (distinct from workspace-/document-scoped roles). */
+export const userRole = pgEnum('user_role', ['admin', 'staff', 'citizen']);
 
 /**
  * A person. Soft-deleted via `deleted_at` (NULL = active). `email` is the canonical,
@@ -15,6 +18,8 @@ export const users = pgTable(
     givenName: text('given_name').notNull(),
     familyName: text('family_name').notNull(),
     email: citext('email'),
+    // Global roles (default {} = least privilege; the auth sync assigns on login).
+    roles: userRole('roles').array().notNull().default([]),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     // Soft delete: NULL = active, non-NULL = deleted. Normal reads filter IS NULL.
