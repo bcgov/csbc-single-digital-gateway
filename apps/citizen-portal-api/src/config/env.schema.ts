@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().positive().default(4001),
+  PORT: z.coerce.number().int().positive().default(4000),
   // Required, fail-fast: there is no safe universal default for a DB connection string,
   // and a silent localhost fallback in production is worse than failing at boot.
   DATABASE_URL: z.url(),
@@ -16,12 +16,12 @@ export const envSchema = z.object({
   AUTH_SESSION_SECRET: z.string().min(16),
   AUTH_POST_LOGIN_REDIRECT: z.url(),
   // Baseline role stamped on a user's FIRST login (re-login never changes roles). Constrained to
-  // this app's audience class: platform-api may stamp staff-class roles only — NEVER `citizen`
-  // (that belongs to the citizens realm / citizen-portal-api). Fail-fast on a cross-audience value.
-  AUTH_DEFAULT_ROLE: z.enum(['admin', 'staff']).default('staff'),
+  // this app's audience: citizen-portal-api may stamp ONLY `citizen` — never staff/admin (those
+  // belong to the staff realm / platform-api). Fail-fast on a cross-audience value.
+  AUTH_DEFAULT_ROLE: z.enum(['citizen']).default('citizen'),
   // Valkey key prefix for this app's sessions + per-user index. MUST be unique per app sharing a
   // Valkey, or sessions/"logout everywhere" collide across apps. Keys: `${prefix}sess:` etc.
-  SESSION_KEY_PREFIX: z.string().min(1).default('sdg:'),
+  SESSION_KEY_PREFIX: z.string().min(1).default('cpa:'),
   // RP-initiated logout: when true, /auth/logout also bounces the browser through the IdP
   // `end_session_endpoint`. Off by default (local session destroy is always sufficient).
   AUTH_RP_LOGOUT: z
@@ -36,7 +36,7 @@ export const envSchema = z.object({
   // origin; set to the real app origin(s) in production. Empty value => CSRF guard inert.
   AUTH_ALLOWED_ORIGINS: z
     .string()
-    .default('http://localhost:3001')
+    .default('http://localhost:3000')
     .transform((v) =>
       v
         .split(',')

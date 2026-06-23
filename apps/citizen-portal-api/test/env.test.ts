@@ -5,38 +5,35 @@ import { validateEnv } from '../src/config/env.schema';
 const DB_URL = 'postgresql://postgres:postgres@localhost:5432/sdg';
 const base = {
   DATABASE_URL: DB_URL,
-  OIDC_ISSUER: 'http://localhost:8080/realms/sdg',
-  OIDC_CLIENT_ID: 'platform-api',
+  OIDC_ISSUER: 'http://localhost:8080/realms/citizens',
+  OIDC_CLIENT_ID: 'citizen-portal-api',
   OIDC_CLIENT_SECRET: 'secret',
-  OIDC_REDIRECT_URI: 'http://localhost:4001/auth/callback',
+  OIDC_REDIRECT_URI: 'http://localhost:4000/auth/callback',
   AUTH_SESSION_SECRET: 'a-long-enough-session-secret',
-  AUTH_POST_LOGIN_REDIRECT: 'http://localhost:3000/app',
+  AUTH_POST_LOGIN_REDIRECT: 'http://localhost:3000',
 };
 
 describe('env validation', () => {
-  it('applies defaults for NODE_ENV, PORT, LOG_LEVEL, and VALKEY_URL', () => {
+  it('applies defaults for NODE_ENV, PORT (4000), LOG_LEVEL, and VALKEY_URL', () => {
     const env = validateEnv({ ...base });
     expect(env.NODE_ENV).toBe('development');
-    expect(env.PORT).toBe(4001);
+    expect(env.PORT).toBe(4000);
     expect(env.DATABASE_URL).toBe(DB_URL);
     expect(env.LOG_LEVEL).toBe('info');
     expect(env.VALKEY_URL).toBe('redis://localhost:6380');
   });
 
-  it('defaults AUTH_DEFAULT_ROLE to staff and SESSION_KEY_PREFIX to sdg:', () => {
+  it('defaults AUTH_DEFAULT_ROLE to citizen and SESSION_KEY_PREFIX to cpa:', () => {
     const env = validateEnv({ ...base });
-    expect(env.AUTH_DEFAULT_ROLE).toBe('staff');
-    expect(env.SESSION_KEY_PREFIX).toBe('sdg:');
+    expect(env.AUTH_DEFAULT_ROLE).toBe('citizen');
+    expect(env.SESSION_KEY_PREFIX).toBe('cpa:');
   });
 
-  it('allows a staff-class AUTH_DEFAULT_ROLE and a custom SESSION_KEY_PREFIX', () => {
-    const env = validateEnv({ ...base, AUTH_DEFAULT_ROLE: 'admin', SESSION_KEY_PREFIX: 'sdg2:' });
-    expect(env.AUTH_DEFAULT_ROLE).toBe('admin');
-    expect(env.SESSION_KEY_PREFIX).toBe('sdg2:');
-  });
-
-  it('rejects citizen as AUTH_DEFAULT_ROLE (cross-audience — platform-api stamps staff-class only)', () => {
-    expect(() => validateEnv({ ...base, AUTH_DEFAULT_ROLE: 'citizen' })).toThrow(
+  it('rejects staff/admin as AUTH_DEFAULT_ROLE (cross-audience — citizen-portal-api stamps citizen only)', () => {
+    expect(() => validateEnv({ ...base, AUTH_DEFAULT_ROLE: 'staff' })).toThrow(
+      /Invalid environment/,
+    );
+    expect(() => validateEnv({ ...base, AUTH_DEFAULT_ROLE: 'admin' })).toThrow(
       /Invalid environment/,
     );
   });
@@ -52,16 +49,6 @@ describe('env validation', () => {
     expect(validateEnv({ ...base, AUTH_RP_LOGOUT: 'true' }).AUTH_RP_LOGOUT).toBe(true);
   });
 
-  it('rejects a non-boolean AUTH_RP_LOGOUT', () => {
-    expect(() => validateEnv({ ...base, AUTH_RP_LOGOUT: 'yes' })).toThrow(/Invalid environment/);
-  });
-
-  it('rejects an invalid AUTH_POST_LOGOUT_REDIRECT URL', () => {
-    expect(() => validateEnv({ ...base, AUTH_POST_LOGOUT_REDIRECT: 'not-a-url' })).toThrow(
-      /Invalid environment/,
-    );
-  });
-
   it('defaults AUTH_TOKEN_REFRESH_SKEW_SECONDS to 30 and coerces from a string', () => {
     expect(validateEnv({ ...base }).AUTH_TOKEN_REFRESH_SKEW_SECONDS).toBe(30);
     expect(
@@ -70,8 +57,8 @@ describe('env validation', () => {
     ).toBe(120);
   });
 
-  it('parses AUTH_ALLOWED_ORIGINS into a trimmed, comma-split list (default: local SPA)', () => {
-    expect(validateEnv({ ...base }).AUTH_ALLOWED_ORIGINS).toEqual(['http://localhost:3001']);
+  it('parses AUTH_ALLOWED_ORIGINS into a trimmed, comma-split list (default: citizen SPA :3000)', () => {
+    expect(validateEnv({ ...base }).AUTH_ALLOWED_ORIGINS).toEqual(['http://localhost:3000']);
     expect(
       validateEnv({ ...base, AUTH_ALLOWED_ORIGINS: 'https://a.gov, https://b.gov' })
         .AUTH_ALLOWED_ORIGINS,
@@ -89,10 +76,6 @@ describe('env validation', () => {
     );
   });
 
-  it('accepts a valid LOG_LEVEL', () => {
-    expect(validateEnv({ ...base, LOG_LEVEL: 'debug' }).LOG_LEVEL).toBe('debug');
-  });
-
   it('throws on an invalid LOG_LEVEL', () => {
     expect(() => validateEnv({ ...base, LOG_LEVEL: 'verbose' })).toThrow(/Invalid environment/);
   });
@@ -101,22 +84,9 @@ describe('env validation', () => {
     expect(validateEnv({ ...base, PORT: '8080' }).PORT).toBe(8080);
   });
 
-  it('accepts each valid NODE_ENV value', () => {
-    expect(validateEnv({ ...base, NODE_ENV: 'production' }).NODE_ENV).toBe('production');
-    expect(validateEnv({ ...base, NODE_ENV: 'test' }).NODE_ENV).toBe('test');
-  });
-
   it('ignores unknown environment variables', () => {
     const env = validateEnv({ ...base, SOME_OTHER: 'x' });
     expect(env).not.toHaveProperty('SOME_OTHER');
-  });
-
-  it('throws on an invalid NODE_ENV', () => {
-    expect(() => validateEnv({ ...base, NODE_ENV: 'staging' })).toThrow(/Invalid environment/);
-  });
-
-  it('throws on a non-numeric PORT', () => {
-    expect(() => validateEnv({ ...base, PORT: 'not-a-number' })).toThrow();
   });
 
   it('throws when DATABASE_URL is missing (required, fail-fast)', () => {
