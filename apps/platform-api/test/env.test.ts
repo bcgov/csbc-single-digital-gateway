@@ -6,11 +6,20 @@ const DB_URL = 'postgresql://postgres:postgres@localhost:5432/sdg';
 const base = { DATABASE_URL: DB_URL };
 
 describe('env validation', () => {
-  it('applies defaults for NODE_ENV and PORT', () => {
+  it('applies defaults for NODE_ENV, PORT, and LOG_LEVEL', () => {
     const env = validateEnv({ ...base });
     expect(env.NODE_ENV).toBe('development');
     expect(env.PORT).toBe(4001);
     expect(env.DATABASE_URL).toBe(DB_URL);
+    expect(env.LOG_LEVEL).toBe('info');
+  });
+
+  it('accepts a valid LOG_LEVEL', () => {
+    expect(validateEnv({ ...base, LOG_LEVEL: 'debug' }).LOG_LEVEL).toBe('debug');
+  });
+
+  it('throws on an invalid LOG_LEVEL', () => {
+    expect(() => validateEnv({ ...base, LOG_LEVEL: 'verbose' })).toThrow(/Invalid environment/);
   });
 
   it('coerces PORT from a string', () => {

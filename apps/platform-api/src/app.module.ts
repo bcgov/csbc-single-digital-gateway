@@ -4,6 +4,7 @@ import { createDatabase, type Database } from '@repo/database';
 import { DatabaseModule } from '@repo/nestjs/database';
 import { DatabaseHealthIndicator } from '@repo/nestjs/database-health';
 import { HealthModule } from '@repo/nestjs/health';
+import { LoggerModule } from '@repo/nestjs/logger';
 import { validateEnv, type Env } from './config/env.schema';
 
 @Module({
@@ -13,6 +14,18 @@ import { validateEnv, type Env } from './config/env.schema';
       isGlobal: true,
       cache: true,
       validate: validateEnv,
+    }),
+    // Structured pino logging (global). pretty in development; silent in tests so the suite
+    // stays quiet and the pino-pretty worker thread never starts.
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => {
+        const nodeEnv = config.get('NODE_ENV', { infer: true });
+        return {
+          level: nodeEnv === 'test' ? 'silent' : config.get('LOG_LEVEL', { infer: true }),
+          pretty: nodeEnv === 'development',
+        };
+      },
     }),
     // Build the Drizzle client from the validated DATABASE_URL and register it globally
     // for injection via @InjectDatabase(). The pg pool is closed on shutdown.

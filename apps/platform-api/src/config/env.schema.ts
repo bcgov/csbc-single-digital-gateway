@@ -6,6 +6,8 @@ export const envSchema = z.object({
   // Required, fail-fast: there is no safe universal default for a DB connection string,
   // and a silent localhost fallback in production is worse than failing at boot.
   DATABASE_URL: z.url(),
+  // pino log level; operators tune verbosity without code changes.
+  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
 });
 
 export type Env = z.infer<typeof envSchema>;
