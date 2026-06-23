@@ -51,6 +51,8 @@ import { validateEnv, type Env } from './config/env.schema';
           scopes: ['openid', 'profile', 'email'],
           postLoginRedirect: config.get('AUTH_POST_LOGIN_REDIRECT', { infer: true }),
           session: { secret: config.get('AUTH_SESSION_SECRET', { infer: true }) },
+          // /auth is intrinsically public; health probes must be reachable unauthenticated.
+          publicPaths: ['/health'],
         };
         if (nodeEnv === 'test') {
           return { ...options, config: {} as unknown as NonNullable<AuthModuleOptions['config']> };

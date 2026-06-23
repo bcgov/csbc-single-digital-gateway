@@ -10,3 +10,12 @@ declare module 'express-session' {
     oidcTx?: OidcTransaction;
   }
 }
+
+// Augment the Express request so `req.authUser` (attached by the guard) is typed.
+declare global {
+  namespace Express {
+    interface Request {
+      authUser?: AuthUser;
+    }
+  }
+}
