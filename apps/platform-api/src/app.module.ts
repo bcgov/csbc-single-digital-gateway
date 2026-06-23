@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createDatabase, type Database } from '@repo/database';
-import { AuthModule, type AuthModuleOptions } from '@repo/nestjs/auth';
+import { AUTH_USER_SYNC, AuthModule, type AuthModuleOptions } from '@repo/nestjs/auth';
 import { DatabaseModule } from '@repo/nestjs/database';
 import { DatabaseHealthIndicator } from '@repo/nestjs/database-health';
 import { HealthModule } from '@repo/nestjs/health';
 import { LoggerModule } from '@repo/nestjs/logger';
+import { OidcUserSyncService } from './auth/oidc-user-sync.service';
 import { validateEnv, type Env } from './config/env.schema';
 
 @Module({
@@ -41,6 +42,8 @@ import { validateEnv, type Env } from './config/env.schema';
     // uses the passthrough sync (no DB); Wave 3 overrides AUTH_USER_SYNC.
     AuthModule.forRootAsync({
       inject: [ConfigService],
+      // Override the passthrough sync: persist users/identities and source roles from the DB.
+      userSync: { provide: AUTH_USER_SYNC, useClass: OidcUserSyncService },
       useFactory: (config: ConfigService<Env, true>): AuthModuleOptions => {
         const nodeEnv = config.get('NODE_ENV', { infer: true });
         const options: AuthModuleOptions = {
