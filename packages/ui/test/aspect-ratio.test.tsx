@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { AspectRatio } from '@ui/components/ui/aspect-ratio';
 
 describe('AspectRatio', () => {
   it('renders its children', () => {

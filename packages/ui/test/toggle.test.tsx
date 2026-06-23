@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { Toggle } from '@/components/ui/toggle';
+import { Toggle } from '@ui/components/ui/toggle';
 
 describe('Toggle', () => {
   it('renders as an unpressed button by default', () => {

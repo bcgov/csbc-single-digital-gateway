@@ -8,7 +8,7 @@
     "types": ["node"],
     "noEmit": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@ui/*": ["./src/*"]
     }
   },
   "include": ["src", "test", "vite.config.ts", "vitest.config.ts"],

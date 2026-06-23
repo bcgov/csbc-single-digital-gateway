@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { ThemeProvider } from 'next-themes';
 import { toast } from 'sonner';
 import { describe, expect, it } from 'vitest';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '@ui/components/ui/sonner';
 
 // Sonner is jsdom-hostile: it reads theme from next-themes and renders its toast
 // region lazily into a portal. These are pragmatic render-safety / structural

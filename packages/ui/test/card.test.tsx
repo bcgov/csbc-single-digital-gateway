@@ -8,8 +8,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+} from '@ui/components/ui/card';
+import { Button } from '@ui/components/ui/button';
 
 describe('Card', () => {
   it('renders the full compound structure', () => {

@@ -6,7 +6,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
   InputOTPSeparator,
-} from '@/components/ui/input-otp';
+} from '@ui/components/ui/input-otp';
 
 // jsdom lacks document.elementFromPoint, which the input-otp library calls from
 // an internal timer after focus. Provide a no-op so the timer cannot throw an

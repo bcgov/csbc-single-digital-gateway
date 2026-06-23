@@ -7,7 +7,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+} from '@ui/components/ui/breadcrumb';
 
 function renderBreadcrumb() {
   return render(

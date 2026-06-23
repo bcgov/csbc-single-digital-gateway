@@ -9,7 +9,7 @@ import {
   ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/components/ui/context-menu';
+} from '@ui/components/ui/context-menu';
 
 function TestContextMenu({ onSelect }: { onSelect?: () => void }) {
   return (

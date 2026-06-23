@@ -8,7 +8,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination';
+} from '@ui/components/ui/pagination';
 
 function renderPagination() {
   return render(

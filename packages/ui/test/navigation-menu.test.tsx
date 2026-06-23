@@ -8,7 +8,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from '@/components/ui/navigation-menu';
+} from '@ui/components/ui/navigation-menu';
 
 function renderNavMenu() {
   return render(

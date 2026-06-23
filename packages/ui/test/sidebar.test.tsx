@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-} from '@/components/ui/sidebar';
+} from '@ui/components/ui/sidebar';
 
 // Sidebar is jsdom-hostile: it depends on use-mobile/matchMedia, a context
 // provider, and complex responsive layout. These are pragmatic render-safety

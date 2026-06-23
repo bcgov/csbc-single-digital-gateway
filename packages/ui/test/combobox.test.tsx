@@ -10,7 +10,7 @@ import {
   ComboboxLabel,
   ComboboxList,
   ComboboxValue,
-} from '@/components/ui/combobox';
+} from '@ui/components/ui/combobox';
 
 const items = ['Apple', 'Banana', 'Cherry'];
 

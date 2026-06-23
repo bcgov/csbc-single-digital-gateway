@@ -53,7 +53,7 @@ export default defineConfig({
     copyStyles(),
   ],
   resolve: {
-    alias: { '@': resolve(import.meta.dirname, 'src') },
+    alias: { '@ui': resolve(import.meta.dirname, 'src') },
   },
   build: {
     sourcemap: true,

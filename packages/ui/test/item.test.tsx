@@ -9,7 +9,7 @@ import {
   ItemMedia,
   ItemSeparator,
   ItemTitle,
-} from '@/components/ui/item';
+} from '@ui/components/ui/item';
 
 describe('Item', () => {
   it('renders a div with the item slot and its children', () => {

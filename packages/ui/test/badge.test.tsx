@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@ui/components/ui/badge';
 
 describe('Badge', () => {
   it('renders its children as a span by default', () => {

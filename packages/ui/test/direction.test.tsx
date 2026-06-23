@@ -1,7 +1,7 @@
 import { render, renderHook, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
-import { DirectionProvider, useDirection } from '@/components/ui/direction';
+import { DirectionProvider, useDirection } from '@ui/components/ui/direction';
 
 const RtlWrapper = ({ children }: { children: ReactNode }) => (
   <DirectionProvider direction="rtl">{children}</DirectionProvider>

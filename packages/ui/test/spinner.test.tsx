@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Spinner } from '@/components/ui/spinner';
+import { Spinner } from '@ui/components/ui/spinner';
 
 describe('Spinner', () => {
   it('renders with a status role and an accessible loading label', () => {

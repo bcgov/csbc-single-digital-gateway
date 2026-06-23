@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@ui/components/ui/resizable';
 
 // react-resizable-panels relies on real layout measurement, which jsdom does
 // not provide. These tests stay at render-safety + accessibility level.

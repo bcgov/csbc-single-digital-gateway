@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@ui/components/ui/skeleton';
 
 describe('Skeleton', () => {
   it('renders a div carrying the skeleton data-slot', () => {

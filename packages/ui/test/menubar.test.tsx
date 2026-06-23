@@ -8,7 +8,7 @@ import {
   MenubarMenu,
   MenubarSeparator,
   MenubarTrigger,
-} from '@/components/ui/menubar';
+} from '@ui/components/ui/menubar';
 
 function renderMenubar(onSelect?: () => void) {
   return render(

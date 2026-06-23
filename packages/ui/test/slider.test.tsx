@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { Slider } from '@/components/ui/slider';
+import { Slider } from '@ui/components/ui/slider';
 
 // Base UI renders each slider thumb as a visually-hidden <input type="range">,
 // which carries role="slider" and the aria-value* attributes. The inputs are

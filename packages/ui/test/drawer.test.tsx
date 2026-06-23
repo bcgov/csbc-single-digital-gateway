@@ -9,7 +9,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@/components/ui/drawer';
+} from '@ui/components/ui/drawer';
 
 function TestDrawer({ open }: { open?: boolean }) {
   return (

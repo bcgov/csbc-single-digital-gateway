@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress';
+import { Progress, ProgressLabel, ProgressValue } from '@ui/components/ui/progress';
 
 describe('Progress', () => {
   it('exposes a progressbar role with the provided value', () => {
