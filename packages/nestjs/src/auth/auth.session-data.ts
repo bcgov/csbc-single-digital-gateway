@@ -8,6 +8,8 @@ declare module 'express-session' {
   interface SessionData {
     authUser?: AuthUser;
     oidcTx?: OidcTransaction;
+    // The raw id_token, kept solely as the `id_token_hint` for RP-initiated logout.
+    idToken?: string;
   }
 }
 

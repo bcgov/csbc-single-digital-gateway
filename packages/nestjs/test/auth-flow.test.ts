@@ -8,11 +8,21 @@ vi.mock('openid-client', () => ({
   randomNonce: () => 'nonce-def',
   buildAuthorizationUrl: (_config: unknown, params: Record<string, string>) =>
     new URL(`https://idp.example.com/authorize?${new URLSearchParams(params).toString()}`),
-  authorizationCodeGrant: () =>
-    Promise.resolve({ claims: () => ({ sub: 'user-1', email: 'u@e.com' }) }),
+  // Reject when the callback URL is flagged, so the one-time-transaction (fail) path is testable.
+  authorizationCodeGrant: (_config: unknown, url: URL) => {
+    if (String(url).includes('boom')) {
+      return Promise.reject(new Error('state mismatch'));
+    }
+    return Promise.resolve({
+      claims: () => ({ sub: 'user-1', email: 'u@e.com' }),
+      id_token: 'id-token-1',
+    });
+  },
+  buildEndSessionUrl: (_config: unknown, params: Record<string, string>) =>
+    new URL(`https://idp.example.com/logout?${new URLSearchParams(params).toString()}`),
 }));
 
-import { buildLoginUrl, completeLogin } from '../src/auth/auth.flow';
+import { buildLoginUrl, buildLogoutUrl, completeLogin } from '../src/auth/auth.flow';
 import type { OidcTransaction } from '../src/auth/auth.flow';
 
 const config = {} as never;
@@ -36,17 +46,18 @@ describe('buildLoginUrl', () => {
 });
 
 describe('completeLogin', () => {
-  it('exchanges the code with the stored verifier/state/nonce, returns claims, clears oidcTx', async () => {
+  it('exchanges the code with the stored verifier/state/nonce, returns claims + id_token, clears oidcTx', async () => {
     const session: { oidcTx?: OidcTransaction } = {
       oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },
     };
-    const claims = await completeLogin(
+    const { claims, idToken } = await completeLogin(
       config,
       new URL('http://localhost:4001/auth/callback?code=c&state=state-abc'),
       session,
     );
 
     expect(claims.sub).toBe('user-1');
+    expect(idToken).toBe('id-token-1');
     expect(session.oidcTx).toBeUndefined();
   });
 
@@ -54,5 +65,38 @@ describe('completeLogin', () => {
     await expect(
       completeLogin(config, new URL('http://localhost:4001/auth/callback'), {}),
     ).rejects.toThrow();
+  });
+
+  it('consumes the transaction even when the exchange fails (one-time use, no replay)', async () => {
+    const session: { oidcTx?: OidcTransaction } = {
+      oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },
+    };
+    await expect(
+      completeLogin(
+        config,
+        new URL('http://localhost:4001/auth/callback?code=boom&state=state-abc'),
+        session,
+      ),
+    ).rejects.toThrow();
+    // The verifier/state/nonce are gone, so a replayed callback can't be retried.
+    expect(session.oidcTx).toBeUndefined();
+  });
+});
+
+describe('buildLogoutUrl', () => {
+  it('builds the end_session URL with id_token_hint and post_logout_redirect_uri', async () => {
+    const url = await buildLogoutUrl(config, {
+      idToken: 'id-token-1',
+      postLogoutRedirect: 'http://localhost:3000/',
+    });
+
+    expect(url.searchParams.get('id_token_hint')).toBe('id-token-1');
+    expect(url.searchParams.get('post_logout_redirect_uri')).toBe('http://localhost:3000/');
+  });
+
+  it('omits params that were not provided', async () => {
+    const url = await buildLogoutUrl(config, {});
+    expect(url.searchParams.get('id_token_hint')).toBeNull();
+    expect(url.searchParams.get('post_logout_redirect_uri')).toBeNull();
   });
 });

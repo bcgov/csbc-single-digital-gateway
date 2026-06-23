@@ -15,6 +15,25 @@ export const envSchema = z.object({
   OIDC_REDIRECT_URI: z.url(),
   AUTH_SESSION_SECRET: z.string().min(16),
   AUTH_POST_LOGIN_REDIRECT: z.url(),
+  // RP-initiated logout: when true, /auth/logout also bounces the browser through the IdP
+  // `end_session_endpoint`. Off by default (local session destroy is always sufficient).
+  AUTH_RP_LOGOUT: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  // Where the IdP returns the browser after RP-initiated logout (pre-registered at the IdP).
+  AUTH_POST_LOGOUT_REDIRECT: z.url().optional(),
+  // CSRF Origin allowlist (comma-separated) for mutating requests. Defaults to the local SPA dev
+  // origin; set to the real app origin(s) in production. Empty value => CSRF guard inert.
+  AUTH_ALLOWED_ORIGINS: z
+    .string()
+    .default('http://localhost:3000')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
   // Session store (Valkey, Redis wire protocol); defaults to the local compose service.
   VALKEY_URL: z.string().default('redis://localhost:6380'),
 });

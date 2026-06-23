@@ -23,6 +23,30 @@ describe('env validation', () => {
     expect(env.VALKEY_URL).toBe('redis://localhost:6380');
   });
 
+  it('defaults AUTH_RP_LOGOUT to false and parses it as a boolean', () => {
+    expect(validateEnv({ ...base }).AUTH_RP_LOGOUT).toBe(false);
+    expect(validateEnv({ ...base, AUTH_RP_LOGOUT: 'true' }).AUTH_RP_LOGOUT).toBe(true);
+  });
+
+  it('rejects a non-boolean AUTH_RP_LOGOUT', () => {
+    expect(() => validateEnv({ ...base, AUTH_RP_LOGOUT: 'yes' })).toThrow(/Invalid environment/);
+  });
+
+  it('rejects an invalid AUTH_POST_LOGOUT_REDIRECT URL', () => {
+    expect(() => validateEnv({ ...base, AUTH_POST_LOGOUT_REDIRECT: 'not-a-url' })).toThrow(
+      /Invalid environment/,
+    );
+  });
+
+  it('parses AUTH_ALLOWED_ORIGINS into a trimmed, comma-split list (default: local SPA)', () => {
+    expect(validateEnv({ ...base }).AUTH_ALLOWED_ORIGINS).toEqual(['http://localhost:3000']);
+    expect(
+      validateEnv({ ...base, AUTH_ALLOWED_ORIGINS: 'https://a.gov, https://b.gov' })
+        .AUTH_ALLOWED_ORIGINS,
+    ).toEqual(['https://a.gov', 'https://b.gov']);
+    expect(validateEnv({ ...base, AUTH_ALLOWED_ORIGINS: '' }).AUTH_ALLOWED_ORIGINS).toEqual([]);
+  });
+
   it('requires the OIDC settings (fail-fast)', () => {
     expect(() => validateEnv({ DATABASE_URL: DB_URL })).toThrow(/Invalid environment/);
   });
