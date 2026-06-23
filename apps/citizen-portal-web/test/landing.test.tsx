@@ -15,4 +15,10 @@ describe('citizen-portal-web landing', () => {
     expect(main?.className).toContain('items-center');
     expect(main?.className).toContain('justify-center');
   });
+
+  it('offers a login link that points at the BFF /auth/login endpoint', () => {
+    render(<HomePage />);
+    const link = screen.getByRole('link', { name: /log in/i });
+    expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+  });
 });
