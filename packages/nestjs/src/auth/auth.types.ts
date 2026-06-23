@@ -20,6 +20,14 @@ export interface AuthUser {
   claims: OidcClaims;
 }
 
+/** The OIDC token set kept server-side in the session (never sent to the browser). */
+export interface SessionTokens {
+  accessToken: string;
+  refreshToken?: string;
+  /** Access-token expiry as epoch ms (= now + `expires_in`); undefined if the IdP omitted it. */
+  expiresAt?: number;
+}
+
 /**
  * The sync port the module calls after a successful token exchange, before establishing the
  * session. Consumers implement it to persist/resolve the user and assign roles; the package
@@ -60,6 +68,11 @@ export interface AuthModuleOptions {
    * (e.g. `['https://app.sdg.gov']`). When omitted/empty the CSRF guard is inert (opt-in).
    */
   allowedOrigins?: string[];
+  /**
+   * Refresh the access token this many seconds before it expires (the lazy-refresh skew window).
+   * Default 30.
+   */
+  tokenRefreshSkewSeconds?: number;
   /** Pre-built OIDC `Configuration`; when set, discovery is skipped (tests / advanced wiring). */
   config?: Configuration;
 }

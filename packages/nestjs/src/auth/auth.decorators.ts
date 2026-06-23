@@ -31,3 +31,11 @@ export function currentUser(_data: unknown, ctx: ExecutionContext): AuthUser | u
 
 /** Inject the authenticated `AuthUser` (undefined on a public route with no session). */
 export const CurrentUser = createParamDecorator(currentUser);
+
+/** Factory behind {@link AccessToken}: the session's current access token (refreshed by the guard). */
+export function accessToken(_data: unknown, ctx: ExecutionContext): string | undefined {
+  return ctx.switchToHttp().getRequest<Request>().session?.tokens?.accessToken;
+}
+
+/** Inject the current OIDC access token for a server-side downstream call (undefined if none). */
+export const AccessToken = createParamDecorator(accessToken);

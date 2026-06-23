@@ -1,6 +1,25 @@
 import type { Configuration } from 'openid-client';
 
-import type { OidcClaims } from './auth.types';
+import type { OidcClaims, SessionTokens } from './auth.types';
+
+/** The subset of an OIDC token-endpoint response the session needs. */
+interface TokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+}
+
+/** Map a token-endpoint response to the server-side session token set (computes `expiresAt`). */
+export function toSessionTokens(response: TokenResponse): SessionTokens {
+  const tokens: SessionTokens = { accessToken: response.access_token };
+  if (response.refresh_token !== undefined) {
+    tokens.refreshToken = response.refresh_token;
+  }
+  if (response.expires_in !== undefined) {
+    tokens.expiresAt = Date.now() + response.expires_in * 1000;
+  }
+  return tokens;
+}
 
 /** OIDC transaction state carried across the login -> callback hop (in the session). */
 export interface OidcTransaction {
@@ -19,10 +38,11 @@ interface FlowSession {
   oidcTx?: OidcTransaction;
 }
 
-/** Result of a successful callback: the id-token claims plus the raw id_token (logout hint). */
+/** Result of a successful callback: the id-token claims, the raw id_token, and the token set. */
 export interface CompletedLogin {
   claims: OidcClaims;
   idToken: string | undefined;
+  tokens: SessionTokens;
 }
 
 export interface LogoutUrlOptions {
@@ -90,7 +110,29 @@ export async function completeLogin(
     throw new Error('auth: token response has no id_token claims');
   }
 
-  return { claims: claims as OidcClaims, idToken: tokens.id_token };
+  return {
+    claims: claims as OidcClaims,
+    idToken: tokens.id_token,
+    tokens: toSessionTokens(tokens),
+  };
+}
+
+/**
+ * Exchange a refresh token for a fresh token set (openid-client `refreshTokenGrant`). Throws when
+ * the refresh token is revoked/expired — callers fail closed. Rotation-aware: if the IdP returns
+ * no new refresh token, the current one is retained.
+ */
+export async function refreshTokens(
+  config: Configuration,
+  refreshToken: string,
+): Promise<SessionTokens> {
+  const oidc = await import('openid-client');
+  const response = await oidc.refreshTokenGrant(config, refreshToken);
+  const next = toSessionTokens(response);
+  if (next.refreshToken === undefined) {
+    next.refreshToken = refreshToken;
+  }
+  return next;
 }
 
 /** Build the IdP `end_session_endpoint` URL for RP-initiated logout. */

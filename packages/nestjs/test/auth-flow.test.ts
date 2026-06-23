@@ -16,13 +16,22 @@ vi.mock('openid-client', () => ({
     return Promise.resolve({
       claims: () => ({ sub: 'user-1', email: 'u@e.com' }),
       id_token: 'id-token-1',
+      access_token: 'access-1',
+      refresh_token: 'refresh-1',
+      expires_in: 300,
     });
   },
+  refreshTokenGrant: (_config: unknown, refreshToken: string) =>
+    Promise.resolve(
+      refreshToken === 'no-rotate'
+        ? { access_token: 'access-2', expires_in: 300 }
+        : { access_token: 'access-2', refresh_token: 'refresh-2', expires_in: 300 },
+    ),
   buildEndSessionUrl: (_config: unknown, params: Record<string, string>) =>
     new URL(`https://idp.example.com/logout?${new URLSearchParams(params).toString()}`),
 }));
 
-import { buildLoginUrl, buildLogoutUrl, completeLogin } from '../src/auth/auth.flow';
+import { buildLoginUrl, buildLogoutUrl, completeLogin, refreshTokens } from '../src/auth/auth.flow';
 import type { OidcTransaction } from '../src/auth/auth.flow';
 
 const config = {} as never;
@@ -59,6 +68,21 @@ describe('completeLogin', () => {
     expect(claims.sub).toBe('user-1');
     expect(idToken).toBe('id-token-1');
     expect(session.oidcTx).toBeUndefined();
+  });
+
+  it('returns the token set (access/refresh + computed expiresAt)', async () => {
+    const session: { oidcTx?: OidcTransaction } = {
+      oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },
+    };
+    const { tokens } = await completeLogin(
+      config,
+      new URL('http://localhost:4001/auth/callback?code=c&state=state-abc'),
+      session,
+    );
+
+    expect(tokens.accessToken).toBe('access-1');
+    expect(tokens.refreshToken).toBe('refresh-1');
+    expect(tokens.expiresAt).toBeGreaterThan(Date.now());
   });
 
   it('throws (fail-closed) when there is no OIDC transaction in the session', async () => {
@@ -98,5 +122,20 @@ describe('buildLogoutUrl', () => {
     const url = await buildLogoutUrl(config, {});
     expect(url.searchParams.get('id_token_hint')).toBeNull();
     expect(url.searchParams.get('post_logout_redirect_uri')).toBeNull();
+  });
+});
+
+describe('refreshTokens', () => {
+  it('exchanges the refresh token for a fresh set, persisting a rotated refresh token', async () => {
+    const tokens = await refreshTokens(config, 'refresh-1');
+    expect(tokens.accessToken).toBe('access-2');
+    expect(tokens.refreshToken).toBe('refresh-2');
+    expect(tokens.expiresAt).toBeGreaterThan(Date.now());
+  });
+
+  it('retains the current refresh token when the IdP rotates none', async () => {
+    const tokens = await refreshTokens(config, 'no-rotate');
+    expect(tokens.accessToken).toBe('access-2');
+    expect(tokens.refreshToken).toBe('no-rotate');
   });
 });

@@ -23,6 +23,8 @@ export const envSchema = z.object({
     .transform((v) => v === 'true'),
   // Where the IdP returns the browser after RP-initiated logout (pre-registered at the IdP).
   AUTH_POST_LOGOUT_REDIRECT: z.url().optional(),
+  // Refresh the access token this many seconds before it expires (lazy-refresh skew window).
+  AUTH_TOKEN_REFRESH_SKEW_SECONDS: z.coerce.number().int().nonnegative().default(30),
   // CSRF Origin allowlist (comma-separated) for mutating requests. Defaults to the local SPA dev
   // origin; set to the real app origin(s) in production. Empty value => CSRF guard inert.
   AUTH_ALLOWED_ORIGINS: z
