@@ -163,6 +163,12 @@
       "import": "./dist/hover-card.js",
       "require": "./dist/hover-card.cjs"
     },
+    "./icon": {
+      "types": "./dist/icon.d.ts",
+      "development": "./src/icon.ts",
+      "import": "./dist/icon.js",
+      "require": "./dist/icon.cjs"
+    },
     "./input": {
       "types": "./dist/input.d.ts",
       "development": "./src/input.ts",
@@ -198,6 +204,12 @@
       "development": "./src/label.ts",
       "import": "./dist/label.js",
       "require": "./dist/label.cjs"
+    },
+    "./logo": {
+      "types": "./dist/logo.d.ts",
+      "development": "./src/logo.ts",
+      "import": "./dist/logo.js",
+      "require": "./dist/logo.cjs"
     },
     "./menubar": {
       "types": "./dist/menubar.d.ts",
@@ -342,6 +354,14 @@
       "development": "./src/tooltip.ts",
       "import": "./dist/tooltip.js",
       "require": "./dist/tooltip.cjs"
+    },
+    "./icon.svg": {
+      "development": "./src/brand/icon.svg",
+      "default": "./dist/icon.svg"
+    },
+    "./logo.svg": {
+      "development": "./src/brand/logo.svg",
+      "default": "./dist/logo.svg"
     },
     "./styles.css": {
       "development": "./src/styles.css",
