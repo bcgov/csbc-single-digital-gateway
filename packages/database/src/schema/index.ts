@@ -6,3 +6,4 @@ export * from './workspaces';
 export * from './document-types';
 export * from './documents';
 export * from './submissions';
+export * from './reviews';
