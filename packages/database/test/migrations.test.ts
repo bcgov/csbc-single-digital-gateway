@@ -21,6 +21,7 @@ const UPDATED_AT_TABLES = [
   'document_members',
   'document_versions',
   'submissions',
+  'submission_versions',
 ];
 
 describe('bootstrap migration', () => {
@@ -40,7 +41,11 @@ describe('bootstrap migration', () => {
 
 describe('triggers migration', () => {
   it('attaches a set_updated_at trigger to every table with updated_at', () => {
-    const sql = readMigration((f) => f.includes('trigger'));
+    // Triggers are added across multiple custom migrations (0002 + per-feature) — read all.
+    const sql = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql') && f.includes('trigger'))
+      .map((f) => readFileSync(resolve(migrationsDir, f), 'utf8'))
+      .join('\n');
     for (const table of UPDATED_AT_TABLES) {
       expect(sql, `missing trigger for ${table}`).toMatch(
         new RegExp(`CREATE TRIGGER[\\s\\S]*?ON\\s+"?${table}"?`, 'i'),

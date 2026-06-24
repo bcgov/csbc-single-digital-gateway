@@ -22,6 +22,8 @@ const EXPECTED_TABLES = [
   'document_versions',
   'document_version_contributors',
   'submissions',
+  'submission_versions',
+  'reviews',
 ] as const;
 
 describe('schema — tables', () => {
@@ -61,10 +63,11 @@ describe('schema — workspaces.slug default', () => {
 });
 
 describe('schema — generated status columns', () => {
+  // submissions' status moved to submission_versions and became a WRITABLE state machine
+  // (see doc 30) — it is intentionally NOT generated and is asserted in submissions.test.ts.
   it.each([
     ['document_type_versions', schema.documentTypeVersions],
     ['document_versions', schema.documentVersions],
-    ['submissions', schema.submissions],
   ] as const)('marks %s.status as a generated column', (_name, table) => {
     const status = cfg(table).columns.find((c) => c.name === 'status');
     expect(status, 'status column must exist').toBeDefined();

@@ -29,6 +29,27 @@
       "when": 1782241746965,
       "tag": "0003_user_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782335675591,
+      "tag": "0004_submissions_versioning_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782335690081,
+      "tag": "0005_drop_old_submissions_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782335782576,
+      "tag": "0006_submission_versions_triggers",
+      "breakpoints": true
     }
   ]
 }

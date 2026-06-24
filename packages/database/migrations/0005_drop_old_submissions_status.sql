@@ -1,0 +1,1 @@
+DROP TYPE "public"."submissions_status";
