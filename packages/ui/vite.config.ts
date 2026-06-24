@@ -1,4 +1,4 @@
-import { copyFileSync, readdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -30,14 +30,19 @@ const entry = Object.fromEntries(
     .map((f) => [f.replace(/\.ts$/, ''), resolve(srcDir, f)]),
 );
 
-// Ship the theme-token stylesheet verbatim; consumers run Tailwind v4 against it.
-const copyStyles = (): Plugin => ({
-  name: 'copy-styles',
+// Ship the theme-token stylesheet (consumers run Tailwind v4 against it) and the raw brand
+// assets (src/brand/*.svg → dist/*.svg, exported as URLs for favicon/<img>) verbatim.
+const copyAssets = (): Plugin => ({
+  name: 'copy-assets',
   closeBundle() {
-    copyFileSync(
-      resolve(import.meta.dirname, 'src/styles.css'),
-      resolve(import.meta.dirname, 'dist/styles.css'),
-    );
+    const dist = resolve(import.meta.dirname, 'dist');
+    copyFileSync(resolve(import.meta.dirname, 'src/styles.css'), resolve(dist, 'styles.css'));
+    const brandDir = resolve(import.meta.dirname, 'src/brand');
+    if (existsSync(brandDir)) {
+      for (const file of readdirSync(brandDir).filter((name) => name.endsWith('.svg'))) {
+        copyFileSync(resolve(brandDir, file), resolve(dist, file));
+      }
+    }
   },
 });
 
@@ -50,7 +55,7 @@ export default defineConfig({
       tsconfigPath: './tsconfig.build.json',
       entryRoot: resolve(import.meta.dirname, 'src'),
     }),
-    copyStyles(),
+    copyAssets(),
   ],
   resolve: {
     alias: { '@ui': resolve(import.meta.dirname, 'src') },
