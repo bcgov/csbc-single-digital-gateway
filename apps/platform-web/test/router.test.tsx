@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
 import { describe, expect, it } from 'vitest';
@@ -8,6 +9,7 @@ describe('platform-web router', () => {
     const router = createRouter({
       routeTree,
       history: createMemoryHistory({ initialEntries: ['/'] }),
+      context: { queryClient: new QueryClient() },
     });
     render(<RouterProvider router={router} />);
     expect(
