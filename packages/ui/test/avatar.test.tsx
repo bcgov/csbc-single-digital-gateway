@@ -6,7 +6,7 @@ import {
   AvatarGroup,
   AvatarGroupCount,
   AvatarImage,
-} from '@/components/ui/avatar';
+} from '@ui/components/ui/avatar';
 
 describe('Avatar', () => {
   it('renders a fallback when no image has loaded', () => {

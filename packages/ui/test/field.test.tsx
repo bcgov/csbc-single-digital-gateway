@@ -11,8 +11,8 @@ import {
   FieldSet,
   FieldContent,
   FieldTitle,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+} from '@ui/components/ui/field';
+import { Input } from '@ui/components/ui/input';
 
 describe('Field', () => {
   it('renders as a role=group with default vertical orientation', () => {

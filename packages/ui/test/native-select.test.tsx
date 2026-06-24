@@ -5,7 +5,7 @@ import {
   NativeSelect,
   NativeSelectOptGroup,
   NativeSelectOption,
-} from '@/components/ui/native-select';
+} from '@ui/components/ui/native-select';
 
 function renderSelect(props?: React.ComponentProps<typeof NativeSelect>) {
   return render(

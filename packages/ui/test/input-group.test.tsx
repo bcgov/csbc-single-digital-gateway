@@ -7,7 +7,7 @@ import {
   InputGroupButton,
   InputGroupText,
   InputGroupInput,
-} from '@/components/ui/input-group';
+} from '@ui/components/ui/input-group';
 
 describe('InputGroup', () => {
   it('renders a group wrapping a control', () => {

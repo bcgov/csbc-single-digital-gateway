@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Calendar, CalendarDayButton } from '@/components/ui/calendar';
+import { Calendar, CalendarDayButton } from '@ui/components/ui/calendar';
 
 // react-day-picker relies on layout APIs that jsdom does not fully implement,
 // so these are render-safety + a11y/structure assertions only.

@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { Kbd, KbdGroup } from '@ui/components/ui/kbd';
 
 describe('Kbd', () => {
   it('renders a kbd element with its children and slot attribute', () => {

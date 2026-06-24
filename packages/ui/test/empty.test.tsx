@@ -7,7 +7,7 @@ import {
   EmptyDescription,
   EmptyContent,
   EmptyMedia,
-} from '@/components/ui/empty';
+} from '@ui/components/ui/empty';
 
 describe('Empty', () => {
   it('renders the full composed structure with title and description', () => {

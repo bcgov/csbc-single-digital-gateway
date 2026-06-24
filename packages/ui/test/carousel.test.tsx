@@ -6,7 +6,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from '@/components/ui/carousel';
+} from '@ui/components/ui/carousel';
 
 // embla-carousel measures the DOM and animates, neither of which run in jsdom,
 // so these are render-safety + a11y/structure assertions only.

@@ -5,7 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { '@': resolve(import.meta.dirname, 'src') },
+    alias: { '@ui': resolve(import.meta.dirname, 'src') },
   },
   test: {
     name: 'ui',

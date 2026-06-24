@@ -8,7 +8,7 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@ui/components/ui/popover';
 
 function TestPopover() {
   return (

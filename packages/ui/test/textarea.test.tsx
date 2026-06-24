@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '@ui/components/ui/textarea';
 
 describe('Textarea', () => {
   it('renders an accessible textbox', () => {

@@ -8,7 +8,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from '@/components/ui/chart';
+} from '@ui/components/ui/chart';
 import { Bar, BarChart } from 'recharts';
 
 // recharts depends on real DOM measurement (ResponsiveContainer/SVG layout) that

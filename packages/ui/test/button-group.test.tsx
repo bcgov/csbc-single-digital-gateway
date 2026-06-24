@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from '@/components/ui/button-group';
-import { Button } from '@/components/ui/button';
+import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from '@ui/components/ui/button-group';
+import { Button } from '@ui/components/ui/button';
 
 describe('ButtonGroup', () => {
   it('renders a group role containing its children', () => {
