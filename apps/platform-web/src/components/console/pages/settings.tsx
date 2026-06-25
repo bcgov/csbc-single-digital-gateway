@@ -7,11 +7,22 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/card';
-import { Input } from '@repo/ui/input';
-import { Label } from '@repo/ui/label';
+import { Skeleton } from '@repo/ui/skeleton';
+import { useQuery } from '@tanstack/react-query';
+import { useParams } from '@tanstack/react-router';
+import { DeleteWorkspaceButton } from '@/components/console/delete-workspace-button';
+import { WorkspaceNameForm } from '@/components/console/workspace-name-form';
+import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
 
-/** Workspace settings. v1 is a static form — Save/Cancel and the danger action are inert placeholders. */
+/** Workspace settings. Admins can rename (General) and delete (Danger zone) the workspace. */
 export function SettingsPage() {
+  const { slug } = useParams({ strict: false });
+  const { data: workspace } = useQuery({
+    ...workspaceBySlugQueryOptions(slug ?? ''),
+    enabled: slug !== undefined,
+  });
+  const isAdmin = workspace?.role === 'admin';
+
   return (
     <div className="mx-auto flex max-w-[760px] flex-col gap-4">
       <Card>
@@ -20,17 +31,17 @@ export function SettingsPage() {
           <CardDescription>Basic workspace information.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex max-w-sm flex-col gap-2">
-            <Label htmlFor="workspace-name">Workspace name</Label>
-            <Input id="workspace-name" defaultValue="Riverton" />
-          </div>
+          {workspace ? (
+            <WorkspaceNameForm
+              key={workspace.id}
+              workspaceId={workspace.id}
+              initialName={workspace.name}
+              canEdit={isAdmin}
+            />
+          ) : (
+            <Skeleton className="h-24 w-full" />
+          )}
         </CardContent>
-        <CardFooter className="justify-end gap-2">
-          <Button variant="ghost" type="button">
-            Cancel
-          </Button>
-          <Button type="button">Save changes</Button>
-        </CardFooter>
       </Card>
 
       <Card>
@@ -38,10 +49,19 @@ export function SettingsPage() {
           <CardTitle className="text-destructive">Danger zone</CardTitle>
           <CardDescription>Irreversible actions for this workspace.</CardDescription>
         </CardHeader>
-        <CardFooter className="justify-end">
-          <Button variant="destructive" type="button">
-            Delete workspace
-          </Button>
+        <CardFooter className="justify-between gap-3">
+          <span className="text-sm text-muted-foreground">
+            {isAdmin
+              ? 'Deleting a workspace removes all of its data and members.'
+              : 'Only workspace admins can delete this workspace.'}
+          </span>
+          {isAdmin && workspace ? (
+            <DeleteWorkspaceButton workspaceId={workspace.id} workspaceName={workspace.name} />
+          ) : (
+            <Button variant="destructive" type="button" disabled>
+              Delete workspace
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </div>

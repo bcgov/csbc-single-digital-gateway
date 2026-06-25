@@ -7,11 +7,18 @@ import { NewMenu } from '@/components/console/new-menu';
 import { NotificationsMenu } from '@/components/console/notifications-menu';
 import { sectionFor } from '@/lib/console-nav';
 
-/** Top bar: section title/subtitle (derived from the active route), search, notifications, "New". */
-export function ConsoleHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+interface ConsoleHeaderProps {
+  onToggleSidebar: () => void;
+  /** Active workspace slug, or undefined when there is no workspace (actions are disabled). */
+  slug: string | undefined;
+}
+
+/** Top bar: section title/subtitle, search, notifications, "New". Actions disable with no workspace. */
+export function ConsoleHeader({ onToggleSidebar, slug }: ConsoleHeaderProps) {
   const pathname = useLocation({ select: (location) => location.pathname });
   const section = sectionFor(pathname);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const enabled = slug !== undefined;
 
   return (
     <header className="flex h-[58px] shrink-0 items-center justify-between gap-4 border-b border-border px-4">
@@ -37,15 +44,18 @@ export function ConsoleHeader({ onToggleSidebar }: { onToggleSidebar: () => void
           size="icon-sm"
           type="button"
           aria-label="Search"
+          disabled={!enabled}
           onClick={() => setPaletteOpen(true)}
         >
           <Search className="size-[18px]" aria-hidden />
         </Button>
-        <NotificationsMenu />
-        <NewMenu />
+        <NotificationsMenu disabled={!enabled} />
+        <NewMenu slug={slug} />
       </div>
 
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      {enabled && slug !== undefined ? (
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} slug={slug} />
+      ) : null}
     </header>
   );
 }

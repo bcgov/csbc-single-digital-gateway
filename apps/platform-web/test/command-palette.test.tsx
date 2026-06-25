@@ -12,8 +12,18 @@ afterEach(() => {
 // console's eight jump destinations so they are reachable by name.
 describe('command palette', () => {
   it('opens from the header search button and lists the console destinations', async () => {
-    mockAuth(authedUser);
-    renderApp('/app');
+    mockAuth(authedUser, {
+      workspaces: [
+        {
+          id: 'w1',
+          slug: 'riverton',
+          name: 'Riverton',
+          role: 'admin',
+          createdAt: '2026-06-01T00:00:00.000Z',
+        },
+      ],
+    });
+    renderApp('/app/riverton');
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: /search/i }));

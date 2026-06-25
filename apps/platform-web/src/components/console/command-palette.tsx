@@ -14,10 +14,12 @@ import { ALL_DESTINATIONS } from '@/lib/console-nav';
 interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Active workspace slug — scoped destinations navigate within it. */
+  slug: string;
 }
 
 /** ⌘K / search command palette — a real jump-to-page navigator over the console's destinations. */
-export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+export function CommandPalette({ open, onOpenChange, slug }: CommandPaletteProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,11 +44,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               const Icon = dest.icon;
               return (
                 <CommandItem
-                  key={dest.to}
+                  key={dest.key}
                   value={dest.label}
                   onSelect={() => {
                     onOpenChange(false);
-                    void navigate({ to: dest.to });
+                    void navigate({
+                      to: dest.to,
+                      ...(dest.scoped ? { params: { slug } } : {}),
+                    });
                   }}
                 >
                   <Icon className="size-4" aria-hidden />

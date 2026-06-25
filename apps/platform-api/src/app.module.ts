@@ -15,6 +15,7 @@ import Valkey from 'iovalkey';
 import { OidcUserSyncService } from './auth/oidc-user-sync.service';
 import { ValkeySessionRegistry } from './auth/valkey-session-registry';
 import { validateEnv, type Env } from './config/env.schema';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -92,6 +93,8 @@ import { validateEnv, type Env } from './config/env.schema';
     // unversioned root. Feature modules live under src/modules/<feature>/.
     // /health/ready reports the database via DatabaseHealthIndicator (select 1).
     HealthModule.forRoot({ readiness: [DatabaseHealthIndicator] }),
+    // Feature modules (versioned under /v1).
+    WorkspacesModule,
   ],
 })
 export class AppModule {}

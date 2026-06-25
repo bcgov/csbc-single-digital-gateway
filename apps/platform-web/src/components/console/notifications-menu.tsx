@@ -7,12 +7,13 @@ import {
 import { Bell } from 'lucide-react';
 
 /** Header notifications bell. Empty in v1 — there is no notification source yet. */
-export function NotificationsMenu() {
+export function NotificationsMenu({ disabled = false }: { disabled?: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Notifications"
-        className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        disabled={disabled}
+        className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
       >
         <Bell className="size-[18px]" aria-hidden />
       </DropdownMenuTrigger>

@@ -12,13 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as AppTeamRouteImport } from './routes/app.team'
-import { Route as AppSubmissionsRouteImport } from './routes/app.submissions'
-import { Route as AppSettingsRouteImport } from './routes/app.settings'
-import { Route as AppServicesRouteImport } from './routes/app.services'
-import { Route as AppReportsRouteImport } from './routes/app.reports'
-import { Route as AppApplicationsRouteImport } from './routes/app.applications'
 import { Route as AppAccountRouteImport } from './routes/app.account'
+import { Route as AppSlugRouteImport } from './routes/app.$slug'
+import { Route as AppSlugIndexRouteImport } from './routes/app.$slug.index'
+import { Route as AppSlugTeamRouteImport } from './routes/app.$slug.team'
+import { Route as AppSlugSubmissionsRouteImport } from './routes/app.$slug.submissions'
+import { Route as AppSlugSettingsRouteImport } from './routes/app.$slug.settings'
+import { Route as AppSlugServicesRouteImport } from './routes/app.$slug.services'
+import { Route as AppSlugReportsRouteImport } from './routes/app.$slug.reports'
+import { Route as AppSlugApplicationsRouteImport } from './routes/app.$slug.applications'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -35,114 +37,134 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppTeamRoute = AppTeamRouteImport.update({
-  id: '/team',
-  path: '/team',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSubmissionsRoute = AppSubmissionsRouteImport.update({
-  id: '/submissions',
-  path: '/submissions',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppServicesRoute = AppServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsRoute = AppReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppApplicationsRoute = AppApplicationsRouteImport.update({
-  id: '/applications',
-  path: '/applications',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSlugRoute = AppSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSlugIndexRoute = AppSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSlugRoute,
+} as any)
+const AppSlugTeamRoute = AppSlugTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AppSlugRoute,
+} as any)
+const AppSlugSubmissionsRoute = AppSlugSubmissionsRouteImport.update({
+  id: '/submissions',
+  path: '/submissions',
+  getParentRoute: () => AppSlugRoute,
+} as any)
+const AppSlugSettingsRoute = AppSlugSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppSlugRoute,
+} as any)
+const AppSlugServicesRoute = AppSlugServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => AppSlugRoute,
+} as any)
+const AppSlugReportsRoute = AppSlugReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppSlugRoute,
+} as any)
+const AppSlugApplicationsRoute = AppSlugApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
+  getParentRoute: () => AppSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
-  '/app/applications': typeof AppApplicationsRoute
-  '/app/reports': typeof AppReportsRoute
-  '/app/services': typeof AppServicesRoute
-  '/app/settings': typeof AppSettingsRoute
-  '/app/submissions': typeof AppSubmissionsRoute
-  '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
+  '/app/$slug/applications': typeof AppSlugApplicationsRoute
+  '/app/$slug/reports': typeof AppSlugReportsRoute
+  '/app/$slug/services': typeof AppSlugServicesRoute
+  '/app/$slug/settings': typeof AppSlugSettingsRoute
+  '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
+  '/app/$slug/team': typeof AppSlugTeamRoute
+  '/app/$slug/': typeof AppSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app/account': typeof AppAccountRoute
-  '/app/applications': typeof AppApplicationsRoute
-  '/app/reports': typeof AppReportsRoute
-  '/app/services': typeof AppServicesRoute
-  '/app/settings': typeof AppSettingsRoute
-  '/app/submissions': typeof AppSubmissionsRoute
-  '/app/team': typeof AppTeamRoute
   '/app': typeof AppIndexRoute
+  '/app/$slug/applications': typeof AppSlugApplicationsRoute
+  '/app/$slug/reports': typeof AppSlugReportsRoute
+  '/app/$slug/services': typeof AppSlugServicesRoute
+  '/app/$slug/settings': typeof AppSlugSettingsRoute
+  '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
+  '/app/$slug/team': typeof AppSlugTeamRoute
+  '/app/$slug': typeof AppSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
-  '/app/applications': typeof AppApplicationsRoute
-  '/app/reports': typeof AppReportsRoute
-  '/app/services': typeof AppServicesRoute
-  '/app/settings': typeof AppSettingsRoute
-  '/app/submissions': typeof AppSubmissionsRoute
-  '/app/team': typeof AppTeamRoute
   '/app/': typeof AppIndexRoute
+  '/app/$slug/applications': typeof AppSlugApplicationsRoute
+  '/app/$slug/reports': typeof AppSlugReportsRoute
+  '/app/$slug/services': typeof AppSlugServicesRoute
+  '/app/$slug/settings': typeof AppSlugSettingsRoute
+  '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
+  '/app/$slug/team': typeof AppSlugTeamRoute
+  '/app/$slug/': typeof AppSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/app'
+    | '/app/$slug'
     | '/app/account'
-    | '/app/applications'
-    | '/app/reports'
-    | '/app/services'
-    | '/app/settings'
-    | '/app/submissions'
-    | '/app/team'
     | '/app/'
+    | '/app/$slug/applications'
+    | '/app/$slug/reports'
+    | '/app/$slug/services'
+    | '/app/$slug/settings'
+    | '/app/$slug/submissions'
+    | '/app/$slug/team'
+    | '/app/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/app/account'
-    | '/app/applications'
-    | '/app/reports'
-    | '/app/services'
-    | '/app/settings'
-    | '/app/submissions'
-    | '/app/team'
     | '/app'
+    | '/app/$slug/applications'
+    | '/app/$slug/reports'
+    | '/app/$slug/services'
+    | '/app/$slug/settings'
+    | '/app/$slug/submissions'
+    | '/app/$slug/team'
+    | '/app/$slug'
   id:
     | '__root__'
     | '/'
     | '/app'
+    | '/app/$slug'
     | '/app/account'
-    | '/app/applications'
-    | '/app/reports'
-    | '/app/services'
-    | '/app/settings'
-    | '/app/submissions'
-    | '/app/team'
     | '/app/'
+    | '/app/$slug/applications'
+    | '/app/$slug/reports'
+    | '/app/$slug/services'
+    | '/app/$slug/settings'
+    | '/app/$slug/submissions'
+    | '/app/$slug/team'
+    | '/app/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -173,48 +195,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/team': {
-      id: '/app/team'
-      path: '/team'
-      fullPath: '/app/team'
-      preLoaderRoute: typeof AppTeamRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/submissions': {
-      id: '/app/submissions'
-      path: '/submissions'
-      fullPath: '/app/submissions'
-      preLoaderRoute: typeof AppSubmissionsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/settings': {
-      id: '/app/settings'
-      path: '/settings'
-      fullPath: '/app/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/services': {
-      id: '/app/services'
-      path: '/services'
-      fullPath: '/app/services'
-      preLoaderRoute: typeof AppServicesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/reports': {
-      id: '/app/reports'
-      path: '/reports'
-      fullPath: '/app/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/applications': {
-      id: '/app/applications'
-      path: '/applications'
-      fullPath: '/app/applications'
-      preLoaderRoute: typeof AppApplicationsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/app/account': {
       id: '/app/account'
       path: '/account'
@@ -222,28 +202,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/$slug': {
+      id: '/app/$slug'
+      path: '/$slug'
+      fullPath: '/app/$slug'
+      preLoaderRoute: typeof AppSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/$slug/': {
+      id: '/app/$slug/'
+      path: '/'
+      fullPath: '/app/$slug/'
+      preLoaderRoute: typeof AppSlugIndexRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
+    '/app/$slug/team': {
+      id: '/app/$slug/team'
+      path: '/team'
+      fullPath: '/app/$slug/team'
+      preLoaderRoute: typeof AppSlugTeamRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
+    '/app/$slug/submissions': {
+      id: '/app/$slug/submissions'
+      path: '/submissions'
+      fullPath: '/app/$slug/submissions'
+      preLoaderRoute: typeof AppSlugSubmissionsRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
+    '/app/$slug/settings': {
+      id: '/app/$slug/settings'
+      path: '/settings'
+      fullPath: '/app/$slug/settings'
+      preLoaderRoute: typeof AppSlugSettingsRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
+    '/app/$slug/services': {
+      id: '/app/$slug/services'
+      path: '/services'
+      fullPath: '/app/$slug/services'
+      preLoaderRoute: typeof AppSlugServicesRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
+    '/app/$slug/reports': {
+      id: '/app/$slug/reports'
+      path: '/reports'
+      fullPath: '/app/$slug/reports'
+      preLoaderRoute: typeof AppSlugReportsRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
+    '/app/$slug/applications': {
+      id: '/app/$slug/applications'
+      path: '/applications'
+      fullPath: '/app/$slug/applications'
+      preLoaderRoute: typeof AppSlugApplicationsRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
   }
 }
 
+interface AppSlugRouteChildren {
+  AppSlugApplicationsRoute: typeof AppSlugApplicationsRoute
+  AppSlugReportsRoute: typeof AppSlugReportsRoute
+  AppSlugServicesRoute: typeof AppSlugServicesRoute
+  AppSlugSettingsRoute: typeof AppSlugSettingsRoute
+  AppSlugSubmissionsRoute: typeof AppSlugSubmissionsRoute
+  AppSlugTeamRoute: typeof AppSlugTeamRoute
+  AppSlugIndexRoute: typeof AppSlugIndexRoute
+}
+
+const AppSlugRouteChildren: AppSlugRouteChildren = {
+  AppSlugApplicationsRoute: AppSlugApplicationsRoute,
+  AppSlugReportsRoute: AppSlugReportsRoute,
+  AppSlugServicesRoute: AppSlugServicesRoute,
+  AppSlugSettingsRoute: AppSlugSettingsRoute,
+  AppSlugSubmissionsRoute: AppSlugSubmissionsRoute,
+  AppSlugTeamRoute: AppSlugTeamRoute,
+  AppSlugIndexRoute: AppSlugIndexRoute,
+}
+
+const AppSlugRouteWithChildren =
+  AppSlugRoute._addFileChildren(AppSlugRouteChildren)
+
 interface AppRouteChildren {
+  AppSlugRoute: typeof AppSlugRouteWithChildren
   AppAccountRoute: typeof AppAccountRoute
-  AppApplicationsRoute: typeof AppApplicationsRoute
-  AppReportsRoute: typeof AppReportsRoute
-  AppServicesRoute: typeof AppServicesRoute
-  AppSettingsRoute: typeof AppSettingsRoute
-  AppSubmissionsRoute: typeof AppSubmissionsRoute
-  AppTeamRoute: typeof AppTeamRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppSlugRoute: AppSlugRouteWithChildren,
   AppAccountRoute: AppAccountRoute,
-  AppApplicationsRoute: AppApplicationsRoute,
-  AppReportsRoute: AppReportsRoute,
-  AppServicesRoute: AppServicesRoute,
-  AppSettingsRoute: AppSettingsRoute,
-  AppSubmissionsRoute: AppSubmissionsRoute,
-  AppTeamRoute: AppTeamRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

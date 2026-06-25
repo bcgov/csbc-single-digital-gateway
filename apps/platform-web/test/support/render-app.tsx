@@ -69,15 +69,92 @@ export function stubLocationAssign(): { assign: ReturnType<typeof vi.fn>; restor
   };
 }
 
-/** Stub `fetch` so `/auth/me` returns `user` (or 401 when null) and `/auth/logout` succeeds. */
-export function mockAuth(user: unknown | null): ReturnType<typeof vi.fn> {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+export interface WorkspaceLike {
+  id: string;
+  slug: string;
+  name: string;
+  role: 'admin' | 'member';
+  createdAt: string;
+}
+
+interface MockAuthOptions {
+  /** Workspaces the user belongs to (the store grows when the test POSTs a new one). */
+  workspaces?: WorkspaceLike[];
+  /** Slug assigned to a workspace created via POST /v1/workspaces. */
+  createdSlug?: string;
+}
+
+/**
+ * Stub `fetch` for the BFF + platform-api endpoints the console uses:
+ * `/auth/me`, `/auth/logout`, and the `/v1/workspaces` list (sort/order/limit aware) + create. The
+ * workspace store is stateful so a POST in a test is reflected by the subsequent list refetch.
+ */
+export function mockAuth(
+  user: unknown | null,
+  options: MockAuthOptions = {},
+): ReturnType<typeof vi.fn> {
+  const store: WorkspaceLike[] = [...(options.workspaces ?? [])];
+
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+    const method = (init?.method ?? 'GET').toUpperCase();
+
     if (url.includes('/auth/me')) {
       return user === null ? new Response(null, { status: 401 }) : jsonResponse(user);
     }
     if (url.includes('/auth/logout')) {
       return new Response(null, { status: 200 });
+    }
+    if (url.includes('/v1/workspaces/by-slug/')) {
+      const slug = decodeURIComponent(url.split('/v1/workspaces/by-slug/')[1]?.split('?')[0] ?? '');
+      const found = store.find((workspace) => workspace.slug === slug);
+      return found ? jsonResponse(found) : new Response(null, { status: 404 });
+    }
+    if (url.includes('/v1/workspaces')) {
+      if (method === 'DELETE') {
+        const id = decodeURIComponent(url.split('/v1/workspaces/')[1]?.split('?')[0] ?? '');
+        const index = store.findIndex((workspace) => workspace.id === id);
+        if (index >= 0) {
+          store.splice(index, 1);
+        }
+        return new Response(null, { status: 204 });
+      }
+      if (method === 'PATCH') {
+        const id = decodeURIComponent(url.split('/v1/workspaces/')[1]?.split('?')[0] ?? '');
+        const body = init?.body ? (JSON.parse(String(init.body)) as { name?: string }) : {};
+        const target = store.find((workspace) => workspace.id === id);
+        if (!target) {
+          return new Response(null, { status: 404 });
+        }
+        target.name = body.name ?? target.name;
+        return jsonResponse(target);
+      }
+      if (method === 'POST') {
+        const body = init?.body ? (JSON.parse(String(init.body)) as { name?: string }) : {};
+        const slug = options.createdSlug ?? `ws-${store.length + 1}`;
+        const created: WorkspaceLike = {
+          id: `id-${slug}`,
+          slug,
+          name: body.name ?? 'Untitled',
+          role: 'admin',
+          createdAt: new Date(Date.UTC(2026, 5, 2 + store.length)).toISOString(),
+        };
+        store.push(created);
+        return jsonResponse(created, 201);
+      }
+      const params = new URL(url, 'http://local').searchParams;
+      const sort = params.get('sort');
+      const order = params.get('order');
+      const limit = Number(params.get('limit') ?? '100');
+      const sorted = store.toSorted((a, b) =>
+        sort === 'createdAt'
+          ? a.createdAt.localeCompare(b.createdAt)
+          : a.name.localeCompare(b.name),
+      );
+      if (order === 'desc') {
+        sorted.reverse();
+      }
+      return jsonResponse({ items: sorted.slice(0, limit), total: store.length, limit, offset: 0 });
     }
     return new Response(null, { status: 404 });
   });

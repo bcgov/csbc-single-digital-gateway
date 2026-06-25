@@ -57,19 +57,29 @@ describe('console shell — profile card on real /auth/me data', () => {
 });
 
 describe('console shell — navigation uses real router links', () => {
-  it('renders sidebar destinations as anchors to their /app routes', async () => {
-    mockAuth(authedUser);
-    renderApp('/app');
+  it('renders sidebar destinations as anchors scoped to the active workspace', async () => {
+    mockAuth(authedUser, {
+      workspaces: [
+        {
+          id: 'w1',
+          slug: 'riverton',
+          name: 'Riverton',
+          role: 'admin',
+          createdAt: '2026-06-01T00:00:00.000Z',
+        },
+      ],
+    });
+    renderApp('/app/riverton');
 
     await screen.findByRole('button', { name: /Maya Reyes/ });
     const cases: Array<[string, string]> = [
-      ['Overview', '/app'],
-      ['Services', '/app/services'],
-      ['Applications', '/app/applications'],
-      ['Submissions', '/app/submissions'],
-      ['Team', '/app/team'],
-      ['Reports', '/app/reports'],
-      ['Settings', '/app/settings'],
+      ['Overview', '/app/riverton'],
+      ['Services', '/app/riverton/services'],
+      ['Applications', '/app/riverton/applications'],
+      ['Submissions', '/app/riverton/submissions'],
+      ['Team', '/app/riverton/team'],
+      ['Reports', '/app/riverton/reports'],
+      ['Settings', '/app/riverton/settings'],
     ];
     for (const [label, href] of cases) {
       expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', href);
