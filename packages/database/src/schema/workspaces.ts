@@ -13,15 +13,15 @@ import {
 import { createdAt, updatedAt, uuidPk } from './_shared';
 import { users } from './users';
 
-/** A tenant. `slug` defaults to a `nanoid()` (unguessable, pgcrypto-backed). */
+/** A tenant. `slug` defaults to an 8-char `nanoid(8)` (unguessable, pgcrypto-backed). */
 export const workspaces = pgTable(
   'workspaces',
   {
     id: uuidPk(),
-    // DEFAULT nanoid() — the function is created in the bootstrap migration.
+    // DEFAULT nanoid(8) — the function is created in the bootstrap migration.
     slug: text('slug')
       .notNull()
-      .default(sql`nanoid()`),
+      .default(sql`nanoid(8)`),
     name: text('name').notNull(),
     settings: jsonb('settings').$type<Record<string, unknown>>().notNull().default({}),
     createdAt: createdAt(),

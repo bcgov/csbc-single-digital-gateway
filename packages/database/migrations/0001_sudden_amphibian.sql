@@ -41,7 +41,7 @@ CREATE TABLE "workspace_members" (
 --> statement-breakpoint
 CREATE TABLE "workspaces" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"slug" text DEFAULT nanoid() NOT NULL,
+	"slug" text DEFAULT nanoid(8) NOT NULL,
 	"name" text NOT NULL,
 	"settings" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
