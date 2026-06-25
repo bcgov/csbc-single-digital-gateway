@@ -1,8 +1,0 @@
-# Feature modules
-#
-# Each feature is a module here: modules/<feature>/
-#   <feature>.module.ts
-#   controllers/   services/   dtos/
-#
-# Feature controllers are URI-versioned: @Controller({ path, version: '1' }) -> /v1/...
-# Cross-cutting modules (health, auth) are imported in src/app.module.ts and stay at root.

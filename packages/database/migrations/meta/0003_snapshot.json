@@ -332,7 +332,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "nanoid()"
+          "default": "nanoid(8)"
         },
         "name": {
           "name": "name",
