@@ -50,6 +50,20 @@
       "when": 1782335782576,
       "tag": "0006_submission_versions_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782422885696,
+      "tag": "0007_document_references",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782423085586,
+      "tag": "0008_document_references_trigger",
+      "breakpoints": true
     }
   ]
 }

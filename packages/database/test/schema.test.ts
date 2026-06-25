@@ -21,6 +21,7 @@ const EXPECTED_TABLES = [
   'document_members',
   'document_versions',
   'document_version_contributors',
+  'document_references',
   'submissions',
   'submission_versions',
   'reviews',

@@ -19,14 +19,22 @@ import { workspaces } from './workspaces';
  * non-NULL = workspace-owned (future). Restrict on delete so a workspace can't be removed
  * while it still owns types.
  */
-export const documentTypes = pgTable('document_types', {
-  id: uuidPk(),
-  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'restrict' }),
-  name: text('name').notNull(),
-  kind: text('kind').notNull(),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const documentTypes = pgTable(
+  'document_types',
+  {
+    id: uuidPk(),
+    workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'restrict' }),
+    name: text('name').notNull(),
+    kind: text('kind').notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    // Composite UNIQUE CONSTRAINT — referenced target of the (type_id, kind) FK on `documents`,
+    // which pins a document's denormalized `kind` to its type's real kind.
+    unique('document_types_id_kind_key').on(table.id, table.kind),
+  ],
+);
 
 export const documentTypeVersionsStatus = pgEnum('document_type_versions_status', [
   'draft',

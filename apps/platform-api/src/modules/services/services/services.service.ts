@@ -42,7 +42,12 @@ export class ServicesService {
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
-        .values({ typeId: type.typeId, workspaceId: input.workspaceId, title: input.title })
+        .values({
+          typeId: type.typeId,
+          workspaceId: input.workspaceId,
+          kind: 'service',
+          title: input.title,
+        })
         .returning();
       const doc = insertedDoc[0];
       if (doc === undefined) {
