@@ -1,0 +1,1 @@
+ALTER TABLE "document_references" ADD COLUMN "label" text;

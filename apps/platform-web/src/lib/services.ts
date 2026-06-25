@@ -37,6 +37,34 @@ export interface ServiceDetail {
   definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
 }
 
+export interface FormCatalogEntry {
+  documentId: string;
+  versionId: string;
+  title: string;
+  kind: string;
+}
+
+export interface ServiceReference {
+  id: string;
+  relation: 'related_service' | 'application_form';
+  position: number;
+  label: string | null;
+  targetDocumentId: string;
+  targetVersionId: string;
+  targetKind: string;
+  targetTitle: string;
+  targetVersion: number;
+  createdAt: string;
+}
+
+/** An application as sent to the composite create/update endpoints. */
+export type ApplicationInput = {
+  id?: string;
+  label: string;
+  position: number;
+  form: { mode: 'existing'; versionId: string } | { mode: 'new'; typeId: string; title: string };
+};
+
 const BASE = `${BFF_ORIGIN}/v1/services`;
 
 async function ok<T>(res: Response): Promise<T> {
@@ -83,6 +111,69 @@ export function serviceQueryOptions(id: string) {
   });
 }
 
+export function serviceDefinitionQueryOptions() {
+  return queryOptions({
+    queryKey: ['services', 'definition'] as const,
+    queryFn: async () =>
+      ok<{ schema: Record<string, unknown>; uischema: Record<string, unknown> }>(
+        await fetch(`${BASE}/definition`, { credentials: 'include' }),
+      ),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export interface FormType {
+  typeId: string;
+  name: string;
+  kind: string;
+}
+
+/** The published form document types (basic-form / multi-stage-form) — for creating a new form inline. */
+export function formTypesQueryOptions() {
+  return queryOptions({
+    queryKey: ['document-types', 'forms'] as const,
+    queryFn: async () => {
+      const envelope = await ok<{
+        items: Array<{ type: { id: string; name: string; kind: string } }>;
+      }>(await fetch(`${BFF_ORIGIN}/v1/document-types`, { credentials: 'include' }));
+      return envelope.items
+        .map((item) => ({ typeId: item.type.id, name: item.type.name, kind: item.type.kind }))
+        .filter((type) => type.kind === 'basic-form' || type.kind === 'multi-stage-form');
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function formsCatalogQueryOptions(workspaceId: string) {
+  return queryOptions({
+    queryKey: ['services', 'forms', workspaceId] as const,
+    queryFn: async () => {
+      const envelope = await ok<{ items: FormCatalogEntry[] }>(
+        await fetch(`${BASE}/forms?workspaceId=${encodeURIComponent(workspaceId)}`, {
+          credentials: 'include',
+        }),
+      );
+      return envelope.items;
+    },
+  });
+}
+
+export function serviceReferencesQueryOptions(id: string, versionId: string) {
+  return queryOptions({
+    queryKey: ['services', 'detail', id, 'references', versionId] as const,
+    queryFn: async () => {
+      const envelope = await ok<{ items: ServiceReference[] }>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references`,
+          { credentials: 'include' },
+        ),
+      );
+      return envelope.items;
+    },
+    staleTime: 10_000,
+  });
+}
+
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
   return ok<T>(
     await fetch(url, {
@@ -95,22 +186,26 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
   );
 }
 
+/** Composite create — service + draft v1 data + applications (inline forms + references), atomic. */
 export function createService(input: {
   workspaceId: string;
   title: string;
+  data: Record<string, unknown>;
+  applications: ApplicationInput[];
 }): Promise<{ service: Service; versions: ServiceVersion[] }> {
   return send(BASE, 'POST', input);
 }
 
+/** Composite draft save — data + title + reconciled application references. */
 export function updateDraft(
   id: string,
   versionId: string,
-  data: Record<string, unknown>,
+  input: { data: Record<string, unknown>; title?: string; applications?: ApplicationInput[] },
 ): Promise<ServiceVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
     'PATCH',
-    { data },
+    input,
   );
 }
 

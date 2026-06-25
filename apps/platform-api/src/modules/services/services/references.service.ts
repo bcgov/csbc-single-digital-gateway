@@ -44,6 +44,7 @@ function toDto(
     id: row.id,
     relation: row.relation,
     position: row.position,
+    label: row.label,
     targetDocumentId: row.targetDocumentId,
     targetVersionId: row.targetVersionId,
     targetKind: row.targetKind,
@@ -109,6 +110,7 @@ export class ReferencesService {
           targetKind: target.kind,
           workspaceId: service.workspaceId,
           relation: input.relation,
+          label: input.label ?? null,
         })
         .returning();
       const row = inserted[0];
@@ -195,6 +197,7 @@ export class ReferencesService {
           targetKind: type.kind,
           workspaceId: service.workspaceId,
           relation: 'application_form',
+          label: input.label ?? null,
         })
         .returning();
       const ref = insertedRef[0];

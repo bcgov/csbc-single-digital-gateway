@@ -1,22 +1,24 @@
-import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { ArrowLeft, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   addServiceVersion,
   archiveVersion,
-  publishVersion,
+  formTypesQueryOptions,
+  formsCatalogQueryOptions,
   serviceQueryOptions,
-  updateDraft,
+  serviceReferencesQueryOptions,
 } from '@/lib/services';
+import { ServiceEditor } from './service-editor';
+import type { ApplicationItem } from './applications-editor';
 
 const STATUS_VARIANT = { draft: 'secondary', published: 'default', archived: 'outline' } as const;
 
-/** Service detail — version history, the JsonForms editor, and the draft→publish lifecycle. */
+/** Service detail — version history + lifecycle, with the unified editor for the selected version. */
 export function ServiceDetail() {
   const { slug, id } = useParams({ from: '/app/$slug/services/$id' });
   const queryClient = useQueryClient();
@@ -26,27 +28,19 @@ export function ServiceDetail() {
   const versions = data?.versions ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = versions.find((v) => v.id === selectedId) ?? versions[versions.length - 1];
-  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const workspaceId = data?.service.workspaceId ?? '';
 
-  useEffect(() => {
-    if (selected) {
-      setFormData(selected.data);
-    }
-  }, [selected?.id]);
-
-  const isDraft = selected?.status === 'draft';
-
-  const save = useMutation({
-    mutationFn: (versionId: string) => updateDraft(id, versionId, formData),
-    onSuccess: invalidate,
+  const referencesQuery = useQuery({
+    ...serviceReferencesQueryOptions(id, selected?.id ?? ''),
+    enabled: selected !== undefined,
   });
-  const publish = useMutation({
-    mutationFn: async (versionId: string) => {
-      await updateDraft(id, versionId, formData);
-      return publishVersion(id, versionId);
-    },
-    onSuccess: invalidate,
+  const references = referencesQuery.data ?? [];
+  const { data: forms = [] } = useQuery({
+    ...formsCatalogQueryOptions(workspaceId),
+    enabled: workspaceId !== '',
   });
+  const { data: formTypes = [] } = useQuery(formTypesQueryOptions());
+
   const archive = useMutation({
     mutationFn: (versionId: string) => archiveVersion(id, versionId),
     onSuccess: invalidate,
@@ -60,8 +54,19 @@ export function ServiceDetail() {
     return null;
   }
 
+  const applications: ApplicationItem[] = references
+    .filter((ref) => ref.relation === 'application_form')
+    .map((ref) => ({
+      key: ref.id,
+      id: ref.id,
+      label: ref.label ?? '',
+      position: ref.position,
+      mode: 'existing' as const,
+      versionId: ref.targetVersionId,
+    }));
+
   return (
-    <div className="mx-auto flex max-w-[1320px] flex-col gap-4">
+    <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
       <Link
         to="/app/$slug/services"
         params={{ slug }}
@@ -83,104 +88,68 @@ export function ServiceDetail() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.8fr]">
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Version</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Version</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {versions.map((version) => (
+              <TableRow
+                key={version.id}
+                className={version.id === selected?.id ? 'bg-accent' : 'cursor-pointer'}
+                onClick={() => setSelectedId(version.id)}
+              >
+                <TableCell className="font-medium">v{version.version}</TableCell>
+                <TableCell>
+                  <Badge variant={STATUS_VARIANT[version.status]}>{version.status}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end">
+                    {version.status !== 'archived' ? (
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        type="button"
+                        disabled={archive.isPending}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          archive.mutate(version.id);
+                        }}
+                      >
+                        Archive
+                      </Button>
+                    ) : null}
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {versions.map((version) => (
-                <TableRow
-                  key={version.id}
-                  className={version.id === selected?.id ? 'bg-accent' : 'cursor-pointer'}
-                  onClick={() => setSelectedId(version.id)}
-                >
-                  <TableCell className="font-medium">v{version.version}</TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANT[version.status]}>{version.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      {version.status !== 'archived' ? (
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          type="button"
-                          disabled={archive.isPending}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            archive.mutate(version.id);
-                          }}
-                        >
-                          Archive
-                        </Button>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium">
-              Form {selected ? `(v${selected.version})` : ''}
-              {isDraft ? '' : ' · read-only'}
-            </span>
-            {isDraft && selected ? (
-              <div className="flex gap-2">
-                <Button
-                  size="xs"
-                  variant="outline"
-                  type="button"
-                  disabled={save.isPending}
-                  onClick={() => save.mutate(selected.id)}
-                >
-                  Save
-                </Button>
-                <Button
-                  size="xs"
-                  type="button"
-                  disabled={publish.isPending}
-                  onClick={() => publish.mutate(selected.id)}
-                >
-                  Publish
-                </Button>
-              </div>
-            ) : null}
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <JsonForms
-              schema={data.definition.schema as JsonSchema}
-              uischema={data.definition.uischema as unknown as UISchemaElement}
-              data={formData}
-              readonly={!isDraft}
-              onChange={({ data: next }) => {
-                if (isDraft) {
-                  setFormData(next as Record<string, unknown>);
-                }
-              }}
-            />
-          </div>
-          {publish.isError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {publish.error.message}
-            </p>
-          ) : null}
-          {save.isError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {save.error.message}
-            </p>
-          ) : null}
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </div>
+
+      {/* Render the editor only once references have loaded — it seeds its state from
+          initialApplications at mount (keyed by version), so mounting before they arrive shows empty. */}
+      {selected && referencesQuery.isSuccess ? (
+        <ServiceEditor
+          key={selected.id}
+          mode="edit"
+          slug={slug}
+          workspaceId={workspaceId}
+          serviceId={id}
+          versionId={selected.id}
+          definition={data.definition}
+          forms={forms}
+          formTypes={formTypes}
+          initialData={selected.data}
+          initialApplications={applications}
+          readonly={selected.status !== 'draft'}
+        />
+      ) : null}
     </div>
   );
 }

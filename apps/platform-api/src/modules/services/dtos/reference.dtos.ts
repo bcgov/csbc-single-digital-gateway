@@ -8,6 +8,7 @@ export type ReferenceRelation = z.infer<typeof referenceRelationSchema>;
 export const addReferenceSchema = z.object({
   targetVersionId: z.uuid(),
   relation: referenceRelationSchema,
+  label: z.string().trim().min(1).max(255).optional(),
 });
 export class AddReferenceDto extends createZodDto(addReferenceSchema) {}
 export type AddReferenceInput = z.infer<typeof addReferenceSchema>;
@@ -16,6 +17,7 @@ export type AddReferenceInput = z.infer<typeof addReferenceSchema>;
 export const createReferencedFormSchema = z.object({
   typeId: z.uuid(),
   title: z.string().trim().min(1).max(255),
+  label: z.string().trim().min(1).max(255).optional(),
 });
 export class CreateReferencedFormDto extends createZodDto(createReferencedFormSchema) {}
 export type CreateReferencedFormInput = z.infer<typeof createReferencedFormSchema>;
@@ -26,6 +28,7 @@ export const referenceSchema = z.object({
   id: z.string(),
   relation: referenceRelationSchema,
   position: z.number().int(),
+  label: z.string().nullable(),
   targetDocumentId: z.string(),
   targetVersionId: z.string(),
   targetKind: z.string(),

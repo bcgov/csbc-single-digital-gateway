@@ -4,10 +4,26 @@ import { z } from 'zod';
 
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────
 
-/** Create a service: pick a workspace + an initial title. The Service document type is resolved server-side. */
+/** An application = a form reference (existing version OR a new form to create) + a button label. */
+export const applicationFormRefSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('existing'), versionId: z.uuid() }),
+  z.object({ mode: z.literal('new'), typeId: z.uuid(), title: z.string().trim().min(1).max(255) }),
+]);
+export const applicationInputSchema = z.object({
+  /** Present = an existing reference (update reconcile); absent = a new application. */
+  id: z.uuid().optional(),
+  label: z.string().trim().min(1).max(255),
+  position: z.number().int().min(0).default(0),
+  form: applicationFormRefSchema,
+});
+export type ApplicationInput = z.infer<typeof applicationInputSchema>;
+
+/** Composite create: the service + its draft v1 data + its application references, persisted atomically. */
 export const createServiceSchema = z.object({
   workspaceId: z.uuid(),
   title: z.string().trim().min(1).max(255),
+  data: z.record(z.string(), z.unknown()).default({}),
+  applications: z.array(applicationInputSchema).default([]),
 });
 export class CreateServiceDto extends createZodDto(createServiceSchema) {}
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;
@@ -16,10 +32,26 @@ export const listServicesQuerySchema = z.object({ workspaceId: z.uuid() });
 export class ListServicesQueryDto extends createZodDto(listServicesQuerySchema) {}
 export type ListServicesQuery = z.infer<typeof listServicesQuerySchema>;
 
-/** Save a draft version's form data (validated against the type schema only at publish time). */
-export const updateVersionDataSchema = z.object({ data: z.record(z.string(), z.unknown()) });
+/** Composite save of a draft version: form data + (optional) reconciled application references. */
+export const updateVersionDataSchema = z.object({
+  data: z.record(z.string(), z.unknown()),
+  title: z.string().trim().min(1).max(255).optional(),
+  applications: z.array(applicationInputSchema).optional(),
+});
 export class UpdateVersionDataDto extends createZodDto(updateVersionDataSchema) {}
 export type UpdateVersionDataInput = z.infer<typeof updateVersionDataSchema>;
+
+/** Forms catalog entry — a workspace form document + the version to reference. */
+export const formCatalogEntrySchema = z.object({
+  documentId: z.string(),
+  versionId: z.string(),
+  title: z.string(),
+  kind: z.string(),
+});
+export type FormCatalogEntry = z.infer<typeof formCatalogEntrySchema>;
+export class FormCatalogListDto extends createZodDto(
+  z.object({ items: z.array(formCatalogEntrySchema) }),
+) {}
 
 // ── Response schemas + DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -68,6 +100,8 @@ export const definitionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
   uischema: z.record(z.string(), z.unknown()),
 });
+export class DefinitionDto extends createZodDto(definitionSchema) {}
+export type DefinitionResponse = z.infer<typeof definitionSchema>;
 export const serviceDetailSchema = z.object({
   service: serviceSchema,
   versions: z.array(serviceVersionSchema),

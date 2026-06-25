@@ -64,6 +64,13 @@
       "when": 1782423085586,
       "tag": "0008_document_references_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782425179328,
+      "tag": "0009_document_reference_label",
+      "breakpoints": true
     }
   ]
 }

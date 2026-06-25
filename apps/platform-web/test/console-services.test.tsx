@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp, type WorkspaceLike } from './support/render-app';
@@ -16,8 +16,6 @@ const riverton: WorkspaceLike = {
   createdAt: ISO,
 };
 
-// Title-only here — the rich-text "about" control is exercised in @repo/ui + @repo/react tests; this
-// app-level test focuses on the services UI (form render + lifecycle) without the heavy Lexical editor.
 const definition = {
   schema: {
     type: 'object',
@@ -29,7 +27,6 @@ const definition = {
     elements: [{ type: 'Control', scope: '#/properties/title' }],
   },
 };
-
 const draftVersion = {
   id: 'sv1',
   documentId: 's1',
@@ -48,14 +45,24 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-/** Layer `/v1/services` handling over the base auth/workspaces mock. */
 function withServices(base: ReturnType<typeof mockAuth>) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
+    if (url.includes('/v1/document-types')) {
+      return json({ items: [] });
+    }
     if (url.includes('/v1/services')) {
       const rest = url.split('/v1/services')[1]?.split('?')[0] ?? '';
       const segs = rest.split('/').filter(Boolean);
+      if (segs[0] === 'definition') {
+        return json(definition);
+      }
+      if (segs[0] === 'forms') {
+        return json({
+          items: [{ documentId: 'f1', versionId: 'fv1', title: 'Permit form', kind: 'basic-form' }],
+        });
+      }
       if (segs.length === 0) {
         if (method === 'POST') {
           return json(
@@ -63,7 +70,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               service: {
                 id: 's1',
                 workspaceId: 'w1',
-                title: 'Parking permit',
+                title: 'New',
                 description: '',
                 createdAt: ISO,
               },
@@ -99,7 +106,24 @@ function withServices(base: ReturnType<typeof mockAuth>) {
           definition,
         });
       }
-      // versions ops (PATCH save, POST publish/archive) — echo a version back.
+      if (segs[segs.length - 1] === 'references') {
+        return json({
+          items: [
+            {
+              id: 'ref1',
+              relation: 'application_form',
+              position: 0,
+              label: 'Apply now',
+              targetDocumentId: 'f1',
+              targetVersionId: 'fv1',
+              targetKind: 'basic-form',
+              targetTitle: 'Permit form',
+              targetVersion: 1,
+              createdAt: ISO,
+            },
+          ],
+        });
+      }
       return json(draftVersion);
     }
     return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
@@ -115,41 +139,34 @@ describe('console services', () => {
   it('lists a workspace’s services', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services');
-
     expect(await screen.findByRole('link', { name: 'Permit application' })).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
-  it('creates a service from the dialog', async () => {
-    const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services');
-    const user = userEvent.setup();
-
-    await user.click(await screen.findByRole('button', { name: /new service/i }));
-    const dialog = await screen.findByRole('dialog', { name: /new service/i });
-    await user.type(within(dialog).getByLabelText('Title'), 'Parking permit');
-    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringMatching(/\/v1\/services$/),
-        expect.objectContaining({ method: 'POST', credentials: 'include' }),
-      );
-    });
+  it('opens the client-first editor at /services/new', async () => {
+    withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+    renderApp('/app/riverton/services/new');
+    // The in-browser editor renders the Service form (Title control) + the Applications section.
+    expect(
+      await screen.findByLabelText(/title/i, undefined, { timeout: 8000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add application/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
   });
 
-  it('renders the form and publishes a draft', async () => {
+  it('edits a draft on the detail page and saves & publishes', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/s1');
     const user = userEvent.setup();
 
-    // The detail route lazily pulls in @repo/react/jsonforms (+ Lexical); allow for that first compile.
-    // The Service form renders via JsonForms — the required Title control is labelled "Title *".
     expect(
       await screen.findByLabelText(/title/i, undefined, { timeout: 8000 }),
     ).toBeInTheDocument();
+    // The existing application reference shows (its button-label input), not the empty state.
+    expect(await screen.findByDisplayValue('Apply now')).toBeInTheDocument();
+    expect(screen.queryByText(/no applications yet/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    await user.click(screen.getByRole('button', { name: /save & publish/i }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/v1/services/s1/versions/sv1/publish'),
