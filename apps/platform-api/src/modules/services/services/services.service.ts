@@ -7,9 +7,10 @@ import {
   workspaceMembers,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import {
   type CreateServiceInput,
+  type FormCatalogEntry,
   type ListServicesQuery,
   type ServiceDetail,
   type ServiceSummary,
@@ -17,6 +18,7 @@ import {
   toServiceDto,
   toServiceVersionDto,
 } from '../dtos/service.dtos';
+import { insertApplication, resolveApplications } from '../util/applications';
 import { ServiceTypeResolver } from './service-type.resolver';
 
 function summarizeStatus(
@@ -35,10 +37,15 @@ export class ServicesService {
     private readonly serviceType: ServiceTypeResolver,
   ) {}
 
-  /** Create a service document of the Service type + its draft version 1 (atomic). */
+  /**
+   * Composite create: the service document + its draft v1 (data) + any inline forms + application
+   * references, all in ONE transaction. Applications are pre-validated before the write opens.
+   */
   async create(userId: string, input: CreateServiceInput): Promise<ServiceWithVersions> {
     await this.requireMembership(userId, input.workspaceId);
     const type = await this.serviceType.resolve();
+    // A new service can't be a reference target yet, so pass '' as the (non-matching) service id.
+    const resolved = await resolveApplications(this.db, '', input.workspaceId, input.applications);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
@@ -60,15 +67,63 @@ export class ServicesService {
           typeId: type.typeId,
           typeVersionId: type.typeVersionId,
           version: 1,
-          data: { title: input.title },
+          data: { ...input.data, title: input.title },
         })
         .returning();
       const version = insertedVersion[0];
       if (version === undefined) {
         throw new Error('document version insert returned no row');
       }
+      const owner = {
+        ownerVersionId: version.id,
+        ownerDocumentId: doc.id,
+        workspaceId: input.workspaceId,
+      };
+      for (const app of resolved) {
+        // Sequential by necessity — these writes share one transaction connection.
+        // eslint-disable-next-line no-await-in-loop
+        await insertApplication(tx, owner, app);
+      }
       return { service: toServiceDto(doc), versions: [toServiceVersionDto(version)] };
     });
+  }
+
+  /** The Service type's published form definition (schema/uischema) — for the create editor. */
+  async getServiceDefinition(): Promise<{
+    schema: Record<string, unknown>;
+    uischema: Record<string, unknown>;
+  }> {
+    const type = await this.serviceType.resolve();
+    return { schema: type.schema, uischema: type.uischema };
+  }
+
+  /** The workspace's form documents (basic-form / multi-stage-form) + a version to reference. */
+  async listForms(userId: string, workspaceId: string): Promise<FormCatalogEntry[]> {
+    await this.requireMembership(userId, workspaceId);
+    const docs = await this.db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.workspaceId, workspaceId),
+          inArray(documents.kind, ['basic-form', 'multi-stage-form']),
+        ),
+      )
+      .orderBy(desc(documents.createdAt));
+    const entries = await Promise.all(
+      docs.map(async (doc) => {
+        const versions = await this.db
+          .select({ id: documentVersions.id, status: documentVersions.status })
+          .from(documentVersions)
+          .where(eq(documentVersions.documentId, doc.id))
+          .orderBy(desc(documentVersions.version));
+        const chosen = versions.find((v) => v.status === 'published') ?? versions[0];
+        return chosen
+          ? { documentId: doc.id, versionId: chosen.id, title: doc.title, kind: doc.kind }
+          : null;
+      }),
+    );
+    return entries.filter((entry): entry is FormCatalogEntry => entry !== null);
   }
 
   /** List a workspace's services with a representative status. */

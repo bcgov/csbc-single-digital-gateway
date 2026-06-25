@@ -27,6 +27,7 @@ import { Route as AppSlugReportsRouteImport } from './routes/app.$slug.reports'
 import { Route as AppSlugApplicationsRouteImport } from './routes/app.$slug.applications'
 import { Route as AdminDocumentTypesIdRouteImport } from './routes/admin.document-types.$id'
 import { Route as AppSlugServicesIndexRouteImport } from './routes/app.$slug.services.index'
+import { Route as AppSlugServicesNewRouteImport } from './routes/app.$slug.services.new'
 import { Route as AppSlugServicesIdRouteImport } from './routes/app.$slug.services.$id'
 
 const AppRoute = AppRouteImport.update({
@@ -119,6 +120,11 @@ const AppSlugServicesIndexRoute = AppSlugServicesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSlugServicesRoute,
 } as any)
+const AppSlugServicesNewRoute = AppSlugServicesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppSlugServicesRoute,
+} as any)
 const AppSlugServicesIdRoute = AppSlugServicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
+  '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/admin/document-types': typeof AdminDocumentTypesIndexRoute
   '/app/$slug': typeof AppSlugIndexRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
+  '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/services': typeof AppSlugServicesIndexRoute
 }
 export interface FileRoutesById {
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
+  '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
 }
 export interface FileRouteTypes {
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/admin/document-types/'
     | '/app/$slug/'
     | '/app/$slug/services/$id'
+    | '/app/$slug/services/new'
     | '/app/$slug/services/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/admin/document-types'
     | '/app/$slug'
     | '/app/$slug/services/$id'
+    | '/app/$slug/services/new'
     | '/app/$slug/services'
   id:
     | '__root__'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/admin/document-types/'
     | '/app/$slug/'
     | '/app/$slug/services/$id'
+    | '/app/$slug/services/new'
     | '/app/$slug/services/'
   fileRoutesById: FileRoutesById
 }
@@ -379,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIndexRouteImport
       parentRoute: typeof AppSlugServicesRoute
     }
+    '/app/$slug/services/new': {
+      id: '/app/$slug/services/new'
+      path: '/new'
+      fullPath: '/app/$slug/services/new'
+      preLoaderRoute: typeof AppSlugServicesNewRouteImport
+      parentRoute: typeof AppSlugServicesRoute
+    }
     '/app/$slug/services/$id': {
       id: '/app/$slug/services/$id'
       path: '/$id'
@@ -416,11 +435,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppSlugServicesRouteChildren {
   AppSlugServicesIdRoute: typeof AppSlugServicesIdRoute
+  AppSlugServicesNewRoute: typeof AppSlugServicesNewRoute
   AppSlugServicesIndexRoute: typeof AppSlugServicesIndexRoute
 }
 
 const AppSlugServicesRouteChildren: AppSlugServicesRouteChildren = {
   AppSlugServicesIdRoute: AppSlugServicesIdRoute,
+  AppSlugServicesNewRoute: AppSlugServicesNewRoute,
   AppSlugServicesIndexRoute: AppSlugServicesIndexRoute,
 }
 

@@ -4,10 +4,27 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { type Database, type DocumentVersion, documentVersions, documents } from '@repo/database';
+import {
+  type Database,
+  type DocumentVersion,
+  documentReferences,
+  documentVersions,
+  documents,
+} from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, sql } from 'drizzle-orm';
-import { type ServiceVersionResponse, toServiceVersionDto } from '../dtos/service.dtos';
+import {
+  type ApplicationInput,
+  type ServiceVersionResponse,
+  type UpdateVersionDataInput,
+  toServiceVersionDto,
+} from '../dtos/service.dtos';
+import {
+  type ResolvedApplication,
+  type Tx,
+  insertApplication,
+  resolveApplications,
+} from '../util/applications';
 import { validateData } from '../util/validate-data';
 import { ServiceTypeResolver } from './service-type.resolver';
 import { ServicesService } from './services.service';
@@ -20,31 +37,101 @@ export class ServiceVersionsService {
     private readonly serviceType: ServiceTypeResolver,
   ) {}
 
-  /** Save a draft version's form data; sync the document title from `data.title`. Drafts only (409). */
+  /**
+   * Composite save of a draft version: form data + title sync, and (when `applications` is given)
+   * reconcile the version's application references — add new, relabel/reorder kept, remove dropped
+   * (a form's last reference can't be removed → 409). Drafts only.
+   */
   async updateDraft(
     userId: string,
     id: string,
     versionId: string,
-    data: Record<string, unknown>,
+    input: UpdateVersionDataInput,
   ): Promise<ServiceVersionResponse> {
-    await this.services.requireDocument(userId, id);
+    const service = await this.services.requireDocument(userId, id);
     const version = await this.requireVersion(id, versionId);
     if (version.status !== 'draft') {
       throw new ConflictException('Only draft versions can be edited');
     }
+    // Pre-resolve NEW applications (no id) before opening the write tx.
+    const newApps = (input.applications ?? []).filter((app) => app.id === undefined);
+    const resolvedNew = await resolveApplications(this.db, id, service.workspaceId, newApps);
+
     const updated = await this.db.transaction(async (tx) => {
       const rows = await tx
         .update(documentVersions)
-        .set({ data })
+        .set({ data: input.data })
         .where(eq(documentVersions.id, versionId))
         .returning();
-      const title = data.title;
-      if (typeof title === 'string' && title.trim() !== '') {
+      const title =
+        input.title ?? (typeof input.data.title === 'string' ? input.data.title : undefined);
+      if (title !== undefined && title.trim() !== '') {
         await tx.update(documents).set({ title }).where(eq(documents.id, id));
+      }
+      if (input.applications !== undefined) {
+        await this.reconcileApplications(
+          tx,
+          { ownerVersionId: versionId, ownerDocumentId: id, workspaceId: service.workspaceId },
+          input.applications,
+          resolvedNew,
+        );
       }
       return rows[0];
     });
     return toServiceVersionDto(this.orThrow(updated));
+  }
+
+  private async reconcileApplications(
+    tx: Tx,
+    owner: { ownerVersionId: string; ownerDocumentId: string; workspaceId: string },
+    incoming: ApplicationInput[],
+    resolvedNew: ResolvedApplication[],
+  ): Promise<void> {
+    const existing = await tx
+      .select()
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, owner.ownerVersionId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      );
+    const keptIds = new Set(incoming.map((app) => app.id).filter((appId) => appId !== undefined));
+
+    // Remove dropped references (a form's last reference is protected). Sequential — one tx connection.
+    for (const ref of existing) {
+      if (keptIds.has(ref.id)) {
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      const counts = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(documentReferences)
+        .where(eq(documentReferences.targetDocumentId, ref.targetDocumentId));
+      if ((counts[0]?.n ?? 0) <= 1) {
+        throw new ConflictException('A form must be referenced by at least one service');
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await tx.delete(documentReferences).where(eq(documentReferences.id, ref.id));
+    }
+
+    // Relabel/reorder kept references.
+    const existingIds = new Set(existing.map((ref) => ref.id));
+    for (const app of incoming) {
+      if (app.id !== undefined && existingIds.has(app.id)) {
+        // eslint-disable-next-line no-await-in-loop
+        await tx
+          .update(documentReferences)
+          .set({ label: app.label, position: app.position })
+          .where(eq(documentReferences.id, app.id));
+      }
+    }
+
+    // Insert new applications (creating inline forms as needed).
+    for (const app of resolvedNew) {
+      // eslint-disable-next-line no-await-in-loop
+      await insertApplication(tx, owner, app);
+    }
   }
 
   /** Validate the draft against its bound type-version schema (422 if invalid), then publish it. */

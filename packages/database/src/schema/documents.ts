@@ -201,6 +201,9 @@ export const documentReferences = pgTable(
     targetKind: text('target_kind').notNull(),
     workspaceId: uuid('workspace_id').notNull(),
     relation: documentReferencesRelation('relation').notNull(),
+    // Button label for an `application_form` reference (what a user clicks to apply). NULL for
+    // `related_service` references.
+    label: text('label'),
     position: integer('position').notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

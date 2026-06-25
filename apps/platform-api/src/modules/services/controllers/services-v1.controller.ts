@@ -4,6 +4,8 @@ import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
   CreateServiceDto,
+  DefinitionDto,
+  FormCatalogListDto,
   ListServicesQueryDto,
   ServiceDetailDto,
   ServiceListDto,
@@ -38,6 +40,19 @@ export class ServicesV1Controller {
     return this.services.create(user.id, body);
   }
 
+  // Declared before `:id` so the static segments win route matching.
+  @Get('definition')
+  @ZodSerializerDto(DefinitionDto)
+  getDefinition() {
+    return this.services.getServiceDefinition();
+  }
+
+  @Get('forms')
+  @ZodSerializerDto(FormCatalogListDto)
+  async listForms(@CurrentUser() user: AuthUser, @Query() query: ListServicesQueryDto) {
+    return { items: await this.services.listForms(user.id, query.workspaceId) };
+  }
+
   @Get(':id')
   @ZodSerializerDto(ServiceDetailDto)
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
@@ -52,7 +67,7 @@ export class ServicesV1Controller {
     @Param('versionId') versionId: string,
     @Body() body: UpdateVersionDataDto,
   ) {
-    return this.versions.updateDraft(user.id, id, versionId, body.data);
+    return this.versions.updateDraft(user.id, id, versionId, body);
   }
 
   @Post(':id/versions/:versionId/publish')
