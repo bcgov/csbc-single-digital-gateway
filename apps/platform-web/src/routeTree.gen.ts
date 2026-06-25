@@ -26,6 +26,8 @@ import { Route as AppSlugServicesRouteImport } from './routes/app.$slug.services
 import { Route as AppSlugReportsRouteImport } from './routes/app.$slug.reports'
 import { Route as AppSlugApplicationsRouteImport } from './routes/app.$slug.applications'
 import { Route as AdminDocumentTypesIdRouteImport } from './routes/admin.document-types.$id'
+import { Route as AppSlugServicesIndexRouteImport } from './routes/app.$slug.services.index'
+import { Route as AppSlugServicesIdRouteImport } from './routes/app.$slug.services.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -112,6 +114,16 @@ const AdminDocumentTypesIdRoute = AdminDocumentTypesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminDocumentTypesRoute,
 } as any)
+const AppSlugServicesIndexRoute = AppSlugServicesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSlugServicesRoute,
+} as any)
+const AppSlugServicesIdRoute = AppSlugServicesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppSlugServicesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -125,12 +137,14 @@ export interface FileRoutesByFullPath {
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
-  '/app/$slug/services': typeof AppSlugServicesRoute
+  '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
   '/app/$slug/team': typeof AppSlugTeamRoute
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
+  '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
+  '/app/$slug/services/': typeof AppSlugServicesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -140,12 +154,13 @@ export interface FileRoutesByTo {
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
-  '/app/$slug/services': typeof AppSlugServicesRoute
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
   '/app/$slug/team': typeof AppSlugTeamRoute
   '/admin/document-types': typeof AdminDocumentTypesIndexRoute
   '/app/$slug': typeof AppSlugIndexRoute
+  '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
+  '/app/$slug/services': typeof AppSlugServicesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -160,12 +175,14 @@ export interface FileRoutesById {
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
-  '/app/$slug/services': typeof AppSlugServicesRoute
+  '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
   '/app/$slug/team': typeof AppSlugTeamRoute
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
+  '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
+  '/app/$slug/services/': typeof AppSlugServicesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -187,6 +204,8 @@ export interface FileRouteTypes {
     | '/app/$slug/team'
     | '/admin/document-types/'
     | '/app/$slug/'
+    | '/app/$slug/services/$id'
+    | '/app/$slug/services/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -196,12 +215,13 @@ export interface FileRouteTypes {
     | '/admin/document-types/$id'
     | '/app/$slug/applications'
     | '/app/$slug/reports'
-    | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
     | '/admin/document-types'
     | '/app/$slug'
+    | '/app/$slug/services/$id'
+    | '/app/$slug/services'
   id:
     | '__root__'
     | '/'
@@ -221,6 +241,8 @@ export interface FileRouteTypes {
     | '/app/$slug/team'
     | '/admin/document-types/'
     | '/app/$slug/'
+    | '/app/$slug/services/$id'
+    | '/app/$slug/services/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -350,6 +372,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDocumentTypesIdRouteImport
       parentRoute: typeof AdminDocumentTypesRoute
     }
+    '/app/$slug/services/': {
+      id: '/app/$slug/services/'
+      path: '/'
+      fullPath: '/app/$slug/services/'
+      preLoaderRoute: typeof AppSlugServicesIndexRouteImport
+      parentRoute: typeof AppSlugServicesRoute
+    }
+    '/app/$slug/services/$id': {
+      id: '/app/$slug/services/$id'
+      path: '/$id'
+      fullPath: '/app/$slug/services/$id'
+      preLoaderRoute: typeof AppSlugServicesIdRouteImport
+      parentRoute: typeof AppSlugServicesRoute
+    }
   }
 }
 
@@ -378,10 +414,24 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AppSlugServicesRouteChildren {
+  AppSlugServicesIdRoute: typeof AppSlugServicesIdRoute
+  AppSlugServicesIndexRoute: typeof AppSlugServicesIndexRoute
+}
+
+const AppSlugServicesRouteChildren: AppSlugServicesRouteChildren = {
+  AppSlugServicesIdRoute: AppSlugServicesIdRoute,
+  AppSlugServicesIndexRoute: AppSlugServicesIndexRoute,
+}
+
+const AppSlugServicesRouteWithChildren = AppSlugServicesRoute._addFileChildren(
+  AppSlugServicesRouteChildren,
+)
+
 interface AppSlugRouteChildren {
   AppSlugApplicationsRoute: typeof AppSlugApplicationsRoute
   AppSlugReportsRoute: typeof AppSlugReportsRoute
-  AppSlugServicesRoute: typeof AppSlugServicesRoute
+  AppSlugServicesRoute: typeof AppSlugServicesRouteWithChildren
   AppSlugSettingsRoute: typeof AppSlugSettingsRoute
   AppSlugSubmissionsRoute: typeof AppSlugSubmissionsRoute
   AppSlugTeamRoute: typeof AppSlugTeamRoute
@@ -391,7 +441,7 @@ interface AppSlugRouteChildren {
 const AppSlugRouteChildren: AppSlugRouteChildren = {
   AppSlugApplicationsRoute: AppSlugApplicationsRoute,
   AppSlugReportsRoute: AppSlugReportsRoute,
-  AppSlugServicesRoute: AppSlugServicesRoute,
+  AppSlugServicesRoute: AppSlugServicesRouteWithChildren,
   AppSlugSettingsRoute: AppSlugSettingsRoute,
   AppSlugSubmissionsRoute: AppSlugSubmissionsRoute,
   AppSlugTeamRoute: AppSlugTeamRoute,

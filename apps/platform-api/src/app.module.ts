@@ -19,6 +19,7 @@ import { OidcUserSyncService } from './auth/oidc-user-sync.service';
 import { ValkeySessionRegistry } from './auth/valkey-session-registry';
 import { validateEnv, type Env } from './config/env.schema';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
+import { ServicesModule } from './modules/services/services.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
 @Module({
@@ -100,6 +101,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     // Feature modules (versioned under /v1).
     WorkspacesModule,
     DocumentTypesModule,
+    ServicesModule,
   ],
   // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses
   // (@ZodSerializerDto), and log response-serialization failures before delegating.
