@@ -1,7 +1,9 @@
 import { Separator } from '@repo/ui/separator';
 import { Link } from '@tanstack/react-router';
+import { ShieldCheck } from 'lucide-react';
 import { ProfileMenu } from '@/components/console/profile-menu';
 import { WorkspaceSwitcher } from '@/components/console/workspace-switcher';
+import { useAuth } from '@/lib/auth';
 import { type NavItem, PRIMARY_NAV, SECONDARY_NAV, SETTINGS_NAV } from '@/lib/console-nav';
 
 const BASE =
@@ -53,6 +55,9 @@ export function ConsoleSidebar({
   collapsed: boolean;
   slug: string | undefined;
 }) {
+  const { data: user } = useAuth();
+  const isAdmin = user?.roles.includes('admin') ?? false;
+
   return (
     <aside
       data-collapsed={collapsed}
@@ -72,6 +77,18 @@ export function ConsoleSidebar({
       </nav>
       <div className="mt-auto flex flex-col gap-0.5">
         <NavLink item={SETTINGS_NAV} slug={slug} />
+        {isAdmin ? (
+          <Link
+            to="/admin"
+            aria-label="Admin"
+            title="Admin"
+            className={`${BASE} text-sidebar-foreground hover:bg-sidebar-accent`}
+            activeProps={{ className: 'bg-sidebar-accent text-sidebar-accent-foreground' }}
+          >
+            <ShieldCheck className="size-[17px] shrink-0" aria-hidden />
+            <span className="flex-1 truncate group-data-[collapsed=true]/rail:hidden">Admin</span>
+          </Link>
+        ) : null}
         <Separator className="my-1.5 bg-sidebar-border" />
         <ProfileMenu />
       </div>

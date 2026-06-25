@@ -10,10 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AppSlugRouteImport } from './routes/app.$slug'
+import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
 import { Route as AppSlugIndexRouteImport } from './routes/app.$slug.index'
 import { Route as AppSlugTeamRouteImport } from './routes/app.$slug.team'
 import { Route as AppSlugSubmissionsRouteImport } from './routes/app.$slug.submissions'
@@ -27,6 +30,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,6 +45,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -46,6 +59,11 @@ const AppSlugRoute = AppSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminDocumentTypesRoute = AdminDocumentTypesRouteImport.update({
+  id: '/document-types',
+  path: '/document-types',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppSlugIndexRoute = AppSlugIndexRouteImport.update({
   id: '/',
@@ -85,9 +103,12 @@ const AppSlugApplicationsRoute = AppSlugApplicationsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/admin/document-types': typeof AdminDocumentTypesRoute
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
@@ -99,7 +120,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/document-types': typeof AdminDocumentTypesRoute
   '/app/account': typeof AppAccountRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
@@ -112,9 +135,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/admin/document-types': typeof AdminDocumentTypesRoute
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
@@ -128,9 +154,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
+    | '/admin/document-types'
     | '/app/$slug'
     | '/app/account'
+    | '/admin/'
     | '/app/'
     | '/app/$slug/applications'
     | '/app/$slug/reports'
@@ -142,7 +171,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/document-types'
     | '/app/account'
+    | '/admin'
     | '/app'
     | '/app/$slug/applications'
     | '/app/$slug/reports'
@@ -154,9 +185,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/app'
+    | '/admin/document-types'
     | '/app/$slug'
     | '/app/account'
+    | '/admin/'
     | '/app/'
     | '/app/$slug/applications'
     | '/app/$slug/reports'
@@ -169,6 +203,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
 }
 
@@ -179,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -195,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/app/account': {
       id: '/app/account'
       path: '/account'
@@ -208,6 +257,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/$slug'
       preLoaderRoute: typeof AppSlugRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/document-types': {
+      id: '/admin/document-types'
+      path: '/document-types'
+      fullPath: '/admin/document-types'
+      preLoaderRoute: typeof AdminDocumentTypesRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/app/$slug/': {
       id: '/app/$slug/'
@@ -261,6 +317,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminDocumentTypesRoute: typeof AdminDocumentTypesRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminDocumentTypesRoute: AdminDocumentTypesRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface AppSlugRouteChildren {
   AppSlugApplicationsRoute: typeof AppSlugApplicationsRoute
   AppSlugReportsRoute: typeof AppSlugReportsRoute
@@ -300,6 +368,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
