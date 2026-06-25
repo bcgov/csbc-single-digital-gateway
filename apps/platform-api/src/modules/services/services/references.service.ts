@@ -22,6 +22,7 @@ import {
   type ReferenceRelation,
   type ReferenceResponse,
 } from '../dtos/reference.dtos';
+import { structureFromDefinition } from '../util/applications';
 import { ServicesService } from './services.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
@@ -180,6 +181,8 @@ export class ReferencesService {
           typeId: input.typeId,
           typeVersionId: type.typeVersionId,
           version: 1,
+          // Copy the template structure into the new form document; `data` stays default values.
+          schema: structureFromDefinition(type.kind, type.definition),
         })
         .returning();
       const formVersion = insertedVersion[0];
@@ -260,7 +263,11 @@ export class ReferencesService {
 
   private async loadFormType(typeId: string) {
     const rows = await this.db
-      .select({ kind: documentTypes.kind, typeVersionId: documentTypeVersions.id })
+      .select({
+        kind: documentTypes.kind,
+        typeVersionId: documentTypeVersions.id,
+        definition: documentTypeVersions.definition,
+      })
       .from(documentTypes)
       .innerJoin(
         documentTypeVersions,
