@@ -4,7 +4,6 @@ import { Roles } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
   AdminDocumentTypeListDto,
-  CreateDocumentTypeDto,
   DocumentTypeVersionDto,
   DocumentTypeWithVersionsDto,
   VersionDefinitionDto,
@@ -22,16 +21,12 @@ export class AdminDocumentTypesV1Controller {
     private readonly versions: DocumentTypeVersionsService,
   ) {}
 
+  // Document types themselves are not created via the API (seeded only); admins manage their versions.
+
   @Get()
   @ZodSerializerDto(AdminDocumentTypeListDto)
   async list() {
     return { items: await this.types.adminList() };
-  }
-
-  @Post()
-  @ZodSerializerDto(DocumentTypeWithVersionsDto)
-  create(@Body() body: CreateDocumentTypeDto) {
-    return this.types.create(body);
   }
 
   @Get(':id')

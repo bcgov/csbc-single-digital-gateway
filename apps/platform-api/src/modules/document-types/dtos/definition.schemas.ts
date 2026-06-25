@@ -22,10 +22,10 @@ export const uiSchemaSchema = z
   })
   .catchall(z.unknown());
 
-/** `basic-form`: a single page of fields. */
+/** `basic-form`: a single page of fields. `description` is required (an empty string is allowed). */
 export const basicFormDefinitionSchema = z.object({
   name: z.string(),
-  description: z.string().optional(),
+  description: z.string(),
   schema: jsonSchemaSchema,
   uischema: uiSchemaSchema,
 });

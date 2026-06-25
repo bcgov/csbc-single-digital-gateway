@@ -11,32 +11,8 @@ export function definitionForKind(kind: DocumentKind) {
   return kind === 'basic-form' ? basicFormDefinitionSchema : multiStageDefinitionSchema;
 }
 
-const name = z.string().trim().min(1).max(255);
-
-/**
- * Create a document type. The `definition` is strictly validated against the per-kind schema
- * (`basicFormDefinitionSchema` / `multiStageDefinitionSchema`) via `superRefine` — a discriminated
- * union can't be a `createZodDto` class base (its type is `A | B`), but the runtime validation is
- * identical: a definition that doesn't match its kind 400s with the real error.
- */
-export const createDocumentTypeSchema = z
-  .object({
-    name,
-    kind: documentKindSchema,
-    definition: z.record(z.string(), z.unknown()),
-  })
-  .superRefine((value, ctx) => {
-    const result = definitionForKind(value.kind).safeParse(value.definition);
-    if (!result.success) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['definition'],
-        message: z.prettifyError(result.error),
-      });
-    }
-  });
-export class CreateDocumentTypeDto extends createZodDto(createDocumentTypeSchema) {}
-export type CreateDocumentTypeInput = z.infer<typeof createDocumentTypeSchema>;
+// Document types are not created via the API (seeded only). `definitionForKind` + the per-kind schemas
+// remain — they validate add/edit-version payloads in the versions service.
 
 /** Add or edit a version — the `definition` is validated against the type's kind in the service. */
 export const versionDefinitionSchema = z.object({ definition: z.record(z.string(), z.unknown()) });

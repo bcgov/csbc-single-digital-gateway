@@ -62,7 +62,6 @@ describe('document-types (e2e)', () => {
 
   it('401s admin + staff endpoints without a session', async () => {
     expect((await http().get('/v1/admin/document-types')).status).toBe(401);
-    expect((await http().post('/v1/admin/document-types').send({})).status).toBe(401);
     expect((await http().get('/v1/document-types')).status).toBe(401);
   });
 
@@ -74,28 +73,17 @@ describe('document-types (e2e)', () => {
           .set('x-test-user', asUser(['staff']))
       ).status,
     ).toBe(403);
-    expect(
-      (
-        await http()
-          .post('/v1/admin/document-types')
-          .set('x-test-user', asUser(['staff']))
-          .send({})
-      ).status,
-    ).toBe(403);
   });
 
-  it('400s an invalid create body for an admin', async () => {
-    const admin = asUser(['admin']);
-    expect(
-      (await http().post('/v1/admin/document-types').set('x-test-user', admin).send({})).status,
-    ).toBe(400);
+  it('has no create-document-type endpoint (types are seeded only)', async () => {
+    // POST /v1/admin/document-types is removed: an admin gets 404 (no matching route), not 201/400.
     expect(
       (
         await http()
           .post('/v1/admin/document-types')
-          .set('x-test-user', admin)
-          .send({ name: 'X', kind: 'unknown-kind', definition: {} })
+          .set('x-test-user', asUser(['admin']))
+          .send({ name: 'X', kind: 'basic-form', definition: {} })
       ).status,
-    ).toBe(400);
+    ).toBe(404);
   });
 });

@@ -8,7 +8,6 @@ import {
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import {
-  type CreateDocumentTypeInput,
   type DocumentTypeDetail,
   type DocumentTypePublished,
   type DocumentTypeVersionResponse,
@@ -20,29 +19,6 @@ import {
 @Injectable()
 export class DocumentTypesService {
   constructor(@InjectDatabase() private readonly db: Database) {}
-
-  /** Create a document type + its draft version 1 (atomic). */
-  async create(input: CreateDocumentTypeInput): Promise<DocumentTypeWithVersions> {
-    return this.db.transaction(async (tx) => {
-      const insertedType = await tx
-        .insert(documentTypes)
-        .values({ name: input.name, kind: input.kind })
-        .returning();
-      const type = insertedType[0];
-      if (type === undefined) {
-        throw new Error('document type insert returned no row');
-      }
-      const insertedVersion = await tx
-        .insert(documentTypeVersions)
-        .values({ typeId: type.id, version: 1, definition: input.definition })
-        .returning();
-      const version = insertedVersion[0];
-      if (version === undefined) {
-        throw new Error('document type version insert returned no row');
-      }
-      return { type: toTypeDto(type), versions: [toVersionDto(version)] };
-    });
-  }
 
   /** Admin: every type, each with all its versions (incl. drafts). */
   async adminList(): Promise<DocumentTypeWithVersions[]> {

@@ -18,12 +18,14 @@ import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AppSlugRouteImport } from './routes/app.$slug'
 import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
 import { Route as AppSlugIndexRouteImport } from './routes/app.$slug.index'
+import { Route as AdminDocumentTypesIndexRouteImport } from './routes/admin.document-types.index'
 import { Route as AppSlugTeamRouteImport } from './routes/app.$slug.team'
 import { Route as AppSlugSubmissionsRouteImport } from './routes/app.$slug.submissions'
 import { Route as AppSlugSettingsRouteImport } from './routes/app.$slug.settings'
 import { Route as AppSlugServicesRouteImport } from './routes/app.$slug.services'
 import { Route as AppSlugReportsRouteImport } from './routes/app.$slug.reports'
 import { Route as AppSlugApplicationsRouteImport } from './routes/app.$slug.applications'
+import { Route as AdminDocumentTypesIdRouteImport } from './routes/admin.document-types.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -70,6 +72,11 @@ const AppSlugIndexRoute = AppSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSlugRoute,
 } as any)
+const AdminDocumentTypesIndexRoute = AdminDocumentTypesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminDocumentTypesRoute,
+} as any)
 const AppSlugTeamRoute = AppSlugTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -100,36 +107,44 @@ const AppSlugApplicationsRoute = AppSlugApplicationsRouteImport.update({
   path: '/applications',
   getParentRoute: () => AppSlugRoute,
 } as any)
+const AdminDocumentTypesIdRoute = AdminDocumentTypesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminDocumentTypesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
-  '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
   '/app/$slug/services': typeof AppSlugServicesRoute
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
   '/app/$slug/team': typeof AppSlugTeamRoute
+  '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin/document-types': typeof AdminDocumentTypesRoute
   '/app/account': typeof AppAccountRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
   '/app/$slug/services': typeof AppSlugServicesRoute
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
   '/app/$slug/team': typeof AppSlugTeamRoute
+  '/admin/document-types': typeof AdminDocumentTypesIndexRoute
   '/app/$slug': typeof AppSlugIndexRoute
 }
 export interface FileRoutesById {
@@ -137,17 +152,19 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
-  '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
   '/app/$slug/applications': typeof AppSlugApplicationsRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
   '/app/$slug/services': typeof AppSlugServicesRoute
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
   '/app/$slug/team': typeof AppSlugTeamRoute
+  '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
 }
 export interface FileRouteTypes {
@@ -161,26 +178,29 @@ export interface FileRouteTypes {
     | '/app/account'
     | '/admin/'
     | '/app/'
+    | '/admin/document-types/$id'
     | '/app/$slug/applications'
     | '/app/$slug/reports'
     | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
+    | '/admin/document-types/'
     | '/app/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin/document-types'
     | '/app/account'
     | '/admin'
     | '/app'
+    | '/admin/document-types/$id'
     | '/app/$slug/applications'
     | '/app/$slug/reports'
     | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
+    | '/admin/document-types'
     | '/app/$slug'
   id:
     | '__root__'
@@ -192,12 +212,14 @@ export interface FileRouteTypes {
     | '/app/account'
     | '/admin/'
     | '/app/'
+    | '/admin/document-types/$id'
     | '/app/$slug/applications'
     | '/app/$slug/reports'
     | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
+    | '/admin/document-types/'
     | '/app/$slug/'
   fileRoutesById: FileRoutesById
 }
@@ -272,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugIndexRouteImport
       parentRoute: typeof AppSlugRoute
     }
+    '/admin/document-types/': {
+      id: '/admin/document-types/'
+      path: '/'
+      fullPath: '/admin/document-types/'
+      preLoaderRoute: typeof AdminDocumentTypesIndexRouteImport
+      parentRoute: typeof AdminDocumentTypesRoute
+    }
     '/app/$slug/team': {
       id: '/app/$slug/team'
       path: '/team'
@@ -314,16 +343,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugApplicationsRouteImport
       parentRoute: typeof AppSlugRoute
     }
+    '/admin/document-types/$id': {
+      id: '/admin/document-types/$id'
+      path: '/$id'
+      fullPath: '/admin/document-types/$id'
+      preLoaderRoute: typeof AdminDocumentTypesIdRouteImport
+      parentRoute: typeof AdminDocumentTypesRoute
+    }
   }
 }
 
+interface AdminDocumentTypesRouteChildren {
+  AdminDocumentTypesIdRoute: typeof AdminDocumentTypesIdRoute
+  AdminDocumentTypesIndexRoute: typeof AdminDocumentTypesIndexRoute
+}
+
+const AdminDocumentTypesRouteChildren: AdminDocumentTypesRouteChildren = {
+  AdminDocumentTypesIdRoute: AdminDocumentTypesIdRoute,
+  AdminDocumentTypesIndexRoute: AdminDocumentTypesIndexRoute,
+}
+
+const AdminDocumentTypesRouteWithChildren =
+  AdminDocumentTypesRoute._addFileChildren(AdminDocumentTypesRouteChildren)
+
 interface AdminRouteChildren {
-  AdminDocumentTypesRoute: typeof AdminDocumentTypesRoute
+  AdminDocumentTypesRoute: typeof AdminDocumentTypesRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminDocumentTypesRoute: AdminDocumentTypesRoute,
+  AdminDocumentTypesRoute: AdminDocumentTypesRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 
