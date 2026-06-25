@@ -33,6 +33,7 @@ describe('document type DTO schemas', () => {
   it('constrains kind to the known set', () => {
     expect(documentKindSchema.safeParse('basic-form').success).toBe(true);
     expect(documentKindSchema.safeParse('multi-stage-form').success).toBe(true);
+    expect(documentKindSchema.safeParse('service').success).toBe(true);
     expect(documentKindSchema.safeParse('other').success).toBe(false);
   });
 
@@ -43,5 +44,22 @@ describe('document type DTO schemas', () => {
     expect(definitionForKind('multi-stage-form').safeParse(multiStageDefinition).success).toBe(
       true,
     );
+    expect(definitionForKind('service').safeParse(serviceDefinition).success).toBe(true);
+    expect(definitionForKind('service').safeParse({ schema: {} }).success).toBe(false);
   });
 });
+
+const serviceDefinition = {
+  schema: {
+    type: 'object',
+    required: ['title'],
+    properties: {
+      title: { type: 'string', title: 'Title' },
+      about: { type: 'object', title: 'About' },
+    },
+  },
+  uischema: {
+    type: 'VerticalLayout',
+    elements: [{ type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } }],
+  },
+};

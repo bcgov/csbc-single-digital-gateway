@@ -12,6 +12,9 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const uiDir = resolve(root, 'src/components/ui');
 const brandDir = resolve(root, 'src/brand');
+// Non-shadcn input components (e.g. the Lexical rich-text input) live here, NOT under components/ui.
+// Only top-level *.tsx are globbed → helper files go in a subdir (src/inputs/<name>/) and aren't exported.
+const inputsDir = resolve(root, 'src/inputs');
 
 const tsxNames = (dir) =>
   existsSync(dir)
@@ -23,11 +26,13 @@ const tsxNames = (dir) =>
 // name -> source dir under src/, used to author the flat re-export target.
 const uiNames = tsxNames(uiDir);
 const brandNames = tsxNames(brandDir);
+const inputNames = tsxNames(inputsDir);
 const sourceDir = new Map([
   ...uiNames.map((n) => [n, 'components/ui']),
   ...brandNames.map((n) => [n, 'brand']),
+  ...inputNames.map((n) => [n, 'inputs']),
 ]);
-const names = [...uiNames, ...brandNames].toSorted();
+const names = [...uiNames, ...brandNames, ...inputNames].toSorted();
 
 // Raw brand assets shipped verbatim (icon.svg, logo.svg) — exported as URLs.
 const brandSvgs = existsSync(brandDir)

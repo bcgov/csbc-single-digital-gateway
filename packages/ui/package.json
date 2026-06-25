@@ -259,6 +259,12 @@
       "import": "./dist/resizable.js",
       "require": "./dist/resizable.cjs"
     },
+    "./rich-text-input": {
+      "types": "./dist/rich-text-input.d.ts",
+      "development": "./src/rich-text-input.ts",
+      "import": "./dist/rich-text-input.js",
+      "require": "./dist/rich-text-input.cjs"
+    },
     "./scroll-area": {
       "types": "./dist/scroll-area.d.ts",
       "development": "./src/scroll-area.ts",
@@ -382,12 +388,19 @@
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@fontsource-variable/noto-sans": "^5.2.10",
+    "@lexical/link": "^0.45.0",
+    "@lexical/list": "^0.45.0",
+    "@lexical/react": "^0.45.0",
+    "@lexical/rich-text": "^0.45.0",
+    "@lexical/selection": "^0.45.0",
+    "@lexical/utils": "^0.45.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "lexical": "^0.45.0",
     "lucide-react": "^1.21.0",
     "next-themes": "^0.4.6",
     "react-day-picker": "^10.0.1",

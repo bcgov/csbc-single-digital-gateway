@@ -20,6 +20,7 @@ export { OneOfEnumControl, oneOfEnumControlTester } from './controls/oneof-enum-
 export { MultiEnumControl, multiEnumControlTester } from './controls/multi-enum-control';
 export { SliderControl, sliderControlTester } from './controls/slider-control';
 export { DateControl, dateControlTester } from './controls/date-control';
+export { RichTextControl, richTextControlTester } from './controls/rich-text-control';
 export { VerticalLayoutRenderer, verticalLayoutTester } from './layouts/vertical-layout';
 export { HorizontalLayoutRenderer, horizontalLayoutTester } from './layouts/horizontal-layout';
 export { GroupLayoutRenderer, groupLayoutTester } from './layouts/group-layout';
