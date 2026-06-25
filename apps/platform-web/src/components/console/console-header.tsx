@@ -3,7 +3,7 @@ import { useLocation } from '@tanstack/react-router';
 import { PanelLeft, Search } from 'lucide-react';
 import { useState } from 'react';
 import { CommandPalette } from '@/components/console/command-palette';
-import { NewMenu } from '@/components/console/new-menu';
+import { NewSheet } from '@/components/console/new-sheet';
 import { NotificationsMenu } from '@/components/console/notifications-menu';
 import { sectionFor } from '@/lib/console-nav';
 
@@ -50,7 +50,7 @@ export function ConsoleHeader({ onToggleSidebar, slug }: ConsoleHeaderProps) {
           <Search className="size-[18px]" aria-hidden />
         </Button>
         <NotificationsMenu disabled={!enabled} />
-        <NewMenu slug={slug} />
+        <NewSheet slug={slug} />
       </div>
 
       {enabled && slug !== undefined ? (
