@@ -1,6 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { ServicesPage } from '@/components/console/pages/services';
+import { Outlet, createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/app/$slug/services')({
-  component: ServicesPage,
+  component: ServicesLayout,
 });
+
+function ServicesLayout() {
+  return <Outlet />;
+}

@@ -12,6 +12,9 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
+    // @repo/react + @repo/ui (source via the `development` export) and @jsonforms/react must all share
+    // one React instance, or JSONForms/Lexical hooks throw.
+    dedupe: ['react', 'react-dom'],
     alias: [
       // @repo/ui is consumed from source (its `development` export). Its internal `@ui/*` maps to
       // the ui package's src; our own `@` maps to this app's src — distinct prefixes, no collision.

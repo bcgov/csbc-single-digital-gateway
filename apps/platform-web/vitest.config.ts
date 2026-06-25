@@ -6,6 +6,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), react()],
   resolve: {
+    // Single React instance across @repo/react, @repo/ui source, @jsonforms/react and Lexical.
+    dedupe: ['react', 'react-dom'],
     alias: [
       // @repo/ui is consumed from source (its `development` export). Its internal `@ui/*` maps to
       // the ui package's src; our own `@` maps to this app's src — distinct prefixes, no collision.
