@@ -20,6 +20,7 @@ const UPDATED_AT_TABLES = [
   'documents',
   'document_members',
   'document_versions',
+  'document_references',
   'submissions',
   'submission_versions',
 ];

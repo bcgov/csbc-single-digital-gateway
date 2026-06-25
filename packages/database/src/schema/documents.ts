@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  check,
   foreignKey,
   index,
   integer,
@@ -28,22 +29,31 @@ export const documents = pgTable(
   'documents',
   {
     id: uuidPk(),
-    typeId: uuid('type_id')
-      .notNull()
-      .references(() => documentTypes.id, { onDelete: 'restrict' }),
+    typeId: uuid('type_id').notNull(),
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'restrict' }),
+    // `kind` is denormalized from the type and pinned by the composite FK below so it can never
+    // drift. It lets document_references DB-enforce "owner is a service" / "target kind matches".
+    kind: text('kind').notNull(),
     title: text('title').notNull(),
     description: text('description').notNull().default(''),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (table) => [
-    // Composite UNIQUE CONSTRAINTS (not indexes) — referenced targets of the composite
-    // FKs on document_versions, document_members, and submissions.
+    // Composite FK (type_id, kind) → document_types(id, kind): enforces the type exists AND the
+    // denormalized kind equals the type's real kind. Replaces the plain type_id FK.
+    foreignKey({
+      columns: [table.typeId, table.kind],
+      foreignColumns: [documentTypes.id, documentTypes.kind],
+      name: 'documents_type_fk',
+    }).onDelete('restrict'),
+    // Composite UNIQUE CONSTRAINTS (not indexes) — referenced targets of the composite FKs on
+    // document_versions, document_members, submissions, and document_references.
     unique('documents_id_type_id_key').on(table.id, table.typeId),
     unique('documents_id_workspace_id_key').on(table.id, table.workspaceId),
+    unique('documents_id_kind_key').on(table.id, table.kind),
     index('documents_type_id_idx').on(table.typeId),
     index('documents_workspace_id_idx').on(table.workspaceId),
   ],
@@ -164,8 +174,91 @@ export const documentVersionContributors = pgTable(
   ],
 );
 
+export const documentReferencesRelation = pgEnum('document_references_relation', [
+  'related_service',
+  'application_form',
+]);
+
+/**
+ * A reference owned by a service `document_version` (owner) to another document's version (target):
+ * other services (`related_service`, optional) or forms (`application_form`, a way to apply). Both
+ * sides are version-pinned. The composite FKs make the type/workspace rules DB-enforced:
+ *  - owner is a service (`owner_kind = 'service'` + (owner_document_id, owner_kind) → documents(id, kind))
+ *  - target kind matches the relation (CHECK + (target_document_id, target_kind) → documents(id, kind))
+ *  - both sides in the same workspace (shared `workspace_id` + composite FKs to documents(id, workspace_id))
+ *  - version ↔ document consistency on each side; no duplicate target; no self-reference.
+ * The "a form must be referenced by ≥1 service" minimum is enforced in the app (not expressible as FKs).
+ */
+export const documentReferences = pgTable(
+  'document_references',
+  {
+    id: uuidPk(),
+    ownerVersionId: uuid('owner_version_id').notNull(),
+    ownerDocumentId: uuid('owner_document_id').notNull(),
+    ownerKind: text('owner_kind').notNull(),
+    targetVersionId: uuid('target_version_id').notNull(),
+    targetDocumentId: uuid('target_document_id').notNull(),
+    targetKind: text('target_kind').notNull(),
+    workspaceId: uuid('workspace_id').notNull(),
+    relation: documentReferencesRelation('relation').notNull(),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.ownerVersionId, table.ownerDocumentId],
+      foreignColumns: [documentVersions.id, documentVersions.documentId],
+      name: 'document_references_owner_version_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.targetVersionId, table.targetDocumentId],
+      foreignColumns: [documentVersions.id, documentVersions.documentId],
+      name: 'document_references_target_version_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.ownerDocumentId, table.ownerKind],
+      foreignColumns: [documents.id, documents.kind],
+      name: 'document_references_owner_kind_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.targetDocumentId, table.targetKind],
+      foreignColumns: [documents.id, documents.kind],
+      name: 'document_references_target_kind_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.ownerDocumentId, table.workspaceId],
+      foreignColumns: [documents.id, documents.workspaceId],
+      name: 'document_references_owner_ws_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.targetDocumentId, table.workspaceId],
+      foreignColumns: [documents.id, documents.workspaceId],
+      name: 'document_references_target_ws_fk',
+    }).onDelete('restrict'),
+    unique('document_references_owner_version_target_doc_key').on(
+      table.ownerVersionId,
+      table.targetDocumentId,
+    ),
+    check('document_references_owner_kind_chk', sql`${table.ownerKind} = 'service'`),
+    check(
+      'document_references_relation_kind_chk',
+      sql`(${table.relation} = 'related_service' AND ${table.targetKind} = 'service') OR (${table.relation} = 'application_form' AND ${table.targetKind} IN ('basic-form', 'multi-stage-form'))`,
+    ),
+    check(
+      'document_references_no_self_chk',
+      sql`${table.ownerDocumentId} <> ${table.targetDocumentId}`,
+    ),
+    index('document_references_target_document_id_idx').on(table.targetDocumentId),
+    index('document_references_owner_version_id_idx').on(table.ownerVersionId),
+    index('document_references_workspace_id_idx').on(table.workspaceId),
+  ],
+);
+
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
+export type DocumentReference = typeof documentReferences.$inferSelect;
+export type NewDocumentReference = typeof documentReferences.$inferInsert;
 export type DocumentMember = typeof documentMembers.$inferSelect;
 export type NewDocumentMember = typeof documentMembers.$inferInsert;
 export type DocumentVersion = typeof documentVersions.$inferSelect;
