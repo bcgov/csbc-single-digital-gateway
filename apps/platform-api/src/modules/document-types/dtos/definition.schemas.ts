@@ -43,3 +43,9 @@ const stageSchema = z.object({
 export const multiStageDefinitionSchema = z.object({
   stages: z.array(stageSchema),
 });
+
+/** `service`: a raw JSONForms `{ schema, uischema }` form (no name/description wrapper). */
+export const serviceDefinitionSchema = z.object({
+  schema: jsonSchemaSchema,
+  uischema: uiSchemaSchema,
+});

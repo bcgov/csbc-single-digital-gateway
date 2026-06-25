@@ -12,10 +12,33 @@ config({ path: resolve(import.meta.dirname, '../../../.env') });
 // Fixed ids make the seed idempotent (re-running inserts nothing new).
 const BASIC_FORM_ID = '00000000-0000-4000-8000-000000000001';
 const MULTI_STAGE_ID = '00000000-0000-4000-8000-000000000002';
+const SERVICE_ID = '00000000-0000-4000-8000-000000000003';
 
 const emptyForm = {
   schema: { type: 'object', properties: {}, required: [] },
   uischema: { type: 'VerticalLayout', elements: [] },
+};
+
+// `about` is a rich-text field — stored as a Lexical SerializedEditorState object (schema type "object"),
+// driven by the `richtext` JSONForms renderer (uischema option `format: 'richtext'`).
+const serviceDefinition = {
+  schema: {
+    type: 'object',
+    required: ['title'],
+    properties: {
+      title: { type: 'string', title: 'Title' },
+      description: { type: 'string', title: 'Description' },
+      about: { type: 'object', title: 'About' },
+    },
+  },
+  uischema: {
+    type: 'VerticalLayout',
+    elements: [
+      { type: 'Control', scope: '#/properties/title' },
+      { type: 'Control', scope: '#/properties/description', options: { multi: true } },
+      { type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } },
+    ],
+  },
 };
 
 const basicFormDefinition = {
@@ -51,6 +74,7 @@ async function seed(): Promise<void> {
       .values([
         { id: BASIC_FORM_ID, name: 'Basic Form', kind: 'basic-form' },
         { id: MULTI_STAGE_ID, name: 'Multi-stage Form', kind: 'multi-stage-form' },
+        { id: SERVICE_ID, name: 'Service', kind: 'service' },
       ])
       .onConflictDoNothing();
 
@@ -69,10 +93,18 @@ async function seed(): Promise<void> {
           definition: multiStageDefinition,
           publishedAt: sql`now()`,
         },
+        {
+          typeId: SERVICE_ID,
+          version: 1,
+          definition: serviceDefinition,
+          publishedAt: sql`now()`,
+        },
       ])
       .onConflictDoNothing();
 
-    console.info('[seed] document types ready: Basic Form, Multi-stage Form (published v1).');
+    console.info(
+      '[seed] document types ready: Basic Form, Multi-stage Form, Service (published v1).',
+    );
   } finally {
     await db.$client.end();
   }

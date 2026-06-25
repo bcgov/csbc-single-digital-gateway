@@ -1,14 +1,25 @@
 import type { DocumentType, DocumentTypeVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { basicFormDefinitionSchema, multiStageDefinitionSchema } from './definition.schemas';
+import {
+  basicFormDefinitionSchema,
+  multiStageDefinitionSchema,
+  serviceDefinitionSchema,
+} from './definition.schemas';
 
-export const documentKindSchema = z.enum(['basic-form', 'multi-stage-form']);
+export const documentKindSchema = z.enum(['basic-form', 'multi-stage-form', 'service']);
 export type DocumentKind = z.infer<typeof documentKindSchema>;
 
 /** The `definition` schema for a given kind (used to validate add/edit-version payloads). */
 export function definitionForKind(kind: DocumentKind) {
-  return kind === 'basic-form' ? basicFormDefinitionSchema : multiStageDefinitionSchema;
+  switch (kind) {
+    case 'basic-form':
+      return basicFormDefinitionSchema;
+    case 'multi-stage-form':
+      return multiStageDefinitionSchema;
+    case 'service':
+      return serviceDefinitionSchema;
+  }
 }
 
 // Document types are not created via the API (seeded only). `definitionForKind` + the per-kind schemas

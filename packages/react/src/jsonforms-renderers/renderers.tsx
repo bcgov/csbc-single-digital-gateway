@@ -11,6 +11,7 @@ import { MultiEnumControl, multiEnumControlTester } from './controls/multi-enum-
 import { MultilineControl, multilineControlTester } from './controls/multiline-control';
 import { NumberControl, numberControlTester } from './controls/number-control';
 import { OneOfEnumControl, oneOfEnumControlTester } from './controls/oneof-enum-control';
+import { RichTextControl, richTextControlTester } from './controls/rich-text-control';
 import { SliderControl, sliderControlTester } from './controls/slider-control';
 import { TextControl, textControlTester } from './controls/text-control';
 import {
@@ -41,6 +42,7 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   { tester: multiEnumControlTester, renderer: MultiEnumControl },
   { tester: sliderControlTester, renderer: SliderControl },
   { tester: dateControlTester, renderer: DateControl },
+  { tester: richTextControlTester, renderer: RichTextControl },
   // Layouts
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
