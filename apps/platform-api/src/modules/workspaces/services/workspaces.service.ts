@@ -3,11 +3,11 @@ import { type Database, workspaceMembers, workspaces } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import {
-  type CreateWorkspaceDto,
+  type CreateWorkspaceInput,
   type ListWorkspacesQuery,
-  type UpdateWorkspaceDto,
-  type WorkspaceDto,
-  type WorkspaceListDto,
+  type UpdateWorkspaceInput,
+  type WorkspaceListResponse,
+  type WorkspaceResponse,
   type WorkspaceRole,
   toWorkspaceDto,
 } from '../dtos/workspace.dtos';
@@ -24,7 +24,7 @@ export class WorkspacesService {
   constructor(@InjectDatabase() private readonly db: Database) {}
 
   /** Workspaces the caller is a member of, sorted + paginated, with the total membership count. */
-  async list(userId: string, query: ListWorkspacesQuery): Promise<WorkspaceListDto> {
+  async list(userId: string, query: ListWorkspacesQuery): Promise<WorkspaceListResponse> {
     const sortColumn = query.sort === 'name' ? workspaces.name : workspaces.createdAt;
     const direction = query.order === 'asc' ? asc : desc;
     const rows = await this.db
@@ -47,13 +47,13 @@ export class WorkspacesService {
     };
   }
 
-  async get(userId: string, id: string): Promise<WorkspaceDto> {
+  async get(userId: string, id: string): Promise<WorkspaceResponse> {
     const { workspace, role } = await this.requireMembership(userId, id);
     return toWorkspaceDto(workspace, role);
   }
 
   /** Resolve a workspace by slug for a member; 404 if it doesn't exist or the caller isn't a member. */
-  async getBySlug(userId: string, slug: string): Promise<WorkspaceDto> {
+  async getBySlug(userId: string, slug: string): Promise<WorkspaceResponse> {
     const rows = await this.db
       .select({ workspace: workspaceCols, role: workspaceMembers.role })
       .from(workspaceMembers)
@@ -68,7 +68,7 @@ export class WorkspacesService {
   }
 
   /** Create a workspace and the creator's admin membership atomically. */
-  async create(userId: string, dto: CreateWorkspaceDto): Promise<WorkspaceDto> {
+  async create(userId: string, dto: CreateWorkspaceInput): Promise<WorkspaceResponse> {
     return this.db.transaction(async (tx) => {
       const inserted = await tx
         .insert(workspaces)
@@ -85,7 +85,7 @@ export class WorkspacesService {
     });
   }
 
-  async update(userId: string, id: string, dto: UpdateWorkspaceDto): Promise<WorkspaceDto> {
+  async update(userId: string, id: string, dto: UpdateWorkspaceInput): Promise<WorkspaceResponse> {
     await this.requireAdmin(userId, id);
     const updated = await this.db
       .update(workspaces)

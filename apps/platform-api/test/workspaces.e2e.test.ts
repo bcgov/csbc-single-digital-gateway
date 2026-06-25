@@ -1,9 +1,11 @@
 import { type INestApplication } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { createDatabase } from '@repo/database';
 import { AuthModule, type AuthModuleOptions, type AuthUser } from '@repo/nestjs/auth';
 import { DatabaseModule } from '@repo/nestjs/database';
 import type { NextFunction, Request, Response } from 'express';
+import { ZodValidationPipe } from 'nestjs-zod';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WorkspacesModule } from '../src/modules/workspaces/workspaces.module';
@@ -41,6 +43,9 @@ describe('workspaces (e2e)', () => {
         }),
         WorkspacesModule,
       ],
+      // AppModule registers this globally; the minimal test module wires it explicitly so the
+      // createZodDto body/query DTOs are validated (400 on bad input) here too.
+      providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],
     }).compile();
     app = moduleRef.createNestApplication();
     app.enableVersioning({ type: (await import('@nestjs/common')).VersioningType.URI });

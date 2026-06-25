@@ -1,47 +1,54 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
+import { ZodSerializerDto } from 'nestjs-zod';
 import {
-  createWorkspaceSchema,
-  listWorkspacesQuerySchema,
-  updateWorkspaceSchema,
-  type WorkspaceDto,
-  type WorkspaceListDto,
-  zodParse,
+  CreateWorkspaceDto,
+  ListWorkspacesQueryDto,
+  UpdateWorkspaceDto,
+  WorkspaceDto,
+  WorkspaceListDto,
 } from '../dtos/workspace.dtos';
 import { WorkspacesService } from '../services/workspaces.service';
 
-/** `/v1/workspaces` — protected-by-default (session). Per-workspace authz lives in the service. */
+/**
+ * `/v1/workspaces` — protected-by-default (session). Requests are validated by the global
+ * `ZodValidationPipe` (via the `createZodDto` body/query types); responses are serialized by
+ * `@ZodSerializerDto`. Per-workspace authz lives in the service.
+ */
+@ApiTags('Workspaces')
 @Controller({ path: 'workspaces', version: '1' })
 export class WorkspacesV1Controller {
   constructor(private readonly service: WorkspacesService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query() query: unknown): Promise<WorkspaceListDto> {
-    return this.service.list(user.id, zodParse(listWorkspacesQuerySchema, query));
+  @ZodSerializerDto(WorkspaceListDto)
+  list(@CurrentUser() user: AuthUser, @Query() query: ListWorkspacesQueryDto) {
+    return this.service.list(user.id, query);
   }
 
   @Post()
-  create(@CurrentUser() user: AuthUser, @Body() body: unknown): Promise<WorkspaceDto> {
-    return this.service.create(user.id, zodParse(createWorkspaceSchema, body));
+  @ZodSerializerDto(WorkspaceDto)
+  create(@CurrentUser() user: AuthUser, @Body() body: CreateWorkspaceDto) {
+    return this.service.create(user.id, body);
   }
 
   @Get('by-slug/:slug')
-  getBySlug(@CurrentUser() user: AuthUser, @Param('slug') slug: string): Promise<WorkspaceDto> {
+  @ZodSerializerDto(WorkspaceDto)
+  getBySlug(@CurrentUser() user: AuthUser, @Param('slug') slug: string) {
     return this.service.getBySlug(user.id, slug);
   }
 
   @Get(':id')
-  get(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<WorkspaceDto> {
+  @ZodSerializerDto(WorkspaceDto)
+  get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.get(user.id, id);
   }
 
   @Patch(':id')
-  update(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ): Promise<WorkspaceDto> {
-    return this.service.update(user.id, id, zodParse(updateWorkspaceSchema, body));
+  @ZodSerializerDto(WorkspaceDto)
+  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: UpdateWorkspaceDto) {
+    return this.service.update(user.id, id, body);
   }
 
   @Delete(':id')

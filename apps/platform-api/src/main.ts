@@ -6,6 +6,7 @@ import session from 'express-session';
 import { AppModule } from './app.module';
 import { buildAppSessionOptions } from './auth/session.factory';
 import type { Env } from './config/env.schema';
+import { setupSwagger } from './swagger';
 
 async function bootstrap(): Promise<void> {
   // Buffer bootstrap logs until pino is installed as the app logger, so ordering/format
@@ -41,6 +42,8 @@ async function bootstrap(): Promise<void> {
       }),
     ),
   );
+  // OpenAPI docs (base + /v1), non-production only.
+  setupSwagger(app, nodeEnv);
   await app.listen(config.get('PORT', { infer: true }));
 }
 

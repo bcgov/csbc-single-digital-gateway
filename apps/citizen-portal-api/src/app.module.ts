@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { createDatabase, type Database } from '@repo/database';
+import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
 import {
   AUTH_USER_SYNC,
   AuthModule,
@@ -92,6 +95,13 @@ import { validateEnv, type Env } from './config/env.schema';
     // unversioned root. Feature modules live under src/modules/<feature>/.
     // /health/ready reports the database via DatabaseHealthIndicator (select 1).
     HealthModule.forRoot({ readiness: [DatabaseHealthIndicator] }),
+  ],
+  // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses
+  // (@ZodSerializerDto), and log response-serialization failures before delegating.
+  providers: [
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
+    { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],
 })
 export class AppModule {}
