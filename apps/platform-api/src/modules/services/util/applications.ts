@@ -26,8 +26,32 @@ export type ResolvedApplication = {
   position: number;
 } & (
   | { mode: 'existing'; versionId: string; documentId: string; kind: string }
-  | { mode: 'new'; typeId: string; typeVersionId: string; kind: string; title: string }
+  | {
+      mode: 'new';
+      typeId: string;
+      typeVersionId: string;
+      kind: string;
+      title: string;
+      definition: Record<string, unknown>;
+    }
 );
+
+/**
+ * The structure to copy into a new form document's `document_versions.schema`, taken from the type
+ * definition: `{ schema, uischema }` for basic-form, `{ stages }` for multi-stage-form, NULL otherwise.
+ */
+export function structureFromDefinition(
+  kind: string,
+  definition: Record<string, unknown>,
+): Record<string, unknown> | null {
+  if (kind === 'basic-form') {
+    return { schema: definition.schema ?? {}, uischema: definition.uischema ?? {} };
+  }
+  if (kind === 'multi-stage-form') {
+    return { stages: definition.stages ?? [] };
+  }
+  return null;
+}
 
 /**
  * Validate each application against the live DB (reads via `db`) so the caller gets clean 400/404/422
@@ -76,7 +100,11 @@ export async function resolveApplications(
         };
       }
       const rows = await db
-        .select({ kind: documentTypes.kind, typeVersionId: documentTypeVersions.id })
+        .select({
+          kind: documentTypes.kind,
+          typeVersionId: documentTypeVersions.id,
+          definition: documentTypeVersions.definition,
+        })
         .from(documentTypes)
         .innerJoin(
           documentTypeVersions,
@@ -103,6 +131,7 @@ export async function resolveApplications(
         typeVersionId: row.typeVersionId,
         kind: row.kind,
         title: app.form.title,
+        definition: row.definition,
       };
     }),
   );
@@ -137,6 +166,8 @@ export async function insertApplication(
         typeId: app.typeId,
         typeVersionId: app.typeVersionId,
         version: 1,
+        // Copy the template structure into the form document; `data` stays default values ({}).
+        schema: structureFromDefinition(app.kind, app.definition),
       })
       .returning();
     const formVersion = insertedVersion[0];

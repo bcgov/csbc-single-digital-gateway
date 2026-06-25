@@ -113,7 +113,11 @@ export const documentVersions = pgTable(
     typeId: uuid('type_id').notNull(),
     typeVersionId: uuid('type_version_id').notNull(),
     version: integer('version').notNull(),
+    // Filled values (services) or default values (forms).
     data: jsonb('data').$type<Record<string, unknown>>().notNull().default({}),
+    // The form's STRUCTURE, copied from the type definition for form documents ({schema,uischema} for
+    // basic-form, {stages} for multi-stage-form). NULL for services today (future: templated services).
+    schema: jsonb('schema').$type<Record<string, unknown>>(),
     status: documentVersionsStatus('status')
       .notNull()
       // Per-branch enum casts (see document-types.ts) so the STORED generated column
