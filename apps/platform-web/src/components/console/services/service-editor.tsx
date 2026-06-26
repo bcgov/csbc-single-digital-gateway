@@ -26,7 +26,12 @@ function toApplicationInputs(items: ApplicationItem[]): ApplicationInput[] {
     form:
       item.mode === 'existing'
         ? { mode: 'existing', versionId: item.versionId ?? '' }
-        : { mode: 'new', typeId: item.newTypeId ?? '', title: item.newTitle ?? '' },
+        : {
+            mode: 'new',
+            typeId: item.newTypeId ?? '',
+            title: item.newTitle ?? '',
+            ...(item.definition ? { definition: item.definition } : {}),
+          },
   }));
 }
 

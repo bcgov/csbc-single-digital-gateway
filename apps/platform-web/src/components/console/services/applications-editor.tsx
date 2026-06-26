@@ -2,9 +2,10 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '@repo/ui/native-select';
-import { Plus, Trash2 } from 'lucide-react';
-import { useRef } from 'react';
-import type { FormCatalogEntry, FormType } from '@/lib/services';
+import { PencilRuler, Plus, Trash2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { EMPTY_FORM_DEFINITION, FormBuilderDialog } from '@/components/form-builder/builder-dialog';
+import type { FormCatalogEntry, FormDefinition, FormType } from '@/lib/services';
 
 /** Client-side state for one application row. `id` present = an existing reference (edit mode). */
 export interface ApplicationItem {
@@ -16,6 +17,8 @@ export interface ApplicationItem {
   versionId?: string | undefined;
   newTypeId?: string | undefined;
   newTitle?: string | undefined;
+  /** Builder-authored definition for a new form (client-first; persisted on service save). */
+  definition?: FormDefinition | undefined;
 }
 
 // Order is the array order; `position` is re-derived from the index on save (see service-editor).
@@ -36,6 +39,8 @@ export function ApplicationsEditor({
   disabled?: boolean;
 }) {
   const nextKey = useRef(0);
+  const [designingKey, setDesigningKey] = useState<string | null>(null);
+  const designing = items.find((item) => item.key === designingKey) ?? null;
 
   const update = (key: string, patch: Partial<ApplicationItem>) =>
     onChange(items.map((item) => (item.key === key ? { ...item, ...patch } : item)));
@@ -134,6 +139,17 @@ export function ApplicationsEditor({
                     placeholder="Form title"
                     onChange={(event) => update(item.key, { newTitle: event.target.value })}
                   />
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    type="button"
+                    className="self-start"
+                    disabled={disabled}
+                    onClick={() => setDesigningKey(item.key)}
+                  >
+                    <PencilRuler className="size-3.5" aria-hidden />
+                    {item.definition ? 'Edit form fields' : 'Design form'}
+                  </Button>
                 </div>
               ) : null}
               <div className="flex justify-end">
@@ -153,6 +169,21 @@ export function ApplicationsEditor({
           ))}
         </ul>
       )}
+      <FormBuilderDialog
+        open={designing !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDesigningKey(null);
+          }
+        }}
+        title={designing?.newTitle ? `Design: ${designing.newTitle}` : 'Design form'}
+        value={designing?.definition ?? EMPTY_FORM_DEFINITION}
+        onChange={(definition) => {
+          if (designingKey !== null) {
+            update(designingKey, { definition });
+          }
+        }}
+      />
     </div>
   );
 }

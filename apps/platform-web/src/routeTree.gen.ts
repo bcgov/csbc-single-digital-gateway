@@ -29,6 +29,8 @@ import { Route as AdminDocumentTypesIdRouteImport } from './routes/admin.documen
 import { Route as AppSlugServicesIndexRouteImport } from './routes/app.$slug.services.index'
 import { Route as AppSlugServicesNewRouteImport } from './routes/app.$slug.services.new'
 import { Route as AppSlugServicesIdRouteImport } from './routes/app.$slug.services.$id'
+import { Route as AppSlugFormsNewRouteImport } from './routes/app.$slug.forms.new'
+import { Route as AppSlugFormsIdEditRouteImport } from './routes/app.$slug.forms.$id.edit'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -130,6 +132,16 @@ const AppSlugServicesIdRoute = AppSlugServicesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppSlugServicesRoute,
 } as any)
+const AppSlugFormsNewRoute = AppSlugFormsNewRouteImport.update({
+  id: '/forms/new',
+  path: '/forms/new',
+  getParentRoute: () => AppSlugRoute,
+} as any)
+const AppSlugFormsIdEditRoute = AppSlugFormsIdEditRouteImport.update({
+  id: '/forms/$id/edit',
+  path: '/forms/$id/edit',
+  getParentRoute: () => AppSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -149,9 +161,11 @@ export interface FileRoutesByFullPath {
   '/app/$slug/team': typeof AppSlugTeamRoute
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
+  '/app/$slug/forms/new': typeof AppSlugFormsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
+  '/app/$slug/forms/$id/edit': typeof AppSlugFormsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,9 +180,11 @@ export interface FileRoutesByTo {
   '/app/$slug/team': typeof AppSlugTeamRoute
   '/admin/document-types': typeof AdminDocumentTypesIndexRoute
   '/app/$slug': typeof AppSlugIndexRoute
+  '/app/$slug/forms/new': typeof AppSlugFormsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/services': typeof AppSlugServicesIndexRoute
+  '/app/$slug/forms/$id/edit': typeof AppSlugFormsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -189,9 +205,11 @@ export interface FileRoutesById {
   '/app/$slug/team': typeof AppSlugTeamRoute
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
+  '/app/$slug/forms/new': typeof AppSlugFormsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRoute
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
+  '/app/$slug/forms/$id/edit': typeof AppSlugFormsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -213,9 +231,11 @@ export interface FileRouteTypes {
     | '/app/$slug/team'
     | '/admin/document-types/'
     | '/app/$slug/'
+    | '/app/$slug/forms/new'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/new'
     | '/app/$slug/services/'
+    | '/app/$slug/forms/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -230,9 +250,11 @@ export interface FileRouteTypes {
     | '/app/$slug/team'
     | '/admin/document-types'
     | '/app/$slug'
+    | '/app/$slug/forms/new'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/new'
     | '/app/$slug/services'
+    | '/app/$slug/forms/$id/edit'
   id:
     | '__root__'
     | '/'
@@ -252,9 +274,11 @@ export interface FileRouteTypes {
     | '/app/$slug/team'
     | '/admin/document-types/'
     | '/app/$slug/'
+    | '/app/$slug/forms/new'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/new'
     | '/app/$slug/services/'
+    | '/app/$slug/forms/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -405,6 +429,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIdRouteImport
       parentRoute: typeof AppSlugServicesRoute
     }
+    '/app/$slug/forms/new': {
+      id: '/app/$slug/forms/new'
+      path: '/forms/new'
+      fullPath: '/app/$slug/forms/new'
+      preLoaderRoute: typeof AppSlugFormsNewRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
+    '/app/$slug/forms/$id/edit': {
+      id: '/app/$slug/forms/$id/edit'
+      path: '/forms/$id/edit'
+      fullPath: '/app/$slug/forms/$id/edit'
+      preLoaderRoute: typeof AppSlugFormsIdEditRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
   }
 }
 
@@ -457,6 +495,8 @@ interface AppSlugRouteChildren {
   AppSlugSubmissionsRoute: typeof AppSlugSubmissionsRoute
   AppSlugTeamRoute: typeof AppSlugTeamRoute
   AppSlugIndexRoute: typeof AppSlugIndexRoute
+  AppSlugFormsNewRoute: typeof AppSlugFormsNewRoute
+  AppSlugFormsIdEditRoute: typeof AppSlugFormsIdEditRoute
 }
 
 const AppSlugRouteChildren: AppSlugRouteChildren = {
@@ -467,6 +507,8 @@ const AppSlugRouteChildren: AppSlugRouteChildren = {
   AppSlugSubmissionsRoute: AppSlugSubmissionsRoute,
   AppSlugTeamRoute: AppSlugTeamRoute,
   AppSlugIndexRoute: AppSlugIndexRoute,
+  AppSlugFormsNewRoute: AppSlugFormsNewRoute,
+  AppSlugFormsIdEditRoute: AppSlugFormsIdEditRoute,
 }
 
 const AppSlugRouteWithChildren =

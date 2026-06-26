@@ -57,12 +57,20 @@ export interface ServiceReference {
   createdAt: string;
 }
 
+/** A JSONForms definition authored by the form builder. */
+export interface FormDefinition {
+  schema: Record<string, unknown>;
+  uischema: Record<string, unknown>;
+}
+
 /** An application as sent to the composite create/update endpoints. */
 export type ApplicationInput = {
   id?: string;
   label: string;
   position: number;
-  form: { mode: 'existing'; versionId: string } | { mode: 'new'; typeId: string; title: string };
+  form:
+    | { mode: 'existing'; versionId: string }
+    | { mode: 'new'; typeId: string; title: string; definition?: FormDefinition };
 };
 
 const BASE = `${BFF_ORIGIN}/v1/services`;

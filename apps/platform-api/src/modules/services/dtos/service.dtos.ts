@@ -4,10 +4,25 @@ import { z } from 'zod';
 
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────
 
-/** An application = a form reference (existing version OR a new form to create) + a button label. */
+/** A JSONForms definition (`{ schema, uischema }`) as authored by the form builder. */
+const formDefinitionShape = z.object({
+  schema: z.record(z.string(), z.unknown()),
+  uischema: z.record(z.string(), z.unknown()),
+});
+
+/**
+ * An application = a form reference (existing version OR a new form to create) + a button label.
+ * A new form may carry a builder-authored `definition`; when omitted the type template is copied
+ * (feature 41). Client-first: the form is only persisted when the service is saved (feature 40).
+ */
 export const applicationFormRefSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('existing'), versionId: z.uuid() }),
-  z.object({ mode: z.literal('new'), typeId: z.uuid(), title: z.string().trim().min(1).max(255) }),
+  z.object({
+    mode: z.literal('new'),
+    typeId: z.uuid(),
+    title: z.string().trim().min(1).max(255),
+    definition: formDefinitionShape.optional(),
+  }),
 ]);
 export const applicationInputSchema = z.object({
   /** Present = an existing reference (update reconcile); absent = a new application. */

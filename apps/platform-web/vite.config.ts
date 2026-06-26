@@ -22,5 +22,17 @@ export default defineConfig({
       { find: '@', replacement: resolve(import.meta.dirname, 'src') },
     ],
   },
+  // The form-builder's @dnd-kit graph is reachable ONLY through the lazy /forms routes, so Vite
+  // wouldn't discover it at startup — first navigation would trigger a dep re-optimization + reload
+  // that 504s the in-flight dynamic import ("Failed to fetch dynamically imported module"). Pre-bundle
+  // these (incl. the @dnd-kit/dom/sortable subpath we import directly) so they're ready on boot.
+  optimizeDeps: {
+    include: [
+      '@dnd-kit/react',
+      '@dnd-kit/react/sortable',
+      '@dnd-kit/dom/sortable',
+      '@dnd-kit/helpers',
+    ],
+  },
   server: { port: 3001 },
 });
