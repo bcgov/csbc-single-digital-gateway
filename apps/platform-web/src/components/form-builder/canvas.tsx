@@ -1,4 +1,5 @@
 import { Input } from '@repo/ui/input';
+import { Label } from '@repo/ui/label';
 import { Textarea } from '@repo/ui/textarea';
 import { ROOT_GROUP } from './dnd';
 import { ContainerRow, ControlRow, EmptyDropZone, EndZone, pathEq } from './field-rows';
@@ -57,21 +58,25 @@ export function Canvas({
       }}
     >
       <div className="mx-auto w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-sm">
-        <Input
-          aria-label="Form title"
-          placeholder="Untitled form"
-          value={model.title}
-          onChange={(event) => onChangeForm({ title: event.target.value })}
-          className="border-0 px-0 text-xl font-semibold shadow-none focus-visible:ring-0"
-        />
-        <Textarea
-          aria-label="Form description"
-          placeholder="Add a description for applicants"
-          value={model.description}
-          onChange={(event) => onChangeForm({ description: event.target.value })}
-          className="mt-1 resize-none border-0 px-0 shadow-none focus-visible:ring-0"
-          rows={2}
-        />
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="canvas-form-title">Form title</Label>
+          <Input
+            id="canvas-form-title"
+            placeholder="Untitled form"
+            value={model.title}
+            onChange={(event) => onChangeForm({ title: event.target.value })}
+          />
+        </div>
+        <div className="mt-3 flex flex-col gap-1.5">
+          <Label htmlFor="canvas-form-description">Form description</Label>
+          <Textarea
+            id="canvas-form-description"
+            placeholder="Add a description for applicants"
+            value={model.description}
+            onChange={(event) => onChangeForm({ description: event.target.value })}
+            rows={3}
+          />
+        </div>
         <div className="mt-4 flex flex-col gap-2">
           {model.fields.length === 0 ? (
             <EmptyDropZone
