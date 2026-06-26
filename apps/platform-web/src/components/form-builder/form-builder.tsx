@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { Suspense, lazy, useMemo, useState, type ReactNode } from 'react';
 import { Canvas } from './canvas';
 import { applyRecord, buildRecord } from './dnd';
-import { FieldCardPreview } from './field-card';
+import { FieldPreview, previewNodeForType } from './field-card';
 import { type FieldTypeId } from './field-types';
 import { Inspector } from './inspector';
 import {
@@ -186,31 +186,19 @@ export function FormBuilder({
           </div>
         )}
       </div>
-      {/* Cursor preview: render the dragged item as a canvas-style field card (palette → its type;
-          reorder → the moved field's summary), so it "becomes" the field while dragging.
-          `dropAnimation={null}` disables the default snap-back-to-source on release (the field lands
-          in the canvas, it doesn't return to the palette). */}
+      {/* Cursor preview: render the dragged item as its REAL field control (palette → a default node
+          for its type; reorder → the moved node), so it "becomes" the rendered field while dragging.
+          `dropAnimation={null}` disables the default snap-back-to-source on release. */}
       <DragOverlay dropAnimation={null}>
         {(source) => {
-          const d = source.data as {
-            fieldType?: FieldTypeId;
-            summary?: { fieldType: FieldTypeId; label: string };
-          };
-          if (typeof d.fieldType === 'string') {
-            return (
-              <div className="w-72">
-                <FieldCardPreview fieldType={d.fieldType} />
-              </div>
-            );
-          }
-          if (d.summary) {
-            return (
-              <div className="w-72">
-                <FieldCardPreview fieldType={d.summary.fieldType} label={d.summary.label} />
-              </div>
-            );
-          }
-          return null;
+          const d = source.data as { node?: FieldNode; fieldType?: FieldTypeId };
+          const node =
+            d.node ?? (typeof d.fieldType === 'string' ? previewNodeForType(d.fieldType) : null);
+          return node ? (
+            <div className="w-80 rounded-lg border border-primary bg-card p-3 shadow-lg">
+              <FieldPreview node={node} />
+            </div>
+          ) : null;
         }}
       </DragOverlay>
     </DragDropProvider>

@@ -29,12 +29,16 @@ function PaletteItem({ def, onAdd }: { def: FieldTypeDef; onAdd: (id: FieldTypeI
     <button
       ref={ref}
       type="button"
+      aria-label={def.label}
       onClick={() => onAdd(def.id)}
       data-dragging={isDragging || undefined}
-      className="flex w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary data-[dragging]:opacity-50"
+      className="flex w-full items-start gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary data-[dragging]:opacity-50"
     >
-      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      <span className="truncate">{def.label}</span>
+      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="flex min-w-0 flex-col">
+        <span className="text-sm font-medium">{def.label}</span>
+        <span className="text-xs text-muted-foreground">{def.description}</span>
+      </span>
     </button>
   );
 }

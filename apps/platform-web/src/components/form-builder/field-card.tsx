@@ -1,35 +1,47 @@
-import { Square } from 'lucide-react';
+import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { FIELD_TYPE_BY_ID, type FieldTypeId } from './field-types';
+import { createField, serializeModel, type FieldNode } from './model';
+
+const noop = () => {};
 
 /**
- * A canvas-style card for a field type — shared by the drag overlay (cursor preview) and the drop
- * placeholder, so what you drag and where it lands both look like the real field. `ghost` = the
- * translucent placeholder variant; default = the solid floating preview.
+ * Renders a single field exactly as a real form would — it serializes the node to a one-field
+ * `{ schema, uischema }` and runs it through the actual `@repo/react` renderers (readonly + inert,
+ * so it's a non-interactive preview). Used by the canvas cards, the drag overlay, and the drop
+ * placeholder so authoring, dragging and dropping all look like the rendered field. `ghost` = the
+ * dashed translucent placeholder variant.
  */
-export function FieldCardPreview({
-  fieldType,
-  label,
-  ghost = false,
-}: {
-  fieldType: FieldTypeId;
-  label?: string;
-  ghost?: boolean;
-}) {
-  const def = FIELD_TYPE_BY_ID[fieldType];
-  const Icon = def?.icon ?? Square;
+export function FieldPreview({ node, ghost = false }: { node: FieldNode; ghost?: boolean }) {
+  const definition = serializeModel({ title: '', description: '', fields: [node] });
   return (
     <div
+      inert
       className={
         ghost
-          ? 'flex items-center gap-2 rounded-lg border-2 border-dashed border-primary bg-primary/10 p-2'
-          : 'flex items-center gap-2 rounded-lg border border-primary bg-card p-2 shadow-lg'
+          ? 'pointer-events-none rounded-lg border-2 border-dashed border-primary bg-primary/5 p-3'
+          : 'pointer-events-none'
       }
     >
-      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate text-sm font-medium">{label ?? def?.label ?? fieldType}</span>
-        <span className="text-xs text-muted-foreground">{def?.label}</span>
-      </span>
+      <JsonForms
+        schema={definition.schema as JsonSchema}
+        uischema={definition.uischema as unknown as UISchemaElement}
+        data={{}}
+        readonly
+        onChange={noop}
+      />
     </div>
   );
+}
+
+/** A default, type-labelled node for previewing a palette field type (there's no real node yet). */
+export function previewNodeForType(fieldType: FieldTypeId): FieldNode {
+  const node = createField(fieldType);
+  const label = FIELD_TYPE_BY_ID[fieldType]?.label ?? fieldType;
+  if (node.kind === 'control') {
+    node.key = node.key || fieldType;
+    node.label = label;
+  } else {
+    node.label = label;
+  }
+  return node;
 }

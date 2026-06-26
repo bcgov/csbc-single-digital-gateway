@@ -3,17 +3,12 @@ import { useDroppable } from '@dnd-kit/react';
 import { useSortable } from '@dnd-kit/react/sortable';
 import { GripVertical, Trash2 } from 'lucide-react';
 import { ROOT_GROUP, containerId, controlId, groupId } from './dnd';
-import { FieldCardPreview } from './field-card';
-import { FIELD_TYPE_BY_ID, type FieldTypeId } from './field-types';
+import { FieldPreview, previewNodeForType } from './field-card';
+import { type FieldTypeId } from './field-types';
 import type { ContainerNode, ControlNode, Path } from './model';
 
 export function pathEq(a: Path | null, b: Path): boolean {
   return a !== null && a.length === b.length && a.every((v, i) => v === b[i]);
-}
-
-function controlSummary(node: ControlNode): string {
-  const typeLabel = FIELD_TYPE_BY_ID[node.fieldType]?.label ?? node.fieldType;
-  return node.label !== '' ? node.label : `Untitled ${typeLabel.toLowerCase()}`;
 }
 
 // Sortable rows never animate position changes. NOTE: `transition: null` does NOT work — @dnd-kit's
@@ -25,7 +20,7 @@ const NO_SLIDE = { transition: { duration: 0 } } as const;
 /** The gap shown where a dragged field will land — a ghost of the actual field for palette drags. */
 function DropPlaceholder({ fieldType }: { fieldType: FieldTypeId | null }) {
   return fieldType !== null ? (
-    <FieldCardPreview fieldType={fieldType} ghost />
+    <FieldPreview node={previewNodeForType(fieldType)} ghost />
   ) : (
     <div
       aria-hidden
@@ -75,13 +70,8 @@ export function ControlRow({
     type: 'field',
     accept: ['field', 'palette-item'],
     // `path` drives moveField; `container`/`index` let a palette drop ON this row insert here;
-    // `summary` lets the drag overlay render this field as a canvas-style card.
-    data: {
-      path,
-      container: path.length === 2 ? path[0] : null,
-      index,
-      summary: { fieldType: node.fieldType, label: controlSummary(node) },
-    },
+    // `node` lets the drag overlay render this field as its real control.
+    data: { path, container: path.length === 2 ? path[0] : null, index, node },
     ...NO_SLIDE,
   });
   return (
@@ -96,27 +86,31 @@ export function ControlRow({
       ) : null}
       <div className="relative">
         <DeleteHandle label="Remove field" onDelete={() => onDelete(path)} />
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-2 group-data-[dragging]:opacity-40 group-data-[selected]:border-primary group-data-[selected]:ring-1 group-data-[selected]:ring-primary">
+        <div className="flex items-start gap-2 rounded-lg border border-border bg-card p-3 group-data-[dragging]:opacity-40 group-data-[selected]:border-primary group-data-[selected]:ring-1 group-data-[selected]:ring-primary">
           <button
             ref={handleRef}
             type="button"
             aria-label="Reorder field"
-            className="cursor-grab text-muted-foreground"
+            className="mt-1 cursor-grab text-muted-foreground"
           >
             <GripVertical className="size-4" aria-hidden />
           </button>
-          <button
-            type="button"
+          {/* The card body renders the REAL control (inert preview); clicking it selects the field. */}
+          <div
+            role="button"
+            tabIndex={0}
             aria-label={`Select field ${index + 1}`}
             onClick={() => onSelect(path)}
-            className="flex min-w-0 flex-1 flex-col text-left"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect(path);
+              }
+            }}
+            className="min-w-0 flex-1 cursor-pointer text-left"
           >
-            <span className="truncate text-sm font-medium">{controlSummary(node)}</span>
-            <span className="text-xs text-muted-foreground">
-              {FIELD_TYPE_BY_ID[node.fieldType]?.label}
-              {node.required ? ' · required' : ''}
-            </span>
-          </button>
+            <FieldPreview node={node} />
+          </div>
         </div>
       </div>
     </div>
@@ -201,7 +195,7 @@ export function ContainerRow({
     group: ROOT_GROUP,
     type: 'container',
     accept: ['field', 'container', 'palette-item'],
-    data: { path: [index], container: null, index, summary: { fieldType: node.layout, label } },
+    data: { path: [index], container: null, index, node },
     ...NO_SLIDE,
   });
   return (
