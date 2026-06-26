@@ -32,6 +32,7 @@ export default defineConfig({
       '@dnd-kit/react/sortable',
       '@dnd-kit/dom/sortable',
       '@dnd-kit/helpers',
+      '@xyflow/react',
     ],
   },
   server: { port: 3001 },

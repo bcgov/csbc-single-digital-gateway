@@ -5,6 +5,8 @@ import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '@repo/ui
 import { PencilRuler, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { EMPTY_FORM_DEFINITION, FormBuilderDialog } from '@/components/form-builder/builder-dialog';
+import { StageBuilderDialog } from '@/components/stage-builder/stage-builder-dialog';
+import { emptyDefinition, type MultiStageDefinition } from '@/components/stage-builder/stage-model';
 import type { FormCatalogEntry, FormDefinition, FormType } from '@/lib/services';
 
 /** Client-side state for one application row. `id` present = an existing reference (edit mode). */
@@ -17,9 +19,14 @@ export interface ApplicationItem {
   versionId?: string | undefined;
   newTypeId?: string | undefined;
   newTitle?: string | undefined;
-  /** Builder-authored definition for a new form (client-first; persisted on service save). */
-  definition?: FormDefinition | undefined;
+  /** Builder-authored definition for a new form (client-first; persisted on service save). Either a
+   * basic-form `{schema,uischema}` or a multi-stage `{stages,edges}` blob, by the chosen type's kind. */
+  definition?: object | undefined;
 }
+
+/** True when a new-application type is a multi-stage form (→ stage builder, not form builder). */
+const isMultiStage = (item: ApplicationItem, formTypes: FormType[]): boolean =>
+  formTypes.find((t) => t.typeId === item.newTypeId)?.kind === 'multi-stage-form';
 
 // Order is the array order; `position` is re-derived from the index on save (see service-editor).
 const selectValue = (item: ApplicationItem) =>
@@ -145,10 +152,20 @@ export function ApplicationsEditor({
                     type="button"
                     className="self-start"
                     disabled={disabled}
-                    onClick={() => setDesigningKey(item.key)}
+                    onClick={() => {
+                      if (item.definition === undefined) {
+                        update(item.key, {
+                          definition: isMultiStage(item, formTypes)
+                            ? emptyDefinition()
+                            : EMPTY_FORM_DEFINITION,
+                        });
+                      }
+                      setDesigningKey(item.key);
+                    }}
                   >
                     <PencilRuler className="size-3.5" aria-hidden />
-                    {item.definition ? 'Edit form fields' : 'Design form'}
+                    {item.definition ? 'Edit' : 'Design'}{' '}
+                    {isMultiStage(item, formTypes) ? 'stages' : 'form'}
                   </Button>
                 </div>
               ) : null}
@@ -169,21 +186,39 @@ export function ApplicationsEditor({
           ))}
         </ul>
       )}
-      <FormBuilderDialog
-        open={designing !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDesigningKey(null);
-          }
-        }}
-        title={designing?.newTitle ? `Design: ${designing.newTitle}` : 'Design form'}
-        value={designing?.definition ?? EMPTY_FORM_DEFINITION}
-        onChange={(definition) => {
-          if (designingKey !== null) {
-            update(designingKey, { definition });
-          }
-        }}
-      />
+      {designing !== null && isMultiStage(designing, formTypes) ? (
+        <StageBuilderDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setDesigningKey(null);
+            }
+          }}
+          title={designing.newTitle ? `Design: ${designing.newTitle}` : 'Design stages'}
+          value={(designing.definition as MultiStageDefinition | undefined) ?? emptyDefinition()}
+          onChange={(definition) => {
+            if (designingKey !== null) {
+              update(designingKey, { definition });
+            }
+          }}
+        />
+      ) : (
+        <FormBuilderDialog
+          open={designing !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDesigningKey(null);
+            }
+          }}
+          title={designing?.newTitle ? `Design: ${designing.newTitle}` : 'Design form'}
+          value={(designing?.definition as FormDefinition | undefined) ?? EMPTY_FORM_DEFINITION}
+          onChange={(definition) => {
+            if (designingKey !== null) {
+              update(designingKey, { definition });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -61,14 +61,14 @@ export function ApplicationTypeModal({ open, onOpenChange, slug }: ApplicationTy
 
   async function pick(method: Method): Promise<void> {
     onOpenChange(false);
-    // Basic form launches the form builder for a new basic-form; resolve its type lazily on click.
-    if (method.id === 'basic-form') {
+    // Basic form → the form builder; multi-stage → the stage builder. Resolve the type lazily on click.
+    if (method.id === 'basic-form' || method.id === 'multi-stage-form') {
       try {
         const types = await queryClient.ensureQueryData(formTypesQueryOptions());
-        const type = types.find((t) => t.kind === 'basic-form');
+        const type = types.find((t) => t.kind === method.id);
         if (type) {
           await navigate({
-            to: '/app/$slug/forms/new',
+            to: method.id === 'basic-form' ? '/app/$slug/forms/new' : '/app/$slug/stages/new',
             params: { slug: slug ?? '' },
             search: { typeId: type.typeId },
           });

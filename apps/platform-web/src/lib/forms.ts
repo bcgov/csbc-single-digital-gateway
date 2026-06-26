@@ -5,7 +5,7 @@
  */
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
-import type { FormDefinition, VersionStatus } from '@/lib/services';
+import type { VersionStatus } from '@/lib/services';
 
 export type { FormDefinition } from '@/lib/services';
 
@@ -22,7 +22,8 @@ export interface FormVersion {
   documentId: string;
   version: number;
   status: VersionStatus;
-  schema: FormDefinition;
+  /** Definition blob — `{schema,uischema}` for basic-form, `{stages,edges}` for multi-stage. Cast per kind. */
+  schema: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -77,7 +78,7 @@ export function createForm(input: {
   workspaceId: string;
   typeId: string;
   title: string;
-  definition: FormDefinition;
+  definition: object;
 }): Promise<FormWithVersion> {
   return send(BASE, 'POST', input);
 }
@@ -86,7 +87,7 @@ export function createForm(input: {
 export function updateFormSchema(
   id: string,
   versionId: string,
-  input: { definition: FormDefinition; title?: string },
+  input: { definition: object; title?: string },
 ): Promise<FormVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,

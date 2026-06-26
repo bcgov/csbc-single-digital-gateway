@@ -4,11 +4,12 @@ import { z } from 'zod';
 
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────
 
-/** A JSONForms definition (`{ schema, uischema }`) as authored by the form builder. */
-const formDefinitionShape = z.object({
-  schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
-});
+/**
+ * A designed form definition authored in-browser before service save (client-first). Opaque object:
+ * `{ schema, uischema }` for a basic-form, `{ stages, edges }` for a multi-stage-form (feature 43).
+ * Stored verbatim into the new form's version; structure is validated by the builder + the type.
+ */
+const formDefinitionShape = z.record(z.string(), z.unknown());
 
 /**
  * An application = a form reference (existing version OR a new form to create) + a button label.

@@ -105,7 +105,9 @@ export function FormBuilderCreatePage() {
 }
 
 function EditLoaded({ slug, initial }: { slug: string; initial: FormWithVersion }) {
-  const [value, setValue] = useState<FormDefinition>(initial.version.schema);
+  const [value, setValue] = useState<FormDefinition>(
+    initial.version.schema as unknown as FormDefinition,
+  );
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: () =>

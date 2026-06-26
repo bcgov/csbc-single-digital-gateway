@@ -2,13 +2,39 @@ import type { Document, DocumentVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-// ── Shared definition (JSON Schema + UI Schema) ─────────────────────────────────────────────────
+// ── Shared definition ───────────────────────────────────────────────────────────────────────────
 
-/** A form definition = its JSON Schema + UI Schema (both opaque records). */
-export const definitionSchema = z.object({
-  schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
+const opaque = z.record(z.string(), z.unknown());
+
+/** A basic-form definition = its JSON Schema + UI Schema (both opaque records). */
+const basicFormDefinition = z.object({ schema: opaque, uischema: opaque });
+
+/** A multi-stage-form definition = stages (each with pages = basic-forms) + flow edges (feature 43). */
+const stagePageSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  schema: opaque,
+  uischema: opaque,
 });
+const stageSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
+  pages: z.array(stagePageSchema),
+});
+const stageEdgeSchema = z.object({ id: z.string(), source: z.string(), target: z.string() });
+const multiStageDefinition = z.object({
+  stages: z.array(stageSchema),
+  edges: z.array(stageEdgeSchema).optional(),
+});
+
+/**
+ * A form definition is either a basic-form (`{ schema, uischema }`) or a multi-stage form
+ * (`{ stages, edges }`). Kept a union (not discriminated) so `createZodDto` wraps the OUTER
+ * request/response objects without TS2509. Otherwise opaque — same posture as services.
+ */
+export const definitionSchema = z.union([basicFormDefinition, multiStageDefinition]);
 export type DefinitionResponse = z.infer<typeof definitionSchema>;
 
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────

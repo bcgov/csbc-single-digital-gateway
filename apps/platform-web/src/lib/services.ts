@@ -70,7 +70,8 @@ export type ApplicationInput = {
   position: number;
   form:
     | { mode: 'existing'; versionId: string }
-    | { mode: 'new'; typeId: string; title: string; definition?: FormDefinition };
+    // `definition` = designed blob: `{schema,uischema}` (basic) or `{stages,edges}` (multi-stage).
+    | { mode: 'new'; typeId: string; title: string; definition?: object };
 };
 
 const BASE = `${BFF_ORIGIN}/v1/services`;
