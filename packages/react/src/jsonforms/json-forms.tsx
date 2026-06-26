@@ -19,7 +19,27 @@ export type JsonFormsProps = Omit<BaseProps, 'renderers' | 'cells'> & {
  * design-system controls out of the box. Pass `renderers`/`cells` to override. All other
  * props (onChange, uischema, validationMode, readonly, i18n, config, …) pass straight
  * through to `@jsonforms/react`.
+ *
+ * The root schema's `title`/`description` render as a form header above the fields (when present),
+ * so the form's name + intro show consistently wherever a form is rendered.
  */
 export function JsonForms({ renderers = defaultRenderers, cells = [], ...props }: JsonFormsProps) {
-  return <JsonFormsBase renderers={renderers} cells={cells} {...props} />;
+  const title = typeof props.schema?.title === 'string' ? props.schema.title : undefined;
+  const description =
+    typeof props.schema?.description === 'string' ? props.schema.description : undefined;
+  return (
+    <div className="space-y-4">
+      {title !== undefined || description !== undefined ? (
+        <header className="space-y-1">
+          {title !== undefined ? (
+            <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+          ) : null}
+          {description !== undefined ? (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          ) : null}
+        </header>
+      ) : null}
+      <JsonFormsBase renderers={renderers} cells={cells} {...props} />
+    </div>
+  );
 }

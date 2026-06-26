@@ -1,7 +1,7 @@
 import { move } from '@dnd-kit/helpers';
 import { DragDropProvider, DragOverlay } from '@dnd-kit/react';
 import { Tabs, TabsList, TabsTrigger } from '@repo/ui/tabs';
-import { Suspense, lazy, useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState, type ReactNode } from 'react';
 import { Canvas } from './canvas';
 import { applyRecord, buildRecord } from './dnd';
 import { FieldCardPreview } from './field-card';
@@ -37,9 +37,15 @@ const Preview = lazy(() => import('./preview'));
 export function FormBuilder({
   value,
   onChange,
+  title,
+  actions,
 }: {
   value: FormDefinition;
   onChange: (value: FormDefinition) => void;
+  /** Optional left-aligned toolbar content (e.g. the page heading). */
+  title?: ReactNode;
+  /** Optional right-aligned toolbar content rendered after the Build/Preview toggle (e.g. Save). */
+  actions?: ReactNode;
 }) {
   const [selectedPath, setSelectedPath] = useState<Path | null>(null);
   const [tab, setTab] = useState<'build' | 'preview'>('build');
@@ -129,13 +135,17 @@ export function FormBuilder({
       }}
     >
       <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <Tabs value={tab} onValueChange={(next) => setTab(next as 'build' | 'preview')}>
-            <TabsList>
-              <TabsTrigger value="build">Build</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+          <div className="min-w-0">{title}</div>
+          <div className="flex items-center gap-3">
+            <Tabs value={tab} onValueChange={(next) => setTab(next as 'build' | 'preview')}>
+              <TabsList>
+                <TabsTrigger value="build">Build</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {actions}
+          </div>
         </div>
         {tab === 'preview' ? (
           <div className="min-h-0 flex-1 overflow-y-auto bg-muted/10">

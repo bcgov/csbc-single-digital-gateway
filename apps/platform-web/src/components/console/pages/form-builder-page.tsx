@@ -36,22 +36,25 @@ function BuilderShell({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h1 className="text-sm font-semibold">{heading}</h1>
-        <div className="flex items-center gap-3">
-          {error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {error.message}
-            </p>
-          ) : null}
-          <Button type="button" disabled={saving} onClick={onSave}>
-            {saving ? <Spinner className="size-4" /> : null}
-            Save form
-          </Button>
-        </div>
-      </div>
       <div className="min-h-0 flex-1">
-        <FormBuilder value={value} onChange={onChange} />
+        <FormBuilder
+          value={value}
+          onChange={onChange}
+          title={<h1 className="text-sm font-semibold">{heading}</h1>}
+          actions={
+            <>
+              {error ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {error.message}
+                </p>
+              ) : null}
+              <Button type="button" disabled={saving} onClick={onSave}>
+                {saving ? <Spinner className="size-4" /> : null}
+                Save form
+              </Button>
+            </>
+          }
+        />
       </div>
     </div>
   );
