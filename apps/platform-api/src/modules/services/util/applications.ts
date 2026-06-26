@@ -33,6 +33,8 @@ export type ResolvedApplication = {
       kind: string;
       title: string;
       definition: Record<string, unknown>;
+      /** Builder-authored `{ schema, uischema }` overriding the type template, if provided. */
+      designedDefinition: Record<string, unknown> | undefined;
     }
 );
 
@@ -132,6 +134,7 @@ export async function resolveApplications(
         kind: row.kind,
         title: app.form.title,
         definition: row.definition,
+        designedDefinition: app.form.definition,
       };
     }),
   );
@@ -166,8 +169,9 @@ export async function insertApplication(
         typeId: app.typeId,
         typeVersionId: app.typeVersionId,
         version: 1,
-        // Copy the template structure into the form document; `data` stays default values ({}).
-        schema: structureFromDefinition(app.kind, app.definition),
+        // Prefer the builder-authored definition; otherwise copy the type template (feature 41).
+        // `data` stays default values ({}).
+        schema: app.designedDefinition ?? structureFromDefinition(app.kind, app.definition),
       })
       .returning();
     const formVersion = insertedVersion[0];

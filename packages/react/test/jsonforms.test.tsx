@@ -51,6 +51,27 @@ describe('@repo/react/jsonforms — JsonForms wrapper', () => {
     });
   });
 
+  it('renders the root schema title + description as a form header', () => {
+    render(
+      <JsonForms
+        schema={{
+          ...schema,
+          title: 'Apply for a permit',
+          description: 'Tell us about your request.',
+        }}
+        data={{}}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Apply for a permit' })).toBeInTheDocument();
+    expect(screen.getByText('Tell us about your request.')).toBeInTheDocument();
+  });
+
+  it('renders no header when the schema has no title/description', () => {
+    render(<JsonForms schema={schema} data={{}} onChange={() => {}} />);
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+  });
+
   it('respects an explicit renderers override', () => {
     const override = [
       { tester: rankWith(100, () => true), renderer: () => <div>custom-override</div> },

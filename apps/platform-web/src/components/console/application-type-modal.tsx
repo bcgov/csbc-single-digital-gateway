@@ -5,10 +5,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/dialog';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { ExternalLink, FileText, type LucideIcon, Layers } from 'lucide-react';
+import { formTypesQueryOptions } from '@/lib/services';
+
+type MethodId = 'basic-form' | 'multi-stage-form' | 'external';
 
 interface Method {
+  id: MethodId;
   title: string;
   description: string;
   icon: LucideIcon;
@@ -16,11 +21,13 @@ interface Method {
 
 const PREFERRED: Method[] = [
   {
+    id: 'basic-form',
     title: 'Basic form',
     description: 'A single page of fields applicants complete and submit in one go.',
     icon: FileText,
   },
   {
+    id: 'multi-stage-form',
     title: 'Multi-stage form',
     description: 'A guided flow split into stages, with conditional logic between them.',
     icon: Layers,
@@ -29,6 +36,7 @@ const PREFERRED: Method[] = [
 
 const OTHER: Method[] = [
   {
+    id: 'external',
     title: 'External link',
     description: 'Send applicants to a form or service hosted elsewhere.',
     icon: ExternalLink,
@@ -49,10 +57,28 @@ interface ApplicationTypeModalProps {
  */
 export function ApplicationTypeModal({ open, onOpenChange, slug }: ApplicationTypeModalProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  function pick(): void {
+  async function pick(method: Method): Promise<void> {
     onOpenChange(false);
-    void navigate({ to: '/app/$slug/applications', params: { slug: slug ?? '' } });
+    // Basic form launches the form builder for a new basic-form; resolve its type lazily on click.
+    if (method.id === 'basic-form') {
+      try {
+        const types = await queryClient.ensureQueryData(formTypesQueryOptions());
+        const type = types.find((t) => t.kind === 'basic-form');
+        if (type) {
+          await navigate({
+            to: '/app/$slug/forms/new',
+            params: { slug: slug ?? '' },
+            search: { typeId: type.typeId },
+          });
+          return;
+        }
+      } catch {
+        /* fall through to the applications screen */
+      }
+    }
+    await navigate({ to: '/app/$slug/applications', params: { slug: slug ?? '' } });
   }
 
   const renderMethod = (method: Method) => {
@@ -61,7 +87,7 @@ export function ApplicationTypeModal({ open, onOpenChange, slug }: ApplicationTy
       <button
         key={method.title}
         type="button"
-        onClick={pick}
+        onClick={() => void pick(method)}
         className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
