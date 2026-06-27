@@ -54,6 +54,10 @@ export interface ServiceReference {
   targetKind: string;
   targetTitle: string;
   targetVersion: number;
+  /** Target form version status (draft/published/archived). */
+  targetStatus: string;
+  /** Whether the target form has submissions — gates delete (none) vs archive (some). */
+  hasSubmissions: boolean;
   createdAt: string;
 }
 
@@ -250,7 +254,8 @@ export function createReferencedForm(
   );
 }
 
-/** Remove an application-method reference from a service draft version. */
+/** Remove an application method from a service draft version. The form is deleted with its last
+ * reference when it has no submissions; the server returns 409 when it does (archive instead). */
 export async function removeReference(
   id: string,
   versionId: string,
@@ -259,6 +264,21 @@ export async function removeReference(
   const res = await fetch(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references/${encodeURIComponent(referenceId)}`,
     { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
+/** Archive an application-method form (for forms with submissions that can't be deleted). */
+export async function archiveReference(
+  id: string,
+  versionId: string,
+  referenceId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references/${encodeURIComponent(referenceId)}/archive`,
+    { method: 'POST', credentials: 'include' },
   );
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`);

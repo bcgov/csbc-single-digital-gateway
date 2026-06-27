@@ -37,6 +37,10 @@ export const referenceSchema = z.object({
   targetKind: z.string(),
   targetTitle: z.string(),
   targetVersion: z.number().int(),
+  /** The target form version's lifecycle status (draft/published/archived). */
+  targetStatus: z.string(),
+  /** Whether the target form has any submissions — gates delete (none) vs archive (some). */
+  hasSubmissions: z.boolean(),
   createdAt: z.string(),
 });
 export class ReferenceDto extends createZodDto(referenceSchema) {}

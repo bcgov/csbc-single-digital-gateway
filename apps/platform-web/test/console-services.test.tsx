@@ -119,6 +119,8 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               targetKind: 'basic-form',
               targetTitle: 'Permit form',
               targetVersion: 1,
+              targetStatus: 'draft',
+              hasSubmissions: false,
               createdAt: ISO,
             },
           ],
@@ -164,6 +166,8 @@ describe('console services', () => {
     expect(await screen.findByText('Permit form')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
     expect(screen.queryByText(/no application methods yet/i)).not.toBeInTheDocument();
+    // No submissions ⇒ the method offers a Delete action.
+    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /save & publish/i }));
     await waitFor(() => {
