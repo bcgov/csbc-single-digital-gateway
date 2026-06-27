@@ -181,8 +181,8 @@ export class ReferencesService {
           typeId: input.typeId,
           typeVersionId: type.typeVersionId,
           version: 1,
-          // Copy the template structure into the new form document; `data` stays default values.
-          schema: structureFromDefinition(type.kind, type.definition),
+          // Prefer a builder-authored definition; otherwise copy the type template. `data` stays default.
+          schema: input.definition ?? structureFromDefinition(type.kind, type.definition),
         })
         .returning();
       const formVersion = insertedVersion[0];

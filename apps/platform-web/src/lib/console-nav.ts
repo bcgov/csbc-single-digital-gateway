@@ -5,7 +5,6 @@
  */
 import {
   BarChart3,
-  FileText,
   Inbox,
   LayoutDashboard,
   type LucideIcon,
@@ -45,14 +44,6 @@ export const PRIMARY_NAV: NavItem[] = [
     to: '/app/$slug/services',
     icon: Package,
     subtitle: 'Service documents that group related applications.',
-    scoped: true,
-  },
-  {
-    key: 'applications',
-    label: 'Applications',
-    to: '/app/$slug/applications',
-    icon: FileText,
-    subtitle: 'Forms and wizards citizens use to apply.',
     scoped: true,
   },
   {

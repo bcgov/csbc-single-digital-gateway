@@ -75,7 +75,6 @@ describe('console shell — navigation uses real router links', () => {
     const cases: Array<[string, string]> = [
       ['Overview', '/app/riverton'],
       ['Services', '/app/riverton/services'],
-      ['Applications', '/app/riverton/applications'],
       ['Submissions', '/app/riverton/submissions'],
       ['Team', '/app/riverton/team'],
       ['Reports', '/app/riverton/reports'],

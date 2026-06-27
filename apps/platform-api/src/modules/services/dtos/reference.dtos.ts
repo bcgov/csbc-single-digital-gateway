@@ -13,11 +13,14 @@ export const addReferenceSchema = z.object({
 export class AddReferenceDto extends createZodDto(addReferenceSchema) {}
 export type AddReferenceInput = z.infer<typeof addReferenceSchema>;
 
-/** Create a form document of `typeId` and reference it from this service version (atomic). */
+/** Create a form document of `typeId` and reference it from this service version (atomic). An optional
+ * builder-authored `definition` (basic `{schema,uischema}` or multi-stage `{stages,edges}`) is stored
+ * instead of the type template (feature 44 — design-then-attach from the service detail). */
 export const createReferencedFormSchema = z.object({
   typeId: z.uuid(),
   title: z.string().trim().min(1).max(255),
   label: z.string().trim().min(1).max(255).optional(),
+  definition: z.record(z.string(), z.unknown()).optional(),
 });
 export class CreateReferencedFormDto extends createZodDto(createReferencedFormSchema) {}
 export type CreateReferencedFormInput = z.infer<typeof createReferencedFormSchema>;

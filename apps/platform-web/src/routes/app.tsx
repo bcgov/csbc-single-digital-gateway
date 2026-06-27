@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute, redirect, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
+import { ConsoleBreadcrumbBar } from '@/components/console/console-breadcrumb-bar';
 import { ConsoleHeader } from '@/components/console/console-header';
 import { ConsoleSidebar } from '@/components/console/console-sidebar';
 import { authQueryOptions } from '@/lib/auth';
+import { PageChromeProvider } from '@/lib/page-chrome';
 import { loginUrl } from '@/lib/bff';
 import { useWorkspaces, workspaceBySlugQueryOptions } from '@/lib/workspaces';
 
@@ -35,14 +37,20 @@ function ConsoleLayout() {
   const activeSlug = routedSlug ? (routedWorkspace?.slug ?? undefined) : workspaces[0]?.slug;
 
   return (
-    <div className="flex h-svh w-full overflow-hidden bg-background text-foreground">
-      <ConsoleSidebar collapsed={collapsed} slug={activeSlug} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <ConsoleHeader onToggleSidebar={() => setCollapsed((value) => !value)} slug={activeSlug} />
-        <main className="flex-1 overflow-auto bg-muted p-6">
-          <Outlet />
-        </main>
+    <PageChromeProvider>
+      <div className="flex h-svh w-full overflow-hidden bg-background text-foreground">
+        <ConsoleSidebar collapsed={collapsed} slug={activeSlug} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <ConsoleHeader
+            onToggleSidebar={() => setCollapsed((value) => !value)}
+            slug={activeSlug}
+          />
+          <ConsoleBreadcrumbBar />
+          <main className="min-h-0 flex-1 overflow-auto bg-muted p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </PageChromeProvider>
   );
 }

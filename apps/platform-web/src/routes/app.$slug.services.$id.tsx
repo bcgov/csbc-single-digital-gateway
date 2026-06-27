@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { ServiceDetail } from '@/components/console/services/service-detail';
+import { Outlet, createFileRoute } from '@tanstack/react-router';
 
+/** Service-detail layout: the detail content lives at the index; builder children replace it. */
 export const Route = createFileRoute('/app/$slug/services/$id')({
-  component: ServiceDetail,
+  component: Outlet,
 });

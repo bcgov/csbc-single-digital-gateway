@@ -32,11 +32,6 @@ describe('console routes — every workspace-scoped destination resolves and ren
     expect(await screen.findByText(/No services yet/i)).toBeInTheDocument();
   });
 
-  it('renders the Applications empty state at /app/:slug/applications', async () => {
-    renderScoped('/app/riverton/applications');
-    expect(await screen.findByText(/No applications yet/i)).toBeInTheDocument();
-  });
-
   it('renders the Submissions empty state and status tabs at /app/:slug/submissions', async () => {
     renderScoped('/app/riverton/submissions');
     expect(await screen.findByText(/No submissions yet/i)).toBeInTheDocument();

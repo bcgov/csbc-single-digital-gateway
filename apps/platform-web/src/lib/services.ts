@@ -235,3 +235,32 @@ export function archiveVersion(id: string, versionId: string): Promise<ServiceVe
 export function addServiceVersion(id: string): Promise<ServiceVersion> {
   return send(`${BASE}/${encodeURIComponent(id)}/versions`, 'POST');
 }
+
+/** Create a new form (of `typeId`, with an optional designed `definition`) AND reference it from a
+ * service draft version — the "Add application method" route flow (feature 44). */
+export function createReferencedForm(
+  id: string,
+  versionId: string,
+  input: { typeId: string; title: string; label?: string; definition?: object },
+): Promise<ServiceReference> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/forms`,
+    'POST',
+    input,
+  );
+}
+
+/** Remove an application-method reference from a service draft version. */
+export async function removeReference(
+  id: string,
+  versionId: string,
+  referenceId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references/${encodeURIComponent(referenceId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}

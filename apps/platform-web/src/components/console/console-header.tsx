@@ -6,6 +6,7 @@ import { CommandPalette } from '@/components/console/command-palette';
 import { NewSheet } from '@/components/console/new-sheet';
 import { NotificationsMenu } from '@/components/console/notifications-menu';
 import { sectionFor } from '@/lib/console-nav';
+import { usePageChrome } from '@/lib/page-chrome';
 
 interface ConsoleHeaderProps {
   onToggleSidebar: () => void;
@@ -19,6 +20,10 @@ export function ConsoleHeader({ onToggleSidebar, slug }: ConsoleHeaderProps) {
   const section = sectionFor(pathname);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const enabled = slug !== undefined;
+  // A nested page (service detail / application-method builder) overrides the section title/subtitle.
+  const chrome = usePageChrome();
+  const title = chrome?.title ?? section.label;
+  const subtitle = chrome ? chrome.description : section.subtitle;
 
   return (
     <header className="flex h-[58px] shrink-0 items-center justify-between gap-4 border-b border-border px-4">
@@ -33,8 +38,8 @@ export function ConsoleHeader({ onToggleSidebar, slug }: ConsoleHeaderProps) {
           <PanelLeft className="size-[18px]" aria-hidden />
         </Button>
         <div className="min-w-0">
-          <h1 className="truncate text-[17px] font-semibold leading-tight">{section.label}</h1>
-          <p className="truncate text-xs text-muted-foreground">{section.subtitle}</p>
+          <h1 className="truncate text-[17px] font-semibold leading-tight">{title}</h1>
+          {subtitle ? <p className="truncate text-xs text-muted-foreground">{subtitle}</p> : null}
         </div>
       </div>
 

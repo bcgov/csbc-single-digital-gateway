@@ -1,114 +1,49 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import {
-  type ApplicationInput,
-  type FormCatalogEntry,
-  type FormType,
-  createService,
-  publishVersion,
-  updateDraft,
-} from '@/lib/services';
-import { ApplicationsEditor, type ApplicationItem } from './applications-editor';
+import { publishVersion, updateDraft } from '@/lib/services';
 
 interface Definition {
   schema: Record<string, unknown>;
   uischema: Record<string, unknown>;
 }
 
-function toApplicationInputs(items: ApplicationItem[]): ApplicationInput[] {
-  return items.map((item, index) => ({
-    ...(item.id ? { id: item.id } : {}),
-    label: item.label,
-    position: index,
-    form:
-      item.mode === 'existing'
-        ? { mode: 'existing', versionId: item.versionId ?? '' }
-        : {
-            mode: 'new',
-            typeId: item.newTypeId ?? '',
-            title: item.newTitle ?? '',
-            ...(item.definition ? { definition: item.definition } : {}),
-          },
-  }));
-}
-
-/** Unified service editor: the JSONForms service form + the applications editor + a composite save. */
+/** Edit a service draft version: the JSONForms service form + Save draft / Save & publish. Application
+ * methods are managed separately (the route-based flow on the detail), not here. Creation is a modal. */
 export function ServiceEditor({
-  mode,
-  slug,
-  workspaceId,
-  definition,
-  forms,
-  formTypes,
   serviceId,
   versionId,
+  definition,
   initialData = {},
-  initialApplications = [],
   readonly = false,
 }: {
-  mode: 'create' | 'edit';
-  slug: string;
-  workspaceId: string;
+  serviceId: string;
+  versionId: string;
   definition: Definition;
-  forms: FormCatalogEntry[];
-  formTypes: FormType[];
-  serviceId?: string;
-  versionId?: string;
   initialData?: Record<string, unknown>;
-  initialApplications?: ApplicationItem[];
   readonly?: boolean;
 }) {
   const [data, setData] = useState<Record<string, unknown>>(initialData);
-  const [applications, setApplications] = useState<ApplicationItem[]>(initialApplications);
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const requireTitle = (): string => {
+    const title = typeof data.title === 'string' ? data.title.trim() : '';
+    if (title === '') {
+      throw new Error('A service title is required');
+    }
+    return title;
+  };
+
   const save = useMutation({
-    mutationFn: async () => {
-      const title = typeof data.title === 'string' ? data.title.trim() : '';
-      if (title === '') {
-        throw new Error('A service title is required');
-      }
-      const applicationInputs = toApplicationInputs(applications);
-      if (mode === 'create') {
-        return createService({ workspaceId, title, data, applications: applicationInputs });
-      }
-      if (serviceId === undefined || versionId === undefined) {
-        throw new Error('Missing service version to update');
-      }
-      await updateDraft(serviceId, versionId, { data, title, applications: applicationInputs });
-      return null;
-    },
-    onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ['services'] });
-      if (mode === 'create' && result) {
-        await navigate({
-          to: '/app/$slug/services/$id',
-          params: { slug, id: result.service.id },
-          replace: true,
-        });
-      }
-    },
+    mutationFn: () => updateDraft(serviceId, versionId, { data, title: requireTitle() }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] }),
   });
 
-  // Edit mode only: save the draft, then publish it (server re-validates → 422 surfaced).
+  // Save the draft, then publish it (server re-validates → 422 surfaced).
   const publish = useMutation({
     mutationFn: async () => {
-      if (serviceId === undefined || versionId === undefined) {
-        throw new Error('Missing service version to publish');
-      }
-      const title = typeof data.title === 'string' ? data.title.trim() : '';
-      if (title === '') {
-        throw new Error('A service title is required');
-      }
-      await updateDraft(serviceId, versionId, {
-        data,
-        title,
-        applications: toApplicationInputs(applications),
-      });
+      await updateDraft(serviceId, versionId, { data, title: requireTitle() });
       return publishVersion(serviceId, versionId);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] }),
@@ -130,15 +65,6 @@ export function ServiceEditor({
           }}
         />
       </div>
-      <div className="rounded-xl border border-border bg-card p-4">
-        <ApplicationsEditor
-          items={applications}
-          onChange={setApplications}
-          forms={forms}
-          formTypes={formTypes}
-          disabled={readonly}
-        />
-      </div>
       {readonly ? null : (
         <div className="flex items-center justify-end gap-3">
           {save.isError || publish.isError ? (
@@ -149,11 +75,9 @@ export function ServiceEditor({
           <Button type="button" variant="outline" disabled={busy} onClick={() => save.mutate()}>
             Save draft
           </Button>
-          {mode === 'edit' ? (
-            <Button type="button" disabled={busy} onClick={() => publish.mutate()}>
-              Save &amp; publish
-            </Button>
-          ) : null}
+          <Button type="button" disabled={busy} onClick={() => publish.mutate()}>
+            Save &amp; publish
+          </Button>
         </div>
       )}
     </div>

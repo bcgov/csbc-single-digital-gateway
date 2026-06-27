@@ -26,25 +26,14 @@ describe('header "New" button', () => {
     return { user, sheet: await screen.findByRole('dialog', { name: /create new/i }) };
   }
 
-  it('opens a side sheet: Service links out, Application is a button', async () => {
+  it('opens a side sheet with the Service option (applications are created within a service)', async () => {
     const { sheet } = await openSheet();
     expect(within(sheet).getByRole('link', { name: /Service/ })).toHaveAttribute(
       'href',
       '/app/riverton/services',
     );
-    expect(within(sheet).getByRole('button', { name: /Application/ })).toBeInTheDocument();
-  });
-
-  it('Application closes the sheet and opens the application-type modal', async () => {
-    const { user, sheet } = await openSheet();
-    await user.click(within(sheet).getByRole('button', { name: /Application/ }));
-
-    const modal = await screen.findByRole('dialog', { name: /new application/i });
-    expect(within(modal).getByText('Basic form')).toBeInTheDocument();
-    expect(within(modal).getByText('Multi-stage form')).toBeInTheDocument();
-    expect(within(modal).getByText(/External link/i)).toBeInTheDocument();
-    // The sheet is gone.
-    expect(screen.queryByRole('dialog', { name: /create new/i })).not.toBeInTheDocument();
+    // The "Application" option was removed — methods are created from the service detail.
+    expect(within(sheet).queryByRole('button', { name: /Application/ })).not.toBeInTheDocument();
   });
 
   it('disables the New button when there is no active workspace', async () => {
@@ -53,21 +42,5 @@ describe('header "New" button', () => {
 
     await screen.findByRole('dialog', { name: /create workspace/i });
     expect(screen.getByRole('button', { name: 'New' })).toBeDisabled();
-  });
-});
-
-describe('Applications page "New application" button', () => {
-  it('opens the application-type modal', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
-    renderApp('/app/riverton/applications');
-    const user = userEvent.setup();
-
-    await screen.findByText(/No applications yet/i);
-    await user.click(screen.getByRole('button', { name: /New application/i }));
-
-    const modal = await screen.findByRole('dialog', { name: /new application/i });
-    expect(within(modal).getByText('Basic form')).toBeInTheDocument();
-    expect(within(modal).getByText('Multi-stage form')).toBeInTheDocument();
-    expect(within(modal).getByText(/External link/i)).toBeInTheDocument();
   });
 });

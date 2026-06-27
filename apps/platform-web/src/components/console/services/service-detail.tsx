@@ -1,20 +1,27 @@
 import { Badge } from '@repo/ui/badge';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@repo/ui/breadcrumb';
 import { Button } from '@repo/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import {
   addServiceVersion,
   archiveVersion,
-  formTypesQueryOptions,
-  formsCatalogQueryOptions,
   serviceQueryOptions,
   serviceReferencesQueryOptions,
 } from '@/lib/services';
+import { useSetPageChrome } from '@/lib/page-chrome';
+import { ApplicationMethods } from './application-methods';
 import { ServiceEditor } from './service-editor';
-import type { ApplicationItem } from './applications-editor';
 
 const STATUS_VARIANT = { draft: 'secondary', published: 'default', archived: 'outline' } as const;
 
@@ -28,18 +35,12 @@ export function ServiceDetail() {
   const versions = data?.versions ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = versions.find((v) => v.id === selectedId) ?? versions[versions.length - 1];
-  const workspaceId = data?.service.workspaceId ?? '';
 
   const referencesQuery = useQuery({
     ...serviceReferencesQueryOptions(id, selected?.id ?? ''),
     enabled: selected !== undefined,
   });
   const references = referencesQuery.data ?? [];
-  const { data: forms = [] } = useQuery({
-    ...formsCatalogQueryOptions(workspaceId),
-    enabled: workspaceId !== '',
-  });
-  const { data: formTypes = [] } = useQuery(formTypesQueryOptions());
 
   const archive = useMutation({
     mutationFn: (versionId: string) => archiveVersion(id, versionId),
@@ -50,33 +51,37 @@ export function ServiceDetail() {
     onSuccess: invalidate,
   });
 
+  const serviceTitle = data?.service.title ?? 'Service';
+  // Drive the top bar (title/description) + the full-width breadcrumb bar for this nested page.
+  useSetPageChrome({
+    title: serviceTitle,
+    description: data?.service.description ? data.service.description : undefined,
+    breadcrumb: (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink render={<Link to="/app/$slug/services" params={{ slug }} />}>
+              Services
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{serviceTitle}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    ),
+  });
+
   if (!data) {
     return null;
   }
 
-  const applications: ApplicationItem[] = references
-    .filter((ref) => ref.relation === 'application_form')
-    .map((ref) => ({
-      key: ref.id,
-      id: ref.id,
-      label: ref.label ?? '',
-      position: ref.position,
-      mode: 'existing' as const,
-      versionId: ref.targetVersionId,
-    }));
+  const applicationRefs = references.filter((ref) => ref.relation === 'application_form');
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
-      <Link
-        to="/app/$slug/services"
-        params={{ slug }}
-        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        Services
-      </Link>
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">{data.service.title}</h2>
+      <div className="flex items-center justify-end gap-3">
         <Button
           size="sm"
           type="button"
@@ -132,23 +137,26 @@ export function ServiceDetail() {
         </Table>
       </div>
 
-      {/* Render the editor only once references have loaded — it seeds its state from
-          initialApplications at mount (keyed by version), so mounting before they arrive shows empty. */}
+      {/* Render the editor only once references have loaded (keyed by version id). Applications are
+          managed by the route-based methods list below, not the inline editor (manageApplications=false). */}
       {selected && referencesQuery.isSuccess ? (
-        <ServiceEditor
-          key={selected.id}
-          mode="edit"
-          slug={slug}
-          workspaceId={workspaceId}
-          serviceId={id}
-          versionId={selected.id}
-          definition={data.definition}
-          forms={forms}
-          formTypes={formTypes}
-          initialData={selected.data}
-          initialApplications={applications}
-          readonly={selected.status !== 'draft'}
-        />
+        <>
+          <ServiceEditor
+            key={selected.id}
+            serviceId={id}
+            versionId={selected.id}
+            definition={data.definition}
+            initialData={selected.data}
+            readonly={selected.status !== 'draft'}
+          />
+          <ApplicationMethods
+            slug={slug}
+            serviceId={id}
+            versionId={selected.id}
+            references={applicationRefs}
+            readonly={selected.status !== 'draft'}
+          />
+        </>
       ) : null}
     </div>
   );
