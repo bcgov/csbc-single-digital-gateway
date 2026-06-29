@@ -7,10 +7,13 @@ import {
 } from '@nestjs/common';
 import { type Database, users, workspaceMembers, workspaces } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, arrayOverlaps, asc, desc, eq, ilike, isNull, notInArray, or, sql } from 'drizzle-orm';
 import {
+  type AddMemberInput,
+  type AddableStaffQuery,
   type CreateWorkspaceInput,
   type ListWorkspacesQuery,
+  type StaffUserResponse,
   type TransferOwnershipInput,
   type UpdateMemberInput,
   type UpdateWorkspaceInput,
@@ -18,6 +21,7 @@ import {
   type WorkspaceMemberResponse,
   type WorkspaceResponse,
   type WorkspaceRole,
+  toStaffUserDto,
   toWorkspaceDto,
   toWorkspaceMemberDto,
 } from '../dtos/workspace.dtos';
@@ -81,6 +85,108 @@ export class WorkspacesService {
       .where(and(eq(workspaceMembers.workspaceId, id), isNull(users.deletedAt)))
       .orderBy(asc(sql`${workspaceMembers.role} <> 'admin'`), asc(users.displayName));
     return { items: rows.map((row) => toWorkspaceMemberDto(row, workspace.ownerUserId)) };
+  }
+
+  /** Staff users who can be added to the workspace (admin only): platform-audience users
+   * (`roles` overlaps {staff,admin}), not soft-deleted, NOT already a member, matched by name/email.
+   * Capped at 20, name-ordered. Empty `q` returns the first page. */
+  async listAddableStaff(
+    userId: string,
+    workspaceId: string,
+    query: AddableStaffQuery,
+  ): Promise<{ items: StaffUserResponse[] }> {
+    await this.requireAdmin(userId, workspaceId);
+    const memberIds = this.db
+      .select({ id: workspaceMembers.userId })
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.workspaceId, workspaceId));
+    const conditions = [
+      arrayOverlaps(users.roles, ['staff', 'admin']),
+      isNull(users.deletedAt),
+      notInArray(users.id, memberIds),
+    ];
+    const q = query.q?.trim();
+    if (q) {
+      const search = or(ilike(users.displayName, `%${q}%`), ilike(users.email, `%${q}%`));
+      if (search) {
+        conditions.push(search);
+      }
+    }
+    const rows = await this.db
+      .select({ id: users.id, displayName: users.displayName, email: users.email })
+      .from(users)
+      .where(and(...conditions))
+      .orderBy(asc(users.displayName))
+      .limit(20);
+    return { items: rows.map(toStaffUserDto) };
+  }
+
+  /** Add an existing staff user as a member with a chosen role (admin only). Re-validates the
+   * target is an eligible staff user (422) and isn't already a member (409). */
+  async addMember(
+    userId: string,
+    workspaceId: string,
+    dto: AddMemberInput,
+  ): Promise<WorkspaceMemberResponse> {
+    const { workspace } = await this.requireAdmin(userId, workspaceId);
+    const targetRows = await this.db
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        email: users.email,
+        roles: users.roles,
+      })
+      .from(users)
+      .where(and(eq(users.id, dto.userId), isNull(users.deletedAt)))
+      .limit(1);
+    const target = targetRows[0];
+    const isStaff =
+      target !== undefined && target.roles.some((r) => r === 'staff' || r === 'admin');
+    if (target === undefined || !isStaff) {
+      throw new UnprocessableEntityException('User is not an addable staff member');
+    }
+    const existing = await this.db
+      .select({ id: workspaceMembers.id })
+      .from(workspaceMembers)
+      .where(
+        and(eq(workspaceMembers.userId, dto.userId), eq(workspaceMembers.workspaceId, workspaceId)),
+      )
+      .limit(1);
+    if (existing[0] !== undefined) {
+      throw new ConflictException('User is already a member');
+    }
+    let inserted;
+    try {
+      inserted = await this.db
+        .insert(workspaceMembers)
+        .values({ userId: dto.userId, workspaceId, role: dto.role })
+        .returning({
+          id: workspaceMembers.id,
+          userId: workspaceMembers.userId,
+          role: workspaceMembers.role,
+          status: workspaceMembers.status,
+          createdAt: workspaceMembers.createdAt,
+        });
+    } catch (error) {
+      // Unique (user_id, workspace_id) violation — lost a race against a concurrent add.
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === '23505'
+      ) {
+        throw new ConflictException('User is already a member');
+      }
+      throw error;
+    }
+    const row = inserted[0];
+    if (row === undefined) {
+      throw new Error('member insert returned no row');
+    }
+    return toWorkspaceMemberDto(
+      { ...row, displayName: target.displayName, email: target.email },
+      workspace.ownerUserId,
+    );
   }
 
   /** Change a member's role and/or status (admin only). Refuses to leave a workspace with no active

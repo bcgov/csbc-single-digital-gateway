@@ -3,13 +3,17 @@ import { ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
+  AddMemberDto,
+  AddableStaffQueryDto,
   CreateWorkspaceDto,
   ListWorkspacesQueryDto,
+  StaffUserListDto,
   TransferOwnershipDto,
   UpdateWorkspaceDto,
   UpdateMemberDto,
   WorkspaceDto,
   WorkspaceListDto,
+  WorkspaceMemberDto,
   WorkspaceMemberListDto,
 } from '../dtos/workspace.dtos';
 import { WorkspacesService } from '../services/workspaces.service';
@@ -52,6 +56,22 @@ export class WorkspacesV1Controller {
   @ZodSerializerDto(WorkspaceMemberListDto)
   listMembers(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.listMembers(user.id, id);
+  }
+
+  @Get(':id/addable-staff')
+  @ZodSerializerDto(StaffUserListDto)
+  listAddableStaff(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query() query: AddableStaffQueryDto,
+  ) {
+    return this.service.listAddableStaff(user.id, id, query);
+  }
+
+  @Post(':id/members')
+  @ZodSerializerDto(WorkspaceMemberDto)
+  addMember(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: AddMemberDto) {
+    return this.service.addMember(user.id, id, body);
   }
 
   @Patch(':id/members/:memberId')

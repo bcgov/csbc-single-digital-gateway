@@ -46,6 +46,21 @@ export const transferOwnershipSchema = z.object({
 export class TransferOwnershipDto extends createZodDto(transferOwnershipSchema) {}
 export type TransferOwnershipInput = z.infer<typeof transferOwnershipSchema>;
 
+/** Add an existing staff user to the workspace with a chosen role (admin only). */
+export const addMemberSchema = z.object({
+  userId: z.uuid(),
+  role: z.enum(['admin', 'member']),
+});
+export class AddMemberDto extends createZodDto(addMemberSchema) {}
+export type AddMemberInput = z.infer<typeof addMemberSchema>;
+
+/** Query for the addable-staff search; `q` filters by name/email (empty → first page). */
+export const addableStaffQuerySchema = z.object({
+  q: z.string().trim().max(255).optional(),
+});
+export class AddableStaffQueryDto extends createZodDto(addableStaffQuerySchema) {}
+export type AddableStaffQuery = z.infer<typeof addableStaffQuerySchema>;
+
 // ── Response schemas + DTOs (serialized by @ZodSerializerDto + the global interceptor) ──────────
 
 /** Wire shape returned to clients. `role` is the caller's membership role in this workspace. */
@@ -88,6 +103,26 @@ export type WorkspaceMemberResponse = z.infer<typeof workspaceMemberSchema>;
 
 export const workspaceMemberListSchema = z.object({ items: z.array(workspaceMemberSchema) });
 export class WorkspaceMemberListDto extends createZodDto(workspaceMemberListSchema) {}
+
+/** A staff user eligible to be added to a workspace (addable-staff search result). */
+export const staffUserSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  email: z.string().nullable(),
+});
+export class StaffUserDto extends createZodDto(staffUserSchema) {}
+export type StaffUserResponse = z.infer<typeof staffUserSchema>;
+
+export const staffUserListSchema = z.object({ items: z.array(staffUserSchema) });
+export class StaffUserListDto extends createZodDto(staffUserListSchema) {}
+
+export function toStaffUserDto(row: {
+  id: string;
+  displayName: string;
+  email: string | null;
+}): StaffUserResponse {
+  return { id: row.id, displayName: row.displayName, email: row.email };
+}
 
 export function toWorkspaceMemberDto(
   row: {

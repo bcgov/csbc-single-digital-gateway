@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addMemberSchema,
+  addableStaffQuerySchema,
   createWorkspaceSchema,
   listWorkspacesQuerySchema,
   transferOwnershipSchema,
   updateWorkspaceSchema,
 } from '../src/modules/workspaces/dtos/workspace.dtos';
+
+const UUID = '11111111-1111-4111-8111-111111111111';
 
 describe('workspace DTO schemas', () => {
   describe('createWorkspaceSchema', () => {
@@ -54,6 +58,36 @@ describe('workspace DTO schemas', () => {
       expect(transferOwnershipSchema.parse({ userId: id, role: 'admin' })).not.toHaveProperty(
         'role',
       );
+    });
+  });
+
+  describe('addMemberSchema', () => {
+    it('accepts a valid userId with admin or member role', () => {
+      expect(addMemberSchema.parse({ userId: UUID, role: 'member' })).toEqual({
+        userId: UUID,
+        role: 'member',
+      });
+      expect(addMemberSchema.parse({ userId: UUID, role: 'admin' })).toEqual({
+        userId: UUID,
+        role: 'admin',
+      });
+    });
+
+    it('rejects a bad userId, missing role, or unknown role', () => {
+      expect(addMemberSchema.safeParse({ userId: 'nope', role: 'member' }).success).toBe(false);
+      expect(addMemberSchema.safeParse({ userId: UUID }).success).toBe(false);
+      expect(addMemberSchema.safeParse({ userId: UUID, role: 'owner' }).success).toBe(false);
+    });
+  });
+
+  describe('addableStaffQuerySchema', () => {
+    it('accepts an optional, trimmed q', () => {
+      expect(addableStaffQuerySchema.parse({})).toEqual({});
+      expect(addableStaffQuerySchema.parse({ q: '  ann ' })).toEqual({ q: 'ann' });
+    });
+
+    it('rejects a q longer than 255 chars', () => {
+      expect(addableStaffQuerySchema.safeParse({ q: 'a'.repeat(256) }).success).toBe(false);
     });
   });
 

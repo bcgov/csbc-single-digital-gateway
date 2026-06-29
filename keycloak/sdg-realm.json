@@ -26,6 +26,15 @@
       "firstName": "Test",
       "lastName": "User",
       "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+    },
+    {
+      "username": "staff2",
+      "enabled": true,
+      "email": "staff2@example.com",
+      "emailVerified": true,
+      "firstName": "Staff",
+      "lastName": "Two",
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }]
     }
   ]
 }

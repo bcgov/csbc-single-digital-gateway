@@ -77,6 +77,11 @@ describe('workspaces (e2e)', () => {
     expect(
       (await http().post('/v1/workspaces/abc/transfer-ownership').send({ userId: 'u2' })).status,
     ).toBe(401);
+    expect((await http().get('/v1/workspaces/abc/addable-staff')).status).toBe(401);
+    expect(
+      (await http().post('/v1/workspaces/abc/members').send({ userId: 'u2', role: 'member' }))
+        .status,
+    ).toBe(401);
   });
 
   it('400s an invalid create body for an authenticated caller', async () => {
@@ -86,6 +91,16 @@ describe('workspaces (e2e)', () => {
     expect(
       (await http().post('/v1/workspaces').set('x-test-user', seedUser).send({ name: '' })).status,
     ).toBe(400);
+  });
+
+  it('400s an invalid add-member body for an authenticated caller', async () => {
+    const post = (body: object) =>
+      http().post('/v1/workspaces/abc/members').set('x-test-user', seedUser).send(body);
+    expect((await post({})).status).toBe(400); // missing userId + role
+    expect((await post({ userId: 'not-a-uuid', role: 'member' })).status).toBe(400);
+    expect(
+      (await post({ userId: '11111111-1111-4111-8111-111111111111', role: 'owner' })).status,
+    ).toBe(400); // bad role
   });
 
   it('400s an invalid transfer-ownership body for an authenticated caller', async () => {
