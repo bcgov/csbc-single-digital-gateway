@@ -1,3 +1,4 @@
+import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
@@ -36,9 +37,11 @@ function useShellProps() {
   };
 }
 
-/** Basic-form method editor — seeded from the loaded form (gated on success at the parent). */
+/** Basic-form method editor — editable when the form is a draft, otherwise a read-only preview. */
 function BasicEdit({ form }: { form: FormWithVersion }) {
   const shell = useShellProps();
+  const status = form.version.status;
+  const readOnly = status !== 'draft';
   const [value, setValue] = useState<FormDefinition>(
     form.version.schema as unknown as FormDefinition,
   );
@@ -48,10 +51,25 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
       updateFormSchema(form.form.id, form.version.id, { definition: value, title: titleOf(value) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['forms', 'detail', form.form.id] }),
   });
+  if (readOnly) {
+    return (
+      <ApplicationShell {...shell} label={form.form.title} status={status} readOnly>
+        <div className="h-full overflow-auto p-4">
+          <JsonForms
+            schema={value.schema as JsonSchema}
+            uischema={value.uischema as unknown as UISchemaElement}
+            data={{}}
+            readonly
+          />
+        </div>
+      </ApplicationShell>
+    );
+  }
   return (
     <ApplicationShell
       {...shell}
       label={form.form.title}
+      status={status}
       onSave={() => save.mutate()}
       saving={save.isPending}
       error={save.error}
@@ -61,9 +79,31 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
   );
 }
 
-/** Multi-stage method editor — the form name/description are edited in the builder's canvas panel. */
+/** A read-only outline of a multi-stage form (stages → pages). */
+function StageOutline({ def }: { def: MultiStageDefinition }) {
+  return (
+    <ol className="flex flex-col gap-3 p-4">
+      {def.stages.map((stage, index) => (
+        <li key={stage.id}>
+          <p className="text-sm font-medium">
+            {index + 1}. {stage.name}
+          </p>
+          <ul className="ml-5 list-disc text-sm text-muted-foreground">
+            {stage.pages.map((page) => (
+              <li key={page.id}>{page.name}</li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** Multi-stage method editor — editable when the form is a draft, otherwise a read-only outline. */
 function StageEdit({ form }: { form: FormWithVersion }) {
   const shell = useShellProps();
+  const status = form.version.status;
+  const readOnly = status !== 'draft';
   // The stored schema may be a barebones template ({ stages } with no edges/name) — normalize so the
   // builder + stage-model mutators always get complete arrays (and a name/description).
   const [value, setValue] = useState<MultiStageDefinition>(() =>
@@ -78,10 +118,20 @@ function StageEdit({ form }: { form: FormWithVersion }) {
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['forms', 'detail', form.form.id] }),
   });
+  if (readOnly) {
+    return (
+      <ApplicationShell {...shell} label={value.name || form.form.title} status={status} readOnly>
+        <div className="h-full overflow-auto">
+          <StageOutline def={value} />
+        </div>
+      </ApplicationShell>
+    );
+  }
   return (
     <ApplicationShell
       {...shell}
       label={value.name || form.form.title}
+      status={status}
       onSave={() => save.mutate()}
       saving={save.isPending}
       error={save.error}
