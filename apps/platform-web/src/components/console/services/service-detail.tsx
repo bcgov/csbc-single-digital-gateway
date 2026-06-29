@@ -9,25 +9,24 @@ import {
 } from '@repo/ui/breadcrumb';
 import { Button } from '@repo/ui/button';
 import { ButtonGroup } from '@repo/ui/button-group';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@repo/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronDown, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
   addServiceVersion,
+  publishVersion,
   serviceQueryOptions,
   serviceReferencesQueryOptions,
+  updateDraft,
 } from '@/lib/services';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import { ApplicationMethods } from './application-methods';
 import { ServiceEditor } from './service-editor';
 import { ServiceMenu } from './service-menu';
+import { ServicePublishModal } from './service-publish-modal';
+import { VersionPicker } from './version-picker';
 
 /** Service detail — the version is in the URL (`…/versions/:versionId`). Header carries a version
  * picker, a "Go to current" shortcut when off the latest, Create-next-version, and the ⋯ menu. */
@@ -94,6 +93,47 @@ export function ServiceDetail({
     },
   });
 
+  // Editable form state for the selected version (lifted here so Save draft / Publish live in the header).
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [formBaseline, setFormBaseline] = useState<Record<string, unknown>>({});
+  const [publishOpen, setPublishOpen] = useState(false);
+  useEffect(() => {
+    setFormData(selected?.data ?? {});
+    setFormBaseline(selected?.data ?? {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reseed only when the version changes
+  }, [selected?.id]);
+  const dirty = JSON.stringify(formData) !== JSON.stringify(formBaseline);
+
+  const save = useMutation({
+    mutationFn: () => {
+      const title = typeof formData.title === 'string' ? formData.title.trim() : '';
+      if (title === '') {
+        throw new Error('A service title is required');
+      }
+      if (!selected) {
+        throw new Error('No version selected');
+      }
+      return updateDraft(id, selected.id, { data: formData, title });
+    },
+    onSuccess: async () => {
+      setFormBaseline(formData);
+      await invalidate();
+    },
+  });
+  const publish = useMutation({
+    mutationFn: () => {
+      if (!selected) {
+        throw new Error('No version selected');
+      }
+      return publishVersion(id, selected.id);
+    },
+    onSuccess: async () => {
+      setPublishOpen(false);
+      await invalidate();
+    },
+  });
+  const busy = save.isPending || publish.isPending;
+
   const serviceTitle = data?.service.title ?? 'Service';
   // Drive the top bar (title/description) + the full-width breadcrumb bar for this nested page.
   useSetPageChrome({
@@ -125,59 +165,72 @@ export function ServiceDetail({
 
   const applicationRefs = references.filter((ref) => ref.relation === 'application_form');
   const isLatest = selected.id === latest?.id;
+  const readonly = selected.status !== 'draft';
+  const publishApplications = applicationRefs.map((ref) => ({
+    title: ref.targetTitle,
+    hasStructure: ref.hasStructure,
+  }));
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
       <div className="flex items-center justify-end gap-2">
-        <div className="flex items-center gap-2">
-          <ButtonGroup>
-            {/* Current + published → start a new draft to edit; mutually exclusive with Go to current. */}
-            {isLatest && latest?.status === 'published' ? (
-              <Button
-                size="sm"
-                type="button"
-                disabled={addVersion.isPending}
-                onClick={() => addVersion.mutate()}
-              >
-                <Pencil className="size-4" aria-hidden />
-                Edit service details
-              </Button>
-            ) : null}
-            {!isLatest && latest ? (
-              <Button size="sm" variant="outline" type="button" onClick={goToCurrent}>
-                Go to current
-              </Button>
-            ) : null}
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button size="sm" variant="outline" type="button" />}>
-                Version v{selected.version}
-                <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                {versions.toReversed().map((version) => (
-                  <DropdownMenuItem
-                    key={version.id}
-                    className={version.id === selected.id ? 'font-semibold' : undefined}
-                    onClick={() => goToVersion(version.id)}
-                  >
-                    v{version.version}
-                    <span className="ml-auto text-xs text-muted-foreground">{version.status}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </ButtonGroup>
-          <ServiceMenu
-            serviceId={id}
-            versionId={selected.id}
-            canDiscard={selected.status === 'draft' && versions.length > 1}
-            hasSubmissions={data.hasSubmissions}
-            archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
-            latestPublished={latest?.publishedAt != null}
-            onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
-            onDiscarded={() => navTab('details')}
-          />
-        </div>
+        {save.isError ? (
+          <p role="alert" className="mr-auto text-sm text-destructive">
+            {save.error.message}
+          </p>
+        ) : null}
+        {/* Editing a draft → separate Save draft / Publish service, left of the version controls. */}
+        {readonly ? null : (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              disabled={!dirty || busy}
+              onClick={() => save.mutate()}
+            >
+              Save draft
+            </Button>
+            <Button
+              size="sm"
+              type="button"
+              disabled={dirty || busy}
+              onClick={() => setPublishOpen(true)}
+            >
+              Publish service
+            </Button>
+          </>
+        )}
+        <ButtonGroup>
+          {/* Current + published → start a new draft to edit; mutually exclusive with Go to current. */}
+          {isLatest && latest?.status === 'published' ? (
+            <Button
+              size="sm"
+              type="button"
+              disabled={addVersion.isPending}
+              onClick={() => addVersion.mutate()}
+            >
+              <Pencil className="size-4" aria-hidden />
+              Edit service details
+            </Button>
+          ) : null}
+          {!isLatest && latest ? (
+            <Button size="sm" variant="outline" type="button" onClick={goToCurrent}>
+              Go to current
+            </Button>
+          ) : null}
+          <VersionPicker versions={versions} selectedId={selected.id} onSelect={goToVersion} />
+        </ButtonGroup>
+        <ServiceMenu
+          serviceId={id}
+          versionId={selected.id}
+          canDiscard={selected.status === 'draft' && versions.length > 1}
+          hasSubmissions={data.hasSubmissions}
+          archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
+          latestPublished={latest?.publishedAt != null}
+          onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
+          onDiscarded={() => navTab('details')}
+        />
       </div>
 
       <Tabs
@@ -196,19 +249,12 @@ export function ServiceDetail({
         </TabsList>
 
         <TabsContent value="details" className="flex flex-col gap-4">
-          {/* Render the editor only once references have loaded (keyed by version id). */}
           {referencesQuery.isSuccess ? (
             <ServiceEditor
-              key={selected.id}
-              serviceId={id}
-              versionId={selected.id}
               definition={data.definition}
-              initialData={selected.data}
-              readonly={selected.status !== 'draft'}
-              applications={applicationRefs.map((ref) => ({
-                title: ref.targetTitle,
-                hasStructure: ref.hasStructure,
-              }))}
+              data={formData}
+              onChange={setFormData}
+              readonly={readonly}
             />
           ) : null}
         </TabsContent>
@@ -220,11 +266,20 @@ export function ServiceDetail({
               serviceId={id}
               versionId={selected.id}
               references={applicationRefs}
-              readonly={selected.status !== 'draft'}
+              readonly={readonly}
             />
           ) : null}
         </TabsContent>
       </Tabs>
+
+      <ServicePublishModal
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        applications={publishApplications}
+        onConfirm={() => publish.mutate()}
+        publishing={publish.isPending}
+        error={publish.error}
+      />
     </div>
   );
 }
