@@ -50,6 +50,42 @@ export const workspaceListSchema = z.object({
 export class WorkspaceListDto extends createZodDto(workspaceListSchema) {}
 export type WorkspaceListResponse = z.infer<typeof workspaceListSchema>;
 
+/** A workspace member: the membership joined to the user's profile. */
+export const workspaceMemberSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  role: z.enum(['admin', 'member']),
+  status: z.enum(['active', 'suspended']),
+  displayName: z.string(),
+  email: z.string().nullable(),
+  joinedAt: z.string(),
+});
+export class WorkspaceMemberDto extends createZodDto(workspaceMemberSchema) {}
+export type WorkspaceMemberResponse = z.infer<typeof workspaceMemberSchema>;
+
+export const workspaceMemberListSchema = z.object({ items: z.array(workspaceMemberSchema) });
+export class WorkspaceMemberListDto extends createZodDto(workspaceMemberListSchema) {}
+
+export function toWorkspaceMemberDto(row: {
+  id: string;
+  userId: string;
+  role: WorkspaceMemberResponse['role'];
+  status: WorkspaceMemberResponse['status'];
+  displayName: string;
+  email: string | null;
+  createdAt: Date;
+}): WorkspaceMemberResponse {
+  return {
+    id: row.id,
+    userId: row.userId,
+    role: row.role,
+    status: row.status,
+    displayName: row.displayName,
+    email: row.email,
+    joinedAt: row.createdAt.toISOString(),
+  };
+}
+
 /** Map a workspace row + the caller's role to the wire shape. */
 export function toWorkspaceDto(
   row: { id: string; slug: string; name: string; createdAt: Date },

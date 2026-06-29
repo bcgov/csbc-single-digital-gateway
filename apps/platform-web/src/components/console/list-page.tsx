@@ -20,14 +20,21 @@ interface ListPageProps {
   actions?: ReactNode;
   emptyTitle: string;
   emptyDescription?: string;
+  /** When present, rendered in the card instead of the empty state. */
+  children?: ReactNode;
 }
 
 /**
- * Shared scaffold for the console's list screens. In this v1 every list renders its empty state —
- * there is no backend yet — with the prototype's toolbar chips and primary action kept as inert
- * placeholders so the layout matches the design.
+ * Shared scaffold for the console's list screens: a toolbar/actions row over a bordered card. With
+ * `children` it renders content (e.g. a table); without, it shows the empty state.
  */
-export function ListPage({ toolbar, actions, emptyTitle, emptyDescription }: ListPageProps) {
+export function ListPage({
+  toolbar,
+  actions,
+  emptyTitle,
+  emptyDescription,
+  children,
+}: ListPageProps) {
   return (
     <div className="mx-auto flex max-w-[1320px] flex-col gap-4">
       {toolbar || actions ? (
@@ -36,13 +43,15 @@ export function ListPage({ toolbar, actions, emptyTitle, emptyDescription }: Lis
           <div className="flex items-center gap-2">{actions}</div>
         </div>
       ) : null}
-      <div className="rounded-xl border border-border bg-card">
-        <Empty className="py-16">
-          <EmptyHeader>
-            <EmptyTitle>{emptyTitle}</EmptyTitle>
-            {emptyDescription ? <EmptyDescription>{emptyDescription}</EmptyDescription> : null}
-          </EmptyHeader>
-        </Empty>
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        {children ?? (
+          <Empty className="py-16">
+            <EmptyHeader>
+              <EmptyTitle>{emptyTitle}</EmptyTitle>
+              {emptyDescription ? <EmptyDescription>{emptyDescription}</EmptyDescription> : null}
+            </EmptyHeader>
+          </Empty>
+        )}
       </div>
     </div>
   );

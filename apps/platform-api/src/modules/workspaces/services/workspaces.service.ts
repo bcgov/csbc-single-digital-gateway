@@ -1,15 +1,17 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { type Database, workspaceMembers, workspaces } from '@repo/database';
+import { type Database, users, workspaceMembers, workspaces } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import {
   type CreateWorkspaceInput,
   type ListWorkspacesQuery,
   type UpdateWorkspaceInput,
   type WorkspaceListResponse,
+  type WorkspaceMemberResponse,
   type WorkspaceResponse,
   type WorkspaceRole,
   toWorkspaceDto,
+  toWorkspaceMemberDto,
 } from '../dtos/workspace.dtos';
 
 const workspaceCols = {
@@ -50,6 +52,26 @@ export class WorkspacesService {
   async get(userId: string, id: string): Promise<WorkspaceResponse> {
     const { workspace, role } = await this.requireMembership(userId, id);
     return toWorkspaceDto(workspace, role);
+  }
+
+  /** List a workspace's members (any member may view). Admins first, then by display name. */
+  async listMembers(userId: string, id: string): Promise<{ items: WorkspaceMemberResponse[] }> {
+    await this.requireMembership(userId, id);
+    const rows = await this.db
+      .select({
+        id: workspaceMembers.id,
+        userId: workspaceMembers.userId,
+        role: workspaceMembers.role,
+        status: workspaceMembers.status,
+        displayName: users.displayName,
+        email: users.email,
+        createdAt: workspaceMembers.createdAt,
+      })
+      .from(workspaceMembers)
+      .innerJoin(users, eq(users.id, workspaceMembers.userId))
+      .where(and(eq(workspaceMembers.workspaceId, id), isNull(users.deletedAt)))
+      .orderBy(asc(sql`${workspaceMembers.role} <> 'admin'`), asc(users.displayName));
+    return { items: rows.map(toWorkspaceMemberDto) };
   }
 
   /** Resolve a workspace by slug for a member; 404 if it doesn't exist or the caller isn't a member. */

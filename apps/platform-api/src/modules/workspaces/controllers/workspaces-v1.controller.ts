@@ -8,6 +8,7 @@ import {
   UpdateWorkspaceDto,
   WorkspaceDto,
   WorkspaceListDto,
+  WorkspaceMemberListDto,
 } from '../dtos/workspace.dtos';
 import { WorkspacesService } from '../services/workspaces.service';
 
@@ -43,6 +44,12 @@ export class WorkspacesV1Controller {
   @ZodSerializerDto(WorkspaceDto)
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.get(user.id, id);
+  }
+
+  @Get(':id/members')
+  @ZodSerializerDto(WorkspaceMemberListDto)
+  listMembers(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.service.listMembers(user.id, id);
   }
 
   @Patch(':id')

@@ -79,6 +79,36 @@ export function workspaceBySlugQueryOptions(slug: string) {
   });
 }
 
+/** A member of a workspace — the membership joined to the user's profile. */
+export interface WorkspaceMember {
+  id: string;
+  userId: string;
+  role: 'admin' | 'member';
+  status: 'active' | 'suspended';
+  displayName: string;
+  email: string | null;
+  joinedAt: string;
+}
+
+/** List a workspace's members (admins first, then by name). */
+export function workspaceMembersQueryOptions(workspaceId: string) {
+  return queryOptions({
+    queryKey: ['workspaces', 'members', workspaceId] as const,
+    queryFn: async (): Promise<WorkspaceMember[]> => {
+      const res = await fetch(
+        `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/members`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) {
+        throw new Error(`GET /v1/workspaces/:id/members failed: ${res.status}`);
+      }
+      const envelope = (await res.json()) as { items: WorkspaceMember[] };
+      return envelope.items;
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
 /** Create a workspace (the caller becomes its admin member, server-side). */
 export async function createWorkspace(name: string): Promise<Workspace> {
   const res = await fetch(`${BFF_ORIGIN}/v1/workspaces`, {
