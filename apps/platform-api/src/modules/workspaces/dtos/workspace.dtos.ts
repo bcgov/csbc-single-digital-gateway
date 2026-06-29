@@ -39,6 +39,13 @@ export const updateMemberSchema = z
 export class UpdateMemberDto extends createZodDto(updateMemberSchema) {}
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
 
+/** Transfer workspace ownership to another member (owner only). */
+export const transferOwnershipSchema = z.object({
+  userId: z.uuid(),
+});
+export class TransferOwnershipDto extends createZodDto(transferOwnershipSchema) {}
+export type TransferOwnershipInput = z.infer<typeof transferOwnershipSchema>;
+
 // ── Response schemas + DTOs (serialized by @ZodSerializerDto + the global interceptor) ──────────
 
 /** Wire shape returned to clients. `role` is the caller's membership role in this workspace. */
@@ -47,6 +54,8 @@ export const workspaceSchema = z.object({
   slug: z.string(),
   name: z.string(),
   role: z.enum(['admin', 'member']),
+  /** The user id of the workspace owner (creator, or whoever it was transferred to). */
+  ownerId: z.string(),
   createdAt: z.string(),
 });
 export class WorkspaceDto extends createZodDto(workspaceSchema) {}
@@ -70,6 +79,8 @@ export const workspaceMemberSchema = z.object({
   status: z.enum(['active', 'suspended']),
   displayName: z.string(),
   email: z.string().nullable(),
+  /** True when this member is the workspace owner — their role/status cannot be changed. */
+  isOwner: z.boolean(),
   joinedAt: z.string(),
 });
 export class WorkspaceMemberDto extends createZodDto(workspaceMemberSchema) {}
@@ -78,15 +89,18 @@ export type WorkspaceMemberResponse = z.infer<typeof workspaceMemberSchema>;
 export const workspaceMemberListSchema = z.object({ items: z.array(workspaceMemberSchema) });
 export class WorkspaceMemberListDto extends createZodDto(workspaceMemberListSchema) {}
 
-export function toWorkspaceMemberDto(row: {
-  id: string;
-  userId: string;
-  role: WorkspaceMemberResponse['role'];
-  status: WorkspaceMemberResponse['status'];
-  displayName: string;
-  email: string | null;
-  createdAt: Date;
-}): WorkspaceMemberResponse {
+export function toWorkspaceMemberDto(
+  row: {
+    id: string;
+    userId: string;
+    role: WorkspaceMemberResponse['role'];
+    status: WorkspaceMemberResponse['status'];
+    displayName: string;
+    email: string | null;
+    createdAt: Date;
+  },
+  ownerId: string,
+): WorkspaceMemberResponse {
   return {
     id: row.id,
     userId: row.userId,
@@ -94,13 +108,14 @@ export function toWorkspaceMemberDto(row: {
     status: row.status,
     displayName: row.displayName,
     email: row.email,
+    isOwner: row.userId === ownerId,
     joinedAt: row.createdAt.toISOString(),
   };
 }
 
 /** Map a workspace row + the caller's role to the wire shape. */
 export function toWorkspaceDto(
-  row: { id: string; slug: string; name: string; createdAt: Date },
+  row: { id: string; slug: string; name: string; ownerUserId: string; createdAt: Date },
   role: WorkspaceRole,
 ): WorkspaceResponse {
   return {
@@ -108,6 +123,7 @@ export function toWorkspaceDto(
     slug: row.slug,
     name: row.name,
     role,
+    ownerId: row.ownerUserId,
     createdAt: row.createdAt.toISOString(),
   };
 }

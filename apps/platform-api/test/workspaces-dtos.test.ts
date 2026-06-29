@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createWorkspaceSchema,
   listWorkspacesQuerySchema,
+  transferOwnershipSchema,
   updateWorkspaceSchema,
 } from '../src/modules/workspaces/dtos/workspace.dtos';
 
@@ -33,6 +34,26 @@ describe('workspace DTO schemas', () => {
     it('accepts a valid name and rejects an empty one', () => {
       expect(updateWorkspaceSchema.parse({ name: 'Renamed' })).toEqual({ name: 'Renamed' });
       expect(updateWorkspaceSchema.safeParse({ name: '' }).success).toBe(false);
+    });
+  });
+
+  describe('transferOwnershipSchema', () => {
+    it('accepts a valid uuid userId', () => {
+      const id = '11111111-1111-4111-8111-111111111111';
+      expect(transferOwnershipSchema.parse({ userId: id })).toEqual({ userId: id });
+    });
+
+    it('rejects a missing or non-uuid userId', () => {
+      expect(transferOwnershipSchema.safeParse({}).success).toBe(false);
+      expect(transferOwnershipSchema.safeParse({ userId: 'not-a-uuid' }).success).toBe(false);
+      expect(transferOwnershipSchema.safeParse({ userId: '' }).success).toBe(false);
+    });
+
+    it('strips unknown keys', () => {
+      const id = '22222222-2222-4222-8222-222222222222';
+      expect(transferOwnershipSchema.parse({ userId: id, role: 'admin' })).not.toHaveProperty(
+        'role',
+      );
     });
   });
 

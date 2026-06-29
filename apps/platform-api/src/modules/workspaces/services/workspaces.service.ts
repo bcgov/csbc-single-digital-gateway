@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { type Database, users, workspaceMembers, workspaces } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
@@ -10,6 +11,7 @@ import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import {
   type CreateWorkspaceInput,
   type ListWorkspacesQuery,
+  type TransferOwnershipInput,
   type UpdateMemberInput,
   type UpdateWorkspaceInput,
   type WorkspaceListResponse,
@@ -24,6 +26,7 @@ const workspaceCols = {
   id: workspaces.id,
   slug: workspaces.slug,
   name: workspaces.name,
+  ownerUserId: workspaces.ownerUserId,
   createdAt: workspaces.createdAt,
 };
 
@@ -62,7 +65,7 @@ export class WorkspacesService {
 
   /** List a workspace's members (any member may view). Admins first, then by display name. */
   async listMembers(userId: string, id: string): Promise<{ items: WorkspaceMemberResponse[] }> {
-    await this.requireMembership(userId, id);
+    const { workspace } = await this.requireMembership(userId, id);
     const rows = await this.db
       .select({
         id: workspaceMembers.id,
@@ -77,7 +80,7 @@ export class WorkspacesService {
       .innerJoin(users, eq(users.id, workspaceMembers.userId))
       .where(and(eq(workspaceMembers.workspaceId, id), isNull(users.deletedAt)))
       .orderBy(asc(sql`${workspaceMembers.role} <> 'admin'`), asc(users.displayName));
-    return { items: rows.map(toWorkspaceMemberDto) };
+    return { items: rows.map((row) => toWorkspaceMemberDto(row, workspace.ownerUserId)) };
   }
 
   /** Change a member's role and/or status (admin only). Refuses to leave a workspace with no active
@@ -88,7 +91,7 @@ export class WorkspacesService {
     memberId: string,
     dto: UpdateMemberInput,
   ): Promise<void> {
-    await this.requireAdmin(userId, workspaceId);
+    const { workspace } = await this.requireAdmin(userId, workspaceId);
     const rows = await this.db
       .select()
       .from(workspaceMembers)
@@ -97,6 +100,10 @@ export class WorkspacesService {
     const target = rows[0];
     if (target === undefined) {
       throw new NotFoundException('Member not found');
+    }
+    // The owner's role and status are immutable — for everyone, including the owner themselves.
+    if (target.userId === workspace.ownerUserId) {
+      throw new ForbiddenException("The owner's role and status cannot be changed");
     }
     const nextRole = dto.role ?? target.role;
     const nextStatus = dto.status ?? target.status;
@@ -144,7 +151,7 @@ export class WorkspacesService {
     return this.db.transaction(async (tx) => {
       const inserted = await tx
         .insert(workspaces)
-        .values({ name: dto.name })
+        .values({ name: dto.name, ownerUserId: userId })
         .returning(workspaceCols);
       const workspace = inserted[0];
       if (workspace === undefined) {
@@ -177,6 +184,48 @@ export class WorkspacesService {
     await this.db.delete(workspaces).where(eq(workspaces.id, id));
   }
 
+  /** Transfer ownership to another member. Owner-only (403); the new owner must already be an
+   * active member (422). In one tx the new owner is promoted to active admin and `owner_user_id`
+   * is reassigned; the previous owner keeps their admin membership (no demotion). */
+  async transferOwnership(
+    userId: string,
+    workspaceId: string,
+    dto: TransferOwnershipInput,
+  ): Promise<WorkspaceResponse> {
+    const { workspace } = await this.requireMembership(userId, workspaceId);
+    if (workspace.ownerUserId !== userId) {
+      throw new ForbiddenException('Only the owner can transfer ownership');
+    }
+    const targetRows = await this.db
+      .select({ id: workspaceMembers.id, status: workspaceMembers.status })
+      .from(workspaceMembers)
+      .where(
+        and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, dto.userId)),
+      )
+      .limit(1);
+    const target = targetRows[0];
+    if (target === undefined || target.status !== 'active') {
+      throw new UnprocessableEntityException('New owner must be an active member');
+    }
+    return this.db.transaction(async (tx) => {
+      await tx
+        .update(workspaceMembers)
+        .set({ role: 'admin', status: 'active' })
+        .where(eq(workspaceMembers.id, target.id));
+      const updated = await tx
+        .update(workspaces)
+        .set({ ownerUserId: dto.userId })
+        .where(eq(workspaces.id, workspaceId))
+        .returning(workspaceCols);
+      const next = updated[0];
+      if (next === undefined) {
+        throw new Error('workspace update returned no row');
+      }
+      // The caller (previous owner) keeps their admin membership.
+      return toWorkspaceDto(next, 'admin');
+    });
+  }
+
   /** Resolve the caller's membership of a workspace; 404 if they aren't a member. */
   private async requireMembership(
     userId: string,
@@ -197,12 +246,16 @@ export class WorkspacesService {
     return row;
   }
 
-  /** Membership must exist (404) and be admin (403). */
-  private async requireAdmin(userId: string, workspaceId: string): Promise<void> {
-    const { role } = await this.requireMembership(userId, workspaceId);
-    if (role !== 'admin') {
+  /** Membership must exist (404) and be admin (403). Returns the membership for reuse. */
+  private async requireAdmin(
+    userId: string,
+    workspaceId: string,
+  ): Promise<{ workspace: WorkspaceRow; role: WorkspaceRole }> {
+    const membership = await this.requireMembership(userId, workspaceId);
+    if (membership.role !== 'admin') {
       throw new ForbiddenException('Admin role required');
     }
+    return membership;
   }
 }
 
@@ -210,5 +263,6 @@ interface WorkspaceRow {
   id: string;
   slug: string;
   name: string;
+  ownerUserId: string;
   createdAt: Date;
 }

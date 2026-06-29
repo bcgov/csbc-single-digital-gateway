@@ -5,6 +5,7 @@ import { ZodSerializerDto } from 'nestjs-zod';
 import {
   CreateWorkspaceDto,
   ListWorkspacesQueryDto,
+  TransferOwnershipDto,
   UpdateWorkspaceDto,
   UpdateMemberDto,
   WorkspaceDto,
@@ -62,6 +63,16 @@ export class WorkspacesV1Controller {
     @Body() body: UpdateMemberDto,
   ): Promise<void> {
     await this.service.updateMember(user.id, id, memberId, body);
+  }
+
+  @Post(':id/transfer-ownership')
+  @ZodSerializerDto(WorkspaceDto)
+  transferOwnership(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: TransferOwnershipDto,
+  ) {
+    return this.service.transferOwnership(user.id, id, body);
   }
 
   @Patch(':id')

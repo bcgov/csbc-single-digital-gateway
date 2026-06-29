@@ -74,6 +74,9 @@ describe('workspaces (e2e)', () => {
     expect((await http().get('/v1/workspaces/abc')).status).toBe(401);
     expect((await http().patch('/v1/workspaces/abc').send({ name: 'X' })).status).toBe(401);
     expect((await http().delete('/v1/workspaces/abc')).status).toBe(401);
+    expect(
+      (await http().post('/v1/workspaces/abc/transfer-ownership').send({ userId: 'u2' })).status,
+    ).toBe(401);
   });
 
   it('400s an invalid create body for an authenticated caller', async () => {
@@ -82,6 +85,25 @@ describe('workspaces (e2e)', () => {
     );
     expect(
       (await http().post('/v1/workspaces').set('x-test-user', seedUser).send({ name: '' })).status,
+    ).toBe(400);
+  });
+
+  it('400s an invalid transfer-ownership body for an authenticated caller', async () => {
+    expect(
+      (
+        await http()
+          .post('/v1/workspaces/abc/transfer-ownership')
+          .set('x-test-user', seedUser)
+          .send({})
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await http()
+          .post('/v1/workspaces/abc/transfer-ownership')
+          .set('x-test-user', seedUser)
+          .send({ userId: 'not-a-uuid' })
+      ).status,
     ).toBe(400);
   });
 
