@@ -6,12 +6,6 @@ import type { ReactNode } from 'react';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import { ServiceBuilderBreadcrumb } from './service-builder-breadcrumb';
 
-const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'outline'> = {
-  draft: 'secondary',
-  published: 'default',
-  archived: 'outline',
-};
-
 /** In-shell wrapper for the nested application-method builders: sets the top-bar title/description +
  * the breadcrumb bar, and frames the builder with a toolbar. When `readOnly` (the form isn't a draft)
  * the Save action is hidden and a hint explains how to make changes (feature 44/47). */
@@ -63,7 +57,7 @@ export function ApplicationShell({
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          {status ? <Badge variant={STATUS_VARIANT[status] ?? 'outline'}>{status}</Badge> : null}
+          {status ? <Badge variant="outline">{status}</Badge> : null}
           <div className="min-w-0">{titleSlot}</div>
         </div>
         <div className="flex items-center gap-3">
