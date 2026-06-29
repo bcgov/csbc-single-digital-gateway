@@ -66,12 +66,14 @@ function PageRow({ page, index, stageId }: { page: StagePage; index: number; sta
       <button
         type="button"
         onClick={() => selectPage(stageId, page.id)}
-        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+        className="flex min-w-0 flex-1 items-start gap-1.5 text-left"
       >
-        <FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="truncate text-sm">{page.name}</span>
-        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-          {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
+        <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-sm">{page.name}</span>
+          <span className="text-xs text-muted-foreground">
+            {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
+          </span>
         </span>
       </button>
       <button
