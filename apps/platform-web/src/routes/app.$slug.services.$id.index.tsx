@@ -1,17 +1,12 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
-import { serviceQueryOptions } from '@/lib/services';
+import { createFileRoute } from '@tanstack/react-router';
+import { ServiceDetail } from '@/components/console/services/service-detail';
 
-/** `…/services/:id` redirects to the most recent version (`…/versions/:versionId`). */
+/** `…/services/:id` — the detail for the current (latest) version (no version in the URL). */
+function ServiceIndex() {
+  const { slug, id } = Route.useParams();
+  return <ServiceDetail slug={slug} id={id} />;
+}
+
 export const Route = createFileRoute('/app/$slug/services/$id/')({
-  loader: async ({ context, params }) => {
-    const detail = await context.queryClient.ensureQueryData(serviceQueryOptions(params.id));
-    const latest = detail.versions[detail.versions.length - 1];
-    if (latest) {
-      throw redirect({
-        to: '/app/$slug/services/$id/versions/$versionId',
-        params: { slug: params.slug, id: params.id, versionId: latest.id },
-      });
-    }
-  },
-  component: () => null,
+  component: ServiceIndex,
 });

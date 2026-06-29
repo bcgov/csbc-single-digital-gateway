@@ -38,7 +38,8 @@ export function ServiceDetail({
 }: {
   slug: string;
   id: string;
-  versionId: string;
+  /** Omitted on the bare `…/services/:id` route → the current (latest) version. */
+  versionId?: string;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -46,26 +47,31 @@ export function ServiceDetail({
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['services'] });
 
   const versions = data?.versions ?? [];
-  const selected = versions.find((v) => v.id === versionId);
   const latest = versions[versions.length - 1];
+  // The bare route (no versionId) shows the current/latest version; older versions are URL-addressed.
+  const selected = versionId === undefined ? latest : versions.find((v) => v.id === versionId);
 
+  // The current version lives at the bare `…/services/:id`; older versions at `…/versions/:versionId`.
+  const goToCurrent = () => navigate({ to: '/app/$slug/services/$id', params: { slug, id } });
   const goToVersion = (vId: string) =>
-    navigate({
-      to: '/app/$slug/services/$id/versions/$versionId',
-      params: { slug, id, versionId: vId },
-    });
+    vId === latest?.id
+      ? goToCurrent()
+      : navigate({
+          to: '/app/$slug/services/$id/versions/$versionId',
+          params: { slug, id, versionId: vId },
+        });
 
   const referencesQuery = useQuery({
-    ...serviceReferencesQueryOptions(id, versionId),
-    enabled: data !== undefined,
+    ...serviceReferencesQueryOptions(id, selected?.id ?? ''),
+    enabled: selected !== undefined,
   });
   const references = referencesQuery.data ?? [];
 
   const addVersion = useMutation({
     mutationFn: () => addServiceVersion(id),
-    onSuccess: async (created) => {
+    onSuccess: async () => {
       await invalidate();
-      goToVersion(created.id);
+      goToCurrent();
     },
   });
 
@@ -106,12 +112,7 @@ export function ServiceDetail({
       <div className="flex items-center justify-end gap-2">
         <ButtonGroup>
           {!isLatest && latest ? (
-            <Button
-              size="sm"
-              variant="outline"
-              type="button"
-              onClick={() => goToVersion(latest.id)}
-            >
+            <Button size="sm" variant="outline" type="button" onClick={goToCurrent}>
               Go to current
             </Button>
           ) : null}
