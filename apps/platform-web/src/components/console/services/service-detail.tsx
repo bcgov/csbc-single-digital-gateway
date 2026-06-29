@@ -9,6 +9,7 @@ import {
 } from '@repo/ui/breadcrumb';
 import { Button } from '@repo/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
@@ -101,71 +102,91 @@ export function ServiceDetail() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Version</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {versions.map((version) => (
-              <TableRow
-                key={version.id}
-                className={version.id === selected?.id ? 'bg-accent' : 'cursor-pointer'}
-                onClick={() => setSelectedId(version.id)}
-              >
-                <TableCell className="font-medium">v{version.version}</TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_VARIANT[version.status]}>{version.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end">
-                    {version.status !== 'archived' ? (
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        type="button"
-                        disabled={archive.isPending}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          archive.mutate(version.id);
-                        }}
-                      >
-                        Archive
-                      </Button>
-                    ) : null}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Tabs defaultValue="details" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="details">Service details</TabsTrigger>
+          <TabsTrigger value="methods">
+            Application methods
+            <Badge variant="secondary" className="ml-2">
+              {applicationRefs.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Render the editor only once references have loaded (keyed by version id). Applications are
-          managed by the route-based methods list below, not the inline editor (manageApplications=false). */}
-      {selected && referencesQuery.isSuccess ? (
-        <>
-          <ServiceEditor
-            key={selected.id}
-            serviceId={id}
-            versionId={selected.id}
-            definition={data.definition}
-            initialData={selected.data}
-            readonly={selected.status !== 'draft'}
-          />
-          <ApplicationMethods
-            slug={slug}
-            serviceId={id}
-            versionId={selected.id}
-            references={applicationRefs}
-            readonly={selected.status !== 'draft'}
-          />
-        </>
-      ) : null}
+        <TabsContent value="details" className="flex flex-col gap-4">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Version</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {versions.map((version) => (
+                  <TableRow
+                    key={version.id}
+                    className={version.id === selected?.id ? 'bg-accent' : 'cursor-pointer'}
+                    onClick={() => setSelectedId(version.id)}
+                  >
+                    <TableCell className="font-medium">v{version.version}</TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_VARIANT[version.status]}>{version.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        {version.status !== 'archived' ? (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            type="button"
+                            disabled={archive.isPending}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              archive.mutate(version.id);
+                            }}
+                          >
+                            Archive
+                          </Button>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Render the editor only once references have loaded (keyed by version id). */}
+          {selected && referencesQuery.isSuccess ? (
+            <ServiceEditor
+              key={selected.id}
+              serviceId={id}
+              versionId={selected.id}
+              definition={data.definition}
+              initialData={selected.data}
+              readonly={selected.status !== 'draft'}
+              applications={applicationRefs.map((ref) => ({
+                title: ref.targetTitle,
+                hasStructure: ref.hasStructure,
+              }))}
+            />
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="methods">
+          {selected && referencesQuery.isSuccess ? (
+            <ApplicationMethods
+              slug={slug}
+              serviceId={id}
+              versionId={selected.id}
+              references={applicationRefs}
+              readonly={selected.status !== 'draft'}
+            />
+          ) : null}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

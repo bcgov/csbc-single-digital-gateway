@@ -1,6 +1,16 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/dialog';
+import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Check, X } from 'lucide-react';
 import { useState } from 'react';
 import { publishVersion, updateDraft } from '@/lib/services';
 
@@ -9,22 +19,32 @@ interface Definition {
   uischema: Record<string, unknown>;
 }
 
-/** Edit a service draft version: the JSONForms service form + Save draft / Save & publish. Application
- * methods are managed separately (the route-based flow on the detail), not here. Creation is a modal. */
+/** A one-line summary of an application method for the publish modal. */
+export interface PublishApplication {
+  title: string;
+  hasStructure: boolean;
+}
+
+/** Edit a service draft version: the JSONForms service form + Save draft / Save & publish. Publishing
+ * shows a summary modal (it also publishes the application forms) and is gated on every method having
+ * fields. Application methods are managed on the other tab; creation is a modal. */
 export function ServiceEditor({
   serviceId,
   versionId,
   definition,
   initialData = {},
   readonly = false,
+  applications = [],
 }: {
   serviceId: string;
   versionId: string;
   definition: Definition;
   initialData?: Record<string, unknown>;
   readonly?: boolean;
+  applications?: PublishApplication[];
 }) {
   const [data, setData] = useState<Record<string, unknown>>(initialData);
+  const [publishOpen, setPublishOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const requireTitle = (): string => {
@@ -40,15 +60,21 @@ export function ServiceEditor({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] }),
   });
 
-  // Save the draft, then publish it (server re-validates → 422 surfaced).
+  // Save the draft, then publish it (server re-validates data + methods → 422 surfaced).
   const publish = useMutation({
     mutationFn: async () => {
       await updateDraft(serviceId, versionId, { data, title: requireTitle() });
       return publishVersion(serviceId, versionId);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] }),
+    onSuccess: async () => {
+      setPublishOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ['services'] });
+    },
   });
   const busy = save.isPending || publish.isPending;
+
+  const structureless = applications.filter((app) => !app.hasStructure);
+  const canPublish = applications.length > 0 && structureless.length === 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -67,19 +93,92 @@ export function ServiceEditor({
       </div>
       {readonly ? null : (
         <div className="flex items-center justify-end gap-3">
-          {save.isError || publish.isError ? (
+          {save.isError ? (
             <p role="alert" className="mr-auto text-sm text-destructive">
-              {(save.error ?? publish.error)?.message}
+              {save.error.message}
             </p>
           ) : null}
           <Button type="button" variant="outline" disabled={busy} onClick={() => save.mutate()}>
             Save draft
           </Button>
-          <Button type="button" disabled={busy} onClick={() => publish.mutate()}>
+          <Button type="button" disabled={busy} onClick={() => setPublishOpen(true)}>
             Save &amp; publish
           </Button>
         </div>
       )}
+
+      <Dialog
+        open={publishOpen}
+        onOpenChange={(next) => {
+          if (!next && !publish.isPending) {
+            setPublishOpen(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Publish service?</DialogTitle>
+            <DialogDescription>
+              Publishing makes the service and its application methods live.
+            </DialogDescription>
+          </DialogHeader>
+          {applications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              This service has no application methods. Add at least one before publishing.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">
+                {applications.length} application method{applications.length === 1 ? '' : 's'} will
+                be published with the service:
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {applications.map((app) => (
+                  <li key={app.title} className="flex items-center gap-2 text-sm">
+                    {app.hasStructure ? (
+                      <Check className="size-4 shrink-0 text-primary" aria-hidden />
+                    ) : (
+                      <X className="size-4 shrink-0 text-destructive" aria-hidden />
+                    )}
+                    <span className="min-w-0 truncate">{app.title}</span>
+                    {app.hasStructure ? null : (
+                      <span className="text-xs text-destructive">no fields</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {structureless.length > 0 ? (
+                <p className="text-sm text-destructive">
+                  Add fields to every method before publishing.
+                </p>
+              ) : null}
+            </div>
+          )}
+          {publish.isError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {publish.error.message}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={publish.isPending}
+              onClick={() => setPublishOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!canPublish || publish.isPending}
+              onClick={() => publish.mutate()}
+            >
+              {publish.isPending ? <Spinner className="size-4" /> : null}
+              Publish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

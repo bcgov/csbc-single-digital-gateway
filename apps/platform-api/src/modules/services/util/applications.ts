@@ -55,6 +55,45 @@ export function structureFromDefinition(
   return null;
 }
 
+/** Whether a JSON Schema has at least one field (a non-empty `properties` object). */
+function hasFields(schema: unknown): boolean {
+  const properties = (schema as { properties?: unknown } | null | undefined)?.properties;
+  return (
+    typeof properties === 'object' && properties !== null && Object.keys(properties).length > 0
+  );
+}
+
+/**
+ * Whether an application form's definition has authored structure (gates service publish). Strict:
+ * a basic-form needs ≥1 field; a multi-stage-form needs ≥1 stage where EVERY stage has ≥1 page and
+ * EVERY page has ≥1 field. Defensive against partial/legacy blobs.
+ */
+export function formHasStructure(
+  kind: string,
+  definition: Record<string, unknown> | null | undefined,
+): boolean {
+  if (!definition) {
+    return false;
+  }
+  if (kind === 'basic-form') {
+    return hasFields(definition.schema);
+  }
+  if (kind === 'multi-stage-form') {
+    const stages = definition.stages;
+    if (!Array.isArray(stages) || stages.length === 0) {
+      return false;
+    }
+    return stages.every((stage) => {
+      const pages = (stage as { pages?: unknown }).pages;
+      if (!Array.isArray(pages) || pages.length === 0) {
+        return false;
+      }
+      return pages.every((page) => hasFields((page as { schema?: unknown }).schema));
+    });
+  }
+  return false;
+}
+
 /**
  * Validate each application against the live DB (reads via `db`) so the caller gets clean 400/404/422
  * before opening a write transaction. Existing form targets must be a form kind in this workspace and not

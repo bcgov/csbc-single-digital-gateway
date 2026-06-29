@@ -123,6 +123,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               targetVersion: 1,
               targetStatus: 'draft',
               hasSubmissions: false,
+              hasStructure: true,
               createdAt: ISO,
             },
           ],
@@ -156,24 +157,26 @@ describe('console services', () => {
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 
-  it('edits a draft on the detail page and saves & publishes', async () => {
+  it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/s1');
     const user = userEvent.setup();
 
+    // Service details tab (default): the JSONForms title control.
     expect(
       await screen.findByLabelText(/title/i, undefined, { timeout: 8000 }),
     ).toBeInTheDocument();
-    // The existing application method shows in the list (by form title), not the empty state.
+
+    // Application methods tab: the method list (count badge + form title).
+    await user.click(screen.getByRole('tab', { name: /application methods/i }));
     expect(await screen.findByText('Permit form')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
-    expect(screen.queryByText(/no application methods yet/i)).not.toBeInTheDocument();
-    // No submissions ⇒ the method offers an enabled Delete (the service-level Delete is disabled here,
-    // since the service is mocked with submissions → it shows Archive + a disabled Delete).
-    const deletes = screen.getAllByRole('button', { name: /delete/i });
-    expect(deletes.some((button) => !button.hasAttribute('disabled'))).toBe(true);
 
-    await user.click(screen.getByRole('button', { name: /save & publish/i }));
+    // Publish through the summary modal (the form has structure ⇒ Publish is enabled).
+    await user.click(screen.getByRole('tab', { name: /service details/i }));
+    await user.click(await screen.findByRole('button', { name: /save & publish/i }));
+    const modal = await screen.findByRole('dialog', { name: /publish service/i });
+    await user.click(within(modal).getByRole('button', { name: 'Publish' }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/v1/services/s1/versions/sv1/publish'),

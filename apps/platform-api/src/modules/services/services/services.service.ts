@@ -222,13 +222,21 @@ export class ServicesService {
     });
   }
 
-  /** Archive a service (archive every non-archived version → status derives to 'archived'). */
+  /** Archive a service (archive every non-archived version → status derives to 'archived'). Archiving a
+   * service also archives its application forms. */
   async archive(userId: string, id: string): Promise<void> {
     await this.requireDocument(userId, id);
+    const formIds = await this.applicationFormIds(id);
+    const docIds = [id, ...formIds];
     await this.db
       .update(documentVersions)
       .set({ archivedAt: new Date() })
-      .where(and(eq(documentVersions.documentId, id), sql`${documentVersions.archivedAt} is null`));
+      .where(
+        and(
+          inArray(documentVersions.documentId, docIds),
+          sql`${documentVersions.archivedAt} is null`,
+        ),
+      );
   }
 
   private async versionsOf(documentId: string) {

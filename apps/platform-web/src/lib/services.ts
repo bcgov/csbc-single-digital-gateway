@@ -62,6 +62,8 @@ export interface ServiceReference {
   targetStatus: string;
   /** Whether the target form has submissions — gates delete (none) vs archive (some). */
   hasSubmissions: boolean;
+  /** Whether the target form has authored structure (fields/stages/pages) — gates service publish. */
+  hasStructure: boolean;
   createdAt: string;
 }
 

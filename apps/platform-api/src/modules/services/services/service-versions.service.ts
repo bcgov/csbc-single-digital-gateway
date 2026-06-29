@@ -22,6 +22,7 @@ import {
 import {
   type ResolvedApplication,
   type Tx,
+  formHasStructure,
   insertApplication,
   resolveApplications,
 } from '../util/applications';
@@ -158,6 +159,38 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
+      // A service must have ≥1 application method, and every method's form must have structure.
+      const apps = await tx
+        .select({
+          targetVersionId: documentReferences.targetVersionId,
+          targetKind: documentReferences.targetKind,
+          targetSchema: documentVersions.schema,
+          targetTitle: documents.title,
+        })
+        .from(documentReferences)
+        .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
+        .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
+        .where(
+          and(
+            eq(documentReferences.ownerVersionId, versionId),
+            eq(documentReferences.relation, 'application_form'),
+          ),
+        );
+      if (apps.length === 0) {
+        throw new UnprocessableEntityException({
+          message: 'A service must have at least one application method to publish',
+          errors: [],
+        });
+      }
+      const structureless = apps
+        .filter((app) => !formHasStructure(app.targetKind, app.targetSchema))
+        .map((app) => app.targetTitle);
+      if (structureless.length > 0) {
+        throw new UnprocessableEntityException({
+          message: 'Every application method needs fields before the service can be published',
+          errors: structureless,
+        });
+      }
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx
         .update(documentVersions)
@@ -168,6 +201,14 @@ export class ServiceVersionsService {
         .set({ publishedAt: sql`now()` })
         .where(eq(documentVersions.id, versionId))
         .returning();
+      // Publishing a service publishes its application forms (one version each).
+      for (const app of apps) {
+        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+        await tx
+          .update(documentVersions)
+          .set({ publishedAt: sql`now()`, archivedAt: null })
+          .where(eq(documentVersions.id, app.targetVersionId));
+      }
       return toServiceVersionDto(this.orThrow(published[0]));
     });
   }

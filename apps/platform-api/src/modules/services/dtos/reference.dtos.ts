@@ -41,6 +41,8 @@ export const referenceSchema = z.object({
   targetStatus: z.string(),
   /** Whether the target form has any submissions — gates delete (none) vs archive (some). */
   hasSubmissions: z.boolean(),
+  /** Whether the target form has authored structure (fields/stages/pages) — gates service publish. */
+  hasStructure: z.boolean(),
   createdAt: z.string(),
 });
 export class ReferenceDto extends createZodDto(referenceSchema) {}

@@ -23,7 +23,7 @@ import {
   type ReferenceRelation,
   type ReferenceResponse,
 } from '../dtos/reference.dtos';
-import { structureFromDefinition } from '../util/applications';
+import { formHasStructure, structureFromDefinition } from '../util/applications';
 import { ServicesService } from './services.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
@@ -43,6 +43,7 @@ function toDto(
   targetVersion: number,
   targetStatus: string,
   hasSubmissions: boolean,
+  hasStructure: boolean,
 ): ReferenceResponse {
   return {
     id: row.id,
@@ -56,6 +57,7 @@ function toDto(
     targetVersion,
     targetStatus,
     hasSubmissions,
+    hasStructure,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -77,6 +79,7 @@ export class ReferencesService {
         targetTitle: documents.title,
         targetVersion: documentVersions.version,
         targetStatus: documentVersions.status,
+        targetSchema: documentVersions.schema,
         hasSubmissions: sql<boolean>`exists (select 1 from ${submissions} where ${submissions.documentId} = ${documentReferences.targetDocumentId})`,
       })
       .from(documentReferences)
@@ -85,7 +88,14 @@ export class ReferencesService {
       .where(eq(documentReferences.ownerVersionId, versionId))
       .orderBy(asc(documentReferences.relation), asc(documentReferences.position));
     return rows.map((row) =>
-      toDto(row.ref, row.targetTitle, row.targetVersion, row.targetStatus, row.hasSubmissions),
+      toDto(
+        row.ref,
+        row.targetTitle,
+        row.targetVersion,
+        row.targetStatus,
+        row.hasSubmissions,
+        formHasStructure(row.ref.targetKind, row.targetSchema),
+      ),
     );
   }
 
@@ -127,7 +137,7 @@ export class ReferencesService {
       if (row === undefined) {
         throw new Error('reference insert returned no row');
       }
-      return toDto(row, target.title, target.version, 'draft', false);
+      return toDto(row, target.title, target.version, 'draft', false, false);
     } catch (error) {
       if (pgCode(error) === '23505') {
         throw new ConflictException('This document is already referenced by the service version');
@@ -256,7 +266,7 @@ export class ReferencesService {
       if (ref === undefined) {
         throw new Error('reference insert returned no row');
       }
-      return toDto(ref, input.title, formVersion.version, 'draft', false);
+      return toDto(ref, input.title, formVersion.version, 'draft', false, false);
     });
   }
 
