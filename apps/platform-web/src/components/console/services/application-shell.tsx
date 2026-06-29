@@ -42,8 +42,9 @@ export function ApplicationShell({
   });
 
   if (!readOnly) {
-    // The builder fills the entire center area and renders its own header (status + Save/Cancel).
-    return <div className="h-full">{children}</div>;
+    // The builder fills the entire center area, edge-to-edge: the negative margin cancels the console
+    // <main> p-6 padding (and the height adds it back) so the builder bleeds to the content edges.
+    return <div className="-m-6 h-[calc(100%+3rem)]">{children}</div>;
   }
 
   return (
