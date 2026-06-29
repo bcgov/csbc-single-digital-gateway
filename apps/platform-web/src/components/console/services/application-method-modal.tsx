@@ -25,7 +25,7 @@ const METHODS: Method[] = [
     title: 'Basic form',
     description: 'A single page of fields applicants complete and submit in one go.',
     icon: FileText,
-    defaultTitle: 'Untitled form',
+    defaultTitle: 'Untitled',
   },
   {
     id: 'multi-stage-form',

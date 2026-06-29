@@ -60,7 +60,7 @@ describe('FormBuilder', () => {
     const user = userEvent.setup();
     render(<Harness />);
     const canvas = screen.getByRole('region', { name: /canvas/i });
-    const title = within(canvas).getByRole('textbox', { name: /form title/i });
+    const title = within(canvas).getByRole('textbox', { name: /^title$/i });
     await user.type(title, 'Apply now');
     expect(dump().schema.title).toBe('Apply now');
   });

@@ -24,7 +24,7 @@ const FROM = '/app/$slug/services/$id/versions/$versionId/application-methods/$a
 
 const titleOf = (def: FormDefinition): string => {
   const title = def.schema.title;
-  return typeof title === 'string' && title.trim() !== '' ? title.trim() : 'Untitled form';
+  return typeof title === 'string' && title.trim() !== '' ? title.trim() : 'Untitled';
 };
 
 function useShellProps() {

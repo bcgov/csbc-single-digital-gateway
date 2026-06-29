@@ -196,14 +196,14 @@ export function Inspector({
     if (node === null) {
       return (
         <div className="flex flex-col gap-4">
-          <Row label="Form title" htmlFor="settings-title">
+          <Row label="Title" htmlFor="settings-title">
             <Input
               id="settings-title"
               value={form.title}
               onChange={(e) => onChangeForm({ title: e.target.value })}
             />
           </Row>
-          <Row label="Form description" htmlFor="settings-desc">
+          <Row label="Description" htmlFor="settings-desc">
             <Textarea
               id="settings-desc"
               rows={3}
