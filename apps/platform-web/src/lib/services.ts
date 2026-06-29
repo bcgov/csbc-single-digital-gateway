@@ -20,6 +20,8 @@ export interface ServiceSummary extends Service {
   versionCount: number;
   /** Whether any of the service's application forms has submissions — gates delete (none) vs archive. */
   hasSubmissions: boolean;
+  /** Whether the latest version was ever published — un-archive reads "Publish" (true) vs "Restore". */
+  latestPublished: boolean;
 }
 
 export interface ServiceVersion {

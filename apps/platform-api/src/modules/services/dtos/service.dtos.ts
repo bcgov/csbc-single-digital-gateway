@@ -99,6 +99,8 @@ export const serviceSummarySchema = serviceSchema.extend({
   versionCount: z.number().int(),
   /** Whether any of the service's application forms has submissions — gates delete (none) vs archive. */
   hasSubmissions: z.boolean(),
+  /** Whether the latest version was ever published — un-archive reads "Publish" (true) vs "Restore". */
+  latestPublished: z.boolean(),
 });
 export type ServiceSummary = z.infer<typeof serviceSummarySchema>;
 export class ServiceListDto extends createZodDto(

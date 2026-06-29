@@ -141,11 +141,14 @@ export class ServicesService {
     return Promise.all(
       docs.map(async (doc) => {
         const versions = await this.versionsOf(doc.id);
+        // versionsOf is ordered asc by version, so the last row is the latest version.
+        const latest = versions[versions.length - 1];
         // Object.assign onto the fresh DTO (not a spread) keeps oxlint's no-map-spread happy.
         return Object.assign(toServiceDto(doc), {
           status: summarizeStatus(versions),
           versionCount: versions.length,
           hasSubmissions: await this.hasSubmissions(doc.id),
+          latestPublished: latest?.publishedAt != null,
         });
       }),
     );

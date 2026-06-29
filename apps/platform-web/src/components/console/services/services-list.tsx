@@ -79,6 +79,7 @@ export function ServicesList() {
                         serviceId={service.id}
                         hasSubmissions={service.hasSubmissions}
                         archived={service.status === 'archived'}
+                        latestPublished={service.latestPublished}
                       />
                     </div>
                   </TableCell>

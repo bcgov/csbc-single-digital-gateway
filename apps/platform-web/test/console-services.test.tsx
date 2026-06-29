@@ -90,6 +90,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               status: 'draft',
               versionCount: 1,
               hasSubmissions: true,
+              latestPublished: false,
             },
           ],
         });

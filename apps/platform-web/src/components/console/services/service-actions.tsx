@@ -22,11 +22,14 @@ export function ServiceActions({
   serviceId,
   hasSubmissions,
   archived,
+  latestPublished,
   onDeleted,
 }: {
   serviceId: string;
   hasSubmissions: boolean;
   archived: boolean;
+  /** Whether the latest version was ever published — un-archive reads "Publish" vs "Restore". */
+  latestPublished: boolean;
   onDeleted?: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -59,7 +62,7 @@ export function ServiceActions({
       onClick={() => reactivate.mutate()}
     >
       <Upload className="size-3.5" aria-hidden />
-      Publish
+      {latestPublished ? 'Publish' : 'Restore'}
     </Button>
   );
 

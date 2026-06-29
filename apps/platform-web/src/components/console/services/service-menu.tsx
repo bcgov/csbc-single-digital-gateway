@@ -33,6 +33,7 @@ export function ServiceMenu({
   canDiscard,
   hasSubmissions,
   archived,
+  latestPublished,
   onDeleted,
   onDiscarded,
 }: {
@@ -42,6 +43,8 @@ export function ServiceMenu({
   canDiscard: boolean;
   hasSubmissions: boolean;
   archived: boolean;
+  /** Whether the latest version was ever published — un-archive reads "Publish service" vs "Restore". */
+  latestPublished: boolean;
   onDeleted: () => void;
   /** Called after the current draft version is discarded (it no longer exists → navigate away). */
   onDiscarded: () => void;
@@ -97,7 +100,7 @@ export function ServiceMenu({
           ) : null}
           {archived ? (
             <DropdownMenuItem disabled={reactivate.isPending} onClick={() => reactivate.mutate()}>
-              Publish service
+              {latestPublished ? 'Publish service' : 'Restore'}
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem disabled={archive.isPending} onClick={() => archive.mutate()}>

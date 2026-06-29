@@ -173,6 +173,7 @@ export function ServiceDetail({
             canDiscard={selected.status === 'draft' && versions.length > 1}
             hasSubmissions={data.hasSubmissions}
             archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
+            latestPublished={latest?.publishedAt != null}
             onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
             onDiscarded={() => navTab('details')}
           />
