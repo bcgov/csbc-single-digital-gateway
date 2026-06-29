@@ -18,6 +18,8 @@ export interface Service {
 export interface ServiceSummary extends Service {
   status: VersionStatus | 'none';
   versionCount: number;
+  /** Whether any of the service's application forms has submissions — gates delete (none) vs archive. */
+  hasSubmissions: boolean;
 }
 
 export interface ServiceVersion {
@@ -35,6 +37,8 @@ export interface ServiceDetail {
   service: Service;
   versions: ServiceVersion[];
   definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
+  /** Whether any of the service's application forms has submissions — gates delete vs archive. */
+  hasSubmissions: boolean;
 }
 
 export interface FormCatalogEntry {
@@ -238,6 +242,28 @@ export function archiveVersion(id: string, versionId: string): Promise<ServiceVe
 
 export function addServiceVersion(id: string): Promise<ServiceVersion> {
   return send(`${BASE}/${encodeURIComponent(id)}/versions`, 'POST');
+}
+
+/** Delete a service with no application methods (server returns 409 if it has any → archive instead). */
+export async function deleteService(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
+/** Archive a service (archives all its versions). */
+export async function archiveService(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/archive`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
 }
 
 /** Create a new form (of `typeId`, with an optional designed `definition`) AND reference it from a

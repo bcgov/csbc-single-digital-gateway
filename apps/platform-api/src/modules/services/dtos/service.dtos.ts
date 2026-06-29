@@ -97,6 +97,8 @@ export type ServiceVersionResponse = z.infer<typeof serviceVersionSchema>;
 export const serviceSummarySchema = serviceSchema.extend({
   status: z.enum(['draft', 'published', 'archived', 'none']),
   versionCount: z.number().int(),
+  /** Whether any of the service's application forms has submissions — gates delete (none) vs archive. */
+  hasSubmissions: z.boolean(),
 });
 export type ServiceSummary = z.infer<typeof serviceSummarySchema>;
 export class ServiceListDto extends createZodDto(
@@ -122,6 +124,8 @@ export const serviceDetailSchema = z.object({
   service: serviceSchema,
   versions: z.array(serviceVersionSchema),
   definition: definitionSchema,
+  /** Whether any of the service's application forms has submissions — gates delete vs archive. */
+  hasSubmissions: z.boolean(),
 });
 export class ServiceDetailDto extends createZodDto(serviceDetailSchema) {}
 export type ServiceDetail = z.infer<typeof serviceDetailSchema>;

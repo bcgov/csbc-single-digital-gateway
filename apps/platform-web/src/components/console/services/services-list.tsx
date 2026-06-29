@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { type ServiceSummary, servicesQueryOptions } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
+import { ServiceActions } from './service-actions';
 
 const STATUS_VARIANT = {
   draft: 'secondary',
@@ -46,12 +47,13 @@ export function ServicesList() {
               <TableHead>Title</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Versions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
                   No services yet — create one with the New button.
                 </TableCell>
               </TableRow>
@@ -71,6 +73,15 @@ export function ServicesList() {
                     <Badge variant={STATUS_VARIANT[service.status]}>{service.status}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{service.versionCount}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-end">
+                      <ServiceActions
+                        serviceId={service.id}
+                        hasSubmissions={service.hasSubmissions}
+                        archived={service.status === 'archived'}
+                      />
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}

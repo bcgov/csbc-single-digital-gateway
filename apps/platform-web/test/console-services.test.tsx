@@ -89,6 +89,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               createdAt: ISO,
               status: 'draft',
               versionCount: 1,
+              hasSubmissions: true,
             },
           ],
         });
@@ -104,6 +105,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
           },
           versions: [draftVersion],
           definition,
+          hasSubmissions: true,
         });
       }
       if (segs[segs.length - 1] === 'references') {
@@ -166,8 +168,10 @@ describe('console services', () => {
     expect(await screen.findByText('Permit form')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
     expect(screen.queryByText(/no application methods yet/i)).not.toBeInTheDocument();
-    // No submissions ⇒ the method offers a Delete action.
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    // No submissions ⇒ the method offers an enabled Delete (the service-level Delete is disabled here,
+    // since the service is mocked with submissions → it shows Archive + a disabled Delete).
+    const deletes = screen.getAllByRole('button', { name: /delete/i });
+    expect(deletes.some((button) => !button.hasAttribute('disabled'))).toBe(true);
 
     await user.click(screen.getByRole('button', { name: /save & publish/i }));
     await waitFor(() => {

@@ -10,7 +10,7 @@ import {
 import { Button } from '@repo/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from '@tanstack/react-router';
+import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -21,6 +21,7 @@ import {
 } from '@/lib/services';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import { ApplicationMethods } from './application-methods';
+import { ServiceActions } from './service-actions';
 import { ServiceEditor } from './service-editor';
 
 const STATUS_VARIANT = { draft: 'secondary', published: 'default', archived: 'outline' } as const;
@@ -28,6 +29,7 @@ const STATUS_VARIANT = { draft: 'secondary', published: 'default', archived: 'ou
 /** Service detail — version history + lifecycle, with the unified editor for the selected version. */
 export function ServiceDetail() {
   const { slug, id } = useParams({ from: '/app/$slug/services/$id' });
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data } = useQuery(serviceQueryOptions(id));
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -81,7 +83,13 @@ export function ServiceDetail() {
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex items-center justify-end gap-2">
+        <ServiceActions
+          serviceId={id}
+          hasSubmissions={data.hasSubmissions}
+          archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
+          onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
+        />
         <Button
           size="sm"
           type="button"

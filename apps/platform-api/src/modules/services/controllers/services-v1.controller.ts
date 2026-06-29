@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
@@ -57,6 +57,18 @@ export class ServicesV1Controller {
   @ZodSerializerDto(ServiceDetailDto)
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.services.get(user.id, id);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  async removeService(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<void> {
+    await this.services.remove(user.id, id);
+  }
+
+  @Post(':id/archive')
+  @HttpCode(204)
+  async archiveService(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<void> {
+    await this.services.archive(user.id, id);
   }
 
   @Patch(':id/versions/:versionId')
