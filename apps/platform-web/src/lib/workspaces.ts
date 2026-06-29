@@ -109,6 +109,26 @@ export function workspaceMembersQueryOptions(workspaceId: string) {
   });
 }
 
+/** Change a member's role and/or status (admin only, enforced server-side). */
+export async function updateWorkspaceMember(
+  workspaceId: string,
+  memberId: string,
+  patch: { role?: WorkspaceMember['role']; status?: WorkspaceMember['status'] },
+): Promise<void> {
+  const res = await fetch(
+    `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/members/${encodeURIComponent(memberId)}`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(patch),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`PATCH /v1/workspaces/:id/members/:memberId failed: ${res.status}`);
+  }
+}
+
 /** Create a workspace (the caller becomes its admin member, server-side). */
 export async function createWorkspace(name: string): Promise<Workspace> {
   const res = await fetch(`${BFF_ORIGIN}/v1/workspaces`, {

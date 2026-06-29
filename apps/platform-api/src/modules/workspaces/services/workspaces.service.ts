@@ -1,10 +1,16 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { type Database, users, workspaceMembers, workspaces } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import {
   type CreateWorkspaceInput,
   type ListWorkspacesQuery,
+  type UpdateMemberInput,
   type UpdateWorkspaceInput,
   type WorkspaceListResponse,
   type WorkspaceMemberResponse,
@@ -72,6 +78,50 @@ export class WorkspacesService {
       .where(and(eq(workspaceMembers.workspaceId, id), isNull(users.deletedAt)))
       .orderBy(asc(sql`${workspaceMembers.role} <> 'admin'`), asc(users.displayName));
     return { items: rows.map(toWorkspaceMemberDto) };
+  }
+
+  /** Change a member's role and/or status (admin only). Refuses to leave a workspace with no active
+   * admin (demoting/suspending the last one). */
+  async updateMember(
+    userId: string,
+    workspaceId: string,
+    memberId: string,
+    dto: UpdateMemberInput,
+  ): Promise<void> {
+    await this.requireAdmin(userId, workspaceId);
+    const rows = await this.db
+      .select()
+      .from(workspaceMembers)
+      .where(and(eq(workspaceMembers.id, memberId), eq(workspaceMembers.workspaceId, workspaceId)))
+      .limit(1);
+    const target = rows[0];
+    if (target === undefined) {
+      throw new NotFoundException('Member not found');
+    }
+    const nextRole = dto.role ?? target.role;
+    const nextStatus = dto.status ?? target.status;
+    // If this member was an active admin and is being demoted or suspended, keep ≥1 active admin.
+    const wasActiveAdmin = target.role === 'admin' && target.status === 'active';
+    const staysActiveAdmin = nextRole === 'admin' && nextStatus === 'active';
+    if (wasActiveAdmin && !staysActiveAdmin) {
+      const counts = await this.db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(workspaceMembers)
+        .where(
+          and(
+            eq(workspaceMembers.workspaceId, workspaceId),
+            eq(workspaceMembers.role, 'admin'),
+            eq(workspaceMembers.status, 'active'),
+          ),
+        );
+      if ((counts[0]?.n ?? 0) <= 1) {
+        throw new ConflictException('A workspace must keep at least one active admin');
+      }
+    }
+    await this.db
+      .update(workspaceMembers)
+      .set({ role: nextRole, status: nextStatus })
+      .where(eq(workspaceMembers.id, memberId));
   }
 
   /** Resolve a workspace by slug for a member; 404 if it doesn't exist or the caller isn't a member. */

@@ -25,7 +25,9 @@ import { Route as AppSlugSettingsRouteImport } from './routes/app.$slug.settings
 import { Route as AppSlugServicesRouteImport } from './routes/app.$slug.services'
 import { Route as AppSlugReportsRouteImport } from './routes/app.$slug.reports'
 import { Route as AdminDocumentTypesIdRouteImport } from './routes/admin.document-types.$id'
+import { Route as AppSlugTeamIndexRouteImport } from './routes/app.$slug.team.index'
 import { Route as AppSlugServicesIndexRouteImport } from './routes/app.$slug.services.index'
+import { Route as AppSlugTeamMemberIdRouteImport } from './routes/app.$slug.team.$memberId'
 import { Route as AppSlugServicesNewRouteImport } from './routes/app.$slug.services.new'
 import { Route as AppSlugServicesIdRouteImport } from './routes/app.$slug.services.$id'
 import { Route as AppSlugServicesIdIndexRouteImport } from './routes/app.$slug.services.$id.index'
@@ -115,10 +117,20 @@ const AdminDocumentTypesIdRoute = AdminDocumentTypesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminDocumentTypesRoute,
 } as any)
+const AppSlugTeamIndexRoute = AppSlugTeamIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSlugTeamRoute,
+} as any)
 const AppSlugServicesIndexRoute = AppSlugServicesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppSlugServicesRoute,
+} as any)
+const AppSlugTeamMemberIdRoute = AppSlugTeamMemberIdRouteImport.update({
+  id: '/$memberId',
+  path: '/$memberId',
+  getParentRoute: () => AppSlugTeamRoute,
 } as any)
 const AppSlugServicesNewRoute = AppSlugServicesNewRouteImport.update({
   id: '/new',
@@ -182,12 +194,14 @@ export interface FileRoutesByFullPath {
   '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
-  '/app/$slug/team': typeof AppSlugTeamRoute
+  '/app/$slug/team': typeof AppSlugTeamRouteWithChildren
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRouteWithChildren
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
+  '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
+  '/app/$slug/team/': typeof AppSlugTeamIndexRoute
   '/app/$slug/services/$id/application-methods': typeof AppSlugServicesIdApplicationMethodsRoute
   '/app/$slug/services/$id/': typeof AppSlugServicesIdIndexRoute
   '/app/$slug/services/$id/versions/$versionId/': typeof AppSlugServicesIdVersionsVersionIdIndexRoute
@@ -204,11 +218,12 @@ export interface FileRoutesByTo {
   '/app/$slug/reports': typeof AppSlugReportsRoute
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
-  '/app/$slug/team': typeof AppSlugTeamRoute
   '/admin/document-types': typeof AdminDocumentTypesIndexRoute
   '/app/$slug': typeof AppSlugIndexRoute
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
+  '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
   '/app/$slug/services': typeof AppSlugServicesIndexRoute
+  '/app/$slug/team': typeof AppSlugTeamIndexRoute
   '/app/$slug/services/$id/application-methods': typeof AppSlugServicesIdApplicationMethodsRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdIndexRoute
   '/app/$slug/services/$id/versions/$versionId': typeof AppSlugServicesIdVersionsVersionIdIndexRoute
@@ -231,12 +246,14 @@ export interface FileRoutesById {
   '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRoute
-  '/app/$slug/team': typeof AppSlugTeamRoute
+  '/app/$slug/team': typeof AppSlugTeamRouteWithChildren
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRouteWithChildren
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
+  '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
+  '/app/$slug/team/': typeof AppSlugTeamIndexRoute
   '/app/$slug/services/$id/application-methods': typeof AppSlugServicesIdApplicationMethodsRoute
   '/app/$slug/services/$id/': typeof AppSlugServicesIdIndexRoute
   '/app/$slug/services/$id/versions/$versionId/': typeof AppSlugServicesIdVersionsVersionIdIndexRoute
@@ -265,7 +282,9 @@ export interface FileRouteTypes {
     | '/app/$slug/'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/new'
+    | '/app/$slug/team/$memberId'
     | '/app/$slug/services/'
+    | '/app/$slug/team/'
     | '/app/$slug/services/$id/application-methods'
     | '/app/$slug/services/$id/'
     | '/app/$slug/services/$id/versions/$versionId/'
@@ -282,11 +301,12 @@ export interface FileRouteTypes {
     | '/app/$slug/reports'
     | '/app/$slug/settings'
     | '/app/$slug/submissions'
-    | '/app/$slug/team'
     | '/admin/document-types'
     | '/app/$slug'
     | '/app/$slug/services/new'
+    | '/app/$slug/team/$memberId'
     | '/app/$slug/services'
+    | '/app/$slug/team'
     | '/app/$slug/services/$id/application-methods'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/$id/versions/$versionId'
@@ -313,7 +333,9 @@ export interface FileRouteTypes {
     | '/app/$slug/'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/new'
+    | '/app/$slug/team/$memberId'
     | '/app/$slug/services/'
+    | '/app/$slug/team/'
     | '/app/$slug/services/$id/application-methods'
     | '/app/$slug/services/$id/'
     | '/app/$slug/services/$id/versions/$versionId/'
@@ -442,12 +464,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDocumentTypesIdRouteImport
       parentRoute: typeof AdminDocumentTypesRoute
     }
+    '/app/$slug/team/': {
+      id: '/app/$slug/team/'
+      path: '/'
+      fullPath: '/app/$slug/team/'
+      preLoaderRoute: typeof AppSlugTeamIndexRouteImport
+      parentRoute: typeof AppSlugTeamRoute
+    }
     '/app/$slug/services/': {
       id: '/app/$slug/services/'
       path: '/'
       fullPath: '/app/$slug/services/'
       preLoaderRoute: typeof AppSlugServicesIndexRouteImport
       parentRoute: typeof AppSlugServicesRoute
+    }
+    '/app/$slug/team/$memberId': {
+      id: '/app/$slug/team/$memberId'
+      path: '/$memberId'
+      fullPath: '/app/$slug/team/$memberId'
+      preLoaderRoute: typeof AppSlugTeamMemberIdRouteImport
+      parentRoute: typeof AppSlugTeamRoute
     }
     '/app/$slug/services/new': {
       id: '/app/$slug/services/new'
@@ -575,12 +611,26 @@ const AppSlugServicesRouteWithChildren = AppSlugServicesRoute._addFileChildren(
   AppSlugServicesRouteChildren,
 )
 
+interface AppSlugTeamRouteChildren {
+  AppSlugTeamMemberIdRoute: typeof AppSlugTeamMemberIdRoute
+  AppSlugTeamIndexRoute: typeof AppSlugTeamIndexRoute
+}
+
+const AppSlugTeamRouteChildren: AppSlugTeamRouteChildren = {
+  AppSlugTeamMemberIdRoute: AppSlugTeamMemberIdRoute,
+  AppSlugTeamIndexRoute: AppSlugTeamIndexRoute,
+}
+
+const AppSlugTeamRouteWithChildren = AppSlugTeamRoute._addFileChildren(
+  AppSlugTeamRouteChildren,
+)
+
 interface AppSlugRouteChildren {
   AppSlugReportsRoute: typeof AppSlugReportsRoute
   AppSlugServicesRoute: typeof AppSlugServicesRouteWithChildren
   AppSlugSettingsRoute: typeof AppSlugSettingsRoute
   AppSlugSubmissionsRoute: typeof AppSlugSubmissionsRoute
-  AppSlugTeamRoute: typeof AppSlugTeamRoute
+  AppSlugTeamRoute: typeof AppSlugTeamRouteWithChildren
   AppSlugIndexRoute: typeof AppSlugIndexRoute
 }
 
@@ -589,7 +639,7 @@ const AppSlugRouteChildren: AppSlugRouteChildren = {
   AppSlugServicesRoute: AppSlugServicesRouteWithChildren,
   AppSlugSettingsRoute: AppSlugSettingsRoute,
   AppSlugSubmissionsRoute: AppSlugSubmissionsRoute,
-  AppSlugTeamRoute: AppSlugTeamRoute,
+  AppSlugTeamRoute: AppSlugTeamRouteWithChildren,
   AppSlugIndexRoute: AppSlugIndexRoute,
 }
 

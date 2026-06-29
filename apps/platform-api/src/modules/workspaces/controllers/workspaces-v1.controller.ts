@@ -6,6 +6,7 @@ import {
   CreateWorkspaceDto,
   ListWorkspacesQueryDto,
   UpdateWorkspaceDto,
+  UpdateMemberDto,
   WorkspaceDto,
   WorkspaceListDto,
   WorkspaceMemberListDto,
@@ -50,6 +51,17 @@ export class WorkspacesV1Controller {
   @ZodSerializerDto(WorkspaceMemberListDto)
   listMembers(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.listMembers(user.id, id);
+  }
+
+  @Patch(':id/members/:memberId')
+  @HttpCode(204)
+  async updateMember(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Body() body: UpdateMemberDto,
+  ): Promise<void> {
+    await this.service.updateMember(user.id, id, memberId, body);
   }
 
   @Patch(':id')

@@ -27,6 +27,18 @@ export const listWorkspacesQuerySchema = z.object({
 export class ListWorkspacesQueryDto extends createZodDto(listWorkspacesQuerySchema) {}
 export type ListWorkspacesQuery = z.infer<typeof listWorkspacesQuerySchema>;
 
+/** Update a member's role and/or status (admin only). */
+export const updateMemberSchema = z
+  .object({
+    role: z.enum(['admin', 'member']).optional(),
+    status: z.enum(['active', 'suspended']).optional(),
+  })
+  .refine((v) => v.role !== undefined || v.status !== undefined, {
+    message: 'Provide role and/or status',
+  });
+export class UpdateMemberDto extends createZodDto(updateMemberSchema) {}
+export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
+
 // ── Response schemas + DTOs (serialized by @ZodSerializerDto + the global interceptor) ──────────
 
 /** Wire shape returned to clients. `role` is the caller's membership role in this workspace. */
