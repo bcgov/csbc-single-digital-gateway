@@ -50,7 +50,7 @@ export function structureFromDefinition(
     return { schema: definition.schema ?? {}, uischema: definition.uischema ?? {} };
   }
   if (kind === 'multi-stage-form') {
-    return { stages: definition.stages ?? [] };
+    return { stages: definition.stages ?? [], edges: definition.edges ?? [] };
   }
   return null;
 }

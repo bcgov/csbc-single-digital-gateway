@@ -10,6 +10,9 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from '@repo/ui/button';
+import { Input } from '@repo/ui/input';
+import { Label } from '@repo/ui/label';
+import { Textarea } from '@repo/ui/textarea';
 import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormBuilderDialog } from '@/components/form-builder/builder-dialog';
@@ -17,7 +20,7 @@ import { StageBuilderContext, type StageBuilderApi } from './stage-context';
 import { StageNode } from './stage-node';
 import {
   addPage,
-  addStage,
+  addStageAtEnd,
   addStageAfter,
   addStageBefore,
   disconnect,
@@ -25,6 +28,7 @@ import {
   removeStage,
   reorderPages,
   renameStage,
+  setMeta,
   updatePageDefinition,
   type MultiStageDefinition,
 } from './stage-model';
@@ -33,8 +37,9 @@ import {
 const nodeTypes: NodeTypes = { stage: StageNode };
 
 // Nodes are NOT user-draggable; lay them out top-aligned, left-to-right by flow/array order.
+// `?? []` guards a partial/stored definition (e.g. a template-derived form with no `edges`).
 const toNodes = (def: MultiStageDefinition): Node[] =>
-  def.stages.map((stage, i) => ({
+  (def.stages ?? []).map((stage, i) => ({
     id: stage.id,
     type: 'stage',
     position: { x: i * 320, y: 0 },
@@ -42,7 +47,7 @@ const toNodes = (def: MultiStageDefinition): Node[] =>
   }));
 
 const toEdges = (def: MultiStageDefinition): Edge[] =>
-  def.edges.map((edge) => ({ id: edge.id, source: edge.source, target: edge.target }));
+  (def.edges ?? []).map((edge) => ({ id: edge.id, source: edge.source, target: edge.target }));
 
 /** Re-fit the viewport (with margin) whenever the stage count changes — rendered inside ReactFlow. */
 function FitOnChange({ count }: { count: number }) {
@@ -68,7 +73,7 @@ export function StageBuilder({
   const [editing, setEditing] = useState<{ stageId: string; pageId: string } | null>(null);
 
   // Rebuild nodes when the SET of stages changes (add/remove); positions come from the model.
-  const stageKey = value.stages.map((s) => s.id).join(',');
+  const stageKey = (value.stages ?? []).map((s) => s.id).join(',');
   useEffect(() => {
     setNodes(toNodes(value));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resync only when stages are added/removed
@@ -98,8 +103,34 @@ export function StageBuilder({
   return (
     <StageBuilderContext.Provider value={api}>
       <div className="relative h-full w-full">
-        <div className="absolute left-3 top-3 z-10">
-          <Button size="sm" type="button" onClick={() => onChange(addStage(value))}>
+        {/* Top-left: form name + description panel. */}
+        <div className="absolute left-3 top-3 z-10 flex w-72 flex-col gap-2 rounded-lg border border-border bg-card p-3 shadow-sm">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="stage-form-name" className="text-xs text-muted-foreground">
+              Form name
+            </Label>
+            <Input
+              id="stage-form-name"
+              value={value.name ?? ''}
+              onChange={(event) => onChange(setMeta(value, { name: event.target.value }))}
+              className="h-8"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="stage-form-description" className="text-xs text-muted-foreground">
+              Description
+            </Label>
+            <Textarea
+              id="stage-form-description"
+              value={value.description ?? ''}
+              rows={2}
+              onChange={(event) => onChange(setMeta(value, { description: event.target.value }))}
+            />
+          </div>
+        </div>
+        {/* Top-right: add a stage connected to the last stage. */}
+        <div className="absolute right-3 top-3 z-10">
+          <Button size="sm" type="button" onClick={() => onChange(addStageAtEnd(value))}>
             <Plus className="size-4" aria-hidden />
             Add stage
           </Button>
@@ -117,7 +148,7 @@ export function StageBuilder({
         >
           <Background />
           <Controls />
-          <FitOnChange count={value.stages.length} />
+          <FitOnChange count={(value.stages ?? []).length} />
         </ReactFlow>
       </div>
       {activePage && editing ? (

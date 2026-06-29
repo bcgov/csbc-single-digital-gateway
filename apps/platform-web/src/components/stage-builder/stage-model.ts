@@ -26,9 +26,14 @@ export interface StageEdge {
 }
 
 export interface MultiStageDefinition {
+  /** Form-level name + description (edited in the canvas panel). */
+  name: string;
+  description: string;
   stages: Stage[];
   edges: StageEdge[];
 }
+
+const DEFAULT_NAME = 'Untitled multi-stage form';
 
 const uid = (): string => crypto.randomUUID();
 
@@ -47,7 +52,40 @@ export function createStage(position: { x: number; y: number }): Stage {
 
 /** A fresh multi-stage form: one stage with one empty page. */
 export function emptyDefinition(): MultiStageDefinition {
-  return { stages: [createStage({ x: 0, y: 0 })], edges: [] };
+  return { name: DEFAULT_NAME, description: '', stages: [createStage({ x: 0, y: 0 })], edges: [] };
+}
+
+/** Update the form-level name/description (the canvas panel). */
+export function setMeta(
+  def: MultiStageDefinition,
+  meta: { name?: string; description?: string },
+): MultiStageDefinition {
+  return { ...def, ...meta };
+}
+
+/**
+ * Coerce a stored/partial definition into a complete one. Forms created from the type template store
+ * `{ stages }` with no `edges` (and stages may lack `position`), so the raw blob isn't a safe
+ * `MultiStageDefinition` — without this, `edges.map`/`edges.filter` throw. Empty → a fresh definition.
+ */
+export function normalizeDefinition(
+  raw: { stages?: unknown; edges?: unknown } | null | undefined,
+): MultiStageDefinition {
+  const meta = raw as { name?: unknown; description?: unknown } | null | undefined;
+  const name = typeof meta?.name === 'string' ? meta.name : DEFAULT_NAME;
+  const description = typeof meta?.description === 'string' ? meta.description : '';
+  const rawStages = Array.isArray(raw?.stages) ? (raw.stages as Stage[]) : [];
+  if (rawStages.length === 0) {
+    return { ...emptyDefinition(), name, description };
+  }
+  const stages = rawStages.map((stage) => ({
+    id: stage.id,
+    name: stage.name,
+    position: stage.position ?? { x: 0, y: 0 },
+    pages: Array.isArray(stage.pages) ? stage.pages : [],
+  }));
+  const edges = Array.isArray(raw?.edges) ? (raw.edges as StageEdge[]) : [];
+  return { name, description, stages, edges };
 }
 
 /** Update the stage with `id` via `fn`; other stages untouched. */
@@ -61,10 +99,16 @@ function mapStage(
 
 // ── Stages ───────────────────────────────────────────────────────────────────────────────────────
 
-/** Append a new stage, auto-positioned so xyflow nodes don't stack at the origin. */
+/** Append a new standalone stage, auto-positioned so xyflow nodes don't stack at the origin. */
 export function addStage(def: MultiStageDefinition): MultiStageDefinition {
   const position = { x: def.stages.length * 320, y: 0 };
   return { ...def, stages: [...def.stages, createStage(position)] };
+}
+
+/** Append a stage and connect it to the current last stage (the "Add stage" toolbar action). */
+export function addStageAtEnd(def: MultiStageDefinition): MultiStageDefinition {
+  const last = def.stages[def.stages.length - 1];
+  return last ? addStageAfter(def, last.id) : addStage(def);
 }
 
 /**
@@ -86,7 +130,7 @@ export function removeStage(def: MultiStageDefinition, stageId: string): MultiSt
       }
     }
   }
-  return { stages: def.stages.filter((stage) => stage.id !== stageId), edges };
+  return { ...def, stages: def.stages.filter((stage) => stage.id !== stageId), edges };
 }
 
 export function renameStage(
@@ -197,14 +241,15 @@ export function disconnect(def: MultiStageDefinition, edgeId: string): MultiStag
   return { ...def, edges: def.edges.filter((edge) => edge.id !== edgeId) };
 }
 
-/** Whether a stage has an incoming edge (a preceding stage). Hides the left "add before" affordance. */
+/** Whether a stage has an incoming edge (a preceding stage). Hides the left "add before" affordance.
+ * `?? []` guards a partial/stored definition with no `edges` (these are render-path reads). */
 export function hasIncoming(def: MultiStageDefinition, stageId: string): boolean {
-  return def.edges.some((edge) => edge.target === stageId);
+  return (def.edges ?? []).some((edge) => edge.target === stageId);
 }
 
 /** Whether a stage has an outgoing edge (a following stage). Hides the right "add after" affordance. */
 export function hasOutgoing(def: MultiStageDefinition, stageId: string): boolean {
-  return def.edges.some((edge) => edge.source === stageId);
+  return (def.edges ?? []).some((edge) => edge.source === stageId);
 }
 
 /** Insert a new stage immediately AFTER `stageId` and link `stageId → new`. */
@@ -216,6 +261,7 @@ export function addStageAfter(def: MultiStageDefinition, stageId: string): Multi
   }
   const stage = createStage({ x: anchor.position.x + 320, y: anchor.position.y });
   return {
+    ...def,
     stages: [...def.stages.slice(0, index + 1), stage, ...def.stages.slice(index + 1)],
     edges: [...def.edges, { id: uid(), source: stageId, target: stage.id }],
   };
@@ -230,6 +276,7 @@ export function addStageBefore(def: MultiStageDefinition, stageId: string): Mult
   }
   const stage = createStage({ x: anchor.position.x - 320, y: anchor.position.y });
   return {
+    ...def,
     stages: [...def.stages.slice(0, index), stage, ...def.stages.slice(index)],
     edges: [...def.edges, { id: uid(), source: stage.id, target: stageId }],
   };

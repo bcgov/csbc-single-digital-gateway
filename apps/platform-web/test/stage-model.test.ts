@@ -3,12 +3,14 @@ import {
   addPage,
   addStage,
   addStageAfter,
+  addStageAtEnd,
   addStageBefore,
   connect,
   disconnect,
   emptyDefinition,
   hasIncoming,
   hasOutgoing,
+  normalizeDefinition,
   removePage,
   removeStage,
   renamePage,
@@ -131,6 +133,18 @@ describe('stage-model', () => {
       expect(next.edges[0]).toMatchObject({ source: anchorId, target: next.stages[1]!.id });
     });
 
+    it('addStageAtEnd appends a stage connected to the current last stage (builds a chain)', () => {
+      let d = emptyDefinition();
+      const first = firstStage(d).id;
+      d = addStageAtEnd(d);
+      const second = d.stages[1]!.id;
+      expect(d.stages).toHaveLength(2);
+      expect(d.edges).toContainEqual(expect.objectContaining({ source: first, target: second }));
+      d = addStageAtEnd(d);
+      const third = d.stages[2]!.id;
+      expect(d.edges).toContainEqual(expect.objectContaining({ source: second, target: third }));
+    });
+
     it('addStageBefore inserts before the anchor and links new → anchor', () => {
       const d = emptyDefinition();
       const anchorId = firstStage(d).id;
@@ -151,6 +165,31 @@ describe('stage-model', () => {
       expect(hasIncoming(next, anchorId)).toBe(false);
       expect(hasIncoming(next, newId)).toBe(true);
       expect(hasOutgoing(next, newId)).toBe(false);
+    });
+  });
+
+  describe('normalizeDefinition', () => {
+    it('adds a missing edges array (template-derived form) without losing stages', () => {
+      // A barebones form stores `{ stages }` with no `edges` and stages without `position`.
+      const raw = { stages: [{ id: 's1', name: 'Stage 1', pages: [{ id: 'p1', name: 'P1' }] }] };
+      const def = normalizeDefinition(raw);
+      expect(def.edges).toEqual([]);
+      expect(def.stages).toHaveLength(1);
+      expect(def.stages[0]!.position).toEqual({ x: 0, y: 0 });
+      expect(def.stages[0]!.pages).toHaveLength(1);
+    });
+
+    it('falls back to a fresh definition when there are no stages', () => {
+      expect(normalizeDefinition({}).stages).toHaveLength(1);
+      expect(normalizeDefinition(undefined).stages).toHaveLength(1);
+      expect(normalizeDefinition({ stages: [] }).edges).toEqual([]);
+    });
+
+    it('preserves a complete definition', () => {
+      const complete = emptyDefinition();
+      const next = normalizeDefinition(complete);
+      expect(next.stages).toHaveLength(complete.stages.length);
+      expect(next.edges).toEqual([]);
     });
   });
 
