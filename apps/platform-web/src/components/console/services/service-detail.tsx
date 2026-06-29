@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import {
   addServiceVersion,
   serviceQueryOptions,
@@ -128,34 +128,9 @@ export function ServiceDetail({
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
-      <div className="flex items-center justify-end gap-2">
-        <ButtonGroup>
-          {!isLatest && latest ? (
-            <Button size="sm" variant="outline" type="button" onClick={goToCurrent}>
-              Go to current
-            </Button>
-          ) : null}
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button size="sm" variant="outline" type="button" />}>
-              Version v{selected.version}
-              <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              {versions.toReversed().map((version) => (
-                <DropdownMenuItem
-                  key={version.id}
-                  className={version.id === selected.id ? 'font-semibold' : undefined}
-                  onClick={() => goToVersion(version.id)}
-                >
-                  v{version.version}
-                  <span className="ml-auto text-xs text-muted-foreground">{version.status}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </ButtonGroup>
-        <div className="flex items-center gap-2">
-          {/* A next version can only be started once the latest one is published. */}
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          {/* A new version can only be started once the latest one is published. */}
           {latest?.status === 'published' ? (
             <Button
               size="sm"
@@ -164,10 +139,36 @@ export function ServiceDetail({
               disabled={addVersion.isPending}
               onClick={() => addVersion.mutate()}
             >
-              <Plus className="size-4" aria-hidden />
               Update service
             </Button>
           ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <ButtonGroup>
+            {!isLatest && latest ? (
+              <Button size="sm" variant="outline" type="button" onClick={goToCurrent}>
+                Go to current
+              </Button>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button size="sm" variant="outline" type="button" />}>
+                Version v{selected.version}
+                <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {versions.toReversed().map((version) => (
+                  <DropdownMenuItem
+                    key={version.id}
+                    className={version.id === selected.id ? 'font-semibold' : undefined}
+                    onClick={() => goToVersion(version.id)}
+                  >
+                    v{version.version}
+                    <span className="ml-auto text-xs text-muted-foreground">{version.status}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </ButtonGroup>
           <ServiceMenu
             serviceId={id}
             versionId={selected.id}
