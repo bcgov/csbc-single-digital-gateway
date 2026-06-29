@@ -77,9 +77,16 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
     navigate({ to: '/app/$slug/services/$id', params: { slug: shell.slug, id: shell.serviceId } });
   const status = form.version.status;
   const readOnly = status !== 'draft';
-  const [value, setValue] = useState<FormDefinition>(
-    form.version.schema as unknown as FormDefinition,
-  );
+  // Seed the editable form. A freshly-created form has no schema.title yet → default it to the
+  // document title (which is "Untitled" at creation) so the Title field isn't blank.
+  const [value, setValue] = useState<FormDefinition>(() => {
+    const def = form.version.schema as unknown as FormDefinition;
+    const title = def.schema.title;
+    if (typeof title === 'string' && title.trim() !== '') {
+      return def;
+    }
+    return { ...def, schema: { ...def.schema, title: form.form.title } };
+  });
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: () =>
