@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { type ServiceSummary, servicesQueryOptions } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
-import { ServiceActions } from './service-actions';
+import { ServiceMenu } from './service-menu';
 
 const STATUS_VARIANT = {
   draft: 'secondary',
@@ -75,7 +75,7 @@ export function ServicesList() {
                   <TableCell className="text-muted-foreground">{service.versionCount}</TableCell>
                   <TableCell>
                     <div className="flex justify-end">
-                      <ServiceActions
+                      <ServiceMenu
                         serviceId={service.id}
                         hasSubmissions={service.hasSubmissions}
                         archived={service.status === 'archived'}

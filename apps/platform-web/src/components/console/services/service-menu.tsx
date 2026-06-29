@@ -25,12 +25,13 @@ import {
   reactivateService,
 } from '@/lib/services';
 
-/** Top-level overflow (⋯) menu for the service detail: discard the current draft, archive/reactivate the
- * service, and delete it (only when no application form has submissions) (feature 49/51). */
+/** Overflow (⋯) menu for a service (detail header + each services-list row): discard the current draft
+ * (detail only), archive ↔ publish/restore the service, and delete it (only when no application form has
+ * submissions) (feature 49/51/52). */
 export function ServiceMenu({
   serviceId,
-  versionId,
-  canDiscard,
+  versionId = '',
+  canDiscard = false,
   hasSubmissions,
   archived,
   latestPublished,
@@ -38,16 +39,17 @@ export function ServiceMenu({
   onDiscarded,
 }: {
   serviceId: string;
-  versionId: string;
-  /** The selected version is a draft AND it isn't the service's only version. */
-  canDiscard: boolean;
+  /** The version to discard — only needed when `canDiscard` (the detail). */
+  versionId?: string;
+  /** The selected version is a draft AND it isn't the service's only version (detail only). */
+  canDiscard?: boolean;
   hasSubmissions: boolean;
   archived: boolean;
   /** Whether the latest version was ever published — un-archive reads "Publish service" vs "Restore". */
   latestPublished: boolean;
-  onDeleted: () => void;
+  onDeleted?: () => void;
   /** Called after the current draft version is discarded (it no longer exists → navigate away). */
-  onDiscarded: () => void;
+  onDiscarded?: () => void;
 }) {
   const queryClient = useQueryClient();
   const [confirm, setConfirm] = useState<null | 'delete' | 'discard'>(null);
@@ -58,7 +60,7 @@ export function ServiceMenu({
     onSuccess: async () => {
       setConfirm(null);
       await invalidate();
-      onDeleted();
+      onDeleted?.();
     },
   });
   const discard = useMutation({
@@ -66,7 +68,7 @@ export function ServiceMenu({
     onSuccess: async () => {
       setConfirm(null);
       await invalidate();
-      onDiscarded();
+      onDiscarded?.();
     },
   });
   const archive = useMutation({
