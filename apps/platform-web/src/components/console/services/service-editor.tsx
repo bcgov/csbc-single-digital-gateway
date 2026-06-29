@@ -1,5 +1,6 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
+import { ButtonGroup } from '@repo/ui/button-group';
 import {
   Dialog,
   DialogContent,
@@ -90,7 +91,7 @@ export function ServiceEditor({
           </p>
         ) : null}
         {readonly ? null : (
-          <>
+          <ButtonGroup>
             <Button
               type="button"
               variant="outline"
@@ -102,7 +103,7 @@ export function ServiceEditor({
             <Button type="button" disabled={dirty || busy} onClick={() => setPublishOpen(true)}>
               Publish
             </Button>
-          </>
+          </ButtonGroup>
         )}
         {actions}
       </div>

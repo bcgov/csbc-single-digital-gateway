@@ -27,7 +27,7 @@ import {
   resolveApplications,
 } from '../util/applications';
 import { validateData } from '../util/validate-data';
-import { copyReferences, dedupCopiedForms } from '../util/version-copy';
+import { copyReferences, dedupCopiedForms, discardVersionTx } from '../util/version-copy';
 import { ServiceTypeResolver } from './service-type.resolver';
 import { ServicesService } from './services.service';
 
@@ -160,8 +160,7 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
-      // Drop deep-copied forms that are unchanged from the previously-published version (re-point the
-      // reference to the previous form), so an unedited "Add version" doesn't create duplicate forms.
+      // Drop deep-copied forms unchanged from the previous published version (re-point + dedup).
       await dedupCopiedForms(tx, id, versionId);
       // A service must have ≥1 application method, and every method's form must have structure.
       const apps = await tx
@@ -232,9 +231,18 @@ export class ServiceVersionsService {
     return toServiceVersionDto(this.orThrow(archived[0]));
   }
 
-  /** Add a new draft version that COPIES the latest version's data + application methods. Each method's
-   * form is deep-copied (new form document + draft version) so the new version is independently editable;
-   * other references (e.g. related services) are copied as-is. */
+  /** Discard a DRAFT version: delete it (+ the application forms it owned). Refuses the last version. */
+  async discardVersion(userId: string, id: string, versionId: string): Promise<void> {
+    await this.services.requireDocument(userId, id);
+    const version = await this.requireVersion(id, versionId);
+    if (version.status !== 'draft') {
+      throw new ConflictException('Only draft versions can be discarded');
+    }
+    await this.db.transaction((tx) => discardVersionTx(tx, id, versionId));
+  }
+
+  /** Add a new draft version copying the latest version's data + methods (each form deep-copied so the
+   * new version edits its own forms; other references copied as-is). */
   async addVersion(userId: string, id: string): Promise<ServiceVersionResponse> {
     const service = await this.services.requireDocument(userId, id);
     const type = await this.serviceType.resolve();

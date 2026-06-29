@@ -1,5 +1,6 @@
+import { ConflictException } from '@nestjs/common';
 import { documentReferences, documentVersions, documents } from '@repo/database';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { Tx } from './applications';
 
 function one<T>(rows: T[], what: string): T {
@@ -8,6 +9,46 @@ function one<T>(rows: T[], what: string): T {
     throw new Error(`${what} returned no row`);
   }
   return row;
+}
+
+/** Delete a (draft) service version and the application forms it owned that nothing else references.
+ * Refuses to discard a service's only version (delete the service instead). */
+export async function discardVersionTx(
+  tx: Tx,
+  serviceId: string,
+  versionId: string,
+): Promise<void> {
+  const counts = await tx
+    .select({ n: sql<number>`count(*)::int` })
+    .from(documentVersions)
+    .where(eq(documentVersions.documentId, serviceId));
+  if ((counts[0]?.n ?? 0) <= 1) {
+    throw new ConflictException('Delete the service instead of discarding its only version');
+  }
+  const formIds = (
+    await tx
+      .select({ formId: documentReferences.targetDocumentId })
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, versionId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      )
+  ).map((r) => r.formId);
+  // Deleting the version cascades the references it owns; the deep-copied forms are then orphaned.
+  await tx.delete(documentVersions).where(eq(documentVersions.id, versionId));
+  for (const formId of formIds) {
+    // eslint-disable-next-line no-await-in-loop -- sequential reads/writes share one tx connection
+    const remaining = await tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documentReferences)
+      .where(eq(documentReferences.targetDocumentId, formId));
+    if ((remaining[0]?.n ?? 0) === 0) {
+      // eslint-disable-next-line no-await-in-loop -- sequential reads/writes share one tx connection
+      await tx.delete(documents).where(eq(documents.id, formId));
+    }
+  }
 }
 
 /**

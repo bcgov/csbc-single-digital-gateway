@@ -22,8 +22,8 @@ import {
 } from '@/lib/services';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import { ApplicationMethods } from './application-methods';
-import { ServiceActions } from './service-actions';
 import { ServiceEditor } from './service-editor';
+import { ServiceMenu } from './service-menu';
 
 const STATUS_VARIANT = { draft: 'secondary', published: 'default', archived: 'outline' } as const;
 
@@ -84,15 +84,6 @@ export function ServiceDetail() {
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
-      <div className="flex items-center justify-end gap-2">
-        <ServiceActions
-          serviceId={id}
-          hasSubmissions={data.hasSubmissions}
-          archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
-          onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
-        />
-      </div>
-
       <Tabs defaultValue="details" className="gap-4">
         <TabsList>
           <TabsTrigger value="details">Service details</TabsTrigger>
@@ -163,19 +154,29 @@ export function ServiceDetail() {
                 hasStructure: ref.hasStructure,
               }))}
               actions={
-                <Button
-                  size="sm"
-                  variant="outline"
-                  type="button"
-                  // A new version can only start once the latest one is published.
-                  disabled={
-                    addVersion.isPending || versions[versions.length - 1]?.status !== 'published'
-                  }
-                  onClick={() => addVersion.mutate()}
-                >
-                  <Plus className="size-4" aria-hidden />
-                  Add version
-                </Button>
+                <>
+                  {/* A next version can only be started once the latest one is published. */}
+                  {versions[versions.length - 1]?.status === 'published' ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      disabled={addVersion.isPending}
+                      onClick={() => addVersion.mutate()}
+                    >
+                      <Plus className="size-4" aria-hidden />
+                      Create next version
+                    </Button>
+                  ) : null}
+                  <ServiceMenu
+                    serviceId={id}
+                    versionId={selected.id}
+                    canDiscard={selected.status === 'draft' && versions.length > 1}
+                    hasSubmissions={data.hasSubmissions}
+                    archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
+                    onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
+                  />
+                </>
               }
             />
           ) : null}

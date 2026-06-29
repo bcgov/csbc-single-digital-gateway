@@ -257,6 +257,17 @@ export async function deleteService(id: string): Promise<void> {
   }
 }
 
+/** Discard a draft version (deletes it + its application forms). */
+export async function discardServiceVersion(id: string, versionId: string): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
 /** Archive a service (archives all its versions). */
 export async function archiveService(id: string): Promise<void> {
   const res = await fetch(`${BASE}/${encodeURIComponent(id)}/archive`, {

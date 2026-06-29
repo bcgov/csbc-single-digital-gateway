@@ -107,4 +107,14 @@ export class ServicesV1Controller {
   addVersion(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.versions.addVersion(user.id, id);
   }
+
+  @Delete(':id/versions/:versionId')
+  @HttpCode(204)
+  async discardVersion(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ): Promise<void> {
+    await this.versions.discardVersion(user.id, id, versionId);
+  }
 }
