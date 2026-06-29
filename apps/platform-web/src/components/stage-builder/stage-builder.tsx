@@ -125,7 +125,7 @@ export function StageBuilder({
           </div>
         </div>
         {tab === 'preview' ? (
-          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/10">
+          <div className="min-h-0 flex-1 bg-muted/10">
             <Suspense
               fallback={<p className="p-6 text-sm text-muted-foreground">Loading preview…</p>}
             >

@@ -1,37 +1,113 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
-import { useState } from 'react';
-import type { MultiStageDefinition } from './stage-model';
+import { Button } from '@repo/ui/button';
+import { useMemo, useState } from 'react';
+import type { MultiStageDefinition, StagePage } from './stage-model';
 
-/** Lazily-loaded live preview of a multi-stage form — every stage's pages rendered through the real
- * renderers, top to bottom, sharing one data object (as a citizen would fill it in). */
+interface Step {
+  stageName: string;
+  page: StagePage;
+}
+
+/** Lazily-loaded live preview of a multi-stage form as a stepper: a legend of stages → pages on the
+ * left, the current page rendered through the real renderers, and a "Step x of y" counter. */
 export default function StagePreview({ definition }: { definition: MultiStageDefinition }) {
+  const steps = useMemo<Step[]>(
+    () =>
+      (definition.stages ?? []).flatMap((stage) =>
+        stage.pages.map((page) => ({ stageName: stage.name, page })),
+      ),
+    [definition],
+  );
+  const [current, setCurrent] = useState(0);
   const [data, setData] = useState<Record<string, unknown>>({});
+  const total = steps.length;
+  const stepIndex = Math.min(current, total - 1);
+  const step = steps[stepIndex];
+
+  if (!step) {
+    return <p className="p-6 text-sm text-muted-foreground">Add a page to preview the form.</p>;
+  }
+
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 p-6">
-      {(definition.stages ?? []).map((stage, index) => (
-        <section key={stage.id} className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-foreground">
-            {index + 1}. {stage.name}
-          </h2>
-          {stage.pages.map((page) => (
-            <div
-              key={page.id}
-              className="flex flex-col gap-2 rounded-xl border border-border bg-card p-6"
-            >
-              <h3 className="text-sm font-medium text-foreground">{page.name}</h3>
-              {page.description ? (
-                <p className="text-sm text-muted-foreground">{page.description}</p>
-              ) : null}
-              <JsonForms
-                schema={page.schema as JsonSchema}
-                uischema={page.uischema as unknown as UISchemaElement}
-                data={data}
-                onChange={({ data: next }) => setData(next as Record<string, unknown>)}
-              />
-            </div>
+    <div className="flex h-full">
+      <aside className="w-64 shrink-0 overflow-y-auto border-r border-border bg-card p-3">
+        <ol className="flex flex-col gap-3">
+          {(definition.stages ?? []).map((stage, stageIndex) => (
+            <li key={stage.id} className="flex flex-col gap-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {stageIndex + 1}. {stage.name}
+              </p>
+              <ul className="flex flex-col gap-0.5">
+                {stage.pages.map((page) => {
+                  const index = steps.findIndex((s) => s.page.id === page.id);
+                  const active = index === stepIndex;
+                  return (
+                    <li key={page.id}>
+                      <button
+                        type="button"
+                        onClick={() => setCurrent(index)}
+                        className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm ${
+                          active
+                            ? 'bg-accent font-medium text-accent-foreground'
+                            : 'text-muted-foreground hover:bg-accent/50'
+                        }`}
+                      >
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {index + 1}
+                        </span>
+                        <span className="truncate">{page.name}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
           ))}
-        </section>
-      ))}
+        </ol>
+      </aside>
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-3">
+          <div className="flex min-w-0 flex-col">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              {step.stageName}
+            </p>
+            <h2 className="truncate text-base font-semibold text-foreground">{step.page.name}</h2>
+          </div>
+          <span className="shrink-0 text-sm text-muted-foreground">
+            Step {stepIndex + 1} of {total}
+          </span>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+          <div className="mx-auto w-full max-w-2xl rounded-xl border border-border bg-card p-6">
+            <JsonForms
+              schema={step.page.schema as JsonSchema}
+              uischema={step.page.uischema as unknown as UISchemaElement}
+              data={data}
+              onChange={({ data: next }) => setData(next as Record<string, unknown>)}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border px-6 py-3">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={stepIndex === 0}
+            onClick={() => setCurrent(stepIndex - 1)}
+          >
+            Back
+          </Button>
+          <Button
+            type="button"
+            disabled={stepIndex >= total - 1}
+            onClick={() => setCurrent(stepIndex + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
