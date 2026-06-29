@@ -113,6 +113,56 @@ export function workspaceMembersQueryOptions(workspaceId: string) {
   });
 }
 
+/** A staff user eligible to be added to a workspace (addable-staff search result). */
+export interface StaffUser {
+  id: string;
+  displayName: string;
+  email: string | null;
+}
+
+/** Search staff users who can be added to this workspace (admin only). `q` filters by name/email;
+ * empty `q` returns the first page. Previous results are kept while typing to avoid flicker. */
+export function workspaceAddableStaffQueryOptions(workspaceId: string, q: string) {
+  const search = q.trim();
+  return queryOptions({
+    queryKey: ['workspaces', 'addable-staff', workspaceId, search] as const,
+    queryFn: async (): Promise<StaffUser[]> => {
+      const qs = search ? `?q=${encodeURIComponent(search)}` : '';
+      const res = await fetch(
+        `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/addable-staff${qs}`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) {
+        throw new Error(`GET /v1/workspaces/:id/addable-staff failed: ${res.status}`);
+      }
+      const envelope = (await res.json()) as { items: StaffUser[] };
+      return envelope.items;
+    },
+    staleTime: 30 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+/** Add an existing staff user to the workspace with a chosen role (admin only, enforced server-side). */
+export async function addWorkspaceMember(
+  workspaceId: string,
+  body: { userId: string; role: WorkspaceRole },
+): Promise<WorkspaceMember> {
+  const res = await fetch(
+    `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/members`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`POST /v1/workspaces/:id/members failed: ${res.status}`);
+  }
+  return (await res.json()) as WorkspaceMember;
+}
+
 /** Change a member's role and/or status (admin only, enforced server-side). */
 export async function updateWorkspaceMember(
   workspaceId: string,
