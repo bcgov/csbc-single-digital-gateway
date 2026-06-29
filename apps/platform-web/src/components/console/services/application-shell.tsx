@@ -50,7 +50,6 @@ export function ApplicationShell({
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
-        {status ? <Badge variant="outline">{status}</Badge> : <span />}
         <Button
           type="button"
           variant="outline"
@@ -60,6 +59,7 @@ export function ApplicationShell({
         >
           Back
         </Button>
+        {status ? <Badge variant="outline">{status}</Badge> : <span />}
       </div>
       <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         This form is {status ?? 'not editable'} and can’t be changed. Add a new service version to

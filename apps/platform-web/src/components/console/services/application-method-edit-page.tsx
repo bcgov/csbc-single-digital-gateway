@@ -122,14 +122,16 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
       <FormBuilder
         value={value}
         onChange={setValue}
-        title={<Badge variant="outline">{status}</Badge>}
         actions={
-          <BuilderActions
-            error={save.error}
-            saving={save.isPending}
-            onSave={() => save.mutate()}
-            onCancel={toDetail}
-          />
+          <>
+            <Badge variant="outline">{status}</Badge>
+            <BuilderActions
+              error={save.error}
+              saving={save.isPending}
+              onSave={() => save.mutate()}
+              onCancel={toDetail}
+            />
+          </>
         }
       />
     </ApplicationShell>
@@ -214,14 +216,16 @@ function StageEdit({ form }: { form: FormWithVersion }) {
       <StageBuilder
         value={value}
         onChange={setValue}
-        title={<Badge variant="outline">{status}</Badge>}
         actions={
-          <BuilderActions
-            error={save.error}
-            saving={save.isPending}
-            onSave={() => save.mutate()}
-            onCancel={toDetail}
-          />
+          <>
+            <Badge variant="outline">{status}</Badge>
+            <BuilderActions
+              error={save.error}
+              saving={save.isPending}
+              onSave={() => save.mutate()}
+              onCancel={toDetail}
+            />
+          </>
         }
       />
     </ApplicationShell>
