@@ -96,6 +96,11 @@ export function ServiceMenu({
           >
             Delete service
           </DropdownMenuItem>
+          {hasSubmissions ? (
+            <p className="px-2 py-1 text-xs text-muted-foreground">
+              Has submissions — archive it instead.
+            </p>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 
