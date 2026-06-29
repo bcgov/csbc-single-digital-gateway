@@ -1,7 +1,41 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { documentReferences, documentVersions, documents } from '@repo/database';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { Tx } from './applications';
+
+/** Reactivate an archived service: clear `archived_at` on the LATEST version (→ its prior published/
+ * draft state) and the application forms it references. Older versions stay archived as history. */
+export async function reactivateServiceTx(tx: Tx, id: string): Promise<void> {
+  const latest = (
+    await tx
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, id))
+      .orderBy(desc(documentVersions.version))
+      .limit(1)
+  )[0];
+  if (latest === undefined) {
+    throw new NotFoundException('Service not found');
+  }
+  if (latest.status !== 'archived') {
+    throw new ConflictException('Only archived services can be reactivated');
+  }
+  const formVersionIds = (
+    await tx
+      .select({ vid: documentReferences.targetVersionId })
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, latest.id),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      )
+  ).map((r) => r.vid);
+  await tx
+    .update(documentVersions)
+    .set({ archivedAt: null })
+    .where(inArray(documentVersions.id, [latest.id, ...formVersionIds]));
+}
 
 function one<T>(rows: T[], what: string): T {
   const row = rows[0];

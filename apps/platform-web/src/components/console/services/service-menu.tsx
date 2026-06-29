@@ -18,10 +18,15 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { EllipsisVertical } from 'lucide-react';
 import { useState } from 'react';
-import { archiveService, deleteService, discardServiceVersion } from '@/lib/services';
+import {
+  archiveService,
+  deleteService,
+  discardServiceVersion,
+  reactivateService,
+} from '@/lib/services';
 
-/** Top-level overflow (⋯) menu for the service detail: discard the current draft, archive the service
- * (always allowed), and delete it (only when no application form has submissions) (feature 49). */
+/** Top-level overflow (⋯) menu for the service detail: discard the current draft, archive/reactivate the
+ * service, and delete it (only when no application form has submissions) (feature 49/51). */
 export function ServiceMenu({
   serviceId,
   versionId,
@@ -65,6 +70,10 @@ export function ServiceMenu({
     mutationFn: () => archiveService(serviceId),
     onSuccess: invalidate,
   });
+  const reactivate = useMutation({
+    mutationFn: () => reactivateService(serviceId),
+    onSuccess: invalidate,
+  });
 
   const active = confirm === 'discard' ? discard : remove;
 
@@ -86,12 +95,15 @@ export function ServiceMenu({
               <DropdownMenuSeparator />
             </>
           ) : null}
-          <DropdownMenuItem
-            disabled={archived || archive.isPending}
-            onClick={() => archive.mutate()}
-          >
-            Archive service
-          </DropdownMenuItem>
+          {archived ? (
+            <DropdownMenuItem disabled={reactivate.isPending} onClick={() => reactivate.mutate()}>
+              Reactivate service
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem disabled={archive.isPending} onClick={() => archive.mutate()}>
+              Archive service
+            </DropdownMenuItem>
+          )}
           {/* A service can only be deleted when none of its application forms has submissions. */}
           <DropdownMenuItem
             className="text-destructive"

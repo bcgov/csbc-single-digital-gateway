@@ -21,6 +21,7 @@ import {
   toServiceVersionDto,
 } from '../dtos/service.dtos';
 import { insertApplication, resolveApplications } from '../util/applications';
+import { reactivateServiceTx } from '../util/version-copy';
 import { ServiceTypeResolver } from './service-type.resolver';
 
 function summarizeStatus(
@@ -237,6 +238,13 @@ export class ServicesService {
           sql`${documentVersions.archivedAt} is null`,
         ),
       );
+  }
+
+  /** Reactivate an archived service: clear `archived_at` on the LATEST version (→ its prior published/
+   * draft state) and the application forms it references. Older versions stay archived as history. */
+  async reactivate(userId: string, id: string): Promise<void> {
+    await this.requireDocument(userId, id);
+    await this.db.transaction((tx) => reactivateServiceTx(tx, id));
   }
 
   private async versionsOf(documentId: string) {

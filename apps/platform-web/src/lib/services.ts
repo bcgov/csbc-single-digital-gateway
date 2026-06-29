@@ -279,6 +279,17 @@ export async function archiveService(id: string): Promise<void> {
   }
 }
 
+/** Reactivate an archived service (restores its latest version + that version's forms). */
+export async function reactivateService(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/reactivate`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
 /** Create a new form (of `typeId`, with an optional designed `definition`) AND reference it from a
  * service draft version — the "Add application method" route flow (feature 44). */
 export function createReferencedForm(

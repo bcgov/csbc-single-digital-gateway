@@ -71,6 +71,12 @@ export class ServicesV1Controller {
     await this.services.archive(user.id, id);
   }
 
+  @Post(':id/reactivate')
+  @HttpCode(204)
+  async reactivateService(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<void> {
+    await this.services.reactivate(user.id, id);
+  }
+
   @Patch(':id/versions/:versionId')
   @ZodSerializerDto(ServiceVersionDto)
   updateDraft(
