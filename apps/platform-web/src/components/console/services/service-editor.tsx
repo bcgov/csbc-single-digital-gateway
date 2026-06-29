@@ -11,7 +11,7 @@ import {
 import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { publishVersion, updateDraft } from '@/lib/services';
 
 interface Definition {
@@ -25,9 +25,9 @@ export interface PublishApplication {
   hasStructure: boolean;
 }
 
-/** Edit a service draft version: the JSONForms service form + Save draft / Save & publish. Publishing
- * shows a summary modal (it also publishes the application forms) and is gated on every method having
- * fields. Application methods are managed on the other tab; creation is a modal. */
+/** Edit a service draft version: a top action bar (Save draft / Publish / + any `actions` like Add
+ * version) over the JSONForms service form. Save draft enables only with unsaved changes; Publish is
+ * disabled until changes are saved (and gated by the summary modal on every method having fields). */
 export function ServiceEditor({
   serviceId,
   versionId,
@@ -35,6 +35,7 @@ export function ServiceEditor({
   initialData = {},
   readonly = false,
   applications = [],
+  actions,
 }: {
   serviceId: string;
   versionId: string;
@@ -42,10 +43,14 @@ export function ServiceEditor({
   initialData?: Record<string, unknown>;
   readonly?: boolean;
   applications?: PublishApplication[];
+  actions?: ReactNode;
 }) {
   const [data, setData] = useState<Record<string, unknown>>(initialData);
+  // Baseline = last-saved data; dirty drives Save draft (on) / Publish (off).
+  const [baseline, setBaseline] = useState<Record<string, unknown>>(initialData);
   const [publishOpen, setPublishOpen] = useState(false);
   const queryClient = useQueryClient();
+  const dirty = JSON.stringify(data) !== JSON.stringify(baseline);
 
   const requireTitle = (): string => {
     const title = typeof data.title === 'string' ? data.title.trim() : '';
@@ -57,15 +62,15 @@ export function ServiceEditor({
 
   const save = useMutation({
     mutationFn: () => updateDraft(serviceId, versionId, { data, title: requireTitle() }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['services'] }),
+    onSuccess: async () => {
+      setBaseline(data);
+      await queryClient.invalidateQueries({ queryKey: ['services'] });
+    },
   });
 
-  // Save the draft, then publish it (server re-validates data + methods → 422 surfaced).
+  // Publish the (already-saved) draft; server re-validates data + methods → 422 surfaced.
   const publish = useMutation({
-    mutationFn: async () => {
-      await updateDraft(serviceId, versionId, { data, title: requireTitle() });
-      return publishVersion(serviceId, versionId);
-    },
+    mutationFn: () => publishVersion(serviceId, versionId),
     onSuccess: async () => {
       setPublishOpen(false);
       await queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -78,6 +83,29 @@ export function ServiceEditor({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-end gap-3">
+        {save.isError ? (
+          <p role="alert" className="mr-auto text-sm text-destructive">
+            {save.error.message}
+          </p>
+        ) : null}
+        {readonly ? null : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!dirty || busy}
+              onClick={() => save.mutate()}
+            >
+              Save draft
+            </Button>
+            <Button type="button" disabled={dirty || busy} onClick={() => setPublishOpen(true)}>
+              Publish
+            </Button>
+          </>
+        )}
+        {actions}
+      </div>
       <div className="rounded-xl border border-border bg-card p-4">
         <JsonForms
           schema={definition.schema as JsonSchema}
@@ -91,21 +119,6 @@ export function ServiceEditor({
           }}
         />
       </div>
-      {readonly ? null : (
-        <div className="flex items-center justify-end gap-3">
-          {save.isError ? (
-            <p role="alert" className="mr-auto text-sm text-destructive">
-              {save.error.message}
-            </p>
-          ) : null}
-          <Button type="button" variant="outline" disabled={busy} onClick={() => save.mutate()}>
-            Save draft
-          </Button>
-          <Button type="button" disabled={busy} onClick={() => setPublishOpen(true)}>
-            Save &amp; publish
-          </Button>
-        </div>
-      )}
 
       <Dialog
         open={publishOpen}

@@ -91,15 +91,6 @@ export function ServiceDetail() {
           archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
           onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
         />
-        <Button
-          size="sm"
-          type="button"
-          disabled={addVersion.isPending}
-          onClick={() => addVersion.mutate()}
-        >
-          <Plus className="size-4" aria-hidden />
-          Add version
-        </Button>
       </div>
 
       <Tabs defaultValue="details" className="gap-4">
@@ -171,6 +162,21 @@ export function ServiceDetail() {
                 title: ref.targetTitle,
                 hasStructure: ref.hasStructure,
               }))}
+              actions={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  // A new version can only start once the latest one is published.
+                  disabled={
+                    addVersion.isPending || versions[versions.length - 1]?.status !== 'published'
+                  }
+                  onClick={() => addVersion.mutate()}
+                >
+                  <Plus className="size-4" aria-hidden />
+                  Add version
+                </Button>
+              }
             />
           ) : null}
         </TabsContent>

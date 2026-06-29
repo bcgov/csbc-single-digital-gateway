@@ -172,9 +172,9 @@ describe('console services', () => {
     expect(await screen.findByText('Permit form')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
 
-    // Publish through the summary modal (the form has structure ⇒ Publish is enabled).
+    // Publish through the summary modal (no unsaved changes ⇒ the Publish trigger is enabled).
     await user.click(screen.getByRole('tab', { name: /service details/i }));
-    await user.click(await screen.findByRole('button', { name: /save & publish/i }));
+    await user.click(await screen.findByRole('button', { name: 'Publish' }));
     const modal = await screen.findByRole('dialog', { name: /publish service/i });
     await user.click(within(modal).getByRole('button', { name: 'Publish' }));
     await waitFor(() => {
