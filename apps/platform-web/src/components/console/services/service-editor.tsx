@@ -12,7 +12,7 @@ import {
 import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, X } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { publishVersion, updateDraft } from '@/lib/services';
 
 interface Definition {
@@ -36,7 +36,6 @@ export function ServiceEditor({
   initialData = {},
   readonly = false,
   applications = [],
-  actions,
 }: {
   serviceId: string;
   versionId: string;
@@ -44,7 +43,6 @@ export function ServiceEditor({
   initialData?: Record<string, unknown>;
   readonly?: boolean;
   applications?: PublishApplication[];
-  actions?: ReactNode;
 }) {
   const [data, setData] = useState<Record<string, unknown>>(initialData);
   // Baseline = last-saved data; dirty drives Save draft (on) / Publish (off).
@@ -105,7 +103,6 @@ export function ServiceEditor({
             </Button>
           </ButtonGroup>
         )}
-        {actions}
       </div>
       <div className="rounded-xl border border-border bg-card p-4">
         <JsonForms

@@ -20,8 +20,8 @@ import { EllipsisVertical } from 'lucide-react';
 import { useState } from 'react';
 import { archiveService, deleteService, discardServiceVersion } from '@/lib/services';
 
-/** Overflow (⋯) menu for the service detail: discard the current draft, and delete/archive the service.
- * Delete is offered only when no application form has submissions, otherwise Archive (feature 49). */
+/** Top-level overflow (⋯) menu for the service detail: discard the current draft, archive the service
+ * (always allowed), and delete it (only when no application form has submissions) (feature 49). */
 export function ServiceMenu({
   serviceId,
   versionId,
@@ -82,18 +82,20 @@ export function ServiceMenu({
               <DropdownMenuSeparator />
             </>
           ) : null}
-          {hasSubmissions ? (
-            <DropdownMenuItem
-              disabled={archived || archive.isPending}
-              onClick={() => archive.mutate()}
-            >
-              Archive service
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem className="text-destructive" onClick={() => setConfirm('delete')}>
-              Delete service
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            disabled={archived || archive.isPending}
+            onClick={() => archive.mutate()}
+          >
+            Archive service
+          </DropdownMenuItem>
+          {/* A service can only be deleted when none of its application forms has submissions. */}
+          <DropdownMenuItem
+            className="text-destructive"
+            disabled={hasSubmissions}
+            onClick={() => setConfirm('delete')}
+          >
+            Delete service
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

@@ -16,7 +16,6 @@ import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import {
   addServiceVersion,
-  archiveVersion,
   serviceQueryOptions,
   serviceReferencesQueryOptions,
 } from '@/lib/services';
@@ -45,10 +44,6 @@ export function ServiceDetail() {
   });
   const references = referencesQuery.data ?? [];
 
-  const archive = useMutation({
-    mutationFn: (versionId: string) => archiveVersion(id, versionId),
-    onSuccess: invalidate,
-  });
   const addVersion = useMutation({
     mutationFn: () => addServiceVersion(id),
     onSuccess: invalidate,
@@ -84,6 +79,32 @@ export function ServiceDetail() {
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
+      {selected ? (
+        <div className="flex items-center justify-end gap-2">
+          {/* A next version can only be started once the latest one is published. */}
+          {versions[versions.length - 1]?.status === 'published' ? (
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              disabled={addVersion.isPending}
+              onClick={() => addVersion.mutate()}
+            >
+              <Plus className="size-4" aria-hidden />
+              Create next version
+            </Button>
+          ) : null}
+          <ServiceMenu
+            serviceId={id}
+            versionId={selected.id}
+            canDiscard={selected.status === 'draft' && versions.length > 1}
+            hasSubmissions={data.hasSubmissions}
+            archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
+            onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
+          />
+        </div>
+      ) : null}
+
       <Tabs defaultValue="details" className="gap-4">
         <TabsList>
           <TabsTrigger value="details">Service details</TabsTrigger>
@@ -102,7 +123,6 @@ export function ServiceDetail() {
                 <TableRow>
                   <TableHead>Version</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -115,24 +135,6 @@ export function ServiceDetail() {
                     <TableCell className="font-medium">v{version.version}</TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[version.status]}>{version.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        {version.status !== 'archived' ? (
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            type="button"
-                            disabled={archive.isPending}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              archive.mutate(version.id);
-                            }}
-                          >
-                            Archive
-                          </Button>
-                        ) : null}
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -153,31 +155,6 @@ export function ServiceDetail() {
                 title: ref.targetTitle,
                 hasStructure: ref.hasStructure,
               }))}
-              actions={
-                <>
-                  {/* A next version can only be started once the latest one is published. */}
-                  {versions[versions.length - 1]?.status === 'published' ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      type="button"
-                      disabled={addVersion.isPending}
-                      onClick={() => addVersion.mutate()}
-                    >
-                      <Plus className="size-4" aria-hidden />
-                      Create next version
-                    </Button>
-                  ) : null}
-                  <ServiceMenu
-                    serviceId={id}
-                    versionId={selected.id}
-                    canDiscard={selected.status === 'draft' && versions.length > 1}
-                    hasSubmissions={data.hasSubmissions}
-                    archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
-                    onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
-                  />
-                </>
-              }
             />
           ) : null}
         </TabsContent>
