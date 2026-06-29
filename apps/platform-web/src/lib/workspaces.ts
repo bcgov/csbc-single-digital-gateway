@@ -13,6 +13,8 @@ export interface Workspace {
   slug: string;
   name: string;
   role: WorkspaceRole;
+  /** User id of the workspace owner (creator, or whoever it was transferred to). */
+  ownerId: string;
   createdAt: string;
 }
 
@@ -87,6 +89,8 @@ export interface WorkspaceMember {
   status: 'active' | 'suspended';
   displayName: string;
   email: string | null;
+  /** The workspace owner — their role/status cannot be changed (enforced server-side). */
+  isOwner: boolean;
   joinedAt: string;
 }
 
@@ -127,6 +131,27 @@ export async function updateWorkspaceMember(
   if (!res.ok) {
     throw new Error(`PATCH /v1/workspaces/:id/members/:memberId failed: ${res.status}`);
   }
+}
+
+/** Transfer ownership to another active member (owner only, enforced server-side). The new owner is
+ * promoted to active admin; the previous owner keeps their admin membership. */
+export async function transferWorkspaceOwnership(
+  workspaceId: string,
+  userId: string,
+): Promise<Workspace> {
+  const res = await fetch(
+    `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/transfer-ownership`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`POST /v1/workspaces/:id/transfer-ownership failed: ${res.status}`);
+  }
+  return (await res.json()) as Workspace;
 }
 
 /** Create a workspace (the caller becomes its admin member, server-side). */
