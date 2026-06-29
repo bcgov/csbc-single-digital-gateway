@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Pencil } from 'lucide-react';
 import {
   addServiceVersion,
   serviceQueryOptions,
@@ -128,21 +128,19 @@ export function ServiceDetail({
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          {/* A new version can only be started once the latest one is published. */}
-          {latest?.status === 'published' ? (
-            <Button
-              size="sm"
-              variant="outline"
-              type="button"
-              disabled={addVersion.isPending}
-              onClick={() => addVersion.mutate()}
-            >
-              Update service
-            </Button>
-          ) : null}
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        {/* A new version can only be started once the latest one is published. */}
+        {latest?.status === 'published' ? (
+          <Button
+            size="sm"
+            type="button"
+            disabled={addVersion.isPending}
+            onClick={() => addVersion.mutate()}
+          >
+            <Pencil className="size-4" aria-hidden />
+            Update service
+          </Button>
+        ) : null}
         <div className="flex items-center gap-2">
           <ButtonGroup>
             {!isLatest && latest ? (
