@@ -125,7 +125,8 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
     );
   }
   return (
-    <ApplicationShell {...shell} label={form.form.title}>
+    // The edited title bubbles up to the document name in the header/breadcrumb (persisted on save).
+    <ApplicationShell {...shell} label={titleOf(value)}>
       <FormBuilder
         value={value}
         onChange={setValue}
