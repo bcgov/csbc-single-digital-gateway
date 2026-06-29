@@ -97,7 +97,7 @@ export function ServiceMenu({
           ) : null}
           {archived ? (
             <DropdownMenuItem disabled={reactivate.isPending} onClick={() => reactivate.mutate()}>
-              Reactivate service
+              Publish service
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem disabled={archive.isPending} onClick={() => archive.mutate()}>

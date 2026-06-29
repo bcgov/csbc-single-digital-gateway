@@ -11,13 +11,13 @@ import {
 import { Button } from '@repo/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@repo/ui/tooltip';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Archive, Trash2 } from 'lucide-react';
+import { Archive, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { archiveService, deleteService } from '@/lib/services';
+import { archiveService, deleteService, reactivateService } from '@/lib/services';
 
-/** Service lifecycle action (list + detail): Delete when none of the service's application forms has
- * submissions (the service + its empty forms are removed), otherwise Archive. Delete is confirmed with
- * a shadcn AlertDialog (feature 45). */
+/** Service lifecycle action (services list): Publish when archived (republish the latest version);
+ * otherwise Delete (no submissions) or Archive (has submissions). Delete is confirmed with a shadcn
+ * AlertDialog (feature 45/51). */
 export function ServiceActions({
   serviceId,
   hasSubmissions,
@@ -44,13 +44,33 @@ export function ServiceActions({
     mutationFn: () => archiveService(serviceId),
     onSuccess: invalidate,
   });
+  const reactivate = useMutation({
+    mutationFn: () => reactivateService(serviceId),
+    onSuccess: invalidate,
+  });
+
+  // Republish an archived service (restores its latest version + that version's forms).
+  const publishButton = (
+    <Button
+      size="xs"
+      variant="ghost"
+      type="button"
+      disabled={reactivate.isPending}
+      onClick={() => reactivate.mutate()}
+    >
+      <Upload className="size-3.5" aria-hidden />
+      Publish
+    </Button>
+  );
 
   if (hasSubmissions) {
     // A service with submitted applications can't be deleted — offer Archive (unless already archived)
     // and a disabled Delete with a tooltip explaining why.
     return (
       <div className="flex items-center gap-2">
-        {archived ? null : (
+        {archived ? (
+          publishButton
+        ) : (
           <Button
             size="xs"
             variant="ghost"
@@ -87,7 +107,8 @@ export function ServiceActions({
   }
 
   return (
-    <>
+    <div className="flex items-center gap-2">
+      {archived ? publishButton : null}
       <Button
         size="xs"
         variant="ghost"
@@ -130,6 +151,6 @@ export function ServiceActions({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }
