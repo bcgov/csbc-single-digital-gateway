@@ -22,6 +22,7 @@ import {
   updateDraft,
 } from '@/lib/services';
 import { useSetPageChrome } from '@/lib/page-chrome';
+import { UnsavedChangesGuard } from '../unsaved-changes-guard';
 import { ApplicationMethods } from './application-methods';
 import { ServiceEditor } from './service-editor';
 import { ServiceMenu } from './service-menu';
@@ -280,6 +281,8 @@ export function ServiceDetail({
         publishing={publish.isPending}
         error={publish.error}
       />
+      {/* Switching tabs/versions or leaving with unsaved form edits prompts before discarding. */}
+      <UnsavedChangesGuard when={dirty} />
     </div>
   );
 }
