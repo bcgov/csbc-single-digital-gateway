@@ -52,15 +52,32 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['forms', 'detail', form.form.id] }),
   });
   if (readOnly) {
+    // Strip root title/description so the JsonForms wrapper doesn't also render a header (we render it).
+    const {
+      title: schemaTitle,
+      description: schemaDescription,
+      ...schemaRest
+    } = value.schema as {
+      title?: unknown;
+      description?: unknown;
+    };
+    const previewTitle =
+      typeof schemaTitle === 'string' && schemaTitle.trim() !== '' ? schemaTitle : form.form.title;
     return (
       <ApplicationShell {...shell} label={form.form.title} status={status} readOnly>
-        <div className="h-full overflow-auto p-4">
-          <JsonForms
-            schema={value.schema as JsonSchema}
-            uischema={value.uischema as unknown as UISchemaElement}
-            data={{}}
-            readonly
+        <div className="flex h-full flex-col">
+          <FormPreviewHeader
+            title={previewTitle}
+            description={typeof schemaDescription === 'string' ? schemaDescription : undefined}
           />
+          <div className="min-h-0 flex-1 overflow-auto p-4">
+            <JsonForms
+              schema={schemaRest as JsonSchema}
+              uischema={value.uischema as unknown as UISchemaElement}
+              data={{}}
+              readonly
+            />
+          </div>
         </div>
       </ApplicationShell>
     );
@@ -76,6 +93,22 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
     >
       <FormBuilder value={value} onChange={setValue} />
     </ApplicationShell>
+  );
+}
+
+/** Title + description header shown above a read-only form preview. */
+function FormPreviewHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string | undefined;
+}) {
+  return (
+    <div className="border-b border-border px-4 py-3">
+      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+      {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
+    </div>
   );
 }
 
@@ -121,8 +154,14 @@ function StageEdit({ form }: { form: FormWithVersion }) {
   if (readOnly) {
     return (
       <ApplicationShell {...shell} label={value.name || form.form.title} status={status} readOnly>
-        <div className="h-full overflow-auto">
-          <StageOutline def={value} />
+        <div className="flex h-full flex-col">
+          <FormPreviewHeader
+            title={value.name || form.form.title}
+            description={value.description || undefined}
+          />
+          <div className="min-h-0 flex-1 overflow-auto">
+            <StageOutline def={value} />
+          </div>
         </div>
       </ApplicationShell>
     );

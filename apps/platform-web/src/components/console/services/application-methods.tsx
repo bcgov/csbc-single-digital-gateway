@@ -21,6 +21,12 @@ const KIND_LABEL: Record<string, string> = {
   'multi-stage-form': 'Multi-stage form',
 };
 
+const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'outline'> = {
+  draft: 'secondary',
+  published: 'default',
+  archived: 'outline',
+};
+
 /** Service-detail "Application methods" — a list of existing method references. Each method links to
  * its builder; it can be DELETED when its form has no submissions, otherwise ARCHIVED (feature 45). */
 export function ApplicationMethods({
@@ -119,7 +125,9 @@ export function ApplicationMethods({
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  {archived ? <Badge variant="outline">Archived</Badge> : null}
+                  <Badge variant={STATUS_VARIANT[ref.targetStatus] ?? 'outline'}>
+                    {ref.targetStatus}
+                  </Badge>
                   {readonly || archived ? null : ref.hasSubmissions ? (
                     <Button
                       size="xs"
