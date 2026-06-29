@@ -27,6 +27,7 @@ import {
   resolveApplications,
 } from '../util/applications';
 import { validateData } from '../util/validate-data';
+import { copyReferences, dedupCopiedForms } from '../util/version-copy';
 import { ServiceTypeResolver } from './service-type.resolver';
 import { ServicesService } from './services.service';
 
@@ -159,6 +160,9 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
+      // Drop deep-copied forms that are unchanged from the previously-published version (re-point the
+      // reference to the previous form), so an unedited "Add version" doesn't create duplicate forms.
+      await dedupCopiedForms(tx, id, versionId);
       // A service must have ≥1 application method, and every method's form must have structure.
       const apps = await tx
         .select({
@@ -228,9 +232,11 @@ export class ServiceVersionsService {
     return toServiceVersionDto(this.orThrow(archived[0]));
   }
 
-  /** Add a new draft version (seeded from the latest version's data; binds to the current published type). */
+  /** Add a new draft version that COPIES the latest version's data + application methods. Each method's
+   * form is deep-copied (new form document + draft version) so the new version is independently editable;
+   * other references (e.g. related services) are copied as-is. */
   async addVersion(userId: string, id: string): Promise<ServiceVersionResponse> {
-    await this.services.requireDocument(userId, id);
+    const service = await this.services.requireDocument(userId, id);
     const type = await this.serviceType.resolve();
     return this.db.transaction(async (tx) => {
       const existing = await tx
@@ -251,7 +257,16 @@ export class ServiceVersionsService {
           data: latest?.data ?? {},
         })
         .returning();
-      return toServiceVersionDto(this.orThrow(inserted[0]));
+      const newVersion = this.orThrow(inserted[0]);
+      if (latest !== undefined) {
+        await copyReferences(tx, {
+          sourceVersionId: latest.id,
+          newVersionId: newVersion.id,
+          serviceId: id,
+          workspaceId: service.workspaceId,
+        });
+      }
+      return toServiceVersionDto(newVersion);
     });
   }
 
