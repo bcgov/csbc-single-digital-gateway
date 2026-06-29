@@ -129,20 +129,20 @@ export function ServiceDetail({
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
       <div className="flex items-center justify-end gap-2">
-        {/* Only on the current version, and only once it's published (→ start a new draft to edit). */}
-        {isLatest && latest?.status === 'published' ? (
-          <Button
-            size="sm"
-            type="button"
-            disabled={addVersion.isPending}
-            onClick={() => addVersion.mutate()}
-          >
-            <Pencil className="size-4" aria-hidden />
-            Edit service details
-          </Button>
-        ) : null}
         <div className="flex items-center gap-2">
           <ButtonGroup>
+            {/* Current + published → start a new draft to edit; mutually exclusive with Go to current. */}
+            {isLatest && latest?.status === 'published' ? (
+              <Button
+                size="sm"
+                type="button"
+                disabled={addVersion.isPending}
+                onClick={() => addVersion.mutate()}
+              >
+                <Pencil className="size-4" aria-hidden />
+                Edit service details
+              </Button>
+            ) : null}
             {!isLatest && latest ? (
               <Button size="sm" variant="outline" type="button" onClick={goToCurrent}>
                 Go to current
