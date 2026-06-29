@@ -231,6 +231,8 @@ export function ServiceDetail({
           latestPublished={latest?.publishedAt != null}
           onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
           onDiscarded={() => navTab('details')}
+          // Abandoning the version/service → drop unsaved edits so the guard doesn't re-prompt.
+          onConfirmDestroy={() => setFormBaseline(formData)}
         />
       </div>
 

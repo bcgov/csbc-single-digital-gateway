@@ -37,6 +37,7 @@ export function ServiceMenu({
   latestPublished,
   onDeleted,
   onDiscarded,
+  onConfirmDestroy,
 }: {
   serviceId: string;
   /** The version to discard — only needed when `canDiscard` (the detail). */
@@ -50,6 +51,9 @@ export function ServiceMenu({
   onDeleted?: () => void;
   /** Called after the current draft version is discarded (it no longer exists → navigate away). */
   onDiscarded?: () => void;
+  /** Fired when a destructive action is confirmed (before it runs) — lets the detail clear its unsaved
+   * form state so the navigation away doesn't re-prompt the unsaved-changes guard. */
+  onConfirmDestroy?: () => void;
 }) {
   const queryClient = useQueryClient();
   const [confirm, setConfirm] = useState<null | 'delete' | 'discard'>(null);
@@ -153,7 +157,10 @@ export function ServiceMenu({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
-              onClick={() => active.mutate()}
+              onClick={() => {
+                onConfirmDestroy?.();
+                active.mutate();
+              }}
             >
               {confirm === 'discard' ? 'Discard draft' : 'Delete'}
             </AlertDialogAction>
