@@ -59,16 +59,16 @@ export function Canvas({
     >
       <div className="mx-auto w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="canvas-form-title">Form title</Label>
+          <Label htmlFor="canvas-form-title">Title</Label>
           <Input
             id="canvas-form-title"
-            placeholder="Untitled form"
+            placeholder="Untitled"
             value={model.title}
             onChange={(event) => onChangeForm({ title: event.target.value })}
           />
         </div>
         <div className="mt-3 flex flex-col gap-1.5">
-          <Label htmlFor="canvas-form-description">Form description</Label>
+          <Label htmlFor="canvas-form-description">Description</Label>
           <Textarea
             id="canvas-form-description"
             placeholder="Add a description for applicants"

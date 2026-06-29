@@ -48,6 +48,17 @@ export class ServiceReferencesV1Controller {
     await this.references.remove(user.id, id, versionId, referenceId);
   }
 
+  @Post(':id/versions/:versionId/references/:referenceId/archive')
+  @HttpCode(204)
+  async archive(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Param('referenceId') referenceId: string,
+  ): Promise<void> {
+    await this.references.archive(user.id, id, versionId, referenceId);
+  }
+
   @Post(':id/versions/:versionId/forms')
   @ZodSerializerDto(ReferenceDto)
   createForm(

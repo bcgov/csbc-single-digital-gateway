@@ -57,7 +57,7 @@ export function Palette({ onAdd }: { onAdd: (id: FieldTypeId) => void }) {
   return (
     <section
       aria-label="Palette"
-      className="flex h-full flex-col gap-3 overflow-y-auto border-r border-border bg-muted/30 p-3"
+      className="flex h-full flex-col gap-3 overflow-y-auto border-r border-border bg-card p-3"
     >
       <Input
         type="search"

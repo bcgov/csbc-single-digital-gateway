@@ -196,14 +196,14 @@ export function Inspector({
     if (node === null) {
       return (
         <div className="flex flex-col gap-4">
-          <Row label="Form title" htmlFor="settings-title">
+          <Row label="Title" htmlFor="settings-title">
             <Input
               id="settings-title"
               value={form.title}
               onChange={(e) => onChangeForm({ title: e.target.value })}
             />
           </Row>
-          <Row label="Form description" htmlFor="settings-desc">
+          <Row label="Description" htmlFor="settings-desc">
             <Textarea
               id="settings-desc"
               rows={3}
@@ -232,7 +232,7 @@ export function Inspector({
   return (
     <section
       aria-label="Inspector"
-      className="flex h-full flex-col gap-3 overflow-y-auto border-l border-border bg-muted/30 p-4"
+      className="flex h-full flex-col gap-3 overflow-y-auto border-l border-border bg-card p-4"
     >
       <h2 className="text-sm font-semibold">
         {node === null ? 'Form settings' : node.kind === 'container' ? 'Section' : 'Field settings'}

@@ -52,9 +52,11 @@ const multiStageDefinition = {
     {
       id: 'stage-1',
       name: 'Stage 1',
+      position: { x: 0, y: 0 },
       pages: [{ id: 'page-1', name: 'Page 1', description: '', ...emptyForm }],
     },
   ],
+  edges: [],
 };
 
 /**

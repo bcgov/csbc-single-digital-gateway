@@ -22,10 +22,12 @@ import {
 import {
   type ResolvedApplication,
   type Tx,
+  formHasStructure,
   insertApplication,
   resolveApplications,
 } from '../util/applications';
 import { validateData } from '../util/validate-data';
+import { copyReferences, dedupCopiedForms, discardVersionTx } from '../util/version-copy';
 import { ServiceTypeResolver } from './service-type.resolver';
 import { ServicesService } from './services.service';
 
@@ -158,6 +160,40 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
+      // Drop deep-copied forms unchanged from the previous published version (re-point + dedup).
+      await dedupCopiedForms(tx, id, versionId);
+      // A service must have ≥1 application method, and every method's form must have structure.
+      const apps = await tx
+        .select({
+          targetVersionId: documentReferences.targetVersionId,
+          targetKind: documentReferences.targetKind,
+          targetSchema: documentVersions.schema,
+          targetTitle: documents.title,
+        })
+        .from(documentReferences)
+        .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
+        .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
+        .where(
+          and(
+            eq(documentReferences.ownerVersionId, versionId),
+            eq(documentReferences.relation, 'application_form'),
+          ),
+        );
+      if (apps.length === 0) {
+        throw new UnprocessableEntityException({
+          message: 'A service must have at least one application method to publish',
+          errors: [],
+        });
+      }
+      const structureless = apps
+        .filter((app) => !formHasStructure(app.targetKind, app.targetSchema))
+        .map((app) => app.targetTitle);
+      if (structureless.length > 0) {
+        throw new UnprocessableEntityException({
+          message: 'Every application method needs fields before the service can be published',
+          errors: structureless,
+        });
+      }
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx
         .update(documentVersions)
@@ -168,6 +204,14 @@ export class ServiceVersionsService {
         .set({ publishedAt: sql`now()` })
         .where(eq(documentVersions.id, versionId))
         .returning();
+      // Publishing a service publishes its application forms (one version each).
+      for (const app of apps) {
+        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+        await tx
+          .update(documentVersions)
+          .set({ publishedAt: sql`now()`, archivedAt: null })
+          .where(eq(documentVersions.id, app.targetVersionId));
+      }
       return toServiceVersionDto(this.orThrow(published[0]));
     });
   }
@@ -187,9 +231,20 @@ export class ServiceVersionsService {
     return toServiceVersionDto(this.orThrow(archived[0]));
   }
 
-  /** Add a new draft version (seeded from the latest version's data; binds to the current published type). */
-  async addVersion(userId: string, id: string): Promise<ServiceVersionResponse> {
+  /** Discard a DRAFT version: delete it (+ the application forms it owned). Refuses the last version. */
+  async discardVersion(userId: string, id: string, versionId: string): Promise<void> {
     await this.services.requireDocument(userId, id);
+    const version = await this.requireVersion(id, versionId);
+    if (version.status !== 'draft') {
+      throw new ConflictException('Only draft versions can be discarded');
+    }
+    await this.db.transaction((tx) => discardVersionTx(tx, id, versionId));
+  }
+
+  /** Add a new draft version copying the latest version's data + methods (each form deep-copied so the
+   * new version edits its own forms; other references copied as-is). */
+  async addVersion(userId: string, id: string): Promise<ServiceVersionResponse> {
+    const service = await this.services.requireDocument(userId, id);
     const type = await this.serviceType.resolve();
     return this.db.transaction(async (tx) => {
       const existing = await tx
@@ -210,7 +265,16 @@ export class ServiceVersionsService {
           data: latest?.data ?? {},
         })
         .returning();
-      return toServiceVersionDto(this.orThrow(inserted[0]));
+      const newVersion = this.orThrow(inserted[0]);
+      if (latest !== undefined) {
+        await copyReferences(tx, {
+          sourceVersionId: latest.id,
+          newVersionId: newVersion.id,
+          serviceId: id,
+          workspaceId: service.workspaceId,
+        });
+      }
+      return toServiceVersionDto(newVersion);
     });
   }
 

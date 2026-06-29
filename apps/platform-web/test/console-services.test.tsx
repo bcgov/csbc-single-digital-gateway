@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp, type WorkspaceLike } from './support/render-app';
@@ -89,6 +89,8 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               createdAt: ISO,
               status: 'draft',
               versionCount: 1,
+              hasSubmissions: true,
+              latestPublished: false,
             },
           ],
         });
@@ -104,6 +106,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
           },
           versions: [draftVersion],
           definition,
+          hasSubmissions: true,
         });
       }
       if (segs[segs.length - 1] === 'references') {
@@ -119,6 +122,9 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               targetKind: 'basic-form',
               targetTitle: 'Permit form',
               targetVersion: 1,
+              targetStatus: 'draft',
+              hasSubmissions: false,
+              hasStructure: true,
               createdAt: ISO,
             },
           ],
@@ -143,30 +149,35 @@ describe('console services', () => {
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
-  it('opens the client-first editor at /services/new', async () => {
+  it('opens the New service modal (title + description) at /services/new', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/new');
-    // The in-browser editor renders the Service form (Title control) + the Applications section.
-    expect(
-      await screen.findByLabelText(/title/i, undefined, { timeout: 8000 }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add application/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
+    const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 8000 });
+    expect(within(modal).getByLabelText(/title/i)).toBeInTheDocument();
+    expect(within(modal).getByLabelText(/description/i)).toBeInTheDocument();
+    expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 
-  it('edits a draft on the detail page and saves & publishes', async () => {
+  it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/s1');
     const user = userEvent.setup();
 
+    // Service details tab (default): the JSONForms title control.
     expect(
       await screen.findByLabelText(/title/i, undefined, { timeout: 8000 }),
     ).toBeInTheDocument();
-    // The existing application reference shows (its button-label input), not the empty state.
-    expect(await screen.findByDisplayValue('Apply now')).toBeInTheDocument();
-    expect(screen.queryByText(/no applications yet/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /save & publish/i }));
+    // Application methods tab: the method list (count badge + form title).
+    await user.click(screen.getByRole('tab', { name: /application methods/i }));
+    expect(await screen.findByText('Permit form')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
+
+    // Publish through the summary modal (no unsaved changes ⇒ the Publish trigger is enabled).
+    await user.click(screen.getByRole('tab', { name: /service details/i }));
+    await user.click(await screen.findByRole('button', { name: 'Publish service' }));
+    const modal = await screen.findByRole('dialog', { name: /publish service/i });
+    await user.click(within(modal).getByRole('button', { name: 'Publish' }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/v1/services/s1/versions/sv1/publish'),

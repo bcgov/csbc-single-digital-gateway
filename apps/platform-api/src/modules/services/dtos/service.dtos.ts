@@ -4,11 +4,12 @@ import { z } from 'zod';
 
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────
 
-/** A JSONForms definition (`{ schema, uischema }`) as authored by the form builder. */
-const formDefinitionShape = z.object({
-  schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
-});
+/**
+ * A designed form definition authored in-browser before service save (client-first). Opaque object:
+ * `{ schema, uischema }` for a basic-form, `{ stages, edges }` for a multi-stage-form (feature 43).
+ * Stored verbatim into the new form's version; structure is validated by the builder + the type.
+ */
+const formDefinitionShape = z.record(z.string(), z.unknown());
 
 /**
  * An application = a form reference (existing version OR a new form to create) + a button label.
@@ -96,6 +97,10 @@ export type ServiceVersionResponse = z.infer<typeof serviceVersionSchema>;
 export const serviceSummarySchema = serviceSchema.extend({
   status: z.enum(['draft', 'published', 'archived', 'none']),
   versionCount: z.number().int(),
+  /** Whether any of the service's application forms has submissions — gates delete (none) vs archive. */
+  hasSubmissions: z.boolean(),
+  /** Whether the latest version was ever published — un-archive reads "Publish" (true) vs "Restore". */
+  latestPublished: z.boolean(),
 });
 export type ServiceSummary = z.infer<typeof serviceSummarySchema>;
 export class ServiceListDto extends createZodDto(
@@ -121,6 +126,8 @@ export const serviceDetailSchema = z.object({
   service: serviceSchema,
   versions: z.array(serviceVersionSchema),
   definition: definitionSchema,
+  /** Whether any of the service's application forms has submissions — gates delete vs archive. */
+  hasSubmissions: z.boolean(),
 });
 export class ServiceDetailDto extends createZodDto(serviceDetailSchema) {}
 export type ServiceDetail = z.infer<typeof serviceDetailSchema>;

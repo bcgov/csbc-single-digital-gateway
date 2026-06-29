@@ -18,6 +18,10 @@ export interface Service {
 export interface ServiceSummary extends Service {
   status: VersionStatus | 'none';
   versionCount: number;
+  /** Whether any of the service's application forms has submissions — gates delete (none) vs archive. */
+  hasSubmissions: boolean;
+  /** Whether the latest version was ever published — un-archive reads "Publish" (true) vs "Restore". */
+  latestPublished: boolean;
 }
 
 export interface ServiceVersion {
@@ -35,6 +39,8 @@ export interface ServiceDetail {
   service: Service;
   versions: ServiceVersion[];
   definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
+  /** Whether any of the service's application forms has submissions — gates delete vs archive. */
+  hasSubmissions: boolean;
 }
 
 export interface FormCatalogEntry {
@@ -54,6 +60,12 @@ export interface ServiceReference {
   targetKind: string;
   targetTitle: string;
   targetVersion: number;
+  /** Target form version status (draft/published/archived). */
+  targetStatus: string;
+  /** Whether the target form has submissions — gates delete (none) vs archive (some). */
+  hasSubmissions: boolean;
+  /** Whether the target form has authored structure (fields/stages/pages) — gates service publish. */
+  hasStructure: boolean;
   createdAt: string;
 }
 
@@ -70,7 +82,8 @@ export type ApplicationInput = {
   position: number;
   form:
     | { mode: 'existing'; versionId: string }
-    | { mode: 'new'; typeId: string; title: string; definition?: FormDefinition };
+    // `definition` = designed blob: `{schema,uischema}` (basic) or `{stages,edges}` (multi-stage).
+    | { mode: 'new'; typeId: string; title: string; definition?: object };
 };
 
 const BASE = `${BFF_ORIGIN}/v1/services`;
@@ -233,4 +246,93 @@ export function archiveVersion(id: string, versionId: string): Promise<ServiceVe
 
 export function addServiceVersion(id: string): Promise<ServiceVersion> {
   return send(`${BASE}/${encodeURIComponent(id)}/versions`, 'POST');
+}
+
+/** Delete a service with no application methods (server returns 409 if it has any → archive instead). */
+export async function deleteService(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
+/** Discard a draft version (deletes it + its application forms). */
+export async function discardServiceVersion(id: string, versionId: string): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
+/** Archive a service (archives all its versions). */
+export async function archiveService(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/archive`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
+/** Reactivate an archived service (restores its latest version + that version's forms). */
+export async function reactivateService(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/reactivate`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
+/** Create a new form (of `typeId`, with an optional designed `definition`) AND reference it from a
+ * service draft version — the "Add application method" route flow (feature 44). */
+export function createReferencedForm(
+  id: string,
+  versionId: string,
+  input: { typeId: string; title: string; label?: string; definition?: object },
+): Promise<ServiceReference> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/forms`,
+    'POST',
+    input,
+  );
+}
+
+/** Remove an application method from a service draft version. The form is deleted with its last
+ * reference when it has no submissions; the server returns 409 when it does (archive instead). */
+export async function removeReference(
+  id: string,
+  versionId: string,
+  referenceId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references/${encodeURIComponent(referenceId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
+/** Archive an application-method form (for forms with submissions that can't be deleted). */
+export async function archiveReference(
+  id: string,
+  versionId: string,
+  referenceId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/references/${encodeURIComponent(referenceId)}/archive`,
+    { method: 'POST', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
 }

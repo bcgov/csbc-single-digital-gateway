@@ -1,13 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   type Database,
   type Document,
+  documentReferences,
   documentVersions,
   documents,
+  submissions,
   workspaceMembers,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   type CreateServiceInput,
   type FormCatalogEntry,
@@ -19,6 +21,7 @@ import {
   toServiceVersionDto,
 } from '../dtos/service.dtos';
 import { insertApplication, resolveApplications } from '../util/applications';
+import { reactivateServiceTx } from '../util/version-copy';
 import { ServiceTypeResolver } from './service-type.resolver';
 
 function summarizeStatus(
@@ -138,10 +141,14 @@ export class ServicesService {
     return Promise.all(
       docs.map(async (doc) => {
         const versions = await this.versionsOf(doc.id);
+        // versionsOf is ordered asc by version, so the last row is the latest version.
+        const latest = versions[versions.length - 1];
         // Object.assign onto the fresh DTO (not a spread) keeps oxlint's no-map-spread happy.
         return Object.assign(toServiceDto(doc), {
           status: summarizeStatus(versions),
           versionCount: versions.length,
+          hasSubmissions: await this.hasSubmissions(doc.id),
+          latestPublished: latest?.publishedAt != null,
         });
       }),
     );
@@ -156,7 +163,91 @@ export class ServicesService {
       service: toServiceDto(doc),
       versions: versions.map(toServiceVersionDto),
       definition: { schema: type.schema, uischema: type.uischema },
+      hasSubmissions: await this.hasSubmissions(id),
     };
+  }
+
+  /** Whether ANY of the service's application-method forms has submissions (gates delete vs archive). */
+  private async hasSubmissions(serviceId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documentReferences)
+      .innerJoin(submissions, eq(submissions.documentId, documentReferences.targetDocumentId))
+      .where(
+        and(
+          eq(documentReferences.ownerDocumentId, serviceId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      );
+    return (rows[0]?.n ?? 0) > 0;
+  }
+
+  /** The application-method form document ids referenced by this service. */
+  private async applicationFormIds(serviceId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ formId: documentReferences.targetDocumentId })
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.ownerDocumentId, serviceId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      );
+    return [...new Set(rows.map((r) => r.formId))];
+  }
+
+  /** Delete a service when none of its application forms has submissions — the service (cascading its
+   * versions + owned references) AND those now-unreferenced forms are removed. Refuses (409) when any
+   * form has submissions: archive instead to preserve the submitted data. */
+  async remove(userId: string, id: string): Promise<void> {
+    await this.requireDocument(userId, id);
+    if (await this.hasSubmissions(id)) {
+      throw new ConflictException(
+        'An application of this service has submissions — archive it instead of deleting it',
+      );
+    }
+    const formIds = await this.applicationFormIds(id);
+    await this.db.transaction(async (tx) => {
+      // Deleting the service cascades its versions + the references it owns; the (submission-free)
+      // application forms are then orphaned — delete each one that no other service still references.
+      await tx.delete(documents).where(eq(documents.id, id));
+      for (const formId of formIds) {
+        // Sequential by necessity — these reads/writes share one transaction connection.
+        // eslint-disable-next-line no-await-in-loop
+        const remaining = await tx
+          .select({ n: sql<number>`count(*)::int` })
+          .from(documentReferences)
+          .where(eq(documentReferences.targetDocumentId, formId));
+        if ((remaining[0]?.n ?? 0) === 0) {
+          // eslint-disable-next-line no-await-in-loop
+          await tx.delete(documents).where(eq(documents.id, formId));
+        }
+      }
+    });
+  }
+
+  /** Archive a service (archive every non-archived version → status derives to 'archived'). Archiving a
+   * service also archives its application forms. */
+  async archive(userId: string, id: string): Promise<void> {
+    await this.requireDocument(userId, id);
+    const formIds = await this.applicationFormIds(id);
+    const docIds = [id, ...formIds];
+    await this.db
+      .update(documentVersions)
+      .set({ archivedAt: new Date() })
+      .where(
+        and(
+          inArray(documentVersions.documentId, docIds),
+          sql`${documentVersions.archivedAt} is null`,
+        ),
+      );
+  }
+
+  /** Reactivate an archived service: clear `archived_at` on the LATEST version (→ its prior published/
+   * draft state) and the application forms it references. Older versions stay archived as history. */
+  async reactivate(userId: string, id: string): Promise<void> {
+    await this.requireDocument(userId, id);
+    await this.db.transaction((tx) => reactivateServiceTx(tx, id));
   }
 
   private async versionsOf(documentId: string) {

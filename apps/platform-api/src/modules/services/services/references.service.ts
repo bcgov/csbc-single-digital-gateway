@@ -13,6 +13,7 @@ import {
   documentTypes,
   documentVersions,
   documents,
+  submissions,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, eq, sql } from 'drizzle-orm';
@@ -22,7 +23,7 @@ import {
   type ReferenceRelation,
   type ReferenceResponse,
 } from '../dtos/reference.dtos';
-import { structureFromDefinition } from '../util/applications';
+import { formHasStructure, structureFromDefinition } from '../util/applications';
 import { ServicesService } from './services.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
@@ -40,6 +41,9 @@ function toDto(
   row: DocumentReference,
   targetTitle: string,
   targetVersion: number,
+  targetStatus: string,
+  hasSubmissions: boolean,
+  hasStructure: boolean,
 ): ReferenceResponse {
   return {
     id: row.id,
@@ -51,6 +55,9 @@ function toDto(
     targetKind: row.targetKind,
     targetTitle,
     targetVersion,
+    targetStatus,
+    hasSubmissions,
+    hasStructure,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -71,13 +78,25 @@ export class ReferencesService {
         ref: documentReferences,
         targetTitle: documents.title,
         targetVersion: documentVersions.version,
+        targetStatus: documentVersions.status,
+        targetSchema: documentVersions.schema,
+        hasSubmissions: sql<boolean>`exists (select 1 from ${submissions} where ${submissions.documentId} = ${documentReferences.targetDocumentId})`,
       })
       .from(documentReferences)
       .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
       .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
       .where(eq(documentReferences.ownerVersionId, versionId))
       .orderBy(asc(documentReferences.relation), asc(documentReferences.position));
-    return rows.map((row) => toDto(row.ref, row.targetTitle, row.targetVersion));
+    return rows.map((row) =>
+      toDto(
+        row.ref,
+        row.targetTitle,
+        row.targetVersion,
+        row.targetStatus,
+        row.hasSubmissions,
+        formHasStructure(row.ref.targetKind, row.targetSchema),
+      ),
+    );
   }
 
   /** Add a reference (owner must be a DRAFT service version). DB enforces kind/workspace/no-dup/no-self. */
@@ -118,7 +137,7 @@ export class ReferencesService {
       if (row === undefined) {
         throw new Error('reference insert returned no row');
       }
-      return toDto(row, target.title, target.version);
+      return toDto(row, target.title, target.version, 'draft', false, false);
     } catch (error) {
       if (pgCode(error) === '23505') {
         throw new ConflictException('This document is already referenced by the service version');
@@ -137,16 +156,56 @@ export class ReferencesService {
     await this.services.requireDocument(userId, serviceId);
     await this.requireDraftOwner(serviceId, versionId);
     const ref = await this.requireReference(versionId, referenceId);
-    if (ref.relation === 'application_form') {
-      const counts = await this.db
-        .select({ n: sql<number>`count(*)::int` })
-        .from(documentReferences)
-        .where(eq(documentReferences.targetDocumentId, ref.targetDocumentId));
-      if ((counts[0]?.n ?? 0) <= 1) {
-        throw new ConflictException('A form must be referenced by at least one service');
-      }
+
+    // Non-form references (e.g. related services) are just unlinked.
+    if (ref.relation !== 'application_form') {
+      await this.db.delete(documentReferences).where(eq(documentReferences.id, referenceId));
+      return;
     }
-    await this.db.delete(documentReferences).where(eq(documentReferences.id, referenceId));
+
+    // For an application-method form: if other services still reference it, only unlink here.
+    // If this is the LAST reference, the form is deleted with it — but only when it has no
+    // submissions (otherwise it must be archived to preserve the submitted data).
+    const refRows = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documentReferences)
+      .where(eq(documentReferences.targetDocumentId, ref.targetDocumentId));
+    if ((refRows[0]?.n ?? 0) > 1) {
+      await this.db.delete(documentReferences).where(eq(documentReferences.id, referenceId));
+      return;
+    }
+    const submissionRows = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(submissions)
+      .where(eq(submissions.documentId, ref.targetDocumentId));
+    if ((submissionRows[0]?.n ?? 0) > 0) {
+      throw new ConflictException('This form has submissions — archive it instead of deleting it');
+    }
+    await this.db.transaction(async (tx) => {
+      await tx.delete(documentReferences).where(eq(documentReferences.id, referenceId));
+      // Deleting the form document cascades its versions; no submissions remain to block it.
+      await tx.delete(documents).where(eq(documents.id, ref.targetDocumentId));
+    });
+  }
+
+  /** Archive an application-method form (set archived_at on its version) — for forms WITH submissions
+   * that can't be deleted. The reference stays; the method shows as archived. */
+  async archive(
+    userId: string,
+    serviceId: string,
+    versionId: string,
+    referenceId: string,
+  ): Promise<void> {
+    await this.services.requireDocument(userId, serviceId);
+    await this.requireDraftOwner(serviceId, versionId);
+    const ref = await this.requireReference(versionId, referenceId);
+    if (ref.relation !== 'application_form') {
+      throw new BadRequestException('Only application-method forms can be archived');
+    }
+    await this.db
+      .update(documentVersions)
+      .set({ archivedAt: new Date() })
+      .where(eq(documentVersions.id, ref.targetVersionId));
   }
 
   /** Create a form document + draft v1 and reference it from this service version (atomic ⇒ form born ≥1). */
@@ -181,8 +240,8 @@ export class ReferencesService {
           typeId: input.typeId,
           typeVersionId: type.typeVersionId,
           version: 1,
-          // Copy the template structure into the new form document; `data` stays default values.
-          schema: structureFromDefinition(type.kind, type.definition),
+          // Prefer a builder-authored definition; otherwise copy the type template. `data` stays default.
+          schema: input.definition ?? structureFromDefinition(type.kind, type.definition),
         })
         .returning();
       const formVersion = insertedVersion[0];
@@ -207,7 +266,7 @@ export class ReferencesService {
       if (ref === undefined) {
         throw new Error('reference insert returned no row');
       }
-      return toDto(ref, input.title, formVersion.version);
+      return toDto(ref, input.title, formVersion.version, 'draft', false, false);
     });
   }
 
