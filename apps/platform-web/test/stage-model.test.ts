@@ -120,6 +120,23 @@ describe('stage-model', () => {
       expect(next.stages[0]!.pages[0]!.schema).toEqual(def.schema);
       expect(next.stages[0]!.pages[0]!.uischema).toEqual(def.uischema);
     });
+
+    it('updatePageDefinition bubbles the form title up to the page name', () => {
+      const d = emptyDefinition();
+      const stageId = d.stages[0]!.id;
+      const pageId = d.stages[0]!.pages[0]!.id;
+      const titled = updatePageDefinition(d, stageId, pageId, {
+        schema: { type: 'object', title: 'Applicant details' },
+        uischema: { type: 'VerticalLayout' },
+      });
+      expect(titled.stages[0]!.pages[0]!.name).toBe('Applicant details');
+      // A blank title keeps the existing page name.
+      const blank = updatePageDefinition(titled, stageId, pageId, {
+        schema: { type: 'object' },
+        uischema: { type: 'VerticalLayout' },
+      });
+      expect(blank.stages[0]!.pages[0]!.name).toBe('Applicant details');
+    });
   });
 
   describe('add stage via edge +', () => {

@@ -213,8 +213,12 @@ export function updatePageDefinition(
   pageId: string,
   definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> },
 ): MultiStageDefinition {
+  // Bubble the form's title up to the page name (keep the existing name if the title is blank).
+  const title = definition.schema.title;
+  const name = typeof title === 'string' && title.trim() !== '' ? title.trim() : undefined;
   return mapPage(def, stageId, pageId, (page) => ({
     ...page,
+    name: name ?? page.name,
     schema: definition.schema,
     uischema: definition.uischema,
   }));
