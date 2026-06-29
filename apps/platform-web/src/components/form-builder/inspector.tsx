@@ -232,7 +232,7 @@ export function Inspector({
   return (
     <section
       aria-label="Inspector"
-      className="flex h-full flex-col gap-3 overflow-y-auto border-l border-border bg-muted/30 p-4"
+      className="flex h-full flex-col gap-3 overflow-y-auto border-l border-border bg-card p-4"
     >
       <h2 className="text-sm font-semibold">
         {node === null ? 'Form settings' : node.kind === 'container' ? 'Section' : 'Field settings'}

@@ -114,7 +114,7 @@ export function StageBuilder({
             <div className="flex items-center gap-3">{actions}</div>
           </div>
         ) : null}
-        <div className="relative min-h-0 flex-1">
+        <div className="relative min-h-0 flex-1 bg-card">
           {/* Top-left: form name + description panel. */}
           <div className="absolute left-3 top-3 z-10 flex w-72 flex-col gap-2 rounded-lg border border-border bg-card p-3 shadow-sm">
             <div className="flex flex-col gap-1">
