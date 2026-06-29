@@ -18,6 +18,7 @@ import {
   updateFormSchema,
 } from '@/lib/forms';
 import { serviceQueryOptions } from '@/lib/services';
+import { UnsavedChangesGuard } from '../unsaved-changes-guard';
 import { ApplicationShell } from './application-shell';
 
 const FROM = '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId';
@@ -79,19 +80,25 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
   const readOnly = status !== 'draft';
   // Seed the editable form. A freshly-created form has no schema.title yet → default it to the
   // document title (which is "Untitled" at creation) so the Title field isn't blank.
-  const [value, setValue] = useState<FormDefinition>(() => {
+  const seed = (): FormDefinition => {
     const def = form.version.schema as unknown as FormDefinition;
     const title = def.schema.title;
     if (typeof title === 'string' && title.trim() !== '') {
       return def;
     }
     return { ...def, schema: { ...def.schema, title: form.form.title } };
-  });
+  };
+  const [value, setValue] = useState<FormDefinition>(seed);
+  const [baseline, setBaseline] = useState<FormDefinition>(seed);
+  const dirty = JSON.stringify(value) !== JSON.stringify(baseline);
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: () =>
       updateFormSchema(form.form.id, form.version.id, { definition: value, title: titleOf(value) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['forms', 'detail', form.form.id] }),
+    onSuccess: () => {
+      setBaseline(value);
+      return queryClient.invalidateQueries({ queryKey: ['forms', 'detail', form.form.id] });
+    },
   });
   if (readOnly) {
     // Strip root title/description so the JsonForms wrapper doesn't also render a header (we render it).
@@ -125,24 +132,27 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
     );
   }
   return (
-    // The edited title bubbles up to the document name in the header/breadcrumb (persisted on save).
-    <ApplicationShell {...shell} label={titleOf(value)}>
-      <FormBuilder
-        value={value}
-        onChange={setValue}
-        actions={
-          <>
-            <Badge variant="outline">{status}</Badge>
-            <BuilderActions
-              error={save.error}
-              saving={save.isPending}
-              onSave={() => save.mutate()}
-              onCancel={toDetail}
-            />
-          </>
-        }
-      />
-    </ApplicationShell>
+    <>
+      {/* The edited title bubbles up to the document name in the header/breadcrumb (saved on save). */}
+      <ApplicationShell {...shell} label={titleOf(value)}>
+        <FormBuilder
+          value={value}
+          onChange={setValue}
+          actions={
+            <>
+              <Badge variant="outline">{status}</Badge>
+              <BuilderActions
+                error={save.error}
+                saving={save.isPending}
+                onSave={() => save.mutate()}
+                onCancel={toDetail}
+              />
+            </>
+          }
+        />
+      </ApplicationShell>
+      <UnsavedChangesGuard when={dirty} />
+    </>
   );
 }
 
@@ -195,6 +205,10 @@ function StageEdit({ form }: { form: FormWithVersion }) {
   const [value, setValue] = useState<MultiStageDefinition>(() =>
     normalizeDefinition(form.version.schema),
   );
+  const [baseline, setBaseline] = useState<MultiStageDefinition>(() =>
+    normalizeDefinition(form.version.schema),
+  );
+  const dirty = JSON.stringify(value) !== JSON.stringify(baseline);
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: () =>
@@ -202,7 +216,10 @@ function StageEdit({ form }: { form: FormWithVersion }) {
         definition: value,
         title: value.name.trim() || form.form.title,
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['forms', 'detail', form.form.id] }),
+    onSuccess: () => {
+      setBaseline(value);
+      return queryClient.invalidateQueries({ queryKey: ['forms', 'detail', form.form.id] });
+    },
   });
   if (readOnly) {
     return (
@@ -220,23 +237,26 @@ function StageEdit({ form }: { form: FormWithVersion }) {
     );
   }
   return (
-    <ApplicationShell {...shell} label={value.name || form.form.title}>
-      <StageBuilder
-        value={value}
-        onChange={setValue}
-        actions={
-          <>
-            <Badge variant="outline">{status}</Badge>
-            <BuilderActions
-              error={save.error}
-              saving={save.isPending}
-              onSave={() => save.mutate()}
-              onCancel={toDetail}
-            />
-          </>
-        }
-      />
-    </ApplicationShell>
+    <>
+      <ApplicationShell {...shell} label={value.name || form.form.title}>
+        <StageBuilder
+          value={value}
+          onChange={setValue}
+          actions={
+            <>
+              <Badge variant="outline">{status}</Badge>
+              <BuilderActions
+                error={save.error}
+                saving={save.isPending}
+                onSave={() => save.mutate()}
+                onCancel={toDetail}
+              />
+            </>
+          }
+        />
+      </ApplicationShell>
+      <UnsavedChangesGuard when={dirty} />
+    </>
   );
 }
 
