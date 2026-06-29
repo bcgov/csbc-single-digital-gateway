@@ -7,7 +7,7 @@ function NewApplicationMethod() {
   const { slug, id, versionId } = Route.useParams();
   return (
     <>
-      <ServiceDetail slug={slug} id={id} versionId={versionId} />
+      <ServiceDetail slug={slug} id={id} versionId={versionId} tab="methods" />
       <ApplicationMethodModal />
     </>
   );

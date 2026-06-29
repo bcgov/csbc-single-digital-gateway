@@ -99,7 +99,7 @@ export function ServiceEditor({
               Save draft
             </Button>
             <Button type="button" disabled={dirty || busy} onClick={() => setPublishOpen(true)}>
-              Publish
+              Publish updates
             </Button>
           </ButtonGroup>
         )}

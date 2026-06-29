@@ -35,11 +35,14 @@ export function ServiceDetail({
   slug,
   id,
   versionId,
+  tab,
 }: {
   slug: string;
   id: string;
   /** Omitted on the bare `…/services/:id` route → the current (latest) version. */
   versionId?: string;
+  /** Which tab the URL selects. */
+  tab: 'details' | 'methods';
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -51,15 +54,31 @@ export function ServiceDetail({
   // The bare route (no versionId) shows the current/latest version; older versions are URL-addressed.
   const selected = versionId === undefined ? latest : versions.find((v) => v.id === versionId);
 
-  // The current version lives at the bare `…/services/:id`; older versions at `…/versions/:versionId`.
-  const goToCurrent = () => navigate({ to: '/app/$slug/services/$id', params: { slug, id } });
-  const goToVersion = (vId: string) =>
-    vId === latest?.id
-      ? goToCurrent()
-      : navigate({
-          to: '/app/$slug/services/$id/versions/$versionId',
-          params: { slug, id, versionId: vId },
-        });
+  // Navigate to a version+tab. The current/latest version is the bare `…/services/:id` (no version in
+  // the URL); older versions are `…/versions/:versionId`. Each tab adds `/application-methods`.
+  const navTab = (nextTab: 'details' | 'methods', vId?: string) => {
+    if (vId !== undefined && vId !== latest?.id) {
+      navigate(
+        nextTab === 'methods'
+          ? {
+              to: '/app/$slug/services/$id/versions/$versionId/application-methods',
+              params: { slug, id, versionId: vId },
+            }
+          : {
+              to: '/app/$slug/services/$id/versions/$versionId',
+              params: { slug, id, versionId: vId },
+            },
+      );
+    } else {
+      navigate(
+        nextTab === 'methods'
+          ? { to: '/app/$slug/services/$id/application-methods', params: { slug, id } }
+          : { to: '/app/$slug/services/$id', params: { slug, id } },
+      );
+    }
+  };
+  const goToCurrent = () => navTab(tab);
+  const goToVersion = (vId: string) => navTab(tab, vId);
 
   const referencesQuery = useQuery({
     ...serviceReferencesQueryOptions(id, selected?.id ?? ''),
@@ -71,7 +90,7 @@ export function ServiceDetail({
     mutationFn: () => addServiceVersion(id),
     onSuccess: async () => {
       await invalidate();
-      goToCurrent();
+      navTab('details');
     },
   });
 
@@ -146,7 +165,7 @@ export function ServiceDetail({
               onClick={() => addVersion.mutate()}
             >
               <Plus className="size-4" aria-hidden />
-              Create next version
+              Update service
             </Button>
           ) : null}
           <ServiceMenu
@@ -156,12 +175,16 @@ export function ServiceDetail({
             hasSubmissions={data.hasSubmissions}
             archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
             onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
-            onDiscarded={() => navigate({ to: '/app/$slug/services/$id', params: { slug, id } })}
+            onDiscarded={() => navTab('details')}
           />
         </div>
       </div>
 
-      <Tabs defaultValue="details" className="gap-4">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => navTab(value === 'methods' ? 'methods' : 'details', versionId)}
+        className="gap-4"
+      >
         <TabsList>
           <TabsTrigger value="details">Service details</TabsTrigger>
           <TabsTrigger value="methods">

@@ -174,7 +174,7 @@ describe('console services', () => {
 
     // Publish through the summary modal (no unsaved changes ⇒ the Publish trigger is enabled).
     await user.click(screen.getByRole('tab', { name: /service details/i }));
-    await user.click(await screen.findByRole('button', { name: 'Publish' }));
+    await user.click(await screen.findByRole('button', { name: 'Publish updates' }));
     const modal = await screen.findByRole('dialog', { name: /publish service/i });
     await user.click(within(modal).getByRole('button', { name: 'Publish' }));
     await waitFor(() => {
