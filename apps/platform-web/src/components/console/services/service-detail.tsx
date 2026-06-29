@@ -129,8 +129,8 @@ export function ServiceDetail({
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
       <div className="flex items-center justify-end gap-2">
-        {/* A new version can only be started once the latest one is published. */}
-        {latest?.status === 'published' ? (
+        {/* Only on the current version, and only once it's published (→ start a new draft to edit). */}
+        {isLatest && latest?.status === 'published' ? (
           <Button
             size="sm"
             type="button"
@@ -138,7 +138,7 @@ export function ServiceDetail({
             onClick={() => addVersion.mutate()}
           >
             <Pencil className="size-4" aria-hidden />
-            Update service
+            Edit service details
           </Button>
         ) : null}
         <div className="flex items-center gap-2">
