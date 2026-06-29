@@ -1,7 +1,9 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
+import { Badge } from '@repo/ui/badge';
+import { Button } from '@repo/ui/button';
 import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { FormBuilder } from '@/components/form-builder/form-builder';
 import { StageBuilder } from '@/components/stage-builder/stage-builder';
@@ -37,9 +39,42 @@ function useShellProps() {
   };
 }
 
+/** Save/Cancel actions rendered inside a builder's header. */
+function BuilderActions({
+  error,
+  saving,
+  onSave,
+  onCancel,
+}: {
+  error: Error | null;
+  saving: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <>
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error.message}
+        </p>
+      ) : null}
+      <Button type="button" variant="outline" onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button type="button" disabled={saving} onClick={onSave}>
+        {saving ? <Spinner className="size-4" /> : null}
+        Save form
+      </Button>
+    </>
+  );
+}
+
 /** Basic-form method editor — editable when the form is a draft, otherwise a read-only preview. */
 function BasicEdit({ form }: { form: FormWithVersion }) {
   const shell = useShellProps();
+  const navigate = useNavigate();
+  const toDetail = () =>
+    navigate({ to: '/app/$slug/services/$id', params: { slug: shell.slug, id: shell.serviceId } });
   const status = form.version.status;
   const readOnly = status !== 'draft';
   const [value, setValue] = useState<FormDefinition>(
@@ -83,15 +118,20 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
     );
   }
   return (
-    <ApplicationShell
-      {...shell}
-      label={form.form.title}
-      status={status}
-      onSave={() => save.mutate()}
-      saving={save.isPending}
-      error={save.error}
-    >
-      <FormBuilder value={value} onChange={setValue} />
+    <ApplicationShell {...shell} label={form.form.title}>
+      <FormBuilder
+        value={value}
+        onChange={setValue}
+        title={<Badge variant="outline">{status}</Badge>}
+        actions={
+          <BuilderActions
+            error={save.error}
+            saving={save.isPending}
+            onSave={() => save.mutate()}
+            onCancel={toDetail}
+          />
+        }
+      />
     </ApplicationShell>
   );
 }
@@ -135,6 +175,9 @@ function StageOutline({ def }: { def: MultiStageDefinition }) {
 /** Multi-stage method editor — editable when the form is a draft, otherwise a read-only outline. */
 function StageEdit({ form }: { form: FormWithVersion }) {
   const shell = useShellProps();
+  const navigate = useNavigate();
+  const toDetail = () =>
+    navigate({ to: '/app/$slug/services/$id', params: { slug: shell.slug, id: shell.serviceId } });
   const status = form.version.status;
   const readOnly = status !== 'draft';
   // The stored schema may be a barebones template ({ stages } with no edges/name) — normalize so the
@@ -167,15 +210,20 @@ function StageEdit({ form }: { form: FormWithVersion }) {
     );
   }
   return (
-    <ApplicationShell
-      {...shell}
-      label={value.name || form.form.title}
-      status={status}
-      onSave={() => save.mutate()}
-      saving={save.isPending}
-      error={save.error}
-    >
-      <StageBuilder value={value} onChange={setValue} />
+    <ApplicationShell {...shell} label={value.name || form.form.title}>
+      <StageBuilder
+        value={value}
+        onChange={setValue}
+        title={<Badge variant="outline">{status}</Badge>}
+        actions={
+          <BuilderActions
+            error={save.error}
+            saving={save.isPending}
+            onSave={() => save.mutate()}
+            onCancel={toDetail}
+          />
+        }
+      />
     </ApplicationShell>
   );
 }

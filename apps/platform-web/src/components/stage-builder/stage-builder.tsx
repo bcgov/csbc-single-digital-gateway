@@ -14,7 +14,7 @@ import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Textarea } from '@repo/ui/textarea';
 import { Plus } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FormBuilderDialog } from '@/components/form-builder/builder-dialog';
 import { StageBuilderContext, type StageBuilderApi } from './stage-context';
 import { StageNode } from './stage-node';
@@ -61,13 +61,18 @@ function FitOnChange({ count }: { count: number }) {
   return null;
 }
 
-/** Node-based editor for a multi-stage form. Controlled by `value`; every edit calls `onChange`. */
+/** Node-based editor for a multi-stage form. Controlled by `value`; every edit calls `onChange`.
+ * `title`/`actions` render in the builder's header bar (status pill / save-cancel). */
 export function StageBuilder({
   value,
   onChange,
+  title,
+  actions,
 }: {
   value: MultiStageDefinition;
   onChange: (value: MultiStageDefinition) => void;
+  title?: ReactNode;
+  actions?: ReactNode;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(toNodes(value));
   const [editing, setEditing] = useState<{ stageId: string; pageId: string } | null>(null);
@@ -102,54 +107,62 @@ export function StageBuilder({
 
   return (
     <StageBuilderContext.Provider value={api}>
-      <div className="relative h-full w-full">
-        {/* Top-left: form name + description panel. */}
-        <div className="absolute left-3 top-3 z-10 flex w-72 flex-col gap-2 rounded-lg border border-border bg-card p-3 shadow-sm">
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="stage-form-name" className="text-xs text-muted-foreground">
-              Form name
-            </Label>
-            <Input
-              id="stage-form-name"
-              value={value.name ?? ''}
-              onChange={(event) => onChange(setMeta(value, { name: event.target.value }))}
-              className="h-8"
-            />
+      <div className="flex h-full flex-col">
+        {title || actions ? (
+          <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+            <div className="min-w-0">{title}</div>
+            <div className="flex items-center gap-3">{actions}</div>
           </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="stage-form-description" className="text-xs text-muted-foreground">
-              Description
-            </Label>
-            <Textarea
-              id="stage-form-description"
-              value={value.description ?? ''}
-              rows={2}
-              onChange={(event) => onChange(setMeta(value, { description: event.target.value }))}
-            />
+        ) : null}
+        <div className="relative min-h-0 flex-1">
+          {/* Top-left: form name + description panel. */}
+          <div className="absolute left-3 top-3 z-10 flex w-72 flex-col gap-2 rounded-lg border border-border bg-card p-3 shadow-sm">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="stage-form-name" className="text-xs text-muted-foreground">
+                Form name
+              </Label>
+              <Input
+                id="stage-form-name"
+                value={value.name ?? ''}
+                onChange={(event) => onChange(setMeta(value, { name: event.target.value }))}
+                className="h-8"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="stage-form-description" className="text-xs text-muted-foreground">
+                Description
+              </Label>
+              <Textarea
+                id="stage-form-description"
+                value={value.description ?? ''}
+                rows={2}
+                onChange={(event) => onChange(setMeta(value, { description: event.target.value }))}
+              />
+            </div>
           </div>
+          {/* Top-right: add a stage connected to the last stage. */}
+          <div className="absolute right-3 top-3 z-10">
+            <Button size="sm" type="button" onClick={() => onChange(addStageAtEnd(value))}>
+              <Plus className="size-4" aria-hidden />
+              Add stage
+            </Button>
+          </div>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            nodesDraggable={false}
+            onNodesChange={onNodesChange}
+            onEdgesDelete={(deleted) => {
+              onChange(deleted.reduce((acc, edge) => disconnect(acc, edge.id), value));
+            }}
+            fitView
+          >
+            <Background />
+            <Controls />
+            <FitOnChange count={(value.stages ?? []).length} />
+          </ReactFlow>
         </div>
-        {/* Top-right: add a stage connected to the last stage. */}
-        <div className="absolute right-3 top-3 z-10">
-          <Button size="sm" type="button" onClick={() => onChange(addStageAtEnd(value))}>
-            <Plus className="size-4" aria-hidden />
-            Add stage
-          </Button>
-        </div>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          nodesDraggable={false}
-          onNodesChange={onNodesChange}
-          onEdgesDelete={(deleted) => {
-            onChange(deleted.reduce((acc, edge) => disconnect(acc, edge.id), value));
-          }}
-          fitView
-        >
-          <Background />
-          <Controls />
-          <FitOnChange count={(value.stages ?? []).length} />
-        </ReactFlow>
       </div>
       {activePage && editing ? (
         <FormBuilderDialog
