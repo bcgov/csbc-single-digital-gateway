@@ -4,9 +4,10 @@ import { ServiceDetail } from '@/components/console/services/service-detail';
 
 /** `…/application-methods/new` — the detail with the "New application method" modal open over it. */
 function NewApplicationMethod() {
+  const { slug, id, versionId } = Route.useParams();
   return (
     <>
-      <ServiceDetail />
+      <ServiceDetail slug={slug} id={id} versionId={versionId} />
       <ApplicationMethodModal />
     </>
   );

@@ -29,6 +29,7 @@ export function ServiceMenu({
   hasSubmissions,
   archived,
   onDeleted,
+  onDiscarded,
 }: {
   serviceId: string;
   versionId: string;
@@ -37,6 +38,8 @@ export function ServiceMenu({
   hasSubmissions: boolean;
   archived: boolean;
   onDeleted: () => void;
+  /** Called after the current draft version is discarded (it no longer exists → navigate away). */
+  onDiscarded: () => void;
 }) {
   const queryClient = useQueryClient();
   const [confirm, setConfirm] = useState<null | 'delete' | 'discard'>(null);
@@ -55,6 +58,7 @@ export function ServiceMenu({
     onSuccess: async () => {
       setConfirm(null);
       await invalidate();
+      onDiscarded();
     },
   });
   const archive = useMutation({

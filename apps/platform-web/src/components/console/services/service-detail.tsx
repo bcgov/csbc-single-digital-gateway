@@ -8,12 +8,17 @@ import {
   BreadcrumbSeparator,
 } from '@repo/ui/breadcrumb';
 import { Button } from '@repo/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
+import { ButtonGroup } from '@repo/ui/button-group';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@repo/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { ChevronDown, Plus } from 'lucide-react';
 import {
   addServiceVersion,
   serviceQueryOptions,
@@ -24,29 +29,44 @@ import { ApplicationMethods } from './application-methods';
 import { ServiceEditor } from './service-editor';
 import { ServiceMenu } from './service-menu';
 
-const STATUS_VARIANT = { draft: 'secondary', published: 'default', archived: 'outline' } as const;
-
-/** Service detail — version history + lifecycle, with the unified editor for the selected version. */
-export function ServiceDetail() {
-  const { slug, id } = useParams({ from: '/app/$slug/services/$id' });
+/** Service detail — the version is in the URL (`…/versions/:versionId`). Header carries a version
+ * picker, a "Go to current" shortcut when off the latest, Create-next-version, and the ⋯ menu. */
+export function ServiceDetail({
+  slug,
+  id,
+  versionId,
+}: {
+  slug: string;
+  id: string;
+  versionId: string;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data } = useQuery(serviceQueryOptions(id));
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['services'] });
 
   const versions = data?.versions ?? [];
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = versions.find((v) => v.id === selectedId) ?? versions[versions.length - 1];
+  const selected = versions.find((v) => v.id === versionId);
+  const latest = versions[versions.length - 1];
+
+  const goToVersion = (vId: string) =>
+    navigate({
+      to: '/app/$slug/services/$id/versions/$versionId',
+      params: { slug, id, versionId: vId },
+    });
 
   const referencesQuery = useQuery({
-    ...serviceReferencesQueryOptions(id, selected?.id ?? ''),
-    enabled: selected !== undefined,
+    ...serviceReferencesQueryOptions(id, versionId),
+    enabled: data !== undefined,
   });
   const references = referencesQuery.data ?? [];
 
   const addVersion = useMutation({
     mutationFn: () => addServiceVersion(id),
-    onSuccess: invalidate,
+    onSuccess: async (created) => {
+      await invalidate();
+      goToVersion(created.id);
+    },
   });
 
   const serviceTitle = data?.service.title ?? 'Service';
@@ -74,15 +94,49 @@ export function ServiceDetail() {
   if (!data) {
     return null;
   }
+  if (!selected) {
+    return <p className="p-6 text-sm text-muted-foreground">This version no longer exists.</p>;
+  }
 
   const applicationRefs = references.filter((ref) => ref.relation === 'application_form');
+  const isLatest = selected.id === latest?.id;
 
   return (
     <div className="mx-auto flex max-w-[1100px] flex-col gap-4">
-      {selected ? (
-        <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2">
+        <ButtonGroup>
+          {!isLatest && latest ? (
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={() => goToVersion(latest.id)}
+            >
+              Go to current
+            </Button>
+          ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button size="sm" variant="outline" type="button" />}>
+              Version v{selected.version}
+              <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {versions.toReversed().map((version) => (
+                <DropdownMenuItem
+                  key={version.id}
+                  className={version.id === selected.id ? 'font-semibold' : undefined}
+                  onClick={() => goToVersion(version.id)}
+                >
+                  v{version.version}
+                  <span className="ml-auto text-xs text-muted-foreground">{version.status}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </ButtonGroup>
+        <div className="flex items-center gap-2">
           {/* A next version can only be started once the latest one is published. */}
-          {versions[versions.length - 1]?.status === 'published' ? (
+          {latest?.status === 'published' ? (
             <Button
               size="sm"
               variant="outline"
@@ -101,9 +155,10 @@ export function ServiceDetail() {
             hasSubmissions={data.hasSubmissions}
             archived={versions.length > 0 && versions.every((v) => v.status === 'archived')}
             onDeleted={() => navigate({ to: '/app/$slug/services', params: { slug } })}
+            onDiscarded={() => navigate({ to: '/app/$slug/services/$id', params: { slug, id } })}
           />
         </div>
-      ) : null}
+      </div>
 
       <Tabs defaultValue="details" className="gap-4">
         <TabsList>
@@ -117,33 +172,8 @@ export function ServiceDetail() {
         </TabsList>
 
         <TabsContent value="details" className="flex flex-col gap-4">
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Version</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {versions.map((version) => (
-                  <TableRow
-                    key={version.id}
-                    className={version.id === selected?.id ? 'bg-accent' : 'cursor-pointer'}
-                    onClick={() => setSelectedId(version.id)}
-                  >
-                    <TableCell className="font-medium">v{version.version}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANT[version.status]}>{version.status}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
           {/* Render the editor only once references have loaded (keyed by version id). */}
-          {selected && referencesQuery.isSuccess ? (
+          {referencesQuery.isSuccess ? (
             <ServiceEditor
               key={selected.id}
               serviceId={id}
@@ -160,7 +190,7 @@ export function ServiceDetail() {
         </TabsContent>
 
         <TabsContent value="methods">
-          {selected && referencesQuery.isSuccess ? (
+          {referencesQuery.isSuccess ? (
             <ApplicationMethods
               slug={slug}
               serviceId={id}
