@@ -41,6 +41,9 @@ function AddStageButton({
 /** One page row inside a stage card — sortable (drag-to-reorder), click opens the form builder. */
 function PageRow({ page, index, stageId }: { page: StagePage; index: number; stageId: string }) {
   const { removePage, selectPage } = useStageBuilder();
+  const fieldCount = Object.keys(
+    (page.schema.properties as Record<string, unknown> | undefined) ?? {},
+  ).length;
   const { ref, handleRef } = useSortable({
     id: page.id,
     index,
@@ -67,6 +70,9 @@ function PageRow({ page, index, stageId }: { page: StagePage; index: number; sta
       >
         <FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
         <span className="truncate text-sm">{page.name}</span>
+        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+          {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
+        </span>
       </button>
       <button
         type="button"
