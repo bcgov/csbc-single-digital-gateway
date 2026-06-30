@@ -20,9 +20,12 @@ export interface AppSessionParams {
  * libs live here in platform-api, not in `@repo/nestjs`.
  */
 export function buildAppSessionOptions(params: AppSessionParams): AuthSessionConfig {
-  const options: { secret: string; secure: boolean; store?: Store } = {
+  const options: { secret: string; secure: boolean; cookieName: string; store?: Store } = {
     secret: params.secret,
     secure: params.secure,
+    // Per-app cookie name (e.g. `cpa.sid`) so co-hosted BFFs on the same host don't clobber each
+    // other's session cookie (cookies ignore port). Derived from the already-unique key prefix.
+    cookieName: `${params.sessionKeyPrefix.replace(/:+$/, '')}.sid`,
   };
 
   if (params.useStore) {

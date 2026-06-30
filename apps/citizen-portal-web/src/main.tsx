@@ -13,7 +13,12 @@ const favicon =
 favicon.type = 'image/svg+xml';
 favicon.href = iconUrl;
 
-const queryClient = new QueryClient();
+// `refetchOnWindowFocus` off + retries capped at 1: the defaults bursted concurrent credentialed
+// BFF requests on tab refocus, stampeding the server token-refresh window into flaky 401s (bug
+// 23-B1). Data still refetches on mount, navigation, and staleness.
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } },
+});
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

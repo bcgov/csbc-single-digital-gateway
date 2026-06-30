@@ -27,6 +27,10 @@ export function buildSessionOptions(options: AuthSessionOptions): AuthSessionCon
     saveUninitialized: false,
     cookie,
   };
+  // A per-app cookie name so co-hosted BFFs (same host, different port) don't share `connect.sid`.
+  if (options.cookieName !== undefined) {
+    config.name = options.cookieName;
+  }
   if (options.store !== undefined) {
     config.store = options.store;
   }

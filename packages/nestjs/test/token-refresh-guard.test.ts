@@ -6,13 +6,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('openid-client', () => ({ refreshTokenGrant: vi.fn() }));
 import { refreshTokenGrant } from 'openid-client';
 
+import * as flow from '../src/auth/auth.flow';
 import type { AuthModuleOptions, SessionTokens } from '../src/auth/auth.types';
 import { TokenRefreshGuard } from '../src/auth/token-refresh.guard';
 
 const mockRefresh = vi.mocked(refreshTokenGrant);
 
-const ctx = (session: unknown): ExecutionContext =>
-  ({ switchToHttp: () => ({ getRequest: () => ({ session }) }) }) as unknown as ExecutionContext;
+const ctx = (session: unknown, sessionID = 's1'): ExecutionContext =>
+  ({
+    switchToHttp: () => ({ getRequest: () => ({ session, sessionID }) }),
+  }) as unknown as ExecutionContext;
 
 const guard = (options: Partial<AuthModuleOptions> = {}): TokenRefreshGuard =>
   new TokenRefreshGuard({} as never, options as AuthModuleOptions);
@@ -81,8 +84,8 @@ describe('TokenRefreshGuard — refresh near expiry', () => {
   });
 });
 
-describe('TokenRefreshGuard — fail closed', () => {
-  it('destroys the session and throws 401 when refresh fails', async () => {
+describe('TokenRefreshGuard — fail closed only on a revoked token', () => {
+  it('destroys the session and throws 401 when the refresh token is invalid_grant', async () => {
     mockRefresh.mockRejectedValueOnce(new Error('invalid_grant'));
     const destroy = vi.fn((cb: (err?: unknown) => void) => cb());
     const session = {
@@ -92,5 +95,59 @@ describe('TokenRefreshGuard — fail closed', () => {
 
     await expect(guard().canActivate(ctx(session))).rejects.toThrow(UnauthorizedException);
     expect(destroy).toHaveBeenCalled();
+  });
+
+  it('detects a structured OAuth invalid_grant error (openid-client shape)', async () => {
+    mockRefresh.mockRejectedValueOnce(Object.assign(new Error('bad'), { error: 'invalid_grant' }));
+    const destroy = vi.fn((cb: (err?: unknown) => void) => cb());
+    const session = { tokens: { accessToken: 'a', refreshToken: 'r', expiresAt: near() }, destroy };
+
+    await expect(guard().canActivate(ctx(session))).rejects.toThrow(UnauthorizedException);
+    expect(destroy).toHaveBeenCalled();
+  });
+
+  it('does NOT destroy the session on a transient refresh error (network/IdP 5xx)', async () => {
+    // The bug: a transient hiccup must not log the user out. Proceed with the session intact.
+    mockRefresh.mockRejectedValueOnce(new Error('fetch failed: ECONNREFUSED'));
+    const destroy = vi.fn((cb: (err?: unknown) => void) => cb());
+    const session = { tokens: { accessToken: 'a', refreshToken: 'r', expiresAt: near() }, destroy };
+
+    expect(await guard().canActivate(ctx(session))).toBe(true);
+    expect(destroy).not.toHaveBeenCalled();
+  });
+});
+
+describe('TokenRefreshGuard — concurrent coalescing', () => {
+  // Spy at the refreshTokens boundary (what coalescedRefresh wraps) — deterministic, unlike the
+  // refreshTokenGrant call count under concurrent dynamic imports.
+  const freshSession = () => ({
+    tokens: { accessToken: 'a', refreshToken: 'r', expiresAt: near() },
+  });
+  const newTokens: SessionTokens = { accessToken: 'new-at', refreshToken: 'r', expiresAt: far() };
+
+  it('coalesces concurrent refreshes for one session into a single call', async () => {
+    const spy = vi.spyOn(flow, 'refreshTokens').mockResolvedValue(newTokens);
+    const g = guard();
+    // Three concurrent requests on the same session id — only one refresh should run.
+    const results = await Promise.all([
+      g.canActivate(ctx(freshSession(), 'sess-1')),
+      g.canActivate(ctx(freshSession(), 'sess-1')),
+      g.canActivate(ctx(freshSession(), 'sess-1')),
+    ]);
+
+    expect(results).toEqual([true, true, true]);
+    expect(spy).toHaveBeenCalledOnce();
+    spy.mockRestore();
+  });
+
+  it('does not coalesce across different sessions', async () => {
+    const spy = vi.spyOn(flow, 'refreshTokens').mockResolvedValue(newTokens);
+    const g = guard();
+    await Promise.all([
+      g.canActivate(ctx(freshSession(), 'sess-A')),
+      g.canActivate(ctx(freshSession(), 'sess-B')),
+    ]);
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
   });
 });

@@ -44,6 +44,12 @@ export interface AuthSessionOptions {
   /** Session store; omit for express-session's default `MemoryStore` (dev/test). */
   store?: Store;
   cookieMaxAge?: number;
+  /**
+   * The session cookie name. MUST be unique per app when multiple BFFs share a host (cookies are
+   * scoped by host+path, NOT port) — otherwise `localhost:4000` and `localhost:4001` clobber each
+   * other's `connect.sid`, sending the wrong session id and 401-ing. Defaults to `connect.sid`.
+   */
+  cookieName?: string;
 }
 
 export interface AuthModuleOptions {

@@ -45,6 +45,12 @@ describe('buildSessionOptions', () => {
     expect(buildSessionOptions({ secret: 's', secure: true }).cookie?.secure).toBe(true);
     expect(buildSessionOptions({ secret: 's' }).cookie?.secure).toBe(false);
   });
+
+  it('sets a per-app cookie name when provided (so co-hosted BFFs do not share connect.sid)', () => {
+    expect(buildSessionOptions({ secret: 's', cookieName: 'sdg.sid' }).name).toBe('sdg.sid');
+    // Defaults to express-session's `connect.sid` (undefined → library default) when not set.
+    expect(buildSessionOptions({ secret: 's' }).name).toBeUndefined();
+  });
 });
 
 describe('passthroughUserSync', () => {
