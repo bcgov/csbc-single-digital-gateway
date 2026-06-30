@@ -5,6 +5,7 @@ import {
   documentReferences,
   documentVersions,
   documents,
+  reviews,
   submissionVersions,
   submissions,
 } from '@repo/database';
@@ -175,6 +176,7 @@ export class ApplicationsService {
           .limit(1)
       : [];
     const kind = formDoc?.kind ?? 'basic-form';
+    const reviewReason = await this.latestReviewReason(sub.id);
     return {
       id: sub.id,
       reference: applicationReference(sub.id, sub.createdAt),
@@ -188,10 +190,35 @@ export class ApplicationsService {
       kind,
       structure: normalizeFormStructure(kind, formVer?.schema ?? {}),
       data: ver.data,
+      reviewReason,
       createdAt: sub.createdAt.toISOString(),
       updatedAt: ver.updatedAt.toISOString(),
       submittedAt: ver.submittedAt?.toISOString() ?? null,
     };
+  }
+
+  /**
+   * Open a draft revision of an application the reviewer has sent back (`needs_changes`). Seeds the
+   * new version from the last answers so the citizen edits from where they left off, then the
+   * existing saveDraft/submit flow applies (the latest version is a draft again). The reviewed
+   * version and its review row are left untouched — the revision is a new version (N+1).
+   */
+  async revise(userId: string, submissionId: string): Promise<SubmissionResponse> {
+    const sub = await this.requireOwn(userId, submissionId);
+    const latest = await this.requireLatest(submissionId);
+    if (latest.status !== 'needs_changes') {
+      throw new ConflictException('This application is not awaiting changes');
+    }
+    const verIns = await this.db
+      .insert(submissionVersions)
+      .values({
+        submissionId: sub.id,
+        workspaceId: latest.workspaceId,
+        version: latest.version + 1,
+        data: latest.data,
+      })
+      .returning();
+    return this.toDto(sub, this.expectRow(verIns[0]));
   }
 
   /** Save in-progress answers (only while the application is still a draft). */
@@ -326,6 +353,17 @@ export class ApplicationsService {
       throw new NotFoundException('Application form not found');
     }
     return { kind: row.kind, structure: normalizeFormStructure(row.kind, row.structure ?? {}) };
+  }
+
+  /** The most recent reviewer note for a submission (for the citizen banner), or null. */
+  private async latestReviewReason(submissionId: string): Promise<string | null> {
+    const rows = await this.db
+      .select({ reason: reviews.reason })
+      .from(reviews)
+      .where(eq(reviews.submissionId, submissionId))
+      .orderBy(desc(reviews.createdAt))
+      .limit(1);
+    return rows[0]?.reason ?? null;
   }
 
   private async latestVersion(submissionId: string): Promise<SubmissionVersionRow | null> {

@@ -86,6 +86,8 @@ export const applicationDetailSchema = z.object({
   kind: z.string(),
   structure: z.record(z.string(), z.unknown()),
   data: z.record(z.string(), z.unknown()),
+  /** The latest reviewer note (from `reviews.reason`), surfaced for rejected / action-needed. */
+  reviewReason: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
   submittedAt: z.string().nullable(),
