@@ -30,7 +30,7 @@ function Submitted({ serviceId, submission }: { serviceId: string; submission: S
         its progress in your applications.
       </p>
       <div className="mt-2 flex flex-wrap justify-center gap-3">
-        <Button render={<a href="/app" />}>Track your applications</Button>
+        <Button render={<a href="/" />}>Track your applications</Button>
         <Button variant="outline" render={<a href={`/services/${serviceId}`} />}>
           Back to the service
         </Button>

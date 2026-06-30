@@ -108,7 +108,7 @@ function ProfileMenu({
           </div>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<a href="/app/account" />}>
+        <DropdownMenuItem render={<a href="/account" />}>
           <UserCog className="size-4" aria-hidden />
           Account settings
         </DropdownMenuItem>

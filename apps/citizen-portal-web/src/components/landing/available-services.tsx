@@ -50,7 +50,7 @@ export function AvailableServices({
                       <ChevronRight className="size-4" aria-hidden />
                     </a>
                     {application ? (
-                      <a href="/app" className="text-xs text-primary hover:underline">
+                      <a href="/" className="text-xs text-primary hover:underline">
                         Open
                       </a>
                     ) : null}

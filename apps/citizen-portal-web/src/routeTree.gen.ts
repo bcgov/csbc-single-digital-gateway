@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
@@ -17,11 +16,6 @@ import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$s
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
 import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
 
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -57,7 +51,6 @@ const ServicesServiceIdApplyFormIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
@@ -66,7 +59,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/services': typeof ServicesIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
@@ -76,7 +68,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
@@ -87,7 +78,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/app'
     | '/applications/$id'
     | '/services/'
     | '/services/$serviceId/'
@@ -96,7 +86,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/app'
     | '/applications/$id'
     | '/services'
     | '/services/$serviceId'
@@ -105,7 +94,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/app'
     | '/applications/$id'
     | '/services/'
     | '/services/$serviceId/'
@@ -115,7 +103,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRoute
   ApplicationsIdRoute: typeof ApplicationsIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
@@ -125,13 +112,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -179,7 +159,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppRoute: AppRoute,
   ApplicationsIdRoute: ApplicationsIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,

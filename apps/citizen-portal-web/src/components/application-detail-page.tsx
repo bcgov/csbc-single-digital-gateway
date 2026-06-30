@@ -72,7 +72,7 @@ export function ApplicationDetailPage() {
         ) : isError || !application ? (
           <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <h1 className="font-heading text-lg font-semibold">Application not found</h1>
-            <Button variant="outline" className="mt-4" render={<a href="/app" />}>
+            <Button variant="outline" className="mt-4" render={<a href="/" />}>
               Your applications
             </Button>
           </div>
