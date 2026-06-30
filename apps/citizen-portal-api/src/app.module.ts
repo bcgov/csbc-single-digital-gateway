@@ -18,6 +18,7 @@ import Valkey from 'iovalkey';
 import { OidcUserSyncService } from './auth/oidc-user-sync.service';
 import { ValkeySessionRegistry } from './auth/valkey-session-registry';
 import { validateEnv, type Env } from './config/env.schema';
+import { ApplicationsModule } from './modules/applications/applications.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 
 @Module({
@@ -98,6 +99,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
     HealthModule.forRoot({ readiness: [DatabaseHealthIndicator] }),
     // Feature modules live under src/modules/<feature>/.
     CatalogModule,
+    ApplicationsModule,
   ],
   // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses
   // (@ZodSerializerDto), and log response-serialization failures before delegating.

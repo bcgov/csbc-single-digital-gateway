@@ -95,7 +95,7 @@ export function ServiceDetailPage() {
             </Section>
 
             <Section id="how-to-apply" title="How to apply">
-              <HowToApply applications={service.applications} />
+              <HowToApply serviceId={service.id} applications={service.applications} />
             </Section>
 
             <Section id="your-activity" title="Your activity">

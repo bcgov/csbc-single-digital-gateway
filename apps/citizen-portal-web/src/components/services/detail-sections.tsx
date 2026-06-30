@@ -125,13 +125,20 @@ export interface ApplicationMethod {
   id: string;
   label: string | null;
   title: string;
+  formId: string;
 }
 
 /**
- * "How to apply" — one card per application-method form the service references. Falls back to a
- * muted message when the service has no online application form.
+ * "How to apply" — one card per application-method form the service references, each linking to the
+ * apply flow. Falls back to a muted message when the service has no online application form.
  */
-export function HowToApply({ applications }: { applications: readonly ApplicationMethod[] }) {
+export function HowToApply({
+  serviceId,
+  applications,
+}: {
+  serviceId: string;
+  applications: readonly ApplicationMethod[];
+}) {
   if (applications.length === 0) {
     return (
       <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
@@ -157,7 +164,7 @@ export function HowToApply({ applications }: { applications: readonly Applicatio
                 </span>
               </div>
             </div>
-            <Button>
+            <Button render={<a href={`/services/${serviceId}/apply/${form.formId}`} />}>
               {form.label && form.label !== 'Untitled' ? form.label : 'Start an application'}
             </Button>
           </CardContent>

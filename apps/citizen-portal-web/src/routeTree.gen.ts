@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
+import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -41,12 +42,19 @@ const ServicesServiceIdVersionsVersionIdRoute =
     path: '/services/$serviceId/versions/$versionId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ServicesServiceIdApplyFormIdRoute =
+  ServicesServiceIdApplyFormIdRouteImport.update({
+    id: '/services/$serviceId/apply/$formId',
+    path: '/services/$serviceId/apply/$formId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesByTo {
@@ -54,6 +62,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/services': typeof ServicesIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesById {
@@ -62,6 +71,7 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRouteTypes {
@@ -71,6 +81,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/services/'
     | '/services/$serviceId/'
+    | '/services/$serviceId/apply/$formId'
     | '/services/$serviceId/versions/$versionId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -78,6 +89,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/services'
     | '/services/$serviceId'
+    | '/services/$serviceId/apply/$formId'
     | '/services/$serviceId/versions/$versionId'
   id:
     | '__root__'
@@ -85,6 +97,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/services/'
     | '/services/$serviceId/'
+    | '/services/$serviceId/apply/$formId'
     | '/services/$serviceId/versions/$versionId'
   fileRoutesById: FileRoutesById
 }
@@ -93,6 +106,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
+  ServicesServiceIdApplyFormIdRoute: typeof ServicesServiceIdApplyFormIdRoute
   ServicesServiceIdVersionsVersionIdRoute: typeof ServicesServiceIdVersionsVersionIdRoute
 }
 
@@ -133,6 +147,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesServiceIdVersionsVersionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/$serviceId/apply/$formId': {
+      id: '/services/$serviceId/apply/$formId'
+      path: '/services/$serviceId/apply/$formId'
+      fullPath: '/services/$serviceId/apply/$formId'
+      preLoaderRoute: typeof ServicesServiceIdApplyFormIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -141,6 +162,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,
+  ServicesServiceIdApplyFormIdRoute: ServicesServiceIdApplyFormIdRoute,
   ServicesServiceIdVersionsVersionIdRoute:
     ServicesServiceIdVersionsVersionIdRoute,
 }

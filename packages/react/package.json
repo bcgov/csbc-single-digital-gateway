@@ -11,6 +11,12 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./form-runner": {
+      "types": "./dist/form-runner.d.ts",
+      "development": "./src/form-runner.ts",
+      "import": "./dist/form-runner.js",
+      "require": "./dist/form-runner.cjs"
+    },
     "./jsonforms": {
       "types": "./dist/jsonforms.d.ts",
       "development": "./src/jsonforms.ts",

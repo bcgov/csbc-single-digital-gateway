@@ -5,25 +5,17 @@ import {
   documentTypeVersions,
   documentVersions,
   documents,
-  submissionVersions,
-  submissions,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import {
   type ApplicationForm,
   type CatalogService as CatalogServiceDto,
   type CatalogServiceDetail,
   type CatalogServiceVersion,
   type ListServicesQuery,
-  type MyApplication,
 } from '../dtos/catalog.dtos';
-import {
-  applicationReference,
-  applicationStatusLabel,
-  definitionSchemas,
-  serviceDataString,
-} from '../util/format';
+import { definitionSchemas, serviceDataString } from '../util/format';
 
 /**
  * Read-only, workspace-free view of the service catalog for citizens (feature 60). Services are
@@ -195,64 +187,6 @@ export class CatalogService {
       createdAt: row.createdAt.toISOString(),
       publishedAt: row.publishedAt?.toISOString() ?? null,
       archivedAt: row.archivedAt?.toISOString() ?? null,
-    };
-  }
-
-  /**
-   * The signed-in citizen's applications, newest first. A submission is against an application-form
-   * version; the owning service (and its version) is resolved through `document_references`. The
-   * status + last-updated come from the latest `submission_version`. Workspace-free.
-   */
-  async listMyApplications(userId: string): Promise<MyApplication[]> {
-    const subs = await this.db
-      .select()
-      .from(submissions)
-      .where(eq(submissions.userId, userId))
-      .orderBy(desc(submissions.createdAt));
-    const items = await Promise.all(subs.map((sub) => this.toApplication(sub)));
-    return items.filter((item): item is MyApplication => item !== null);
-  }
-
-  /** Resolve one submission into a citizen-facing application row (or null if it has no owning service). */
-  private async toApplication(sub: typeof submissions.$inferSelect): Promise<MyApplication | null> {
-    const refRows = await this.db
-      .select({
-        serviceId: documentReferences.ownerDocumentId,
-        serviceVersionId: documentReferences.ownerVersionId,
-      })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.targetVersionId, sub.documentVersionId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      )
-      .limit(1);
-    const ref = refRows[0];
-    if (ref === undefined) {
-      return null;
-    }
-    const [svc] = await this.db
-      .select({ title: documents.title })
-      .from(documents)
-      .where(eq(documents.id, ref.serviceId))
-      .limit(1);
-    const [ver] = await this.db
-      .select({ status: submissionVersions.status, updatedAt: submissionVersions.updatedAt })
-      .from(submissionVersions)
-      .where(eq(submissionVersions.submissionId, sub.id))
-      .orderBy(desc(submissionVersions.version))
-      .limit(1);
-    const status = ver?.status ?? 'draft';
-    return {
-      id: sub.id,
-      serviceId: ref.serviceId,
-      serviceVersionId: ref.serviceVersionId,
-      serviceTitle: svc?.title ?? 'Service',
-      reference: applicationReference(sub.id, sub.createdAt),
-      status,
-      statusLabel: applicationStatusLabel(status),
-      lastUpdated: (ver?.updatedAt ?? sub.updatedAt).toISOString(),
     };
   }
 }

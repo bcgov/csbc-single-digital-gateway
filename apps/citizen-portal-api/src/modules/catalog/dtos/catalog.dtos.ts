@@ -86,35 +86,3 @@ export const catalogServiceVersionSchema = z.object({
 });
 export type CatalogServiceVersion = z.infer<typeof catalogServiceVersionSchema>;
 export class CatalogServiceVersionDto extends createZodDto(catalogServiceVersionSchema) {}
-
-/** The submission-workflow states, mirrored from `submission_versions.status`. */
-export const applicationStatusSchema = z.enum([
-  'draft',
-  'pending',
-  'in_review',
-  'approved',
-  'rejected',
-  'needs_changes',
-  'withdrawn',
-]);
-export type ApplicationStatus = z.infer<typeof applicationStatusSchema>;
-
-/**
- * One of the signed-in citizen's applications. `serviceVersionId` points at the exact service
- * version applied to (published or archived), so the UI can deep-link to the historical detail.
- * Workspace-free.
- */
-export const myApplicationSchema = z.object({
-  id: z.string(),
-  serviceId: z.string(),
-  serviceVersionId: z.string(),
-  serviceTitle: z.string(),
-  reference: z.string(),
-  status: applicationStatusSchema,
-  statusLabel: z.string(),
-  lastUpdated: z.string(),
-});
-export type MyApplication = z.infer<typeof myApplicationSchema>;
-export class MyApplicationListDto extends createZodDto(
-  z.object({ items: z.array(myApplicationSchema) }),
-) {}

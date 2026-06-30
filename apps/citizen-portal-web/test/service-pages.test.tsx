@@ -114,7 +114,10 @@ describe('service detail page', () => {
     await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 });
     expect(screen.getByRole('heading', { name: 'How to apply' })).toBeInTheDocument();
     expect(screen.getByText('Your Profile')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Apply online' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Apply online' })).toHaveAttribute(
+      'href',
+      '/services/svc-1/apply/f1',
+    );
   });
 
   it('shows a not-available state on 404', async () => {
