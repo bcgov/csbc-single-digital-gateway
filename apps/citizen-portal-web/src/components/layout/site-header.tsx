@@ -10,6 +10,7 @@ import {
 } from '@repo/ui/dropdown-menu';
 import { Logo } from '@repo/ui/logo';
 import { Skeleton } from '@repo/ui/skeleton';
+import { Link } from '@tanstack/react-router';
 import { LogOut, UserCog } from 'lucide-react';
 import { initials } from '@/lib/auth';
 import { loginUrl } from '@/lib/bff';
@@ -36,14 +37,14 @@ const NAV_ITEMS = [
   { id: 'services', label: 'Services', href: '/services' },
 ] as const;
 
-/** Primary nav (Home, Services). Plain anchors so the header renders outside a router (tests). */
+/** Primary nav (Home, Services) — client-side router links so navigation doesn't reload the app. */
 function PrimaryNav({ active }: { active?: 'home' | 'services' | undefined }) {
   return (
     <nav aria-label="Primary" className="hidden items-center gap-6 sm:flex">
       {NAV_ITEMS.map((item) => (
-        <a
+        <Link
           key={item.id}
-          href={item.href}
+          to={item.href}
           aria-current={active === item.id ? 'page' : undefined}
           className={`text-xs font-medium ${
             active === item.id
@@ -52,7 +53,7 @@ function PrimaryNav({ active }: { active?: 'home' | 'services' | undefined }) {
           }`}
         >
           {item.label}
-        </a>
+        </Link>
       ))}
     </nav>
   );
@@ -61,7 +62,7 @@ function PrimaryNav({ active }: { active?: 'home' | 'services' | undefined }) {
 /** Shared brand lockup on the left of the header. */
 function BrandLockup() {
   return (
-    <a href="/" className="flex items-center gap-2.5">
+    <Link to="/" className="flex items-center gap-2.5">
       <Logo className="h-7 w-auto" aria-label="Government of British Columbia" />
       <span className="font-heading text-sm font-semibold text-foreground">
         Single Digital Gateway
@@ -69,7 +70,7 @@ function BrandLockup() {
       <Badge variant="secondary" className="uppercase">
         beta
       </Badge>
-    </a>
+    </Link>
   );
 }
 
@@ -108,6 +109,7 @@ function ProfileMenu({
           </div>
         )}
         <DropdownMenuSeparator />
+        {/* No /account route exists yet — kept as a plain anchor until one does. */}
         <DropdownMenuItem render={<a href="/account" />}>
           <UserCog className="size-4" aria-hidden />
           Account settings

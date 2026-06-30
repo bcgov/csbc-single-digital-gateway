@@ -2,7 +2,7 @@ import { FormRunner } from '@repo/react/form-runner';
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
@@ -30,8 +30,11 @@ function Submitted({ serviceId, submission }: { serviceId: string; submission: S
         its progress in your applications.
       </p>
       <div className="mt-2 flex flex-wrap justify-center gap-3">
-        <Button render={<a href="/" />}>Track your applications</Button>
-        <Button variant="outline" render={<a href={`/services/${serviceId}`} />}>
+        <Button render={<Link to="/" />}>Track your applications</Button>
+        <Button
+          variant="outline"
+          render={<Link to="/services/$serviceId" params={{ serviceId }} />}
+        >
           Back to the service
         </Button>
       </div>
@@ -164,7 +167,11 @@ function Unavailable({ serviceId }: { serviceId: string }) {
       <p className="mt-1 text-sm text-muted-foreground">
         This application form isn’t available right now.
       </p>
-      <Button variant="outline" className="mt-4" render={<a href={`/services/${serviceId}`} />}>
+      <Button
+        variant="outline"
+        className="mt-4"
+        render={<Link to="/services/$serviceId" params={{ serviceId }} />}
+      >
         Back to the service
       </Button>
     </div>

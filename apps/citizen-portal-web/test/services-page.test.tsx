@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ServicesPage } from '@/components/services-page';
+import { routeTree } from '@/routeTree.gen';
 
 const authedUser = {
   id: 'c1',
@@ -49,9 +49,17 @@ function mockBff({ me = new Response(null, { status: 401 }), apps = applications
   return fetchMock;
 }
 
-function renderWithClient(ui: ReactNode) {
+function renderServices() {
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/services'] }),
+  });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
 }
 
 afterEach(() => {
@@ -61,8 +69,8 @@ afterEach(() => {
 describe('citizen-portal-web /services page', () => {
   it('lists published services from the catalog (anonymous)', async () => {
     mockBff();
-    renderWithClient(<ServicesPage />);
-    expect(screen.getByRole('heading', { name: 'Services', level: 1 })).toBeInTheDocument();
+    renderServices();
+    expect(await screen.findByRole('heading', { name: 'Services', level: 1 })).toBeInTheDocument();
     expect(
       await screen.findByRole('link', { name: /Income and Disability Assistance/i }),
     ).toBeInTheDocument();
@@ -71,14 +79,14 @@ describe('citizen-portal-web /services page', () => {
 
   it('does not show "Your applications" for an anonymous visitor', async () => {
     mockBff();
-    renderWithClient(<ServicesPage />);
+    renderServices();
     await screen.findByRole('link', { name: /Birth Registration/i });
     expect(screen.queryByRole('heading', { name: 'Your applications' })).not.toBeInTheDocument();
   });
 
   it('shows the citizen’s applications when authenticated', async () => {
     mockBff({ me: jsonResponse(authedUser) });
-    renderWithClient(<ServicesPage />);
+    renderServices();
     expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
     expect(await screen.findByText(/20250615-0003/)).toBeInTheDocument();
   });
@@ -86,7 +94,7 @@ describe('citizen-portal-web /services page', () => {
   it('searches via the catalog endpoint with the q parameter', async () => {
     const fetchMock = mockBff();
     const user = userEvent.setup();
-    renderWithClient(<ServicesPage />);
+    renderServices();
     await screen.findByRole('link', { name: /Birth Registration/i });
 
     await user.type(screen.getByRole('searchbox', { name: /search services/i }), 'birth');

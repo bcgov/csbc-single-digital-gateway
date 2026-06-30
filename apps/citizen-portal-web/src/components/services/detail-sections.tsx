@@ -2,6 +2,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@r
 import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { Clock, Mail, MapPin, Phone, Send, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ApplicationRow } from '@/components/services/application-row';
@@ -168,7 +169,14 @@ export function HowToApply({
                 </span>
               </div>
             </div>
-            <Button render={<a href={`/services/${serviceId}/apply/${form.formId}`} />}>
+            <Button
+              render={
+                <Link
+                  to="/services/$serviceId/apply/$formId"
+                  params={{ serviceId, formId: form.formId }}
+                />
+              }
+            >
               {form.label && form.label !== 'Untitled' ? form.label : 'Start an application'}
             </Button>
           </CardContent>

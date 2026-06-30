@@ -1,7 +1,7 @@
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ReviseForm } from '@/components/application/revise-form';
 import { StatusBanner } from '@/components/application/status-banner';
@@ -105,7 +105,7 @@ export function ApplicationDetailPage() {
         ) : isError || !application ? (
           <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <h1 className="font-heading text-lg font-semibold">Application not found</h1>
-            <Button variant="outline" className="mt-4" render={<a href="/" />}>
+            <Button variant="outline" className="mt-4" render={<Link to="/" />}>
               Your applications
             </Button>
           </div>
