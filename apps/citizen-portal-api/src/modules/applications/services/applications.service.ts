@@ -20,6 +20,7 @@ import {
   normalizeFormStructure,
   submissionStatusLabel,
 } from '../util/format';
+import { validateSubmission } from '../util/validate';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
 
@@ -160,7 +161,11 @@ export class ApplicationsService {
     return this.toDto(sub, this.expectRow(updated[0]));
   }
 
-  /** Submit the application: persist the final answers and advance draft → pending. */
+  /**
+   * Submit the application: validate the answers against the form schema (422 on failure), then
+   * persist the final answers and advance draft → pending. Validation runs only here — drafts are
+   * intentionally partial and are never validated.
+   */
   async submit(
     userId: string,
     submissionId: string,
@@ -168,6 +173,14 @@ export class ApplicationsService {
   ): Promise<SubmissionResponse> {
     const sub = await this.requireOwn(userId, submissionId);
     const ver = await this.requireDraft(submissionId);
+    const form = await this.loadFormStructure(sub.documentVersionId);
+    const result = validateSubmission(form.kind, form.structure, data);
+    if (!result.valid) {
+      throw new UnprocessableEntityException({
+        message: 'The application has validation errors',
+        errors: result.errors,
+      });
+    }
     const updated = await this.db
       .update(submissionVersions)
       .set({ data, status: 'pending', submittedAt: new Date() })
@@ -241,6 +254,23 @@ export class ApplicationsService {
     );
     const draft = withVersions.find((entry) => entry.version?.status === 'draft');
     return draft && draft.version ? { submission: draft.submission, version: draft.version } : null;
+  }
+
+  /** The form version's kind + normalized render/validation structure (for submit validation). */
+  private async loadFormStructure(
+    formVersionId: string,
+  ): Promise<{ kind: string; structure: Record<string, unknown> }> {
+    const rows = await this.db
+      .select({ kind: documents.kind, structure: documentVersions.schema })
+      .from(documentVersions)
+      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
+      .where(eq(documentVersions.id, formVersionId))
+      .limit(1);
+    const row = rows[0];
+    if (row === undefined) {
+      throw new NotFoundException('Application form not found');
+    }
+    return { kind: row.kind, structure: normalizeFormStructure(row.kind, row.structure ?? {}) };
   }
 
   private async latestVersion(submissionId: string): Promise<SubmissionVersionRow | null> {
