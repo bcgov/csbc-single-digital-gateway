@@ -56,6 +56,16 @@ const multiStageDefinition = {
   ],
 };
 
+describe('FormRunner — preview (no onSubmit)', () => {
+  it('renders a fillable form with no Submit affordance', () => {
+    render(
+      <FormRunner kind="basic-form" definition={basicDefinition} data={{}} onSubmit={undefined} />,
+    );
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Submit' })).not.toBeInTheDocument();
+  });
+});
+
 describe('FormRunner — basic', () => {
   it('blocks submit until required fields are valid, then submits the data', async () => {
     const onSubmit = vi.fn();
