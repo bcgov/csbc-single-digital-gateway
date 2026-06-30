@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback } from '@repo/ui/avatar';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { AvailableServices } from '@/components/landing/available-services';
@@ -7,7 +6,7 @@ import { LoginCta } from '@/components/landing/login-cta';
 import { TrackApplications } from '@/components/landing/track-applications';
 import { WhatYouCanDo } from '@/components/landing/what-you-can-do';
 import { PageShell } from '@/components/layout/page-shell';
-import { firstName, initials, useAuth } from '@/lib/auth';
+import { firstName, useAuth } from '@/lib/auth';
 import { displayName, logout } from '@/lib/bff';
 import { myApplicationsQueryOptions, servicesQueryOptions } from '@/lib/catalog';
 
@@ -16,19 +15,12 @@ async function handleLogout(): Promise<void> {
   window.location.assign('/');
 }
 
-/** Greeting block for a signed-in citizen: avatar + "Hi, <first name>" / "Welcome to MyBC." */
+/** Greeting block for a signed-in citizen: "Hi, <first name>" / "Welcome to MyBC." */
 function Greeting({ name }: { name: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <Avatar size="lg">
-        <AvatarFallback>{initials(name)}</AvatarFallback>
-      </Avatar>
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-semibold text-foreground">
-          Hi, {firstName(name)}
-        </h1>
-        <p className="text-sm text-muted-foreground">Welcome to MyBC.</p>
-      </div>
+    <div className="flex flex-col gap-1">
+      <h1 className="font-heading text-2xl font-semibold text-foreground">Hi, {firstName(name)}</h1>
+      <p className="text-sm text-muted-foreground">Welcome to MyBC.</p>
     </div>
   );
 }
