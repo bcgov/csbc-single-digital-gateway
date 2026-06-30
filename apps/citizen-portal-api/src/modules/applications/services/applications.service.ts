@@ -11,6 +11,7 @@ import {
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq } from 'drizzle-orm';
 import {
+  type ApplicationDetail,
   type MyApplication,
   type SubmissionResponse,
   type SubmissionStatus,
@@ -138,11 +139,59 @@ export class ApplicationsService {
     });
   }
 
-  /** A single application owned by the citizen (for resume). 404 if it isn't theirs. */
-  async get(userId: string, submissionId: string): Promise<SubmissionResponse> {
+  /**
+   * The full view of one of the citizen's applications: the submission + the form it was made
+   * through (kind + render structure) + the owning service. 404 if it isn't theirs.
+   */
+  async getDetail(userId: string, submissionId: string): Promise<ApplicationDetail> {
     const sub = await this.requireOwn(userId, submissionId);
     const ver = await this.requireLatest(submissionId);
-    return this.toDto(sub, ver);
+    const [formDoc] = await this.db
+      .select({ title: documents.title, kind: documents.kind })
+      .from(documents)
+      .where(eq(documents.id, sub.documentId))
+      .limit(1);
+    const [formVer] = await this.db
+      .select({ schema: documentVersions.schema })
+      .from(documentVersions)
+      .where(eq(documentVersions.id, sub.documentVersionId))
+      .limit(1);
+    const refRows = await this.db
+      .select({ serviceId: documentReferences.ownerDocumentId })
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.targetVersionId, sub.documentVersionId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      )
+      .limit(1);
+    const serviceId = refRows[0]?.serviceId ?? '';
+    const [svc] = serviceId
+      ? await this.db
+          .select({ title: documents.title })
+          .from(documents)
+          .where(eq(documents.id, serviceId))
+          .limit(1)
+      : [];
+    const kind = formDoc?.kind ?? 'basic-form';
+    return {
+      id: sub.id,
+      reference: applicationReference(sub.id, sub.createdAt),
+      status: ver.status,
+      statusLabel: submissionStatusLabel(ver.status),
+      formId: sub.documentId,
+      formVersionId: sub.documentVersionId,
+      formTitle: formDoc?.title ?? 'Application',
+      serviceId,
+      serviceTitle: svc?.title ?? 'Service',
+      kind,
+      structure: normalizeFormStructure(kind, formVer?.schema ?? {}),
+      data: ver.data,
+      createdAt: sub.createdAt.toISOString(),
+      updatedAt: ver.updatedAt.toISOString(),
+      submittedAt: ver.submittedAt?.toISOString() ?? null,
+    };
   }
 
   /** Save in-progress answers (only while the application is still a draft). */
@@ -223,6 +272,11 @@ export class ApplicationsService {
       .from(documents)
       .where(eq(documents.id, ref.serviceId))
       .limit(1);
+    const [form] = await this.db
+      .select({ title: documents.title })
+      .from(documents)
+      .where(eq(documents.id, sub.documentId))
+      .limit(1);
     const ver = await this.latestVersion(sub.id);
     const status: SubmissionStatus = ver?.status ?? 'draft';
     return {
@@ -230,6 +284,7 @@ export class ApplicationsService {
       serviceId: ref.serviceId,
       serviceVersionId: ref.serviceVersionId,
       serviceTitle: svc?.title ?? 'Service',
+      formTitle: form?.title ?? 'Application',
       reference: applicationReference(sub.id, sub.createdAt),
       status,
       statusLabel: submissionStatusLabel(status),

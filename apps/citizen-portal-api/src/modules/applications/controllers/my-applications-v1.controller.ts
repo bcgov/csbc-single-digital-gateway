@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
+  ApplicationDetailDto,
   CreateSubmissionDto,
   MyApplicationListDto,
   SubmissionDataDto,
@@ -33,9 +34,9 @@ export class MyApplicationsV1Controller {
   }
 
   @Get('applications/:id')
-  @ZodSerializerDto(SubmissionDto)
+  @ZodSerializerDto(ApplicationDetailDto)
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.applications.get(user.id, id);
+    return this.applications.getDetail(user.id, id);
   }
 
   @Patch('applications/:id')

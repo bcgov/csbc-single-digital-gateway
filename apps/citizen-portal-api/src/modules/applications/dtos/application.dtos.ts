@@ -39,6 +39,8 @@ export const myApplicationSchema = z.object({
   serviceId: z.string(),
   serviceVersionId: z.string(),
   serviceTitle: z.string(),
+  /** The application method / form the citizen applied through (the row's title). */
+  formTitle: z.string(),
   reference: z.string(),
   status: submissionStatusSchema,
   statusLabel: z.string(),
@@ -64,6 +66,32 @@ export const submissionSchema = z.object({
 });
 export type SubmissionResponse = z.infer<typeof submissionSchema>;
 export class SubmissionDto extends createZodDto(submissionSchema) {}
+
+/**
+ * The full view of one application for the application page: the submission + the form it was made
+ * through (kind + render structure) + the owning service, so the page can show names and render the
+ * submitted answers read-only.
+ */
+export const applicationDetailSchema = z.object({
+  id: z.string(),
+  reference: z.string(),
+  status: submissionStatusSchema,
+  statusLabel: z.string(),
+  formId: z.string(),
+  formVersionId: z.string(),
+  formTitle: z.string(),
+  serviceId: z.string(),
+  serviceTitle: z.string(),
+  /** `basic-form` | `multi-stage-form` — how to render `structure` + `data`. */
+  kind: z.string(),
+  structure: z.record(z.string(), z.unknown()),
+  data: z.record(z.string(), z.unknown()),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  submittedAt: z.string().nullable(),
+});
+export type ApplicationDetail = z.infer<typeof applicationDetailSchema>;
+export class ApplicationDetailDto extends createZodDto(applicationDetailSchema) {}
 
 // ── Request bodies ────────────────────────────────────────────────────────────────────────────────
 
