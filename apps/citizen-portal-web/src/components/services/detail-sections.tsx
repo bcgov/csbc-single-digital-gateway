@@ -3,6 +3,7 @@ import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Clock, Mail, MapPin, Phone, Send, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { ServiceContent } from '@/components/services/service-content';
 
 /** The anchor targets shown in the left "On this page" nav and used as section ids. */
 export const DETAIL_SECTIONS = [
@@ -246,6 +247,57 @@ export function ContactInformation() {
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * The shared two-column body of a service page: the "On this page" rail + all sections, with the
+ * overview rendering the given `schema`/`uischema`/`data`. Used by both the live service detail and
+ * the historical version page, so they're laid out identically.
+ */
+export function ServiceSections({
+  serviceId,
+  schema,
+  uischema,
+  data,
+  applications,
+}: {
+  serviceId: string;
+  schema: Record<string, unknown>;
+  uischema: Record<string, unknown>;
+  data: Record<string, unknown>;
+  applications: readonly ApplicationMethod[];
+}) {
+  return (
+    <div className="flex gap-10">
+      <OnThisPage />
+      <div className="flex min-w-0 flex-1 flex-col gap-10">
+        <Section id="overview" title="Overview">
+          <InAGlance />
+          <ServiceContent
+            schema={schema}
+            uischema={uischema}
+            data={data}
+            omit={['title', 'description']}
+          />
+        </Section>
+        <Section id="eligibility" title="Eligibility criteria">
+          <EligibilityCriteria />
+        </Section>
+        <Section id="how-to-apply" title="How to apply">
+          <HowToApply serviceId={serviceId} applications={applications} />
+        </Section>
+        <Section id="your-activity" title="Your activity">
+          <YourActivity />
+        </Section>
+        <Section id="help" title="Help and information">
+          <HelpAndInformation />
+        </Section>
+        <Section id="contact" title="Contact information">
+          <ContactInformation />
+        </Section>
+      </div>
     </div>
   );
 }

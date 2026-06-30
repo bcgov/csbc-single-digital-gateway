@@ -3,24 +3,15 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import {
-  ContactInformation,
-  EligibilityCriteria,
-  HelpAndInformation,
-  HowToApply,
-  InAGlance,
-  OnThisPage,
-  Section,
-  YourActivity,
-} from '@/components/services/detail-sections';
-import { Breadcrumb, ServiceContent } from '@/components/services/service-content';
+import { ServiceSections } from '@/components/services/detail-sections';
+import { Breadcrumb } from '@/components/services/service-content';
 import { serviceQueryOptions } from '@/lib/catalog';
 
 /**
  * A single service's detail page (`/services/:serviceId`) — public (feature 60). Always shows the
  * current PUBLISHED version (no version switcher; a specific version is reachable only via its
  * permalink). Layout follows `inspiration/services-detail.png`: a sticky "On this page" rail beside
- * a sectioned overview. Sections other than the overview use placeholder content (no data model yet).
+ * a sectioned overview (shared with the historical version page via `ServiceSections`).
  */
 export function ServiceDetailPage() {
   const { serviceId } = useParams({ from: '/services/$serviceId/' });
@@ -65,7 +56,6 @@ export function ServiceDetailPage() {
           ]}
         />
 
-        {/* Title + primary CTA */}
         <header className="flex flex-col gap-3 border-b pb-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-1">
             <h1 className="font-heading text-2xl font-semibold text-foreground">{service.title}</h1>
@@ -76,41 +66,13 @@ export function ServiceDetailPage() {
           <Button className="shrink-0">Start an application</Button>
         </header>
 
-        {/* Two-column: sticky side nav + sectioned content */}
-        <div className="flex gap-10">
-          <OnThisPage />
-          <div className="flex min-w-0 flex-1 flex-col gap-10">
-            <Section id="overview" title="Overview">
-              <InAGlance />
-              <ServiceContent
-                schema={service.schema}
-                uischema={service.uischema}
-                data={service.data}
-                omit={['title', 'description']}
-              />
-            </Section>
-
-            <Section id="eligibility" title="Eligibility criteria">
-              <EligibilityCriteria />
-            </Section>
-
-            <Section id="how-to-apply" title="How to apply">
-              <HowToApply serviceId={service.id} applications={service.applications} />
-            </Section>
-
-            <Section id="your-activity" title="Your activity">
-              <YourActivity />
-            </Section>
-
-            <Section id="help" title="Help and information">
-              <HelpAndInformation />
-            </Section>
-
-            <Section id="contact" title="Contact information">
-              <ContactInformation />
-            </Section>
-          </div>
-        </div>
+        <ServiceSections
+          serviceId={service.id}
+          schema={service.schema}
+          uischema={service.uischema}
+          data={service.data}
+          applications={service.applications}
+        />
       </div>
     </CitizenShell>
   );

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
 
@@ -87,6 +87,7 @@ function renderRoute(path: string) {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+  return router;
 }
 
 afterEach(() => {
@@ -147,5 +148,14 @@ describe('service version page', () => {
     expect(
       await screen.findByRole('heading', { name: /not available/i }, { timeout: 5000 }),
     ).toBeInTheDocument();
+  });
+
+  it('redirects the current published version to the canonical service page', async () => {
+    mockBff(); // detail.publishedVersionId === 'ver-3'
+    const router = renderRoute('/services/svc-1/versions/ver-3');
+    await waitFor(() =>
+      expect(router.state.location.pathname.replace(/\/$/, '')).toBe('/services/svc-1'),
+    );
+    expect(screen.queryByText(/historical version/i)).not.toBeInTheDocument();
   });
 });
