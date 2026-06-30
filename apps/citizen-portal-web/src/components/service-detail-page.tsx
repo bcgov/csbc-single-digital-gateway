@@ -2,14 +2,14 @@ import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
-import { History } from 'lucide-react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { Breadcrumb, ServiceFields } from '@/components/services/service-fields';
 import { serviceQueryOptions } from '@/lib/catalog';
 
 /**
- * A single service's detail page (`/services/:serviceId`) — public (feature 60). Shows the current
- * published version's title/description/content and links to that version's permalink.
+ * A single service's detail page (`/services/:serviceId`) — public (feature 60). Always shows the
+ * current PUBLISHED version; there is intentionally no version switcher here (a specific version is
+ * reachable only by its direct permalink, `/services/:serviceId/versions/:versionId`).
  */
 export function ServiceDetailPage() {
   const { serviceId } = useParams({ from: '/services/$serviceId/' });
@@ -52,13 +52,6 @@ export function ServiceDetailPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               <Button>Start an application</Button>
-              <a
-                href={`/services/${service.id}/versions/${service.publishedVersionId}`}
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                <History className="size-3.5" aria-hidden />
-                View this version (v{service.version})
-              </a>
             </div>
           </>
         )}

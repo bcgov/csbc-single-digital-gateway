@@ -63,17 +63,18 @@ afterEach(() => {
 });
 
 describe('service detail page', () => {
-  it('renders the service and links to its published version', async () => {
+  it('renders the published service with no version switcher', async () => {
     mockBff();
     renderRoute('/services/svc-1');
     expect(
       await screen.findByRole('heading', { name: 'Service One', level: 1 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Financial support for residents.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /View this version \(v3\)/i })).toHaveAttribute(
-      'href',
-      '/services/svc-1/versions/ver-3',
-    );
+    // The detail screen always shows the published version — no affordance to change versions.
+    const versionLinks = screen
+      .queryAllByRole('link')
+      .filter((link) => link.getAttribute('href')?.includes('/versions/'));
+    expect(versionLinks).toHaveLength(0);
   });
 
   it('shows a not-available state on 404', async () => {
