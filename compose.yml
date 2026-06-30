@@ -49,10 +49,14 @@ services:
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
     healthcheck:
+      # Keycloak 26 (HostnameV2) derives realm URLs from the request authority, so the probe MUST
+      # send a Host header — without it `request.authority()` is null and the endpoint 500s with an
+      # uncaught NullPointerException (and the check never sees "200 OK"). Connection: close lets the
+      # read return promptly.
       test:
         [
           'CMD-SHELL',
-          'exec 3<>/dev/tcp/localhost/8080 && echo -e "GET /realms/sdg HTTP/1.0\\n\\n" >&3 && cat <&3 | grep -q "200 OK"',
+          'exec 3<>/dev/tcp/localhost/8080 && printf "GET /realms/sdg HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n" >&3 && cat <&3 | grep -q "200 OK"',
         ]
       interval: 10s
       timeout: 5s
