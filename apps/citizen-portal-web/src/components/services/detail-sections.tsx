@@ -120,27 +120,50 @@ export function EligibilityCriteria() {
   );
 }
 
-/** "How to apply" — the online application route. */
-export function HowToApply({ onApply }: { onApply?: () => void }) {
+/** One application-method form for a service (its title + the call-to-action label). */
+export interface ApplicationMethod {
+  id: string;
+  label: string | null;
+  title: string;
+}
+
+/**
+ * "How to apply" — one card per application-method form the service references. Falls back to a
+ * muted message when the service has no online application form.
+ */
+export function HowToApply({ applications }: { applications: readonly ApplicationMethod[] }) {
+  if (applications.length === 0) {
+    return (
+      <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        This service isn’t available to apply for online yet.
+      </p>
+    );
+  }
   return (
-    <Card>
-      <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Send className="size-5" aria-hidden />
-          </span>
-          <div className="flex flex-col">
-            <span className="font-heading text-sm font-semibold text-foreground">
-              Online application
-            </span>
-            <span className="text-xs text-muted-foreground">
-              Apply through the Single Digital Gateway.
-            </span>
-          </div>
-        </div>
-        <Button onClick={onApply}>Start an application</Button>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-3">
+      {applications.map((form) => (
+        <Card key={form.id}>
+          <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Send className="size-5" aria-hidden />
+              </span>
+              <div className="flex flex-col">
+                <span className="font-heading text-sm font-semibold text-foreground">
+                  {form.title}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Apply through the Single Digital Gateway.
+                </span>
+              </div>
+            </div>
+            <Button>
+              {form.label && form.label !== 'Untitled' ? form.label : 'Start an application'}
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
 

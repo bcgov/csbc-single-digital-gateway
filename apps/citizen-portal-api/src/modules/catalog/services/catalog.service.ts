@@ -11,6 +11,7 @@ import {
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import {
+  type ApplicationForm,
   type CatalogService as CatalogServiceDto,
   type CatalogServiceDetail,
   type CatalogServiceVersion,
@@ -124,7 +125,30 @@ export class CatalogService {
       publishedAt: row.publishedAt?.toISOString() ?? null,
       data: row.data,
       ...definitionSchemas(row.definition),
+      applications: await this.applicationFormsFor(row.versionId),
     };
+  }
+
+  /** The application-method forms a service version offers (its `application_form` references). */
+  private async applicationFormsFor(versionId: string): Promise<ApplicationForm[]> {
+    return this.db
+      .select({
+        id: documentReferences.id,
+        label: documentReferences.label,
+        title: documents.title,
+        formId: documentReferences.targetDocumentId,
+        formVersionId: documentReferences.targetVersionId,
+        kind: documentReferences.targetKind,
+      })
+      .from(documentReferences)
+      .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, versionId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      )
+      .orderBy(asc(documentReferences.position));
   }
 
   /**

@@ -32,8 +32,23 @@ export class CatalogServiceListDto extends createZodDto(
 ) {}
 
 /**
+ * An application method = a form the published service version references (relation
+ * `application_form`). `label` is the call-to-action text; `title` is the form's name. Workspace-free.
+ */
+export const applicationFormSchema = z.object({
+  id: z.string(),
+  label: z.string().nullable(),
+  title: z.string(),
+  formId: z.string(),
+  formVersionId: z.string(),
+  kind: z.string(),
+});
+export type ApplicationForm = z.infer<typeof applicationFormSchema>;
+
+/**
  * A service detail = the card fields + a pointer to its current published version (so the detail
- * page can render the version content and link to the version permalink). Workspace-free.
+ * page can render the version content and link to the version permalink) + the application-method
+ * forms the service offers. Workspace-free.
  */
 export const catalogServiceDetailSchema = catalogServiceSchema.extend({
   publishedVersionId: z.string(),
@@ -44,6 +59,8 @@ export const catalogServiceDetailSchema = catalogServiceSchema.extend({
   /** The JSON Schema + UISchema (from the bound Service type version) for rendering `data`. */
   schema: z.record(z.string(), z.unknown()),
   uischema: z.record(z.string(), z.unknown()),
+  /** The forms a citizen can apply through (the published version's `application_form` references). */
+  applications: z.array(applicationFormSchema),
 });
 export type CatalogServiceDetail = z.infer<typeof catalogServiceDetailSchema>;
 export class CatalogServiceDetailDto extends createZodDto(catalogServiceDetailSchema) {}

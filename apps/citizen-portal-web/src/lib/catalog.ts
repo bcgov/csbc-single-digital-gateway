@@ -13,6 +13,16 @@ export interface CatalogService {
   description: string;
 }
 
+/** A form a citizen can apply through (a service version's `application_form` reference). */
+export interface ApplicationForm {
+  id: string;
+  label: string | null;
+  title: string;
+  formId: string;
+  formVersionId: string;
+  kind: string;
+}
+
 /** A service detail — the card fields + its current published version + render definition. */
 export interface CatalogServiceDetail extends CatalogService {
   publishedVersionId: string;
@@ -21,6 +31,7 @@ export interface CatalogServiceDetail extends CatalogService {
   data: Record<string, unknown>;
   schema: Record<string, unknown>;
   uischema: Record<string, unknown>;
+  applications: ApplicationForm[];
 }
 
 /** A historical service version (published or archived) + its render definition. */

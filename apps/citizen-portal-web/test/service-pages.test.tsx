@@ -31,6 +31,16 @@ const detail = {
   data: { title: 'Service One', description: 'Financial support for residents.' },
   schema,
   uischema,
+  applications: [
+    {
+      id: 'ref-1',
+      label: 'Apply online',
+      title: 'Your Profile',
+      formId: 'f1',
+      formVersionId: 'fv1',
+      kind: 'basic-form',
+    },
+  ],
 };
 
 const version = {
@@ -96,6 +106,15 @@ describe('service detail page', () => {
       .queryAllByRole('link')
       .filter((link) => link.getAttribute('href')?.includes('/versions/'));
     expect(versionLinks).toHaveLength(0);
+  });
+
+  it('surfaces the application forms in How to apply', async () => {
+    mockBff();
+    renderRoute('/services/svc-1');
+    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 });
+    expect(screen.getByRole('heading', { name: 'How to apply' })).toBeInTheDocument();
+    expect(screen.getByText('Your Profile')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply online' })).toBeInTheDocument();
   });
 
   it('shows a not-available state on 404', async () => {
