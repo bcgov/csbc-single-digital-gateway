@@ -50,4 +50,10 @@ export class MyApplicationsV1Controller {
   submit(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: SubmissionDataDto) {
     return this.applications.submit(user.id, id, body.data);
   }
+
+  @Post('applications/:id/revise')
+  @ZodSerializerDto(SubmissionDto)
+  revise(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.applications.revise(user.id, id);
+  }
 }

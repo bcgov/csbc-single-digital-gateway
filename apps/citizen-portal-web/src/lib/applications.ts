@@ -31,6 +31,8 @@ export interface ApplicationDetail {
   kind: string;
   structure: Record<string, unknown>;
   data: Record<string, unknown>;
+  /** The latest reviewer note, surfaced in the status banner for rejected / action-needed. */
+  reviewReason: string | null;
   createdAt: string;
   updatedAt: string;
   submittedAt: string | null;
@@ -99,6 +101,14 @@ export async function submitApplication(
 /** One of the citizen's applications, fully resolved for the application page (auth). */
 export async function getApplication(id: string): Promise<ApplicationDetail> {
   return requestJson(`/v1/me/applications/${id}`);
+}
+
+/**
+ * Open a draft revision of an application a reviewer sent back (`needs_changes`). Returns the new
+ * draft submission; the existing saveDraft/submit then apply to it. 409 if it isn't awaiting changes.
+ */
+export async function reviseApplication(id: string): Promise<Submission> {
+  return requestJson(`/v1/me/applications/${id}/revise`, { method: 'POST' });
 }
 
 /** Query for a single application's detail. */

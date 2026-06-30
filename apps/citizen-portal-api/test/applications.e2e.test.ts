@@ -61,6 +61,9 @@ describe('citizen applications (e2e)', () => {
       (await http().post('/v1/me/applications/abc/submit').set('Origin', ORIGIN).send({ data: {} }))
         .status,
     ).toBe(401);
+    expect(
+      (await http().post('/v1/me/applications/abc/revise').set('Origin', ORIGIN).send()).status,
+    ).toBe(401);
   });
 
   it('rejects a mutating request with no allowlisted Origin (CSRF, 403)', async () => {
