@@ -1,7 +1,6 @@
-import { Badge } from '@repo/ui/badge';
 import { Skeleton } from '@repo/ui/skeleton';
-import { ChevronRight } from 'lucide-react';
 import { SectionHeading } from '@/components/landing/section-heading';
+import { ApplicationRow } from '@/components/services/application-row';
 import type { MyApplication } from '@/lib/catalog';
 
 interface TrackApplicationsProps {
@@ -18,29 +17,6 @@ function EmptyState() {
         When you apply for a service, you’ll be able to track its status here.
       </p>
     </div>
-  );
-}
-
-/** A single tracked-application row: service, status badge, reference, and last-updated. */
-function ApplicationRow({ application }: { application: MyApplication }) {
-  return (
-    <a
-      href={`/services/${application.serviceId}/versions/${application.serviceVersionId}`}
-      className="flex items-center justify-between gap-4 rounded-lg bg-background p-4 ring-1 ring-foreground/10 hover:ring-primary/40"
-    >
-      <div className="flex flex-col gap-1">
-        <span className="font-heading text-sm font-semibold text-primary">
-          {application.serviceTitle}
-        </span>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="secondary">{application.statusLabel}</Badge>
-          <span>{application.reference}</span>
-          <span aria-hidden>·</span>
-          <span>Last updated {new Date(application.lastUpdated).toLocaleDateString()}</span>
-        </div>
-      </div>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-    </a>
   );
 }
 

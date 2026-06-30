@@ -1,9 +1,12 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@repo/ui/accordion';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
+import { useQuery } from '@tanstack/react-query';
 import { Clock, Mail, MapPin, Phone, Send, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { ApplicationRow } from '@/components/services/application-row';
 import { ServiceContent } from '@/components/services/service-content';
+import { myApplicationsQueryOptions } from '@/lib/catalog';
 
 /** The anchor targets shown in the left "On this page" nav and used as section ids. */
 export const DETAIL_SECTIONS = [
@@ -175,17 +178,28 @@ export function HowToApply({
   );
 }
 
-/** "Your activity" — amber callout prompting the citizen to start (no real applications wired). */
-export function YourActivity({ onApply }: { onApply?: () => void }) {
-  return (
-    <div className="flex flex-col items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-6 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-semibold text-foreground">No application yet</span>
-        <span className="text-xs text-muted-foreground">
-          You haven’t applied for this service. Start an application to track it here.
-        </span>
+/**
+ * "Your activity" — the citizen's applications for THIS service (pulled from the API and filtered to
+ * `serviceId`). Empty/anonymous shows an informational callout.
+ */
+export function YourActivity({ serviceId }: { serviceId: string }) {
+  const { data } = useQuery(myApplicationsQueryOptions());
+  const mine = (data ?? []).filter((application) => application.serviceId === serviceId);
+  if (mine.length === 0) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-6">
+        <span className="text-sm font-semibold text-foreground">No applications yet</span>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          When you apply for this service, you’ll see your applications and their status here.
+        </p>
       </div>
-      <Button onClick={onApply}>Start an application</Button>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      {mine.map((application) => (
+        <ApplicationRow key={application.id} application={application} />
+      ))}
     </div>
   );
 }
@@ -289,7 +303,7 @@ export function ServiceSections({
           <HowToApply serviceId={serviceId} applications={applications} />
         </Section>
         <Section id="your-activity" title="Your activity">
-          <YourActivity />
+          <YourActivity serviceId={serviceId} />
         </Section>
         <Section id="help" title="Help and information">
           <HelpAndInformation />

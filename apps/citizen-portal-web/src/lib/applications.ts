@@ -17,6 +17,25 @@ export interface ApplicationFormToFill {
   structure: Record<string, unknown>;
 }
 
+/** The full view of one application — the submission + the form it was made through + its service. */
+export interface ApplicationDetail {
+  id: string;
+  reference: string;
+  status: ApplicationStatus;
+  statusLabel: string;
+  formId: string;
+  formVersionId: string;
+  formTitle: string;
+  serviceId: string;
+  serviceTitle: string;
+  kind: string;
+  structure: Record<string, unknown>;
+  data: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  submittedAt: string | null;
+}
+
 /** A submission in the draft → submitted lifecycle. */
 export interface Submission {
   id: string;
@@ -74,6 +93,21 @@ export async function submitApplication(
   return requestJson(`/v1/me/applications/${id}/submit`, {
     method: 'POST',
     body: JSON.stringify({ data }),
+  });
+}
+
+/** One of the citizen's applications, fully resolved for the application page (auth). */
+export async function getApplication(id: string): Promise<ApplicationDetail> {
+  return requestJson(`/v1/me/applications/${id}`);
+}
+
+/** Query for a single application's detail. */
+export function applicationQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: ['me', 'applications', id] as const,
+    queryFn: () => getApplication(id),
+    staleTime: 30 * 1000,
+    retry: false,
   });
 }
 

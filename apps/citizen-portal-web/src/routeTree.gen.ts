@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
+import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
 import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplicationsIdRoute = ApplicationsIdRouteImport.update({
+  id: '/applications/$id',
+  path: '/applications/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesServiceIdIndexRoute = ServicesServiceIdIndexRouteImport.update({
@@ -52,6 +58,7 @@ const ServicesServiceIdApplyFormIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/applications/$id': typeof ApplicationsIdRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
@@ -60,6 +67,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/applications/$id': typeof ApplicationsIdRoute
   '/services': typeof ServicesIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/applications/$id': typeof ApplicationsIdRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/applications/$id'
     | '/services/'
     | '/services/$serviceId/'
     | '/services/$serviceId/apply/$formId'
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/applications/$id'
     | '/services'
     | '/services/$serviceId'
     | '/services/$serviceId/apply/$formId'
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/applications/$id'
     | '/services/'
     | '/services/$serviceId/'
     | '/services/$serviceId/apply/$formId'
@@ -104,6 +116,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
+  ApplicationsIdRoute: typeof ApplicationsIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
   ServicesServiceIdApplyFormIdRoute: typeof ServicesServiceIdApplyFormIdRoute
@@ -133,6 +146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/applications/$id': {
+      id: '/applications/$id'
+      path: '/applications/$id'
+      fullPath: '/applications/$id'
+      preLoaderRoute: typeof ApplicationsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/$serviceId/': {
       id: '/services/$serviceId/'
       path: '/services/$serviceId'
@@ -160,6 +180,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
+  ApplicationsIdRoute: ApplicationsIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,
   ServicesServiceIdApplyFormIdRoute: ServicesServiceIdApplyFormIdRoute,

@@ -65,6 +65,8 @@ export interface MyApplication {
   serviceId: string;
   serviceVersionId: string;
   serviceTitle: string;
+  /** The application method / form the citizen applied through (the row's title). */
+  formTitle: string;
   reference: string;
   status: ApplicationStatus;
   statusLabel: string;

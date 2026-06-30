@@ -21,6 +21,7 @@ const applications = [
     serviceId: 's2',
     serviceVersionId: 'v1',
     serviceTitle: 'Birth Registration',
+    formTitle: 'Birth Registration application',
     reference: '20250615-0003',
     status: 'in_review',
     statusLabel: 'Review',
