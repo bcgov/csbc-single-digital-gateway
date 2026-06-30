@@ -22,6 +22,7 @@ const applications = [
     serviceId: 's2',
     serviceVersionId: 'v1',
     serviceTitle: 'Birth Registration',
+    formTitle: 'Birth Registration application',
     reference: '20250615-0003',
     status: 'in_review',
     statusLabel: 'Review',
@@ -79,7 +80,7 @@ describe('citizen-portal-web /services page', () => {
     mockBff({ me: jsonResponse(authedUser) });
     renderWithClient(<ServicesPage />);
     expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
-    expect(await screen.findByText('20250615-0003')).toBeInTheDocument();
+    expect(await screen.findByText(/20250615-0003/)).toBeInTheDocument();
   });
 
   it('searches via the catalog endpoint with the q parameter', async () => {

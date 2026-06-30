@@ -8,6 +8,7 @@ import { ChevronRight, Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { SectionHeading } from '@/components/landing/section-heading';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { ApplicationRow } from '@/components/services/application-row';
 import { useAuth } from '@/lib/auth';
 import {
   type CatalogService,
@@ -87,22 +88,7 @@ function YourApplications({ applications }: { applications: readonly MyApplicati
       <SectionHeading title="Your applications" />
       <div className="grid gap-3 md:grid-cols-2">
         {applications.map((application) => (
-          <a
-            key={application.id}
-            href={`/services/${application.serviceId}/versions/${application.serviceVersionId}`}
-            className="flex items-center justify-between gap-3 rounded-lg bg-background p-4 ring-1 ring-foreground/10 hover:ring-primary/40"
-          >
-            <div className="flex flex-col gap-1">
-              <span className="font-heading text-sm font-semibold text-primary">
-                {application.serviceTitle}
-              </span>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="secondary">{application.statusLabel}</Badge>
-                <span>{application.reference}</span>
-              </div>
-            </div>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          </a>
+          <ApplicationRow key={application.id} application={application} />
         ))}
       </div>
     </section>
