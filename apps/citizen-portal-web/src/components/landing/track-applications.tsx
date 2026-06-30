@@ -1,10 +1,12 @@
 import { Badge } from '@repo/ui/badge';
+import { Skeleton } from '@repo/ui/skeleton';
 import { ChevronRight } from 'lucide-react';
 import { SectionHeading } from '@/components/landing/section-heading';
-import type { Application } from '@/lib/content';
+import type { MyApplication } from '@/lib/catalog';
 
 interface TrackApplicationsProps {
-  applications: readonly Application[];
+  applications: readonly MyApplication[];
+  loading?: boolean;
 }
 
 /** Empty-state card shown when the citizen has no applications in flight. */
@@ -20,10 +22,10 @@ function EmptyState() {
 }
 
 /** A single tracked-application row: service, status badge, reference, and last-updated. */
-function ApplicationRow({ application }: { application: Application }) {
+function ApplicationRow({ application }: { application: MyApplication }) {
   return (
     <a
-      href="#"
+      href={`/services/${application.serviceId}/versions/${application.serviceVersionId}`}
       className="flex items-center justify-between gap-4 rounded-lg bg-background p-4 ring-1 ring-foreground/10 hover:ring-primary/40"
     >
       <div className="flex flex-col gap-1">
@@ -31,10 +33,10 @@ function ApplicationRow({ application }: { application: Application }) {
           {application.serviceTitle}
         </span>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="secondary">{application.status}</Badge>
+          <Badge variant="secondary">{application.statusLabel}</Badge>
           <span>{application.reference}</span>
           <span aria-hidden>·</span>
-          <span>Last updated {application.lastUpdated}</span>
+          <span>Last updated {new Date(application.lastUpdated).toLocaleDateString()}</span>
         </div>
       </div>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -43,11 +45,13 @@ function ApplicationRow({ application }: { application: Application }) {
 }
 
 /** "Track your applications" section — empty state, or a list of the citizen's applications. */
-export function TrackApplications({ applications }: TrackApplicationsProps) {
+export function TrackApplications({ applications, loading = false }: TrackApplicationsProps) {
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading title="Track your applications" />
-      {applications.length === 0 ? (
+      {loading ? (
+        <Skeleton className="h-20 w-full rounded-lg" />
+      ) : applications.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="flex flex-col gap-3">

@@ -11,6 +11,23 @@ const authedUser = {
   claims: { sub: 'subject-1', preferred_username: 'citizen1', name: 'Amina Ali' },
 };
 
+const services = [
+  { id: 's2', title: 'Birth Registration', description: 'Register the birth of a child in B.C.' },
+];
+
+const applications = [
+  {
+    id: 'a1',
+    serviceId: 's2',
+    serviceVersionId: 'v1',
+    serviceTitle: 'Birth Registration',
+    reference: '20250615-0003',
+    status: 'in_review',
+    statusLabel: 'Review',
+    lastUpdated: '2025-06-30T00:00:00.000Z',
+  },
+];
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -18,7 +35,21 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-/** Render under a fresh QueryClient so the `['auth','me']` cache never bleeds between tests. */
+/** Route the BFF calls a page makes: auth, catalog services, and the user's applications. */
+function mockBff({ me = jsonResponse(authedUser), apps = applications } = {}) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes('/auth/me')) return me;
+    if (url.includes('/auth/logout')) return new Response(null, { status: 204 });
+    if (url.includes('/v1/me/applications')) return jsonResponse({ items: apps });
+    if (url.includes('/v1/services')) return jsonResponse({ items: services });
+    void init;
+    return new Response(null, { status: 404 });
+  });
+  globalThis.fetch = fetchMock as unknown as typeof fetch;
+  return fetchMock;
+}
+
 function renderWithClient(ui: ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
@@ -30,46 +61,41 @@ afterEach(() => {
 
 describe('citizen-portal-web /app page', () => {
   it('greets the authenticated user resolved from GET /auth/me', async () => {
-    globalThis.fetch = vi.fn(async () => jsonResponse(authedUser)) as unknown as typeof fetch;
-
+    const fetchMock = mockBff();
     renderWithClient(<AppPage />);
-
     expect(await screen.findByRole('heading', { name: 'Hi, Amina' })).toBeInTheDocument();
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/auth/me'),
       expect.objectContaining({ credentials: 'include' }),
     );
   });
 
-  it('surfaces the tracked applications and available services', async () => {
-    globalThis.fetch = vi.fn(async () => jsonResponse(authedUser)) as unknown as typeof fetch;
-
+  it('surfaces the tracked applications from /v1/me/applications', async () => {
+    mockBff();
     renderWithClient(<AppPage />);
-
     await screen.findByRole('heading', { name: 'Hi, Amina' });
     expect(screen.getByRole('heading', { name: 'Track your applications' })).toBeInTheDocument();
-    expect(screen.getAllByText('20250615-0003').length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { name: 'Available services' })).toBeInTheDocument();
+    expect((await screen.findAllByText('Birth Registration')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('20250615-0003')).length).toBeGreaterThan(0);
+  });
+
+  it('shows the empty applications state when the user has none', async () => {
+    mockBff({ apps: [] });
+    renderWithClient(<AppPage />);
+    await screen.findByRole('heading', { name: 'Hi, Amina' });
+    expect(await screen.findByText(/no applications to track/i)).toBeInTheDocument();
   });
 
   it('shows a login prompt when GET /auth/me returns 401', async () => {
-    globalThis.fetch = vi.fn(
-      async () => new Response(null, { status: 401 }),
-    ) as unknown as typeof fetch;
-
+    mockBff({ me: new Response(null, { status: 401 }) });
     renderWithClient(<AppPage />);
-
     const links = await screen.findAllByRole('link', { name: /log in/i });
     expect(links.some((link) => link.getAttribute('href')?.includes('/auth/login'))).toBe(true);
     expect(screen.queryByRole('button', { name: /account menu/i })).not.toBeInTheDocument();
   });
 
   it('posts to /auth/logout from the account menu', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).includes('/auth/me')) return jsonResponse(authedUser);
-      return new Response(null, { status: 204 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const fetchMock = mockBff();
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
       configurable: true,

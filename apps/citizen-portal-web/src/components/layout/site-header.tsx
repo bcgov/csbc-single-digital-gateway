@@ -27,6 +27,35 @@ interface SiteHeaderProps {
   user?: HeaderUser | undefined;
   /** Logout handler for the avatar menu (authenticated variant). */
   onLogout?: (() => void) | undefined;
+  /** Which primary nav item is the current page. */
+  activeNav?: 'home' | 'services' | undefined;
+}
+
+const NAV_ITEMS = [
+  { id: 'home', label: 'Home', href: '/' },
+  { id: 'services', label: 'Services', href: '/services' },
+] as const;
+
+/** Primary nav (Home, Services). Plain anchors so the header renders outside a router (tests). */
+function PrimaryNav({ active }: { active?: 'home' | 'services' | undefined }) {
+  return (
+    <nav aria-label="Primary" className="hidden items-center gap-6 sm:flex">
+      {NAV_ITEMS.map((item) => (
+        <a
+          key={item.id}
+          href={item.href}
+          aria-current={active === item.id ? 'page' : undefined}
+          className={`text-xs font-medium ${
+            active === item.id
+              ? 'text-foreground underline underline-offset-8'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
 /** Shared brand lockup on the left of the header. */
@@ -98,19 +127,22 @@ function ProfileMenu({
   );
 }
 
-/** Top site header. Anonymous → brand + Log in button; authenticated → brand + avatar menu. */
-export function SiteHeader({ variant, user, onLogout }: SiteHeaderProps) {
+/** Top site header. Anonymous → brand + nav + Log in button; authenticated → brand + nav + avatar. */
+export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderProps) {
   return (
     <header className="border-b bg-background">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4">
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4">
         <BrandLockup />
-        {variant === 'anonymous' ? (
-          <Button size="sm" render={<a href={loginUrl} />}>
-            Log in
-          </Button>
-        ) : (
-          <ProfileMenu user={user} onLogout={onLogout} />
-        )}
+        <div className="ml-auto flex items-center gap-6">
+          <PrimaryNav active={activeNav} />
+          {variant === 'anonymous' ? (
+            <Button size="sm" render={<a href={loginUrl} />}>
+              Log in
+            </Button>
+          ) : (
+            <ProfileMenu user={user} onLogout={onLogout} />
+          )}
+        </div>
       </div>
     </header>
   );

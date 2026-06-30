@@ -1,13 +1,14 @@
 import { Avatar, AvatarFallback } from '@repo/ui/avatar';
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
+import { useQuery } from '@tanstack/react-query';
 import { AvailableServices } from '@/components/landing/available-services';
 import { TrackApplications } from '@/components/landing/track-applications';
 import { WhatYouCanDo } from '@/components/landing/what-you-can-do';
 import { PageShell } from '@/components/layout/page-shell';
 import { firstName, initials, useAuth } from '@/lib/auth';
 import { displayName, loginUrl, logout } from '@/lib/bff';
-import { MOCK_APPLICATIONS } from '@/lib/content';
+import { myApplicationsQueryOptions, servicesQueryOptions } from '@/lib/catalog';
 
 async function handleLogout(): Promise<void> {
   await logout();
@@ -43,6 +44,8 @@ function Greeting({ name }: { name: string | null }) {
  */
 export function AppPage() {
   const { data: user, isPending } = useAuth();
+  const services = useQuery(servicesQueryOptions());
+  const applications = useQuery(myApplicationsQueryOptions());
 
   // Resolved with no session (401): the /app page is not yet route-guarded, so prompt for login.
   if (!isPending && !user) {
@@ -63,14 +66,22 @@ export function AppPage() {
     <PageShell
       variant="authenticated"
       user={headerUser}
+      activeNav="home"
       onLogout={() => {
         void handleLogout();
       }}
     >
       <div className="flex flex-col gap-12">
         <Greeting name={name} />
-        <TrackApplications applications={MOCK_APPLICATIONS} />
-        <AvailableServices applications={MOCK_APPLICATIONS} />
+        <TrackApplications
+          applications={applications.data ?? []}
+          loading={applications.isPending}
+        />
+        <AvailableServices
+          services={(services.data ?? []).slice(0, 4)}
+          applications={applications.data ?? []}
+          loading={services.isPending}
+        />
         <WhatYouCanDo />
       </div>
     </PageShell>
