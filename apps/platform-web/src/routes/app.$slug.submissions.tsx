@@ -1,6 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { SubmissionsPage } from '@/components/console/pages/submissions';
+import { Outlet, createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/app/$slug/submissions')({
-  component: SubmissionsPage,
+  component: SubmissionsLayout,
 });
+
+function SubmissionsLayout() {
+  return <Outlet />;
+}
