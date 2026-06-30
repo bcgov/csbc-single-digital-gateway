@@ -20,6 +20,7 @@ import { ValkeySessionRegistry } from './auth/valkey-session-registry';
 import { validateEnv, type Env } from './config/env.schema';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { FormsModule } from './modules/forms/forms.module';
+import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { ServicesModule } from './modules/services/services.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
@@ -104,6 +105,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     DocumentTypesModule,
     ServicesModule,
     FormsModule,
+    SubmissionsModule,
   ],
   // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses
   // (@ZodSerializerDto), and log response-serialization failures before delegating.
