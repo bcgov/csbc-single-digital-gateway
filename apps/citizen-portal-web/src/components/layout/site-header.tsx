@@ -109,8 +109,7 @@ function ProfileMenu({
           </div>
         )}
         <DropdownMenuSeparator />
-        {/* No /account route exists yet — kept as a plain anchor until one does. */}
-        <DropdownMenuItem render={<a href="/account" />}>
+        <DropdownMenuItem render={<Link to="/account" />}>
           <UserCog className="size-4" aria-hidden />
           Account settings
         </DropdownMenuItem>
