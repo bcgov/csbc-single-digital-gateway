@@ -15,7 +15,7 @@ export function PageShell({ variant, user, onLogout, activeNav, children }: Page
   return (
     <div className="flex min-h-svh flex-col bg-muted/30">
       <SiteHeader variant={variant} user={user} onLogout={onLogout} activeNav={activeNav} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-4">{children}</main>
       <SiteFooter />
     </div>
   );

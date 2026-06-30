@@ -57,21 +57,23 @@ function ServiceCard({
   application?: MyApplication | undefined;
 }) {
   return (
-    <Card id={service.id}>
-      <CardContent className="flex flex-col gap-2 py-4">
-        <div className="flex items-start justify-between gap-2">
-          <a
-            href={`/services/${service.id}`}
-            className="inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary hover:underline"
-          >
-            {service.title}
-            <ChevronRight className="size-4" aria-hidden />
-          </a>
-          {application ? <Badge variant="secondary">{application.statusLabel}</Badge> : null}
-        </div>
-        <p className="text-xs/relaxed text-muted-foreground">{service.description}</p>
-      </CardContent>
-    </Card>
+    <a
+      href={`/services/${service.id}`}
+      className="group block rounded-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+    >
+      <Card id={service.id} className="h-full transition-shadow group-hover:ring-primary/40">
+        <CardContent className="flex flex-col gap-2 py-4">
+          <div className="flex items-start justify-between gap-2">
+            <span className="inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary group-hover:underline">
+              {service.title}
+              <ChevronRight className="size-4" aria-hidden />
+            </span>
+            {application ? <Badge variant="secondary">{application.statusLabel}</Badge> : null}
+          </div>
+          <p className="text-xs/relaxed text-muted-foreground">{service.description}</p>
+        </CardContent>
+      </Card>
+    </a>
   );
 }
 
