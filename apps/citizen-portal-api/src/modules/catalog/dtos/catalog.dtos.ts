@@ -19,7 +19,7 @@ export type ListServicesQuery = z.infer<typeof listServicesQuerySchema>;
 
 // ── Responses ───────────────────────────────────────────────────────────────────────────────────
 
-/** A catalog service card — no workspace fields. */
+/** A catalog service card — no workspace fields. Title/description come from the published version. */
 export const catalogServiceSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -30,6 +30,19 @@ export class CatalogServiceDto extends createZodDto(catalogServiceSchema) {}
 export class CatalogServiceListDto extends createZodDto(
   z.object({ items: z.array(catalogServiceSchema) }),
 ) {}
+
+/**
+ * A service detail = the card fields + a pointer to its current published version (so the detail
+ * page can render the version content and link to the version permalink). Workspace-free.
+ */
+export const catalogServiceDetailSchema = catalogServiceSchema.extend({
+  publishedVersionId: z.string(),
+  version: z.number().int(),
+  publishedAt: z.string().nullable(),
+  data: z.record(z.string(), z.unknown()),
+});
+export type CatalogServiceDetail = z.infer<typeof catalogServiceDetailSchema>;
+export class CatalogServiceDetailDto extends createZodDto(catalogServiceDetailSchema) {}
 
 /**
  * A historical service version a citizen may read directly — only `published` or `archived`

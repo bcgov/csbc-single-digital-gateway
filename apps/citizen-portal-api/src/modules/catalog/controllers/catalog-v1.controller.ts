@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
-  CatalogServiceDto,
+  CatalogServiceDetailDto,
   CatalogServiceListDto,
   CatalogServiceVersionDto,
   ListServicesQueryDto,
@@ -29,7 +29,7 @@ export class CatalogV1Controller {
 
   @Public()
   @Get(':id')
-  @ZodSerializerDto(CatalogServiceDto)
+  @ZodSerializerDto(CatalogServiceDetailDto)
   get(@Param('id') id: string) {
     return this.catalog.getService(id);
   }

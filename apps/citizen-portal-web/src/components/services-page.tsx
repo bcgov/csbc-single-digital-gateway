@@ -7,20 +7,14 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { SectionHeading } from '@/components/landing/section-heading';
-import { PageShell } from '@/components/layout/page-shell';
+import { CitizenShell } from '@/components/layout/citizen-shell';
 import { useAuth } from '@/lib/auth';
-import { displayName, logout } from '@/lib/bff';
 import {
   type CatalogService,
   type MyApplication,
   myApplicationsQueryOptions,
   servicesQueryOptions,
 } from '@/lib/catalog';
-
-async function handleLogout(): Promise<void> {
-  await logout();
-  window.location.assign('/');
-}
 
 /** Search box + submit button. Submitting sets the active query term (drives the services query). */
 function ServiceSearch({ onSearch }: { onSearch: (term: string) => void }) {
@@ -129,14 +123,7 @@ export function ServicesPage() {
   const byService = new Map(myApps.map((application) => [application.serviceId, application]));
 
   return (
-    <PageShell
-      variant={user ? 'authenticated' : 'anonymous'}
-      activeNav="services"
-      user={user ? { name: displayName(user), email: user.claims.email } : undefined}
-      onLogout={() => {
-        void handleLogout();
-      }}
-    >
+    <CitizenShell activeNav="services">
       <div className="flex flex-col gap-8">
         <header className="flex flex-col gap-2">
           <h1 className="font-heading text-2xl font-semibold text-foreground">Services</h1>
@@ -174,6 +161,6 @@ export function ServicesPage() {
           )}
         </section>
       </div>
-    </PageShell>
+    </CitizenShell>
   );
 }

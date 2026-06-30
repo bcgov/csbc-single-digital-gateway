@@ -25,8 +25,15 @@ export function applicationReference(submissionId: string, createdAt: Date): str
   return `${date}-${suffix}`;
 }
 
-/** The historical title of a service version: the version's own `data.title`, else the doc title. */
-export function serviceVersionTitle(data: Record<string, unknown>, fallback: string): string {
-  const title = data['title'];
-  return typeof title === 'string' && title.trim().length > 0 ? title : fallback;
+/**
+ * Read a display string out of a service version's `data` JSONB (where the meaningful title and
+ * description live), falling back to the document column when absent/blank.
+ */
+export function serviceDataString(
+  data: Record<string, unknown>,
+  key: string,
+  fallback: string,
+): string {
+  const value = data[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
 }

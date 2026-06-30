@@ -8,14 +8,15 @@ import {
   submissions,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, ilike, inArray, or } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import {
   type CatalogService as CatalogServiceDto,
+  type CatalogServiceDetail,
   type CatalogServiceVersion,
   type ListServicesQuery,
   type MyApplication,
 } from '../dtos/catalog.dtos';
-import { applicationReference, applicationStatusLabel, serviceVersionTitle } from '../util/format';
+import { applicationReference, applicationStatusLabel, serviceDataString } from '../util/format';
 
 /**
  * Read-only, workspace-free view of the service catalog for citizens (feature 60). Services are
@@ -26,53 +27,95 @@ import { applicationReference, applicationStatusLabel, serviceVersionTitle } fro
 export class CatalogService {
   constructor(@InjectDatabase() private readonly db: Database) {}
 
-  /** Subquery of document ids that have at least one published version. */
-  private publishedServiceDocIds() {
-    return this.db
-      .selectDistinct({ id: documentVersions.documentId })
-      .from(documentVersions)
-      .where(eq(documentVersions.status, 'published'));
+  /**
+   * Free-text match across a service's published title/description (which live in the version
+   * `data` JSONB), plus the document title as a fallback.
+   */
+  private searchFilter(q: string) {
+    const term = `%${q}%`;
+    return or(
+      ilike(documents.title, term),
+      ilike(sql`${documentVersions.data}->>'title'`, term),
+      ilike(sql`${documentVersions.data}->>'description'`, term),
+    );
   }
 
-  /** List published services across all workspaces, optionally filtered by free-text `q`. */
+  /**
+   * List published services across all workspaces, optionally filtered by free-text `q`. The inner
+   * join on the published version (one per document) both restricts to published services and
+   * surfaces the version `data` from which title/description are read.
+   */
   async listServices(query: ListServicesQuery): Promise<CatalogServiceDto[]> {
-    const filters = [
-      eq(documents.kind, 'service'),
-      inArray(documents.id, this.publishedServiceDocIds()),
-    ];
+    const filters = [eq(documents.kind, 'service')];
     if (query.q !== undefined && query.q.length > 0) {
-      const term = `%${query.q}%`;
-      const match = or(ilike(documents.title, term), ilike(documents.description, term));
+      const match = this.searchFilter(query.q);
       if (match !== undefined) {
         filters.push(match);
       }
     }
-    return this.db
-      .select({ id: documents.id, title: documents.title, description: documents.description })
+    const rows = await this.db
+      .select({
+        id: documents.id,
+        docTitle: documents.title,
+        docDescription: documents.description,
+        data: documentVersions.data,
+      })
       .from(documents)
+      .innerJoin(
+        documentVersions,
+        and(
+          eq(documentVersions.documentId, documents.id),
+          eq(documentVersions.status, 'published'),
+        ),
+      )
       .where(and(...filters))
       .orderBy(asc(documents.title))
       .limit(query.limit);
+    return rows.map((row) => ({
+      id: row.id,
+      title: serviceDataString(row.data, 'title', row.docTitle),
+      description: serviceDataString(row.data, 'description', row.docDescription),
+    }));
   }
 
-  /** A single published service (404 when it does not exist or has no published version). */
-  async getService(id: string): Promise<CatalogServiceDto> {
+  /**
+   * A single published service + its current published version (id/number/data), so the detail page
+   * can render the content and link to the version permalink. 404 when not a published service.
+   */
+  async getService(id: string): Promise<CatalogServiceDetail> {
     const rows = await this.db
-      .select({ id: documents.id, title: documents.title, description: documents.description })
+      .select({
+        id: documents.id,
+        docTitle: documents.title,
+        docDescription: documents.description,
+        versionId: documentVersions.id,
+        version: documentVersions.version,
+        publishedAt: documentVersions.publishedAt,
+        data: documentVersions.data,
+      })
       .from(documents)
-      .where(
+      .innerJoin(
+        documentVersions,
         and(
-          eq(documents.id, id),
-          eq(documents.kind, 'service'),
-          inArray(documents.id, this.publishedServiceDocIds()),
+          eq(documentVersions.documentId, documents.id),
+          eq(documentVersions.status, 'published'),
         ),
       )
+      .where(and(eq(documents.id, id), eq(documents.kind, 'service')))
       .limit(1);
     const row = rows[0];
     if (row === undefined) {
       throw new NotFoundException('Service not found');
     }
-    return row;
+    return {
+      id: row.id,
+      title: serviceDataString(row.data, 'title', row.docTitle),
+      description: serviceDataString(row.data, 'description', row.docDescription),
+      publishedVersionId: row.versionId,
+      version: row.version,
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+      data: row.data,
+    };
   }
 
   /**
@@ -111,7 +154,7 @@ export class CatalogService {
       serviceId,
       version: row.version,
       status: row.status,
-      title: serviceVersionTitle(row.data, row.docTitle),
+      title: serviceDataString(row.data, 'title', row.docTitle),
       data: row.data,
       createdAt: row.createdAt.toISOString(),
       publishedAt: row.publishedAt?.toISOString() ?? null,
