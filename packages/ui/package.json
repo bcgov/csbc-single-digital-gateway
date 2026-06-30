@@ -265,6 +265,12 @@
       "import": "./dist/rich-text-input.js",
       "require": "./dist/rich-text-input.cjs"
     },
+    "./rich-text-view": {
+      "types": "./dist/rich-text-view.d.ts",
+      "development": "./src/rich-text-view.ts",
+      "import": "./dist/rich-text-view.js",
+      "require": "./dist/rich-text-view.cjs"
+    },
     "./scroll-area": {
       "types": "./dist/scroll-area.d.ts",
       "development": "./src/scroll-area.ts",

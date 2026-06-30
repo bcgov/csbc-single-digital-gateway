@@ -40,6 +40,7 @@ export * from './progress';
 export * from './radio-group';
 export * from './resizable';
 export * from './rich-text-input';
+export * from './rich-text-view';
 export * from './scroll-area';
 export * from './select';
 export * from './separator';

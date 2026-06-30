@@ -13,15 +13,17 @@ export interface CatalogService {
   description: string;
 }
 
-/** A service detail — the card fields + its current published version. */
+/** A service detail — the card fields + its current published version + render definition. */
 export interface CatalogServiceDetail extends CatalogService {
   publishedVersionId: string;
   version: number;
   publishedAt: string | null;
   data: Record<string, unknown>;
+  schema: Record<string, unknown>;
+  uischema: Record<string, unknown>;
 }
 
-/** A historical service version (published or archived). */
+/** A historical service version (published or archived) + its render definition. */
 export interface CatalogServiceVersion {
   id: string;
   serviceId: string;
@@ -29,6 +31,8 @@ export interface CatalogServiceVersion {
   status: 'published' | 'archived';
   title: string;
   data: Record<string, unknown>;
+  schema: Record<string, unknown>;
+  uischema: Record<string, unknown>;
   createdAt: string;
   publishedAt: string | null;
   archivedAt: string | null;

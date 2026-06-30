@@ -4,7 +4,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { Breadcrumb, ServiceFields } from '@/components/services/service-fields';
+import { Breadcrumb, ServiceContent } from '@/components/services/service-content';
 import { type CatalogServiceVersion, serviceVersionQueryOptions } from '@/lib/catalog';
 
 /** The date a version became effective: its publish date, else its archive date. */
@@ -80,11 +80,12 @@ export function ServiceVersionPage() {
               applications.
             </div>
 
-            {typeof version.data['description'] === 'string' ? (
-              <p className="text-sm text-foreground">{version.data['description'] as string}</p>
-            ) : null}
-
-            <ServiceFields data={version.data} />
+            <ServiceContent
+              schema={version.schema}
+              uischema={version.uischema}
+              data={version.data}
+              omit={['title']}
+            />
 
             <a href={`/services/${serviceId}`} className="text-xs text-primary hover:underline">
               View the current service

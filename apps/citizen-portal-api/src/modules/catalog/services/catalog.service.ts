@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   type Database,
   documentReferences,
+  documentTypeVersions,
   documentVersions,
   documents,
   submissionVersions,
@@ -16,7 +17,12 @@ import {
   type ListServicesQuery,
   type MyApplication,
 } from '../dtos/catalog.dtos';
-import { applicationReference, applicationStatusLabel, serviceDataString } from '../util/format';
+import {
+  applicationReference,
+  applicationStatusLabel,
+  definitionSchemas,
+  serviceDataString,
+} from '../util/format';
 
 /**
  * Read-only, workspace-free view of the service catalog for citizens (feature 60). Services are
@@ -92,6 +98,7 @@ export class CatalogService {
         version: documentVersions.version,
         publishedAt: documentVersions.publishedAt,
         data: documentVersions.data,
+        definition: documentTypeVersions.definition,
       })
       .from(documents)
       .innerJoin(
@@ -101,6 +108,7 @@ export class CatalogService {
           eq(documentVersions.status, 'published'),
         ),
       )
+      .innerJoin(documentTypeVersions, eq(documentTypeVersions.id, documentVersions.typeVersionId))
       .where(and(eq(documents.id, id), eq(documents.kind, 'service')))
       .limit(1);
     const row = rows[0];
@@ -115,6 +123,7 @@ export class CatalogService {
       version: row.version,
       publishedAt: row.publishedAt?.toISOString() ?? null,
       data: row.data,
+      ...definitionSchemas(row.definition),
     };
   }
 
@@ -133,9 +142,11 @@ export class CatalogService {
         publishedAt: documentVersions.publishedAt,
         archivedAt: documentVersions.archivedAt,
         docTitle: documents.title,
+        definition: documentTypeVersions.definition,
       })
       .from(documentVersions)
       .innerJoin(documents, eq(documents.id, documentVersions.documentId))
+      .innerJoin(documentTypeVersions, eq(documentTypeVersions.id, documentVersions.typeVersionId))
       .where(
         and(
           eq(documentVersions.id, versionId),
@@ -156,6 +167,7 @@ export class CatalogService {
       status: row.status,
       title: serviceDataString(row.data, 'title', row.docTitle),
       data: row.data,
+      ...definitionSchemas(row.definition),
       createdAt: row.createdAt.toISOString(),
       publishedAt: row.publishedAt?.toISOString() ?? null,
       archivedAt: row.archivedAt?.toISOString() ?? null,

@@ -39,7 +39,11 @@ export const catalogServiceDetailSchema = catalogServiceSchema.extend({
   publishedVersionId: z.string(),
   version: z.number().int(),
   publishedAt: z.string().nullable(),
+  /** The filled service content. */
   data: z.record(z.string(), z.unknown()),
+  /** The JSON Schema + UISchema (from the bound Service type version) for rendering `data`. */
+  schema: z.record(z.string(), z.unknown()),
+  uischema: z.record(z.string(), z.unknown()),
 });
 export type CatalogServiceDetail = z.infer<typeof catalogServiceDetailSchema>;
 export class CatalogServiceDetailDto extends createZodDto(catalogServiceDetailSchema) {}
@@ -56,6 +60,9 @@ export const catalogServiceVersionSchema = z.object({
   status: z.enum(['published', 'archived']),
   title: z.string(),
   data: z.record(z.string(), z.unknown()),
+  /** The JSON Schema + UISchema (from the bound Service type version) for rendering `data`. */
+  schema: z.record(z.string(), z.unknown()),
+  uischema: z.record(z.string(), z.unknown()),
   createdAt: z.string(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),

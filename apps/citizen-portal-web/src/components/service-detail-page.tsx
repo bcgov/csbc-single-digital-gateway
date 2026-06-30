@@ -3,7 +3,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { Breadcrumb, ServiceFields } from '@/components/services/service-fields';
+import { Breadcrumb, ServiceContent } from '@/components/services/service-content';
 import { serviceQueryOptions } from '@/lib/catalog';
 
 /**
@@ -48,7 +48,12 @@ export function ServiceDetailPage() {
               ) : null}
             </header>
 
-            <ServiceFields data={service.data} />
+            <ServiceContent
+              schema={service.schema}
+              uischema={service.uischema}
+              data={service.data}
+              omit={['title', 'description']}
+            />
 
             <div className="flex flex-wrap items-center gap-3">
               <Button>Start an application</Button>
