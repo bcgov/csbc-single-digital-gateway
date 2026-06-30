@@ -9,55 +9,109 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ServicesIndexRouteImport } from './routes/services.index'
+import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
+import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
+import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
+import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
 
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesIndexRoute = ServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplicationsIdRoute = ApplicationsIdRouteImport.update({
+  id: '/applications/$id',
+  path: '/applications/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesServiceIdIndexRoute = ServicesServiceIdIndexRouteImport.update({
+  id: '/services/$serviceId/',
+  path: '/services/$serviceId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesServiceIdVersionsVersionIdRoute =
+  ServicesServiceIdVersionsVersionIdRouteImport.update({
+    id: '/services/$serviceId/versions/$versionId',
+    path: '/services/$serviceId/versions/$versionId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ServicesServiceIdApplyFormIdRoute =
+  ServicesServiceIdApplyFormIdRouteImport.update({
+    id: '/services/$serviceId/apply/$formId',
+    path: '/services/$serviceId/apply/$formId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/applications/$id': typeof ApplicationsIdRoute
+  '/services/': typeof ServicesIndexRoute
+  '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
+  '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/applications/$id': typeof ApplicationsIdRoute
+  '/services': typeof ServicesIndexRoute
+  '/services/$serviceId': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
+  '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/applications/$id': typeof ApplicationsIdRoute
+  '/services/': typeof ServicesIndexRoute
+  '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
+  '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
+  '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app'
+  fullPaths:
+    | '/'
+    | '/applications/$id'
+    | '/services/'
+    | '/services/$serviceId/'
+    | '/services/$serviceId/apply/$formId'
+    | '/services/$serviceId/versions/$versionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app'
-  id: '__root__' | '/' | '/app'
+  to:
+    | '/'
+    | '/applications/$id'
+    | '/services'
+    | '/services/$serviceId'
+    | '/services/$serviceId/apply/$formId'
+    | '/services/$serviceId/versions/$versionId'
+  id:
+    | '__root__'
+    | '/'
+    | '/applications/$id'
+    | '/services/'
+    | '/services/$serviceId/'
+    | '/services/$serviceId/apply/$formId'
+    | '/services/$serviceId/versions/$versionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRoute
+  ApplicationsIdRoute: typeof ApplicationsIdRoute
+  ServicesIndexRoute: typeof ServicesIndexRoute
+  ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
+  ServicesServiceIdApplyFormIdRoute: typeof ServicesServiceIdApplyFormIdRoute
+  ServicesServiceIdVersionsVersionIdRoute: typeof ServicesServiceIdVersionsVersionIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -65,12 +119,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/': {
+      id: '/services/'
+      path: '/services'
+      fullPath: '/services/'
+      preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/applications/$id': {
+      id: '/applications/$id'
+      path: '/applications/$id'
+      fullPath: '/applications/$id'
+      preLoaderRoute: typeof ApplicationsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/$serviceId/': {
+      id: '/services/$serviceId/'
+      path: '/services/$serviceId'
+      fullPath: '/services/$serviceId/'
+      preLoaderRoute: typeof ServicesServiceIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/$serviceId/versions/$versionId': {
+      id: '/services/$serviceId/versions/$versionId'
+      path: '/services/$serviceId/versions/$versionId'
+      fullPath: '/services/$serviceId/versions/$versionId'
+      preLoaderRoute: typeof ServicesServiceIdVersionsVersionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/$serviceId/apply/$formId': {
+      id: '/services/$serviceId/apply/$formId'
+      path: '/services/$serviceId/apply/$formId'
+      fullPath: '/services/$serviceId/apply/$formId'
+      preLoaderRoute: typeof ServicesServiceIdApplyFormIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppRoute: AppRoute,
+  ApplicationsIdRoute: ApplicationsIdRoute,
+  ServicesIndexRoute: ServicesIndexRoute,
+  ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,
+  ServicesServiceIdApplyFormIdRoute: ServicesServiceIdApplyFormIdRoute,
+  ServicesServiceIdVersionsVersionIdRoute:
+    ServicesServiceIdVersionsVersionIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

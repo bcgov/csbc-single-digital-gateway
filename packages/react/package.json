@@ -11,6 +11,12 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./form-runner": {
+      "types": "./dist/form-runner.d.ts",
+      "development": "./src/form-runner.ts",
+      "import": "./dist/form-runner.js",
+      "require": "./dist/form-runner.cjs"
+    },
     "./jsonforms": {
       "types": "./dist/jsonforms.d.ts",
       "development": "./src/jsonforms.ts",
@@ -22,6 +28,12 @@
       "development": "./src/jsonforms-renderers.ts",
       "import": "./dist/jsonforms-renderers.js",
       "require": "./dist/jsonforms-renderers.cjs"
+    },
+    "./jsonforms-renderers-display": {
+      "types": "./dist/jsonforms-renderers-display.d.ts",
+      "development": "./src/jsonforms-renderers-display.ts",
+      "import": "./dist/jsonforms-renderers-display.js",
+      "require": "./dist/jsonforms-renderers-display.cjs"
     }
   },
   "files": [

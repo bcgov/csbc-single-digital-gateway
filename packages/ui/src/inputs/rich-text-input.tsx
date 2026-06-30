@@ -1,16 +1,6 @@
-import {
-  $createHeadingNode,
-  type HeadingTagType,
-  HeadingNode,
-  QuoteNode,
-} from '@lexical/rich-text';
-import {
-  INSERT_ORDERED_LIST_COMMAND,
-  INSERT_UNORDERED_LIST_COMMAND,
-  ListItemNode,
-  ListNode,
-} from '@lexical/list';
-import { LinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
+import { $createHeadingNode, type HeadingTagType } from '@lexical/rich-text';
+import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
+import { TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { $setBlocksType } from '@lexical/selection';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
@@ -41,6 +31,7 @@ import {
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@ui/components/ui/button';
 import { cn } from '@ui/lib/utils';
+import { richTextNodes, richTextTheme } from './rich-text/shared';
 
 export interface RichTextInputProps {
   id?: string;
@@ -52,17 +43,7 @@ export interface RichTextInputProps {
   className?: string;
 }
 
-const theme = {
-  paragraph: 'mb-1 last:mb-0',
-  heading: {
-    h1: 'text-2xl font-semibold',
-    h2: 'text-xl font-semibold',
-    h3: 'text-lg font-semibold',
-  },
-  list: { ul: 'list-disc pl-5', ol: 'list-decimal pl-5', listitem: 'mb-0.5' },
-  text: { bold: 'font-semibold', italic: 'italic', underline: 'underline' },
-  link: 'text-primary underline',
-};
+const theme = richTextTheme;
 
 function ToolbarButton({
   label,
@@ -191,7 +172,7 @@ export function RichTextInput({
   const ariaInvalid = props['aria-invalid'];
   const initialConfig = {
     namespace: 'rich-text-input',
-    nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
+    nodes: richTextNodes,
     theme,
     editable: !disabled,
     onError: (error: Error) => {
