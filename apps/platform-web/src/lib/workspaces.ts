@@ -13,6 +13,8 @@ export interface Workspace {
   slug: string;
   name: string;
   role: WorkspaceRole;
+  /** User id of the workspace owner (creator, or whoever it was transferred to). */
+  ownerId: string;
   createdAt: string;
 }
 
@@ -77,6 +79,129 @@ export function workspaceBySlugQueryOptions(slug: string) {
     },
     staleTime: 60 * 1000,
   });
+}
+
+/** A member of a workspace — the membership joined to the user's profile. */
+export interface WorkspaceMember {
+  id: string;
+  userId: string;
+  role: 'admin' | 'member';
+  status: 'active' | 'suspended';
+  displayName: string;
+  email: string | null;
+  /** The workspace owner — their role/status cannot be changed (enforced server-side). */
+  isOwner: boolean;
+  joinedAt: string;
+}
+
+/** List a workspace's members (admins first, then by name). */
+export function workspaceMembersQueryOptions(workspaceId: string) {
+  return queryOptions({
+    queryKey: ['workspaces', 'members', workspaceId] as const,
+    queryFn: async (): Promise<WorkspaceMember[]> => {
+      const res = await fetch(
+        `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/members`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) {
+        throw new Error(`GET /v1/workspaces/:id/members failed: ${res.status}`);
+      }
+      const envelope = (await res.json()) as { items: WorkspaceMember[] };
+      return envelope.items;
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+/** A staff user eligible to be added to a workspace (addable-staff search result). */
+export interface StaffUser {
+  id: string;
+  displayName: string;
+  email: string | null;
+}
+
+/** Search staff users who can be added to this workspace (admin only). `q` filters by name/email;
+ * empty `q` returns the first page. Previous results are kept while typing to avoid flicker. */
+export function workspaceAddableStaffQueryOptions(workspaceId: string, q: string) {
+  const search = q.trim();
+  return queryOptions({
+    queryKey: ['workspaces', 'addable-staff', workspaceId, search] as const,
+    queryFn: async (): Promise<StaffUser[]> => {
+      const qs = search ? `?q=${encodeURIComponent(search)}` : '';
+      const res = await fetch(
+        `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/addable-staff${qs}`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) {
+        throw new Error(`GET /v1/workspaces/:id/addable-staff failed: ${res.status}`);
+      }
+      const envelope = (await res.json()) as { items: StaffUser[] };
+      return envelope.items;
+    },
+    staleTime: 30 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+/** Add an existing staff user to the workspace with a chosen role (admin only, enforced server-side). */
+export async function addWorkspaceMember(
+  workspaceId: string,
+  body: { userId: string; role: WorkspaceRole },
+): Promise<WorkspaceMember> {
+  const res = await fetch(
+    `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/members`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`POST /v1/workspaces/:id/members failed: ${res.status}`);
+  }
+  return (await res.json()) as WorkspaceMember;
+}
+
+/** Change a member's role and/or status (admin only, enforced server-side). */
+export async function updateWorkspaceMember(
+  workspaceId: string,
+  memberId: string,
+  patch: { role?: WorkspaceMember['role']; status?: WorkspaceMember['status'] },
+): Promise<void> {
+  const res = await fetch(
+    `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/members/${encodeURIComponent(memberId)}`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(patch),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`PATCH /v1/workspaces/:id/members/:memberId failed: ${res.status}`);
+  }
+}
+
+/** Transfer ownership to another active member (owner only, enforced server-side). The new owner is
+ * promoted to active admin; the previous owner keeps their admin membership. */
+export async function transferWorkspaceOwnership(
+  workspaceId: string,
+  userId: string,
+): Promise<Workspace> {
+  const res = await fetch(
+    `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/transfer-ownership`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`POST /v1/workspaces/:id/transfer-ownership failed: ${res.status}`);
+  }
+  return (await res.json()) as Workspace;
 }
 
 /** Create a workspace (the caller becomes its admin member, server-side). */

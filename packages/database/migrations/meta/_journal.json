@@ -78,6 +78,13 @@
       "when": 1782427770160,
       "tag": "0010_document_version_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782772599499,
+      "tag": "0011_workspace_owner",
+      "breakpoints": true
     }
   ]
 }

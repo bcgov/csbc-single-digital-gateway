@@ -110,6 +110,12 @@ export function mockAuth(
       const found = store.find((workspace) => workspace.slug === slug);
       return found ? jsonResponse(found) : new Response(null, { status: 404 });
     }
+    // Member-management endpoints default to empty so generic route tests get the empty state rather
+    // than falling through to the workspaces-list branch below (which yields garbage member rows).
+    // Dedicated team/add-member tests supply their own fetch mocks.
+    if (url.includes('/members') || url.includes('/addable-staff')) {
+      return jsonResponse({ items: [] });
+    }
     if (url.includes('/v1/workspaces')) {
       if (method === 'DELETE') {
         const id = decodeURIComponent(url.split('/v1/workspaces/')[1]?.split('?')[0] ?? '');

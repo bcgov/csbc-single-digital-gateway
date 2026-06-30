@@ -23,6 +23,13 @@ export const workspaces = pgTable(
       .notNull()
       .default(sql`nanoid(8)`),
     name: text('name').notNull(),
+    // The owner is the workspace creator; ownership can be transferred (feature 57). Distinct from
+    // the `admin` membership role — the owner's role/status can never be changed. RESTRICT (not
+    // cascade): users are soft-deleted, so an owner row always persists and can't be deleted out
+    // from under a workspace. Backfilled (oldest active admin) then set NOT NULL in 0011.
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
     settings: jsonb('settings').$type<Record<string, unknown>>().notNull().default({}),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
