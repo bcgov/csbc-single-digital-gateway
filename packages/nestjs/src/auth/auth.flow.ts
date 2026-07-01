@@ -135,6 +135,45 @@ export async function refreshTokens(
   return next;
 }
 
+/**
+ * Validate a caller-supplied post-login return target. Accepts a *relative path only* — a single
+ * leading slash, no scheme, no control characters — so the callback can resolve it against the
+ * trusted app origin, making an open redirect structurally impossible. Returns the safe path, or
+ * `undefined` when the input is missing or unsafe (the caller then falls back to postLoginRedirect).
+ *
+ * Rejected vectors: absolute URLs, protocol-relative `//host`, backslash-smuggled `/\host`,
+ * embedded schemes (`://`), CRLF/control-char redirect-splitting, non-strings, empty, over-long.
+ */
+export function sanitizeReturnTo(raw: unknown): string | undefined {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 2048) {
+    return undefined;
+  }
+  // Must be a site-relative path: exactly one leading slash (reject `//host` and `/\host`).
+  if (raw[0] !== '/' || raw[1] === '/' || raw[1] === '\\') {
+    return undefined;
+  }
+  // No embedded scheme, and no ASCII control chars (blocks CRLF header-splitting).
+  // eslint-disable-next-line no-control-regex -- intentionally matching control chars to reject them
+  if (raw.includes('://') || /[\u0000-\u001f\u007f]/.test(raw)) {
+    return undefined;
+  }
+  return raw;
+}
+
+/**
+ * Resolve the final post-login redirect. A stored `returnTo` is re-validated and pinned onto the
+ * origin of `postLoginRedirect` (so the browser can only ever land on the app's own origin — an
+ * open redirect is impossible even if a full URL somehow reached the session). Anything absent or
+ * unsafe falls back to `postLoginRedirect` verbatim.
+ */
+export function resolvePostLoginTarget(returnTo: unknown, postLoginRedirect: string): string {
+  const safe = sanitizeReturnTo(returnTo);
+  if (safe === undefined) {
+    return postLoginRedirect;
+  }
+  return new URL(safe, new URL(postLoginRedirect).origin).href;
+}
+
 /** Build the IdP `end_session_endpoint` URL for RP-initiated logout. */
 export async function buildLogoutUrl(
   config: Configuration,

@@ -2,9 +2,8 @@ import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Skeleton } from '@repo/ui/skeleton';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { useAuth } from '@/lib/auth';
+import { useAuth, useLoginUrl } from '@/lib/auth';
 import { displayName, logout } from '@/lib/bff';
-import { loginUrl } from '@/lib/bff';
 
 async function handleLogout(): Promise<void> {
   await logout();
@@ -27,6 +26,7 @@ function Field({ label, value }: { label: string; value: string }) {
  */
 export function AccountPage() {
   const { data: user, isPending } = useAuth();
+  const loginUrl = useLoginUrl();
 
   return (
     <CitizenShell>

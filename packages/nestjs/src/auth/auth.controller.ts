@@ -12,7 +12,13 @@ import type { Request, Response } from 'express';
 import type { Configuration } from 'openid-client';
 
 import { AUTH_OPTIONS, AUTH_USER_SYNC, OIDC_CONFIG, SESSION_REGISTRY } from './auth.constants';
-import { buildLoginUrl, buildLogoutUrl, completeLogin } from './auth.flow';
+import {
+  buildLoginUrl,
+  buildLogoutUrl,
+  completeLogin,
+  resolvePostLoginTarget,
+  sanitizeReturnTo,
+} from './auth.flow';
 import './auth.session-data';
 import type { SessionRegistry } from './session-registry';
 import type { AuthModuleOptions, AuthUser, AuthUserSync } from './auth.types';
@@ -31,7 +37,17 @@ export class AuthController {
   ) {}
 
   @Get('login')
-  async login(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async login(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Query('returnTo') returnTo?: string,
+  ): Promise<void> {
+    // Stash a *validated* return target (relative path only) so the callback can land the browser
+    // back where it started. Unsafe/absent → nothing stored → default postLoginRedirect (unchanged).
+    const safe = sanitizeReturnTo(returnTo);
+    if (safe !== undefined) {
+      req.session.returnTo = safe;
+    }
     const url = await buildLoginUrl(this.config, this.options, req.session);
     res.redirect(url.href);
   }
@@ -52,7 +68,11 @@ export class AuthController {
     req.session.tokens = tokens;
     // Index this session under the user so it can be revoked by "logout everywhere".
     await this.registry.track(user.id, req.sessionID);
-    res.redirect(this.options.postLoginRedirect);
+    // Land the browser on the (single-use) return target if one was stored, else the default.
+    // resolvePostLoginTarget pins any returnTo onto the app origin — no open-redirect surface.
+    const target = resolvePostLoginTarget(req.session.returnTo, this.options.postLoginRedirect);
+    delete req.session.returnTo;
+    res.redirect(target);
   }
 
   @Get('me')

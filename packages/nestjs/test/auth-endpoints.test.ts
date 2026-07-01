@@ -57,6 +57,22 @@ describe('AuthController.login', () => {
     expect(session.oidcTx).toMatchObject({ state: 'state-abc' });
     expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('idp.example.com/authorize'));
   });
+
+  it('stores a safe returnTo on the session', async () => {
+    const session: Record<string, unknown> = {};
+    const res = { redirect: vi.fn() };
+    await make().controller.login({ session } as never, res as never, '/app/services/42');
+
+    expect(session.returnTo).toBe('/app/services/42');
+  });
+
+  it('ignores an unsafe returnTo (open-redirect vector)', async () => {
+    const session: Record<string, unknown> = {};
+    const res = { redirect: vi.fn() };
+    await make().controller.login({ session } as never, res as never, 'https://evil.example.com');
+
+    expect(session.returnTo).toBeUndefined();
+  });
 });
 
 describe('AuthController.callback', () => {
@@ -77,6 +93,39 @@ describe('AuthController.callback', () => {
     expect(session.idToken).toBe('id-token-1');
     expect((session.tokens as { accessToken: string }).accessToken).toBe('access-1');
     expect(registry.track).toHaveBeenCalledWith('user-1', 'sid-1');
+    expect(res.redirect).toHaveBeenCalledWith(options.postLoginRedirect);
+  });
+
+  it('redirects to a stored returnTo (pinned to the app origin) and clears it', async () => {
+    const session: Record<string, unknown> = {
+      oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },
+      returnTo: '/app/services/42?tab=x',
+    };
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+    await make().controller.callback(req as never, res as never);
+
+    // options.postLoginRedirect is http://localhost:3000/app → origin http://localhost:3000
+    expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/app/services/42?tab=x');
+    expect(session.returnTo).toBeUndefined();
+  });
+
+  it('falls back to postLoginRedirect when no returnTo was stored', async () => {
+    const session: Record<string, unknown> = {
+      oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },
+    };
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+    await make().controller.callback(req as never, res as never);
+
     expect(res.redirect).toHaveBeenCalledWith(options.postLoginRedirect);
   });
 });

@@ -27,6 +27,14 @@ export const BFF_ORIGIN = import.meta.env.VITE_BFF_ORIGIN ?? 'http://localhost:4
 /** Top-level navigation target that starts the OIDC login flow. */
 export const loginUrl = `${BFF_ORIGIN}/auth/login`;
 
+/**
+ * Login URL that returns the browser to `path` (a site-relative path, e.g. `/app/services/42`)
+ * after the OIDC round-trip. The BFF validates and pins it to this app's origin (feature 67).
+ */
+export function loginUrlFor(path: string): string {
+  return `${loginUrl}?returnTo=${encodeURIComponent(path)}`;
+}
+
 /** The signed-in user, or `null` when there is no session (401). Throws on any other failure. */
 export async function getMe(): Promise<AuthUser | null> {
   const res = await fetch(`${BFF_ORIGIN}/auth/me`, { credentials: 'include' });
