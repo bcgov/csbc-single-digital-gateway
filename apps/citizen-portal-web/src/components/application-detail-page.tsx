@@ -7,13 +7,12 @@ import { ReviseForm } from '@/components/application/revise-form';
 import { StatusBanner } from '@/components/application/status-banner';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { Breadcrumb, ServiceContent } from '@/components/services/service-content';
-import { useAuth } from '@/lib/auth';
+import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   type ApplicationDetail,
   applicationQueryOptions,
   reviseApplication,
 } from '@/lib/applications';
-import { loginUrl } from '@/lib/bff';
 
 interface StructurePage {
   id?: string;
@@ -59,6 +58,7 @@ function SubmittedAnswers({ application }: { application: ApplicationDetail }) {
 export function ApplicationDetailPage() {
   const { id } = useParams({ from: '/applications/$id' });
   const { data: user, isPending: authPending } = useAuth();
+  const loginUrl = useLoginUrl();
   const { data: application, isPending, isError } = useQuery(applicationQueryOptions(id));
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);

@@ -12,8 +12,7 @@ import { Logo } from '@repo/ui/logo';
 import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
 import { LogOut, UserCog } from 'lucide-react';
-import { initials } from '@/lib/auth';
-import { loginUrl } from '@/lib/bff';
+import { initials, useLoginUrl } from '@/lib/auth';
 
 /** The signed-in user, as far as the header needs to render the avatar + menu. */
 export interface HeaderUser {
@@ -130,6 +129,7 @@ function ProfileMenu({
 
 /** Top site header. Anonymous → brand + nav + Log in button; authenticated → brand + nav + avatar. */
 export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderProps) {
+  const loginUrl = useLoginUrl();
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4">

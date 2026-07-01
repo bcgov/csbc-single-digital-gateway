@@ -1,9 +1,10 @@
 import { Button } from '@repo/ui/button';
 import { LogIn } from 'lucide-react';
-import { loginUrl } from '@/lib/bff';
+import { useLoginUrl } from '@/lib/auth';
 
 /** The "Log in to get started" call-to-action panel on the anonymous landing page. */
 export function LoginCta() {
+  const loginUrl = useLoginUrl();
   return (
     <section className="flex flex-col items-center gap-3 rounded-xl bg-background p-8 text-center ring-1 ring-foreground/10">
       <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">

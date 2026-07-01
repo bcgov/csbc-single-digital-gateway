@@ -4,7 +4,8 @@
  * and, later, guard routes via `ensureQueryData(authQueryOptions())`.
  */
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { getMe } from '@/lib/bff';
+import { useLocation } from '@tanstack/react-router';
+import { getMe, loginUrlFor } from '@/lib/bff';
 
 /** The shared query for the current user — `['auth','me']`, resolving to `AuthUser | null`. */
 export function authQueryOptions() {
@@ -18,6 +19,15 @@ export function authQueryOptions() {
 /** Subscribe to the current user inside a component. */
 export function useAuth() {
   return useQuery(authQueryOptions());
+}
+
+/**
+ * The BFF login URL that returns the browser to the current page after login (feature 67).
+ * Use for "Log in" affordances so a citizen lands back where they started.
+ */
+export function useLoginUrl(): string {
+  const location = useLocation();
+  return loginUrlFor(location.href);
 }
 
 /** Avatar text: the first letters of the first two words, uppercased (`"Amina Ali" → "AA"`). */

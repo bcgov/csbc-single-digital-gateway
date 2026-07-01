@@ -1,8 +1,9 @@
 import { Button } from '@repo/ui/button';
-import { loginUrl } from '@/lib/bff';
+import { useLoginUrl } from '@/lib/auth';
 
 /** Anonymous landing hero: headline, supporting copy, BC Services Card login, and an illustration. */
 export function Hero() {
+  const loginUrl = useLoginUrl();
   return (
     <section className="grid items-center gap-8 rounded-xl bg-background p-8 ring-1 ring-foreground/10 md:grid-cols-2">
       <div className="flex flex-col gap-4">

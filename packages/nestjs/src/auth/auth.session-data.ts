@@ -12,6 +12,9 @@ declare module 'express-session' {
     idToken?: string;
     // The OIDC token set (server-side only) for lazy refresh + downstream calls.
     tokens?: SessionTokens;
+    // A sanitized, site-relative path to return the browser to after login (single-use). Set at
+    // /auth/login, consumed + cleared at /auth/callback. Never a full URL, never sent to the client.
+    returnTo?: string;
   }
 }
 

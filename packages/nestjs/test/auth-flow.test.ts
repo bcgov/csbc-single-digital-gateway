@@ -31,7 +31,14 @@ vi.mock('openid-client', () => ({
     new URL(`https://idp.example.com/logout?${new URLSearchParams(params).toString()}`),
 }));
 
-import { buildLoginUrl, buildLogoutUrl, completeLogin, refreshTokens } from '../src/auth/auth.flow';
+import {
+  buildLoginUrl,
+  buildLogoutUrl,
+  completeLogin,
+  refreshTokens,
+  resolvePostLoginTarget,
+  sanitizeReturnTo,
+} from '../src/auth/auth.flow';
 import type { OidcTransaction } from '../src/auth/auth.flow';
 
 const config = {} as never;
@@ -122,6 +129,69 @@ describe('buildLogoutUrl', () => {
     const url = await buildLogoutUrl(config, {});
     expect(url.searchParams.get('id_token_hint')).toBeNull();
     expect(url.searchParams.get('post_logout_redirect_uri')).toBeNull();
+  });
+});
+
+describe('sanitizeReturnTo', () => {
+  it('accepts a site-relative path (with query) unchanged', () => {
+    expect(sanitizeReturnTo('/app/services/42?tab=details')).toBe('/app/services/42?tab=details');
+  });
+
+  it('accepts the bare root path', () => {
+    expect(sanitizeReturnTo('/')).toBe('/');
+  });
+
+  it('rejects an absolute URL (open-redirect vector)', () => {
+    expect(sanitizeReturnTo('https://evil.example.com')).toBeUndefined();
+  });
+
+  it('rejects a protocol-relative URL (//host)', () => {
+    expect(sanitizeReturnTo('//evil.example.com')).toBeUndefined();
+  });
+
+  it('rejects a backslash-smuggled path (/\\host)', () => {
+    expect(sanitizeReturnTo('/\\evil.example.com')).toBeUndefined();
+  });
+
+  it('rejects a path with an embedded scheme (contains ://)', () => {
+    expect(sanitizeReturnTo('/redirect?next=http://evil.example.com')).toBeUndefined();
+  });
+
+  it('rejects control characters (CRLF header-splitting)', () => {
+    expect(sanitizeReturnTo('/app\r\nSet-Cookie: x=1')).toBeUndefined();
+  });
+
+  it('rejects a value that does not start with a slash', () => {
+    expect(sanitizeReturnTo('app/foo')).toBeUndefined();
+  });
+
+  it('rejects non-string, empty, and over-long input', () => {
+    expect(sanitizeReturnTo(undefined)).toBeUndefined();
+    expect(sanitizeReturnTo(42)).toBeUndefined();
+    expect(sanitizeReturnTo('')).toBeUndefined();
+    expect(sanitizeReturnTo(`/${'a'.repeat(2048)}`)).toBeUndefined();
+  });
+});
+
+describe('resolvePostLoginTarget', () => {
+  const postLoginRedirect = 'http://localhost:3000/app';
+
+  it('pins a safe returnTo onto the origin of postLoginRedirect', () => {
+    expect(resolvePostLoginTarget('/app/services/42?tab=x', postLoginRedirect)).toBe(
+      'http://localhost:3000/app/services/42?tab=x',
+    );
+  });
+
+  it('falls back to postLoginRedirect when returnTo is absent', () => {
+    expect(resolvePostLoginTarget(undefined, postLoginRedirect)).toBe(postLoginRedirect);
+  });
+
+  it('falls back to postLoginRedirect when returnTo is unsafe (defense-in-depth)', () => {
+    // Even if a full URL somehow reached the session, resolution must not honor its origin.
+    expect(resolvePostLoginTarget('https://evil.example.com/x', postLoginRedirect)).toBe(
+      postLoginRedirect,
+    );
+    expect(resolvePostLoginTarget('//evil.example.com', postLoginRedirect)).toBe(postLoginRedirect);
   });
 });
 

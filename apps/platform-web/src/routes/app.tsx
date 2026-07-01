@@ -6,15 +6,16 @@ import { ConsoleHeader } from '@/components/console/console-header';
 import { ConsoleSidebar } from '@/components/console/console-sidebar';
 import { authQueryOptions } from '@/lib/auth';
 import { PageChromeProvider } from '@/lib/page-chrome';
-import { loginUrl } from '@/lib/bff';
+import { loginUrlFor } from '@/lib/bff';
 import { useWorkspaces, workspaceBySlugQueryOptions } from '@/lib/workspaces';
 
 export const Route = createFileRoute('/app')({
-  // Fail-closed guard: resolve the session once, redirect anonymous visitors to the BFF login.
-  beforeLoad: async ({ context }) => {
+  // Fail-closed guard: resolve the session once, redirect anonymous visitors to the BFF login,
+  // carrying the requested path so they land back here after logging in (feature 67).
+  beforeLoad: async ({ context, location }) => {
     const user = await context.queryClient.ensureQueryData(authQueryOptions());
     if (!user) {
-      throw redirect({ href: loginUrl });
+      throw redirect({ href: loginUrlFor(location.href) });
     }
     return { user };
   },

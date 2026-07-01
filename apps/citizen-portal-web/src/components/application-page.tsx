@@ -7,7 +7,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { Breadcrumb } from '@/components/services/service-content';
-import { useAuth } from '@/lib/auth';
+import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   type ApplicationFormToFill,
   type Submission,
@@ -16,8 +16,6 @@ import {
   saveDraft,
   submitApplication,
 } from '@/lib/applications';
-import { loginUrl } from '@/lib/bff';
-
 /** Confirmation shown after a successful submit. */
 function Submitted({ serviceId, submission }: { serviceId: string; submission: Submission }) {
   return (
@@ -152,6 +150,7 @@ export function ApplicationPage() {
 }
 
 function LoginPrompt() {
+  const loginUrl = useLoginUrl();
   return (
     <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
       <p className="text-sm text-muted-foreground">You need to be signed in to apply.</p>
