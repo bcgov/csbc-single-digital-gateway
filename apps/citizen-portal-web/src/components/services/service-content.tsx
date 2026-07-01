@@ -1,8 +1,9 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { displayRenderers } from '@repo/react/jsonforms-renderers-display';
+import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 
-/** A simple breadcrumb trail (plain anchors — avoids the Base UI breadcrumb render-prop gotcha). */
+/** A simple breadcrumb trail. Client-side router links so a crumb click doesn't reload the app. */
 export function Breadcrumb({ trail }: { trail: { label: string; href?: string }[] }) {
   return (
     <nav aria-label="Breadcrumb">
@@ -11,9 +12,9 @@ export function Breadcrumb({ trail }: { trail: { label: string; href?: string }[
           <li key={`${crumb.label}-${i}`} className="flex items-center gap-1">
             {i > 0 ? <ChevronRight className="size-3" aria-hidden /> : null}
             {crumb.href ? (
-              <a href={crumb.href} className="hover:text-foreground hover:underline">
+              <Link to={crumb.href} className="hover:text-foreground hover:underline">
                 {crumb.label}
-              </a>
+              </Link>
             ) : (
               <span aria-current="page" className="text-foreground">
                 {crumb.label}

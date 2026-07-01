@@ -1,7 +1,7 @@
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { ServiceSections } from '@/components/services/detail-sections';
 import { Breadcrumb } from '@/components/services/service-content';
@@ -37,7 +37,7 @@ export function ServiceDetailPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             This service doesn’t exist or isn’t published.
           </p>
-          <Button variant="outline" className="mt-4" render={<a href="/services" />}>
+          <Button variant="outline" className="mt-4" render={<Link to="/services" />}>
             Back to services
           </Button>
         </div>

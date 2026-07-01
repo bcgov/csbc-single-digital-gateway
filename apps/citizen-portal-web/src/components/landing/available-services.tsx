@@ -1,5 +1,6 @@
 import { Badge } from '@repo/ui/badge';
 import { Skeleton } from '@repo/ui/skeleton';
+import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import { SectionHeading } from '@/components/landing/section-heading';
 import type { CatalogService, MyApplication } from '@/lib/catalog';
@@ -42,17 +43,18 @@ export function AvailableServices({
               return (
                 <article key={service.id} className="rounded-lg bg-background p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <a
-                      href={`/services#${service.id}`}
+                    <Link
+                      to="/services"
+                      hash={service.id}
                       className="inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary hover:underline"
                     >
                       {service.title}
                       <ChevronRight className="size-4" aria-hidden />
-                    </a>
+                    </Link>
                     {application ? (
-                      <a href="/" className="text-xs text-primary hover:underline">
+                      <Link to="/" className="text-xs text-primary hover:underline">
                         Open
-                      </a>
+                      </Link>
                     ) : null}
                   </div>
                   {application ? (

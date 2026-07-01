@@ -1,4 +1,5 @@
 import { Badge } from '@repo/ui/badge';
+import { Link } from '@tanstack/react-router';
 import type { MyApplication } from '@/lib/catalog';
 
 /**
@@ -8,8 +9,9 @@ import type { MyApplication } from '@/lib/catalog';
  */
 export function ApplicationRow({ application }: { application: MyApplication }) {
   return (
-    <a
-      href={`/applications/${application.id}`}
+    <Link
+      to="/applications/$id"
+      params={{ id: application.id }}
       className="block rounded-lg bg-background p-4 ring-1 ring-foreground/10 hover:ring-primary/40"
     >
       <div className="flex items-center justify-between gap-2">
@@ -25,6 +27,6 @@ export function ApplicationRow({ application }: { application: MyApplication }) 
         {application.reference} · Last updated{' '}
         {new Date(application.lastUpdated).toLocaleDateString()}
       </p>
-    </a>
+    </Link>
   );
 }

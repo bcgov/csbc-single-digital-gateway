@@ -4,6 +4,7 @@ import { Card, CardContent } from '@repo/ui/card';
 import { Input } from '@repo/ui/input';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { ChevronRight, Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { SectionHeading } from '@/components/landing/section-heading';
@@ -58,8 +59,9 @@ function ServiceCard({
   application?: MyApplication | undefined;
 }) {
   return (
-    <a
-      href={`/services/${service.id}`}
+    <Link
+      to="/services/$serviceId"
+      params={{ serviceId: service.id }}
       className="group block rounded-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <Card id={service.id} className="h-full transition-shadow group-hover:ring-primary/40">
@@ -74,7 +76,7 @@ function ServiceCard({
           <p className="text-xs/relaxed text-muted-foreground">{service.description}</p>
         </CardContent>
       </Card>
-    </a>
+    </Link>
   );
 }
 

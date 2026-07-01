@@ -2,7 +2,7 @@ import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { History } from 'lucide-react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { type ApplicationMethod, ServiceSections } from '@/components/services/detail-sections';
@@ -62,9 +62,13 @@ function VersionDetail({
           <span>
             You’re viewing a historical version of this service (version {version.version}
             {range ? ` · ${range}` : ''}).{' '}
-            <a href={`/services/${serviceId}`} className="text-primary hover:underline">
+            <Link
+              to="/services/$serviceId"
+              params={{ serviceId }}
+              className="text-primary hover:underline"
+            >
               View the current service
-            </a>
+            </Link>
             .
           </span>
         </div>
@@ -111,7 +115,7 @@ export function ServiceVersionPage() {
             <Button
               variant="outline"
               className="mt-4"
-              render={<a href={`/services/${serviceId}`} />}
+              render={<Link to="/services/$serviceId" params={{ serviceId }} />}
             >
               Back to the service
             </Button>
