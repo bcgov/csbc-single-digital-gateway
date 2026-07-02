@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { HomePage } from '@/components/home-page';
 
 describe('platform-web landing', () => {
-  it('greets with the application name', () => {
+  it('shows the application name', () => {
     render(<HomePage />);
-    expect(screen.getByRole('heading', { name: 'Hello, platform-web.' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Single Digital Gateway Platform' }),
+    ).toBeInTheDocument();
   });
 
   it('centers the greeting on the full viewport', () => {
