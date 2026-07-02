@@ -18,7 +18,8 @@
     "**/routeTree.gen.ts"
   ],
   "rules": {
-    "no-extraneous-class": ["warn", { "allowWithDecorator": true }]
+    "no-extraneous-class": ["warn", { "allowWithDecorator": true }],
+    "no-underscore-dangle": ["warn", { "allow": ["__APP_CONFIG__"] }]
   },
   "overrides": [
     {
