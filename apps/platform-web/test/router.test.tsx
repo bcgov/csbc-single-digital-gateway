@@ -13,7 +13,7 @@ describe('platform-web router', () => {
     });
     render(<RouterProvider router={router} />);
     expect(
-      await screen.findByRole('heading', { name: 'Hello, platform-web.' }),
+      await screen.findByRole('heading', { name: 'Single Digital Gateway Platform' }),
     ).toBeInTheDocument();
   });
 });
