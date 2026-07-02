@@ -4,8 +4,9 @@ import { defineConfig } from 'drizzle-kit';
 
 // drizzle-kit `migrate` needs DATABASE_URL; `generate` does not. drizzle-kit loads this
 // config from the package dir (the npm `db:*` scripts set cwd here), so anchor on cwd to
-// reach the repo-root .env. (import.meta.dirname is undefined under drizzle-kit's loader.)
-config({ path: resolve(process.cwd(), '../../.env') });
+// reach this package's own .env (see .env.example). (import.meta.dirname is undefined
+// under drizzle-kit's loader, so process.cwd() is the reliable anchor.)
+config({ path: resolve(process.cwd(), '.env') });
 
 export default defineConfig({
   dialect: 'postgresql',
