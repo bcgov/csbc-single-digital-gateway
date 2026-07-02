@@ -1,19 +1,29 @@
-import { QueryClient } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
-import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { describe, expect, it } from 'vitest';
-import { routeTree } from '@/routeTree.gen';
+import { screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { authedUser, mockAuth, renderApp } from './support/render-app';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('platform-web router', () => {
-  it('resolves the landing route at /', async () => {
-    const router = createRouter({
-      routeTree,
-      history: createMemoryHistory({ initialEntries: ['/'] }),
-      context: { queryClient: new QueryClient() },
-    });
-    render(<RouterProvider router={router} />);
+  it('resolves the landing route at / for anonymous visitors', async () => {
+    mockAuth(null);
+    renderApp('/');
     expect(
       await screen.findByRole('heading', { name: 'Single Digital Gateway Platform' }),
     ).toBeInTheDocument();
+  });
+
+  it('redirects a signed-in visitor from / to the console', async () => {
+    mockAuth(authedUser);
+    const { router } = renderApp('/');
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/app');
+    });
+    expect(
+      screen.queryByRole('heading', { name: 'Single Digital Gateway Platform' }),
+    ).not.toBeInTheDocument();
   });
 });
