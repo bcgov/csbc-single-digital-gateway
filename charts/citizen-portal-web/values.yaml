@@ -1,0 +1,86 @@
+# citizen-portal-web Helm values.
+#
+# A static SPA served by nginx. Its only config is BFF_ORIGIN (the browser-facing origin of
+# citizen-portal-api), injected at container start into window.__APP_CONFIG__ — it is PUBLIC, so
+# it lives in the ConfigMap (no Secret needed).
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/sidmclaughlin/citizen-portal-web # override per environment
+  tag: "" # defaults to .Chart.appVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# No sensitive config — BFF_ORIGIN is a public browser origin.
+existingSecret: ""
+
+# Non-sensitive env → ConfigMap. BFF_ORIGIN is REQUIRED (the container fails fast without it).
+env:
+  BFF_ORIGIN: https://citizen-portal-api.example.gov
+
+# Extra raw env entries (support valueFrom) merged into the container; precedence over envFrom.
+extraEnv: []
+
+containerPort: 8080
+
+service:
+  type: ClusterIP
+  port: 80
+
+route:
+  enabled: true
+  host: portal.example.gov
+  annotations: {}
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+probes:
+  liveness:
+    path: /
+  readiness:
+    path: /
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+# OpenShift restricted-v2 assigns the UID/fsGroup — do NOT set runAsUser/fsGroup here.
+# nginx writes to /tmp + /var/cache/nginx, so readOnlyRootFilesystem stays false.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

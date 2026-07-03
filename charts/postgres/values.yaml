@@ -1,0 +1,66 @@
+# Crunchy PostgresCluster values.
+#
+# This chart deploys a `PostgresCluster` CR — the Crunchy Postgres Operator (PGO) must already
+# be installed in the cluster (on OpenShift via OperatorHub/OLM). The operator provisions the
+# Postgres pods, Patroni HA, pgBackRest backups, Services, and the user/connection Secret.
+
+# Cluster name — also the prefix of the generated Secret: <name>-pguser-<database.user>
+name: sdg
+
+postgresVersion: 16
+
+# Force OpenShift-appropriate behaviour (securityContext, fsGroup handling). The operator also
+# auto-detects; set false on vanilla Kubernetes.
+openshift: true
+
+# Optional explicit images (empty = the operator's defaults for this Postgres version). Set for
+# air-gapped / custom registries.
+image: ""
+
+instances:
+  name: instance1
+  # HA: 1 primary + (replicas-1) replicas, Patroni-managed failover. 2 = primary + 1 replica.
+  replicas: 2
+  storage:
+    size: 10Gi
+    storageClassName: "" # cluster default when empty
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  # Spread instances across nodes: preferred | required | off
+  antiAffinity: preferred
+
+# The application database + owner. The operator creates both and generates the connection
+# Secret <name>-pguser-<user> (keys: uri, host, port, dbname, user, password, jdbc-uri).
+database:
+  name: sdg
+  user: sdg
+
+backups:
+  image: ""
+  storage:
+    size: 10Gi
+    storageClassName: ""
+  # pgBackRest schedules (cron). Empty disables that schedule.
+  schedules:
+    full: "0 1 * * 0" # weekly full, Sundays 01:00
+    incremental: "0 1 * * 1-6" # daily incremental
+  # repo1-retention-full — number of full backups to keep.
+  retentionFull: "14"
+
+# Optional PgBouncer connection pooler (adds <name>-pgbouncer Service + pgbouncer-* secret keys).
+pgbouncer:
+  enabled: false
+  replicas: 2
+  image: ""
+
+# Optional pgMonitor exporter sidecar (Prometheus).
+monitoring:
+  enabled: false
+
+# Passthrough for spec.patroni (e.g. dynamicConfiguration). Leave empty for defaults.
+patroni: {}

@@ -1,0 +1,8 @@
+apiVersion: v2
+name: postgres
+description: >-
+  Crunchy Postgres (PGO) cluster for the Single Digital Gateway — a PostgresCluster custom
+  resource (HA + pgBackRest). Requires the Crunchy Postgres Operator to be installed.
+type: application
+version: 0.1.0
+appVersion: "16"
