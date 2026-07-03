@@ -10,8 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as DevRouteRouteImport } from './routes/dev/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
+import { Route as DevIndexRouteImport } from './routes/dev/index'
+import { Route as DevIconsRouteImport } from './routes/dev/icons'
+import { Route as DevFormElementsRouteImport } from './routes/dev/form-elements'
+import { Route as DevDraggableRouteImport } from './routes/dev/draggable'
+import { Route as DevCardsRouteImport } from './routes/dev/cards'
+import { Route as DevButtonRouteImport } from './routes/dev/button'
+import { Route as DevBadgeRouteImport } from './routes/dev/badge'
+import { Route as DevAccordionRouteImport } from './routes/dev/accordion'
 import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
@@ -20,6 +29,11 @@ import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/servi
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevRouteRoute = DevRouteRouteImport.update({
+  id: '/dev',
+  path: '/dev',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,6 +45,46 @@ const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DevIndexRoute = DevIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevIconsRoute = DevIconsRouteImport.update({
+  id: '/icons',
+  path: '/icons',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevFormElementsRoute = DevFormElementsRouteImport.update({
+  id: '/form-elements',
+  path: '/form-elements',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevDraggableRoute = DevDraggableRouteImport.update({
+  id: '/draggable',
+  path: '/draggable',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevCardsRoute = DevCardsRouteImport.update({
+  id: '/cards',
+  path: '/cards',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevButtonRoute = DevButtonRouteImport.update({
+  id: '/button',
+  path: '/button',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevBadgeRoute = DevBadgeRouteImport.update({
+  id: '/badge',
+  path: '/badge',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevAccordionRoute = DevAccordionRouteImport.update({
+  id: '/accordion',
+  path: '/accordion',
+  getParentRoute: () => DevRouteRoute,
 } as any)
 const ApplicationsIdRoute = ApplicationsIdRouteImport.update({
   id: '/applications/$id',
@@ -57,8 +111,17 @@ const ServicesServiceIdApplyFormIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/applications/$id': typeof ApplicationsIdRoute
+  '/dev/accordion': typeof DevAccordionRoute
+  '/dev/badge': typeof DevBadgeRoute
+  '/dev/button': typeof DevButtonRoute
+  '/dev/cards': typeof DevCardsRoute
+  '/dev/draggable': typeof DevDraggableRoute
+  '/dev/form-elements': typeof DevFormElementsRoute
+  '/dev/icons': typeof DevIconsRoute
+  '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
@@ -68,6 +131,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/applications/$id': typeof ApplicationsIdRoute
+  '/dev/accordion': typeof DevAccordionRoute
+  '/dev/badge': typeof DevBadgeRoute
+  '/dev/button': typeof DevButtonRoute
+  '/dev/cards': typeof DevCardsRoute
+  '/dev/draggable': typeof DevDraggableRoute
+  '/dev/form-elements': typeof DevFormElementsRoute
+  '/dev/icons': typeof DevIconsRoute
+  '/dev': typeof DevIndexRoute
   '/services': typeof ServicesIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
@@ -76,8 +147,17 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/applications/$id': typeof ApplicationsIdRoute
+  '/dev/accordion': typeof DevAccordionRoute
+  '/dev/badge': typeof DevBadgeRoute
+  '/dev/button': typeof DevButtonRoute
+  '/dev/cards': typeof DevCardsRoute
+  '/dev/draggable': typeof DevDraggableRoute
+  '/dev/form-elements': typeof DevFormElementsRoute
+  '/dev/icons': typeof DevIconsRoute
+  '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
@@ -87,8 +167,17 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dev'
     | '/account'
     | '/applications/$id'
+    | '/dev/accordion'
+    | '/dev/badge'
+    | '/dev/button'
+    | '/dev/cards'
+    | '/dev/draggable'
+    | '/dev/form-elements'
+    | '/dev/icons'
+    | '/dev/'
     | '/services/'
     | '/services/$serviceId/'
     | '/services/$serviceId/apply/$formId'
@@ -98,6 +187,14 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/applications/$id'
+    | '/dev/accordion'
+    | '/dev/badge'
+    | '/dev/button'
+    | '/dev/cards'
+    | '/dev/draggable'
+    | '/dev/form-elements'
+    | '/dev/icons'
+    | '/dev'
     | '/services'
     | '/services/$serviceId'
     | '/services/$serviceId/apply/$formId'
@@ -105,8 +202,17 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/dev'
     | '/account'
     | '/applications/$id'
+    | '/dev/accordion'
+    | '/dev/badge'
+    | '/dev/button'
+    | '/dev/cards'
+    | '/dev/draggable'
+    | '/dev/form-elements'
+    | '/dev/icons'
+    | '/dev/'
     | '/services/'
     | '/services/$serviceId/'
     | '/services/$serviceId/apply/$formId'
@@ -115,6 +221,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DevRouteRoute: typeof DevRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
   ApplicationsIdRoute: typeof ApplicationsIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
@@ -132,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev': {
+      id: '/dev'
+      path: '/dev'
+      fullPath: '/dev'
+      preLoaderRoute: typeof DevRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -145,6 +259,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dev/': {
+      id: '/dev/'
+      path: '/'
+      fullPath: '/dev/'
+      preLoaderRoute: typeof DevIndexRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/icons': {
+      id: '/dev/icons'
+      path: '/icons'
+      fullPath: '/dev/icons'
+      preLoaderRoute: typeof DevIconsRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/form-elements': {
+      id: '/dev/form-elements'
+      path: '/form-elements'
+      fullPath: '/dev/form-elements'
+      preLoaderRoute: typeof DevFormElementsRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/draggable': {
+      id: '/dev/draggable'
+      path: '/draggable'
+      fullPath: '/dev/draggable'
+      preLoaderRoute: typeof DevDraggableRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/cards': {
+      id: '/dev/cards'
+      path: '/cards'
+      fullPath: '/dev/cards'
+      preLoaderRoute: typeof DevCardsRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/button': {
+      id: '/dev/button'
+      path: '/button'
+      fullPath: '/dev/button'
+      preLoaderRoute: typeof DevButtonRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/badge': {
+      id: '/dev/badge'
+      path: '/badge'
+      fullPath: '/dev/badge'
+      preLoaderRoute: typeof DevBadgeRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/accordion': {
+      id: '/dev/accordion'
+      path: '/accordion'
+      fullPath: '/dev/accordion'
+      preLoaderRoute: typeof DevAccordionRouteImport
+      parentRoute: typeof DevRouteRoute
     }
     '/applications/$id': {
       id: '/applications/$id'
@@ -177,8 +347,35 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DevRouteRouteChildren {
+  DevAccordionRoute: typeof DevAccordionRoute
+  DevBadgeRoute: typeof DevBadgeRoute
+  DevButtonRoute: typeof DevButtonRoute
+  DevCardsRoute: typeof DevCardsRoute
+  DevDraggableRoute: typeof DevDraggableRoute
+  DevFormElementsRoute: typeof DevFormElementsRoute
+  DevIconsRoute: typeof DevIconsRoute
+  DevIndexRoute: typeof DevIndexRoute
+}
+
+const DevRouteRouteChildren: DevRouteRouteChildren = {
+  DevAccordionRoute: DevAccordionRoute,
+  DevBadgeRoute: DevBadgeRoute,
+  DevButtonRoute: DevButtonRoute,
+  DevCardsRoute: DevCardsRoute,
+  DevDraggableRoute: DevDraggableRoute,
+  DevFormElementsRoute: DevFormElementsRoute,
+  DevIconsRoute: DevIconsRoute,
+  DevIndexRoute: DevIndexRoute,
+}
+
+const DevRouteRouteWithChildren = DevRouteRoute._addFileChildren(
+  DevRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DevRouteRoute: DevRouteRouteWithChildren,
   AccountRoute: AccountRoute,
   ApplicationsIdRoute: ApplicationsIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,

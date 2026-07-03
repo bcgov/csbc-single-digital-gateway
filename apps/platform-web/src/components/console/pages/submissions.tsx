@@ -73,7 +73,7 @@ export function SubmissionsPage() {
               <TableCell>{s.serviceTitle}</TableCell>
               <TableCell>{s.formTitle}</TableCell>
               <TableCell>
-                <Badge variant="secondary">{s.statusLabel}</Badge>
+                <Badge color="yellow">{s.statusLabel}</Badge>
               </TableCell>
               <TableCell className="text-muted-foreground">{fmtDate(s.submittedAt)}</TableCell>
             </TableRow>

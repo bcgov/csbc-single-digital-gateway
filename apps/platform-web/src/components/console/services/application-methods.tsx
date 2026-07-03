@@ -119,7 +119,7 @@ export function ApplicationMethods({
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  {archived ? <Badge variant="outline">Archived</Badge> : null}
+                  {archived ? <Badge color="blue">Archived</Badge> : null}
                   {readonly || archived ? null : ref.hasSubmissions ? (
                     <Button
                       size="xs"

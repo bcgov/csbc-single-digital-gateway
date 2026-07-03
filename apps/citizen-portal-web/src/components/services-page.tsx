@@ -71,7 +71,7 @@ function ServiceCard({
               {service.title}
               <ChevronRight className="size-4" aria-hidden />
             </span>
-            {application ? <Badge variant="secondary">{application.statusLabel}</Badge> : null}
+            {application ? <Badge color="yellow">{application.statusLabel}</Badge> : null}
           </div>
           <p className="text-xs/relaxed text-muted-foreground">{service.description}</p>
         </CardContent>
@@ -86,9 +86,9 @@ function YourApplications({ applications }: { applications: readonly MyApplicati
     return null;
   }
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col ">
       <SectionHeading title="Your applications" />
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="mt-4">
         {applications.map((application) => (
           <ApplicationRow key={application.id} application={application} />
         ))}
@@ -114,12 +114,10 @@ export function ServicesPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="flex flex-col gap-8">
+      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
         <header className="flex flex-col gap-2">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">Services</h1>
-          <p className="text-sm text-muted-foreground">
-            Find and use Government of British Columbia services.
-          </p>
+          <h1>Services</h1>
+          <p className="text-lg">Find and use Government of British Columbia services.</p>
         </header>
 
         <ServiceSearch onSearch={setQuery} />
@@ -128,6 +126,7 @@ export function ServicesPage() {
 
         <section className="flex flex-col gap-4">
           <SectionHeading title="All services" />
+
           {services.isPending ? (
             <div className="grid gap-4 md:grid-cols-2">
               {[0, 1, 2, 3].map((i) => (

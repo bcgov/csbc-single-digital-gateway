@@ -140,7 +140,7 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
           onChange={setValue}
           actions={
             <>
-              <Badge variant="outline">{status}</Badge>
+              <Badge color="blue">{status}</Badge>
               <BuilderActions
                 error={save.error}
                 saving={save.isPending}
@@ -244,7 +244,7 @@ function StageEdit({ form }: { form: FormWithVersion }) {
           onChange={setValue}
           actions={
             <>
-              <Badge variant="outline">{status}</Badge>
+              <Badge color="blue">{status}</Badge>
               <BuilderActions
                 error={save.error}
                 saving={save.isPending}

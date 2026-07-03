@@ -1,6 +1,5 @@
 import { Avatar, AvatarFallback } from '@repo/ui/avatar';
-import { Badge } from '@repo/ui/badge';
-import { Button } from '@repo/ui/button';
+import { buttonVariants } from '@repo/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +12,8 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
 import { LogOut, UserCog } from 'lucide-react';
 import { initials, useLoginUrl } from '@/lib/auth';
+import { mdiLogin } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 /** The signed-in user, as far as the header needs to render the avatar + menu. */
 export interface HeaderUser {
@@ -39,17 +40,13 @@ const NAV_ITEMS = [
 /** Primary nav (Home, Services) — client-side router links so navigation doesn't reload the app. */
 function PrimaryNav({ active }: { active?: 'home' | 'services' | undefined }) {
   return (
-    <nav aria-label="Primary" className="hidden items-center gap-6 sm:flex">
+    <nav aria-label="Primary" className="hidden items-center sm:flex">
       {NAV_ITEMS.map((item) => (
         <Link
           key={item.id}
           to={item.href}
           aria-current={active === item.id ? 'page' : undefined}
-          className={`text-xs font-medium ${
-            active === item.id
-              ? 'text-foreground underline underline-offset-8'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
+          className={`text-foreground no-underline hover:underline p-4 ${active === item.id ? '' : ''}`}
         >
           {item.label}
         </Link>
@@ -61,15 +58,13 @@ function PrimaryNav({ active }: { active?: 'home' | 'services' | undefined }) {
 /** Shared brand lockup on the left of the header. */
 function BrandLockup() {
   return (
-    <Link to="/" className="flex items-center gap-2.5">
-      <Logo className="h-7 w-auto" aria-label="Government of British Columbia" />
-      <span className="font-heading text-sm font-semibold text-foreground">
-        Single Digital Gateway
-      </span>
-      <Badge variant="secondary" className="uppercase">
-        beta
-      </Badge>
-    </Link>
+    <div className="flex items-center">
+      <Link to="/" aria-label="`Go to the Single Digital Gateway homepage`" className="pr-4">
+        <Logo className="h-13 w-auto" aria-label="Government of British Columbia" />
+      </Link>
+      <p className="text-lg font-bold border-l pl-4">Single Digital Gateway</p>
+      <sup className="text-sm text-danger-hover font-bold ml-1.5">alpha</sup>
+    </div>
   );
 }
 
@@ -132,14 +127,15 @@ export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderPro
   const loginUrl = useLoginUrl();
   return (
     <header className="border-b bg-background">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4">
+      <div className="mx-4 md:mx-8 xl:mx-auto w-full max-w-280 flex items-center gap-4">
         <BrandLockup />
         <div className="ml-auto flex items-center gap-6">
           <PrimaryNav active={activeNav} />
           {variant === 'anonymous' ? (
-            <Button size="sm" render={<a href={loginUrl} />}>
+            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+              <Icon path={mdiLogin} aria-hidden={true} />
               Log in
-            </Button>
+            </Link>
           ) : (
             <ProfileMenu user={user} onLogout={onLogout} />
           )}

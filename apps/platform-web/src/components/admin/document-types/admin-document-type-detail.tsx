@@ -9,10 +9,10 @@ import { DefinitionEditor } from '@/components/admin/document-types/definition-e
 import { VersionActions } from '@/components/admin/document-types/version-actions';
 import { addVersion, adminDocumentTypeQueryOptions, editDraft } from '@/lib/document-types';
 
-const STATUS_VARIANT = {
-  draft: 'secondary',
-  published: 'default',
-  archived: 'outline',
+const STATUS_COLOR = {
+  draft: 'yellow',
+  published: 'green',
+  archived: 'blue',
 } as const;
 
 /** Admin Document Type detail — version history, lifecycle actions, and the definition editor. */
@@ -69,7 +69,7 @@ export function AdminDocumentTypeDetail() {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">{data.type.name}</h2>
-          <Badge variant="secondary">{data.type.kind}</Badge>
+          <Badge color="yellow">{data.type.kind}</Badge>
         </div>
         <Button size="sm" type="button" disabled={add.isPending} onClick={() => add.mutate()}>
           <Plus className="size-4" aria-hidden />
@@ -96,7 +96,7 @@ export function AdminDocumentTypeDetail() {
                 >
                   <TableCell className="font-medium">v{version.version}</TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[version.status]}>{version.status}</Badge>
+                    <Badge color={STATUS_COLOR[version.status]}>{version.status}</Badge>
                   </TableCell>
                   <TableCell>
                     <VersionActions typeId={id} version={version} />
