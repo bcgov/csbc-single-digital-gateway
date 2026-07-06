@@ -1,0 +1,62 @@
+name: OpenShift Helm deploy
+description: >-
+  Log in to OpenShift with a namespace ServiceAccount token and `helm upgrade --install` the SDG
+  umbrella chart, pinning all five images to one immutable git SHA tag.
+
+inputs:
+  values-file:
+    description: Env values file under charts/single-digital-gateway/ (e.g. values-dev.yaml)
+    required: true
+  namespace:
+    description: Target OpenShift namespace (e.g. d62e77-dev)
+    required: true
+  openshift-server:
+    description: OpenShift API server URL
+    required: true
+  openshift-token:
+    description: ServiceAccount token for the namespace (a GitHub secret)
+    required: true
+  image-tag:
+    description: Immutable image tag to deploy (the git SHA)
+    required: true
+  release:
+    description: Helm release name
+    required: false
+    default: sdg
+
+runs:
+  using: composite
+  steps:
+    - name: Install oc
+      uses: redhat-actions/openshift-tools-installer@v1
+      with:
+        oc: '4'
+
+    - name: Install helm
+      uses: azure/setup-helm@v4
+      with:
+        version: v3.16.4
+
+    - name: Log in to OpenShift
+      uses: redhat-actions/oc-login@v1
+      with:
+        openshift_server_url: ${{ inputs.openshift-server }}
+        openshift_token: ${{ inputs.openshift-token }}
+        namespace: ${{ inputs.namespace }}
+
+    - name: Vendor umbrella subcharts
+      shell: bash
+      run: helm dependency build charts/single-digital-gateway
+
+    - name: Helm upgrade
+      shell: bash
+      run: |
+        helm upgrade --install "${{ inputs.release }}" charts/single-digital-gateway \
+          --namespace "${{ inputs.namespace }}" \
+          --values "charts/single-digital-gateway/${{ inputs.values-file }}" \
+          --set platform-api.image.tag="${{ inputs.image-tag }}" \
+          --set citizen-portal-api.image.tag="${{ inputs.image-tag }}" \
+          --set platform-web.image.tag="${{ inputs.image-tag }}" \
+          --set citizen-portal-web.image.tag="${{ inputs.image-tag }}" \
+          --set platform-api.migrations.image.tag="${{ inputs.image-tag }}" \
+          --wait --timeout 10m
