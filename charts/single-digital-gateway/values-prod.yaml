@@ -1,0 +1,115 @@
+# =============================================================================
+# SDG umbrella — PROD environment   (namespace: <slug>-prod)
+# =============================================================================
+# Install / upgrade the whole stack into the prod namespace from this one file:
+#
+#   helm dependency build charts/single-digital-gateway            # once — vendors the 6 subcharts
+#   helm upgrade --install sdg charts/single-digital-gateway \
+#     -n <slug>-prod --create-namespace \
+#     -f charts/single-digital-gateway/values-prod.yaml
+#
+# Namespace budget: 0.5 CPU / 2Gi, ResourceQuota on LIMITS only. The per-container limits are
+# tuned in each subchart's defaults; this file only carries per-environment identity (hosts,
+# image tags, backup policy, log level). Summed container LIMITS, steady state:
+#
+#   platform-api            100m / 256Mi
+#   citizen-portal-api      100m / 256Mi
+#   platform-web             15m /  64Mi
+#   citizen-portal-web       15m /  64Mi
+#   valkey                   40m / 128Mi
+#   postgres (database)      80m / 512Mi
+#   postgres repo-host       15m /  96Mi
+#   postgres pgbackrest       10m /  48Mi   (sidecar in the instance pod)
+#   postgres pgbackrest-cfg    5m /  32Mi   (sidecar in the instance pod)
+#   ---------------------------------------------------------------
+#   STEADY TOTAL            380m / 1456Mi    (of 500m / 2048Mi)
+#
+# Transient headroom: platform-api's migrate hook runs pre-upgrade while the old pod is still up
+# (+100m / 256Mi) → peak 480m / 1712Mi; even with a pgBackRest backup Job also running (+15m /
+# 64Mi) it stays at 495m / 1776Mi, under budget. Apps use strategy.maxSurge:0, so a rollout never
+# briefly runs two pods. Prod keeps weekly-full + daily-incremental backups
+# (backup-Job pods are +15m / 64Mi, transient).
+#
+# NOTE: this stack is SINGLE-INSTANCE everywhere (no Postgres HA, no app replica) — the only
+# option inside 0.5 CPU / 2Gi. Once the prod namespace gets more budget, raise the app
+# replicaCount / strategy.maxSurge and postgres.instances.replicas (to 2) and re-check the sums.
+#
+# ASSUMPTION: a couple of operator-managed init containers get their limits from the namespace
+# LimitRange defaults. If there is no LimitRange, a limits-only quota rejects any pod with an
+# unlimited container — add a LimitRange with small default limits to the namespace.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Postgres — single instance; full weekly + daily incremental backups retained for prod.
+# ---------------------------------------------------------------------------
+postgres:
+  name: sdg
+  instances:
+    storage:
+      size: 10Gi
+  backups:
+    storage:
+      size: 10Gi
+    schedules:
+      full: "0 1 * * 0"      # weekly full, Sundays 01:00
+      incremental: "0 1 * * 1-6"  # daily incremental
+    retentionFull: "14"
+
+valkey: {}
+
+# ---------------------------------------------------------------------------
+# platform-api (staff BFF). Pin a released image tag in prod.
+# ---------------------------------------------------------------------------
+platform-api:
+  image:
+    tag: "1.0.0"          # pin a released version in prod
+  env:
+    LOG_LEVEL: info
+    OIDC_ISSUER: https://keycloak.example.gov/realms/sdg
+    OIDC_REDIRECT_URI: https://platform-api.example.gov/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://platform.example.gov/app
+    AUTH_ALLOWED_ORIGINS: https://platform.example.gov
+    AUTH_RP_LOGOUT: "true"
+  route:
+    host: platform-api.example.gov
+  migrations:
+    image:
+      tag: "1.0.0"
+
+# ---------------------------------------------------------------------------
+# citizen-portal-api (citizen BFF). Migrations disabled (platform-api owns the shared DB).
+# ---------------------------------------------------------------------------
+citizen-portal-api:
+  image:
+    tag: "1.0.0"
+  env:
+    LOG_LEVEL: info
+    OIDC_ISSUER: https://keycloak.example.gov/realms/citizens
+    OIDC_REDIRECT_URI: https://citizen-portal-api.example.gov/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://portal.example.gov/
+    AUTH_ALLOWED_ORIGINS: https://portal.example.gov
+    AUTH_RP_LOGOUT: "true"
+  route:
+    host: citizen-portal-api.example.gov
+
+# ---------------------------------------------------------------------------
+# platform-web (staff SPA).
+# ---------------------------------------------------------------------------
+platform-web:
+  image:
+    tag: "1.0.0"
+  env:
+    BFF_ORIGIN: https://platform-api.example.gov
+  route:
+    host: platform.example.gov
+
+# ---------------------------------------------------------------------------
+# citizen-portal-web (citizen SPA).
+# ---------------------------------------------------------------------------
+citizen-portal-web:
+  image:
+    tag: "1.0.0"
+  env:
+    BFF_ORIGIN: https://citizen-portal-api.example.gov
+  route:
+    host: portal.example.gov

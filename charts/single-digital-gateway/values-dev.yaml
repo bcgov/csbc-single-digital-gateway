@@ -1,0 +1,114 @@
+# =============================================================================
+# SDG umbrella — DEV environment   (namespace: <slug>-dev)
+# =============================================================================
+# Install / upgrade the whole stack into the dev namespace from this one file:
+#
+#   helm dependency build charts/single-digital-gateway            # once — vendors the 6 subcharts
+#   helm upgrade --install sdg charts/single-digital-gateway \
+#     -n <slug>-dev --create-namespace \
+#     -f charts/single-digital-gateway/values-dev.yaml
+#
+# Namespace budget: 0.5 CPU / 2Gi, ResourceQuota on LIMITS only. The per-container limits are
+# tuned in each subchart's defaults; this file only carries per-environment identity (hosts,
+# image tags, backup policy, log level). Summed container LIMITS, steady state:
+#
+#   platform-api            100m / 256Mi
+#   citizen-portal-api      100m / 256Mi
+#   platform-web             15m /  64Mi
+#   citizen-portal-web       15m /  64Mi
+#   valkey                   40m / 128Mi
+#   postgres (database)      80m / 512Mi
+#   postgres repo-host       15m /  96Mi
+#   postgres pgbackrest       10m /  48Mi   (sidecar in the instance pod)
+#   postgres pgbackrest-cfg    5m /  32Mi   (sidecar in the instance pod)
+#   ---------------------------------------------------------------
+#   STEADY TOTAL            380m / 1456Mi    (of 500m / 2048Mi)
+#
+# Transient headroom: platform-api's migrate hook runs pre-upgrade while the old pod is still up
+# (+100m / 256Mi) → peak 480m / 1712Mi; even with a pgBackRest backup Job also running (+15m /
+# 64Mi) it stays at 495m / 1776Mi, under budget. Apps use strategy.maxSurge:0, so a rollout never
+# briefly runs two pods. Dev disables scheduled backups (no recurring backup-Job
+# pods); the operator still runs one initial backup Job (+15m / 64Mi, transient).
+#
+# ASSUMPTION: a couple of operator-managed init containers get their limits from the namespace
+# LimitRange defaults. If there is no LimitRange, a limits-only quota rejects any pod with an
+# unlimited container — add a LimitRange with small default limits to the namespace.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Postgres (Crunchy PGO PostgresCluster) — single instance, backups un-scheduled in dev.
+# ---------------------------------------------------------------------------
+postgres:
+  name: sdg
+  instances:
+    storage:
+      size: 5Gi          # dev: smaller data volume
+  backups:
+    storage:
+      size: 5Gi
+    schedules:            # dev: no recurring backups (fewer transient Job pods)
+      full: ""
+      incremental: ""
+    retentionFull: "2"
+
+# ---------------------------------------------------------------------------
+# Valkey session store — defaults already fit the budget; nothing env-specific.
+# (auth.existingSecret: valkey-secrets must be pre-created in the namespace.)
+# ---------------------------------------------------------------------------
+valkey: {}
+
+# ---------------------------------------------------------------------------
+# platform-api (staff BFF). Replace the example hosts/tags with your real dev values.
+# existingSecret: platform-api-secrets must be pre-created in the namespace.
+# ---------------------------------------------------------------------------
+platform-api:
+  image:
+    tag: "develop"       # dev image tag (e.g. a branch tag or commit SHA)
+  env:
+    LOG_LEVEL: debug
+    OIDC_ISSUER: https://keycloak.dev.example.gov/realms/sdg
+    OIDC_REDIRECT_URI: https://platform-api.dev.example.gov/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://platform.dev.example.gov/app
+    AUTH_ALLOWED_ORIGINS: https://platform.dev.example.gov
+  route:
+    host: platform-api.dev.example.gov
+  migrations:
+    image:
+      tag: "develop"
+
+# ---------------------------------------------------------------------------
+# citizen-portal-api (citizen BFF). Migrations stay disabled (platform-api owns the shared DB).
+# ---------------------------------------------------------------------------
+citizen-portal-api:
+  image:
+    tag: "develop"
+  env:
+    LOG_LEVEL: debug
+    OIDC_ISSUER: https://keycloak.dev.example.gov/realms/citizens
+    OIDC_REDIRECT_URI: https://citizen-portal-api.dev.example.gov/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://portal.dev.example.gov/
+    AUTH_ALLOWED_ORIGINS: https://portal.dev.example.gov
+  route:
+    host: citizen-portal-api.dev.example.gov
+
+# ---------------------------------------------------------------------------
+# platform-web (staff SPA). BFF_ORIGIN is the browser-facing platform-api origin.
+# ---------------------------------------------------------------------------
+platform-web:
+  image:
+    tag: "develop"
+  env:
+    BFF_ORIGIN: https://platform-api.dev.example.gov
+  route:
+    host: platform.dev.example.gov
+
+# ---------------------------------------------------------------------------
+# citizen-portal-web (citizen SPA).
+# ---------------------------------------------------------------------------
+citizen-portal-web:
+  image:
+    tag: "develop"
+  env:
+    BFF_ORIGIN: https://citizen-portal-api.dev.example.gov
+  route:
+    host: portal.dev.example.gov

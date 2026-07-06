@@ -1,0 +1,50 @@
+# =============================================================================
+# SDG umbrella — shared base values (applied UNDER every values-<env>.yaml)
+# =============================================================================
+# Cross-environment wiring that is identical in dev/test/prod lives here so it is not triplicated
+# in the per-env files. Helm loads this file first, then layers values-<env>.yaml on top.
+#
+# DATABASE_URL is sourced straight from the Secret the Crunchy Postgres Operator generates for the
+# cluster: `<postgres.name>-pguser-<postgres.database.user>` = **sdg-pguser-sdg**, key **uri**
+# (a full postgresql:// connection string to the primary). So DATABASE_URL does NOT need to be
+# placed in the apps' existingSecret — and because extraEnv is applied to BOTH the app container
+# and the pre-upgrade migrate Job (and takes precedence over envFrom), migrations get it too.
+#
+#   • Rename the cluster (postgres.name) or DB user (postgres.database.user)? update the
+#     secretKeyRef.name below to match `<name>-pguser-<user>`.
+#   • Enable the pgBouncer pooler (postgres.pgbouncer.enabled=true)? switch key `uri` → `pgbouncer-uri`.
+#   • existingSecret is still required for the other secrets (OIDC_CLIENT_SECRET,
+#     AUTH_SESSION_SECRET, VALKEY_URL) — only DATABASE_URL moves out of it.
+#
+# FIRST-INSTALL ORDERING (important): the migrate Job is a pre-install/pre-upgrade Helm hook, and
+# Helm runs pre-install hooks BEFORE any release resource — including the PostgresCluster CR. On a
+# brand-new namespace the operator has not yet created `sdg-pguser-sdg` (nor a ready database), so
+# a single `helm install` would run the migrate hook before the secret/DB exist. Do a phased
+# FIRST install instead (upgrades are fine — the DB already exists):
+#
+#     # 1) bring up Postgres (+ Valkey + apps) WITHOUT the migrate hook
+#     helm install sdg charts/single-digital-gateway -n <slug>-dev --create-namespace \
+#       -f charts/single-digital-gateway/values-dev.yaml \
+#       --set platform-api.migrations.enabled=false
+#     # 2) wait for the cluster's user Secret + a ready primary
+#     oc -n <slug>-dev wait --for=condition=Ready pod -l postgres-operator.crunchydata.com/role=master --timeout=300s
+#     # 3) upgrade with migrations enabled (default) → pre-upgrade migrate runs against the ready DB
+#     helm upgrade sdg charts/single-digital-gateway -n <slug>-dev \
+#       -f charts/single-digital-gateway/values-dev.yaml
+# =============================================================================
+
+platform-api:
+  extraEnv:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: sdg-pguser-sdg # <postgres.name>-pguser-<postgres.database.user>
+          key: uri # full postgresql:// URI to the primary (use `pgbouncer-uri` if pooling)
+
+citizen-portal-api:
+  extraEnv:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: sdg-pguser-sdg
+          key: uri

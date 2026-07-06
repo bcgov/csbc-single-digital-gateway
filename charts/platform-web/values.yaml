@@ -4,10 +4,19 @@
 # platform-api), injected at container start into window.__APP_CONFIG__ — it is PUBLIC, so it
 # lives in the ConfigMap (no Secret needed).
 
-replicaCount: 2
+replicaCount: 1
+
+# Rollout strategy. Under a limits-only ResourceQuota there is no budget for a surge pod, so
+# these charts default to maxSurge:0 — the single pod is recreated in place (brief downtime on
+# upgrade) instead of briefly running two. Raise maxSurge only when the namespace has spare limits.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
 
 image:
-  repository: ghcr.io/sidmclaughlin/platform-web # override per environment
+  repository: ghcr.io/bcgov/csbc-single-digital-gateway/platform-web # override per environment
   tag: "" # defaults to .Chart.appVersion
   pullPolicy: IfNotPresent
 
@@ -51,17 +60,18 @@ probes:
   readiness:
     path: /
 
+# Static nginx SPA — cheap. Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the stack.
 resources:
   requests:
-    cpu: 25m
-    memory: 64Mi
+    cpu: 10m
+    memory: 32Mi
   limits:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 15m
+    memory: 64Mi
 
 autoscaling:
   enabled: false
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
 

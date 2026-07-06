@@ -4,10 +4,19 @@
 # in a pre-created Secret named by `existingSecret` — never put them here. Non-sensitive env
 # below is rendered into a ConfigMap. Both are injected into the container via envFrom.
 
-replicaCount: 2
+replicaCount: 1
+
+# Rollout strategy. Under a limits-only ResourceQuota there is no budget for a surge pod, so
+# these charts default to maxSurge:0 — the single pod is recreated in place (brief downtime on
+# upgrade) instead of briefly running two. Raise maxSurge only when the namespace has spare limits.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
 
 image:
-  repository: ghcr.io/sidmclaughlin/platform-api # override per environment
+  repository: ghcr.io/bcgov/csbc-single-digital-gateway/platform-api # override per environment
   tag: "" # defaults to .Chart.appVersion
   pullPolicy: IfNotPresent
 
@@ -71,7 +80,7 @@ migrations:
   command: migrate # or "migrate-seed"
   backoffLimit: 2
   image:
-    repository: ghcr.io/sidmclaughlin/db-migrate # override per environment
+    repository: ghcr.io/bcgov/csbc-single-digital-gateway/db-migrate # override per environment
     tag: ""
 
 probes:
@@ -80,17 +89,20 @@ probes:
   readiness:
     path: /health/ready
 
+# Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the whole stack. The migrate hook
+# reuses these limits, and it runs (pre-upgrade) while the old app pod is still up — so this app's
+# limit is budgeted to leave room for one concurrent migrate job. See charts/single-digital-gateway/values-*.yaml.
 resources:
   requests:
-    cpu: 50m
+    cpu: 25m
     memory: 128Mi
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 100m
+    memory: 256Mi
 
 autoscaling:
   enabled: false
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
 

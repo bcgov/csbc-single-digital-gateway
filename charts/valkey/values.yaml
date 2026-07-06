@@ -35,19 +35,22 @@ persistence:
   storageClassName: "" # cluster default when empty
   accessMode: ReadWriteOnce
 
-# Valkey tuning. Empty maxmemory = no explicit limit (rely on the pod memory limit).
-maxmemory: ""
+# Valkey tuning. Cap maxmemory BELOW the pod memory limit so Valkey rejects writes (noeviction)
+# rather than being OOM-killed by the kernel when the 128Mi limit is hit. Session payloads are
+# tiny, so ~96mb is ample for the tuned namespace.
+maxmemory: "96mb"
 maxmemoryPolicy: noeviction # sessions carry TTLs; noeviction avoids silently dropping them
 save: "" # RDB snapshot points; "" = AOF-only (appendonly is always on)
 extraConfig: [] # extra raw valkey.conf lines
 
+# Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the whole stack.
 resources:
   requests:
-    cpu: 50m
-    memory: 128Mi
+    cpu: 25m
+    memory: 64Mi
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 40m
+    memory: 128Mi
 
 # Optional: restrict ingress to 6379 to specific client pods (e.g. the BFF apps).
 networkPolicy:
