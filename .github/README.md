@@ -79,12 +79,60 @@ Paste the printed token into the environment's `OPENSHIFT_TOKEN` secret **exactl
 trailing whitespace or newline. (Alternatively, BC Gov namespaces ship a built-in `pipeline`
 ServiceAccount with a long-lived token secret you can reuse instead of creating `github-deployer`.)
 
-### 3. Bootstrap each namespace once (before CI can deploy)
+### 3. Namespace secrets (per namespace)
+
+The charts reference **three** hand-created secrets per namespace. The `*-web` apps need none, and
+`DATABASE_URL` is **not** here — it comes from the operator-generated `sdg-pguser-sdg` secret.
+
+| Secret                       | Keys                                                      |
+| ---------------------------- | --------------------------------------------------------- |
+| `valkey-secrets`             | `VALKEY_PASSWORD`                                         |
+| `platform-api-secrets`       | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL` |
+| `citizen-portal-api-secrets` | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL` |
+
+```sh
+NS=d62e77-dev   # repeat per namespace, with that env's Keycloak client secrets
+
+# One Valkey password, shared by the server and both BFFs:
+VALKEY_PASSWORD=$(openssl rand -hex 24)
+VALKEY_URL="redis://:${VALKEY_PASSWORD}@sdg-valkey:6379"
+
+oc create secret generic valkey-secrets -n "$NS" \
+  --from-literal=VALKEY_PASSWORD="$VALKEY_PASSWORD"
+
+oc create secret generic platform-api-secrets -n "$NS" \
+  --from-literal=OIDC_CLIENT_SECRET='<platform-api client secret — Keycloak realm sdg>' \
+  --from-literal=AUTH_SESSION_SECRET="$(openssl rand -hex 32)" \
+  --from-literal=VALKEY_URL="$VALKEY_URL"
+
+oc create secret generic citizen-portal-api-secrets -n "$NS" \
+  --from-literal=OIDC_CLIENT_SECRET='<citizen-portal-api client secret — Keycloak realm citizens>' \
+  --from-literal=AUTH_SESSION_SECRET="$(openssl rand -hex 32)" \
+  --from-literal=VALKEY_URL="$VALKEY_URL"
+```
+
+- The `VALKEY_PASSWORD` in `valkey-secrets` **must equal** the password embedded in both `VALKEY_URL`s.
+- `AUTH_SESSION_SECRET` ≥ 16 chars; use a distinct value per app (rotating it logs everyone out).
+- `OIDC_CLIENT_SECRET` is each app's confidential-client secret from its Keycloak realm — different
+  per app and per environment.
+- Update an existing secret idempotently by appending `--dry-run=client -o yaml | oc apply -f -`.
+
+### 4. Bootstrap each namespace once (before CI can deploy)
 
 The umbrella's migrate hook is a pre-install Helm hook, so the very first install must be phased (the
 DB must exist first). Do the phased first install by hand (see [charts/README.md](../charts/README.md#first-install-phased--db-must-exist-before-migrations)),
-then CI handles all subsequent `helm upgrade`s. Also ensure the pre-created Secrets and (if the GHCR
-packages are private) an image pull secret exist in each namespace — see the charts README.
+then CI handles all subsequent `helm upgrade`s.
+
+If the GHCR packages are **private**, the pods also need an image pull secret, linked to the app
+ServiceAccounts (or set `imagePullSecrets` in the umbrella env files):
+
+```sh
+oc create secret docker-registry ghcr-pull -n "$NS" \
+  --docker-server=ghcr.io --docker-username=<gh-user> --docker-password=<gh-PAT-with-read:packages>
+for sa in default sdg-platform-api sdg-citizen-portal-api sdg-platform-web sdg-citizen-portal-web; do
+  oc secrets link "$sa" ghcr-pull --for=pull -n "$NS" 2>/dev/null || true
+done
+```
 
 ## Images
 
