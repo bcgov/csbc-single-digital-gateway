@@ -30,9 +30,9 @@ Create three [Environments](../../settings/environments): **`dev`**, **`test`**,
 
 Set once at the **repository** level (shared across environments):
 
-| Kind     | Name               | Example                                    |
-| -------- | ------------------ | ------------------------------------------ |
-| Variable | `OPENSHIFT_SERVER` | `https://api.silver.devops.gov.bc.ca:6443` |
+| Kind     | Name               | Example                                  |
+| -------- | ------------------ | ---------------------------------------- |
+| Variable | `OPENSHIFT_SERVER` | `https://api.gold.devops.gov.bc.ca:6443` |
 
 `GITHUB_TOKEN` (automatic) pushes/pulls the GHCR images — no PAT needed.
 
@@ -71,7 +71,7 @@ TOKEN=$(oc get secret github-deployer-token -n "$NS" -o jsonpath='{.data.token}'
 printf '%s\n' "$TOKEN"
 
 # VERIFY it works BEFORE saving it to GitHub (should print the SA identity, not an error):
-oc login --token="$TOKEN" --server=https://api.silver.devops.gov.bc.ca:6443 >/dev/null \
+oc login --token="$TOKEN" --server=https://api.gold.devops.gov.bc.ca:6443 >/dev/null \
   && oc whoami   # → system:serviceaccount:$NS:github-deployer
 ```
 

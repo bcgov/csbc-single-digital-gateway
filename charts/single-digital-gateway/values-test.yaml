@@ -59,7 +59,7 @@ valkey:
 # Same-origin topology (feature 78): each audience's *-web nginx is the ONE external Route — it
 # serves the SPA and reverse-proxies /api/* to its BFF (API_UPSTREAM). The APIs have no external
 # Route. Confirm the apps domain: oc get ingresses.config/cluster -o jsonpath='{.spec.domain}' and
-# replace `apps.silver.devops.gov.bc.ca` if not on Silver. OIDC_REDIRECT_URI carries /api (register
+# replace `apps.gold.devops.gov.bc.ca` if your cluster's apps domain differs. OIDC_REDIRECT_URI carries /api (register
 # it in Keycloak). OIDC_ISSUER is your IdP realm.
 # ---------------------------------------------------------------------------
 platform-api:
@@ -70,9 +70,10 @@ platform-api:
   env:
     LOG_LEVEL: info
     OIDC_ISSUER: https://<keycloak-host>/realms/sdg
-    OIDC_REDIRECT_URI: https://sdg-platform-test.apps.silver.devops.gov.bc.ca/api/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-test.apps.silver.devops.gov.bc.ca/app
-    AUTH_ALLOWED_ORIGINS: https://sdg-platform-test.apps.silver.devops.gov.bc.ca
+    OIDC_CLIENT_ID: platform-api # your Keycloak client ID — set here (helm reverts live oc-edit)
+    OIDC_REDIRECT_URI: https://sdg-platform-test.apps.gold.devops.gov.bc.ca/api/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-test.apps.gold.devops.gov.bc.ca/app
+    AUTH_ALLOWED_ORIGINS: https://sdg-platform-test.apps.gold.devops.gov.bc.ca
   migrations:
     image:
       tag: "test"
@@ -88,9 +89,10 @@ citizen-portal-api:
   env:
     LOG_LEVEL: info
     OIDC_ISSUER: https://<keycloak-host>/realms/citizens
-    OIDC_REDIRECT_URI: https://sdg-portal-test.apps.silver.devops.gov.bc.ca/api/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-test.apps.silver.devops.gov.bc.ca/
-    AUTH_ALLOWED_ORIGINS: https://sdg-portal-test.apps.silver.devops.gov.bc.ca
+    OIDC_CLIENT_ID: citizen-portal-api # your Keycloak client ID — set here (helm reverts live oc-edit)
+    OIDC_REDIRECT_URI: https://sdg-portal-test.apps.gold.devops.gov.bc.ca/api/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-test.apps.gold.devops.gov.bc.ca/
+    AUTH_ALLOWED_ORIGINS: https://sdg-portal-test.apps.gold.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # platform-web (staff SPA + front door). Serves the SPA and proxies /api/* → platform-api.

@@ -211,11 +211,12 @@ Only the two `*-web` charts carry a route host, resolved in this order (`route.*
 Find your cluster's apps domain:
 
 ```sh
-oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'   # e.g. apps.silver.devops.gov.bc.ca
+oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'   # e.g. apps.gold.devops.gov.bc.ca
 ```
 
-The env files use `apps.silver.devops.gov.bc.ca` inside the app URLs — **replace it if you're not on
-Silver**, and keep it in sync with each web `route.subdomain`. Notes:
+The env files use `apps.gold.devops.gov.bc.ca` inside the app URLs — **replace it if your cluster's
+apps domain differs** (`oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'`), and keep it
+in sync with each web `route.subdomain`. Notes:
 
 - The web `env.API_UPSTREAM` (`<release>-platform-api:80`) is the in-cluster BFF Service nginx proxies
   to; `env.BFF_ORIGIN` is `/api` (same-origin, relative). Both are **required** — the web container
