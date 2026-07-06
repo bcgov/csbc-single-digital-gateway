@@ -188,15 +188,24 @@ per-environment identity — route subdomains, `image.tag`, OIDC issuer/redirect
 incremental). Before deploying, set the real image tags, your IdP issuer (`<oidc-issuer-host>`),
 and the cluster apps domain in the route URLs (see below).
 
-### Routes — using the cluster ingress (no custom domain)
+### Routes — one same-origin host per audience (feature 78)
 
-Each app's Route resolves its host in this order (`route.*` in the env file):
+Each **audience** has a **single** external Route — its `*-web` nginx, which serves the SPA at `/`
+and **reverse-proxies `/api/*`** to the co-located BFF Service. The API charts run with
+`route.enabled: false` (no external Route); they are reached only in-cluster through the web nginx.
+So the browser talks to one origin per audience:
 
-1. **`route.host`** — an explicit FQDN. Needs external DNS and, for edge TLS, a matching cert.
-   Use for production vanity domains (`platform.gov.bc.ca`).
-2. **`route.subdomain`** — *just the prefix.* OpenShift appends the cluster's ingress domain, so the
-   host becomes **`<subdomain>.<apps-domain>`**, served by the router's **default wildcard cert** —
-   no DNS or cert to manage. This is the default in the env files (e.g. `sdg-platform-dev`).
+```
+staff:   sdg-platform-<env>.apps…   → platform-web nginx   → / (SPA) + /api/* → platform-api
+citizen: sdg-portal-<env>.apps…     → citizen-portal-web    → / (SPA) + /api/* → citizen-portal-api
+```
+
+Only the two `*-web` charts carry a route host, resolved in this order (`route.*`):
+
+1. **`route.host`** — an explicit FQDN (external DNS + a cert). Use for production vanity domains.
+2. **`route.subdomain`** — *just the prefix.* OpenShift appends the cluster's ingress domain →
+   **`<subdomain>.<apps-domain>`**, served by the router's **default wildcard cert** (no DNS/cert to
+   manage). This is the env-file default (e.g. `sdg-platform-dev`).
 3. **Neither set** — OpenShift auto-generates `<route-name>-<namespace>.<apps-domain>`.
 
 Find your cluster's apps domain:
@@ -205,18 +214,19 @@ Find your cluster's apps domain:
 oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'   # e.g. apps.silver.devops.gov.bc.ca
 ```
 
-The env files use `apps.silver.devops.gov.bc.ca` as the domain inside the app URLs
-(`OIDC_REDIRECT_URI`, `AUTH_POST_LOGIN_REDIRECT`, `AUTH_ALLOWED_ORIGINS`, `BFF_ORIGIN`) — **replace
-it if you're not on Silver**, and keep it in sync with each `route.subdomain` (a mismatch between
-the real route host and `OIDC_REDIRECT_URI` breaks the login flow). Notes:
+The env files use `apps.silver.devops.gov.bc.ca` inside the app URLs — **replace it if you're not on
+Silver**, and keep it in sync with each web `route.subdomain`. Notes:
 
-- **Subdomains must be unique cluster-wide** — dev/test/prod share one cluster, so they carry a
+- The web `env.API_UPSTREAM` (`<release>-platform-api:80`) is the in-cluster BFF Service nginx proxies
+  to; `env.BFF_ORIGIN` is `/api` (same-origin, relative). Both are **required** — the web container
+  fails fast without them.
+- **`OIDC_REDIRECT_URI` now carries `/api`** (`https://<web-host>/api/auth/callback`, through nginx):
+  register that exact URI in the Keycloak realm client, or the callback fails.
+- Because the SPA and BFF are now the **same origin**, the BFF's `SameSite=lax` session cookie and
+  the CSRF `Origin` allowlist have no cross-site surface — no CORS needed.
+- **Subdomains must be unique cluster-wide** — dev/test/prod share one cluster, hence the
   `-dev`/`-test`/`-prod` suffix. A duplicate host is rejected (`HostAlreadyClaimed`).
-- The web and API sit on **separate hosts under the same apps domain** (same registrable domain →
-  same-site), so the BFF's `SameSite=lax` session cookie and the CSRF `Origin` allowlist behave the
-  same as with a custom domain — this is purely a domain swap, not a topology change.
-- `tls.termination: edge` (the chart default) pairs with the wildcard cert; leave it as-is for
-  cluster-ingress hosts.
+- `tls.termination: edge` (the chart default) pairs with the wildcard cert; leave it as-is.
 
 ---
 
@@ -231,10 +241,10 @@ charts/<name> -n <ns> -f my-values.yaml`) if you don't want the umbrella. Common
 
 | Chart | Kind(s) | Notes |
 |---|---|---|
-| **platform-api** | Deployment, Service, Route, ConfigMap, ServiceAccount, migrate Job | Staff BFF (NestJS), port 4000. `migrations.enabled: true` — **owns migrations for the shared DB**. |
-| **citizen-portal-api** | Deployment, Service, Route, ConfigMap, ServiceAccount | Citizen BFF (NestJS), port 4000. `migrations.enabled: false` (platform-api migrates the shared DB). |
-| **platform-web** | Deployment, Service, Route, ConfigMap, ServiceAccount | Staff SPA (nginx), port 8080. Only config is `env.BFF_ORIGIN` (public, in the ConfigMap). |
-| **citizen-portal-web** | Deployment, Service, Route, ConfigMap, ServiceAccount | Citizen SPA (nginx), port 8080. `env.BFF_ORIGIN` only. |
+| **platform-api** | Deployment, Service, ConfigMap, ServiceAccount, migrate Job | Staff BFF (NestJS), port 4000. `migrations.enabled: true` — **owns migrations for the shared DB**. `route.enabled: false` in the umbrella — reached via platform-web nginx at `/api/*` (feature 78). |
+| **citizen-portal-api** | Deployment, Service, ConfigMap, ServiceAccount | Citizen BFF (NestJS), port 4000. `migrations.enabled: false` (platform-api migrates the shared DB). `route.enabled: false` in the umbrella — reached via citizen-portal-web nginx at `/api/*`. |
+| **platform-web** | Deployment, Service, Route, ConfigMap, ServiceAccount | Staff SPA + front door (nginx, port 8080). Serves `/` and reverse-proxies `/api/*` → platform-api. Requires `env.BFF_ORIGIN` (`/api`) + `env.API_UPSTREAM` (`<release>-platform-api:80`). |
+| **citizen-portal-web** | Deployment, Service, Route, ConfigMap, ServiceAccount | Citizen SPA + front door (nginx, port 8080). Serves `/` and proxies `/api/*` → citizen-portal-api. Requires `env.BFF_ORIGIN` + `env.API_UPSTREAM`. |
 | **valkey** | StatefulSet, Service (+ headless), ConfigMap, ServiceAccount, optional NetworkPolicy | Session store, single replica, persistent PVC. Password from `auth.existingSecret`. `maxmemory` capped below the pod limit (noeviction). |
 | **postgres** | PostgresCluster (CRD) | Crunchy PGO cluster. Requires the operator. Exposes `instances.*`, `backups.{schedules,retentionFull,storage,repoHost,sidecars,jobs}`, optional `pgbouncer`/`monitoring`. Generates secret `sdg-pguser-sdg`. |
 

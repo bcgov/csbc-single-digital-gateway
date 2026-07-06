@@ -62,23 +62,24 @@ valkey:
     size: 1Gi
 
 # ---------------------------------------------------------------------------
-# Route hosts use the cluster's ingress: set route.subdomain (the "first part") and OpenShift
-# appends the cluster apps domain → <subdomain>.<apps-domain>, served by the default wildcard cert
-# (edge TLS, no custom cert/DNS). Find your apps domain and confirm the value used in the URLs:
+# Same-origin topology (feature 78): each audience has ONE external Route — its *-web nginx, which
+# serves the SPA at / and reverse-proxies /api/* to the co-located BFF (API_UPSTREAM). The APIs have
+# NO external Route (route.enabled: false); they are reached only in-cluster via the web nginx.
+# Only the two *-web charts carry a route.subdomain → <subdomain>.<apps-domain> (default wildcard
+# cert, edge TLS). Confirm your apps domain and replace `apps.silver.devops.gov.bc.ca` if not Silver:
 #   oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'
-# Replace `apps.silver.devops.gov.bc.ca` below if you're not on the Silver cluster. Subdomains must
-# be unique cluster-wide (hence the -dev suffix). OIDC_ISSUER is your IdP (Keycloak) realm, NOT a
-# cluster route — set it to the real issuer URL. existingSecret secrets must be pre-created.
+# OIDC_REDIRECT_URI now carries the /api prefix (through nginx) — register it verbatim in Keycloak.
+# OIDC_ISSUER is your IdP realm, not a cluster route. existingSecret secrets must be pre-created.
 # ---------------------------------------------------------------------------
 platform-api:
   image:
     tag: "develop"       # dev image tag (e.g. a branch tag or commit SHA)
   route:
-    subdomain: sdg-platform-api-dev
+    enabled: false       # internal only — reached via platform-web nginx at /api/*
   env:
     LOG_LEVEL: debug
     OIDC_ISSUER: https://<keycloak-host>/realms/sdg
-    OIDC_REDIRECT_URI: https://sdg-platform-api-dev.apps.silver.devops.gov.bc.ca/auth/callback
+    OIDC_REDIRECT_URI: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca/app
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca
   migrations:
@@ -92,16 +93,17 @@ citizen-portal-api:
   image:
     tag: "develop"
   route:
-    subdomain: sdg-portal-api-dev
+    enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
   env:
     LOG_LEVEL: debug
     OIDC_ISSUER: https://<keycloak-host>/realms/citizens
-    OIDC_REDIRECT_URI: https://sdg-portal-api-dev.apps.silver.devops.gov.bc.ca/auth/callback
+    OIDC_REDIRECT_URI: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca/
     AUTH_ALLOWED_ORIGINS: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
-# platform-web (staff SPA). BFF_ORIGIN is the browser-facing platform-api origin.
+# platform-web (staff SPA + front door). Serves the SPA and proxies /api/* → platform-api.
+# API_UPSTREAM must match the platform-api Service name (<release>-platform-api:80).
 # ---------------------------------------------------------------------------
 platform-web:
   image:
@@ -109,10 +111,11 @@ platform-web:
   route:
     subdomain: sdg-platform-dev
   env:
-    BFF_ORIGIN: https://sdg-platform-api-dev.apps.silver.devops.gov.bc.ca
+    BFF_ORIGIN: /api
+    API_UPSTREAM: sdg-platform-api:80
 
 # ---------------------------------------------------------------------------
-# citizen-portal-web (citizen SPA).
+# citizen-portal-web (citizen SPA + front door). Proxies /api/* → citizen-portal-api.
 # ---------------------------------------------------------------------------
 citizen-portal-web:
   image:
@@ -120,4 +123,5 @@ citizen-portal-web:
   route:
     subdomain: sdg-portal-dev
   env:
-    BFF_ORIGIN: https://sdg-portal-api-dev.apps.silver.devops.gov.bc.ca
+    BFF_ORIGIN: /api
+    API_UPSTREAM: sdg-citizen-portal-api:80

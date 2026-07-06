@@ -33,8 +33,12 @@ serviceAccount:
 existingSecret: ""
 
 # Non-sensitive env → ConfigMap. BFF_ORIGIN is REQUIRED (the container fails fast without it).
+# Both are REQUIRED — the container fails fast without them (feature 78):
+#   BFF_ORIGIN   — the SAME-ORIGIN path the SPA calls; the web nginx reverse-proxies it. Normally /api.
+#   API_UPSTREAM — the in-cluster citizen-portal-api Service (host:port) nginx proxies /api/* to.
 env:
-  BFF_ORIGIN: https://<citizen-portal-api-host> # override per environment
+  BFF_ORIGIN: /api
+  API_UPSTREAM: <release>-citizen-portal-api:80 # override per environment (matches the api Service name)
 
 # Extra raw env entries (support valueFrom) merged into the container; precedence over envFrom.
 extraEnv: []

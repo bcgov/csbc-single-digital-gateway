@@ -56,19 +56,21 @@ valkey:
     size: 1Gi
 
 # ---------------------------------------------------------------------------
-# Route hosts use the cluster ingress via route.subdomain → <subdomain>.<apps-domain> (default
-# wildcard cert). Confirm your apps domain: oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'
-# and replace `apps.silver.devops.gov.bc.ca` if not on Silver. OIDC_ISSUER is your IdP realm.
+# Same-origin topology (feature 78): each audience's *-web nginx is the ONE external Route — it
+# serves the SPA and reverse-proxies /api/* to its BFF (API_UPSTREAM). The APIs have no external
+# Route. Confirm the apps domain: oc get ingresses.config/cluster -o jsonpath='{.spec.domain}' and
+# replace `apps.silver.devops.gov.bc.ca` if not on Silver. OIDC_REDIRECT_URI carries /api (register
+# it in Keycloak). OIDC_ISSUER is your IdP realm.
 # ---------------------------------------------------------------------------
 platform-api:
   image:
     tag: "staging"        # test image tag (e.g. a release candidate)
   route:
-    subdomain: sdg-platform-api-test
+    enabled: false       # internal only — reached via platform-web nginx at /api/*
   env:
     LOG_LEVEL: info
     OIDC_ISSUER: https://<keycloak-host>/realms/sdg
-    OIDC_REDIRECT_URI: https://sdg-platform-api-test.apps.silver.devops.gov.bc.ca/auth/callback
+    OIDC_REDIRECT_URI: https://sdg-platform-test.apps.silver.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-test.apps.silver.devops.gov.bc.ca/app
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-test.apps.silver.devops.gov.bc.ca
   migrations:
@@ -82,16 +84,16 @@ citizen-portal-api:
   image:
     tag: "staging"
   route:
-    subdomain: sdg-portal-api-test
+    enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
   env:
     LOG_LEVEL: info
     OIDC_ISSUER: https://<keycloak-host>/realms/citizens
-    OIDC_REDIRECT_URI: https://sdg-portal-api-test.apps.silver.devops.gov.bc.ca/auth/callback
+    OIDC_REDIRECT_URI: https://sdg-portal-test.apps.silver.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-test.apps.silver.devops.gov.bc.ca/
     AUTH_ALLOWED_ORIGINS: https://sdg-portal-test.apps.silver.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
-# platform-web (staff SPA).
+# platform-web (staff SPA + front door). Serves the SPA and proxies /api/* → platform-api.
 # ---------------------------------------------------------------------------
 platform-web:
   image:
@@ -99,10 +101,11 @@ platform-web:
   route:
     subdomain: sdg-platform-test
   env:
-    BFF_ORIGIN: https://sdg-platform-api-test.apps.silver.devops.gov.bc.ca
+    BFF_ORIGIN: /api
+    API_UPSTREAM: sdg-platform-api:80
 
 # ---------------------------------------------------------------------------
-# citizen-portal-web (citizen SPA).
+# citizen-portal-web (citizen SPA + front door). Proxies /api/* → citizen-portal-api.
 # ---------------------------------------------------------------------------
 citizen-portal-web:
   image:
@@ -110,4 +113,5 @@ citizen-portal-web:
   route:
     subdomain: sdg-portal-test
   env:
-    BFF_ORIGIN: https://sdg-portal-api-test.apps.silver.devops.gov.bc.ca
+    BFF_ORIGIN: /api
+    API_UPSTREAM: sdg-citizen-portal-api:80

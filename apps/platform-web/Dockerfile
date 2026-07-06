@@ -3,10 +3,12 @@
 # Multi-stage production image for platform-web (Vite SPA, served by nginx on :8080).
 # Build from the MONOREPO ROOT:
 #   docker build -f apps/platform-web/Dockerfile -t platform-web:local .
-# Run — BFF_ORIGIN is REQUIRED at start (the browser-facing origin of platform-api):
-#   docker run -p 8080:8080 -e BFF_ORIGIN=https://api.example.gov platform-web:local
+# Run — BFF_ORIGIN + API_UPSTREAM are REQUIRED at start. This image both serves the SPA and
+# reverse-proxies /api/* to the platform-api BFF, so BFF_ORIGIN is the SAME-ORIGIN path the SPA
+# calls (/api) and API_UPSTREAM is the BFF host:port nginx proxies to:
+#   docker run -p 8080:8080 -e BFF_ORIGIN=/api -e API_UPSTREAM=platform-api:4000 platform-web:local
 #
-# See .mdd/docs/73-web-app-dockerfiles.md for the rationale.
+# See .mdd/docs/73-web-app-dockerfiles.md + 78-web-api-same-origin-proxy.md for the rationale.
 
 ARG NODE_IMAGE=node:24-alpine
 ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.27-alpine
@@ -45,7 +47,12 @@ RUN turbo run build --filter=platform-web
 # ---------------------------------------------------------------------------
 FROM ${NGINX_IMAGE} AS runner
 
-COPY apps/platform-web/docker/nginx.conf /etc/nginx/conf.d/default.conf
+# nginx config is a TEMPLATE: the image's 20-envsubst-on-templates.sh renders
+# /etc/nginx/templates/*.template → /etc/nginx/conf.d/ at start, substituting ${API_UPSTREAM}
+# (the in-cluster platform-api Service). NGINX_ENVSUBST_FILTER scopes envsubst to that one var so
+# nginx runtime variables ($uri, $host, …) survive. API_UPSTREAM is REQUIRED (see entrypoint).
+ENV NGINX_ENVSUBST_FILTER=API_UPSTREAM
+COPY apps/platform-web/docker/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY apps/platform-web/docker/40-render-runtime-config.sh /docker-entrypoint.d/40-render-runtime-config.sh
 COPY --from=builder /app/apps/platform-web/dist /usr/share/nginx/html
 
