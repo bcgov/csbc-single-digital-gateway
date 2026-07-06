@@ -55,6 +55,14 @@ spec:
       databases:
         - {{ .Values.database.name }}
 
+  {{- if .Values.initSQL.enabled }}
+  # One-time bootstrap SQL (superuser) — grants the app user CREATE on `public` (PG15+). See the
+  # init-sql ConfigMap. Runs only on INITIAL cluster creation.
+  databaseInitSQL:
+    name: {{ .Values.name }}-init-sql
+    key: init.sql
+  {{- end }}
+
   backups:
     pgbackrest:
       {{- with .Values.backups.image }}
