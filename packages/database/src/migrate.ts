@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 
 import { createDatabase } from './client';
+import { resolvePgSsl } from './ssl';
 
 // Load this package's own .env (see .env.example) when present, so `npm run db:migrate:run`
 // works locally regardless of cwd. In CI/containers DATABASE_URL comes from the environment
@@ -20,7 +21,9 @@ async function run(): Promise<void> {
     throw new Error('db:migrate — DATABASE_URL is not set');
   }
 
-  const db = createDatabase(url);
+  const db = createDatabase(url, {
+    ssl: resolvePgSsl({ mode: process.env.PGSSLMODE, ca: process.env.DATABASE_CA_CERT }),
+  });
   try {
     await migrate(db, { migrationsFolder: resolve(import.meta.dirname, '../migrations') });
     console.info('[migrate] all migrations applied.');
