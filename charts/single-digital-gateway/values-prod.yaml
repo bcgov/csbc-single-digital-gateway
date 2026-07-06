@@ -72,7 +72,7 @@ valkey:
 # ---------------------------------------------------------------------------
 platform-api:
   image:
-    tag: "1.0.0"          # pin a released version in prod
+    tag: "prod"          # moving tag CI publishes on a Release deploy; the CI deploy overrides with the SHA
   route:
     enabled: false       # internal only — reached via platform-web nginx at /api/*
   env:
@@ -84,14 +84,14 @@ platform-api:
     AUTH_RP_LOGOUT: "true"
   migrations:
     image:
-      tag: "1.0.0"
+      tag: "prod"
 
 # ---------------------------------------------------------------------------
 # citizen-portal-api (citizen BFF). Migrations disabled (platform-api owns the shared DB).
 # ---------------------------------------------------------------------------
 citizen-portal-api:
   image:
-    tag: "1.0.0"
+    tag: "prod"
   route:
     enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
   env:
@@ -107,7 +107,7 @@ citizen-portal-api:
 # ---------------------------------------------------------------------------
 platform-web:
   image:
-    tag: "1.0.0"
+    tag: "prod"
   route:
     subdomain: sdg-platform-prod
   env:
@@ -119,7 +119,7 @@ platform-web:
 # ---------------------------------------------------------------------------
 citizen-portal-web:
   image:
-    tag: "1.0.0"
+    tag: "prod"
   route:
     subdomain: sdg-portal-prod
   env:
