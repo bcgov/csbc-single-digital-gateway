@@ -38,7 +38,11 @@ Set once at the **repository** level (shared across environments):
 
 ### 2. OpenShift deployer ServiceAccount (per namespace)
 
-Run once per namespace by someone with namespace admin (you don't need cluster admin):
+Run once per namespace by someone with namespace admin (you don't need cluster admin).
+
+> **Use a long-lived token — not `oc create token`.** `oc create token` mints a bound token that
+> **expires** (~1h), and CI then fails with `The token provided is invalid or expired`. Create a
+> `kubernetes.io/service-account-token` Secret instead; its token does not expire.
 
 ```sh
 NS=d62e77-dev   # repeat for -test, -prod
@@ -57,9 +61,23 @@ metadata:
 type: kubernetes.io/service-account-token
 EOF
 
-# Copy this into the environment's OPENSHIFT_TOKEN secret:
-oc get secret github-deployer-token -n "$NS" -o jsonpath='{.data.token}' | base64 -d; echo
+# The token controller populates .data.token ASYNCHRONOUSLY — wait until it is non-empty:
+until oc get secret github-deployer-token -n "$NS" -o jsonpath='{.data.token}' | grep -q .; do
+  echo "waiting for token…"; sleep 2
+done
+
+# Print the token (note: no trailing newline — do not copy the shell prompt after it):
+TOKEN=$(oc get secret github-deployer-token -n "$NS" -o jsonpath='{.data.token}' | base64 -d)
+printf '%s\n' "$TOKEN"
+
+# VERIFY it works BEFORE saving it to GitHub (should print the SA identity, not an error):
+oc login --token="$TOKEN" --server=https://api.silver.devops.gov.bc.ca:6443 >/dev/null \
+  && oc whoami   # → system:serviceaccount:$NS:github-deployer
 ```
+
+Paste the printed token into the environment's `OPENSHIFT_TOKEN` secret **exactly** — no leading/
+trailing whitespace or newline. (Alternatively, BC Gov namespaces ship a built-in `pipeline`
+ServiceAccount with a long-lived token secret you can reuse instead of creating `github-deployer`.)
 
 ### 3. Bootstrap each namespace once (before CI can deploy)
 
