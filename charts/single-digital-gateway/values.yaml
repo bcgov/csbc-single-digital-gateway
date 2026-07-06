@@ -16,6 +16,15 @@
 #   • existingSecret is still required for the other secrets (OIDC_CLIENT_SECRET,
 #     AUTH_SESSION_SECRET, VALKEY_URL) — only DATABASE_URL moves out of it.
 #
+# DB TLS: Crunchy Postgres requires TLS (its pg_hba.conf has only hostssl entries). PGSSLMODE +
+# DATABASE_CA_CERT (below) make the client verify the server against the cluster's CA:
+#   • PGSSLMODE=verify-full — encrypt + verify the CA chain + the hostname. If the server cert's
+#     SANs don't include the connection host (some Crunchy service DNS names), switch to verify-ca
+#     (chain only). no-verify = encrypt without any verification (fallback).
+#   • DATABASE_CA_CERT — the CA PEM, sourced from the operator's cluster-cert Secret
+#     (`<postgres.name>-cluster-cert`, key `ca.crt`). Confirm that name on your cluster:
+#     `oc get secret sdg-cluster-cert -n <ns> -o jsonpath='{.data.ca\.crt}' | base64 -d | head -1`
+#
 # FIRST-INSTALL ORDERING (important): the migrate Job is a pre-install/pre-upgrade Helm hook, and
 # Helm runs pre-install hooks BEFORE any release resource — including the PostgresCluster CR. On a
 # brand-new namespace the operator has not yet created `sdg-pguser-sdg` (nor a ready database), so
@@ -40,6 +49,13 @@ platform-api:
         secretKeyRef:
           name: sdg-pguser-sdg # <postgres.name>-pguser-<postgres.database.user>
           key: uri # full postgresql:// URI to the primary (use `pgbouncer-uri` if pooling)
+    - name: PGSSLMODE
+      value: "verify-full" # or "verify-ca" if the cert SANs don't match the host; "no-verify" to skip
+    - name: DATABASE_CA_CERT
+      valueFrom:
+        secretKeyRef:
+          name: sdg-cluster-cert # <postgres.name>-cluster-cert (the operator's cluster CA)
+          key: ca.crt
 
 citizen-portal-api:
   extraEnv:
@@ -48,3 +64,10 @@ citizen-portal-api:
         secretKeyRef:
           name: sdg-pguser-sdg
           key: uri
+    - name: PGSSLMODE
+      value: "verify-full"
+    - name: DATABASE_CA_CERT
+      valueFrom:
+        secretKeyRef:
+          name: sdg-cluster-cert
+          key: ca.crt
