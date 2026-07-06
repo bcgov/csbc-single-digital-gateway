@@ -12,6 +12,8 @@ metadata:
 spec:
   {{- if .Values.route.host }}
   host: {{ .Values.route.host }}
+  {{- else if .Values.route.subdomain }}
+  subdomain: {{ .Values.route.subdomain }}
   {{- end }}
   to:
     kind: Service

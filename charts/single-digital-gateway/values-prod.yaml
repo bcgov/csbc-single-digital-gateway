@@ -46,32 +46,41 @@ postgres:
   name: sdg
   instances:
     storage:
-      size: 10Gi
+      size: 2Gi          # data volume (PVC #1) — raise when the prod namespace has more storage
   backups:
     storage:
-      size: 10Gi
+      size: 1Gi          # pgBackRest repo volume (PVC #2) — grow with the quota + retention needs
     schedules:
       full: "0 1 * * 0"      # weekly full, Sundays 01:00
       incremental: "0 1 * * 1-6"  # daily incremental
     retentionFull: "14"
 
-valkey: {}
+# Valkey data (PVC #3) → 1Gi, so 2Gi + 1Gi + 1Gi = 4Gi fits a 5Gi namespace storage quota.
+# Raise instances/backups/valkey storage once the prod namespace has a larger quota.
+valkey:
+  persistence:
+    size: 1Gi
 
 # ---------------------------------------------------------------------------
-# platform-api (staff BFF). Pin a released image tag in prod.
+# Prod route hosts default to the cluster ingress via route.subdomain → <subdomain>.<apps-domain>.
+# PRODUCTION usually wants a vanity domain instead: set `route.host: platform.gov.bc.ca` (with DNS
+# + a cert — a custom-domain edge Route needs `tls.certificate/key` or an externally-managed cert),
+# and update the URLs below to match. Confirm the cluster apps domain with:
+#   oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'
+# OIDC_ISSUER is your IdP (Keycloak) realm, not a cluster route.
 # ---------------------------------------------------------------------------
 platform-api:
   image:
     tag: "1.0.0"          # pin a released version in prod
+  route:
+    subdomain: sdg-platform-api-prod
   env:
     LOG_LEVEL: info
-    OIDC_ISSUER: https://keycloak.example.gov/realms/sdg
-    OIDC_REDIRECT_URI: https://platform-api.example.gov/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://platform.example.gov/app
-    AUTH_ALLOWED_ORIGINS: https://platform.example.gov
+    OIDC_ISSUER: https://<keycloak-host>/realms/sdg
+    OIDC_REDIRECT_URI: https://sdg-platform-api-prod.apps.silver.devops.gov.bc.ca/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-prod.apps.silver.devops.gov.bc.ca/app
+    AUTH_ALLOWED_ORIGINS: https://sdg-platform-prod.apps.silver.devops.gov.bc.ca
     AUTH_RP_LOGOUT: "true"
-  route:
-    host: platform-api.example.gov
   migrations:
     image:
       tag: "1.0.0"
@@ -82,15 +91,15 @@ platform-api:
 citizen-portal-api:
   image:
     tag: "1.0.0"
+  route:
+    subdomain: sdg-portal-api-prod
   env:
     LOG_LEVEL: info
-    OIDC_ISSUER: https://keycloak.example.gov/realms/citizens
-    OIDC_REDIRECT_URI: https://citizen-portal-api.example.gov/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://portal.example.gov/
-    AUTH_ALLOWED_ORIGINS: https://portal.example.gov
+    OIDC_ISSUER: https://<keycloak-host>/realms/citizens
+    OIDC_REDIRECT_URI: https://sdg-portal-api-prod.apps.silver.devops.gov.bc.ca/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-prod.apps.silver.devops.gov.bc.ca/
+    AUTH_ALLOWED_ORIGINS: https://sdg-portal-prod.apps.silver.devops.gov.bc.ca
     AUTH_RP_LOGOUT: "true"
-  route:
-    host: citizen-portal-api.example.gov
 
 # ---------------------------------------------------------------------------
 # platform-web (staff SPA).
@@ -98,10 +107,10 @@ citizen-portal-api:
 platform-web:
   image:
     tag: "1.0.0"
-  env:
-    BFF_ORIGIN: https://platform-api.example.gov
   route:
-    host: platform.example.gov
+    subdomain: sdg-platform-prod
+  env:
+    BFF_ORIGIN: https://sdg-platform-api-prod.apps.silver.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # citizen-portal-web (citizen SPA).
@@ -109,7 +118,7 @@ platform-web:
 citizen-portal-web:
   image:
     tag: "1.0.0"
-  env:
-    BFF_ORIGIN: https://citizen-portal-api.example.gov
   route:
-    host: portal.example.gov
+    subdomain: sdg-portal-prod
+  env:
+    BFF_ORIGIN: https://sdg-portal-api-prod.apps.silver.devops.gov.bc.ca

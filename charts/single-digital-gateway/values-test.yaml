@@ -41,31 +41,36 @@ postgres:
   name: sdg
   instances:
     storage:
-      size: 5Gi
+      size: 2Gi          # data volume (PVC #1)
   backups:
     storage:
-      size: 5Gi
+      size: 1Gi          # pgBackRest repo volume (PVC #2)
     schedules:
       full: "0 2 * * 0"   # weekly full, Sundays 02:00
       incremental: ""      # no daily incrementals in test
     retentionFull: "4"
 
-valkey: {}
+# Valkey data (PVC #3) → 1Gi, so 2Gi + 1Gi + 1Gi = 4Gi fits a 5Gi namespace storage quota.
+valkey:
+  persistence:
+    size: 1Gi
 
 # ---------------------------------------------------------------------------
-# platform-api (staff BFF).
+# Route hosts use the cluster ingress via route.subdomain → <subdomain>.<apps-domain> (default
+# wildcard cert). Confirm your apps domain: oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'
+# and replace `apps.silver.devops.gov.bc.ca` if not on Silver. OIDC_ISSUER is your IdP realm.
 # ---------------------------------------------------------------------------
 platform-api:
   image:
     tag: "staging"        # test image tag (e.g. a release candidate)
+  route:
+    subdomain: sdg-platform-api-test
   env:
     LOG_LEVEL: info
-    OIDC_ISSUER: https://keycloak.test.example.gov/realms/sdg
-    OIDC_REDIRECT_URI: https://platform-api.test.example.gov/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://platform.test.example.gov/app
-    AUTH_ALLOWED_ORIGINS: https://platform.test.example.gov
-  route:
-    host: platform-api.test.example.gov
+    OIDC_ISSUER: https://<keycloak-host>/realms/sdg
+    OIDC_REDIRECT_URI: https://sdg-platform-api-test.apps.silver.devops.gov.bc.ca/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-test.apps.silver.devops.gov.bc.ca/app
+    AUTH_ALLOWED_ORIGINS: https://sdg-platform-test.apps.silver.devops.gov.bc.ca
   migrations:
     image:
       tag: "staging"
@@ -76,14 +81,14 @@ platform-api:
 citizen-portal-api:
   image:
     tag: "staging"
+  route:
+    subdomain: sdg-portal-api-test
   env:
     LOG_LEVEL: info
-    OIDC_ISSUER: https://keycloak.test.example.gov/realms/citizens
-    OIDC_REDIRECT_URI: https://citizen-portal-api.test.example.gov/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://portal.test.example.gov/
-    AUTH_ALLOWED_ORIGINS: https://portal.test.example.gov
-  route:
-    host: citizen-portal-api.test.example.gov
+    OIDC_ISSUER: https://<keycloak-host>/realms/citizens
+    OIDC_REDIRECT_URI: https://sdg-portal-api-test.apps.silver.devops.gov.bc.ca/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-test.apps.silver.devops.gov.bc.ca/
+    AUTH_ALLOWED_ORIGINS: https://sdg-portal-test.apps.silver.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # platform-web (staff SPA).
@@ -91,10 +96,10 @@ citizen-portal-api:
 platform-web:
   image:
     tag: "staging"
-  env:
-    BFF_ORIGIN: https://platform-api.test.example.gov
   route:
-    host: platform.test.example.gov
+    subdomain: sdg-platform-test
+  env:
+    BFF_ORIGIN: https://sdg-platform-api-test.apps.silver.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # citizen-portal-web (citizen SPA).
@@ -102,7 +107,7 @@ platform-web:
 citizen-portal-web:
   image:
     tag: "staging"
-  env:
-    BFF_ORIGIN: https://citizen-portal-api.test.example.gov
   route:
-    host: portal.test.example.gov
+    subdomain: sdg-portal-test
+  env:
+    BFF_ORIGIN: https://sdg-portal-api-test.apps.silver.devops.gov.bc.ca

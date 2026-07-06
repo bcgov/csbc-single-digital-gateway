@@ -34,7 +34,7 @@ existingSecret: ""
 
 # Non-sensitive env → ConfigMap. BFF_ORIGIN is REQUIRED (the container fails fast without it).
 env:
-  BFF_ORIGIN: https://platform-api.example.gov
+  BFF_ORIGIN: https://<platform-api-host> # override per environment
 
 # Extra raw env entries (support valueFrom) merged into the container; precedence over envFrom.
 extraEnv: []
@@ -47,7 +47,10 @@ service:
 
 route:
   enabled: true
-  host: platform.example.gov
+  # host: explicit FQDN. subdomain: just the prefix — OpenShift appends the cluster ingress domain
+  # (<subdomain>.<apps-domain>, default wildcard cert). Both empty → auto <route-name>-<ns>.<domain>.
+  host: ""
+  subdomain: ""
   annotations: {}
   tls:
     enabled: true

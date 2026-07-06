@@ -55,13 +55,46 @@ pod in place, brief downtime on upgrade) because a limits-only quota has no room
 To grow beyond this budget later: raise the app `replicaCount` / `strategy.maxSurge` and
 `postgres.instances.replicas` (to 2 for HA), then re-check the sums.
 
+### Storage budget — fits a 5Gi namespace quota
+
+The stack requests **three PVCs**, tuned in the env files to total **4Gi** (under a 5Gi
+namespace storage quota):
+
+| PVC | Value key | Size |
+|---|---|---:|
+| Postgres data | `postgres.instances.storage.size` | 2Gi |
+| pgBackRest repo | `postgres.backups.storage.size` | 1Gi |
+| Valkey data | `valkey.persistence.size` | 1Gi |
+| **Total** | | **4Gi** |
+
+Notes:
+- These sizes are set **per environment** in `values-{dev,test,prod}.yaml` — raise them when a
+  namespace has a larger storage quota (prod especially, for backup retention).
+- Set `valkey.persistence.enabled: false` to drop the Valkey PVC entirely — sessions become
+  ephemeral, so a Valkey pod restart logs everyone out (acceptable in dev/test).
+- pgBackRest always needs a repo volume (a repo is mandatory), so the minimum is 2 PVCs.
+- PVCs are **not** deleted by `helm uninstall` (see [Uninstall](#uninstall)); if a redeploy hits
+  the quota, delete leftover PVCs from a previous install first.
+
 ---
 
 ## Prerequisites
 
 - **Helm 3.8+** and `oc`/`kubectl` logged in to the target cluster.
-- **Crunchy Postgres Operator (PGO)** installed cluster-wide (OpenShift: OperatorHub/OLM). The
-  `postgres` chart deploys a `PostgresCluster` custom resource that the operator reconciles.
+- **Namespace admin is sufficient — cluster admin is NOT required.** Every chart creates only
+  **namespaced** resources (Deployment, StatefulSet, Service, Route, ConfigMap, ServiceAccount,
+  Job, the `PostgresCluster` CR). There are no CRDs, ClusterRoles, or operators in these charts.
+  - The target namespaces are **pre-provisioned** by the platform (e.g. BC Gov Private Cloud
+    license-plate namespaces `<slug>-dev|test|prod|tools`). **Do NOT pass `--create-namespace`** —
+    you don't have permission to create/patch the Namespace object, and Helm will fail with
+    `namespaces "<slug>-dev" is forbidden: … cannot patch resource "namespaces"`. Just target the
+    existing namespace with `-n <slug>-dev`.
+- **Crunchy Postgres Operator (PGO)** must already be running **cluster-wide** and watching your
+  namespaces, and its `PostgresCluster` CRD must be installed. The `postgres` chart only creates a
+  `PostgresCluster` CR — the platform-run operator reconciles it. On the **BC Gov Private Cloud
+  PaaS this is already provided**; you neither install nor can install the operator yourself
+  (that needs cluster admin). Verify it's available with:
+  `oc get crd postgresclusters.postgres-operator.crunchydata.com`.
 - **Container images** pushed to a registry the cluster can pull. Default repositories are
   `ghcr.io/bcgov/csbc-single-digital-gateway/{platform-api,citizen-portal-api,platform-web,citizen-portal-web,db-migrate}`
   (override `image.repository`/`image.tag` per environment). If the GHCR packages are **private**
@@ -120,8 +153,9 @@ the operator hasn't created `sdg-pguser-sdg` or a ready database yet, so split t
 
 ```sh
 # 1) bring up Postgres (+ Valkey + apps) WITHOUT the migrate hook
+#    (namespace is pre-provisioned — do NOT pass --create-namespace)
 helm install sdg charts/single-digital-gateway \
-  -n <slug>-dev --create-namespace \
+  -n <slug>-dev \
   -f charts/single-digital-gateway/values-dev.yaml \
   --set platform-api.migrations.enabled=false
 
@@ -149,9 +183,40 @@ and set in the env files.
 ### What each env file overrides
 
 The per-container **limits are tuned in the subchart defaults**, so the env files only carry
-per-environment identity — route hosts, `image.tag`, OIDC issuer/redirect URLs, `BFF_ORIGIN`,
+per-environment identity — route subdomains, `image.tag`, OIDC issuer/redirect URLs, `BFF_ORIGIN`,
 `LOG_LEVEL`, and backup policy (dev: no schedules; test: weekly full; prod: weekly full + daily
-incremental). Replace the placeholder `*.example.gov` hosts and image tags with your real values.
+incremental). Before deploying, set the real image tags, your IdP issuer (`<oidc-issuer-host>`),
+and the cluster apps domain in the route URLs (see below).
+
+### Routes — using the cluster ingress (no custom domain)
+
+Each app's Route resolves its host in this order (`route.*` in the env file):
+
+1. **`route.host`** — an explicit FQDN. Needs external DNS and, for edge TLS, a matching cert.
+   Use for production vanity domains (`platform.gov.bc.ca`).
+2. **`route.subdomain`** — *just the prefix.* OpenShift appends the cluster's ingress domain, so the
+   host becomes **`<subdomain>.<apps-domain>`**, served by the router's **default wildcard cert** —
+   no DNS or cert to manage. This is the default in the env files (e.g. `sdg-platform-dev`).
+3. **Neither set** — OpenShift auto-generates `<route-name>-<namespace>.<apps-domain>`.
+
+Find your cluster's apps domain:
+
+```sh
+oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'   # e.g. apps.silver.devops.gov.bc.ca
+```
+
+The env files use `apps.silver.devops.gov.bc.ca` as the domain inside the app URLs
+(`OIDC_REDIRECT_URI`, `AUTH_POST_LOGIN_REDIRECT`, `AUTH_ALLOWED_ORIGINS`, `BFF_ORIGIN`) — **replace
+it if you're not on Silver**, and keep it in sync with each `route.subdomain` (a mismatch between
+the real route host and `OIDC_REDIRECT_URI` breaks the login flow). Notes:
+
+- **Subdomains must be unique cluster-wide** — dev/test/prod share one cluster, so they carry a
+  `-dev`/`-test`/`-prod` suffix. A duplicate host is rejected (`HostAlreadyClaimed`).
+- The web and API sit on **separate hosts under the same apps domain** (same registrable domain →
+  same-site), so the BFF's `SameSite=lax` session cookie and the CSRF `Origin` allowlist behave the
+  same as with a custom domain — this is purely a domain swap, not a topology change.
+- `tls.termination: edge` (the chart default) pairs with the wildcard cert; leave it as-is for
+  cluster-ingress hosts.
 
 ---
 

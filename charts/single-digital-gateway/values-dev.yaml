@@ -42,36 +42,45 @@ postgres:
   name: sdg
   instances:
     storage:
-      size: 5Gi          # dev: smaller data volume
+      size: 2Gi          # data volume (PVC #1)
   backups:
     storage:
-      size: 5Gi
+      size: 1Gi          # pgBackRest repo volume (PVC #2)
     schedules:            # dev: no recurring backups (fewer transient Job pods)
       full: ""
       incremental: ""
     retentionFull: "2"
 
 # ---------------------------------------------------------------------------
-# Valkey session store — defaults already fit the budget; nothing env-specific.
+# Valkey session store. persistence.size is PVC #3 — kept to 1Gi so the three PVCs
+# (2Gi + 1Gi + 1Gi = 4Gi) fit a 5Gi namespace storage quota. Set persistence.enabled: false to
+# drop this PVC entirely (sessions become ephemeral — a Valkey restart logs everyone out).
 # (auth.existingSecret: valkey-secrets must be pre-created in the namespace.)
 # ---------------------------------------------------------------------------
-valkey: {}
+valkey:
+  persistence:
+    size: 1Gi
 
 # ---------------------------------------------------------------------------
-# platform-api (staff BFF). Replace the example hosts/tags with your real dev values.
-# existingSecret: platform-api-secrets must be pre-created in the namespace.
+# Route hosts use the cluster's ingress: set route.subdomain (the "first part") and OpenShift
+# appends the cluster apps domain → <subdomain>.<apps-domain>, served by the default wildcard cert
+# (edge TLS, no custom cert/DNS). Find your apps domain and confirm the value used in the URLs:
+#   oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'
+# Replace `apps.silver.devops.gov.bc.ca` below if you're not on the Silver cluster. Subdomains must
+# be unique cluster-wide (hence the -dev suffix). OIDC_ISSUER is your IdP (Keycloak) realm, NOT a
+# cluster route — set it to the real issuer URL. existingSecret secrets must be pre-created.
 # ---------------------------------------------------------------------------
 platform-api:
   image:
     tag: "develop"       # dev image tag (e.g. a branch tag or commit SHA)
+  route:
+    subdomain: sdg-platform-api-dev
   env:
     LOG_LEVEL: debug
-    OIDC_ISSUER: https://keycloak.dev.example.gov/realms/sdg
-    OIDC_REDIRECT_URI: https://platform-api.dev.example.gov/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://platform.dev.example.gov/app
-    AUTH_ALLOWED_ORIGINS: https://platform.dev.example.gov
-  route:
-    host: platform-api.dev.example.gov
+    OIDC_ISSUER: https://<keycloak-host>/realms/sdg
+    OIDC_REDIRECT_URI: https://sdg-platform-api-dev.apps.silver.devops.gov.bc.ca/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca/app
+    AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca
   migrations:
     image:
       tag: "develop"
@@ -82,14 +91,14 @@ platform-api:
 citizen-portal-api:
   image:
     tag: "develop"
+  route:
+    subdomain: sdg-portal-api-dev
   env:
     LOG_LEVEL: debug
-    OIDC_ISSUER: https://keycloak.dev.example.gov/realms/citizens
-    OIDC_REDIRECT_URI: https://citizen-portal-api.dev.example.gov/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://portal.dev.example.gov/
-    AUTH_ALLOWED_ORIGINS: https://portal.dev.example.gov
-  route:
-    host: citizen-portal-api.dev.example.gov
+    OIDC_ISSUER: https://<keycloak-host>/realms/citizens
+    OIDC_REDIRECT_URI: https://sdg-portal-api-dev.apps.silver.devops.gov.bc.ca/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca/
+    AUTH_ALLOWED_ORIGINS: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # platform-web (staff SPA). BFF_ORIGIN is the browser-facing platform-api origin.
@@ -97,10 +106,10 @@ citizen-portal-api:
 platform-web:
   image:
     tag: "develop"
-  env:
-    BFF_ORIGIN: https://platform-api.dev.example.gov
   route:
-    host: platform.dev.example.gov
+    subdomain: sdg-platform-dev
+  env:
+    BFF_ORIGIN: https://sdg-platform-api-dev.apps.silver.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # citizen-portal-web (citizen SPA).
@@ -108,7 +117,7 @@ platform-web:
 citizen-portal-web:
   image:
     tag: "develop"
-  env:
-    BFF_ORIGIN: https://citizen-portal-api.dev.example.gov
   route:
-    host: portal.dev.example.gov
+    subdomain: sdg-portal-dev
+  env:
+    BFF_ORIGIN: https://sdg-portal-api-dev.apps.silver.devops.gov.bc.ca

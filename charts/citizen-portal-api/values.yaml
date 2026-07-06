@@ -37,15 +37,17 @@ env:
   NODE_ENV: production
   PORT: "4000"
   LOG_LEVEL: info
-  OIDC_ISSUER: https://keycloak.example.gov/realms/citizens
+  # URL placeholders below MUST be overridden per environment (see charts/single-digital-gateway/
+  # values-*.yaml). OIDC_ISSUER is your IdP realm; the others are this app's / the SPA's public host.
+  OIDC_ISSUER: https://<oidc-issuer-host>/realms/citizens
   OIDC_CLIENT_ID: citizen-portal-api
-  OIDC_REDIRECT_URI: https://citizen-portal-api.example.gov/auth/callback
-  AUTH_POST_LOGIN_REDIRECT: https://portal.example.gov/
+  OIDC_REDIRECT_URI: https://<citizen-portal-api-host>/auth/callback
+  AUTH_POST_LOGIN_REDIRECT: https://<citizen-portal-web-host>/
   AUTH_DEFAULT_ROLE: citizen
   SESSION_KEY_PREFIX: "cpa:"
   AUTH_RP_LOGOUT: "false"
   AUTH_TOKEN_REFRESH_SKEW_SECONDS: "30"
-  AUTH_ALLOWED_ORIGINS: https://portal.example.gov
+  AUTH_ALLOWED_ORIGINS: https://<citizen-portal-web-host>
 
 # Extra raw env entries (support valueFrom) merged into the app AND migrate containers; they take
 # precedence over envFrom keys. Use to source DATABASE_URL from a Crunchy PGO Secret (feature 76)
@@ -66,7 +68,10 @@ service:
 
 route:
   enabled: true
-  host: citizen-portal-api.example.gov
+  # host: explicit FQDN. subdomain: just the prefix — OpenShift appends the cluster ingress domain
+  # (<subdomain>.<apps-domain>, default wildcard cert). Both empty → auto <route-name>-<ns>.<domain>.
+  host: ""
+  subdomain: ""
   annotations: {}
   tls:
     enabled: true
