@@ -33,6 +33,12 @@
 #       -f charts/single-digital-gateway/values-dev.yaml
 # =============================================================================
 
+# PGSSLMODE=no-verify: Crunchy Postgres requires TLS (its pg_hba.conf has only hostssl entries),
+# but the operator's `uri` has no sslmode and node-postgres defaults to plaintext → "no pg_hba.conf
+# entry … no encryption". `no-verify` makes pg connect over TLS without verifying the cluster's
+# self-signed CA (encryption on the wire, in-cluster). extraEnv reaches BOTH the app pods and the
+# migrate hook (their only shared env source). For full verification instead, mount the Crunchy CA
+# (`<cluster>-cluster-cert` `ca.crt`) and use PGSSLMODE=verify-full + PGSSLROOTCERT.
 platform-api:
   extraEnv:
     - name: DATABASE_URL
@@ -40,6 +46,8 @@ platform-api:
         secretKeyRef:
           name: sdg-pguser-sdg # <postgres.name>-pguser-<postgres.database.user>
           key: uri # full postgresql:// URI to the primary (use `pgbouncer-uri` if pooling)
+    - name: PGSSLMODE
+      value: "no-verify"
 
 citizen-portal-api:
   extraEnv:
@@ -48,3 +56,5 @@ citizen-portal-api:
         secretKeyRef:
           name: sdg-pguser-sdg
           key: uri
+    - name: PGSSLMODE
+      value: "no-verify"
