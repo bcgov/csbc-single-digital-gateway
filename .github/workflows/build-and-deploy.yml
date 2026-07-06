@@ -36,8 +36,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      # No `npm ci` here: the affected graph only needs turbo, and a full install fails on the Linux
+      # runner because the (macOS-generated) lockfile lacks some Linux-only optional deps
+      # (@emnapi/*, rollup-linux-*). `npx turbo` reads the workspace graph directly — no install.
       - id: affected
         shell: bash
         env:
@@ -58,7 +59,7 @@ jobs:
             echo "images=$(images_json '"ALL"')" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          affected=$(TURBO_SCM_BASE="$BEFORE" npx turbo run build --affected --dry=json | jq -c '.packages')
+          affected=$(TURBO_SCM_BASE="$BEFORE" npx --yes turbo@2.9.18 run build --affected --dry=json | jq -c '.packages')
           echo "Affected packages: $affected"
           echo "images=$(images_json "$affected")" >> "$GITHUB_OUTPUT"
 
