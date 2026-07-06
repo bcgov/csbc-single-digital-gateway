@@ -64,7 +64,7 @@ valkey:
 # ---------------------------------------------------------------------------
 platform-api:
   image:
-    tag: "staging"        # test image tag (e.g. a release candidate)
+    tag: "test"        # moving tag CI publishes on a v* deploy; the CI deploy overrides with the SHA
   route:
     enabled: false       # internal only — reached via platform-web nginx at /api/*
   env:
@@ -75,14 +75,14 @@ platform-api:
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-test.apps.silver.devops.gov.bc.ca
   migrations:
     image:
-      tag: "staging"
+      tag: "test"
 
 # ---------------------------------------------------------------------------
 # citizen-portal-api (citizen BFF). Migrations disabled (platform-api owns the shared DB).
 # ---------------------------------------------------------------------------
 citizen-portal-api:
   image:
-    tag: "staging"
+    tag: "test"
   route:
     enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
   env:
@@ -97,7 +97,7 @@ citizen-portal-api:
 # ---------------------------------------------------------------------------
 platform-web:
   image:
-    tag: "staging"
+    tag: "test"
   route:
     subdomain: sdg-platform-test
   env:
@@ -109,7 +109,7 @@ platform-web:
 # ---------------------------------------------------------------------------
 citizen-portal-web:
   image:
-    tag: "staging"
+    tag: "test"
   route:
     subdomain: sdg-portal-test
   env:

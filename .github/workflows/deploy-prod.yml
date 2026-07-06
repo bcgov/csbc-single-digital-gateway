@@ -40,7 +40,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify SHA images exist (built on main)
+      - name: Verify SHA images exist, then publish the :prod moving tag
         shell: bash
         run: |
           set -euo pipefail
@@ -49,6 +49,7 @@ jobs:
             echo "Checking $ref"
             docker manifest inspect "$ref" >/dev/null \
               || { echo "::error::Missing image $ref — release a commit that was built on main."; exit 1; }
+            docker buildx imagetools create --tag "${IMAGE_PREFIX}/${img}:prod" "$ref"
           done
 
       - uses: ./.github/actions/openshift-helm-deploy

@@ -73,7 +73,7 @@ valkey:
 # ---------------------------------------------------------------------------
 platform-api:
   image:
-    tag: "develop"       # dev image tag (e.g. a branch tag or commit SHA)
+    tag: "dev"       # moving tag CI publishes on `main`; the CI deploy overrides this with the immutable SHA
   route:
     enabled: false       # internal only — reached via platform-web nginx at /api/*
   env:
@@ -84,14 +84,14 @@ platform-api:
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca
   migrations:
     image:
-      tag: "develop"
+      tag: "dev"
 
 # ---------------------------------------------------------------------------
 # citizen-portal-api (citizen BFF). Migrations stay disabled (platform-api owns the shared DB).
 # ---------------------------------------------------------------------------
 citizen-portal-api:
   image:
-    tag: "develop"
+    tag: "dev"
   route:
     enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
   env:
@@ -107,7 +107,7 @@ citizen-portal-api:
 # ---------------------------------------------------------------------------
 platform-web:
   image:
-    tag: "develop"
+    tag: "dev"
   route:
     subdomain: sdg-platform-dev
   env:
@@ -119,7 +119,7 @@ platform-web:
 # ---------------------------------------------------------------------------
 citizen-portal-web:
   image:
-    tag: "develop"
+    tag: "dev"
   route:
     subdomain: sdg-portal-dev
   env:
