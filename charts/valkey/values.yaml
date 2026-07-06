@@ -1,0 +1,80 @@
+# Valkey session store — single instance, persistent, password from an existing Secret.
+#
+# The BFFs (platform-api / citizen-portal-api) connect via VALKEY_URL, e.g.
+#   redis://:<password>@<release>-valkey:6379
+# Point that URL (in the app charts' secret) at the Service below, and use the SAME password
+# that this chart reads from `auth.existingSecret`.
+
+image:
+  repository: valkey/valkey
+  tag: 8-alpine
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+auth:
+  enabled: true
+  # Pre-created Secret + key holding the Valkey password (requirepass). Use the same secret the
+  # apps' VALKEY_URL derives from.
+  existingSecret: valkey-secrets
+  passwordKey: VALKEY_PASSWORD
+
+service:
+  port: 6379
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClassName: "" # cluster default when empty
+  accessMode: ReadWriteOnce
+
+# Valkey tuning. Cap maxmemory BELOW the pod memory limit so Valkey rejects writes (noeviction)
+# rather than being OOM-killed by the kernel when the 128Mi limit is hit. Session payloads are
+# tiny, so ~96mb is ample for the tuned namespace.
+maxmemory: "96mb"
+maxmemoryPolicy: noeviction # sessions carry TTLs; noeviction avoids silently dropping them
+save: "" # RDB snapshot points; "" = AOF-only (appendonly is always on)
+extraConfig: [] # extra raw valkey.conf lines
+
+# Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the whole stack.
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 40m
+    memory: 128Mi
+
+# Optional: restrict ingress to 6379 to specific client pods (e.g. the BFF apps).
+networkPolicy:
+  enabled: false
+  allowedPodSelectors: []
+  # - matchLabels:
+  #     app.kubernetes.io/name: platform-api
+
+# OpenShift restricted-v2 assigns UID + fsGroup (making the PVC group-writable) — do NOT set
+# runAsUser/fsGroup here. On vanilla Kubernetes set podSecurityContext.fsGroup so the PVC is
+# writable by the non-root user.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

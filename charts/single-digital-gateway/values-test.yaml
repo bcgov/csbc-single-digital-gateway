@@ -1,0 +1,117 @@
+# =============================================================================
+# SDG umbrella — TEST environment   (namespace: <slug>-test)
+# =============================================================================
+# Install / upgrade the whole stack into the test namespace from this one file:
+#
+#   helm dependency build charts/single-digital-gateway            # once — vendors the 6 subcharts
+#   helm upgrade --install sdg charts/single-digital-gateway \
+#     -n <slug>-test --create-namespace \
+#     -f charts/single-digital-gateway/values-test.yaml
+#
+# Namespace budget: 0.5 CPU / 2Gi, ResourceQuota on LIMITS only. The per-container limits are
+# tuned in each subchart's defaults; this file only carries per-environment identity (hosts,
+# image tags, backup policy, log level). Summed container LIMITS, steady state:
+#
+#   platform-api            100m / 256Mi
+#   citizen-portal-api      100m / 256Mi
+#   platform-web             15m /  64Mi
+#   citizen-portal-web       15m /  64Mi
+#   valkey                   40m / 128Mi
+#   postgres (database)      80m / 512Mi
+#   postgres repo-host       15m /  96Mi
+#   postgres pgbackrest       10m /  48Mi   (sidecar in the instance pod)
+#   postgres pgbackrest-cfg    5m /  32Mi   (sidecar in the instance pod)
+#   ---------------------------------------------------------------
+#   STEADY TOTAL            380m / 1456Mi    (of 500m / 2048Mi)
+#
+# Transient headroom: platform-api's migrate hook runs pre-upgrade while the old pod is still up
+# (+100m / 256Mi) → peak 480m / 1712Mi; even with a pgBackRest backup Job also running (+15m /
+# 64Mi) it stays at 495m / 1776Mi, under budget. Apps use strategy.maxSurge:0, so a rollout never
+# briefly runs two pods. Test keeps only a weekly full backup (one recurring Job).
+#
+# ASSUMPTION: a couple of operator-managed init containers get their limits from the namespace
+# LimitRange defaults. If there is no LimitRange, a limits-only quota rejects any pod with an
+# unlimited container — add a LimitRange with small default limits to the namespace.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Postgres — single instance; weekly full backup only in test.
+# ---------------------------------------------------------------------------
+postgres:
+  name: sdg
+  instances:
+    storage:
+      size: 2Gi          # data volume (PVC #1)
+  backups:
+    storage:
+      size: 1Gi          # pgBackRest repo volume (PVC #2)
+    schedules:
+      full: "0 2 * * 0"   # weekly full, Sundays 02:00
+      incremental: ""      # no daily incrementals in test
+    retentionFull: "4"
+
+# Valkey data (PVC #3) → 1Gi, so 2Gi + 1Gi + 1Gi = 4Gi fits a 5Gi namespace storage quota.
+valkey:
+  persistence:
+    size: 1Gi
+
+# ---------------------------------------------------------------------------
+# Same-origin topology (feature 78): each audience's *-web nginx is the ONE external Route — it
+# serves the SPA and reverse-proxies /api/* to its BFF (API_UPSTREAM). The APIs have no external
+# Route. Confirm the apps domain: oc get ingresses.config/cluster -o jsonpath='{.spec.domain}' and
+# replace `apps.silver.devops.gov.bc.ca` if not on Silver. OIDC_REDIRECT_URI carries /api (register
+# it in Keycloak). OIDC_ISSUER is your IdP realm.
+# ---------------------------------------------------------------------------
+platform-api:
+  image:
+    tag: "staging"        # test image tag (e.g. a release candidate)
+  route:
+    enabled: false       # internal only — reached via platform-web nginx at /api/*
+  env:
+    LOG_LEVEL: info
+    OIDC_ISSUER: https://<keycloak-host>/realms/sdg
+    OIDC_REDIRECT_URI: https://sdg-platform-test.apps.silver.devops.gov.bc.ca/api/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-test.apps.silver.devops.gov.bc.ca/app
+    AUTH_ALLOWED_ORIGINS: https://sdg-platform-test.apps.silver.devops.gov.bc.ca
+  migrations:
+    image:
+      tag: "staging"
+
+# ---------------------------------------------------------------------------
+# citizen-portal-api (citizen BFF). Migrations disabled (platform-api owns the shared DB).
+# ---------------------------------------------------------------------------
+citizen-portal-api:
+  image:
+    tag: "staging"
+  route:
+    enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
+  env:
+    LOG_LEVEL: info
+    OIDC_ISSUER: https://<keycloak-host>/realms/citizens
+    OIDC_REDIRECT_URI: https://sdg-portal-test.apps.silver.devops.gov.bc.ca/api/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-test.apps.silver.devops.gov.bc.ca/
+    AUTH_ALLOWED_ORIGINS: https://sdg-portal-test.apps.silver.devops.gov.bc.ca
+
+# ---------------------------------------------------------------------------
+# platform-web (staff SPA + front door). Serves the SPA and proxies /api/* → platform-api.
+# ---------------------------------------------------------------------------
+platform-web:
+  image:
+    tag: "staging"
+  route:
+    subdomain: sdg-platform-test
+  env:
+    BFF_ORIGIN: /api
+    API_UPSTREAM: sdg-platform-api:80
+
+# ---------------------------------------------------------------------------
+# citizen-portal-web (citizen SPA + front door). Proxies /api/* → citizen-portal-api.
+# ---------------------------------------------------------------------------
+citizen-portal-web:
+  image:
+    tag: "staging"
+  route:
+    subdomain: sdg-portal-test
+  env:
+    BFF_ORIGIN: /api
+    API_UPSTREAM: sdg-citizen-portal-api:80

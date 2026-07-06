@@ -1,0 +1,3 @@
+# Vendored subchart tarballs — byte-duplicates of the sibling charts/, rebuildable with
+# `helm dependency build charts/single-digital-gateway`. Chart.lock IS committed (reproducibility).
+charts/

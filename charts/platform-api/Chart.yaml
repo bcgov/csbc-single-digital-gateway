@@ -1,0 +1,7 @@
+apiVersion: v2
+name: platform-api
+description: Staff BFF (NestJS) for the Single Digital Gateway
+type: application
+version: 0.1.0
+# appVersion is the default image tag (override image.tag per environment).
+appVersion: "0.0.0"

@@ -7,7 +7,7 @@ import { documentTypes, documentTypeVersions } from './schema';
 
 // Load this package's own .env (see .env.example) so `npm run db:seed -w @repo/database`
 // picks up DATABASE_URL regardless of the cwd it is invoked from.
-config({ path: resolve(import.meta.dirname, '../.env') });
+config({ path: resolve(import.meta.dirname, '../.env'), quiet: true });
 
 // Fixed ids make the seed idempotent (re-running inserts nothing new).
 const BASIC_FORM_ID = '00000000-0000-4000-8000-000000000001';

@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>citizen-portal-web</title>
+    <!-- Runtime config (window.__APP_CONFIG__). Classic script → runs before the deferred app
+         module, so src/lib/bff.ts sees the injected BFF origin. See public/config.js. -->
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="root"></div>

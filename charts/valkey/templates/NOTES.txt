@@ -1,0 +1,22 @@
+Valkey session store "{{ include "valkey.fullname" . }}" deployed (single instance,
+{{ if .Values.persistence.enabled }}persistent {{ .Values.persistence.size }} PVC{{ else }}ephemeral (emptyDir){{ end }}).
+
+In-cluster endpoint (for the BFFs' VALKEY_URL):
+  {{ include "valkey.fullname" . }}:{{ .Values.service.port }}
+
+{{- if .Values.auth.enabled }}
+
+Auth is ON — password read from Secret "{{ .Values.auth.existingSecret }}" (key {{ .Values.auth.passwordKey }}).
+Set the apps' VALKEY_URL to include the SAME password, e.g.:
+  redis://:<password>@{{ include "valkey.fullname" . }}:{{ .Values.service.port }}
+
+  kubectl create secret generic {{ .Values.auth.existingSecret }} \
+    --from-literal={{ .Values.auth.passwordKey }}='<password>'
+{{- else }}
+
+Auth is OFF — rely on in-cluster network isolation (enable networkPolicy to restrict clients).
+  VALKEY_URL: redis://{{ include "valkey.fullname" . }}:{{ .Values.service.port }}
+{{- end }}
+
+Check it:
+  kubectl exec -it {{ include "valkey.fullname" . }}-0 -- valkey-cli {{ if .Values.auth.enabled }}-a <password> {{ end }}ping

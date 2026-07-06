@@ -1,0 +1,130 @@
+# citizen-portal-api Helm values.
+#
+# Sensitive env (DATABASE_URL, VALKEY_URL, OIDC_CLIENT_SECRET, AUTH_SESSION_SECRET) MUST live
+# in a pre-created Secret named by `existingSecret` — never put them here. Non-sensitive env
+# below is rendered into a ConfigMap. Both are injected into the container via envFrom.
+
+replicaCount: 1
+
+# Rollout strategy. Under a limits-only ResourceQuota there is no budget for a surge pod, so
+# these charts default to maxSurge:0 — the single pod is recreated in place (brief downtime on
+# upgrade) instead of briefly running two. Raise maxSurge only when the namespace has spare limits.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+
+image:
+  repository: ghcr.io/bcgov/csbc-single-digital-gateway/citizen-portal-api # override per environment
+  tag: "" # defaults to .Chart.appVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pre-created Secret holding: DATABASE_URL, VALKEY_URL, OIDC_CLIENT_SECRET, AUTH_SESSION_SECRET
+existingSecret: citizen-portal-api-secrets
+
+# Non-sensitive env → ConfigMap. Replace the example hosts per environment.
+env:
+  NODE_ENV: production
+  PORT: "4000"
+  LOG_LEVEL: info
+  # URL placeholders below MUST be overridden per environment (see charts/single-digital-gateway/
+  # values-*.yaml). OIDC_ISSUER is your IdP realm; the others are this app's / the SPA's public host.
+  OIDC_ISSUER: https://<oidc-issuer-host>/realms/citizens
+  OIDC_CLIENT_ID: citizen-portal-api
+  OIDC_REDIRECT_URI: https://<citizen-portal-api-host>/auth/callback
+  AUTH_POST_LOGIN_REDIRECT: https://<citizen-portal-web-host>/
+  AUTH_DEFAULT_ROLE: citizen
+  SESSION_KEY_PREFIX: "cpa:"
+  AUTH_RP_LOGOUT: "false"
+  AUTH_TOKEN_REFRESH_SKEW_SECONDS: "30"
+  AUTH_ALLOWED_ORIGINS: https://<citizen-portal-web-host>
+
+# Extra raw env entries (support valueFrom) merged into the app AND migrate containers; they take
+# precedence over envFrom keys. Use to source DATABASE_URL from a Crunchy PGO Secret (feature 76)
+# instead of putting it in existingSecret:
+#   extraEnv:
+#     - name: DATABASE_URL
+#       valueFrom:
+#         secretKeyRef:
+#           name: sdg-pguser-sdg
+#           key: uri            # or pgbouncer-uri to go through the pooler
+extraEnv: []
+
+containerPort: 4000
+
+service:
+  type: ClusterIP
+  port: 80
+
+route:
+  enabled: true
+  # host: explicit FQDN. subdomain: just the prefix — OpenShift appends the cluster ingress domain
+  # (<subdomain>.<apps-domain>, default wildcard cert). Both empty → auto <route-name>-<ns>.<domain>.
+  host: ""
+  subdomain: ""
+  annotations: {}
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+# DISABLED: platform-api's release migrates the shared DB (run migrations exactly once). Flip
+# to true only if this app is deployed without platform-api.
+migrations:
+  enabled: false
+  command: migrate # or "migrate-seed"
+  backoffLimit: 2
+  image:
+    repository: ghcr.io/bcgov/csbc-single-digital-gateway/db-migrate # override per environment
+    tag: ""
+
+probes:
+  liveness:
+    path: /health/live
+  readiness:
+    path: /health/ready
+
+# Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the whole stack. (This app's migrate
+# hook is disabled — platform-api owns migrations for the shared DB.) See charts/single-digital-gateway/values-*.yaml.
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+# OpenShift restricted-v2 assigns the UID/fsGroup — do NOT set runAsUser/fsGroup here.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

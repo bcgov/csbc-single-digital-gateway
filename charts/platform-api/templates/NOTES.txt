@@ -1,0 +1,22 @@
+{{ .Chart.Name }} {{ .Chart.Version }} deployed as release "{{ .Release.Name }}".
+
+Image:   {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+{{- if .Values.migrations.enabled }}
+Migrate: pre-install/pre-upgrade hook ran "{{ .Values.migrations.command }}" ({{ .Values.migrations.image.repository }}).
+{{- else }}
+Migrate: DISABLED (migrations.enabled=false) — ensure another release migrates the shared DB.
+{{- end }}
+
+Required before install — a Secret named "{{ .Values.existingSecret }}" with keys:
+  DATABASE_URL, VALKEY_URL, OIDC_CLIENT_SECRET, AUTH_SESSION_SECRET
+
+  kubectl create secret generic {{ .Values.existingSecret }} \
+    --from-literal=DATABASE_URL=postgres://... \
+    --from-literal=VALKEY_URL=redis://... \
+    --from-literal=OIDC_CLIENT_SECRET=... \
+    --from-literal=AUTH_SESSION_SECRET=...
+
+{{- if .Values.route.enabled }}
+
+URL: https://{{ .Values.route.host }}
+{{- end }}

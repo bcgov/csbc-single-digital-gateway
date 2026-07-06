@@ -1,0 +1,111 @@
+# Crunchy PostgresCluster values.
+#
+# This chart deploys a `PostgresCluster` CR — the Crunchy Postgres Operator (PGO) must already
+# be installed in the cluster (on OpenShift via OperatorHub/OLM). The operator provisions the
+# Postgres pods, Patroni HA, pgBackRest backups, Services, and the user/connection Secret.
+
+# Cluster name — also the prefix of the generated Secret: <name>-pguser-<database.user>
+name: sdg
+
+postgresVersion: 16
+
+# Force OpenShift-appropriate behaviour (securityContext, fsGroup handling). The operator also
+# auto-detects; set false on vanilla Kubernetes.
+openshift: true
+
+# Optional explicit images (empty = the operator's defaults for this Postgres version). Set for
+# air-gapped / custom registries.
+image: ""
+
+instances:
+  name: instance1
+  # Single instance for now (no HA) to fit the tuned namespace budget. Raise to 2 (primary + 1
+  # Patroni-managed replica) once the namespace has more headroom.
+  replicas: 1
+  storage:
+    size: 10Gi
+    storageClassName: "" # cluster default when empty
+  # Applies to the `database` (Postgres) container. Tuned for a 0.5 CPU / 2Gi limits-only
+  # namespace shared by the whole stack — light dev/test load, not production throughput.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 80m
+      memory: 512Mi
+  # Spread instances across nodes: preferred | required | off. With a single instance there is
+  # nothing to spread, so this is "off" (quoted — bare off is YAML boolean false).
+  antiAffinity: "off"
+
+# The application database + owner. The operator creates both and generates the connection
+# Secret <name>-pguser-<user> (keys: uri, host, port, dbname, user, password, jdbc-uri).
+database:
+  name: sdg
+  user: sdg
+
+backups:
+  image: ""
+  storage:
+    size: 10Gi
+    storageClassName: ""
+  # pgBackRest schedules (cron). Empty disables that schedule. The env values files disable
+  # schedules in dev/test (fewer transient backup-Job pods against the limits quota) and keep a
+  # lean schedule in prod.
+  schedules:
+    full: "0 1 * * 0" # weekly full, Sundays 01:00
+    incremental: "0 1 * * 1-6" # daily incremental
+  # repo1-retention-full — number of full backups to keep.
+  retentionFull: "14"
+  # Resource limits for the pgBackRest containers. Under a limits-only ResourceQuota EVERY
+  # container must carry a limit (or a namespace LimitRange defaults it) — so cap them explicitly
+  # to keep the summed limits within budget and predictable:
+  #   repoHost  — the dedicated pgBackRest repository pod (volume repo)
+  #   sidecars  — the pgBackRest containers co-located in each Postgres instance pod
+  #   jobs      — one-off backup Job pods (initial stanza backup + scheduled full/incremental)
+  repoHost:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 48Mi
+      limits:
+        cpu: 15m
+        memory: 96Mi
+  sidecars:
+    pgbackrest:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 16Mi
+        limits:
+          cpu: 10m
+          memory: 48Mi
+    pgbackrestConfig:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 16Mi
+        limits:
+          cpu: 5m
+          memory: 32Mi
+  jobs:
+    resources:
+      requests:
+        cpu: 5m
+        memory: 32Mi
+      limits:
+        cpu: 15m
+        memory: 64Mi
+
+# Optional PgBouncer connection pooler (adds <name>-pgbouncer Service + pgbouncer-* secret keys).
+pgbouncer:
+  enabled: false
+  replicas: 2
+  image: ""
+
+# Optional pgMonitor exporter sidecar (Prometheus).
+monitoring:
+  enabled: false
+
+# Passthrough for spec.patroni (e.g. dynamicConfiguration). Leave empty for defaults.
+patroni: {}

@@ -1,0 +1,12 @@
+{{ .Chart.Name }} {{ .Chart.Version }} deployed as release "{{ .Release.Name }}".
+
+Image:      {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+BFF_ORIGIN: {{ .Values.env.BFF_ORIGIN }}
+
+The SPA is served by nginx on :8080 and reads BFF_ORIGIN at container start (window.__APP_CONFIG__).
+If BFF_ORIGIN is unset the container fails fast and will not start.
+
+{{- if .Values.route.enabled }}
+
+URL: https://{{ .Values.route.host }}
+{{- end }}

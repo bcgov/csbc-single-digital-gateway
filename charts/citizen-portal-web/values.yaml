@@ -1,0 +1,103 @@
+# citizen-portal-web Helm values.
+#
+# A static SPA served by nginx. Its only config is BFF_ORIGIN (the browser-facing origin of
+# citizen-portal-api), injected at container start into window.__APP_CONFIG__ — it is PUBLIC, so
+# it lives in the ConfigMap (no Secret needed).
+
+replicaCount: 1
+
+# Rollout strategy. Under a limits-only ResourceQuota there is no budget for a surge pod, so
+# these charts default to maxSurge:0 — the single pod is recreated in place (brief downtime on
+# upgrade) instead of briefly running two. Raise maxSurge only when the namespace has spare limits.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+
+image:
+  repository: ghcr.io/bcgov/csbc-single-digital-gateway/citizen-portal-web # override per environment
+  tag: "" # defaults to .Chart.appVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# No sensitive config — BFF_ORIGIN is a public browser origin.
+existingSecret: ""
+
+# Non-sensitive env → ConfigMap. BFF_ORIGIN is REQUIRED (the container fails fast without it).
+# Both are REQUIRED — the container fails fast without them (feature 78):
+#   BFF_ORIGIN   — the SAME-ORIGIN path the SPA calls; the web nginx reverse-proxies it. Normally /api.
+#   API_UPSTREAM — the in-cluster citizen-portal-api Service (host:port) nginx proxies /api/* to.
+env:
+  BFF_ORIGIN: /api
+  API_UPSTREAM: <release>-citizen-portal-api:80 # override per environment (matches the api Service name)
+
+# Extra raw env entries (support valueFrom) merged into the container; precedence over envFrom.
+extraEnv: []
+
+containerPort: 8080
+
+service:
+  type: ClusterIP
+  port: 80
+
+route:
+  enabled: true
+  # host: explicit FQDN. subdomain: just the prefix — OpenShift appends the cluster ingress domain
+  # (<subdomain>.<apps-domain>, default wildcard cert). Both empty → auto <route-name>-<ns>.<domain>.
+  host: ""
+  subdomain: ""
+  annotations: {}
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+probes:
+  liveness:
+    path: /
+  readiness:
+    path: /
+
+# Static nginx SPA — cheap. Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the stack.
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 15m
+    memory: 64Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+# OpenShift restricted-v2 assigns the UID/fsGroup — do NOT set runAsUser/fsGroup here.
+# nginx writes to /tmp + /var/cache/nginx, so readOnlyRootFilesystem stays false.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

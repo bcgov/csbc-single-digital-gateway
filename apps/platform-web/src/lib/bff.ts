@@ -21,8 +21,15 @@ export interface AuthUser {
   claims: OidcClaims;
 }
 
-/** Origin of this app's BFF (platform-api); overridable per environment. */
-export const BFF_ORIGIN = import.meta.env.VITE_BFF_ORIGIN ?? 'http://localhost:4001';
+/**
+ * Origin of this app's BFF (platform-api); overridable per environment. Resolution order:
+ *   1. runtime window config injected by the container entrypoint (see public/config.js),
+ *   2. build-time `VITE_BFF_ORIGIN` (dev / baked builds),
+ *   3. localhost dev default.
+ * `||` (not `??`) so an empty string from any source falls through.
+ */
+export const BFF_ORIGIN =
+  window.__APP_CONFIG__?.bffOrigin || import.meta.env.VITE_BFF_ORIGIN || 'http://localhost:4001';
 
 /** Top-level navigation target that starts the OIDC login flow. */
 export const loginUrl = `${BFF_ORIGIN}/auth/login`;
