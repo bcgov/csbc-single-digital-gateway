@@ -23,7 +23,7 @@ function EmptyState() {
 /** "Track your applications" section — empty state, or a list of the citizen's applications. */
 export function TrackApplications({ applications, loading = false }: TrackApplicationsProps) {
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-4 border-b-2 border-[#FCBA19] bg-linear-to-b from-(--surface-color-background-white,#FFF) to-(--theme-gold-10,#FEF8E8)">
       <SectionHeading title="Track your applications" />
       {loading ? (
         <Skeleton className="h-20 w-full rounded-lg" />

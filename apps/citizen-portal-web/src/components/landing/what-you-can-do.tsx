@@ -14,13 +14,15 @@ export function WhatYouCanDo() {
         {FEATURE_CARDS.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.id}>
-              <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
-                <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="size-5" aria-hidden />
+            <Card key={card.id} className="rounded-(--layout-margin-xs,2px)">
+              <CardContent className="flex flex-col justify-between items-center text-center gap-4">
+                <span className="flex size-14 items-center justify-center bg-[#F1F8FE] text-primary">
+                  <Icon className="size-5 text-[#1a5a96]" aria-hidden />
                 </span>
-                <h3 className="font-heading text-sm font-semibold text-primary">{card.title}</h3>
-                <p className="text-xs/relaxed text-muted-foreground">{card.description}</p>
+                <h3 className="font-heading text-[18px] font-semibold text-primary">
+                  {card.title}
+                </h3>
+                <p className="text-[14px]/relaxed text-muted-foreground">{card.description}</p>
               </CardContent>
             </Card>
           );

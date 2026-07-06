@@ -18,7 +18,7 @@ export function SectionHeading({
   const dark = tone === 'dark';
   return (
     <div className="flex flex-col gap-1">
-      <span className="h-1 w-8 rounded-full bg-amber-500" aria-hidden />
+      <span className="h-1 w-8 rounded-full bg-amber-500 mb-2" aria-hidden />
       <h2
         className={`font-heading text-lg font-semibold ${dark ? 'text-white' : 'text-foreground'}`}
       >

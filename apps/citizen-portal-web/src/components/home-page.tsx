@@ -18,7 +18,7 @@ async function handleLogout(): Promise<void> {
 /** Greeting block for a signed-in citizen: "Hi, <first name>" / "Welcome to MyBC." */
 function Greeting({ name }: { name: string }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 mt-6">
       <h1 className="font-heading text-2xl font-semibold text-foreground">Hi, {firstName(name)}</h1>
       <p className="text-sm text-muted-foreground">Welcome to MyBC.</p>
     </div>

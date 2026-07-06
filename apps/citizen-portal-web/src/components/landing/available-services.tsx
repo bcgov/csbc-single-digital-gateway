@@ -24,9 +24,9 @@ export function AvailableServices({
   );
 
   return (
-    <section className="rounded-xl bg-primary p-6 shadow-sm">
+    <section className="rounded-(--layout-margin-xs,4px) bg-primary p-6 shadow-sm bg-linear-to-r from-(--theme-blue-90,#1E5189) to-(--theme-blue-70,#5595D9)">
       <SectionHeading
-        title="Available services"
+        title="Discover services"
         description="Here are some services currently available through the Single Digital Gateway."
         tone="dark"
       />
