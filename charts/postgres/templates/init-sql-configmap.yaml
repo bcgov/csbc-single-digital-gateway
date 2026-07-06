@@ -1,0 +1,19 @@
+{{- if .Values.initSQL.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-init-sql
+  labels:
+    {{- include "pg.labels" . | nindent 4 }}
+data:
+  # Run ONCE by the operator as the postgres superuser right after the cluster is first created
+  # (spec.databaseInitSQL). PG15+ revoked CREATE on `public` from non-owners, so the app user must
+  # be granted access or migrations fail with "permission denied for schema public". `\c` switches
+  # from the default `postgres` connection to the app database.
+  init.sql: |
+    \c {{ .Values.database.name }}
+    GRANT ALL ON SCHEMA public TO {{ .Values.database.user }};
+    {{- with .Values.initSQL.extra }}
+    {{ . | nindent 4 }}
+    {{- end }}
+{{- end }}

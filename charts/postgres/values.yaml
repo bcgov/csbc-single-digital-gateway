@@ -44,6 +44,18 @@ database:
   name: sdg
   user: sdg
 
+# spec.databaseInitSQL — SQL the operator runs ONCE (as the postgres superuser) right after the
+# cluster is first created. PG15+ revoked CREATE on `public` from non-owners, so the app user must
+# be granted access or drizzle migrations fail with "permission denied for schema public".
+#
+# NOTE: this runs only on INITIAL cluster creation — changing it does NOT re-run on an existing
+# cluster. For an already-running cluster, grant by hand:
+#   oc exec -n <ns> $(oc get pod -n <ns> -l postgres-operator.crunchydata.com/role=master -o name) \
+#     -c database -- psql -d <db> -c "GRANT ALL ON SCHEMA public TO <user>;"
+initSQL:
+  enabled: true
+  extra: "" # additional SQL appended after the public-schema grant (optional)
+
 backups:
   image: ""
   storage:
