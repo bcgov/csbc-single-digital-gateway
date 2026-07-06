@@ -83,8 +83,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push (changed)
-        if: matrix.image.changed
+      # Build if the image changed OR there is no :dev image to retag from yet (first run / an image
+      # that was never built) — otherwise the retag below would fail with ":dev not found".
+      - name: Decide build vs retag
+        id: decide
+        shell: bash
+        run: |
+          if [ "${{ matrix.image.changed }}" = "true" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          elif docker manifest inspect "${IMAGE_PREFIX}/${{ matrix.image.name }}:dev" >/dev/null 2>&1; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::${{ matrix.image.name }}:dev not found — building instead of retagging."
+          fi
+
+      - name: Build & push (:sha + :dev)
+        if: steps.decide.outputs.build == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -97,8 +112,8 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
 
-      - name: Retag :dev → :sha (unchanged — no build)
-        if: ${{ !matrix.image.changed }}
+      - name: Retag :dev → :sha (unchanged, no build)
+        if: steps.decide.outputs.build == 'false'
         shell: bash
         run: |
           docker buildx imagetools create \
