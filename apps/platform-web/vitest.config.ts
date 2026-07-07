@@ -25,7 +25,7 @@ export default defineConfig({
     // each in isolation. The pre-push hook runs `typecheck` (turbo build) and the full `test`
     // suite in parallel, and under that CPU contention these tests balloon past Vitest's 5s
     // default and flake with "Test timed out in 5000ms". Give them ample headroom.
-    testTimeout: 20000,
-    hookTimeout: 20000,
+    testTimeout: 60000,
+    hookTimeout: 60000,
   },
 });

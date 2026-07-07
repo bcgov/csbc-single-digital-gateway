@@ -11,7 +11,7 @@ function jsonResponse(body: unknown): Response {
   });
 }
 
-function renderRoute(path: string) {
+async function renderRoute(path: string) {
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
     if (String(input).includes('/v1/me/applications')) return new Response(null, { status: 401 });
     if (String(input).includes('/v1/services')) return jsonResponse({ items: [] });
@@ -23,6 +23,7 @@ function renderRoute(path: string) {
     routeTree,
     history: createMemoryHistory({ initialEntries: [path] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -37,7 +38,7 @@ afterEach(() => {
 
 describe('citizen-portal-web router', () => {
   it('resolves the anonymous landing route at /', async () => {
-    renderRoute('/');
+    await renderRoute('/');
     expect(
       await screen.findByRole(
         'heading',
@@ -48,7 +49,7 @@ describe('citizen-portal-web router', () => {
   });
 
   it('resolves the services catalog route at /services', async () => {
-    renderRoute('/services');
+    await renderRoute('/services');
     expect(
       await screen.findByRole('heading', { name: 'Services', level: 1 }, { timeout: 5000 }),
     ).toBeInTheDocument();

@@ -95,7 +95,7 @@ describe('add member flow', () => {
     const addButton = await screen.findByRole('button', { name: 'Add member' }, { timeout: 5000 });
     await user.click(addButton);
 
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('dialog', {}, { timeout: 8000 });
     // Both staff show initially.
     expect(await within(dialog).findByText('Sam Lee')).toBeInTheDocument();
     expect(within(dialog).getByText('Dana Kim')).toBeInTheDocument();

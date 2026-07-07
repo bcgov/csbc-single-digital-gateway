@@ -146,7 +146,9 @@ describe('console services', () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     const { router } = renderApp('/app/riverton/services');
     await router.load();
-    expect(await screen.findByRole('link', { name: 'Permit application' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 8000 }),
+    ).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
@@ -173,13 +175,19 @@ describe('console services', () => {
 
     // Application methods tab: the method list (count badge + form title).
     await user.click(screen.getByRole('tab', { name: /application methods/i }));
-    expect(await screen.findByText('Permit form')).toBeInTheDocument();
+    expect(await screen.findByText('Permit form', {}, { timeout: 8000 })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
 
     // Publish through the summary modal (no unsaved changes ⇒ the Publish trigger is enabled).
     await user.click(screen.getByRole('tab', { name: /service details/i }));
-    await user.click(await screen.findByRole('button', { name: 'Publish service' }));
-    const modal = await screen.findByRole('dialog', { name: /publish service/i });
+    await user.click(
+      await screen.findByRole('button', { name: 'Publish service' }, { timeout: 8000 }),
+    );
+    const modal = await screen.findByRole(
+      'dialog',
+      { name: /publish service/i },
+      { timeout: 8000 },
+    );
     await user.click(within(modal).getByRole('button', { name: 'Publish' }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

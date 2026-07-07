@@ -100,6 +100,8 @@ describe('deleting a workspace from settings', () => {
     await confirmDelete();
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/app'));
-    expect(await screen.findByRole('dialog', { name: /create workspace/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', { name: /create workspace/i }, { timeout: 8000 }),
+    ).toBeInTheDocument();
   });
 });

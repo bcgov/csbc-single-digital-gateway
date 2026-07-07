@@ -49,11 +49,12 @@ function mockBff({ me = new Response(null, { status: 401 }), apps = applications
   return fetchMock;
 }
 
-function renderServices() {
+async function renderServices() {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/services'] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -69,7 +70,7 @@ afterEach(() => {
 describe('citizen-portal-web /services page', () => {
   it('lists published services from the catalog (anonymous)', async () => {
     mockBff();
-    renderServices();
+    await renderServices();
     expect(await screen.findByRole('heading', { name: 'Services', level: 1 })).toBeInTheDocument();
     expect(
       await screen.findByRole('link', { name: /Income and Disability Assistance/i }),
@@ -79,14 +80,14 @@ describe('citizen-portal-web /services page', () => {
 
   it('does not show "Your applications" for an anonymous visitor', async () => {
     mockBff();
-    renderServices();
+    await renderServices();
     await screen.findByRole('link', { name: /Birth Registration/i });
     expect(screen.queryByRole('heading', { name: 'Your applications' })).not.toBeInTheDocument();
   });
 
   it('shows the citizen’s applications when authenticated', async () => {
     mockBff({ me: jsonResponse(authedUser) });
-    renderServices();
+    await renderServices();
     expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
     expect(await screen.findByText(/20250615-0003/)).toBeInTheDocument();
   });
@@ -94,7 +95,7 @@ describe('citizen-portal-web /services page', () => {
   it('searches via the catalog endpoint with the q parameter', async () => {
     const fetchMock = mockBff();
     const user = userEvent.setup();
-    renderServices();
+    await renderServices();
     await screen.findByRole('link', { name: /Birth Registration/i });
 
     await user.type(screen.getByRole('searchbox', { name: /search services/i }), 'birth');

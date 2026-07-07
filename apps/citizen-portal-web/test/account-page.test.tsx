@@ -17,7 +17,7 @@ function jsonResponse(body: unknown): Response {
   });
 }
 
-function renderAccount(me: Response) {
+async function renderAccount(me: Response) {
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes('/auth/me')) return me;
@@ -29,6 +29,7 @@ function renderAccount(me: Response) {
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/account'] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -43,9 +44,9 @@ afterEach(() => {
 
 describe('citizen-portal-web /account page', () => {
   it('shows the signed-in user’s name and email', async () => {
-    renderAccount(jsonResponse(authedUser));
+    await renderAccount(jsonResponse(authedUser));
     expect(
-      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 6000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Amina Ali')).toBeInTheDocument();
     expect(screen.getByText('amina@example.com')).toBeInTheDocument();
@@ -53,7 +54,7 @@ describe('citizen-portal-web /account page', () => {
   });
 
   it('prompts an anonymous visitor to log in', async () => {
-    renderAccount(new Response(null, { status: 401 }));
+    await renderAccount(new Response(null, { status: 401 }));
     const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 5000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });

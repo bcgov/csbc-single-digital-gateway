@@ -102,7 +102,7 @@ describe('console submissions', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Income Assistance · Income application')).toBeInTheDocument();
 
-    await user.click(await screen.findByRole('button', { name: 'Approve' }));
+    await user.click(await screen.findByRole('button', { name: 'Approve' }, { timeout: 8000 }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -111,6 +111,8 @@ describe('console submissions', () => {
       ),
     );
     // After the review the panel reflects the actioned status.
-    expect(await screen.findByText(/has been actioned/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/has been actioned/i, {}, { timeout: 8000 }),
+    ).toBeInTheDocument();
   });
 });

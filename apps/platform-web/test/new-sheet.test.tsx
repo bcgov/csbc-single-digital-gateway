@@ -39,9 +39,10 @@ describe('header "New" button', () => {
 
   it('disables the New button when there is no active workspace', async () => {
     mockAuth(authedUser, { workspaces: [] });
-    renderApp('/app');
+    const { router } = renderApp('/app');
+    await router.load();
 
-    await screen.findByRole('dialog', { name: /create workspace/i });
+    await screen.findByRole('dialog', { name: /create workspace/i }, { timeout: 8000 });
     expect(screen.getByRole('button', { name: 'New' })).toBeDisabled();
   });
 });
