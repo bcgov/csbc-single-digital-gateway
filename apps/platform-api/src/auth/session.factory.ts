@@ -30,6 +30,9 @@ export function buildAppSessionOptions(params: AppSessionParams): AuthSessionCon
 
   if (params.useStore) {
     const client = new Valkey(params.valkeyUrl);
+    // connect-redis MUST stay ^8 while the store client is iovalkey (ioredis-fork): v9 dropped
+    // ioredis support and passes TTL as a node-redis options object, which iovalkey stringifies to
+    // `[object Object]` → Valkey `ERR syntax error` → sessions never persist → /auth/callback 500s.
     options.store = new RedisStore({ client, prefix: `${params.sessionKeyPrefix}sess:` });
   }
 
