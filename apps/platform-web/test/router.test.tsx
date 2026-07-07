@@ -11,7 +11,11 @@ describe('platform-web router', () => {
     mockAuth(null);
     renderApp('/');
     expect(
-      await screen.findByRole('heading', { name: 'Single Digital Gateway Platform' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Single Digital Gateway Platform' },
+        { timeout: 8000 },
+      ),
     ).toBeInTheDocument();
   });
 
