@@ -69,9 +69,10 @@ backups:
     incremental: "0 1 * * 1-6" # daily incremental
   # repo1-retention-full — number of full backups to keep.
   retentionFull: "14"
-  # Resource limits for the pgBackRest containers. Under a limits-only ResourceQuota EVERY
-  # container must carry a limit (or a namespace LimitRange defaults it) — so cap them explicitly
-  # to keep the summed limits within budget and predictable:
+  # Resource requests/limits for the pgBackRest containers. The namespace quota meters *requests*
+  # (requests.cpu 500m / requests.memory 2Gi) — not limits — so keep requests lean but size limits
+  # for headroom (a too-low CPU *limit* throttles the sidecar's liveness probe; see below). Summed
+  # limits are still kept under the request budget for predictability:
   #   repoHost  — the dedicated pgBackRest repository pod (volume repo)
   #   sidecars  — the pgBackRest containers co-located in each Postgres instance pod
   #   jobs      — one-off backup Job pods (initial stanza backup + scheduled full/incremental)
@@ -85,12 +86,19 @@ backups:
         memory: 96Mi
   sidecars:
     pgbackrest:
+      # This sidecar runs `pgbackrest server` (the TLS server every backup talks to) and is
+      # liveness-probed with `pgbackrest server-ping` (timeoutSeconds: 1, operator-fixed). A CPU
+      # limit that is too low CPU-throttles the probe past 1s → kubelet kills the container →
+      # CrashLoopBackOff, which severs every in-flight backup with pgBackRest ERROR [039]
+      # ("client state is 'response' but expected 'idle'"). Keep limits.cpu high enough that a
+      # fork + local TLS handshake clears the 1s probe. Limits are not quota-metered here (the
+      # quota meters requests); 100m keeps even the summed limits under the 500m CPU budget.
       resources:
         requests:
-          cpu: 5m
+          cpu: 10m
           memory: 16Mi
         limits:
-          cpu: 10m
+          cpu: 100m
           memory: 48Mi
     pgbackrestConfig:
       resources:
