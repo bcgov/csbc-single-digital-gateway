@@ -1,0 +1,37 @@
+apiVersion: v2
+name: single-digital-gateway
+description: >-
+  Umbrella chart for the Single Digital Gateway. Installs the whole stack — Crunchy Postgres,
+  Valkey, both BFF APIs (platform-api, citizen-portal-api) and both SPAs (platform-web,
+  citizen-portal-web) — into a single namespace from one per-environment values file. Tuned to
+  fit a 0.5 CPU / 2Gi ResourceQuota that caps limits only (see values-<env>.yaml).
+type: application
+version: 0.1.0
+# Umbrella appVersion is unused for images — each subchart carries its own image.tag (override
+# per environment in values-<env>.yaml).
+appVersion: "0.0.0"
+
+# Local file:// subcharts. Run `helm dependency build charts/single-digital-gateway` to vendor
+# them into charts/single-digital-gateway/charts/ before install/upgrade. Postgres comes first so
+# its connection Secret and
+# the Valkey Service exist before the APIs start (ordering is best-effort — the APIs' readiness
+# probes tolerate a not-yet-ready datastore).
+dependencies:
+  - name: postgres
+    version: 0.1.0
+    repository: file://../postgres
+  - name: valkey
+    version: 0.1.0
+    repository: file://../valkey
+  - name: platform-api
+    version: 0.1.0
+    repository: file://../platform-api
+  - name: citizen-portal-api
+    version: 0.1.0
+    repository: file://../citizen-portal-api
+  - name: platform-web
+    version: 0.1.0
+    repository: file://../platform-web
+  - name: citizen-portal-web
+    version: 0.1.0
+    repository: file://../citizen-portal-web

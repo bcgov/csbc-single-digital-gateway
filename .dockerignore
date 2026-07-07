@@ -1,0 +1,38 @@
+# Docker build context excludes. The *-api Dockerfiles build from the repo root so the
+# turbo pruner can read the full workspace graph — keep the context small and secret-free.
+
+# Dependencies & build output (reinstalled/rebuilt inside the image)
+**/node_modules
+**/dist
+**/dist-scripts
+**/.turbo
+out
+.tsbuildinfo
+**/*.tsbuildinfo
+
+# Secrets & local env — NEVER copy into an image (config is injected at runtime)
+**/.env
+**/.env.*
+!**/.env.example
+
+# VCS & tooling metadata
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Project meta / docs / agent tooling — not needed to build or run
+.mdd
+.claude
+.mddrc*
+**/*.md
+!**/README.md
+
+# Test & coverage artifacts
+**/coverage
+**/.vitest
+**/*.log
+
+# OS cruft
+.DS_Store

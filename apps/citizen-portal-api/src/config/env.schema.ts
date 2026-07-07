@@ -6,6 +6,10 @@ export const envSchema = z.object({
   // Required, fail-fast: there is no safe universal default for a DB connection string,
   // and a silent localhost fallback in production is worse than failing at boot.
   DATABASE_URL: z.url(),
+  // DB TLS (optional). PGSSLMODE = disable | no-verify | verify-ca | verify-full; DATABASE_CA_CERT
+  // is the CA PEM (e.g. Crunchy's ca.crt) used to verify the server. Unset → no TLS (local dev).
+  PGSSLMODE: z.string().optional(),
+  DATABASE_CA_CERT: z.string().optional(),
   // pino log level; operators tune verbosity without code changes.
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
   // OIDC (BFF) — required, fail-fast (no safe defaults for an IdP / secret).

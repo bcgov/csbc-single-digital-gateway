@@ -1,0 +1,61 @@
+name: Deploy prod
+
+# GitHub Release published → deploy PROD (approval-gated via the `prod` Environment).
+# Deploy-only: promotes the exact SHA images the main build already produced — no rebuild.
+# workflow_dispatch re-deploys a chosen tag/sha. See .mdd/docs/79-github-actions-cicd.md.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git tag or SHA to deploy to prod (must be built on main)
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE_PREFIX: ghcr.io/bcgov/csbc-single-digital-gateway
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+    environment: prod # required reviewers → manual approval before this job runs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.event.inputs.ref }}
+          fetch-depth: 0
+
+      - name: Resolve commit SHA
+        id: sha
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SHA images exist, then publish the :prod moving tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          for img in platform-api citizen-portal-api platform-web citizen-portal-web db-migrate; do
+            ref="${IMAGE_PREFIX}/${img}:${{ steps.sha.outputs.sha }}"
+            echo "Checking $ref"
+            docker manifest inspect "$ref" >/dev/null \
+              || { echo "::error::Missing image $ref — release a commit that was built on main."; exit 1; }
+            docker buildx imagetools create --tag "${IMAGE_PREFIX}/${img}:prod" "$ref"
+          done
+
+      - uses: ./.github/actions/openshift-helm-deploy
+        with:
+          values-file: values-prod.yaml
+          namespace: ${{ vars.OPENSHIFT_NAMESPACE }}
+          openshift-server: ${{ vars.OPENSHIFT_SERVER }}
+          openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+          image-tag: ${{ steps.sha.outputs.sha }}

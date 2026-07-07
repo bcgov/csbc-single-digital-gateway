@@ -54,9 +54,15 @@ export class AuthController {
 
   @Get('callback')
   async callback(@Req() req: Request, @Res() res: Response): Promise<void> {
-    // Resolve the full callback URL from the configured redirect origin (avoids trusting the
-    // Host header). originalUrl carries `?code&state`.
-    const currentUrl = new URL(req.originalUrl, this.options.redirectUri);
+    // Rebuild the callback URL from the *configured* redirectUri — path and all — carrying over only
+    // the incoming query (`?code&state&iss…`). A reverse proxy may strip a path prefix before the BFF
+    // sees the request (e.g. nginx maps `/api/auth/callback` -> `/auth/callback`), so req.originalUrl's
+    // absolute path would clobber that prefix. openid-client derives the token-exchange `redirect_uri`
+    // from this URL, and it MUST byte-match the one used at authorization (options.redirectUri) or the
+    // IdP rejects the exchange with `invalid_grant` (Incorrect redirect_uri). Sourcing the path from
+    // redirectUri keeps them identical and also avoids trusting the Host header.
+    const currentUrl = new URL(this.options.redirectUri);
+    currentUrl.search = new URL(req.originalUrl, this.options.redirectUri).search;
     const { claims, idToken, tokens } = await completeLogin(this.config, currentUrl, req.session);
     const user = await this.userSync.onSignIn(claims);
     req.session.authUser = user;

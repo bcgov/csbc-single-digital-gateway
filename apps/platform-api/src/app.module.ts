@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
-import { createDatabase, type Database } from '@repo/database';
+import { createDatabase, resolvePgSsl, type Database } from '@repo/database';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import {
@@ -49,7 +49,12 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     DatabaseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
-        createDatabase(config.get('DATABASE_URL', { infer: true })),
+        createDatabase(config.get('DATABASE_URL', { infer: true }), {
+          ssl: resolvePgSsl({
+            mode: config.get('PGSSLMODE', { infer: true }),
+            ca: config.get('DATABASE_CA_CERT', { infer: true }),
+          }),
+        }),
       onDestroy: (db: Database) => db.$client.end(),
     }),
     // OIDC BFF auth (global). Discovery runs against OIDC_ISSUER at boot — except under test,

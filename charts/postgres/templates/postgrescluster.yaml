@@ -1,0 +1,146 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    {{- include "pg.labels" . | nindent 4 }}
+spec:
+  postgresVersion: {{ .Values.postgresVersion }}
+  {{- if .Values.openshift }}
+  openshift: true
+  {{- end }}
+  {{- with .Values.image }}
+  image: {{ . }}
+  {{- end }}
+
+  instances:
+    - name: {{ .Values.instances.name }}
+      replicas: {{ .Values.instances.replicas }}
+      {{- with .Values.instances.resources }}
+      resources:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.instances.storage.size }}
+        {{- with .Values.instances.storage.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+      {{- if ne .Values.instances.antiAffinity "off" }}
+      affinity:
+        podAntiAffinity:
+          {{- $selector := dict "postgres-operator.crunchydata.com/cluster" .Values.name "postgres-operator.crunchydata.com/instance-set" .Values.instances.name }}
+          {{- if eq .Values.instances.antiAffinity "required" }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  {{- toYaml $selector | nindent 18 }}
+          {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- toYaml $selector | nindent 20 }}
+          {{- end }}
+      {{- end }}
+
+  users:
+    - name: {{ .Values.database.user }}
+      databases:
+        - {{ .Values.database.name }}
+
+  {{- if .Values.initSQL.enabled }}
+  # One-time bootstrap SQL (superuser) — grants the app user CREATE on `public` (PG15+). See the
+  # init-sql ConfigMap. Runs only on INITIAL cluster creation.
+  databaseInitSQL:
+    name: {{ .Values.name }}-init-sql
+    key: init.sql
+  {{- end }}
+
+  backups:
+    pgbackrest:
+      {{- with .Values.backups.image }}
+      image: {{ . }}
+      {{- end }}
+      {{- if .Values.backups.retentionFull }}
+      global:
+        repo1-retention-full: {{ .Values.backups.retentionFull | quote }}
+      {{- end }}
+      {{- with .Values.backups.repoHost }}
+      repoHost:
+        {{- with .resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.backups.sidecars }}
+      sidecars:
+        {{- with .pgbackrest }}
+        pgbackrest:
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- with .pgbackrestConfig }}
+        pgbackrestConfig:
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.backups.jobs }}
+      jobs:
+        {{- with .resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: {{ .Values.backups.storage.size }}
+              {{- with .Values.backups.storage.storageClassName }}
+              storageClassName: {{ . }}
+              {{- end }}
+          {{- if or .Values.backups.schedules.full .Values.backups.schedules.incremental }}
+          schedules:
+            {{- with .Values.backups.schedules.full }}
+            full: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.backups.schedules.incremental }}
+            incremental: {{ . | quote }}
+            {{- end }}
+          {{- end }}
+
+  {{- if .Values.pgbouncer.enabled }}
+  proxy:
+    pgBouncer:
+      replicas: {{ .Values.pgbouncer.replicas }}
+      {{- with .Values.pgbouncer.image }}
+      image: {{ . }}
+      {{- end }}
+  {{- end }}
+
+  {{- if .Values.monitoring.enabled }}
+  monitoring:
+    pgmonitor:
+      exporter: {}
+  {{- end }}
+
+  {{- with .Values.patroni }}
+  patroni:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

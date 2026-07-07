@@ -1,0 +1,172 @@
+name: Build and deploy
+
+# push to main        → build only the images whose files (or local deps) changed, then deploy dev
+# push tag v*         → deploy TEST (no build — reuse the SHA images main already built)
+# See .mdd/docs/79-github-actions-cicd.md.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+concurrency:
+  group: build-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_PREFIX: ghcr.io/bcgov/csbc-single-digital-gateway
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # changes — Turborepo affected graph → which of the 5 images changed (incl. local deps).
+  # Emits all 5 images each flagged changed:true|false so `images` can build or retag.
+  # ---------------------------------------------------------------------------
+  changes:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.affected.outputs.images }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # No `npm ci` here: the affected graph only needs turbo, and a full install fails on the Linux
+      # runner because the (macOS-generated) lockfile lacks some Linux-only optional deps
+      # (@emnapi/*, rollup-linux-*). `npx turbo` reads the workspace graph directly — no install.
+      - id: affected
+        shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          images_json() { # $1 = affected package-name JSON array (or "ALL")
+            jq -cn --argjson aff "$1" '
+              [ {n:"platform-api",        p:"platform-api"},
+                {n:"citizen-portal-api",  p:"citizen-portal-api"},
+                {n:"platform-web",        p:"platform-web"},
+                {n:"citizen-portal-web",  p:"citizen-portal-web"},
+                {n:"db-migrate",          p:"@repo/database"} ]
+              | map({name: .n, changed: ( ($aff == "ALL") or (.p as $x | $aff | index($x) != null) )})'
+          }
+          if [ -z "${BEFORE:-}" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "No usable base ($BEFORE) — building all images."
+            echo "images=$(images_json '"ALL"')" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          affected=$(TURBO_SCM_BASE="$BEFORE" npx --yes turbo@2.9.18 run build --affected --dry=json | jq -c '.packages')
+          echo "Affected packages: $affected"
+          echo "images=$(images_json "$affected")" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # images — for each of the 5: BUILD if changed (push :sha + :dev), else RETAG :dev → :sha
+  # (a manifest copy, no build) so every commit has a complete :sha image set.
+  # ---------------------------------------------------------------------------
+  images:
+    needs: changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(needs.changes.outputs.images) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build if the image changed OR there is no :dev image to retag from yet (first run / an image
+      # that was never built) — otherwise the retag below would fail with ":dev not found".
+      - name: Decide build vs retag
+        id: decide
+        shell: bash
+        run: |
+          if [ "${{ matrix.image.changed }}" = "true" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          elif docker manifest inspect "${IMAGE_PREFIX}/${{ matrix.image.name }}:dev" >/dev/null 2>&1; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::${{ matrix.image.name }}:dev not found — building instead of retagging."
+          fi
+
+      - name: Build & push (:sha + :dev)
+        if: steps.decide.outputs.build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.image.name == 'db-migrate' && 'packages/database/Dockerfile' || format('apps/{0}/Dockerfile', matrix.image.name) }}
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}:dev
+          cache-from: type=gha,scope=${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
+
+      - name: Retag :dev → :sha (unchanged, no build)
+        if: steps.decide.outputs.build == 'false'
+        shell: bash
+        run: |
+          docker buildx imagetools create \
+            --tag "${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}:${{ github.sha }}" \
+            "${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}:dev"
+
+  # ---------------------------------------------------------------------------
+  # deploy-dev — on main, after images. Pins all 5 to the commit SHA.
+  # ---------------------------------------------------------------------------
+  deploy-dev:
+    needs: images
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/openshift-helm-deploy
+        with:
+          values-file: values-dev.yaml
+          namespace: ${{ vars.OPENSHIFT_NAMESPACE }}
+          openshift-server: ${{ vars.OPENSHIFT_SERVER }}
+          openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+          image-tag: ${{ github.sha }}
+
+  # ---------------------------------------------------------------------------
+  # deploy-test — on a v* tag. Deploy-only: reuse the SHA images main already built.
+  # ---------------------------------------------------------------------------
+  deploy-test:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify SHA images exist, then publish the :test moving tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          for img in platform-api citizen-portal-api platform-web citizen-portal-web db-migrate; do
+            ref="${IMAGE_PREFIX}/${img}:${{ github.sha }}"
+            echo "Checking $ref"
+            docker manifest inspect "$ref" >/dev/null \
+              || { echo "::error::Missing image $ref — tag a commit that was built on main."; exit 1; }
+            docker buildx imagetools create --tag "${IMAGE_PREFIX}/${img}:test" "$ref"
+          done
+      - uses: ./.github/actions/openshift-helm-deploy
+        with:
+          values-file: values-test.yaml
+          namespace: ${{ vars.OPENSHIFT_NAMESPACE }}
+          openshift-server: ${{ vars.OPENSHIFT_SERVER }}
+          openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+          image-tag: ${{ github.sha }}
