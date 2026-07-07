@@ -66,7 +66,7 @@ valkey:
 # serves the SPA at / and reverse-proxies /api/* to the co-located BFF (API_UPSTREAM). The APIs have
 # NO external Route (route.enabled: false); they are reached only in-cluster via the web nginx.
 # Only the two *-web charts carry a route.subdomain → <subdomain>.<apps-domain> (default wildcard
-# cert, edge TLS). Confirm your apps domain and replace `apps.silver.devops.gov.bc.ca` if not Silver:
+# cert, edge TLS). Confirm your apps domain and replace `apps.gold.devops.gov.bc.ca` if your cluster's apps domain differs:
 #   oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'
 # OIDC_REDIRECT_URI now carries the /api prefix (through nginx) — register it verbatim in Keycloak.
 # OIDC_ISSUER is your IdP realm, not a cluster route. existingSecret secrets must be pre-created.
@@ -78,10 +78,11 @@ platform-api:
     enabled: false       # internal only — reached via platform-web nginx at /api/*
   env:
     LOG_LEVEL: debug
-    OIDC_ISSUER: https://<keycloak-host>/realms/sdg
-    OIDC_REDIRECT_URI: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca/api/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca/app
-    AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.silver.devops.gov.bc.ca
+    OIDC_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+    OIDC_CLIENT_ID: single-digital-gateway-idir-6379 # BC Gov CSS (IDIR) — set here (helm reverts live oc-edit)
+    OIDC_REDIRECT_URI: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca/api/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca/app
+    AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca
   migrations:
     image:
       tag: "dev"
@@ -96,10 +97,11 @@ citizen-portal-api:
     enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
   env:
     LOG_LEVEL: debug
-    OIDC_ISSUER: https://<keycloak-host>/realms/citizens
-    OIDC_REDIRECT_URI: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca/api/auth/callback
-    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca/
-    AUTH_ALLOWED_ORIGINS: https://sdg-portal-dev.apps.silver.devops.gov.bc.ca
+    OIDC_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+    OIDC_CLIENT_ID: single-digital-gateway-bc-services-card-6380 # BC Gov CSS (BC Services Card) — set here (helm reverts live oc-edit)
+    OIDC_REDIRECT_URI: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca/api/auth/callback
+    AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca/
+    AUTH_ALLOWED_ORIGINS: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # platform-web (staff SPA + front door). Serves the SPA and proxies /api/* → platform-api.
