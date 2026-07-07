@@ -18,7 +18,8 @@ const riverton: WorkspaceLike = {
 describe('workspace onboarding gate at /app', () => {
   it('shows a forced Create Workspace modal when the user has no workspace', async () => {
     mockAuth(authedUser, { workspaces: [] });
-    renderApp('/app');
+    const { router } = renderApp('/app');
+    await router.load();
 
     const dialog = await screen.findByRole('dialog', { name: /create workspace/i });
     expect(within(dialog).getByRole('textbox')).toBeInTheDocument();
@@ -29,7 +30,8 @@ describe('workspace onboarding gate at /app', () => {
 
   it('disables section navigation but keeps the profile card working with no workspace', async () => {
     mockAuth(authedUser, { workspaces: [] });
-    renderApp('/app');
+    const { router } = renderApp('/app');
+    await router.load();
 
     await screen.findByRole('dialog', { name: /create workspace/i });
     // Nav items render but are not navigable links.
@@ -42,6 +44,7 @@ describe('workspace onboarding gate at /app', () => {
   it('redirects to /app/:slug (the workspace overview) when the user has a workspace', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     const { router } = renderApp('/app');
+    await router.load();
 
     expect(await screen.findByText(/Overview is being set up/i)).toBeInTheDocument();
     await waitFor(() => expect(router.state.location.pathname).toBe('/app/riverton'));
@@ -50,6 +53,7 @@ describe('workspace onboarding gate at /app', () => {
   it('creates a workspace from the modal and lands on its new route', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [], createdSlug: 'new-town' });
     const { router } = renderApp('/app');
+    await router.load();
     const user = userEvent.setup();
 
     const dialog = await screen.findByRole('dialog', { name: /create workspace/i });

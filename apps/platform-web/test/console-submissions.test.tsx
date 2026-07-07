@@ -81,7 +81,8 @@ afterEach(() => {
 describe('console submissions', () => {
   it('lists the workspace submissions for review', async () => {
     mockSubmissions();
-    renderApp('/app/riverton/submissions');
+    const { router } = renderApp('/app/riverton/submissions');
+    await router.load();
     expect(
       await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -93,7 +94,8 @@ describe('console submissions', () => {
   it('opens a submission and records a review decision', async () => {
     const fetchMock = mockSubmissions();
     const user = userEvent.setup();
-    renderApp('/app/riverton/submissions/sub1');
+    const { router } = renderApp('/app/riverton/submissions/sub1');
+    await router.load();
 
     expect(
       await screen.findByRole('heading', { name: 'Amina Ali', level: 1 }, { timeout: 5000 }),

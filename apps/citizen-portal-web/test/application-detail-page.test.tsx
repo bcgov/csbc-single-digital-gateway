@@ -73,11 +73,12 @@ function mockBff({ app = jsonResponse(detail), me = jsonResponse(authedUser) } =
   return fetchMock;
 }
 
-function renderApp() {
+async function renderApp() {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/applications/sub1'] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -93,7 +94,7 @@ afterEach(() => {
 describe('citizen application detail page', () => {
   it('shows the application, its service, and the submitted answers', async () => {
     mockBff();
-    renderApp();
+    await renderApp();
     expect(
       await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -104,7 +105,7 @@ describe('citizen application detail page', () => {
 
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
-    renderApp();
+    await renderApp();
     const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 5000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
@@ -120,7 +121,7 @@ describe('citizen application detail page', () => {
         }),
       ),
     });
-    renderApp();
+    await renderApp();
     expect(
       await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -132,7 +133,7 @@ describe('citizen application detail page', () => {
 
   it('shows an approved banner with descriptive copy', async () => {
     mockBff({ app: jsonResponse(detailWith({ status: 'approved', statusLabel: 'Approved' })) });
-    renderApp();
+    await renderApp();
     await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 });
     // Banner-specific copy (distinct from the plain status label) — not present pre-feature.
     expect(screen.getByText(/this application has been approved/i)).toBeInTheDocument();
@@ -149,7 +150,7 @@ describe('citizen application detail page', () => {
         }),
       ),
     });
-    renderApp();
+    await renderApp();
     await userEvent
       .setup()
       .click(await screen.findByRole('button', { name: /make changes/i }, { timeout: 5000 }));
@@ -162,5 +163,5 @@ describe('citizen application detail page', () => {
       expect.stringContaining('/v1/me/applications/sub1/revise'),
       expect.objectContaining({ method: 'POST' }),
     );
-  }, 20000);
+  });
 });

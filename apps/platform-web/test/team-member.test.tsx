@@ -68,7 +68,8 @@ function mockTeamFetch(options: { user?: typeof authedUser; role?: 'admin' | 'me
 describe('member profile — workspace owner', () => {
   it('locks the role/status controls and explains it on the owner profile', async () => {
     mockTeamFetch();
-    renderApp('/app/riverton/team/m1');
+    const { router } = renderApp('/app/riverton/team/m1');
+    await router.load();
 
     // First mount compiles the code-split team route — allow extra time (3rd arg waitForOptions).
     expect(
@@ -88,7 +89,8 @@ describe('member profile — workspace owner', () => {
   it('lets the owner transfer ownership to another active member', async () => {
     const fetchMock = mockTeamFetch();
     const user = userEvent.setup();
-    renderApp('/app/riverton/team/m2');
+    const { router } = renderApp('/app/riverton/team/m2');
+    await router.load();
 
     expect(await screen.findByRole('heading', { name: 'Sam Lee' })).toBeInTheDocument();
     // Sam is editable (not the owner) and the owner can transfer to them.
@@ -115,7 +117,8 @@ describe('member profile — workspace owner', () => {
   it('shows a regular member another member’s role/status read-only (no form)', async () => {
     const viewer = { ...authedUser, id: 'u3' }; // a plain member, not an admin or the owner
     mockTeamFetch({ user: viewer, role: 'member' });
-    renderApp('/app/riverton/team/m2');
+    const { router } = renderApp('/app/riverton/team/m2');
+    await router.load();
 
     expect(
       await screen.findByRole('heading', { name: 'Sam Lee' }, { timeout: 5000 }),

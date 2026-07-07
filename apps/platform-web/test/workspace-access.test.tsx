@@ -18,13 +18,15 @@ const riverton: WorkspaceLike = {
 describe('accessing a workspace by slug', () => {
   it('shows a not-found state when the slug 404s', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
-    renderApp('/app/nope');
+    const { router } = renderApp('/app/nope');
+    await router.load();
     expect(await screen.findByText(/workspace not found/i)).toBeInTheDocument();
   });
 
   it('disables nav and top-bar actions on a 404 workspace (the switcher stays usable)', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
-    renderApp('/app/nope');
+    const { router } = renderApp('/app/nope');
+    await router.load();
 
     await screen.findByText(/workspace not found/i);
     // Section nav is disabled (not navigable links) and the search action is disabled…
@@ -54,7 +56,8 @@ async function confirmDelete(): Promise<void> {
 describe('renaming a workspace from settings', () => {
   it('saves a new workspace name via PATCH', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [riverton] });
-    renderApp('/app/riverton/settings');
+    const { router } = renderApp('/app/riverton/settings');
+    await router.load();
     const user = userEvent.setup();
 
     const input = await screen.findByLabelText(/workspace name/i);
@@ -75,6 +78,7 @@ describe('deleting a workspace from settings', () => {
   it('confirms, deletes, and redirects to a remaining workspace', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [riverton, townsville] });
     const { router } = renderApp('/app/riverton/settings');
+    await router.load();
 
     await confirmDelete();
 
@@ -91,6 +95,7 @@ describe('deleting a workspace from settings', () => {
   it('forces workspace creation only when the last workspace is deleted', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     const { router } = renderApp('/app/riverton/settings');
+    await router.load();
 
     await confirmDelete();
 

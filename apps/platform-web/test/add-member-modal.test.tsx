@@ -88,7 +88,8 @@ describe('add member flow', () => {
   it('lets an admin search staff, pick a role, and add a member', async () => {
     const fetchMock = mockTeamFetch('admin');
     const user = userEvent.setup();
-    renderApp('/app/riverton/team');
+    const { router } = renderApp('/app/riverton/team');
+    await router.load();
 
     // First mount compiles the code-split team route — allow extra time (3rd arg waitForOptions).
     const addButton = await screen.findByRole('button', { name: 'Add member' }, { timeout: 5000 });
@@ -122,7 +123,8 @@ describe('add member flow', () => {
 
   it('hides the Add member action from non-admins', async () => {
     mockTeamFetch('member');
-    renderApp('/app/riverton/team');
+    const { router } = renderApp('/app/riverton/team');
+    await router.load();
 
     expect(await screen.findByText('Maya Reyes', undefined, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add member' })).not.toBeInTheDocument();

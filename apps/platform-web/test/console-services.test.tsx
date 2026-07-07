@@ -144,14 +144,16 @@ function withServices(base: ReturnType<typeof mockAuth>) {
 describe('console services', () => {
   it('lists a workspace’s services', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services');
+    const { router } = renderApp('/app/riverton/services');
+    await router.load();
     expect(await screen.findByRole('link', { name: 'Permit application' })).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
   it('opens the New service modal (title + description) at /services/new', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/new');
+    const { router } = renderApp('/app/riverton/services/new');
+    await router.load();
     const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 8000 });
     expect(within(modal).getByLabelText(/title/i)).toBeInTheDocument();
     expect(within(modal).getByLabelText(/description/i)).toBeInTheDocument();
@@ -160,7 +162,8 @@ describe('console services', () => {
 
   it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/s1');
+    const { router } = renderApp('/app/riverton/services/s1');
+    await router.load();
     const user = userEvent.setup();
 
     // Service details tab (default): the JSONForms title control.

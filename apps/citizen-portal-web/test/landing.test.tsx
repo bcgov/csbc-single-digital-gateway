@@ -73,10 +73,16 @@ describe('citizen-portal-web home — signed out', () => {
     mockBff();
     renderHome();
     expect(
-      await screen.findByRole('heading', { name: 'Access government services online' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Access government services online' },
+        { timeout: 5000 },
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you can do' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Available services' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Discover services', level: 2 }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Log in to get started' })).toBeInTheDocument();
   });
 

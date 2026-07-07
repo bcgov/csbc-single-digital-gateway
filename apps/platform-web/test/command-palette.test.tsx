@@ -23,7 +23,8 @@ describe('command palette', () => {
         },
       ],
     });
-    renderApp('/app/riverton');
+    const { router } = renderApp('/app/riverton');
+    await router.load();
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: /search/i }));

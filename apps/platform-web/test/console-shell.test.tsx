@@ -25,7 +25,8 @@ describe('console auth presentation helpers', () => {
 describe('console shell — profile card on real /auth/me data', () => {
   it('renders the signed-in user name, role and initials in the sidebar', async () => {
     mockAuth(authedUser);
-    renderApp('/app');
+    const { router } = renderApp('/app');
+    await router.load();
 
     const profile = await screen.findByRole('button', { name: /Maya Reyes/ });
     expect(within(profile).getByText('Staff')).toBeInTheDocument();
@@ -39,7 +40,8 @@ describe('console shell — profile card on real /auth/me data', () => {
   it('logs out via the profile menu and returns to home', async () => {
     mockAuth(authedUser);
     const location = stubLocationAssign();
-    renderApp('/app');
+    const { router } = renderApp('/app');
+    await router.load();
 
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /Maya Reyes/ }));
@@ -69,7 +71,8 @@ describe('console shell — navigation uses real router links', () => {
         },
       ],
     });
-    renderApp('/app/riverton');
+    const { router } = renderApp('/app/riverton');
+    await router.load();
 
     await screen.findByRole('button', { name: /Maya Reyes/ });
     const cases: Array<[string, string]> = [

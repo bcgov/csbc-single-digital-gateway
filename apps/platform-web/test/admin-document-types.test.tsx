@@ -103,7 +103,8 @@ const basicEntry: Entry = {
 describe('admin document types', () => {
   it('lists document types with status', async () => {
     mockApi([basicEntry]);
-    renderApp('/admin/document-types');
+    const { router } = renderApp('/admin/document-types');
+    await router.load();
 
     expect(await screen.findByRole('link', { name: 'Basic Form' })).toBeInTheDocument();
     expect(screen.getByText('Published v1')).toBeInTheDocument();
@@ -111,7 +112,8 @@ describe('admin document types', () => {
 
   it('does not offer a create-document-type action', async () => {
     mockApi([basicEntry]);
-    renderApp('/admin/document-types');
+    const { router } = renderApp('/admin/document-types');
+    await router.load();
 
     await screen.findByRole('link', { name: 'Basic Form' });
     expect(screen.queryByRole('button', { name: /new document type/i })).not.toBeInTheDocument();
@@ -123,7 +125,8 @@ describe('admin document types', () => {
       versions: [{ ...basicEntry.versions[0]!, status: 'draft', publishedAt: null }],
     };
     const { fetchMock } = mockApi([draftEntry]);
-    renderApp('/admin/document-types/dt-1');
+    const { router } = renderApp('/admin/document-types/dt-1');
+    await router.load();
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: 'Publish' }));

@@ -18,7 +18,8 @@ const riverton: WorkspaceLike = {
 describe('header "New" button', () => {
   async function openSheet() {
     mockAuth(authedUser, { workspaces: [riverton] });
-    renderApp('/app/riverton');
+    const { router } = renderApp('/app/riverton');
+    await router.load();
     const user = userEvent.setup();
     // Wait for the workspace-scoped console to finish loading before opening the sheet.
     await screen.findByText(/Overview is being set up/i);

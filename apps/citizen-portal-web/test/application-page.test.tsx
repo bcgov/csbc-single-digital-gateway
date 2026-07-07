@@ -59,11 +59,12 @@ function mockBff({ me = jsonResponse(authedUser) } = {}) {
   return fetchMock;
 }
 
-function renderApply() {
+async function renderApply() {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/services/svc-1/apply/f1'] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -80,7 +81,7 @@ describe('citizen application page', () => {
   it('lets an authenticated citizen fill and submit, then confirms', async () => {
     const fetchMock = mockBff();
     const user = userEvent.setup();
-    renderApply();
+    await renderApply();
 
     expect(
       await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 5000 }),
@@ -100,7 +101,7 @@ describe('citizen application page', () => {
 
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
-    renderApply();
+    await renderApply();
     const link = await screen.findByRole('link', { name: /log in to apply/i }, { timeout: 5000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });

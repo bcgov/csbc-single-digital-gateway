@@ -19,7 +19,8 @@ const riverton: WorkspaceLike = {
 describe('admin shell at /admin', () => {
   it('renders the admin nav + "Back to app" for an admin', async () => {
     mockAuth(adminUser);
-    renderApp('/admin');
+    const { router } = renderApp('/admin');
+    await router.load();
 
     expect(await screen.findByText(/admin overview is being set up/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/admin');
@@ -32,13 +33,15 @@ describe('admin shell at /admin', () => {
 
   it('renders the Document Types placeholder at /admin/document-types', async () => {
     mockAuth(adminUser);
-    renderApp('/admin/document-types');
+    const { router } = renderApp('/admin/document-types');
+    await router.load();
     expect(await screen.findByText(/No document types yet/i)).toBeInTheDocument();
   });
 
   it('redirects a non-admin away from /admin to /app', async () => {
     mockAuth(authedUser, { workspaces: [] });
     const { router } = renderApp('/admin');
+    await router.load();
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/app'));
     expect(screen.queryByRole('link', { name: 'Document Types' })).not.toBeInTheDocument();
@@ -48,7 +51,8 @@ describe('admin shell at /admin', () => {
 describe('admin entry in the staff sidebar', () => {
   it('shows an Admin link for admins', async () => {
     mockAuth(adminUser, { workspaces: [riverton] });
-    renderApp('/app/riverton');
+    const { router } = renderApp('/app/riverton');
+    await router.load();
 
     await screen.findByRole('button', { name: /Maya Reyes/ });
     expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
@@ -56,7 +60,8 @@ describe('admin entry in the staff sidebar', () => {
 
   it('hides the Admin link for non-admins', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
-    renderApp('/app/riverton');
+    const { router } = renderApp('/app/riverton');
+    await router.load();
 
     await screen.findByRole('button', { name: /Maya Reyes/ });
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();

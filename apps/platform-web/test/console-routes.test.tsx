@@ -15,48 +15,51 @@ const riverton: WorkspaceLike = {
 };
 
 /** Mount the console scoped to the `riverton` workspace at the given section path. */
-function renderScoped(path: string) {
+async function renderScoped(path: string) {
   mockAuth(authedUser, { workspaces: [riverton] });
-  return renderApp(path);
+  const res = renderApp(path);
+  await res.router.load();
+  return res;
 }
 
 describe('console routes — every workspace-scoped destination resolves and renders', () => {
   it('renders the Overview placeholder at /app/:slug', async () => {
-    renderScoped('/app/riverton');
+    await renderScoped('/app/riverton');
     expect(await screen.findByText(/Overview is being set up/i)).toBeInTheDocument();
   });
 
   it('renders the Services empty state at /app/:slug/services', async () => {
-    renderScoped('/app/riverton/services');
+    await renderScoped('/app/riverton/services');
     expect(await screen.findByRole('heading', { name: 'Services', level: 1 })).toBeInTheDocument();
     expect(await screen.findByText(/No services yet/i)).toBeInTheDocument();
   });
 
   it('renders the Submissions empty state and status tabs at /app/:slug/submissions', async () => {
-    renderScoped('/app/riverton/submissions');
+    await renderScoped('/app/riverton/submissions');
     expect(await screen.findByText(/No submissions yet/i)).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 
   it('renders the Team empty state at /app/:slug/team', async () => {
-    renderScoped('/app/riverton/team');
+    await renderScoped('/app/riverton/team');
     expect(await screen.findByText(/Just you so far/i)).toBeInTheDocument();
   });
 
   it('renders the Reports empty state at /app/:slug/reports', async () => {
-    renderScoped('/app/riverton/reports');
+    await renderScoped('/app/riverton/reports');
     expect(await screen.findByText(/No saved reports yet/i)).toBeInTheDocument();
   });
 
   it('renders the Settings page with a danger zone at /app/:slug/settings', async () => {
-    renderScoped('/app/riverton/settings');
+    await renderScoped('/app/riverton/settings');
     expect(await screen.findByText('Workspace name')).toBeInTheDocument();
     expect(screen.getByText(/Danger zone/i)).toBeInTheDocument();
   });
 
   it('renders the user-scoped Account page prefilled with the signed-in user at /app/account', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
-    renderApp('/app/account');
+    const { router } = renderApp('/app/account');
+    await router.load();
     expect(await screen.findByDisplayValue('Maya Reyes')).toBeInTheDocument();
     expect(screen.getByDisplayValue('maya.reyes@riverton.gov')).toBeInTheDocument();
   });
