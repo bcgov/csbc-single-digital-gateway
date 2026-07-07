@@ -3,7 +3,7 @@ import { Input } from '@repo/ui/input';
 import { useMemo, useState } from 'react';
 import { FIELD_TYPES, type FieldGroup, type FieldTypeDef, type FieldTypeId } from './field-types';
 
-const GROUP_ORDER: FieldGroup[] = ['Core', 'Advanced', 'Rich text', 'Layout'];
+const GROUP_ORDER: FieldGroup[] = ['Core', 'Advanced', 'Rich text', 'Display', 'Layout'];
 
 function matches(def: FieldTypeDef, query: string): boolean {
   if (query === '') {

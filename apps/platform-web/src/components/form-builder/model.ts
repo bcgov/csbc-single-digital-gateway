@@ -27,14 +27,37 @@ export interface ControlNode {
   step?: number;
 }
 
+export type HeadingLevel = 2 | 3;
+export type TextAlign = 'left' | 'center' | 'right';
+
+/**
+ * A display-only element (heading / paragraph / rich text). It renders presentational content and
+ * collects NO data — it serializes to a `Label` uischema element with no `schema.properties` entry
+ * (feature 81). `id` is a stable identity persisted through serialize↔parse so its dnd sortable id
+ * stays stable across edits (controls rely on their schema `key` for the same purpose).
+ */
+export interface DisplayNode {
+  kind: 'display';
+  displayType: 'heading' | 'paragraph' | 'richtext';
+  id: string;
+  /** Heading / paragraph copy. Empty for richtext (content lives in `content`). */
+  text: string;
+  /** Heading only. */
+  level?: HeadingLevel;
+  /** Paragraph only. Absent = left (not serialized when left). */
+  align?: TextAlign;
+  /** Richtext only: the Lexical editor state (JSON), or null when empty. */
+  content?: unknown;
+}
+
 export interface ContainerNode {
   kind: 'container';
   layout: 'group' | 'horizontal';
   label?: string;
-  children: ControlNode[];
+  children: (ControlNode | DisplayNode)[];
 }
 
-export type FieldNode = ControlNode | ContainerNode;
+export type FieldNode = ControlNode | ContainerNode | DisplayNode;
 
 export interface FormModel {
   title: string;
@@ -80,15 +103,37 @@ export function uniqueKey(base: string, existing: string[]): string {
 
 // ── Field factory ───────────────────────────────────────────────────────────────────────────────
 
-type ControlFieldTypeId = Exclude<FieldTypeId, 'group' | 'horizontal'>;
+type DisplayFieldTypeId = 'heading' | 'paragraph' | 'richtextdisplay';
+type ControlFieldTypeId = Exclude<FieldTypeId, 'group' | 'horizontal' | DisplayFieldTypeId>;
+
+/** Generate a stable, unique id for a display node (persisted in the uischema for dnd identity). */
+function newDisplayId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
+/** A fresh display node for a Display-group palette type, with content defaults that round-trip. */
+function createDisplayField(fieldType: DisplayFieldTypeId): DisplayNode {
+  const id = newDisplayId();
+  if (fieldType === 'heading') {
+    return { kind: 'display', displayType: 'heading', id, text: 'Heading', level: 2 };
+  }
+  if (fieldType === 'paragraph') {
+    return { kind: 'display', displayType: 'paragraph', id, text: 'Paragraph text' };
+  }
+  return { kind: 'display', displayType: 'richtext', id, text: '', content: null };
+}
 
 /** A fresh node for a palette field type, with sensible defaults that round-trip. */
 export function createField(fieldType: ControlFieldTypeId): ControlNode;
+export function createField(fieldType: DisplayFieldTypeId): DisplayNode;
 export function createField(fieldType: 'group' | 'horizontal'): ContainerNode;
 export function createField(fieldType: FieldTypeId): FieldNode;
 export function createField(fieldType: FieldTypeId): FieldNode {
   if (fieldType === 'group' || fieldType === 'horizontal') {
     return { kind: 'container', layout: fieldType, children: [] };
+  }
+  if (fieldType === 'heading' || fieldType === 'paragraph' || fieldType === 'richtextdisplay') {
+    return createDisplayField(fieldType);
   }
   const node: ControlNode = {
     kind: 'control',
@@ -151,7 +196,7 @@ export function insertField(model: FormModel, node: FieldNode, target: DropTarge
     fields.splice(clamp(target.index, fields.length), 0, node);
   } else {
     const host = fields[container];
-    if (host !== undefined && host.kind === 'container' && node.kind === 'control') {
+    if (host !== undefined && host.kind === 'container' && node.kind !== 'container') {
       host.children.splice(clamp(target.index, host.children.length), 0, node);
     } else {
       fields.splice(clamp(target.index, fields.length), 0, node);
@@ -196,7 +241,7 @@ export function moveField(model: FormModel, from: Path, target: DropTarget): For
     fields.splice(clamp(index, fields.length), 0, node);
   } else {
     const host = fields[container];
-    if (host !== undefined && host.kind === 'container' && node.kind === 'control') {
+    if (host !== undefined && host.kind === 'container' && node.kind !== 'container') {
       host.children.splice(clamp(index, host.children.length), 0, node);
     } else {
       fields.splice(clamp(index, fields.length), 0, node);
@@ -211,9 +256,14 @@ export function allKeys(model: FormModel): string[] {
   for (const field of model.fields) {
     if (field.kind === 'control') {
       keys.push(field.key);
-    } else {
-      keys.push(...field.children.map((c) => c.key));
+    } else if (field.kind === 'container') {
+      for (const child of field.children) {
+        if (child.kind === 'control') {
+          keys.push(child.key);
+        }
+      }
     }
+    // Display nodes have no key — skipped.
   }
   return keys;
 }

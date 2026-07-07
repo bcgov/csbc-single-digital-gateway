@@ -5,8 +5,16 @@ import { Switch } from '@repo/ui/switch';
 import { Textarea } from '@repo/ui/textarea';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { DisplayInspector } from './display-inspector';
 import { ENUM_FIELD_TYPES } from './field-types';
-import type { ContainerNode, ControlNode, EnumOption, FieldNode, FormModel } from './model';
+import type {
+  ContainerNode,
+  ControlNode,
+  DisplayNode,
+  EnumOption,
+  FieldNode,
+  FormModel,
+} from './model';
 
 function Row({
   label,
@@ -183,6 +191,7 @@ export function Inspector({
   form,
   onChangeControl,
   onChangeContainer,
+  onChangeDisplay,
   onChangeForm,
 }: {
   node: FieldNode | null;
@@ -190,6 +199,7 @@ export function Inspector({
   form: Pick<FormModel, 'title' | 'description'>;
   onChangeControl: (patch: Partial<ControlNode>) => void;
   onChangeContainer: (patch: Partial<ContainerNode>) => void;
+  onChangeDisplay: (patch: Partial<DisplayNode>) => void;
   onChangeForm: (patch: Partial<Pick<FormModel, 'title' | 'description'>>) => void;
 }) {
   const body = (() => {
@@ -225,18 +235,28 @@ export function Inspector({
         </Row>
       );
     }
+    if (node.kind === 'display') {
+      return <DisplayInspector node={node} onChange={onChangeDisplay} />;
+    }
     const duplicateKey = allKeys.filter((k) => k === node.key).length > 1;
     return <ControlInspector node={node} duplicateKey={duplicateKey} onChange={onChangeControl} />;
   })();
+
+  const heading =
+    node === null
+      ? 'Form settings'
+      : node.kind === 'container'
+        ? 'Section'
+        : node.kind === 'display'
+          ? 'Content'
+          : 'Field settings';
 
   return (
     <section
       aria-label="Inspector"
       className="flex h-full flex-col gap-3 overflow-y-auto border-l border-border bg-card p-4"
     >
-      <h2 className="text-sm font-semibold">
-        {node === null ? 'Form settings' : node.kind === 'container' ? 'Section' : 'Field settings'}
-      </h2>
+      <h2 className="text-sm font-semibold">{heading}</h2>
       {body}
     </section>
   );

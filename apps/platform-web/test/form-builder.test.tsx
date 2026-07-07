@@ -95,6 +95,20 @@ describe('FormBuilder', () => {
     expect(dump().schema.required.length).toBe(1);
   });
 
+  it('clears the selected field when focusing the form Title', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const palette = screen.getByRole('region', { name: /palette/i });
+    await user.click(within(palette).getByRole('button', { name: /^text$/i }));
+    const canvas = screen.getByRole('region', { name: /canvas/i });
+    await user.click(within(canvas).getByRole('button', { name: /select field 1/i }));
+    const inspector = screen.getByRole('region', { name: /inspector/i });
+    expect(within(inspector).getByRole('heading', { name: /field settings/i })).toBeInTheDocument();
+    // Focusing the form-level Title deselects the field → inspector returns to form settings.
+    await user.click(within(canvas).getByRole('textbox', { name: /^title$/i }));
+    expect(within(inspector).getByRole('heading', { name: /form settings/i })).toBeInTheDocument();
+  });
+
   it('selects a layout container and shows section settings in the inspector', async () => {
     const user = userEvent.setup();
     render(<Harness />);
@@ -114,5 +128,82 @@ describe('FormBuilder', () => {
     const canvas = screen.getByRole('region', { name: /canvas/i });
     await user.click(within(canvas).getByRole('button', { name: /delete|remove/i }));
     expect(dump().uischema.elements).toHaveLength(0);
+  });
+
+  describe('display fields (inline editing)', () => {
+    it('edits a heading inline on the canvas, writing a Label element (no property)', async () => {
+      const user = userEvent.setup();
+      render(<Harness />);
+      const palette = screen.getByRole('region', { name: /palette/i });
+      await user.click(within(palette).getByRole('button', { name: /^heading$/i }));
+      const canvas = screen.getByRole('region', { name: /canvas/i });
+      const input = within(canvas).getByRole('textbox', { name: /^heading$/i });
+      await user.clear(input);
+      await user.type(input, 'Your details');
+      const after = dump();
+      expect(after.uischema.elements[0]).toMatchObject({
+        type: 'Label',
+        text: 'Your details',
+        options: { format: 'heading' },
+      });
+      // A display field collects no data.
+      expect(Object.keys(after.schema.properties)).toHaveLength(0);
+    });
+
+    it('selecting a heading shows its settings in the inspector and switches level', async () => {
+      const user = userEvent.setup();
+      render(<Harness />);
+      const palette = screen.getByRole('region', { name: /palette/i });
+      await user.click(within(palette).getByRole('button', { name: /^heading$/i }));
+      const canvas = screen.getByRole('region', { name: /canvas/i });
+      // Selecting the card (focusing its inline input) opens the inspector for this display field.
+      await user.click(within(canvas).getByRole('textbox', { name: /^heading$/i }));
+      const inspector = screen.getByRole('region', { name: /inspector/i });
+      expect(within(inspector).getByRole('heading', { name: /content/i })).toBeInTheDocument();
+      await user.click(within(inspector).getByRole('button', { name: /subheading/i }));
+      expect(dump().uischema.elements[0].options.level).toBe(3);
+    });
+
+    it('edits a paragraph inline on the canvas', async () => {
+      const user = userEvent.setup();
+      render(<Harness />);
+      const palette = screen.getByRole('region', { name: /palette/i });
+      await user.click(within(palette).getByRole('button', { name: /^paragraph$/i }));
+      const canvas = screen.getByRole('region', { name: /canvas/i });
+      const input = within(canvas).getByRole('textbox', { name: /^paragraph$/i });
+      await user.clear(input);
+      await user.type(input, 'Please read.');
+      expect(dump().uischema.elements[0]).toMatchObject({
+        type: 'Label',
+        text: 'Please read.',
+        options: { format: 'paragraph' },
+      });
+    });
+
+    it('sets paragraph alignment via the inspector', async () => {
+      const user = userEvent.setup();
+      render(<Harness />);
+      const palette = screen.getByRole('region', { name: /palette/i });
+      await user.click(within(palette).getByRole('button', { name: /^paragraph$/i }));
+      const canvas = screen.getByRole('region', { name: /canvas/i });
+      await user.click(within(canvas).getByRole('textbox', { name: /^paragraph$/i }));
+      const inspector = screen.getByRole('region', { name: /inspector/i });
+      await user.click(within(inspector).getByRole('button', { name: /align center/i }));
+      expect(dump().uischema.elements[0].options.align).toBe('center');
+    });
+
+    it('renders a rich-text editor inline on the canvas for a rich-text display field', async () => {
+      const user = userEvent.setup();
+      render(<Harness />);
+      const palette = screen.getByRole('region', { name: /palette/i });
+      // Two "Rich text" palette items: the data-collecting control (Rich text group) then the
+      // display field (Display group). The second is the display one.
+      const richTextButtons = within(palette).getAllByRole('button', { name: /^rich text$/i });
+      await user.click(richTextButtons[richTextButtons.length - 1] as HTMLElement);
+      const canvas = screen.getByRole('region', { name: /canvas/i });
+      // The inline editor exposes its formatting toolbar (proof an editable input is present).
+      expect(within(canvas).getByRole('toolbar', { name: /formatting/i })).toBeInTheDocument();
+      expect(dump().uischema.elements[0].options.format).toBe('richtext');
+    });
   });
 });

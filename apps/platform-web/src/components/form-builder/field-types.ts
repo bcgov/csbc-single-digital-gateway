@@ -4,10 +4,13 @@ import {
   ChevronDownSquare,
   CircleDot,
   Columns2,
+  FileText,
   Hash,
+  Heading,
   Layers,
   ListChecks,
   ListTodo,
+  Pilcrow,
   SlidersHorizontal,
   TextCursorInput,
   ToggleRight,
@@ -16,7 +19,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-/** Every authorable element. Controls become JSON-Schema properties; containers wrap children. */
+/**
+ * Every authorable element. Controls become JSON-Schema properties; containers wrap children;
+ * display fields render presentational content (heading / paragraph / rich text) and collect NO
+ * data (they emit a `Label` uischema element with no `schema.properties` entry — see feature 81).
+ */
 export type FieldTypeId =
   | 'text'
   | 'number'
@@ -30,10 +37,13 @@ export type FieldTypeId =
   | 'toggle'
   | 'oneof'
   | 'richtext'
+  | 'heading'
+  | 'paragraph'
+  | 'richtextdisplay'
   | 'group'
   | 'horizontal';
 
-export type FieldGroup = 'Core' | 'Advanced' | 'Rich text' | 'Layout';
+export type FieldGroup = 'Core' | 'Advanced' | 'Rich text' | 'Display' | 'Layout';
 
 export interface FieldTypeDef {
   id: FieldTypeId;
@@ -41,7 +51,7 @@ export interface FieldTypeDef {
   /** Short, one-line description shown on the palette card. */
   description: string;
   group: FieldGroup;
-  kind: 'control' | 'container';
+  kind: 'control' | 'container' | 'display';
   icon: LucideIcon;
   /** Optional keyword aliases the palette search also matches. */
   keywords?: string[];
@@ -149,6 +159,33 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     kind: 'control',
     icon: TextCursorInput,
     keywords: ['wysiwyg', 'lexical'],
+  },
+  {
+    id: 'heading',
+    label: 'Heading',
+    description: 'A section heading. Displays only — collects no data.',
+    group: 'Display',
+    kind: 'display',
+    icon: Heading,
+    keywords: ['title', 'subheading', 'h2', 'h3'],
+  },
+  {
+    id: 'paragraph',
+    label: 'Paragraph',
+    description: 'A block of guidance text. Displays only — collects no data.',
+    group: 'Display',
+    kind: 'display',
+    icon: Pilcrow,
+    keywords: ['text', 'copy', 'instructions'],
+  },
+  {
+    id: 'richtextdisplay',
+    label: 'Rich text',
+    description: 'Formatted content to read. Displays only — collects no data.',
+    group: 'Display',
+    kind: 'display',
+    icon: FileText,
+    keywords: ['formatted', 'content', 'guidance', 'lexical'],
   },
   {
     id: 'group',

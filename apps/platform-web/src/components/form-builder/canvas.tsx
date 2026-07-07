@@ -2,9 +2,9 @@ import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Textarea } from '@repo/ui/textarea';
 import { ROOT_GROUP } from './dnd';
-import { ContainerRow, ControlRow, EmptyDropZone, EndZone, pathEq } from './field-rows';
+import { ContainerRow, EmptyDropZone, EndZone, FieldRow, pathEq } from './field-rows';
 import type { FieldTypeId } from './field-types';
-import type { FieldNode, FormModel, Path } from './model';
+import type { DisplayNode, FieldNode, FormModel, Path } from './model';
 
 /** Center column: the form preview-as-editor — editable title/description + the draggable fields. */
 export function Canvas({
@@ -13,6 +13,7 @@ export function Canvas({
   paletteDragType,
   onSelect,
   onDelete,
+  onChangeDisplay,
   onChangeForm,
 }: {
   model: FormModel;
@@ -20,22 +21,11 @@ export function Canvas({
   paletteDragType: FieldTypeId | null;
   onSelect: (path: Path | null) => void;
   onDelete: (path: Path) => void;
+  onChangeDisplay: (path: Path, patch: Partial<DisplayNode>) => void;
   onChangeForm: (patch: Partial<Pick<FormModel, 'title' | 'description'>>) => void;
 }) {
   const renderField = (field: FieldNode, index: number) =>
-    field.kind === 'control' ? (
-      <ControlRow
-        key={field.key || index}
-        node={field}
-        index={index}
-        group={ROOT_GROUP}
-        path={[index]}
-        selected={pathEq(selectedPath, [index])}
-        paletteDragType={paletteDragType}
-        onSelect={onSelect}
-        onDelete={onDelete}
-      />
-    ) : (
+    field.kind === 'container' ? (
       <ContainerRow
         key={`container-${index}`}
         node={field}
@@ -44,6 +34,20 @@ export function Canvas({
         paletteDragType={paletteDragType}
         onSelect={onSelect}
         onDelete={onDelete}
+        onChangeDisplay={onChangeDisplay}
+      />
+    ) : (
+      <FieldRow
+        key={field.kind === 'control' ? field.key || index : field.id}
+        node={field}
+        index={index}
+        group={ROOT_GROUP}
+        path={[index]}
+        selected={pathEq(selectedPath, [index])}
+        paletteDragType={paletteDragType}
+        onSelect={onSelect}
+        onDelete={onDelete}
+        onChangeDisplay={onChangeDisplay}
       />
     );
 
@@ -65,6 +69,7 @@ export function Canvas({
             placeholder="Untitled"
             value={model.title}
             onChange={(event) => onChangeForm({ title: event.target.value })}
+            onFocus={() => onSelect(null)}
           />
         </div>
         <div className="mt-3 flex flex-col gap-1.5">
@@ -75,6 +80,7 @@ export function Canvas({
             value={model.description}
             onChange={(event) => onChangeForm({ description: event.target.value })}
             rows={3}
+            onFocus={() => onSelect(null)}
           />
         </div>
         <div className="mt-4 flex flex-col gap-2">
