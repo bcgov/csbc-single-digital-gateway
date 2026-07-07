@@ -69,8 +69,8 @@ platform-api:
     enabled: false       # internal only — reached via platform-web nginx at /api/*
   env:
     LOG_LEVEL: info
-    OIDC_ISSUER: https://<keycloak-host>/realms/sdg
-    OIDC_CLIENT_ID: platform-api # your Keycloak client ID — set here (helm reverts live oc-edit)
+    OIDC_ISSUER: https://test.loginproxy.gov.bc.ca/auth/realms/standard
+    OIDC_CLIENT_ID: single-digital-gateway-idir-6379 # BC Gov CSS (IDIR) — set here (helm reverts live oc-edit)
     OIDC_REDIRECT_URI: https://sdg-platform-test.apps.gold.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-test.apps.gold.devops.gov.bc.ca/app
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-test.apps.gold.devops.gov.bc.ca
@@ -88,8 +88,8 @@ citizen-portal-api:
     enabled: false       # internal only — reached via citizen-portal-web nginx at /api/*
   env:
     LOG_LEVEL: info
-    OIDC_ISSUER: https://<keycloak-host>/realms/citizens
-    OIDC_CLIENT_ID: citizen-portal-api # your Keycloak client ID — set here (helm reverts live oc-edit)
+    OIDC_ISSUER: https://test.loginproxy.gov.bc.ca/auth/realms/standard
+    OIDC_CLIENT_ID: single-digital-gateway-bc-services-card-6380 # BC Gov CSS (BC Services Card) — set here (helm reverts live oc-edit)
     OIDC_REDIRECT_URI: https://sdg-portal-test.apps.gold.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-test.apps.gold.devops.gov.bc.ca/
     AUTH_ALLOWED_ORIGINS: https://sdg-portal-test.apps.gold.devops.gov.bc.ca
