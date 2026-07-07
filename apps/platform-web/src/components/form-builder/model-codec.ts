@@ -7,10 +7,12 @@ import { ENUM_FIELD_TYPES, type FieldTypeId } from './field-types';
 import type {
   ContainerNode,
   ControlNode,
+  DisplayNode,
   EnumOption,
   FieldNode,
   FormDefinition,
   FormModel,
+  HeadingLevel,
 } from './model';
 
 type JsonObject = Record<string, unknown>;
@@ -100,6 +102,26 @@ function controlElement(node: ControlNode): JsonObject {
   return element;
 }
 
+/** A display-only node → a `Label` uischema element. Never emits a `schema.properties` entry. */
+function displayElement(node: DisplayNode): JsonObject {
+  const options: JsonObject = { format: node.displayType };
+  if (node.displayType === 'heading') {
+    options.level = node.level ?? 2;
+  }
+  if (node.displayType === 'paragraph' && node.align !== undefined && node.align !== 'left') {
+    options.align = node.align;
+  }
+  if (node.displayType === 'richtext') {
+    options.content = node.content ?? null;
+  }
+  return {
+    type: 'Label',
+    text: node.displayType === 'richtext' ? '' : node.text,
+    options,
+    i: node.id,
+  };
+}
+
 export function serializeModel(model: FormModel): FormDefinition {
   const properties: JsonObject = {};
   const required: string[] = [];
@@ -113,16 +135,22 @@ export function serializeModel(model: FormModel): FormDefinition {
     return controlElement(node);
   };
 
+  const serializeChild = (node: ControlNode | DisplayNode): JsonObject =>
+    node.kind === 'control' ? addControl(node) : displayElement(node);
+
   for (const field of model.fields) {
-    if (field.kind === 'control') {
-      elements.push(addControl(field));
-    } else {
+    if (field.kind === 'container') {
       const layoutType = field.layout === 'group' ? 'Group' : 'HorizontalLayout';
-      const child = { type: layoutType, elements: field.children.map(addControl) } as JsonObject;
+      const child = {
+        type: layoutType,
+        elements: field.children.map(serializeChild),
+      } as JsonObject;
       if (field.layout === 'group' && field.label !== undefined && field.label !== '') {
         child.label = field.label;
       }
       elements.push(child);
+    } else {
+      elements.push(serializeChild(field));
     }
   }
 
@@ -228,6 +256,44 @@ function parseControl(
   return node;
 }
 
+/** A `Label` element carrying `options.format` → a display node (else null for a plain label). */
+function parseDisplay(element: JsonObject): DisplayNode | null {
+  const options = (element.options as JsonObject | undefined) ?? {};
+  const format = options.format;
+  if (format !== 'heading' && format !== 'paragraph' && format !== 'richtext') {
+    return null;
+  }
+  const id = typeof element.i === 'string' ? element.i : globalThis.crypto.randomUUID();
+  const text = typeof element.text === 'string' ? element.text : '';
+  if (format === 'heading') {
+    const level: HeadingLevel = options.level === 3 ? 3 : 2;
+    return { kind: 'display', displayType: 'heading', id, text, level };
+  }
+  if (format === 'paragraph') {
+    const node: DisplayNode = { kind: 'display', displayType: 'paragraph', id, text };
+    if (options.align === 'center' || options.align === 'right') {
+      node.align = options.align;
+    }
+    return node;
+  }
+  return {
+    kind: 'display',
+    displayType: 'richtext',
+    id,
+    text: '',
+    content: options.content ?? null,
+  };
+}
+
+/** Parse one layout child element into a control or display node (else null). */
+function parseChild(
+  element: JsonObject,
+  schema: JsonObject,
+  required: Set<string>,
+): ControlNode | DisplayNode | null {
+  return element.type === 'Label' ? parseDisplay(element) : parseControl(element, schema, required);
+}
+
 export function parseModel(definition: FormDefinition): FormModel {
   const schema = (definition.schema as JsonObject | undefined) ?? {};
   const uischema = (definition.uischema as JsonObject | undefined) ?? {};
@@ -241,10 +307,15 @@ export function parseModel(definition: FormDefinition): FormModel {
       if (control !== null) {
         fields.push(control);
       }
+    } else if (element.type === 'Label') {
+      const display = parseDisplay(element);
+      if (display !== null) {
+        fields.push(display);
+      }
     } else if (element.type === 'Group' || element.type === 'HorizontalLayout') {
       const children = ((element.elements as JsonObject[] | undefined) ?? [])
-        .map((child) => parseControl(child, schema, required))
-        .filter((c): c is ControlNode => c !== null);
+        .map((child) => parseChild(child, schema, required))
+        .filter((c): c is ControlNode | DisplayNode => c !== null);
       const node: ContainerNode = {
         kind: 'container',
         layout: element.type === 'Group' ? 'group' : 'horizontal',

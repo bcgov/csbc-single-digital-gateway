@@ -2,10 +2,11 @@ import { CollisionPriority } from '@dnd-kit/abstract';
 import { useDroppable } from '@dnd-kit/react';
 import { useSortable } from '@dnd-kit/react/sortable';
 import { GripVertical, Trash2 } from 'lucide-react';
-import { ROOT_GROUP, containerId, controlId, groupId } from './dnd';
+import { DisplayCard } from './display-card';
+import { ROOT_GROUP, containerId, controlId, displayId, groupId } from './dnd';
 import { FieldPreview, previewNodeForType } from './field-card';
 import { type FieldTypeId } from './field-types';
-import type { ContainerNode, ControlNode, Path } from './model';
+import type { ContainerNode, ControlNode, DisplayNode, Path } from './model';
 
 export function pathEq(a: Path | null, b: Path): boolean {
   return a !== null && a.length === b.length && a.every((v, i) => v === b[i]);
@@ -43,8 +44,12 @@ function DeleteHandle({ label, onDelete }: { label: string; onDelete: () => void
   );
 }
 
-/** A field control rendered as a sortable row. Default plugins → live reflow opens the reorder gap. */
-export function ControlRow({
+/**
+ * A field (a data-collecting control OR a display-only node) rendered as a sortable row. Default
+ * plugins → live reflow opens the reorder gap. Controls are addressed by `f:<key>`, display nodes
+ * by `d:<id>` — both share the `'field'` sortable type so they interleave freely in a list.
+ */
+export function FieldRow({
   node,
   index,
   group,
@@ -53,8 +58,9 @@ export function ControlRow({
   paletteDragType,
   onSelect,
   onDelete,
+  onChangeDisplay,
 }: {
-  node: ControlNode;
+  node: ControlNode | DisplayNode;
   index: number;
   group: string;
   path: Path;
@@ -62,9 +68,10 @@ export function ControlRow({
   paletteDragType: FieldTypeId | null;
   onSelect: (path: Path) => void;
   onDelete: (path: Path) => void;
+  onChangeDisplay: (path: Path, patch: Partial<DisplayNode>) => void;
 }) {
   const { ref, handleRef, isDragSource, isDropTarget } = useSortable({
-    id: controlId(node.key),
+    id: node.kind === 'control' ? controlId(node.key) : displayId(node.id),
     index,
     group,
     type: 'field',
@@ -95,22 +102,35 @@ export function ControlRow({
           >
             <GripVertical className="size-4" aria-hidden />
           </button>
-          {/* The card body renders the REAL control (inert preview); clicking it selects the field. */}
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label={`Select field ${index + 1}`}
-            onClick={() => onSelect(path)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onSelect(path);
-              }
-            }}
-            className="min-w-0 flex-1 cursor-pointer text-left"
-          >
-            <FieldPreview node={node} />
-          </div>
+          {node.kind === 'display' ? (
+            // Content is edited inline; clicking/focusing the card selects it so the inspector shows
+            // its config (e.g. heading level). onFocusCapture covers keyboard focus into an input.
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- wraps real inputs; not a control itself
+            <div
+              className="min-w-0 flex-1"
+              onClick={() => onSelect(path)}
+              onFocusCapture={() => onSelect(path)}
+            >
+              <DisplayCard node={node} path={path} onChange={onChangeDisplay} />
+            </div>
+          ) : (
+            // The card body renders the REAL control (inert preview); clicking it selects the field.
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label={`Select field ${index + 1}`}
+              onClick={() => onSelect(path)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onSelect(path);
+                }
+              }}
+              className="min-w-0 flex-1 cursor-pointer text-left"
+            >
+              <FieldPreview node={node} />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -180,6 +200,7 @@ export function ContainerRow({
   paletteDragType,
   onSelect,
   onDelete,
+  onChangeDisplay,
 }: {
   node: ContainerNode;
   index: number;
@@ -187,6 +208,7 @@ export function ContainerRow({
   paletteDragType: FieldTypeId | null;
   onSelect: (path: Path) => void;
   onDelete: (path: Path) => void;
+  onChangeDisplay: (path: Path, patch: Partial<DisplayNode>) => void;
 }) {
   const label = node.label ?? (node.layout === 'group' ? 'Group' : 'Row');
   const { ref, handleRef, isDragSource, isDropTarget } = useSortable({
@@ -237,8 +259,8 @@ export function ContainerRow({
             }
           >
             {node.children.map((child, childIndex) => (
-              <ControlRow
-                key={child.key || childIndex}
+              <FieldRow
+                key={child.kind === 'control' ? child.key || childIndex : child.id}
                 node={child}
                 index={childIndex}
                 group={groupId(index)}
@@ -247,6 +269,7 @@ export function ContainerRow({
                 paletteDragType={paletteDragType}
                 onSelect={onSelect}
                 onDelete={onDelete}
+                onChangeDisplay={onChangeDisplay}
               />
             ))}
             {node.children.length === 0 ? (

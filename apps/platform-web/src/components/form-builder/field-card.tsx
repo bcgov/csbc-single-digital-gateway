@@ -1,18 +1,36 @@
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
+import { DisplayCard } from './display-card';
 import { FIELD_TYPE_BY_ID, type FieldTypeId } from './field-types';
 import { createField, serializeModel, type FieldNode } from './model';
 
 const noop = () => {};
 
 /**
- * Renders a single field exactly as a real form would — it serializes the node to a one-field
- * `{ schema, uischema }` and runs it through the actual `@repo/react` renderers (readonly + inert,
- * so it's a non-interactive preview). Used by the canvas cards, the drag overlay, and the drop
- * placeholder so authoring, dragging and dropping all look like the rendered field. `ghost` = the
- * dashed translucent placeholder variant.
+ * Renders a single field exactly as the canvas shows it, so the drag overlay and drop placeholder
+ * match the canvas card. Data-collecting controls serialize to a one-field `{ schema, uischema }`
+ * and run through the real `@repo/react` renderers (readonly + inert). **Display fields render the
+ * same `DisplayCard`** the canvas uses (inert here, so it's a non-interactive look-alike) — otherwise
+ * a dragged heading/paragraph/rich-text would show a different (read-only) preview than the editable
+ * card it came from. `ghost` = the dashed translucent placeholder variant.
  */
 export function FieldPreview({ node, ghost = false }: { node: FieldNode; ghost?: boolean }) {
-  const definition = serializeModel({ title: '', description: '', fields: [node] });
+  const body =
+    node.kind === 'display' ? (
+      <DisplayCard node={node} path={[]} onChange={noop} />
+    ) : (
+      (() => {
+        const definition = serializeModel({ title: '', description: '', fields: [node] });
+        return (
+          <JsonForms
+            schema={definition.schema as JsonSchema}
+            uischema={definition.uischema as unknown as UISchemaElement}
+            data={{}}
+            readonly
+            onChange={noop}
+          />
+        );
+      })()
+    );
   return (
     <div
       inert
@@ -22,13 +40,7 @@ export function FieldPreview({ node, ghost = false }: { node: FieldNode; ghost?:
           : 'pointer-events-none'
       }
     >
-      <JsonForms
-        schema={definition.schema as JsonSchema}
-        uischema={definition.uischema as unknown as UISchemaElement}
-        data={{}}
-        readonly
-        onChange={noop}
-      />
+      {body}
     </div>
   );
 }
@@ -40,8 +52,9 @@ export function previewNodeForType(fieldType: FieldTypeId): FieldNode {
   if (node.kind === 'control') {
     node.key = node.key || fieldType;
     node.label = label;
-  } else {
+  } else if (node.kind === 'container') {
     node.label = label;
   }
+  // Display nodes keep the default content set by createField (e.g. "Heading").
   return node;
 }

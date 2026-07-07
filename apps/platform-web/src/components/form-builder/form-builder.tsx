@@ -10,6 +10,7 @@ import { Inspector } from './inspector';
 import {
   type ContainerNode,
   type ControlNode,
+  type DisplayNode,
   type FieldNode,
   type FormDefinition,
   type FormModel,
@@ -58,18 +59,19 @@ export function FormBuilder({
 
   const addField = (fieldType: FieldTypeId) => {
     const node = createField(fieldType);
-    const target = selectedPath !== null ? model.fields[selectedPath[0] as number] : undefined;
     if (node.kind === 'control') {
       node.key = uniqueKey(fieldType, allKeys(model));
-      if (target !== undefined && target.kind === 'container') {
-        emit(
-          insertField(model, node, {
-            container: selectedPath![0] as number,
-            index: target.children.length,
-          }),
-        );
-        return;
-      }
+    }
+    // A control or display field added while a container is selected drops into that container.
+    const target = selectedPath !== null ? model.fields[selectedPath[0] as number] : undefined;
+    if (node.kind !== 'container' && target !== undefined && target.kind === 'container') {
+      emit(
+        insertField(model, node, {
+          container: selectedPath![0] as number,
+          index: target.children.length,
+        }),
+      );
+      return;
     }
     emit(insertField(model, node, { container: null, index: model.fields.length }));
   };
@@ -89,7 +91,7 @@ export function FormBuilder({
       if (child === undefined) {
         return;
       }
-      top.children[path[1] as number] = updater(child) as ControlNode;
+      top.children[path[1] as number] = updater(child) as ControlNode | DisplayNode;
     }
     emit({ ...model, fields });
   };
@@ -167,6 +169,9 @@ export function FormBuilder({
                 emit(deleteAt(model, path));
                 setSelectedPath(null);
               }}
+              onChangeDisplay={(path, patch) =>
+                replaceAt(path, (node) => ({ ...(node as DisplayNode), ...patch }))
+              }
               onChangeForm={(patch) => emit({ ...model, ...patch })}
             />
             <Inspector
@@ -180,6 +185,10 @@ export function FormBuilder({
               onChangeContainer={(patch) =>
                 selectedPath !== null &&
                 replaceAt(selectedPath, (node) => ({ ...(node as ContainerNode), ...patch }))
+              }
+              onChangeDisplay={(patch) =>
+                selectedPath !== null &&
+                replaceAt(selectedPath, (node) => ({ ...(node as DisplayNode), ...patch }))
               }
               onChangeForm={(patch) => emit({ ...model, ...patch })}
             />

@@ -23,7 +23,9 @@ const container = (children: ControlNode[] = []): ContainerNode => ({
 const rootKeys = (m: FormModel) => m.fields.map((f) => (f.kind === 'control' ? f.key : 'GROUP'));
 const childKeys = (m: FormModel, i: number) => {
   const f = m.fields[i];
-  return f && f.kind === 'container' ? f.children.map((c) => c.key) : [];
+  return f && f.kind === 'container'
+    ? f.children.map((c) => (c.kind === 'control' ? c.key : ''))
+    : [];
 };
 
 describe('form-builder dnd record', () => {
