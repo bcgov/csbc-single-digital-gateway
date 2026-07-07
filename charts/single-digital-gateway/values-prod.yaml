@@ -84,6 +84,11 @@ platform-api:
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-prod.apps.gold.devops.gov.bc.ca
     AUTH_RP_LOGOUT: "true"
   migrations:
+    # migrate-seed (not plain migrate): the pre-upgrade hook must also seed the essential
+    # reference data — the Service + Form document types (each with a published v1) — or the
+    # staff console 500s on the first data call (`GET /v1/services`). Idempotent (fixed ids +
+    # onConflictDoNothing), so safe on every deploy.
+    command: migrate-seed
     image:
       tag: "prod"
 

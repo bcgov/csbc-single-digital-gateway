@@ -84,6 +84,12 @@ platform-api:
     AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca/app
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca
   migrations:
+    # migrate-seed (not plain migrate): the pre-upgrade hook must also seed the essential
+    # reference data — the Service + Form document types (each with a published v1). Without
+    # them the staff console 500s on the first data call (`GET /v1/services` -> "Service
+    # document type is not seeded"). The seed is idempotent (fixed ids + onConflictDoNothing),
+    # so running it on every deploy is safe.
+    command: migrate-seed
     image:
       tag: "dev"
 
