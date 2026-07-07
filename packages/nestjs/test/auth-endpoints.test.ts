@@ -8,7 +8,7 @@ vi.mock('openid-client', () => ({
   randomNonce: () => 'nonce-def',
   buildAuthorizationUrl: (_config: unknown, params: Record<string, string>) =>
     new URL(`https://idp.example.com/authorize?${new URLSearchParams(params).toString()}`),
-  authorizationCodeGrant: () =>
+  authorizationCodeGrant: vi.fn(() =>
     Promise.resolve({
       claims: () => ({ sub: 'user-1', email: 'u@e.com' }),
       id_token: 'id-token-1',
@@ -16,10 +16,12 @@ vi.mock('openid-client', () => ({
       refresh_token: 'refresh-1',
       expires_in: 300,
     }),
+  ),
   buildEndSessionUrl: (_config: unknown, params: Record<string, string>) =>
     new URL(`https://idp.example.com/logout?${new URLSearchParams(params).toString()}`),
 }));
 
+import { authorizationCodeGrant } from 'openid-client';
 import { AuthController } from '../src/auth/auth.controller';
 import { passthroughUserSync } from '../src/auth/auth.user-sync';
 import type { SessionRegistry } from '../src/auth/session-registry';
@@ -112,6 +114,33 @@ describe('AuthController.callback', () => {
     // options.postLoginRedirect is http://localhost:3000/app → origin http://localhost:3000
     expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/app/services/42?tab=x');
     expect(session.returnTo).toBeUndefined();
+  });
+
+  it('exchanges against the configured redirectUri path even when a proxy stripped a prefix', async () => {
+    // redirectUri carries an `/api` prefix (external URL), but a reverse proxy strips it before the
+    // BFF sees the request, so originalUrl lacks it. The token-exchange redirect_uri must still match
+    // the authorization one (with `/api`) or the IdP returns invalid_grant (Incorrect redirect_uri).
+    vi.mocked(authorizationCodeGrant).mockClear();
+    const proxied: AuthModuleOptions = {
+      ...options,
+      redirectUri: 'https://app.example.gov/api/auth/callback',
+    };
+    const session: Record<string, unknown> = {
+      oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },
+    };
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc&iss=https%3A%2F%2Fidp.example.com',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+    await make(proxied).controller.callback(req as never, res as never);
+
+    const url = vi.mocked(authorizationCodeGrant).mock.calls[0]?.[1] as URL;
+    expect(url.pathname).toBe('/api/auth/callback');
+    expect(url.origin).toBe('https://app.example.gov');
+    expect(url.searchParams.get('code')).toBe('c');
+    expect(url.searchParams.get('state')).toBe('state-abc');
   });
 
   it('falls back to postLoginRedirect when no returnTo was stored', async () => {
