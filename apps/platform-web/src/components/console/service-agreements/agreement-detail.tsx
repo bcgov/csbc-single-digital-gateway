@@ -138,6 +138,9 @@ function AgreementBody({
   const busy = save.isPending || publish.isPending || newVersion.isPending;
   const latestPublished = latest?.status === 'published';
   const error = save.error ?? publish.error ?? newVersion.error;
+  // When reached FROM a service, the agreement follows the service's lifecycle (like application
+  // methods): edit the draft here, no publish/version workflow — the service publish publishes it.
+  const showWorkflow = scope.kind !== 'service';
 
   return (
     <div className="mx-auto flex max-w-[1000px] flex-col gap-4">
@@ -146,8 +149,10 @@ function AgreementBody({
         {backLink}
         <div className="flex items-center gap-2">
           {isGlobal ? <Badge variant="outline">Global</Badge> : null}
-          <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
-          {latestPublished && editableContext(isGlobal, isAdmin) ? (
+          {showWorkflow ? (
+            <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : null}
+          {showWorkflow && latestPublished && editableContext(isGlobal, isAdmin) ? (
             <Button
               size="sm"
               variant="outline"
@@ -163,7 +168,7 @@ function AgreementBody({
               {save.isPending ? <Spinner className="size-4" /> : null} Save
             </Button>
           ) : null}
-          {editable ? (
+          {showWorkflow && editable ? (
             <Button
               size="sm"
               type="button"

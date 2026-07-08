@@ -8,11 +8,12 @@ import {
   type Database,
   type DocumentVersion,
   documentReferences,
+  documentTypeVersions,
   documentVersions,
   documents,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import {
   type ApplicationInput,
   type ServiceVersionResponse,
@@ -194,11 +195,20 @@ export class ServiceVersionsService {
           errors: structureless,
         });
       }
-      // Every attached service agreement must still have a published version (agreements publish
-      // independently — a pinned version may have been archived by a newer agreement version).
+      // Attached service agreements authored FOR this service are drafts — they publish WITH the
+      // service (like application forms). Already-published (attached existing / global) agreements
+      // are left untouched. Each draft's pinned version is validated before publishing.
       const agrRefs = await tx
-        .select({ docId: documentReferences.targetDocumentId, title: documents.title })
+        .select({
+          targetVersionId: documentReferences.targetVersionId,
+          targetDocumentId: documentReferences.targetDocumentId,
+          status: documentVersions.status,
+          data: documentVersions.data,
+          typeVersionId: documentVersions.typeVersionId,
+          title: documents.title,
+        })
         .from(documentReferences)
+        .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
         .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
         .where(
           and(
@@ -206,27 +216,15 @@ export class ServiceVersionsService {
             eq(documentReferences.relation, 'service_agreement'),
           ),
         );
-      if (agrRefs.length > 0) {
-        const publishedRows = await tx
-          .select({ docId: documentVersions.documentId })
-          .from(documentVersions)
-          .where(
-            and(
-              inArray(
-                documentVersions.documentId,
-                agrRefs.map((ref) => ref.docId),
-              ),
-              eq(documentVersions.status, 'published'),
-            ),
-          );
-        const publishedDocs = new Set(publishedRows.map((row) => row.docId));
-        const unpublished = agrRefs
-          .filter((ref) => !publishedDocs.has(ref.docId))
-          .map((r) => r.title);
-        if (unpublished.length > 0) {
+      const draftAgreements = agrRefs.filter((ref) => ref.status === 'draft');
+      for (const agr of draftAgreements) {
+        // eslint-disable-next-line no-await-in-loop -- sequential reads share one tx connection
+        const agrSchema = await this.agreementTypeSchema(tx, agr.typeVersionId);
+        const agrResult = validateData(agrSchema, agr.data);
+        if (!agrResult.valid) {
           throw new UnprocessableEntityException({
-            message: 'Every attached service agreement must be published',
-            errors: unpublished,
+            message: `Service agreement "${agr.title}" is incomplete and can't be published`,
+            errors: agrResult.errors,
           });
         }
       }
@@ -247,6 +245,25 @@ export class ServiceVersionsService {
           .update(documentVersions)
           .set({ publishedAt: sql`now()`, archivedAt: null })
           .where(eq(documentVersions.id, app.targetVersionId));
+      }
+      // ...and its attached DRAFT agreements: demote each agreement doc's published version, then
+      // promote the pinned draft (≤1 published per document).
+      for (const agr of draftAgreements) {
+        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+        await tx
+          .update(documentVersions)
+          .set({ archivedAt: sql`now()` })
+          .where(
+            and(
+              eq(documentVersions.documentId, agr.targetDocumentId),
+              eq(documentVersions.status, 'published'),
+            ),
+          );
+        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+        await tx
+          .update(documentVersions)
+          .set({ publishedAt: sql`now()`, archivedAt: null })
+          .where(eq(documentVersions.id, agr.targetVersionId));
       }
       return toServiceVersionDto(this.orThrow(published[0]));
     });
@@ -319,6 +336,20 @@ export class ServiceVersionsService {
       throw new Error('document version mutation returned no row');
     }
     return row;
+  }
+
+  /** The JSON schema bound to a document type-version (to validate an agreement's data on publish). */
+  private async agreementTypeSchema(
+    tx: Tx,
+    typeVersionId: string,
+  ): Promise<Record<string, unknown>> {
+    const rows = await tx
+      .select({ definition: documentTypeVersions.definition })
+      .from(documentTypeVersions)
+      .where(eq(documentTypeVersions.id, typeVersionId))
+      .limit(1);
+    const definition = rows[0]?.definition as { schema?: unknown } | undefined;
+    return (definition?.schema as Record<string, unknown> | undefined) ?? {};
   }
 
   private async requireVersion(documentId: string, versionId: string): Promise<DocumentVersion> {
