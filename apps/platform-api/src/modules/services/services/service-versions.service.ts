@@ -12,7 +12,7 @@ import {
   documents,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   type ApplicationInput,
   type ServiceVersionResponse,
@@ -193,6 +193,42 @@ export class ServiceVersionsService {
           message: 'Every application method needs fields before the service can be published',
           errors: structureless,
         });
+      }
+      // Every attached service agreement must still have a published version (agreements publish
+      // independently — a pinned version may have been archived by a newer agreement version).
+      const agrRefs = await tx
+        .select({ docId: documentReferences.targetDocumentId, title: documents.title })
+        .from(documentReferences)
+        .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
+        .where(
+          and(
+            eq(documentReferences.ownerVersionId, versionId),
+            eq(documentReferences.relation, 'service_agreement'),
+          ),
+        );
+      if (agrRefs.length > 0) {
+        const publishedRows = await tx
+          .select({ docId: documentVersions.documentId })
+          .from(documentVersions)
+          .where(
+            and(
+              inArray(
+                documentVersions.documentId,
+                agrRefs.map((ref) => ref.docId),
+              ),
+              eq(documentVersions.status, 'published'),
+            ),
+          );
+        const publishedDocs = new Set(publishedRows.map((row) => row.docId));
+        const unpublished = agrRefs
+          .filter((ref) => !publishedDocs.has(ref.docId))
+          .map((r) => r.title);
+        if (unpublished.length > 0) {
+          throw new UnprocessableEntityException({
+            message: 'Every attached service agreement must be published',
+            errors: unpublished,
+          });
+        }
       }
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx

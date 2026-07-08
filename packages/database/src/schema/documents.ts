@@ -181,6 +181,7 @@ export const documentVersionContributors = pgTable(
 export const documentReferencesRelation = pgEnum('document_references_relation', [
   'related_service',
   'application_form',
+  'service_agreement',
 ]);
 
 /**
@@ -204,6 +205,10 @@ export const documentReferences = pgTable(
     targetDocumentId: uuid('target_document_id').notNull(),
     targetKind: text('target_kind').notNull(),
     workspaceId: uuid('workspace_id').notNull(),
+    // The target document's workspace, or NULL when the target is a GLOBAL agreement (only the
+    // `service_agreement` relation may be NULL here). Lets the target side be global-or-same-ws
+    // independently of the owner, which is always workspace-scoped (a service).
+    targetWorkspaceId: uuid('target_workspace_id'),
     relation: documentReferencesRelation('relation').notNull(),
     // Button label for an `application_form` reference (what a user clicks to apply). NULL for
     // `related_service` references.
@@ -238,8 +243,10 @@ export const documentReferences = pgTable(
       foreignColumns: [documents.id, documents.workspaceId],
       name: 'document_references_owner_ws_fk',
     }).onDelete('cascade'),
+    // Target side is keyed on target_workspace_id (not the shared workspace_id): NULL ⇒ a global
+    // agreement (FK skipped); non-NULL ⇒ the target must exist in that workspace.
     foreignKey({
-      columns: [table.targetDocumentId, table.workspaceId],
+      columns: [table.targetDocumentId, table.targetWorkspaceId],
       foreignColumns: [documents.id, documents.workspaceId],
       name: 'document_references_target_ws_fk',
     }).onDelete('restrict'),
@@ -250,7 +257,17 @@ export const documentReferences = pgTable(
     check('document_references_owner_kind_chk', sql`${table.ownerKind} = 'service'`),
     check(
       'document_references_relation_kind_chk',
-      sql`(${table.relation} = 'related_service' AND ${table.targetKind} = 'service') OR (${table.relation} = 'application_form' AND ${table.targetKind} IN ('basic-form', 'multi-stage-form'))`,
+      sql`(${table.relation} = 'related_service' AND ${table.targetKind} = 'service') OR (${table.relation} = 'application_form' AND ${table.targetKind} IN ('basic-form', 'multi-stage-form')) OR (${table.relation} = 'service_agreement' AND ${table.targetKind} = 'service-agreement')`,
+    ),
+    // A scoped target must be in the owner's workspace; a NULL target_workspace_id (global) is
+    // allowed only for the service_agreement relation (services/forms are never global).
+    check(
+      'document_references_target_ws_scope_chk',
+      sql`${table.targetWorkspaceId} IS NULL OR ${table.targetWorkspaceId} = ${table.workspaceId}`,
+    ),
+    check(
+      'document_references_target_ws_global_only_chk',
+      sql`${table.targetWorkspaceId} IS NOT NULL OR ${table.relation} = 'service_agreement'`,
     ),
     check(
       'document_references_no_self_chk',

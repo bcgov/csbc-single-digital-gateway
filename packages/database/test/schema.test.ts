@@ -64,6 +64,19 @@ describe('schema — documents.workspace_id nullable (global documents)', () => 
   });
 });
 
+describe('schema — document_references service_agreement relation + relaxed workspace', () => {
+  it('includes the service_agreement relation enum value', () => {
+    expect(schema.documentReferencesRelation.enumValues).toContain('service_agreement');
+  });
+
+  it('has a nullable target_workspace_id column (global-or-same-ws targets)', () => {
+    const { columns } = cfg(schema.documentReferences);
+    const targetWs = columns.find((c) => c.name === 'target_workspace_id');
+    expect(targetWs, 'document_references.target_workspace_id must exist').toBeDefined();
+    expect(targetWs?.notNull).toBe(false);
+  });
+});
+
 describe('schema — workspaces.slug default', () => {
   it('defaults slug to nanoid() at the database level', () => {
     const slug = cfg(schema.workspaces).columns.find((c) => c.name === 'slug');

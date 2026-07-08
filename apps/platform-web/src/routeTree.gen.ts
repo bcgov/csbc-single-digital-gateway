@@ -41,8 +41,10 @@ import { Route as AppSlugServicesIdRouteImport } from './routes/app.$slug.servic
 import { Route as AppSlugServiceAgreementsNewRouteImport } from './routes/app.$slug.service-agreements.new'
 import { Route as AppSlugServiceAgreementsIdRouteImport } from './routes/app.$slug.service-agreements.$id'
 import { Route as AppSlugServicesIdIndexRouteImport } from './routes/app.$slug.services.$id.index'
+import { Route as AppSlugServicesIdServiceAgreementsRouteImport } from './routes/app.$slug.services.$id.service-agreements'
 import { Route as AppSlugServicesIdApplicationMethodsRouteImport } from './routes/app.$slug.services.$id.application-methods'
 import { Route as AppSlugServicesIdVersionsVersionIdIndexRouteImport } from './routes/app.$slug.services.$id.versions.$versionId.index'
+import { Route as AppSlugServicesIdVersionsVersionIdServiceAgreementsRouteImport } from './routes/app.$slug.services.$id.versions.$versionId.service-agreements'
 import { Route as AppSlugServicesIdVersionsVersionIdApplicationMethodsIndexRouteImport } from './routes/app.$slug.services.$id.versions.$versionId.application-methods.index'
 import { Route as AppSlugServicesIdVersionsVersionIdApplicationMethodsNewRouteImport } from './routes/app.$slug.services.$id.versions.$versionId.application-methods.new'
 import { Route as AppSlugServicesIdVersionsVersionIdApplicationMethodsApplicationMethodIdRouteImport } from './routes/app.$slug.services.$id.versions.$versionId.application-methods.$applicationMethodId'
@@ -214,6 +216,12 @@ const AppSlugServicesIdIndexRoute = AppSlugServicesIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSlugServicesIdRoute,
 } as any)
+const AppSlugServicesIdServiceAgreementsRoute =
+  AppSlugServicesIdServiceAgreementsRouteImport.update({
+    id: '/service-agreements',
+    path: '/service-agreements',
+    getParentRoute: () => AppSlugServicesIdRoute,
+  } as any)
 const AppSlugServicesIdApplicationMethodsRoute =
   AppSlugServicesIdApplicationMethodsRouteImport.update({
     id: '/application-methods',
@@ -224,6 +232,12 @@ const AppSlugServicesIdVersionsVersionIdIndexRoute =
   AppSlugServicesIdVersionsVersionIdIndexRouteImport.update({
     id: '/versions/$versionId/',
     path: '/versions/$versionId/',
+    getParentRoute: () => AppSlugServicesIdRoute,
+  } as any)
+const AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute =
+  AppSlugServicesIdVersionsVersionIdServiceAgreementsRouteImport.update({
+    id: '/versions/$versionId/service-agreements',
+    path: '/versions/$versionId/service-agreements',
     getParentRoute: () => AppSlugServicesIdRoute,
   } as any)
 const AppSlugServicesIdVersionsVersionIdApplicationMethodsIndexRoute =
@@ -280,7 +294,9 @@ export interface FileRoutesByFullPath {
   '/app/$slug/submissions/': typeof AppSlugSubmissionsIndexRoute
   '/app/$slug/team/': typeof AppSlugTeamIndexRoute
   '/app/$slug/services/$id/application-methods': typeof AppSlugServicesIdApplicationMethodsRoute
+  '/app/$slug/services/$id/service-agreements': typeof AppSlugServicesIdServiceAgreementsRoute
   '/app/$slug/services/$id/': typeof AppSlugServicesIdIndexRoute
+  '/app/$slug/services/$id/versions/$versionId/service-agreements': typeof AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute
   '/app/$slug/services/$id/versions/$versionId/': typeof AppSlugServicesIdVersionsVersionIdIndexRoute
   '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
   '/app/$slug/services/$id/versions/$versionId/application-methods/new': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsNewRoute
@@ -309,7 +325,9 @@ export interface FileRoutesByTo {
   '/app/$slug/submissions': typeof AppSlugSubmissionsIndexRoute
   '/app/$slug/team': typeof AppSlugTeamIndexRoute
   '/app/$slug/services/$id/application-methods': typeof AppSlugServicesIdApplicationMethodsRoute
+  '/app/$slug/services/$id/service-agreements': typeof AppSlugServicesIdServiceAgreementsRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdIndexRoute
+  '/app/$slug/services/$id/versions/$versionId/service-agreements': typeof AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute
   '/app/$slug/services/$id/versions/$versionId': typeof AppSlugServicesIdVersionsVersionIdIndexRoute
   '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
   '/app/$slug/services/$id/versions/$versionId/application-methods/new': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsNewRoute
@@ -349,7 +367,9 @@ export interface FileRoutesById {
   '/app/$slug/submissions/': typeof AppSlugSubmissionsIndexRoute
   '/app/$slug/team/': typeof AppSlugTeamIndexRoute
   '/app/$slug/services/$id/application-methods': typeof AppSlugServicesIdApplicationMethodsRoute
+  '/app/$slug/services/$id/service-agreements': typeof AppSlugServicesIdServiceAgreementsRoute
   '/app/$slug/services/$id/': typeof AppSlugServicesIdIndexRoute
+  '/app/$slug/services/$id/versions/$versionId/service-agreements': typeof AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute
   '/app/$slug/services/$id/versions/$versionId/': typeof AppSlugServicesIdVersionsVersionIdIndexRoute
   '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
   '/app/$slug/services/$id/versions/$versionId/application-methods/new': typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsNewRoute
@@ -390,7 +410,9 @@ export interface FileRouteTypes {
     | '/app/$slug/submissions/'
     | '/app/$slug/team/'
     | '/app/$slug/services/$id/application-methods'
+    | '/app/$slug/services/$id/service-agreements'
     | '/app/$slug/services/$id/'
+    | '/app/$slug/services/$id/versions/$versionId/service-agreements'
     | '/app/$slug/services/$id/versions/$versionId/'
     | '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId'
     | '/app/$slug/services/$id/versions/$versionId/application-methods/new'
@@ -419,7 +441,9 @@ export interface FileRouteTypes {
     | '/app/$slug/submissions'
     | '/app/$slug/team'
     | '/app/$slug/services/$id/application-methods'
+    | '/app/$slug/services/$id/service-agreements'
     | '/app/$slug/services/$id'
+    | '/app/$slug/services/$id/versions/$versionId/service-agreements'
     | '/app/$slug/services/$id/versions/$versionId'
     | '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId'
     | '/app/$slug/services/$id/versions/$versionId/application-methods/new'
@@ -458,7 +482,9 @@ export interface FileRouteTypes {
     | '/app/$slug/submissions/'
     | '/app/$slug/team/'
     | '/app/$slug/services/$id/application-methods'
+    | '/app/$slug/services/$id/service-agreements'
     | '/app/$slug/services/$id/'
+    | '/app/$slug/services/$id/versions/$versionId/service-agreements'
     | '/app/$slug/services/$id/versions/$versionId/'
     | '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId'
     | '/app/$slug/services/$id/versions/$versionId/application-methods/new'
@@ -697,6 +723,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIdIndexRouteImport
       parentRoute: typeof AppSlugServicesIdRoute
     }
+    '/app/$slug/services/$id/service-agreements': {
+      id: '/app/$slug/services/$id/service-agreements'
+      path: '/service-agreements'
+      fullPath: '/app/$slug/services/$id/service-agreements'
+      preLoaderRoute: typeof AppSlugServicesIdServiceAgreementsRouteImport
+      parentRoute: typeof AppSlugServicesIdRoute
+    }
     '/app/$slug/services/$id/application-methods': {
       id: '/app/$slug/services/$id/application-methods'
       path: '/application-methods'
@@ -709,6 +742,13 @@ declare module '@tanstack/react-router' {
       path: '/versions/$versionId'
       fullPath: '/app/$slug/services/$id/versions/$versionId/'
       preLoaderRoute: typeof AppSlugServicesIdVersionsVersionIdIndexRouteImport
+      parentRoute: typeof AppSlugServicesIdRoute
+    }
+    '/app/$slug/services/$id/versions/$versionId/service-agreements': {
+      id: '/app/$slug/services/$id/versions/$versionId/service-agreements'
+      path: '/versions/$versionId/service-agreements'
+      fullPath: '/app/$slug/services/$id/versions/$versionId/service-agreements'
+      preLoaderRoute: typeof AppSlugServicesIdVersionsVersionIdServiceAgreementsRouteImport
       parentRoute: typeof AppSlugServicesIdRoute
     }
     '/app/$slug/services/$id/versions/$versionId/application-methods/': {
@@ -800,7 +840,9 @@ const AppSlugServiceAgreementsRouteWithChildren =
 
 interface AppSlugServicesIdRouteChildren {
   AppSlugServicesIdApplicationMethodsRoute: typeof AppSlugServicesIdApplicationMethodsRoute
+  AppSlugServicesIdServiceAgreementsRoute: typeof AppSlugServicesIdServiceAgreementsRoute
   AppSlugServicesIdIndexRoute: typeof AppSlugServicesIdIndexRoute
+  AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute: typeof AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute
   AppSlugServicesIdVersionsVersionIdIndexRoute: typeof AppSlugServicesIdVersionsVersionIdIndexRoute
   AppSlugServicesIdVersionsVersionIdApplicationMethodsApplicationMethodIdRoute: typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsApplicationMethodIdRoute
   AppSlugServicesIdVersionsVersionIdApplicationMethodsNewRoute: typeof AppSlugServicesIdVersionsVersionIdApplicationMethodsNewRoute
@@ -810,7 +852,11 @@ interface AppSlugServicesIdRouteChildren {
 const AppSlugServicesIdRouteChildren: AppSlugServicesIdRouteChildren = {
   AppSlugServicesIdApplicationMethodsRoute:
     AppSlugServicesIdApplicationMethodsRoute,
+  AppSlugServicesIdServiceAgreementsRoute:
+    AppSlugServicesIdServiceAgreementsRoute,
   AppSlugServicesIdIndexRoute: AppSlugServicesIdIndexRoute,
+  AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute:
+    AppSlugServicesIdVersionsVersionIdServiceAgreementsRoute,
   AppSlugServicesIdVersionsVersionIdIndexRoute:
     AppSlugServicesIdVersionsVersionIdIndexRoute,
   AppSlugServicesIdVersionsVersionIdApplicationMethodsApplicationMethodIdRoute:

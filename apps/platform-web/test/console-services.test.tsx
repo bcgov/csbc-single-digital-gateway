@@ -109,6 +109,9 @@ function withServices(base: ReturnType<typeof mockAuth>) {
           hasSubmissions: true,
         });
       }
+      if (segs[segs.length - 1] === 'agreements') {
+        return json({ items: [] });
+      }
       if (segs[segs.length - 1] === 'references') {
         return json({
           items: [
@@ -172,6 +175,10 @@ describe('console services', () => {
     await user.click(screen.getByRole('tab', { name: /application methods/i }));
     expect(await screen.findByText('Permit form')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
+
+    // Service agreements tab: its panel (empty state) — guards the tab wiring.
+    await user.click(screen.getByRole('tab', { name: /service agreements/i }));
+    expect(await screen.findByText(/no agreements yet/i)).toBeInTheDocument();
 
     // Publish through the summary modal (no unsaved changes ⇒ the Publish trigger is enabled).
     await user.click(screen.getByRole('tab', { name: /service details/i }));

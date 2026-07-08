@@ -102,6 +102,7 @@ export async function copyReferences(
       targetKind: documentReferences.targetKind,
       targetDocumentId: documentReferences.targetDocumentId,
       targetVersionId: documentReferences.targetVersionId,
+      targetWorkspaceId: documentReferences.targetWorkspaceId,
       formTitle: documents.title,
       formKind: documents.kind,
       formTypeId: documentVersions.typeId,
@@ -142,6 +143,10 @@ export async function copyReferences(
       targetDocumentId = formDoc.id;
       targetVersionId = one(formVersionRows, 'form version copy').id;
     }
+    // A copied application_form gets a fresh form document in the owner's workspace; other
+    // relations keep the source's target_workspace_id (NULL for a global service agreement).
+    const targetWorkspaceId =
+      src.relation === 'application_form' ? source.workspaceId : src.targetWorkspaceId;
     // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
     await tx.insert(documentReferences).values({
       ownerVersionId: source.newVersionId,
@@ -151,6 +156,7 @@ export async function copyReferences(
       targetDocumentId,
       targetKind: src.targetKind,
       workspaceId: source.workspaceId,
+      targetWorkspaceId,
       relation: src.relation,
       label: src.label,
       position: src.position,

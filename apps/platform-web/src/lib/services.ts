@@ -195,6 +195,71 @@ export function serviceReferencesQueryOptions(id: string, versionId: string) {
   });
 }
 
+export interface ServiceAgreementRef {
+  id: string;
+  agreementDocumentId: string;
+  agreementVersionId: string;
+  title: string;
+  isOptional: boolean;
+  isGlobal: boolean;
+  position: number;
+  createdAt: string;
+}
+
+/** The service agreements attached to a service version (feature 86). */
+export function serviceAgreementRefsQueryOptions(id: string, versionId: string) {
+  return queryOptions({
+    queryKey: ['services', 'detail', id, 'agreements', versionId] as const,
+    queryFn: async () => {
+      const envelope = await ok<{ items: ServiceAgreementRef[] }>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
+          { credentials: 'include' },
+        ),
+      );
+      return envelope.items;
+    },
+    staleTime: 10_000,
+  });
+}
+
+export function attachServiceAgreement(
+  id: string,
+  versionId: string,
+  agreementDocumentId: string,
+): Promise<ServiceAgreementRef> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
+    'POST',
+    { agreementDocumentId },
+  );
+}
+
+/** Create a NEW draft workspace agreement in the service's workspace and attach it, atomically. */
+export function createServiceAgreement(
+  id: string,
+  versionId: string,
+): Promise<ServiceAgreementRef> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements/new`,
+    'POST',
+  );
+}
+
+export async function detachServiceAgreement(
+  id: string,
+  versionId: string,
+  referenceId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements/${encodeURIComponent(referenceId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
   return ok<T>(
     await fetch(url, {
