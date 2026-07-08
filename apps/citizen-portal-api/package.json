@@ -9,6 +9,9 @@
     "lint": "oxlint",
     "start": "node dist/src/main.js",
     "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "test:e2e": "vitest run test/e2e \"e2e.test.ts\"",
+    "test:unit": "vitest run test/unit \"unit.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -40,6 +43,7 @@
     "@types/express-session": "^1.19.0",
     "@types/node": "26.0.0",
     "@types/supertest": "7.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "supertest": "7.2.2",
     "unplugin-swc": "1.5.9"
   }

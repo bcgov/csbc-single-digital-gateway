@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import { DATABASE_CLIENT } from '@repo/nestjs/database';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AppModule } from '../src/app.module';
+import { AppModule } from '../../src/app.module';
 
 // DATABASE_URL is provided by test/setup.ts; createDatabase() is lazy, so no real Postgres
 // is needed — a socket is only opened on the first query.

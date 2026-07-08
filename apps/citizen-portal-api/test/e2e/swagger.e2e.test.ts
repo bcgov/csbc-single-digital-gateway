@@ -2,8 +2,8 @@ import { type INestApplication, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AppModule } from '../src/app.module';
-import { setupSwagger } from '../src/swagger';
+import { AppModule } from '../../src/app.module';
+import { setupSwagger } from '../../src/swagger';
 
 describe('swagger docs (e2e)', () => {
   let app: INestApplication;

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { ValkeySessionRegistry } from '../src/auth/valkey-session-registry';
+import { ValkeySessionRegistry } from '../../../src/auth/valkey-session-registry';
 
 /** Minimal in-memory fake of the iovalkey commands the registry uses. */
 const makeClient = (sets: Record<string, string[]> = {}) => ({

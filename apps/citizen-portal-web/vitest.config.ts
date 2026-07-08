@@ -27,5 +27,12 @@ export default defineConfig({
     // default and flake with "Test timed out in 5000ms". Give them ample headroom.
     testTimeout: 20000,
     hookTimeout: 20000,
+    coverage: {
+      enabled: true,
+      provider: 'v8',
+      include: ['src/**/*.tsx'],
+      exclude: ['src/main.tsx', 'src/router.tsx', 'src/routeTree.gen.ts', 'src/vite-env.d.ts'],
+      reportOnFailure: true,
+    },
   },
 });

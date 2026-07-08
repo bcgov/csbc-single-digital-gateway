@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateEnv } from '../src/config/env.schema';
+import { validateEnv } from '../../../src/config/env.schema';
 
 // Required (no-default) vars a valid base env must always supply.
 const DB_URL = 'postgresql://postgres:postgres@localhost:5432/sdg';
