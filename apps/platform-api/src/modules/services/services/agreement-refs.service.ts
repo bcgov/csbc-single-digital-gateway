@@ -180,7 +180,8 @@ export class AgreementRefsService {
     });
   }
 
-  /** Detach an agreement from a service draft version. */
+  /** Detach an agreement from a service draft version. If the agreement is a draft (never published)
+   * with no remaining references, it was only ever created for this service — delete it too. */
   async detach(
     userId: string,
     serviceId: string,
@@ -189,19 +190,41 @@ export class AgreementRefsService {
   ): Promise<void> {
     await this.services.requireDocument(userId, serviceId);
     await this.requireDraftOwner(serviceId, versionId);
-    const deleted = await this.db
-      .delete(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.id, referenceId),
-          eq(documentReferences.ownerVersionId, versionId),
-          eq(documentReferences.relation, 'service_agreement'),
-        ),
-      )
-      .returning({ id: documentReferences.id });
-    if (deleted[0] === undefined) {
-      throw new NotFoundException('Agreement reference not found');
-    }
+    await this.db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(documentReferences)
+        .where(
+          and(
+            eq(documentReferences.id, referenceId),
+            eq(documentReferences.ownerVersionId, versionId),
+            eq(documentReferences.relation, 'service_agreement'),
+          ),
+        )
+        .returning({ agreementId: documentReferences.targetDocumentId });
+      const row = deleted[0];
+      if (row === undefined) {
+        throw new NotFoundException('Agreement reference not found');
+      }
+      const remaining = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(documentReferences)
+        .where(eq(documentReferences.targetDocumentId, row.agreementId));
+      const published = await tx
+        .select({ id: documentVersions.id })
+        .from(documentVersions)
+        .where(
+          and(
+            eq(documentVersions.documentId, row.agreementId),
+            eq(documentVersions.status, 'published'),
+          ),
+        )
+        .limit(1);
+      if ((remaining[0]?.n ?? 0) === 0 && published[0] === undefined) {
+        // Orphaned draft agreement (created for this service, never published) — remove it (cascades
+        // its versions). Published or still-referenced agreements are kept.
+        await tx.delete(documents).where(eq(documents.id, row.agreementId));
+      }
+    });
   }
 
   /** List the agreements attached to a service version, resolved to title/is-optional/scope. */

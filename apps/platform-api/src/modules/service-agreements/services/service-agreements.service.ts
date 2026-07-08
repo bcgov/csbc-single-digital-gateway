@@ -117,10 +117,13 @@ export class ServiceAgreementsService {
       }
       scope = isNull(documents.workspaceId);
     }
+    // Only surface agreements with a currently-published version — a draft-only agreement (e.g. one
+    // created inline for a service but never published) shouldn't clutter the reusable catalog.
+    const hasPublished = sql`exists (select 1 from ${documentVersions} dv where dv.document_id = ${documents.id} and dv.status = 'published')`;
     const docs = await this.db
       .select()
       .from(documents)
-      .where(and(eq(documents.kind, KIND), scope))
+      .where(and(eq(documents.kind, KIND), scope, hasPublished))
       .orderBy(desc(documents.createdAt));
     return Promise.all(
       docs.map(async (doc) => {

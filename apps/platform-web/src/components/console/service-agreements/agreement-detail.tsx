@@ -195,29 +195,33 @@ function AgreementBody({
         />
       </div>
 
-      <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
-        <span className="text-sm font-medium">Associated services</span>
-        {services.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Not attached to any service yet — attach it from a service&apos;s Service agreements
-            tab.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {services.map((service) => (
-              <li key={service.id}>
-                <Link
-                  to="/app/$slug/services/$id"
-                  params={{ slug: service.workspaceSlug, id: service.id }}
-                  className="text-sm font-medium text-foreground hover:underline"
-                >
-                  {service.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Associated services only matter in the standalone editor — not when editing an agreement
+          reached FROM a service (you're already in that service's context). */}
+      {showWorkflow ? (
+        <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+          <span className="text-sm font-medium">Associated services</span>
+          {services.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Not attached to any service yet — attach it from a service&apos;s Service agreements
+              tab.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {services.map((service) => (
+                <li key={service.id}>
+                  <Link
+                    to="/app/$slug/services/$id"
+                    params={{ slug: service.workspaceSlug, id: service.id }}
+                    className="text-sm font-medium text-foreground hover:underline"
+                  >
+                    {service.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }
