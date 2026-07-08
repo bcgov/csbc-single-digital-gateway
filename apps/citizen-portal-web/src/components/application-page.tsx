@@ -134,10 +134,17 @@ export function ApplicationPage() {
   const agreements = useQuery(
     serviceAgreementsQueryOptions(serviceId, Boolean(user) && form.isSuccess && draft.isSuccess),
   );
-  // The consent gate blocks the form until every agreement is decided (required = approved). Once
-  // the citizen continues we mount the form; a submit-time 422 resets this so the gate can re-open.
+  // The consent gate blocks the form until the citizen explicitly presses Continue. `gateEngaged`
+  // latches once consent is needed, so recording the LAST decision doesn't auto-advance the page —
+  // only `onContinue` (→ proceeded) mounts the form. A submit-time 422 resets `proceeded` and the
+  // refetch re-flags `consentNeeded`, so the gate re-opens for a newly published agreement version.
   const [proceeded, setProceeded] = useState(false);
-  const showGate = agreements.isSuccess && consentPending(agreements.data) && !proceeded;
+  const [gateEngaged, setGateEngaged] = useState(false);
+  const consentNeeded = agreements.isSuccess && consentPending(agreements.data);
+  useEffect(() => {
+    if (consentNeeded) setGateEngaged(true);
+  }, [consentNeeded]);
+  const showGate = (gateEngaged || consentNeeded) && !proceeded;
 
   return (
     <CitizenShell activeNav="services">
