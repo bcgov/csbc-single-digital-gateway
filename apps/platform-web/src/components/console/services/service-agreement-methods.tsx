@@ -83,8 +83,8 @@ export function ServiceAgreementMethods({
             >
               <span className="flex min-w-0 items-center gap-2">
                 <Link
-                  to="/app/$slug/service-agreements/$id"
-                  params={{ slug, id: ref.agreementDocumentId }}
+                  to="/app/$slug/services/$id/versions/$versionId/service-agreements/$agreementId"
+                  params={{ slug, id: serviceId, versionId, agreementId: ref.agreementDocumentId }}
                   className="truncate text-sm font-medium text-foreground hover:underline"
                 >
                   {ref.title}

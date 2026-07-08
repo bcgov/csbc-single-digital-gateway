@@ -102,7 +102,11 @@ describe('service agreement methods panel', () => {
     mockFetch();
     renderPanel();
     const link = await screen.findByRole('link', { name: 'Terms of service' });
-    expect(link).toHaveAttribute('href', expect.stringContaining('/service-agreements/a-attached'));
+    // Edited from a path under the service detail (like application methods).
+    expect(link).toHaveAttribute(
+      'href',
+      expect.stringContaining('/services/s1/versions/sv1/service-agreements/a-attached'),
+    );
     expect(screen.getByText('Required')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add service agreement/i })).toBeInTheDocument();

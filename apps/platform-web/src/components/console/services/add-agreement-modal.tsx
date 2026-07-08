@@ -64,10 +64,10 @@ export function AddAgreementModal({
     onSuccess: async (ref) => {
       await invalidate();
       onOpenChange(false);
-      // Author the new draft agreement in its editor (then publish it to satisfy the service gate).
+      // Author the new draft agreement in its editor (under the service; back returns here).
       await navigate({
-        to: '/app/$slug/service-agreements/$id',
-        params: { slug, id: ref.agreementDocumentId },
+        to: '/app/$slug/services/$id/versions/$versionId/service-agreements/$agreementId',
+        params: { slug, id: serviceId, versionId, agreementId: ref.agreementDocumentId },
       });
     },
   });

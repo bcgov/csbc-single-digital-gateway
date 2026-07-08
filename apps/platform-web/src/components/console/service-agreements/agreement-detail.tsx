@@ -103,8 +103,19 @@ function AgreementBody({
     },
   });
 
-  const backLink =
-    scope.kind === 'workspace' ? (
+  let backLink;
+  if (scope.kind === 'service') {
+    backLink = (
+      <Link
+        to="/app/$slug/services/$id/service-agreements"
+        params={{ slug: scope.slug, id: scope.serviceId }}
+        className="text-sm text-muted-foreground hover:underline"
+      >
+        ← Back to service
+      </Link>
+    );
+  } else if (scope.kind === 'workspace') {
+    backLink = (
       <Link
         to="/app/$slug/service-agreements"
         params={{ slug: scope.slug }}
@@ -112,7 +123,9 @@ function AgreementBody({
       >
         ← All agreements
       </Link>
-    ) : (
+    );
+  } else {
+    backLink = (
       <Link
         to="/admin/service-agreements"
         className="text-sm text-muted-foreground hover:underline"
@@ -120,6 +133,7 @@ function AgreementBody({
         ← All agreements
       </Link>
     );
+  }
 
   const busy = save.isPending || publish.isPending || newVersion.isPending;
   const latestPublished = latest?.status === 'published';
