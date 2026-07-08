@@ -98,34 +98,41 @@ function renderPanel(readonly = false) {
 }
 
 describe('service agreement methods panel', () => {
-  it('lists attached agreements with a Required badge and create/attach actions', async () => {
+  it('lists attached agreements with a Required badge and an Add button', async () => {
     mockFetch();
     renderPanel();
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     expect(screen.getByText('Required')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create agreement/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /attach existing/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add service agreement/i })).toBeInTheDocument();
   });
 
-  it('the attach picker shows only published, not-already-attached agreements', async () => {
+  it('the Add modal offers create + attach, and the attach step lists only published, not-attached', async () => {
     mockFetch();
     renderPanel();
     await screen.findByText('Terms of service');
-    await userEvent.click(screen.getByRole('button', { name: /attach existing/i }));
-    const dialog = await screen.findByRole('dialog', { name: /attach a service agreement/i });
-    // Published + not attached → shown.
+    await userEvent.click(screen.getByRole('button', { name: /add service agreement/i }));
+    const dialog = await screen.findByRole('dialog', { name: /add a service agreement/i });
+    // Chooser: both options present.
+    expect(
+      within(dialog).getByRole('button', { name: /create a new agreement/i }),
+    ).toBeInTheDocument();
+    const attachChoice = within(dialog).getByRole('button', {
+      name: /attach an existing agreement/i,
+    });
+    await userEvent.click(attachChoice);
+    // Picker: published + not attached → shown; draft + already-attached → excluded.
     expect(await within(dialog).findByText('Privacy policy')).toBeInTheDocument();
-    // Draft → excluded; already-attached → excluded.
     expect(within(dialog).queryByText('Draft notice')).not.toBeInTheDocument();
     expect(within(dialog).queryByText('Terms of service')).not.toBeInTheDocument();
   });
 
-  it('hides create/attach/detach affordances when readonly', async () => {
+  it('hides the Add and detach affordances when readonly', async () => {
     mockFetch();
     renderPanel(true);
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /create agreement/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /attach existing/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /add service agreement/i }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /detach/i })).not.toBeInTheDocument();
   });
 });
