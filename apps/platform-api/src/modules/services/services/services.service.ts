@@ -272,8 +272,10 @@ export class ServicesService {
     }
   }
 
-  /** The document must exist AND the caller be a member of its workspace; 404 otherwise. */
-  async requireDocument(userId: string, id: string): Promise<Document> {
+  /** The document must exist AND the caller be a member of its workspace; 404 otherwise. The
+   * membership inner-join can only match a workspace-scoped document (a global, workspace-NULL
+   * document has no workspace_id to join on), so the returned document's workspace is non-null. */
+  async requireDocument(userId: string, id: string): Promise<Document & { workspaceId: string }> {
     const rows = await this.db
       .select({ doc: documents })
       .from(documents)
@@ -287,9 +289,9 @@ export class ServicesService {
       .where(eq(documents.id, id))
       .limit(1);
     const row = rows[0];
-    if (row === undefined) {
+    if (row === undefined || row.doc.workspaceId === null) {
       throw new NotFoundException('Service not found');
     }
-    return row.doc;
+    return { ...row.doc, workspaceId: row.doc.workspaceId };
   }
 }

@@ -20,6 +20,7 @@ import { ValkeySessionRegistry } from './auth/valkey-session-registry';
 import { validateEnv, type Env } from './config/env.schema';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { FormsModule } from './modules/forms/forms.module';
+import { ServiceAgreementsModule } from './modules/service-agreements/service-agreements.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { ServicesModule } from './modules/services/services.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
@@ -110,6 +111,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     DocumentTypesModule,
     ServicesModule,
     FormsModule,
+    ServiceAgreementsModule,
     SubmissionsModule,
   ],
   // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses

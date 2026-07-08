@@ -30,9 +30,9 @@ export const documents = pgTable(
   {
     id: uuidPk(),
     typeId: uuid('type_id').notNull(),
-    workspaceId: uuid('workspace_id')
-      .notNull()
-      .references(() => workspaces.id, { onDelete: 'restrict' }),
+    // Nullable: NULL = a GLOBAL document (shared catalog, e.g. an admin-authored service
+    // agreement), like document_types.workspace_id. Non-NULL = workspace-scoped as usual.
+    workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'restrict' }),
     // `kind` is denormalized from the type and pinned by the composite FK below so it can never
     // drift. It lets document_references DB-enforce "owner is a service" / "target kind matches".
     kind: text('kind').notNull(),

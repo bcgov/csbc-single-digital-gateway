@@ -55,6 +55,15 @@ describe('schema — users (soft delete + citext email)', () => {
   });
 });
 
+describe('schema — documents.workspace_id nullable (global documents)', () => {
+  it('allows a NULL workspace_id so a document can be global (e.g. an admin service agreement)', () => {
+    const { columns } = cfg(schema.documents);
+    const workspaceId = columns.find((c) => c.name === 'workspace_id');
+    expect(workspaceId, 'documents.workspace_id must exist').toBeDefined();
+    expect(workspaceId?.notNull).toBe(false);
+  });
+});
+
 describe('schema — workspaces.slug default', () => {
   it('defaults slug to nanoid() at the database level', () => {
     const slug = cfg(schema.workspaces).columns.find((c) => c.name === 'slug');

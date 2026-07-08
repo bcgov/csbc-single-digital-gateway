@@ -16,22 +16,30 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AppSlugRouteImport } from './routes/app.$slug'
+import { Route as AdminServiceAgreementsRouteImport } from './routes/admin.service-agreements'
 import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
 import { Route as AppSlugIndexRouteImport } from './routes/app.$slug.index'
+import { Route as AdminServiceAgreementsIndexRouteImport } from './routes/admin.service-agreements.index'
 import { Route as AdminDocumentTypesIndexRouteImport } from './routes/admin.document-types.index'
 import { Route as AppSlugTeamRouteImport } from './routes/app.$slug.team'
 import { Route as AppSlugSubmissionsRouteImport } from './routes/app.$slug.submissions'
 import { Route as AppSlugSettingsRouteImport } from './routes/app.$slug.settings'
 import { Route as AppSlugServicesRouteImport } from './routes/app.$slug.services'
+import { Route as AppSlugServiceAgreementsRouteImport } from './routes/app.$slug.service-agreements'
 import { Route as AppSlugReportsRouteImport } from './routes/app.$slug.reports'
+import { Route as AdminServiceAgreementsNewRouteImport } from './routes/admin.service-agreements.new'
+import { Route as AdminServiceAgreementsIdRouteImport } from './routes/admin.service-agreements.$id'
 import { Route as AdminDocumentTypesIdRouteImport } from './routes/admin.document-types.$id'
 import { Route as AppSlugTeamIndexRouteImport } from './routes/app.$slug.team.index'
 import { Route as AppSlugSubmissionsIndexRouteImport } from './routes/app.$slug.submissions.index'
 import { Route as AppSlugServicesIndexRouteImport } from './routes/app.$slug.services.index'
+import { Route as AppSlugServiceAgreementsIndexRouteImport } from './routes/app.$slug.service-agreements.index'
 import { Route as AppSlugTeamMemberIdRouteImport } from './routes/app.$slug.team.$memberId'
 import { Route as AppSlugSubmissionsIdRouteImport } from './routes/app.$slug.submissions.$id'
 import { Route as AppSlugServicesNewRouteImport } from './routes/app.$slug.services.new'
 import { Route as AppSlugServicesIdRouteImport } from './routes/app.$slug.services.$id'
+import { Route as AppSlugServiceAgreementsNewRouteImport } from './routes/app.$slug.service-agreements.new'
+import { Route as AppSlugServiceAgreementsIdRouteImport } from './routes/app.$slug.service-agreements.$id'
 import { Route as AppSlugServicesIdIndexRouteImport } from './routes/app.$slug.services.$id.index'
 import { Route as AppSlugServicesIdApplicationMethodsRouteImport } from './routes/app.$slug.services.$id.application-methods'
 import { Route as AppSlugServicesIdVersionsVersionIdIndexRouteImport } from './routes/app.$slug.services.$id.versions.$versionId.index'
@@ -74,6 +82,11 @@ const AppSlugRoute = AppSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminServiceAgreementsRoute = AdminServiceAgreementsRouteImport.update({
+  id: '/service-agreements',
+  path: '/service-agreements',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDocumentTypesRoute = AdminDocumentTypesRouteImport.update({
   id: '/document-types',
   path: '/document-types',
@@ -84,6 +97,12 @@ const AppSlugIndexRoute = AppSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSlugRoute,
 } as any)
+const AdminServiceAgreementsIndexRoute =
+  AdminServiceAgreementsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminServiceAgreementsRoute,
+  } as any)
 const AdminDocumentTypesIndexRoute = AdminDocumentTypesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -109,11 +128,29 @@ const AppSlugServicesRoute = AppSlugServicesRouteImport.update({
   path: '/services',
   getParentRoute: () => AppSlugRoute,
 } as any)
+const AppSlugServiceAgreementsRoute =
+  AppSlugServiceAgreementsRouteImport.update({
+    id: '/service-agreements',
+    path: '/service-agreements',
+    getParentRoute: () => AppSlugRoute,
+  } as any)
 const AppSlugReportsRoute = AppSlugReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
   getParentRoute: () => AppSlugRoute,
 } as any)
+const AdminServiceAgreementsNewRoute =
+  AdminServiceAgreementsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AdminServiceAgreementsRoute,
+  } as any)
+const AdminServiceAgreementsIdRoute =
+  AdminServiceAgreementsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AdminServiceAgreementsRoute,
+  } as any)
 const AdminDocumentTypesIdRoute = AdminDocumentTypesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -134,6 +171,12 @@ const AppSlugServicesIndexRoute = AppSlugServicesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSlugServicesRoute,
 } as any)
+const AppSlugServiceAgreementsIndexRoute =
+  AppSlugServiceAgreementsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppSlugServiceAgreementsRoute,
+  } as any)
 const AppSlugTeamMemberIdRoute = AppSlugTeamMemberIdRouteImport.update({
   id: '/$memberId',
   path: '/$memberId',
@@ -154,6 +197,18 @@ const AppSlugServicesIdRoute = AppSlugServicesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppSlugServicesRoute,
 } as any)
+const AppSlugServiceAgreementsNewRoute =
+  AppSlugServiceAgreementsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AppSlugServiceAgreementsRoute,
+  } as any)
+const AppSlugServiceAgreementsIdRoute =
+  AppSlugServiceAgreementsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AppSlugServiceAgreementsRoute,
+  } as any)
 const AppSlugServicesIdIndexRoute = AppSlugServicesIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -197,22 +252,30 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
+  '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
+  '/admin/service-agreements/$id': typeof AdminServiceAgreementsIdRoute
+  '/admin/service-agreements/new': typeof AdminServiceAgreementsNewRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
+  '/app/$slug/service-agreements': typeof AppSlugServiceAgreementsRouteWithChildren
   '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRouteWithChildren
   '/app/$slug/team': typeof AppSlugTeamRouteWithChildren
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
+  '/admin/service-agreements/': typeof AdminServiceAgreementsIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
+  '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
+  '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRouteWithChildren
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/submissions/$id': typeof AppSlugSubmissionsIdRoute
   '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
+  '/app/$slug/service-agreements/': typeof AppSlugServiceAgreementsIndexRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
   '/app/$slug/submissions/': typeof AppSlugSubmissionsIndexRoute
   '/app/$slug/team/': typeof AppSlugTeamIndexRoute
@@ -229,13 +292,19 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
+  '/admin/service-agreements/$id': typeof AdminServiceAgreementsIdRoute
+  '/admin/service-agreements/new': typeof AdminServiceAgreementsNewRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/admin/document-types': typeof AdminDocumentTypesIndexRoute
+  '/admin/service-agreements': typeof AdminServiceAgreementsIndexRoute
   '/app/$slug': typeof AppSlugIndexRoute
+  '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
+  '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/submissions/$id': typeof AppSlugSubmissionsIdRoute
   '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
+  '/app/$slug/service-agreements': typeof AppSlugServiceAgreementsIndexRoute
   '/app/$slug/services': typeof AppSlugServicesIndexRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsIndexRoute
   '/app/$slug/team': typeof AppSlugTeamIndexRoute
@@ -252,22 +321,30 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
+  '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
+  '/admin/service-agreements/$id': typeof AdminServiceAgreementsIdRoute
+  '/admin/service-agreements/new': typeof AdminServiceAgreementsNewRoute
   '/app/$slug/reports': typeof AppSlugReportsRoute
+  '/app/$slug/service-agreements': typeof AppSlugServiceAgreementsRouteWithChildren
   '/app/$slug/services': typeof AppSlugServicesRouteWithChildren
   '/app/$slug/settings': typeof AppSlugSettingsRoute
   '/app/$slug/submissions': typeof AppSlugSubmissionsRouteWithChildren
   '/app/$slug/team': typeof AppSlugTeamRouteWithChildren
   '/admin/document-types/': typeof AdminDocumentTypesIndexRoute
+  '/admin/service-agreements/': typeof AdminServiceAgreementsIndexRoute
   '/app/$slug/': typeof AppSlugIndexRoute
+  '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
+  '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRouteWithChildren
   '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/submissions/$id': typeof AppSlugSubmissionsIdRoute
   '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
+  '/app/$slug/service-agreements/': typeof AppSlugServiceAgreementsIndexRoute
   '/app/$slug/services/': typeof AppSlugServicesIndexRoute
   '/app/$slug/submissions/': typeof AppSlugSubmissionsIndexRoute
   '/app/$slug/team/': typeof AppSlugTeamIndexRoute
@@ -285,22 +362,30 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/admin/document-types'
+    | '/admin/service-agreements'
     | '/app/$slug'
     | '/app/account'
     | '/admin/'
     | '/app/'
     | '/admin/document-types/$id'
+    | '/admin/service-agreements/$id'
+    | '/admin/service-agreements/new'
     | '/app/$slug/reports'
+    | '/app/$slug/service-agreements'
     | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
     | '/admin/document-types/'
+    | '/admin/service-agreements/'
     | '/app/$slug/'
+    | '/app/$slug/service-agreements/$id'
+    | '/app/$slug/service-agreements/new'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/new'
     | '/app/$slug/submissions/$id'
     | '/app/$slug/team/$memberId'
+    | '/app/$slug/service-agreements/'
     | '/app/$slug/services/'
     | '/app/$slug/submissions/'
     | '/app/$slug/team/'
@@ -317,13 +402,19 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/admin/document-types/$id'
+    | '/admin/service-agreements/$id'
+    | '/admin/service-agreements/new'
     | '/app/$slug/reports'
     | '/app/$slug/settings'
     | '/admin/document-types'
+    | '/admin/service-agreements'
     | '/app/$slug'
+    | '/app/$slug/service-agreements/$id'
+    | '/app/$slug/service-agreements/new'
     | '/app/$slug/services/new'
     | '/app/$slug/submissions/$id'
     | '/app/$slug/team/$memberId'
+    | '/app/$slug/service-agreements'
     | '/app/$slug/services'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
@@ -339,22 +430,30 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/admin/document-types'
+    | '/admin/service-agreements'
     | '/app/$slug'
     | '/app/account'
     | '/admin/'
     | '/app/'
     | '/admin/document-types/$id'
+    | '/admin/service-agreements/$id'
+    | '/admin/service-agreements/new'
     | '/app/$slug/reports'
+    | '/app/$slug/service-agreements'
     | '/app/$slug/services'
     | '/app/$slug/settings'
     | '/app/$slug/submissions'
     | '/app/$slug/team'
     | '/admin/document-types/'
+    | '/admin/service-agreements/'
     | '/app/$slug/'
+    | '/app/$slug/service-agreements/$id'
+    | '/app/$slug/service-agreements/new'
     | '/app/$slug/services/$id'
     | '/app/$slug/services/new'
     | '/app/$slug/submissions/$id'
     | '/app/$slug/team/$memberId'
+    | '/app/$slug/service-agreements/'
     | '/app/$slug/services/'
     | '/app/$slug/submissions/'
     | '/app/$slug/team/'
@@ -423,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/service-agreements': {
+      id: '/admin/service-agreements'
+      path: '/service-agreements'
+      fullPath: '/admin/service-agreements'
+      preLoaderRoute: typeof AdminServiceAgreementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/document-types': {
       id: '/admin/document-types'
       path: '/document-types'
@@ -436,6 +542,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/$slug/'
       preLoaderRoute: typeof AppSlugIndexRouteImport
       parentRoute: typeof AppSlugRoute
+    }
+    '/admin/service-agreements/': {
+      id: '/admin/service-agreements/'
+      path: '/'
+      fullPath: '/admin/service-agreements/'
+      preLoaderRoute: typeof AdminServiceAgreementsIndexRouteImport
+      parentRoute: typeof AdminServiceAgreementsRoute
     }
     '/admin/document-types/': {
       id: '/admin/document-types/'
@@ -472,12 +585,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesRouteImport
       parentRoute: typeof AppSlugRoute
     }
+    '/app/$slug/service-agreements': {
+      id: '/app/$slug/service-agreements'
+      path: '/service-agreements'
+      fullPath: '/app/$slug/service-agreements'
+      preLoaderRoute: typeof AppSlugServiceAgreementsRouteImport
+      parentRoute: typeof AppSlugRoute
+    }
     '/app/$slug/reports': {
       id: '/app/$slug/reports'
       path: '/reports'
       fullPath: '/app/$slug/reports'
       preLoaderRoute: typeof AppSlugReportsRouteImport
       parentRoute: typeof AppSlugRoute
+    }
+    '/admin/service-agreements/new': {
+      id: '/admin/service-agreements/new'
+      path: '/new'
+      fullPath: '/admin/service-agreements/new'
+      preLoaderRoute: typeof AdminServiceAgreementsNewRouteImport
+      parentRoute: typeof AdminServiceAgreementsRoute
+    }
+    '/admin/service-agreements/$id': {
+      id: '/admin/service-agreements/$id'
+      path: '/$id'
+      fullPath: '/admin/service-agreements/$id'
+      preLoaderRoute: typeof AdminServiceAgreementsIdRouteImport
+      parentRoute: typeof AdminServiceAgreementsRoute
     }
     '/admin/document-types/$id': {
       id: '/admin/document-types/$id'
@@ -507,6 +641,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIndexRouteImport
       parentRoute: typeof AppSlugServicesRoute
     }
+    '/app/$slug/service-agreements/': {
+      id: '/app/$slug/service-agreements/'
+      path: '/'
+      fullPath: '/app/$slug/service-agreements/'
+      preLoaderRoute: typeof AppSlugServiceAgreementsIndexRouteImport
+      parentRoute: typeof AppSlugServiceAgreementsRoute
+    }
     '/app/$slug/team/$memberId': {
       id: '/app/$slug/team/$memberId'
       path: '/$memberId'
@@ -534,6 +675,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/$slug/services/$id'
       preLoaderRoute: typeof AppSlugServicesIdRouteImport
       parentRoute: typeof AppSlugServicesRoute
+    }
+    '/app/$slug/service-agreements/new': {
+      id: '/app/$slug/service-agreements/new'
+      path: '/new'
+      fullPath: '/app/$slug/service-agreements/new'
+      preLoaderRoute: typeof AppSlugServiceAgreementsNewRouteImport
+      parentRoute: typeof AppSlugServiceAgreementsRoute
+    }
+    '/app/$slug/service-agreements/$id': {
+      id: '/app/$slug/service-agreements/$id'
+      path: '/$id'
+      fullPath: '/app/$slug/service-agreements/$id'
+      preLoaderRoute: typeof AppSlugServiceAgreementsIdRouteImport
+      parentRoute: typeof AppSlugServiceAgreementsRoute
     }
     '/app/$slug/services/$id/': {
       id: '/app/$slug/services/$id/'
@@ -593,17 +748,55 @@ const AdminDocumentTypesRouteChildren: AdminDocumentTypesRouteChildren = {
 const AdminDocumentTypesRouteWithChildren =
   AdminDocumentTypesRoute._addFileChildren(AdminDocumentTypesRouteChildren)
 
+interface AdminServiceAgreementsRouteChildren {
+  AdminServiceAgreementsIdRoute: typeof AdminServiceAgreementsIdRoute
+  AdminServiceAgreementsNewRoute: typeof AdminServiceAgreementsNewRoute
+  AdminServiceAgreementsIndexRoute: typeof AdminServiceAgreementsIndexRoute
+}
+
+const AdminServiceAgreementsRouteChildren: AdminServiceAgreementsRouteChildren =
+  {
+    AdminServiceAgreementsIdRoute: AdminServiceAgreementsIdRoute,
+    AdminServiceAgreementsNewRoute: AdminServiceAgreementsNewRoute,
+    AdminServiceAgreementsIndexRoute: AdminServiceAgreementsIndexRoute,
+  }
+
+const AdminServiceAgreementsRouteWithChildren =
+  AdminServiceAgreementsRoute._addFileChildren(
+    AdminServiceAgreementsRouteChildren,
+  )
+
 interface AdminRouteChildren {
   AdminDocumentTypesRoute: typeof AdminDocumentTypesRouteWithChildren
+  AdminServiceAgreementsRoute: typeof AdminServiceAgreementsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDocumentTypesRoute: AdminDocumentTypesRouteWithChildren,
+  AdminServiceAgreementsRoute: AdminServiceAgreementsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface AppSlugServiceAgreementsRouteChildren {
+  AppSlugServiceAgreementsIdRoute: typeof AppSlugServiceAgreementsIdRoute
+  AppSlugServiceAgreementsNewRoute: typeof AppSlugServiceAgreementsNewRoute
+  AppSlugServiceAgreementsIndexRoute: typeof AppSlugServiceAgreementsIndexRoute
+}
+
+const AppSlugServiceAgreementsRouteChildren: AppSlugServiceAgreementsRouteChildren =
+  {
+    AppSlugServiceAgreementsIdRoute: AppSlugServiceAgreementsIdRoute,
+    AppSlugServiceAgreementsNewRoute: AppSlugServiceAgreementsNewRoute,
+    AppSlugServiceAgreementsIndexRoute: AppSlugServiceAgreementsIndexRoute,
+  }
+
+const AppSlugServiceAgreementsRouteWithChildren =
+  AppSlugServiceAgreementsRoute._addFileChildren(
+    AppSlugServiceAgreementsRouteChildren,
+  )
 
 interface AppSlugServicesIdRouteChildren {
   AppSlugServicesIdApplicationMethodsRoute: typeof AppSlugServicesIdApplicationMethodsRoute
@@ -676,6 +869,7 @@ const AppSlugTeamRouteWithChildren = AppSlugTeamRoute._addFileChildren(
 
 interface AppSlugRouteChildren {
   AppSlugReportsRoute: typeof AppSlugReportsRoute
+  AppSlugServiceAgreementsRoute: typeof AppSlugServiceAgreementsRouteWithChildren
   AppSlugServicesRoute: typeof AppSlugServicesRouteWithChildren
   AppSlugSettingsRoute: typeof AppSlugSettingsRoute
   AppSlugSubmissionsRoute: typeof AppSlugSubmissionsRouteWithChildren
@@ -685,6 +879,7 @@ interface AppSlugRouteChildren {
 
 const AppSlugRouteChildren: AppSlugRouteChildren = {
   AppSlugReportsRoute: AppSlugReportsRoute,
+  AppSlugServiceAgreementsRoute: AppSlugServiceAgreementsRouteWithChildren,
   AppSlugServicesRoute: AppSlugServicesRouteWithChildren,
   AppSlugSettingsRoute: AppSlugSettingsRoute,
   AppSlugSubmissionsRoute: AppSlugSubmissionsRouteWithChildren,
