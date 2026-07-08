@@ -176,7 +176,8 @@ describe('console services', () => {
     expect(await screen.findByText('Permit form')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
 
-    // Service agreements tab: its panel (empty state) — guards the tab wiring.
+    // Service agreements tab: a count badge (0) + its panel (empty state) — guards the tab wiring.
+    expect(screen.getByRole('tab', { name: /service agreements\s*0/i })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: /service agreements/i }));
     expect(await screen.findByText(/no agreements yet/i)).toBeInTheDocument();
 

@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import {
   addServiceVersion,
   publishVersion,
+  serviceAgreementRefsQueryOptions,
   serviceQueryOptions,
   serviceReferencesQueryOptions,
   updateDraft,
@@ -92,6 +93,11 @@ export function ServiceDetail({
     enabled: selected !== undefined,
   });
   const references = referencesQuery.data ?? [];
+  const agreementRefsQuery = useQuery({
+    ...serviceAgreementRefsQueryOptions(id, selected?.id ?? ''),
+    enabled: selected !== undefined,
+  });
+  const agreementCount = agreementRefsQuery.data?.length ?? 0;
 
   const addVersion = useMutation({
     mutationFn: () => addServiceVersion(id),
@@ -258,7 +264,12 @@ export function ServiceDetail({
               {applicationRefs.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="agreements">Service agreements</TabsTrigger>
+          <TabsTrigger value="agreements">
+            Service agreements
+            <Badge variant="secondary" className="ml-2">
+              {agreementCount}
+            </Badge>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="flex flex-col gap-4">
