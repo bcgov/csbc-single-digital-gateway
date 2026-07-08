@@ -1,20 +1,37 @@
-import { Button } from '@repo/ui/button';
-import { LogIn } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { buttonVariants } from '@repo/ui/button';
+import { mdiLogin } from '@mdi/js';
+import { Icon } from '@mdi/react';
+import {
+  Card,
+  CardContent,
+  CardIconAction,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@repo/ui/card';
 import { useLoginUrl } from '@/lib/auth';
 
 /** The "Log in to get started" call-to-action panel on the anonymous landing page. */
 export function LoginCta() {
   const loginUrl = useLoginUrl();
   return (
-    <section className="flex flex-col items-center gap-3 rounded-xl bg-background p-8 text-center ring-1 ring-foreground/10">
-      <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <LogIn className="size-5" aria-hidden />
-      </span>
-      <h2 className="font-heading text-lg font-semibold text-foreground">Log in to get started</h2>
-      <p className="text-sm text-muted-foreground">
-        Log in to apply for services and manage your requests.
-      </p>
-      <Button render={<a href={loginUrl} />}>Log in with BC Services Card Account</Button>
+    <section>
+      <Card centered className="border-b-2 border-bcgov-gold bg-linear-to-t from-blue-10 to-white">
+        <CardIconAction>
+          <Icon path={mdiLogin} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>Log in to get started</CardTitle>
+          <CardDescription>Log in to apply for services and manage your requests.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+            <Icon path={mdiLogin} size="16px" />
+            Log in with BC Services Card Account
+          </Link>
+        </CardContent>
+      </Card>
     </section>
   );
 }

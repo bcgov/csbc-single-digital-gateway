@@ -114,7 +114,8 @@ export function ApplicationPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="flex flex-col gap-6">
+      <p>This is the application-page.tsx</p>
+      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
         <Breadcrumb
           trail={[
             { label: 'Services', href: '/services' },

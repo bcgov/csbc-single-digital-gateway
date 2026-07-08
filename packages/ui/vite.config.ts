@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -37,6 +37,14 @@ const copyAssets = (): Plugin => ({
   closeBundle() {
     const dist = resolve(import.meta.dirname, 'dist');
     copyFileSync(resolve(import.meta.dirname, 'src/styles.css'), resolve(dist, 'styles.css'));
+
+    const stylesDir = resolve(import.meta.dirname, 'src/styles');
+    const distStylesDir = resolve(dist, 'styles');
+    mkdirSync(distStylesDir, { recursive: true });
+    for (const file of readdirSync(stylesDir).filter((name) => name.endsWith('.css'))) {
+      copyFileSync(resolve(stylesDir, file), resolve(distStylesDir, file));
+    }
+
     const brandDir = resolve(import.meta.dirname, 'src/brand');
     if (existsSync(brandDir)) {
       for (const file of readdirSync(brandDir).filter((name) => name.endsWith('.svg'))) {

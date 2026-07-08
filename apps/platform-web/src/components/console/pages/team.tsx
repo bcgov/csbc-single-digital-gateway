@@ -80,15 +80,15 @@ export function TeamPage() {
                   <TableCell className="text-muted-foreground">{member.email ?? '—'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
-                      <Badge variant={member.role === 'admin' ? 'default' : 'outline'}>
+                      <Badge color={member.role === 'admin' ? 'green' : 'blue'}>
                         {member.role === 'admin' ? 'Admin' : 'Member'}
                       </Badge>
-                      {member.isOwner ? <Badge variant="secondary">Owner</Badge> : null}
+                      {member.isOwner ? <Badge color="yellow">Owner</Badge> : null}
                     </div>
                   </TableCell>
                   <TableCell>
                     {member.status === 'suspended' ? (
-                      <Badge variant="outline">Suspended</Badge>
+                      <Badge color="blue">Suspended</Badge>
                     ) : (
                       <span className="text-sm text-muted-foreground">Active</span>
                     )}

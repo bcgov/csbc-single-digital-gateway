@@ -158,7 +158,7 @@ export function SubmissionDetail() {
       <header className="flex flex-col gap-2 border-b pb-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-heading text-xl font-semibold">{submission.applicantName}</h1>
-          <Badge variant="secondary">{submission.statusLabel}</Badge>
+          <Badge color="yellow">{submission.statusLabel}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
           {submission.serviceTitle} · {submission.formTitle}

@@ -8,11 +8,11 @@ import { type ServiceSummary, servicesQueryOptions } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
 import { ServiceMenu } from './service-menu';
 
-const STATUS_VARIANT = {
-  draft: 'secondary',
-  published: 'default',
-  archived: 'outline',
-  none: 'outline',
+const STATUS_COLOR = {
+  draft: 'yellow',
+  published: 'green',
+  archived: 'blue',
+  none: 'blue',
 } as const;
 
 /** Workspace Services list — service documents with status; "New service" opens the client-first editor. */
@@ -70,7 +70,7 @@ export function ServicesList() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[service.status]}>{service.status}</Badge>
+                    <Badge color={STATUS_COLOR[service.status]}>{service.status}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{service.versionCount}</TableCell>
                   <TableCell>

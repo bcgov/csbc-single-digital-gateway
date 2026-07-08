@@ -1,7 +1,9 @@
 import { Badge } from '@repo/ui/badge';
+import { Card, CardHeader, CardDescription, CardTitle } from '@repo/ui/card';
+import { mdiChevronRight } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
-import { ChevronRight } from 'lucide-react';
 import { SectionHeading } from '@/components/landing/section-heading';
 import type { CatalogService, MyApplication } from '@/lib/catalog';
 
@@ -24,15 +26,14 @@ export function AvailableServices({
   );
 
   return (
-    <section className="rounded-xl bg-primary p-6 shadow-sm">
+    <section className="rounded-sm bg-linear-to-r from-blue-90 to-blue-70 p-6 shadow-lg text-white my-6">
       <SectionHeading
         title="Available services"
         description="Here are some services currently available through the Single Digital Gateway."
-        tone="dark"
       />
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-5 grid gap-6 md:grid-cols-3">
         {loading
-          ? [0, 1].map((i) => (
+          ? [0, 1, 2].map((i) => (
               <div key={i} className="rounded-lg bg-background p-4">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="mt-3 h-3 w-full" />
@@ -40,34 +41,56 @@ export function AvailableServices({
             ))
           : services.map((service) => {
               const application = byService.get(service.id);
-              return (
-                <article key={service.id} className="rounded-lg bg-background p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <Link
-                      to="/services"
-                      hash={service.id}
-                      className="inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary hover:underline"
-                    >
-                      {service.title}
-                      <ChevronRight className="size-4" aria-hidden />
-                    </Link>
-                    {application ? (
-                      <Link to="/" className="text-xs text-primary hover:underline">
-                        Open
+              return application ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      <Link
+                        key={service.id}
+                        to="/applications/$id"
+                        params={{ id: application.id }}
+                        className="no-underline hover:underline"
+                      >
+                        {service.title}
+                        <Icon
+                          path={mdiChevronRight}
+                          size="20px"
+                          className="inline-flex text-link"
+                          aria-hidden={true}
+                        />
                       </Link>
-                    ) : null}
-                  </div>
-                  {application ? (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary">{application.statusLabel}</Badge>
-                      <span>{application.reference}</span>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-xs/relaxed text-muted-foreground">
-                      {service.description}
-                    </p>
-                  )}
-                </article>
+                    </CardTitle>
+                    <CardDescription>
+                      Description
+                      <br />
+                      <Badge color="yellow">{application.statusLabel}</Badge> •{' '}
+                      {application.reference}
+                    </CardDescription>
+                  </CardHeader>
+                  {/* need to see what this looks like */}
+                </Card>
+              ) : (
+                <Card centered>
+                  <CardHeader>
+                    <CardTitle>
+                      <Link
+                        key={service.id}
+                        to="/services"
+                        hash={service.id}
+                        className="no-underline hover:underline"
+                      >
+                        {service.title}
+                        <Icon
+                          path={mdiChevronRight}
+                          size="20px"
+                          className="inline-flex text-link"
+                          aria-hidden={true}
+                        />
+                      </Link>
+                    </CardTitle>
+                    <CardDescription>{service.description}</CardDescription>
+                  </CardHeader>
+                </Card>
               );
             })}
       </div>

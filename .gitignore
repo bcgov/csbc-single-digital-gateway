@@ -24,3 +24,23 @@ npm-debug.log*
 
 # OS / editor
 .DS_Store
+
+# AI Artifacts
+.aider*
+.bolt/
+.claude/
+.codium/
+.codex/
+.cody/
+.continue/
+.copilot/
+.cursor/
+.mdd/
+.openai/
+.v0/
+.windsurf/
+.cursorignore
+.cursorrules
+.github/copilot-instructions.md
+AGENTS*.md
+CLAUDE*.md

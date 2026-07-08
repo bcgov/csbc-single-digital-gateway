@@ -1,4 +1,5 @@
-import { Card, CardContent } from '@repo/ui/card';
+import { Icon } from '@mdi/react';
+import { Card, CardDescription, CardHeader, CardIconAction, CardTitle } from '@repo/ui/card';
 import { SectionHeading } from '@/components/landing/section-heading';
 import { FEATURE_CARDS } from '@/lib/content';
 
@@ -10,21 +11,18 @@ export function WhatYouCanDo() {
         title="What you can do"
         description="The Single Digital Gateway makes it easier to find and use government services online."
       />
-      <div className="grid gap-4 md:grid-cols-3">
-        {FEATURE_CARDS.map((card) => {
-          const Icon = card.icon;
-          return (
-            <Card key={card.id}>
-              <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
-                <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="size-5" aria-hidden />
-                </span>
-                <h3 className="font-heading text-sm font-semibold text-primary">{card.title}</h3>
-                <p className="text-xs/relaxed text-muted-foreground">{card.description}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid gap-6 md:grid-cols-3">
+        {FEATURE_CARDS.map((card) => (
+          <Card key={card.id} centered>
+            <CardIconAction size="lg">
+              <Icon path={card.icon} size="32px" className="text-blue-80" aria-hidden={true} />
+            </CardIconAction>
+            <CardHeader>
+              <CardTitle>{card.title}</CardTitle>
+              <CardDescription>{card.description}</CardDescription>
+            </CardHeader>
+          </Card>
+        ))}
       </div>
     </section>
   );

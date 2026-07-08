@@ -1,9 +1,12 @@
-import { Button } from '@repo/ui/button';
+import { Link } from '@tanstack/react-router';
+import { buttonVariants } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Skeleton } from '@repo/ui/skeleton';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import { displayName, logout } from '@/lib/bff';
+import { mdiLogin } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 async function handleLogout(): Promise<void> {
   await logout();
@@ -30,7 +33,7 @@ export function AccountPage() {
 
   return (
     <CitizenShell>
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
         {isPending ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-8 w-48" />
@@ -41,7 +44,10 @@ export function AccountPage() {
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view your account.
             </p>
-            <Button render={<a href={loginUrl} />}>Log in</Button>
+            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+              <Icon path={mdiLogin} aria-hidden={true} />
+              Log in
+            </Link>
           </div>
         ) : (
           <>
@@ -58,14 +64,14 @@ export function AccountPage() {
               </CardContent>
             </Card>
             <div>
-              <Button
-                variant="outline"
+              <button
+                className={buttonVariants({ variant: 'outline', size: 'default' })}
                 onClick={() => {
                   void handleLogout();
                 }}
               >
                 Log out
-              </Button>
+              </button>
             </div>
           </>
         )}
