@@ -23,6 +23,7 @@ import {
   submissionStatusLabel,
 } from '../util/format';
 import { validateSubmission } from '../util/validate';
+import { ConsentService } from './consent.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
 
@@ -36,7 +37,10 @@ type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
  */
 @Injectable()
 export class ApplicationsService {
-  constructor(@InjectDatabase() private readonly db: Database) {}
+  constructor(
+    @InjectDatabase() private readonly db: Database,
+    private readonly consent: ConsentService,
+  ) {}
 
   /**
    * The form a citizen applies through, for a given service — validated to be an `application_form`
@@ -262,6 +266,8 @@ export class ApplicationsService {
         errors: result.errors,
       });
     }
+    // Consent gate: every required service agreement must be approved (against its current version).
+    await this.consent.assertSubmittableForForm(userId, sub.documentVersionId);
     const updated = await this.db
       .update(submissionVersions)
       .set({ data, status: 'pending', submittedAt: new Date() })

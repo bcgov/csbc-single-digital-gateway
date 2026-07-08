@@ -7,3 +7,4 @@ export * from './document-types';
 export * from './documents';
 export * from './submissions';
 export * from './reviews';
+export * from './service-agreement-consents';

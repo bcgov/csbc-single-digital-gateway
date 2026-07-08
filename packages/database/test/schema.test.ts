@@ -77,6 +77,19 @@ describe('schema — document_references service_agreement relation + relaxed wo
   });
 });
 
+describe('schema — service_agreement_consents (append-only audit)', () => {
+  it('has approve/reject decision, a durable user FK, and NO updated_at (immutable)', () => {
+    expect(schema.serviceAgreementConsentsDecision.enumValues).toEqual(['approve', 'reject']);
+    const { columns } = cfg(schema.serviceAgreementConsents);
+    const names = columns.map((c) => c.name);
+    expect(names).toContain('user_id');
+    expect(names).toContain('agreement_version_id');
+    expect(names).toContain('decision');
+    // Immutable audit: no updated_at (so no set_updated_at trigger attaches).
+    expect(names).not.toContain('updated_at');
+  });
+});
+
 describe('schema — workspaces.slug default', () => {
   it('defaults slug to nanoid() at the database level', () => {
     const slug = cfg(schema.workspaces).columns.find((c) => c.name === 'slug');
