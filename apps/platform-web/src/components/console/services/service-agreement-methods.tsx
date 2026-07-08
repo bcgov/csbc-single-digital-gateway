@@ -89,10 +89,10 @@ export function ServiceAgreementMethods({
                 >
                   {ref.title}
                 </Link>
-                <Badge variant={ref.isOptional ? 'secondary' : 'default'}>
+                <Badge color={ref.isOptional ? 'grey' : 'blue'}>
                   {ref.isOptional ? 'Optional' : 'Required'}
                 </Badge>
-                {ref.isGlobal ? <Badge variant="outline">Global</Badge> : null}
+                {ref.isGlobal ? <Badge color="grey">Global</Badge> : null}
               </span>
               {readonly ? null : (
                 <Button

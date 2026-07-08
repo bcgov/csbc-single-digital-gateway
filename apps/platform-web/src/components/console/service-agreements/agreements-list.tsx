@@ -7,11 +7,11 @@ import { Plus } from 'lucide-react';
 import { agreementsQueryOptions, type ServiceAgreementSummary } from '@/lib/service-agreements';
 import { type AgreementScope, scopeWorkspaceId } from './scope';
 
-const STATUS_VARIANT = {
-  draft: 'secondary',
-  published: 'default',
-  archived: 'outline',
-  none: 'outline',
+const STATUS_COLOR = {
+  draft: 'grey',
+  published: 'blue',
+  archived: 'grey',
+  none: 'grey',
 } as const;
 
 /** Shared Service Agreements list — workspace-scoped (staff) or global (admin) per `scope`. */
@@ -82,11 +82,11 @@ export function AgreementsList({ scope }: { scope: AgreementScope }) {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANT[item.status]}>{item.status}</Badge>
+                    <Badge color={STATUS_COLOR[item.status]}>{item.status}</Badge>
                   </TableCell>
                   <TableCell>
                     {item.isGlobal ? (
-                      <Badge variant="outline">Global</Badge>
+                      <Badge color="grey">Global</Badge>
                     ) : (
                       <span className="text-muted-foreground">Workspace</span>
                     )}

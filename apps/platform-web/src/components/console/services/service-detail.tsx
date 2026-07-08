@@ -266,7 +266,7 @@ export function ServiceDetail({
           </TabsTrigger>
           <TabsTrigger value="agreements">
             Service agreements
-            <Badge variant="secondary" className="ml-2">
+            <Badge color="yellow" className="ml-2">
               {agreementCount}
             </Badge>
           </TabsTrigger>
