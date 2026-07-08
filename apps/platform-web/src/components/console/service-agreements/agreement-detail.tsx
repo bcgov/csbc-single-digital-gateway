@@ -20,6 +20,8 @@ import {
   type ServiceAgreementDetail,
   updateAgreementDraft,
 } from '@/lib/service-agreements';
+import { serviceQueryOptions } from '@/lib/services';
+import { canEditAgreementVersion } from './agreement-editability';
 import { AgreementEditor } from './agreement-editor';
 import type { AgreementScope } from './scope';
 
@@ -62,8 +64,25 @@ function AgreementBody({
 
   const dirty = JSON.stringify(formData) !== JSON.stringify(baseline);
   const isGlobal = agreement.workspaceId === null;
-  // A global agreement is admin-only to edit; otherwise a draft is editable.
-  const editable = selected?.status === 'draft' && (!isGlobal || isAdmin);
+  // In service scope, the agreement follows the service's lifecycle: editable only while the owning
+  // service version is a draft. Fail-closed (read-only) until that status has loaded.
+  const isServiceScope = scope.kind === 'service';
+  const serviceVersionQuery = useQuery({
+    ...serviceQueryOptions(isServiceScope ? scope.serviceId : ''),
+    enabled: isServiceScope,
+  });
+  const serviceVersionIsDraft =
+    scope.kind === 'service'
+      ? serviceVersionQuery.data?.versions.find((v) => v.id === scope.serviceVersionId)?.status ===
+        'draft'
+      : true;
+  const editable = canEditAgreementVersion({
+    versionStatus: selected?.status,
+    isGlobal,
+    isAdmin,
+    serviceScope: isServiceScope,
+    serviceVersionIsDraft,
+  });
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['service-agreements', 'detail', id] });
@@ -148,7 +167,7 @@ function AgreementBody({
       <div className="flex items-center justify-between gap-3">
         {backLink}
         <div className="flex items-center gap-2">
-          {isGlobal ? <Badge variant="outline">Global</Badge> : null}
+          {isGlobal ? <Badge color="grey">Global</Badge> : null}
           {showWorkflow ? (
             <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
           ) : null}

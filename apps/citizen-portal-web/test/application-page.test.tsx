@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
@@ -105,5 +105,60 @@ describe('citizen application page', () => {
     renderApply();
     const link = await screen.findByRole('link', { name: /log in to apply/i }, { timeout: 5000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+  });
+
+  it('requires an explicit Continue press — approving all agreements does not auto-advance', async () => {
+    const agreement = {
+      agreementVersionId: 'av1',
+      agreementDocumentId: 'ad1',
+      data: {
+        title: 'Terms',
+        content: null,
+        isOptional: false,
+        approveLabel: 'I accept',
+        rejectLabel: 'I decline',
+      },
+    };
+    let recorded = false;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/me/services/') && url.endsWith('/agreements'))
+        return jsonResponse({ items: [{ ...agreement, decision: recorded ? 'approve' : null }] });
+      if (method === 'POST' && url.endsWith('/v1/me/agreement-consents')) {
+        recorded = true;
+        return jsonResponse({ agreementVersionId: 'av1', decision: 'approve' });
+      }
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
+        return jsonResponse(submitted);
+      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
+      if (method === 'PATCH') return jsonResponse(draft);
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const user = userEvent.setup();
+    renderApply();
+
+    // The gate is shown; the form is not.
+    expect(
+      await screen.findByRole('heading', { name: 'Before you apply' }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^Apply — / })).not.toBeInTheDocument();
+
+    // Approving the required agreement enables Continue but does NOT auto-advance to the form.
+    await user.click(screen.getByRole('radio', { name: 'I accept' }));
+    const continueBtn = await screen.findByRole('button', { name: 'Continue to application' });
+    await waitFor(() => expect(continueBtn).toBeEnabled());
+    expect(screen.queryByRole('heading', { name: /^Apply — / })).not.toBeInTheDocument();
+
+    // Only the explicit Continue press mounts the form (heavy JsonForms mount — allow extra time
+    // under parallel load, per the heavy-web-vitest-timeout convention).
+    await user.click(continueBtn);
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 15000 }),
+    ).toBeInTheDocument();
   });
 });

@@ -35,7 +35,7 @@ export function ConsoleAgreementDetail() {
 
 /** Edit an agreement reached FROM a service detail — the editor's "back" returns to the service. */
 export function ServiceAgreementEditPage() {
-  const { slug, id, agreementId } = useParams({
+  const { slug, id, versionId, agreementId } = useParams({
     from: '/app/$slug/services/$id/versions/$versionId/service-agreements/$agreementId',
   });
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
@@ -44,6 +44,7 @@ export function ServiceAgreementEditPage() {
     slug,
     workspaceId: workspace?.id ?? '',
     serviceId: id,
+    serviceVersionId: versionId,
   };
   return <AgreementDetail scope={scope} id={agreementId} />;
 }

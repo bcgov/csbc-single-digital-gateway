@@ -256,8 +256,11 @@ export const documentReferences = pgTable(
     ),
     check('document_references_owner_kind_chk', sql`${table.ownerKind} = 'service'`),
     check(
+      // `relation::text` (not the enum literal) so a fresh single-transaction migrate can apply this
+      // CHECK in the same run that ADDs the `service_agreement` enum value (Postgres forbids using a
+      // not-yet-committed enum value; a text comparison sidesteps it). See migration 0014.
       'document_references_relation_kind_chk',
-      sql`(${table.relation} = 'related_service' AND ${table.targetKind} = 'service') OR (${table.relation} = 'application_form' AND ${table.targetKind} IN ('basic-form', 'multi-stage-form')) OR (${table.relation} = 'service_agreement' AND ${table.targetKind} = 'service-agreement')`,
+      sql`(${table.relation} = 'related_service' AND ${table.targetKind} = 'service') OR (${table.relation} = 'application_form' AND ${table.targetKind} IN ('basic-form', 'multi-stage-form')) OR (${table.relation}::text = 'service_agreement' AND ${table.targetKind} = 'service-agreement')`,
     ),
     // A scoped target must be in the owner's workspace; a NULL target_workspace_id (global) is
     // allowed only for the service_agreement relation (services/forms are never global).
@@ -267,7 +270,7 @@ export const documentReferences = pgTable(
     ),
     check(
       'document_references_target_ws_global_only_chk',
-      sql`${table.targetWorkspaceId} IS NOT NULL OR ${table.relation} = 'service_agreement'`,
+      sql`${table.targetWorkspaceId} IS NOT NULL OR ${table.relation}::text = 'service_agreement'`,
     ),
     check(
       'document_references_no_self_chk',

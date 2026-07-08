@@ -172,7 +172,7 @@ export function AddAgreementModal({
                       className="flex w-full items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
                     >
                       <span className="font-medium text-foreground">{agreement.title}</span>
-                      {agreement.isGlobal ? <Badge variant="outline">Global</Badge> : null}
+                      {agreement.isGlobal ? <Badge color="grey">Global</Badge> : null}
                     </button>
                   </li>
                 ))}

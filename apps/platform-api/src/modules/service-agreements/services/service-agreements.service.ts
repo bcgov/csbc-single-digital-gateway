@@ -189,6 +189,7 @@ export class ServiceAgreementsService {
   ): Promise<ServiceAgreementVersionResponse> {
     await this.requireAgreementForWrite(actor, id);
     const version = await this.requireDraftVersion(id, versionId);
+    await this.requireServiceEditable(version.id);
     const updated = await this.db
       .update(documentVersions)
       .set({ data: input.data })
@@ -284,6 +285,29 @@ export class ServiceAgreementsService {
       throw new ConflictException('Only draft versions can be edited or published');
     }
     return version;
+  }
+
+  /** When an agreement version is referenced by a service version, it may only be edited while that
+   * service version is a draft (the agreement follows the service's lifecycle). Standalone agreements
+   * (no service owner) are unaffected. */
+  private async requireServiceEditable(agreementVersionId: string): Promise<void> {
+    const rows = await this.db
+      .select({ status: documentVersions.status })
+      .from(documentReferences)
+      .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.ownerVersionId))
+      .where(
+        and(
+          eq(documentReferences.targetVersionId, agreementVersionId),
+          eq(documentReferences.relation, 'service_agreement'),
+        ),
+      )
+      .limit(1);
+    const owner = rows[0];
+    if (owner !== undefined && owner.status !== 'draft') {
+      throw new ConflictException(
+        'This agreement can only be edited while its service is in draft',
+      );
+    }
   }
 
   private orThrow(row: DocumentVersion | undefined): DocumentVersion {

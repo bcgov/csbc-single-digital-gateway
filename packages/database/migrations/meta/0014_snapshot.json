@@ -934,7 +934,7 @@
         },
         "document_references_relation_kind_chk": {
           "name": "document_references_relation_kind_chk",
-          "value": "(\"document_references\".\"relation\" = 'related_service' AND \"document_references\".\"target_kind\" = 'service') OR (\"document_references\".\"relation\" = 'application_form' AND \"document_references\".\"target_kind\" IN ('basic-form', 'multi-stage-form')) OR (\"document_references\".\"relation\" = 'service_agreement' AND \"document_references\".\"target_kind\" = 'service-agreement')"
+          "value": "(\"document_references\".\"relation\" = 'related_service' AND \"document_references\".\"target_kind\" = 'service') OR (\"document_references\".\"relation\" = 'application_form' AND \"document_references\".\"target_kind\" IN ('basic-form', 'multi-stage-form')) OR (\"document_references\".\"relation\"::text = 'service_agreement' AND \"document_references\".\"target_kind\" = 'service-agreement')"
         },
         "document_references_target_ws_scope_chk": {
           "name": "document_references_target_ws_scope_chk",
@@ -942,7 +942,7 @@
         },
         "document_references_target_ws_global_only_chk": {
           "name": "document_references_target_ws_global_only_chk",
-          "value": "\"document_references\".\"target_workspace_id\" IS NOT NULL OR \"document_references\".\"relation\" = 'service_agreement'"
+          "value": "\"document_references\".\"target_workspace_id\" IS NOT NULL OR \"document_references\".\"relation\"::text = 'service_agreement'"
         },
         "document_references_no_self_chk": {
           "name": "document_references_no_self_chk",

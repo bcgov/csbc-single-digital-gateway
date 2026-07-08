@@ -1,7 +1,53 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { documentReferences, documentVersions, documents } from '@repo/database';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import type { Tx } from './applications';
+
+/** A previous-published-version agreement reference (the revert target). */
+export interface AgreementRefSnapshot {
+  position: number;
+  data: unknown;
+  targetDocumentId: string;
+  targetVersionId: string;
+}
+/** A current draft version's agreement reference (a deep-copy candidate for revert). */
+export interface CurrentAgreementRef extends AgreementRefSnapshot {
+  refId: string;
+}
+/** A revert instruction: re-point `refId` to the previous version, delete the copied document. */
+export interface AgreementRevert {
+  refId: string;
+  copiedDocumentId: string;
+  previousDocumentId: string;
+  previousVersionId: string;
+}
+
+/**
+ * Pure planner for revert-if-unchanged of deep-copied service agreements. Pairs each current draft
+ * agreement copy to the previously-published service version's agreement ref by `position`
+ * (agreements have no `label`); an unchanged copy (byte-identical `data`) is reverted to the previous
+ * version so publishing doesn't create a redundant agreement version.
+ */
+export function planAgreementReverts(
+  current: CurrentAgreementRef[],
+  previous: AgreementRefSnapshot[],
+): AgreementRevert[] {
+  const previousByPosition = new Map(previous.map((p) => [p.position, p]));
+  const reverts: AgreementRevert[] = [];
+  for (const cur of current) {
+    const match = previousByPosition.get(cur.position);
+    if (match === undefined || JSON.stringify(cur.data) !== JSON.stringify(match.data)) {
+      continue;
+    }
+    reverts.push({
+      refId: cur.refId,
+      copiedDocumentId: cur.targetDocumentId,
+      previousDocumentId: match.targetDocumentId,
+      previousVersionId: match.targetVersionId,
+    });
+  }
+  return reverts;
+}
 
 /** Reactivate an archived service: clear `archived_at` on the LATEST version (→ its prior published/
  * draft state) and the application forms it references. Older versions stay archived as history. */
@@ -59,28 +105,43 @@ export async function discardVersionTx(
   if ((counts[0]?.n ?? 0) <= 1) {
     throw new ConflictException('Delete the service instead of discarding its only version');
   }
-  const formIds = (
+  // Deep-copied targets this version owns: application forms (always) + WORKSPACE service agreements.
+  // Globals (targetWorkspaceId NULL) are shared/admin-owned and never candidates for deletion.
+  const copyDocIds = (
     await tx
-      .select({ formId: documentReferences.targetDocumentId })
+      .select({ docId: documentReferences.targetDocumentId })
       .from(documentReferences)
       .where(
         and(
           eq(documentReferences.ownerVersionId, versionId),
-          eq(documentReferences.relation, 'application_form'),
+          or(
+            eq(documentReferences.relation, 'application_form'),
+            and(
+              eq(documentReferences.relation, 'service_agreement'),
+              isNotNull(documentReferences.targetWorkspaceId),
+            ),
+          ),
         ),
       )
-  ).map((r) => r.formId);
-  // Deleting the version cascades the references it owns; the deep-copied forms are then orphaned.
+  ).map((r) => r.docId);
+  // Deleting the version cascades the references it owns; the deep-copied targets are then orphaned.
   await tx.delete(documentVersions).where(eq(documentVersions.id, versionId));
-  for (const formId of formIds) {
+  for (const docId of copyDocIds) {
     // eslint-disable-next-line no-await-in-loop -- sequential reads/writes share one tx connection
     const remaining = await tx
       .select({ n: sql<number>`count(*)::int` })
       .from(documentReferences)
-      .where(eq(documentReferences.targetDocumentId, formId));
-    if ((remaining[0]?.n ?? 0) === 0) {
+      .where(eq(documentReferences.targetDocumentId, docId));
+    // eslint-disable-next-line no-await-in-loop -- sequential reads/writes share one tx connection
+    const published = await tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documentVersions)
+      .where(and(eq(documentVersions.documentId, docId), eq(documentVersions.status, 'published')));
+    // Delete only orphaned pure-draft copies. An attached-existing agreement that was ever published
+    // (has a published version) is shared — leave it even if this was its last reference.
+    if ((remaining[0]?.n ?? 0) === 0 && (published[0]?.n ?? 0) === 0) {
       // eslint-disable-next-line no-await-in-loop -- sequential reads/writes share one tx connection
-      await tx.delete(documents).where(eq(documents.id, formId));
+      await tx.delete(documents).where(eq(documents.id, docId));
     }
   }
 }
@@ -108,6 +169,7 @@ export async function copyReferences(
       formTypeId: documentVersions.typeId,
       formTypeVersionId: documentVersions.typeVersionId,
       formSchema: documentVersions.schema,
+      srcData: documentVersions.data,
     })
     .from(documentReferences)
     .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
@@ -117,9 +179,15 @@ export async function copyReferences(
   for (const src of sources) {
     let targetDocumentId = src.targetDocumentId;
     let targetVersionId = src.targetVersionId;
-    if (src.relation === 'application_form') {
+    // Deep-copy application forms (always) and WORKSPACE service agreements (globals stay shared)
+    // into a fresh draft the new service version owns. Forms carry their structure in `schema`;
+    // agreements carry authored content in `data`.
+    const deepCopy =
+      src.relation === 'application_form' ||
+      (src.relation === 'service_agreement' && src.targetWorkspaceId !== null);
+    if (deepCopy) {
       // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-      const formDocRows = await tx
+      const copyDocRows = await tx
         .insert(documents)
         .values({
           typeId: src.formTypeId,
@@ -128,20 +196,22 @@ export async function copyReferences(
           title: src.formTitle,
         })
         .returning();
-      const formDoc = one(formDocRows, 'form document copy');
+      const copyDoc = one(copyDocRows, 'reference document copy');
       // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-      const formVersionRows = await tx
+      const copyVersionRows = await tx
         .insert(documentVersions)
         .values({
-          documentId: formDoc.id,
+          documentId: copyDoc.id,
           typeId: src.formTypeId,
           typeVersionId: src.formTypeVersionId,
           version: 1,
           schema: src.formSchema,
+          // Agreements carry authored content in `data`; forms keep the prior behavior (schema only).
+          ...(src.relation === 'service_agreement' ? { data: src.srcData } : {}),
         })
         .returning();
-      targetDocumentId = formDoc.id;
-      targetVersionId = one(formVersionRows, 'form version copy').id;
+      targetDocumentId = copyDoc.id;
+      targetVersionId = one(copyVersionRows, 'reference version copy').id;
     }
     // A copied application_form gets a fresh form document in the owner's workspace; other
     // relations keep the source's target_workspace_id (NULL for a global service agreement).
@@ -231,5 +301,76 @@ export async function dedupCopiedForms(
     // The copy is now unreferenced → delete it (cascades its version).
     // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
     await tx.delete(documents).where(eq(documents.id, cur.targetDocumentId));
+  }
+}
+
+/**
+ * On publish, revert any unchanged deep-copied WORKSPACE service agreement to the previously-published
+ * service version's agreement (matched by `position`, compared by authored `data`) and delete the
+ * redundant copy. Only the draft copies this version owns are considered; globals (re-referenced
+ * as-is) and already-published shared versions are left untouched. Runs before the agreement promote.
+ */
+export async function dedupCopiedAgreements(
+  tx: Tx,
+  serviceId: string,
+  versionId: string,
+): Promise<void> {
+  const pubRows = await tx
+    .select({ id: documentVersions.id })
+    .from(documentVersions)
+    .where(
+      and(eq(documentVersions.documentId, serviceId), eq(documentVersions.status, 'published')),
+    )
+    .limit(1);
+  const publishedVersionId = pubRows[0]?.id;
+  if (publishedVersionId === undefined || publishedVersionId === versionId) {
+    return;
+  }
+  const previous: AgreementRefSnapshot[] = await tx
+    .select({
+      position: documentReferences.position,
+      data: documentVersions.data,
+      targetDocumentId: documentReferences.targetDocumentId,
+      targetVersionId: documentReferences.targetVersionId,
+    })
+    .from(documentReferences)
+    .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
+    .where(
+      and(
+        eq(documentReferences.ownerVersionId, publishedVersionId),
+        eq(documentReferences.relation, 'service_agreement'),
+      ),
+    );
+  // Only the draft copies this version owns are revert candidates (globals/shared published are
+  // filtered by `status = 'draft'`).
+  const current: CurrentAgreementRef[] = await tx
+    .select({
+      refId: documentReferences.id,
+      position: documentReferences.position,
+      data: documentVersions.data,
+      targetDocumentId: documentReferences.targetDocumentId,
+      targetVersionId: documentReferences.targetVersionId,
+    })
+    .from(documentReferences)
+    .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
+    .where(
+      and(
+        eq(documentReferences.ownerVersionId, versionId),
+        eq(documentReferences.relation, 'service_agreement'),
+        eq(documentVersions.status, 'draft'),
+      ),
+    );
+
+  for (const revert of planAgreementReverts(current, previous)) {
+    // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+    await tx
+      .update(documentReferences)
+      .set({
+        targetDocumentId: revert.previousDocumentId,
+        targetVersionId: revert.previousVersionId,
+      })
+      .where(eq(documentReferences.id, revert.refId));
+    // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+    await tx.delete(documents).where(eq(documents.id, revert.copiedDocumentId));
   }
 }

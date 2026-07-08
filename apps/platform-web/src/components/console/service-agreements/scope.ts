@@ -8,7 +8,14 @@
 export type AgreementScope =
   | { kind: 'workspace'; slug: string; workspaceId: string }
   | { kind: 'admin' }
-  | { kind: 'service'; slug: string; workspaceId: string; serviceId: string };
+  | {
+      kind: 'service';
+      slug: string;
+      workspaceId: string;
+      serviceId: string;
+      /** The service version the agreement is edited under — its draft-ness gates editability. */
+      serviceVersionId: string;
+    };
 
 /** The workspaceId to list by: the workspace's id, or null for the global (admin) surface. */
 export function scopeWorkspaceId(scope: AgreementScope): string | null {

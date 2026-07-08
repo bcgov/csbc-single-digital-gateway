@@ -28,7 +28,12 @@ import {
   resolveApplications,
 } from '../util/applications';
 import { validateData } from '../util/validate-data';
-import { copyReferences, dedupCopiedForms, discardVersionTx } from '../util/version-copy';
+import {
+  copyReferences,
+  dedupCopiedAgreements,
+  dedupCopiedForms,
+  discardVersionTx,
+} from '../util/version-copy';
 import { ServiceTypeResolver } from './service-type.resolver';
 import { ServicesService } from './services.service';
 
@@ -161,8 +166,10 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
-      // Drop deep-copied forms unchanged from the previous published version (re-point + dedup).
+      // Drop deep-copied forms + workspace agreements unchanged from the previous published version
+      // (re-point + delete the redundant copy) before the promote loops below.
       await dedupCopiedForms(tx, id, versionId);
+      await dedupCopiedAgreements(tx, id, versionId);
       // A service must have ≥1 application method, and every method's form must have structure.
       const apps = await tx
         .select({
