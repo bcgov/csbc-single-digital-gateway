@@ -79,7 +79,7 @@ function MultiEnumDisplayComponent({
       ) : (
         <div className="flex flex-wrap gap-1">
           {selected.map((value) => (
-            <Badge key={String(value)} variant="secondary">
+            <Badge key={String(value)} color="yellow">
               {labelOf(options, value)}
             </Badge>
           ))}
