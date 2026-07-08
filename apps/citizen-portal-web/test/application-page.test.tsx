@@ -48,6 +48,8 @@ function mockBff({ me = jsonResponse(authedUser) } = {}) {
     const url = String(input);
     const method = init?.method ?? 'GET';
     if (url.includes('/auth/me')) return me;
+    if (url.includes('/v1/me/services/') && url.endsWith('/agreements'))
+      return jsonResponse({ items: [] });
     if (url.includes('/v1/services/') && url.includes('/applications/')) return jsonResponse(form);
     if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
       return jsonResponse(submitted);
