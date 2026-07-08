@@ -9,13 +9,16 @@ import {
   type Database,
   type Document,
   type DocumentVersion,
+  documentReferences,
   documentVersions,
   documents,
   workspaceMembers,
+  workspaces,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import {
+  type AssociatedService,
   type CreateServiceAgreementInput,
   type ListServiceAgreementsQuery,
   type ServiceAgreementDetail,
@@ -139,7 +142,39 @@ export class ServiceAgreementsService {
       agreement: toAgreementDto(doc),
       versions: versions.map(toAgreementVersionDto),
       definition: { schema: type.schema, uischema: type.uischema },
+      services: await this.associatedServices(actor, id),
     };
+  }
+
+  /** The distinct services this agreement is attached to. Non-admins only see services in a
+   * workspace they belong to (so a global agreement never leaks cross-workspace service titles). */
+  private async associatedServices(
+    actor: Actor,
+    agreementId: string,
+  ): Promise<AssociatedService[]> {
+    const memberScoped = actor.isAdmin
+      ? undefined
+      : sql`exists (select 1 from ${workspaceMembers} wm where wm.workspace_id = ${documents.workspaceId} and wm.user_id = ${actor.id})`;
+    return this.db
+      .selectDistinct({
+        id: documents.id,
+        title: documents.title,
+        workspaceSlug: workspaces.slug,
+      })
+      .from(documentReferences)
+      .innerJoin(
+        documents,
+        and(eq(documents.id, documentReferences.ownerDocumentId), eq(documents.kind, 'service')),
+      )
+      .innerJoin(workspaces, eq(workspaces.id, documents.workspaceId))
+      .where(
+        and(
+          eq(documentReferences.targetDocumentId, agreementId),
+          eq(documentReferences.relation, 'service_agreement'),
+          ...(memberScoped ? [memberScoped] : []),
+        ),
+      )
+      .orderBy(asc(documents.title));
   }
 
   /** Edit a draft version's authored data (+ optional title sync). Drafts only. */

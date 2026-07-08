@@ -45,7 +45,7 @@ function AgreementBody({
   const { data: user } = useAuth();
   const isAdmin = user?.roles.includes('admin') ?? false;
   const queryClient = useQueryClient();
-  const { versions, definition, agreement } = detail;
+  const { versions, definition, agreement, services } = detail;
   const latest = versions[versions.length - 1];
   const [selectedId, setSelectedId] = useState(latest?.id ?? '');
   const selected = versions.find((v) => v.id === selectedId) ?? latest;
@@ -194,6 +194,30 @@ function AgreementBody({
           readonly={!editable}
         />
       </div>
+
+      <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+        <span className="text-sm font-medium">Associated services</span>
+        {services.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Not attached to any service yet — attach it from a service&apos;s Service agreements
+            tab.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {services.map((service) => (
+              <li key={service.id}>
+                <Link
+                  to="/app/$slug/services/$id"
+                  params={{ slug: service.workspaceSlug, id: service.id }}
+                  className="text-sm font-medium text-foreground hover:underline"
+                >
+                  {service.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

@@ -69,11 +69,20 @@ export const agreementDefinitionSchema = z.object({
   uischema: z.record(z.string(), z.unknown()),
 });
 
-/** Detail: the agreement + all its versions + the type definition to render the editor. */
+/** A service this agreement is attached to (agreements may be attached to many services). */
+export const associatedServiceSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  workspaceSlug: z.string(),
+});
+export type AssociatedService = z.infer<typeof associatedServiceSchema>;
+
+/** Detail: the agreement + all its versions + the type definition + the services it's attached to. */
 export const serviceAgreementDetailSchema = z.object({
   agreement: serviceAgreementSchema,
   versions: z.array(serviceAgreementVersionSchema),
   definition: agreementDefinitionSchema,
+  services: z.array(associatedServiceSchema),
 });
 export class ServiceAgreementDetailDto extends createZodDto(serviceAgreementDetailSchema) {}
 export type ServiceAgreementDetail = z.infer<typeof serviceAgreementDetailSchema>;

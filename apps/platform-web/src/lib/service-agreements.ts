@@ -32,10 +32,18 @@ export interface ServiceAgreementVersion {
   archivedAt: string | null;
 }
 
+/** A service this agreement is attached to (agreements may be attached to many services). */
+export interface AssociatedService {
+  id: string;
+  title: string;
+  workspaceSlug: string;
+}
+
 export interface ServiceAgreementDetail {
   agreement: ServiceAgreement;
   versions: ServiceAgreementVersion[];
   definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
+  services: AssociatedService[];
 }
 
 const BASE = `${BFF_ORIGIN}/v1/service-agreements`;
