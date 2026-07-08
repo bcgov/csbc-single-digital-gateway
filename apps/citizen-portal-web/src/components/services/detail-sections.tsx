@@ -55,8 +55,7 @@ export function Section({
   return (
     <section id={id} className="scroll-mt-6 flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <span className="h-1 w-8 rounded-full bg-amber-500" aria-hidden />
-        <h2 className="font-heading text-lg font-semibold text-foreground">{title}</h2>
+        <h2 className="section-heading">{title}</h2>
       </div>
       {children}
     </section>

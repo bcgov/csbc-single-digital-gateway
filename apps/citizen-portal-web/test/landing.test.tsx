@@ -77,7 +77,7 @@ describe('citizen-portal-web home — signed out', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you can do' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Available services' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Log in to get started' })).toBeInTheDocument();
+    expect(screen.getByText('Log in to get started')).toBeInTheDocument();
   });
 
   it('offers login links that point at the BFF /auth/login endpoint', async () => {

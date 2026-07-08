@@ -50,7 +50,7 @@ function VersionDetail({
       <header className="flex flex-col gap-3 border-b pb-6">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="font-heading text-2xl font-semibold text-foreground">{version.title}</h1>
-          <Badge variant="secondary" className="capitalize">
+          <Badge color="yellow" className="capitalize">
             {version.status}
           </Badge>
         </div>
@@ -100,7 +100,7 @@ export function ServiceVersionPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="flex flex-col gap-6">
+      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
         {version.isPending || service.isPending ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-8 w-64" />

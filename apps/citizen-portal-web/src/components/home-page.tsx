@@ -18,9 +18,9 @@ async function handleLogout(): Promise<void> {
 /** Greeting block for a signed-in citizen: "Hi, <first name>" / "Welcome to MyBC." */
 function Greeting({ name }: { name: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <h1 className="font-heading text-2xl font-semibold text-foreground">Hi, {firstName(name)}</h1>
-      <p className="text-sm text-muted-foreground">Welcome to MyBC.</p>
+    <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col">
+      <h1>Hi, {firstName(name)}</h1>
+      <p>Welcome to MyBC.</p>
     </div>
   );
 }
@@ -47,33 +47,39 @@ export function HomePage() {
       }}
     >
       {isPending ? (
-        <div className="flex flex-col gap-6">
+        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-40 w-full rounded-xl" />
         </div>
       ) : user ? (
-        <div className="flex flex-col gap-12">
-          <Greeting name={displayName(user)} />
-          <TrackApplications
-            applications={applications.data ?? []}
-            loading={applications.isPending}
-          />
-          <AvailableServices
-            services={(services.data ?? []).slice(0, 4)}
-            applications={applications.data ?? []}
-            loading={services.isPending}
-          />
-          <WhatYouCanDo />
+        <div className="flex flex-col">
+          <div className="py-6 border-b-2 border-bcgov-gold">
+            <Greeting name={displayName(user)} />
+          </div>
+          <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+            <TrackApplications
+              applications={applications.data ?? []}
+              loading={applications.isPending}
+            />
+            <AvailableServices
+              services={(services.data ?? []).slice(0, 4)}
+              applications={applications.data ?? []}
+              loading={services.isPending}
+            />
+            <WhatYouCanDo />
+          </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-12">
+        <div className="flex flex-col">
           <Hero />
-          <WhatYouCanDo />
-          <AvailableServices
-            services={(services.data ?? []).slice(0, 4)}
-            loading={services.isPending}
-          />
-          <LoginCta />
+          <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+            <WhatYouCanDo />
+            <AvailableServices
+              services={(services.data ?? []).slice(0, 4)}
+              loading={services.isPending}
+            />
+            <LoginCta />
+          </div>
         </div>
       )}
     </PageShell>

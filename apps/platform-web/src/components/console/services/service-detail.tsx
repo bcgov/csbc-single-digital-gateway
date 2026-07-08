@@ -245,7 +245,7 @@ export function ServiceDetail({
           <TabsTrigger value="details">Service details</TabsTrigger>
           <TabsTrigger value="methods">
             Application methods
-            <Badge variant="secondary" className="ml-2">
+            <Badge color="yellow" className="ml-2">
               {applicationRefs.length}
             </Badge>
           </TabsTrigger>

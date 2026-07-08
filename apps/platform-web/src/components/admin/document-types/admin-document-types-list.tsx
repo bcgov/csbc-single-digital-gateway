@@ -57,7 +57,7 @@ export function AdminDocumentTypesList() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{entry.type.kind}</Badge>
+                    <Badge color="yellow">{entry.type.kind}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{statusSummary(entry)}</TableCell>
                   <TableCell className="text-muted-foreground">{entry.versions.length}</TableCell>

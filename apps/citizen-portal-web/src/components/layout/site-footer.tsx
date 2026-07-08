@@ -18,10 +18,10 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
 /** Land acknowledgement band + brand/columns + copyright. Shared across both landing pages. */
 export function SiteFooter() {
   return (
-    <footer className="mt-16">
+    <footer className="mt-16 flex flex-col">
       {/* Land acknowledgement band */}
-      <div className="bg-neutral-900 text-neutral-200">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 text-[11px]/relaxed">
+      <div className="bg-gray-110 text-white text-sm border-y-6 border-gold-60">
+        <div className="my-8 mx-4 md:mx-8 xl:mx-auto w-full max-w-280 flex flex-col gap-9">
           The B.C. Public Service acknowledges the territories of First Nations around B.C. and is
           grateful to carry out our work on these lands. We acknowledge the rights, interests,
           priorities, and concerns of all Indigenous Peoples — First Nations, Métis, and Inuit —
@@ -31,7 +31,7 @@ export function SiteFooter() {
       </div>
 
       {/* Brand + link columns */}
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <div className="my-6 mx-4 md:mx-8 xl:mx-auto w-full max-w-280 flex flex-col gap-9">
         <div className="grid gap-8 md:grid-cols-[1.5fr_repeat(3,1fr)]">
           <div className="flex flex-col gap-3">
             <Logo className="h-8 w-auto" aria-label="Government of British Columbia" />
@@ -56,7 +56,7 @@ export function SiteFooter() {
           ))}
         </div>
         <p className="mt-10 border-t pt-6 text-[11px] text-muted-foreground">
-          © 2027 Government of British Columbia.
+          &copy; {new Date().getFullYear()} Government of British Columbia.
         </p>
       </div>
     </footer>

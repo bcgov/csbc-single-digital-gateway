@@ -137,7 +137,7 @@ function MemberForm({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-foreground">{member.displayName}</h2>
-            {member.isOwner ? <Badge variant="secondary">Owner</Badge> : null}
+            {member.isOwner ? <Badge color="yellow">Owner</Badge> : null}
           </div>
           <p className="text-sm text-muted-foreground">{member.email ?? 'No email on file'}</p>
           <p className="text-xs text-muted-foreground">
@@ -207,14 +207,14 @@ function MemberForm({
         <div className="flex gap-10">
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium">Role</span>
-            <Badge variant={member.role === 'admin' ? 'default' : 'outline'} className="self-start">
+            <Badge color={member.role === 'admin' ? 'green' : 'blue'} className="self-start">
               {member.role === 'admin' ? 'Admin' : 'Member'}
             </Badge>
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium">Status</span>
             {member.status === 'suspended' ? (
-              <Badge variant="outline" className="self-start">
+              <Badge color="blue" className="self-start">
                 Suspended
               </Badge>
             ) : (

@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mdi/js": "^7.4.47",
+    "@mdi/react": "^1.6.1",
     "@repo/react": "*",
     "@repo/ui": "*",
     "@tanstack/react-query": "5.101.0",

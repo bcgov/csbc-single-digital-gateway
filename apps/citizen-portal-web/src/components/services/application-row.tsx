@@ -1,4 +1,7 @@
 import { Badge } from '@repo/ui/badge';
+import { Card, CardIconAction, CardHeader, CardTitle, CardDescription } from '@repo/ui/card';
+import { mdiCake, mdiChevronRight } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { Link } from '@tanstack/react-router';
 import type { MyApplication } from '@/lib/catalog';
 
@@ -9,24 +12,34 @@ import type { MyApplication } from '@/lib/catalog';
  */
 export function ApplicationRow({ application }: { application: MyApplication }) {
   return (
-    <Link
-      to="/applications/$id"
-      params={{ id: application.id }}
-      className="block rounded-lg bg-background p-4 ring-1 ring-foreground/10 hover:ring-primary/40"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-heading text-sm font-semibold text-primary">
-          {application.formTitle}
-        </span>
-        <Badge variant="secondary" className="shrink-0">
-          {application.statusLabel}
-        </Badge>
-      </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">{application.serviceTitle}</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {application.reference} · Last updated{' '}
-        {new Date(application.lastUpdated).toLocaleDateString()}
-      </p>
-    </Link>
+    <Card column>
+      <CardIconAction size="sm">
+        <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+      </CardIconAction>
+      <CardHeader>
+        <CardTitle>
+          <Link
+            to="/applications/$id"
+            params={{ id: application.id }}
+            className="no-underline hover:underline"
+          >
+            {application.formTitle}
+            <Icon
+              path={mdiChevronRight}
+              size="20px"
+              className="inline-flex text-link"
+              aria-hidden={true}
+            />
+          </Link>
+        </CardTitle>
+        <CardDescription>
+          {application.serviceTitle}
+          <br />
+          <Badge color="yellow">{application.statusLabel}</Badge> &#8226; {application.formTitle}{' '}
+          &#8226; {application.reference} &#8226; Last updated{' '}
+          {new Date(application.lastUpdated).toLocaleDateString()}
+        </CardDescription>
+      </CardHeader>
+    </Card>
   );
 }

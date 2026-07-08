@@ -1,4 +1,7 @@
 import { Button } from '@repo/ui/button';
+import { buttonVariants } from '@repo/ui/button';
+import { mdiLogin } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
@@ -89,28 +92,35 @@ export function ApplicationDetailPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="flex flex-col gap-6">
-        {!authPending && !user ? (
+      {!authPending && !user ? (
+        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
           <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view this application.
             </p>
-            <Button render={<a href={loginUrl} />}>Log in</Button>
+            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+              <Icon path={mdiLogin} aria-hidden={true} />
+              Log in
+            </Link>
           </div>
-        ) : isPending ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        ) : isError || !application ? (
+        </div>
+      ) : isPending ? (
+        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      ) : isError || !application ? (
+        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
           <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <h1 className="font-heading text-lg font-semibold">Application not found</h1>
             <Button variant="outline" className="mt-4" render={<Link to="/" />}>
               Your applications
             </Button>
           </div>
-        ) : (
-          <>
+        </div>
+      ) : (
+        <>
+          <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
             <Breadcrumb
               trail={[
                 { label: 'Services', href: '/services' },
@@ -130,26 +140,27 @@ export function ApplicationDetailPage() {
                   : `Last updated ${new Date(application.updatedAt).toLocaleDateString()}`}
               </p>
             </header>
-
-            {editing ? (
-              <ReviseForm
-                application={application}
-                onSubmitted={() => setEditing(false)}
-                onCancel={() => setEditing(false)}
-              />
-            ) : (
-              <>
-                <StatusBanner
-                  status={application.status}
-                  reviewReason={application.reviewReason}
-                  action={bannerAction(application.status)}
+            <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+              {editing ? (
+                <ReviseForm
+                  application={application}
+                  onSubmitted={() => setEditing(false)}
+                  onCancel={() => setEditing(false)}
                 />
-                <SubmittedAnswers application={application} />
-              </>
-            )}
-          </>
-        )}
-      </div>
+              ) : (
+                <>
+                  <StatusBanner
+                    status={application.status}
+                    reviewReason={application.reviewReason}
+                    action={bannerAction(application.status)}
+                  />
+                  <SubmittedAnswers application={application} />
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </CitizenShell>
   );
 }

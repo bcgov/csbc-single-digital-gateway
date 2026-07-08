@@ -19,6 +19,8 @@
   "files.trimTrailingWhitespace": true,
   "prettier.requireConfig": true,
   "eslint.enable": false,
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
   "js/ts.tsdk.path": "node_modules/typescript/lib",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true,
   "search.exclude": {
