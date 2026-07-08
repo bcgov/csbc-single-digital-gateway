@@ -98,11 +98,13 @@ function renderPanel(readonly = false) {
 }
 
 describe('service agreement methods panel', () => {
-  it('lists attached agreements with a Required badge and an Add button', async () => {
+  it('lists attached agreements: title links to the editor, with Required + Remove', async () => {
     mockFetch();
     renderPanel();
-    expect(await screen.findByText('Terms of service')).toBeInTheDocument();
+    const link = await screen.findByRole('link', { name: 'Terms of service' });
+    expect(link).toHaveAttribute('href', expect.stringContaining('/service-agreements/a-attached'));
     expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add service agreement/i })).toBeInTheDocument();
   });
 
@@ -133,6 +135,6 @@ describe('service agreement methods panel', () => {
     expect(
       screen.queryByRole('button', { name: /add service agreement/i }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /detach/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument();
   });
 });

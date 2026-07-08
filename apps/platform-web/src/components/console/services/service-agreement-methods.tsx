@@ -1,8 +1,18 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@repo/ui/alert-dialog';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
-import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, X } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
   detachServiceAgreement,
@@ -16,12 +26,12 @@ interface ServiceAgreementMethodsProps {
   serviceId: string;
   versionId: string;
   workspaceId: string;
-  /** True for non-draft versions — the attached list renders read-only. */
+  /** True for non-draft versions — the list renders read-only (no add/remove). */
   readonly: boolean;
 }
 
-/** Service-detail panel — the consent agreements attached to this service version. "Add service
- * agreement" opens a modal to create a new one (→ its editor) or attach an existing published one. */
+/** Service-detail "Service agreements" — the consent agreements attached to this service version.
+ * Each row links to the agreement's editor; "Add service agreement" creates or attaches one. */
 export function ServiceAgreementMethods({
   slug,
   serviceId,
@@ -30,6 +40,7 @@ export function ServiceAgreementMethods({
   readonly,
 }: ServiceAgreementMethodsProps) {
   const [addOpen, setAddOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: items = [] } = useQuery(serviceAgreementRefsQueryOptions(serviceId, versionId));
 
@@ -43,7 +54,7 @@ export function ServiceAgreementMethods({
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between">
         <span className="text-sm font-medium">Service agreements</span>
         {readonly ? null : (
           <Button size="xs" variant="outline" type="button" onClick={() => setAddOpen(true)}>
@@ -68,29 +79,32 @@ export function ServiceAgreementMethods({
           {items.map((ref: ServiceAgreementRef) => (
             <li
               key={ref.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border p-3"
             >
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{ref.title}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <Link
+                  to="/app/$slug/service-agreements/$id"
+                  params={{ slug, id: ref.agreementDocumentId }}
+                  className="truncate text-sm font-medium text-foreground hover:underline"
+                >
+                  {ref.title}
+                </Link>
                 <Badge variant={ref.isOptional ? 'secondary' : 'default'}>
                   {ref.isOptional ? 'Optional' : 'Required'}
                 </Badge>
                 {ref.isGlobal ? <Badge variant="outline">Global</Badge> : null}
-              </div>
+              </span>
               {readonly ? null : (
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="ghost"
                   type="button"
-                  aria-label={`Detach ${ref.title}`}
+                  className="shrink-0 text-destructive"
                   disabled={detach.isPending && detach.variables === ref.id}
-                  onClick={() => detach.mutate(ref.id)}
+                  onClick={() => setConfirmId(ref.id)}
                 >
-                  {detach.isPending && detach.variables === ref.id ? (
-                    <Spinner className="size-4" />
-                  ) : (
-                    <X className="size-4" aria-hidden />
-                  )}
+                  <Trash2 className="size-3.5" aria-hidden />
+                  Remove
                 </Button>
               )}
             </li>
@@ -107,6 +121,39 @@ export function ServiceAgreementMethods({
         workspaceId={workspaceId}
         attachedDocumentIds={items.map((ref) => ref.agreementDocumentId)}
       />
+
+      <AlertDialog
+        open={confirmId !== null}
+        onOpenChange={(next) => {
+          if (!next) {
+            setConfirmId(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this agreement from the service?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Applicants will no longer respond to it for this service. The agreement itself is not
+              deleted and stays available to attach again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmId !== null) {
+                  detach.mutate(confirmId);
+                  setConfirmId(null);
+                }
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
