@@ -136,3 +136,52 @@ export function publishAgreementVersion(
     'POST',
   );
 }
+
+// ── Workspace default agreements (feature 96/98) ────────────────────────────────────────────────
+
+/** A workspace's default service agreement, resolved to its current published version. */
+export interface DefaultAgreement {
+  id: string;
+  agreementDocumentId: string;
+  title: string;
+  isOptional: boolean;
+  isGlobal: boolean;
+  createdAt: string;
+}
+
+const defaultsUrl = (workspaceId: string) =>
+  `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/default-agreements`;
+
+/** The workspace's default agreements (member-read). */
+export function workspaceDefaultAgreementsQueryOptions(workspaceId: string) {
+  return queryOptions({
+    queryKey: ['workspace-default-agreements', workspaceId] as const,
+    queryFn: async () => {
+      const envelope = await ok<{ items: DefaultAgreement[] }>(
+        await fetch(defaultsUrl(workspaceId), { credentials: 'include' }),
+      );
+      return envelope.items;
+    },
+    enabled: workspaceId !== '',
+    staleTime: 10_000,
+  });
+}
+
+/** Add a published agreement (workspace or global) as a workspace default (admin). */
+export function addDefaultAgreement(
+  workspaceId: string,
+  agreementDocumentId: string,
+): Promise<DefaultAgreement> {
+  return send(defaultsUrl(workspaceId), 'POST', { agreementDocumentId });
+}
+
+/** Remove a workspace default (admin). */
+export async function removeDefaultAgreement(workspaceId: string, id: string): Promise<void> {
+  const res = await fetch(`${defaultsUrl(workspaceId)}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(`Remove default failed: ${res.status}`);
+  }
+}
