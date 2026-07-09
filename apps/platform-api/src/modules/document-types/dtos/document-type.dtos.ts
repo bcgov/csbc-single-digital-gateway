@@ -4,10 +4,16 @@ import { z } from 'zod';
 import {
   basicFormDefinitionSchema,
   multiStageDefinitionSchema,
+  serviceAgreementDefinitionSchema,
   serviceDefinitionSchema,
 } from './definition.schemas';
 
-export const documentKindSchema = z.enum(['basic-form', 'multi-stage-form', 'service']);
+export const documentKindSchema = z.enum([
+  'basic-form',
+  'multi-stage-form',
+  'service',
+  'service-agreement',
+]);
 export type DocumentKind = z.infer<typeof documentKindSchema>;
 
 /** The `definition` schema for a given kind (used to validate add/edit-version payloads). */
@@ -19,6 +25,8 @@ export function definitionForKind(kind: DocumentKind) {
       return multiStageDefinitionSchema;
     case 'service':
       return serviceDefinitionSchema;
+    case 'service-agreement':
+      return serviceAgreementDefinitionSchema;
   }
 }
 

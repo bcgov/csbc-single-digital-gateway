@@ -195,6 +195,60 @@ export function serviceReferencesQueryOptions(id: string, versionId: string) {
   });
 }
 
+export interface ServiceAgreementRef {
+  id: string;
+  /** Document-only pointer — the agreement resolves its current published version server-side. */
+  agreementDocumentId: string;
+  title: string;
+  isOptional: boolean;
+  isGlobal: boolean;
+  position: number;
+  createdAt: string;
+}
+
+/** The service agreements attached to a service version (feature 86). */
+export function serviceAgreementRefsQueryOptions(id: string, versionId: string) {
+  return queryOptions({
+    queryKey: ['services', 'detail', id, 'agreements', versionId] as const,
+    queryFn: async () => {
+      const envelope = await ok<{ items: ServiceAgreementRef[] }>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
+          { credentials: 'include' },
+        ),
+      );
+      return envelope.items;
+    },
+    staleTime: 10_000,
+  });
+}
+
+export function attachServiceAgreement(
+  id: string,
+  versionId: string,
+  agreementDocumentId: string,
+): Promise<ServiceAgreementRef> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
+    'POST',
+    { agreementDocumentId },
+  );
+}
+
+export async function detachServiceAgreement(
+  id: string,
+  versionId: string,
+  referenceId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements/${encodeURIComponent(referenceId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
   return ok<T>(
     await fetch(url, {

@@ -2,7 +2,7 @@
  * Admin navigation model (feature 34) — mirrors `console-nav.ts` for the `/admin` site. The starter
  * set is Overview + Document Types (Document Types is the first real admin feature, built next).
  */
-import { FileType, LayoutDashboard, type LucideIcon } from 'lucide-react';
+import { FileSignature, FileType, LayoutDashboard, type LucideIcon } from 'lucide-react';
 
 export interface AdminNavItem {
   /** Stable id; for sections it equals the trailing path segment. */
@@ -29,6 +29,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     to: '/admin/document-types',
     icon: FileType,
     subtitle: 'Manage the document type definitions available to workspaces.',
+  },
+  {
+    key: 'service-agreements',
+    label: 'Service Agreements',
+    to: '/admin/service-agreements',
+    icon: FileSignature,
+    subtitle: 'Global consent documents shared across all workspaces.',
   },
 ];
 

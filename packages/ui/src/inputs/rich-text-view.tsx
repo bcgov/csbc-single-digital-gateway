@@ -18,7 +18,9 @@ export interface RichTextViewProps {
  * theme keep it visually identical to the editor's output).
  */
 export function RichTextView({ value, className }: RichTextViewProps) {
-  if (!value) {
+  // Render nothing for an empty value — including an empty `{}` (no `root`), which would otherwise
+  // make Lexical read `root.type` on undefined and crash.
+  if (!value || !value.root) {
     return null;
   }
   const initialConfig = {

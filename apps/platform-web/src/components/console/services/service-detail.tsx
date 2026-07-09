@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import {
   addServiceVersion,
   publishVersion,
+  serviceAgreementRefsQueryOptions,
   serviceQueryOptions,
   serviceReferencesQueryOptions,
   updateDraft,
@@ -24,6 +25,7 @@ import {
 import { useSetPageChrome } from '@/lib/page-chrome';
 import { UnsavedChangesGuard } from '../unsaved-changes-guard';
 import { ApplicationMethods } from './application-methods';
+import { ServiceAgreementMethods } from './service-agreement-methods';
 import { ServiceEditor } from './service-editor';
 import { ServiceMenu } from './service-menu';
 import { ServicePublishModal } from './service-publish-modal';
@@ -42,7 +44,7 @@ export function ServiceDetail({
   /** Omitted on the bare `…/services/:id` route → the current (latest) version. */
   versionId?: string;
   /** Which tab the URL selects. */
-  tab: 'details' | 'methods';
+  tab: 'details' | 'methods' | 'agreements';
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,25 +58,31 @@ export function ServiceDetail({
 
   // Navigate to a version+tab. The current/latest version is the bare `…/services/:id` (no version in
   // the URL); older versions are `…/versions/:versionId`. Each tab adds `/application-methods`.
-  const navTab = (nextTab: 'details' | 'methods', vId?: string) => {
-    if (vId !== undefined && vId !== latest?.id) {
-      navigate(
-        nextTab === 'methods'
-          ? {
-              to: '/app/$slug/services/$id/versions/$versionId/application-methods',
-              params: { slug, id, versionId: vId },
-            }
-          : {
-              to: '/app/$slug/services/$id/versions/$versionId',
-              params: { slug, id, versionId: vId },
-            },
-      );
+  const navTab = (nextTab: 'details' | 'methods' | 'agreements', vId?: string) => {
+    const older = vId !== undefined && vId !== latest?.id;
+    if (older) {
+      if (nextTab === 'methods') {
+        navigate({
+          to: '/app/$slug/services/$id/versions/$versionId/application-methods',
+          params: { slug, id, versionId: vId },
+        });
+      } else if (nextTab === 'agreements') {
+        navigate({
+          to: '/app/$slug/services/$id/versions/$versionId/service-agreements',
+          params: { slug, id, versionId: vId },
+        });
+      } else {
+        navigate({
+          to: '/app/$slug/services/$id/versions/$versionId',
+          params: { slug, id, versionId: vId },
+        });
+      }
+    } else if (nextTab === 'methods') {
+      navigate({ to: '/app/$slug/services/$id/application-methods', params: { slug, id } });
+    } else if (nextTab === 'agreements') {
+      navigate({ to: '/app/$slug/services/$id/service-agreements', params: { slug, id } });
     } else {
-      navigate(
-        nextTab === 'methods'
-          ? { to: '/app/$slug/services/$id/application-methods', params: { slug, id } }
-          : { to: '/app/$slug/services/$id', params: { slug, id } },
-      );
+      navigate({ to: '/app/$slug/services/$id', params: { slug, id } });
     }
   };
   const goToCurrent = () => navTab(tab);
@@ -85,6 +93,11 @@ export function ServiceDetail({
     enabled: selected !== undefined,
   });
   const references = referencesQuery.data ?? [];
+  const agreementRefsQuery = useQuery({
+    ...serviceAgreementRefsQueryOptions(id, selected?.id ?? ''),
+    enabled: selected !== undefined,
+  });
+  const agreementCount = agreementRefsQuery.data?.length ?? 0;
 
   const addVersion = useMutation({
     mutationFn: () => addServiceVersion(id),
@@ -238,7 +251,9 @@ export function ServiceDetail({
 
       <Tabs
         value={tab}
-        onValueChange={(value) => navTab(value === 'methods' ? 'methods' : 'details', versionId)}
+        onValueChange={(value) =>
+          navTab(value === 'methods' || value === 'agreements' ? value : 'details', versionId)
+        }
         className="gap-4"
       >
         <TabsList>
@@ -247,6 +262,12 @@ export function ServiceDetail({
             Application methods
             <Badge color="yellow" className="ml-2">
               {applicationRefs.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="agreements">
+            Service agreements
+            <Badge color="yellow" className="ml-2">
+              {agreementCount}
             </Badge>
           </TabsTrigger>
         </TabsList>
@@ -269,6 +290,18 @@ export function ServiceDetail({
               serviceId={id}
               versionId={selected.id}
               references={applicationRefs}
+              readonly={readonly}
+            />
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="agreements">
+          {referencesQuery.isSuccess ? (
+            <ServiceAgreementMethods
+              slug={slug}
+              serviceId={id}
+              versionId={selected.id}
+              workspaceId={data.service.workspaceId}
               readonly={readonly}
             />
           ) : null}

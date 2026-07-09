@@ -5,6 +5,7 @@
  */
 import {
   BarChart3,
+  FileSignature,
   Inbox,
   LayoutDashboard,
   type LucideIcon,
@@ -44,6 +45,14 @@ export const PRIMARY_NAV: NavItem[] = [
     to: '/app/$slug/services',
     icon: Package,
     subtitle: 'Service documents that group related applications.',
+    scoped: true,
+  },
+  {
+    key: 'service-agreements',
+    label: 'Service Agreements',
+    to: '/app/$slug/service-agreements',
+    icon: FileSignature,
+    subtitle: 'Consent documents applicants approve before applying.',
     scoped: true,
   },
   {

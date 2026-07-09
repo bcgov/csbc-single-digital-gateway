@@ -49,3 +49,13 @@ export const serviceDefinitionSchema = z.object({
   schema: jsonSchemaSchema,
   uischema: uiSchemaSchema,
 });
+
+/**
+ * `service-agreement`: a raw JSONForms `{ schema, uischema }` form (same shape as `service`).
+ * Its definition carries the authored consent fields (title, description, rich-text content,
+ * isOptional, approveLabel, rejectLabel). Kept as its own export so the two can diverge.
+ */
+export const serviceAgreementDefinitionSchema = z.object({
+  schema: jsonSchemaSchema,
+  uischema: uiSchemaSchema,
+});

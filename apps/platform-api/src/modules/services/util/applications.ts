@@ -232,6 +232,8 @@ export async function insertApplication(
     targetDocumentId,
     targetKind: app.kind,
     workspaceId: owner.workspaceId,
+    // Application forms are same-workspace, so the target's workspace equals the owner's.
+    targetWorkspaceId: owner.workspaceId,
     relation: 'application_form',
     label: app.label,
     position: app.position,

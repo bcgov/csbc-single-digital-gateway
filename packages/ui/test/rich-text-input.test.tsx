@@ -63,6 +63,11 @@ describe('RichTextInput', () => {
     expect(document.querySelector('[contenteditable="false"]')).toBeTruthy();
   });
 
+  it('does not crash on an empty `{}` value (no root) — renders an empty editor', () => {
+    render(<RichTextInput value={{} as never} />);
+    expect(document.querySelector('[contenteditable="true"]')).toBeTruthy();
+  });
+
   it('dispatches a formatting command without crashing', async () => {
     const user = userEvent.setup();
     render(<RichTextInput />);

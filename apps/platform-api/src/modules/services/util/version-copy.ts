@@ -30,7 +30,9 @@ export async function reactivateServiceTx(tx: Tx, id: string): Promise<void> {
           eq(documentReferences.relation, 'application_form'),
         ),
       )
-  ).map((r) => r.vid);
+  )
+    .map((r) => r.vid)
+    .filter((vid): vid is string => vid !== null);
   await tx
     .update(documentVersions)
     .set({ archivedAt: null })
@@ -45,8 +47,17 @@ function one<T>(rows: T[], what: string): T {
   return row;
 }
 
+/** Assert a value the query type widened to nullable (via a LEFT join) is actually present. */
+function req<T>(value: T | null | undefined, what: string): T {
+  if (value === null || value === undefined) {
+    throw new Error(`${what} is unexpectedly null`);
+  }
+  return value;
+}
+
 /** Delete a (draft) service version and the application forms it owned that nothing else references.
- * Refuses to discard a service's only version (delete the service instead). */
+ * Refuses to discard a service's only version (delete the service instead). Service agreements are
+ * shared documents (document-only references) and are never deleted by a service-version discard. */
 export async function discardVersionTx(
   tx: Tx,
   serviceId: string,
@@ -87,8 +98,10 @@ export async function discardVersionTx(
 
 /**
  * Copy a service version's references onto a NEW version. Application-method forms are deep-copied
- * (new form document + fresh draft version) so each service version edits its own forms; other
- * references (e.g. related services) are copied as-is.
+ * (new form document + fresh draft version) so each service version edits its own forms. Other
+ * references — service agreements (document-only pointers) and related services — are copied AS-IS.
+ * The join to `document_versions` is a LEFT join because a `service_agreement` reference carries no
+ * `target_version_id` (it resolves current-published) and must still be copied.
  */
 export async function copyReferences(
   tx: Tx,
@@ -102,6 +115,7 @@ export async function copyReferences(
       targetKind: documentReferences.targetKind,
       targetDocumentId: documentReferences.targetDocumentId,
       targetVersionId: documentReferences.targetVersionId,
+      targetWorkspaceId: documentReferences.targetWorkspaceId,
       formTitle: documents.title,
       formKind: documents.kind,
       formTypeId: documentVersions.typeId,
@@ -110,18 +124,19 @@ export async function copyReferences(
     })
     .from(documentReferences)
     .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
-    .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
+    .leftJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
     .where(eq(documentReferences.ownerVersionId, source.sourceVersionId));
 
   for (const src of sources) {
     let targetDocumentId = src.targetDocumentId;
     let targetVersionId = src.targetVersionId;
     if (src.relation === 'application_form') {
+      // A form always pins a version, so the LEFT join resolved its row (type ids are present).
       // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
       const formDocRows = await tx
         .insert(documents)
         .values({
-          typeId: src.formTypeId,
+          typeId: req(src.formTypeId, 'form typeId'),
           workspaceId: source.workspaceId,
           kind: src.formKind,
           title: src.formTitle,
@@ -133,8 +148,8 @@ export async function copyReferences(
         .insert(documentVersions)
         .values({
           documentId: formDoc.id,
-          typeId: src.formTypeId,
-          typeVersionId: src.formTypeVersionId,
+          typeId: req(src.formTypeId, 'form typeId'),
+          typeVersionId: req(src.formTypeVersionId, 'form typeVersionId'),
           version: 1,
           schema: src.formSchema,
         })
@@ -142,6 +157,11 @@ export async function copyReferences(
       targetDocumentId = formDoc.id;
       targetVersionId = one(formVersionRows, 'form version copy').id;
     }
+    // A copied application_form gets a fresh form document in the owner's workspace; other relations
+    // keep the source's target_workspace_id (NULL for a global service agreement) and version pin
+    // (NULL for a service agreement — a document-only pointer).
+    const targetWorkspaceId =
+      src.relation === 'application_form' ? source.workspaceId : src.targetWorkspaceId;
     // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
     await tx.insert(documentReferences).values({
       ownerVersionId: source.newVersionId,
@@ -151,6 +171,7 @@ export async function copyReferences(
       targetDocumentId,
       targetKind: src.targetKind,
       workspaceId: source.workspaceId,
+      targetWorkspaceId,
       relation: src.relation,
       label: src.label,
       position: src.position,

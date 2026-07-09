@@ -90,6 +90,11 @@ export type FormWithVersion = z.infer<typeof formWithVersionSchema>;
 // ── Row → DTO mappers ───────────────────────────────────────────────────────────────────────────
 
 export function toFormDto(row: Document): FormResponse {
+  if (row.workspaceId === null) {
+    // A form is always workspace-scoped (only service agreements may be global); a
+    // workspace-less form document is a data invariant violation, not a valid response.
+    throw new Error('form document has no workspace');
+  }
   return {
     id: row.id,
     workspaceId: row.workspaceId,

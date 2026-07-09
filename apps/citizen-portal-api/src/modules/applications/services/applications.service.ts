@@ -23,6 +23,7 @@ import {
   submissionStatusLabel,
 } from '../util/format';
 import { validateSubmission } from '../util/validate';
+import { ConsentService } from './consent.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
 
@@ -36,7 +37,10 @@ type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
  */
 @Injectable()
 export class ApplicationsService {
-  constructor(@InjectDatabase() private readonly db: Database) {}
+  constructor(
+    @InjectDatabase() private readonly db: Database,
+    private readonly consent: ConsentService,
+  ) {}
 
   /**
    * The form a citizen applies through, for a given service — validated to be an `application_form`
@@ -71,7 +75,8 @@ export class ApplicationsService {
       )
       .limit(1);
     const ref = refRows[0];
-    if (ref === undefined) {
+    // An application_form reference always pins a version (only service_agreement refs may omit it).
+    if (ref === undefined || ref.formVersionId === null) {
       throw new NotFoundException('Application form not found');
     }
     const formRows = await this.db
@@ -107,9 +112,14 @@ export class ApplicationsService {
       .where(eq(documentVersions.id, formVersionId))
       .limit(1);
     const fv = fvRows[0];
-    if (fv === undefined || !FORM_KINDS.has(fv.kind)) {
+    if (fv === undefined || !FORM_KINDS.has(fv.kind) || fv.workspaceId === null) {
+      // Application forms are always workspace-scoped (only service agreements may be global),
+      // so a workspace-less document is not a valid application form version.
       throw new UnprocessableEntityException('Not an application form version');
     }
+    // Hoist the narrowed workspace: property narrowing (fv.workspaceId) doesn't survive into the
+    // transaction closure below, but a const local does.
+    const { workspaceId } = fv;
     const existing = await this.findUserDraft(userId, formVersionId);
     if (existing) {
       return this.toDto(existing.submission, existing.version);
@@ -121,7 +131,7 @@ export class ApplicationsService {
           documentId: fv.documentId,
           documentVersionId: formVersionId,
           userId,
-          workspaceId: fv.workspaceId,
+          workspaceId,
         })
         .returning();
       const sub = subIns[0];
@@ -130,7 +140,7 @@ export class ApplicationsService {
       }
       const verIns = await tx
         .insert(submissionVersions)
-        .values({ submissionId: sub.id, workspaceId: fv.workspaceId, version: 1, data: {} })
+        .values({ submissionId: sub.id, workspaceId, version: 1, data: {} })
         .returning();
       const ver = verIns[0];
       if (ver === undefined) {
@@ -257,6 +267,8 @@ export class ApplicationsService {
         errors: result.errors,
       });
     }
+    // Consent gate: every required service agreement must be approved (against its current version).
+    await this.consent.assertSubmittableForForm(userId, sub.documentVersionId);
     const updated = await this.db
       .update(submissionVersions)
       .set({ data, status: 'pending', submittedAt: new Date() })

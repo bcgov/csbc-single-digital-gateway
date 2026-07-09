@@ -135,6 +135,11 @@ export type ServiceDetail = z.infer<typeof serviceDetailSchema>;
 // ── Row → DTO mappers ───────────────────────────────────────────────────────────────────────────
 
 export function toServiceDto(row: Document): ServiceResponse {
+  if (row.workspaceId === null) {
+    // A service is always workspace-scoped (only service agreements may be global); a
+    // workspace-less service document is a data invariant violation, not a valid response.
+    throw new Error('service document has no workspace');
+  }
   return {
     id: row.id,
     workspaceId: row.workspaceId,

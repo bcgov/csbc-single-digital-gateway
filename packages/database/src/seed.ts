@@ -14,6 +14,7 @@ config({ path: resolve(import.meta.dirname, '../.env'), quiet: true });
 const BASIC_FORM_ID = '00000000-0000-4000-8000-000000000001';
 const MULTI_STAGE_ID = '00000000-0000-4000-8000-000000000002';
 const SERVICE_ID = '00000000-0000-4000-8000-000000000003';
+const SERVICE_AGREEMENT_ID = '00000000-0000-4000-8000-000000000004';
 
 const emptyForm = {
   schema: { type: 'object', properties: {}, required: [] },
@@ -38,6 +39,36 @@ const serviceDefinition = {
       { type: 'Control', scope: '#/properties/title' },
       { type: 'Control', scope: '#/properties/description', options: { multi: true } },
       { type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } },
+    ],
+  },
+};
+
+// A service agreement (consent document) is authored as a fixed set of fields. `content` is a
+// rich-text field (Lexical `object`, `richtext` renderer) like the service `about`. `approveLabel`/
+// `rejectLabel` are the display strings for the citizen's approve/reject radio (Wave 3); the
+// decision value itself is NOT part of this definition (it's collected at apply time).
+const serviceAgreementDefinition = {
+  schema: {
+    type: 'object',
+    required: ['title'],
+    properties: {
+      title: { type: 'string', title: 'Title' },
+      description: { type: 'string', title: 'Description' },
+      content: { type: 'object', title: 'Content' },
+      isOptional: { type: 'boolean', title: 'Optional', default: false },
+      approveLabel: { type: 'string', title: 'Approve label', default: 'Approve' },
+      rejectLabel: { type: 'string', title: 'Reject label', default: 'Reject' },
+    },
+  },
+  uischema: {
+    type: 'VerticalLayout',
+    elements: [
+      { type: 'Control', scope: '#/properties/title' },
+      { type: 'Control', scope: '#/properties/description', options: { multi: true } },
+      { type: 'Control', scope: '#/properties/content', options: { format: 'richtext' } },
+      { type: 'Control', scope: '#/properties/isOptional' },
+      { type: 'Control', scope: '#/properties/approveLabel' },
+      { type: 'Control', scope: '#/properties/rejectLabel' },
     ],
   },
 };
@@ -80,6 +111,7 @@ async function seed(): Promise<void> {
         { id: BASIC_FORM_ID, name: 'Basic Form', kind: 'basic-form' },
         { id: MULTI_STAGE_ID, name: 'Multi-stage Form', kind: 'multi-stage-form' },
         { id: SERVICE_ID, name: 'Service', kind: 'service' },
+        { id: SERVICE_AGREEMENT_ID, name: 'Service Agreement', kind: 'service-agreement' },
       ])
       .onConflictDoNothing();
 
@@ -104,11 +136,17 @@ async function seed(): Promise<void> {
           definition: serviceDefinition,
           publishedAt: sql`now()`,
         },
+        {
+          typeId: SERVICE_AGREEMENT_ID,
+          version: 1,
+          definition: serviceAgreementDefinition,
+          publishedAt: sql`now()`,
+        },
       ])
       .onConflictDoNothing();
 
     console.info(
-      '[seed] document types ready: Basic Form, Multi-stage Form, Service (published v1).',
+      '[seed] document types ready: Basic Form, Multi-stage Form, Service, Service Agreement (published v1).',
     );
   } finally {
     await db.$client.end();

@@ -16,7 +16,7 @@ import {
   submissions,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
   type AddReferenceInput,
   type CreateReferencedFormInput,
@@ -27,6 +27,15 @@ import { formHasStructure, structureFromDefinition } from '../util/applications'
 import { ServicesService } from './services.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
+
+/** application_form / related_service references always pin a version (only service_agreement refs
+ * may omit it), so this narrows the now-nullable `target_version_id` for those relations. */
+function pinnedVersion(value: string | null, what: string): string {
+  if (value === null) {
+    throw new Error(`${what} is unexpectedly null`);
+  }
+  return value;
+}
 
 function pgCode(error: unknown): string | undefined {
   if (typeof error === 'object' && error !== null) {
@@ -46,12 +55,13 @@ function toDto(
   hasStructure: boolean,
 ): ReferenceResponse {
   return {
+    // `list` filters to the two legacy relations, so the widened enum never reaches this mapper.
+    relation: row.relation as ReferenceResponse['relation'],
     id: row.id,
-    relation: row.relation,
     position: row.position,
     label: row.label,
     targetDocumentId: row.targetDocumentId,
-    targetVersionId: row.targetVersionId,
+    targetVersionId: pinnedVersion(row.targetVersionId, 'reference target_version_id'),
     targetKind: row.targetKind,
     targetTitle,
     targetVersion,
@@ -85,7 +95,14 @@ export class ReferencesService {
       .from(documentReferences)
       .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
       .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
-      .where(eq(documentReferences.ownerVersionId, versionId))
+      // Legacy references view = application methods + related services only. Service-agreement
+      // references (feature 86) have their own surface and are excluded here.
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, versionId),
+          inArray(documentReferences.relation, ['related_service', 'application_form']),
+        ),
+      )
       .orderBy(asc(documentReferences.relation), asc(documentReferences.position));
     return rows.map((row) =>
       toDto(
@@ -129,6 +146,8 @@ export class ReferencesService {
           targetDocumentId: target.documentId,
           targetKind: target.kind,
           workspaceId: service.workspaceId,
+          // Legacy relations (forms/related services) are always same-workspace.
+          targetWorkspaceId: service.workspaceId,
           relation: input.relation,
           label: input.label ?? null,
         })
@@ -205,7 +224,7 @@ export class ReferencesService {
     await this.db
       .update(documentVersions)
       .set({ archivedAt: new Date() })
-      .where(eq(documentVersions.id, ref.targetVersionId));
+      .where(eq(documentVersions.id, pinnedVersion(ref.targetVersionId, 'form target_version_id')));
   }
 
   /** Create a form document + draft v1 and reference it from this service version (atomic ⇒ form born ≥1). */
@@ -258,6 +277,8 @@ export class ReferencesService {
           targetDocumentId: formDoc.id,
           targetKind: type.kind,
           workspaceId: service.workspaceId,
+          // A newly-created application form lives in the service's workspace.
+          targetWorkspaceId: service.workspaceId,
           relation: 'application_form',
           label: input.label ?? null,
         })

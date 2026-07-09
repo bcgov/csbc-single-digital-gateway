@@ -160,7 +160,8 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
-      // Drop deep-copied forms unchanged from the previous published version (re-point + dedup).
+      // Drop deep-copied forms unchanged from the previous published version (re-point + delete the
+      // redundant copy) before the promote loop below.
       await dedupCopiedForms(tx, id, versionId);
       // A service must have ≥1 application method, and every method's form must have structure.
       const apps = await tx
@@ -194,6 +195,8 @@ export class ServiceVersionsService {
           errors: structureless,
         });
       }
+      // Service agreements are shared policy documents (document-only references) published
+      // independently in the console — publishing a service does NOT publish its agreements.
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx
         .update(documentVersions)
@@ -204,8 +207,10 @@ export class ServiceVersionsService {
         .set({ publishedAt: sql`now()` })
         .where(eq(documentVersions.id, versionId))
         .returning();
-      // Publishing a service publishes its application forms (one version each).
+      // Publishing a service publishes its application forms (one version each; forms always pin a
+      // version, so target_version_id is non-null here).
       for (const app of apps) {
+        if (app.targetVersionId === null) continue;
         // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
         await tx
           .update(documentVersions)
