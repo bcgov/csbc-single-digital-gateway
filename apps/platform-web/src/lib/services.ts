@@ -197,8 +197,8 @@ export function serviceReferencesQueryOptions(id: string, versionId: string) {
 
 export interface ServiceAgreementRef {
   id: string;
+  /** Document-only pointer — the agreement resolves its current published version server-side. */
   agreementDocumentId: string;
-  agreementVersionId: string;
   title: string;
   isOptional: boolean;
   isGlobal: boolean;
@@ -232,17 +232,6 @@ export function attachServiceAgreement(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
     'POST',
     { agreementDocumentId },
-  );
-}
-
-/** Create a NEW draft workspace agreement in the service's workspace and attach it, atomically. */
-export function createServiceAgreement(
-  id: string,
-  versionId: string,
-): Promise<ServiceAgreementRef> {
-  return send(
-    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements/new`,
-    'POST',
   );
 }
 

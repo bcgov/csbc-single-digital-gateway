@@ -26,7 +26,6 @@ function json(body: unknown, status = 200): Response {
 const attachedRef = {
   id: 'ref1',
   agreementDocumentId: 'a-attached',
-  agreementVersionId: 'av1',
   title: 'Terms of service',
   isOptional: false,
   isGlobal: false,
@@ -98,34 +97,29 @@ function renderPanel(readonly = false) {
 }
 
 describe('service agreement methods panel', () => {
-  it('lists attached agreements: title links to the editor, with Required + Remove', async () => {
+  it('lists attached agreements: title links to the standalone console editor, with Required + Remove', async () => {
     mockFetch();
     renderPanel();
     const link = await screen.findByRole('link', { name: 'Terms of service' });
-    // Edited from a path under the service detail (like application methods).
-    expect(link).toHaveAttribute(
-      'href',
-      expect.stringContaining('/services/s1/versions/sv1/service-agreements/a-attached'),
-    );
+    // Agreements are edited in the standalone Service Agreements console (by document id), not
+    // under the service version (initiative shared-service-agreements).
+    expect(link).toHaveAttribute('href', expect.stringContaining('/service-agreements/a-attached'));
+    expect(link).toHaveAttribute('href', expect.not.stringContaining('/versions/'));
     expect(screen.getByText('Required')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add service agreement/i })).toBeInTheDocument();
   });
 
-  it('the Add modal offers create + attach, and the attach step lists only published, not-attached', async () => {
+  it('the Add modal is attach-only and lists only published, not-attached agreements', async () => {
     mockFetch();
     renderPanel();
     await screen.findByText('Terms of service');
     await userEvent.click(screen.getByRole('button', { name: /add service agreement/i }));
     const dialog = await screen.findByRole('dialog', { name: /add a service agreement/i });
-    // Chooser: both options present.
+    // Attach-only: no "create a new agreement" affordance.
     expect(
-      within(dialog).getByRole('button', { name: /create a new agreement/i }),
-    ).toBeInTheDocument();
-    const attachChoice = within(dialog).getByRole('button', {
-      name: /attach an existing agreement/i,
-    });
-    await userEvent.click(attachChoice);
+      within(dialog).queryByRole('button', { name: /create a new agreement/i }),
+    ).not.toBeInTheDocument();
     // Picker: published + not attached → shown; draft + already-attached → excluded.
     expect(await within(dialog).findByText('Privacy policy')).toBeInTheDocument();
     expect(within(dialog).queryByText('Draft notice')).not.toBeInTheDocument();

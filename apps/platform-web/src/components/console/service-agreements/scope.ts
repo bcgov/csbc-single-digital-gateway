@@ -1,21 +1,12 @@
 /**
  * The surfaces that host the shared Service Agreements components: the workspace console
- * (staff, workspace-scoped), the admin shell (admin, global), and — when editing an agreement
- * reached FROM a service — the `service` scope, which is a workspace edit whose "back" returns to
- * the service's agreements tab. The scope drives the list query, the create payload, and the
- * scope-aware navigation targets.
+ * (staff, workspace-scoped) and the admin shell (admin, global). The scope drives the list query,
+ * the create payload, and the scope-aware navigation targets. Agreements are authored here — never
+ * "under" a service (initiative shared-service-agreements).
  */
 export type AgreementScope =
   | { kind: 'workspace'; slug: string; workspaceId: string }
-  | { kind: 'admin' }
-  | {
-      kind: 'service';
-      slug: string;
-      workspaceId: string;
-      serviceId: string;
-      /** The service version the agreement is edited under — its draft-ness gates editability. */
-      serviceVersionId: string;
-    };
+  | { kind: 'admin' };
 
 /** The workspaceId to list by: the workspace's id, or null for the global (admin) surface. */
 export function scopeWorkspaceId(scope: AgreementScope): string | null {

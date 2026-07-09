@@ -31,7 +31,8 @@ interface ServiceAgreementMethodsProps {
 }
 
 /** Service-detail "Service agreements" — the consent agreements attached to this service version.
- * Each row links to the agreement's editor; "Add service agreement" creates or attaches one. */
+ * Each row links to the agreement in the standalone console; "Add service agreement" attaches an
+ * existing published agreement (authoring happens in the console, not inline). */
 export function ServiceAgreementMethods({
   slug,
   serviceId,
@@ -83,8 +84,8 @@ export function ServiceAgreementMethods({
             >
               <span className="flex min-w-0 items-center gap-2">
                 <Link
-                  to="/app/$slug/services/$id/versions/$versionId/service-agreements/$agreementId"
-                  params={{ slug, id: serviceId, versionId, agreementId: ref.agreementDocumentId }}
+                  to="/app/$slug/service-agreements/$id"
+                  params={{ slug, id: ref.agreementDocumentId }}
                   className="truncate text-sm font-medium text-foreground hover:underline"
                 >
                   {ref.title}
@@ -115,7 +116,6 @@ export function ServiceAgreementMethods({
       <AddAgreementModal
         open={addOpen}
         onOpenChange={setAddOpen}
-        slug={slug}
         serviceId={serviceId}
         versionId={versionId}
         workspaceId={workspaceId}
