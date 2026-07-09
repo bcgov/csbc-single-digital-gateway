@@ -15,9 +15,9 @@ export type AttachAgreementInput = z.infer<typeof attachAgreementSchema>;
 export const agreementRefSchema = z.object({
   /** The document_references row id (used to detach). */
   id: z.string(),
+  /** The agreement DOCUMENT this service points at (document-only — the version is resolved
+   * current-published at read time; the reference pins no version). */
   agreementDocumentId: z.string(),
-  /** The pinned (published-at-attach) agreement version. */
-  agreementVersionId: z.string(),
   title: z.string(),
   /** Whether the agreement is optional for applicants (from the agreement's published data). */
   isOptional: z.boolean(),

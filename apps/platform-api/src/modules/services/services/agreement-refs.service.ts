@@ -5,30 +5,13 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import {
-  type Database,
-  documentReferences,
-  documentTypeVersions,
-  documentTypes,
-  documentVersions,
-  documents,
-} from '@repo/database';
+import { type Database, documentReferences, documentVersions, documents } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { AgreementRefResponse } from '../dtos/agreement-ref.dtos';
 import { ServicesService } from './services.service';
 
 const AGREEMENT_KIND = 'service-agreement';
-
-/** Default authored data for a newly-created draft agreement (mirrors the type definition defaults). */
-const DEFAULT_AGREEMENT_DATA = {
-  title: 'Untitled service agreement',
-  description: '',
-  content: {},
-  isOptional: false,
-  approveLabel: 'Approve',
-  rejectLabel: 'Reject',
-};
 
 interface ResolvedAgreement {
   documentId: string;
@@ -82,7 +65,8 @@ export class AgreementRefsService {
         ownerVersionId: versionId,
         ownerDocumentId: serviceId,
         ownerKind: 'service',
-        targetVersionId: agreement.versionId,
+        // Document-only pointer: no version pin — the agreement resolves current-published at read time.
+        targetVersionId: null,
         targetDocumentId: agreement.documentId,
         targetKind: AGREEMENT_KIND,
         workspaceId: service.workspaceId,
@@ -99,85 +83,12 @@ export class AgreementRefsService {
     return {
       id: row.id,
       agreementDocumentId: agreement.documentId,
-      agreementVersionId: agreement.versionId,
       title: agreement.title,
       isOptional: agreement.isOptional,
       isGlobal: agreement.workspaceId === null,
       position: row.position,
       createdAt: row.createdAt.toISOString(),
     };
-  }
-
-  /** Create a NEW draft workspace agreement (in the service's workspace) and attach it, atomically.
-   * Mirrors createForm for application methods — the agreement is authored/published afterwards, and
-   * the service publish gate requires it published. */
-  async createAndAttach(
-    userId: string,
-    serviceId: string,
-    versionId: string,
-  ): Promise<AgreementRefResponse> {
-    const service = await this.services.requireDocument(userId, serviceId);
-    await this.requireDraftOwner(serviceId, versionId);
-    const type = await this.resolveAgreementType();
-    return this.db.transaction(async (tx) => {
-      const docRows = await tx
-        .insert(documents)
-        .values({
-          typeId: type.typeId,
-          workspaceId: service.workspaceId,
-          kind: AGREEMENT_KIND,
-          title: DEFAULT_AGREEMENT_DATA.title,
-        })
-        .returning();
-      const doc = docRows[0];
-      if (doc === undefined) {
-        throw new Error('agreement document insert returned no row');
-      }
-      const verRows = await tx
-        .insert(documentVersions)
-        .values({
-          documentId: doc.id,
-          typeId: type.typeId,
-          typeVersionId: type.typeVersionId,
-          version: 1,
-          data: DEFAULT_AGREEMENT_DATA,
-        })
-        .returning();
-      const ver = verRows[0];
-      if (ver === undefined) {
-        throw new Error('agreement version insert returned no row');
-      }
-      const position = await this.nextPosition(versionId);
-      const refRows = await tx
-        .insert(documentReferences)
-        .values({
-          ownerVersionId: versionId,
-          ownerDocumentId: serviceId,
-          ownerKind: 'service',
-          targetVersionId: ver.id,
-          targetDocumentId: doc.id,
-          targetKind: AGREEMENT_KIND,
-          workspaceId: service.workspaceId,
-          targetWorkspaceId: service.workspaceId,
-          relation: 'service_agreement',
-          position,
-        })
-        .returning();
-      const ref = refRows[0];
-      if (ref === undefined) {
-        throw new Error('agreement reference insert returned no row');
-      }
-      return {
-        id: ref.id,
-        agreementDocumentId: doc.id,
-        agreementVersionId: ver.id,
-        title: doc.title,
-        isOptional: DEFAULT_AGREEMENT_DATA.isOptional,
-        isGlobal: false,
-        position: ref.position,
-        createdAt: ref.createdAt.toISOString(),
-      };
-    });
   }
 
   /** Detach an agreement from a service draft version. If the agreement is a draft (never published)
@@ -234,11 +145,12 @@ export class AgreementRefsService {
     versionId: string,
   ): Promise<AgreementRefResponse[]> {
     await this.services.requireDocument(userId, serviceId);
+    // A service_agreement reference is document-only; resolve each agreement's CURRENT published
+    // version (by document id) for its title/is-optional — the same way the citizen gate resolves it.
     const rows = await this.db
       .select({
         id: documentReferences.id,
         agreementDocumentId: documentReferences.targetDocumentId,
-        agreementVersionId: documentReferences.targetVersionId,
         title: documents.title,
         data: documentVersions.data,
         targetWorkspaceId: documentReferences.targetWorkspaceId,
@@ -247,7 +159,13 @@ export class AgreementRefsService {
       })
       .from(documentReferences)
       .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
-      .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
+      .innerJoin(
+        documentVersions,
+        and(
+          eq(documentVersions.documentId, documentReferences.targetDocumentId),
+          eq(documentVersions.status, 'published'),
+        ),
+      )
       .where(
         and(
           eq(documentReferences.ownerVersionId, versionId),
@@ -258,7 +176,6 @@ export class AgreementRefsService {
     return rows.map((row) => ({
       id: row.id,
       agreementDocumentId: row.agreementDocumentId,
-      agreementVersionId: row.agreementVersionId,
       title: row.title,
       isOptional: row.data.isOptional === true,
       isGlobal: row.targetWorkspaceId === null,
@@ -300,27 +217,6 @@ export class AgreementRefsService {
       isOptional: row.data.isOptional === true,
       workspaceId: row.workspaceId,
     };
-  }
-
-  /** The seeded Service Agreement type + its published type-version (new drafts bind to it). */
-  private async resolveAgreementType(): Promise<{ typeId: string; typeVersionId: string }> {
-    const rows = await this.db
-      .select({ typeId: documentTypes.id, typeVersionId: documentTypeVersions.id })
-      .from(documentTypes)
-      .innerJoin(
-        documentTypeVersions,
-        and(
-          eq(documentTypeVersions.typeId, documentTypes.id),
-          eq(documentTypeVersions.status, 'published'),
-        ),
-      )
-      .where(eq(documentTypes.kind, AGREEMENT_KIND))
-      .limit(1);
-    const row = rows[0];
-    if (row === undefined) {
-      throw new Error('Service Agreement type is not seeded or has no published version');
-    }
-    return { typeId: row.typeId, typeVersionId: row.typeVersionId };
   }
 
   /** The owner service version must exist and be a draft (attachments are edited on the draft). */

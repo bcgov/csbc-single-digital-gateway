@@ -65,7 +65,6 @@ describe('service agreement refs (e2e)', () => {
   it('401s agreement-reference endpoints without a session', async () => {
     expect((await http().get(AGR)).status).toBe(401);
     expect((await http().post(AGR).send({ agreementDocumentId: UUID })).status).toBe(401);
-    expect((await http().post(`${AGR}/new`)).status).toBe(401);
     expect((await http().delete(`${AGR}/${UUID}`)).status).toBe(401);
   });
 

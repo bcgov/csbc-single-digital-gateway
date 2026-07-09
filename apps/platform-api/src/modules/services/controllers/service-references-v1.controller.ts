@@ -100,16 +100,6 @@ export class ServiceReferencesV1Controller {
     return this.agreements.attach(user.id, id, versionId, body.agreementDocumentId);
   }
 
-  @Post(':id/versions/:versionId/agreements/new')
-  @ZodSerializerDto(AgreementRefDto)
-  createAgreement(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Param('versionId') versionId: string,
-  ) {
-    return this.agreements.createAndAttach(user.id, id, versionId);
-  }
-
   @Delete(':id/versions/:versionId/agreements/:referenceId')
   @HttpCode(204)
   async detachAgreement(
