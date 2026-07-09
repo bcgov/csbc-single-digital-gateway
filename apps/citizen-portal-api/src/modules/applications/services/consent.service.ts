@@ -68,6 +68,22 @@ export class ConsentService {
     if (row === undefined) {
       throw new UnprocessableEntityException('Not a published service agreement version');
     }
+    // Append-only, latest-wins: skip the write when the citizen's latest decision on this
+    // (user, agreement document + version) is already the same — the audit records only real changes.
+    const latest = await this.db
+      .select({ decision: serviceAgreementConsents.decision })
+      .from(serviceAgreementConsents)
+      .where(
+        and(
+          eq(serviceAgreementConsents.userId, userId),
+          eq(serviceAgreementConsents.agreementVersionId, agreementVersionId),
+        ),
+      )
+      .orderBy(desc(serviceAgreementConsents.createdAt))
+      .limit(1);
+    if (latest[0]?.decision === decision) {
+      return { agreementVersionId, decision };
+    }
     await this.db.insert(serviceAgreementConsents).values({
       userId,
       agreementDocumentId: row.agreementDocumentId,
