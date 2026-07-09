@@ -63,30 +63,39 @@ describe('consentPending', () => {
 });
 
 describe('ConsentGate', () => {
-  it('records a decision and gates Continue until a required agreement is approved', async () => {
+  it('does not POST on radio change; records only when Continue is pressed', async () => {
     const user = userEvent.setup();
     const { fetchMock, onContinue } = renderGate([required]);
 
     const continueBtn = screen.getByRole('button', { name: 'Continue to application' });
     expect(continueBtn).toBeDisabled();
 
-    // Rejecting a required agreement records the decision but keeps Continue blocked.
+    // Rejecting a required agreement updates the UI but does NOT submit; Continue stays blocked.
     await user.click(screen.getByRole('radio', { name: 'I decline' }));
+    expect(screen.getByText(/must approve this agreement/i)).toBeInTheDocument();
+    expect(continueBtn).toBeDisabled();
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/v1/me/agreement-consents'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+
+    // Approving unblocks Continue — still no POST yet.
+    await user.click(screen.getByRole('radio', { name: 'I accept the terms' }));
+    await waitFor(() => expect(continueBtn).toBeEnabled());
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/v1/me/agreement-consents'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+
+    // Pressing Continue records the decision, THEN advances.
+    await user.click(continueBtn);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/v1/me/agreement-consents'),
         expect.objectContaining({ method: 'POST' }),
       ),
     );
-    expect(screen.getByText(/must approve this agreement/i)).toBeInTheDocument();
-    expect(continueBtn).toBeDisabled();
-
-    // Approving unblocks Continue.
-    await user.click(screen.getByRole('radio', { name: 'I accept the terms' }));
-    await waitFor(() => expect(continueBtn).toBeEnabled());
-
-    await user.click(continueBtn);
-    expect(onContinue).toHaveBeenCalledOnce();
+    await waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
   });
 
   it('lets an optional agreement be rejected and still continue', async () => {
@@ -97,6 +106,6 @@ describe('ConsentGate', () => {
     const continueBtn = screen.getByRole('button', { name: 'Continue to application' });
     await waitFor(() => expect(continueBtn).toBeEnabled());
     await user.click(continueBtn);
-    expect(onContinue).toHaveBeenCalledOnce();
+    await waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
   });
 });

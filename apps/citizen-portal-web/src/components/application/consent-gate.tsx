@@ -33,8 +33,9 @@ interface ConsentGateProps {
 /**
  * The consent gate (feature 90): shown before the application form when a service's agreements
  * haven't all been decided. Renders each agreement read-only + an approve/reject radio (authored
- * labels, canonical values), records each decision, and gates Continue until every required
- * agreement is approved. The server (feature 89) re-validates on submit — this is UX only.
+ * labels, canonical values), gathers the decisions LOCALLY, and gates Continue until every required
+ * agreement is approved. Decisions are recorded (POSTed) only when the citizen presses Continue —
+ * not on each radio change. The server (feature 89) re-validates on submit — this is UX only.
  */
 export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGateProps) {
   const queryClient = useQueryClient();
@@ -47,23 +48,44 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
   );
   const [failed, setFailed] = useState(false);
 
-  const record = useMutation({
-    mutationFn: ({ versionId, decision }: { versionId: string; decision: ConsentDecision }) =>
-      recordConsent(versionId, decision),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['me', 'serviceAgreements', serviceId] }),
+  // Decisions are recorded only when the citizen presses Continue — not on each radio change.
+  const submit = useMutation({
+    mutationFn: async () => {
+      // Record only decisions that differ from what the server already has (append-only, latest-wins).
+      const changed = agreements
+        .map((a) => ({
+          versionId: a.agreementVersionId,
+          decision: decisions[a.agreementVersionId],
+          server: a.decision,
+        }))
+        .filter(
+          (
+            x,
+          ): x is {
+            versionId: string;
+            decision: ConsentDecision;
+            server: ConsentDecision | null;
+          } => x.decision !== undefined && x.decision !== x.server,
+        );
+      await Promise.all(changed.map((x) => recordConsent(x.versionId, x.decision)));
+    },
+    onMutate: () => setFailed(false),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['me', 'serviceAgreements', serviceId] });
+      onContinue();
+    },
+    onError: () => setFailed(true),
   });
 
   const choose = (versionId: string, decision: ConsentDecision) => {
     setDecisions((prev) => ({ ...prev, [versionId]: decision }));
     setFailed(false);
-    record.mutate({ versionId, decision }, { onError: () => setFailed(true) });
   };
 
   const allSatisfied = agreements.every((a) =>
     satisfied(a, decisions[a.agreementVersionId] ?? null),
   );
-  const canContinue = allSatisfied && !record.isPending && !failed;
+  const canContinue = allSatisfied && !submit.isPending;
 
   return (
     <div className="flex flex-col gap-4">
@@ -132,7 +154,7 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
       ) : null}
 
       <div className="flex justify-end">
-        <Button disabled={!canContinue} onClick={onContinue}>
+        <Button disabled={!canContinue} onClick={() => submit.mutate()}>
           Continue to application
         </Button>
       </div>
