@@ -8,3 +8,4 @@ export * from './documents';
 export * from './submissions';
 export * from './reviews';
 export * from './service-agreement-consents';
+export * from './workspace-default-agreements';

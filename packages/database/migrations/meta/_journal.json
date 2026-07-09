@@ -120,6 +120,13 @@
       "when": 1783560075531,
       "tag": "0016_agreement_document_pointer",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1783604502268,
+      "tag": "0017_workspace_default_agreements",
+      "breakpoints": true
     }
   ]
 }

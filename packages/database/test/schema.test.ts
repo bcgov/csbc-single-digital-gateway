@@ -99,6 +99,21 @@ describe('schema — service_agreement_consents (append-only audit)', () => {
   });
 });
 
+describe('schema — workspace_default_agreements (workspace → agreement link)', () => {
+  it('links a workspace to an agreement document (document-only) and is immutable', () => {
+    const { columns } = cfg(schema.workspaceDefaultAgreements);
+    const names = columns.map((c) => c.name);
+    expect(names).toContain('workspace_id');
+    expect(names).toContain('agreement_document_id');
+    expect(names).toContain('agreement_kind');
+    // Global-or-same-ws targeting; the agreement's workspace is nullable (NULL = global).
+    const agrWs = columns.find((c) => c.name === 'agreement_workspace_id');
+    expect(agrWs?.notNull).toBe(false);
+    // Immutable: added/removed, never edited → no updated_at (so no set_updated_at trigger).
+    expect(names).not.toContain('updated_at');
+  });
+});
+
 describe('schema — workspaces.slug default', () => {
   it('defaults slug to nanoid() at the database level', () => {
     const slug = cfg(schema.workspaces).columns.find((c) => c.name === 'slug');
