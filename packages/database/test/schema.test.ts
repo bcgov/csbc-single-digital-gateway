@@ -75,6 +75,15 @@ describe('schema — document_references service_agreement relation + relaxed wo
     expect(targetWs, 'document_references.target_workspace_id must exist').toBeDefined();
     expect(targetWs?.notNull).toBe(false);
   });
+
+  it('has a NULLABLE target_version_id (service_agreement refs point at the document)', () => {
+    // Initiative shared-service-agreements: a service_agreement reference omits the version pin and
+    // resolves current-published; a CHECK keeps it non-null for forms/related-services.
+    const { columns } = cfg(schema.documentReferences);
+    const targetVersion = columns.find((c) => c.name === 'target_version_id');
+    expect(targetVersion, 'document_references.target_version_id must exist').toBeDefined();
+    expect(targetVersion?.notNull).toBe(false);
+  });
 });
 
 describe('schema — service_agreement_consents (append-only audit)', () => {
