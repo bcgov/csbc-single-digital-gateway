@@ -201,7 +201,10 @@ export const documentReferences = pgTable(
     ownerVersionId: uuid('owner_version_id').notNull(),
     ownerDocumentId: uuid('owner_document_id').notNull(),
     ownerKind: text('owner_kind').notNull(),
-    targetVersionId: uuid('target_version_id').notNull(),
+    // The pinned target version, or NULL for a `service_agreement` reference — which points at the
+    // agreement DOCUMENT and always resolves the current published version (initiative
+    // shared-service-agreements). `application_form` / `related_service` keep a non-null pin.
+    targetVersionId: uuid('target_version_id'),
     targetDocumentId: uuid('target_document_id').notNull(),
     targetKind: text('target_kind').notNull(),
     workspaceId: uuid('workspace_id').notNull(),
@@ -271,6 +274,13 @@ export const documentReferences = pgTable(
     check(
       'document_references_target_ws_global_only_chk',
       sql`${table.targetWorkspaceId} IS NOT NULL OR ${table.relation}::text = 'service_agreement'`,
+    ),
+    // Only a `service_agreement` reference may omit the version pin (it points at the document and
+    // resolves current-published); forms/related-services must pin a version. `relation::text` per
+    // the enum-in-CHECK migrate rule.
+    check(
+      'document_references_agreement_no_version_chk',
+      sql`${table.targetVersionId} IS NOT NULL OR ${table.relation}::text = 'service_agreement'`,
     ),
     check(
       'document_references_no_self_chk',

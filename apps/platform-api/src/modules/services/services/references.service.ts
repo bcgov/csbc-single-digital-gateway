@@ -28,6 +28,15 @@ import { ServicesService } from './services.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
 
+/** application_form / related_service references always pin a version (only service_agreement refs
+ * may omit it), so this narrows the now-nullable `target_version_id` for those relations. */
+function pinnedVersion(value: string | null, what: string): string {
+  if (value === null) {
+    throw new Error(`${what} is unexpectedly null`);
+  }
+  return value;
+}
+
 function pgCode(error: unknown): string | undefined {
   if (typeof error === 'object' && error !== null) {
     const e = error as { code?: unknown; cause?: { code?: unknown } };
@@ -52,7 +61,7 @@ function toDto(
     position: row.position,
     label: row.label,
     targetDocumentId: row.targetDocumentId,
-    targetVersionId: row.targetVersionId,
+    targetVersionId: pinnedVersion(row.targetVersionId, 'reference target_version_id'),
     targetKind: row.targetKind,
     targetTitle,
     targetVersion,
@@ -215,7 +224,7 @@ export class ReferencesService {
     await this.db
       .update(documentVersions)
       .set({ archivedAt: new Date() })
-      .where(eq(documentVersions.id, ref.targetVersionId));
+      .where(eq(documentVersions.id, pinnedVersion(ref.targetVersionId, 'form target_version_id')));
   }
 
   /** Create a form document + draft v1 and reference it from this service version (atomic ⇒ form born ≥1). */

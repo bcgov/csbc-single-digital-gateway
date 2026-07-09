@@ -5,23 +5,38 @@ import { AgreementDetail } from './agreement-detail';
 import { AgreementsList } from './agreements-list';
 import { NewAgreementModal } from './new-agreement-modal';
 import type { AgreementScope } from './scope';
+import { WorkspaceDefaultAgreements } from './workspace-default-agreements';
 
 /** Resolve the workspace scope from the active `$slug` (workspaceId is '' until it loads). */
-function useWorkspaceScope(): AgreementScope {
+function useWorkspaceScope(): Extract<AgreementScope, { kind: 'workspace' }> {
   const { slug } = useParams({ from: '/app/$slug' });
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   return { kind: 'workspace', slug, workspaceId: workspace?.id ?? '' };
 }
 
+/** The workspace Service Agreements view: the agreements list + the workspace defaults panel. */
+function WorkspaceAgreementsView({
+  scope,
+}: {
+  scope: Extract<AgreementScope, { kind: 'workspace' }>;
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <AgreementsList scope={scope} />
+      <WorkspaceDefaultAgreements slug={scope.slug} workspaceId={scope.workspaceId} />
+    </div>
+  );
+}
+
 export function ConsoleAgreementsList() {
-  return <AgreementsList scope={useWorkspaceScope()} />;
+  return <WorkspaceAgreementsView scope={useWorkspaceScope()} />;
 }
 
 export function ConsoleAgreementsNew() {
   const scope = useWorkspaceScope();
   return (
     <>
-      <AgreementsList scope={scope} />
+      <WorkspaceAgreementsView scope={scope} />
       <NewAgreementModal scope={scope} />
     </>
   );
@@ -31,20 +46,4 @@ export function ConsoleAgreementDetail() {
   const scope = useWorkspaceScope();
   const { id } = useParams({ from: '/app/$slug/service-agreements/$id' });
   return <AgreementDetail scope={scope} id={id} />;
-}
-
-/** Edit an agreement reached FROM a service detail — the editor's "back" returns to the service. */
-export function ServiceAgreementEditPage() {
-  const { slug, id, versionId, agreementId } = useParams({
-    from: '/app/$slug/services/$id/versions/$versionId/service-agreements/$agreementId',
-  });
-  const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
-  const scope: AgreementScope = {
-    kind: 'service',
-    slug,
-    workspaceId: workspace?.id ?? '',
-    serviceId: id,
-    serviceVersionId: versionId,
-  };
-  return <AgreementDetail scope={scope} id={agreementId} />;
 }

@@ -75,6 +75,15 @@ describe('schema — document_references service_agreement relation + relaxed wo
     expect(targetWs, 'document_references.target_workspace_id must exist').toBeDefined();
     expect(targetWs?.notNull).toBe(false);
   });
+
+  it('has a NULLABLE target_version_id (service_agreement refs point at the document)', () => {
+    // Initiative shared-service-agreements: a service_agreement reference omits the version pin and
+    // resolves current-published; a CHECK keeps it non-null for forms/related-services.
+    const { columns } = cfg(schema.documentReferences);
+    const targetVersion = columns.find((c) => c.name === 'target_version_id');
+    expect(targetVersion, 'document_references.target_version_id must exist').toBeDefined();
+    expect(targetVersion?.notNull).toBe(false);
+  });
 });
 
 describe('schema — service_agreement_consents (append-only audit)', () => {
@@ -86,6 +95,21 @@ describe('schema — service_agreement_consents (append-only audit)', () => {
     expect(names).toContain('agreement_version_id');
     expect(names).toContain('decision');
     // Immutable audit: no updated_at (so no set_updated_at trigger attaches).
+    expect(names).not.toContain('updated_at');
+  });
+});
+
+describe('schema — workspace_default_agreements (workspace → agreement link)', () => {
+  it('links a workspace to an agreement document (document-only) and is immutable', () => {
+    const { columns } = cfg(schema.workspaceDefaultAgreements);
+    const names = columns.map((c) => c.name);
+    expect(names).toContain('workspace_id');
+    expect(names).toContain('agreement_document_id');
+    expect(names).toContain('agreement_kind');
+    // Global-or-same-ws targeting; the agreement's workspace is nullable (NULL = global).
+    const agrWs = columns.find((c) => c.name === 'agreement_workspace_id');
+    expect(agrWs?.notNull).toBe(false);
+    // Immutable: added/removed, never edited → no updated_at (so no set_updated_at trigger).
     expect(names).not.toContain('updated_at');
   });
 });

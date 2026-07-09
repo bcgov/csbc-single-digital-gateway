@@ -75,7 +75,8 @@ export class ApplicationsService {
       )
       .limit(1);
     const ref = refRows[0];
-    if (ref === undefined) {
+    // An application_form reference always pins a version (only service_agreement refs may omit it).
+    if (ref === undefined || ref.formVersionId === null) {
       throw new NotFoundException('Application form not found');
     }
     const formRows = await this.db

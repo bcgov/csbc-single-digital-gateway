@@ -20,8 +20,6 @@ import {
   type ServiceAgreementDetail,
   updateAgreementDraft,
 } from '@/lib/service-agreements';
-import { serviceQueryOptions } from '@/lib/services';
-import { canEditAgreementVersion } from './agreement-editability';
 import { AgreementEditor } from './agreement-editor';
 import type { AgreementScope } from './scope';
 
@@ -64,25 +62,8 @@ function AgreementBody({
 
   const dirty = JSON.stringify(formData) !== JSON.stringify(baseline);
   const isGlobal = agreement.workspaceId === null;
-  // In service scope, the agreement follows the service's lifecycle: editable only while the owning
-  // service version is a draft. Fail-closed (read-only) until that status has loaded.
-  const isServiceScope = scope.kind === 'service';
-  const serviceVersionQuery = useQuery({
-    ...serviceQueryOptions(isServiceScope ? scope.serviceId : ''),
-    enabled: isServiceScope,
-  });
-  const serviceVersionIsDraft =
-    scope.kind === 'service'
-      ? serviceVersionQuery.data?.versions.find((v) => v.id === scope.serviceVersionId)?.status ===
-        'draft'
-      : true;
-  const editable = canEditAgreementVersion({
-    versionStatus: selected?.status,
-    isGlobal,
-    isAdmin,
-    serviceScope: isServiceScope,
-    serviceVersionIsDraft,
-  });
+  // A global agreement is admin-only to edit; otherwise a draft is editable.
+  const editable = selected?.status === 'draft' && (!isGlobal || isAdmin);
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['service-agreements', 'detail', id] });
@@ -122,19 +103,8 @@ function AgreementBody({
     },
   });
 
-  let backLink;
-  if (scope.kind === 'service') {
-    backLink = (
-      <Link
-        to="/app/$slug/services/$id/service-agreements"
-        params={{ slug: scope.slug, id: scope.serviceId }}
-        className="text-sm text-muted-foreground hover:underline"
-      >
-        ← Back to service
-      </Link>
-    );
-  } else if (scope.kind === 'workspace') {
-    backLink = (
+  const backLink =
+    scope.kind === 'workspace' ? (
       <Link
         to="/app/$slug/service-agreements"
         params={{ slug: scope.slug }}
@@ -142,9 +112,7 @@ function AgreementBody({
       >
         ← All agreements
       </Link>
-    );
-  } else {
-    backLink = (
+    ) : (
       <Link
         to="/admin/service-agreements"
         className="text-sm text-muted-foreground hover:underline"
@@ -152,14 +120,10 @@ function AgreementBody({
         ← All agreements
       </Link>
     );
-  }
 
   const busy = save.isPending || publish.isPending || newVersion.isPending;
   const latestPublished = latest?.status === 'published';
   const error = save.error ?? publish.error ?? newVersion.error;
-  // When reached FROM a service, the agreement follows the service's lifecycle (like application
-  // methods): edit the draft here, no publish/version workflow — the service publish publishes it.
-  const showWorkflow = scope.kind !== 'service';
 
   return (
     <div className="mx-auto flex max-w-[1000px] flex-col gap-4">
@@ -168,10 +132,8 @@ function AgreementBody({
         {backLink}
         <div className="flex items-center gap-2">
           {isGlobal ? <Badge color="grey">Global</Badge> : null}
-          {showWorkflow ? (
-            <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
-          ) : null}
-          {showWorkflow && latestPublished && editableContext(isGlobal, isAdmin) ? (
+          <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
+          {latestPublished && editableContext(isGlobal, isAdmin) ? (
             <Button
               size="sm"
               variant="outline"
@@ -187,7 +149,7 @@ function AgreementBody({
               {save.isPending ? <Spinner className="size-4" /> : null} Save
             </Button>
           ) : null}
-          {showWorkflow && editable ? (
+          {editable ? (
             <Button
               size="sm"
               type="button"
@@ -214,33 +176,30 @@ function AgreementBody({
         />
       </div>
 
-      {/* Associated services only matter in the standalone editor — not when editing an agreement
-          reached FROM a service (you're already in that service's context). */}
-      {showWorkflow ? (
-        <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
-          <span className="text-sm font-medium">Associated services</span>
-          {services.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Not attached to any service yet — attach it from a service&apos;s Service agreements
-              tab.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {services.map((service) => (
-                <li key={service.id}>
-                  <Link
-                    to="/app/$slug/services/$id"
-                    params={{ slug: service.workspaceSlug, id: service.id }}
-                    className="text-sm font-medium text-foreground hover:underline"
-                  >
-                    {service.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
+      {/* The services that reference this shared agreement (it applies to each at current-published). */}
+      <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+        <span className="text-sm font-medium">Associated services</span>
+        {services.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Not attached to any service yet — attach it from a service&apos;s Service agreements
+            tab.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {services.map((service) => (
+              <li key={service.id}>
+                <Link
+                  to="/app/$slug/services/$id"
+                  params={{ slug: service.workspaceSlug, id: service.id }}
+                  className="text-sm font-medium text-foreground hover:underline"
+                >
+                  {service.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

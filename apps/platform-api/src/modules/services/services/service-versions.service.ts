@@ -8,7 +8,6 @@ import {
   type Database,
   type DocumentVersion,
   documentReferences,
-  documentTypeVersions,
   documentVersions,
   documents,
 } from '@repo/database';
@@ -28,12 +27,7 @@ import {
   resolveApplications,
 } from '../util/applications';
 import { validateData } from '../util/validate-data';
-import {
-  copyReferences,
-  dedupCopiedAgreements,
-  dedupCopiedForms,
-  discardVersionTx,
-} from '../util/version-copy';
+import { copyReferences, dedupCopiedForms, discardVersionTx } from '../util/version-copy';
 import { ServiceTypeResolver } from './service-type.resolver';
 import { ServicesService } from './services.service';
 
@@ -166,10 +160,9 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
-      // Drop deep-copied forms + workspace agreements unchanged from the previous published version
-      // (re-point + delete the redundant copy) before the promote loops below.
+      // Drop deep-copied forms unchanged from the previous published version (re-point + delete the
+      // redundant copy) before the promote loop below.
       await dedupCopiedForms(tx, id, versionId);
-      await dedupCopiedAgreements(tx, id, versionId);
       // A service must have ≥1 application method, and every method's form must have structure.
       const apps = await tx
         .select({
@@ -202,39 +195,8 @@ export class ServiceVersionsService {
           errors: structureless,
         });
       }
-      // Attached service agreements authored FOR this service are drafts — they publish WITH the
-      // service (like application forms). Already-published (attached existing / global) agreements
-      // are left untouched. Each draft's pinned version is validated before publishing.
-      const agrRefs = await tx
-        .select({
-          targetVersionId: documentReferences.targetVersionId,
-          targetDocumentId: documentReferences.targetDocumentId,
-          status: documentVersions.status,
-          data: documentVersions.data,
-          typeVersionId: documentVersions.typeVersionId,
-          title: documents.title,
-        })
-        .from(documentReferences)
-        .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
-        .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
-        .where(
-          and(
-            eq(documentReferences.ownerVersionId, versionId),
-            eq(documentReferences.relation, 'service_agreement'),
-          ),
-        );
-      const draftAgreements = agrRefs.filter((ref) => ref.status === 'draft');
-      for (const agr of draftAgreements) {
-        // eslint-disable-next-line no-await-in-loop -- sequential reads share one tx connection
-        const agrSchema = await this.agreementTypeSchema(tx, agr.typeVersionId);
-        const agrResult = validateData(agrSchema, agr.data);
-        if (!agrResult.valid) {
-          throw new UnprocessableEntityException({
-            message: `Service agreement "${agr.title}" is incomplete and can't be published`,
-            errors: agrResult.errors,
-          });
-        }
-      }
+      // Service agreements are shared policy documents (document-only references) published
+      // independently in the console — publishing a service does NOT publish its agreements.
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx
         .update(documentVersions)
@@ -245,32 +207,15 @@ export class ServiceVersionsService {
         .set({ publishedAt: sql`now()` })
         .where(eq(documentVersions.id, versionId))
         .returning();
-      // Publishing a service publishes its application forms (one version each).
+      // Publishing a service publishes its application forms (one version each; forms always pin a
+      // version, so target_version_id is non-null here).
       for (const app of apps) {
+        if (app.targetVersionId === null) continue;
         // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
         await tx
           .update(documentVersions)
           .set({ publishedAt: sql`now()`, archivedAt: null })
           .where(eq(documentVersions.id, app.targetVersionId));
-      }
-      // ...and its attached DRAFT agreements: demote each agreement doc's published version, then
-      // promote the pinned draft (≤1 published per document).
-      for (const agr of draftAgreements) {
-        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-        await tx
-          .update(documentVersions)
-          .set({ archivedAt: sql`now()` })
-          .where(
-            and(
-              eq(documentVersions.documentId, agr.targetDocumentId),
-              eq(documentVersions.status, 'published'),
-            ),
-          );
-        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-        await tx
-          .update(documentVersions)
-          .set({ publishedAt: sql`now()`, archivedAt: null })
-          .where(eq(documentVersions.id, agr.targetVersionId));
       }
       return toServiceVersionDto(this.orThrow(published[0]));
     });
@@ -343,20 +288,6 @@ export class ServiceVersionsService {
       throw new Error('document version mutation returned no row');
     }
     return row;
-  }
-
-  /** The JSON schema bound to a document type-version (to validate an agreement's data on publish). */
-  private async agreementTypeSchema(
-    tx: Tx,
-    typeVersionId: string,
-  ): Promise<Record<string, unknown>> {
-    const rows = await tx
-      .select({ definition: documentTypeVersions.definition })
-      .from(documentTypeVersions)
-      .where(eq(documentTypeVersions.id, typeVersionId))
-      .limit(1);
-    const definition = rows[0]?.definition as { schema?: unknown } | undefined;
-    return (definition?.schema as Record<string, unknown> | undefined) ?? {};
   }
 
   private async requireVersion(documentId: string, versionId: string): Promise<DocumentVersion> {

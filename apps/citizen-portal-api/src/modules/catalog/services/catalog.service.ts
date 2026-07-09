@@ -123,7 +123,7 @@ export class CatalogService {
 
   /** The application-method forms a service version offers (its `application_form` references). */
   private async applicationFormsFor(versionId: string): Promise<ApplicationForm[]> {
-    return this.db
+    const rows = await this.db
       .select({
         id: documentReferences.id,
         label: documentReferences.label,
@@ -141,6 +141,8 @@ export class CatalogService {
         ),
       )
       .orderBy(asc(documentReferences.position));
+    // An application_form reference always pins a version; the narrowing drops any malformed null.
+    return rows.filter((row): row is ApplicationForm => row.formVersionId !== null);
   }
 
   /**
