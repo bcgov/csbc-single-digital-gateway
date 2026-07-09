@@ -19,6 +19,10 @@ import {
   serviceAgreementRefsQueryOptions,
   type ServiceAgreementRef,
 } from '@/lib/services';
+import {
+  type DefaultAgreement,
+  workspaceDefaultAgreementsQueryOptions,
+} from '@/lib/service-agreements';
 import { AddAgreementModal } from './add-agreement-modal';
 
 interface ServiceAgreementMethodsProps {
@@ -44,6 +48,11 @@ export function ServiceAgreementMethods({
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: items = [] } = useQuery(serviceAgreementRefsQueryOptions(serviceId, versionId));
+  const { data: defaults = [] } = useQuery(workspaceDefaultAgreementsQueryOptions(workspaceId));
+  // Workspace defaults ALSO apply to this service's citizens (feature 97). Show the ones not already
+  // explicitly attached (deduped by document, matching the citizen union) so staff see the full set.
+  const attachedDocIds = new Set(items.map((ref) => ref.agreementDocumentId));
+  const extraDefaults = defaults.filter((def) => !attachedDocIds.has(def.agreementDocumentId));
 
   const detach = useMutation({
     mutationFn: (referenceId: string) => detachServiceAgreement(serviceId, versionId, referenceId),
@@ -73,7 +82,8 @@ export function ServiceAgreementMethods({
 
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No agreements yet — add one with the button above.
+          No agreements attached to this service
+          {extraDefaults.length > 0 ? ' (workspace defaults still apply — see below)' : ''}.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -113,13 +123,46 @@ export function ServiceAgreementMethods({
         </ul>
       )}
 
+      {extraDefaults.length > 0 ? (
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <span className="text-xs font-medium text-muted-foreground">
+            Also applied from workspace defaults
+          </span>
+          <ul className="flex flex-col gap-2">
+            {extraDefaults.map((def: DefaultAgreement) => (
+              <li
+                key={def.id}
+                className="flex items-center gap-2 rounded-lg border border-dashed border-border p-3"
+              >
+                <Link
+                  to="/app/$slug/service-agreements/$id"
+                  params={{ slug, id: def.agreementDocumentId }}
+                  className="truncate text-sm font-medium text-foreground hover:underline"
+                >
+                  {def.title}
+                </Link>
+                <Badge color={def.isOptional ? 'grey' : 'blue'}>
+                  {def.isOptional ? 'Optional' : 'Required'}
+                </Badge>
+                {def.isGlobal ? <Badge color="grey">Global</Badge> : null}
+                <Badge color="yellow">Workspace default</Badge>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            Managed for all services in this workspace, in the Service Agreements console.
+          </p>
+        </div>
+      ) : null}
+
       <AddAgreementModal
         open={addOpen}
         onOpenChange={setAddOpen}
         serviceId={serviceId}
         versionId={versionId}
         workspaceId={workspaceId}
-        attachedDocumentIds={items.map((ref) => ref.agreementDocumentId)}
+        // Exclude both already-attached and workspace-default agreements (defaults already apply).
+        excludeDocumentIds={[...attachedDocIds, ...defaults.map((def) => def.agreementDocumentId)]}
       />
 
       <AlertDialog

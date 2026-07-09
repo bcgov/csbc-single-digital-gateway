@@ -16,8 +16,9 @@ interface AddAgreementModalProps {
   serviceId: string;
   versionId: string;
   workspaceId: string;
-  /** Agreement document ids already attached — excluded from the picker. */
-  attachedDocumentIds: string[];
+  /** Agreement document ids to exclude from the picker — already attached OR already a workspace
+   * default (defaults are applied automatically, so attaching them again is redundant). */
+  excludeDocumentIds: string[];
 }
 
 /** "Add a service agreement" — attach an EXISTING published agreement (workspace or global). Agreements
@@ -29,7 +30,7 @@ export function AddAgreementModal({
   serviceId,
   versionId,
   workspaceId,
-  attachedDocumentIds,
+  excludeDocumentIds,
 }: AddAgreementModalProps) {
   const queryClient = useQueryClient();
 
@@ -37,8 +38,8 @@ export function AddAgreementModal({
     ...agreementsQueryOptions(workspaceId),
     enabled: open && workspaceId !== '',
   });
-  const attached = new Set(attachedDocumentIds);
-  const selectable = agreements.filter((a) => a.status === 'published' && !attached.has(a.id));
+  const excluded = new Set(excludeDocumentIds);
+  const selectable = agreements.filter((a) => a.status === 'published' && !excluded.has(a.id));
 
   const attach = useMutation({
     mutationFn: (agreementDocumentId: string) =>

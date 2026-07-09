@@ -179,7 +179,7 @@ describe('console services', () => {
     // Service agreements tab: a count badge (0) + its panel (empty state) — guards the tab wiring.
     expect(screen.getByRole('tab', { name: /service agreements\s*0/i })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: /service agreements/i }));
-    expect(await screen.findByText(/no agreements yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no agreements attached to this service/i)).toBeInTheDocument();
 
     // Publish through the summary modal (no unsaved changes ⇒ the Publish trigger is enabled).
     await user.click(screen.getByRole('tab', { name: /service details/i }));
