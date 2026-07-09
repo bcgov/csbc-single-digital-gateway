@@ -5,6 +5,7 @@ import {
   documentVersions,
   documents,
   serviceAgreementConsents,
+  workspaceDefaultAgreements,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq } from 'drizzle-orm';
@@ -111,15 +112,17 @@ export class ConsentService {
     }
   }
 
-  /** The shared resolver: each `service_agreement` reference on the service version → the agreement's
-   * currently-published version + authored data + the caller's latest decision on that version. */
+  /** The shared resolver: the agreements a citizen must decide for this service version — the service's
+   * own attached `service_agreement` references UNION its workspace's default agreements — each to its
+   * currently-published version + authored data + the caller's latest decision. Deduped by agreement
+   * document (workspace defaults first), so an agreement that is both attached and defaulted shows once. */
   private async resolveForServiceVersion(
     userId: string,
     serviceVersionId: string,
   ): Promise<ServiceAgreementConsentItem[]> {
-    // Each attached agreement's currently-published version (drops agreements with none — the inner
-    // join). One row per agreement (unique(owner_version_id, target_document_id)).
-    const rows = await this.db
+    // The service's own attached agreements' currently-published version (inner join drops those with
+    // no published version). One row per agreement (unique(owner_version_id, target_document_id)).
+    const attached = await this.db
       .select({
         agreementDocumentId: documentReferences.targetDocumentId,
         agreementVersionId: documentVersions.id,
@@ -139,8 +142,46 @@ export class ConsentService {
           eq(documentReferences.relation, 'service_agreement'),
         ),
       );
+
+    // The service's workspace (services are never global, so this is non-null in practice).
+    const svc = await this.db
+      .select({ workspaceId: documents.workspaceId })
+      .from(documentVersions)
+      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
+      .where(eq(documentVersions.id, serviceVersionId))
+      .limit(1);
+    const workspaceId = svc[0]?.workspaceId ?? null;
+
+    // The workspace's default agreements (apply to every service in the workspace), current-published.
+    const defaults =
+      workspaceId === null
+        ? []
+        : await this.db
+            .select({
+              agreementDocumentId: workspaceDefaultAgreements.agreementDocumentId,
+              agreementVersionId: documentVersions.id,
+              data: documentVersions.data,
+            })
+            .from(workspaceDefaultAgreements)
+            .innerJoin(
+              documentVersions,
+              and(
+                eq(documentVersions.documentId, workspaceDefaultAgreements.agreementDocumentId),
+                eq(documentVersions.status, 'published'),
+              ),
+            )
+            .where(eq(workspaceDefaultAgreements.workspaceId, workspaceId));
+
+    // Dedupe by agreement document (defaults first → an also-attached agreement lists once).
+    const byDocument = new Map<string, (typeof attached)[number]>();
+    for (const row of [...defaults, ...attached]) {
+      if (!byDocument.has(row.agreementDocumentId)) {
+        byDocument.set(row.agreementDocumentId, row);
+      }
+    }
+
     return Promise.all(
-      rows.map(async (row) => {
+      [...byDocument.values()].map(async (row) => {
         const consent = await this.db
           .select({ decision: serviceAgreementConsents.decision })
           .from(serviceAgreementConsents)
