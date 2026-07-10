@@ -3,36 +3,39 @@
 # =============================================================================
 # Install / upgrade the whole stack into the dev namespace from this one file:
 #
-#   helm dependency build charts/single-digital-gateway            # once — vendors the 6 subcharts
+#   helm dependency build charts/single-digital-gateway            # once — vendors the 7 subcharts
 #   helm upgrade --install sdg charts/single-digital-gateway \
 #     -n <slug>-dev --create-namespace \
 #     -f charts/single-digital-gateway/values-dev.yaml
 #
-# Namespace budget: 0.5 CPU / 2Gi, ResourceQuota on LIMITS only. The per-container limits are
-# tuned in each subchart's defaults; this file only carries per-environment identity (hosts,
-# image tags, backup policy, log level). Summed container LIMITS, steady state:
+# Namespace budget: 0.5 CPU / 2Gi, ResourceQuota on REQUESTS (requests.cpu / requests.memory —
+# limits are NOT quota-metered; they are per-container burst ceilings; see charts/README.md).
+# Per-container resources are tuned in each subchart's defaults; this file only carries
+# per-environment identity (hosts, image tags, backup policy, log level). Summed container
+# REQUESTS, steady state:
 #
-#   platform-api            100m / 256Mi
-#   citizen-portal-api      100m / 256Mi
-#   platform-web             15m /  64Mi
-#   citizen-portal-web       15m /  64Mi
-#   valkey                   40m / 128Mi
-#   postgres (database)      80m / 512Mi
-#   postgres repo-host       15m /  96Mi
-#   postgres pgbackrest       10m /  48Mi   (sidecar in the instance pod)
-#   postgres pgbackrest-cfg    5m /  32Mi   (sidecar in the instance pod)
+#   platform-api             25m / 128Mi
+#   citizen-portal-api       25m / 128Mi
+#   notification-service     25m / 128Mi
+#   platform-web             10m /  32Mi
+#   citizen-portal-web       10m /  32Mi
+#   valkey                   25m /  64Mi
+#   postgres (database)      50m / 256Mi
+#   postgres repo-host       10m /  48Mi
+#   postgres pgbackrest      10m /  16Mi   (sidecar in the instance pod)
+#   postgres pgbackrest-cfg   5m /  16Mi   (sidecar in the instance pod)
 #   ---------------------------------------------------------------
-#   STEADY TOTAL            380m / 1456Mi    (of 500m / 2048Mi)
+#   STEADY TOTAL            195m / 848Mi    (of 500m / 2048Mi)
 #
-# Transient headroom: platform-api's migrate hook runs pre-upgrade while the old pod is still up
-# (+100m / 256Mi) → peak 480m / 1712Mi; even with a pgBackRest backup Job also running (+15m /
-# 64Mi) it stays at 495m / 1776Mi, under budget. Apps use strategy.maxSurge:0, so a rollout never
-# briefly runs two pods. Dev disables scheduled backups (no recurring backup-Job
-# pods); the operator still runs one initial backup Job (+15m / 64Mi, transient).
+# Transient headroom: a migrate hook runs pre-upgrade while the old pod is still up (+25m / 64Mi;
+# Helm runs release hooks serially, so at most ONE migrate Job exists at a time); with a pgBackRest
+# backup Job also running (+5m / 32Mi) the worst-case peak is 225m / 944Mi — under half the quota.
+# Apps keep strategy.maxSurge:0 (recreate in place). Dev disables scheduled backups (no
+# recurring backup-Job pods); the operator still runs one initial backup Job (transient).
 #
-# ASSUMPTION: a couple of operator-managed init containers get their limits from the namespace
-# LimitRange defaults. If there is no LimitRange, a limits-only quota rejects any pod with an
-# unlimited container — add a LimitRange with small default limits to the namespace.
+# ASSUMPTION: a couple of operator-managed init containers get their requests/limits from the
+# namespace LimitRange defaults. If there is no LimitRange, the quota rejects any pod whose
+# containers omit requests on the metered resources — add a LimitRange with small defaults.
 # =============================================================================
 
 # ---------------------------------------------------------------------------
@@ -83,6 +86,13 @@ platform-api:
     OIDC_REDIRECT_URI: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca/app
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca
+    # Outbox relay -> notification-service (in-cluster). PREREQUISITE: provision this m2m
+    # service-account client in the environment IdP (see charts/single-digital-gateway/values.yaml).
+    NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
+    NOTIFICATIONS_M2M_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+    NOTIFICATIONS_M2M_CLIENT_ID: sdg-platform-m-2-m-6511
+    # Notification email deep-link origins (feature 127).
+    CITIZEN_WEB_URL: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca
   migrations:
     # migrate-seed (not plain migrate): the pre-upgrade hook must also seed the essential
     # reference data — the Service + Form document types (each with a published v1). Without
@@ -108,6 +118,14 @@ citizen-portal-api:
     OIDC_REDIRECT_URI: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca/
     AUTH_ALLOWED_ORIGINS: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca
+    # Outbox relay -> notification-service (in-cluster). PREREQUISITE: provision this m2m
+    # service-account client in the environment IdP (see charts/single-digital-gateway/values.yaml).
+    NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
+    NOTIFICATIONS_M2M_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+    NOTIFICATIONS_M2M_CLIENT_ID: sdg-citizen-portal-m-2-m-6510
+    # Notification email deep-link origins (feature 127).
+    CITIZEN_WEB_URL: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca
+    PLATFORM_WEB_URL: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca
 
 # ---------------------------------------------------------------------------
 # platform-web (staff SPA + front door). Serves the SPA and proxies /api/* → platform-api.
@@ -133,3 +151,21 @@ citizen-portal-web:
   env:
     BFF_ORIGIN: /api
     API_UPSTREAM: sdg-citizen-portal-api:80
+
+# ---------------------------------------------------------------------------
+# notification-service (internal-only — no Route). OIDC_ISSUER = the realm hosting the m2m
+# service-account clients (must be provisioned in this environment's IdP; the compose Keycloak
+# realm import applies only to local dev). SMTP_URL comes from notification-service-secrets.
+# ---------------------------------------------------------------------------
+notification-service:
+  image:
+    tag: "dev"
+  env:
+    LOG_LEVEL: debug
+    OIDC_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+    # CSS standard realm has no custom audience mapper — each caller's token carries its own
+    # client id as aud, so accept EITHER m2m client (ANY-of list, feature 102).
+    M2M_AUDIENCE: sdg-platform-m-2-m-6511,sdg-citizen-portal-m-2-m-6510
+  migrations:
+    image:
+      tag: "dev"

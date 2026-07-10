@@ -15,3 +15,7 @@ process.env.OIDC_CLIENT_SECRET ??= 'test-secret';
 process.env.OIDC_REDIRECT_URI ??= 'http://localhost:4001/auth/callback';
 process.env.AUTH_SESSION_SECRET ??= 'test-session-secret-0123456789';
 process.env.AUTH_POST_LOGIN_REDIRECT ??= 'http://localhost:3000/app';
+
+// The outbox relay requires NOTIFICATIONS_M2M_CLIENT_SECRET (zod, fail-fast, no default).
+// The relay itself is inert under NODE_ENV=test — this is a dummy value for validation only.
+process.env.NOTIFICATIONS_M2M_CLIENT_SECRET ??= 'test-secret';

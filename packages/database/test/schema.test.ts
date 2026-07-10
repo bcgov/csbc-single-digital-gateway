@@ -161,3 +161,45 @@ describe('schema — composite foreign keys', () => {
     expect(composite.length, 'expected at least two composite FKs').toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('schema — notification_outbox (transactional outbox)', () => {
+  it('mirrors the ingestion contract with a unique idempotency key and a users FK', () => {
+    const { columns, uniqueConstraints, foreignKeys } = cfg(schema.notificationOutbox);
+    const byName = new Map(columns.map((c) => [c.name, c]));
+
+    const key = byName.get('idempotency_key');
+    expect(key, 'idempotency_key must exist').toBeDefined();
+    expect(key?.notNull).toBe(true);
+    expect(
+      uniqueConstraints.some((u) => u.columns.some((c) => c.name === 'idempotency_key')),
+      'idempotency_key must be UNIQUE',
+    ).toBe(true);
+
+    expect(byName.get('user_id')?.notNull).toBe(true);
+    const fk = foreignKeys.find((f) => f.reference().columns.some((c) => c.name === 'user_id'));
+    expect(fk, 'user_id must FK to users').toBeDefined();
+    expect(byName.get('type')?.notNull).toBe(true);
+    expect(byName.get('title')?.notNull).toBe(true);
+    expect(byName.get('body')?.notNull).toBe(false);
+    expect(byName.get('email')?.notNull).toBe(false);
+  });
+
+  it('carries relay state: writable pending-default status, attempts, next_attempt_at', () => {
+    const { columns } = cfg(schema.notificationOutbox);
+    const byName = new Map(columns.map((c) => [c.name, c]));
+
+    expect(schema.outboxStatus.enumValues).toEqual(['pending', 'delivered', 'failed']);
+    const status = byName.get('status');
+    expect(status?.getSQLType()).toBe('outbox_status');
+    expect(status?.notNull).toBe(true);
+    expect(status?.hasDefault).toBe(true);
+    expect(status?.generated, 'status must be writable, not GENERATED').toBeUndefined();
+
+    expect(byName.get('attempts')?.notNull).toBe(true);
+    const nextAttempt = byName.get('next_attempt_at');
+    expect(nextAttempt?.notNull).toBe(true);
+    expect(nextAttempt?.hasDefault).toBe(true);
+    expect(byName.get('delivered_at')?.notNull).toBe(false);
+    expect(byName.has('updated_at')).toBe(true);
+  });
+});

@@ -2,12 +2,12 @@
 
 Helm charts to deploy the whole SDG stack onto **OpenShift** (or vanilla Kubernetes). There is
 one **umbrella chart** (`single-digital-gateway`) that installs everything into a namespace from a
-single per-environment values file, plus six standalone subcharts it composes.
+single per-environment values file, plus seven standalone subcharts it composes.
 
 ```
 charts/
 ├── single-digital-gateway/     # umbrella — installs the whole stack (this is what you deploy)
-│   ├── Chart.yaml              #   file:// deps on the 6 subcharts below
+│   ├── Chart.yaml              #   file:// deps on the 7 subcharts below
 │   ├── values.yaml             #   shared base (DATABASE_URL wiring) — applied under every env file
 │   ├── values-dev.yaml         #   per-namespace env config …
 │   ├── values-test.yaml        #   …
@@ -17,43 +17,70 @@ charts/
 ├── platform-api/               # staff BFF (NestJS)
 ├── citizen-portal-api/         # citizen BFF (NestJS)
 ├── platform-web/               # staff SPA (nginx)
-└── citizen-portal-web/         # citizen SPA (nginx)
+├── citizen-portal-web/         # citizen SPA (nginx)
+└── notification-service/       # internal notifications m2m service (NestJS, no Route)
 ```
 
 ---
 
-## Resource model — tuned for 0.5 CPU / 2Gi (limits-only quota)
+## Resource model — fits a 0.5 CPU / 2Gi requests-metered quota
 
 Each environment namespace (`<slug>-dev`, `<slug>-test`, `<slug>-prod`) has a **ResourceQuota of
-0.5 CPU / 2Gi that caps limits only**. The whole stack is therefore **single-instance** (apps
-`replicaCount: 1`, `postgres.instances.replicas: 1`, no HA) and every container carries an explicit,
-lean `limits`. Summed container limits per namespace:
+0.5 CPU / 2Gi that meters container `requests`** — `requests.cpu` / `requests.memory`, the BC Gov
+Private Cloud model (confirm yours with `oc describe quota -n <slug>-dev`). **Limits are not
+quota-metered**; they only cap what a container may burst to on its node. So two sums matter, and
+only the first is a hard budget:
 
-| Workload | CPU limit | Mem limit | |
+**Requests — quota-metered (must stay ≤ 500m / 2048Mi):**
+
+| Workload | CPU req | Mem req | |
 |---|---:|---:|---|
-| platform-api | 100m | 256Mi | |
-| citizen-portal-api | 100m | 256Mi | |
-| platform-web | 15m | 64Mi | nginx |
-| citizen-portal-web | 15m | 64Mi | nginx |
-| valkey | 40m | 128Mi | `maxmemory 96mb` to avoid OOMKill |
-| postgres — database | 80m | 512Mi | |
-| postgres — repo-host | 15m | 96Mi | pgBackRest repo pod |
-| postgres — pgbackrest (sidecar) | 10m | 48Mi | in the instance pod |
-| postgres — pgbackrest-config (sidecar) | 5m | 32Mi | in the instance pod |
-| **Steady total** | **380m** | **1456Mi** | of 500m / 2048Mi |
-| + migrate Job (pre-upgrade, transient) | +100m | +256Mi | peak **480m / 1712Mi** |
-| + backup Job running too (worst case) | +15m | +64Mi | peak **495m / 1776Mi** |
+| platform-api | 25m | 128Mi | |
+| citizen-portal-api | 25m | 128Mi | |
+| notification-service | 25m | 128Mi | |
+| platform-web | 10m | 32Mi | nginx |
+| citizen-portal-web | 10m | 32Mi | nginx |
+| valkey | 25m | 64Mi | |
+| postgres — database | 50m | 256Mi | |
+| postgres — repo-host | 10m | 48Mi | pgBackRest repo pod |
+| postgres — pgbackrest (sidecar) | 10m | 16Mi | in the instance pod |
+| postgres — pgbackrest-config (sidecar) | 5m | 16Mi | in the instance pod |
+| **Steady total** | **195m** | **848Mi** | of 500m / 2048Mi |
+| + migrate Job (pre-upgrade, transient) | +25m | +64Mi | Helm runs release hooks serially, so at most ONE migrate Job exists at a time |
+| + backup Job running too (worst case) | +5m | +32Mi | peak **225m / 944Mi** |
 
-Every scenario stays under 500m / 2Gi. Apps default to `strategy.maxSurge: 0` (recreate the single
-pod in place, brief downtime on upgrade) because a limits-only quota has no room for a surge pod.
+Worst-case peak uses **under half** the quota — comfortable headroom for surge pods, an HA Postgres
+replica, or new services later.
 
-> **LimitRange assumption.** A couple of operator-managed init containers get their limits from the
-> namespace's **LimitRange** defaults. If a namespace has a limits-only quota but *no* LimitRange,
-> Kubernetes rejects any pod with an unlimited container — add a LimitRange with small default
-> limits to the namespace.
+**Limits — not metered, sized for behaviour (sum 570m / 1648Mi):** each container's limit buys
+boot speed and burst latency, so they deliberately sum past 500m — that's fine under a
+requests-metered quota. Notable: the pgBackRest **sidecar carries a 100m limit on a 10m request**
+because its operator-fixed 1-second liveness probe (`pgbackrest server-ping`) gets CPU-throttled
+past 1s under a lower limit → CrashLoopBackOff that severs in-flight backups (pgBackRest
+ERROR [039]). Do not "tidy" that limit down — see the comment in `charts/postgres/values.yaml`.
+
+The whole stack is **single-instance** (apps `replicaCount: 1`, `postgres.instances.replicas: 1`,
+no HA), and apps default to `strategy.maxSurge: 0` (the single pod is recreated in place — brief
+downtime on upgrade). With the requests headroom above, a surge pod is affordable: set
+`<app>.strategy.rollingUpdate.maxSurge: 1` per app for zero-downtime rollouts if brief
+double-scheduling is acceptable.
+
+> **LimitRange assumption.** Every container the charts render carries explicit
+> requests+limits, but a couple of **operator-managed init containers** rely on the namespace's
+> **LimitRange** defaults. A quota on a resource rejects any pod whose containers omit that
+> resource — if the namespace has no LimitRange, add one with small defaults.
+
+**Re-check after changing any chart's resources** — render the umbrella and sum per dimension
+(steady containers, plus the largest hook Job and the pgBackRest backup Job as transient peak):
+
+```sh
+helm dependency build charts/single-digital-gateway
+helm template sdg charts/single-digital-gateway \
+  -f charts/single-digital-gateway/values-prod.yaml | grep -B2 -A4 'requests:'
+```
 
 To grow beyond this budget later: raise the app `replicaCount` / `strategy.maxSurge` and
-`postgres.instances.replicas` (to 2 for HA), then re-check the sums.
+`postgres.instances.replicas` (to 2 for HA), then re-check the request sums.
 
 ### Storage budget — fits a 5Gi namespace quota
 
@@ -96,7 +123,7 @@ Notes:
   (that needs cluster admin). Verify it's available with:
   `oc get crd postgresclusters.postgres-operator.crunchydata.com`.
 - **Container images** pushed to a registry the cluster can pull. Default repositories are
-  `ghcr.io/bcgov/csbc-single-digital-gateway/{platform-api,citizen-portal-api,platform-web,citizen-portal-web,db-migrate}`
+  `ghcr.io/bcgov/csbc-single-digital-gateway/{platform-api,citizen-portal-api,platform-web,citizen-portal-web,notification-service,db-migrate,notification-db-migrate}`
   (override `image.repository`/`image.tag` per environment). If the GHCR packages are **private**
   (the org default), create a pull secret and reference it via `imagePullSecrets`, or pods
   `ImagePullBackOff`:
@@ -113,12 +140,14 @@ Notes:
 
   | Secret | Used by | Keys |
   |---|---|---|
-  | `platform-api-secrets` | platform-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL` |
-  | `citizen-portal-api-secrets` | citizen-portal-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL` |
+  | `platform-api-secrets` | platform-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET` |
+  | `citizen-portal-api-secrets` | citizen-portal-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET` |
   | `valkey-secrets` | valkey | `VALKEY_PASSWORD` |
+  | `notification-service-secrets` | notification-service | `SMTP_URL` |
   | `sdg-pguser-sdg` | both APIs (`DATABASE_URL`) | **operator-generated** — do not create |
 
   `DATABASE_URL` is **not** in the app secrets — it is sourced from the operator's `sdg-pguser-sdg`
+  (and notification-service's `NOTIFICATION_DATABASE_URL` from `sdg-pguser-notifications`)
   secret (`key: uri`) via the umbrella's base `values.yaml`. `VALKEY_URL` is a full
   `redis://:<password>@<release>-valkey:6379` string; put it in the app secret and use the same
   password as `valkey-secrets`.
@@ -139,31 +168,33 @@ oc -n <slug>-dev create secret generic platform-api-secrets \
 
 ## Install the whole stack (umbrella chart)
 
-The umbrella declares the six subcharts as local `file://` dependencies — vendor them once:
+The umbrella declares the seven subcharts as local `file://` dependencies — vendor them once:
 
 ```sh
 helm dependency build charts/single-digital-gateway
 ```
 
-### First install (phased — DB must exist before migrations)
+### First install (phased — DBs must exist before migrations)
 
-The `platform-api` migrate Job is a **pre-install/pre-upgrade Helm hook**, and Helm runs pre-install
-hooks *before* any release resource — including the `PostgresCluster` CR. On a brand-new namespace
-the operator hasn't created `sdg-pguser-sdg` or a ready database yet, so split the first install:
+The `platform-api` and `notification-service` migrate Jobs are **pre-install/pre-upgrade Helm
+hooks**, and Helm runs pre-install hooks *before* any release resource — including the
+`PostgresCluster` CR. On a brand-new namespace the operator hasn't created `sdg-pguser-sdg` /
+`sdg-pguser-notifications` or a ready database yet, so split the first install:
 
 ```sh
-# 1) bring up Postgres (+ Valkey + apps) WITHOUT the migrate hook
+# 1) bring up Postgres (+ Valkey + apps) WITHOUT the migrate hooks
 #    (namespace is pre-provisioned — do NOT pass --create-namespace)
 helm install sdg charts/single-digital-gateway \
   -n <slug>-dev \
   -f charts/single-digital-gateway/values-dev.yaml \
-  --set platform-api.migrations.enabled=false
+  --set platform-api.migrations.enabled=false \
+  --set notification-service.migrations.enabled=false
 
-# 2) wait for the operator to provision the cluster + user secret
+# 2) wait for the operator to provision the cluster + user secrets
 oc -n <slug>-dev wait --for=condition=Ready \
   pod -l postgres-operator.crunchydata.com/role=master --timeout=300s
 
-# 3) upgrade with migrations enabled (the default) → pre-upgrade migrate runs against the ready DB
+# 3) upgrade with migrations enabled (the default) → pre-upgrade migrates run against the ready DBs
 helm upgrade sdg charts/single-digital-gateway \
   -n <slug>-dev -f charts/single-digital-gateway/values-dev.yaml
 ```
@@ -233,7 +264,7 @@ in sync with each web `route.subdomain`. Notes:
 
 ## The subcharts
 
-All six are standard `application` charts and can be installed standalone (`helm install <name>
+All seven are standard `application` charts and can be installed standalone (`helm install <name>
 charts/<name> -n <ns> -f my-values.yaml`) if you don't want the umbrella. Common app-chart values:
 `replicaCount`, `image.{repository,tag}`, `env` (→ ConfigMap), `extraEnv` (raw env, supports
 `valueFrom`; merged into the app **and** migrate containers), `existingSecret`, `route.*`,
@@ -246,21 +277,31 @@ charts/<name> -n <ns> -f my-values.yaml`) if you don't want the umbrella. Common
 | **citizen-portal-api** | Deployment, Service, ConfigMap, ServiceAccount | Citizen BFF (NestJS), port 4000. `migrations.enabled: false` (platform-api migrates the shared DB). `route.enabled: false` in the umbrella — reached via citizen-portal-web nginx at `/api/*`. |
 | **platform-web** | Deployment, Service, Route, ConfigMap, ServiceAccount | Staff SPA + front door (nginx, port 8080). Serves `/` and reverse-proxies `/api/*` → platform-api. Requires `env.BFF_ORIGIN` (`/api`) + `env.API_UPSTREAM` (`<release>-platform-api:80`). |
 | **citizen-portal-web** | Deployment, Service, Route, ConfigMap, ServiceAccount | Citizen SPA + front door (nginx, port 8080). Serves `/` and proxies `/api/*` → citizen-portal-api. Requires `env.BFF_ORIGIN` + `env.API_UPSTREAM`. |
+| **notification-service** | Deployment, Service, ConfigMap, ServiceAccount, migrate Job | Internal notifications m2m resource server (NestJS), port 4002. **No Route template — browsers never reach it**; the BFFs call the ClusterIP Service with client-credentials tokens. `migrations.enabled: true` — **owns migrations for its own DB** (`sdg_notifications`, operator secret `sdg-pguser-notifications` via `postgres.extraUsers`). |
 | **valkey** | StatefulSet, Service (+ headless), ConfigMap, ServiceAccount, optional NetworkPolicy | Session store, single replica, persistent PVC. Password from `auth.existingSecret`. `maxmemory` capped below the pod limit (noeviction). |
-| **postgres** | PostgresCluster (CRD) | Crunchy PGO cluster. Requires the operator. Exposes `instances.*`, `backups.{schedules,retentionFull,storage,repoHost,sidecars,jobs}`, optional `pgbouncer`/`monitoring`. Generates secret `sdg-pguser-sdg`. |
+| **postgres** | PostgresCluster (CRD) | Crunchy PGO cluster. Requires the operator. Exposes `instances.*`, `backups.{schedules,retentionFull,storage,repoHost,sidecars,jobs}`, optional `pgbouncer`/`monitoring`. Generates secret `sdg-pguser-sdg` (+ `sdg-pguser-notifications` via `extraUsers`). |
 
 ### Migrations
 
-Migrations run exactly once per deploy from **platform-api** (the shared DB). The migrate Job reuses
-platform-api's `resources` and its `extraEnv` (so it gets `DATABASE_URL` from the operator secret).
-Keep `citizen-portal-api.migrations.enabled: false` unless it is deployed without platform-api.
+Two databases, two owners — each migrated exactly once per deploy:
+
+- **Shared app DB (`sdg`)** — migrated by **platform-api**'s hook (image `db-migrate`). Keep
+  `citizen-portal-api.migrations.enabled: false` unless it is deployed without platform-api.
+- **Notifications DB (`sdg_notifications`)** — migrated by **notification-service**'s own hook
+  (image `notification-db-migrate`); no conflict, since Helm runs release hooks serially.
+
+Each migrate Job gets its DB URL from the app's `extraEnv` (the operator-generated pguser secret)
+and its own lean `migrations.resources` (requests are what the quota meters; the transient Job adds
+only +25m / 64Mi to the request sum while it runs).
 
 ### Backups (postgres)
 
 pgBackRest is always on (a repo is mandatory). Schedules are cron strings — empty disables that
 schedule. `retentionFull` is how many full backups to keep. The `backups.repoHost` / `backups.sidecars`
-/ `backups.jobs` resource blocks exist so every pgBackRest container carries a limit under the
-limits-only quota. dev disables schedules; prod keeps weekly-full + daily-incremental.
+/ `backups.jobs` resource blocks exist so every pgBackRest container carries explicit requests
+(what the quota meters) and a deliberate limit — in particular the sidecar's 100m CPU limit, which
+its 1-second liveness probe needs (see the resource model above). dev disables schedules; prod
+keeps weekly-full + daily-incremental.
 
 ---
 

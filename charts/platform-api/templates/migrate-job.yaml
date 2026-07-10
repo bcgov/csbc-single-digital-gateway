@@ -43,5 +43,5 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml (.Values.migrations.resources | default .Values.resources) | nindent 12 }}
 {{- end }}

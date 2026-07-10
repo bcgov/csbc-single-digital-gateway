@@ -1,0 +1,20 @@
+{{ .Chart.Name }} {{ .Chart.Version }} deployed as release "{{ .Release.Name }}".
+
+Image:   {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+{{- if .Values.migrations.enabled }}
+Migrate: pre-install/pre-upgrade hook ran "{{ .Values.migrations.command }}" ({{ .Values.migrations.image.repository }}).
+{{- else }}
+Migrate: DISABLED (migrations.enabled=false) — ensure the notifications DB is migrated some other way.
+{{- end }}
+
+INTERNAL-ONLY: this chart deliberately has no Route. The BFFs reach it in-cluster at
+  http://{{ include "app.fullname" . }}:{{ .Values.service.port }}
+
+Required before install — a Secret named "{{ .Values.existingSecret }}" with keys:
+  SMTP_URL   (smtp[s]://[user:pass@]host:port — may carry credentials)
+
+  kubectl create secret generic {{ .Values.existingSecret }} \
+    --from-literal=SMTP_URL=smtp://...
+
+NOTIFICATION_DATABASE_URL is expected via extraEnv from the Crunchy operator secret
+(sdg-pguser-notifications, key uri) — see charts/single-digital-gateway/values.yaml.

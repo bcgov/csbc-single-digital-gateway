@@ -22,6 +22,7 @@ import { Route as DevButtonRouteImport } from './routes/dev/button'
 import { Route as DevBadgeRouteImport } from './routes/dev/badge'
 import { Route as DevAccordionRouteImport } from './routes/dev/accordion'
 import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
+import { Route as AccountNotificationsRouteImport } from './routes/account_.notifications'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
 import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
@@ -91,6 +92,11 @@ const ApplicationsIdRoute = ApplicationsIdRouteImport.update({
   path: '/applications/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountNotificationsRoute = AccountNotificationsRouteImport.update({
+  id: '/account_/notifications',
+  path: '/account/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesServiceIdIndexRoute = ServicesServiceIdIndexRouteImport.update({
   id: '/services/$serviceId/',
   path: '/services/$serviceId/',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
+  '/account/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/account/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
+  '/account_/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dev'
     | '/account'
+    | '/account/notifications'
     | '/applications/$id'
     | '/dev/accordion'
     | '/dev/badge'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/account'
+    | '/account/notifications'
     | '/applications/$id'
     | '/dev/accordion'
     | '/dev/badge'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dev'
     | '/account'
+    | '/account_/notifications'
     | '/applications/$id'
     | '/dev/accordion'
     | '/dev/badge'
@@ -223,6 +235,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DevRouteRoute: typeof DevRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
+  AccountNotificationsRoute: typeof AccountNotificationsRoute
   ApplicationsIdRoute: typeof ApplicationsIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicationsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account_/notifications': {
+      id: '/account_/notifications'
+      path: '/account/notifications'
+      fullPath: '/account/notifications'
+      preLoaderRoute: typeof AccountNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/$serviceId/': {
       id: '/services/$serviceId/'
       path: '/services/$serviceId'
@@ -377,6 +397,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DevRouteRoute: DevRouteRouteWithChildren,
   AccountRoute: AccountRoute,
+  AccountNotificationsRoute: AccountNotificationsRoute,
   ApplicationsIdRoute: ApplicationsIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,

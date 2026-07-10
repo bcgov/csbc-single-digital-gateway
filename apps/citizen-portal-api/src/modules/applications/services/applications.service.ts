@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
@@ -8,6 +9,9 @@ import {
   reviews,
   submissionVersions,
   submissions,
+  users,
+  workspaceMembers,
+  workspaces,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq } from 'drizzle-orm';
@@ -22,6 +26,9 @@ import {
   normalizeFormStructure,
   submissionStatusLabel,
 } from '../util/format';
+import type { Env } from '../../../config/env.schema';
+import { enqueueNotification } from '../../../notifications/enqueue';
+import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
 import { validateSubmission } from '../util/validate';
 import { ConsentService } from './consent.service';
 
@@ -40,6 +47,7 @@ export class ApplicationsService {
   constructor(
     @InjectDatabase() private readonly db: Database,
     private readonly consent: ConsentService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   /**
@@ -269,11 +277,94 @@ export class ApplicationsService {
     }
     // Consent gate: every required service agreement must be approved (against its current version).
     await this.consent.assertSubmittableForForm(userId, sub.documentVersionId);
-    const updated = await this.db
-      .update(submissionVersions)
-      .set({ data, status: 'pending', submittedAt: new Date() })
-      .where(eq(submissionVersions.id, ver.id))
-      .returning();
+    // Pre-resolve the citizen's contact email (read BEFORE the tx) for the notification seed.
+    const [owner] = await this.db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    // Pre-resolve the staff audience (feature 124): the owning workspace's slug (staff routes are
+    // workspace-scoped), the service title for the message, and every ACTIVE member + email seed.
+    const [workspace] = await this.db
+      .select({ slug: workspaces.slug })
+      .from(workspaces)
+      .where(eq(workspaces.id, sub.workspaceId))
+      .limit(1);
+    const [serviceRef] = await this.db
+      .select({ title: documents.title })
+      .from(documentReferences)
+      .innerJoin(documents, eq(documents.id, documentReferences.ownerDocumentId))
+      .where(
+        and(
+          eq(documentReferences.targetVersionId, sub.documentVersionId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      )
+      .limit(1);
+    const members = await this.db
+      .select({ userId: workspaceMembers.userId, email: users.email })
+      .from(workspaceMembers)
+      .innerJoin(users, eq(users.id, workspaceMembers.userId))
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, sub.workspaceId),
+          eq(workspaceMembers.status, 'active'),
+        ),
+      );
+    // Advance draft → pending and queue the received-confirmation in the SAME transaction
+    // (the outbox guarantee, doc 109). One confirmation per submitted VERSION — a resubmit
+    // after needs_changes is a new version and gets its own.
+    const updated = await this.db.transaction(async (tx) => {
+      const rows = await tx
+        .update(submissionVersions)
+        .set({ data, status: 'pending', submittedAt: new Date() })
+        .where(eq(submissionVersions.id, ver.id))
+        .returning();
+      const content = submissionReceivedContent(applicationReference(sub.id, sub.createdAt));
+      // Email deep links (feature 127), composed from config — never user input.
+      const citizenWebUrl = this.config.get('CITIZEN_WEB_URL', { infer: true });
+      const platformWebUrl = this.config.get('PLATFORM_WEB_URL', { infer: true });
+      await enqueueNotification(tx, {
+        idempotencyKey: `submission:${ver.id}`,
+        userId,
+        type: content.type,
+        title: content.title,
+        body: content.body,
+        payload: {
+          submissionId: sub.id,
+          link: new URL(`/applications/${sub.id}`, citizenWebUrl).href,
+          linkLabel: 'View application',
+        },
+        email: owner?.email ?? null,
+      });
+      // Staff alert per ACTIVE workspace member (feature 124) — same tx, per-member rows so each
+      // has their own read-state and preferences. Staff and citizens are distinct principals, so
+      // no self-exclusion is needed.
+      const staffContent = staffSubmissionContent(
+        applicationReference(sub.id, sub.createdAt),
+        serviceRef?.title ?? null,
+      );
+      for (const member of members) {
+        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+        await enqueueNotification(tx, {
+          idempotencyKey: `submission:${ver.id}:staff:${member.userId}`,
+          userId: member.userId,
+          type: staffContent.type,
+          title: staffContent.title,
+          body: staffContent.body,
+          payload: {
+            submissionId: sub.id,
+            workspaceSlug: workspace?.slug ?? null,
+            ...(workspace?.slug !== undefined && {
+              link: new URL(`/app/${workspace.slug}/submissions/${sub.id}`, platformWebUrl).href,
+              linkLabel: 'Review application',
+            }),
+          },
+          email: member.email,
+        });
+      }
+      return rows;
+    });
     return this.toDto(sub, this.expectRow(updated[0]));
   }
 

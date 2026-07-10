@@ -6,9 +6,10 @@
 
 replicaCount: 1
 
-# Rollout strategy. Under a limits-only ResourceQuota there is no budget for a surge pod, so
-# these charts default to maxSurge:0 — the single pod is recreated in place (brief downtime on
-# upgrade) instead of briefly running two. Raise maxSurge only when the namespace has spare limits.
+# Rollout strategy. These charts default to maxSurge:0 — the single pod is recreated in place
+# (brief downtime on upgrade) instead of briefly running two. The requests-metered quota has
+# ample headroom for a surge pod (see charts/README.md); raise maxSurge to 1 per app when
+# zero-downtime rollouts matter more than strict single-scheduling.
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -67,7 +68,7 @@ probes:
   readiness:
     path: /
 
-# Static nginx SPA — cheap. Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the stack.
+# Static nginx SPA — cheap. Requests are what the namespace quota meters (see charts/README.md).
 resources:
   requests:
     cpu: 10m

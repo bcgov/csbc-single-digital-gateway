@@ -127,6 +127,20 @@
       "when": 1783604502268,
       "tag": "0017_workspace_default_agreements",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1783701290573,
+      "tag": "0018_notification_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1783701291191,
+      "tag": "0019_notification_outbox_trigger",
+      "breakpoints": true
     }
   ]
 }

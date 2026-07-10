@@ -1,0 +1,10 @@
+apiVersion: v2
+name: notification-service
+description: >-
+  Notification service (NestJS) for the Single Digital Gateway — internal-only (ClusterIP, no
+  Route): ingestion, preferences, in-app feed, and the email delivery worker. Reached exclusively
+  by the BFFs.
+type: application
+version: 0.1.0
+# appVersion is the default image tag (override image.tag per environment).
+appVersion: "0.0.0"

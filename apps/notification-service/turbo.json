@@ -1,0 +1,9 @@
+{
+  "extends": ["//"],
+  "//": "This app's dev server loads @repo/notification-database + @repo/nestjs from their built dist (Node/nest don't use the `development` source-export condition the web apps rely on), so its dev task must build internal deps first. Scoped here — NOT on the root dev task — so the web apps keep compiling @repo/ui/@repo/react from source (no dist build on dev startup).",
+  "tasks": {
+    "dev": {
+      "dependsOn": ["^build"]
+    }
+  }
+}
