@@ -92,6 +92,14 @@ export class IngestionService {
           .returning();
         if (row !== undefined) {
           deliveryRows.push(row);
+          if (pref.channel === 'in_app') {
+            // Transactional real-time signal (feature 121): fires only on commit; reaches the
+            // LISTEN client on EVERY pod, so SSE stays correct beyond a single instance.
+            // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+            await tx.execute(
+              sql`SELECT pg_notify('notification_events', ${JSON.stringify({ userId: input.userId })})`,
+            );
+          }
         }
       }
 
