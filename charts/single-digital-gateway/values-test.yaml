@@ -82,7 +82,7 @@ platform-api:
     # service-account client in the environment IdP (see charts/single-digital-gateway/values.yaml).
     NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
     NOTIFICATIONS_M2M_ISSUER: https://test.loginproxy.gov.bc.ca/auth/realms/standard
-    NOTIFICATIONS_M2M_CLIENT_ID: platform-api-m2m
+    NOTIFICATIONS_M2M_CLIENT_ID: sdg-platform-m-2-m-6511
     # Notification email deep-link origins (feature 127).
     CITIZEN_WEB_URL: https://sdg-portal-test.apps.gold.devops.gov.bc.ca
   migrations:
@@ -113,7 +113,7 @@ citizen-portal-api:
     # service-account client in the environment IdP (see charts/single-digital-gateway/values.yaml).
     NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
     NOTIFICATIONS_M2M_ISSUER: https://test.loginproxy.gov.bc.ca/auth/realms/standard
-    NOTIFICATIONS_M2M_CLIENT_ID: citizen-portal-api-m2m
+    NOTIFICATIONS_M2M_CLIENT_ID: sdg-citizen-portal-m-2-m-6510
     # Notification email deep-link origins (feature 127).
     CITIZEN_WEB_URL: https://sdg-portal-test.apps.gold.devops.gov.bc.ca
     PLATFORM_WEB_URL: https://sdg-platform-test.apps.gold.devops.gov.bc.ca
