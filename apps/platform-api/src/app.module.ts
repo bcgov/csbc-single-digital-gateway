@@ -18,6 +18,7 @@ import Valkey from 'iovalkey';
 import { OidcUserSyncService } from './auth/oidc-user-sync.service';
 import { ValkeySessionRegistry } from './auth/valkey-session-registry';
 import { validateEnv, type Env } from './config/env.schema';
+import { OutboxRelayModule } from './notifications/outbox-relay.module';
 import { DefaultAgreementsModule } from './modules/default-agreements/default-agreements.module';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { FormsModule } from './modules/forms/forms.module';
@@ -115,6 +116,8 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     FormsModule,
     ServiceAgreementsModule,
     SubmissionsModule,
+    // Transactional-outbox relay to the notification-service (no routes; inert under test).
+    OutboxRelayModule,
   ],
   // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses
   // (@ZodSerializerDto), and log response-serialization failures before delegating.

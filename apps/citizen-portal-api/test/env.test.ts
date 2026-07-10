@@ -4,6 +4,7 @@ import { validateEnv } from '../src/config/env.schema';
 // Required (no-default) vars a valid base env must always supply.
 const DB_URL = 'postgresql://postgres:postgres@localhost:5432/sdg';
 const base = {
+  NOTIFICATIONS_M2M_CLIENT_SECRET: 'test-secret',
   DATABASE_URL: DB_URL,
   OIDC_ISSUER: 'http://localhost:8080/realms/citizens',
   OIDC_CLIENT_ID: 'citizen-portal-api',
@@ -14,6 +15,18 @@ const base = {
 };
 
 describe('env validation', () => {
+  it('defaults the outbox relay settings and requires the m2m client secret', () => {
+    const env = validateEnv({ ...base });
+    expect(env.NOTIFICATION_SERVICE_URL).toBe('http://localhost:4002');
+    expect(env.NOTIFICATIONS_M2M_ISSUER).toBe('http://localhost:8080/realms/sdg');
+    expect(env.NOTIFICATIONS_M2M_CLIENT_ID).toBe('citizen-portal-api-m2m');
+    expect(env.OUTBOX_RELAY_ENABLED).toBe(true);
+    expect(env.OUTBOX_RELAY_INTERVAL_MS).toBe(5000);
+    expect(env.OUTBOX_RELAY_MAX_ATTEMPTS).toBe(5);
+    const { NOTIFICATIONS_M2M_CLIENT_SECRET: _drop, ...withoutSecret } = base;
+    expect(() => validateEnv(withoutSecret)).toThrow(/Invalid environment/);
+  });
+
   it('applies defaults for NODE_ENV, PORT (4000), LOG_LEVEL, and VALKEY_URL', () => {
     const env = validateEnv({ ...base });
     expect(env.NODE_ENV).toBe('development');
