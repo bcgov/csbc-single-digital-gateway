@@ -15,6 +15,7 @@ import { and, asc, eq, lte, sql } from 'drizzle-orm';
 
 import type { Env } from '../../../config/env.schema';
 import { backoffMs, DEFAULT_BACKOFF_BASE_MS } from '../backoff';
+import { emailActionFromPayload } from '../email-action';
 import { EMAIL_SENDER, type EmailSender } from './mailer';
 
 interface DueRow {
@@ -130,9 +131,13 @@ export class EmailWorkerService implements OnApplicationBootstrap, OnApplication
     }
 
     try {
+      // Deep link (feature 127): validated producer-composed URL from the payload, or nothing.
+      const action = emailActionFromPayload(notification.payload);
       const rendered = await renderNotificationEmail({
         title: notification.title,
         body: notification.body ?? undefined,
+        actionUrl: action?.url,
+        actionLabel: action?.label,
       });
       await this.sender.send({ to: email, ...rendered });
       await tx

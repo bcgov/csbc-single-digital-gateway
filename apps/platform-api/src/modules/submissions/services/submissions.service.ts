@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   type Database,
   documentReferences,
@@ -20,6 +21,7 @@ import {
   type SubmissionStatus,
   type SubmissionSummary,
 } from '../dtos/submission.dtos';
+import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
 import { normalizeFormStructure, submissionReference, submissionStatusLabel } from '../util/format';
 import { reviewNotificationContent } from '../util/notification-content';
@@ -43,7 +45,10 @@ const REVIEWABLE: ReadonlySet<SubmissionStatus> = new Set(['pending', 'in_review
  */
 @Injectable()
 export class SubmissionsService {
-  constructor(@InjectDatabase() private readonly db: Database) {}
+  constructor(
+    @InjectDatabase() private readonly db: Database,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   /** The caller must be a member of the workspace; 404 otherwise (existence not leaked). */
   private async requireMembership(userId: string, workspaceId: string): Promise<void> {
@@ -159,13 +164,19 @@ export class SubmissionsService {
           submissionReference(sub.id, sub.createdAt),
           input.reason,
         );
+        // Email deep link (feature 127): the citizen's application page, composed from config.
+        const citizenWebUrl = this.config.get('CITIZEN_WEB_URL', { infer: true });
         await enqueueNotification(tx, {
           idempotencyKey: `review:${review.id}`,
           userId: sub.userId,
           type: content.type,
           title: content.title,
           body: content.body,
-          payload: { submissionId: sub.id },
+          payload: {
+            submissionId: sub.id,
+            link: new URL(`/applications/${sub.id}`, citizenWebUrl).href,
+            linkLabel: 'View application',
+          },
           email: ownerEmail,
         });
       }

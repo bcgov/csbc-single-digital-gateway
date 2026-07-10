@@ -49,6 +49,13 @@ export const envSchema = z.object({
     ),
   // Session store (Valkey, Redis wire protocol); defaults to the local compose service.
   VALKEY_URL: z.string().default('redis://localhost:6380'),
+  // --- Notification email links (feature 127) ----------------------------------------------------
+  // Public web origins the notification emails deep-link into. Producer-composed from config —
+  // never from user input.
+  CITIZEN_WEB_URL: z.url().default('http://localhost:3000'),
+  // The staff console origin — used for staff notification email links (feature 127).
+  PLATFORM_WEB_URL: z.url().default('http://localhost:3001'),
+
   // --- Outbox relay → notification-service (feature 110) ---------------------------------------
   // Base URL of the notification-service ingestion API.
   NOTIFICATION_SERVICE_URL: z.url().default('http://localhost:4002'),

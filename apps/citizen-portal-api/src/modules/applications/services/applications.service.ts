@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
@@ -25,6 +26,7 @@ import {
   normalizeFormStructure,
   submissionStatusLabel,
 } from '../util/format';
+import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
 import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
 import { validateSubmission } from '../util/validate';
@@ -45,6 +47,7 @@ export class ApplicationsService {
   constructor(
     @InjectDatabase() private readonly db: Database,
     private readonly consent: ConsentService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   /**
@@ -318,13 +321,20 @@ export class ApplicationsService {
         .where(eq(submissionVersions.id, ver.id))
         .returning();
       const content = submissionReceivedContent(applicationReference(sub.id, sub.createdAt));
+      // Email deep links (feature 127), composed from config — never user input.
+      const citizenWebUrl = this.config.get('CITIZEN_WEB_URL', { infer: true });
+      const platformWebUrl = this.config.get('PLATFORM_WEB_URL', { infer: true });
       await enqueueNotification(tx, {
         idempotencyKey: `submission:${ver.id}`,
         userId,
         type: content.type,
         title: content.title,
         body: content.body,
-        payload: { submissionId: sub.id },
+        payload: {
+          submissionId: sub.id,
+          link: new URL(`/applications/${sub.id}`, citizenWebUrl).href,
+          linkLabel: 'View application',
+        },
         email: owner?.email ?? null,
       });
       // Staff alert per ACTIVE workspace member (feature 124) — same tx, per-member rows so each
@@ -342,7 +352,14 @@ export class ApplicationsService {
           type: staffContent.type,
           title: staffContent.title,
           body: staffContent.body,
-          payload: { submissionId: sub.id, workspaceSlug: workspace?.slug ?? null },
+          payload: {
+            submissionId: sub.id,
+            workspaceSlug: workspace?.slug ?? null,
+            ...(workspace?.slug !== undefined && {
+              link: new URL(`/app/${workspace.slug}/submissions/${sub.id}`, platformWebUrl).href,
+              linkLabel: 'Review application',
+            }),
+          },
           email: member.email,
         });
       }

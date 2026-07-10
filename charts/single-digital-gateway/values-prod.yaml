@@ -87,6 +87,8 @@ platform-api:
     NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
     NOTIFICATIONS_M2M_ISSUER: https://loginproxy.gov.bc.ca/auth/realms/standard
     NOTIFICATIONS_M2M_CLIENT_ID: platform-api-m2m
+    # Notification email deep-link origins (feature 127).
+    CITIZEN_WEB_URL: https://sdg-portal-prod.apps.gold.devops.gov.bc.ca
     AUTH_RP_LOGOUT: "true"
   migrations:
     # migrate-seed (not plain migrate): the pre-upgrade hook must also seed the essential
@@ -117,6 +119,9 @@ citizen-portal-api:
     NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
     NOTIFICATIONS_M2M_ISSUER: https://loginproxy.gov.bc.ca/auth/realms/standard
     NOTIFICATIONS_M2M_CLIENT_ID: citizen-portal-api-m2m
+    # Notification email deep-link origins (feature 127).
+    CITIZEN_WEB_URL: https://sdg-portal-prod.apps.gold.devops.gov.bc.ca
+    PLATFORM_WEB_URL: https://sdg-platform-prod.apps.gold.devops.gov.bc.ca
     AUTH_RP_LOGOUT: "true"
 
 # ---------------------------------------------------------------------------

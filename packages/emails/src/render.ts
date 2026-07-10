@@ -9,7 +9,8 @@ export interface RenderedEmail {
 }
 
 /**
- * Render the generic notification email to a multipart-ready pair (HTML + plain text).
+ * Render the generic notification email to a multipart-ready pair (HTML + plain text —
+ * the text variant carries any action URL as a raw link).
  * Pure: no env reads, no I/O — callers own transport. `subject` is the notification title.
  */
 export async function renderNotificationEmail(

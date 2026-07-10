@@ -15,6 +15,11 @@ const base = {
 };
 
 describe('env validation', () => {
+  it('defaults the web origin(s) used for notification email links', () => {
+    const env = validateEnv({ ...base });
+    expect(env.CITIZEN_WEB_URL).toBe('http://localhost:3000');
+  });
+
   it('defaults the outbox relay settings and requires the m2m client secret', () => {
     const env = validateEnv({ ...base });
     expect(env.NOTIFICATION_SERVICE_URL).toBe('http://localhost:4002');
