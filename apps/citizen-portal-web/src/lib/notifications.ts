@@ -107,3 +107,30 @@ export function updateNotificationPreferences(
     body: JSON.stringify(input),
   });
 }
+
+export interface NotificationsSubscription {
+  close: () => void;
+}
+
+/**
+ * Subscribe to the BFF's real-time notification stream (feature 125). A native EventSource
+ * (auto-reconnecting — which also re-enters the BFF pipe with a fresh m2m token upstream) on
+ * the session cookie; events carry no data, so `onEvent` should invalidate + refetch. The
+ * constructor is injectable for tests; when no implementation exists (jsdom), this no-ops —
+ * the 30s unread poll remains the fallback everywhere.
+ */
+export function subscribeToNotifications(
+  onEvent: () => void,
+  EventSourceCtor: typeof EventSource | undefined = typeof EventSource === 'undefined'
+    ? undefined
+    : EventSource,
+): NotificationsSubscription {
+  if (EventSourceCtor === undefined) {
+    return { close: () => {} };
+  }
+  const source = new EventSourceCtor(`${BFF_ORIGIN}/v1/me/notifications/stream`, {
+    withCredentials: true,
+  });
+  source.addEventListener('notification', onEvent);
+  return { close: () => source.close() };
+}

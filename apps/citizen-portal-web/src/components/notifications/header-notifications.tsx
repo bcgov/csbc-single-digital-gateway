@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NotificationCenter, type NotificationItem } from '@repo/react/notification-center';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -8,6 +8,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   notificationFeedQueryOptions,
+  subscribeToNotifications,
   unreadCountQueryOptions,
 } from '@/lib/notifications';
 
@@ -29,6 +30,16 @@ export function HeaderNotifications() {
   const unread = useQuery(unreadCountQueryOptions());
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+
+  // Real-time (feature 125): every SSE event invalidates the family — badge + feed together.
+  // This component only renders in the authenticated header, so the subscription lifetime is
+  // exactly the signed-in session's; the 30s poll stays as silent fallback.
+  useEffect(() => {
+    const subscription = subscribeToNotifications(() => {
+      void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+    });
+    return () => subscription.close();
+  }, [queryClient]);
   const markRead = useMutation({ mutationFn: markNotificationRead, onSuccess: invalidate });
   const markAllRead = useMutation({ mutationFn: markAllNotificationsRead, onSuccess: invalidate });
 
