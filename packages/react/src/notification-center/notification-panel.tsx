@@ -33,9 +33,9 @@ export function NotificationPanel({
   const unread = items.filter((item) => item.readAt === null).length;
   return (
     <div className="flex w-80 flex-col">
-      <div className="flex items-center justify-between px-4 py-2">
+      <div className="flex items-center justify-between gap-2 py-2 pl-4 pr-3">
         <h2 className="text-sm font-semibold">Notifications</h2>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {unread > 0 ? (
             <Button type="button" variant="ghost" size="sm" onClick={onMarkAllRead}>
               Mark all read
@@ -45,7 +45,7 @@ export function NotificationPanel({
             <Button
               type="button"
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               aria-label="Notification settings"
               onClick={onOpenPreferences}
             >
