@@ -22,6 +22,28 @@ services:
       timeout: 5s
       retries: 5
 
+  # Notification-service database — a SEPARATE Postgres instance (own volume, host port 5433)
+  # so @repo/notification-database never shares DDL or a connection with @repo/database,
+  # mirroring the per-service database split in non-local environments.
+  #   npm run db:migrate -w @repo/notification-database
+  notifications-postgres:
+    image: postgres:16-alpine
+    container_name: sdg-notifications-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sdg_notifications
+    ports:
+      - '${NOTIFICATIONS_POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - sdg-notifications-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d sdg_notifications']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # Session store for the BFF (Redis wire protocol). Host port 6380 to avoid 6379 conflicts.
   valkey:
     image: valkey/valkey:8-alpine
@@ -64,3 +86,4 @@ services:
 
 volumes:
   sdg-postgres-data:
+  sdg-notifications-postgres-data:
