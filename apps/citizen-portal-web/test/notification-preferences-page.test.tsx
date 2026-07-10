@@ -67,7 +67,10 @@ describe('notification preferences page', () => {
     expect(
       await screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 5000 }),
     ).toBeInTheDocument();
-    expect(await screen.findByRole('switch', { name: 'In-app notifications' })).toBeChecked();
+    const inApp = await screen.findByRole('switch', { name: 'In-app notifications' });
+    expect(inApp).toBeChecked();
+    // Base UI Switch exposes disabled state via aria-disabled, not the native attribute.
+    expect(inApp).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('switch', { name: 'Email notifications' })).not.toBeChecked();
     expect(screen.getByLabelText('Contact email')).toHaveValue('amina@example.com');
   });
@@ -87,6 +90,7 @@ describe('notification preferences page', () => {
     };
     expect(body.email).toBe('amina@example.com');
     expect(body.channels).toContainEqual({ channel: 'email', enabled: true });
-    expect(body.channels).toContainEqual({ channel: 'in_app', enabled: true });
+    // in_app is mandatory (feature 128) — never sent on the write path.
+    expect(body.channels.some((c) => c.channel === 'in_app')).toBe(false);
   });
 });

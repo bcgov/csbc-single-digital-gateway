@@ -51,7 +51,10 @@ describe('account page notification settings section', () => {
     expect(
       await screen.findByText('Notification settings', undefined, { timeout: 5000 }),
     ).toBeInTheDocument();
-    expect(await screen.findByRole('switch', { name: 'In-app notifications' })).toBeChecked();
+    const inApp = await screen.findByRole('switch', { name: 'In-app notifications' });
+    expect(inApp).toBeChecked();
+    // Base UI Switch exposes disabled state via aria-disabled, not the native attribute.
+    expect(inApp).toHaveAttribute('aria-disabled', 'true');
     await user.click(screen.getByRole('switch', { name: 'Email notifications' }));
     await user.click(screen.getByRole('button', { name: 'Save preferences' }));
     await waitFor(() => {
@@ -59,5 +62,6 @@ describe('account page notification settings section', () => {
     });
     const body = JSON.parse(puts[0]!) as { channels: { channel: string; enabled: boolean }[] };
     expect(body.channels).toContainEqual({ channel: 'email', enabled: true });
+    expect(body.channels.some((c) => c.channel === 'in_app')).toBe(false);
   });
 });

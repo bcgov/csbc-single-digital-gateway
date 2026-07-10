@@ -56,15 +56,23 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
                 <span className="text-sm font-medium">{meta.title}</span>
                 <p className="text-xs text-muted-foreground">{meta.description}</p>
               </div>
-              <Switch
-                aria-label={meta.title}
-                checked={entry.enabled}
-                onCheckedChange={(enabled) => {
-                  setChannels((prev) =>
-                    prev.map((c) => (c.channel === entry.channel ? { ...c, enabled } : c)),
-                  );
-                }}
-              />
+              {entry.channel === 'in_app' ? (
+                // Mandatory channel (feature 128): always on, not a preference.
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Always on</span>
+                  <Switch aria-label={meta.title} checked disabled />
+                </div>
+              ) : (
+                <Switch
+                  aria-label={meta.title}
+                  checked={entry.enabled}
+                  onCheckedChange={(enabled) => {
+                    setChannels((prev) =>
+                      prev.map((c) => (c.channel === entry.channel ? { ...c, enabled } : c)),
+                    );
+                  }}
+                />
+              )}
             </div>
           );
         })}
@@ -91,7 +99,11 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
             type="button"
             disabled={save.isPending}
             onClick={() => {
-              save.mutate({ email: email.trim() === '' ? null : email.trim(), channels });
+              save.mutate({
+                email: email.trim() === '' ? null : email.trim(),
+                // in_app is mandatory — the write path only accepts togglable channels.
+                channels: channels.filter((c) => c.channel !== 'in_app'),
+              });
             }}
           >
             {save.isPending ? 'Saving…' : 'Save preferences'}

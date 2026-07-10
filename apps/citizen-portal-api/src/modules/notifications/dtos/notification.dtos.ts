@@ -42,10 +42,13 @@ export const readAllResponseSchema = z.object({ updated: z.number().int().nonneg
 export class ReadAllResponseDto extends createZodDto(readAllResponseSchema) {}
 export type ReadAllResponse = z.infer<typeof readAllResponseSchema>;
 
+// The channels a user may toggle (feature 128): in_app is mandatory and rejected on writes.
+export const togglableChannelSchema = z.enum(['email']);
+
 export const updatePreferencesSchema = z.object({
   email: z.email().nullable().optional(),
   channels: z
-    .array(z.object({ channel: channelSchema, enabled: z.boolean() }))
+    .array(z.object({ channel: togglableChannelSchema, enabled: z.boolean() }))
     .max(2)
     .refine(
       (entries) => new Set(entries.map((e) => e.channel)).size === entries.length,

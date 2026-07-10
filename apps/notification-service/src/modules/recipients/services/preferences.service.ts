@@ -86,7 +86,8 @@ function defaultToggle(channel: (typeof ALL_CHANNELS)[number]): {
   channel: (typeof ALL_CHANNELS)[number];
   enabled: boolean;
 } {
-  return { channel, enabled: false };
+  // in_app is mandatory (feature 128) — always composed as enabled.
+  return { channel, enabled: channel === 'in_app' };
 }
 
 function compose(
@@ -99,7 +100,8 @@ function compose(
     email,
     channels: ALL_CHANNELS.map((channel) => ({
       channel,
-      enabled: byChannel.get(channel) ?? false,
+      // in_app is mandatory: always true regardless of any historical stored row.
+      enabled: channel === 'in_app' ? true : (byChannel.get(channel) ?? false),
     })),
   };
 }

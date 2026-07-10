@@ -67,39 +67,51 @@ export class IngestionService {
         return undefined;
       }
 
-      const enabled = await tx
+      const deliveryRows: Delivery[] = [];
+      // in_app is MANDATORY (feature 128): every notification gets a feed item — born sent —
+      // with no preference row consulted.
+      const [inApp] = await tx
+        .insert(deliveries)
+        .values({
+          notificationId: notification.id,
+          recipientId: recipient.id,
+          channel: 'in_app',
+          status: 'sent',
+          sentAt: new Date(),
+        })
+        .returning();
+      if (inApp !== undefined) {
+        deliveryRows.push(inApp);
+        // Transactional real-time signal (feature 121): fires only on commit; reaches the
+        // LISTEN client on EVERY pod, so SSE stays correct beyond a single instance.
+        await tx.execute(
+          sql`SELECT pg_notify('notification_events', ${JSON.stringify({ userId: input.userId })})`,
+        );
+      }
+
+      // Email remains opt-in: delivered only with an enabled preference.
+      const [emailPref] = await tx
         .select()
         .from(channelPreferences)
         .where(
           and(
             eq(channelPreferences.recipientId, recipient.id),
+            eq(channelPreferences.channel, 'email'),
             eq(channelPreferences.enabled, true),
           ),
-        );
-
-      const deliveryRows: Delivery[] = [];
-      for (const pref of enabled) {
-        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-        const [row] = await tx
+        )
+        .limit(1);
+      if (emailPref !== undefined) {
+        const [emailRow] = await tx
           .insert(deliveries)
           .values({
             notificationId: notification.id,
             recipientId: recipient.id,
-            channel: pref.channel,
-            // An in-app delivery row IS the feed item — born sent. Email waits for the worker.
-            ...(pref.channel === 'in_app' ? { status: 'sent' as const, sentAt: new Date() } : {}),
+            channel: 'email',
           })
           .returning();
-        if (row !== undefined) {
-          deliveryRows.push(row);
-          if (pref.channel === 'in_app') {
-            // Transactional real-time signal (feature 121): fires only on commit; reaches the
-            // LISTEN client on EVERY pod, so SSE stays correct beyond a single instance.
-            // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-            await tx.execute(
-              sql`SELECT pg_notify('notification_events', ${JSON.stringify({ userId: input.userId })})`,
-            );
-          }
+        if (emailRow !== undefined) {
+          deliveryRows.push(emailRow);
         }
       }
 

@@ -54,10 +54,18 @@ describe('/v1/recipients/:userId/preferences (e2e — auth + validation)', () =>
       .set('Authorization', 'Bearer test-token')
       .send({
         channels: [
-          { channel: 'in_app', enabled: true },
-          { channel: 'in_app', enabled: false },
+          { channel: 'email', enabled: true },
+          { channel: 'email', enabled: false },
         ],
       });
+    expect(res.status).toBe(400);
+  });
+
+  it('400s an attempt to toggle in_app (mandatory channel, feature 128)', async () => {
+    const res = await request(app.getHttpServer())
+      .put(`/v1/recipients/${USER_ID}/preferences`)
+      .set('Authorization', 'Bearer test-token')
+      .send({ channels: [{ channel: 'in_app', enabled: false }] });
     expect(res.status).toBe(400);
   });
 });

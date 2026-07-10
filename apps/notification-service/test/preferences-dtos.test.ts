@@ -8,15 +8,23 @@ describe('updatePreferencesSchema', () => {
     expect(parsed.channels).toBeUndefined();
   });
 
-  it('accepts channel toggles and an email', () => {
+  it('accepts togglable channel entries and an email', () => {
     const parsed = updatePreferencesSchema.parse({
       email: 'citizen@example.com',
-      channels: [
-        { channel: 'in_app', enabled: true },
-        { channel: 'email', enabled: false },
-      ],
+      channels: [{ channel: 'email', enabled: false }],
     });
-    expect(parsed.channels).toHaveLength(2);
+    expect(parsed.channels).toHaveLength(1);
+  });
+
+  it('rejects in_app entries — the channel is mandatory and not a preference (feature 128)', () => {
+    expect(
+      updatePreferencesSchema.safeParse({ channels: [{ channel: 'in_app', enabled: false }] })
+        .success,
+    ).toBe(false);
+    expect(
+      updatePreferencesSchema.safeParse({ channels: [{ channel: 'in_app', enabled: true }] })
+        .success,
+    ).toBe(false);
   });
 
   it('accepts email: null (clears the address)', () => {
@@ -37,8 +45,8 @@ describe('updatePreferencesSchema', () => {
     expect(
       updatePreferencesSchema.safeParse({
         channels: [
-          { channel: 'in_app', enabled: true },
-          { channel: 'in_app', enabled: false },
+          { channel: 'email', enabled: true },
+          { channel: 'email', enabled: false },
         ],
       }).success,
     ).toBe(false);
