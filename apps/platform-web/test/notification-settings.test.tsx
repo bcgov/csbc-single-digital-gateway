@@ -42,11 +42,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('staff notification settings page', () => {
+describe('account page notification settings section', () => {
   it('renders seeded toggles and saves changes through the platform BFF', async () => {
     const user = userEvent.setup();
     const puts = mockBff();
-    renderApp('/app/notification-settings');
+    renderApp('/app/account');
     // CardTitle renders a styled div (no heading role) — match by text.
     expect(
       await screen.findByText('Notification settings', undefined, { timeout: 5000 }),

@@ -89,7 +89,7 @@ function LiveNotificationsMenu() {
       onItemClick={handleItemClick}
       onOpenPreferences={() => {
         setOpen(false);
-        void navigate({ to: '/app/notification-settings' });
+        void navigate({ to: '/app/account' });
       }}
     />
   );

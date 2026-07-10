@@ -11,6 +11,7 @@ import {
 import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Skeleton } from '@repo/ui/skeleton';
+import { NotificationSettingsCard } from '@/components/console/pages/notification-settings';
 import { initials, roleLabel, useAuth } from '@/lib/auth';
 import { displayName } from '@/lib/bff';
 
@@ -72,6 +73,7 @@ export function AccountPage() {
           <Button type="button">Save changes</Button>
         </CardFooter>
       </Card>
+      <NotificationSettingsCard />
     </div>
   );
 }

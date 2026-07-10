@@ -96,33 +96,31 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
 }
 
 /**
- * `/app/notification-settings` — the staff notification preferences (user-scoped, so it sits
- * beside /app/account rather than under a workspace). Same seeded-form rules as the citizen page.
+ * The staff notification preferences card — a section of `/app/account` (user-scoped, like the
+ * rest of that page). Same seeded-form rules as the citizen preferences page.
  */
-export function NotificationSettingsPage() {
+export function NotificationSettingsCard() {
   const prefs = useQuery(notificationPreferencesQueryOptions());
 
   return (
-    <div className="mx-auto flex max-w-[760px] flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification settings</CardTitle>
-          <CardDescription>Choose how you hear about activity in your workspaces.</CardDescription>
-        </CardHeader>
-        {prefs.isSuccess ? (
-          <PreferencesForm initial={prefs.data} />
-        ) : prefs.isError ? (
-          <CardContent>
-            <p className="text-sm text-destructive" role="alert">
-              Notification settings are temporarily unavailable.
-            </p>
-          </CardContent>
-        ) : (
-          <CardContent>
-            <Skeleton className="h-56 w-full" />
-          </CardContent>
-        )}
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Notification settings</CardTitle>
+        <CardDescription>Choose how you hear about activity in your workspaces.</CardDescription>
+      </CardHeader>
+      {prefs.isSuccess ? (
+        <PreferencesForm initial={prefs.data} />
+      ) : prefs.isError ? (
+        <CardContent>
+          <p className="text-sm text-destructive" role="alert">
+            Notification settings are temporarily unavailable.
+          </p>
+        </CardContent>
+      ) : (
+        <CardContent>
+          <Skeleton className="h-56 w-full" />
+        </CardContent>
+      )}
+    </Card>
   );
 }

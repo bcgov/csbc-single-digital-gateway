@@ -14,7 +14,6 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AppNotificationSettingsRouteImport } from './routes/app.notification-settings'
 import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AppSlugRouteImport } from './routes/app.$slug'
 import { Route as AdminServiceAgreementsRouteImport } from './routes/admin.service-agreements'
@@ -74,11 +73,6 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
-} as any)
-const AppNotificationSettingsRoute = AppNotificationSettingsRouteImport.update({
-  id: '/notification-settings',
-  path: '/notification-settings',
-  getParentRoute: () => AppRoute,
 } as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
@@ -275,7 +269,6 @@ export interface FileRoutesByFullPath {
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
-  '/app/notification-settings': typeof AppNotificationSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
@@ -312,7 +305,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app/account': typeof AppAccountRoute
-  '/app/notification-settings': typeof AppNotificationSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
@@ -350,7 +342,6 @@ export interface FileRoutesById {
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
-  '/app/notification-settings': typeof AppNotificationSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/admin/document-types/$id': typeof AdminDocumentTypesIdRoute
@@ -394,7 +385,6 @@ export interface FileRouteTypes {
     | '/admin/service-agreements'
     | '/app/$slug'
     | '/app/account'
-    | '/app/notification-settings'
     | '/admin/'
     | '/app/'
     | '/admin/document-types/$id'
@@ -431,7 +421,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app/account'
-    | '/app/notification-settings'
     | '/admin'
     | '/app'
     | '/admin/document-types/$id'
@@ -468,7 +457,6 @@ export interface FileRouteTypes {
     | '/admin/service-agreements'
     | '/app/$slug'
     | '/app/account'
-    | '/app/notification-settings'
     | '/admin/'
     | '/app/'
     | '/admin/document-types/$id'
@@ -545,13 +533,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
-    }
-    '/app/notification-settings': {
-      id: '/app/notification-settings'
-      path: '/notification-settings'
-      fullPath: '/app/notification-settings'
-      preLoaderRoute: typeof AppNotificationSettingsRouteImport
-      parentRoute: typeof AppRoute
     }
     '/app/account': {
       id: '/app/account'
@@ -958,14 +939,12 @@ const AppSlugRouteWithChildren =
 interface AppRouteChildren {
   AppSlugRoute: typeof AppSlugRouteWithChildren
   AppAccountRoute: typeof AppAccountRoute
-  AppNotificationSettingsRoute: typeof AppNotificationSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppSlugRoute: AppSlugRouteWithChildren,
   AppAccountRoute: AppAccountRoute,
-  AppNotificationSettingsRoute: AppNotificationSettingsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
