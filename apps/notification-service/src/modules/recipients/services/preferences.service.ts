@@ -1,14 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { channelPreferences, recipients, type Database } from '@repo/notification-database';
 import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 
 import {
   ALL_CHANNELS,
   type PreferencesResponse,
   type UpdatePreferencesInput,
 } from '../dtos/preferences.dtos';
+import { parseUuidParam } from '../util/user-id';
 
 /**
  * Recipient profile + channel toggles. The trust model is the m2m token — the calling BFF
@@ -20,7 +20,7 @@ export class PreferencesService {
   constructor(@InjectDatabase() private readonly db: Database) {}
 
   async get(userId: string): Promise<PreferencesResponse> {
-    const id = parseUserId(userId);
+    const id = parseUuidParam(userId, 'userId');
     const [recipient] = await this.db
       .select()
       .from(recipients)
@@ -37,7 +37,7 @@ export class PreferencesService {
   }
 
   async update(userId: string, input: UpdatePreferencesInput): Promise<PreferencesResponse> {
-    const id = parseUserId(userId);
+    const id = parseUuidParam(userId, 'userId');
     await this.db.transaction(async (tx) => {
       const [existing] = await tx
         .select()
@@ -80,14 +80,6 @@ export class PreferencesService {
     });
     return this.get(id);
   }
-}
-
-function parseUserId(userId: string): string {
-  const parsed = z.uuid().safeParse(userId);
-  if (!parsed.success) {
-    throw new BadRequestException('userId must be a uuid');
-  }
-  return parsed.data;
 }
 
 function defaultToggle(channel: (typeof ALL_CHANNELS)[number]): {
