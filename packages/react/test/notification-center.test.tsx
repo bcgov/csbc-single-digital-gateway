@@ -83,7 +83,7 @@ describe('NotificationCenter', () => {
     expect(await screen.findByText('No notifications')).toBeInTheDocument();
   });
 
-  it('renders the settings footer only when onOpenPreferences is provided', async () => {
+  it('renders the settings cog in the header only when onOpenPreferences is provided', async () => {
     const user = userEvent.setup();
     const onOpenPreferences = vi.fn();
     setup({ onOpenPreferences });

@@ -1,6 +1,7 @@
 import { Button } from '@repo/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@repo/ui/empty';
 import { Separator } from '@repo/ui/separator';
+import { SettingsIcon } from 'lucide-react';
 
 import { relativeTime } from './relative-time';
 import type { NotificationItem } from './types';
@@ -11,7 +12,7 @@ export interface NotificationPanelProps {
   /** Fired ONLY for unread items (the module never emits redundant mutations). */
   onMarkRead: (deliveryId: string) => void;
   onMarkAllRead: () => void;
-  /** Renders a settings footer link when provided. */
+  /** Renders the header settings cog when provided. */
   onOpenPreferences?: (() => void) | undefined;
   /** Injectable clock for deterministic relative timestamps in tests. */
   now?: Date | undefined;
@@ -32,13 +33,26 @@ export function NotificationPanel({
   const unread = items.filter((item) => item.readAt === null).length;
   return (
     <div className="flex w-80 flex-col">
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between px-4 py-2">
         <h2 className="text-sm font-semibold">Notifications</h2>
-        {unread > 0 ? (
-          <Button type="button" variant="ghost" size="sm" onClick={onMarkAllRead}>
-            Mark all read
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-1">
+          {unread > 0 ? (
+            <Button type="button" variant="ghost" size="sm" onClick={onMarkAllRead}>
+              Mark all read
+            </Button>
+          ) : null}
+          {onOpenPreferences !== undefined ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Notification settings"
+              onClick={onOpenPreferences}
+            >
+              <SettingsIcon aria-hidden="true" className="size-4" />
+            </Button>
+          ) : null}
+        </div>
       </div>
       <Separator />
       {loading ? (
@@ -91,22 +105,6 @@ export function NotificationPanel({
           })}
         </ul>
       )}
-      {onOpenPreferences !== undefined ? (
-        <>
-          <Separator />
-          <div className="px-2 py-1.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={onOpenPreferences}
-            >
-              Notification settings
-            </Button>
-          </div>
-        </>
-      ) : null}
     </div>
   );
 }

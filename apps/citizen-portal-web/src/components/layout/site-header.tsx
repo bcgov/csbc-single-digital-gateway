@@ -12,6 +12,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
 import { LogOut, UserCog } from 'lucide-react';
 import { initials, useLoginUrl } from '@/lib/auth';
+import { HeaderNotifications } from '@/components/notifications/header-notifications';
 import { mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
 
@@ -137,7 +138,10 @@ export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderPro
               Log in
             </Link>
           ) : (
-            <ProfileMenu user={user} onLogout={onLogout} />
+            <div className="flex items-center gap-2">
+              <HeaderNotifications />
+              <ProfileMenu user={user} onLogout={onLogout} />
+            </div>
           )}
         </div>
       </div>
