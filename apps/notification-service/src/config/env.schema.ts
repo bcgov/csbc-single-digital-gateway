@@ -19,6 +19,17 @@ export const envSchema = z.object({
   // The audience every accepted token's `aud` must contain. Issuer alone is NOT enough —
   // staff login tokens share the issuer and must be rejected.
   M2M_AUDIENCE: z.string().min(1).default('notification-service'),
+  // Email delivery worker. Defaults target the compose Mailpit (dev SMTP); SMTP_URL may carry
+  // credentials in real environments (smtp[s]://user:pass@host:port) — env/secrets only.
+  SMTP_URL: z.url().default('smtp://localhost:1025'),
+  MAIL_FROM: z.string().min(3).default('no-reply@sdg.local'),
+  EMAIL_WORKER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  EMAIL_WORKER_INTERVAL_MS: z.coerce.number().int().min(250).default(5000),
+  EMAIL_WORKER_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(10),
+  EMAIL_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;

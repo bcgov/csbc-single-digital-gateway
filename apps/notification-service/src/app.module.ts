@@ -10,6 +10,7 @@ import { createDatabase, resolvePgSsl, type Database } from '@repo/notification-
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { validateEnv, type Env } from './config/env.schema';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { EmailDeliveryModule } from './modules/email-delivery/email-delivery.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RecipientsModule } from './modules/recipients/recipients.module';
 
@@ -84,6 +85,8 @@ import { RecipientsModule } from './modules/recipients/recipients.module';
     // Feature modules (all protected by the m2m guard).
     NotificationsModule,
     RecipientsModule,
+    // Background email outbox drain (no routes; inert under NODE_ENV=test).
+    EmailDeliveryModule,
   ],
   // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses
   // (@ZodSerializerDto), and log response-serialization failures before delegating.

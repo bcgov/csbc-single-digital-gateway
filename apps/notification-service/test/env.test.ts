@@ -39,6 +39,32 @@ describe('env validation', () => {
     expect(() => validateEnv({ ...base, OIDC_ISSUER: 'not-a-url' })).toThrow(/Invalid environment/);
   });
 
+  it('defaults the email worker settings', () => {
+    const env = validateEnv({ ...base });
+    expect(env.SMTP_URL).toBe('smtp://localhost:1025');
+    expect(env.MAIL_FROM).toBe('no-reply@sdg.local');
+    expect(env.EMAIL_WORKER_ENABLED).toBe(true);
+    expect(env.EMAIL_WORKER_INTERVAL_MS).toBe(5000);
+    expect(env.EMAIL_WORKER_BATCH_SIZE).toBe(10);
+    expect(env.EMAIL_MAX_ATTEMPTS).toBe(5);
+  });
+
+  it('parses EMAIL_WORKER_ENABLED=false and coerces the numeric worker settings', () => {
+    const env = validateEnv({
+      ...base,
+      EMAIL_WORKER_ENABLED: 'false',
+      EMAIL_WORKER_INTERVAL_MS: '10000',
+      EMAIL_MAX_ATTEMPTS: '3',
+    });
+    expect(env.EMAIL_WORKER_ENABLED).toBe(false);
+    expect(env.EMAIL_WORKER_INTERVAL_MS).toBe(10_000);
+    expect(env.EMAIL_MAX_ATTEMPTS).toBe(3);
+  });
+
+  it('rejects an invalid SMTP_URL', () => {
+    expect(() => validateEnv({ ...base, SMTP_URL: 'not a url' })).toThrow(/Invalid environment/);
+  });
+
   it('defaults M2M_AUDIENCE to notification-service', () => {
     expect(validateEnv({ ...base }).M2M_AUDIENCE).toBe('notification-service');
     expect(validateEnv({ ...base, M2M_AUDIENCE: 'other-aud' }).M2M_AUDIENCE).toBe('other-aud');

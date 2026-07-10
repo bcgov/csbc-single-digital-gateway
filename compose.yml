@@ -44,6 +44,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # Dev SMTP sink for the notification-service email worker: catches all mail, browsable UI +
+  # API on ${MAILPIT_UI_PORT:-8025}. Nothing ever leaves the machine.
+  mailpit:
+    image: axllent/mailpit
+    container_name: sdg-mailpit
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # Session store for the BFF (Redis wire protocol). Host port 6380 to avoid 6379 conflicts.
   valkey:
     image: valkey/valkey:8-alpine
