@@ -10,6 +10,7 @@ import { createDatabase, resolvePgSsl, type Database } from '@repo/notification-
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { validateEnv, type Env } from './config/env.schema';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -79,6 +80,8 @@ import { HttpExceptionFilter } from './filters/http-exception.filter';
     // src/modules/<feature>/ and are protected by the m2m guard by default.
     // /health/ready reports the database via DatabaseHealthIndicator (select 1).
     HealthModule.forRoot({ readiness: [DatabaseHealthIndicator] }),
+    // Feature modules (all protected by the m2m guard).
+    NotificationsModule,
   ],
   // Global nestjs-zod wiring: validate requests (createZodDto schemas), serialize responses
   // (@ZodSerializerDto), and log response-serialization failures before delegating.
