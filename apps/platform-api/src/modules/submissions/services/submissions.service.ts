@@ -20,7 +20,9 @@ import {
   type SubmissionStatus,
   type SubmissionSummary,
 } from '../dtos/submission.dtos';
+import { enqueueNotification } from '../../../notifications/enqueue';
 import { normalizeFormStructure, submissionReference, submissionStatusLabel } from '../util/format';
+import { reviewNotificationContent } from '../util/notification-content';
 
 type SubmissionRow = typeof submissions.$inferSelect;
 type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
@@ -121,19 +123,52 @@ export class SubmissionsService {
       throw new ConflictException(`A ${version.status} submission cannot be reviewed`);
     }
     const mapped = DECISION_MAP[input.decision];
+    // Pre-resolve the owner's contact email (read BEFORE the tx) for the notification seed.
+    const ownerEmail =
+      sub.userId === null
+        ? null
+        : ((
+            await this.db
+              .select({ email: users.email })
+              .from(users)
+              .where(eq(users.id, sub.userId))
+              .limit(1)
+          )[0]?.email ?? null);
     await this.db.transaction(async (tx) => {
-      await tx.insert(reviews).values({
-        submissionVersionId: version.id,
-        submissionId: sub.id,
-        workspaceId: sub.workspaceId,
-        reviewerId: userId,
-        decision: mapped.decision,
-        reason: input.reason ?? null,
-      });
+      const [review] = await tx
+        .insert(reviews)
+        .values({
+          submissionVersionId: version.id,
+          submissionId: sub.id,
+          workspaceId: sub.workspaceId,
+          reviewerId: userId,
+          decision: mapped.decision,
+          reason: input.reason ?? null,
+        })
+        .returning({ id: reviews.id });
       await tx
         .update(submissionVersions)
         .set({ status: mapped.status })
         .where(eq(submissionVersions.id, version.id));
+      // Same-transaction outbox insert (doc 109's guarantee): notify the citizen owner.
+      // Anonymous submissions (user_id NULL) queue nothing. Each review row is a distinct
+      // decision → its own idempotency key.
+      if (sub.userId !== null && review !== undefined) {
+        const content = reviewNotificationContent(
+          mapped.decision,
+          submissionReference(sub.id, sub.createdAt),
+          input.reason,
+        );
+        await enqueueNotification(tx, {
+          idempotencyKey: `review:${review.id}`,
+          userId: sub.userId,
+          type: content.type,
+          title: content.title,
+          body: content.body,
+          payload: { submissionId: sub.id },
+          email: ownerEmail,
+        });
+      }
     });
     return this.get(userId, submissionId);
   }
