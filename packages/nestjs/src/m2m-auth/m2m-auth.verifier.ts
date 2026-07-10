@@ -8,7 +8,8 @@ import type { M2mAuthModuleOptions, M2mPrincipal, M2mTokenVerifier } from './m2m
  * Discovery (`{issuer}/.well-known/openid-configuration` → `jwks_uri`) runs lazily on the
  * FIRST verify — the app boots without a reachable IdP (same laziness as `createDatabase`).
  * jose's `createRemoteJWKSet` caches keys and handles rotation. `jwtVerify` enforces the
- * signature, `exp`/`nbf`, `iss`, and that `aud` contains the required audience.
+ * signature, `exp`/`nbf`, `iss`, and that `aud` contains the required audience (ANY-of when
+ * a list is configured — see {@link M2mAuthModuleOptions.audience}).
  *
  * jose is ESM-only and `@repo/nestjs` is CommonJS, so it is loaded via dynamic `import()` —
  * the same TS1479 pattern as openid-client in `auth/oidc.provider.ts`.

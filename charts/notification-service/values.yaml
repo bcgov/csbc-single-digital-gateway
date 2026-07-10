@@ -33,7 +33,10 @@ existingSecret: notification-service-secrets
 
 # Non-sensitive env → ConfigMap. OIDC_ISSUER MUST be overridden per environment: it is the realm
 # hosting the m2m service-account clients the BFF relays authenticate with, and every accepted
-# token must carry the M2M_AUDIENCE audience (see .mdd/docs/102-m2m-auth-module.md).
+# token must carry one of the M2M_AUDIENCE audiences (comma-separated, ANY-of; see
+# .mdd/docs/102-m2m-auth-module.md). If the environment's IdP can't add a custom audience
+# mapper (e.g. the CSS standard realm), set M2M_AUDIENCE to the allowed m2m caller client ids:
+#   M2M_AUDIENCE: platform-api-m2m,citizen-portal-api-m2m
 env:
   NODE_ENV: production
   PORT: "4002"

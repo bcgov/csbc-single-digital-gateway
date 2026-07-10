@@ -16,9 +16,23 @@ export const envSchema = z.object({
   // m2m auth (required, fail-fast): the OIDC issuer whose client-credentials tokens are
   // accepted (the Keycloak sdg realm — machine identities live there, see feature 101).
   OIDC_ISSUER: z.url(),
-  // The audience every accepted token's `aud` must contain. Issuer alone is NOT enough —
-  // staff login tokens share the issuer and must be rejected.
-  M2M_AUDIENCE: z.string().min(1).default('notification-service'),
+  // The audience(s) every accepted token's `aud` must contain — comma-separated, ANY-of.
+  // Issuer alone is NOT enough — staff login tokens share the issuer and must be rejected.
+  // Where the IdP can't add a custom audience mapper (e.g. the CSS standard realm), list the
+  // allowed m2m caller client ids instead (their tokens carry their own client id as `aud`).
+  M2M_AUDIENCE: z
+    .string()
+    .min(1)
+    .default('notification-service')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s !== ''),
+    )
+    .refine((list) => list.length > 0, {
+      message: 'M2M_AUDIENCE must contain at least one audience',
+    }),
   // Email delivery worker. Defaults target the compose Mailpit (dev SMTP); SMTP_URL may carry
   // credentials in real environments (smtp[s]://user:pass@host:port) — env/secrets only.
   SMTP_URL: z.url().default('smtp://localhost:1025'),

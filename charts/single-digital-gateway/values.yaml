@@ -100,7 +100,9 @@ postgres:
 # IdP PREREQUISITE: the m2m service-account clients (platform-api-m2m / citizen-portal-api-m2m,
 # with a notification-service audience on their access tokens) exist only in the LOCAL compose
 # Keycloak — provision equivalents in each environment's IdP and set OIDC_ISSUER /
-# NOTIFICATIONS_M2M_* in values-<env>.yaml before enabling the relay there.
+# NOTIFICATIONS_M2M_* in values-<env>.yaml before enabling the relay there. If that IdP can't
+# add a custom audience mapper (e.g. the CSS standard realm), set the notification-service
+# M2M_AUDIENCE to the comma-separated m2m client ids instead (ANY-of match).
 # ---------------------------------------------------------------------------
 notification-service:
   extraEnv:

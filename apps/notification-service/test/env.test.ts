@@ -65,9 +65,20 @@ describe('env validation', () => {
     expect(() => validateEnv({ ...base, SMTP_URL: 'not a url' })).toThrow(/Invalid environment/);
   });
 
-  it('defaults M2M_AUDIENCE to notification-service', () => {
-    expect(validateEnv({ ...base }).M2M_AUDIENCE).toBe('notification-service');
-    expect(validateEnv({ ...base, M2M_AUDIENCE: 'other-aud' }).M2M_AUDIENCE).toBe('other-aud');
+  it('defaults M2M_AUDIENCE to notification-service (as a one-entry list)', () => {
+    expect(validateEnv({ ...base }).M2M_AUDIENCE).toEqual(['notification-service']);
+    expect(validateEnv({ ...base, M2M_AUDIENCE: 'other-aud' }).M2M_AUDIENCE).toEqual(['other-aud']);
+  });
+
+  it('splits a comma-separated M2M_AUDIENCE into a trimmed ANY-of list', () => {
+    expect(
+      validateEnv({ ...base, M2M_AUDIENCE: 'platform-api-m2m, citizen-portal-api-m2m' })
+        .M2M_AUDIENCE,
+    ).toEqual(['platform-api-m2m', 'citizen-portal-api-m2m']);
+  });
+
+  it('rejects an M2M_AUDIENCE with no usable entries', () => {
+    expect(() => validateEnv({ ...base, M2M_AUDIENCE: ' , ' })).toThrow(/Invalid environment/);
   });
 
   it('throws on an invalid NOTIFICATION_DATABASE_URL', () => {
