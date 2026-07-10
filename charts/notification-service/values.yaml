@@ -7,7 +7,7 @@
 
 replicaCount: 1
 
-# maxSurge:0 — see the API charts: no budget for a surge pod under the limits-only quota.
+# maxSurge:0 — see the API charts: recreate in place; raise for zero-downtime rollouts.
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -74,13 +74,13 @@ migrations:
   image:
     repository: ghcr.io/bcgov/csbc-single-digital-gateway/notification-db-migrate # override per environment
     tag: ""
-  # The migrator is small and short-lived — keep its transient quota footprint low.
+  # The migrator is small and short-lived; only its REQUESTS are quota-metered.
   resources:
     requests:
       cpu: 25m
       memory: 64Mi
     limits:
-      cpu: 50m
+      cpu: 100m
       memory: 128Mi
 
 probes:
@@ -89,15 +89,14 @@ probes:
   readiness:
     path: /health/ready
 
-# Right-sized below the API charts (mostly-idle pollers + small API surface). NOTE the namespace
-# budget: adding this chart pushes the 0.5 CPU limits-only quota's steady total to ~455m and the
-# migrate-hook peak past 500m — raise the namespace quota (750m recommended) or phase installs.
+# Requests are what the namespace quota meters (see charts/README.md); limits match the API
+# charts for the same boot/latency margins (the app is a mostly-idle poller + SSE fan-out).
 resources:
   requests:
     cpu: 25m
     memory: 128Mi
   limits:
-    cpu: 75m
+    cpu: 100m
     memory: 192Mi
 
 autoscaling:

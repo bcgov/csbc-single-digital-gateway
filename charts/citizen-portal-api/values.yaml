@@ -6,9 +6,10 @@
 
 replicaCount: 1
 
-# Rollout strategy. Under a limits-only ResourceQuota there is no budget for a surge pod, so
-# these charts default to maxSurge:0 — the single pod is recreated in place (brief downtime on
-# upgrade) instead of briefly running two. Raise maxSurge only when the namespace has spare limits.
+# Rollout strategy. These charts default to maxSurge:0 — the single pod is recreated in place
+# (brief downtime on upgrade) instead of briefly running two. The requests-metered quota has
+# ample headroom for a surge pod (see charts/README.md); raise maxSurge to 1 per app when
+# zero-downtime rollouts matter more than strict single-scheduling.
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -87,6 +88,15 @@ migrations:
   image:
     repository: ghcr.io/bcgov/csbc-single-digital-gateway/db-migrate # override per environment
     tag: ""
+  # The migrator is short-lived; only its REQUESTS are quota-metered (see charts/README.md),
+  # so requests stay lean while limits leave burst headroom for a fast migrate.
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
 
 probes:
   liveness:
@@ -94,7 +104,8 @@ probes:
   readiness:
     path: /health/ready
 
-# Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the whole stack. (This app's migrate
+# The namespace quota meters REQUESTS (0.5 CPU / 2Gi shared by the whole stack — see
+# charts/README.md); limits are unmetered burst ceilings. (This app's migrate
 # hook is disabled — platform-api owns migrations for the shared DB.) See charts/single-digital-gateway/values-*.yaml.
 resources:
   requests:

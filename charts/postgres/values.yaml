@@ -25,8 +25,9 @@ instances:
   storage:
     size: 10Gi
     storageClassName: "" # cluster default when empty
-  # Applies to the `database` (Postgres) container. Tuned for a 0.5 CPU / 2Gi limits-only
-  # namespace shared by the whole stack — light dev/test load, not production throughput.
+  # Applies to the `database` (Postgres) container. Requests are what the namespace quota
+  # meters (0.5 CPU / 2Gi shared by the whole stack — see charts/README.md); sized for light
+  # dev/test load, not production throughput.
   resources:
     requests:
       cpu: 50m
@@ -102,8 +103,8 @@ backups:
       # limit that is too low CPU-throttles the probe past 1s → kubelet kills the container →
       # CrashLoopBackOff, which severs every in-flight backup with pgBackRest ERROR [039]
       # ("client state is 'response' but expected 'idle'"). Keep limits.cpu high enough that a
-      # fork + local TLS handshake clears the 1s probe. Limits are not quota-metered here (the
-      # quota meters requests); 100m keeps even the summed limits under the 500m CPU budget.
+      # fork + local TLS handshake clears the 1s probe. Limits are not quota-metered (the quota
+      # meters requests — see charts/README.md), so this 100m costs nothing against the budget.
       resources:
         requests:
           cpu: 10m

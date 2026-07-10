@@ -3,35 +3,39 @@
 # =============================================================================
 # Install / upgrade the whole stack into the test namespace from this one file:
 #
-#   helm dependency build charts/single-digital-gateway            # once — vendors the 6 subcharts
+#   helm dependency build charts/single-digital-gateway            # once — vendors the 7 subcharts
 #   helm upgrade --install sdg charts/single-digital-gateway \
 #     -n <slug>-test --create-namespace \
 #     -f charts/single-digital-gateway/values-test.yaml
 #
-# Namespace budget: 0.5 CPU / 2Gi, ResourceQuota on LIMITS only. The per-container limits are
-# tuned in each subchart's defaults; this file only carries per-environment identity (hosts,
-# image tags, backup policy, log level). Summed container LIMITS, steady state:
+# Namespace budget: 0.5 CPU / 2Gi, ResourceQuota on REQUESTS (requests.cpu / requests.memory —
+# limits are NOT quota-metered; they are per-container burst ceilings; see charts/README.md).
+# Per-container resources are tuned in each subchart's defaults; this file only carries
+# per-environment identity (hosts, image tags, backup policy, log level). Summed container
+# REQUESTS, steady state:
 #
-#   platform-api            100m / 256Mi
-#   citizen-portal-api      100m / 256Mi
-#   platform-web             15m /  64Mi
-#   citizen-portal-web       15m /  64Mi
-#   valkey                   40m / 128Mi
-#   postgres (database)      80m / 512Mi
-#   postgres repo-host       15m /  96Mi
-#   postgres pgbackrest       10m /  48Mi   (sidecar in the instance pod)
-#   postgres pgbackrest-cfg    5m /  32Mi   (sidecar in the instance pod)
+#   platform-api             25m / 128Mi
+#   citizen-portal-api       25m / 128Mi
+#   notification-service     25m / 128Mi
+#   platform-web             10m /  32Mi
+#   citizen-portal-web       10m /  32Mi
+#   valkey                   25m /  64Mi
+#   postgres (database)      50m / 256Mi
+#   postgres repo-host       10m /  48Mi
+#   postgres pgbackrest      10m /  16Mi   (sidecar in the instance pod)
+#   postgres pgbackrest-cfg   5m /  16Mi   (sidecar in the instance pod)
 #   ---------------------------------------------------------------
-#   STEADY TOTAL            380m / 1456Mi    (of 500m / 2048Mi)
+#   STEADY TOTAL            195m / 848Mi    (of 500m / 2048Mi)
 #
-# Transient headroom: platform-api's migrate hook runs pre-upgrade while the old pod is still up
-# (+100m / 256Mi) → peak 480m / 1712Mi; even with a pgBackRest backup Job also running (+15m /
-# 64Mi) it stays at 495m / 1776Mi, under budget. Apps use strategy.maxSurge:0, so a rollout never
-# briefly runs two pods. Test keeps only a weekly full backup (one recurring Job).
+# Transient headroom: a migrate hook runs pre-upgrade while the old pod is still up (+25m / 64Mi;
+# Helm runs release hooks serially, so at most ONE migrate Job exists at a time); with a pgBackRest
+# backup Job also running (+5m / 32Mi) the worst-case peak is 225m / 944Mi — under half the quota.
+# Apps keep strategy.maxSurge:0 (recreate in place). Test keeps only a weekly full backup
+# (one recurring Job).
 #
-# ASSUMPTION: a couple of operator-managed init containers get their limits from the namespace
-# LimitRange defaults. If there is no LimitRange, a limits-only quota rejects any pod with an
-# unlimited container — add a LimitRange with small default limits to the namespace.
+# ASSUMPTION: a couple of operator-managed init containers get their requests/limits from the
+# namespace LimitRange defaults. If there is no LimitRange, the quota rejects any pod whose
+# containers omit requests on the metered resources — add a LimitRange with small defaults.
 # =============================================================================
 
 # ---------------------------------------------------------------------------
