@@ -126,6 +126,15 @@
   --color-success-text: var(--app-success-text);
   --color-warning-text: var(--app-warning-text);
 
+  --color-icon-primary: var(--app-icon-primary);
+  --color-icon-secondary: var(--app-icon-secondary);
+  --color-icon-disabled: var(--app-icon-disabled);
+  --color-icon-link: var(--app-icon-link);
+  --color-icon-danger: var(--app-icon-danger);
+  --color-icon-success: var(--app-icon-success);
+  --color-icon-warning: var(--app-icon-warning);
+  --color-icon-invert: var(--app-icon-invert);
+
   /* ------------------------------------------------------------------------ */
   /* Sidebar                                                                   */
   /* ------------------------------------------------------------------------ */
