@@ -12,3 +12,16 @@ export function submissionReceivedContent(reference: string): SubmissionReceived
     body: `Your application ${reference} was received and is pending review.`,
   };
 }
+
+/** Staff-facing alert for a new submission (feature 124). Pure — unit-tested. */
+export function staffSubmissionContent(
+  reference: string,
+  serviceTitle: string | null,
+): SubmissionReceivedContent {
+  const service = serviceTitle !== null && serviceTitle !== '' ? ` for ${serviceTitle}` : '';
+  return {
+    type: 'submission.received',
+    title: 'New application received',
+    body: `Application ${reference}${service} was submitted and is ready for review.`,
+  };
+}
