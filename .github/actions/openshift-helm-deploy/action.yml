@@ -1,7 +1,7 @@
 name: OpenShift Helm deploy
 description: >-
   Log in to OpenShift with a namespace ServiceAccount token and `helm upgrade --install` the SDG
-  umbrella chart, pinning all five images to one immutable git SHA tag.
+  umbrella chart, pinning all seven images to one immutable git SHA tag.
 
 inputs:
   values-file:
@@ -59,4 +59,6 @@ runs:
           --set platform-web.image.tag="${{ inputs.image-tag }}" \
           --set citizen-portal-web.image.tag="${{ inputs.image-tag }}" \
           --set platform-api.migrations.image.tag="${{ inputs.image-tag }}" \
+          --set notification-service.image.tag="${{ inputs.image-tag }}" \
+          --set notification-service.migrations.image.tag="${{ inputs.image-tag }}" \
           --wait --timeout 10m
