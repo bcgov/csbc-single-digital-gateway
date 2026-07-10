@@ -14,7 +14,7 @@ let publicJwk: JWK;
 function stubIdpFetch(): void {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: string | URL) => {
       const url = String(input);
       if (url === `${ISSUER}/.well-known/openid-configuration`) {
         return new Response(JSON.stringify({ issuer: ISSUER, jwks_uri: JWKS_URI }), {
