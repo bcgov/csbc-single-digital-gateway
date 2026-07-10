@@ -5,6 +5,7 @@ import { validateEnv } from '../src/config/env.schema';
 const DB_URL = 'postgresql://postgres:postgres@localhost:5433/sdg_notifications';
 const base = {
   NOTIFICATION_DATABASE_URL: DB_URL,
+  OIDC_ISSUER: 'http://localhost:8080/realms/sdg',
 };
 
 describe('env validation', () => {
@@ -31,6 +32,16 @@ describe('env validation', () => {
 
   it('throws when NOTIFICATION_DATABASE_URL is missing (required, fail-fast)', () => {
     expect(() => validateEnv({})).toThrow(/Invalid environment/);
+  });
+
+  it('requires OIDC_ISSUER (fail-fast) and rejects a non-URL value', () => {
+    expect(() => validateEnv({ NOTIFICATION_DATABASE_URL: DB_URL })).toThrow(/Invalid environment/);
+    expect(() => validateEnv({ ...base, OIDC_ISSUER: 'not-a-url' })).toThrow(/Invalid environment/);
+  });
+
+  it('defaults M2M_AUDIENCE to notification-service', () => {
+    expect(validateEnv({ ...base }).M2M_AUDIENCE).toBe('notification-service');
+    expect(validateEnv({ ...base, M2M_AUDIENCE: 'other-aud' }).M2M_AUDIENCE).toBe('other-aud');
   });
 
   it('throws on an invalid NOTIFICATION_DATABASE_URL', () => {

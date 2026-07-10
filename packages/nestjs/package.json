@@ -27,6 +27,10 @@
     "./auth": {
       "types": "./dist/auth/index.d.ts",
       "default": "./dist/auth/index.js"
+    },
+    "./m2m-auth": {
+      "types": "./dist/m2m-auth/index.d.ts",
+      "default": "./dist/m2m-auth/index.js"
     }
   },
   "files": [
@@ -41,6 +45,7 @@
   },
   "dependencies": {
     "express-session": "^1.19.0",
+    "jose": "^6.2.2",
     "nestjs-pino": "^4.6.1",
     "openid-client": "^6.8.4",
     "pino": "^10.3.1",

@@ -13,6 +13,12 @@ export const envSchema = z.object({
   NOTIFICATION_DATABASE_CA_CERT: z.string().optional(),
   // pino log level; operators tune verbosity without code changes.
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
+  // m2m auth (required, fail-fast): the OIDC issuer whose client-credentials tokens are
+  // accepted (the Keycloak sdg realm — machine identities live there, see feature 101).
+  OIDC_ISSUER: z.url(),
+  // The audience every accepted token's `aud` must contain. Issuer alone is NOT enough —
+  // staff login tokens share the issuer and must be rejected.
+  M2M_AUDIENCE: z.string().min(1).default('notification-service'),
 });
 
 export type Env = z.infer<typeof envSchema>;

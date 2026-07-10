@@ -7,3 +7,9 @@ import 'reflect-metadata';
 // integration testing.
 process.env.NOTIFICATION_DATABASE_URL ??=
   'postgresql://postgres:postgres@localhost:5599/sdg_notifications';
+
+// The m2m guard requires OIDC_ISSUER (zod, fail-fast). Under NODE_ENV=test the app module
+// injects a stub verifier (accepts the literal 'test-token'), so this is a dummy value that
+// only satisfies validation — no Keycloak runs in the suite. The live JWKS round-trip is
+// verified separately in integration.
+process.env.OIDC_ISSUER ??= 'http://localhost:8080/realms/sdg';

@@ -5,6 +5,7 @@ import { DatabaseModule } from '@repo/nestjs/database';
 import { DatabaseHealthIndicator } from '@repo/nestjs/database-health';
 import { HealthModule } from '@repo/nestjs/health';
 import { LoggerModule } from '@repo/nestjs/logger';
+import { M2mAuthModule, type M2mAuthModuleOptions } from '@repo/nestjs/m2m-auth';
 import { createDatabase, resolvePgSsl, type Database } from '@repo/notification-database';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { validateEnv, type Env } from './config/env.schema';
@@ -43,9 +44,39 @@ import { HttpExceptionFilter } from './filters/http-exception.filter';
         }),
       onDestroy: (db: Database) => db.$client.end(),
     }),
-    // Cross-cutting modules stay at the unversioned root. Feature modules (Wave 2+) live
-    // under src/modules/<feature>/ — the FIRST one MUST register the client-credentials JWT
-    // guard (no route may expose ingestion unauthenticated).
+    // m2m resource-server auth (global guard): every route requires a client-credentials
+    // bearer JWT from the sdg realm carrying the notification-service audience — except
+    // /health (publicPaths) and non-prod swagger (mounted outside the guard chain). Under
+    // test a stub verifier is injected (accepts the literal 'test-token') so the suite
+    // runs without Keycloak; the live JWKS round-trip is verified in integration.
+    M2mAuthModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>): M2mAuthModuleOptions => {
+        const options: M2mAuthModuleOptions = {
+          issuer: config.get('OIDC_ISSUER', { infer: true }),
+          audience: config.get('M2M_AUDIENCE', { infer: true }),
+          publicPaths: ['/health'],
+        };
+        if (config.get('NODE_ENV', { infer: true }) === 'test') {
+          return {
+            ...options,
+            verifier: {
+              verify: (token: string) =>
+                token === 'test-token'
+                  ? Promise.resolve({
+                      clientId: 'test-client',
+                      subject: 'test-subject',
+                      claims: {},
+                    })
+                  : Promise.reject(new Error('invalid test token')),
+            },
+          };
+        }
+        return options;
+      },
+    }),
+    // Cross-cutting modules stay at the unversioned root. Feature modules live under
+    // src/modules/<feature>/ and are protected by the m2m guard by default.
     // /health/ready reports the database via DatabaseHealthIndicator (select 1).
     HealthModule.forRoot({ readiness: [DatabaseHealthIndicator] }),
   ],
