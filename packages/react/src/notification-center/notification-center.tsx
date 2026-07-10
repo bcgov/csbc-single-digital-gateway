@@ -10,6 +10,8 @@ export interface NotificationCenterProps {
   loading?: boolean | undefined;
   onMarkRead: (deliveryId: string) => void;
   onMarkAllRead: () => void;
+  /** Fired on every item click after the mark-read intent — the app decides if it navigates. */
+  onItemClick?: ((item: NotificationItem) => void) | undefined;
   onOpenPreferences?: (() => void) | undefined;
   /** Controlled open state (optional — uncontrolled by default). */
   open?: boolean | undefined;
@@ -28,6 +30,7 @@ export function NotificationCenter({
   loading,
   onMarkRead,
   onMarkAllRead,
+  onItemClick,
   onOpenPreferences,
   open,
   onOpenChange,
@@ -45,6 +48,7 @@ export function NotificationCenter({
           loading={loading}
           onMarkRead={onMarkRead}
           onMarkAllRead={onMarkAllRead}
+          onItemClick={onItemClick}
           onOpenPreferences={onOpenPreferences}
           now={now}
         />

@@ -19,12 +19,22 @@ const FEED = {
       type: 'application.approved',
       title: 'Your application was approved',
       body: 'A decision was recorded.',
-      payload: null,
+      payload: { submissionId: 'sub-1' },
       createdAt: new Date().toISOString(),
       readAt: null,
     },
+    {
+      deliveryId: 'd-2',
+      notificationId: 'n-2',
+      type: 'demo.announcement',
+      title: 'No destination here',
+      body: null,
+      payload: null,
+      createdAt: new Date().toISOString(),
+      readAt: new Date().toISOString(),
+    },
   ],
-  total: 1,
+  total: 2,
   limit: 20,
   offset: 0,
 };
@@ -61,7 +71,7 @@ function renderHome() {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return calls;
+  return { calls, router };
 }
 
 afterEach(() => {
@@ -78,7 +88,7 @@ describe('header notification bell', () => {
 
   it('opens the feed and marks an item read via the BFF', async () => {
     const user = userEvent.setup();
-    const calls = renderHome();
+    const { calls } = renderHome();
     const bell = await screen.findByRole(
       'button',
       { name: 'Notifications — 1 unread' },
@@ -94,5 +104,35 @@ describe('header notification bell', () => {
         true,
       );
     });
+  });
+
+  it('navigates to the application page when the notification carries a submissionId', async () => {
+    const user = userEvent.setup();
+    const { router } = renderHome();
+    const bell = await screen.findByRole(
+      'button',
+      { name: 'Notifications — 1 unread' },
+      { timeout: 5000 },
+    );
+    await user.click(bell);
+    await user.click(
+      await screen.findByRole('button', { name: 'Your application was approved (unread)' }),
+    );
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/applications/sub-1');
+    });
+  });
+
+  it('does not navigate for a notification without a destination payload', async () => {
+    const user = userEvent.setup();
+    const { router } = renderHome();
+    const bell = await screen.findByRole(
+      'button',
+      { name: 'Notifications — 1 unread' },
+      { timeout: 5000 },
+    );
+    await user.click(bell);
+    await user.click(await screen.findByRole('button', { name: 'No destination here' }));
+    expect(router.state.location.pathname).toBe('/');
   });
 });

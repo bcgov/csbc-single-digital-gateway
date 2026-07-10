@@ -68,6 +68,22 @@ describe('NotificationCenter', () => {
     expect(onMarkRead).toHaveBeenCalledTimes(1);
   });
 
+  it('fires onItemClick with the full item for unread AND read items (mark-read stays unread-only)', async () => {
+    const user = userEvent.setup();
+    const onItemClick = vi.fn();
+    const { onMarkRead } = setup({ onItemClick });
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Your application was approved (unread)' }),
+    );
+    expect(onItemClick).toHaveBeenCalledWith(expect.objectContaining({ deliveryId: 'd-unread' }));
+    expect(onMarkRead).toHaveBeenCalledWith('d-unread');
+    await user.click(screen.getByRole('button', { name: 'We received your application' }));
+    expect(onItemClick).toHaveBeenCalledWith(expect.objectContaining({ deliveryId: 'd-read' }));
+    expect(onItemClick).toHaveBeenCalledTimes(2);
+    expect(onMarkRead).toHaveBeenCalledTimes(1);
+  });
+
   it('fires onMarkAllRead and hides the action when nothing is unread', async () => {
     const user = userEvent.setup();
     const { onMarkAllRead } = setup();

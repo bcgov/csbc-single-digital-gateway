@@ -12,6 +12,11 @@ export interface NotificationPanelProps {
   /** Fired ONLY for unread items (the module never emits redundant mutations). */
   onMarkRead: (deliveryId: string) => void;
   onMarkAllRead: () => void;
+  /**
+   * Fired on EVERY item click (read or unread), after the mark-read intent. The module never
+   * interprets payloads or knows URLs — the consuming app decides whether a click navigates.
+   */
+  onItemClick?: ((item: NotificationItem) => void) | undefined;
   /** Renders the header settings cog when provided. */
   onOpenPreferences?: (() => void) | undefined;
   /** Injectable clock for deterministic relative timestamps in tests. */
@@ -27,6 +32,7 @@ export function NotificationPanel({
   loading = false,
   onMarkRead,
   onMarkAllRead,
+  onItemClick,
   onOpenPreferences,
   now,
 }: NotificationPanelProps) {
@@ -78,6 +84,7 @@ export function NotificationPanel({
                     if (isUnread) {
                       onMarkRead(item.deliveryId);
                     }
+                    onItemClick?.(item);
                   }}
                   className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-accent"
                   aria-label={`${item.title}${isUnread ? ' (unread)' : ''}`}
