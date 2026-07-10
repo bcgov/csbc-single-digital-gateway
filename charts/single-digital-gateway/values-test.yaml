@@ -153,6 +153,9 @@ notification-service:
   env:
     LOG_LEVEL: info
     OIDC_ISSUER: https://test.loginproxy.gov.bc.ca/auth/realms/standard
+    # CSS standard realm has no custom audience mapper — each caller's token carries its own
+    # client id as aud, so accept EITHER m2m client (ANY-of list, feature 102).
+    M2M_AUDIENCE: sdg-platform-m-2-m-6511,sdg-citizen-portal-m-2-m-6510
   migrations:
     image:
       tag: "test"
