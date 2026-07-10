@@ -138,6 +138,14 @@ describe('schema — deliveries (per-channel outbox)', () => {
     expect(byName.has('updated_at')).toBe(true);
   });
 
+  it('has a NOT NULL defaulted next_attempt_at driving the worker retry schedule', () => {
+    const { columns } = cfg(schema.deliveries);
+    const nextAttempt = new Map(columns.map((c) => [c.name, c])).get('next_attempt_at');
+    expect(nextAttempt, 'deliveries.next_attempt_at must exist').toBeDefined();
+    expect(nextAttempt?.notNull).toBe(true);
+    expect(nextAttempt?.hasDefault).toBe(true);
+  });
+
   it('is unique per notification × channel', () => {
     const { uniqueConstraints } = cfg(schema.deliveries);
     expect(

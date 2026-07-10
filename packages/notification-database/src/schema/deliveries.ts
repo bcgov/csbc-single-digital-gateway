@@ -35,6 +35,9 @@ export const deliveries = pgTable(
     status: deliveryStatus('status').notNull().default('pending'),
     attempts: integer('attempts').notNull().default(0),
     lastError: text('last_error'),
+    // Retry schedule for the email worker: claimable when <= now(); failures push it into
+    // the future (exponential backoff, app-owned policy). Meaningless once sent/failed.
+    nextAttemptAt: timestamptz('next_attempt_at').notNull().defaultNow(),
     sentAt: timestamptz('sent_at'),
     // In-app mark-read; email rows never set it.
     readAt: timestamptz('read_at'),
@@ -48,7 +51,7 @@ export const deliveries = pgTable(
       columns: [table.notificationId, table.recipientId],
       foreignColumns: [notifications.id, notifications.recipientId],
     }).onDelete('cascade'),
-    index('deliveries_channel_status_idx').on(table.channel, table.status),
+    index('deliveries_claim_idx').on(table.channel, table.status, table.nextAttemptAt),
     index('deliveries_recipient_channel_read_idx').on(
       table.recipientId,
       table.channel,
