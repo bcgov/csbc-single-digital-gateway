@@ -1,0 +1,247 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { useQuery } from '@tanstack/react-query';
+import {
+  DETAIL_SECTIONS,
+  OnThisPage,
+  Section,
+  InAGlance,
+  EligibilityCriteria,
+  HowToApply,
+  YourActivity,
+  HelpAndInformation,
+  ContactInformation,
+  ServiceSections,
+} from '@/components/services/detail-sections';
+
+// Mock UI elements from @repo
+vi.mock('@repo/ui/accordion', () => ({
+  Accordion: ({ children }: any) => <div data-testid="accordion">{children}</div>,
+  AccordionItem: ({ children, value }: any) => (
+    <div data-testid={`accordion-item-${value}`}>{children}</div>
+  ),
+  AccordionTrigger: ({ children }: any) => (
+    <button data-testid="accordion-trigger">{children}</button>
+  ),
+  AccordionContent: ({ children }: any) => <div data-testid="accordion-content">{children}</div>,
+}));
+
+vi.mock('@repo/ui/button', () => ({
+  Button: ({ children, onClick, render: renderProp }: any) => {
+    if (renderProp) {
+      return React.cloneElement(renderProp, {
+        children: (
+          <>
+            {renderProp.props.children}
+            {children}
+          </>
+        ),
+        onClick,
+      });
+    }
+    return (
+      <button data-testid="button" onClick={onClick}>
+        {children}
+      </button>
+    );
+  },
+}));
+
+vi.mock('@repo/ui/card', () => ({
+  Card: ({ children }: any) => <div data-testid="card">{children}</div>,
+  CardContent: ({ children, className }: any) => (
+    <div data-testid="card-content" className={className}>
+      {children}
+    </div>
+  ),
+}));
+
+// Mock @tanstack/react-router Link component
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to, params, ...props }: any) => {
+    const href = to
+      .replace('$serviceId', params?.serviceId || '')
+      .replace('$formId', params?.formId || '');
+    return (
+      <a href={href} {...props}>
+        {children}
+      </a>
+    );
+  },
+}));
+
+// Mock @tanstack/react-query useQuery
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: vi.fn(),
+}));
+
+// Mock child components
+vi.mock('@/components/services/application-row', () => ({
+  ApplicationRow: ({ application }: any) => (
+    <div data-testid={`application-row-${application.id}`}>{application.formTitle}</div>
+  ),
+}));
+
+vi.mock('@/components/services/service-content', () => ({
+  ServiceContent: ({ schema, uischema, data }: any) => (
+    <div data-testid="service-content">{JSON.stringify({ schema, uischema, data })}</div>
+  ),
+}));
+
+vi.mock('@/lib/catalog', () => ({
+  myApplicationsQueryOptions: vi.fn(() => ({ queryKey: ['myApplications'] })),
+}));
+
+describe('OnThisPage Component', () => {
+  it('renders a navigation element with the correct links', () => {
+    render(<OnThisPage />);
+    const nav = screen.getByRole('navigation', { name: /on this page/i });
+    expect(nav).toBeInTheDocument();
+
+    DETAIL_SECTIONS.forEach((section) => {
+      const link = screen.getByRole('link', { name: section.label });
+      expect(link).toHaveAttribute('href', `#${section.id}`);
+    });
+  });
+});
+
+describe('Section Component', () => {
+  it('renders a section with a heading and children', () => {
+    render(
+      <Section id="test-sec" title="Test Section Title">
+        <p>Test Child Content</p>
+      </Section>,
+    );
+    const heading = screen.getByRole('heading', { name: /Test Section Title/i, level: 2 });
+    expect(heading).toBeInTheDocument();
+    expect(screen.getByText('Test Child Content')).toBeInTheDocument();
+  });
+});
+
+describe('InAGlance Component', () => {
+  it('renders the overview info cards', () => {
+    render(<InAGlance />);
+    expect(screen.getByText('Cost')).toBeInTheDocument();
+    expect(screen.getByText('Free')).toBeInTheDocument();
+    expect(screen.getByText('Processing time')).toBeInTheDocument();
+    expect(screen.getByText('2–4 weeks')).toBeInTheDocument();
+    expect(screen.getByText('How to apply')).toBeInTheDocument();
+    expect(screen.getByText('Online')).toBeInTheDocument();
+  });
+});
+
+describe('EligibilityCriteria Component', () => {
+  it('renders eligibility accordion with age, income, and residency', () => {
+    render(<EligibilityCriteria />);
+    expect(screen.getByText('Age')).toBeInTheDocument();
+    expect(screen.getByText('Income')).toBeInTheDocument();
+    expect(screen.getByText('Residency')).toBeInTheDocument();
+  });
+});
+
+describe('HowToApply Component', () => {
+  it('renders fallback copy when there are no applications', () => {
+    render(<HowToApply serviceId="svc-1" applications={[]} />);
+    expect(
+      screen.getByText(/This service isn’t available to apply for online yet/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders application buttons with custom or default labels', () => {
+    const apps = [
+      { id: '1', label: 'Apply Now', title: 'Income Assistance', formId: 'f-1' },
+      { id: '2', label: null, title: 'Disability Assistance', formId: 'f-2' },
+      { id: '3', label: 'Untitled', title: 'Child Assistance', formId: 'f-3' },
+    ];
+    render(<HowToApply serviceId="svc-1" applications={apps} />);
+
+    expect(screen.getByText('Income Assistance')).toBeInTheDocument();
+    expect(screen.getByText('Disability Assistance')).toBeInTheDocument();
+    expect(screen.getByText('Child Assistance')).toBeInTheDocument();
+
+    const link1 = screen.getByRole('link', { name: 'Apply Now' });
+    expect(link1).toHaveAttribute('href', '/services/svc-1/apply/f-1');
+
+    // Muted/Untitled labels fall back to default text
+    const link2 = screen.getAllByRole('link', { name: 'Start an application' });
+    expect(link2).toHaveLength(2);
+    expect(link2[0]).toHaveAttribute('href', '/services/svc-1/apply/f-2');
+    expect(link2[1]).toHaveAttribute('href', '/services/svc-1/apply/f-3');
+  });
+});
+
+describe('YourActivity Component', () => {
+  it('renders fallback when the user has no activity for the service', () => {
+    vi.mocked(useQuery).mockReturnValue({ data: [] } as any);
+    render(<YourActivity serviceId="svc-1" />);
+    expect(screen.getByText('No applications yet')).toBeInTheDocument();
+  });
+
+  it('renders application rows when the user has applications for this service', () => {
+    const mockApps = [
+      { id: 'app-1', serviceId: 'svc-1', formTitle: 'Form 1' },
+      { id: 'app-2', serviceId: 'svc-2', formTitle: 'Form 2' },
+    ];
+    vi.mocked(useQuery).mockReturnValue({ data: mockApps } as any);
+    render(<YourActivity serviceId="svc-1" />);
+
+    // Only app-1 is for svc-1
+    expect(screen.getByTestId('application-row-app-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('application-row-app-2')).not.toBeInTheDocument();
+    expect(screen.getByText('Form 1')).toBeInTheDocument();
+  });
+});
+
+describe('HelpAndInformation Component', () => {
+  it('renders help sections', () => {
+    render(<HelpAndInformation />);
+    expect(screen.getByText('Guides and resources')).toBeInTheDocument();
+    expect(screen.getByText('Policy and legislation')).toBeInTheDocument();
+  });
+});
+
+describe('ContactInformation Component', () => {
+  it('renders contact cards', () => {
+    render(<ContactInformation />);
+    expect(screen.getByText('Call us')).toBeInTheDocument();
+    expect(screen.getByText('1-800-000-0000')).toBeInTheDocument();
+    expect(screen.getByText('Other ways')).toBeInTheDocument();
+    expect(screen.getByText('Visit us')).toBeInTheDocument();
+  });
+});
+
+describe('ServiceSections Component', () => {
+  it('renders all sections and subsections', () => {
+    vi.mocked(useQuery).mockReturnValue({ data: [] } as any);
+
+    const mockSchema = { type: 'object' };
+    const mockUischema = { type: 'VerticalLayout' };
+    const mockData = { name: 'test' };
+    const mockApps = [{ id: '1', label: 'Apply', title: 'Form', formId: 'f-1' }];
+
+    render(
+      <ServiceSections
+        serviceId="svc-1"
+        schema={mockSchema}
+        uischema={mockUischema}
+        data={mockData}
+        applications={mockApps}
+      />,
+    );
+
+    // Check main layout structure
+    expect(screen.getByRole('navigation', { name: /on this page/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Eligibility criteria' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'How to apply' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your activity' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Help and information' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Contact information' })).toBeInTheDocument();
+
+    // Check service content is rendered with passed schemas
+    const content = screen.getByTestId('service-content');
+    expect(content).toBeInTheDocument();
+    expect(content.textContent).toContain(JSON.stringify(mockSchema));
+  });
+});

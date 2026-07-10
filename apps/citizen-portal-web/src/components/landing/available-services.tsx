@@ -42,11 +42,10 @@ export function AvailableServices({
           : services.map((service) => {
               const application = byService.get(service.id);
               return application ? (
-                <Card>
+                <Card key={service.id}>
                   <CardHeader>
                     <CardTitle>
                       <Link
-                        key={service.id}
                         to="/applications/$id"
                         params={{ id: application.id }}
                         className="no-underline hover:underline"
@@ -70,11 +69,10 @@ export function AvailableServices({
                   {/* need to see what this looks like */}
                 </Card>
               ) : (
-                <Card centered>
+                <Card key={service.id} centered>
                   <CardHeader>
                     <CardTitle>
                       <Link
-                        key={service.id}
                         to="/services"
                         hash={service.id}
                         className="no-underline hover:underline"

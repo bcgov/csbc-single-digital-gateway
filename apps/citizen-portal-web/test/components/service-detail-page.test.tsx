@@ -76,11 +76,12 @@ function mockBff({ svc = jsonResponse(detail), ver = jsonResponse(version) } = {
   }) as unknown as typeof fetch;
 }
 
-function renderRoute(path: string) {
+async function renderRoute(path: string) {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: [path] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -97,7 +98,7 @@ afterEach(() => {
 describe('service detail page', () => {
   it('renders the published service with no version switcher', async () => {
     mockBff();
-    renderRoute('/services/svc-1');
+    await renderRoute('/services/svc-1');
     expect(
       await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -109,9 +110,19 @@ describe('service detail page', () => {
     expect(versionLinks).toHaveLength(0);
   });
 
+  it('renders without description if service has no description', async () => {
+    const detailNoDesc = { ...detail, description: '' };
+    mockBff({ svc: jsonResponse(detailNoDesc) });
+    await renderRoute('/services/svc-1');
+    expect(
+      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Financial support for residents.')).not.toBeInTheDocument();
+  });
+
   it('surfaces the application forms in How to apply', async () => {
     mockBff();
-    renderRoute('/services/svc-1');
+    await renderRoute('/services/svc-1');
     await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 });
     expect(screen.getByRole('heading', { name: 'How to apply' })).toBeInTheDocument();
     expect(screen.getByText('Your Profile')).toBeInTheDocument();
@@ -123,7 +134,7 @@ describe('service detail page', () => {
 
   it('shows a not-available state on 404', async () => {
     mockBff({ svc: new Response(null, { status: 404 }) });
-    renderRoute('/services/missing');
+    await renderRoute('/services/missing');
     expect(
       await screen.findByRole('heading', { name: /not available/i }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -133,7 +144,7 @@ describe('service detail page', () => {
 describe('service version page', () => {
   it('renders a historical version with its status', async () => {
     mockBff();
-    renderRoute('/services/svc-1/versions/ver-1');
+    await renderRoute('/services/svc-1/versions/ver-1');
     expect(
       await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -144,7 +155,7 @@ describe('service version page', () => {
 
   it('shows a not-available state on 404', async () => {
     mockBff({ ver: new Response(null, { status: 404 }) });
-    renderRoute('/services/svc-1/versions/missing');
+    await renderRoute('/services/svc-1/versions/missing');
     expect(
       await screen.findByRole('heading', { name: /not available/i }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -152,7 +163,7 @@ describe('service version page', () => {
 
   it('redirects the current published version to the canonical service page', async () => {
     mockBff(); // detail.publishedVersionId === 'ver-3'
-    const router = renderRoute('/services/svc-1/versions/ver-3');
+    const router = await renderRoute('/services/svc-1/versions/ver-3');
     await waitFor(() =>
       expect(router.state.location.pathname.replace(/\/$/, '')).toBe('/services/svc-1'),
     );

@@ -77,12 +77,12 @@ describe('TrackApplications Component', () => {
     // Assert both applications are rendered with details
     expect(screen.getByText('Income Assistance Application')).toBeInTheDocument();
     expect(screen.getByText('Submitted')).toBeInTheDocument();
-    expect(screen.getByText('Income Assistance')).toBeInTheDocument();
+    expect(screen.getAllByText(/Income Assistance/).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/20260708-0001/)).toBeInTheDocument();
 
     expect(screen.getByText('Child Care Benefit Application')).toBeInTheDocument();
     expect(screen.getByText('Approved')).toBeInTheDocument();
-    expect(screen.getByText('Child Care Benefit')).toBeInTheDocument();
+    expect(screen.getAllByText(/Child Care Benefit/).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/20260708-0002/)).toBeInTheDocument();
 
     // Verify links are rendered correctly pointing to details

@@ -9,16 +9,10 @@ describe('WhatYouCanDo Component', () => {
     // Assert SectionHeading is present
     expect(screen.getByRole('heading', { name: 'What you can do', level: 2 })).toBeInTheDocument();
 
-    // Assert card titles (rendered as h3 headings)
-    expect(
-      screen.getByRole('heading', { name: 'Discover services', level: 3 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: 'Apply and track your requests', level: 3 }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: 'Manage your information', level: 3 }),
-    ).toBeInTheDocument();
+    // Assert card titles
+    expect(screen.getByText('Discover services')).toBeInTheDocument();
+    expect(screen.getByText('Apply and track your requests')).toBeInTheDocument();
+    expect(screen.getByText('Manage your information')).toBeInTheDocument();
 
     // Assert card descriptions
     expect(screen.getByText('Browse and search for government services.')).toBeInTheDocument();

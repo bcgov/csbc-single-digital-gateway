@@ -2,6 +2,15 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Hero } from '@/components/landing/hero';
 
+// Mock Link from @tanstack/react-router to avoid router context setup
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to, ...props }: any) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 // Mock useLoginUrl hook to avoid TanStack Router hook dependency
 vi.mock('@/lib/auth', () => ({
   useLoginUrl: vi.fn(() => '/mock-login-url'),

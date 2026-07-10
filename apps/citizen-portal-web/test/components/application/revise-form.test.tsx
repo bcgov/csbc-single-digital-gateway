@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReviseForm } from '@/components/application/revise-form';
@@ -102,8 +102,7 @@ describe('ReviseForm Component', () => {
     renderComponent();
 
     const input = screen.getByLabelText('Name');
-    await userEvent.clear(input);
-    await userEvent.type(input, 'Updated');
+    fireEvent.change(input, { target: { value: 'Updated' } });
 
     // Wait for the 800ms debounce timer to fire and trigger the PATCH request
     await waitFor(() => {

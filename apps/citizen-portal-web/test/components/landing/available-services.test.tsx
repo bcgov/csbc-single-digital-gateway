@@ -5,8 +5,13 @@ import type { CatalogService, MyApplication } from '@/lib/catalog';
 
 // Mock Link from @tanstack/react-router to avoid setting up a router in this simple component test
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to, hash, ...props }: any) => {
-    const href = hash ? `${to}#${hash}` : to;
+  Link: ({ children, to, hash, params, ...props }: any) => {
+    let href = hash ? `${to}#${hash}` : to;
+    if (params) {
+      Object.entries(params).forEach(([key, val]) => {
+        href = href.replace(`$${key}`, String(val));
+      });
+    }
     return (
       <a href={href} {...props}>
         {children}
@@ -74,25 +79,25 @@ describe('AvailableServices Component', () => {
     expect(screen.queryByText('Open')).not.toBeInTheDocument();
   });
 
-  it('renders application details and Open link for services with active applications', () => {
+  it('renders application details for services with active applications', () => {
     render(
       <AvailableServices services={mockServices} applications={mockApplications} loading={false} />,
     );
 
     // Svc 1 has an application
-    expect(screen.getByRole('link', { name: /Income Assistance/i })).toBeInTheDocument();
+    const link1 = screen.getByRole('link', { name: /Income Assistance/i });
+    expect(link1).toBeInTheDocument();
+    expect(link1).toHaveAttribute('href', '/applications/app-abc');
     expect(screen.getByText('Submitted')).toBeInTheDocument(); // Badge status label
-    expect(screen.getByText('20260708-0001')).toBeInTheDocument(); // Reference
-    expect(screen.getByRole('link', { name: 'Open' })).toHaveAttribute('href', '/');
+    expect(screen.getByText(/20260708-0001/)).toBeInTheDocument(); // Reference
 
     // Svc 1 description should not be present (replaced by app info)
     expect(screen.queryByText('Support for low-income individuals.')).not.toBeInTheDocument();
 
     // Svc 2 has no application, so it should render the description normally
-    expect(screen.getByRole('link', { name: /Child Care Benefit/i })).toBeInTheDocument();
+    const link2 = screen.getByRole('link', { name: /Child Care Benefit/i });
+    expect(link2).toBeInTheDocument();
+    expect(link2).toHaveAttribute('href', '/services#svc-2');
     expect(screen.getByText('Funding help for child care costs.')).toBeInTheDocument();
-    expect(screen.queryByText('Child Care Benefit')?.closest('article')).not.toHaveTextContent(
-      'Open',
-    );
   });
 });

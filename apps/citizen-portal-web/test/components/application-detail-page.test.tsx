@@ -73,11 +73,12 @@ function mockBff({ app = jsonResponse(detail), me = jsonResponse(authedUser) } =
   return fetchMock;
 }
 
-function renderApp() {
+async function renderApp() {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/applications/sub1'] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -93,7 +94,7 @@ afterEach(() => {
 describe('citizen application detail page', () => {
   it('shows the application, its service, and the submitted answers', async () => {
     mockBff();
-    renderApp();
+    await renderApp();
     expect(
       await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -102,9 +103,51 @@ describe('citizen application detail page', () => {
     expect(await screen.findByText('Amina')).toBeInTheDocument(); // a submitted answer, read-only
   });
 
+  it('renders a multi-stage form structure correctly', async () => {
+    const multiStageDetail = {
+      ...detail,
+      kind: 'multi-stage-form',
+      structure: {
+        stages: [
+          {
+            pages: [
+              {
+                id: 'page-1',
+                name: 'First Page',
+                schema: {
+                  type: 'object',
+                  properties: { firstName: { type: 'string', title: 'First Name' } },
+                },
+                uischema: {
+                  type: 'VerticalLayout',
+                  elements: [{ type: 'Control', scope: '#/properties/firstName' }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      data: { firstName: 'MultiStageName' },
+    };
+    mockBff({ app: jsonResponse(multiStageDetail) });
+    await renderApp();
+    expect(
+      await screen.findByRole('heading', { name: 'First Page', level: 3 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('MultiStageName')).toBeInTheDocument();
+  });
+
+  it('shows not found page if application fetch fails', async () => {
+    mockBff({ app: new Response(null, { status: 404 }) });
+    await renderApp();
+    expect(
+      await screen.findByRole('heading', { name: 'Application not found', level: 1 }),
+    ).toBeInTheDocument();
+  });
+
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
-    renderApp();
+    await renderApp();
     const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 5000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
@@ -120,7 +163,7 @@ describe('citizen application detail page', () => {
         }),
       ),
     });
-    renderApp();
+    await renderApp();
     expect(
       await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
     ).toBeInTheDocument();
@@ -132,10 +175,34 @@ describe('citizen application detail page', () => {
 
   it('shows an approved banner with descriptive copy', async () => {
     mockBff({ app: jsonResponse(detailWith({ status: 'approved', statusLabel: 'Approved' })) });
-    renderApp();
+    await renderApp();
     await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 });
     // Banner-specific copy (distinct from the plain status label) — not present pre-feature.
     expect(screen.getByText(/this application has been approved/i)).toBeInTheDocument();
+  });
+
+  it('handles draft status with resume and cancel flow', async () => {
+    const draftDetail = detailWith({
+      status: 'draft',
+      statusLabel: 'Draft',
+      submittedAt: null,
+    });
+    mockBff({ app: jsonResponse(draftDetail) });
+    const user = userEvent.setup();
+    await renderApp();
+
+    const continueBtn = await screen.findByRole('button', { name: 'Continue your application' });
+    expect(continueBtn).toBeInTheDocument();
+
+    // Click continue to enter edit mode
+    await user.click(continueBtn);
+    const cancelBtn = await screen.findByRole('button', { name: 'Cancel' });
+    expect(cancelBtn).toBeInTheDocument();
+
+    // Click cancel to exit edit mode
+    await user.click(cancelBtn);
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue your application' })).toBeInTheDocument();
   });
 
   it('revises an action-needed application: opens a draft and shows the editable form', async () => {
@@ -149,7 +216,7 @@ describe('citizen application detail page', () => {
         }),
       ),
     });
-    renderApp();
+    await renderApp();
     await userEvent
       .setup()
       .click(await screen.findByRole('button', { name: /make changes/i }, { timeout: 5000 }));
@@ -163,4 +230,28 @@ describe('citizen application detail page', () => {
       expect.objectContaining({ method: 'POST' }),
     );
   }, 20000);
+
+  it('exits edit mode on revise form submit', async () => {
+    mockBff({
+      app: jsonResponse(
+        detailWith({
+          status: 'needs_changes',
+          statusLabel: 'Action needed',
+          reviewReason: 'Please fix your name.',
+          submittedAt: null,
+        }),
+      ),
+    });
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /make changes/i }));
+    const resubmitBtn = await screen.findByRole('button', { name: /resubmit application/i });
+    expect(resubmitBtn).toBeInTheDocument();
+
+    // Click resubmit to submit and exit edit mode
+    await user.click(resubmitBtn);
+    expect(screen.queryByRole('button', { name: /resubmit application/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /make changes/i })).toBeInTheDocument();
+  });
 });

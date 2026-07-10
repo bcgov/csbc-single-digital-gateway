@@ -49,11 +49,12 @@ function mockBff({ me = new Response(null, { status: 401 }), apps = applications
   return fetchMock;
 }
 
-function renderServices() {
+async function renderServices() {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/services'] }),
   });
+  await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -69,7 +70,7 @@ afterEach(() => {
 describe('citizen-portal-web /services page', () => {
   it('lists published services from the catalog (anonymous)', async () => {
     mockBff();
-    renderServices();
+    await renderServices();
     expect(await screen.findByRole('heading', { name: 'Services', level: 1 })).toBeInTheDocument();
     expect(
       await screen.findByRole('link', { name: /Income and Disability Assistance/i }),
@@ -79,14 +80,14 @@ describe('citizen-portal-web /services page', () => {
 
   it('does not show "Your applications" for an anonymous visitor', async () => {
     mockBff();
-    renderServices();
+    await renderServices();
     await screen.findByRole('link', { name: /Birth Registration/i });
     expect(screen.queryByRole('heading', { name: 'Your applications' })).not.toBeInTheDocument();
   });
 
   it('shows the citizen’s applications when authenticated', async () => {
     mockBff({ me: jsonResponse(authedUser) });
-    renderServices();
+    await renderServices();
     expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
     expect(await screen.findByText(/20250615-0003/)).toBeInTheDocument();
   });
@@ -94,7 +95,7 @@ describe('citizen-portal-web /services page', () => {
   it('searches via the catalog endpoint with the q parameter', async () => {
     const fetchMock = mockBff();
     const user = userEvent.setup();
-    renderServices();
+    await renderServices();
     await screen.findByRole('link', { name: /Birth Registration/i });
 
     await user.type(screen.getByRole('searchbox', { name: /search services/i }), 'birth');
@@ -106,5 +107,36 @@ describe('citizen-portal-web /services page', () => {
         expect.objectContaining({ credentials: 'include' }),
       ),
     );
+  });
+
+  it('renders "No services found" message when services list is empty', async () => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) return new Response(null, { status: 401 });
+      if (url.includes('/v1/me/applications')) return jsonResponse({ items: [] });
+      if (url.includes('/v1/services')) return jsonResponse({ items: [] });
+      return new Response(null, { status: 404 });
+    }) as unknown as typeof fetch;
+
+    await renderServices();
+    expect(await screen.findByText('No services found.')).toBeInTheDocument();
+  });
+
+  it('renders "No services found for [query]" message when services list is empty with search', async () => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) return new Response(null, { status: 401 });
+      if (url.includes('/v1/me/applications')) return jsonResponse({ items: [] });
+      if (url.includes('/v1/services')) return jsonResponse({ items: [] });
+      return new Response(null, { status: 404 });
+    }) as unknown as typeof fetch;
+
+    const user = userEvent.setup();
+    await renderServices();
+
+    await user.type(screen.getByRole('searchbox', { name: /search services/i }), 'unknown-query');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+
+    expect(await screen.findByText('No services found for “unknown-query”.')).toBeInTheDocument();
   });
 });

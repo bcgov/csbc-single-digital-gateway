@@ -11,7 +11,6 @@ export default defineConfig({
     include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
     setupFiles: ['./test/setup.ts'],
     coverage: {
-      enabled: true,
       provider: 'v8',
       include: ['src/**/*.ts'],
       exclude: ['src/main.ts', 'src/swagger.ts'],
