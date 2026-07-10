@@ -8,6 +8,7 @@ import {
   reviews,
   submissionVersions,
   submissions,
+  users,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq } from 'drizzle-orm';
@@ -22,6 +23,8 @@ import {
   normalizeFormStructure,
   submissionStatusLabel,
 } from '../util/format';
+import { enqueueNotification } from '../../../notifications/enqueue';
+import { submissionReceivedContent } from '../util/notification-content';
 import { validateSubmission } from '../util/validate';
 import { ConsentService } from './consent.service';
 
@@ -269,11 +272,33 @@ export class ApplicationsService {
     }
     // Consent gate: every required service agreement must be approved (against its current version).
     await this.consent.assertSubmittableForForm(userId, sub.documentVersionId);
-    const updated = await this.db
-      .update(submissionVersions)
-      .set({ data, status: 'pending', submittedAt: new Date() })
-      .where(eq(submissionVersions.id, ver.id))
-      .returning();
+    // Pre-resolve the citizen's contact email (read BEFORE the tx) for the notification seed.
+    const [owner] = await this.db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    // Advance draft → pending and queue the received-confirmation in the SAME transaction
+    // (the outbox guarantee, doc 109). One confirmation per submitted VERSION — a resubmit
+    // after needs_changes is a new version and gets its own.
+    const updated = await this.db.transaction(async (tx) => {
+      const rows = await tx
+        .update(submissionVersions)
+        .set({ data, status: 'pending', submittedAt: new Date() })
+        .where(eq(submissionVersions.id, ver.id))
+        .returning();
+      const content = submissionReceivedContent(applicationReference(sub.id, sub.createdAt));
+      await enqueueNotification(tx, {
+        idempotencyKey: `submission:${ver.id}`,
+        userId,
+        type: content.type,
+        title: content.title,
+        body: content.body,
+        payload: { submissionId: sub.id },
+        email: owner?.email ?? null,
+      });
+      return rows;
+    });
     return this.toDto(sub, this.expectRow(updated[0]));
   }
 
