@@ -29,6 +29,9 @@ dependencies:
   - name: citizen-portal-api
     version: 0.1.0
     repository: file://../citizen-portal-api
+  - name: notification-service
+    version: 0.1.0
+    repository: file://../notification-service
   - name: platform-web
     version: 0.1.0
     repository: file://../platform-web

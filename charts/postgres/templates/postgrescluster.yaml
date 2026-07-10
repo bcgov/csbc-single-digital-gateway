@@ -54,6 +54,13 @@ spec:
     - name: {{ .Values.database.user }}
       databases:
         - {{ .Values.database.name }}
+    {{- range .Values.extraUsers }}
+    - name: {{ .name }}
+      databases:
+        {{- range .databases }}
+        - {{ . }}
+        {{- end }}
+    {{- end }}
 
   {{- if .Values.initSQL.enabled }}
   # One-time bootstrap SQL (superuser) — grants the app user CREATE on `public` (PG15+). See the

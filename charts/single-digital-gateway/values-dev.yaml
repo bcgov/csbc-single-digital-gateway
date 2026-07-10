@@ -83,6 +83,11 @@ platform-api:
     OIDC_REDIRECT_URI: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca/app
     AUTH_ALLOWED_ORIGINS: https://sdg-platform-dev.apps.gold.devops.gov.bc.ca
+    # Outbox relay -> notification-service (in-cluster). PREREQUISITE: provision this m2m
+    # service-account client in the environment IdP (see charts/single-digital-gateway/values.yaml).
+    NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
+    NOTIFICATIONS_M2M_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+    NOTIFICATIONS_M2M_CLIENT_ID: platform-api-m2m
   migrations:
     # migrate-seed (not plain migrate): the pre-upgrade hook must also seed the essential
     # reference data — the Service + Form document types (each with a published v1). Without
@@ -108,6 +113,11 @@ citizen-portal-api:
     OIDC_REDIRECT_URI: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca/api/auth/callback
     AUTH_POST_LOGIN_REDIRECT: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca/
     AUTH_ALLOWED_ORIGINS: https://sdg-portal-dev.apps.gold.devops.gov.bc.ca
+    # Outbox relay -> notification-service (in-cluster). PREREQUISITE: provision this m2m
+    # service-account client in the environment IdP (see charts/single-digital-gateway/values.yaml).
+    NOTIFICATION_SERVICE_URL: http://sdg-notification-service:80
+    NOTIFICATIONS_M2M_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+    NOTIFICATIONS_M2M_CLIENT_ID: citizen-portal-api-m2m
 
 # ---------------------------------------------------------------------------
 # platform-web (staff SPA + front door). Serves the SPA and proxies /api/* → platform-api.
@@ -133,3 +143,18 @@ citizen-portal-web:
   env:
     BFF_ORIGIN: /api
     API_UPSTREAM: sdg-citizen-portal-api:80
+
+# ---------------------------------------------------------------------------
+# notification-service (internal-only — no Route). OIDC_ISSUER = the realm hosting the m2m
+# service-account clients (must be provisioned in this environment's IdP; the compose Keycloak
+# realm import applies only to local dev). SMTP_URL comes from notification-service-secrets.
+# ---------------------------------------------------------------------------
+notification-service:
+  image:
+    tag: "dev"
+  env:
+    LOG_LEVEL: debug
+    OIDC_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+  migrations:
+    image:
+      tag: "dev"

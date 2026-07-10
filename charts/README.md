@@ -113,12 +113,14 @@ Notes:
 
   | Secret | Used by | Keys |
   |---|---|---|
-  | `platform-api-secrets` | platform-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL` |
-  | `citizen-portal-api-secrets` | citizen-portal-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL` |
+  | `platform-api-secrets` | platform-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET` |
+  | `citizen-portal-api-secrets` | citizen-portal-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET` |
   | `valkey-secrets` | valkey | `VALKEY_PASSWORD` |
+  | `notification-service-secrets` | notification-service | `SMTP_URL` |
   | `sdg-pguser-sdg` | both APIs (`DATABASE_URL`) | **operator-generated** — do not create |
 
   `DATABASE_URL` is **not** in the app secrets — it is sourced from the operator's `sdg-pguser-sdg`
+  (and notification-service's `NOTIFICATION_DATABASE_URL` from `sdg-pguser-notifications`)
   secret (`key: uri`) via the umbrella's base `values.yaml`. `VALKEY_URL` is a full
   `redis://:<password>@<release>-valkey:6379` string; put it in the app secret and use the same
   password as `valkey-secrets`.

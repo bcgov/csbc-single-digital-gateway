@@ -52,6 +52,17 @@ database:
 # cluster. For an already-running cluster, grant by hand:
 #   oc exec -n <ns> $(oc get pod -n <ns> -l postgres-operator.crunchydata.com/role=master -o name) \
 #     -c database -- psql -d <db> -c "GRANT ALL ON SCHEMA public TO <user>;"
+# Additional users/databases the operator provisions alongside the primary app user. Each entry
+# gets its own generated Secret `<name>-pguser-<user>` (keys uri/host/port/dbname/user/password).
+# NOTE (PG15+): databaseInitSQL runs ONLY at initial cluster creation — for users added to an
+# EXISTING cluster, apply the public-schema grant manually:
+#   \c <db>; GRANT ALL ON SCHEMA public TO <user>;
+# For fresh clusters, add the grant to initSQL.extra.
+#   extraUsers:
+#     - name: notifications
+#       databases: [sdg_notifications]
+extraUsers: []
+
 initSQL:
   enabled: true
   extra: "" # additional SQL appended after the public-schema grant (optional)
