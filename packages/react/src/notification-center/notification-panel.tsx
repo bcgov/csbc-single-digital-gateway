@@ -32,7 +32,7 @@ export function NotificationPanel({
 }: NotificationPanelProps) {
   const unread = items.filter((item) => item.readAt === null).length;
   return (
-    <div className="flex w-80 flex-col">
+    <div className="flex w-full flex-col text-sm">
       <div className="flex items-center justify-between gap-2 py-2 pl-4 pr-3">
         <h2 className="text-sm font-semibold">Notifications</h2>
         <div className="flex shrink-0 items-center gap-1">

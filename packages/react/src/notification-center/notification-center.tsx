@@ -39,7 +39,7 @@ export function NotificationCenter({
       {...(onOpenChange !== undefined && { onOpenChange })}
     >
       <PopoverTrigger render={<NotificationBell count={unreadCount} />} />
-      <PopoverContent align="end" className="p-0">
+      <PopoverContent align="end" className="w-96 gap-0 p-0">
         <NotificationPanel
           items={items}
           loading={loading}
