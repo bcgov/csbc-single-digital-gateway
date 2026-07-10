@@ -53,6 +53,7 @@ describe('citizen notifications proxy (e2e)', () => {
       401,
     );
     expect((await http().get('/v1/me/notification-preferences')).status).toBe(401);
+    expect((await http().get('/v1/me/notifications/stream')).status).toBe(401);
     expect(
       (await http().put('/v1/me/notification-preferences').set('Origin', ORIGIN).send({})).status,
     ).toBe(401);

@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import type { Request, Response as ExpressResponse } from 'express';
+
 import type { Env } from '../../../config/env.schema';
 import { M2mTokenClient } from '../../../notifications/m2m-token.client';
 
@@ -64,5 +66,60 @@ export class NotificationsProxyService {
       throw new BadGatewayException('Notifications are temporarily unavailable');
     }
     return (await response.json()) as T;
+  }
+
+  /**
+   * Pipe the upstream SSE stream 1:1 to the browser (feature 122). Failures BEFORE headers →
+   * 502; failures AFTER headers just end the response — the browser EventSource reconnects,
+   * re-entering here with a fresh m2m token (which is how mid-stream token expiry self-heals).
+   * The AbortController tied to the client connection prevents orphaned upstream streams.
+   */
+  async pipeStream(path: string, req: Request, res: ExpressResponse): Promise<void> {
+    const base = this.config.get('NOTIFICATION_SERVICE_URL', { infer: true });
+    const controller = new AbortController();
+    req.on('close', () => controller.abort());
+    let upstream: Response;
+    try {
+      const token = await this.tokenClient.getToken();
+      upstream = await fetch(new URL(path, base), {
+        headers: { authorization: `Bearer ${token}`, accept: 'text/event-stream' },
+        signal: controller.signal,
+      });
+    } catch (error) {
+      this.logger.error(
+        `notification stream unreachable: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+      throw new BadGatewayException('Notifications are temporarily unavailable');
+    }
+    if (!upstream.ok || upstream.body === null) {
+      if (upstream.status === 401) {
+        this.tokenClient.invalidate();
+      }
+      this.logger.error(`notification stream upstream responded ${upstream.status}`);
+      throw new BadGatewayException('Notifications are temporarily unavailable');
+    }
+    res.status(200);
+    res.set({
+      'content-type': 'text/event-stream',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+    });
+    res.flushHeaders();
+    const reader = upstream.body.getReader();
+    try {
+      for (;;) {
+        // eslint-disable-next-line no-await-in-loop -- sequential stream reads by nature
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        res.write(Buffer.from(value));
+      }
+    } catch {
+      // Aborted by the client or dropped upstream — either way the reconnect loop handles it.
+    } finally {
+      res.end();
+    }
   }
 }

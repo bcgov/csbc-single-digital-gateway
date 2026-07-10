@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { CurrentUser, type AuthUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 
@@ -36,6 +37,12 @@ export class MyNotificationsV1Controller {
       'GET',
       `/v1/recipients/${user.id}/notifications?limit=${query.limit}&offset=${query.offset}`,
     );
+  }
+
+  /** SSE pipe (feature 122): raw @Res; the session guard still runs. */
+  @Get('notifications/stream')
+  stream(@CurrentUser() user: AuthUser, @Req() req: Request, @Res() res: Response): Promise<void> {
+    return this.proxy.pipeStream(`/v1/recipients/${user.id}/notifications/stream`, req, res);
   }
 
   @Get('notifications/unread-count')
