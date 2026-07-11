@@ -22,7 +22,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "app.serviceAccountName" . }}
+      {{- /* Deliberately NO serviceAccountName: this Job is a pre-install/pre-upgrade hook and
+      runs BEFORE the release's ServiceAccount exists — referencing it leaves the Job podless
+      ("serviceaccount not found") on a first install, hanging helm until --timeout. The
+      migrator needs no API identity; the always-present `default` SA is correct. */}}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
