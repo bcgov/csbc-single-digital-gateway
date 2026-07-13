@@ -133,10 +133,10 @@ export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderPro
         <div className="ml-auto flex items-center gap-6">
           <PrimaryNav active={activeNav} />
           {variant === 'anonymous' ? (
-            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
               <Icon path={mdiLogin} aria-hidden={true} />
               Log in
-            </Link>
+            </a>
           ) : (
             <div className="flex items-center gap-2">
               <HeaderNotifications />

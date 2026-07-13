@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { buttonVariants } from '@repo/ui/button';
 import { mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
@@ -15,10 +14,10 @@ export function Hero() {
             <h1>Access government services online</h1>
             <p className="text-lg mb-4">Find and use Government of British Columbia services.</p>
             <div className="">
-              <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'lg' })}>
+              <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'lg' })}>
                 <Icon path={mdiLogin} aria-hidden={true} />
                 Log in with BC Services Card Account
-              </Link>
+              </a>
             </div>
           </div>
 
