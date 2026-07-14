@@ -10,7 +10,7 @@ export function Hero() {
   return (
     <div className="border-b-2 border-bcgov-gold bg-linear-to-t from-blue-10 to-white">
       <div className="mx-auto px-4 md:px-8 w-full max-w-280 flex flex-col">
-        <section className="grid items-center gap-8 py-6 md:grid-cols-2">
+        <section className="grid items-center gap-8 py-6 lg:grid-cols-2">
           <div className="flex flex-col gap-2">
             <h1>Access government services online</h1>
             <p className="text-lg mb-4">Find and use Government of British Columbia services.</p>
@@ -24,7 +24,7 @@ export function Hero() {
 
           {/* Illustration placeholder — skeleton only, colours approximate. */}
           <div
-            className="hidden aspect-4/3 items-center justify-center rounded-lg md:flex bg-white bg-opacity-25"
+            className="hidden aspect-4/3 items-center justify-center rounded-lg lg:flex bg-white bg-opacity-25"
             aria-hidden
           >
             <div className="flex items-end gap-1">
