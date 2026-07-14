@@ -30,6 +30,20 @@ describe('service DTO schemas', () => {
     expect(updateVersionDataSchema.safeParse({}).success).toBe(false);
   });
 
+  it('updateVersionDataSchema accepts an optional applicationOrder of uuids (feature 132)', () => {
+    expect(
+      updateVersionDataSchema.safeParse({ data: {}, applicationOrder: [UUID, UUID] }).success,
+    ).toBe(true);
+    // Empty order is valid (a service can have its methods cleared to none).
+    expect(updateVersionDataSchema.safeParse({ data: {}, applicationOrder: [] }).success).toBe(
+      true,
+    );
+    // Non-uuid ids are rejected.
+    expect(
+      updateVersionDataSchema.safeParse({ data: {}, applicationOrder: ['nope'] }).success,
+    ).toBe(false);
+  });
+
   it('createServiceSchema accepts applications (existing + new form) and defaults them empty', () => {
     const parsed = createServiceSchema.safeParse({ workspaceId: UUID, title: 'Permit' });
     expect(parsed.success && parsed.data.applications).toEqual([]);

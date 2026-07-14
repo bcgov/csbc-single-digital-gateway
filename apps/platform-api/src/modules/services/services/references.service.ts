@@ -24,7 +24,7 @@ import {
   type ReferenceRelation,
   type ReferenceResponse,
 } from '../dtos/reference.dtos';
-import { formHasStructure, structureFromDefinition } from '../util/applications';
+import { type Tx, formHasStructure, structureFromDefinition } from '../util/applications';
 import { ServicesService } from './services.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
@@ -119,7 +119,9 @@ export class ReferencesService {
           ]),
         ),
       )
-      .orderBy(asc(documentReferences.relation), asc(documentReferences.position));
+      // Position-first (feature 132) so the staff application-method order matches the citizen "How
+      // to apply" order (which reads `asc(position)`); relation is only a stable tiebreak.
+      .orderBy(asc(documentReferences.position), asc(documentReferences.relation));
     return rows.map((row) => {
       const isExternal = row.ref.targetKind === EXTERNAL_KIND;
       return toDto(
@@ -153,6 +155,8 @@ export class ReferencesService {
       throw new BadRequestException('A service cannot reference itself');
     }
     this.assertRelationMatchesKind(input.relation, target.kind);
+    // Application-method references append at the end; related services aren't ordered (stay at 0).
+    const position = input.relation === 'application_form' ? await this.nextPosition(versionId) : 0;
 
     try {
       const inserted = await this.db
@@ -169,6 +173,7 @@ export class ReferencesService {
           targetWorkspaceId: service.workspaceId,
           relation: input.relation,
           label: input.label ?? null,
+          position,
         })
         .returning();
       const row = inserted[0];
@@ -264,6 +269,7 @@ export class ReferencesService {
     const type = await this.loadFormType(input.typeId);
 
     return this.db.transaction(async (tx) => {
+      const position = await this.nextPosition(versionId, tx);
       const insertedDoc = await tx
         .insert(documents)
         .values({
@@ -306,6 +312,7 @@ export class ReferencesService {
           targetWorkspaceId: service.workspaceId,
           relation: 'application_form',
           label: input.label ?? null,
+          position,
         })
         .returning();
       const ref = insertedRef[0];
@@ -329,6 +336,7 @@ export class ReferencesService {
     const type = await this.loadExternalType();
 
     return this.db.transaction(async (tx) => {
+      const position = await this.nextPosition(versionId, tx);
       const insertedDoc = await tx
         .insert(documents)
         .values({
@@ -370,6 +378,7 @@ export class ReferencesService {
           targetWorkspaceId: service.workspaceId,
           relation: 'external_application',
           label: input.label,
+          position,
         })
         .returning();
       const ref = insertedRef[0];
@@ -426,6 +435,23 @@ export class ReferencesService {
       true,
       input.url,
     );
+  }
+
+  /** The next application-method position for a service version — `max(existing) + 1`, or 0 when the
+   * version has no methods yet. New methods append at the END so positions stay unique and the staff
+   * and citizen orders never diverge (feature 132). Accepts an optional tx for use inside a write. */
+  private async nextPosition(versionId: string, tx?: Tx): Promise<number> {
+    const rows = await (tx ?? this.db)
+      .select({ max: sql<number | null>`max(${documentReferences.position})` })
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, versionId),
+          inArray(documentReferences.relation, ['application_form', 'external_application']),
+        ),
+      );
+    const max = rows[0]?.max;
+    return max === null || max === undefined ? 0 : max + 1;
   }
 
   private assertRelationMatchesKind(relation: ReferenceRelation, kind: string): void {

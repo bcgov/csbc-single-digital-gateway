@@ -78,6 +78,9 @@ export class ServiceVersionsService {
           resolvedNew,
         );
       }
+      if (input.applicationOrder !== undefined) {
+        await this.reorderApplications(tx, versionId, input.applicationOrder);
+      }
       return rows[0];
     });
     return toServiceVersionDto(this.orThrow(updated));
@@ -133,6 +136,32 @@ export class ServiceVersionsService {
     for (const app of resolvedNew) {
       // eslint-disable-next-line no-await-in-loop
       await insertApplication(tx, owner, app);
+    }
+  }
+
+  /** Reposition a draft version's application-method references (forms + external links) to the given
+   * order (feature 132): each id becomes `position = its index`. Ids that aren't application-method
+   * refs of this version are ignored (defensive — can't touch another version/workspace). This
+   * `position` is what both the staff list and the citizen "How to apply" read order by. */
+  private async reorderApplications(tx: Tx, versionId: string, order: string[]): Promise<void> {
+    const existing = await tx
+      .select({ id: documentReferences.id })
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, versionId),
+          inArray(documentReferences.relation, ['application_form', 'external_application']),
+        ),
+      );
+    const valid = new Set(existing.map((row) => row.id));
+    let position = 0;
+    for (const id of order) {
+      if (!valid.has(id)) {
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+      await tx.update(documentReferences).set({ position }).where(eq(documentReferences.id, id));
+      position += 1;
     }
   }
 
