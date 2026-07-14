@@ -44,6 +44,10 @@ import {
   sliderDisplayTester,
   textDisplayTester,
 } from './controls/primitive-displays';
+import {
+  ContactMethodsDisplay,
+  contactMethodsDisplayTester,
+} from './controls/contact-methods-display';
 import { RichTextDisplay, richTextDisplayTester } from './controls/rich-text-display';
 
 /**
@@ -66,6 +70,7 @@ export const displayRenderers: JsonFormsRendererRegistryEntry[] = [
   { tester: sliderDisplayTester, renderer: SliderDisplay },
   { tester: dateDisplayTester, renderer: DateDisplay },
   { tester: richTextDisplayTester, renderer: RichTextDisplay },
+  { tester: contactMethodsDisplayTester, renderer: ContactMethodsDisplay },
   // Layouts (reused from the form renderer set)
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },

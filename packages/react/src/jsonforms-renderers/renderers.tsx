@@ -1,6 +1,10 @@
 import type { JsonFormsRendererRegistryEntry } from '@jsonforms/core';
 import { BooleanControl, booleanControlTester } from './controls/boolean-control';
 import {
+  ContactMethodsControl,
+  contactMethodsControlTester,
+} from './controls/contact-methods/contact-methods-control';
+import {
   BooleanToggleControl,
   booleanToggleControlTester,
 } from './controls/boolean-toggle-control';
@@ -43,6 +47,7 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   { tester: sliderControlTester, renderer: SliderControl },
   { tester: dateControlTester, renderer: DateControl },
   { tester: richTextControlTester, renderer: RichTextControl },
+  { tester: contactMethodsControlTester, renderer: ContactMethodsControl },
   // Layouts
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },

@@ -33,3 +33,21 @@ export {
   multiEnumDisplayTester,
 } from './controls/enum-displays';
 export { RichTextDisplay, richTextDisplayTester } from './controls/rich-text-display';
+export {
+  ContactMethodsDisplay,
+  contactMethodsDisplayTester,
+} from './controls/contact-methods-display';
+
+// The "list of cards" view for a service's contact methods (feature 130). Exported so apps can
+// render contact methods outside a JsonForms dispatch (e.g. the citizen portal's Contact section).
+export { ContactMethodsView } from './controls/contact-methods-view';
+export {
+  normalizeContactMethods,
+  CONTACT_METHOD_TYPES,
+  CONTACT_METHOD_META,
+  type ContactMethod,
+  type ContactMethodType,
+  type ContactEntry,
+  type ValueEntry,
+  type AddressEntry,
+} from '../jsonforms-renderers/controls/contact-methods/model';
