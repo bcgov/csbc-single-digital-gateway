@@ -9,7 +9,7 @@ export function Hero() {
   const loginUrl = useLoginUrl();
   return (
     <div className="border-b-2 border-bcgov-gold bg-linear-to-t from-blue-10 to-white">
-      <div className="mx-4 md:mx-8 xl:mx-auto w-full max-w-280 flex flex-col">
+      <div className="mx-auto px-4 md:px-8 w-full max-w-280 flex flex-col">
         <section className="grid items-center gap-8 py-6 md:grid-cols-2">
           <div className="flex flex-col gap-2">
             <h1>Access government services online</h1>

@@ -114,7 +114,7 @@ export function ServicesPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+      <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
         <header className="flex flex-col gap-2">
           <h1>Services</h1>
           <p className="text-lg">Find and use Government of British Columbia services.</p>

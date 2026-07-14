@@ -128,7 +128,7 @@ export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderPro
   const loginUrl = useLoginUrl();
   return (
     <header className="border-b bg-background">
-      <div className="mx-4 md:mx-8 xl:mx-auto w-full max-w-280 flex items-center gap-4">
+      <div className="mx-auto px-4 md:px-8 w-full max-w-280 flex items-center gap-4">
         <BrandLockup />
         <div className="ml-auto flex items-center gap-6">
           <PrimaryNav active={activeNav} />
