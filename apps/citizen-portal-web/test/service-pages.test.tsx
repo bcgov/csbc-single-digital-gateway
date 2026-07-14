@@ -39,6 +39,16 @@ const detail = {
       formId: 'f1',
       formVersionId: 'fv1',
       kind: 'basic-form',
+      url: null,
+    },
+    {
+      id: 'ref-2',
+      label: 'Apply on GOV.UK',
+      title: 'Apply on GOV.UK',
+      formId: 'ext-1',
+      formVersionId: 'extv-1',
+      kind: 'external-application',
+      url: 'https://gov.uk/apply',
     },
   ],
 };
@@ -119,6 +129,18 @@ describe('service detail page', () => {
       'href',
       '/services/svc-1/apply/f1',
     );
+  });
+
+  it('renders an external method as a "Visit site" link opening the url in a new tab', async () => {
+    mockBff();
+    renderRoute('/services/svc-1');
+    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 });
+    const visit = screen.getByRole('link', { name: 'Visit site' });
+    expect(visit).toHaveAttribute('href', 'https://gov.uk/apply');
+    expect(visit).toHaveAttribute('target', '_blank');
+    expect(visit).toHaveAttribute('rel', 'noopener noreferrer');
+    // The external method does NOT link into the in-portal apply flow.
+    expect(visit).not.toHaveAttribute('href', expect.stringContaining('/apply/'));
   });
 
   it('shows a not-available state on 404', async () => {
