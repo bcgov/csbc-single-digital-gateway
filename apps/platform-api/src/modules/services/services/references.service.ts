@@ -20,6 +20,7 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
   type AddReferenceInput,
   type CreateReferencedFormInput,
+  type ExternalApplicationInput,
   type ReferenceRelation,
   type ReferenceResponse,
 } from '../dtos/reference.dtos';
@@ -27,6 +28,13 @@ import { formHasStructure, structureFromDefinition } from '../util/applications'
 import { ServicesService } from './services.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
+const EXTERNAL_KIND = 'external-application';
+
+/** The `data` shape of an external-application document version (feature 131). */
+function externalUrl(data: Record<string, unknown> | null | undefined): string | null {
+  const url = data?.url;
+  return typeof url === 'string' ? url : null;
+}
 
 /** application_form / related_service references always pin a version (only service_agreement refs
  * may omit it), so this narrows the now-nullable `target_version_id` for those relations. */
@@ -53,13 +61,16 @@ function toDto(
   targetStatus: string,
   hasSubmissions: boolean,
   hasStructure: boolean,
+  url: string | null,
 ): ReferenceResponse {
   return {
-    // `list` filters to the two legacy relations, so the widened enum never reaches this mapper.
+    // `list` filters to application methods + related services, so the widened enum (which also
+    // carries service_agreement) never reaches this mapper.
     relation: row.relation as ReferenceResponse['relation'],
     id: row.id,
     position: row.position,
     label: row.label,
+    url,
     targetDocumentId: row.targetDocumentId,
     targetVersionId: pinnedVersion(row.targetVersionId, 'reference target_version_id'),
     targetKind: row.targetKind,
@@ -90,30 +101,38 @@ export class ReferencesService {
         targetVersion: documentVersions.version,
         targetStatus: documentVersions.status,
         targetSchema: documentVersions.schema,
+        targetData: documentVersions.data,
         hasSubmissions: sql<boolean>`exists (select 1 from ${submissions} where ${submissions.documentId} = ${documentReferences.targetDocumentId})`,
       })
       .from(documentReferences)
       .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
       .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
-      // Legacy references view = application methods + related services only. Service-agreement
+      // Application-method references (forms + external links) and related services. Service-agreement
       // references (feature 86) have their own surface and are excluded here.
       .where(
         and(
           eq(documentReferences.ownerVersionId, versionId),
-          inArray(documentReferences.relation, ['related_service', 'application_form']),
+          inArray(documentReferences.relation, [
+            'related_service',
+            'application_form',
+            'external_application',
+          ]),
         ),
       )
       .orderBy(asc(documentReferences.relation), asc(documentReferences.position));
-    return rows.map((row) =>
-      toDto(
+    return rows.map((row) => {
+      const isExternal = row.ref.targetKind === EXTERNAL_KIND;
+      return toDto(
         row.ref,
         row.targetTitle,
         row.targetVersion,
         row.targetStatus,
         row.hasSubmissions,
-        formHasStructure(row.ref.targetKind, row.targetSchema),
-      ),
-    );
+        // An external method has no form structure; it's a valid method once it has a url.
+        isExternal ? true : formHasStructure(row.ref.targetKind, row.targetSchema),
+        isExternal ? externalUrl(row.targetData) : null,
+      );
+    });
   }
 
   /** Add a reference (owner must be a DRAFT service version). DB enforces kind/workspace/no-dup/no-self. */
@@ -156,7 +175,7 @@ export class ReferencesService {
       if (row === undefined) {
         throw new Error('reference insert returned no row');
       }
-      return toDto(row, target.title, target.version, 'draft', false, false);
+      return toDto(row, target.title, target.version, 'draft', false, false, null);
     } catch (error) {
       if (pgCode(error) === '23505') {
         throw new ConflictException('This document is already referenced by the service version');
@@ -176,15 +195,15 @@ export class ReferencesService {
     await this.requireDraftOwner(serviceId, versionId);
     const ref = await this.requireReference(versionId, referenceId);
 
-    // Non-form references (e.g. related services) are just unlinked.
-    if (ref.relation !== 'application_form') {
+    // Related-service references point at a shared, independently-owned document — just unlink.
+    if (ref.relation === 'related_service') {
       await this.db.delete(documentReferences).where(eq(documentReferences.id, referenceId));
       return;
     }
 
-    // For an application-method form: if other services still reference it, only unlink here.
-    // If this is the LAST reference, the form is deleted with it — but only when it has no
-    // submissions (otherwise it must be archived to preserve the submitted data).
+    // Application-method targets (forms + external links) are owned by the service: if other service
+    // versions still reference the same target, only unlink here; if this is the LAST reference the
+    // target document is deleted with it.
     const refRows = await this.db
       .select({ n: sql<number>`count(*)::int` })
       .from(documentReferences)
@@ -193,16 +212,22 @@ export class ReferencesService {
       await this.db.delete(documentReferences).where(eq(documentReferences.id, referenceId));
       return;
     }
-    const submissionRows = await this.db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(submissions)
-      .where(eq(submissions.documentId, ref.targetDocumentId));
-    if ((submissionRows[0]?.n ?? 0) > 0) {
-      throw new ConflictException('This form has submissions — archive it instead of deleting it');
+    // A form with submissions can't be deleted — archive it instead (external methods never have
+    // submissions, so this only ever gates forms).
+    if (ref.relation === 'application_form') {
+      const submissionRows = await this.db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(submissions)
+        .where(eq(submissions.documentId, ref.targetDocumentId));
+      if ((submissionRows[0]?.n ?? 0) > 0) {
+        throw new ConflictException(
+          'This form has submissions — archive it instead of deleting it',
+        );
+      }
     }
     await this.db.transaction(async (tx) => {
       await tx.delete(documentReferences).where(eq(documentReferences.id, referenceId));
-      // Deleting the form document cascades its versions; no submissions remain to block it.
+      // Deleting the target document cascades its versions; no submissions remain to block it.
       await tx.delete(documents).where(eq(documents.id, ref.targetDocumentId));
     });
   }
@@ -287,8 +312,120 @@ export class ReferencesService {
       if (ref === undefined) {
         throw new Error('reference insert returned no row');
       }
-      return toDto(ref, input.title, formVersion.version, 'draft', false, false);
+      return toDto(ref, input.title, formVersion.version, 'draft', false, false, null);
     });
+  }
+
+  /** Create an external-application document + v1 (data `{ label, url }`) and reference it from this
+   * service version (atomic) — the external analogue of `createForm` (feature 131). */
+  async createExternal(
+    userId: string,
+    serviceId: string,
+    versionId: string,
+    input: ExternalApplicationInput,
+  ): Promise<ReferenceResponse> {
+    const service = await this.services.requireDocument(userId, serviceId);
+    await this.requireDraftOwner(serviceId, versionId);
+    const type = await this.loadExternalType();
+
+    return this.db.transaction(async (tx) => {
+      const insertedDoc = await tx
+        .insert(documents)
+        .values({
+          typeId: type.typeId,
+          workspaceId: service.workspaceId,
+          kind: EXTERNAL_KIND,
+          title: input.label,
+        })
+        .returning();
+      const extDoc = insertedDoc[0];
+      if (extDoc === undefined) {
+        throw new Error('external application document insert returned no row');
+      }
+      const insertedVersion = await tx
+        .insert(documentVersions)
+        .values({
+          documentId: extDoc.id,
+          typeId: type.typeId,
+          typeVersionId: type.typeVersionId,
+          version: 1,
+          // The external method's content lives in `data`; it has no form structure (`schema` NULL).
+          data: { label: input.label, url: input.url },
+        })
+        .returning();
+      const extVersion = insertedVersion[0];
+      if (extVersion === undefined) {
+        throw new Error('external application version insert returned no row');
+      }
+      const insertedRef = await tx
+        .insert(documentReferences)
+        .values({
+          ownerVersionId: versionId,
+          ownerDocumentId: serviceId,
+          ownerKind: 'service',
+          targetVersionId: extVersion.id,
+          targetDocumentId: extDoc.id,
+          targetKind: EXTERNAL_KIND,
+          workspaceId: service.workspaceId,
+          targetWorkspaceId: service.workspaceId,
+          relation: 'external_application',
+          label: input.label,
+        })
+        .returning();
+      const ref = insertedRef[0];
+      if (ref === undefined) {
+        throw new Error('reference insert returned no row');
+      }
+      return toDto(ref, input.label, extVersion.version, 'draft', false, true, input.url);
+    });
+  }
+
+  /** Edit an external method's label + url (draft owner only): update the target document title and
+   * its version `data`. The reference's `label` mirror is kept in sync. */
+  async updateExternal(
+    userId: string,
+    serviceId: string,
+    versionId: string,
+    referenceId: string,
+    input: ExternalApplicationInput,
+  ): Promise<ReferenceResponse> {
+    await this.services.requireDocument(userId, serviceId);
+    await this.requireDraftOwner(serviceId, versionId);
+    const ref = await this.requireReference(versionId, referenceId);
+    if (ref.relation !== 'external_application') {
+      throw new BadRequestException('Not an external application method');
+    }
+    const targetVersionId = pinnedVersion(ref.targetVersionId, 'external target_version_id');
+
+    const updated = await this.db.transaction(async (tx) => {
+      await tx
+        .update(documents)
+        .set({ title: input.label })
+        .where(eq(documents.id, ref.targetDocumentId));
+      const versionRows = await tx
+        .update(documentVersions)
+        .set({ data: { label: input.label, url: input.url } })
+        .where(eq(documentVersions.id, targetVersionId))
+        .returning();
+      const rows = await tx
+        .update(documentReferences)
+        .set({ label: input.label })
+        .where(eq(documentReferences.id, referenceId))
+        .returning();
+      return { ref: rows[0], version: versionRows[0] };
+    });
+    if (updated.ref === undefined || updated.version === undefined) {
+      throw new Error('external application update returned no row');
+    }
+    return toDto(
+      updated.ref,
+      input.label,
+      updated.version.version,
+      'draft',
+      false,
+      true,
+      input.url,
+    );
   }
 
   private assertRelationMatchesKind(relation: ReferenceRelation, kind: string): void {
@@ -364,6 +501,29 @@ export class ReferencesService {
     }
     if (!FORM_KINDS.has(row.kind)) {
       throw new BadRequestException('typeId must be a basic-form or multi-stage-form type');
+    }
+    return row;
+  }
+
+  /** The published external-application type (its id + published version id) — 422 if unseeded. */
+  private async loadExternalType(): Promise<{ typeId: string; typeVersionId: string }> {
+    const rows = await this.db
+      .select({ typeId: documentTypes.id, typeVersionId: documentTypeVersions.id })
+      .from(documentTypes)
+      .innerJoin(
+        documentTypeVersions,
+        and(
+          eq(documentTypeVersions.typeId, documentTypes.id),
+          eq(documentTypeVersions.status, 'published'),
+        ),
+      )
+      .where(eq(documentTypes.kind, EXTERNAL_KIND))
+      .limit(1);
+    const row = rows[0];
+    if (row === undefined) {
+      throw new UnprocessableEntityException(
+        'External application type not found or has no published version',
+      );
     }
     return row;
   }

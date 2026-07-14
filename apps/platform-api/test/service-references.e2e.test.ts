@@ -66,6 +66,50 @@ describe('service references (e2e)', () => {
     expect((await http().post(`${base}/references`).send({})).status).toBe(401);
   });
 
+  it('401s external-application endpoints without a session', async () => {
+    expect(
+      (
+        await http()
+          .post(`${base}/external-applications`)
+          .send({ label: 'x', url: 'https://x.gov' })
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await http()
+          .patch(`${base}/external-applications/${UUID}`)
+          .send({ label: 'x', url: 'https://x.gov' })
+      ).status,
+    ).toBe(401);
+  });
+
+  it('400s invalid external-application bodies (missing + non-https url)', async () => {
+    const staff = asUser(['staff']);
+    // Missing fields.
+    expect(
+      (await http().post(`${base}/external-applications`).set('x-test-user', staff).send({}))
+        .status,
+    ).toBe(400);
+    // Non-https url is rejected (feature 131 — https only).
+    expect(
+      (
+        await http()
+          .post(`${base}/external-applications`)
+          .set('x-test-user', staff)
+          .send({ label: 'GOV', url: 'http://gov.example' })
+      ).status,
+    ).toBe(400);
+    // A script-scheme url is rejected.
+    expect(
+      (
+        await http()
+          .post(`${base}/external-applications`)
+          .set('x-test-user', staff)
+          .send({ label: 'GOV', url: 'javascript:alert(1)' })
+      ).status,
+    ).toBe(400);
+  });
+
   it('400s invalid reference + form bodies for a signed-in user', async () => {
     const staff = asUser(['staff']);
     expect(

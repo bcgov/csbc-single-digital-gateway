@@ -12,7 +12,7 @@ import {
   documents,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   type ApplicationInput,
   type ServiceVersionResponse,
@@ -163,7 +163,8 @@ export class ServiceVersionsService {
       // Drop deep-copied forms unchanged from the previous published version (re-point + delete the
       // redundant copy) before the promote loop below.
       await dedupCopiedForms(tx, id, versionId);
-      // A service must have ≥1 application method, and every method's form must have structure.
+      // A service must have ≥1 application method (a form OR an external link), and every FORM
+      // method must have structure. An external method is valid once it has a url (feature 131).
       const apps = await tx
         .select({
           targetVersionId: documentReferences.targetVersionId,
@@ -177,7 +178,7 @@ export class ServiceVersionsService {
         .where(
           and(
             eq(documentReferences.ownerVersionId, versionId),
-            eq(documentReferences.relation, 'application_form'),
+            inArray(documentReferences.relation, ['application_form', 'external_application']),
           ),
         );
       if (apps.length === 0) {
@@ -187,7 +188,11 @@ export class ServiceVersionsService {
         });
       }
       const structureless = apps
-        .filter((app) => !formHasStructure(app.targetKind, app.targetSchema))
+        .filter(
+          (app) =>
+            app.targetKind !== 'external-application' &&
+            !formHasStructure(app.targetKind, app.targetSchema),
+        )
         .map((app) => app.targetTitle);
       if (structureless.length > 0) {
         throw new UnprocessableEntityException({
