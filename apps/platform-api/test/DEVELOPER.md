@@ -1,8 +1,8 @@
-# Citizen Portal API Project Quality Assurance Testing Documentation
+# Platform API Project Quality Assurance Testing Documentation
 
 ## Vitest
 
-The Citizen Portal API project uses Vitest for QA testing, which is the preferred framework for its zero-config setup, mocking capabilities, and broad ecosystem support for this Node.js based project. The main focuses of QA testing for the Citizen Portal API application are unit and integration tests. Coverage test is also available with coverage threshold that increases as the project expands.
+The Platform API project uses Vitest for QA testing, which is the preferred framework for its zero-config setup, mocking capabilities, and broad ecosystem support for this Node.js based project. The main focuses of QA testing for the Platform API application are unit and integration tests. Coverage test is also available with coverage threshold that increases as the project expands.
 
 ## Files and Folders
 

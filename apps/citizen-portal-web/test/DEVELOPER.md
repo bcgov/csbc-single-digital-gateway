@@ -1,18 +1,8 @@
-# Citizen Portal API Project Quality Assurance Testing Documentation
+# Citizen Portal Web Project Quality Assurance Testing Documentation
 
 ## Vitest
 
-The Citizen Portal API project uses Vitest for QA testing, which is the preferred framework for its zero-config setup, mocking capabilities, and broad ecosystem support for this Node.js based project. The main focuses of QA testing for the Citizen Portal API application are unit and integration tests. Coverage test is also available with coverage threshold that increases as the project expands.
-
-## Files and Folders
-
-Unit test files with file name suffix `**/*.unit.test.ts` should be placed inside the [`unit`](./unit) folder, whereas integration test files with file name suffix `**/*.e2e.test.ts` should be placed inside the [integration](./integration/) folder.
-
-| Testing Content  |     File Format     |                  Folder (example)                  |
-| :--------------: | :-----------------: | :------------------------------------------------: |
-|    Unit test     | `**/*.unit.test.ts` | [health/**unit**](../src/modules/health/**unit**/) |
-| Integration test | `**/*.e2e.test.ts`  |           [integration](./integration/)            |
-|  Coverage test   |                     |  coverage.txt [coverage](./coverage/coverage.txt)  |
+The citizen portal web project uses Vitest for QA testing, which is the preferred framework for its zero-config setup, mocking capabilities, and broad ecosystem support for this Node.js based project. The main focuses of QA testing for the web application are unit and integration tests. Coverage test is also available with coverage threshold that increases as the project expands.
 
 ## Configuration
 
