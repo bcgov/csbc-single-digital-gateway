@@ -1,13 +1,13 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { renderers } from '../src/jsonforms-renderers';
 
-// The Service type definition models contact methods as a loose array; the bespoke control is
-// dispatched purely by the uischema option `format: 'contact-methods'` (mirrors the richtext field).
+// Contact methods are a loose array; the bespoke control is dispatched purely by the uischema option
+// `format: 'contact-methods'`. Each method holds ONE value (revision 2 — no entries list).
 const schema: JsonSchema = {
   type: 'object',
   properties: {
@@ -20,8 +20,10 @@ const schema: JsonSchema = {
         properties: {
           type: { type: 'string', enum: ['phone', 'email', 'address', 'fax', 'links'] },
           label: { type: 'string' },
-          description: { type: 'object' },
-          entries: { type: 'array' },
+          value: { type: 'string' },
+          address_one: { type: 'string' },
+          city: { type: 'string' },
+          postal_code: { type: 'string' },
         },
       },
     },
@@ -62,94 +64,178 @@ function Form({
   );
 }
 
-// Read the latest emitted contact_methods array from the onChange spy (JsonForms debounces ~10ms —
-// always assert inside waitFor, never synchronously after the interaction).
-function lastMethods(onData: ReturnType<typeof vi.fn>): unknown[] {
+function lastMethods(onData: ReturnType<typeof vi.fn>): Record<string, unknown>[] {
   const last = onData.mock.calls.at(-1)?.[0] as Record<string, unknown> | undefined;
-  return (last?.contact_methods as unknown[]) ?? [];
+  return (last?.contact_methods as Record<string, unknown>[]) ?? [];
 }
 
-describe('contact-methods control (editable)', () => {
-  it('renders the control label and an add affordance per contact-method type', () => {
+describe('contact-methods control (table + modal editor)', () => {
+  it('renders the heading, add button, and an empty-state table placeholder when empty', () => {
     render(<Form />);
-    expect(screen.getByText('Contact methods')).toBeInTheDocument();
-    for (const type of ['phone', 'email', 'address', 'fax', 'links']) {
-      expect(
-        screen.getByRole('button', { name: new RegExp(`add ${type}`, 'i') }),
-      ).toBeInTheDocument();
-    }
+    expect(screen.getByRole('heading', { name: /contact methods/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add contact method/i })).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getByText(/no contact methods yet/i)).toBeInTheDocument();
   });
 
-  it('appends a typed method when its add button is clicked', async () => {
+  it('adds a phone method through the modal (pick type → fill form → save)', async () => {
     const onData = vi.fn();
     const user = userEvent.setup();
     render(<Form onData={onData} />);
 
-    await user.click(screen.getByRole('button', { name: /add phone/i }));
+    await user.click(screen.getByRole('button', { name: /add contact method/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(/choose the kind of contact method to add/i),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /phone/i }));
+    await user.type(within(dialog).getByRole('textbox', { name: /label/i }), 'Support line');
+    // The phone value uses react-phone-number-input — paste an E.164 number (avoids format-as-you-type).
+    const phoneField = within(dialog).getByRole('textbox', { name: /number|value/i });
+    await user.click(phoneField);
+    await user.paste('+12505551234');
+    await user.click(within(dialog).getByRole('button', { name: /save|add/i }));
 
     await waitFor(() => {
       const methods = lastMethods(onData);
       expect(methods).toHaveLength(1);
-      expect((methods[0] as { type?: string }).type).toBe('phone');
+      expect(methods[0]).toMatchObject({
+        type: 'phone',
+        label: 'Support line',
+        value: '+12505551234',
+      });
     });
   });
 
-  it('renders a label input, a rich-text description editor, and a remove control for a method', async () => {
-    const user = userEvent.setup();
-    render(<Form initial={{ contact_methods: [{ type: 'phone', label: '', entries: [] }] }} />);
-
-    // Label field.
-    expect(screen.getByRole('textbox', { name: /label/i })).toBeInTheDocument();
-    // Rich-text description reuses the Lexical toolbar from feature 37.
-    expect(screen.getByRole('toolbar', { name: /formatting/i })).toBeInTheDocument();
-    // Remove-method control.
-    expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
-    expect(user).toBeDefined();
-  });
-
-  it('adds a value entry (label + value) to a phone method', async () => {
+  it('adds an address method with its address fields', async () => {
     const onData = vi.fn();
     const user = userEvent.setup();
-    render(
-      <Form
-        onData={onData}
-        initial={{ contact_methods: [{ type: 'phone', label: 'Support', entries: [] }] }}
-      />,
-    );
+    render(<Form onData={onData} />);
 
-    await user.click(screen.getByRole('button', { name: /add (phone number|entry)/i }));
-    const value = screen.getByRole('textbox', { name: /number|value/i });
-    await user.type(value, '1-800-555-0000');
+    await user.click(screen.getByRole('button', { name: /add contact method/i }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: /address/i }));
+    await user.type(within(dialog).getByRole('textbox', { name: /^label/i }), 'Head office');
+    await user.type(
+      within(dialog).getByRole('textbox', { name: /address line 1/i }),
+      '123 Government St',
+    );
+    await user.type(within(dialog).getByRole('textbox', { name: /city/i }), 'Victoria');
+    await user.type(within(dialog).getByRole('textbox', { name: /province/i }), 'BC');
+    await user.type(within(dialog).getByRole('textbox', { name: /country/i }), 'Canada');
+    await user.type(within(dialog).getByRole('textbox', { name: /postal code/i }), 'V8V 1X4');
+    await user.click(within(dialog).getByRole('button', { name: /save|add/i }));
 
     await waitFor(() => {
-      const methods = lastMethods(onData) as { entries?: { value?: string }[] }[];
-      expect(methods[0]?.entries?.at(-1)?.value).toBe('1-800-555-0000');
+      const methods = lastMethods(onData);
+      expect(methods[0]).toMatchObject({
+        type: 'address',
+        label: 'Head office',
+        address_one: '123 Government St',
+        city: 'Victoria',
+        province: 'BC',
+        country: 'Canada',
+        postal_code: 'V8V 1X4',
+      });
     });
   });
 
-  it('renders address fields for an address method', () => {
-    render(
-      <Form initial={{ contact_methods: [{ type: 'address', label: 'HQ', entries: [{}] }] }} />,
-    );
-    expect(screen.getByRole('textbox', { name: /address line 1/i })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /city/i })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /postal code/i })).toBeInTheDocument();
+  it('blocks save and shows "Required" errors when required fields are empty', async () => {
+    const onData = vi.fn();
+    const user = userEvent.setup();
+    render(<Form onData={onData} />);
+
+    await user.click(screen.getByRole('button', { name: /add contact method/i }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: /phone/i }));
+    await user.click(within(dialog).getByRole('button', { name: /save/i }));
+
+    // Save is blocked (dialog stays open), both required fields show an error, nothing was saved.
+    expect(within(dialog).getAllByText(/required/i).length).toBeGreaterThanOrEqual(2);
+    expect(lastMethods(onData)).toHaveLength(0);
   });
 
-  it('removes a method when its remove control is clicked', async () => {
+  it('renders a table with method, details and action columns', () => {
+    render(
+      <Form
+        initial={{
+          contact_methods: [{ type: 'phone', label: 'Support line', value: '1-800-555-0000' }],
+        }}
+      />,
+    );
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /contact method/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /details/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /action/i })).toBeInTheDocument();
+    expect(screen.getByText('Support line')).toBeInTheDocument();
+    expect(screen.getByText('1-800-555-0000')).toBeInTheDocument();
+  });
+
+  it('edits a method through the modal', async () => {
     const onData = vi.fn();
     const user = userEvent.setup();
     render(
       <Form
         onData={onData}
-        initial={{ contact_methods: [{ type: 'email', label: 'X', entries: [] }] }}
+        initial={{ contact_methods: [{ type: 'phone', label: 'Support', value: '+12505550000' }] }}
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /remove/i }));
+    await user.click(screen.getByRole('button', { name: /edit/i }));
+    const dialog = await screen.findByRole('dialog');
+    const valueField = within(dialog).getByRole('textbox', { name: /number|value/i });
+    await user.clear(valueField);
+    await user.click(valueField);
+    await user.paste('+12509998888');
+    await user.click(within(dialog).getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      expect(lastMethods(onData)).toHaveLength(1);
+      expect(lastMethods(onData)[0]).toMatchObject({ value: '+12509998888' });
+    });
+  });
+
+  it('deletes a method', async () => {
+    const onData = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Form
+        onData={onData}
+        initial={{ contact_methods: [{ type: 'email', label: 'X', value: 'x@y.z' }] }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /delete/i }));
 
     await waitFor(() => {
       expect(lastMethods(onData)).toHaveLength(0);
+    });
+  });
+
+  it('reorders methods with the move-down control', async () => {
+    const onData = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Form
+        onData={onData}
+        initial={{
+          contact_methods: [
+            { type: 'phone', label: 'First', value: '111' },
+            { type: 'email', label: 'Second', value: 'two@x.z' },
+          ],
+        }}
+      />,
+    );
+
+    const [firstMoveDown] = screen.getAllByRole('button', { name: /move down/i });
+    if (!firstMoveDown) {
+      throw new Error('expected a move-down button');
+    }
+    await user.click(firstMoveDown);
+
+    await waitFor(() => {
+      const methods = lastMethods(onData);
+      expect(methods.map((m) => m.label)).toEqual(['Second', 'First']);
     });
   });
 });

@@ -4,55 +4,15 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ContactMethodsView, displayRenderers } from '../src/jsonforms-renderers-display';
 
-const richText = {
-  root: {
-    children: [
-      {
-        children: [
-          {
-            detail: 0,
-            format: 0,
-            mode: 'normal',
-            style: '',
-            text: 'Open weekdays 9–5',
-            type: 'text',
-            version: 1,
-          },
-        ],
-        direction: 'ltr',
-        format: '',
-        indent: 0,
-        type: 'paragraph',
-        version: 1,
-      },
-    ],
-    direction: 'ltr',
-    format: '',
-    indent: 0,
-    type: 'root',
-    version: 1,
-  },
-};
-
 const methods = [
-  {
-    type: 'phone',
-    label: 'Support line',
-    description: richText,
-    entries: [{ label: 'Toll free', value: '1-800-555-0000' }],
-  },
+  { type: 'phone', label: 'Support line', value: '1-800-555-0000' },
   {
     type: 'address',
     label: 'Head office',
-    entries: [
-      {
-        label: 'Mailing',
-        address_one: '123 Government St',
-        city: 'Victoria',
-        province: 'BC',
-        postal_code: 'V8V 1X4',
-      },
-    ],
+    address_one: '123 Government St',
+    city: 'Victoria',
+    province: 'BC',
+    postal_code: 'V8V 1X4',
   },
 ];
 
@@ -63,32 +23,35 @@ describe('ContactMethodsView (display component)', () => {
     expect(screen.getByText('Head office')).toBeInTheDocument();
   });
 
-  it('renders value entries (label + value) for a phone method', () => {
+  it('renders the single value for a value method', () => {
     render(<ContactMethodsView value={methods} />);
-    expect(screen.getByText('Toll free')).toBeInTheDocument();
     expect(screen.getByText('1-800-555-0000')).toBeInTheDocument();
   });
 
-  it('renders address fields for an address method', () => {
+  it('renders address lines for an address method', () => {
     render(<ContactMethodsView value={methods} />);
     expect(screen.getByText(/123 Government St/)).toBeInTheDocument();
     expect(screen.getByText(/Victoria/)).toBeInTheDocument();
     expect(screen.getByText(/V8V 1X4/)).toBeInTheDocument();
   });
 
-  it('renders the rich-text description', () => {
-    render(<ContactMethodsView value={methods} />);
-    expect(screen.getByText('Open weekdays 9–5')).toBeInTheDocument();
-  });
-
   it('renders nothing for an empty or malformed value (no throw)', () => {
     const { container } = render(<ContactMethodsView value={undefined} />);
     expect(container).toBeInTheDocument();
     expect(screen.queryByText('Support line')).not.toBeInTheDocument();
-    // A partial/garbage blob must not throw.
     expect(() =>
       render(<ContactMethodsView value={[{ type: 'phone' }, { nope: true }]} />),
     ).not.toThrow();
+  });
+
+  it('is backward-compatible with revision-1 entries data', () => {
+    render(
+      <ContactMethodsView
+        value={[{ type: 'phone', label: 'Old', entries: [{ value: '1-888-000-0000' }] }]}
+      />,
+    );
+    expect(screen.getByText('Old')).toBeInTheDocument();
+    expect(screen.getByText('1-888-000-0000')).toBeInTheDocument();
   });
 });
 

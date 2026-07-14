@@ -38,6 +38,7 @@ export * from './menubar';
 export * from './native-select';
 export * from './navigation-menu';
 export * from './pagination';
+export * from './phone-input';
 export * from './popover';
 export * from './progress';
 export * from './radio-group';

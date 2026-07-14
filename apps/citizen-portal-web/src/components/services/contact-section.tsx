@@ -17,5 +17,5 @@ export function ContactSection({ value }: { value: unknown }) {
       </p>
     );
   }
-  return <ContactMethodsView value={value} />;
+  return <ContactMethodsView value={value} layout="rows" />;
 }

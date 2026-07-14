@@ -1,25 +1,24 @@
+import { formatPhone } from '@repo/ui/phone-input';
 import { Link, Mail, MapPin, Phone, Printer, type LucideIcon } from 'lucide-react';
 
 /**
- * Shared model for the Service "contact methods" field (feature 130). One source of truth for the
- * five method types, their per-type entry shape, and the labels/icons used by BOTH the editable
- * control (`contact-methods-control.tsx`) and the read-only view (`contact-methods-view.tsx`).
+ * Shared model for the Service "contact methods" field (feature 130, revision 2). One source of truth
+ * for the five method types, their per-type field shape, and the labels/icons used by BOTH the table
+ * editor (`contact-methods-control.tsx` + `method-dialog.tsx`) and the read-only view
+ * (`contact-methods-view.tsx`).
  *
- * `contact_methods` is a plain array — any type may repeat (the one-per-type constraint was dropped).
+ * `contact_methods` is a plain array — any type may repeat, order is user-controlled. Each method holds
+ * ONE value (revision 1's `entries` list + rich-text `description` are gone).
  */
 
 export type ContactMethodType = 'phone' | 'email' | 'address' | 'fax' | 'links';
 
-/** phone | email | fax | links — a labelled scalar value. */
-export interface ValueEntry {
-  label?: string;
-  value: string;
-}
-
-/** address — a labelled postal address. `address_one` is the only structurally-required field. */
-export interface AddressEntry {
-  label?: string;
-  address_one: string;
+/** A flat contact method: `value` for scalar types, the `address_*` fields for `address`. */
+export interface ContactMethod {
+  type: ContactMethodType;
+  label: string;
+  value?: string;
+  address_one?: string;
   address_two?: string;
   city?: string;
   province?: string;
@@ -27,24 +26,20 @@ export interface AddressEntry {
   postal_code?: string;
 }
 
-export type ContactEntry = ValueEntry | AddressEntry;
+export type AddressFieldKey =
+  | 'address_one'
+  | 'address_two'
+  | 'city'
+  | 'province'
+  | 'country'
+  | 'postal_code';
 
-export interface ContactMethod {
-  type: ContactMethodType;
-  label: string;
-  /** Optional Lexical `SerializedEditorState` object (feature 37 richtext), or absent. */
-  description?: unknown;
-  entries: ContactEntry[];
-}
-
-/** A field the address entry editor/view renders, in order. */
 export interface AddressField {
-  key: keyof AddressEntry;
+  key: AddressFieldKey;
   label: string;
 }
 
 export const ADDRESS_FIELDS: readonly AddressField[] = [
-  { key: 'label', label: 'Label' },
   { key: 'address_one', label: 'Address line 1' },
   { key: 'address_two', label: 'Address line 2' },
   { key: 'city', label: 'City' },
@@ -53,30 +48,25 @@ export const ADDRESS_FIELDS: readonly AddressField[] = [
   { key: 'postal_code', label: 'Postal code' },
 ];
 
-interface ValueEntryConfig {
+interface ValueFieldConfig {
   kind: 'value';
   /** Label + input type for the single value field (phone number, email, fax number, URL). */
   valueLabel: string;
   inputType: 'tel' | 'email' | 'url' | 'text';
-  /** Accessible label for the "add another entry" button. */
-  addEntryLabel: string;
 }
 
-interface AddressEntryConfig {
+interface AddressFieldConfig {
   kind: 'address';
-  addEntryLabel: string;
 }
 
-export type EntryConfig = ValueEntryConfig | AddressEntryConfig;
+export type FieldConfig = ValueFieldConfig | AddressFieldConfig;
 
 export interface ContactMethodMeta {
   type: ContactMethodType;
-  /** Human label for the method type (badge + card heading fallback). */
+  /** Human label for the method type (type picker, table cell, card sub-label). */
   label: string;
-  /** Accessible label for the "add a method of this type" button (e.g. "Add phone"). */
-  addLabel: string;
   icon: LucideIcon;
-  entry: EntryConfig;
+  field: FieldConfig;
 }
 
 export const CONTACT_METHOD_TYPES: readonly ContactMethodType[] = [
@@ -91,52 +81,32 @@ export const CONTACT_METHOD_META: Record<ContactMethodType, ContactMethodMeta> =
   phone: {
     type: 'phone',
     label: 'Phone',
-    addLabel: 'Add phone',
     icon: Phone,
-    entry: {
-      kind: 'value',
-      valueLabel: 'Number',
-      inputType: 'tel',
-      addEntryLabel: 'Add phone number',
-    },
+    field: { kind: 'value', valueLabel: 'Number', inputType: 'tel' },
   },
   email: {
     type: 'email',
     label: 'Email',
-    addLabel: 'Add email',
     icon: Mail,
-    entry: {
-      kind: 'value',
-      valueLabel: 'Email address',
-      inputType: 'email',
-      addEntryLabel: 'Add email address',
-    },
+    field: { kind: 'value', valueLabel: 'Email address', inputType: 'email' },
   },
   address: {
     type: 'address',
     label: 'Address',
-    addLabel: 'Add address',
     icon: MapPin,
-    entry: { kind: 'address', addEntryLabel: 'Add address' },
+    field: { kind: 'address' },
   },
   fax: {
     type: 'fax',
     label: 'Fax',
-    addLabel: 'Add fax',
     icon: Printer,
-    entry: {
-      kind: 'value',
-      valueLabel: 'Fax number',
-      inputType: 'tel',
-      addEntryLabel: 'Add fax number',
-    },
+    field: { kind: 'value', valueLabel: 'Fax number', inputType: 'tel' },
   },
   links: {
     type: 'links',
     label: 'Links',
-    addLabel: 'Add links',
     icon: Link,
-    entry: { kind: 'value', valueLabel: 'URL', inputType: 'url', addEntryLabel: 'Add link' },
+    field: { kind: 'value', valueLabel: 'URL', inputType: 'url' },
   },
 };
 
@@ -144,36 +114,28 @@ export function isContactMethodType(value: unknown): value is ContactMethodType 
   return typeof value === 'string' && CONTACT_METHOD_TYPES.includes(value as ContactMethodType);
 }
 
+/** Phone-style types whose value is a dial-able number (rendered via react-phone-number-input). */
+export function isPhoneType(type: ContactMethodType): boolean {
+  return type === 'phone' || type === 'fax';
+}
+
 const asString = (value: unknown): string => (typeof value === 'string' ? value : '');
 
-function normalizeEntry(type: ContactMethodType, raw: unknown): ContactEntry[] {
-  if (!raw || typeof raw !== 'object') {
-    return [];
-  }
-  const rec = raw as Record<string, unknown>;
-  const label = asString(rec.label);
-  const labelPart = label ? { label } : {};
-  if (type === 'address') {
-    return [
-      {
-        ...labelPart,
-        address_one: asString(rec.address_one),
-        address_two: asString(rec.address_two),
-        city: asString(rec.city),
-        province: asString(rec.province),
-        country: asString(rec.country),
-        postal_code: asString(rec.postal_code),
-      },
-    ];
-  }
-  return [{ ...labelPart, value: asString(rec.value) }];
+/** Read `key` from the flat record, falling back to a revision-1 first-entry blob for compatibility. */
+function readField(
+  rec: Record<string, unknown>,
+  entry0: Record<string, unknown> | undefined,
+  key: string,
+): string {
+  return asString(rec[key]) || (entry0 ? asString(entry0[key]) : '');
 }
 
 /**
- * Coerce an unknown JSONB blob into a well-formed `ContactMethod[]` — used by the render path so a
- * partial or hand-edited value never throws (per CLAUDE.md "normalize before use"). Unknown types
- * and non-object entries are dropped; missing fields default to empty strings. The editable control
- * does NOT use this (it edits the raw array so half-typed entries persist).
+ * Coerce an unknown JSONB blob into a well-formed `ContactMethod[]` — used by every render path so a
+ * partial or hand-edited value never throws (per CLAUDE.md "normalize before use"). Unknown types are
+ * dropped; missing fields default to empty strings. **Backward-compatible with revision-1 data**: when a
+ * flat `value`/`address_*` field is absent it reads the first `entries[]` element; any `description` is
+ * dropped. The table editor does NOT use this (it edits the raw array so half-typed methods persist).
  */
 export function normalizeContactMethods(raw: unknown): ContactMethod[] {
   if (!Array.isArray(raw)) {
@@ -187,39 +149,45 @@ export function normalizeContactMethods(raw: unknown): ContactMethod[] {
     if (!isContactMethodType(rec.type)) {
       return [];
     }
-    const entriesRaw = Array.isArray(rec.entries) ? rec.entries : [];
-    return [
-      {
-        type: rec.type,
-        label: asString(rec.label),
-        ...(rec.description !== undefined && rec.description !== null
-          ? { description: rec.description }
-          : {}),
-        entries: entriesRaw.flatMap((entry) =>
-          normalizeEntry(rec.type as ContactMethodType, entry),
-        ),
-      },
-    ];
+    const entries = Array.isArray(rec.entries) ? rec.entries : [];
+    const entry0 =
+      entries[0] && typeof entries[0] === 'object'
+        ? (entries[0] as Record<string, unknown>)
+        : undefined;
+    const label = readField(rec, entry0, 'label');
+    if (rec.type === 'address') {
+      return [
+        {
+          type: 'address',
+          label,
+          address_one: readField(rec, entry0, 'address_one'),
+          address_two: readField(rec, entry0, 'address_two'),
+          city: readField(rec, entry0, 'city'),
+          province: readField(rec, entry0, 'province'),
+          country: readField(rec, entry0, 'country'),
+          postal_code: readField(rec, entry0, 'postal_code'),
+        },
+      ];
+    }
+    return [{ type: rec.type, label, value: readField(rec, entry0, 'value') }];
   });
 }
 
-/** A fresh empty entry for the given type (one blank row when a method is added / "add entry"). */
-export function emptyEntry(type: ContactMethodType): ContactEntry {
-  return type === 'address' ? { address_one: '' } : { value: '' };
-}
-
-/** A fresh empty method of the given type, seeded with one blank entry row. */
-export function emptyMethod(type: ContactMethodType): ContactMethod {
-  return { type, label: '', entries: [emptyEntry(type)] };
-}
-
-/** True when a value/address entry carries something worth displaying. */
-export function entryHasContent(type: ContactMethodType, entry: ContactEntry): boolean {
-  if (type === 'address') {
-    const a = entry as AddressEntry;
-    return Boolean(
-      a.address_one || a.address_two || a.city || a.province || a.country || a.postal_code,
+/** The one-or-more display lines for a method — a single value, or the formatted address lines. */
+export function methodDetailLines(method: ContactMethod): string[] {
+  if (method.type === 'address') {
+    const region = [method.city, method.province, method.postal_code].filter(Boolean).join(' ');
+    return [method.address_one, method.address_two, region, method.country].filter(
+      (line): line is string => Boolean(line),
     );
   }
-  return Boolean((entry as ValueEntry).value);
+  if (!method.value) {
+    return [];
+  }
+  return [isPhoneType(method.type) ? formatPhone(method.value) : method.value];
+}
+
+/** A fresh empty method of the given type for the add-flow. */
+export function emptyMethod(type: ContactMethodType): ContactMethod {
+  return type === 'address' ? { type, label: '', address_one: '' } : { type, label: '', value: '' };
 }

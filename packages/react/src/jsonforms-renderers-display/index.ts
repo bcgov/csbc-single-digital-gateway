@@ -43,11 +43,9 @@ export {
 export { ContactMethodsView } from './controls/contact-methods-view';
 export {
   normalizeContactMethods,
+  methodDetailLines,
   CONTACT_METHOD_TYPES,
   CONTACT_METHOD_META,
   type ContactMethod,
   type ContactMethodType,
-  type ContactEntry,
-  type ValueEntry,
-  type AddressEntry,
 } from '../jsonforms-renderers/controls/contact-methods/model';
