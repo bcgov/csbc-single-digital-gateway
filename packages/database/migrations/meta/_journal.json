@@ -141,6 +141,13 @@
       "when": 1783701291191,
       "tag": "0019_notification_outbox_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784063414140,
+      "tag": "0020_external_application",
+      "breakpoints": true
     }
   ]
 }
