@@ -3,9 +3,10 @@ import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Clock, Mail, MapPin, Phone, Send, Wallet } from 'lucide-react';
+import { Clock, Send, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ApplicationRow } from '@/components/services/application-row';
+import { ContactSection } from '@/components/services/contact-section';
 import { ServiceContent } from '@/components/services/service-content';
 import { myApplicationsQueryOptions } from '@/lib/catalog';
 
@@ -238,40 +239,6 @@ export function HelpAndInformation() {
   );
 }
 
-const CONTACT = [
-  { icon: Phone, label: 'Call us', value: '1-800-000-0000', sub: 'Mon–Fri, 8am–4:30pm' },
-  {
-    icon: Mail,
-    label: 'Other ways',
-    value: 'Email or text us',
-    sub: 'We reply within 2 business days',
-  },
-  { icon: MapPin, label: 'Visit us', value: 'Find a service centre', sub: 'Locations across B.C.' },
-];
-
-/** "Contact information" — a row of contact cards (placeholder). */
-export function ContactInformation() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-3">
-      {CONTACT.map((item) => {
-        const Icon = item.icon;
-        return (
-          <Card key={item.label}>
-            <CardContent className="flex flex-col gap-1 py-4">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="size-4" aria-hidden />
-              </span>
-              <span className="mt-1 text-[11px] text-muted-foreground">{item.label}</span>
-              <span className="text-sm font-medium text-foreground">{item.value}</span>
-              <span className="text-xs text-muted-foreground">{item.sub}</span>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
 /**
  * The shared two-column body of a service page: the "On this page" rail + all sections, with the
  * overview rendering the given `schema`/`uischema`/`data`. Used by both the live service detail and
@@ -300,7 +267,7 @@ export function ServiceSections({
             schema={schema}
             uischema={uischema}
             data={data}
-            omit={['title', 'description']}
+            omit={['title', 'description', 'contact_methods']}
           />
         </Section>
         <Section id="eligibility" title="Eligibility criteria">
@@ -316,7 +283,7 @@ export function ServiceSections({
           <HelpAndInformation />
         </Section>
         <Section id="contact" title="Contact information">
-          <ContactInformation />
+          <ContactSection value={data.contact_methods} />
         </Section>
       </div>
     </div>

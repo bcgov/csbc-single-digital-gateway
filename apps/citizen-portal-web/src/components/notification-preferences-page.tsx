@@ -124,7 +124,7 @@ export function NotificationPreferencesPage() {
 
   return (
     <CitizenShell>
-      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+      <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
         {authPending ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-8 w-48" />

@@ -23,6 +23,8 @@ const emptyForm = {
 
 // `about` is a rich-text field — stored as a Lexical SerializedEditorState object (schema type "object"),
 // driven by the `richtext` JSONForms renderer (uischema option `format: 'richtext'`).
+// `contact_methods` (feature 130) is a loose array driven by the bespoke `contact-methods` renderer
+// (uischema option `format: 'contact-methods'`); the control owns the per-type entry shape.
 const serviceDefinition = {
   schema: {
     type: 'object',
@@ -31,6 +33,25 @@ const serviceDefinition = {
       title: { type: 'string', title: 'Title' },
       description: { type: 'string', title: 'Description' },
       about: { type: 'object', title: 'About' },
+      contact_methods: {
+        type: 'array',
+        title: 'Contact methods',
+        items: {
+          type: 'object',
+          required: ['type'],
+          properties: {
+            type: { type: 'string', enum: ['phone', 'email', 'address', 'fax', 'links'] },
+            label: { type: 'string' },
+            value: { type: 'string' },
+            address_one: { type: 'string' },
+            address_two: { type: 'string' },
+            city: { type: 'string' },
+            province: { type: 'string' },
+            country: { type: 'string' },
+            postal_code: { type: 'string' },
+          },
+        },
+      },
     },
   },
   uischema: {
@@ -39,6 +60,11 @@ const serviceDefinition = {
       { type: 'Control', scope: '#/properties/title' },
       { type: 'Control', scope: '#/properties/description', options: { multi: true } },
       { type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } },
+      {
+        type: 'Control',
+        scope: '#/properties/contact_methods',
+        options: { format: 'contact-methods' },
+      },
     ],
   },
 };
