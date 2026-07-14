@@ -277,7 +277,13 @@ export function createService(input: {
 export function updateDraft(
   id: string,
   versionId: string,
-  input: { data: Record<string, unknown>; title?: string; applications?: ApplicationInput[] },
+  input: {
+    data: Record<string, unknown>;
+    title?: string;
+    applications?: ApplicationInput[];
+    /** Ordered application-method reference ids — repositions them on save (feature 132). */
+    applicationOrder?: string[];
+  },
 ): Promise<ServiceVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,

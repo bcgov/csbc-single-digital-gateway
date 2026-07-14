@@ -45,7 +45,27 @@ const externalRef: ServiceReference = {
   createdAt: ISO,
 };
 
-function renderMethods(references: ServiceReference[]) {
+const formRef: ServiceReference = {
+  id: 'ref-form',
+  relation: 'application_form',
+  position: 0,
+  label: 'Apply online',
+  url: null,
+  targetDocumentId: 'form-doc',
+  targetVersionId: 'form-ver',
+  targetKind: 'basic-form',
+  targetTitle: 'Application form',
+  targetVersion: 1,
+  targetStatus: 'draft',
+  hasSubmissions: false,
+  hasStructure: true,
+  createdAt: ISO,
+};
+
+function renderMethods(
+  references: ServiceReference[],
+  opts: { readonly?: boolean; onReorder?: (ids: string[]) => void } = {},
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const rootRoute = createRootRoute({
     component: () => (
@@ -54,7 +74,8 @@ function renderMethods(references: ServiceReference[]) {
         serviceId="s1"
         versionId="sv1"
         references={references}
-        readonly={false}
+        readonly={opts.readonly ?? false}
+        {...(opts.onReorder ? { onReorder: opts.onReorder } : {})}
       />
     ),
   });
@@ -145,5 +166,31 @@ describe('ApplicationMethods — external method row', () => {
       expect.stringContaining('/versions/sv1/external-applications/ref-ext'),
       expect.objectContaining({ method: 'PATCH' }),
     );
+  });
+});
+
+describe('ApplicationMethods — reordering (feature 132)', () => {
+  it('shows a reorder grip per method when editable', async () => {
+    renderMethods([formRef, externalRef], { onReorder: () => {} });
+    expect(await screen.findByText('Application form')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reorder Application form' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reorder Apply on GOV.UK' })).toBeInTheDocument();
+  });
+
+  it('shows no reorder grips on a read-only (published) version', async () => {
+    renderMethods([formRef, externalRef], { readonly: true, onReorder: () => {} });
+    expect(await screen.findByText('Application form')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Reorder / })).not.toBeInTheDocument();
+    // Read-only also hides the edit/delete affordances.
+    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+  });
+
+  it('renders methods in the order given (parent-controlled)', async () => {
+    renderMethods([externalRef, formRef], { onReorder: () => {} });
+    await screen.findByText('Application form');
+    const titles = screen
+      .getAllByText(/Apply on GOV\.UK|Application form/)
+      .map((el) => el.textContent);
+    expect(titles).toEqual(['Apply on GOV.UK', 'Application form']);
   });
 });
