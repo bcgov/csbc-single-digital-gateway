@@ -52,9 +52,11 @@ export interface FormCatalogEntry {
 
 export interface ServiceReference {
   id: string;
-  relation: 'related_service' | 'application_form';
+  relation: 'related_service' | 'application_form' | 'external_application';
   position: number;
   label: string | null;
+  /** For an `external_application` reference, the external https destination; null for forms. */
+  url: string | null;
   targetDocumentId: string;
   targetVersionId: string;
   targetKind: string;
@@ -356,6 +358,34 @@ export function createReferencedForm(
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/forms`,
     'POST',
+    input,
+  );
+}
+
+/** Create an external application method (a labelled https link) on a service draft version and
+ * reference it — the External-link "Add application method" flow (feature 131). */
+export function createExternalApplication(
+  id: string,
+  versionId: string,
+  input: { label: string; url: string },
+): Promise<ServiceReference> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/external-applications`,
+    'POST',
+    input,
+  );
+}
+
+/** Edit an external application method's label + url (draft version only). */
+export function updateExternalApplication(
+  id: string,
+  versionId: string,
+  referenceId: string,
+  input: { label: string; url: string },
+): Promise<ServiceReference> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/external-applications/${encodeURIComponent(referenceId)}`,
+    'PATCH',
     input,
   );
 }

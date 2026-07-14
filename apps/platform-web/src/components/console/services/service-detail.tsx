@@ -177,7 +177,9 @@ export function ServiceDetail({
     return <p className="p-6 text-sm text-muted-foreground">This version no longer exists.</p>;
   }
 
-  const applicationRefs = references.filter((ref) => ref.relation === 'application_form');
+  const applicationRefs = references.filter(
+    (ref) => ref.relation === 'application_form' || ref.relation === 'external_application',
+  );
   const isLatest = selected.id === latest?.id;
   const readonly = selected.status !== 'draft';
   const publishApplications = applicationRefs.map((ref) => ({
