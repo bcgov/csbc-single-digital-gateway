@@ -92,6 +92,9 @@ describe('ExternalApplicationForm', () => {
     );
     const submit = screen.getByRole('button', { name: 'Add link' });
     expect(submit).toBeDisabled();
+    // BC-branded placeholders.
+    expect(screen.getByLabelText('Label')).toHaveAttribute('placeholder', 'Apply at gov.bc.ca');
+    expect(screen.getByLabelText('Link URL')).toHaveAttribute('placeholder', 'https://gov.bc.ca');
 
     await userEvent.type(screen.getByLabelText('Label'), '  Apply on GOV.UK  ');
     // A non-https url keeps submit disabled.

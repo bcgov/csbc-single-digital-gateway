@@ -66,7 +66,7 @@ export function ExternalApplicationForm({
           id={labelId}
           value={label}
           onChange={(event) => setLabel(event.target.value)}
-          placeholder="Apply on GOV.UK"
+          placeholder="Apply at gov.bc.ca"
           maxLength={255}
           disabled={submitting}
         />
@@ -80,7 +80,7 @@ export function ExternalApplicationForm({
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           onBlur={() => setTouched(true)}
-          placeholder="https://example.gov"
+          placeholder="https://gov.bc.ca"
           disabled={submitting}
           aria-invalid={urlError}
         />
