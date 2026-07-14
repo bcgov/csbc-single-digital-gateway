@@ -182,12 +182,16 @@ export const documentReferencesRelation = pgEnum('document_references_relation',
   'related_service',
   'application_form',
   'service_agreement',
+  'external_application',
 ]);
 
 /**
  * A reference owned by a service `document_version` (owner) to another document's version (target):
- * other services (`related_service`, optional) or forms (`application_form`, a way to apply). Both
- * sides are version-pinned. The composite FKs make the type/workspace rules DB-enforced:
+ * other services (`related_service`, optional), forms (`application_form`, a way to apply), or an
+ * external link (`external_application`, a way to apply hosted elsewhere — the target is an
+ * `external-application` document whose version `data` holds `{ label, url }`). Application-method
+ * targets (forms + external) are version-pinned. The composite FKs make the type/workspace rules
+ * DB-enforced:
  *  - owner is a service (`owner_kind = 'service'` + (owner_document_id, owner_kind) → documents(id, kind))
  *  - target kind matches the relation (CHECK + (target_document_id, target_kind) → documents(id, kind))
  *  - both sides in the same workspace (shared `workspace_id` + composite FKs to documents(id, workspace_id))
@@ -213,8 +217,9 @@ export const documentReferences = pgTable(
     // independently of the owner, which is always workspace-scoped (a service).
     targetWorkspaceId: uuid('target_workspace_id'),
     relation: documentReferencesRelation('relation').notNull(),
-    // Button label for an `application_form` reference (what a user clicks to apply). NULL for
-    // `related_service` references.
+    // Display label for an application-method reference: the call-to-action for an `application_form`,
+    // or the method name for an `external_application` (whose URL lives in the target version `data`).
+    // NULL for `related_service` references.
     label: text('label'),
     position: integer('position').notNull().default(0),
     createdAt: createdAt(),
@@ -260,10 +265,11 @@ export const documentReferences = pgTable(
     check('document_references_owner_kind_chk', sql`${table.ownerKind} = 'service'`),
     check(
       // `relation::text` (not the enum literal) so a fresh single-transaction migrate can apply this
-      // CHECK in the same run that ADDs the `service_agreement` enum value (Postgres forbids using a
-      // not-yet-committed enum value; a text comparison sidesteps it). See migration 0014.
+      // CHECK in the same run that ADDs the `service_agreement` / `external_application` enum values
+      // (Postgres forbids using a not-yet-committed enum value; a text comparison sidesteps it). See
+      // migrations 0014 and 0021.
       'document_references_relation_kind_chk',
-      sql`(${table.relation} = 'related_service' AND ${table.targetKind} = 'service') OR (${table.relation} = 'application_form' AND ${table.targetKind} IN ('basic-form', 'multi-stage-form')) OR (${table.relation}::text = 'service_agreement' AND ${table.targetKind} = 'service-agreement')`,
+      sql`(${table.relation} = 'related_service' AND ${table.targetKind} = 'service') OR (${table.relation} = 'application_form' AND ${table.targetKind} IN ('basic-form', 'multi-stage-form')) OR (${table.relation}::text = 'service_agreement' AND ${table.targetKind} = 'service-agreement') OR (${table.relation}::text = 'external_application' AND ${table.targetKind} = 'external-application')`,
     ),
     // A scoped target must be in the owner's workspace; a NULL target_workspace_id (global) is
     // allowed only for the service_agreement relation (services/forms are never global).

@@ -15,6 +15,7 @@ const BASIC_FORM_ID = '00000000-0000-4000-8000-000000000001';
 const MULTI_STAGE_ID = '00000000-0000-4000-8000-000000000002';
 const SERVICE_ID = '00000000-0000-4000-8000-000000000003';
 const SERVICE_AGREEMENT_ID = '00000000-0000-4000-8000-000000000004';
+const EXTERNAL_APPLICATION_ID = '00000000-0000-4000-8000-000000000005';
 
 const emptyForm = {
   schema: { type: 'object', properties: {}, required: [] },
@@ -99,6 +100,20 @@ const serviceAgreementDefinition = {
   },
 };
 
+// An external application method (feature 131) collects no JSONForms structure — its version `data`
+// holds `{ label, url }` directly. This definition documents that data shape (it is not rendered by
+// a builder); `structureFromDefinition` returns NULL for this kind, so the document's `schema` is NULL.
+const externalApplicationDefinition = {
+  schema: {
+    type: 'object',
+    required: ['label', 'url'],
+    properties: {
+      label: { type: 'string', title: 'Label' },
+      url: { type: 'string', format: 'uri', title: 'URL' },
+    },
+  },
+};
+
 const basicFormDefinition = {
   name: 'Basic Form',
   description: 'A single page of fields applicants complete and submit in one go.',
@@ -138,6 +153,7 @@ async function seed(): Promise<void> {
         { id: MULTI_STAGE_ID, name: 'Multi-stage Form', kind: 'multi-stage-form' },
         { id: SERVICE_ID, name: 'Service', kind: 'service' },
         { id: SERVICE_AGREEMENT_ID, name: 'Service Agreement', kind: 'service-agreement' },
+        { id: EXTERNAL_APPLICATION_ID, name: 'External Application', kind: 'external-application' },
       ])
       .onConflictDoNothing();
 
@@ -168,11 +184,17 @@ async function seed(): Promise<void> {
           definition: serviceAgreementDefinition,
           publishedAt: sql`now()`,
         },
+        {
+          typeId: EXTERNAL_APPLICATION_ID,
+          version: 1,
+          definition: externalApplicationDefinition,
+          publishedAt: sql`now()`,
+        },
       ])
       .onConflictDoNothing();
 
     console.info(
-      '[seed] document types ready: Basic Form, Multi-stage Form, Service, Service Agreement (published v1).',
+      '[seed] document types ready: Basic Form, Multi-stage Form, Service, Service Agreement, External Application (published v1).',
     );
   } finally {
     await db.$client.end();

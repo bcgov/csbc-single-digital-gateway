@@ -1,3 +1,6 @@
+import { move } from '@dnd-kit/helpers';
+import { DragDropProvider } from '@dnd-kit/react';
+import { useSortable } from '@dnd-kit/react/sortable';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,35 +13,208 @@ import {
 } from '@repo/ui/alert-dialog';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Archive, FileText, Layers, Plus, Trash2 } from 'lucide-react';
+import {
+  Archive,
+  ExternalLink,
+  FileText,
+  GripVertical,
+  Layers,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
-import { archiveReference, removeReference, type ServiceReference } from '@/lib/services';
+import {
+  archiveReference,
+  removeReference,
+  type ServiceReference,
+  updateExternalApplication,
+} from '@/lib/services';
+import { ExternalApplicationForm } from './external-application-form';
 
 const KIND_LABEL: Record<string, string> = {
   'basic-form': 'Basic form',
   'multi-stage-form': 'Multi-stage form',
+  'external-application': 'External link',
 };
 
-/** Service-detail "Application methods" — a list of existing method references. Each method links to
- * its builder; it can be DELETED when its form has no submissions, otherwise ARCHIVED (feature 45). */
+const METHODS_GROUP = 'application-methods';
+// Reorder gaps open instantly; the slide animation is disabled (see form-builder field-rows).
+const NO_SLIDE = { transition: { duration: 0 } } as const;
+
+interface RowActions {
+  slug: string;
+  serviceId: string;
+  versionId: string;
+  readonly: boolean;
+  busy: boolean;
+  onEdit: (reference: ServiceReference) => void;
+  onArchive: (referenceId: string) => void;
+  onDelete: (referenceId: string) => void;
+}
+
+/** The visual body of one method row. `handleRef` (when reorderable) wires the drag grip. */
+function MethodRowBody({
+  reference,
+  handleRef,
+  slug,
+  serviceId,
+  versionId,
+  readonly,
+  busy,
+  onEdit,
+  onArchive,
+  onDelete,
+}: RowActions & {
+  reference: ServiceReference;
+  handleRef?: (element: Element | null) => void;
+}) {
+  const isExternal = reference.targetKind === 'external-application';
+  const Icon = isExternal
+    ? ExternalLink
+    : reference.targetKind === 'multi-stage-form'
+      ? Layers
+      : FileText;
+  const archived = reference.targetStatus === 'archived';
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 group-data-[dragging]:opacity-40">
+      <span className="flex min-w-0 items-center gap-2">
+        {handleRef ? (
+          <button
+            ref={handleRef}
+            type="button"
+            aria-label={`Reorder ${reference.targetTitle}`}
+            className="cursor-grab text-muted-foreground"
+          >
+            <GripVertical className="size-4" aria-hidden />
+          </button>
+        ) : null}
+        <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <span className="min-w-0">
+          {archived || isExternal ? (
+            // External methods have no builder page; forms link to their builder.
+            <span className="block truncate text-sm font-medium">{reference.targetTitle}</span>
+          ) : (
+            <Link
+              to="/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId"
+              params={{
+                slug,
+                id: serviceId,
+                versionId,
+                applicationMethodId: reference.targetDocumentId,
+              }}
+              className="block truncate text-sm font-medium text-foreground hover:underline"
+            >
+              {reference.targetTitle}
+            </Link>
+          )}
+          <span className="block truncate text-xs text-muted-foreground">
+            {isExternal
+              ? (reference.url ?? KIND_LABEL[reference.targetKind])
+              : `${reference.label ? `${reference.label} · ` : ''}${KIND_LABEL[reference.targetKind] ?? reference.targetKind}`}
+          </span>
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        {archived ? <Badge color="blue">Archived</Badge> : null}
+        {readonly || archived ? null : (
+          <>
+            {isExternal ? (
+              <Button
+                size="xs"
+                variant="ghost"
+                type="button"
+                disabled={busy}
+                onClick={() => onEdit(reference)}
+              >
+                <Pencil className="size-3.5" aria-hidden />
+                Edit
+              </Button>
+            ) : null}
+            {reference.hasSubmissions ? (
+              <Button
+                size="xs"
+                variant="ghost"
+                type="button"
+                disabled={busy}
+                onClick={() => onArchive(reference.id)}
+              >
+                <Archive className="size-3.5" aria-hidden />
+                Archive
+              </Button>
+            ) : (
+              <Button
+                size="xs"
+                variant="ghost"
+                type="button"
+                className="text-destructive"
+                disabled={busy}
+                onClick={() => onDelete(reference.id)}
+              >
+                <Trash2 className="size-3.5" aria-hidden />
+                Delete
+              </Button>
+            )}
+          </>
+        )}
+      </span>
+    </div>
+  );
+}
+
+/** A draggable method row — only rendered inside the DragDropProvider (editable draft). */
+function SortableMethodRow({
+  reference,
+  index,
+  ...actions
+}: RowActions & { reference: ServiceReference; index: number }) {
+  const { ref, handleRef, isDragSource } = useSortable({
+    id: reference.id,
+    index,
+    group: METHODS_GROUP,
+    type: 'method',
+    ...NO_SLIDE,
+  });
+  return (
+    <li ref={ref} data-dragging={isDragSource || undefined} className="group list-none">
+      <MethodRowBody reference={reference} handleRef={handleRef} {...actions} />
+    </li>
+  );
+}
+
+/**
+ * Service-detail "Application methods" — the list of method references. Forms link to their builder;
+ * external methods are edited inline. When `onReorder` is provided and the version is a draft, the
+ * list is drag-sortable; the new order is held by the parent and saved with the service (feature 132).
+ */
 export function ApplicationMethods({
   slug,
   serviceId,
   versionId,
   references,
   readonly,
+  onReorder,
 }: {
   slug: string;
   serviceId: string;
   versionId: string;
   references: ServiceReference[];
   readonly: boolean;
+  onReorder?: (orderedIds: string[]) => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [editRef, setEditRef] = useState<ServiceReference | null>(null);
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['services'] });
   const remove = useMutation({
     mutationFn: (referenceId: string) => removeReference(serviceId, versionId, referenceId),
@@ -48,7 +224,71 @@ export function ApplicationMethods({
     mutationFn: (referenceId: string) => archiveReference(serviceId, versionId, referenceId),
     onSuccess: invalidate,
   });
+  const editExternal = useMutation({
+    mutationFn: (input: { referenceId: string; label: string; url: string }) =>
+      updateExternalApplication(serviceId, versionId, input.referenceId, {
+        label: input.label,
+        url: input.url,
+      }),
+    onSuccess: async () => {
+      await invalidate();
+      setEditRef(null);
+    },
+  });
   const error = remove.error ?? archive.error;
+  const sortable = !readonly && onReorder !== undefined;
+
+  const actionsFor = (reference: ServiceReference): RowActions => ({
+    slug,
+    serviceId,
+    versionId,
+    readonly,
+    busy:
+      (remove.isPending && remove.variables === reference.id) ||
+      (archive.isPending && archive.variables === reference.id),
+    onEdit: (r) => {
+      editExternal.reset();
+      setEditRef(r);
+    },
+    onArchive: (referenceId) => archive.mutate(referenceId),
+    onDelete: (referenceId) => setConfirmId(referenceId),
+  });
+
+  const list =
+    references.length === 0 ? (
+      <p className="text-sm text-muted-foreground">
+        No application methods yet — add a form a user can apply through.
+      </p>
+    ) : sortable ? (
+      <DragDropProvider
+        onDragEnd={(event) => {
+          const next = move({ [METHODS_GROUP]: references.map((r) => r.id) }, event);
+          const ids = next[METHODS_GROUP];
+          if (ids !== undefined) {
+            onReorder?.(ids);
+          }
+        }}
+      >
+        <ul className="flex flex-col gap-2">
+          {references.map((reference, index) => (
+            <SortableMethodRow
+              key={reference.id}
+              reference={reference}
+              index={index}
+              {...actionsFor(reference)}
+            />
+          ))}
+        </ul>
+      </DragDropProvider>
+    ) : (
+      <ul className="flex flex-col gap-2">
+        {references.map((reference) => (
+          <li key={reference.id} className="list-none">
+            <MethodRowBody reference={reference} {...actionsFor(reference)} />
+          </li>
+        ))}
+      </ul>
+    );
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
@@ -76,80 +316,7 @@ export function ApplicationMethods({
           {error.message}
         </p>
       ) : null}
-      {references.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No application methods yet — add a form a user can apply through.
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {references.map((ref) => {
-            const Icon = ref.targetKind === 'multi-stage-form' ? Layers : FileText;
-            const archived = ref.targetStatus === 'archived';
-            const busy =
-              (remove.isPending && remove.variables === ref.id) ||
-              (archive.isPending && archive.variables === ref.id);
-            return (
-              <li
-                key={ref.id}
-                className="flex items-center justify-between gap-2 rounded-lg border border-border p-3"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  <span className="min-w-0">
-                    {archived ? (
-                      <span className="block truncate text-sm font-medium">{ref.targetTitle}</span>
-                    ) : (
-                      <Link
-                        to="/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId"
-                        params={{
-                          slug,
-                          id: serviceId,
-                          versionId,
-                          applicationMethodId: ref.targetDocumentId,
-                        }}
-                        className="block truncate text-sm font-medium text-foreground hover:underline"
-                      >
-                        {ref.targetTitle}
-                      </Link>
-                    )}
-                    <span className="block text-xs text-muted-foreground">
-                      {ref.label ? `${ref.label} · ` : ''}
-                      {KIND_LABEL[ref.targetKind] ?? ref.targetKind}
-                    </span>
-                  </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-2">
-                  {archived ? <Badge color="blue">Archived</Badge> : null}
-                  {readonly || archived ? null : ref.hasSubmissions ? (
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => archive.mutate(ref.id)}
-                    >
-                      <Archive className="size-3.5" aria-hidden />
-                      Archive
-                    </Button>
-                  ) : (
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      type="button"
-                      className="text-destructive"
-                      disabled={busy}
-                      onClick={() => setConfirmId(ref.id)}
-                    >
-                      <Trash2 className="size-3.5" aria-hidden />
-                      Delete
-                    </Button>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {list}
       <AlertDialog
         open={confirmId !== null}
         onOpenChange={(next) => {
@@ -162,7 +329,7 @@ export function ApplicationMethods({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this application method?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently deletes the form. This can’t be undone.
+              This permanently removes the application method. This can’t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -181,6 +348,42 @@ export function ApplicationMethods({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog
+        open={editRef !== null}
+        onOpenChange={(next) => {
+          if (!next && !editExternal.isPending) {
+            setEditRef(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit external link</DialogTitle>
+            <DialogDescription>Update where applicants are sent to apply.</DialogDescription>
+          </DialogHeader>
+          {editRef ? (
+            <ExternalApplicationForm
+              key={editRef.id}
+              initial={{ label: editRef.label ?? '', url: editRef.url ?? '' }}
+              submitLabel="Save"
+              submitting={editExternal.isPending}
+              error={editExternal.error?.message ?? null}
+              onSubmit={(values) =>
+                editExternal.mutate({
+                  referenceId: editRef.id,
+                  label: values.label,
+                  url: values.url,
+                })
+              }
+              onCancel={() => {
+                if (!editExternal.isPending) {
+                  setEditRef(null);
+                }
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

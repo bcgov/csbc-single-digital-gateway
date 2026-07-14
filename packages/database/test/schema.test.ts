@@ -69,6 +69,10 @@ describe('schema — document_references service_agreement relation + relaxed wo
     expect(schema.documentReferencesRelation.enumValues).toContain('service_agreement');
   });
 
+  it('includes the external_application relation enum value (feature 131)', () => {
+    expect(schema.documentReferencesRelation.enumValues).toContain('external_application');
+  });
+
   it('has a nullable target_workspace_id column (global-or-same-ws targets)', () => {
     const { columns } = cfg(schema.documentReferences);
     const targetWs = columns.find((c) => c.name === 'target_workspace_id');

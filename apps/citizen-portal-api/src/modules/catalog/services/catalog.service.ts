@@ -121,7 +121,9 @@ export class CatalogService {
     };
   }
 
-  /** The application-method forms a service version offers (its `application_form` references). */
+  /** The application methods a service version offers — in-portal forms (`application_form`) AND
+   * external links (`external_application`, feature 131). For an external method the `https`
+   * destination is read from its target version `data.url`; forms carry `url: null`. */
   private async applicationFormsFor(versionId: string): Promise<ApplicationForm[]> {
     const rows = await this.db
       .select({
@@ -131,18 +133,35 @@ export class CatalogService {
         formId: documentReferences.targetDocumentId,
         formVersionId: documentReferences.targetVersionId,
         kind: documentReferences.targetKind,
+        targetData: documentVersions.data,
       })
       .from(documentReferences)
       .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
+      .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
       .where(
         and(
           eq(documentReferences.ownerVersionId, versionId),
-          eq(documentReferences.relation, 'application_form'),
+          inArray(documentReferences.relation, ['application_form', 'external_application']),
         ),
       )
       .orderBy(asc(documentReferences.position));
-    // An application_form reference always pins a version; the narrowing drops any malformed null.
-    return rows.filter((row): row is ApplicationForm => row.formVersionId !== null);
+    // An application-method reference always pins a version; the narrowing drops any malformed null.
+    return rows
+      .filter((row) => row.formVersionId !== null)
+      .map((row) => {
+        const rawUrl = (row.targetData as { url?: unknown }).url;
+        const url =
+          row.kind === 'external-application' && typeof rawUrl === 'string' ? rawUrl : null;
+        return {
+          id: row.id,
+          label: row.label,
+          title: row.title,
+          formId: row.formId,
+          formVersionId: row.formVersionId as string,
+          kind: row.kind,
+          url,
+        } satisfies ApplicationForm;
+      });
   }
 
   /**

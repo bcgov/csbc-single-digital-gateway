@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
@@ -10,6 +10,7 @@ import {
 import {
   AddReferenceDto,
   CreateReferencedFormDto,
+  ExternalApplicationDto,
   ReferenceDto,
   ReferenceListDto,
 } from '../dtos/reference.dtos';
@@ -77,6 +78,29 @@ export class ServiceReferencesV1Controller {
     @Body() body: CreateReferencedFormDto,
   ) {
     return this.references.createForm(user.id, id, versionId, body);
+  }
+
+  @Post(':id/versions/:versionId/external-applications')
+  @ZodSerializerDto(ReferenceDto)
+  createExternal(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Body() body: ExternalApplicationDto,
+  ) {
+    return this.references.createExternal(user.id, id, versionId, body);
+  }
+
+  @Patch(':id/versions/:versionId/external-applications/:referenceId')
+  @ZodSerializerDto(ReferenceDto)
+  updateExternal(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Param('referenceId') referenceId: string,
+    @Body() body: ExternalApplicationDto,
+  ) {
+    return this.references.updateExternal(user.id, id, versionId, referenceId, body);
   }
 
   @Get(':id/versions/:versionId/agreements')

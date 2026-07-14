@@ -77,11 +77,11 @@ export async function discardVersionTx(
       .where(
         and(
           eq(documentReferences.ownerVersionId, versionId),
-          eq(documentReferences.relation, 'application_form'),
+          inArray(documentReferences.relation, ['application_form', 'external_application']),
         ),
       )
   ).map((r) => r.formId);
-  // Deleting the version cascades the references it owns; the deep-copied forms are then orphaned.
+  // Deleting the version cascades the references it owns; the deep-copied methods are then orphaned.
   await tx.delete(documentVersions).where(eq(documentVersions.id, versionId));
   for (const formId of formIds) {
     // eslint-disable-next-line no-await-in-loop -- sequential reads/writes share one tx connection
@@ -97,11 +97,12 @@ export async function discardVersionTx(
 }
 
 /**
- * Copy a service version's references onto a NEW version. Application-method forms are deep-copied
- * (new form document + fresh draft version) so each service version edits its own forms. Other
- * references — service agreements (document-only pointers) and related services — are copied AS-IS.
- * The join to `document_versions` is a LEFT join because a `service_agreement` reference carries no
- * `target_version_id` (it resolves current-published) and must still be copied.
+ * Copy a service version's references onto a NEW version. Application-method targets — forms AND
+ * external links (feature 131) — are deep-copied (new document + fresh draft version) so each
+ * service version edits its own methods. Other references — service agreements (document-only
+ * pointers) and related services — are copied AS-IS. The join to `document_versions` is a LEFT join
+ * because a `service_agreement` reference carries no `target_version_id` (it resolves
+ * current-published) and must still be copied.
  */
 export async function copyReferences(
   tx: Tx,
@@ -121,6 +122,7 @@ export async function copyReferences(
       formTypeId: documentVersions.typeId,
       formTypeVersionId: documentVersions.typeVersionId,
       formSchema: documentVersions.schema,
+      formData: documentVersions.data,
     })
     .from(documentReferences)
     .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
@@ -130,38 +132,43 @@ export async function copyReferences(
   for (const src of sources) {
     let targetDocumentId = src.targetDocumentId;
     let targetVersionId = src.targetVersionId;
-    if (src.relation === 'application_form') {
-      // A form always pins a version, so the LEFT join resolved its row (type ids are present).
+    // Forms + external links are service-owned methods → deep-copy the target (fresh doc + version).
+    const isOwnedCopy =
+      src.relation === 'application_form' || src.relation === 'external_application';
+    if (isOwnedCopy) {
+      // An owned method always pins a version, so the LEFT join resolved its row (type ids present).
       // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
       const formDocRows = await tx
         .insert(documents)
         .values({
-          typeId: req(src.formTypeId, 'form typeId'),
+          typeId: req(src.formTypeId, 'method typeId'),
           workspaceId: source.workspaceId,
           kind: src.formKind,
           title: src.formTitle,
         })
         .returning();
-      const formDoc = one(formDocRows, 'form document copy');
+      const formDoc = one(formDocRows, 'method document copy');
       // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
       const formVersionRows = await tx
         .insert(documentVersions)
         .values({
           documentId: formDoc.id,
-          typeId: req(src.formTypeId, 'form typeId'),
-          typeVersionId: req(src.formTypeVersionId, 'form typeVersionId'),
+          typeId: req(src.formTypeId, 'method typeId'),
+          typeVersionId: req(src.formTypeVersionId, 'method typeVersionId'),
           version: 1,
+          // Forms carry their structure in `schema` (data default {}); external methods carry
+          // `{ label, url }` in `data` (schema NULL). Copying both covers both kinds.
           schema: src.formSchema,
+          data: src.formData ?? {},
         })
         .returning();
       targetDocumentId = formDoc.id;
-      targetVersionId = one(formVersionRows, 'form version copy').id;
+      targetVersionId = one(formVersionRows, 'method version copy').id;
     }
-    // A copied application_form gets a fresh form document in the owner's workspace; other relations
-    // keep the source's target_workspace_id (NULL for a global service agreement) and version pin
-    // (NULL for a service agreement — a document-only pointer).
-    const targetWorkspaceId =
-      src.relation === 'application_form' ? source.workspaceId : src.targetWorkspaceId;
+    // A deep-copied method gets a fresh document in the owner's workspace; other relations keep the
+    // source's target_workspace_id (NULL for a global service agreement) and version pin (NULL for a
+    // service agreement — a document-only pointer).
+    const targetWorkspaceId = isOwnedCopy ? source.workspaceId : src.targetWorkspaceId;
     // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
     await tx.insert(documentReferences).values({
       ownerVersionId: source.newVersionId,
@@ -179,9 +186,23 @@ export async function copyReferences(
   }
 }
 
+/** Dedup key for an owned method reference: relation + label so a form and an external method
+ * sharing a label never cross-match. */
+function methodDedupKey(relation: string, label: string | null): string {
+  return `${relation} ${label ?? ''}`;
+}
+
+/** The content that identifies an unedited copy, per relation: a form's `schema` (structure) or
+ * an external method's `data` (`{ label, url }`). */
+function methodDedupContent(relation: string, schema: unknown, data: unknown): string {
+  return JSON.stringify(relation === 'external_application' ? data : schema);
+}
+
 /**
- * On publish, re-point any unchanged deep-copied application form to the previously-published
- * version's form (matched by button label) and delete the redundant copy.
+ * On publish, re-point any unchanged deep-copied application method — a form OR an external link
+ * (feature 131) — to the previously-published version's target (matched by relation + label) and
+ * delete the redundant copy. Forms are compared by their `schema` (structure); external methods by
+ * their `data` (`{ label, url }`). Either way, byte-identical content ⇒ an unedited copy.
  */
 export async function dedupCopiedForms(
   tx: Tx,
@@ -199,43 +220,45 @@ export async function dedupCopiedForms(
   if (publishedVersionId === undefined || publishedVersionId === versionId) {
     return;
   }
+  const ownedMethods = inArray(documentReferences.relation, [
+    'application_form',
+    'external_application',
+  ]);
   const previous = await tx
     .select({
+      relation: documentReferences.relation,
       label: documentReferences.label,
       targetDocumentId: documentReferences.targetDocumentId,
       targetVersionId: documentReferences.targetVersionId,
       schema: documentVersions.schema,
+      data: documentVersions.data,
     })
     .from(documentReferences)
     .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
-    .where(
-      and(
-        eq(documentReferences.ownerVersionId, publishedVersionId),
-        eq(documentReferences.relation, 'application_form'),
-      ),
-    );
-  const previousByLabel = new Map(previous.map((p) => [p.label ?? '', p]));
+    .where(and(eq(documentReferences.ownerVersionId, publishedVersionId), ownedMethods));
+  const previousByKey = new Map(previous.map((p) => [methodDedupKey(p.relation, p.label), p]));
 
   const current = await tx
     .select({
       refId: documentReferences.id,
+      relation: documentReferences.relation,
       label: documentReferences.label,
       targetDocumentId: documentReferences.targetDocumentId,
       schema: documentVersions.schema,
+      data: documentVersions.data,
     })
     .from(documentReferences)
     .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
-    .where(
-      and(
-        eq(documentReferences.ownerVersionId, versionId),
-        eq(documentReferences.relation, 'application_form'),
-      ),
-    );
+    .where(and(eq(documentReferences.ownerVersionId, versionId), ownedMethods));
 
   for (const cur of current) {
-    const match = previousByLabel.get(cur.label ?? '');
-    // Byte-identical schema = an unedited copy (the deep-copy preserves key order; any edit changes it).
-    if (match === undefined || JSON.stringify(cur.schema) !== JSON.stringify(match.schema)) {
+    const match = previousByKey.get(methodDedupKey(cur.relation, cur.label));
+    // Byte-identical content = an unedited copy (the deep-copy preserves key order; edits change it).
+    if (
+      match === undefined ||
+      methodDedupContent(cur.relation, cur.schema, cur.data) !==
+        methodDedupContent(match.relation, match.schema, match.data)
+    ) {
       continue;
     }
     // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection

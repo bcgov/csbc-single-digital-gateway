@@ -32,8 +32,11 @@ export class CatalogServiceListDto extends createZodDto(
 ) {}
 
 /**
- * An application method = a form the published service version references (relation
- * `application_form`). `label` is the call-to-action text; `title` is the form's name. Workspace-free.
+ * An application method the published service version references — either an in-portal form
+ * (relation `application_form`, `kind` basic-form/multi-stage-form) or an external link (relation
+ * `external_application`, `kind` external-application; feature 131). `label` is the call-to-action /
+ * method name; `title` is the form/method name. For an external method, `url` is the `https`
+ * destination the citizen visits; NULL for forms. Workspace-free.
  */
 export const applicationFormSchema = z.object({
   id: z.string(),
@@ -42,6 +45,7 @@ export const applicationFormSchema = z.object({
   formId: z.string(),
   formVersionId: z.string(),
   kind: z.string(),
+  url: z.string().nullable(),
 });
 export type ApplicationForm = z.infer<typeof applicationFormSchema>;
 
