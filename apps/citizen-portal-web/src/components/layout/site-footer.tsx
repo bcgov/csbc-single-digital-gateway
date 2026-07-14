@@ -34,7 +34,7 @@ export function SiteFooter() {
       <div className="my-6 mx-auto px-4 md:px-8 w-full max-w-280 flex flex-col gap-9">
         <div className="grid gap-8 md:grid-cols-[1.5fr_repeat(3,1fr)]">
           <div className="flex flex-col gap-3">
-            <Logo className="h-8 w-auto" aria-label="Government of British Columbia" />
+            <Logo className="h-8 w-auto self-start" aria-label="Government of British Columbia" />
             <p className="max-w-xs text-[11px]/relaxed text-muted-foreground">
               We can help in over 220 languages and through other accessible options. Call, email or
               text us, or find a service centre.
