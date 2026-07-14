@@ -98,10 +98,10 @@ export function ApplicationDetailPage() {
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view this application.
             </p>
-            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
               <Icon path={mdiLogin} aria-hidden={true} />
               Log in
-            </Link>
+            </a>
           </div>
         </div>
       ) : isPending ? (

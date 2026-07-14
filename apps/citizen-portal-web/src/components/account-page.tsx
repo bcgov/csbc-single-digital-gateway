@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { buttonVariants } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Skeleton } from '@repo/ui/skeleton';
@@ -44,10 +43,10 @@ export function AccountPage() {
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view your account.
             </p>
-            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
               <Icon path={mdiLogin} aria-hidden={true} />
               Log in
-            </Link>
+            </a>
           </div>
         ) : (
           <>

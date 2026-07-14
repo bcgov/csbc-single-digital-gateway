@@ -6,7 +6,6 @@ import { Label } from '@repo/ui/label';
 import { Skeleton } from '@repo/ui/skeleton';
 import { Switch } from '@repo/ui/switch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { Icon } from '@mdi/react';
 import { mdiLogin } from '@mdi/js';
 
@@ -136,10 +135,10 @@ export function NotificationPreferencesPage() {
             <p className="text-sm text-muted-foreground">
               You need to be signed in to manage notifications.
             </p>
-            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
               <Icon path={mdiLogin} aria-hidden={true} />
               Log in
-            </Link>
+            </a>
           </div>
         ) : (
           <>

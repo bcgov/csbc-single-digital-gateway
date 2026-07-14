@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { buttonVariants } from '@repo/ui/button';
 import { mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
@@ -26,10 +25,10 @@ export function LoginCta() {
           <CardDescription>Log in to apply for services and manage your requests.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+          <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
             <Icon path={mdiLogin} size="16px" />
             Log in with BC Services Card Account
-          </Link>
+          </a>
         </CardContent>
       </Card>
     </section>
