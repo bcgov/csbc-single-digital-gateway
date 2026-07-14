@@ -14,6 +14,7 @@ import { Route as DevRouteRouteImport } from './routes/dev/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
+import { Route as DevStatusBannerRouteImport } from './routes/dev/status-banner'
 import { Route as DevIconsRouteImport } from './routes/dev/icons'
 import { Route as DevFormElementsRouteImport } from './routes/dev/form-elements'
 import { Route as DevDraggableRouteImport } from './routes/dev/draggable'
@@ -50,6 +51,11 @@ const ServicesIndexRoute = ServicesIndexRouteImport.update({
 const DevIndexRoute = DevIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevStatusBannerRoute = DevStatusBannerRouteImport.update({
+  id: '/status-banner',
+  path: '/status-banner',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevIconsRoute = DevIconsRouteImport.update({
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev': typeof DevIndexRoute
   '/services': typeof ServicesIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/dev/draggable'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/status-banner'
     | '/dev/'
     | '/services/'
     | '/services/$serviceId/'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/dev/draggable'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/status-banner'
     | '/dev'
     | '/services'
     | '/services/$serviceId'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/dev/draggable'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/status-banner'
     | '/dev/'
     | '/services/'
     | '/services/$serviceId/'
@@ -278,6 +290,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dev/'
       preLoaderRoute: typeof DevIndexRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/status-banner': {
+      id: '/dev/status-banner'
+      path: '/status-banner'
+      fullPath: '/dev/status-banner'
+      preLoaderRoute: typeof DevStatusBannerRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/icons': {
@@ -375,6 +394,7 @@ interface DevRouteRouteChildren {
   DevDraggableRoute: typeof DevDraggableRoute
   DevFormElementsRoute: typeof DevFormElementsRoute
   DevIconsRoute: typeof DevIconsRoute
+  DevStatusBannerRoute: typeof DevStatusBannerRoute
   DevIndexRoute: typeof DevIndexRoute
 }
 
@@ -386,6 +406,7 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevDraggableRoute: DevDraggableRoute,
   DevFormElementsRoute: DevFormElementsRoute,
   DevIconsRoute: DevIconsRoute,
+  DevStatusBannerRoute: DevStatusBannerRoute,
   DevIndexRoute: DevIndexRoute,
 }
 
