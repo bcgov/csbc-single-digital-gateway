@@ -38,13 +38,17 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 /** Route the calls the auth-aware home page makes: auth, services, the user's applications. */
-function mockBff({ me = new Response(null, { status: 401 }), apps = applications } = {}) {
+function mockBff({
+  me = new Response(null, { status: 401 }),
+  apps = applications,
+  svcs = services,
+} = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes('/auth/me')) return me;
     if (url.includes('/auth/logout')) return new Response(null, { status: 204 });
     if (url.includes('/v1/me/applications')) return jsonResponse({ items: apps });
-    if (url.includes('/v1/services')) return jsonResponse({ items: services });
+    if (url.includes('/v1/services')) return jsonResponse({ items: svcs });
     return new Response(null, { status: 404 });
   });
   globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -100,6 +104,35 @@ describe('citizen-portal-web home — signed out', () => {
       '/services',
     );
   });
+
+  it('shows each service card with its description and a catalog link', async () => {
+    mockBff();
+    renderHome();
+    const card = await screen.findByRole('link', { name: /Income and Disability Assistance/i });
+    // The title + disclosure chevron link navigates straight to the service detail page.
+    expect(card).toHaveAttribute('href', '/services/s1');
+    // The service description is rendered alongside the title (stacked in the card).
+    expect(screen.getByText('Financial support.')).toBeInTheDocument();
+  });
+
+  it('does not show "Browse all services" when fewer than 3 services are available', async () => {
+    mockBff();
+    renderHome();
+    await screen.findByRole('link', { name: /Income and Disability Assistance/i });
+    expect(screen.queryByRole('link', { name: /browse all services/i })).toBeNull();
+  });
+
+  it('shows a "Browse all services" link to the catalog when the panel is full (3 services)', async () => {
+    const threeServices = [
+      { id: 's1', title: 'Income and Disability Assistance', description: 'Financial support.' },
+      { id: 's2', title: 'Birth Registration', description: 'Register the birth of a child.' },
+      { id: 's3', title: 'Marriage Licence', description: 'Apply for a marriage licence.' },
+    ];
+    mockBff({ svcs: threeServices });
+    renderHome();
+    const browseAll = await screen.findByRole('link', { name: /browse all services/i });
+    expect(browseAll).toHaveAttribute('href', '/services');
+  });
 });
 
 describe('citizen-portal-web home — signed in', () => {
@@ -110,6 +143,17 @@ describe('citizen-portal-web home — signed in', () => {
     expect(screen.getByRole('heading', { name: 'Track your applications' })).toBeInTheDocument();
     expect(await screen.findByText('Birth Registration application')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Access government services online' })).toBeNull();
+  });
+
+  it('shows Available services as plain service cards even for services already applied to', async () => {
+    // The citizen has an application for s2, yet the Available services card must stay identical to
+    // the anonymous card — a service link to the detail page, not an application/status card.
+    mockBff({ me: jsonResponse(authedUser) });
+    renderHome();
+    await screen.findByRole('heading', { name: 'Hi, Amina' });
+    const serviceLink = await screen.findByRole('link', { name: 'Birth Registration' });
+    // A plain service-detail link (not an /applications/:id status card).
+    expect(serviceLink).toHaveAttribute('href', '/services/s2');
   });
 
   it('shows the empty applications state when there are none', async () => {

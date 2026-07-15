@@ -62,8 +62,7 @@ export function HomePage() {
               loading={applications.isPending}
             />
             <AvailableServices
-              services={(services.data ?? []).slice(0, 4)}
-              applications={applications.data ?? []}
+              services={(services.data ?? []).slice(0, 3)}
               loading={services.isPending}
             />
             <WhatYouCanDo />
@@ -75,7 +74,7 @@ export function HomePage() {
           <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
             <WhatYouCanDo />
             <AvailableServices
-              services={(services.data ?? []).slice(0, 4)}
+              services={(services.data ?? []).slice(0, 3)}
               loading={services.isPending}
             />
             <LoginCta />
