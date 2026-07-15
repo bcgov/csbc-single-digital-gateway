@@ -150,7 +150,7 @@ export function ApplicationDetailPage() {
                   : `Last updated ${new Date(application.updatedAt).toLocaleDateString()}`}
               </p>
             </header>
-            <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+            <div className="flex flex-col gap-9">
               {editing ? (
                 <ReviseForm
                   application={application}
