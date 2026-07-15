@@ -147,7 +147,11 @@ describe('citizen-portal-web home — signed in', () => {
     renderHome();
     expect(await screen.findByRole('heading', { name: 'Hi, Amina' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Track your applications' })).toBeInTheDocument();
-    expect(await screen.findByText('Birth Registration application')).toBeInTheDocument();
+    // The application row's status pill + subheading (application name • Ref # • last updated).
+    expect(await screen.findByText('Review')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Birth Registration application • Ref #20250615-0003/),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Access government services online' })).toBeNull();
   });
 
@@ -157,9 +161,13 @@ describe('citizen-portal-web home — signed in', () => {
     mockBff({ me: jsonResponse(authedUser) });
     renderHome();
     await screen.findByRole('heading', { name: 'Hi, Amina' });
-    const serviceLink = await screen.findByRole('link', { name: 'Birth Registration' });
-    // A plain service-detail link (not an /applications/:id status card).
-    expect(serviceLink).toHaveAttribute('href', '/services/s2');
+    // Both the tracked application row and the services panel now title by service name, so scope to
+    // the service-detail link: the Available services card must link to /services/s2, not an
+    // /applications/:id status card.
+    const serviceLinks = (await screen.findAllByRole('link', { name: 'Birth Registration' })).map(
+      (el) => el.getAttribute('href'),
+    );
+    expect(serviceLinks).toContain('/services/s2');
   });
 
   it('shows the empty applications state when there are none', async () => {
