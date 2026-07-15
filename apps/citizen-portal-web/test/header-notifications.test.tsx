@@ -82,7 +82,7 @@ describe('header notification bell', () => {
   it('shows the unread badge for a signed-in citizen', async () => {
     renderHome();
     expect(
-      await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 5000 }),
+      await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe('header notification bell', () => {
     const bell = await screen.findByRole(
       'button',
       { name: 'Notifications — 1 unread' },
-      { timeout: 5000 },
+      { timeout: 10000 },
     );
     await user.click(bell);
     const item = await screen.findByRole('button', {
@@ -112,7 +112,7 @@ describe('header notification bell', () => {
     const bell = await screen.findByRole(
       'button',
       { name: 'Notifications — 1 unread' },
-      { timeout: 5000 },
+      { timeout: 10000 },
     );
     await user.click(bell);
     await user.click(
@@ -129,7 +129,7 @@ describe('header notification bell', () => {
     const bell = await screen.findByRole(
       'button',
       { name: 'Notifications — 1 unread' },
-      { timeout: 5000 },
+      { timeout: 10000 },
     );
     await user.click(bell);
     await user.click(await screen.findByRole('button', { name: 'No destination here' }));

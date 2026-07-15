@@ -65,7 +65,7 @@ describe('notification preferences page', () => {
   it('renders the seeded toggles and email', async () => {
     renderPage();
     expect(
-      await screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 10000 }),
     ).toBeInTheDocument();
     const inApp = await screen.findByRole('switch', { name: 'In-app notifications' });
     expect(inApp).toBeChecked();
@@ -78,7 +78,7 @@ describe('notification preferences page', () => {
   it('saves toggled channels and the email through the BFF', async () => {
     const user = userEvent.setup();
     const puts = renderPage();
-    await screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 5000 });
+    await screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 10000 });
     await user.click(await screen.findByRole('switch', { name: 'Email notifications' }));
     await user.click(screen.getByRole('button', { name: 'Save preferences' }));
     await waitFor(() => {

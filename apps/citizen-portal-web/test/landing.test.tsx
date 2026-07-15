@@ -76,8 +76,14 @@ describe('citizen-portal-web home — signed out', () => {
   it('leads with the hero headline and marketing sections', async () => {
     mockBff();
     renderHome();
+    // First render in this file cold-compiles the route tree's heavy deps (JsonForms/Lexical);
+    // give the first query a generous timeout so a cold cache doesn't flake it.
     expect(
-      await screen.findByRole('heading', { name: 'Access government services online' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Access government services online' },
+        { timeout: 10000 },
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you can do' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Available services' })).toBeInTheDocument();

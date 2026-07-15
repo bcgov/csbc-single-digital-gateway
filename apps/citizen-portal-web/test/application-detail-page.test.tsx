@@ -95,7 +95,7 @@ describe('citizen application detail page', () => {
     mockBff();
     renderApp();
     expect(
-      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Birth Registration').length).toBeGreaterThan(0);
     expect(screen.getByText('Submitted')).toBeInTheDocument();
@@ -105,7 +105,7 @@ describe('citizen application detail page', () => {
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
     renderApp();
-    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 5000 });
+    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 10000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
@@ -122,7 +122,7 @@ describe('citizen application detail page', () => {
     });
     renderApp();
     expect(
-      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     // The status-aware banner names the state and surfaces the reviewer's note.
     expect(screen.getByText('Action needed')).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe('citizen application detail page', () => {
   it('shows an approved banner with descriptive copy', async () => {
     mockBff({ app: jsonResponse(detailWith({ status: 'approved', statusLabel: 'Approved' })) });
     renderApp();
-    await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 });
+    await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 10000 });
     // Banner-specific copy (distinct from the plain status label) — not present pre-feature.
     expect(screen.getByText(/this application has been approved/i)).toBeInTheDocument();
   });
@@ -152,7 +152,7 @@ describe('citizen application detail page', () => {
     renderApp();
     await userEvent
       .setup()
-      .click(await screen.findByRole('button', { name: /make changes/i }, { timeout: 5000 }));
+      .click(await screen.findByRole('button', { name: /make changes/i }, { timeout: 10000 }));
     // Mounts the editable FormRunner (its Resubmit button only exists in edit mode)…
     expect(
       await screen.findByRole('button', { name: /resubmit application/i }, { timeout: 15000 }),
