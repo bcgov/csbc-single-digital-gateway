@@ -5,6 +5,20 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
 
+// Capture the SSE handler the bell registers so a test can fire a realtime event (the real
+// EventSource no-ops in jsdom). Everything else in the module stays real.
+const sse = vi.hoisted(() => ({ onEvent: null as null | (() => void) }));
+vi.mock('@/lib/notifications', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/notifications')>();
+  return {
+    ...actual,
+    subscribeToNotifications: (onEvent: () => void) => {
+      sse.onEvent = onEvent;
+      return { close: () => {} };
+    },
+  };
+});
+
 const authedUser = {
   id: 'c1',
   roles: ['citizen'],
@@ -71,7 +85,7 @@ function renderHome() {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return { calls, router };
+  return { calls, router, client };
 }
 
 afterEach(() => {
@@ -84,6 +98,17 @@ describe('header notification bell', () => {
     expect(
       await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 10000 }),
     ).toBeInTheDocument();
+  });
+
+  it('invalidates the application detail family on a realtime notification event', async () => {
+    const { client } = renderHome();
+    await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 10000 });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    // Fire the SSE handler the bell registered — the open application detail must be refreshed.
+    sse.onEvent?.();
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['me', 'applications'] });
+    });
   });
 
   it('opens the feed and marks an item read via the BFF', async () => {

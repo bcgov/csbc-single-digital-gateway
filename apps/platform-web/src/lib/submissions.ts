@@ -84,10 +84,13 @@ export async function reviewSubmission(
   });
 }
 
+/** The query-key root for submissions — invalidated to refresh the list + open detail page. */
+export const SUBMISSIONS_KEY = ['submissions'] as const;
+
 /** Query for a workspace's submissions, optionally filtered by status. */
 export function submissionsQueryOptions(workspaceId: string, status?: SubmissionStatus) {
   return queryOptions({
-    queryKey: ['submissions', workspaceId, status ?? 'all'] as const,
+    queryKey: [...SUBMISSIONS_KEY, workspaceId, status ?? 'all'] as const,
     queryFn: () => listSubmissions(workspaceId, status),
     staleTime: 30 * 1000,
   });
@@ -96,7 +99,7 @@ export function submissionsQueryOptions(workspaceId: string, status?: Submission
 /** Query for a single submission's detail. */
 export function submissionQueryOptions(id: string) {
   return queryOptions({
-    queryKey: ['submissions', 'detail', id] as const,
+    queryKey: [...SUBMISSIONS_KEY, 'detail', id] as const,
     queryFn: () => getSubmission(id),
     staleTime: 30 * 1000,
     retry: false,

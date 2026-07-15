@@ -166,10 +166,13 @@ export function serviceAgreementsQueryOptions(serviceId: string, enabled: boolea
   });
 }
 
+/** The query-key root for a citizen's applications — invalidated to refresh the detail page. */
+export const APPLICATIONS_KEY = ['me', 'applications'] as const;
+
 /** Query for a single application's detail. */
 export function applicationQueryOptions(id: string) {
   return queryOptions({
-    queryKey: ['me', 'applications', id] as const,
+    queryKey: [...APPLICATIONS_KEY, id] as const,
     queryFn: () => getApplication(id),
     staleTime: 30 * 1000,
     retry: false,

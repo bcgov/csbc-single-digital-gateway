@@ -3,6 +3,20 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, renderApp } from './support/render-app';
 
+// Capture the SSE handler the bell registers so a test can fire a realtime event (the real
+// EventSource no-ops in jsdom). Everything else in the module stays real.
+const sse = vi.hoisted(() => ({ onEvent: null as null | (() => void) }));
+vi.mock('@/lib/notifications', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/notifications')>();
+  return {
+    ...actual,
+    subscribeToNotifications: (onEvent: () => void) => {
+      sse.onEvent = onEvent;
+      return { close: () => {} };
+    },
+  };
+});
+
 const ISO = '2026-06-01T00:00:00.000Z';
 const workspace = { id: 'w1', slug: 'riverton', name: 'Riverton', role: 'admin', createdAt: ISO };
 
@@ -72,6 +86,18 @@ describe('console notifications bell', () => {
     expect(
       await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 5000 }),
     ).toBeInTheDocument();
+  });
+
+  it('invalidates the submission family on a realtime notification event', async () => {
+    mockBff();
+    const { queryClient } = renderApp('/app/riverton');
+    await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 5000 });
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    // Fire the SSE handler the bell registered — the open submission detail must be refreshed.
+    sse.onEvent?.();
+    await waitFor(() => {
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['submissions'] });
+    });
   });
 
   it('navigates to the workspace review page for a staff payload and marks it read', async () => {
