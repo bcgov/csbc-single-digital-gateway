@@ -185,3 +185,38 @@ describe('citizen-portal-web home — signed in', () => {
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/'));
   });
 });
+
+describe('citizen-portal-web mobile menu', () => {
+  it('opens a menu whose top bar carries the brand lockup and an X close control', async () => {
+    mockBff();
+    const user = userEvent.setup();
+    renderHome();
+
+    await screen.findByRole('heading', { name: 'Access government services online' });
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Menu' });
+    // Top bar mirrors the header: the brand homepage lockup is present inside the menu.
+    expect(
+      within(dialog).getByRole('link', { name: /Single Digital Gateway homepage/i }),
+    ).toBeInTheDocument();
+    // The hamburger is swapped for an X close control (no "Menu" title heading text shown).
+    expect(within(dialog).getByRole('button', { name: /close menu/i })).toBeInTheDocument();
+    // Nav links are listed in the menu body.
+    expect(within(dialog).getByRole('link', { name: 'Services' })).toBeInTheDocument();
+  });
+
+  it('closes the menu when the X control is clicked', async () => {
+    mockBff();
+    const user = userEvent.setup();
+    renderHome();
+
+    await screen.findByRole('heading', { name: 'Access government services online' });
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Menu' });
+    await user.click(within(dialog).getByRole('button', { name: /close menu/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull());
+  });
+});
