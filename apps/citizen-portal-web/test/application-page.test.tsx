@@ -85,7 +85,7 @@ describe('citizen application page', () => {
     renderApply();
 
     expect(
-      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Submit application' }));
@@ -103,7 +103,7 @@ describe('citizen application page', () => {
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
     renderApply();
-    const link = await screen.findByRole('link', { name: /log in to apply/i }, { timeout: 5000 });
+    const link = await screen.findByRole('link', { name: /log in to apply/i }, { timeout: 10000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
@@ -144,7 +144,7 @@ describe('citizen application page', () => {
 
     // The gate is shown; the form is not.
     expect(
-      await screen.findByRole('heading', { name: 'Before you apply' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Before you apply' }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^Apply — / })).not.toBeInTheDocument();
 

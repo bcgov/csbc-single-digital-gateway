@@ -1,29 +1,38 @@
-import { Badge } from '@repo/ui/badge';
 import { Card, CardHeader, CardDescription, CardTitle } from '@repo/ui/card';
 import { mdiChevronRight } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
 import { SectionHeading } from '@/components/landing/section-heading';
-import type { CatalogService, MyApplication } from '@/lib/catalog';
+import type { CatalogService } from '@/lib/catalog';
 
 interface AvailableServicesProps {
   services: readonly CatalogService[];
-  /** When the citizen has applied to a service, its card shows the application status + "Open". */
-  applications?: readonly MyApplication[];
   /** Render skeleton cards while the services query is loading. */
   loading?: boolean;
 }
 
-/** The blue "Available services" panel with service cards. Shared by both landing pages. */
-export function AvailableServices({
-  services,
-  applications = [],
-  loading = false,
-}: AvailableServicesProps) {
-  const byService = new Map(
-    applications.map((application) => [application.serviceId, application]),
+/** The disclosure chevron shown at the top-right of a card, signalling "there's more here". */
+function DisclosureChevron() {
+  return (
+    <Icon
+      path={mdiChevronRight}
+      size="20px"
+      className="mt-0.5 shrink-0 text-link"
+      aria-hidden={true}
+    />
   );
+}
+
+/**
+ * The blue "Available services" panel with service cards. Shared by both landing pages and identical
+ * whether or not the citizen is signed in — every card simply links to its service detail (a citizen's
+ * in-flight applications are surfaced separately by the "Track your applications" section).
+ */
+export function AvailableServices({ services, loading = false }: AvailableServicesProps) {
+  // The home panel is capped at 3 services (see home-page.tsx); when it is full, offer a link to
+  // the full catalog so citizens know there is more to browse.
+  const showBrowseAll = !loading && services.length >= 3;
 
   return (
     <section className="rounded-sm bg-linear-to-r from-blue-90 to-blue-70 p-6 shadow-lg text-white my-6">
@@ -39,61 +48,35 @@ export function AvailableServices({
                 <Skeleton className="mt-3 h-3 w-full" />
               </div>
             ))
-          : services.map((service) => {
-              const application = byService.get(service.id);
-              return application ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      <Link
-                        key={service.id}
-                        to="/applications/$id"
-                        params={{ id: application.id }}
-                        className="no-underline hover:underline"
-                      >
-                        {service.title}
-                        <Icon
-                          path={mdiChevronRight}
-                          size="20px"
-                          className="inline-flex text-link"
-                          aria-hidden={true}
-                        />
-                      </Link>
-                    </CardTitle>
-                    <CardDescription>
-                      Description
-                      <br />
-                      <Badge color="yellow">{application.statusLabel}</Badge> •{' '}
-                      {application.reference}
-                    </CardDescription>
-                  </CardHeader>
-                  {/* need to see what this looks like */}
-                </Card>
-              ) : (
-                <Card centered>
-                  <CardHeader>
-                    <CardTitle>
-                      <Link
-                        key={service.id}
-                        to="/services"
-                        hash={service.id}
-                        className="no-underline hover:underline"
-                      >
-                        {service.title}
-                        <Icon
-                          path={mdiChevronRight}
-                          size="20px"
-                          className="inline-flex text-link"
-                          aria-hidden={true}
-                        />
-                      </Link>
-                    </CardTitle>
-                    <CardDescription>{service.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              );
-            })}
+          : services.map((service) => (
+              <Card key={service.id}>
+                <CardHeader>
+                  <CardTitle className="text-base font-semibold">
+                    <Link
+                      to="/services/$serviceId"
+                      params={{ serviceId: service.id }}
+                      className="flex items-start justify-between gap-2 no-underline hover:underline"
+                    >
+                      <span>{service.title}</span>
+                      <DisclosureChevron />
+                    </Link>
+                  </CardTitle>
+                  <CardDescription className="line-clamp-2">{service.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
       </div>
+      {showBrowseAll ? (
+        <div className="mt-6 text-right">
+          <Link
+            to="/services"
+            className="inline-flex items-center gap-1 font-semibold text-white no-underline hover:underline"
+          >
+            Browse all services
+            <Icon path={mdiChevronRight} size="20px" className="inline-flex" aria-hidden={true} />
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 }

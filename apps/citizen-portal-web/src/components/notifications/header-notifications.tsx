@@ -11,6 +11,7 @@ import {
   subscribeToNotifications,
   unreadCountQueryOptions,
 } from '@/lib/notifications';
+import { APPLICATIONS_KEY } from '@/lib/applications';
 
 /**
  * The header bell: app-side wiring of `@repo/react/notification-center` to the BFF proxy
@@ -37,6 +38,9 @@ export function HeaderNotifications() {
   useEffect(() => {
     const subscription = subscribeToNotifications(() => {
       void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+      // Also refresh the open application detail page — a notification usually reflects a change to
+      // one of the citizen's applications. Active-query-only, so this refetches just the mounted page.
+      void queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
     });
     return () => subscription.close();
   }, [queryClient]);

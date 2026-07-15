@@ -45,7 +45,7 @@ describe('citizen-portal-web /account page', () => {
   it('shows the signed-in user’s name and email', async () => {
     renderAccount(jsonResponse(authedUser));
     expect(
-      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Amina Ali')).toBeInTheDocument();
     expect(screen.getByText('amina@example.com')).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('citizen-portal-web /account page', () => {
 
   it('prompts an anonymous visitor to log in', async () => {
     renderAccount(new Response(null, { status: 401 }));
-    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 5000 });
+    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 10000 });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 });

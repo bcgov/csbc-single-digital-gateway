@@ -13,6 +13,7 @@ import {
   subscribeToNotifications,
   unreadCountQueryOptions,
 } from '@/lib/notifications';
+import { SUBMISSIONS_KEY } from '@/lib/submissions';
 
 /**
  * Header notifications bell — the live notification center (features 123–126): platform BFF
@@ -54,6 +55,9 @@ function LiveNotificationsMenu() {
   useEffect(() => {
     const subscription = subscribeToNotifications(() => {
       void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+      // Also refresh the open submission detail (and list) — a notification usually reflects a
+      // review-relevant change. Active-query-only, so this refetches just the mounted queries.
+      void queryClient.invalidateQueries({ queryKey: SUBMISSIONS_KEY });
     });
     return () => subscription.close();
   }, [queryClient]);

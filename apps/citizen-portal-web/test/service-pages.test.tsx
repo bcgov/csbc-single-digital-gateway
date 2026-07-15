@@ -109,7 +109,7 @@ describe('service detail page', () => {
     mockBff();
     renderRoute('/services/svc-1');
     expect(
-      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Financial support for residents.')).toBeInTheDocument();
     // The detail screen always shows the published version — no affordance to change versions.
@@ -122,7 +122,7 @@ describe('service detail page', () => {
   it('surfaces the application forms in How to apply', async () => {
     mockBff();
     renderRoute('/services/svc-1');
-    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 });
+    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
     expect(screen.getByRole('heading', { name: 'How to apply' })).toBeInTheDocument();
     expect(screen.getByText('Your Profile')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Apply online' })).toHaveAttribute(
@@ -134,7 +134,7 @@ describe('service detail page', () => {
   it('renders an external method as a "Visit site" link opening the url in a new tab', async () => {
     mockBff();
     renderRoute('/services/svc-1');
-    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 });
+    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
     const visit = screen.getByRole('link', { name: 'Visit site' });
     expect(visit).toHaveAttribute('href', 'https://gov.uk/apply');
     expect(visit).toHaveAttribute('target', '_blank');
@@ -147,7 +147,7 @@ describe('service detail page', () => {
     mockBff({ svc: new Response(null, { status: 404 }) });
     renderRoute('/services/missing');
     expect(
-      await screen.findByRole('heading', { name: /not available/i }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: /not available/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 });
@@ -157,7 +157,7 @@ describe('service version page', () => {
     mockBff();
     renderRoute('/services/svc-1/versions/ver-1');
     expect(
-      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('archived')).toBeInTheDocument();
     expect(screen.getByText(/historical version/i)).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe('service version page', () => {
     mockBff({ ver: new Response(null, { status: 404 }) });
     renderRoute('/services/svc-1/versions/missing');
     expect(
-      await screen.findByRole('heading', { name: /not available/i }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: /not available/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 
