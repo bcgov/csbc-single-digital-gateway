@@ -13,7 +13,7 @@ vi.mock('drizzle-orm', async (importOriginal) => {
   return {
     ...original,
     or: (...args: any[]) => {
-      if ((globalThis as any).__mockOrUndefined) {
+      if ((globalThis as any).mockOrUndefined) {
         return undefined as any;
       }
       return original.or(...args);
@@ -257,12 +257,12 @@ describe('WorkspacesService', () => {
           mockQuery([{ id: 'user-2', displayName: 'Staff 1', email: 'staff@example.com' }]),
         );
 
-      (globalThis as any).__mockOrUndefined = true;
+      (globalThis as any).mockOrUndefined = true;
       try {
         const result = await service.listAddableStaff('user-1', 'ws-1', { q: 'staff' });
         expect(result.items).toHaveLength(1);
       } finally {
-        (globalThis as any).__mockOrUndefined = false;
+        (globalThis as any).mockOrUndefined = false;
       }
     });
   });

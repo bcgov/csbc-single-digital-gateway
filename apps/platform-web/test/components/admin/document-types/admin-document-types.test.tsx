@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderApp } from './support/render-app';
+import { renderApp } from '../../../support/render-app';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 vi.mock('@monaco-editor/react', () => ({
