@@ -99,7 +99,9 @@ describe('citizen application detail page', () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText('Birth Registration').length).toBeGreaterThan(0);
     expect(screen.getByText('Submitted')).toBeInTheDocument();
-    expect(await screen.findByText('Amina')).toBeInTheDocument(); // a submitted answer, read-only
+    // Answers render as a read-only (disabled) form, so the value is the input's value, not text.
+    expect(await screen.findByDisplayValue('Amina')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your answers' })).toBeInTheDocument();
   });
 
   it('prompts anonymous visitors to log in', async () => {
