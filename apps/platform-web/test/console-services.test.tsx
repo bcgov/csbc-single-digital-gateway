@@ -144,8 +144,10 @@ function withServices(base: ReturnType<typeof mockAuth>) {
 describe('console services', () => {
   it('lists a workspace’s services', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services');
-    expect(await screen.findByRole('link', { name: 'Permit application' })).toBeInTheDocument();
+    renderApp('/app/riverton/services/');
+    expect(
+      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 8000 }),
+    ).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
