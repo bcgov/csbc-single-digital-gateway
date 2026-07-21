@@ -20,14 +20,14 @@ const nonAdminUser = { ...authedUser, roles: ['staff'] };
 
 describe('admin route — beforeLoad guard', () => {
   it('redirects anonymous users to the BFF login URL and encodes the return path', async () => {
-    const { assign, restore } = stubLocationAssign();
+    const { replace, restore } = stubLocationAssign();
     mockAuth(null);
     renderApp('/admin');
 
     await waitFor(() => {
-      expect(assign).toHaveBeenCalledWith(expect.stringContaining('/auth/login'));
+      expect(replace).toHaveBeenCalledWith(expect.stringContaining('/auth/login'));
     });
-    const [url] = assign.mock.calls[0] as [string];
+    const [url] = replace.mock.calls[0] as [string];
     expect(url).toContain('returnTo=');
     restore();
   });
