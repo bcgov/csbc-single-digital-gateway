@@ -27,7 +27,7 @@ describe('console shell — profile card on real /auth/me data', () => {
     mockAuth(authedUser);
     renderApp('/app');
 
-    const profile = await screen.findByRole('button', { name: /Maya Reyes/ });
+    const profile = await screen.findByRole('button', { name: /Maya Reyes/ }, { timeout: 32000 });
     expect(within(profile).getByText('Staff')).toBeInTheDocument();
     expect(within(profile).getByText('MR')).toBeInTheDocument();
     expect(globalThis.fetch).toHaveBeenCalledWith(

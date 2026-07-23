@@ -40,8 +40,8 @@ const mockBasicSubmission = {
   serviceTitle: 'Parking Permits',
   formId: 'form-123',
   formTitle: 'Application Form',
-  applicantName: 'Lewis Chen',
-  applicantEmail: 'lewis@example.com',
+  applicantName: 'Test User',
+  applicantEmail: 'test@example.com',
   status: 'pending',
   statusLabel: 'Pending Review',
   reference: 'REF-0001',
@@ -84,13 +84,13 @@ describe('App Slug Submissions ID Detail Route', () => {
     renderApp('/app/riverton/submissions/sub-123');
 
     // Wait for the submission detail header to render
-    expect(await screen.findByText('Lewis Chen', {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(await screen.findByText('Test User', undefined, { timeout: 32000 })).toBeInTheDocument();
 
     // Verify submission details and metadata
     expect(screen.getByText('Pending Review')).toBeInTheDocument();
     expect(screen.getByText(/Parking Permits · Application Form/i)).toBeInTheDocument();
     expect(screen.getByText(/REF-0001/i)).toBeInTheDocument();
-    expect(screen.getByText(/lewis@example\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/test@example\.com/i)).toBeInTheDocument();
 
     // Verify answers section header
     expect(screen.getByText('Answers')).toBeInTheDocument();

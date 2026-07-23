@@ -87,4 +87,49 @@ describe('DisplayCard', () => {
     await user.type(editor, '!');
     expect(handleChange).toHaveBeenCalledWith([2], { content: 'Rich content!' });
   });
+
+  it('defaults to level 2 heading styling when level is undefined', () => {
+    const handleChange = vi.fn();
+    const node: DisplayNode = {
+      kind: 'display',
+      id: 'd4',
+      displayType: 'heading',
+      text: 'Heading without level',
+    };
+
+    render(<DisplayCard node={node} path={[0]} onChange={handleChange} />);
+
+    const input = screen.getByLabelText('Heading');
+    expect(input).toHaveClass('text-xl');
+  });
+
+  it('defaults to left text alignment when align is undefined', () => {
+    const handleChange = vi.fn();
+    const node: DisplayNode = {
+      kind: 'display',
+      id: 'd5',
+      displayType: 'paragraph',
+      text: 'Paragraph text without alignment',
+    };
+
+    render(<DisplayCard node={node} path={[1]} onChange={handleChange} />);
+
+    const textarea = screen.getByLabelText('Paragraph');
+    expect(textarea).toHaveClass('text-left');
+  });
+
+  it('handles omitted content value in RichTextInput', () => {
+    const handleChange = vi.fn();
+    const node: DisplayNode = {
+      kind: 'display',
+      id: 'd6',
+      displayType: 'richtext',
+      text: '',
+    };
+
+    render(<DisplayCard node={node} path={[2]} onChange={handleChange} />);
+
+    const editor = screen.getByTestId('mock-rich-text-input');
+    expect(editor).toHaveValue('');
+  });
 });

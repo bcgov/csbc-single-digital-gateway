@@ -19,14 +19,16 @@ describe('accessing a workspace by slug', () => {
   it('shows a not-found state when the slug 404s', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     renderApp('/app/nope');
-    expect(await screen.findByText(/workspace not found/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/workspace not found/i, undefined, { timeout: 32000 }),
+    ).toBeInTheDocument();
   });
 
   it('disables nav and top-bar actions on a 404 workspace (the switcher stays usable)', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     renderApp('/app/nope');
 
-    await screen.findByText(/workspace not found/i);
+    await screen.findByText(/workspace not found/i, undefined, { timeout: 32000 });
     // Section nav is disabled (not navigable links) and the search action is disabled…
     expect(screen.queryByRole('link', { name: 'Services' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /search/i })).toBeDisabled();

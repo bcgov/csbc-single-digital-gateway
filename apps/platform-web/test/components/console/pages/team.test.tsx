@@ -97,7 +97,11 @@ describe('TeamPage', () => {
     renderApp('/app/riverton/team');
 
     // Toolbar header
-    expect(await screen.findByText('People with access to this workspace')).toBeInTheDocument();
+    expect(
+      await screen.findByText('People with access to this workspace', undefined, {
+        timeout: 16000,
+      }),
+    ).toBeInTheDocument();
 
     // Admin action button
     const addMemberBtn = await screen.findByRole('button', { name: 'Add member' });
@@ -183,5 +187,32 @@ describe('TeamPage', () => {
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByText('Add member')).toBeInTheDocument();
+  });
+
+  it('renders "—" when member email is not present', async () => {
+    const noEmailMember = [
+      {
+        id: 'm4',
+        userId: 'u4',
+        role: 'member' as const,
+        status: 'active' as const,
+        displayName: 'No Email Guy',
+        email: null as any,
+        isOwner: false,
+        joinedAt: ISO,
+      },
+    ];
+    mockTeamApi(mockWorkspaceAdmin, noEmailMember);
+    renderApp('/app/riverton/team');
+
+    expect(await screen.findByText('No Email Guy')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('handles workspace with missing or null ID', async () => {
+    mockTeamApi({ slug: 'riverton', name: 'Riverton', role: 'admin' } as any, []);
+    renderApp('/app/riverton/team');
+
+    expect(await screen.findByText('Just you so far')).toBeInTheDocument();
   });
 });

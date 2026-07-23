@@ -17,6 +17,32 @@ vi.mock('@/lib/services', () => ({
   reactivateService: vi.fn(),
 }));
 
+vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@repo/ui/alert-dialog')>();
+  return {
+    ...original,
+    AlertDialog: ({ children, open, onOpenChange }: any) => {
+      return (
+        <>
+          {onOpenChange && (
+            <div data-testid="mock-alertdialog-helpers">
+              <button data-testid="trigger-open-true" onClick={() => onOpenChange(true)}>
+                Open True
+              </button>
+              <button data-testid="trigger-open-false" onClick={() => onOpenChange(false)}>
+                Open False
+              </button>
+            </div>
+          )}
+          <original.AlertDialog open={open} onOpenChange={onOpenChange}>
+            {children}
+          </original.AlertDialog>
+        </>
+      );
+    },
+  };
+});
+
 afterEach(() => {
   vi.clearAllMocks();
 });
@@ -231,5 +257,74 @@ describe('ServiceMenu', () => {
     const errorAlert = await screen.findByRole('alert');
     expect(errorAlert).toBeInTheDocument();
     expect(errorAlert).toHaveTextContent('Internal Database Error');
+  });
+
+  it('does not crash when optional callbacks onDeleted, onDiscarded, and onConfirmDestroy are omitted', async () => {
+    const user = userEvent.setup();
+    vi.mocked(deleteService).mockResolvedValueOnce({} as any);
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ServiceMenu
+          serviceId="srv-123"
+          hasSubmissions={false}
+          archived={false}
+          latestPublished={false}
+        />
+      </QueryClientProvider>,
+    );
+
+    const triggerBtn = screen.getByRole('button', { name: /more actions/i });
+    await user.click(triggerBtn);
+
+    const deleteMenuBtn = await screen.findByRole('menuitem', { name: /delete service/i });
+    await user.click(deleteMenuBtn);
+
+    const confirmBtn = screen.getByRole('button', { name: 'Delete' });
+    await user.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(deleteService).toHaveBeenCalledWith('srv-123');
+    });
+  });
+
+  it('shows error messages in dialog when discard draft fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(discardServiceVersion).mockRejectedValueOnce(
+      new Error('Discard failed due to locks'),
+    );
+
+    renderServiceMenu({ canDiscard: true, serviceId: 'srv-123', versionId: 'v2' });
+
+    const triggerBtn = screen.getByRole('button', { name: /more actions/i });
+    await user.click(triggerBtn);
+
+    const discardMenuBtn = await screen.findByRole('menuitem', { name: /discard draft/i });
+    await user.click(discardMenuBtn);
+
+    const confirmBtn = await screen.findByRole('button', { name: 'Discard draft' });
+    await user.click(confirmBtn);
+
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert).toHaveTextContent('Discard failed due to locks');
+  });
+
+  it('does not close dialog when AlertDialog triggers onOpenChange(true)', async () => {
+    const user = userEvent.setup();
+    renderServiceMenu({ archived: false, canDiscard: false, hasSubmissions: false });
+
+    // Open menu and select delete to open the dialog
+    const triggerBtn = screen.getByRole('button', { name: /more actions/i });
+    await user.click(triggerBtn);
+
+    const deleteMenuBtn = await screen.findByRole('menuitem', { name: /delete service/i });
+    await user.click(deleteMenuBtn);
+
+    const triggerOpenTrueBtn = screen.getByTestId('trigger-open-true');
+    await user.click(triggerOpenTrueBtn);
+
+    // Dialog should still be open
+    expect(screen.getByRole('heading', { name: 'Delete this service?' })).toBeInTheDocument();
   });
 });

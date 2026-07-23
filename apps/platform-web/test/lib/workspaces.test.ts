@@ -79,7 +79,9 @@ describe('Workspaces API Client', () => {
       const opts = workspacesQueryOptions();
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
-      await expect((opts.queryFn as any)()).rejects.toThrow('GET /v1/workspaces failed: 500');
+      await expect((opts.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
+        'GET /v1/workspaces failed: 500',
+      );
     });
   });
 
@@ -181,7 +183,7 @@ describe('Workspaces API Client', () => {
       const opts = workspaceBySlugQueryOptions('my-slug');
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
-      await expect((opts.queryFn as any)()).rejects.toThrow(
+      await expect((opts.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
         'GET /v1/workspaces/by-slug failed: 500',
       );
     });
@@ -207,7 +209,7 @@ describe('Workspaces API Client', () => {
       const opts = workspaceMembersQueryOptions('ws-id-123');
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
-      await expect((opts.queryFn as any)()).rejects.toThrow(
+      await expect((opts.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
         'GET /v1/workspaces/:id/members failed: 500',
       );
     });
@@ -254,7 +256,7 @@ describe('Workspaces API Client', () => {
       const opts = workspaceAddableStaffQueryOptions('ws-id-123', '');
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
-      await expect((opts.queryFn as any)()).rejects.toThrow(
+      await expect((opts.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
         'GET /v1/workspaces/:id/addable-staff failed: 500',
       );
     });
@@ -279,8 +281,10 @@ describe('Workspaces API Client', () => {
       mockFetch.mockResolvedValueOnce(mockResponse(400, null, false));
 
       await expect(
-        addWorkspaceMember('ws-id-123', { userId: 'u-1', role: 'admin' }),
-      ).rejects.toThrow('POST /v1/workspaces/:id/members failed: 400');
+        addWorkspaceMember('ws-id-123', { userId: 'u-1', role: 'admin' }).catch(
+          (e: any) => e.message,
+        ),
+      ).resolves.toContain('POST /v1/workspaces/:id/members failed: 400');
     });
   });
 
@@ -307,8 +311,10 @@ describe('Workspaces API Client', () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
       await expect(
-        updateWorkspaceMember('ws-id-123', 'mem-id-456', { role: 'member' }),
-      ).rejects.toThrow('PATCH /v1/workspaces/:id/members/:memberId failed: 500');
+        updateWorkspaceMember('ws-id-123', 'mem-id-456', { role: 'member' }).catch(
+          (e: any) => e.message,
+        ),
+      ).resolves.toContain('PATCH /v1/workspaces/:id/members/:memberId failed: 500');
     });
   });
 
@@ -333,9 +339,9 @@ describe('Workspaces API Client', () => {
     it('should throw when transferring ownership fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(403, null, false));
 
-      await expect(transferWorkspaceOwnership('ws-id-123', 'u-2')).rejects.toThrow(
-        'POST /v1/workspaces/:id/transfer-ownership failed: 403',
-      );
+      await expect(
+        transferWorkspaceOwnership('ws-id-123', 'u-2').catch((e: any) => e.message),
+      ).resolves.toContain('POST /v1/workspaces/:id/transfer-ownership failed: 403');
     });
   });
 
@@ -357,7 +363,9 @@ describe('Workspaces API Client', () => {
     it('should throw when creating workspace fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
-      await expect(createWorkspace('New WS')).rejects.toThrow('POST /v1/workspaces failed: 500');
+      await expect(createWorkspace('New WS').catch((e: any) => e.message)).resolves.toContain(
+        'POST /v1/workspaces failed: 500',
+      );
     });
   });
 
@@ -379,9 +387,9 @@ describe('Workspaces API Client', () => {
     it('should throw when renaming workspace fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
-      await expect(updateWorkspace('ws-id-123', 'Updated Name')).rejects.toThrow(
-        'PATCH /v1/workspaces failed: 500',
-      );
+      await expect(
+        updateWorkspace('ws-id-123', 'Updated Name').catch((e: any) => e.message),
+      ).resolves.toContain('PATCH /v1/workspaces failed: 500');
     });
   });
 
@@ -399,7 +407,7 @@ describe('Workspaces API Client', () => {
     it('should throw when deleting workspace fails', async () => {
       mockFetch.mockResolvedValueOnce(mockResponse(500, null, false));
 
-      await expect(deleteWorkspace('ws-id-123')).rejects.toThrow(
+      await expect(deleteWorkspace('ws-id-123').catch((e: any) => e.message)).resolves.toContain(
         'DELETE /v1/workspaces failed: 500',
       );
     });

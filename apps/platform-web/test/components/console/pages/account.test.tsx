@@ -59,4 +59,26 @@ describe('AccountPage', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument();
   });
+
+  it('renders user details correctly when user has no email', () => {
+    const mockUserNoEmail = {
+      id: 'u-123',
+      roles: ['admin'],
+      claims: {
+        sub: 'sub-123',
+        name: 'Test Admin No Email',
+      },
+    };
+    vi.mocked(useAuth).mockReturnValue({ data: mockUserNoEmail } as any);
+
+    render(<AccountPage />);
+
+    expect(screen.getByText('Profile')).toBeInTheDocument();
+    expect(screen.getByText('Test Admin No Email')).toBeInTheDocument();
+    // Only role should render: "Admin" instead of "email · Admin"
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+
+    const emailInput = screen.getByLabelText('Email');
+    expect(emailInput).toHaveValue('');
+  });
 });

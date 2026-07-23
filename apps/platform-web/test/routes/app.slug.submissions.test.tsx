@@ -64,6 +64,6 @@ describe('App Slug Submissions Layout Route', () => {
     renderApp('/app/riverton/submissions/');
 
     // Verify child submissions queue index page content renders through the Outlet
-    expect(await screen.findByRole('tab', { name: 'All' }, { timeout: 8000 })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'All' }, { timeout: 32000 })).toBeInTheDocument();
   });
 });

@@ -65,7 +65,7 @@ describe('App Slug Services New Route', () => {
 
     // Verify modal is open and has the heading "New service"
     expect(
-      await screen.findByRole('heading', { name: 'New service' }, { timeout: 8000 }),
+      await screen.findByRole('heading', { name: 'New service' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Check modal description and input labels

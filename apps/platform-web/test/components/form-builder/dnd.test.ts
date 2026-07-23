@@ -156,5 +156,36 @@ describe('dnd utility helpers', () => {
       expect(container.children).toHaveLength(1);
       expect(container.children[0].key).toBe('email');
     });
+
+    it('handles missing root group, non-container indices, invalid prefixes, and missing child groups safely', () => {
+      const invalidRecord = {};
+      const resultEmpty = applyRecord(originalModel, invalidRecord);
+      expect(resultEmpty.fields).toEqual([]);
+
+      const mockModelWithNonContainer: FormModel = {
+        title: 'Survey',
+        description: 'Survey Desc',
+        fields: [
+          { kind: 'control', key: 'first_name', label: 'First Name', type: 'text' } as any,
+          {
+            kind: 'container',
+            id: 'c-1',
+            title: 'Details Block',
+            children: [{ kind: 'control', key: 'email', label: 'Email', type: 'text' } as any],
+          } as any,
+        ],
+      };
+
+      const customRecord = {
+        [ROOT_GROUP]: ['c:0', 'c:1', 'x:invalid_id'],
+      };
+
+      const result = applyRecord(mockModelWithNonContainer, customRecord);
+
+      expect(result.fields).toHaveLength(1);
+      const container = result.fields[0] as any;
+      expect(container.kind).toBe('container');
+      expect(container.children).toEqual([]);
+    });
   });
 });

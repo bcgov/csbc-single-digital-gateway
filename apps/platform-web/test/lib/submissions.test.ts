@@ -80,7 +80,9 @@ describe('Submissions review API client', () => {
   it('throws custom status error message when request fails', async () => {
     mockFetch.mockResolvedValue(mockResponse(500, null, false));
 
-    await expect(getSubmission('sub-1')).rejects.toThrow('GET /v1/submissions/sub-1 failed: 500');
+    await expect(getSubmission('sub-1').catch((e: any) => e.message)).resolves.toContain(
+      'GET /v1/submissions/sub-1 failed: 500',
+    );
   });
 
   it('proposes correct submissionsQueryOptions configuration details', async () => {

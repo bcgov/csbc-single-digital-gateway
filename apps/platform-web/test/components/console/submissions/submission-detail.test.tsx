@@ -68,8 +68,8 @@ const mockBasicSubmission: SubmissionDetailData = {
   serviceTitle: 'Parking Permits',
   formId: 'form-123',
   formTitle: 'Application Form',
-  applicantName: 'Lewis Chen',
-  applicantEmail: 'lewis@example.com',
+  applicantName: 'Test User',
+  applicantEmail: 'test@example.com',
   status: 'pending',
   statusLabel: 'Pending Review',
   reference: 'REF-0001',
@@ -182,10 +182,10 @@ describe('SubmissionDetail', () => {
     renderSubmissionDetail(queryClient);
 
     // Header info
-    expect(await screen.findByRole('heading', { name: 'Lewis Chen' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Test User' })).toBeInTheDocument();
     expect(screen.getByText('Pending Review')).toBeInTheDocument();
     expect(screen.getByText('Parking Permits · Application Form')).toBeInTheDocument();
-    expect(screen.getByText(/REF-0001 · lewis@example\.com/)).toBeInTheDocument();
+    expect(screen.getByText(/REF-0001 · test@example\.com/)).toBeInTheDocument();
 
     // Answers section
     expect(screen.getByRole('heading', { name: 'Answers' })).toBeInTheDocument();
@@ -277,5 +277,144 @@ describe('SubmissionDetail', () => {
     expect(
       await screen.findByText('Could not record the review — please try again.'),
     ).toBeInTheDocument();
+  });
+
+  it('handles null submittedAt, empty page names, and reviews without reason in multi-stage form', async () => {
+    const mockCustomSubmission: SubmissionDetailData = {
+      id: 'sub-custom',
+      serviceId: 'srv-123',
+      serviceTitle: 'Custom Service',
+      formId: 'form-custom',
+      formTitle: 'Custom Form',
+      applicantName: 'Charlie',
+      applicantEmail: null,
+      status: 'approved',
+      statusLabel: 'Approved',
+      reference: 'REF-0003',
+      submittedAt: null as any,
+      updatedAt: '2026-07-15T00:00:00Z',
+      kind: 'multi-stage-form',
+      structure: {
+        stages: [
+          {
+            pages: [
+              {
+                id: 'page-1',
+              },
+            ],
+          },
+        ],
+      },
+      data: {},
+      reviews: [
+        {
+          id: 'rev-2',
+          decision: 'approve',
+          reason: '',
+          reviewerName: 'Reviewer Guy',
+          createdAt: '2026-07-15T02:00:00Z',
+        },
+      ],
+    };
+
+    mockSubmissionData = mockCustomSubmission;
+    renderSubmissionDetail(queryClient);
+
+    expect(await screen.findByRole('heading', { name: 'Charlie' })).toBeInTheDocument();
+    const headerText = screen.getByText(/REF-0003/).textContent;
+    expect(headerText).not.toContain('Submitted');
+    expect(headerText).not.toContain('@');
+
+    expect(screen.queryByRole('heading', { name: /Business Details/ })).not.toBeInTheDocument();
+
+    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+    expect(screen.getByText('approve')).toBeInTheDocument();
+    expect(screen.queryByText('Looks great!')).not.toBeInTheDocument();
+  });
+
+  it('handles basic form submission with empty/missing schema', async () => {
+    const mockEmptyBasicSubmission: SubmissionDetailData = {
+      id: 'sub-empty',
+      serviceId: 'srv-123',
+      serviceTitle: 'Empty Service',
+      formId: 'form-empty',
+      formTitle: 'Empty Form',
+      applicantName: 'Empty User',
+      applicantEmail: 'empty@example.com',
+      status: 'pending',
+      statusLabel: 'Pending Review',
+      reference: 'REF-0004',
+      submittedAt: '2026-07-15T00:00:00Z',
+      updatedAt: '2026-07-15T00:00:00Z',
+      kind: 'basic-form',
+      structure: {},
+      data: {},
+      reviews: [],
+    };
+
+    mockSubmissionData = mockEmptyBasicSubmission;
+    renderSubmissionDetail(queryClient);
+
+    expect(await screen.findByRole('heading', { name: 'Empty User' })).toBeInTheDocument();
+    expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
+  });
+
+  it('covers multi-stage form structure fallbacks', async () => {
+    const mockFallbackSubmission: SubmissionDetailData = {
+      id: 'sub-fallback',
+      serviceId: 'srv-123',
+      serviceTitle: 'Custom Service',
+      formId: 'form-custom',
+      formTitle: 'Custom Form',
+      applicantName: 'Charlie',
+      applicantEmail: null,
+      status: 'approved',
+      statusLabel: 'Approved',
+      reference: 'REF-0004',
+      submittedAt: null as any,
+      updatedAt: '2026-07-15T00:00:00Z',
+      kind: 'multi-stage-form',
+      structure: {},
+      data: {},
+      reviews: [],
+    };
+
+    mockSubmissionData = mockFallbackSubmission;
+    renderSubmissionDetail(queryClient);
+
+    expect(await screen.findByText('REF-0004')).toBeInTheDocument();
+  });
+
+  it('covers stage pages and page id fallback', async () => {
+    const mockPageFallbackSubmission: SubmissionDetailData = {
+      id: 'sub-page-fallback',
+      serviceId: 'srv-123',
+      serviceTitle: 'Custom Service',
+      formId: 'form-custom',
+      formTitle: 'Custom Form',
+      applicantName: 'Charlie',
+      applicantEmail: null,
+      status: 'approved',
+      statusLabel: 'Approved',
+      reference: 'REF-0005',
+      submittedAt: null as any,
+      updatedAt: '2026-07-15T00:00:00Z',
+      kind: 'multi-stage-form',
+      structure: {
+        stages: [
+          {},
+          {
+            pages: [{}],
+          },
+        ],
+      },
+      data: {},
+      reviews: [],
+    };
+
+    mockSubmissionData = mockPageFallbackSubmission;
+    renderSubmissionDetail(queryClient);
+
+    expect(await screen.findByText('REF-0005')).toBeInTheDocument();
   });
 });

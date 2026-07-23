@@ -149,4 +149,44 @@ describe('ServicePublishModal', () => {
     expect(errorAlert).toBeInTheDocument();
     expect(errorAlert).toHaveTextContent('Network error publishing service');
   });
+
+  it('does not trigger onOpenChange(false) on Escape when publishing is active', async () => {
+    const user = userEvent.setup();
+    const onOpenChangeSpy = vi.fn();
+    renderPublishModal({
+      open: true,
+      applications: [],
+      publishing: true,
+      onOpenChange: onOpenChangeSpy,
+    });
+
+    await user.keyboard('{Escape}');
+
+    expect(onOpenChangeSpy).not.toHaveBeenCalled();
+  });
+
+  it('triggers onOpenChange(false) on Escape when publishing is not active', async () => {
+    const user = userEvent.setup();
+    const onOpenChangeSpy = vi.fn();
+    renderPublishModal({
+      open: true,
+      applications: [],
+      publishing: false,
+      onOpenChange: onOpenChangeSpy,
+    });
+
+    await user.keyboard('{Escape}');
+
+    expect(onOpenChangeSpy).toHaveBeenCalledWith(false);
+  });
+
+  it('renders singular text when there is exactly one application method', async () => {
+    const apps: PublishApplication[] = [{ title: 'Single Form', hasStructure: true }];
+    renderPublishModal({ open: true, applications: apps });
+
+    expect(await screen.findByRole('heading', { name: 'Publish service?' })).toBeInTheDocument();
+    expect(
+      screen.getByText('1 application method will be published with the service:'),
+    ).toBeInTheDocument();
+  });
 });

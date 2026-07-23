@@ -143,4 +143,47 @@ describe('ApplicationShell', () => {
       },
     });
   });
+
+  it('defaults readOnly to false when not provided', () => {
+    const { container } = render(
+      <ApplicationShell
+        slug="riverton"
+        serviceId="srv-123"
+        serviceTitle="Municipal Parking"
+        label="Parking Form"
+      >
+        <div data-testid="default-child">Content</div>
+      </ApplicationShell>,
+    );
+
+    expect(screen.getByTestId('default-child')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
+
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper).toHaveClass('-m-6');
+    expect(wrapper).toHaveClass('h-[calc(100%+3rem)]');
+  });
+
+  it('renders correctly in read-only mode when status is undefined', () => {
+    render(
+      <ApplicationShell
+        slug="riverton"
+        serviceId="srv-123"
+        serviceTitle="Municipal Parking"
+        label="Parking Form"
+        readOnly={true}
+      >
+        <div>Content</div>
+      </ApplicationShell>,
+    );
+
+    expect(
+      screen.getByText(
+        'This form is not editable and can’t be changed. Add a new service version to make changes.',
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByText('published')).not.toBeInTheDocument();
+    expect(screen.queryByText('archived')).not.toBeInTheDocument();
+  });
 });

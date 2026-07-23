@@ -104,7 +104,7 @@ describe('App Slug Services ID Layout Route', () => {
 
     // Breadcrumb page title
     expect(
-      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 8000 }),
+      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify service details tab is active (rendered in the child route component)

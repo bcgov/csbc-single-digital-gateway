@@ -115,4 +115,64 @@ describe('WorkspaceNameForm', () => {
       'Could not save changes. Please try again.',
     );
   });
+
+  it('disables save and cancel buttons when name is changed to whitespace only', async () => {
+    const user = userEvent.setup();
+    renderForm(queryClient, { initialName: 'My Workspace', canEdit: true });
+    const input = screen.getByLabelText('Workspace name');
+
+    // Change input to spaces
+    await user.clear(input);
+    await user.type(input, '   ');
+
+    const cancelBtn = screen.getByRole('button', { name: 'Cancel' });
+    const saveBtn = screen.getByRole('button', { name: 'Save changes' });
+
+    expect(cancelBtn).toBeDisabled();
+    expect(saveBtn).toBeDisabled();
+  });
+
+  it('does not submit if the form is clean', () => {
+    renderForm(queryClient, { initialName: 'My Workspace', canEdit: true });
+    const input = screen.getByLabelText('Workspace name');
+    const form = input.closest('form')!;
+
+    fireEvent.submit(form);
+
+    expect(updateWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('disables buttons while updateWorkspace mutation is pending', async () => {
+    const user = userEvent.setup();
+    let resolveUpdate: ((v: any) => void) | null = null;
+    vi.mocked(updateWorkspace).mockImplementation(
+      () =>
+        new Promise<any>((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+
+    renderForm(queryClient, { initialName: 'Old Name' });
+
+    const input = screen.getByLabelText('Workspace name');
+    await user.type(input, ' New Name');
+
+    const cancelBtn = screen.getByRole('button', { name: 'Cancel' });
+    const saveBtn = screen.getByRole('button', { name: 'Save changes' });
+    const form = input.closest('form')!;
+    fireEvent.submit(form);
+
+    // Buttons should be disabled during pending status
+    await waitFor(() => {
+      expect(cancelBtn).toBeDisabled();
+      expect(saveBtn).toBeDisabled();
+    });
+
+    // Resolve the mutation
+    resolveUpdate!({} as any);
+
+    await waitFor(() => {
+      expect(saveBtn).toBeDisabled(); // clean again after success
+    });
+  });
 });

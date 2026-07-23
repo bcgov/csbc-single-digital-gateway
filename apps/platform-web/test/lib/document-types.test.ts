@@ -68,14 +68,25 @@ describe('Admin Document Types API client', () => {
     );
 
     const options = adminDocumentTypeQueryOptions('dt-1');
-    await expect((options.queryFn as any)()).rejects.toThrow('Database validation failed');
+    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
+      'Database validation failed',
+    );
 
     // Test case 2: Array of messages
     mockFetch.mockResolvedValue(
       mockResponse(400, { message: ['Name is required', 'Kind is invalid'] }, false),
     );
 
-    await expect((options.queryFn as any)()).rejects.toThrow('Name is required, Kind is invalid');
+    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
+      'Name is required, Kind is invalid',
+    );
+
+    // Test case 3: Neither string nor array
+    mockFetch.mockResolvedValue(mockResponse(400, { message: { code: 'INVALID' } }, false));
+
+    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toBe(
+      'Request failed: 400',
+    );
   });
 
   it('sends POST to add a version', async () => {
@@ -126,7 +137,9 @@ describe('Admin Document Types API client', () => {
   it('throws error when deleteDraft request fails', async () => {
     mockFetch.mockResolvedValue(mockResponse(500, null, false));
 
-    await expect(deleteDraft('dt-1', 'ver-1')).rejects.toThrow('Request failed: 500');
+    await expect(deleteDraft('dt-1', 'ver-1').catch((e: any) => e.message)).resolves.toContain(
+      'Request failed: 500',
+    );
   });
 
   it('sends POST requests to publish and archive versions', async () => {

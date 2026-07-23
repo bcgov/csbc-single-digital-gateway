@@ -42,8 +42,8 @@ const mockSubmissionsList = {
       serviceTitle: 'Parking Permits',
       formId: 'form-123',
       formTitle: 'Application Form',
-      applicantName: 'Lewis Chen',
-      applicantEmail: 'lewis@example.com',
+      applicantName: 'Test User',
+      applicantEmail: 'test@example.com',
       status: 'pending',
       statusLabel: 'Pending Review',
       reference: 'REF-0001',
@@ -80,7 +80,7 @@ describe('App Slug Submissions Index Route', () => {
     renderApp('/app/riverton/submissions/');
 
     // Wait for the tab buttons to be rendered
-    expect(await screen.findByRole('tab', { name: 'All' }, { timeout: 8000 })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'All' }, { timeout: 32000 })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Pending' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'In review' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Needs changes' })).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe('App Slug Submissions Index Route', () => {
     expect(screen.getByText('Submitted')).toBeInTheDocument();
 
     // Verify submission row details are correctly loaded asynchronously
-    expect(await screen.findByText('Lewis Chen')).toBeInTheDocument();
+    expect(await screen.findByText('Test User')).toBeInTheDocument();
     expect(screen.getByText('REF-0001')).toBeInTheDocument();
     expect(screen.getByText('Parking Permits')).toBeInTheDocument();
     expect(screen.getByText('Application Form')).toBeInTheDocument();

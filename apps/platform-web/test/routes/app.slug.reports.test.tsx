@@ -41,7 +41,7 @@ describe('App Slug Reports Route', () => {
 
     // Verify empty state title
     expect(
-      await screen.findByText('No saved reports yet', {}, { timeout: 8000 }),
+      await screen.findByText('No saved reports yet', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify description and toolbar text

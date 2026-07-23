@@ -65,7 +65,7 @@ describe('App Slug Services Layout Route', () => {
 
     // Verify services index page content renders through the Outlet
     expect(
-      await screen.findByText('Service documents in this workspace.', {}, { timeout: 8000 }),
+      await screen.findByText('Service documents in this workspace.', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 });

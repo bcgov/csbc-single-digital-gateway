@@ -54,7 +54,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-function mockSubmissionsApi(submissions = submissionsList) {
+function mockSubmissionsApi(submissions: any[] = submissionsList) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
 
@@ -82,7 +82,7 @@ function mockSubmissionsApi(submissions = submissionsList) {
 }
 
 describe('SubmissionsPage', () => {
-  it('renders loading skeleton when data is fetching', () => {
+  it('renders loading skeleton when data is fetching', async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL) =>
         new Promise<any>((resolve) => {
@@ -99,8 +99,12 @@ describe('SubmissionsPage', () => {
 
     const { container } = renderApp('/app/riverton/submissions');
 
-    const skeleton = container.querySelector('.animate-pulse');
-    expect(skeleton).toBeInTheDocument();
+    await waitFor(
+      () => {
+        expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+      },
+      { timeout: 32000 },
+    );
   });
 
   it('renders empty queue state when there are no submissions', async () => {
@@ -116,8 +120,8 @@ describe('SubmissionsPage', () => {
     renderApp('/app/riverton/submissions');
 
     // Wait for the table rows to render
-    const linkAlice = await screen.findByRole('link', { name: 'Alice Smith' });
-    const linkBob = screen.getByRole('link', { name: 'Bob Jones' });
+    const linkAlice = await screen.findByRole('link', { name: 'Alice Smith' }, { timeout: 32000 });
+    const linkBob = await screen.findByRole('link', { name: 'Bob Jones' }, { timeout: 32000 });
 
     expect(linkAlice).toBeInTheDocument();
     expect(linkAlice).toHaveAttribute('href', '/app/riverton/submissions/sub-1');
@@ -126,11 +130,10 @@ describe('SubmissionsPage', () => {
     expect(
       screen.getByText(new Date('2026-06-02T10:00:00.000Z').toLocaleDateString()),
     ).toBeInTheDocument();
-
     expect(linkBob).toBeInTheDocument();
     expect(linkBob).toHaveAttribute('href', '/app/riverton/submissions/sub-2');
     expect(screen.getByText('REF-002')).toBeInTheDocument();
-    expect(screen.getByText('Approved')).toBeInTheDocument();
+    expect(screen.getAllByText('Approved')).toHaveLength(2);
     expect(
       screen.getByText(new Date('2026-06-03T11:00:00.000Z').toLocaleDateString()),
     ).toBeInTheDocument();
@@ -178,5 +181,134 @@ describe('SubmissionsPage', () => {
       expect(screen.getByText('Alice Smith')).toBeInTheDocument();
       expect(screen.getByText('Bob Jones')).toBeInTheDocument();
     });
+  });
+
+  it('renders "—" when submittedAt date is null', async () => {
+    const nullDateSubmission = [
+      {
+        id: 'sub-3',
+        serviceId: 'srv-1',
+        serviceTitle: 'Business License',
+        formId: 'frm-1',
+        formTitle: 'Application Form',
+        applicantName: 'Charlie Brown',
+        applicantEmail: 'charlie@example.com',
+        status: 'pending' as const,
+        statusLabel: 'Pending Review',
+        reference: 'REF-003',
+        submittedAt: null as any,
+        updatedAt: ISO,
+      },
+    ];
+    mockSubmissionsApi(nullDateSubmission);
+    renderApp('/app/riverton/submissions');
+
+    const linkCharlie = await screen.findByRole('link', { name: 'Charlie Brown' });
+    expect(linkCharlie).toBeInTheDocument();
+
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('filters submissions for In review and Needs changes tabs', async () => {
+    const extraSubmissions = [
+      ...submissionsList,
+      {
+        id: 'sub-3',
+        serviceId: 'srv-1',
+        serviceTitle: 'Business License',
+        formId: 'frm-1',
+        formTitle: 'Application Form',
+        applicantName: 'Charlie Brown',
+        applicantEmail: 'charlie@example.com',
+        status: 'in_review' as const,
+        statusLabel: 'In review',
+        reference: 'REF-003',
+        submittedAt: '2026-06-04T12:00:00.000Z',
+        updatedAt: ISO,
+      },
+      {
+        id: 'sub-4',
+        serviceId: 'srv-1',
+        serviceTitle: 'Business License',
+        formId: 'frm-1',
+        formTitle: 'Application Form',
+        applicantName: 'Diana Prince',
+        applicantEmail: 'diana@example.com',
+        status: 'needs_changes' as const,
+        statusLabel: 'Needs changes',
+        reference: 'REF-004',
+        submittedAt: '2026-06-05T13:00:00.000Z',
+        updatedAt: ISO,
+      },
+    ];
+
+    mockSubmissionsApi(extraSubmissions);
+    renderApp('/app/riverton/submissions');
+    const user = userEvent.setup();
+
+    expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+    expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
+    expect(screen.getByText('Diana Prince')).toBeInTheDocument();
+
+    const inReviewTab = screen.getByRole('tab', { name: 'In review' });
+    await user.click(inReviewTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
+      expect(screen.queryByText('Alice Smith')).not.toBeInTheDocument();
+      expect(screen.queryByText('Bob Jones')).not.toBeInTheDocument();
+      expect(screen.queryByText('Diana Prince')).not.toBeInTheDocument();
+    });
+
+    const needsChangesTab = screen.getByRole('tab', { name: 'Needs changes' });
+    await user.click(needsChangesTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Diana Prince')).toBeInTheDocument();
+      expect(screen.queryByText('Alice Smith')).not.toBeInTheDocument();
+      expect(screen.queryByText('Bob Jones')).not.toBeInTheDocument();
+      expect(screen.queryByText('Charlie Brown')).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not render loading skeleton when workspace is loading', async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL) =>
+        new Promise<any>((resolve) => {
+          const url = String(input);
+          if (url.includes('/auth/me')) {
+            resolve(json(authedUser));
+          }
+        }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { container } = renderApp('/app/riverton/submissions');
+
+    expect(container.querySelector('.animate-pulse')).not.toBeInTheDocument();
+  });
+
+  it('handles workspace with missing or null ID', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) {
+        return json(authedUser);
+      }
+      if (url.includes('/v1/workspaces/by-slug/riverton')) {
+        // Return workspace without ID
+        return json({ slug: 'riverton', name: 'Riverton', role: 'admin' });
+      }
+      if (url.includes('/v1/submissions')) {
+        return json({ items: [] });
+      }
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderApp('/app/riverton/submissions');
+
+    // It should render empty state
+    expect(await screen.findByText('No submissions yet')).toBeInTheDocument();
   });
 });

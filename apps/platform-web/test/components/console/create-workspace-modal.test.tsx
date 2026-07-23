@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CreateWorkspaceModal } from '@/components/console/create-workspace-modal';
-import { createWorkspace } from '@/lib/workspaces';
+import { createWorkspace, type Workspace } from '@/lib/workspaces';
 
 const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', () => ({
@@ -141,5 +141,98 @@ describe('CreateWorkspaceModal', () => {
     expect(
       await screen.findByText('Could not create the workspace. Please try again.'),
     ).toBeInTheDocument();
+  });
+
+  it('renders with default props (open: true, dismissable: false)', () => {
+    renderModal(queryClient); // No props passed
+    expect(screen.getByRole('heading', { name: 'Create workspace' })).toBeInTheDocument();
+    expect(screen.getByText('Create your first workspace to get started.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+  });
+
+  it('does not submit if the workspace name is empty or only whitespace', async () => {
+    renderModal(queryClient, { dismissable: true, open: true });
+    const input = screen.getByLabelText(/workspace name/i);
+    const form = input.closest('form')!;
+
+    // Set input value to spaces
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.submit(form);
+
+    expect(createWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('handles successful submit when onOpenChange is not provided', async () => {
+    const user = userEvent.setup();
+    vi.mocked(createWorkspace).mockResolvedValue({
+      id: 'w-1',
+      slug: 'city-of-riverton',
+      name: 'City of Riverton',
+      role: 'admin',
+      ownerId: 'u-1',
+      createdAt: '2026-07-15T00:00:00Z',
+    });
+
+    renderModal(queryClient, { dismissable: true, open: true }); // No onOpenChange provided
+
+    const input = screen.getByLabelText(/workspace name/i);
+    await user.type(input, 'City of Riverton');
+
+    const form = input.closest('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(createWorkspace).toHaveBeenCalledTimes(1);
+    });
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/app/$slug',
+      params: { slug: 'city-of-riverton' },
+    });
+  });
+
+  it('handles cancel click when onOpenChange is not provided', async () => {
+    const user = userEvent.setup();
+    renderModal(queryClient, { dismissable: true, open: true }); // No onOpenChange provided
+    const cancelBtn = screen.getByRole('button', { name: 'Cancel' });
+    await expect(user.click(cancelBtn)).resolves.not.toThrow();
+  });
+
+  it('disables the submit button while workspace creation is in progress', async () => {
+    const user = userEvent.setup();
+    let resolvePromise!: (val: any) => void;
+    const promise: Promise<Workspace> = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    vi.mocked(createWorkspace).mockReturnValue(promise);
+
+    renderModal(queryClient, { dismissable: true, open: true });
+
+    const input = screen.getByLabelText(/workspace name/i);
+    await user.type(input, 'New Workspace');
+
+    const submitBtn = screen.getByRole('button', { name: 'Create workspace' });
+    expect(submitBtn).toBeEnabled();
+
+    const form = input.closest('form')!;
+    fireEvent.submit(form);
+
+    // It should be disabled during the pending state (mutation.isPending)
+    await waitFor(() => {
+      expect(submitBtn).toBeDisabled();
+    });
+
+    // Resolve the promise to complete the test
+    resolvePromise({
+      id: 'w-1',
+      slug: 'new-workspace',
+      name: 'New Workspace',
+      role: 'admin',
+      ownerId: 'u-1',
+      createdAt: '2026-07-15T00:00:00Z',
+    });
+
+    await waitFor(() => {
+      expect(createWorkspace).toHaveBeenCalledTimes(1);
+    });
   });
 });

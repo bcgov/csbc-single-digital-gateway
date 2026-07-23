@@ -5,6 +5,7 @@ import { DefinitionEditor } from '@/components/admin/document-types/definition-e
 // Mock Monaco Editor because it doesn't run in JSDOM.
 // We capture options to assert that properties are passed down correctly.
 let mockedOptions: any = null;
+let mockedOnChange: any = null;
 vi.mock('@monaco-editor/react', () => ({
   default: ({
     value,
@@ -12,10 +13,11 @@ vi.mock('@monaco-editor/react', () => ({
     options,
   }: {
     value: string;
-    onChange?: (v: string) => void;
+    onChange?: (v: string | undefined) => void;
     options?: any;
   }) => {
     mockedOptions = options;
+    mockedOnChange = onChange;
     return (
       <textarea
         aria-label="definition-textarea"
@@ -44,6 +46,11 @@ describe('DefinitionEditor', () => {
     });
   });
 
+  it('defaults readOnly to false if not provided', () => {
+    render(<DefinitionEditor value="" />);
+    expect(mockedOptions.readOnly).toBe(false);
+  });
+
   it('triggers onChange when value is changed', () => {
     const handleChange = vi.fn();
     render(<DefinitionEditor value="" onChange={handleChange} readOnly={false} />);
@@ -54,5 +61,18 @@ describe('DefinitionEditor', () => {
 
     fireEvent.change(textarea, { target: { value: '{"new": "value"}' } });
     expect(handleChange).toHaveBeenCalledWith('{"new": "value"}');
+  });
+
+  it('handles next being undefined in onChange', () => {
+    const handleChange = vi.fn();
+    render(<DefinitionEditor value="" onChange={handleChange} />);
+
+    mockedOnChange(undefined);
+    expect(handleChange).toHaveBeenCalledWith('');
+  });
+
+  it('does not crash if onChange is undefined', () => {
+    render(<DefinitionEditor value="" />);
+    expect(() => mockedOnChange('some-value')).not.toThrow();
   });
 });

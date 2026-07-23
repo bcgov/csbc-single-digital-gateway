@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp } from '../support/render-app';
+import { Route } from '@/routes/admin.document-types.$id';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -70,7 +71,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-function withDocumentType(base: ReturnType<typeof mockAuth>) {
+function withDocumentType(base: ReturnType<typeof mockAuth>, docTypeData: any = mockDocumentType) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
@@ -99,7 +100,7 @@ function withDocumentType(base: ReturnType<typeof mockAuth>) {
           });
         }
       }
-      return json(mockDocumentType);
+      return json(docTypeData);
     }
 
     return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
@@ -111,13 +112,17 @@ function withDocumentType(base: ReturnType<typeof mockAuth>) {
   return fetchMock;
 }
 
-describe('Admin Document Type Detail Route', () => {
-  it('renders the document type name, kind, and versions list', async () => {
+describe('Admin Document Type ID Route Integration Test Suite', () => {
+  it('verifies route has a valid component definition', () => {
+    expect(Route.options.component).toBeDefined();
+  });
+
+  it('renders the document type name, kind, and versions list through the router', async () => {
     withDocumentType(mockAuth(adminUser));
     renderApp('/admin/document-types/dt-1');
 
     expect(
-      await screen.findByRole('heading', { name: 'Passport Application Form' }),
+      await screen.findByRole('heading', { name: 'Passport Application Form' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('basic-form')).toBeInTheDocument();
 
@@ -185,6 +190,67 @@ describe('Admin Document Type Detail Route', () => {
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({ definition: newDefinition }),
+        }),
+      );
+    });
+  });
+
+  it('renders blue badge for archived status version', async () => {
+    const mockDocumentTypeWithArchived = {
+      ...mockDocumentType,
+      versions: [
+        ...mockDocumentType.versions,
+        {
+          id: 'ver-3',
+          version: 3,
+          status: 'archived',
+          definition: { schema: { type: 'number' } },
+        },
+      ],
+    };
+
+    withDocumentType(mockAuth(adminUser), mockDocumentTypeWithArchived);
+    renderApp('/admin/document-types/dt-1');
+
+    expect(await screen.findByText('archived', {}, { timeout: 32000 })).toBeInTheDocument();
+  });
+
+  it('renders validation error when saving invalid json draft definition', async () => {
+    withDocumentType(mockAuth(adminUser));
+    renderApp('/admin/document-types/dt-1');
+
+    const user = userEvent.setup();
+    const editor = await screen.findByTestId('mock-monaco-editor');
+
+    fireEvent.change(editor, { target: { value: '{ invalid JSON' } });
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await user.click(saveBtn);
+
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert).toHaveTextContent('Definition is not valid JSON.');
+  });
+
+  it('handles version creation fallback definition when selected is undefined', async () => {
+    const mockDocumentTypeEmptyVersions = {
+      ...mockDocumentType,
+      versions: [],
+    };
+
+    const fetchMock = withDocumentType(mockAuth(adminUser), mockDocumentTypeEmptyVersions);
+    renderApp('/admin/document-types/dt-1');
+
+    const user = userEvent.setup();
+    const addBtn = await screen.findByRole('button', { name: /add version/i });
+    await user.click(addBtn);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/v1/admin/document-types/dt-1/versions'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ definition: {} }),
         }),
       );
     });

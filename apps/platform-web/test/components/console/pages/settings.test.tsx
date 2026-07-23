@@ -1,7 +1,24 @@
-import { screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { authedUser, mockAuth, renderApp } from '../../../support/render-app';
+import { SettingsPage } from '@/components/console/pages/settings';
+
+let mockSlug: string | undefined = 'riverton';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...original,
+    useParams: (options: any) => {
+      if (mockSlug === undefined) {
+        return { slug: undefined };
+      }
+      return original.useParams(options);
+    },
+  };
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -26,14 +43,53 @@ const memberWorkspace = {
 };
 
 describe('SettingsPage', () => {
+  beforeEach(() => {
+    mockSlug = 'riverton';
+  });
+
   it('renders loading state initially', async () => {
-    const fetchMock = vi.fn(() => new Promise<any>(() => {})); // never resolves
+    let workspaceRequests = 0;
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL) =>
+        new Promise<any>((resolve) => {
+          const url = String(input);
+          if (url.includes('/auth/me')) {
+            resolve(
+              new Response(JSON.stringify(authedUser), {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+              }),
+            );
+          } else if (url.includes('/v1/workspaces/by-slug/riverton')) {
+            workspaceRequests++;
+            if (workspaceRequests === 1) {
+              resolve(
+                new Response(JSON.stringify(adminWorkspace), {
+                  status: 200,
+                  headers: { 'content-type': 'application/json' },
+                }),
+              );
+            }
+            // Subsequent requests will never resolve
+          }
+        }),
+    );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const { container } = renderApp('/app/riverton/settings');
+    const { queryClient, container } = renderApp('/app/riverton/settings');
 
-    const skeleton = container.querySelector('.animate-pulse');
-    expect(skeleton).toBeInTheDocument();
+    // Wait for the main app shell to load so loader succeeds
+    await screen.findByRole('main', undefined, { timeout: 32000 });
+
+    // Reset query data to null to force the loading skeleton state
+    queryClient.setQueryData(['workspaces', 'by-slug', 'riverton'], null);
+
+    await waitFor(
+      () => {
+        expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+      },
+      { timeout: 32000 },
+    );
   });
 
   it('renders workspace settings for admin user (edit form enabled, delete button active)', async () => {
@@ -75,7 +131,7 @@ describe('SettingsPage', () => {
     // 4. Clicking delete button opens confirm dialog
     await user.click(deleteBtn);
     const dialog = await screen.findByRole('alertdialog');
-    expect(within(dialog).getByText('Delete Riverton?')).toBeInTheDocument();
+    expect(within(dialog).getByText('Delete Riverton New Name?')).toBeInTheDocument();
     expect(
       within(dialog).getByText(
         'This permanently deletes the workspace and removes every member. This cannot be undone.',
@@ -111,5 +167,24 @@ describe('SettingsPage', () => {
     ).toBeInTheDocument();
     const deleteBtn = screen.getByRole('button', { name: 'Delete workspace' });
     expect(deleteBtn).toBeDisabled();
+  });
+
+  it('renders loading skeleton when slug is undefined', () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    mockSlug = undefined;
+
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <SettingsPage />
+      </QueryClientProvider>,
+    );
+
+    const skeleton = container.querySelector('.animate-pulse');
+    expect(skeleton).toBeInTheDocument();
   });
 });

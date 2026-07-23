@@ -47,6 +47,10 @@ describe('Inspector', () => {
     // Edit form metadata
     await user.type(titleInput, '!');
     expect(handleChangeForm).toHaveBeenCalledWith({ title: 'Customer Survey!' });
+    handleChangeForm.mockClear();
+
+    await user.type(descInput, '!');
+    expect(handleChangeForm).toHaveBeenCalledWith({ description: 'Please answer accurately.!' });
   });
 
   it('renders container settings when node is a ContainerNode', async () => {
@@ -145,6 +149,16 @@ describe('Inspector', () => {
     await user.type(screen.getByLabelText('Label'), '!');
     expect(handleChangeControl).toHaveBeenCalledWith({ label: 'Username!' });
 
+    // Edit Field key
+    const keyInput = screen.getByLabelText('Field key');
+    await user.type(keyInput, '1');
+    expect(handleChangeControl).toHaveBeenLastCalledWith({ key: 'username1' });
+
+    // Edit Help text
+    const helpInput = screen.getByLabelText('Help text');
+    await user.type(helpInput, '?');
+    expect(handleChangeControl).toHaveBeenLastCalledWith({ description: '?' });
+
     // Toggle required
     const requiredSwitch = screen.getByRole('switch', { name: 'Required' });
     expect(requiredSwitch).not.toBeChecked();
@@ -176,7 +190,10 @@ describe('Inspector', () => {
       label: 'Colors',
       required: false,
       options: {},
-      enumOptions: [{ value: 'red', label: 'Red Label' }],
+      enumOptions: [
+        { value: 'red', label: 'Red Label' },
+        { value: 'blue', label: 'Blue Label' },
+      ],
     };
 
     render(
@@ -200,24 +217,28 @@ describe('Inspector', () => {
 
     // For value-only field (select), value change propagates identical value to label
     expect(handleChangeControl).toHaveBeenCalledWith({
-      enumOptions: [{ value: 'reds', label: 'reds' }],
+      enumOptions: [
+        { value: 'reds', label: 'reds' },
+        { value: 'blue', label: 'Blue Label' },
+      ],
     });
 
     // Add option
     const addBtn = screen.getByRole('button', { name: 'Add option' });
     await user.click(addBtn);
-    expect(handleChangeControl).toHaveBeenCalledWith({
+    expect(handleChangeControl).toHaveBeenLastCalledWith({
       enumOptions: [
         { value: 'red', label: 'Red Label' },
-        { value: 'option_2', label: 'Option 2' },
+        { value: 'blue', label: 'Blue Label' },
+        { value: 'option_3', label: 'Option 3' },
       ],
     });
 
     // Remove option
     const removeBtn = screen.getByRole('button', { name: 'Remove option 1' });
     await user.click(removeBtn);
-    expect(handleChangeControl).toHaveBeenCalledWith({
-      enumOptions: [],
+    expect(handleChangeControl).toHaveBeenLastCalledWith({
+      enumOptions: [{ value: 'blue', label: 'Blue Label' }],
     });
   });
 
@@ -254,8 +275,14 @@ describe('Inspector', () => {
 
     // Edit label only
     await user.type(labelInput, '!');
-    expect(handleChangeControl).toHaveBeenCalledWith({
+    expect(handleChangeControl).toHaveBeenLastCalledWith({
       enumOptions: [{ value: 'v1', label: 'Label 1!' }],
+    });
+
+    // Edit value
+    await user.type(valueInput, '2');
+    expect(handleChangeControl).toHaveBeenLastCalledWith({
+      enumOptions: [{ value: 'v12', label: 'Label 1' }],
     });
   });
 
@@ -296,5 +323,134 @@ describe('Inspector', () => {
     // Edit Min value
     fireEvent.change(minInput, { target: { value: '10' } });
     expect(handleChangeControl).toHaveBeenCalledWith({ min: 10 });
+
+    // Edit Max value
+    fireEvent.change(maxInput, { target: { value: '200' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ max: 200 });
+
+    // Edit Step value
+    fireEvent.change(stepInput, { target: { value: '5' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ step: 5 });
+  });
+
+  it('defaults empty values in Container and Control inspectors when properties are omitted', () => {
+    const nodeContainer: ContainerNode = {
+      kind: 'container',
+      layout: 'group',
+      children: [],
+    };
+
+    const { rerender } = render(
+      <Inspector
+        node={nodeContainer}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Section title')).toHaveValue('');
+
+    const nodeControl: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'name',
+      label: 'Name',
+      required: false,
+      options: {},
+    };
+
+    rerender(
+      <Inspector
+        node={nodeControl}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Help text')).toHaveValue('');
+
+    const nodeSlider: ControlNode = {
+      kind: 'control',
+      fieldType: 'slider',
+      key: 'val',
+      label: 'Value',
+      required: false,
+      options: {},
+    };
+
+    rerender(
+      <Inspector
+        node={nodeSlider}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Min')).toHaveValue(0);
+    expect(screen.getByLabelText('Max')).toHaveValue(100);
+    expect(screen.getByLabelText('Step')).toHaveValue(1);
+  });
+
+  it('shows warning message when EnumOptions list is empty', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'select',
+      key: 'colors',
+      label: 'Colors',
+      required: false,
+      options: {},
+      enumOptions: [],
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Add at least one option.')).toBeInTheDocument();
+  });
+
+  it('handles missing/undefined enumOptions in EnumOptionsEditor', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'select',
+      key: 'colors',
+      label: 'Colors',
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Add at least one option.')).toBeInTheDocument();
   });
 });

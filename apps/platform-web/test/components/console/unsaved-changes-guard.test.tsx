@@ -7,19 +7,44 @@ import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard'
 const mockReset = vi.fn();
 const mockProceed = vi.fn();
 let mockBlockerStatus = 'idle';
+let mockHasReset = true;
+let mockHasProceed = true;
 
 vi.mock('@tanstack/react-router', () => ({
   useBlocker: vi.fn(() => ({
     status: mockBlockerStatus,
-    reset: mockReset,
-    proceed: mockProceed,
+    reset: mockHasReset ? mockReset : undefined,
+    proceed: mockHasProceed ? mockProceed : undefined,
   })),
 }));
+
+let capturedOnOpenChange: any = null;
+vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@repo/ui/alert-dialog')>();
+  return {
+    ...original,
+    AlertDialog: ({ children, open, onOpenChange }: any) => {
+      capturedOnOpenChange = onOpenChange;
+      // If original.AlertDialog is not functional/rendered properly in JSDOM tests due to Radix portals,
+      // fallback to custom div, but original.AlertDialog is preferred if it works.
+      return original.AlertDialog ? (
+        <original.AlertDialog open={open} onOpenChange={onOpenChange}>
+          {children}
+        </original.AlertDialog>
+      ) : (
+        <div data-testid="mock-alert-dialog">{children}</div>
+      );
+    },
+  };
+});
 
 describe('UnsavedChangesGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockBlockerStatus = 'idle';
+    mockHasReset = true;
+    mockHasProceed = true;
+    capturedOnOpenChange = null;
   });
 
   it('registers blocker and does not show dialog when blocker status is idle', () => {
@@ -74,5 +99,56 @@ describe('UnsavedChangesGuard', () => {
     await user.click(proceedBtn);
 
     expect(mockProceed).toHaveBeenCalledTimes(1);
+  });
+
+  it('registers blocker correctly when "when" is false', () => {
+    render(<UnsavedChangesGuard when={false} />);
+    const callArgs = vi.mocked(useBlocker).mock.calls[0]?.[0] as any;
+    expect(callArgs?.shouldBlockFn()).toBe(false);
+    expect(callArgs?.enableBeforeUnload()).toBe(false);
+  });
+
+  it('calls blocker.reset in onOpenChange when open is false', () => {
+    mockBlockerStatus = 'blocked';
+    render(<UnsavedChangesGuard when={true} />);
+
+    expect(capturedOnOpenChange).toBeInstanceOf(Function);
+
+    // Call with true - should do nothing
+    capturedOnOpenChange(true);
+    expect(mockReset).not.toHaveBeenCalled();
+
+    // Call with false - should call blocker.reset
+    capturedOnOpenChange(false);
+    expect(mockReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles onOpenChange(false) safely when blocker.reset is undefined', () => {
+    mockBlockerStatus = 'blocked';
+    mockHasReset = false; // Mock blocker.reset as undefined
+    render(<UnsavedChangesGuard when={true} />);
+
+    expect(capturedOnOpenChange).toBeInstanceOf(Function);
+    expect(() => capturedOnOpenChange(false)).not.toThrow();
+  });
+
+  it('handles Keep editing click safely when blocker.reset is undefined', async () => {
+    const user = userEvent.setup();
+    mockBlockerStatus = 'blocked';
+    mockHasReset = false; // Mock blocker.reset as undefined
+    render(<UnsavedChangesGuard when={true} />);
+
+    const cancelBtn = screen.getByRole('button', { name: 'Keep editing' });
+    await expect(user.click(cancelBtn)).resolves.not.toThrow();
+  });
+
+  it('handles Discard changes click safely when blocker.proceed is undefined', async () => {
+    const user = userEvent.setup();
+    mockBlockerStatus = 'blocked';
+    mockHasProceed = false; // Mock blocker.proceed as undefined
+    render(<UnsavedChangesGuard when={true} />);
+
+    const proceedBtn = screen.getByRole('button', { name: 'Discard changes' });
+    await expect(user.click(proceedBtn)).resolves.not.toThrow();
   });
 });

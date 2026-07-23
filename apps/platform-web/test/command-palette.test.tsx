@@ -26,7 +26,7 @@ describe('command palette', () => {
     renderApp('/app/riverton');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: /search/i }));
+    await user.click(await screen.findByRole('button', { name: /search/i }, { timeout: 32000 }));
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Submissions')).toBeInTheDocument();

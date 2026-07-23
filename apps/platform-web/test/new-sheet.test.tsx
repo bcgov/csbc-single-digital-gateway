@@ -21,9 +21,12 @@ describe('header "New" button', () => {
     renderApp('/app/riverton');
     const user = userEvent.setup();
     // Wait for the workspace-scoped console to finish loading before opening the sheet.
-    await screen.findByText(/Overview is being set up/i);
+    await screen.findByText(/Overview is being set up/i, undefined, { timeout: 32000 });
     await user.click(screen.getByRole('button', { name: 'New' }));
-    return { user, sheet: await screen.findByRole('dialog', { name: /create new/i }) };
+    return {
+      user,
+      sheet: await screen.findByRole('dialog', { name: /create new/i }, { timeout: 32000 }),
+    };
   }
 
   it('opens a side sheet with the Service option (applications are created within a service)', async () => {
@@ -40,7 +43,7 @@ describe('header "New" button', () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app');
 
-    await screen.findByRole('dialog', { name: /create workspace/i });
+    await screen.findByRole('dialog', { name: /create workspace/i }, { timeout: 32000 });
     expect(screen.getByRole('button', { name: 'New' })).toBeDisabled();
   });
 });

@@ -146,7 +146,7 @@ describe('console services', () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/');
     expect(
-      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 8000 }),
+      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
@@ -154,7 +154,7 @@ describe('console services', () => {
   it('opens the New service modal (title + description) at /services/new', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/new');
-    const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 8000 });
+    const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 32000 });
     expect(within(modal).getByLabelText(/title/i)).toBeInTheDocument();
     expect(within(modal).getByLabelText(/description/i)).toBeInTheDocument();
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
@@ -167,7 +167,7 @@ describe('console services', () => {
 
     // Service details tab (default): the JSONForms title control.
     expect(
-      await screen.findByLabelText(/title/i, undefined, { timeout: 8000 }),
+      await screen.findByLabelText(/title/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Application methods tab: the method list (count badge + form title).

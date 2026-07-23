@@ -118,13 +118,13 @@ describe('App Slug Services ID Versions VersionID Application Methods New Route'
       await screen.findByRole(
         'link',
         { name: 'Permit application', hidden: true },
-        { timeout: 8000 },
+        { timeout: 32000 },
       ),
     ).toBeInTheDocument();
 
     // Verify modal is open and has the heading "New application method"
     expect(
-      await screen.findByRole('heading', { name: 'New application method' }, { timeout: 8000 }),
+      await screen.findByRole('heading', { name: 'New application method' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Check modal description and fields

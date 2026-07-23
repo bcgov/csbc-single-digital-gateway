@@ -66,7 +66,7 @@ describe('App Slug Layout Route', () => {
       await screen.findByText(
         'Overview is being set up — placeholder layout shown until you choose what to track.',
         {},
-        { timeout: 8000 },
+        { timeout: 32000 },
       ),
     ).toBeInTheDocument();
   });
@@ -78,12 +78,27 @@ describe('App Slug Layout Route', () => {
 
     // Verify WorkspaceNotFound title is displayed
     expect(
-      await screen.findByText('Workspace not found', {}, { timeout: 8000 }),
+      await screen.findByText('Workspace not found', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByText('It may have been deleted, or you don’t have access to it.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Back to your workspaces' })).toBeInTheDocument();
+  });
+
+  it('bubbles the error when the workspace fetch fails with 500', async () => {
+    const mockAuthFn = mockAuth(authedUser, { workspaces: [] });
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) {
+        return new Response('Internal Server Error', { status: 500 });
+      }
+      return (mockAuthFn as any)(input, init);
+    });
+
+    renderApp('/app/riverton/');
+
+    expect(await screen.findByText(/failed: 500/i, {}, { timeout: 32000 })).toBeInTheDocument();
   });
 });

@@ -18,6 +18,8 @@ import {
   hasOutgoing,
   addStageAfter,
   addStageBefore,
+  setStagePosition,
+  addStageAtEnd,
 } from '@/components/stage-builder/stage-model';
 import type { MultiStageDefinition } from '@/components/stage-builder/stage-model';
 
@@ -229,5 +231,210 @@ describe('stage-model pure functions', () => {
     expect(before.edges).toHaveLength(1);
     expect(before.edges[0]?.source).toBe(before.stages[0]?.id);
     expect(before.edges[0]?.target).toBe('s1');
+  });
+
+  describe('stage-model additional coverage', () => {
+    it('sets stage position successfully', () => {
+      const def: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [{ id: 's1', name: 'S1', position: { x: 0, y: 0 }, pages: [] }],
+        edges: [],
+      };
+      const result = setStagePosition(def, 's1', { x: 50, y: 80 });
+      expect(result.stages[0]?.position).toEqual({ x: 50, y: 80 });
+    });
+
+    it('addStageAtEnd handles empty stages list successfully', () => {
+      const emptyDef: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [],
+        edges: [],
+      };
+      const result = addStageAtEnd(emptyDef);
+      expect(result.stages).toHaveLength(1);
+      expect(result.stages[0]?.position).toEqual({ x: 0, y: 0 });
+    });
+
+    it('reorderPages returns unmodified stage if from index is out of bounds', () => {
+      const def: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [
+          {
+            id: 's1',
+            name: 'Stage',
+            position: { x: 0, y: 0 },
+            pages: [{ id: 'p1', name: 'P1', description: '', schema: {}, uischema: {} }],
+          },
+        ],
+        edges: [],
+      };
+      const result = reorderPages(def, 's1', 99, 0);
+      expect(result).toEqual(def);
+    });
+
+    it('updatePageDefinition handles omitted, empty, or whitespace-only titles without changing page name', () => {
+      const def: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [
+          {
+            id: 's1',
+            name: 'Stage',
+            position: { x: 0, y: 0 },
+            pages: [
+              { id: 'p1', name: 'Original Page Name', description: '', schema: {}, uischema: {} },
+            ],
+          },
+        ],
+        edges: [],
+      };
+
+      const newDefNoTitle = {
+        schema: { properties: {} },
+        uischema: { type: 'VerticalLayout', elements: [] },
+      };
+      const result1 = updatePageDefinition(def, 's1', 'p1', newDefNoTitle as any);
+      expect(result1.stages[0]?.pages[0]?.name).toBe('Original Page Name');
+
+      const newDefEmptyTitle = {
+        schema: { title: '  ', properties: {} },
+        uischema: { type: 'VerticalLayout', elements: [] },
+      };
+      const result2 = updatePageDefinition(def, 's1', 'p1', newDefEmptyTitle as any);
+      expect(result2.stages[0]?.pages[0]?.name).toBe('Original Page Name');
+    });
+
+    it('addStageAfter and addStageBefore exit early if anchor stage is invalid', () => {
+      const def: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [{ id: 's1', name: 'Stage 1', position: { x: 100, y: 20 }, pages: [] }],
+        edges: [],
+      };
+
+      expect(addStageAfter(def, 'invalid-stage-id')).toBe(def);
+      expect(addStageBefore(def, 'invalid-stage-id')).toBe(def);
+    });
+
+    it('covers removeStage healing edges: chain, self-link, and duplicate link skip', () => {
+      const def: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [
+          { id: 's1', name: 'S1', position: { x: 0, y: 0 }, pages: [] },
+          { id: 's2', name: 'S2', position: { x: 320, y: 0 }, pages: [] },
+          { id: 's3', name: 'S3', position: { x: 640, y: 0 }, pages: [] },
+        ],
+        edges: [
+          { id: 'e1', source: 's1', target: 's2' },
+          { id: 'e2', source: 's2', target: 's3' },
+          { id: 'e3', source: 's2', target: 's1' },
+          { id: 'e4', source: 's1', target: 's3' },
+        ],
+      };
+
+      const result = removeStage(def, 's2');
+      expect(result.stages).toHaveLength(2);
+      expect(result.stages.map((s) => s.id)).toEqual(['s1', 's3']);
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0]?.id).toBe('e4');
+    });
+
+    it('heals edge chain when removing middle stage without pre-existing edges', () => {
+      const def: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [
+          { id: 's1', name: 'S1', position: { x: 0, y: 0 }, pages: [] },
+          { id: 's2', name: 'S2', position: { x: 320, y: 0 }, pages: [] },
+          { id: 's3', name: 'S3', position: { x: 640, y: 0 }, pages: [] },
+        ],
+        edges: [
+          { id: 'e1', source: 's1', target: 's2' },
+          { id: 'e2', source: 's2', target: 's3' },
+        ],
+      };
+
+      const result = removeStage(def, 's2');
+      expect(result.stages).toHaveLength(2);
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0]?.source).toBe('s1');
+      expect(result.edges[0]?.target).toBe('s3');
+    });
+
+    it('covers normalizeDefinition details, addStageAtEnd on empty definition, and hasIncoming/hasOutgoing edges nullish check', () => {
+      // 1. Call normalizeDefinition with nullish/non-array pages and edges
+      const raw = {
+        name: 'Custom Flow',
+        description: 'Custom description',
+        stages: [
+          {
+            id: 'stage-custom-1',
+            name: 'Custom Stage',
+            pages: null,
+          },
+        ],
+        edges: null,
+      };
+
+      const normalized = normalizeDefinition(raw as any);
+      expect(normalized.name).toBe('Custom Flow');
+      expect(normalized.description).toBe('Custom description');
+      expect(normalized.stages[0]?.position).toEqual({ x: 0, y: 0 });
+      expect(normalized.stages[0]?.pages).toEqual([]);
+      expect(normalized.edges).toEqual([]);
+
+      // 2. Call normalizeDefinition with normal arrays for pages and edges (Branch 1)
+      const rawNormal = {
+        name: 'Normal Flow',
+        description: 'Normal description',
+        stages: [
+          {
+            id: 'stage-1',
+            name: 'Stage 1',
+            pages: [{ id: 'p1', name: 'Page 1' }],
+          },
+        ],
+        edges: [{ id: 'e1', source: 'stage-1', target: 'stage-2' }],
+      };
+      const normalizedNormal = normalizeDefinition(rawNormal as any);
+      expect(normalizedNormal.stages[0]?.pages).toHaveLength(1);
+      expect(normalizedNormal.edges).toHaveLength(1);
+
+      // addStageAtEnd when stages length is 0 (Branch 2)
+      const emptyDef: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [],
+        edges: [],
+      };
+      const resultEmpty = addStageAtEnd(emptyDef);
+      expect(resultEmpty.stages).toHaveLength(1);
+      expect(resultEmpty.stages[0]?.position).toEqual({ x: 0, y: 0 });
+
+      // addStageAtEnd when stages length > 0 (Branch 1)
+      const nonLastDef: MultiStageDefinition = {
+        name: '',
+        description: '',
+        stages: [{ id: 's1', name: 'S1', position: { x: 0, y: 0 }, pages: [] }],
+        edges: [],
+      };
+      const resultNonEmpty = addStageAtEnd(nonLastDef);
+      expect(resultNonEmpty.stages).toHaveLength(2);
+      expect(resultNonEmpty.edges).toHaveLength(1);
+
+      // hasIncoming/hasOutgoing edges nullish fallback ?? []
+      const defWithNullEdges = {
+        name: '',
+        description: '',
+        stages: [],
+        edges: null,
+      };
+      expect(hasIncoming(defWithNullEdges as any, 's1')).toBe(false);
+      expect(hasOutgoing(defWithNullEdges as any, 's1')).toBe(false);
+    });
   });
 });

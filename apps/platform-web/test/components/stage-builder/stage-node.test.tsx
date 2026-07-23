@@ -7,8 +7,36 @@ import type { StageBuilderApi } from '@/components/stage-builder/stage-context';
 
 // Mock dnd-kit context
 vi.mock('@dnd-kit/react', () => ({
-  DragDropProvider: ({ children }: any) => (
-    <div data-testid="mock-drag-drop-provider">{children}</div>
+  DragDropProvider: ({ children, onDragEnd }: any) => (
+    <div data-testid="mock-drag-drop-provider">
+      <button onClick={() => onDragEnd?.({ operation: { source: null, target: null } })}>
+        Drag End Null
+      </button>
+      <button
+        onClick={() =>
+          onDragEnd?.({
+            operation: { source: { data: { index: 0 } }, target: { data: { index: 1 } } },
+          })
+        }
+      >
+        Drag End Reorder
+      </button>
+      <button
+        onClick={() =>
+          onDragEnd?.({
+            operation: { source: { data: { index: 0 } }, target: { data: { index: 0 } } },
+          })
+        }
+      >
+        Drag End Same Index
+      </button>
+      <button
+        onClick={() => onDragEnd?.({ operation: { source: { data: {} }, target: { data: {} } } })}
+      >
+        Drag End Undefined Indices
+      </button>
+      {children}
+    </div>
   ),
 }));
 
@@ -198,5 +226,183 @@ describe('StageNode', () => {
     const addPageBtn = screen.getByRole('button', { name: 'Add page' });
     await user.click(addPageBtn);
     expect(mockApi.addPage).toHaveBeenCalledWith('stage-1');
+  });
+
+  it('renders null if stage is not found', () => {
+    const { container } = render(
+      <StageBuilderContext.Provider value={mockApi}>
+        <StageNode
+          {...({
+            id: 'non-existent-stage',
+            type: 'stage',
+            selected: false,
+            zIndex: 1,
+            isConnectable: true,
+            data: {},
+          } as any)}
+        />
+      </StageBuilderContext.Provider>,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders correct plural fields labeling for 0 or multiple fields', () => {
+    const multiFieldApi: StageBuilderApi = {
+      ...mockApi,
+      def: {
+        ...mockApi.def,
+        stages: [
+          {
+            id: 'stage-1',
+            name: 'Stage One',
+            position: { x: 0, y: 0 },
+            pages: [
+              {
+                id: 'page-1',
+                name: 'Page Alpha',
+                description: '',
+                schema: { type: 'object', properties: {} },
+                uischema: { type: 'VerticalLayout', elements: [] },
+              },
+              {
+                id: 'page-2',
+                name: 'Page Beta',
+                description: '',
+                schema: { type: 'object', properties: { f1: {}, f2: {} } },
+                uischema: { type: 'VerticalLayout', elements: [] },
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      <StageBuilderContext.Provider value={multiFieldApi}>
+        <StageNode
+          {...({
+            id: 'stage-1',
+            type: 'stage',
+            selected: false,
+            zIndex: 1,
+            isConnectable: true,
+            data: {},
+          } as any)}
+        />
+      </StageBuilderContext.Provider>,
+    );
+
+    expect(screen.getByText('0 fields')).toBeInTheDocument();
+    expect(screen.getByText('2 fields')).toBeInTheDocument();
+  });
+
+  it('triggers reorderPages on drag end triggers', async () => {
+    const user = userEvent.setup();
+    render(
+      <StageBuilderContext.Provider value={mockApi}>
+        <StageNode
+          {...({
+            id: 'stage-1',
+            type: 'stage',
+            selected: false,
+            zIndex: 1,
+            isConnectable: true,
+            data: {},
+          } as any)}
+        />
+      </StageBuilderContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Drag End Null' }));
+    expect(mockApi.reorderPages).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Drag End Reorder' }));
+    expect(mockApi.reorderPages).toHaveBeenCalledWith('stage-1', 0, 1);
+
+    await user.click(screen.getByRole('button', { name: 'Drag End Same Index' }));
+    expect(mockApi.reorderPages).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: 'Drag End Undefined Indices' }));
+    expect(mockApi.reorderPages).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders correctly when page.schema.properties is undefined', () => {
+    const undefinedPropertiesApi: StageBuilderApi = {
+      ...mockApi,
+      def: {
+        ...mockApi.def,
+        stages: [
+          {
+            id: 'stage-1',
+            name: 'Stage One',
+            position: { x: 0, y: 0 },
+            pages: [
+              {
+                id: 'page-1',
+                name: 'Page Gamma',
+                description: '',
+                schema: { type: 'object' },
+                uischema: { type: 'VerticalLayout', elements: [] },
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      <StageBuilderContext.Provider value={undefinedPropertiesApi}>
+        <StageNode
+          {...({
+            id: 'stage-1',
+            type: 'stage',
+            selected: false,
+            zIndex: 1,
+            isConnectable: true,
+            data: {},
+          } as any)}
+        />
+      </StageBuilderContext.Provider>,
+    );
+
+    expect(screen.getByText('Page Gamma')).toBeInTheDocument();
+    expect(screen.getByText('0 fields')).toBeInTheDocument();
+  });
+
+  it('hides add stage buttons when stage has incoming and outgoing edges', () => {
+    const connectedEdgesApi: StageBuilderApi = {
+      ...mockApi,
+      def: {
+        ...mockApi.def,
+        stages: [
+          { id: 'stage-pre', name: 'Pre Stage', position: { x: -320, y: 0 }, pages: [] },
+          { id: 'stage-1', name: 'Stage One', position: { x: 0, y: 0 }, pages: [] },
+          { id: 'stage-post', name: 'Post Stage', position: { x: 320, y: 0 }, pages: [] },
+        ],
+        edges: [
+          { id: 'e-in', source: 'stage-pre', target: 'stage-1' },
+          { id: 'e-out', source: 'stage-1', target: 'stage-post' },
+        ],
+      },
+    };
+
+    render(
+      <StageBuilderContext.Provider value={connectedEdgesApi}>
+        <StageNode
+          {...({
+            id: 'stage-1',
+            type: 'stage',
+            selected: false,
+            zIndex: 1,
+            isConnectable: true,
+            data: {},
+          } as any)}
+        />
+      </StageBuilderContext.Provider>,
+    );
+
+    expect(screen.queryByLabelText('Add stage before')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Add stage after')).not.toBeInTheDocument();
   });
 });

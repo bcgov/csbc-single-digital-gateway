@@ -9,8 +9,9 @@ import { useStageBuilder } from '@/components/stage-builder/stage-context';
 // Mock @xyflow/react
 vi.mock('@xyflow/react', () => {
   return {
-    ReactFlow: ({ children, nodes, nodeTypes }: any) => (
+    ReactFlow: ({ children, nodes, nodeTypes, onEdgesDelete }: any) => (
       <div data-testid="mock-react-flow">
+        <button onClick={() => onEdgesDelete?.([{ id: 'edge-1' }])}>Trigger Edge Delete</button>
         {nodes.map((node: any) => {
           const NodeType = nodeTypes[node.type];
           return (
@@ -48,6 +49,10 @@ vi.mock('@/components/stage-builder/stage-node', () => {
           <h3>Stage Node: {stage.name}</h3>
           <button onClick={() => api.addPage(id)}>Add Page</button>
           <button onClick={() => api.removeStage(id)}>Remove Stage</button>
+          <button onClick={() => api.reorderPages(id, 0, 1)}>Reorder Pages</button>
+          <button onClick={() => api.renameStage(id, 'Renamed Stage')}>Rename Stage</button>
+          <button onClick={() => api.addAfter(id)}>Add After</button>
+          <button onClick={() => api.addBefore(id)}>Add Before</button>
           {stage.pages.map((p) => (
             <div key={p.id} data-testid={`page-row-${p.id}`}>
               <span>Page: {p.name}</span>
@@ -67,6 +72,7 @@ vi.mock('@/components/form-builder/builder-dialog', () => ({
     <div data-testid="mock-form-builder-dialog">
       <h2>{title}</h2>
       <button onClick={() => onOpenChange(false)}>Close Dialog</button>
+      <button onClick={() => onOpenChange(true)}>Trigger Open True</button>
       <button
         onClick={() =>
           onChange({ schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } })
@@ -331,5 +337,151 @@ describe('StageBuilder', () => {
     await user.click(closeBtn);
 
     expect(screen.queryByTestId('mock-form-builder-dialog')).not.toBeInTheDocument();
+  });
+
+  it('renders optional title and actions toolbars and handles empty metadata fallbacks', () => {
+    const emptyMetaVal = {
+      ...initialValue,
+      name: undefined,
+      description: undefined,
+    };
+
+    render(
+      <StageBuilder
+        value={emptyMetaVal as any}
+        onChange={vi.fn()}
+        title={<div data-testid="custom-title">Custom Title</div>}
+        actions={<button data-testid="custom-action">Custom Action</button>}
+      />,
+    );
+
+    expect(screen.getByTestId('custom-title')).toBeInTheDocument();
+    expect(screen.getByTestId('custom-action')).toBeInTheDocument();
+    expect(screen.getByLabelText('Form name')).toHaveValue('');
+    expect(screen.getByLabelText('Description')).toHaveValue('');
+  });
+
+  it('does not delete stage when confirmation is declined', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    const confirmSpy = vi.spyOn(globalThis, 'confirm').mockImplementation(() => false);
+
+    const twoStageVal: MultiStageDefinition = {
+      ...initialValue,
+      stages: [
+        ...initialValue.stages,
+        {
+          id: 'stage-2',
+          name: 'Stage Two',
+          position: { x: 320, y: 0 },
+          pages: [
+            {
+              id: 'page-2',
+              name: 'Page Beta',
+              description: '',
+              schema: { type: 'object', properties: {} },
+              uischema: { type: 'VerticalLayout', elements: [] },
+            },
+          ],
+        },
+      ],
+    };
+
+    render(<StageBuilder value={twoStageVal} onChange={handleChange} />);
+
+    const removeBtns = screen.getAllByRole('button', { name: 'Remove Stage' });
+    await user.click(removeBtns[1]!);
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('handles page reordering, stage renaming, and relative stage insertions', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(<StageBuilder value={initialValue} onChange={handleChange} />);
+
+    await user.click(screen.getByRole('button', { name: 'Reorder Pages' }));
+    expect(handleChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        stages: expect.any(Array),
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Rename Stage' }));
+    expect(handleChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        stages: [
+          expect.objectContaining({
+            id: 'stage-1',
+            name: 'Renamed Stage',
+          }),
+        ],
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add After' }));
+    expect(handleChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        stages: expect.any(Array),
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add Before' }));
+    expect(handleChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        stages: expect.any(Array),
+      }),
+    );
+  });
+
+  it('handles edge deletion correctly', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const modelWithEdges: MultiStageDefinition = {
+      ...initialValue,
+      edges: [{ id: 'edge-1', source: 'stage-1', target: 'stage-2' }],
+    };
+
+    render(<StageBuilder value={modelWithEdges} onChange={handleChange} />);
+
+    await user.click(screen.getByRole('button', { name: 'Trigger Edge Delete' }));
+
+    expect(handleChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        edges: [],
+      }),
+    );
+  });
+
+  it('covers fallback logic when stages and edges are undefined/null', () => {
+    const valueWithNulls = {
+      name: 'Null Meta',
+      description: 'None',
+      stages: undefined,
+      edges: undefined,
+    };
+    const { unmount } = render(<StageBuilder value={valueWithNulls as any} onChange={vi.fn()} />);
+    expect(screen.getByLabelText('Form name')).toHaveValue('Null Meta');
+
+    // Covers FitOnChange cleanup cancelAnimationFrame branch
+    unmount();
+  });
+
+  it('covers FormBuilderDialog onOpenChange true branch', async () => {
+    const user = userEvent.setup();
+    render(<StageBuilder value={initialValue} onChange={vi.fn()} />);
+
+    // Open FormBuilderDialog
+    const editPageBtn = screen.getByRole('button', { name: 'Edit Page' });
+    await user.click(editPageBtn);
+
+    // Click Trigger Open True to invoke onOpenChange(true) -> if (!open) evaluates false
+    const openTrueBtn = screen.getByRole('button', { name: 'Trigger Open True' });
+    await user.click(openTrueBtn);
+
+    expect(screen.getByTestId('mock-form-builder-dialog')).toBeInTheDocument();
   });
 });

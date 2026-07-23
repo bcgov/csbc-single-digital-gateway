@@ -77,7 +77,7 @@ describe('App Slug Services Index Route', () => {
 
     // Verify page header and layout
     expect(
-      await screen.findByText('Service documents in this workspace.', {}, { timeout: 8000 }),
+      await screen.findByText('Service documents in this workspace.', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify services are listed in the table

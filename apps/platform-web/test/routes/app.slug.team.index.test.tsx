@@ -78,7 +78,7 @@ describe('App Slug Team Index Route', () => {
 
     // Wait for the team header text to render
     expect(
-      await screen.findByText('People with access to this workspace', {}, { timeout: 8000 }),
+      await screen.findByText('People with access to this workspace', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify Add member button is visible for admin workspace role

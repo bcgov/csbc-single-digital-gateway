@@ -108,7 +108,7 @@ describe('App Slug Services ID Application Methods Route', () => {
 
     // Breadcrumb page title
     expect(
-      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 8000 }),
+      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify application methods tab is active and shows the count badge of 1

@@ -63,6 +63,21 @@ describe('field-card features', () => {
       const wrapper = container.firstChild as HTMLElement;
       expect(wrapper).toHaveClass('pointer-events-none', 'border-dashed', 'border-primary');
     });
+
+    it('defaults to non-ghost styling when ghost prop is omitted', () => {
+      const node: FieldNode = {
+        kind: 'display',
+        id: 'd1',
+        displayType: 'heading',
+        text: 'Heading text content',
+      };
+
+      const { container } = render(<FieldPreview node={node} />);
+
+      expect(screen.getByTestId('mock-display-card')).toBeInTheDocument();
+      const wrapper = container.firstChild as HTMLElement;
+      expect(wrapper).not.toHaveClass('border-dashed');
+    });
   });
 
   describe('previewNodeForType', () => {
@@ -89,6 +104,15 @@ describe('field-card features', () => {
       if (node.kind === 'display') {
         expect(node.displayType).toBe('heading');
         expect(node.text).toBe('Heading');
+      }
+    });
+
+    it('falls back to fieldType as label when definition is not found', () => {
+      const node = previewNodeForType('custom-unrecognized' as any);
+      expect(node.kind).toBe('control');
+      if (node.kind === 'control') {
+        expect(node.label).toBe('custom-unrecognized');
+        expect(node.key).toBe('custom-unrecognized');
       }
     });
   });

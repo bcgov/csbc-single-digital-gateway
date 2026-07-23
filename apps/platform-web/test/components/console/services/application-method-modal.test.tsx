@@ -121,7 +121,7 @@ describe('ApplicationMethodModal', () => {
 
     // Dialog title and description should be present
     expect(
-      await screen.findByRole('heading', { name: 'New application method' }),
+      await screen.findByRole('heading', { name: 'New application method' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Choose how applicants apply for this service.')).toBeInTheDocument();
 
@@ -264,5 +264,108 @@ describe('ApplicationMethodModal', () => {
         }),
       );
     });
+  });
+
+  it('shows error message when form creation fails', async () => {
+    const fetchMock = mockApi();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/services/srv-123/versions/v-456/forms') && method === 'POST') {
+        return new Response(JSON.stringify({ message: 'Failed to create form' }), {
+          status: 500,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.includes('/auth/me')) return json(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/v1/workspaces'))
+        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
+      if (url.includes('/v1/document-types')) return json(mockFormTypes);
+      return new Response(null, { status: 404 });
+    });
+
+    const user = userEvent.setup();
+    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+
+    const basicFormBtn = await screen.findByRole('button', { name: /Basic form/i });
+    await user.click(basicFormBtn);
+
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert.textContent).toContain('Failed to create form');
+  });
+
+  it('shows error message when form type is unavailable', async () => {
+    const fetchMock = mockApi();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/v1/document-types')) {
+        return json({ items: [] });
+      }
+      if (url.includes('/auth/me')) return json(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/v1/workspaces'))
+        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
+      return new Response(null, { status: 404 });
+    });
+
+    const user = userEvent.setup();
+    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+
+    const basicFormBtn = await screen.findByRole('button', { name: /Basic form/i });
+    await user.click(basicFormBtn);
+
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert.textContent).toContain('Basic form type unavailable');
+  });
+
+  it('does not close the modal if form creation is pending', async () => {
+    let resolveCreate!: (value: Response) => void;
+    const createPromise = new Promise<Response>((resolve) => {
+      resolveCreate = resolve;
+    });
+
+    const fetchMock = mockApi();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.includes('/v1/services/srv-123/versions/v-456/forms') && method === 'POST') {
+        return createPromise;
+      }
+      if (url.includes('/auth/me')) return json(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/v1/workspaces'))
+        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
+      if (url.includes('/v1/document-types')) return json(mockFormTypes);
+      return new Response(null, { status: 404 });
+    });
+
+    const user = userEvent.setup();
+    const { router } = renderApp(
+      '/app/riverton/services/srv-123/versions/v-456/application-methods/new',
+    );
+
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    // Click Basic form button to trigger mutation and make it pending
+    const basicFormBtn = await screen.findByRole('button', { name: /Basic form/i });
+    await user.click(basicFormBtn);
+
+    // Verify spinner is rendered
+    expect(basicFormBtn.querySelector('.animate-spin')).toBeInTheDocument();
+
+    // Try to dismiss by pressing Escape
+    await user.keyboard('{Escape}');
+
+    // Modal title should still be in the document
+    expect(screen.getByRole('heading', { name: 'New application method' })).toBeInTheDocument();
+
+    // Verify it did not navigate
+    expect(navigateSpy).not.toHaveBeenCalled();
+
+    // Resolve the creation to clean up
+    resolveCreate(json(mockBasicReference));
   });
 });

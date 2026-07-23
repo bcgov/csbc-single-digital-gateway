@@ -77,7 +77,7 @@ describe('App Slug Team Member ID Profile Route', () => {
     renderApp('/app/riverton/team/mem-123');
 
     // Wait for the member profile page content to load
-    expect(await screen.findByText('Alice Smith', {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(await screen.findByText('Alice Smith', {}, { timeout: 32000 })).toBeInTheDocument();
 
     // Verify sub-details
     expect(screen.getByText('alice@riverton.gov')).toBeInTheDocument();

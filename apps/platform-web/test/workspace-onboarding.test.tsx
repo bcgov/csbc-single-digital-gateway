@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp, type WorkspaceLike } from './support/render-app';
@@ -20,7 +20,11 @@ describe('workspace onboarding gate at /app', () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app');
 
-    const dialog = await screen.findByRole('dialog', { name: /create workspace/i });
+    const dialog = await screen.findByRole(
+      'dialog',
+      { name: /create workspace/i },
+      { timeout: 32000 },
+    );
     expect(within(dialog).getByRole('textbox')).toBeInTheDocument();
     // Forced — there is no escape (no Cancel) when the user has zero workspaces.
     expect(within(dialog).queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
@@ -31,7 +35,7 @@ describe('workspace onboarding gate at /app', () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app');
 
-    await screen.findByRole('dialog', { name: /create workspace/i });
+    await screen.findByRole('dialog', { name: /create workspace/i }, { timeout: 32000 });
     // Nav items render but are not navigable links.
     expect(screen.queryByRole('link', { name: 'Services' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Submissions' })).not.toBeInTheDocument();
@@ -53,6 +57,11 @@ describe('workspace onboarding gate at /app', () => {
     const user = userEvent.setup();
 
     const dialog = await screen.findByRole('dialog', { name: /create workspace/i });
+
+    // Trigger submit with empty name to cover the early return branch in integration tests
+    const form = within(dialog).getByRole('textbox').closest('form')!;
+    fireEvent.submit(form);
+
     await user.type(within(dialog).getByRole('textbox'), 'New Town');
     await user.click(within(dialog).getByRole('button', { name: /create workspace/i }));
 

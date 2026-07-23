@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleSidebar } from '@/components/console/console-sidebar';
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ to, params, children, _activeOptions, _activeProps, ...props }: any) => {
+  Link: ({ to, params, children, activeOptions, activeProps, ...props }: any) => {
     let href = to;
     if (params) {
       Object.entries(params).forEach(([key, val]) => {
@@ -11,7 +11,13 @@ vi.mock('@tanstack/react-router', () => ({
       });
     }
     return (
-      <a href={href} data-testid="router-link" {...props}>
+      <a
+        href={href}
+        data-testid="router-link"
+        data-active-options={JSON.stringify(activeOptions)}
+        data-active-props={JSON.stringify(activeProps)}
+        {...props}
+      >
         {children}
       </a>
     );
@@ -58,10 +64,16 @@ describe('ConsoleSidebar', () => {
     const overviewLink = screen.getByRole('link', { name: 'Overview' });
     expect(overviewLink).toBeInTheDocument();
     expect(overviewLink).toHaveAttribute('href', '/app/riverton');
+    expect(overviewLink).toHaveAttribute('data-active-options', '{"exact":true}');
+    expect(overviewLink).toHaveAttribute(
+      'data-active-props',
+      '{"className":"bg-sidebar-accent text-sidebar-accent-foreground"}',
+    );
 
     const servicesLink = screen.getByRole('link', { name: 'Services' });
     expect(servicesLink).toBeInTheDocument();
     expect(servicesLink).toHaveAttribute('href', '/app/riverton/services');
+    expect(servicesLink).toHaveAttribute('data-active-options', '{"exact":false}');
 
     const settingsLink = screen.getByRole('link', { name: 'Settings' });
     expect(settingsLink).toBeInTheDocument();
@@ -100,6 +112,13 @@ describe('ConsoleSidebar', () => {
 
   it('does not render Admin link if user is not admin', () => {
     mockUser = { roles: ['user'] };
+    render(<ConsoleSidebar collapsed={false} slug="riverton" />);
+
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+  });
+
+  it('does not render Admin link if user is null', () => {
+    mockUser = null;
     render(<ConsoleSidebar collapsed={false} slug="riverton" />);
 
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();

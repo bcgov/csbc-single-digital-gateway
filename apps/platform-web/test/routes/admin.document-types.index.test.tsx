@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp } from '../support/render-app';
+import { Route } from '@/routes/admin.document-types.index';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -50,7 +51,11 @@ function mockDocumentTypes(items: any[], base: ReturnType<typeof mockAuth>) {
   return fetchMock;
 }
 
-describe('Admin Document Types List Route', () => {
+describe('Admin Document Types Index Route Integration Test Suite', () => {
+  it('verifies route has a valid component definition', () => {
+    expect(Route.options.component).toBeDefined();
+  });
+
   it('renders empty state when no document types exist', async () => {
     mockDocumentTypes([], mockAuth(adminUser));
     renderApp('/admin/document-types');
@@ -80,30 +85,48 @@ describe('Admin Document Types List Route', () => {
     mockDocumentTypes(mockData, mockAuth(adminUser));
     renderApp('/admin/document-types');
 
-    // Document A assertions (Published v1, 2 versions)
-    expect(await screen.findByRole('link', { name: 'Document A' })).toHaveAttribute(
+    expect(await screen.findByText('Document A')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Document A' })).toHaveAttribute(
       'href',
       '/admin/document-types/dt-1',
     );
     expect(screen.getByText('Published v1')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('Draft')).toBeInTheDocument();
 
-    // Document B assertions (Draft, 1 version)
+    expect(screen.getByText('Document B')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Document B' })).toHaveAttribute(
       'href',
       '/admin/document-types/dt-2',
     );
-    expect(screen.getByText('Draft')).toBeInTheDocument();
 
-    // Document C assertions (Archived, 1 version)
+    expect(screen.getByText('Document C')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Document C' })).toHaveAttribute(
       'href',
       '/admin/document-types/dt-3',
     );
     expect(screen.getByText('Archived')).toBeInTheDocument();
 
-    // Check kind badges (using findAllByText to match multiple elements)
     const badges = screen.getAllByText('basic-form');
     expect(badges.length).toBeGreaterThan(0);
+  });
+
+  it('renders Archived status and 0 version count when versions list is empty', async () => {
+    const mockData = [
+      {
+        type: { id: 'dt-4', name: 'Document D', kind: 'basic-form' },
+        versions: [],
+      },
+    ];
+
+    mockDocumentTypes(mockData, mockAuth(adminUser));
+    renderApp('/admin/document-types');
+
+    expect(await screen.findByRole('link', { name: 'Document D' })).toHaveAttribute(
+      'href',
+      '/admin/document-types/dt-4',
+    );
+    expect(screen.getByText('Archived')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
   });
 });

@@ -104,4 +104,33 @@ describe('DeleteWorkspaceButton', () => {
     expect(removeQueriesSpy).toHaveBeenCalledWith({ queryKey: ['workspaces'] });
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/app' });
   });
+
+  it('disables the action button while delete mutation is pending', async () => {
+    const user = userEvent.setup();
+    let resolveDelete: ((v: null) => void) | null = null;
+    vi.mocked(deleteWorkspace).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDelete = resolve as any;
+        }),
+    );
+
+    renderDeleteButton(queryClient);
+
+    const triggerBtn = screen.getByRole('button', { name: 'Delete workspace' });
+    await user.click(triggerBtn);
+
+    const confirmBtn = await screen.findByRole('button', { name: 'Delete workspace' });
+    await user.click(confirmBtn);
+
+    // It should be disabled
+    expect(confirmBtn).toBeDisabled();
+
+    // Resolve the promise to clean up
+    resolveDelete!(null);
+
+    await waitFor(() => {
+      expect(confirmBtn).not.toBeDisabled();
+    });
+  });
 });

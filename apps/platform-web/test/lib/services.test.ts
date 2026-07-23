@@ -148,7 +148,7 @@ describe('Services API client', () => {
     );
 
     const options = serviceQueryOptions('srv-1');
-    await expect((options.queryFn as any)()).rejects.toThrow(
+    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
       'Schema invalid: Field name missing; Properties duplicate',
     );
   });
@@ -288,5 +288,95 @@ describe('Services API client', () => {
         credentials: 'include',
       },
     );
+  });
+
+  describe('API error handling boundaries', () => {
+    it('handles non-JSON error body gracefully', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      } as Response);
+
+      const options = serviceQueryOptions('srv-1');
+      let thrown: Error | undefined;
+      try {
+        await (options.queryFn as any)();
+      } catch (err) {
+        thrown = err as Error;
+      }
+      expect(thrown).toBeDefined();
+      expect(thrown?.message).toContain('Request failed: 500');
+    });
+
+    it('handles JSON error body with errors array but no message', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ errors: ['Direct Error Description'] }),
+      } as Response);
+
+      const options = serviceQueryOptions('srv-1');
+      let thrown: Error | undefined;
+      try {
+        await (options.queryFn as any)();
+      } catch (err) {
+        thrown = err as Error;
+      }
+      expect(thrown).toBeDefined();
+      expect(thrown?.message).toBe('Request failed: 400: Direct Error Description');
+    });
+
+    it('handles JSON error body with message but no errors array', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'Only Message' }),
+      } as Response);
+
+      const options = serviceQueryOptions('srv-1');
+      let thrown: Error | undefined;
+      try {
+        await (options.queryFn as any)();
+      } catch (err) {
+        thrown = err as Error;
+      }
+      expect(thrown).toBeDefined();
+      expect(thrown?.message).toBe('Only Message');
+    });
+
+    it('handles deletion, archive, reactivation, and reference failures gracefully', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 409,
+      } as Response);
+
+      const runAndCatch = async (fn: () => Promise<any>) => {
+        try {
+          await fn();
+          return null;
+        } catch (err) {
+          return err as Error;
+        }
+      };
+
+      const err1 = await runAndCatch(() => deleteService('srv-1'));
+      expect(err1?.message).toBe('Request failed: 409');
+
+      const err2 = await runAndCatch(() => discardServiceVersion('srv-1', 'ver-1'));
+      expect(err2?.message).toBe('Request failed: 409');
+
+      const err3 = await runAndCatch(() => archiveService('srv-1'));
+      expect(err3?.message).toBe('Request failed: 409');
+
+      const err4 = await runAndCatch(() => reactivateService('srv-1'));
+      expect(err4?.message).toBe('Request failed: 409');
+
+      const err5 = await runAndCatch(() => removeReference('srv-1', 'ver-1', 'ref-1'));
+      expect(err5?.message).toBe('Request failed: 409');
+
+      const err6 = await runAndCatch(() => archiveReference('srv-1', 'ver-1', 'ref-1'));
+      expect(err6?.message).toBe('Request failed: 409');
+    });
   });
 });

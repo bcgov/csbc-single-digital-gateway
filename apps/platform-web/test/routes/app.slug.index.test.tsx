@@ -44,7 +44,7 @@ describe('App Slug Index Route', () => {
       await screen.findByText(
         'Overview is being set up — placeholder layout shown until you choose what to track.',
         {},
-        { timeout: 8000 },
+        { timeout: 32000 },
       ),
     ).toBeInTheDocument();
 

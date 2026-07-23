@@ -23,7 +23,9 @@ function renderScoped(path: string) {
 describe('console routes — every workspace-scoped destination resolves and renders', () => {
   it('renders the Overview placeholder at /app/:slug', async () => {
     renderScoped('/app/riverton');
-    expect(await screen.findByText(/Overview is being set up/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Overview is being set up/i, undefined, { timeout: 32000 }),
+    ).toBeInTheDocument();
   });
 
   it('renders the Services empty state at /app/:slug/services', async () => {

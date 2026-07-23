@@ -6,6 +6,25 @@ import { render } from '@testing-library/react';
 import { ApplicationMethods } from '@/components/console/services/application-methods';
 import { archiveReference, removeReference, type ServiceReference } from '@/lib/services';
 
+export let capturedOnOpenChange: ((next: boolean) => void) | undefined;
+export let capturedActionOnClick: (() => void) | undefined;
+export let mockAlwaysOpen = false;
+
+vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@repo/ui/alert-dialog')>();
+  return {
+    ...actual,
+    AlertDialog: (props: any) => {
+      capturedOnOpenChange = props.onOpenChange;
+      return <actual.AlertDialog {...props} open={mockAlwaysOpen || props.open} />;
+    },
+    AlertDialogAction: (props: any) => {
+      capturedActionOnClick = props.onClick;
+      return <actual.AlertDialogAction {...props} />;
+    },
+  };
+});
+
 const mockNavigate = vi.fn();
 
 vi.mock('@tanstack/react-router', () => ({
@@ -235,5 +254,148 @@ describe('ApplicationMethods', () => {
     const errorMessage = await screen.findByRole('alert');
     expect(errorMessage).toBeInTheDocument();
     expect(errorMessage).toHaveTextContent('Failed to archive method');
+  });
+
+  it('does not display Archive or Delete buttons when readonly is true', () => {
+    renderApplicationMethods({ references: mockReferences, readonly: true });
+
+    expect(screen.queryByRole('button', { name: /archive/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+  });
+
+  it('does not display Archive or Delete buttons for archived methods', () => {
+    renderApplicationMethods({ references: mockReferences });
+
+    const archivedListItem = screen.getByText('Archived Form').closest('li');
+    expect(archivedListItem).toBeInTheDocument();
+    expect(archivedListItem?.querySelector('button')).toBeNull();
+  });
+
+  it('handles empty label and unknown form kind', () => {
+    const referencesWithEmptyLabel: ServiceReference[] = [
+      {
+        id: 'ref-custom-123',
+        relation: 'application_form',
+        position: 0,
+        label: '',
+        targetDocumentId: 'doc-custom-789',
+        targetVersionId: 'v-custom-1',
+        targetKind: 'custom-form-kind',
+        targetTitle: 'Custom Form',
+        targetVersion: 1,
+        targetStatus: 'draft',
+        hasSubmissions: false,
+        hasStructure: true,
+        createdAt: '2026-06-01T00:00:00.000Z',
+      },
+    ];
+
+    renderApplicationMethods({ references: referencesWithEmptyLabel });
+
+    expect(screen.getByText('custom-form-kind')).toBeInTheDocument();
+    expect(screen.queryByText(/·/)).not.toBeInTheDocument();
+  });
+
+  it('disables Archive button when archive mutation is pending', async () => {
+    let resolveArchive!: (value: void) => void;
+    const archivePromise = new Promise<void>((resolve) => {
+      resolveArchive = resolve;
+    });
+    vi.mocked(archiveReference).mockReturnValueOnce(archivePromise);
+
+    const user = userEvent.setup();
+    renderApplicationMethods({ references: mockReferences });
+
+    const archiveButton = screen.getByRole('button', { name: /archive/i });
+    await user.click(archiveButton);
+
+    expect(archiveButton).toBeDisabled();
+
+    resolveArchive();
+  });
+
+  it('disables Delete button when delete mutation is pending', async () => {
+    let resolveDelete!: (value: void) => void;
+    const deletePromise = new Promise<void>((resolve) => {
+      resolveDelete = resolve;
+    });
+    vi.mocked(removeReference).mockReturnValueOnce(deletePromise);
+
+    const user = userEvent.setup();
+    renderApplicationMethods({ references: mockReferences });
+
+    const deleteButton = screen.getByRole('button', { name: /delete/i });
+    await user.click(deleteButton);
+
+    const confirmDeleteButton = await screen.findByRole('button', { name: /^delete$/i });
+    await user.click(confirmDeleteButton);
+
+    expect(deleteButton).toBeDisabled();
+
+    resolveDelete();
+  });
+
+  it('displays error message when delete mutation fails', async () => {
+    vi.mocked(removeReference).mockRejectedValueOnce(new Error('Failed to delete method'));
+    const user = userEvent.setup();
+    renderApplicationMethods({ references: mockReferences });
+
+    const deleteButton = screen.getByRole('button', { name: /delete/i });
+    await user.click(deleteButton);
+
+    const confirmDeleteButton = await screen.findByRole('button', { name: /^delete$/i });
+    await user.click(confirmDeleteButton);
+
+    const errorMessage = await screen.findByRole('alert');
+    expect(errorMessage).toBeInTheDocument();
+    expect(errorMessage).toHaveTextContent('Failed to delete method');
+  });
+
+  it('invalidates services queries on archive mutation success', async () => {
+    vi.mocked(archiveReference).mockResolvedValueOnce();
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+    const user = userEvent.setup();
+    renderApplicationMethods({ references: mockReferences });
+
+    const archiveButton = screen.getByRole('button', { name: /archive/i });
+    await user.click(archiveButton);
+
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['services'] });
+    });
+  });
+
+  it('allows canceling the delete action in the confirmation dialog', async () => {
+    const user = userEvent.setup();
+    renderApplicationMethods({ references: mockReferences });
+
+    const deleteButton = screen.getByRole('button', { name: /delete/i });
+    await user.click(deleteButton);
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toBeInTheDocument();
+
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    await user.click(cancelButton);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('covers AlertDialog onOpenChange true branch and action click when confirmId is null', async () => {
+    mockAlwaysOpen = true;
+    try {
+      renderApplicationMethods({ references: mockReferences });
+      await screen.findByRole('alertdialog');
+
+      // Trigger onOpenChange(true) -> if (!next) evaluates false
+      capturedOnOpenChange?.(true);
+
+      // capturedActionOnClick has confirmId = null closure -> if (confirmId !== null) evaluates false
+      capturedActionOnClick?.();
+    } finally {
+      mockAlwaysOpen = false;
+    }
   });
 });

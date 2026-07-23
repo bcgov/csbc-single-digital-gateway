@@ -49,6 +49,14 @@ describe('CommandPalette', () => {
     // Pressing K alone should not trigger open change
     fireEvent.keyDown(document, { key: 'k' });
     expect(handleOpenChange).toHaveBeenCalledTimes(2);
+
+    // Pressing Ctrl+A should not trigger open change (ctrlKey is true, key is not 'k')
+    fireEvent.keyDown(document, { key: 'a', ctrlKey: true });
+    expect(handleOpenChange).toHaveBeenCalledTimes(2);
+
+    // Pressing Cmd+A should not trigger open change (metaKey is true, key is not 'k')
+    fireEvent.keyDown(document, { key: 'a', metaKey: true });
+    expect(handleOpenChange).toHaveBeenCalledTimes(2);
   });
 
   it('navigates to workspace-scoped route and closes on item select', async () => {

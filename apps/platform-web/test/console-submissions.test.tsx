@@ -96,7 +96,7 @@ describe('console submissions', () => {
     renderApp('/app/riverton/submissions/sub1');
 
     expect(
-      await screen.findByRole('heading', { name: 'Amina Ali', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Amina Ali', level: 1 }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Income Assistance · Income application')).toBeInTheDocument();
 

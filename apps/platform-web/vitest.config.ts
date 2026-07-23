@@ -25,7 +25,19 @@ export default defineConfig({
     // each in isolation. The pre-push hook runs `typecheck` (turbo build) and the full `test`
     // suite in parallel, and under that CPU contention these tests balloon past Vitest's 5s
     // default and flake with "Test timed out in 5000ms". Give them ample headroom.
-    testTimeout: 20000,
-    hookTimeout: 20000,
+    testTimeout: 32000,
+    hookTimeout: 32000,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/main.tsx',
+        'src/router.tsx',
+        'src/routeTree.gen.ts',
+        'src/vite-env.d.ts',
+        'src/routes/**',
+      ],
+      reportOnFailure: true,
+    },
   },
 });

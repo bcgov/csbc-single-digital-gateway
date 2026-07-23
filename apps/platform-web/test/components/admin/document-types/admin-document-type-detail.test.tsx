@@ -1,4 +1,4 @@
-import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../support/render-app';
@@ -198,7 +198,9 @@ describe('AdminDocumentTypeDetail', () => {
     mockApi([basicEntry]);
     renderApp('/admin/document-types/dt-1');
 
-    expect(await screen.findByRole('heading', { name: 'Basic Form' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Basic Form' }, { timeout: 32000 }),
+    ).toBeInTheDocument();
     expect(screen.getByText('basic-form')).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'v1' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'published' })).toBeInTheDocument();
@@ -312,7 +314,8 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
 
     // Let's archive v1 (which is published, so it has Archive)
-    const archiveButton = screen.getByRole('button', { name: 'Archive' });
+    const v1Row = screen.getByRole('row', { name: /v1/ });
+    const archiveButton = within(v1Row).getByRole('button', { name: 'Archive' });
     await user.click(archiveButton);
 
     await waitFor(() => {
@@ -348,6 +351,178 @@ describe('AdminDocumentTypeDetail', () => {
           (init?.method ?? 'GET').toUpperCase() === 'DELETE',
       );
       expect(deleteCall).toBeTruthy();
+    });
+  });
+
+  it('renders nothing when document type data is not loaded', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) {
+        return json(adminUser);
+      }
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { container } = renderApp('/admin/document-types/dt-unknown');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(container.querySelector('main')?.firstChild).toBeNull();
+  });
+
+  it('handles document type with no versions', async () => {
+    const emptyEntry: Entry = {
+      type: {
+        id: 'dt-empty',
+        workspaceId: null,
+        name: 'Empty Form',
+        kind: 'basic-form',
+        createdAt: ISO,
+      },
+      versions: [],
+    };
+    const { fetchMock } = mockApi([emptyEntry]);
+    renderApp('/admin/document-types/dt-empty');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Empty Form' }, { timeout: 32000 }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText('Definition')).toBeInTheDocument();
+    expect(screen.queryByText(/v\d+/)).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    const addVersionButton = screen.getByRole('button', { name: 'Add version' });
+    await user.click(addVersionButton);
+
+    await waitFor(() => {
+      const postCall = fetchMock.mock.calls.find(
+        ([input, init]) =>
+          String(input).includes('/v1/admin/document-types/dt-empty/versions') &&
+          (init?.method ?? 'GET').toUpperCase() === 'POST',
+      );
+      expect(postCall).toBeTruthy();
+      expect(JSON.parse(String(postCall?.[1]?.body))).toEqual({
+        definition: {},
+      });
+    });
+  });
+
+  it('renders archived status correctly', async () => {
+    const archivedEntry: Entry = {
+      type: {
+        id: 'dt-1',
+        workspaceId: null,
+        name: 'Basic Form',
+        kind: 'basic-form',
+        createdAt: ISO,
+      },
+      versions: [
+        {
+          id: 'dt-1-v1',
+          typeId: 'dt-1',
+          version: 1,
+          status: 'archived',
+          definition: { name: 'x' },
+          createdAt: ISO,
+          publishedAt: ISO,
+          archivedAt: ISO,
+        },
+      ],
+    };
+    mockApi([archivedEntry]);
+    renderApp('/admin/document-types/dt-1');
+
+    expect(await screen.findByRole('cell', { name: 'archived' })).toBeInTheDocument();
+  });
+
+  it('disables the Add Version button while adding a version', async () => {
+    let resolveAdd: ((r: Response) => void) | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) return json(adminUser);
+      if (url.includes('/v1/admin/document-types/dt-1/versions') && init?.method === 'POST') {
+        return new Promise<Response>((resolve) => {
+          resolveAdd = resolve;
+        });
+      }
+      return json(basicEntry);
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
+
+    const addVersionButton = await screen.findByRole('button', { name: 'Add version' });
+    await user.click(addVersionButton);
+
+    // It should be disabled now
+    expect(addVersionButton).toBeDisabled();
+
+    // Resolve the promise
+    resolveAdd!(
+      json({
+        id: 'dt-1-v2',
+        typeId: 'dt-1',
+        version: 2,
+        status: 'draft',
+        definition: {},
+        createdAt: ISO,
+        publishedAt: null,
+        archivedAt: null,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(addVersionButton).not.toBeDisabled();
+    });
+  });
+
+  it('disables the Save button while saving draft text', async () => {
+    let resolveSave: ((r: Response) => void) | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) return json(adminUser);
+      if (
+        url.includes('/v1/admin/document-types/dt-1/versions/dt-1-v2') &&
+        init?.method === 'PATCH'
+      ) {
+        return new Promise<Response>((resolve) => {
+          resolveSave = resolve;
+        });
+      }
+      return json(multipleEntry);
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
+
+    const textarea = await screen.findByLabelText('definition');
+    const saveButton = screen.getByRole('button', { name: 'Save' });
+
+    // Modify definition
+    fireEvent.change(textarea, { target: { value: '{"key": "new"}' } });
+    await user.click(saveButton);
+
+    // It should be disabled now
+    expect(saveButton).toBeDisabled();
+
+    // Resolve the promise
+    resolveSave!(
+      json({
+        id: 'dt-1-v2',
+        typeId: 'dt-1',
+        version: 2,
+        status: 'draft',
+        definition: { key: 'new' },
+        createdAt: ISO,
+        publishedAt: null,
+        archivedAt: null,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled();
     });
   });
 });

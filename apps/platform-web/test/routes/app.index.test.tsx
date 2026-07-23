@@ -22,6 +22,18 @@ vi.mock('@/lib/bff', () => {
   };
 });
 
+vi.mock('@/components/console/create-workspace-modal', () => ({
+  CreateWorkspaceModal: ({ dismissable }: any) => (
+    <div>
+      <h3>Create workspace</h3>
+      <label htmlFor="workspace-name">Workspace name</label>
+      <input id="workspace-name" />
+      <button>Create workspace</button>
+      {dismissable && <button>Cancel</button>}
+    </div>
+  ),
+}));
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -49,7 +61,7 @@ describe('App Index Route (Workspace Gate)', () => {
       await screen.findByText(
         'Overview is being set up — placeholder layout shown until you choose what to track.',
         {},
-        { timeout: 8000 },
+        { timeout: 32000 },
       ),
     ).toBeInTheDocument();
   });
@@ -60,7 +72,7 @@ describe('App Index Route (Workspace Gate)', () => {
 
     // Verify "Create workspace" dialog is rendered
     expect(
-      await screen.findByRole('heading', { name: 'Create workspace' }, { timeout: 8000 }),
+      await screen.findByRole('heading', { name: 'Create workspace' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Check the label and create button

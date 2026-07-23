@@ -61,7 +61,7 @@ describe('ProfileMenu', () => {
     expect(screen.getByText('··')).toBeInTheDocument();
     // In our component, if user is not loaded, two Skeletons are rendered.
     // They are rendered inside a container. We can assert the placeholder role or class.
-    expect(screen.queryByText('Lewis Chen')).not.toBeInTheDocument();
+    expect(screen.queryByText('Test User')).not.toBeInTheDocument();
   });
 
   it('renders user details when authentication succeeds', async () => {
@@ -70,9 +70,9 @@ describe('ProfileMenu', () => {
       roles: ['admin'],
       claims: {
         sub: 'sub-123',
-        name: 'Lewis Chen',
-        email: 'lewis@gov.bc.ca',
-        preferred_username: 'lewis',
+        name: 'Test User',
+        email: 'test@example.com',
+        preferred_username: 'Tester',
       },
     };
     queryClient.setQueryData(['auth', 'me'], mockUser);
@@ -80,9 +80,9 @@ describe('ProfileMenu', () => {
     renderProfileMenu(queryClient);
 
     // Verify displayName, role initials, and avatar text render correctly
-    expect(await screen.findByText('Lewis Chen')).toBeInTheDocument();
+    expect(await screen.findByText('Test User')).toBeInTheDocument();
     expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('LC')).toBeInTheDocument();
+    expect(screen.getByText('TU')).toBeInTheDocument();
   });
 
   it('opens profile dropdown menu with correct items when clicked', async () => {
@@ -92,9 +92,9 @@ describe('ProfileMenu', () => {
       roles: ['admin'],
       claims: {
         sub: 'sub-123',
-        name: 'Lewis Chen',
-        email: 'lewis@gov.bc.ca',
-        preferred_username: 'lewis',
+        name: 'Test User',
+        email: 'test@example.com',
+        preferred_username: 'Tester',
       },
     };
     queryClient.setQueryData(['auth', 'me'], mockUser);
@@ -105,7 +105,7 @@ describe('ProfileMenu', () => {
     await user.click(triggerBtn);
 
     // Verify Dropdown items and user details within it
-    expect(await screen.findByText('lewis@gov.bc.ca')).toBeInTheDocument();
+    expect(await screen.findByText('test@example.com')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Account settings/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Help & support/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Log out/i })).toBeInTheDocument();
@@ -118,9 +118,9 @@ describe('ProfileMenu', () => {
       roles: ['admin'],
       claims: {
         sub: 'sub-123',
-        name: 'Lewis Chen',
-        email: 'lewis@gov.bc.ca',
-        preferred_username: 'lewis',
+        name: 'Test User',
+        email: 'test@example.com',
+        preferred_username: 'Tester',
       },
     };
     queryClient.setQueryData(['auth', 'me'], mockUser);
@@ -138,5 +138,38 @@ describe('ProfileMenu', () => {
       expect(logout).toHaveBeenCalled();
     });
     expect(mockAssign).toHaveBeenCalledWith('/');
+  });
+
+  it('does not render email in dropdown if email claim is missing', async () => {
+    const user = userEvent.setup();
+    const mockUserNoEmail = {
+      id: 'u-123',
+      roles: ['admin'],
+      claims: {
+        sub: 'sub-123',
+        name: 'Test User No Email',
+        preferred_username: 'Tester',
+      },
+    };
+    queryClient.setQueryData(['auth', 'me'], mockUserNoEmail);
+
+    renderProfileMenu(queryClient);
+
+    const triggerBtn = await screen.findByRole('button');
+    await user.click(triggerBtn);
+
+    expect((await screen.findAllByText('Test User No Email')).length).greaterThan(0);
+    expect(screen.queryByText(/@/)).not.toBeInTheDocument();
+  });
+
+  it('does not render user header block in dropdown when user is not loaded', async () => {
+    const user = userEvent.setup();
+    renderProfileMenu(queryClient);
+
+    const triggerBtn = screen.getByRole('button');
+    await user.click(triggerBtn);
+
+    expect(await screen.findByRole('menuitem', { name: /Account settings/i })).toBeInTheDocument();
+    expect(screen.queryByText('Test User')).not.toBeInTheDocument();
   });
 });

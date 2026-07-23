@@ -50,7 +50,7 @@ describe('admin entry in the staff sidebar', () => {
     mockAuth(adminUser, { workspaces: [riverton] });
     renderApp('/app/riverton');
 
-    await screen.findByRole('button', { name: /Maya Reyes/ });
+    await screen.findByRole('button', { name: /Maya Reyes/ }, { timeout: 32000 });
     expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
   });
 

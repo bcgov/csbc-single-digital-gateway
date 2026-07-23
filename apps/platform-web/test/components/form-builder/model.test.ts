@@ -232,4 +232,251 @@ describe('form-builder model helpers', () => {
       expect(allKeys(model)).toEqual(['f1', 'f2']);
     });
   });
+
+  describe('createField additional types', () => {
+    it('creates paragraph display field', () => {
+      const node = createField('paragraph');
+      expect(node).toEqual({
+        kind: 'display',
+        displayType: 'paragraph',
+        id: expect.any(String),
+        text: 'Paragraph text',
+      });
+    });
+
+    it('creates richtextdisplay display field', () => {
+      const node = createField('richtextdisplay');
+      expect(node).toEqual({
+        kind: 'display',
+        displayType: 'richtext',
+        id: expect.any(String),
+        text: '',
+        content: null,
+      });
+    });
+
+    it('creates oneof enum field with user-friendly label', () => {
+      const node = createField('oneof');
+      expect((node as any).enumOptions).toEqual([{ value: 'option_1', label: 'Option 1' }]);
+    });
+
+    it('creates select enum field with raw value label', () => {
+      const node = createField('select');
+      expect((node as any).enumOptions).toEqual([{ value: 'option_1', label: 'option_1' }]);
+    });
+
+    it('creates slider field with range settings', () => {
+      const node = createField('slider');
+      expect(node).toEqual({
+        kind: 'control',
+        key: '',
+        fieldType: 'slider',
+        label: '',
+        required: false,
+        options: {},
+        min: 0,
+        max: 100,
+        step: 1,
+      });
+    });
+  });
+
+  describe('insertField edge cases', () => {
+    const initialModel: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          key: 'f1',
+          label: 'F1',
+          fieldType: 'text',
+          required: false,
+          options: {},
+        },
+      ],
+    };
+
+    it('inserts at root if target container is not a container node', () => {
+      const newNode = createField('text');
+      newNode.key = 'f2';
+      const result = insertField(initialModel, newNode, { container: 0, index: 0 });
+      expect(result.fields).toHaveLength(2);
+      expect((result.fields[0] as any).key).toBe('f2');
+    });
+
+    it('inserts at root if inserting a container inside a container target', () => {
+      const modelWithContainer: FormModel = {
+        title: '',
+        description: '',
+        fields: [{ kind: 'container', layout: 'group', children: [] }],
+      };
+      const nestedContainer = createField('group');
+      const result = insertField(modelWithContainer, nestedContainer, { container: 0, index: 0 });
+      expect(result.fields).toHaveLength(2);
+      expect(result.fields[0]?.kind).toBe('container');
+      expect(result.fields[1]?.kind).toBe('container');
+    });
+  });
+
+  describe('moveField edge cases', () => {
+    const initialModel: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          key: 'f1',
+          label: 'F1',
+          fieldType: 'text',
+          required: false,
+          options: {},
+        },
+        { kind: 'container', layout: 'group', children: [] },
+      ],
+    };
+
+    it('returns unmodified model if path is invalid', () => {
+      const result = moveField(initialModel, [999], { container: null, index: 0 });
+      expect(result).toBe(initialModel);
+    });
+
+    it('moves container into another container but falls back to root', () => {
+      const modelWithTwoContainers: FormModel = {
+        title: '',
+        description: '',
+        fields: [
+          { kind: 'container', layout: 'group', children: [], label: 'C1' },
+          { kind: 'container', layout: 'group', children: [], label: 'C2' },
+        ],
+      };
+
+      const result = moveField(modelWithTwoContainers, [0], { container: 1, index: 0 });
+      expect(result.fields).toHaveLength(2);
+      expect(result.fields[0]?.kind).toBe('container');
+      expect(result.fields[1]?.kind).toBe('container');
+    });
+
+    it('moves field into a non-container host but falls back to root', () => {
+      const modelWithNonContainerTarget: FormModel = {
+        title: '',
+        description: '',
+        fields: [
+          {
+            kind: 'control',
+            key: 'f1',
+            label: 'F1',
+            fieldType: 'text',
+            required: false,
+            options: {},
+          },
+          {
+            kind: 'control',
+            key: 'f2',
+            label: 'F2',
+            fieldType: 'text',
+            required: false,
+            options: {},
+          },
+          { kind: 'container', layout: 'group', children: [] },
+        ],
+      };
+      const result = moveField(modelWithNonContainerTarget, [0], { container: 1, index: 0 });
+      expect(result.fields).toHaveLength(3);
+      expect((result.fields[0] as any).key).toBe('f1');
+    });
+
+    it('does not modify model if moving nested field from a non-container parent', () => {
+      const result = moveField(initialModel, [0, 1], { container: null, index: 0 });
+      expect(result).toEqual(initialModel);
+    });
+
+    it('decrements index when moving a nested field to a later index in the same container', () => {
+      const containerModel: FormModel = {
+        title: '',
+        description: '',
+        fields: [
+          {
+            kind: 'container',
+            layout: 'group',
+            children: [
+              {
+                kind: 'control',
+                key: 'child1',
+                label: 'C1',
+                fieldType: 'text',
+                required: false,
+                options: {},
+              },
+              {
+                kind: 'control',
+                key: 'child2',
+                label: 'C2',
+                fieldType: 'text',
+                required: false,
+                options: {},
+              },
+            ],
+          },
+        ],
+      };
+      const result = moveField(containerModel, [0, 0], { container: 0, index: 2 });
+      const container = result.fields[0] as any;
+      expect(container.children[0].key).toBe('child2');
+      expect(container.children[1].key).toBe('child1');
+    });
+  });
+
+  describe('getNodeAt additional edge cases', () => {
+    it('returns null if child index does not exist in container', () => {
+      const model: FormModel = {
+        title: '',
+        description: '',
+        fields: [
+          {
+            kind: 'container',
+            layout: 'group',
+            children: [],
+          },
+        ],
+      };
+      expect(getNodeAt(model, [0, 99])).toBeNull();
+    });
+
+    it('covers host undefined branch in moveField when nested path parent is missing during clone', () => {
+      let callCount = 0;
+      const fieldsArray = [
+        {
+          kind: 'container',
+          layout: 'group',
+          children: [
+            {
+              kind: 'control',
+              key: 'child1',
+              label: 'C1',
+              fieldType: 'text',
+              required: false,
+              options: {},
+            },
+          ],
+        },
+      ];
+
+      const model = {
+        title: '',
+        description: '',
+        get fields() {
+          callCount++;
+          if (callCount === 1) {
+            return fieldsArray;
+          } else {
+            return [];
+          }
+        },
+      };
+
+      const result = moveField(model as any, [0, 0], { container: null, index: 0 });
+      expect(result.fields).toHaveLength(1);
+    });
+  });
 });

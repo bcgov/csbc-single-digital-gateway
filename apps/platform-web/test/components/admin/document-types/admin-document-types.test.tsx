@@ -105,7 +105,9 @@ describe('admin document types', () => {
     mockApi([basicEntry]);
     renderApp('/admin/document-types');
 
-    expect(await screen.findByRole('link', { name: 'Basic Form' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'Basic Form' }, { timeout: 32000 }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Published v1')).toBeInTheDocument();
   });
 

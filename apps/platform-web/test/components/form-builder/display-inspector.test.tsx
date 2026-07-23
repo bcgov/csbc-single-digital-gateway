@@ -87,4 +87,32 @@ describe('DisplayInspector', () => {
     // Verify text matches expected Rich Text display name format
     expect(screen.getByText('Edit the rich text content on the canvas.')).toBeInTheDocument();
   });
+
+  it('defaults to level 2 heading active when level is undefined', () => {
+    const node: DisplayNode = {
+      kind: 'display',
+      id: 'h-2',
+      displayType: 'heading',
+      text: '',
+    };
+
+    render(<DisplayInspector node={node} onChange={vi.fn()} />);
+
+    const headingBtn = screen.getByRole('button', { name: 'Heading' });
+    expect(headingBtn).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('defaults to left alignment active when align is undefined', () => {
+    const node: DisplayNode = {
+      kind: 'display',
+      id: 'p-2',
+      displayType: 'paragraph',
+      text: '',
+    };
+
+    render(<DisplayInspector node={node} onChange={vi.fn()} />);
+
+    const leftBtn = screen.getByRole('button', { name: 'Align left' });
+    expect(leftBtn).toHaveAttribute('aria-pressed', 'true');
+  });
 });

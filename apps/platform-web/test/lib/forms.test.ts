@@ -64,13 +64,17 @@ describe('Forms API client', () => {
     );
 
     const options = formQueryOptions('frm-1');
-    await expect((options.queryFn as any)()).rejects.toThrow('Invalid JSON Schema payload');
+    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
+      'Invalid JSON Schema payload',
+    );
   });
 
   it('falls back to default HTTP status text message on failure without body details', async () => {
     mockFetch.mockResolvedValue(mockResponse(500, null, false));
 
     const options = formQueryOptions('frm-1');
-    await expect((options.queryFn as any)()).rejects.toThrow('Request failed: 500');
+    await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
+      'Request failed: 500',
+    );
   });
 });
