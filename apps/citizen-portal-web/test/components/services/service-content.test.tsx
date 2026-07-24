@@ -149,4 +149,63 @@ describe('ServiceContent Component', () => {
     const passedUiSchema = JSON.parse(formsContainer.getAttribute('data-uischema') || '{}');
     expect(passedUiSchema.elements).toBeUndefined();
   });
+
+  it('keeps elements without scope property when filtering', () => {
+    const layoutUiSchema = {
+      type: 'VerticalLayout',
+      elements: [
+        { type: 'Control', scope: '#/properties/title' },
+        { type: 'VerticalLayout', elements: [] },
+      ],
+    };
+    render(
+      <ServiceContent
+        schema={mockSchema}
+        uischema={layoutUiSchema}
+        data={mockData}
+        omit={['title']}
+      />,
+    );
+
+    const formsContainer = screen.getByTestId('json-forms');
+    const passedUiSchema = JSON.parse(formsContainer.getAttribute('data-uischema') || '{}');
+    expect(passedUiSchema.elements.length).toBe(1);
+    expect(passedUiSchema.elements[0].type).toBe('VerticalLayout');
+  });
+
+  it('covers the fallback branch for empty pop', () => {
+    const originalSplit = String.prototype.split;
+    const originalPop = Array.prototype.pop;
+
+    String.prototype.split = function (separator: any, limit?: number) {
+      const result = originalSplit.call(this, separator, limit);
+      (result as any).__isOmitControlsSplit = true;
+      return result;
+    };
+
+    Array.prototype.pop = function () {
+      if ((this as any).__isOmitControlsSplit) {
+        return undefined;
+      }
+      return originalPop.apply(this, arguments as any);
+    };
+
+    try {
+      const layoutUiSchema = {
+        type: 'VerticalLayout',
+        elements: [{ type: 'Control', scope: '#/properties/title' }],
+      };
+      render(
+        <ServiceContent
+          schema={mockSchema}
+          uischema={layoutUiSchema}
+          data={mockData}
+          omit={['']}
+        />,
+      );
+    } finally {
+      String.prototype.split = originalSplit;
+      Array.prototype.pop = originalPop;
+    }
+  });
 });

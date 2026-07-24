@@ -143,4 +143,12 @@ describe('SiteHeader Component', () => {
 
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
+
+  it('renders loading placeholder in authenticated variant when user is undefined', () => {
+    render(<SiteHeader variant="authenticated" user={undefined} />);
+
+    expect(screen.getByTestId('dropdown-trigger')).toBeInTheDocument();
+    expect(screen.getByTestId('avatar-fallback')).toHaveTextContent('··');
+    expect(screen.getByTestId('dropdown-content')).toBeInTheDocument();
+  });
 });

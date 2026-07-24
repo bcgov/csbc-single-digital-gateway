@@ -148,8 +148,16 @@ describe('citizen application detail page', () => {
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
     await renderApp();
-    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 5000 });
-    expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+    expect(
+      await screen.findByText(
+        'You need to be signed in to view this application.',
+        {},
+        { timeout: 5000 },
+      ),
+    ).toBeInTheDocument();
+    const links = await screen.findAllByRole('link', { name: /log in/i });
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0]).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
   it('shows an "Action needed" banner with the reviewer reason and a Make changes action', async () => {
@@ -253,5 +261,52 @@ describe('citizen application detail page', () => {
     await user.click(resubmitBtn);
     expect(screen.queryByRole('button', { name: /resubmit application/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /make changes/i })).toBeInTheDocument();
+  });
+
+  it('handles multi-stage forms with missing stages, pages, ids, names, schemas, or uischemas', async () => {
+    const multiStageWithFallbacks = {
+      ...detail,
+      kind: 'multi-stage-form',
+      structure: {
+        stages: [
+          {},
+          {
+            pages: [{}],
+          },
+        ],
+      },
+      data: { firstName: 'MultiStageName' },
+    };
+    mockBff({ app: jsonResponse(multiStageWithFallbacks) });
+    await renderApp();
+    expect(
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  it('handles multi-stage forms with missing stages property entirely', async () => {
+    const multiStageNoStages = {
+      ...detail,
+      kind: 'multi-stage-form',
+      structure: {},
+      data: {},
+    };
+    mockBff({ app: jsonResponse(multiStageNoStages) });
+    await renderApp();
+    expect(
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  it('handles basic forms with missing schemas or uischemas', async () => {
+    const basicNoSchemas = {
+      ...detail,
+      structure: {},
+    };
+    mockBff({ app: jsonResponse(basicNoSchemas) });
+    await renderApp();
+    expect(
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }),
+    ).toBeInTheDocument();
   });
 });

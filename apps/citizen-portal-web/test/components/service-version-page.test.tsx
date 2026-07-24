@@ -225,4 +225,31 @@ describe('ServiceVersionPage Component', () => {
       screen.getByText(new RegExp(`version 1.*Valid from ${expectedFrom}`, 'i')),
     ).toBeInTheDocument();
   });
+
+  it('returns empty string for validity range when both publishedAt and createdAt are null', () => {
+    const mockVersionData = {
+      version: 3,
+      title: 'Historical Title',
+      status: 'archived',
+      createdAt: null,
+      publishedAt: null,
+      archivedAt: null,
+      schema: {},
+      uischema: {},
+      data: {},
+    };
+
+    vi.mocked(useQuery).mockImplementation((options: any) => {
+      if (options.queryKey[0] === 'version') {
+        return { isPending: false, data: mockVersionData } as any;
+      }
+      return { isPending: false, data: {} } as any;
+    });
+
+    render(<ServiceVersionPage />);
+
+    expect(
+      screen.getByText((content) => content.includes('version 3') && !content.includes('Valid')),
+    ).toBeInTheDocument();
+  });
 });

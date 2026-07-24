@@ -1,9 +1,26 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
+
+vi.mock('@repo/react/form-runner', () => ({
+  FormRunner: ({ data, onChange, onSubmit, submitLabel, submitting }: any) => (
+    <div>
+      <label htmlFor="mock-input">Name</label>
+      <input
+        id="mock-input"
+        type="text"
+        value={data.name || ''}
+        onChange={(e) => onChange({ ...data, name: e.target.value })}
+      />
+      <button disabled={submitting} onClick={() => onSubmit(data)}>
+        {submitLabel}
+      </button>
+    </div>
+  ),
+}));
 
 const authedUser = { id: 'c1', roles: ['citizen'], claims: { sub: 'c1', name: 'Amina Ali' } };
 
@@ -66,7 +83,7 @@ async function renderApply() {
   });
   await router.load();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+  return render(
     <QueryClientProvider client={client}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
@@ -75,6 +92,7 @@ async function renderApply() {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe('citizen application page', () => {
@@ -102,7 +120,10 @@ describe('citizen application page', () => {
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
     await renderApply();
-    const link = await screen.findByRole('link', { name: /log in to apply/i }, { timeout: 5000 });
+    expect(
+      await screen.findByText('You need to be signed in to apply.', {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    const link = await screen.findByRole('link', { name: /log in to apply/i });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
@@ -120,6 +141,207 @@ describe('citizen application page', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText('This application form isn’t available right now.'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders unavailable state when draft fetch fails', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (method === 'POST' && url.endsWith('/v1/me/applications'))
+        return new Response(null, { status: 500 });
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    await renderApply();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Application unavailable' }),
+    ).toBeInTheDocument();
+  });
+
+  it('handles draft response with missing data property', async () => {
+    const draftNoData = { ...draft, data: undefined };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (method === 'POST' && url.endsWith('/v1/me/applications'))
+        return jsonResponse(draftNoData);
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    await renderApply();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an error message if submission fails', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
+        return new Response(null, { status: 500 });
+      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const user = userEvent.setup();
+    await renderApply();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', { name: 'Submit application' }));
+
+    expect(await screen.findByText('Could not submit — please try again.')).toBeInTheDocument();
+  });
+
+  it('autosaves input changes after debounce and shows saving/saved states', async () => {
+    let resolvePatch: ((value: Response) => void) | undefined;
+    const patchPromise = new Promise<Response>((resolve) => {
+      resolvePatch = resolve;
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
+      if (method === 'PATCH') return patchPromise;
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await renderApply();
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    // Trigger changes using fireEvent
+    fireEvent.change(input, { target: { value: 'A' } });
+    fireEvent.change(input, { target: { value: 'Am' } });
+
+    // Check that "Saving…" is rendered (wait for the 800ms debounce)
+    expect(await screen.findByText('Saving…', {}, { timeout: 3000 })).toBeInTheDocument();
+
+    // Resolve the PATCH call
+    await act(async () => {
+      resolvePatch!(jsonResponse(draft));
+    });
+
+    // Check that "Draft saved" is rendered
+    expect(await screen.findByText('Draft saved', {}, { timeout: 3000 })).toBeInTheDocument();
+  });
+
+  it('clears active timer on unmount, and handles submit when timer is null', async () => {
+    let resolvePost!: (value: Response) => void;
+    const postPromise = new Promise<Response>((resolve) => {
+      resolvePost = resolve;
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
+      if (method === 'POST' && url.includes('/submit')) return postPromise;
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { unmount } = await renderApply();
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    // 1. Trigger change to set active timer
+    fireEvent.change(input, { target: { value: 'A' } });
+
+    // 2. Unmount immediately while timer is active
+    unmount();
+
+    // 3. Re-render fresh to test submit with null timer
+    await renderApply();
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+
+    // Click submit immediately without changes (so timer.current is null)
+    const submitBtn = screen.getByRole('button', { name: 'Submit application' });
+    await userEvent.click(submitBtn);
+
+    // Verify submitting is true
+    expect(submitBtn).toBeDisabled();
+
+    // Resolve the submit call
+    await act(async () => {
+      resolvePost(jsonResponse({ ...draft, status: 'submitted' }));
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Application submitted' }),
+    ).toBeInTheDocument();
+  });
+
+  it('cancels pending autosave timer on submit', async () => {
+    let resolvePost!: (value: Response) => void;
+    const postPromise = new Promise<Response>((resolve) => {
+      resolvePost = resolve;
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
+      if (method === 'POST' && url.includes('/submit')) return postPromise;
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await renderApply();
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    // 1. Trigger change to set active timer
+    fireEvent.change(input, { target: { value: 'Typing and submitting' } });
+
+    // 2. Click submit immediately while timer is active
+    const submitBtn = screen.getByRole('button', { name: 'Submit application' });
+    await userEvent.click(submitBtn);
+
+    // Resolve the submit call
+    await act(async () => {
+      resolvePost(jsonResponse({ ...draft, status: 'submitted' }));
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Application submitted' }),
     ).toBeInTheDocument();
   });
 });

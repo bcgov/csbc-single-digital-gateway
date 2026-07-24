@@ -1,9 +1,26 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReviseForm } from '@/components/application/revise-form';
 import type { ApplicationDetail } from '@/lib/applications';
+
+vi.mock('@repo/react/form-runner', () => ({
+  FormRunner: ({ data, onChange, onSubmit, submitLabel, submitting }: any) => (
+    <div>
+      <label htmlFor="mock-input">Name</label>
+      <input
+        id="mock-input"
+        type="text"
+        value={data.name || ''}
+        onChange={(e) => onChange({ ...data, name: e.target.value })}
+      />
+      <button disabled={submitting} onClick={() => onSubmit(data)}>
+        {submitLabel}
+      </button>
+    </div>
+  ),
+}));
 
 const mockApplication: ApplicationDetail = {
   id: 'sub123',
@@ -48,8 +65,13 @@ afterEach(() => {
 });
 
 describe('ReviseForm Component', () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
   });
 
   const renderComponent = (
@@ -153,5 +175,100 @@ describe('ReviseForm Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Could not submit — please try again.')).toBeInTheDocument();
     });
+  });
+
+  it('handles undefined initial data gracefully', () => {
+    const mockAppNoData = { ...mockApplication, data: undefined };
+    renderComponent({ application: mockAppNoData as any });
+    expect(screen.getByLabelText('Name')).toHaveValue('');
+  });
+
+  it('performs debounced autosave with multiple changes, clearing previous timers', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ ...mockApplication, data: { name: 'Updated name' } }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderComponent();
+
+    const input = screen.getByLabelText('Name');
+
+    // Trigger first change
+    fireEvent.change(input, { target: { value: 'U' } });
+
+    // Wait 100ms (less than 800ms debounce)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Trigger second change, which should clear the first timer
+    fireEvent.change(input, { target: { value: 'Up' } });
+
+    // Wait for the final save to complete
+    expect(await screen.findByText('Draft saved', {}, { timeout: 2000 })).toBeInTheDocument();
+
+    // Verify it was never called with the intermediate value 'U'
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ data: { name: 'U' } }),
+      }),
+    );
+
+    // Verify it was called with the final value 'Up'
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ data: { name: 'Up' } }),
+      }),
+    );
+  });
+
+  it('shows saving indicator when autosave is pending', async () => {
+    let resolvePatch: (value: Response) => void;
+    const patchPromise = new Promise<Response>((resolve) => {
+      resolvePatch = resolve;
+    });
+
+    const fetchMock = vi.fn(async () => patchPromise);
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderComponent();
+
+    const input = screen.getByLabelText('Name');
+    fireEvent.change(input, { target: { value: 'New Name' } });
+
+    expect(await screen.findByText('Saving…', {}, { timeout: 2000 })).toBeInTheDocument();
+
+    await act(async () => {
+      resolvePatch(jsonResponse(mockApplication));
+    });
+
+    expect(await screen.findByText('Draft saved')).toBeInTheDocument();
+  });
+
+  it('cancels pending autosave timer on submit', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ ...mockApplication, status: 'pending' }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderComponent();
+
+    const input = screen.getByLabelText('Name');
+    fireEvent.change(input, { target: { value: 'Typing and submitting' } });
+
+    // Click submit immediately
+    const submitBtn = screen.getByRole('button', { name: 'Resubmit application' });
+    await userEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/v1/me/applications/sub123/submit'),
+        expect.any(Object),
+      );
+    });
+
+    // The autosave PATCH should not have been called because submit cleared the timer
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/v1/me/applications/sub123'),
+      expect.objectContaining({ method: 'PATCH' }),
+    );
   });
 });

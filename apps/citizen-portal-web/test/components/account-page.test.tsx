@@ -57,8 +57,16 @@ describe('citizen-portal-web /account page', () => {
 
   it('prompts an anonymous visitor to log in', async () => {
     await renderAccount(new Response(null, { status: 401 }));
-    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 5000 });
-    expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+    expect(
+      await screen.findByText(
+        'You need to be signed in to view your account.',
+        {},
+        { timeout: 5000 },
+      ),
+    ).toBeInTheDocument();
+    const links = await screen.findAllByRole('link', { name: /log in/i });
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0]).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
   it('renders a loading skeleton when authorization state is pending', async () => {

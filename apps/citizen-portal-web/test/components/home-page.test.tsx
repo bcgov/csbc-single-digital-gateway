@@ -248,4 +248,20 @@ describe('HomePage Component', () => {
     expect(screen.getByTestId('track-applications')).toBeInTheDocument();
     expect(screen.getByText('Applications Count: 0')).toBeInTheDocument();
   });
+
+  it('handles nullish services data query in anonymous view gracefully', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      data: null,
+      isPending: false,
+    } as any);
+
+    vi.mocked(useQuery).mockReturnValue({
+      data: undefined,
+      isPending: false,
+    } as any);
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('available-services')).toBeInTheDocument();
+  });
 });
