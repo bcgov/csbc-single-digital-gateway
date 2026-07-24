@@ -148,6 +148,39 @@ describe('CatalogService Unit Tests', () => {
         },
       ]);
     });
+
+    it('should handle empty search parameter ("")', async () => {
+      const mockRows = [
+        {
+          id: 'service-1',
+          docTitle: 'Service 1 Title',
+          docDescription: 'Service 1 Desc',
+          data: {},
+        },
+      ];
+
+      mockResponse(mockRows, documents, 'select');
+
+      const result = await service.listServices({ q: '', limit: 50 });
+
+      expect(result).toEqual([
+        {
+          id: 'service-1',
+          title: 'Service 1 Title',
+          description: 'Service 1 Desc',
+        },
+      ]);
+    });
+
+    it('should not add match filter if searchFilter returns undefined', async () => {
+      const searchSpy = vi.spyOn(service as any, 'searchFilter').mockReturnValue(undefined);
+      mockResponse([], documents, 'select');
+
+      await service.listServices({ q: 'health', limit: 10 });
+
+      expect(searchSpy).toHaveBeenCalledWith('health');
+      searchSpy.mockRestore();
+    });
   });
 
   describe('getService', () => {
@@ -295,6 +328,62 @@ describe('CatalogService Unit Tests', () => {
       const result = await service.getServiceVersion('service-123', 'version-456');
       expect(result.publishedAt).toBeNull();
       expect(result.archivedAt).toBeNull();
+    });
+
+    it('should return service version details with archived status and defined archivedAt/publishedAt on success', async () => {
+      const mockVersionRow = [
+        {
+          id: 'version-456',
+          version: 2,
+          status: 'archived',
+          data: { title: 'Service Title v2', description: 'Service Desc v2' },
+          createdAt: new Date('2026-07-08T10:00:00Z'),
+          publishedAt: new Date('2026-07-08T12:00:00Z'),
+          archivedAt: new Date('2026-07-08T14:00:00Z'),
+          docTitle: 'Fallback Title',
+          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
+        },
+      ];
+
+      mockResponse(mockVersionRow, documentVersions, 'select');
+
+      const result = await service.getServiceVersion('service-123', 'version-456');
+
+      expect(result).toEqual({
+        id: 'version-456',
+        serviceId: 'service-123',
+        version: 2,
+        status: 'archived',
+        title: 'Service Title v2',
+        data: { title: 'Service Title v2', description: 'Service Desc v2' },
+        schema: { type: 'object' },
+        uischema: { type: 'VerticalLayout' },
+        createdAt: '2026-07-08T10:00:00.000Z',
+        publishedAt: '2026-07-08T12:00:00.000Z',
+        archivedAt: '2026-07-08T14:00:00.000Z',
+      });
+    });
+
+    it('should throw NotFoundException if version exists but status is neither published nor archived', async () => {
+      const mockVersionRow = [
+        {
+          id: 'version-456',
+          version: 2,
+          status: 'draft',
+          data: { title: 'Service Title v2', description: 'Service Desc v2' },
+          createdAt: new Date('2026-07-08T10:00:00Z'),
+          publishedAt: null,
+          archivedAt: null,
+          docTitle: 'Fallback Title',
+          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
+        },
+      ];
+
+      mockResponse(mockVersionRow, documentVersions, 'select');
+
+      await expect(service.getServiceVersion('service-123', 'version-456')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

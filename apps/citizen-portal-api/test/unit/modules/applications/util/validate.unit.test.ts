@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import Ajv from 'ajv';
 import { validateSubmission } from '../../../../../src/modules/applications/util/validate';
 
 const basic = {
@@ -19,6 +20,8 @@ const multiStage = {
     { pages: [{ schema: { type: 'object', properties: { b: { type: 'boolean' } } } }] },
   ],
 };
+
+const mockValidate = () => false;
 
 describe('validate utils', () => {
   describe('validateSubmission - basic form', () => {
@@ -182,6 +185,51 @@ describe('validate utils', () => {
       const structureEmptyPages = { stages: [{ pages: [{}] }] };
       const resultEmptyPages = validateSubmission('multi-stage-form', structureEmptyPages, {});
       expect(resultEmptyPages).toEqual({ valid: true, errors: [] });
+
+      const structureUndefinedStages = {};
+      const resultUndefinedStages = validateSubmission(
+        'multi-stage-form',
+        structureUndefinedStages,
+        {},
+      );
+      expect(resultUndefinedStages).toEqual({ valid: true, errors: [] });
+    });
+
+    it('should handle undefined validate.errors and undefined error.message gracefully', () => {
+      const compileSpy = vi.spyOn(Ajv.prototype, 'compile').mockImplementation(() => {
+        const validate = mockValidate as any;
+        validate.errors = [
+          {
+            instancePath: '/test',
+            message: undefined,
+          },
+        ];
+        return validate;
+      });
+
+      const result = validateSubmission('basic-form', { schema: {} }, {});
+      expect(result).toEqual({
+        valid: false,
+        errors: ['/test is invalid'],
+      });
+
+      compileSpy.mockRestore();
+    });
+
+    it('should handle missing validate.errors list gracefully', () => {
+      const compileSpy = vi.spyOn(Ajv.prototype, 'compile').mockImplementation(() => {
+        const validate = mockValidate as any;
+        validate.errors = undefined;
+        return validate;
+      });
+
+      const result = validateSubmission('basic-form', { schema: {} }, {});
+      expect(result).toEqual({
+        valid: true,
+        errors: [],
+      });
+
+      compileSpy.mockRestore();
     });
   });
 });

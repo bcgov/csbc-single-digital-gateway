@@ -37,6 +37,11 @@ describe('mapClaims Function Unit Test', () => {
     expect(mapClaims({ sub: 'x', iss: 'i', email: 'e@x' }).displayName).toBe('e@x');
     expect(mapClaims({ sub: 'x', iss: 'i' }).displayName).toBe('x');
   });
+
+  it('falls back to empty string for missing issuer (iss)', () => {
+    const m = mapClaims({ sub: 's' });
+    expect(m.issuer).toBe('');
+  });
 });
 
 const createDbMock = () => {

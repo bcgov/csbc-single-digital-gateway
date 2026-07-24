@@ -155,6 +155,35 @@ describe('ApplicationsService Unit Tests', () => {
         },
       });
     });
+
+    it('should return normalized form details on success even if structure is null', async () => {
+      const mockForm = {
+        kind: 'basic-form',
+        title: 'Apply Now',
+        structure: null,
+      };
+
+      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
+      mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
+      mockResponse([mockForm], documentVersions, 'select'); // form details found
+
+      const result = await service.getApplicationForm('svc-id', 'form-id');
+
+      expect(result).toEqual({
+        serviceId: 'svc-id',
+        formId: 'form-id',
+        formVersionId: 'form-ver-id',
+        kind: 'basic-form',
+        title: 'Apply Now',
+        structure: {
+          schema: { type: 'object', properties: {} },
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [],
+          },
+        },
+      });
+    });
   });
 
   describe('createOrResumeDraft', () => {
@@ -344,6 +373,57 @@ describe('ApplicationsService Unit Tests', () => {
         },
         data: { field: 'value' },
         reviewReason: null,
+        createdAt: '2026-07-08T12:00:00.000Z',
+        updatedAt: '2026-07-08T12:10:00.000Z',
+        submittedAt: null,
+      });
+    });
+
+    it('should return details with default fallback values when form doc, version, reference, or service are missing', async () => {
+      const sub = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        userId: 'user-1',
+        createdAt: new Date('2026-07-08T12:00:00.000Z'),
+      };
+      const ver = {
+        id: 'ver-1',
+        status: 'draft',
+        data: { field: 'value' },
+        updatedAt: new Date('2026-07-08T12:10:00.000Z'),
+        submittedAt: null,
+      };
+
+      mockResponse([sub], submissions, 'select'); // requireOwn
+      mockResponse([ver], submissionVersions, 'select'); // requireLatest
+      mockResponse([], documents, 'select'); // form doc details (empty -> formDoc undefined)
+      mockResponse([], documentVersions, 'select'); // form version details (empty -> formVer undefined)
+      mockResponse([], documentReferences, 'select'); // documentReferences relation (empty -> refRows[0] undefined)
+      mockResponse([{ reason: 'Some reason' }], reviews, 'select'); // latestReviewReason -> reviews select
+
+      const result = await service.getDetail('user-1', 'sub-1');
+
+      expect(result).toEqual({
+        id: 'sub-1',
+        reference: expect.any(String),
+        status: 'draft',
+        statusLabel: 'Draft',
+        formId: 'doc-1',
+        formVersionId: 'fv-1',
+        formTitle: 'Application', // fallback
+        serviceId: '', // fallback
+        serviceTitle: 'Service', // fallback
+        kind: 'basic-form', // fallback
+        structure: {
+          schema: { type: 'object', properties: {} },
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [],
+          },
+        },
+        data: { field: 'value' },
+        reviewReason: 'Some reason',
         createdAt: '2026-07-08T12:00:00.000Z',
         updatedAt: '2026-07-08T12:10:00.000Z',
         submittedAt: null,
@@ -565,6 +645,47 @@ describe('ApplicationsService Unit Tests', () => {
         NotFoundException,
       );
     });
+
+    it('should submit successfully even if form schema structure is null', async () => {
+      const sub = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        userId: 'user-1',
+        createdAt: new Date('2026-07-08T12:00:00.000Z'),
+      };
+      const ver = { id: 'ver-1', status: 'draft' };
+      const formSchema = {
+        kind: 'basic-form',
+        structure: null,
+      };
+      const submittedVer = {
+        id: 'ver-1',
+        status: 'pending',
+        data: {},
+        updatedAt: new Date('2026-07-08T12:40:00.000Z'),
+        submittedAt: new Date('2026-07-08T12:40:00.000Z'),
+      };
+
+      mockResponse([sub], submissions, 'select'); // requireOwn
+      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
+      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
+      mockResponse([submittedVer], submissionVersions, 'update'); // update query
+
+      const result = await service.submit('user-1', 'sub-1', {});
+
+      expect(result).toEqual({
+        id: 'sub-1',
+        formId: 'doc-1',
+        formVersionId: 'fv-1',
+        status: 'pending',
+        data: {},
+        reference: expect.any(String),
+        createdAt: '2026-07-08T12:00:00.000Z',
+        updatedAt: '2026-07-08T12:40:00.000Z',
+        submittedAt: '2026-07-08T12:40:00.000Z',
+      });
+    });
   });
 
   describe('listMine', () => {
@@ -616,6 +737,43 @@ describe('ApplicationsService Unit Tests', () => {
         status: 'draft',
         statusLabel: 'Draft',
         lastUpdated: '2026-07-08T12:10:00.000Z',
+      });
+    });
+
+    it('should fall back to defaults when service, form, or version are missing/undefined', async () => {
+      const sub1 = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        createdAt: new Date('2026-07-08T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-08T12:05:00.000Z'),
+      };
+
+      mockResponse([sub1], submissions, 'select'); // listMine submissions query
+
+      // toMyApplication mocks:
+      mockResponse(
+        [{ serviceId: 'svc-1', serviceVersionId: 'svc-ver-1' }],
+        documentReferences,
+        'select',
+      ); // ref
+      mockResponse([], documents, 'select'); // svc doc (empty -> svc undefined)
+      mockResponse([], documents, 'select'); // form doc (empty -> form undefined)
+      mockResponse([], submissionVersions, 'select'); // latestVersion (empty -> ver undefined)
+
+      const result = await service.listMine('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: 'sub-1',
+        serviceId: 'svc-1',
+        serviceVersionId: 'svc-ver-1',
+        serviceTitle: 'Service',
+        formTitle: 'Application',
+        reference: expect.any(String),
+        status: 'draft',
+        statusLabel: 'Draft',
+        lastUpdated: '2026-07-08T12:05:00.000Z', // falls back to sub.updatedAt
       });
     });
   });
