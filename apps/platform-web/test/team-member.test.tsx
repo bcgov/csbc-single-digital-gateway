@@ -72,7 +72,7 @@ describe('member profile — workspace owner', () => {
 
     // First mount compiles the code-split team route — allow extra time (3rd arg waitForOptions).
     expect(
-      await screen.findByRole('heading', { name: 'Maya Reyes' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Maya Reyes' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     // The owner badge and the immutability note are shown.
     expect(screen.getAllByText('Owner').length).toBeGreaterThan(0);
