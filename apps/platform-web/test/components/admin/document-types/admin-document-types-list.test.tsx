@@ -59,7 +59,7 @@ describe('AdminDocumentTypesList', () => {
     expect(
       await screen.findByText('The document type catalog. Open a type to manage its versions.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('No document types yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No document types yet.')).toBeInTheDocument();
   });
 
   it('renders a list of document types with correct metadata, status summary, and versions count', async () => {
