@@ -7,9 +7,10 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { Switch } from '@repo/ui/switch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Icon } from '@mdi/react';
-import { mdiLogin } from '@mdi/js';
+import { mdiBellOutline, mdiLogin } from '@mdi/js';
 
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   NOTIFICATIONS_KEY,
@@ -122,15 +123,21 @@ export function NotificationPreferencesPage() {
   const loginUrl = useLoginUrl();
   const prefs = useQuery({ ...notificationPreferencesQueryOptions(), enabled: user != null });
 
-  return (
-    <CitizenShell>
-      <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
-        {authPending ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        ) : !user ? (
+  if (authPending) {
+    return (
+      <CitizenShell>
+        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-3 px-4 md:px-8">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </CitizenShell>
+    );
+  }
+
+  if (!user) {
+    return (
+      <CitizenShell>
+        <div className="mx-auto my-6 flex w-full max-w-280 flex-col px-4 md:px-8">
           <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">
               You need to be signed in to manage notifications.
@@ -140,27 +147,30 @@ export function NotificationPreferencesPage() {
               Log in
             </a>
           </div>
-        ) : (
-          <>
-            <header className="flex flex-col gap-1 border-b pb-6">
-              <h1 className="font-heading text-2xl font-semibold text-foreground">
-                Notification settings
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Choose how you hear about updates to your applications.
-              </p>
-            </header>
-            {prefs.isSuccess ? (
-              <PreferencesForm initial={prefs.data} />
-            ) : prefs.isError ? (
-              <p className="text-sm text-destructive" role="alert">
-                Notification settings are temporarily unavailable.
-              </p>
-            ) : (
-              <Skeleton className="h-56 w-full" />
-            )}
-          </>
-        )}
+        </div>
+      </CitizenShell>
+    );
+  }
+
+  return (
+    <CitizenShell>
+      <div className="flex flex-col">
+        <SettingsPageHeader
+          icon={mdiBellOutline}
+          title="Notification settings"
+          subtitle="Choose how you hear about updates to your applications."
+        />
+        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
+          {prefs.isSuccess ? (
+            <PreferencesForm initial={prefs.data} />
+          ) : prefs.isError ? (
+            <p className="text-sm text-destructive" role="alert">
+              Notification settings are temporarily unavailable.
+            </p>
+          ) : (
+            <Skeleton className="h-56 w-full" />
+          )}
+        </div>
       </div>
     </CitizenShell>
   );

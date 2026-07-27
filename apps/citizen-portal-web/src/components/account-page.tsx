@@ -13,6 +13,7 @@ import { Card, CardDescription, CardHeader, CardIconAction, CardTitle } from '@r
 import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import type { AuthUser, OidcAddress } from '@/lib/bff';
 
@@ -66,9 +67,7 @@ function InfoCell({
 }) {
   return (
     <div className={`flex flex-col gap-1 p-4 ${className ?? ''}`}>
-      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-xs font-semibold tracking-wide text-muted-foreground">{label}</span>
       <span className="text-sm text-foreground">
         {value === '' || value == null ? EMPTY : value}
       </span>
@@ -213,19 +212,11 @@ export function AccountPage() {
   return (
     <CitizenShell>
       <div className="flex flex-col">
-        <div className="border-b-2 border-bcgov-gold">
-          <div className="mx-auto flex w-full max-w-280 items-center gap-4 px-4 py-6 md:px-8">
-            <div className="flex items-center justify-center bg-blue-10 p-2">
-              <Icon path={mdiCog} size="32px" className="text-blue-80" aria-hidden={true} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <h1 className="font-heading text-2xl font-semibold text-foreground">
-                Account settings
-              </h1>
-              <p className="text-sm text-muted-foreground">Your Single Digital Gateway account.</p>
-            </div>
-          </div>
-        </div>
+        <SettingsPageHeader
+          icon={mdiCog}
+          title="Account settings"
+          subtitle="Your Single Digital Gateway account."
+        />
         <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
           <AccountDetails user={user} />
           <div className="flex flex-col">
