@@ -51,6 +51,17 @@ export interface Submission {
   submittedAt: string | null;
 }
 
+/** A request failure that carries the HTTP status (so callers can branch on e.g. a consent 422). */
+export class RequestError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'RequestError';
+  }
+}
+
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BFF_ORIGIN}${path}`, {
     credentials: 'include',
@@ -58,7 +69,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.body ? { headers: { 'content-type': 'application/json', ...init.headers } } : {}),
   });
   if (!res.ok) {
-    throw new Error(`${init?.method ?? 'GET'} ${path} failed: ${res.status}`);
+    throw new RequestError(res.status, `${init?.method ?? 'GET'} ${path} failed: ${res.status}`);
   }
   return (await res.json()) as T;
 }
@@ -111,10 +122,57 @@ export async function reviseApplication(id: string): Promise<Submission> {
   return requestJson(`/v1/me/applications/${id}/revise`, { method: 'POST' });
 }
 
+/** The canonical consent decision (independent of the agreement's authored labels). */
+export type ConsentDecision = 'approve' | 'reject';
+
+/** One service agreement the citizen must decide on before applying + their current decision. */
+export interface ServiceAgreementConsent {
+  agreementVersionId: string;
+  agreementDocumentId: string;
+  /** The authored fields: title, description, content (Lexical), isOptional, approveLabel, rejectLabel. */
+  data: Record<string, unknown>;
+  /** The caller's latest decision on this version, or null = undecided. */
+  decision: ConsentDecision | null;
+}
+
+/** The agreements a service requires + the caller's decisions (auth, `@CurrentUser`-scoped). */
+export async function getServiceAgreements(serviceId: string): Promise<ServiceAgreementConsent[]> {
+  const { items } = await requestJson<{ items: ServiceAgreementConsent[] }>(
+    `/v1/me/services/${serviceId}/agreements`,
+  );
+  return items;
+}
+
+/** Record an approve/reject decision on a published agreement version (append-only; auth). */
+export async function recordConsent(
+  agreementVersionId: string,
+  decision: ConsentDecision,
+): Promise<{ agreementVersionId: string; decision: ConsentDecision }> {
+  return requestJson('/v1/me/agreement-consents', {
+    method: 'POST',
+    body: JSON.stringify({ agreementVersionId, decision }),
+  });
+}
+
+/** Query for a service's agreements + the caller's decisions (auth-gated). */
+export function serviceAgreementsQueryOptions(serviceId: string, enabled: boolean) {
+  return queryOptions({
+    queryKey: ['me', 'serviceAgreements', serviceId] as const,
+    queryFn: () => getServiceAgreements(serviceId),
+    enabled,
+    staleTime: 10 * 1000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/** The query-key root for a citizen's applications — invalidated to refresh the detail page. */
+export const APPLICATIONS_KEY = ['me', 'applications'] as const;
+
 /** Query for a single application's detail. */
 export function applicationQueryOptions(id: string) {
   return queryOptions({
-    queryKey: ['me', 'applications', id] as const,
+    queryKey: [...APPLICATIONS_KEY, id] as const,
     queryFn: () => getApplication(id),
     staleTime: 30 * 1000,
     retry: false,

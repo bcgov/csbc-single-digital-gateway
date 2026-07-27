@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for img in platform-api citizen-portal-api platform-web citizen-portal-web db-migrate; do
+          for img in platform-api citizen-portal-api platform-web citizen-portal-web db-migrate notification-service notification-db-migrate; do
             ref="${IMAGE_PREFIX}/${img}:${{ steps.sha.outputs.sha }}"
             echo "Checking $ref"
             docker manifest inspect "$ref" >/dev/null \

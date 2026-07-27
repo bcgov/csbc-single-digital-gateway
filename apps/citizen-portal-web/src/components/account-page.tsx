@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { buttonVariants } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Skeleton } from '@repo/ui/skeleton';
@@ -33,7 +32,7 @@ export function AccountPage() {
 
   return (
     <CitizenShell>
-      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+      <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
         {isPending ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-8 w-48" />
@@ -44,10 +43,10 @@ export function AccountPage() {
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view your account.
             </p>
-            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
               <Icon path={mdiLogin} aria-hidden={true} />
               Log in
-            </Link>
+            </a>
           </div>
         ) : (
           <>

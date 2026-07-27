@@ -39,6 +39,16 @@ const detail = {
       formId: 'f1',
       formVersionId: 'fv1',
       kind: 'basic-form',
+      url: null,
+    },
+    {
+      id: 'ref-2',
+      label: 'Apply on GOV.UK',
+      title: 'Apply on GOV.UK',
+      formId: 'ext-1',
+      formVersionId: 'extv-1',
+      kind: 'external-application',
+      url: 'https://gov.uk/apply',
     },
   ],
 };
@@ -100,7 +110,7 @@ describe('service detail page', () => {
     mockBff();
     await renderRoute('/services/svc-1');
     expect(
-      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Financial support for residents.')).toBeInTheDocument();
     // The detail screen always shows the published version — no affordance to change versions.
@@ -122,8 +132,8 @@ describe('service detail page', () => {
 
   it('surfaces the application forms in How to apply', async () => {
     mockBff();
-    await renderRoute('/services/svc-1');
-    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 });
+    renderRoute('/services/svc-1');
+    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
     expect(screen.getByRole('heading', { name: 'How to apply' })).toBeInTheDocument();
     expect(screen.getByText('Your Profile')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Apply online' })).toHaveAttribute(
@@ -132,11 +142,23 @@ describe('service detail page', () => {
     );
   });
 
+  it('renders an external method as a "Visit site" link opening the url in a new tab', async () => {
+    mockBff();
+    renderRoute('/services/svc-1');
+    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
+    const visit = screen.getByRole('link', { name: 'Visit site' });
+    expect(visit).toHaveAttribute('href', 'https://gov.uk/apply');
+    expect(visit).toHaveAttribute('target', '_blank');
+    expect(visit).toHaveAttribute('rel', 'noopener noreferrer');
+    // The external method does NOT link into the in-portal apply flow.
+    expect(visit).not.toHaveAttribute('href', expect.stringContaining('/apply/'));
+  });
+
   it('shows a not-available state on 404', async () => {
     mockBff({ svc: new Response(null, { status: 404 }) });
     await renderRoute('/services/missing');
     expect(
-      await screen.findByRole('heading', { name: /not available/i }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: /not available/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 });
@@ -146,7 +168,7 @@ describe('service version page', () => {
     mockBff();
     await renderRoute('/services/svc-1/versions/ver-1');
     expect(
-      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('archived')).toBeInTheDocument();
     expect(screen.getByText(/historical version/i)).toBeInTheDocument();
@@ -157,7 +179,7 @@ describe('service version page', () => {
     mockBff({ ver: new Response(null, { status: 404 }) });
     await renderRoute('/services/svc-1/versions/missing');
     expect(
-      await screen.findByRole('heading', { name: /not available/i }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: /not available/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 

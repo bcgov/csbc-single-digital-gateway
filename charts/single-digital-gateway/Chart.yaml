@@ -2,9 +2,10 @@ apiVersion: v2
 name: single-digital-gateway
 description: >-
   Umbrella chart for the Single Digital Gateway. Installs the whole stack — Crunchy Postgres,
-  Valkey, both BFF APIs (platform-api, citizen-portal-api) and both SPAs (platform-web,
-  citizen-portal-web) — into a single namespace from one per-environment values file. Tuned to
-  fit a 0.5 CPU / 2Gi ResourceQuota that caps limits only (see values-<env>.yaml).
+  Valkey, both BFF APIs (platform-api, citizen-portal-api), both SPAs (platform-web,
+  citizen-portal-web) and the internal notification-service — into a single namespace from one
+  per-environment values file. Tuned to fit a 0.5 CPU / 2Gi ResourceQuota that meters container
+  requests (see values-<env>.yaml).
 type: application
 version: 0.1.0
 # Umbrella appVersion is unused for images — each subchart carries its own image.tag (override
@@ -29,6 +30,9 @@ dependencies:
   - name: citizen-portal-api
     version: 0.1.0
     repository: file://../citizen-portal-api
+  - name: notification-service
+    version: 0.1.0
+    repository: file://../notification-service
   - name: platform-web
     version: 0.1.0
     repository: file://../platform-web

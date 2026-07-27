@@ -1,0 +1,1 @@
+ALTER TYPE "public"."document_references_relation" ADD VALUE 'service_agreement';

@@ -21,8 +21,8 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # changes — Turborepo affected graph → which of the 5 images changed (incl. local deps).
-  # Emits all 5 images each flagged changed:true|false so `images` can build or retag.
+  # changes — Turborepo affected graph → which of the 7 images changed (incl. local deps).
+  # Emits all 7 images each flagged changed:true|false so `images` can build or retag.
   # ---------------------------------------------------------------------------
   changes:
     if: github.ref == 'refs/heads/main'
@@ -51,7 +51,9 @@ jobs:
                 {n:"citizen-portal-api",  p:"citizen-portal-api"},
                 {n:"platform-web",        p:"platform-web"},
                 {n:"citizen-portal-web",  p:"citizen-portal-web"},
-                {n:"db-migrate",          p:"@repo/database"} ]
+                {n:"db-migrate",          p:"@repo/database"},
+                {n:"notification-service",   p:"notification-service"},
+                {n:"notification-db-migrate", p:"@repo/notification-database"} ]
               | map({name: .n, changed: ( ($aff == "ALL") or (.p as $x | $aff | index($x) != null) )})'
           }
           if [ -z "${BEFORE:-}" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
@@ -64,7 +66,7 @@ jobs:
           echo "images=$(images_json "$affected")" >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
-  # images — for each of the 5: BUILD if changed (push :sha + :dev), else RETAG :dev → :sha
+  # images — for each of the 7: BUILD if changed (push :sha + :dev), else RETAG :dev → :sha
   # (a manifest copy, no build) so every commit has a complete :sha image set.
   # ---------------------------------------------------------------------------
   images:
@@ -103,7 +105,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.image.name == 'db-migrate' && 'packages/database/Dockerfile' || format('apps/{0}/Dockerfile', matrix.image.name) }}
+          file: ${{ matrix.image.name == 'db-migrate' && 'packages/database/Dockerfile' || matrix.image.name == 'notification-db-migrate' && 'packages/notification-database/Dockerfile' || format('apps/{0}/Dockerfile', matrix.image.name) }}
           push: true
           platforms: linux/amd64
           tags: |
@@ -121,7 +123,7 @@ jobs:
             "${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}:dev"
 
   # ---------------------------------------------------------------------------
-  # deploy-dev — on main, after images. Pins all 5 to the commit SHA.
+  # deploy-dev — on main, after images. Pins all 7 to the commit SHA.
   # ---------------------------------------------------------------------------
   deploy-dev:
     needs: images
@@ -156,7 +158,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for img in platform-api citizen-portal-api platform-web citizen-portal-web db-migrate; do
+          for img in platform-api citizen-portal-api platform-web citizen-portal-web db-migrate notification-service notification-db-migrate; do
             ref="${IMAGE_PREFIX}/${img}:${{ github.sha }}"
             echo "Checking $ref"
             docker manifest inspect "$ref" >/dev/null \

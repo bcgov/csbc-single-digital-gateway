@@ -14,6 +14,8 @@ config({ path: resolve(import.meta.dirname, '../.env'), quiet: true });
 const BASIC_FORM_ID = '00000000-0000-4000-8000-000000000001';
 const MULTI_STAGE_ID = '00000000-0000-4000-8000-000000000002';
 const SERVICE_ID = '00000000-0000-4000-8000-000000000003';
+const SERVICE_AGREEMENT_ID = '00000000-0000-4000-8000-000000000004';
+const EXTERNAL_APPLICATION_ID = '00000000-0000-4000-8000-000000000005';
 
 const emptyForm = {
   schema: { type: 'object', properties: {}, required: [] },
@@ -22,6 +24,8 @@ const emptyForm = {
 
 // `about` is a rich-text field — stored as a Lexical SerializedEditorState object (schema type "object"),
 // driven by the `richtext` JSONForms renderer (uischema option `format: 'richtext'`).
+// `contact_methods` (feature 130) is a loose array driven by the bespoke `contact-methods` renderer
+// (uischema option `format: 'contact-methods'`); the control owns the per-type entry shape.
 const serviceDefinition = {
   schema: {
     type: 'object',
@@ -30,6 +34,25 @@ const serviceDefinition = {
       title: { type: 'string', title: 'Title' },
       description: { type: 'string', title: 'Description' },
       about: { type: 'object', title: 'About' },
+      contact_methods: {
+        type: 'array',
+        title: 'Contact methods',
+        items: {
+          type: 'object',
+          required: ['type'],
+          properties: {
+            type: { type: 'string', enum: ['phone', 'email', 'address', 'fax', 'links'] },
+            label: { type: 'string' },
+            value: { type: 'string' },
+            address_one: { type: 'string' },
+            address_two: { type: 'string' },
+            city: { type: 'string' },
+            province: { type: 'string' },
+            country: { type: 'string' },
+            postal_code: { type: 'string' },
+          },
+        },
+      },
     },
   },
   uischema: {
@@ -38,7 +61,56 @@ const serviceDefinition = {
       { type: 'Control', scope: '#/properties/title' },
       { type: 'Control', scope: '#/properties/description', options: { multi: true } },
       { type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } },
+      {
+        type: 'Control',
+        scope: '#/properties/contact_methods',
+        options: { format: 'contact-methods' },
+      },
     ],
+  },
+};
+
+// A service agreement (consent document) is authored as a fixed set of fields. `content` is a
+// rich-text field (Lexical `object`, `richtext` renderer) like the service `about`. `approveLabel`/
+// `rejectLabel` are the display strings for the citizen's approve/reject radio (Wave 3); the
+// decision value itself is NOT part of this definition (it's collected at apply time).
+const serviceAgreementDefinition = {
+  schema: {
+    type: 'object',
+    required: ['title'],
+    properties: {
+      title: { type: 'string', title: 'Title' },
+      description: { type: 'string', title: 'Description' },
+      content: { type: 'object', title: 'Content' },
+      isOptional: { type: 'boolean', title: 'Optional', default: false },
+      approveLabel: { type: 'string', title: 'Approve label', default: 'Approve' },
+      rejectLabel: { type: 'string', title: 'Reject label', default: 'Reject' },
+    },
+  },
+  uischema: {
+    type: 'VerticalLayout',
+    elements: [
+      { type: 'Control', scope: '#/properties/title' },
+      { type: 'Control', scope: '#/properties/description', options: { multi: true } },
+      { type: 'Control', scope: '#/properties/content', options: { format: 'richtext' } },
+      { type: 'Control', scope: '#/properties/isOptional' },
+      { type: 'Control', scope: '#/properties/approveLabel' },
+      { type: 'Control', scope: '#/properties/rejectLabel' },
+    ],
+  },
+};
+
+// An external application method (feature 131) collects no JSONForms structure — its version `data`
+// holds `{ label, url }` directly. This definition documents that data shape (it is not rendered by
+// a builder); `structureFromDefinition` returns NULL for this kind, so the document's `schema` is NULL.
+const externalApplicationDefinition = {
+  schema: {
+    type: 'object',
+    required: ['label', 'url'],
+    properties: {
+      label: { type: 'string', title: 'Label' },
+      url: { type: 'string', format: 'uri', title: 'URL' },
+    },
   },
 };
 
@@ -80,6 +152,8 @@ async function seed(): Promise<void> {
         { id: BASIC_FORM_ID, name: 'Basic Form', kind: 'basic-form' },
         { id: MULTI_STAGE_ID, name: 'Multi-stage Form', kind: 'multi-stage-form' },
         { id: SERVICE_ID, name: 'Service', kind: 'service' },
+        { id: SERVICE_AGREEMENT_ID, name: 'Service Agreement', kind: 'service-agreement' },
+        { id: EXTERNAL_APPLICATION_ID, name: 'External Application', kind: 'external-application' },
       ])
       .onConflictDoNothing();
 
@@ -104,11 +178,23 @@ async function seed(): Promise<void> {
           definition: serviceDefinition,
           publishedAt: sql`now()`,
         },
+        {
+          typeId: SERVICE_AGREEMENT_ID,
+          version: 1,
+          definition: serviceAgreementDefinition,
+          publishedAt: sql`now()`,
+        },
+        {
+          typeId: EXTERNAL_APPLICATION_ID,
+          version: 1,
+          definition: externalApplicationDefinition,
+          publishedAt: sql`now()`,
+        },
       ])
       .onConflictDoNothing();
 
     console.info(
-      '[seed] document types ready: Basic Form, Multi-stage Form, Service (published v1).',
+      '[seed] document types ready: Basic Form, Multi-stage Form, Service, Service Agreement, External Application (published v1).',
     );
   } finally {
     await db.$client.end();

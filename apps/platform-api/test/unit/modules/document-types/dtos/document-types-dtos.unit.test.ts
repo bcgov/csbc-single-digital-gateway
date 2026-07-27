@@ -34,6 +34,7 @@ describe('document type DTO schemas', () => {
     expect(documentKindSchema.safeParse('basic-form').success).toBe(true);
     expect(documentKindSchema.safeParse('multi-stage-form').success).toBe(true);
     expect(documentKindSchema.safeParse('service').success).toBe(true);
+    expect(documentKindSchema.safeParse('service-agreement').success).toBe(true);
     expect(documentKindSchema.safeParse('other').success).toBe(false);
   });
 
@@ -46,6 +47,18 @@ describe('document type DTO schemas', () => {
     );
     expect(definitionForKind('service').safeParse(serviceDefinition).success).toBe(true);
     expect(definitionForKind('service').safeParse({ schema: {} }).success).toBe(false);
+  });
+
+  it('validates a service-agreement definition (raw {schema,uischema})', () => {
+    expect(
+      definitionForKind('service-agreement').safeParse(serviceAgreementDefinition).success,
+    ).toBe(true);
+    // Missing uischema → invalid.
+    expect(
+      definitionForKind('service-agreement').safeParse({
+        schema: serviceAgreementDefinition.schema,
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -61,5 +74,27 @@ const serviceDefinition = {
   uischema: {
     type: 'VerticalLayout',
     elements: [{ type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } }],
+  },
+};
+
+const serviceAgreementDefinition = {
+  schema: {
+    type: 'object',
+    required: ['title'],
+    properties: {
+      title: { type: 'string', title: 'Title' },
+      description: { type: 'string', title: 'Description' },
+      content: { type: 'object', title: 'Content' },
+      isOptional: { type: 'boolean', title: 'Optional', default: false },
+      approveLabel: { type: 'string', title: 'Approve label', default: 'Approve' },
+      rejectLabel: { type: 'string', title: 'Reject label', default: 'Reject' },
+    },
+  },
+  uischema: {
+    type: 'VerticalLayout',
+    elements: [
+      { type: 'Control', scope: '#/properties/content', options: { format: 'richtext' } },
+      { type: 'Control', scope: '#/properties/isOptional' },
+    ],
   },
 };

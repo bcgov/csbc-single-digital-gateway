@@ -49,6 +49,29 @@ export const envSchema = z.object({
     ),
   // Session store (Valkey, Redis wire protocol); defaults to the local compose service.
   VALKEY_URL: z.string().default('redis://localhost:6380'),
+  // --- Notification email links (feature 127) ----------------------------------------------------
+  // Public web origins the notification emails deep-link into. Producer-composed from config —
+  // never from user input.
+  CITIZEN_WEB_URL: z.url().default('http://localhost:3000'),
+  // The staff console origin — used for staff notification email links (feature 127).
+  PLATFORM_WEB_URL: z.url().default('http://localhost:3001'),
+
+  // --- Outbox relay → notification-service (feature 110) ---------------------------------------
+  // Base URL of the notification-service ingestion API.
+  NOTIFICATION_SERVICE_URL: z.url().default('http://localhost:4002'),
+  // Realm hosting the m2m clients — the sdg realm (feature 101), NOT necessarily this app's
+  // own login issuer (citizen-portal-api logs in against the citizens realm).
+  NOTIFICATIONS_M2M_ISSUER: z.url().default('http://localhost:8080/realms/sdg'),
+  NOTIFICATIONS_M2M_CLIENT_ID: z.string().min(1).default('citizen-portal-api-m2m'),
+  // Required, no default — a real secret (same posture as OIDC_CLIENT_SECRET).
+  NOTIFICATIONS_M2M_CLIENT_SECRET: z.string().min(1),
+  OUTBOX_RELAY_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  OUTBOX_RELAY_INTERVAL_MS: z.coerce.number().int().min(250).default(5000),
+  OUTBOX_RELAY_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(10),
+  OUTBOX_RELAY_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;

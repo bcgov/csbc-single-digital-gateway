@@ -14,6 +14,7 @@ import { Route as DevRouteRouteImport } from './routes/dev/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
+import { Route as DevStatusBannerRouteImport } from './routes/dev/status-banner'
 import { Route as DevIconsRouteImport } from './routes/dev/icons'
 import { Route as DevFormElementsRouteImport } from './routes/dev/form-elements'
 import { Route as DevDraggableRouteImport } from './routes/dev/draggable'
@@ -22,6 +23,7 @@ import { Route as DevButtonRouteImport } from './routes/dev/button'
 import { Route as DevBadgeRouteImport } from './routes/dev/badge'
 import { Route as DevAccordionRouteImport } from './routes/dev/accordion'
 import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
+import { Route as AccountNotificationsRouteImport } from './routes/account_.notifications'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
 import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
@@ -49,6 +51,11 @@ const ServicesIndexRoute = ServicesIndexRouteImport.update({
 const DevIndexRoute = DevIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevStatusBannerRoute = DevStatusBannerRouteImport.update({
+  id: '/status-banner',
+  path: '/status-banner',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevIconsRoute = DevIconsRouteImport.update({
@@ -91,6 +98,11 @@ const ApplicationsIdRoute = ApplicationsIdRouteImport.update({
   path: '/applications/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountNotificationsRoute = AccountNotificationsRouteImport.update({
+  id: '/account_/notifications',
+  path: '/account/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesServiceIdIndexRoute = ServicesServiceIdIndexRouteImport.update({
   id: '/services/$serviceId/',
   path: '/services/$serviceId/',
@@ -113,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
+  '/account/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -121,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
@@ -130,6 +144,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/account/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -138,6 +153,7 @@ export interface FileRoutesByTo {
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev': typeof DevIndexRoute
   '/services': typeof ServicesIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
@@ -149,6 +165,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dev': typeof DevRouteRouteWithChildren
   '/account': typeof AccountRoute
+  '/account_/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
   '/dev/badge': typeof DevBadgeRoute
@@ -157,6 +174,7 @@ export interface FileRoutesById {
   '/dev/draggable': typeof DevDraggableRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
@@ -169,6 +187,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dev'
     | '/account'
+    | '/account/notifications'
     | '/applications/$id'
     | '/dev/accordion'
     | '/dev/badge'
@@ -177,6 +196,7 @@ export interface FileRouteTypes {
     | '/dev/draggable'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/status-banner'
     | '/dev/'
     | '/services/'
     | '/services/$serviceId/'
@@ -186,6 +206,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/account'
+    | '/account/notifications'
     | '/applications/$id'
     | '/dev/accordion'
     | '/dev/badge'
@@ -194,6 +215,7 @@ export interface FileRouteTypes {
     | '/dev/draggable'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/status-banner'
     | '/dev'
     | '/services'
     | '/services/$serviceId'
@@ -204,6 +226,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dev'
     | '/account'
+    | '/account_/notifications'
     | '/applications/$id'
     | '/dev/accordion'
     | '/dev/badge'
@@ -212,6 +235,7 @@ export interface FileRouteTypes {
     | '/dev/draggable'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/status-banner'
     | '/dev/'
     | '/services/'
     | '/services/$serviceId/'
@@ -223,6 +247,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DevRouteRoute: typeof DevRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
+  AccountNotificationsRoute: typeof AccountNotificationsRoute
   ApplicationsIdRoute: typeof ApplicationsIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
@@ -265,6 +290,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dev/'
       preLoaderRoute: typeof DevIndexRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/status-banner': {
+      id: '/dev/status-banner'
+      path: '/status-banner'
+      fullPath: '/dev/status-banner'
+      preLoaderRoute: typeof DevStatusBannerRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/icons': {
@@ -323,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicationsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account_/notifications': {
+      id: '/account_/notifications'
+      path: '/account/notifications'
+      fullPath: '/account/notifications'
+      preLoaderRoute: typeof AccountNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/$serviceId/': {
       id: '/services/$serviceId/'
       path: '/services/$serviceId'
@@ -355,6 +394,7 @@ interface DevRouteRouteChildren {
   DevDraggableRoute: typeof DevDraggableRoute
   DevFormElementsRoute: typeof DevFormElementsRoute
   DevIconsRoute: typeof DevIconsRoute
+  DevStatusBannerRoute: typeof DevStatusBannerRoute
   DevIndexRoute: typeof DevIndexRoute
 }
 
@@ -366,6 +406,7 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevDraggableRoute: DevDraggableRoute,
   DevFormElementsRoute: DevFormElementsRoute,
   DevIconsRoute: DevIconsRoute,
+  DevStatusBannerRoute: DevStatusBannerRoute,
   DevIndexRoute: DevIndexRoute,
 }
 
@@ -377,6 +418,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DevRouteRoute: DevRouteRouteWithChildren,
   AccountRoute: AccountRoute,
+  AccountNotificationsRoute: AccountNotificationsRoute,
   ApplicationsIdRoute: ApplicationsIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,

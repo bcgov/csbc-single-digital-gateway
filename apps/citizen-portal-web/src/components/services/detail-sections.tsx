@@ -3,9 +3,10 @@ import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Clock, Mail, MapPin, Phone, Send, Wallet } from 'lucide-react';
+import { Clock, ExternalLink, Send, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ApplicationRow } from '@/components/services/application-row';
+import { ContactSection } from '@/components/services/contact-section';
 import { ServiceContent } from '@/components/services/service-content';
 import { myApplicationsQueryOptions } from '@/lib/catalog';
 
@@ -124,12 +125,15 @@ export function EligibilityCriteria() {
   );
 }
 
-/** One application-method form for a service (its title + the call-to-action label). */
+/** One application method for a service: an in-portal form or an external link (feature 131). For an
+ * external method (`kind` === 'external-application'), `url` is the site the citizen visits. */
 export interface ApplicationMethod {
   id: string;
   label: string | null;
   title: string;
   formId: string;
+  kind?: string;
+  url?: string | null;
 }
 
 /**
@@ -152,35 +156,54 @@ export function HowToApply({
   }
   return (
     <div className="flex flex-col gap-3">
-      {applications.map((form) => (
-        <Card key={form.id}>
-          <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Send className="size-5" aria-hidden />
-              </span>
-              <div className="flex flex-col">
-                <span className="font-heading text-sm font-semibold text-foreground">
-                  {form.title}
+      {applications.map((form) => {
+        // An external method links out to another site ("Visit site"); a form starts an in-portal
+        // application (feature 131).
+        const isExternal = form.kind === 'external-application' && Boolean(form.url);
+        const Icon = isExternal ? ExternalLink : Send;
+        return (
+          <Card key={form.id}>
+            <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="size-5" aria-hidden />
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  Apply through the Single Digital Gateway.
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-heading text-sm font-semibold text-foreground">
+                    {form.title}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {isExternal
+                      ? 'Apply on an external site.'
+                      : 'Apply through the Single Digital Gateway.'}
+                  </span>
+                </div>
               </div>
-            </div>
-            <Button
-              render={
-                <Link
-                  to="/services/$serviceId/apply/$formId"
-                  params={{ serviceId, formId: form.formId }}
-                />
-              }
-            >
-              {form.label && form.label !== 'Untitled' ? form.label : 'Start an application'}
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+              {isExternal ? (
+                <Button
+                  render={
+                    // Opens the external site in a new tab; rel prevents tab-nabbing + referrer leak.
+                    <a href={form.url ?? undefined} target="_blank" rel="noopener noreferrer" />
+                  }
+                >
+                  Visit site
+                </Button>
+              ) : (
+                <Button
+                  render={
+                    <Link
+                      to="/services/$serviceId/apply/$formId"
+                      params={{ serviceId, formId: form.formId }}
+                    />
+                  }
+                >
+                  {form.label && form.label !== 'Untitled' ? form.label : 'Start an application'}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -238,40 +261,6 @@ export function HelpAndInformation() {
   );
 }
 
-const CONTACT = [
-  { icon: Phone, label: 'Call us', value: '1-800-000-0000', sub: 'Mon–Fri, 8am–4:30pm' },
-  {
-    icon: Mail,
-    label: 'Other ways',
-    value: 'Email or text us',
-    sub: 'We reply within 2 business days',
-  },
-  { icon: MapPin, label: 'Visit us', value: 'Find a service centre', sub: 'Locations across B.C.' },
-];
-
-/** "Contact information" — a row of contact cards (placeholder). */
-export function ContactInformation() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-3">
-      {CONTACT.map((item) => {
-        const Icon = item.icon;
-        return (
-          <Card key={item.label}>
-            <CardContent className="flex flex-col gap-1 py-4">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="size-4" aria-hidden />
-              </span>
-              <span className="mt-1 text-[11px] text-muted-foreground">{item.label}</span>
-              <span className="text-sm font-medium text-foreground">{item.value}</span>
-              <span className="text-xs text-muted-foreground">{item.sub}</span>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
 /**
  * The shared two-column body of a service page: the "On this page" rail + all sections, with the
  * overview rendering the given `schema`/`uischema`/`data`. Used by both the live service detail and
@@ -300,7 +289,7 @@ export function ServiceSections({
             schema={schema}
             uischema={uischema}
             data={data}
-            omit={['title', 'description']}
+            omit={['title', 'description', 'contact_methods']}
           />
         </Section>
         <Section id="eligibility" title="Eligibility criteria">
@@ -316,7 +305,7 @@ export function ServiceSections({
           <HelpAndInformation />
         </Section>
         <Section id="contact" title="Contact information">
-          <ContactInformation />
+          <ContactSection value={data.contact_methods} />
         </Section>
       </div>
     </div>

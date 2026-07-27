@@ -52,9 +52,11 @@ export interface FormCatalogEntry {
 
 export interface ServiceReference {
   id: string;
-  relation: 'related_service' | 'application_form';
+  relation: 'related_service' | 'application_form' | 'external_application';
   position: number;
   label: string | null;
+  /** For an `external_application` reference, the external https destination; null for forms. */
+  url: string | null;
   targetDocumentId: string;
   targetVersionId: string;
   targetKind: string;
@@ -195,6 +197,60 @@ export function serviceReferencesQueryOptions(id: string, versionId: string) {
   });
 }
 
+export interface ServiceAgreementRef {
+  id: string;
+  /** Document-only pointer — the agreement resolves its current published version server-side. */
+  agreementDocumentId: string;
+  title: string;
+  isOptional: boolean;
+  isGlobal: boolean;
+  position: number;
+  createdAt: string;
+}
+
+/** The service agreements attached to a service version (feature 86). */
+export function serviceAgreementRefsQueryOptions(id: string, versionId: string) {
+  return queryOptions({
+    queryKey: ['services', 'detail', id, 'agreements', versionId] as const,
+    queryFn: async () => {
+      const envelope = await ok<{ items: ServiceAgreementRef[] }>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
+          { credentials: 'include' },
+        ),
+      );
+      return envelope.items;
+    },
+    staleTime: 10_000,
+  });
+}
+
+export function attachServiceAgreement(
+  id: string,
+  versionId: string,
+  agreementDocumentId: string,
+): Promise<ServiceAgreementRef> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements`,
+    'POST',
+    { agreementDocumentId },
+  );
+}
+
+export async function detachServiceAgreement(
+  id: string,
+  versionId: string,
+  referenceId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/agreements/${encodeURIComponent(referenceId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  );
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+}
+
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
   return ok<T>(
     await fetch(url, {
@@ -221,7 +277,13 @@ export function createService(input: {
 export function updateDraft(
   id: string,
   versionId: string,
-  input: { data: Record<string, unknown>; title?: string; applications?: ApplicationInput[] },
+  input: {
+    data: Record<string, unknown>;
+    title?: string;
+    applications?: ApplicationInput[];
+    /** Ordered application-method reference ids — repositions them on save (feature 132). */
+    applicationOrder?: string[];
+  },
 ): Promise<ServiceVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
@@ -302,6 +364,34 @@ export function createReferencedForm(
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/forms`,
     'POST',
+    input,
+  );
+}
+
+/** Create an external application method (a labelled https link) on a service draft version and
+ * reference it — the External-link "Add application method" flow (feature 131). */
+export function createExternalApplication(
+  id: string,
+  versionId: string,
+  input: { label: string; url: string },
+): Promise<ServiceReference> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/external-applications`,
+    'POST',
+    input,
+  );
+}
+
+/** Edit an external application method's label + url (draft version only). */
+export function updateExternalApplication(
+  id: string,
+  versionId: string,
+  referenceId: string,
+  input: { label: string; url: string },
+): Promise<ServiceReference> {
+  return send(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/external-applications/${encodeURIComponent(referenceId)}`,
+    'PATCH',
     input,
   );
 }

@@ -71,3 +71,50 @@ citizen-portal-api:
         secretKeyRef:
           name: sdg-cluster-cert
           key: ca.crt
+
+# ---------------------------------------------------------------------------
+# Notifications database — a SECOND database/user in the same Crunchy cluster. The operator
+# provisions sdg_notifications + the `notifications` user and generates the
+# `sdg-pguser-notifications` Secret notification-service consumes below.
+#
+# PG15+ public-schema grant: databaseInitSQL runs ONLY at initial cluster creation, so
+# initSQL.extra below covers FRESH clusters. For an EXISTING cluster, apply once by hand:
+#   oc exec -n <ns> statefulset/sdg-instance1 -c database -- \
+#     psql -d sdg_notifications -c 'GRANT ALL ON SCHEMA public TO notifications;'
+# ---------------------------------------------------------------------------
+postgres:
+  extraUsers:
+    - name: notifications
+      databases:
+        - sdg_notifications
+  initSQL:
+    extra: |
+      \c sdg_notifications
+      GRANT ALL ON SCHEMA public TO notifications;
+
+# ---------------------------------------------------------------------------
+# notification-service — internal-only (no Route). NOTIFICATION_DATABASE_URL comes from the
+# operator-generated pguser Secret; the migrate hook inherits extraEnv automatically. SMTP_URL
+# lives in the pre-created notification-service-secrets Secret.
+#
+# IdP PREREQUISITE: the m2m service-account clients (platform-api-m2m / citizen-portal-api-m2m,
+# with a notification-service audience on their access tokens) exist only in the LOCAL compose
+# Keycloak — provision equivalents in each environment's IdP and set OIDC_ISSUER /
+# NOTIFICATIONS_M2M_* in values-<env>.yaml before enabling the relay there. If that IdP can't
+# add a custom audience mapper (e.g. the CSS standard realm), set the notification-service
+# M2M_AUDIENCE to the comma-separated m2m client ids instead (ANY-of match).
+# ---------------------------------------------------------------------------
+notification-service:
+  extraEnv:
+    - name: NOTIFICATION_DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: sdg-pguser-notifications # <postgres.name>-pguser-<extraUsers[].name>
+          key: uri
+    - name: PGSSLMODE
+      value: "verify-full"
+    - name: NOTIFICATION_DATABASE_CA_CERT
+      valueFrom:
+        secretKeyRef:
+          name: sdg-cluster-cert
+          key: ca.crt

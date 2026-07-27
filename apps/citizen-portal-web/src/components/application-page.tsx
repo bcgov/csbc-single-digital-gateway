@@ -5,15 +5,18 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ConsentGate, consentPending } from '@/components/application/consent-gate';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { Breadcrumb } from '@/components/services/service-content';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   type ApplicationFormToFill,
+  RequestError,
   type Submission,
   applicationFormQueryOptions,
   draftQueryOptions,
   saveDraft,
+  serviceAgreementsQueryOptions,
   submitApplication,
 } from '@/lib/applications';
 /** Confirmation shown after a successful submit. */
@@ -41,7 +44,16 @@ function Submitted({ serviceId, submission }: { serviceId: string; submission: S
 }
 
 /** The interactive form, mounted only once the form structure + draft are loaded (seeds from draft). */
-function ApplicationForm({ form, draft }: { form: ApplicationFormToFill; draft: Submission }) {
+function ApplicationForm({
+  form,
+  draft,
+  onConsentError,
+}: {
+  form: ApplicationFormToFill;
+  draft: Submission;
+  /** Called when submit is rejected server-side (422) — a new agreement version may need consent. */
+  onConsentError: (data: Record<string, unknown>) => void;
+}) {
   const [data, setData] = useState<Record<string, unknown>>(draft.data ?? {});
   const [submitted, setSubmitted] = useState<Submission | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -52,6 +64,14 @@ function ApplicationForm({ form, draft }: { form: ApplicationFormToFill; draft: 
   const submit = useMutation({
     mutationFn: (next: Record<string, unknown>) => submitApplication(draft.id, next),
     onSuccess: (result) => setSubmitted(result),
+    onError: (error, next) => {
+      // A 422 can be form-data or consent (a new agreement version published mid-flight). Persist
+      // the answers and let the page re-resolve the gate; the server stays authoritative.
+      if (error instanceof RequestError && error.status === 422) {
+        save.mutate(next);
+        onConsentError(next);
+      }
+    },
   });
 
   useEffect(
@@ -111,11 +131,25 @@ export function ApplicationPage() {
     ...draftQueryOptions(form.data?.formVersionId),
     enabled: Boolean(user) && form.isSuccess,
   });
+  const agreements = useQuery(
+    serviceAgreementsQueryOptions(serviceId, Boolean(user) && form.isSuccess && draft.isSuccess),
+  );
+  // The consent gate blocks the form until the citizen explicitly presses Continue. `gateEngaged`
+  // latches once consent is needed, so recording the LAST decision doesn't auto-advance the page —
+  // only `onContinue` (→ proceeded) mounts the form. A submit-time 422 resets `proceeded` and the
+  // refetch re-flags `consentNeeded`, so the gate re-opens for a newly published agreement version.
+  const [proceeded, setProceeded] = useState(false);
+  const [gateEngaged, setGateEngaged] = useState(false);
+  const consentNeeded = agreements.isSuccess && consentPending(agreements.data);
+  useEffect(() => {
+    if (consentNeeded) setGateEngaged(true);
+  }, [consentNeeded]);
+  const showGate = (gateEngaged || consentNeeded) && !proceeded;
 
   return (
     <CitizenShell activeNav="services">
       <p>This is the application-page.tsx</p>
-      <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+      <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
         <Breadcrumb
           trail={[
             { label: 'Services', href: '/services' },
@@ -133,16 +167,29 @@ export function ApplicationPage() {
           <Unavailable serviceId={serviceId} />
         ) : !authPending && !user ? (
           <LoginPrompt />
-        ) : draft.isError ? (
+        ) : draft.isError || agreements.isError ? (
           <Unavailable serviceId={serviceId} />
-        ) : !draft.data ? (
+        ) : !draft.data || !agreements.isSuccess ? (
           <Skeleton className="h-32 w-full" />
+        ) : showGate ? (
+          <ConsentGate
+            agreements={agreements.data}
+            serviceId={serviceId}
+            onContinue={() => setProceeded(true)}
+          />
         ) : (
           <>
             <h1 className="font-heading text-2xl font-semibold text-foreground">
               Apply — {form.data.title}
             </h1>
-            <ApplicationForm form={form.data} draft={draft.data} />
+            <ApplicationForm
+              form={form.data}
+              draft={draft.data}
+              onConsentError={() => {
+                setProceeded(false);
+                void agreements.refetch();
+              }}
+            />
           </>
         )}
       </div>

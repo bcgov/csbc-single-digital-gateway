@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
@@ -8,6 +9,9 @@ import {
   reviews,
   submissionVersions,
   submissions,
+  users,
+  workspaceMembers,
+  workspaces,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq } from 'drizzle-orm';
@@ -22,7 +26,11 @@ import {
   normalizeFormStructure,
   submissionStatusLabel,
 } from '../util/format';
+import type { Env } from '../../../config/env.schema';
+import { enqueueNotification } from '../../../notifications/enqueue';
+import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
 import { validateSubmission } from '../util/validate';
+import { ConsentService } from './consent.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
 
@@ -36,7 +44,11 @@ type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
  */
 @Injectable()
 export class ApplicationsService {
-  constructor(@InjectDatabase() private readonly db: Database) {}
+  constructor(
+    @InjectDatabase() private readonly db: Database,
+    private readonly consent: ConsentService,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   /**
    * The form a citizen applies through, for a given service — validated to be an `application_form`
@@ -71,7 +83,8 @@ export class ApplicationsService {
       )
       .limit(1);
     const ref = refRows[0];
-    if (ref === undefined) {
+    // An application_form reference always pins a version (only service_agreement refs may omit it).
+    if (ref === undefined || ref.formVersionId === null) {
       throw new NotFoundException('Application form not found');
     }
     const formRows = await this.db
@@ -107,9 +120,14 @@ export class ApplicationsService {
       .where(eq(documentVersions.id, formVersionId))
       .limit(1);
     const fv = fvRows[0];
-    if (fv === undefined || !FORM_KINDS.has(fv.kind)) {
+    if (fv === undefined || !FORM_KINDS.has(fv.kind) || fv.workspaceId === null) {
+      // Application forms are always workspace-scoped (only service agreements may be global),
+      // so a workspace-less document is not a valid application form version.
       throw new UnprocessableEntityException('Not an application form version');
     }
+    // Hoist the narrowed workspace: property narrowing (fv.workspaceId) doesn't survive into the
+    // transaction closure below, but a const local does.
+    const { workspaceId } = fv;
     const existing = await this.findUserDraft(userId, formVersionId);
     if (existing) {
       return this.toDto(existing.submission, existing.version);
@@ -121,7 +139,7 @@ export class ApplicationsService {
           documentId: fv.documentId,
           documentVersionId: formVersionId,
           userId,
-          workspaceId: fv.workspaceId,
+          workspaceId,
         })
         .returning();
       const sub = subIns[0];
@@ -130,7 +148,7 @@ export class ApplicationsService {
       }
       const verIns = await tx
         .insert(submissionVersions)
-        .values({ submissionId: sub.id, workspaceId: fv.workspaceId, version: 1, data: {} })
+        .values({ submissionId: sub.id, workspaceId, version: 1, data: {} })
         .returning();
       const ver = verIns[0];
       if (ver === undefined) {
@@ -257,11 +275,96 @@ export class ApplicationsService {
         errors: result.errors,
       });
     }
-    const updated = await this.db
-      .update(submissionVersions)
-      .set({ data, status: 'pending', submittedAt: new Date() })
-      .where(eq(submissionVersions.id, ver.id))
-      .returning();
+    // Consent gate: every required service agreement must be approved (against its current version).
+    await this.consent.assertSubmittableForForm(userId, sub.documentVersionId);
+    // Pre-resolve the citizen's contact email (read BEFORE the tx) for the notification seed.
+    const [owner] = await this.db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    // Pre-resolve the staff audience (feature 124): the owning workspace's slug (staff routes are
+    // workspace-scoped), the service title for the message, and every ACTIVE member + email seed.
+    const [workspace] = await this.db
+      .select({ slug: workspaces.slug })
+      .from(workspaces)
+      .where(eq(workspaces.id, sub.workspaceId))
+      .limit(1);
+    const [serviceRef] = await this.db
+      .select({ title: documents.title })
+      .from(documentReferences)
+      .innerJoin(documents, eq(documents.id, documentReferences.ownerDocumentId))
+      .where(
+        and(
+          eq(documentReferences.targetVersionId, sub.documentVersionId),
+          eq(documentReferences.relation, 'application_form'),
+        ),
+      )
+      .limit(1);
+    const members = await this.db
+      .select({ userId: workspaceMembers.userId, email: users.email })
+      .from(workspaceMembers)
+      .innerJoin(users, eq(users.id, workspaceMembers.userId))
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, sub.workspaceId),
+          eq(workspaceMembers.status, 'active'),
+        ),
+      );
+    // Advance draft → pending and queue the received-confirmation in the SAME transaction
+    // (the outbox guarantee, doc 109). One confirmation per submitted VERSION — a resubmit
+    // after needs_changes is a new version and gets its own.
+    const updated = await this.db.transaction(async (tx) => {
+      const rows = await tx
+        .update(submissionVersions)
+        .set({ data, status: 'pending', submittedAt: new Date() })
+        .where(eq(submissionVersions.id, ver.id))
+        .returning();
+      const content = submissionReceivedContent(applicationReference(sub.id, sub.createdAt));
+      // Email deep links (feature 127), composed from config — never user input.
+      const citizenWebUrl = this.config.get('CITIZEN_WEB_URL', { infer: true });
+      const platformWebUrl = this.config.get('PLATFORM_WEB_URL', { infer: true });
+      await enqueueNotification(tx, {
+        idempotencyKey: `submission:${ver.id}`,
+        userId,
+        type: content.type,
+        title: content.title,
+        body: content.body,
+        payload: {
+          submissionId: sub.id,
+          link: new URL(`/applications/${sub.id}`, citizenWebUrl).href,
+          linkLabel: 'View application',
+        },
+        email: owner?.email ?? null,
+      });
+      // Staff alert per ACTIVE workspace member (feature 124) — same tx, per-member rows so each
+      // has their own read-state and preferences. Staff and citizens are distinct principals, so
+      // no self-exclusion is needed.
+      const staffContent = staffSubmissionContent(
+        applicationReference(sub.id, sub.createdAt),
+        serviceRef?.title ?? null,
+      );
+      for (const member of members) {
+        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+        await enqueueNotification(tx, {
+          idempotencyKey: `submission:${ver.id}:staff:${member.userId}`,
+          userId: member.userId,
+          type: staffContent.type,
+          title: staffContent.title,
+          body: staffContent.body,
+          payload: {
+            submissionId: sub.id,
+            workspaceSlug: workspace?.slug ?? null,
+            ...(workspace?.slug !== undefined && {
+              link: new URL(`/app/${workspace.slug}/submissions/${sub.id}`, platformWebUrl).href,
+              linkLabel: 'Review application',
+            }),
+          },
+          email: member.email,
+        });
+      }
+      return rows;
+    });
     return this.toDto(sub, this.expectRow(updated[0]));
   }
 

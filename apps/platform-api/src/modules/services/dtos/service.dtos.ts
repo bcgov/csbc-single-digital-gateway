@@ -53,6 +53,10 @@ export const updateVersionDataSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   title: z.string().trim().min(1).max(255).optional(),
   applications: z.array(applicationInputSchema).optional(),
+  /** Ordered application-method reference ids (feature 132). When present, each id that is an
+   * application-method reference of this draft version is repositioned to its index — this is what
+   * dictates the citizen "How to apply" order. */
+  applicationOrder: z.array(z.uuid()).optional(),
 });
 export class UpdateVersionDataDto extends createZodDto(updateVersionDataSchema) {}
 export type UpdateVersionDataInput = z.infer<typeof updateVersionDataSchema>;
@@ -135,6 +139,11 @@ export type ServiceDetail = z.infer<typeof serviceDetailSchema>;
 // ── Row → DTO mappers ───────────────────────────────────────────────────────────────────────────
 
 export function toServiceDto(row: Document): ServiceResponse {
+  if (row.workspaceId === null) {
+    // A service is always workspace-scoped (only service agreements may be global); a
+    // workspace-less service document is a data invariant violation, not a valid response.
+    throw new Error('service document has no workspace');
+  }
   return {
     id: row.id,
     workspaceId: row.workspaceId,

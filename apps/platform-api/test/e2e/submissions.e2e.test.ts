@@ -1,5 +1,6 @@
 import { type INestApplication, VersioningType } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { createDatabase } from '@repo/database';
 import { AuthModule, type AuthModuleOptions, type AuthUser } from '@repo/nestjs/auth';
@@ -34,6 +35,8 @@ describe('submissions (e2e)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
+        // SubmissionsService injects ConfigService (CITIZEN_WEB_URL for email deep links).
+        ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
         AuthModule.forRoot(authOptions),
         DatabaseModule.forRoot({
           client: createDatabase('postgresql://postgres:postgres@localhost:5599/sdg'),

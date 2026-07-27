@@ -13,7 +13,9 @@ export interface CatalogService {
   description: string;
 }
 
-/** A form a citizen can apply through (a service version's `application_form` reference). */
+/** An application method a service offers — an in-portal form (`kind` basic-form/multi-stage-form)
+ * or an external link (`kind` external-application, feature 131). For an external method `url` is the
+ * https destination the citizen visits ("Visit site"); null for forms. */
 export interface ApplicationForm {
   id: string;
   label: string | null;
@@ -21,6 +23,7 @@ export interface ApplicationForm {
   formId: string;
   formVersionId: string;
   kind: string;
+  url: string | null;
 }
 
 /** A service detail — the card fields + its current published version + render definition. */

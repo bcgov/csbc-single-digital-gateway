@@ -253,6 +253,12 @@
       "import": "./dist/pagination.js",
       "require": "./dist/pagination.cjs"
     },
+    "./phone-input": {
+      "types": "./dist/phone-input.d.ts",
+      "development": "./src/phone-input.ts",
+      "import": "./dist/phone-input.js",
+      "require": "./dist/phone-input.cjs"
+    },
     "./popover": {
       "types": "./dist/popover.d.ts",
       "development": "./src/popover.ts",
@@ -439,6 +445,7 @@
     "lucide-react": "^1.21.0",
     "next-themes": "^0.4.6",
     "react-day-picker": "^10.0.1",
+    "react-phone-number-input": "^3.4.17",
     "react-resizable-panels": "^4.11.2",
     "react-select": "^5.10.2",
     "react-select-async-paginate": "^0.7.11",

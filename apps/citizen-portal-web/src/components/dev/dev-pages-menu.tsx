@@ -17,6 +17,7 @@ const DEV_PAGES = [
   { to: '/dev/button', label: 'Button' },
   { to: '/dev/accordion', label: 'Accordion' },
   { to: '/dev/icons', label: 'Icons' },
+  { to: '/dev/status-banner', label: 'Status banner' },
   { to: '/dev/form-elements', label: 'Form elements' },
   { to: '/dev/draggable', label: 'Draggable' },
 ] as const;

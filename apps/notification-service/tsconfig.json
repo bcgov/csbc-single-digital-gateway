@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    // Bundler resolution for typecheck (the app is bundled by SWC/nest). Lets tsc resolve the
+    // re-exports of "type": "module" workspace deps like @repo/notification-database, which
+    // NodeNext-ESM can't (extensionless relative re-exports in the emitted .d.ts).
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "test"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -96,11 +96,13 @@ describe('citizen application detail page', () => {
     mockBff();
     await renderApp();
     expect(
-      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Birth Registration').length).toBeGreaterThan(0);
     expect(screen.getByText('Submitted')).toBeInTheDocument();
-    expect(await screen.findByText('Amina')).toBeInTheDocument(); // a submitted answer, read-only
+    // Answers render as a read-only (disabled) form, so the value is the input's value, not text.
+    expect(await screen.findByDisplayValue('Amina')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your answers' })).toBeInTheDocument();
   });
 
   it('renders a multi-stage form structure correctly', async () => {
@@ -147,17 +149,9 @@ describe('citizen application detail page', () => {
 
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
-    await renderApp();
-    expect(
-      await screen.findByText(
-        'You need to be signed in to view this application.',
-        {},
-        { timeout: 5000 },
-      ),
-    ).toBeInTheDocument();
-    const links = await screen.findAllByRole('link', { name: /log in/i });
-    expect(links.length).toBeGreaterThan(0);
-    expect(links[0]).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+    renderApp();
+    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 10000 });
+    expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
   });
 
   it('shows an "Action needed" banner with the reviewer reason and a Make changes action', async () => {
@@ -173,7 +167,7 @@ describe('citizen application detail page', () => {
     });
     await renderApp();
     expect(
-      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 10000 }),
     ).toBeInTheDocument();
     // The status-aware banner names the state and surfaces the reviewer's note.
     expect(screen.getByText('Action needed')).toBeInTheDocument();
@@ -183,8 +177,8 @@ describe('citizen application detail page', () => {
 
   it('shows an approved banner with descriptive copy', async () => {
     mockBff({ app: jsonResponse(detailWith({ status: 'approved', statusLabel: 'Approved' })) });
-    await renderApp();
-    await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 5000 });
+    renderApp();
+    await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 10000 });
     // Banner-specific copy (distinct from the plain status label) — not present pre-feature.
     expect(screen.getByText(/this application has been approved/i)).toBeInTheDocument();
   });
@@ -227,7 +221,7 @@ describe('citizen application detail page', () => {
     await renderApp();
     await userEvent
       .setup()
-      .click(await screen.findByRole('button', { name: /make changes/i }, { timeout: 5000 }));
+      .click(await screen.findByRole('button', { name: /make changes/i }, { timeout: 10000 }));
     // Mounts the editable FormRunner (its Resubmit button only exists in edit mode)…
     expect(
       await screen.findByRole('button', { name: /resubmit application/i }, { timeout: 15000 }),

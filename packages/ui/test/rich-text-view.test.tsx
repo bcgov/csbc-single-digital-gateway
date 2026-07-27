@@ -49,4 +49,9 @@ describe('RichTextView', () => {
     const { container } = render(<RichTextView value={null} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('renders nothing (does not crash) for an empty `{}` value with no root', () => {
+    const { container } = render(<RichTextView value={{} as never} />);
+    expect(container).toBeEmptyDOMElement();
+  });
 });

@@ -1,0 +1,128 @@
+# notification-service Helm values.
+#
+# INTERNAL-ONLY: this chart has NO Route template — browsers never reach the service; the BFFs
+# call the ClusterIP Service (feature 113's trust model). Sensitive env (SMTP_URL — it may carry
+# credentials; NOTIFICATION_DATABASE_URL — operator-sourced via extraEnv) never lives here.
+# Non-sensitive env below is rendered into a ConfigMap.
+
+replicaCount: 1
+
+# maxSurge:0 — see the API charts: recreate in place; raise for zero-downtime rollouts.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+
+image:
+  repository: ghcr.io/bcgov/csbc-single-digital-gateway/notification-service # override per environment
+  tag: "" # defaults to .Chart.appVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pre-created Secret holding: SMTP_URL (never in the ConfigMap — it may carry credentials).
+existingSecret: notification-service-secrets
+
+# Non-sensitive env → ConfigMap. OIDC_ISSUER MUST be overridden per environment: it is the realm
+# hosting the m2m service-account clients the BFF relays authenticate with, and every accepted
+# token must carry one of the M2M_AUDIENCE audiences (comma-separated, ANY-of; see
+# .mdd/docs/102-m2m-auth-module.md). If the environment's IdP can't add a custom audience
+# mapper (e.g. the CSS standard realm), set M2M_AUDIENCE to the allowed m2m caller client ids:
+#   M2M_AUDIENCE: platform-api-m2m,citizen-portal-api-m2m
+env:
+  NODE_ENV: production
+  PORT: "4002"
+  LOG_LEVEL: info
+  OIDC_ISSUER: https://<oidc-issuer-host>/realms/<m2m-realm>
+  M2M_AUDIENCE: notification-service
+  MAIL_FROM: no-reply@gov.bc.ca
+  EMAIL_WORKER_ENABLED: "true"
+  EMAIL_WORKER_INTERVAL_MS: "5000"
+  EMAIL_WORKER_BATCH_SIZE: "10"
+  EMAIL_MAX_ATTEMPTS: "5"
+
+# Extra raw env entries (support valueFrom) merged into the app AND migrate containers; they take
+# precedence over envFrom keys. Used to source NOTIFICATION_DATABASE_URL from the Crunchy PGO
+# Secret the operator generates for the `notifications` user (feature 118):
+#   extraEnv:
+#     - name: NOTIFICATION_DATABASE_URL
+#       valueFrom:
+#         secretKeyRef:
+#           name: sdg-pguser-notifications
+#           key: uri
+extraEnv: []
+
+containerPort: 4002
+
+service:
+  type: ClusterIP
+  port: 80
+
+# ENABLED: notification-service owns its own database (sdg_notifications), so its release runs
+# the migrate hook — no conflict with platform-api's shared-DB migrations (Helm runs release
+# hooks serially). FIRST install on a fresh namespace: start with migrations.enabled=false until
+# the operator has provisioned sdg-pguser-notifications (same phased install as the base values).
+migrations:
+  enabled: true
+  command: migrate # this image has no seed
+  backoffLimit: 2
+  image:
+    repository: ghcr.io/bcgov/csbc-single-digital-gateway/notification-db-migrate # override per environment
+    tag: ""
+  # The migrator is small and short-lived; only its REQUESTS are quota-metered.
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+probes:
+  liveness:
+    path: /health/live
+  readiness:
+    path: /health/ready
+
+# Requests are what the namespace quota meters (see charts/README.md); limits match the API
+# charts for the same boot/latency margins (the app is a mostly-idle poller + SSE fan-out).
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    cpu: 100m
+    memory: 192Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# OpenShift restricted-v2 assigns the UID/fsGroup — do NOT set runAsUser/fsGroup here.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

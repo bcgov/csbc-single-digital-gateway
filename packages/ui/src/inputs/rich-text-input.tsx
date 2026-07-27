@@ -178,7 +178,10 @@ export function RichTextInput({
     onError: (error: Error) => {
       throw error;
     },
-    ...(value ? { editorState: JSON.stringify(value) } : {}),
+    // Only seed an editor state from a REAL SerializedEditorState (has a `root`). An empty `{}`
+    // (e.g. a default-seeded rich-text field) has no root, so Lexical would read `root.type` on
+    // undefined and crash — treat it (and null/undefined) as an empty editor.
+    ...(value && value.root ? { editorState: JSON.stringify(value) } : {}),
   };
 
   return (

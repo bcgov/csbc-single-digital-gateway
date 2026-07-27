@@ -38,13 +38,17 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 /** Route the calls the auth-aware home page makes: auth, services, the user's applications. */
-function mockBff({ me = new Response(null, { status: 401 }), apps = applications } = {}) {
+function mockBff({
+  me = new Response(null, { status: 401 }),
+  apps = applications,
+  svcs = services,
+} = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes('/auth/me')) return me;
     if (url.includes('/auth/logout')) return new Response(null, { status: 204 });
     if (url.includes('/v1/me/applications')) return jsonResponse({ items: apps });
-    if (url.includes('/v1/services')) return jsonResponse({ items: services });
+    if (url.includes('/v1/services')) return jsonResponse({ items: svcs });
     return new Response(null, { status: 404 });
   });
   globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -72,9 +76,15 @@ afterEach(() => {
 describe('citizen-portal-web home — signed out', () => {
   it('leads with the hero headline and marketing sections', async () => {
     mockBff();
-    await renderHome();
+    renderHome();
+    // First render in this file cold-compiles the route tree's heavy deps (JsonForms/Lexical);
+    // give the first query a generous timeout so a cold cache doesn't flake it.
     expect(
-      await screen.findByRole('heading', { name: 'Access government services online' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Access government services online' },
+        { timeout: 10000 },
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What you can do' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Available services' })).toBeInTheDocument();
@@ -101,6 +111,35 @@ describe('citizen-portal-web home — signed out', () => {
       '/services',
     );
   });
+
+  it('shows each service card with its description and a catalog link', async () => {
+    mockBff();
+    renderHome();
+    const card = await screen.findByRole('link', { name: /Income and Disability Assistance/i });
+    // The title + disclosure chevron link navigates straight to the service detail page.
+    expect(card).toHaveAttribute('href', '/services/s1');
+    // The service description is rendered alongside the title (stacked in the card).
+    expect(screen.getByText('Financial support.')).toBeInTheDocument();
+  });
+
+  it('does not show "Browse all services" when fewer than 3 services are available', async () => {
+    mockBff();
+    renderHome();
+    await screen.findByRole('link', { name: /Income and Disability Assistance/i });
+    expect(screen.queryByRole('link', { name: /browse all services/i })).toBeNull();
+  });
+
+  it('shows a "Browse all services" link to the catalog when the panel is full (3 services)', async () => {
+    const threeServices = [
+      { id: 's1', title: 'Income and Disability Assistance', description: 'Financial support.' },
+      { id: 's2', title: 'Birth Registration', description: 'Register the birth of a child.' },
+      { id: 's3', title: 'Marriage Licence', description: 'Apply for a marriage licence.' },
+    ];
+    mockBff({ svcs: threeServices });
+    renderHome();
+    const browseAll = await screen.findByRole('link', { name: /browse all services/i });
+    expect(browseAll).toHaveAttribute('href', '/services');
+  });
 });
 
 describe('citizen-portal-web home — signed in', () => {
@@ -109,8 +148,27 @@ describe('citizen-portal-web home — signed in', () => {
     await renderHome();
     expect(await screen.findByRole('heading', { name: 'Hi, Amina' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Track your applications' })).toBeInTheDocument();
-    expect(await screen.findByText('Birth Registration application')).toBeInTheDocument();
+    // The application row's status pill + subheading (application name • Ref # • last updated).
+    expect(await screen.findByText('Review')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Birth Registration application • Ref #20250615-0003/),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Access government services online' })).toBeNull();
+  });
+
+  it('shows Available services as plain service cards even for services already applied to', async () => {
+    // The citizen has an application for s2, yet the Available services card must stay identical to
+    // the anonymous card — a service link to the detail page, not an application/status card.
+    mockBff({ me: jsonResponse(authedUser) });
+    renderHome();
+    await screen.findByRole('heading', { name: 'Hi, Amina' });
+    // Both the tracked application row and the services panel now title by service name, so scope to
+    // the service-detail link: the Available services card must link to /services/s2, not an
+    // /applications/:id status card.
+    const serviceLinks = (await screen.findAllByRole('link', { name: 'Birth Registration' })).map(
+      (el) => el.getAttribute('href'),
+    );
+    expect(serviceLinks).toContain('/services/s2');
   });
 
   it('shows the empty applications state when there are none', async () => {
@@ -140,5 +198,40 @@ describe('citizen-portal-web home — signed in', () => {
       ),
     );
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/'));
+  });
+});
+
+describe('citizen-portal-web mobile menu', () => {
+  it('opens a menu whose top bar carries the brand lockup and an X close control', async () => {
+    mockBff();
+    const user = userEvent.setup();
+    renderHome();
+
+    await screen.findByRole('heading', { name: 'Access government services online' });
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Menu' });
+    // Top bar mirrors the header: the brand homepage lockup is present inside the menu.
+    expect(
+      within(dialog).getByRole('link', { name: /Single Digital Gateway homepage/i }),
+    ).toBeInTheDocument();
+    // The hamburger is swapped for an X close control (no "Menu" title heading text shown).
+    expect(within(dialog).getByRole('button', { name: /close menu/i })).toBeInTheDocument();
+    // Nav links are listed in the menu body.
+    expect(within(dialog).getByRole('link', { name: 'Services' })).toBeInTheDocument();
+  });
+
+  it('closes the menu when the X control is clicked', async () => {
+    mockBff();
+    const user = userEvent.setup();
+    renderHome();
+
+    await screen.findByRole('heading', { name: 'Access government services online' });
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Menu' });
+    await user.click(within(dialog).getByRole('button', { name: /close menu/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull());
   });
 });

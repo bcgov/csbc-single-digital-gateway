@@ -12,7 +12,7 @@ import {
   documents,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   type ApplicationInput,
   type ServiceVersionResponse,
@@ -78,6 +78,9 @@ export class ServiceVersionsService {
           resolvedNew,
         );
       }
+      if (input.applicationOrder !== undefined) {
+        await this.reorderApplications(tx, versionId, input.applicationOrder);
+      }
       return rows[0];
     });
     return toServiceVersionDto(this.orThrow(updated));
@@ -136,6 +139,32 @@ export class ServiceVersionsService {
     }
   }
 
+  /** Reposition a draft version's application-method references (forms + external links) to the given
+   * order (feature 132): each id becomes `position = its index`. Ids that aren't application-method
+   * refs of this version are ignored (defensive — can't touch another version/workspace). This
+   * `position` is what both the staff list and the citizen "How to apply" read order by. */
+  private async reorderApplications(tx: Tx, versionId: string, order: string[]): Promise<void> {
+    const existing = await tx
+      .select({ id: documentReferences.id })
+      .from(documentReferences)
+      .where(
+        and(
+          eq(documentReferences.ownerVersionId, versionId),
+          inArray(documentReferences.relation, ['application_form', 'external_application']),
+        ),
+      );
+    const valid = new Set(existing.map((row) => row.id));
+    let position = 0;
+    for (const id of order) {
+      if (!valid.has(id)) {
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
+      await tx.update(documentReferences).set({ position }).where(eq(documentReferences.id, id));
+      position += 1;
+    }
+  }
+
   /** Validate the draft against its bound type-version schema (422 if invalid), then publish it. */
   async publish(userId: string, id: string, versionId: string): Promise<ServiceVersionResponse> {
     await this.services.requireDocument(userId, id);
@@ -160,9 +189,11 @@ export class ServiceVersionsService {
           errors: result.errors,
         });
       }
-      // Drop deep-copied forms unchanged from the previous published version (re-point + dedup).
+      // Drop deep-copied forms unchanged from the previous published version (re-point + delete the
+      // redundant copy) before the promote loop below.
       await dedupCopiedForms(tx, id, versionId);
-      // A service must have ≥1 application method, and every method's form must have structure.
+      // A service must have ≥1 application method (a form OR an external link), and every FORM
+      // method must have structure. An external method is valid once it has a url (feature 131).
       const apps = await tx
         .select({
           targetVersionId: documentReferences.targetVersionId,
@@ -176,7 +207,7 @@ export class ServiceVersionsService {
         .where(
           and(
             eq(documentReferences.ownerVersionId, versionId),
-            eq(documentReferences.relation, 'application_form'),
+            inArray(documentReferences.relation, ['application_form', 'external_application']),
           ),
         );
       if (apps.length === 0) {
@@ -186,7 +217,11 @@ export class ServiceVersionsService {
         });
       }
       const structureless = apps
-        .filter((app) => !formHasStructure(app.targetKind, app.targetSchema))
+        .filter(
+          (app) =>
+            app.targetKind !== 'external-application' &&
+            !formHasStructure(app.targetKind, app.targetSchema),
+        )
         .map((app) => app.targetTitle);
       if (structureless.length > 0) {
         throw new UnprocessableEntityException({
@@ -194,6 +229,8 @@ export class ServiceVersionsService {
           errors: structureless,
         });
       }
+      // Service agreements are shared policy documents (document-only references) published
+      // independently in the console — publishing a service does NOT publish its agreements.
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx
         .update(documentVersions)
@@ -204,8 +241,10 @@ export class ServiceVersionsService {
         .set({ publishedAt: sql`now()` })
         .where(eq(documentVersions.id, versionId))
         .returning();
-      // Publishing a service publishes its application forms (one version each).
+      // Publishing a service publishes its application forms (one version each; forms always pin a
+      // version, so target_version_id is non-null here).
       for (const app of apps) {
+        if (app.targetVersionId === null) continue;
         // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
         await tx
           .update(documentVersions)

@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   type Database,
   documentReferences,
@@ -20,7 +21,10 @@ import {
   type SubmissionStatus,
   type SubmissionSummary,
 } from '../dtos/submission.dtos';
+import type { Env } from '../../../config/env.schema';
+import { enqueueNotification } from '../../../notifications/enqueue';
 import { normalizeFormStructure, submissionReference, submissionStatusLabel } from '../util/format';
+import { reviewNotificationContent } from '../util/notification-content';
 
 type SubmissionRow = typeof submissions.$inferSelect;
 type SubmissionVersionRow = typeof submissionVersions.$inferSelect;
@@ -41,7 +45,10 @@ const REVIEWABLE: ReadonlySet<SubmissionStatus> = new Set(['pending', 'in_review
  */
 @Injectable()
 export class SubmissionsService {
-  constructor(@InjectDatabase() private readonly db: Database) {}
+  constructor(
+    @InjectDatabase() private readonly db: Database,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
 
   /** The caller must be a member of the workspace; 404 otherwise (existence not leaked). */
   private async requireMembership(userId: string, workspaceId: string): Promise<void> {
@@ -121,19 +128,58 @@ export class SubmissionsService {
       throw new ConflictException(`A ${version.status} submission cannot be reviewed`);
     }
     const mapped = DECISION_MAP[input.decision];
+    // Pre-resolve the owner's contact email (read BEFORE the tx) for the notification seed.
+    const ownerEmail =
+      sub.userId === null
+        ? null
+        : ((
+            await this.db
+              .select({ email: users.email })
+              .from(users)
+              .where(eq(users.id, sub.userId))
+              .limit(1)
+          )[0]?.email ?? null);
     await this.db.transaction(async (tx) => {
-      await tx.insert(reviews).values({
-        submissionVersionId: version.id,
-        submissionId: sub.id,
-        workspaceId: sub.workspaceId,
-        reviewerId: userId,
-        decision: mapped.decision,
-        reason: input.reason ?? null,
-      });
+      const [review] = await tx
+        .insert(reviews)
+        .values({
+          submissionVersionId: version.id,
+          submissionId: sub.id,
+          workspaceId: sub.workspaceId,
+          reviewerId: userId,
+          decision: mapped.decision,
+          reason: input.reason ?? null,
+        })
+        .returning({ id: reviews.id });
       await tx
         .update(submissionVersions)
         .set({ status: mapped.status })
         .where(eq(submissionVersions.id, version.id));
+      // Same-transaction outbox insert (doc 109's guarantee): notify the citizen owner.
+      // Anonymous submissions (user_id NULL) queue nothing. Each review row is a distinct
+      // decision → its own idempotency key.
+      if (sub.userId !== null && review !== undefined) {
+        const content = reviewNotificationContent(
+          mapped.decision,
+          submissionReference(sub.id, sub.createdAt),
+          input.reason,
+        );
+        // Email deep link (feature 127): the citizen's application page, composed from config.
+        const citizenWebUrl = this.config.get('CITIZEN_WEB_URL', { infer: true });
+        await enqueueNotification(tx, {
+          idempotencyKey: `review:${review.id}`,
+          userId: sub.userId,
+          type: content.type,
+          title: content.title,
+          body: content.body,
+          payload: {
+            submissionId: sub.id,
+            link: new URL(`/applications/${sub.id}`, citizenWebUrl).href,
+            linkLabel: 'View application',
+          },
+          email: ownerEmail,
+        });
+      }
     });
     return this.get(userId, submissionId);
   }

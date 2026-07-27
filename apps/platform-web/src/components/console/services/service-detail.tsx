@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import {
   addServiceVersion,
   publishVersion,
+  serviceAgreementRefsQueryOptions,
   serviceQueryOptions,
   serviceReferencesQueryOptions,
   updateDraft,
@@ -24,10 +25,22 @@ import {
 import { useSetPageChrome } from '@/lib/page-chrome';
 import { UnsavedChangesGuard } from '../unsaved-changes-guard';
 import { ApplicationMethods } from './application-methods';
+import { ServiceAgreementMethods } from './service-agreement-methods';
 import { ServiceEditor } from './service-editor';
 import { ServiceMenu } from './service-menu';
 import { ServicePublishModal } from './service-publish-modal';
 import { VersionPicker } from './version-picker';
+
+/** Reconcile a held application-method order against the current membership (feature 132): keep the
+ * existing relative order for ids still present (drops removed ids), then append any new ids in
+ * server order. A pure reorder (same id set) leaves both order arrays untouched by the reseed effect;
+ * a create/delete folds the change into BOTH order + baseline so it isn't seen as an unsaved reorder. */
+function reconcileOrder(previous: string[], present: string[]): string[] {
+  const presentSet = new Set(present);
+  const kept = previous.filter((methodId) => presentSet.has(methodId));
+  const keptSet = new Set(kept);
+  return [...kept, ...present.filter((methodId) => !keptSet.has(methodId))];
+}
 
 /** Service detail — the version is in the URL (`…/versions/:versionId`). Header carries a version
  * picker, a "Go to current" shortcut when off the latest, Create-next-version, and the ⋯ menu. */
@@ -42,7 +55,7 @@ export function ServiceDetail({
   /** Omitted on the bare `…/services/:id` route → the current (latest) version. */
   versionId?: string;
   /** Which tab the URL selects. */
-  tab: 'details' | 'methods';
+  tab: 'details' | 'methods' | 'agreements';
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,25 +69,31 @@ export function ServiceDetail({
 
   // Navigate to a version+tab. The current/latest version is the bare `…/services/:id` (no version in
   // the URL); older versions are `…/versions/:versionId`. Each tab adds `/application-methods`.
-  const navTab = (nextTab: 'details' | 'methods', vId?: string) => {
-    if (vId !== undefined && vId !== latest?.id) {
-      navigate(
-        nextTab === 'methods'
-          ? {
-              to: '/app/$slug/services/$id/versions/$versionId/application-methods',
-              params: { slug, id, versionId: vId },
-            }
-          : {
-              to: '/app/$slug/services/$id/versions/$versionId',
-              params: { slug, id, versionId: vId },
-            },
-      );
+  const navTab = (nextTab: 'details' | 'methods' | 'agreements', vId?: string) => {
+    const older = vId !== undefined && vId !== latest?.id;
+    if (older) {
+      if (nextTab === 'methods') {
+        navigate({
+          to: '/app/$slug/services/$id/versions/$versionId/application-methods',
+          params: { slug, id, versionId: vId },
+        });
+      } else if (nextTab === 'agreements') {
+        navigate({
+          to: '/app/$slug/services/$id/versions/$versionId/service-agreements',
+          params: { slug, id, versionId: vId },
+        });
+      } else {
+        navigate({
+          to: '/app/$slug/services/$id/versions/$versionId',
+          params: { slug, id, versionId: vId },
+        });
+      }
+    } else if (nextTab === 'methods') {
+      navigate({ to: '/app/$slug/services/$id/application-methods', params: { slug, id } });
+    } else if (nextTab === 'agreements') {
+      navigate({ to: '/app/$slug/services/$id/service-agreements', params: { slug, id } });
     } else {
-      navigate(
-        nextTab === 'methods'
-          ? { to: '/app/$slug/services/$id/application-methods', params: { slug, id } }
-          : { to: '/app/$slug/services/$id', params: { slug, id } },
-      );
+      navigate({ to: '/app/$slug/services/$id', params: { slug, id } });
     }
   };
   const goToCurrent = () => navTab(tab);
@@ -85,6 +104,11 @@ export function ServiceDetail({
     enabled: selected !== undefined,
   });
   const references = referencesQuery.data ?? [];
+  const agreementRefsQuery = useQuery({
+    ...serviceAgreementRefsQueryOptions(id, selected?.id ?? ''),
+    enabled: selected !== undefined,
+  });
+  const agreementCount = agreementRefsQuery.data?.length ?? 0;
 
   const addVersion = useMutation({
     mutationFn: () => addServiceVersion(id),
@@ -103,7 +127,25 @@ export function ServiceDetail({
     setFormBaseline(selected?.data ?? {});
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reseed only when the version changes
   }, [selected?.id]);
-  const dirty = JSON.stringify(formData) !== JSON.stringify(formBaseline);
+
+  // Application-method order (feature 132): drag reorders this held list; it's saved with the service.
+  const appMethodIds = references
+    .filter((ref) => ref.relation === 'application_form' || ref.relation === 'external_application')
+    .map((ref) => ref.id);
+  const [methodOrder, setMethodOrder] = useState<string[]>([]);
+  const [methodOrderBaseline, setMethodOrderBaseline] = useState<string[]>([]);
+  // Reseed/reconcile whenever the version changes or a method is created/deleted (the id SET changes);
+  // a pure drag keeps the same set, so this effect leaves the dragged order alone.
+  const appMethodKey = appMethodIds.toSorted().join(',');
+  useEffect(() => {
+    setMethodOrder((previous) => reconcileOrder(previous, appMethodIds));
+    setMethodOrderBaseline((previous) => reconcileOrder(previous, appMethodIds));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reconcile on version/membership change
+  }, [selected?.id, appMethodKey]);
+
+  const dirty =
+    JSON.stringify(formData) !== JSON.stringify(formBaseline) ||
+    methodOrder.join(',') !== methodOrderBaseline.join(',');
 
   const save = useMutation({
     mutationFn: () => {
@@ -114,10 +156,11 @@ export function ServiceDetail({
       if (!selected) {
         throw new Error('No version selected');
       }
-      return updateDraft(id, selected.id, { data: formData, title });
+      return updateDraft(id, selected.id, { data: formData, title, applicationOrder: methodOrder });
     },
     onSuccess: async () => {
       setFormBaseline(formData);
+      setMethodOrderBaseline(methodOrder);
       await invalidate();
     },
   });
@@ -164,7 +207,11 @@ export function ServiceDetail({
     return <p className="p-6 text-sm text-muted-foreground">This version no longer exists.</p>;
   }
 
-  const applicationRefs = references.filter((ref) => ref.relation === 'application_form');
+  const orderIndex = new Map(methodOrder.map((methodId, i) => [methodId, i]));
+  const applicationRefs = references
+    .filter((ref) => ref.relation === 'application_form' || ref.relation === 'external_application')
+    // Display in the held (drag) order; unknown ids (not yet reconciled) fall to the end.
+    .toSorted((a, b) => (orderIndex.get(a.id) ?? Infinity) - (orderIndex.get(b.id) ?? Infinity));
   const isLatest = selected.id === latest?.id;
   const readonly = selected.status !== 'draft';
   const publishApplications = applicationRefs.map((ref) => ({
@@ -238,7 +285,9 @@ export function ServiceDetail({
 
       <Tabs
         value={tab}
-        onValueChange={(value) => navTab(value === 'methods' ? 'methods' : 'details', versionId)}
+        onValueChange={(value) =>
+          navTab(value === 'methods' || value === 'agreements' ? value : 'details', versionId)
+        }
         className="gap-4"
       >
         <TabsList>
@@ -247,6 +296,12 @@ export function ServiceDetail({
             Application methods
             <Badge color="yellow" className="ml-2">
               {applicationRefs.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="agreements">
+            Service agreements
+            <Badge color="yellow" className="ml-2">
+              {agreementCount}
             </Badge>
           </TabsTrigger>
         </TabsList>
@@ -269,6 +324,19 @@ export function ServiceDetail({
               serviceId={id}
               versionId={selected.id}
               references={applicationRefs}
+              readonly={readonly}
+              onReorder={setMethodOrder}
+            />
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="agreements">
+          {referencesQuery.isSuccess ? (
+            <ServiceAgreementMethods
+              slug={slug}
+              serviceId={id}
+              versionId={selected.id}
+              workspaceId={data.service.workspaceId}
               readonly={readonly}
             />
           ) : null}

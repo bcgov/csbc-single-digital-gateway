@@ -43,7 +43,8 @@ maxmemoryPolicy: noeviction # sessions carry TTLs; noeviction avoids silently dr
 save: "" # RDB snapshot points; "" = AOF-only (appendonly is always on)
 extraConfig: [] # extra raw valkey.conf lines
 
-# Tuned for a 0.5 CPU / 2Gi limits-only namespace shared by the whole stack.
+# The namespace quota meters REQUESTS (0.5 CPU / 2Gi shared by the whole stack); limits are
+# unmetered burst ceilings — see charts/README.md.
 resources:
   requests:
     cpu: 25m

@@ -1,5 +1,7 @@
+import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
 import { buttonVariants } from '@repo/ui/button';
+import { Card, CardContent } from '@repo/ui/card';
 import { mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Skeleton } from '@repo/ui/skeleton';
@@ -9,7 +11,7 @@ import { useState } from 'react';
 import { ReviseForm } from '@/components/application/revise-form';
 import { StatusBanner } from '@/components/application/status-banner';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { Breadcrumb, ServiceContent } from '@/components/services/service-content';
+import { Breadcrumb } from '@/components/services/service-content';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   type ApplicationDetail,
@@ -24,7 +26,11 @@ interface StructurePage {
   uischema?: Record<string, unknown>;
 }
 
-/** Render the submitted answers read-only — one form for basic, one per page for multi-stage. */
+/**
+ * Render the submitted answers read-only as a **disabled form** (same as the staff submission review,
+ * `platform-web` `submission-detail.tsx`) so it's clear what the citizen entered — basic = one form,
+ * multi-stage = one form per page with the page name as a heading.
+ */
 function SubmittedAnswers({ application }: { application: ApplicationDetail }) {
   const { kind, structure, data } = application;
   if (kind === 'multi-stage-form') {
@@ -34,20 +40,24 @@ function SubmittedAnswers({ application }: { application: ApplicationDetail }) {
       <div className="flex flex-col gap-6">
         {pages.map((page, index) => (
           <div key={page.id ?? index} className="flex flex-col gap-2">
-            {page.name ? (
-              <h3 className="font-heading text-sm font-semibold text-foreground">{page.name}</h3>
-            ) : null}
-            <ServiceContent schema={page.schema ?? {}} uischema={page.uischema ?? {}} data={data} />
+            {page.name ? <h3 className="text-sm font-semibold">{page.name}</h3> : null}
+            <JsonForms
+              schema={(page.schema ?? {}) as JsonSchema}
+              uischema={page.uischema as unknown as UISchemaElement}
+              data={data}
+              readonly
+            />
           </div>
         ))}
       </div>
     );
   }
   return (
-    <ServiceContent
-      schema={(structure['schema'] as Record<string, unknown>) ?? {}}
-      uischema={(structure['uischema'] as Record<string, unknown>) ?? {}}
+    <JsonForms
+      schema={(structure['schema'] ?? {}) as JsonSchema}
+      uischema={structure['uischema'] as unknown as UISchemaElement}
       data={data}
+      readonly
     />
   );
 }
@@ -93,24 +103,24 @@ export function ApplicationDetailPage() {
   return (
     <CitizenShell activeNav="services">
       {!authPending && !user ? (
-        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
           <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view this application.
             </p>
-            <Link to={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
+            <a href={loginUrl} className={buttonVariants({ variant: 'default', size: 'default' })}>
               <Icon path={mdiLogin} aria-hidden={true} />
               Log in
-            </Link>
+            </a>
           </div>
         </div>
       ) : isPending ? (
-        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-32 w-full" />
         </div>
       ) : isError || !application ? (
-        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
           <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <h1 className="font-heading text-lg font-semibold">Application not found</h1>
             <Button variant="outline" className="mt-4" render={<Link to="/" />}>
@@ -120,7 +130,7 @@ export function ApplicationDetailPage() {
         </div>
       ) : (
         <>
-          <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+          <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
             <Breadcrumb
               trail={[
                 { label: 'Services', href: '/services' },
@@ -140,7 +150,7 @@ export function ApplicationDetailPage() {
                   : `Last updated ${new Date(application.updatedAt).toLocaleDateString()}`}
               </p>
             </header>
-            <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+            <div className="flex flex-col gap-9">
               {editing ? (
                 <ReviseForm
                   application={application}
@@ -154,7 +164,16 @@ export function ApplicationDetailPage() {
                     reviewReason={application.reviewReason}
                     action={bannerAction(application.status)}
                   />
-                  <SubmittedAnswers application={application} />
+                  <section className="flex flex-col gap-3">
+                    <h2 className="font-heading text-sm font-semibold uppercase text-muted-foreground">
+                      Your answers
+                    </h2>
+                    <Card>
+                      <CardContent className="py-4">
+                        <SubmittedAnswers application={application} />
+                      </CardContent>
+                    </Card>
+                  </section>
                 </>
               )}
             </div>

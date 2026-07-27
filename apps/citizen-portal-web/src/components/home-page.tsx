@@ -18,7 +18,7 @@ async function handleLogout(): Promise<void> {
 /** Greeting block for a signed-in citizen: "Hi, <first name>" / "Welcome to MyBC." */
 function Greeting({ name }: { name: string }) {
   return (
-    <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col">
+    <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col">
       <h1>Hi, {firstName(name)}</h1>
       <p>Welcome to MyBC.</p>
     </div>
@@ -47,7 +47,7 @@ export function HomePage() {
       }}
     >
       {isPending ? (
-        <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-40 w-full rounded-xl" />
         </div>
@@ -56,14 +56,13 @@ export function HomePage() {
           <div className="py-6 border-b-2 border-bcgov-gold">
             <Greeting name={displayName(user)} />
           </div>
-          <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+          <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
             <TrackApplications
               applications={applications.data ?? []}
               loading={applications.isPending}
             />
             <AvailableServices
-              services={(services.data ?? []).slice(0, 4)}
-              applications={applications.data ?? []}
+              services={(services.data ?? []).slice(0, 3)}
               loading={services.isPending}
             />
             <WhatYouCanDo />
@@ -72,10 +71,10 @@ export function HomePage() {
       ) : (
         <div className="flex flex-col">
           <Hero />
-          <div className="mx-4 md:mx-8 xl:mx-auto my-6 w-full max-w-280 flex flex-col gap-9">
+          <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
             <WhatYouCanDo />
             <AvailableServices
-              services={(services.data ?? []).slice(0, 4)}
+              services={(services.data ?? []).slice(0, 3)}
               loading={services.isPending}
             />
             <LoginCta />
