@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { channelPreferences, recipients, type Database } from '@repo/notification-database';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import {
   ALL_CHANNELS,
   type PreferencesResponse,
   type UpdatePreferencesInput,
 } from '../dtos/preferences.dtos';
+import { emailContactMissing } from '../util/email-contact';
 import { parseUuidParam } from '../util/user-id';
 
 /**
@@ -44,6 +45,30 @@ export class PreferencesService {
         .from(recipients)
         .where(eq(recipients.userId, id))
         .limit(1);
+
+      // Enforce (on the MERGED state): email notifications cannot be enabled without a contact
+      // email. Reads the current email-channel pref so a partial toggle-only update is validated
+      // against the stored address, and vice versa. Throwing here rolls back before any write.
+      let emailEnabled = false;
+      if (existing !== undefined) {
+        const [pref] = await tx
+          .select({ enabled: channelPreferences.enabled })
+          .from(channelPreferences)
+          .where(
+            and(
+              eq(channelPreferences.recipientId, existing.id),
+              eq(channelPreferences.channel, 'email'),
+            ),
+          )
+          .limit(1);
+        emailEnabled = pref?.enabled ?? false;
+      }
+      if (emailContactMissing(input, { email: existing?.email ?? null, emailEnabled })) {
+        throw new UnprocessableEntityException(
+          'A contact email is required when email notifications are enabled',
+        );
+      }
+
       let recipientId: string;
       if (existing === undefined) {
         const [created] = await tx

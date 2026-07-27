@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -15,7 +16,7 @@ import { M2mTokenClient } from '../../../notifications/m2m-token.client';
 /**
  * Server-side proxy to the notification-service recipient APIs. The m2m token never leaves
  * this process; the caller's identity is ALWAYS the session user's id (the controller passes
- * it — path/body never carry a recipient id). Upstream errors: 404/400 pass through as
+ * it — path/body never carry a recipient id). Upstream errors: 404/400/422 pass through as
  * semantic errors, anything else (5xx, network) becomes a generic 502 with the real cause
  * logged server-side only.
  */
@@ -57,6 +58,18 @@ export class NotificationsProxyService {
       }
       if (response.status === 400) {
         throw new BadRequestException('Invalid notifications request');
+      }
+      if (response.status === 422) {
+        // Semantic validation failure upstream (e.g. email channel on without a contact email) —
+        // surface the upstream message (our own service's text, safe) rather than a generic 502.
+        const detail: unknown = await response.json().catch(() => null);
+        const message =
+          typeof detail === 'object' &&
+          detail !== null &&
+          typeof (detail as { message?: unknown }).message === 'string'
+            ? (detail as { message: string }).message
+            : 'Invalid notifications request';
+        throw new UnprocessableEntityException(message);
       }
       if (response.status === 401) {
         // Our token was rejected — re-authenticate on the next call rather than retry blindly.
