@@ -53,8 +53,10 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
           return (
             <div key={entry.channel} className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">{meta.title}</span>
-                <p className="text-xs text-muted-foreground">{meta.description}</p>
+                <span className="text-base font-semibold tracking-wide text-muted-foreground">
+                  {meta.title}
+                </span>
+                <p className="text-sm text-muted-foreground">{meta.description}</p>
               </div>
               {entry.channel === 'in_app' ? (
                 // Mandatory channel (feature 128): always on, not a preference.
