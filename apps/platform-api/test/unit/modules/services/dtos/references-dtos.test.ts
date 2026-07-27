@@ -3,7 +3,7 @@ import {
   addReferenceSchema,
   createReferencedFormSchema,
   externalApplicationSchema,
-} from '../src/modules/services/dtos/reference.dtos';
+} from '../../../../../src/modules/services/dtos/reference.dtos';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 

@@ -212,6 +212,7 @@ describe('CatalogService Unit Tests', () => {
           formId: 'form-abc',
           formVersionId: 'form-ver-xyz',
           kind: 'form',
+          targetData: { url: null },
         },
       ];
 
@@ -238,9 +239,72 @@ describe('CatalogService Unit Tests', () => {
             formId: 'form-abc',
             formVersionId: 'form-ver-xyz',
             kind: 'form',
+            url: null,
           },
         ],
       });
+    });
+
+    it('should map applications with external url correctly', async () => {
+      const mockServiceRow = [
+        {
+          id: 'service-123',
+          docTitle: 'Fallback Title',
+          docDescription: 'Fallback Desc',
+          versionId: 'version-456',
+          version: 1,
+          publishedAt: new Date('2026-07-08T12:00:00Z'),
+          data: { title: 'Published Service Title', description: 'Published Service Desc' },
+          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
+        },
+      ];
+
+      const mockApplicationsRow = [
+        {
+          id: 'ref-1',
+          label: 'Apply Externally 1',
+          title: 'External Site 1',
+          formId: 'form-abc',
+          formVersionId: 'form-ver-xyz',
+          kind: 'external-application',
+          targetData: { url: 'https://example.com' },
+        },
+        {
+          id: 'ref-2',
+          label: 'Apply Externally 2',
+          title: 'External Site 2',
+          formId: 'form-def',
+          formVersionId: 'form-ver-uvw',
+          kind: 'external-application',
+          targetData: { url: 123 },
+        },
+      ];
+
+      mockResponse(mockServiceRow, documents, 'select');
+      mockResponse(mockApplicationsRow, documentReferences, 'select');
+
+      const result = await service.getService('service-123');
+
+      expect(result.applications).toEqual([
+        {
+          id: 'ref-1',
+          label: 'Apply Externally 1',
+          title: 'External Site 1',
+          formId: 'form-abc',
+          formVersionId: 'form-ver-xyz',
+          kind: 'external-application',
+          url: 'https://example.com',
+        },
+        {
+          id: 'ref-2',
+          label: 'Apply Externally 2',
+          title: 'External Site 2',
+          formId: 'form-def',
+          formVersionId: 'form-ver-uvw',
+          kind: 'external-application',
+          url: null,
+        },
+      ]);
     });
 
     it('should handle null publishedAt on success', async () => {

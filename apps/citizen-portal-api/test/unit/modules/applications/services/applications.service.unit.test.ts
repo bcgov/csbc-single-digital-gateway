@@ -8,6 +8,10 @@ import {
   reviews,
   submissionVersions,
   submissions,
+  users,
+  workspaces,
+  workspaceMembers,
+  notificationOutbox,
 } from '@repo/database';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
 
@@ -52,6 +56,7 @@ const createDbMock = () => {
       set: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       returning: vi.fn().mockReturnThis(),
+      onConflictDoNothing: vi.fn().mockReturnThis(),
       // eslint-disable-next-line unicorn/no-thenable -- Drizzle ORM queries are thenables; the mock must implement .then() to support direct await
       then: (onfulfilled: any) => {
         const index = mocks.queries.findIndex(
@@ -91,12 +96,28 @@ describe('ApplicationsService Unit Tests', () => {
   let service: ApplicationsService;
   let dbMock: any;
   let mockResponse: any;
+  let consentMock: any;
+  let configMock: any;
 
   beforeEach(() => {
     const mocks = createDbMock();
     dbMock = mocks.dbMock;
     mockResponse = mocks.mockResponse;
-    service = new ApplicationsService(dbMock as unknown as Database);
+    consentMock = {
+      assertSubmittableForForm: vi.fn().mockResolvedValue(undefined),
+    };
+    configMock = {
+      get: vi.fn((key: string) => {
+        if (key === 'CITIZEN_WEB_URL') return 'http://citizen';
+        if (key === 'PLATFORM_WEB_URL') return 'http://platform';
+        return undefined;
+      }),
+    };
+    service = new ApplicationsService(
+      dbMock as unknown as Database,
+      consentMock as any,
+      configMock as any,
+    );
   });
 
   describe('getApplicationForm', () => {
@@ -611,7 +632,17 @@ describe('ApplicationsService Unit Tests', () => {
       mockResponse([sub], submissions, 'select'); // requireOwn
       mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
       mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
+      mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email query
+      mockResponse([{ slug: 'workspace-slug' }], workspaces, 'select'); // workspace slug query
+      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef query
+      mockResponse(
+        [{ userId: 'member-1', email: 'member1@example.com' }],
+        workspaceMembers,
+        'select',
+      ); // members query
       mockResponse([submittedVer], submissionVersions, 'update'); // update query
+      mockResponse([], notificationOutbox, 'insert'); // citizen notification insert
+      mockResponse([], notificationOutbox, 'insert'); // staff notification insert
 
       const result = await service.submit('user-1', 'sub-1', { age: 25 });
 
@@ -685,6 +716,47 @@ describe('ApplicationsService Unit Tests', () => {
         updatedAt: '2026-07-08T12:40:00.000Z',
         submittedAt: '2026-07-08T12:40:00.000Z',
       });
+    });
+
+    it('should submit successfully even if workspace is not found or has no slug but members exist', async () => {
+      const sub = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        userId: 'user-1',
+        createdAt: new Date('2026-07-08T12:00:00.000Z'),
+      };
+      const ver = { id: 'ver-1', status: 'draft' };
+      const formSchema = {
+        kind: 'basic-form',
+        structure: null,
+      };
+      const submittedVer = {
+        id: 'ver-1',
+        status: 'pending',
+        data: {},
+        updatedAt: new Date('2026-07-08T12:40:00.000Z'),
+        submittedAt: new Date('2026-07-08T12:40:00.000Z'),
+      };
+
+      mockResponse([sub], submissions, 'select'); // requireOwn
+      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
+      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
+      mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email
+      mockResponse([], workspaces, 'select'); // workspace is undefined
+      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef
+      mockResponse(
+        [{ userId: 'member-1', email: 'member1@example.com' }],
+        workspaceMembers,
+        'select',
+      ); // members exist
+      mockResponse([submittedVer], submissionVersions, 'update'); // update query
+      mockResponse([], notificationOutbox, 'insert'); // citizen notification
+      mockResponse([], notificationOutbox, 'insert'); // staff notification
+
+      const result = await service.submit('user-1', 'sub-1', {});
+
+      expect(result.status).toBe('pending');
     });
   });
 
