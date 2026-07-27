@@ -23,10 +23,10 @@ type DbTx = Parameters<Parameters<Database['transaction']>[0]>[0];
 const str = (value: unknown): string | undefined =>
   typeof value === 'string' && value.length > 0 ? value : undefined;
 
-/** Map OIDC claims to the user/identity fields (pure — `iss`/`preferred_username` via index). */
+/** Map OIDC claims to the user/identity fields (pure — `iss`/`display_name` via index). */
 export function mapClaims(claims: OidcClaims): SyncedClaims {
   const email = str(claims.email);
-  const displayName = str(claims.name) ?? str(claims.preferred_username) ?? email ?? claims.sub;
+  const displayName = str(claims.display_name) ?? email ?? claims.sub;
   const result: SyncedClaims = {
     issuer: str(claims.iss) ?? '',
     sub: claims.sub,

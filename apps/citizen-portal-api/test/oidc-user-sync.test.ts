@@ -9,7 +9,7 @@ describe('mapClaims', () => {
         sub: 's-1',
         iss: 'https://idp.example.com',
         email: 'a@b.com',
-        name: 'A B',
+        display_name: 'A B',
         given_name: 'A',
         family_name: 'B',
       }),
@@ -30,9 +30,10 @@ describe('mapClaims', () => {
     expect(m.email).toBeUndefined();
   });
 
-  it('derives displayName: name → preferred_username → email → sub', () => {
-    expect(mapClaims({ sub: 'x', iss: 'i', name: 'N' }).displayName).toBe('N');
-    expect(mapClaims({ sub: 'x', iss: 'i', preferred_username: 'p' }).displayName).toBe('p');
+  it('derives displayName: display_name → email → sub', () => {
+    expect(mapClaims({ sub: 'x', iss: 'i', display_name: 'N' }).displayName).toBe('N');
+    // `name`/`preferred_username` are intentionally ignored for citizens; email is next.
+    expect(mapClaims({ sub: 'x', iss: 'i', name: 'N', email: 'e@x' }).displayName).toBe('e@x');
     expect(mapClaims({ sub: 'x', iss: 'i', email: 'e@x' }).displayName).toBe('e@x');
     expect(mapClaims({ sub: 'x', iss: 'i' }).displayName).toBe('x');
   });
