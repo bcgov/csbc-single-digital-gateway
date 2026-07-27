@@ -9,6 +9,8 @@
 export interface OidcClaims {
   sub: string;
   email?: string;
+  /** Citizen realm's preferred display label (see `keycloak/citizens-realm.json` mapper). */
+  display_name?: string;
   name?: string;
   preferred_username?: string;
   [claim: string]: unknown;
@@ -59,7 +61,11 @@ export async function logout(): Promise<void> {
   await fetch(`${BFF_ORIGIN}/auth/logout`, { method: 'POST', credentials: 'include' });
 }
 
-/** Best-effort greeting label: display name → username → email → opaque id. */
+/**
+ * Best-effort greeting label: display name → email → opaque id. Mirrors the citizen-portal-api
+ * `mapClaims` order (`display_name ?? email ?? sub`); `user.id` is the always-present final
+ * fallback here (the browser never sees a bare `sub`).
+ */
 export function displayName(user: AuthUser): string {
-  return user.claims.name ?? user.claims.preferred_username ?? user.claims.email ?? user.id;
+  return user.claims.display_name ?? user.claims.email ?? user.id;
 }

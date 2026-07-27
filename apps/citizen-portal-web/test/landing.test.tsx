@@ -8,7 +8,7 @@ import { routeTree } from '@/routeTree.gen';
 const authedUser = {
   id: 'c1',
   roles: ['citizen'],
-  claims: { sub: 'subject-1', preferred_username: 'citizen1', name: 'Amina Ali' },
+  claims: { sub: 'subject-1', preferred_username: 'citizen1', display_name: 'Amina Ali' },
 };
 
 const services = [
