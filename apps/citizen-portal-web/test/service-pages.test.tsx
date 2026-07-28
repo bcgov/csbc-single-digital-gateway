@@ -119,6 +119,22 @@ describe('service detail page', () => {
     expect(versionLinks).toHaveLength(0);
   });
 
+  it('renders the header (title + action) above a full-width gold divider', async () => {
+    mockBff();
+    renderRoute('/services/svc-1');
+    const heading = await screen.findByRole(
+      'heading',
+      { name: 'Service One', level: 1 },
+      { timeout: 10000 },
+    );
+    const start = screen.getByRole('button', { name: 'Start an application' });
+
+    const divider = document.querySelector('.border-bcgov-gold');
+    expect(divider).not.toBeNull();
+    expect(divider).toContainElement(heading);
+    expect(divider).toContainElement(start);
+  });
+
   it('surfaces the application forms in How to apply', async () => {
     mockBff();
     renderRoute('/services/svc-1');
