@@ -33,18 +33,26 @@ interface ConsentGateProps {
 
 /**
  * The consent gate (feature 90): shown before the application form when a service's agreements
- * haven't all been decided. Renders each agreement read-only + an approve/reject radio (authored
- * labels, canonical values), gathers the decisions LOCALLY, and gates Continue until every required
- * agreement is approved. Decisions are recorded (POSTed) only when the citizen presses Continue —
- * not on each radio change. The server (feature 89) re-validates on submit — this is UX only.
+ * haven't all been decided. Presents ONLY the agreements still needing a decision on their current
+ * version — new/changed ones (feature 148); already-satisfied agreements are hidden so the gate
+ * never re-presents or re-records an unchanged approval. Renders each pending agreement read-only +
+ * an approve/reject radio (authored labels, canonical values), gathers the decisions LOCALLY, and
+ * gates Continue until every required agreement is approved. Decisions are recorded (POSTed) only
+ * when the citizen presses Continue — not on each radio change. The server (feature 89) re-validates
+ * on submit — this is UX only.
  */
 export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGateProps) {
   const queryClient = useQueryClient();
+  // Present ONLY agreements still needing a decision on their current version — i.e. new or changed
+  // ones (consent is keyed to the published version, so a bumped version has no consent → unsatisfied).
+  // Agreements the citizen already satisfied (approved-required / decided-optional) on the current
+  // version are hidden, so the gate never re-presents — or re-records — an unchanged approval.
+  const pending = agreements.filter((a) => !satisfied(a, a.decision));
   // Local decisions seeded from the server's current decisions (a rejected required agreement
   // arrives with decision='reject' and still blocks until re-decided to approve).
   const [decisions, setDecisions] = useState<Record<string, ConsentDecision>>(() =>
     Object.fromEntries(
-      agreements.filter((a) => a.decision !== null).map((a) => [a.agreementVersionId, a.decision!]),
+      pending.filter((a) => a.decision !== null).map((a) => [a.agreementVersionId, a.decision!]),
     ),
   );
   const [failed, setFailed] = useState(false);
@@ -53,7 +61,7 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
   const submit = useMutation({
     mutationFn: async () => {
       // Record only decisions that differ from what the server already has (append-only, latest-wins).
-      const changed = agreements
+      const changed = pending
         .map((a) => ({
           versionId: a.agreementVersionId,
           decision: decisions[a.agreementVersionId],
@@ -83,9 +91,7 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
     setFailed(false);
   };
 
-  const allSatisfied = agreements.every((a) =>
-    satisfied(a, decisions[a.agreementVersionId] ?? null),
-  );
+  const allSatisfied = pending.every((a) => satisfied(a, decisions[a.agreementVersionId] ?? null));
   const canContinue = allSatisfied && !submit.isPending;
 
   return (
@@ -94,15 +100,15 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
         <h1 className="font-heading text-2xl font-semibold text-foreground">Before you apply</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Please review and respond to the following{' '}
-          {agreements.length === 1 ? 'agreement' : 'agreements'} to continue your application.
+          {pending.length === 1 ? 'agreement' : 'agreements'} to continue your application.
         </p>
       </div>
 
       <AccordionGroup
-        values={agreements.map((a) => a.agreementVersionId)}
-        defaultValue={agreements.map((a) => a.agreementVersionId)}
+        values={pending.map((a) => a.agreementVersionId)}
+        defaultValue={pending.map((a) => a.agreementVersionId)}
       >
-        {agreements.map((a) => {
+        {pending.map((a) => {
           const title = str(a.data.title, 'Service agreement');
           const description = str(a.data.description, '');
           const content = a.data.content as ComponentProps<typeof RichTextView>['value'];
