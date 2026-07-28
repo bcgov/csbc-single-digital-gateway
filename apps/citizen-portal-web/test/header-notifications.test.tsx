@@ -160,4 +160,38 @@ describe('header notification bell', () => {
     await user.click(await screen.findByRole('button', { name: 'No destination here' }));
     expect(router.state.location.pathname).toBe('/');
   });
+
+  it('marks all notifications read via the BFF', async () => {
+    const user = userEvent.setup();
+    const { calls } = renderHome();
+    const bell = await screen.findByRole(
+      'button',
+      { name: 'Notifications — 1 unread' },
+      { timeout: 10000 },
+    );
+    await user.click(bell);
+    const markAllReadBtn = await screen.findByRole('button', { name: 'Mark all read' });
+    await user.click(markAllReadBtn);
+    await waitFor(() => {
+      expect(calls.some((c) => c.includes('POST') && c.includes('/notifications/read-all'))).toBe(
+        true,
+      );
+    });
+  });
+
+  it('navigates to notifications preferences page on settings click', async () => {
+    const user = userEvent.setup();
+    const { router } = renderHome();
+    const bell = await screen.findByRole(
+      'button',
+      { name: 'Notifications — 1 unread' },
+      { timeout: 10000 },
+    );
+    await user.click(bell);
+    const settingsBtn = await screen.findByRole('button', { name: 'Notification settings' });
+    await user.click(settingsBtn);
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/account/notifications');
+    });
+  });
 });

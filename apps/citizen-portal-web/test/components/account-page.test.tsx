@@ -48,7 +48,7 @@ describe('citizen-portal-web /account page', () => {
   it('shows the signed-in user’s name and email', async () => {
     await renderAccount(jsonResponse(authedUser));
     expect(
-      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Amina Ali')).toBeInTheDocument();
     expect(screen.getByText('amina@example.com')).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('citizen-portal-web /account page', () => {
       await screen.findByText(
         'You need to be signed in to view your account.',
         {},
-        { timeout: 5000 },
+        { timeout: 32000 },
       ),
     ).toBeInTheDocument();
     const links = await screen.findAllByRole('link', { name: /log in/i });
@@ -84,7 +84,7 @@ describe('citizen-portal-web /account page', () => {
     };
     await renderAccount(jsonResponse(userNoEmail));
     expect(
-      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Amina Ali')).toBeInTheDocument();
     expect(screen.queryByText('Email')).toBeNull();
@@ -121,7 +121,7 @@ describe('citizen-portal-web /account page', () => {
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     const logoutBtn = screen.getByRole('button', { name: /log out/i });

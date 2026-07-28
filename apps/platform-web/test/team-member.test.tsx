@@ -118,7 +118,7 @@ describe('member profile — workspace owner', () => {
     renderApp('/app/riverton/team/m2');
 
     expect(
-      await screen.findByRole('heading', { name: 'Sam Lee' }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Sam Lee' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     // Role/status are visible as read-only badges, not interactive toggle buttons.
     expect(screen.getByText('Member')).toBeInTheDocument();

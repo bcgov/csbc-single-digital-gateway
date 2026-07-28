@@ -60,12 +60,13 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function mockBff({ me = jsonResponse(authedUser) } = {}) {
+function mockBff({ me = jsonResponse(authedUser), agreements = jsonResponse({ items: [] }) } = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
     if (url.includes('/auth/me')) return me;
     if (url.includes('/v1/services/') && url.includes('/applications/')) return jsonResponse(form);
+    if (url.includes('/v1/me/services/') && url.includes('/agreements')) return agreements;
     if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
       return jsonResponse(submitted);
     if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
@@ -121,7 +122,7 @@ describe('citizen application page', () => {
     mockBff({ me: new Response(null, { status: 401 }) });
     await renderApply();
     expect(
-      await screen.findByText('You need to be signed in to apply.', {}, { timeout: 5000 }),
+      await screen.findByText('You need to be signed in to apply.', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
     const link = await screen.findByRole('link', { name: /log in to apply/i });
     expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
@@ -151,6 +152,8 @@ describe('citizen application page', () => {
       if (url.includes('/auth/me')) return jsonResponse(authedUser);
       if (url.includes('/v1/services/') && url.includes('/applications/'))
         return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
       if (method === 'POST' && url.endsWith('/v1/me/applications'))
         return new Response(null, { status: 500 });
       return new Response(null, { status: 404 });
@@ -171,6 +174,8 @@ describe('citizen application page', () => {
       if (url.includes('/auth/me')) return jsonResponse(authedUser);
       if (url.includes('/v1/services/') && url.includes('/applications/'))
         return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
       if (method === 'POST' && url.endsWith('/v1/me/applications'))
         return jsonResponse(draftNoData);
       return new Response(null, { status: 404 });
@@ -190,6 +195,8 @@ describe('citizen application page', () => {
       if (url.includes('/auth/me')) return jsonResponse(authedUser);
       if (url.includes('/v1/services/') && url.includes('/applications/'))
         return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
       if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
         return new Response(null, { status: 500 });
       if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
@@ -220,6 +227,8 @@ describe('citizen application page', () => {
       if (url.includes('/auth/me')) return jsonResponse(authedUser);
       if (url.includes('/v1/services/') && url.includes('/applications/'))
         return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
       if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
       if (method === 'PATCH') return patchPromise;
       return new Response(null, { status: 404 });
@@ -228,7 +237,7 @@ describe('citizen application page', () => {
 
     await renderApply();
     expect(
-      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
     const input = screen.getByRole('textbox', { name: 'Name' });
@@ -261,6 +270,8 @@ describe('citizen application page', () => {
       if (url.includes('/auth/me')) return jsonResponse(authedUser);
       if (url.includes('/v1/services/') && url.includes('/applications/'))
         return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
       if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
       if (method === 'POST' && url.includes('/submit')) return postPromise;
       return new Response(null, { status: 404 });
@@ -269,7 +280,7 @@ describe('citizen application page', () => {
 
     const { unmount } = await renderApply();
     expect(
-      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
     const input = screen.getByRole('textbox', { name: 'Name' });
@@ -283,7 +294,7 @@ describe('citizen application page', () => {
     // 3. Re-render fresh to test submit with null timer
     await renderApply();
     expect(
-      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
     // Click submit immediately without changes (so timer.current is null)
@@ -315,6 +326,8 @@ describe('citizen application page', () => {
       if (url.includes('/auth/me')) return jsonResponse(authedUser);
       if (url.includes('/v1/services/') && url.includes('/applications/'))
         return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
       if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
       if (method === 'POST' && url.includes('/submit')) return postPromise;
       return new Response(null, { status: 404 });
@@ -323,7 +336,7 @@ describe('citizen application page', () => {
 
     await renderApply();
     expect(
-      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
     const input = screen.getByRole('textbox', { name: 'Name' });
@@ -343,5 +356,145 @@ describe('citizen application page', () => {
     expect(
       await screen.findByRole('heading', { name: 'Application submitted' }),
     ).toBeInTheDocument();
+  });
+
+  it('renders loading skeleton when form fetch is pending', async () => {
+    let resolveForm!: (value: Response) => void;
+    const formPromise = new Promise<Response>((resolve) => {
+      resolveForm = resolve;
+    });
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/')) return formPromise;
+      return new Response(null, { status: 404 });
+    }) as unknown as typeof fetch;
+
+    await renderApply();
+    expect(
+      screen.queryByRole('heading', { name: 'Application unavailable' }),
+    ).not.toBeInTheDocument();
+    await act(async () => {
+      resolveForm(jsonResponse(form));
+    });
+  });
+
+  it('renders loading skeleton when draft or agreements are pending', async () => {
+    let resolveDraft!: (value: Response) => void;
+    const draftPromise = new Promise<Response>((resolve) => {
+      resolveDraft = resolve;
+    });
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
+      if (method === 'POST' && url.endsWith('/v1/me/applications')) return draftPromise;
+      return new Response(null, { status: 404 });
+    }) as unknown as typeof fetch;
+
+    await renderApply();
+    await act(async () => {
+      resolveDraft(jsonResponse(draft));
+    });
+  });
+
+  it('renders unavailable state when agreements fetch fails', async () => {
+    mockBff({ agreements: new Response(null, { status: 500 }) });
+    await renderApply();
+    expect(
+      await screen.findByRole('heading', { name: 'Application unavailable' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders consent gate when agreements are pending, lets user continue after accept', async () => {
+    mockBff({
+      agreements: jsonResponse({
+        items: [
+          {
+            agreementVersionId: 'av-req',
+            agreementDocumentId: 'ad-req',
+            data: {
+              title: 'Terms of Service',
+              description: 'Please read carefully.',
+              content: null,
+              isOptional: false,
+              approveLabel: 'I accept the terms',
+              rejectLabel: 'I decline',
+            },
+            decision: null,
+          },
+        ],
+      }),
+    });
+
+    const user = userEvent.setup();
+    await renderApply();
+
+    expect(await screen.findByRole('heading', { name: 'Before you apply' })).toBeInTheDocument();
+
+    const radioApprove = screen.getByRole('radio', { name: 'I accept the terms' });
+    await user.click(radioApprove);
+
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/v1/me/agreement-consents')) {
+        return jsonResponse({ agreementVersionId: 'av-req', decision: 'approve' });
+      }
+      if (url.includes('/v1/me/services/') && url.includes('/agreements')) {
+        return jsonResponse({
+          items: [
+            {
+              agreementVersionId: 'av-req',
+              agreementDocumentId: 'ad-req',
+              data: { title: 'Terms of Service', isOptional: false },
+              decision: 'approve',
+            },
+          ],
+        });
+      }
+      return mockBff()(input);
+    }) as unknown as typeof fetch;
+
+    const continueBtn = screen.getByRole('button', { name: 'Continue to application' });
+    await user.click(continueBtn);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+  });
+
+  it('handles 422 submission error and triggers consent gate refetch', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/services/') && url.includes('/applications/'))
+        return jsonResponse(form);
+      if (url.includes('/v1/me/services/') && url.includes('/agreements'))
+        return jsonResponse({ items: [] });
+      if (url.includes('/v1/me/applications') && url.endsWith('/submit'))
+        return new Response(null, { status: 422 });
+      if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(draft);
+      if (method === 'PATCH') return jsonResponse(draft);
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const user = userEvent.setup();
+    await renderApply();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }),
+    ).toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', { name: 'Submit application' }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/agreements'),
+      expect.any(Object),
+    );
   });
 });

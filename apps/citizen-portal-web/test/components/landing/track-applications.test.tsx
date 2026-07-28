@@ -75,12 +75,12 @@ describe('TrackApplications Component', () => {
     expect(screen.getByRole('heading', { name: 'Track your applications' })).toBeInTheDocument();
 
     // Assert both applications are rendered with details
-    expect(screen.getByText('Income Assistance Application')).toBeInTheDocument();
+    expect(screen.getByText(/Income Assistance Application/)).toBeInTheDocument();
     expect(screen.getByText('Submitted')).toBeInTheDocument();
     expect(screen.getAllByText(/Income Assistance/).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/20260708-0001/)).toBeInTheDocument();
 
-    expect(screen.getByText('Child Care Benefit Application')).toBeInTheDocument();
+    expect(screen.getByText(/Child Care Benefit Application/)).toBeInTheDocument();
     expect(screen.getByText('Approved')).toBeInTheDocument();
     expect(screen.getAllByText(/Child Care Benefit/).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/20260708-0002/)).toBeInTheDocument();

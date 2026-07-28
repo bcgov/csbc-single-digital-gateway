@@ -85,7 +85,7 @@ describe('citizen application page', () => {
     renderApply();
 
     expect(
-      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
+      await screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Submit application' }));

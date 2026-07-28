@@ -52,7 +52,9 @@ describe('ServiceVersionRoute', () => {
           <Component />
         </React.Suspense>,
       );
-      expect(await screen.findByTestId('mock-version-page')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('mock-version-page', {}, { timeout: 10000 }),
+      ).toBeInTheDocument();
     }
   });
 

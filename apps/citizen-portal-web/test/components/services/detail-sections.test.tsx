@@ -11,11 +11,18 @@ import {
   HowToApply,
   YourActivity,
   HelpAndInformation,
-  ContactInformation,
   ServiceSections,
 } from '@/components/services/detail-sections';
+import { ContactSection } from '@/components/services/contact-section';
 
 // Mock UI elements from @repo
+vi.mock('@repo/react/jsonforms-renderers-display', () => ({
+  ContactMethodsView: ({ value }: any) => (
+    <div data-testid="contact-methods-view">{JSON.stringify(value)}</div>
+  ),
+  normalizeContactMethods: (value: any) => (value ? [value] : []),
+}));
+
 vi.mock('@repo/ui/accordion', () => ({
   Accordion: ({ children }: any) => <div data-testid="accordion">{children}</div>,
   AccordionItem: ({ children, value }: any) => (
@@ -169,11 +176,45 @@ describe('HowToApply Component', () => {
     expect(link2[0]).toHaveAttribute('href', '/services/svc-1/apply/f-2');
     expect(link2[1]).toHaveAttribute('href', '/services/svc-1/apply/f-3');
   });
+
+  it('renders external applications correctly and handles falsy external URLs', () => {
+    const apps = [
+      {
+        id: 'ext-1',
+        kind: 'external-application',
+        url: 'https://external-site.com',
+        title: 'External Service',
+        formId: 'f-ext-1',
+      },
+      {
+        id: 'ext-empty',
+        kind: 'external-application',
+        url: '', // Falsy URL should fall back to internal application
+        title: 'Empty URL External Service',
+        formId: 'f-ext-empty',
+      },
+    ] as any[];
+
+    render(<HowToApply serviceId="svc-1" applications={apps} />);
+
+    // External service checks
+    expect(screen.getByText('External Service')).toBeInTheDocument();
+    expect(screen.getByText('Apply on an external site.')).toBeInTheDocument();
+    const externalLink = screen.getByRole('link', { name: 'Visit site' });
+    expect(externalLink).toHaveAttribute('href', 'https://external-site.com');
+    expect(externalLink).toHaveAttribute('target', '_blank');
+
+    // Falsy URL checks (falls back to internal)
+    expect(screen.getByText('Empty URL External Service')).toBeInTheDocument();
+    expect(screen.getByText('Apply through the Single Digital Gateway.')).toBeInTheDocument();
+    const internalLink = screen.getByRole('link', { name: 'Start an application' });
+    expect(internalLink).toHaveAttribute('href', '/services/svc-1/apply/f-ext-empty');
+  });
 });
 
 describe('YourActivity Component', () => {
-  it('renders fallback when the user has no activity for the service', () => {
-    vi.mocked(useQuery).mockReturnValue({ data: [] } as any);
+  it('renders fallback when the user has no activity for the service or data is undefined', () => {
+    vi.mocked(useQuery).mockReturnValue({ data: undefined } as any);
     render(<YourActivity serviceId="svc-1" />);
     expect(screen.getByText('No applications yet')).toBeInTheDocument();
   });
@@ -201,13 +242,17 @@ describe('HelpAndInformation Component', () => {
   });
 });
 
-describe('ContactInformation Component', () => {
-  it('renders contact cards', () => {
-    render(<ContactInformation />);
-    expect(screen.getByText('Call us')).toBeInTheDocument();
-    expect(screen.getByText('1-800-000-0000')).toBeInTheDocument();
-    expect(screen.getByText('Other ways')).toBeInTheDocument();
-    expect(screen.getByText('Visit us')).toBeInTheDocument();
+describe('ContactSection Component', () => {
+  it('renders empty state when there are no contact methods', () => {
+    render(<ContactSection value={undefined} />);
+    expect(screen.getByText('No contact information for this service yet.')).toBeInTheDocument();
+  });
+
+  it('renders ContactMethodsView when contact methods exist', () => {
+    const mockValue = { type: 'phone', value: '1-800-000-0000' };
+    render(<ContactSection value={mockValue} />);
+    expect(screen.getByTestId('contact-methods-view')).toBeInTheDocument();
+    expect(screen.getByText(JSON.stringify(mockValue))).toBeInTheDocument();
   });
 });
 

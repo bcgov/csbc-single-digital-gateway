@@ -33,10 +33,11 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function renderGate(agreements: ServiceAgreementConsent[], onContinue = vi.fn()) {
-  const fetchMock = vi.fn(async () =>
-    jsonResponse({ agreementVersionId: 'x', decision: 'approve' }),
-  );
+function renderGate(
+  agreements: ServiceAgreementConsent[],
+  onContinue = vi.fn(),
+  fetchMock = vi.fn(async () => jsonResponse({ agreementVersionId: 'x', decision: 'approve' })),
+) {
   globalThis.fetch = fetchMock as unknown as typeof fetch;
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -107,5 +108,108 @@ describe('ConsentGate', () => {
     await waitFor(() => expect(continueBtn).toBeEnabled());
     await user.click(continueBtn);
     await waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
+  });
+
+  it('handles submission errors and clears error on selection change', async () => {
+    const user = userEvent.setup();
+    const errorFetch = vi.fn(async () => jsonResponse(null, 500));
+    renderGate([required], vi.fn(), errorFetch);
+
+    // Approve the required agreement to enable the button
+    await user.click(screen.getByRole('radio', { name: 'I accept the terms' }));
+    const continueBtn = screen.getByRole('button', { name: 'Continue to application' });
+    await waitFor(() => expect(continueBtn).toBeEnabled());
+
+    // Submit and verify failure message
+    await user.click(continueBtn);
+    expect(
+      await screen.findByText(
+        'Could not save your response — please try again.',
+        {},
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument();
+
+    // Change response to decline and verify error message goes away
+    await user.click(screen.getByRole('radio', { name: 'I decline' }));
+    expect(
+      screen.queryByText('Could not save your response — please try again.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders default titles/labels, optional content/description, and handles multiple agreements text', async () => {
+    const defaultLabelsAgreement: ServiceAgreementConsent = {
+      agreementVersionId: 'av-def',
+      agreementDocumentId: 'ad-def',
+      data: {
+        isOptional: false,
+      },
+      decision: null,
+    };
+
+    const optAgreementWithContent: ServiceAgreementConsent = {
+      agreementVersionId: 'av-opt-content',
+      agreementDocumentId: 'ad-opt-content',
+      data: {
+        title: 'Optional with content',
+        description: 'Optional agreement description',
+        content: {
+          root: {
+            children: [
+              {
+                children: [
+                  {
+                    detail: 0,
+                    format: 0,
+                    mode: 'normal',
+                    style: '',
+                    text: 'Rich text content here',
+                    type: 'text',
+                    version: 1,
+                  },
+                ],
+                direction: 'ltr',
+                format: '',
+                indent: 0,
+                type: 'paragraph',
+                version: 1,
+              },
+            ],
+            direction: 'ltr',
+            format: '',
+            indent: 0,
+            type: 'root',
+            version: 1,
+          },
+        },
+        isOptional: true,
+      },
+      decision: null,
+    };
+
+    // Render both to check "agreements" plural header description
+    renderGate([defaultLabelsAgreement, optAgreementWithContent]);
+
+    expect(screen.getByText(/respond to the following agreements/i)).toBeInTheDocument();
+
+    // Default labels
+    expect(screen.getByText('Service agreement')).toBeInTheDocument();
+    expect(screen.getAllByText('I approve')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('I do not approve')[0]).toBeInTheDocument();
+
+    // Content and description render when present
+    expect(screen.getByText('Optional agreement description')).toBeInTheDocument();
+    expect(screen.getByText('Rich text content here')).toBeInTheDocument();
+  });
+
+  it('seeds local decisions from server decisions', async () => {
+    const preApproved: ServiceAgreementConsent = {
+      ...required,
+      agreementVersionId: 'av-pre-app',
+      decision: 'approve',
+    };
+    renderGate([preApproved]);
+    const radioApprove = screen.getByRole('radio', { name: 'I accept the terms' });
+    expect(radioApprove).toBeChecked();
   });
 });

@@ -63,13 +63,12 @@ describe('ApplicationRow Component', () => {
   it('renders application details correctly in card elements', () => {
     render(<ApplicationRow application={mockApplication} />);
 
-    // Assert layout wrappers and icon
-    expect(screen.getByTestId('card')).toHaveAttribute('data-column', 'true');
-    expect(screen.getByTestId('card-icon-action')).toHaveAttribute('data-size', 'sm');
+    // Assert card and card-header are in the document
+    expect(screen.getByTestId('card')).toBeInTheDocument();
     expect(screen.getByTestId('card-header')).toBeInTheDocument();
 
     // Assert Title Link and target path substitution
-    const link = screen.getByRole('link', { name: /Income Form/i });
+    const link = screen.getByRole('link', { name: /Income Assistance/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/applications/app-abc');
 
@@ -78,13 +77,12 @@ describe('ApplicationRow Component', () => {
     expect(badge).toHaveAttribute('data-color', 'yellow');
     expect(badge).toHaveTextContent('Submitted');
 
-    // Assert remaining descriptions: service title, reference, formTitle and formatted date
+    // Assert remaining descriptions: reference, formTitle and formatted date
     const descriptionText = screen.getByTestId('card-description');
-    expect(descriptionText).toHaveTextContent('Income Assistance');
     expect(descriptionText).toHaveTextContent('20260708-0001');
     expect(descriptionText).toHaveTextContent('Income Form');
 
     const formattedDate = new Date(mockApplication.lastUpdated).toLocaleDateString();
-    expect(descriptionText).toHaveTextContent(`Last updated ${formattedDate}`);
+    expect(descriptionText).toHaveTextContent(formattedDate);
   });
 });

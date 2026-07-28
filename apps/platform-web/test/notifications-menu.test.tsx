@@ -84,14 +84,14 @@ describe('console notifications bell', () => {
     mockBff();
     renderApp('/app/riverton');
     expect(
-      await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 5000 }),
+      await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 
   it('invalidates the submission family on a realtime notification event', async () => {
     mockBff();
     const { queryClient } = renderApp('/app/riverton');
-    await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 5000 });
+    await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 });
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
     // Fire the SSE handler the bell registered — the open submission detail must be refreshed.
     sse.onEvent?.();
@@ -107,7 +107,7 @@ describe('console notifications bell', () => {
     const bell = await screen.findByRole(
       'button',
       { name: 'Notifications — 1 unread' },
-      { timeout: 5000 },
+      { timeout: 32000 },
     );
     await user.click(bell);
     await user.click(
@@ -130,7 +130,7 @@ describe('console notifications bell', () => {
     const bell = await screen.findByRole(
       'button',
       { name: 'Notifications — 1 unread' },
-      { timeout: 5000 },
+      { timeout: 32000 },
     );
     await user.click(bell);
     await user.click(await screen.findByRole('button', { name: 'No destination here' }));

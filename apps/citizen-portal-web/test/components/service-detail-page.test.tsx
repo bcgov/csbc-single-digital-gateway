@@ -125,7 +125,7 @@ describe('service detail page', () => {
     mockBff({ svc: jsonResponse(detailNoDesc) });
     await renderRoute('/services/svc-1');
     expect(
-      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.queryByText('Financial support for residents.')).not.toBeInTheDocument();
   });

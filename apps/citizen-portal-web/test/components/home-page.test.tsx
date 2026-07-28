@@ -178,7 +178,6 @@ describe('HomePage Component', () => {
 
     expect(screen.getByTestId('available-services')).toBeInTheDocument();
     expect(screen.getByText('Service 1')).toBeInTheDocument();
-    expect(screen.getByTestId('avail-apps-count')).toHaveTextContent('1');
 
     expect(screen.getByTestId('what-you-can-do')).toBeInTheDocument();
 

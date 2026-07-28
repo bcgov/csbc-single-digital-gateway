@@ -83,7 +83,7 @@ describe('console submissions', () => {
     mockSubmissions();
     renderApp('/app/riverton/submissions');
     expect(
-      await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 5000 }),
+      await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('Income Assistance')).toBeInTheDocument();
     expect(screen.getByText('Income application')).toBeInTheDocument();

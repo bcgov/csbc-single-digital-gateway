@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { SiteHeader } from '@/components/layout/site-header';
@@ -12,6 +12,10 @@ vi.mock('@repo/ui/avatar', () => ({
 
 vi.mock('@repo/ui/logo', () => ({
   Logo: () => <div data-testid="logo">Logo</div>,
+}));
+
+vi.mock('@/components/notifications/header-notifications', () => ({
+  HeaderNotifications: () => <div data-testid="header-notifications">Notifications</div>,
 }));
 
 vi.mock('@repo/ui/dropdown-menu', () => ({
@@ -46,6 +50,50 @@ vi.mock('@repo/ui/dropdown-menu', () => ({
     );
   },
   DropdownMenuSeparator: () => <hr />,
+}));
+
+const DialogContext = React.createContext<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+} | null>(null);
+
+vi.mock('@repo/ui/dialog', () => ({
+  Dialog: ({ children, open, onOpenChange }: any) => {
+    const [localOpen, setLocalOpen] = React.useState(false);
+    const isControlled = open !== undefined;
+    const isOpen = isControlled ? open : localOpen;
+    const setOpen = (val: boolean) => {
+      if (!isControlled) setLocalOpen(val);
+      onOpenChange?.(val);
+    };
+    return (
+      <DialogContext.Provider value={{ open: isOpen, setOpen }}>
+        <div data-testid="dialog">{children}</div>
+      </DialogContext.Provider>
+    );
+  },
+  DialogTrigger: ({ children, ...props }: any) => {
+    const ctx = React.useContext(DialogContext);
+    return (
+      <button {...props} onClick={() => ctx?.setOpen(true)}>
+        {children}
+      </button>
+    );
+  },
+  DialogContent: ({ children, ...props }: any) => {
+    const ctx = React.useContext(DialogContext);
+    if (!ctx?.open) return null;
+    return <div {...props}>{children}</div>;
+  },
+  DialogTitle: ({ children }: any) => <div>{children}</div>,
+  DialogClose: ({ children, ...props }: any) => {
+    const ctx = React.useContext(DialogContext);
+    return (
+      <button {...props} onClick={() => ctx?.setOpen(false)}>
+        {children}
+      </button>
+    );
+  },
 }));
 
 // Mock router Link
@@ -150,5 +198,27 @@ describe('SiteHeader Component', () => {
     expect(screen.getByTestId('dropdown-trigger')).toBeInTheDocument();
     expect(screen.getByTestId('avatar-fallback')).toHaveTextContent('··');
     expect(screen.getByTestId('dropdown-content')).toBeInTheDocument();
+  });
+
+  it('closes the mobile menu when a navigation link is clicked', async () => {
+    const user = userEvent.setup();
+    render(<SiteHeader variant="anonymous" />);
+
+    // Open mobile menu
+    const menuBtn = screen.getByRole('button', { name: 'Menu' });
+    await user.click(menuBtn);
+
+    // Verify mobile menu nav links are visible (should be 2 of each since Desktop + Mobile)
+    const servicesLinks = screen.getAllByRole('link', { name: 'Services' });
+    expect(servicesLinks).toHaveLength(2);
+
+    // Click the mobile version of the link
+    const mobileServicesLink = servicesLinks[1]!;
+    await user.click(mobileServicesLink);
+
+    // Verify dialog content is closed (dialog content is no longer in document)
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 });

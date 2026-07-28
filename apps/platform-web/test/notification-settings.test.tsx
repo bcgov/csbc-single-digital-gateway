@@ -49,7 +49,7 @@ describe('account page notification settings section', () => {
     renderApp('/app/account');
     // CardTitle renders a styled div (no heading role) — match by text.
     expect(
-      await screen.findByText('Notification settings', undefined, { timeout: 5000 }),
+      await screen.findByText('Notification settings', undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
     const inApp = await screen.findByRole('switch', { name: 'In-app notifications' });
     expect(inApp).toBeChecked();

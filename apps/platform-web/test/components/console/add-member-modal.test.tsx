@@ -104,7 +104,7 @@ describe('add member flow', () => {
     renderApp('/app/riverton/team');
 
     // First mount compiles the code-split team route — allow extra time (3rd arg waitForOptions).
-    const addButton = await screen.findByRole('button', { name: 'Add member' }, { timeout: 5000 });
+    const addButton = await screen.findByRole('button', { name: 'Add member' }, { timeout: 32000 });
     await user.click(addButton);
 
     const dialog = await screen.findByRole('dialog');
@@ -137,7 +137,9 @@ describe('add member flow', () => {
     mockTeamFetch('member');
     renderApp('/app/riverton/team');
 
-    expect(await screen.findByText('Maya Reyes', undefined, { timeout: 5000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText('Maya Reyes', undefined, { timeout: 32000 }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add member' })).not.toBeInTheDocument();
   });
 

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
@@ -42,13 +42,21 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function mockBff({ app = jsonResponse(detail), me = jsonResponse(authedUser) } = {}) {
+function mockBff({
+  app = jsonResponse(detail),
+  me = jsonResponse(authedUser),
+}: {
+  app?: Response | Promise<Response>;
+  me?: Response | Promise<Response>;
+} = {}) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? 'GET';
     // Clone the captured responses — a Response body is single-use, and the detail is re-fetched
     // (e.g. invalidateQueries after revise), so the same object would be consumed twice.
-    if (url.includes('/auth/me')) return me.clone();
+    if (url.includes('/auth/me')) {
+      return me instanceof Response ? me.clone() : me;
+    }
     // Revise: open a draft revision seeded from the prior answers.
     if (url.includes('/v1/me/applications/sub1/revise') && method === 'POST') {
       return jsonResponse({
@@ -66,7 +74,9 @@ function mockBff({ app = jsonResponse(detail), me = jsonResponse(authedUser) } =
     if (url.includes('/v1/me/applications/sub1/submit') && method === 'POST') {
       return jsonResponse({ id: 'sub1', status: 'pending', reference: '20260630-0001' });
     }
-    if (url.includes('/v1/me/applications/sub1')) return app.clone(); // GET detail + PATCH save
+    if (url.includes('/v1/me/applications/sub1')) {
+      return app instanceof Response ? app.clone() : app;
+    }
     return new Response(null, { status: 404 });
   });
   globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -88,6 +98,7 @@ async function renderApp() {
 }
 
 afterEach(() => {
+  cleanup();
   vi.restoreAllMocks();
 });
 
@@ -136,7 +147,7 @@ describe('citizen application detail page', () => {
     expect(
       await screen.findByRole('heading', { name: 'First Page', level: 3 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('MultiStageName')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('MultiStageName')).toBeInTheDocument();
   });
 
   it('shows not found page if application fetch fails', async () => {
@@ -149,9 +160,18 @@ describe('citizen application detail page', () => {
 
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
-    renderApp();
-    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 10000 });
-    expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+    await renderApp();
+    expect(
+      await screen.findByText(
+        'You need to be signed in to view this application.',
+        {},
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument();
+    const link = screen
+      .getAllByRole('link', { name: /log in/i })
+      .find((el) => el.getAttribute('href')?.includes('/auth/login'));
+    expect(link).toBeDefined();
   });
 
   it('shows an "Action needed" banner with the reviewer reason and a Make changes action', async () => {
@@ -301,6 +321,58 @@ describe('citizen application detail page', () => {
     await renderApp();
     expect(
       await screen.findByRole('heading', { name: 'Your Profile', level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  it('handles auth pending state (renders skeleton loader)', async () => {
+    // Pass a promise that never resolves for both me and app to keep auth and app in pending state
+    mockBff({
+      me: new Promise<Response>(() => {}),
+      app: new Promise<Response>(() => {}),
+    });
+    await renderApp();
+    // Verify that the skeleton is displayed rather than the content/login message
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(
+      screen.queryByRole('heading', { name: 'Your Profile', level: 1 }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('You need to be signed in to view this application.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('handles application loading state when logged in', async () => {
+    // me resolves immediately, but app is pending
+    mockBff({
+      app: new Promise<Response>(() => {}),
+    });
+    await renderApp();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(
+      screen.queryByRole('heading', { name: 'Your Profile', level: 1 }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('You need to be signed in to view this application.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('handles application being null with status 200', async () => {
+    mockBff({ app: jsonResponse(null) });
+    await renderApp();
+    expect(
+      await screen.findByRole('heading', { name: 'Application not found', level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  it('handles auth query failure', async () => {
+    mockBff({ me: new Response(null, { status: 500 }) });
+    await renderApp();
+    expect(
+      await screen.findByText(
+        'You need to be signed in to view this application.',
+        {},
+        { timeout: 10000 },
+      ),
     ).toBeInTheDocument();
   });
 });
