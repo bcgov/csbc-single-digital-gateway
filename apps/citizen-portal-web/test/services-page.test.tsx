@@ -91,6 +91,21 @@ describe('citizen-portal-web /services page', () => {
     expect(await screen.findByText(/20250615-0003/)).toBeInTheDocument();
   });
 
+  it('does not show an application status pill on the "All services" catalog card', async () => {
+    mockBff({ me: jsonResponse(authedUser) });
+    renderServices();
+    // Wait until applications have loaded (status is available in "Your applications").
+    await screen.findByRole('heading', { name: 'Your applications' });
+
+    const birthRegLinks = await screen.findAllByRole('link', { name: /Birth Registration/i });
+    const catalogCard = birthRegLinks.find((el) =>
+      el.getAttribute('href')?.startsWith('/services/'),
+    );
+    expect(catalogCard).toBeDefined();
+    // The status ("Review") belongs to "Your applications", never the catalog card.
+    expect(catalogCard).not.toHaveTextContent('Review');
+  });
+
   it('searches via the catalog endpoint with the q parameter', async () => {
     const fetchMock = mockBff();
     const user = userEvent.setup();

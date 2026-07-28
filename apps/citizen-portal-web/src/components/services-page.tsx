@@ -1,4 +1,3 @@
-import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Input } from '@repo/ui/input';
@@ -50,14 +49,11 @@ function ServiceSearch({ onSearch }: { onSearch: (term: string) => void }) {
   );
 }
 
-/** A single service card in the catalog grid. */
-function ServiceCard({
-  service,
-  application,
-}: {
-  service: CatalogService;
-  application?: MyApplication | undefined;
-}) {
+/**
+ * A single service card in the catalog grid. These cards are purely navigational — they never
+ * surface application status (that lives in the "Your applications" band above the grid).
+ */
+function ServiceCard({ service }: { service: CatalogService }) {
   return (
     <Link
       to="/services/$serviceId"
@@ -66,13 +62,10 @@ function ServiceCard({
     >
       <Card id={service.id} className="h-full transition-shadow group-hover:ring-primary/40">
         <CardContent className="flex flex-col gap-2 py-4">
-          <div className="flex items-start justify-between gap-2">
-            <span className="inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary group-hover:underline">
-              {service.title}
-              <ChevronRight className="size-4" aria-hidden />
-            </span>
-            {application ? <Badge color="yellow">{application.statusLabel}</Badge> : null}
-          </div>
+          <span className="inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary group-hover:underline">
+            {service.title}
+            <ChevronRight className="size-4" aria-hidden />
+          </span>
           <p className="text-xs/relaxed text-muted-foreground">{service.description}</p>
         </CardContent>
       </Card>
@@ -110,7 +103,6 @@ export function ServicesPage() {
 
   const items = services.data ?? [];
   const myApps = applications.data ?? [];
-  const byService = new Map(myApps.map((application) => [application.serviceId, application]));
 
   return (
     <CitizenShell activeNav="services">
@@ -140,11 +132,7 @@ export function ServicesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {items.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  application={byService.get(service.id)}
-                />
+                <ServiceCard key={service.id} service={service} />
               ))}
             </div>
           )}
