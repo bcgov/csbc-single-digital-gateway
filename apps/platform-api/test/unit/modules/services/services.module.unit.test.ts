@@ -9,6 +9,7 @@ import { ServicesService } from '../../../../src/modules/services/services/servi
 import { ServiceVersionsService } from '../../../../src/modules/services/services/service-versions.service';
 import { ServiceTypeResolver } from '../../../../src/modules/services/services/service-type.resolver';
 import { ReferencesService } from '../../../../src/modules/services/services/references.service';
+import { AgreementRefsService } from '../../../../src/modules/services/services/agreement-refs.service';
 
 describe('ServicesModule Unit Tests', () => {
   it('should compile ServicesModule successfully and resolve all controllers and providers', async () => {
@@ -41,6 +42,7 @@ describe('ServicesModule Unit Tests', () => {
     expect(moduleRef.get(ServiceVersionsService)).toBeDefined();
     expect(moduleRef.get(ServiceTypeResolver)).toBeDefined();
     expect(moduleRef.get(ReferencesService)).toBeDefined();
+    expect(moduleRef.get(AgreementRefsService)).toBeDefined();
 
     await moduleRef.close();
   });
@@ -59,6 +61,7 @@ describe('ServicesModule Unit Tests', () => {
     expect(providers).toContain(ServiceVersionsService);
     expect(providers).toContain(ServiceTypeResolver);
     expect(providers).toContain(ReferencesService);
-    expect(providers).toHaveLength(4);
+    expect(providers).toContain(AgreementRefsService);
+    expect(providers).toHaveLength(5);
   });
 });

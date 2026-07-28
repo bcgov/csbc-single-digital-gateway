@@ -1,10 +1,12 @@
 import { Test } from '@nestjs/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Module, Global } from '@nestjs/common';
 import { DATABASE_CLIENT } from '@repo/nestjs/database';
 import { SubmissionsModule } from '../../../../src/modules/submissions/submissions.module';
 import { SubmissionsV1Controller } from '../../../../src/modules/submissions/controllers/submissions-v1.controller';
 import { SubmissionsService } from '../../../../src/modules/submissions/services/submissions.service';
+
+import { ConfigService } from '@nestjs/config';
 
 describe('SubmissionsModule Unit Tests', () => {
   it('should compile SubmissionsModule successfully and resolve all controllers and providers', async () => {
@@ -17,8 +19,12 @@ describe('SubmissionsModule Unit Tests', () => {
           provide: DATABASE_CLIENT,
           useValue: mockDbClient,
         },
+        {
+          provide: ConfigService,
+          useValue: { get: vi.fn() },
+        },
       ],
-      exports: [DATABASE_CLIENT],
+      exports: [DATABASE_CLIENT, ConfigService],
     })
     class MockDatabaseModule {}
 

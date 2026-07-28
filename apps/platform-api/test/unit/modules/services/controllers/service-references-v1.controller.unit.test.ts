@@ -9,6 +9,7 @@ import type {
 describe('ServiceReferencesV1Controller', () => {
   let controller: ServiceReferencesV1Controller;
   let referencesServiceMock: any;
+  let agreementRefsServiceMock: any;
 
   const mockUser: AuthUser = {
     id: 'user-1',
@@ -27,9 +28,17 @@ describe('ServiceReferencesV1Controller', () => {
       remove: vi.fn(),
       archive: vi.fn(),
       createForm: vi.fn(),
+      createExternal: vi.fn(),
+      updateExternal: vi.fn(),
     };
 
-    controller = new ServiceReferencesV1Controller(referencesServiceMock);
+    agreementRefsServiceMock = {
+      list: vi.fn(),
+      attach: vi.fn(),
+      detach: vi.fn(),
+    };
+
+    controller = new ServiceReferencesV1Controller(referencesServiceMock, agreementRefsServiceMock);
   });
 
   describe('list', () => {
@@ -121,6 +130,104 @@ describe('ServiceReferencesV1Controller', () => {
         body,
       );
       expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('createExternal', () => {
+    it('creates a referenced external application via the service', async () => {
+      const body = {
+        label: 'External App',
+        url: 'https://example.com/apply',
+      };
+      const mockResult = { id: 'ref-1', targetDocumentId: 'ext-doc-1' };
+      referencesServiceMock.createExternal.mockResolvedValue(mockResult);
+
+      const result = await controller.createExternal(mockUser, 'service-1', 'version-1', body);
+
+      expect(referencesServiceMock.createExternal).toHaveBeenCalledWith(
+        mockUser.id,
+        'service-1',
+        'version-1',
+        body,
+      );
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('updateExternal', () => {
+    it('updates a referenced external application via the service', async () => {
+      const body = {
+        label: 'New External Label',
+        url: 'https://example.com/new-apply',
+      };
+      const mockResult = { id: 'ref-1', label: 'New External Label' };
+      referencesServiceMock.updateExternal.mockResolvedValue(mockResult);
+
+      const result = await controller.updateExternal(
+        mockUser,
+        'service-1',
+        'version-1',
+        'ref-1',
+        body,
+      );
+
+      expect(referencesServiceMock.updateExternal).toHaveBeenCalledWith(
+        mockUser.id,
+        'service-1',
+        'version-1',
+        'ref-1',
+        body,
+      );
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('listAgreements', () => {
+    it('returns agreements list from the agreements service wrapped in an items object', async () => {
+      const mockList = [{ id: 'ref-agreement-1', title: 'Agreement 1' }];
+      agreementRefsServiceMock.list.mockResolvedValue(mockList);
+
+      const result = await controller.listAgreements(mockUser, 'service-1', 'version-1');
+
+      expect(agreementRefsServiceMock.list).toHaveBeenCalledWith(
+        mockUser.id,
+        'service-1',
+        'version-1',
+      );
+      expect(result).toEqual({ items: mockList });
+    });
+  });
+
+  describe('attachAgreement', () => {
+    it('attaches an agreement reference via the agreements service', async () => {
+      const body = { agreementDocumentId: 'agreement-doc-123' };
+      const mockResult = { id: 'ref-agreement-1', agreementDocumentId: 'agreement-doc-123' };
+      agreementRefsServiceMock.attach.mockResolvedValue(mockResult);
+
+      const result = await controller.attachAgreement(mockUser, 'service-1', 'version-1', body);
+
+      expect(agreementRefsServiceMock.attach).toHaveBeenCalledWith(
+        mockUser.id,
+        'service-1',
+        'version-1',
+        'agreement-doc-123',
+      );
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('detachAgreement', () => {
+    it('detaches an agreement reference via the agreements service', async () => {
+      agreementRefsServiceMock.detach.mockResolvedValue(undefined);
+
+      await controller.detachAgreement(mockUser, 'service-1', 'version-1', 'ref-agreement-1');
+
+      expect(agreementRefsServiceMock.detach).toHaveBeenCalledWith(
+        mockUser.id,
+        'service-1',
+        'version-1',
+        'ref-agreement-1',
+      );
     });
   });
 });

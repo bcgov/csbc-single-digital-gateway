@@ -163,6 +163,20 @@ describe('service DTO schemas', () => {
         createdAt: '2026-07-12T00:00:00.000Z',
       });
     });
+
+    it('throws Error if workspaceId is null', () => {
+      const mockRow = {
+        id: 'service-1',
+        workspaceId: null,
+        title: 'My Service',
+        description: 'Service description',
+        createdAt: new Date('2026-07-12T00:00:00.000Z'),
+      };
+
+      expect(() => toServiceDto(mockRow as unknown as Document)).toThrow(
+        'service document has no workspace',
+      );
+    });
   });
 
   describe('toServiceVersionDto', () => {
@@ -189,6 +203,32 @@ describe('service DTO schemas', () => {
         createdAt: '2026-07-12T00:00:00.000Z',
         publishedAt: '2026-07-12T01:00:00.000Z',
         archivedAt: null,
+      });
+    });
+
+    it('maps null publishedAt and defined archivedAt correctly', () => {
+      const mockRow = {
+        id: 'version-1',
+        documentId: 'service-1',
+        version: 1,
+        status: 'archived',
+        data: { key: 'value' },
+        createdAt: new Date('2026-07-12T00:00:00.000Z'),
+        publishedAt: null,
+        archivedAt: new Date('2026-07-12T02:00:00.000Z'),
+      };
+
+      const result = toServiceVersionDto(mockRow as unknown as DocumentVersion);
+
+      expect(result).toEqual({
+        id: 'version-1',
+        documentId: 'service-1',
+        version: 1,
+        status: 'archived',
+        data: { key: 'value' },
+        createdAt: '2026-07-12T00:00:00.000Z',
+        publishedAt: null,
+        archivedAt: '2026-07-12T02:00:00.000Z',
       });
     });
   });

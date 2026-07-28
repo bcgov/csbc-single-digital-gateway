@@ -13,6 +13,7 @@ const mockQuery = (resolvedValue: any) => {
   return Object.assign(qb, {
     from: vi.fn().mockReturnValue(qb),
     innerJoin: vi.fn().mockReturnValue(qb),
+    leftJoin: vi.fn().mockReturnValue(qb),
     limit: vi.fn().mockReturnValue(qb),
     orderBy: vi.fn().mockReturnValue(qb),
     where: vi.fn().mockReturnValue(qb),
@@ -201,7 +202,7 @@ describe('version-copy utility tests', () => {
       txMock.returning.mockResolvedValueOnce([]); // doc returning empty
 
       await expect(copyReferences(txMock, source)).rejects.toThrow(
-        'form document copy returned no row',
+        'method document copy returned no row',
       );
     });
 
@@ -229,7 +230,31 @@ describe('version-copy utility tests', () => {
         .mockResolvedValueOnce([]); // version fails
 
       await expect(copyReferences(txMock, source)).rejects.toThrow(
-        'form version copy returned no row',
+        'method version copy returned no row',
+      );
+    });
+
+    it('throws error if formTypeId is missing during copy', async () => {
+      txMock.select.mockReturnValueOnce(
+        mockQuery([
+          {
+            relation: 'application_form',
+            label: 'Apply',
+            position: 0,
+            targetKind: 'basic-form',
+            targetDocumentId: 'form-1',
+            targetVersionId: 'form-v-1',
+            formTitle: 'Apply Form',
+            formKind: 'basic-form',
+            formTypeId: null, // missing typeId triggers req() throw
+            formTypeVersionId: 'tv-1',
+            formSchema: {},
+          },
+        ]),
+      );
+
+      await expect(copyReferences(txMock, source)).rejects.toThrow(
+        'method typeId is unexpectedly null',
       );
     });
   });
@@ -389,6 +414,45 @@ describe('version-copy utility tests', () => {
       expect(txMock.set).toHaveBeenCalledWith({
         targetDocumentId: 'form-original',
         targetVersionId: 'form-v-original',
+      });
+      expect(txMock.delete).toHaveBeenCalledWith(documents);
+    });
+
+    it('deduplicates deep-copied external applications if data is identical', async () => {
+      txMock.select
+        // 1. pubRows query -> returns previous published id
+        .mockReturnValueOnce(mockQuery([{ id: 'version-1' }]))
+        // 2. previous references/data
+        .mockReturnValueOnce(
+          mockQuery([
+            {
+              relation: 'external_application',
+              label: 'External Apply',
+              targetDocumentId: 'ext-original',
+              targetVersionId: 'ext-v-original',
+              data: { label: 'External Apply', url: 'https://example.com' },
+            },
+          ]),
+        )
+        // 3. current references/data
+        .mockReturnValueOnce(
+          mockQuery([
+            {
+              refId: 'ref-current',
+              relation: 'external_application',
+              label: 'External Apply',
+              targetDocumentId: 'ext-copy',
+              data: { label: 'External Apply', url: 'https://example.com' }, // identical data
+            },
+          ]),
+        );
+
+      await dedupCopiedForms(txMock, 'service-1', 'version-2');
+
+      expect(txMock.update).toHaveBeenCalledWith(documentReferences);
+      expect(txMock.set).toHaveBeenCalledWith({
+        targetDocumentId: 'ext-original',
+        targetVersionId: 'ext-v-original',
       });
       expect(txMock.delete).toHaveBeenCalledWith(documents);
     });

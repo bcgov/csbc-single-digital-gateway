@@ -147,6 +147,20 @@ describe('form DTO schemas', () => {
         createdAt: '2026-07-12T00:00:00.000Z',
       });
     });
+
+    it('throws an error if workspaceId is null', () => {
+      const mockRow = {
+        id: 'doc-1',
+        workspaceId: null,
+        title: 'My Document',
+        kind: 'basic-form',
+        createdAt: new Date('2026-07-12T00:00:00.000Z'),
+      };
+
+      expect(() => toFormDto(mockRow as unknown as Document)).toThrow(
+        'form document has no workspace',
+      );
+    });
   });
 
   describe('toFormVersionDto', () => {
