@@ -1,11 +1,9 @@
-import type { ComponentProps } from 'react';
 import { Button } from '@repo/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { Field, FieldLabel } from '@repo/ui/field';
 import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
-import { RichTextView } from '@repo/ui/rich-text-view';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { AgreementCard, type AgreementContent } from '@/components/agreement-card';
 import {
   type ConsentDecision,
   type ServiceAgreementConsent,
@@ -100,50 +98,48 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
       {agreements.map((a) => {
         const title = str(a.data.title, 'Service agreement');
         const description = str(a.data.description, '');
-        const content = a.data.content as ComponentProps<typeof RichTextView>['value'];
+        const content = a.data.content as AgreementContent;
         const chosen = decisions[a.agreementVersionId] ?? null;
         const required = !isOptional(a);
         const blocked = required && chosen === 'reject';
         return (
-          <Card key={a.agreementVersionId}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {title}
-                <span className="text-xs font-normal text-muted-foreground">
-                  {required ? 'Required' : 'Optional'}
-                </span>
-              </CardTitle>
-              {description ? <CardDescription>{description}</CardDescription> : null}
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {content ? <RichTextView value={content} /> : null}
-              <RadioGroup
-                value={chosen}
-                aria-label={`Your decision on ${title}`}
-                onValueChange={(value: unknown) =>
-                  choose(a.agreementVersionId, value as ConsentDecision)
-                }
-              >
-                <Field orientation="horizontal">
-                  <RadioGroupItem id={`${a.agreementVersionId}-approve`} value="approve" />
-                  <FieldLabel htmlFor={`${a.agreementVersionId}-approve`}>
-                    {str(a.data.approveLabel, 'I approve')}
-                  </FieldLabel>
-                </Field>
-                <Field orientation="horizontal">
-                  <RadioGroupItem id={`${a.agreementVersionId}-reject`} value="reject" />
-                  <FieldLabel htmlFor={`${a.agreementVersionId}-reject`}>
-                    {str(a.data.rejectLabel, 'I do not approve')}
-                  </FieldLabel>
-                </Field>
-              </RadioGroup>
-              {blocked ? (
-                <p className="text-sm text-destructive">
-                  You must approve this agreement to continue your application.
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
+          <AgreementCard
+            key={a.agreementVersionId}
+            title={title}
+            description={description || null}
+            content={content}
+            aside={
+              <span className="text-xs font-normal text-muted-foreground">
+                {required ? 'Required' : 'Optional'}
+              </span>
+            }
+          >
+            <RadioGroup
+              value={chosen}
+              aria-label={`Your decision on ${title}`}
+              onValueChange={(value: unknown) =>
+                choose(a.agreementVersionId, value as ConsentDecision)
+              }
+            >
+              <Field orientation="horizontal">
+                <RadioGroupItem id={`${a.agreementVersionId}-approve`} value="approve" />
+                <FieldLabel htmlFor={`${a.agreementVersionId}-approve`}>
+                  {str(a.data.approveLabel, 'I approve')}
+                </FieldLabel>
+              </Field>
+              <Field orientation="horizontal">
+                <RadioGroupItem id={`${a.agreementVersionId}-reject`} value="reject" />
+                <FieldLabel htmlFor={`${a.agreementVersionId}-reject`}>
+                  {str(a.data.rejectLabel, 'I do not approve')}
+                </FieldLabel>
+              </Field>
+            </RadioGroup>
+            {blocked ? (
+              <p className="text-sm text-destructive">
+                You must approve this agreement to continue your application.
+              </p>
+            ) : null}
+          </AgreementCard>
         );
       })}
 

@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
+import { Breadcrumb } from '@/components/breadcrumb';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   serviceAgreementsQueryOptions,
@@ -181,6 +182,14 @@ export function ServiceAgreementsPage() {
           icon={mdiFileDocumentCheckOutline}
           title="Service Agreements"
           subtitle="Agreements you've accepted to use government services."
+          breadcrumb={
+            <Breadcrumb
+              trail={[
+                { label: 'Account settings', href: '/account' },
+                { label: 'Service Agreements' },
+              ]}
+            />
+          }
         />
         <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
           {agreements.isSuccess ? (

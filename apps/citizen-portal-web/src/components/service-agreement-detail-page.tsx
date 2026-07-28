@@ -1,11 +1,12 @@
-import type { ComponentProps } from 'react';
-import { mdiArrowLeft, mdiFileDocumentCheckOutline, mdiLogin } from '@mdi/js';
+import type { ReactNode } from 'react';
+import { mdiArrowLeft, mdiCheckCircle, mdiFileDocumentCheckOutline, mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { buttonVariants } from '@repo/ui/button';
-import { RichTextView } from '@repo/ui/rich-text-view';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
+import { AgreementCard, type AgreementContent } from '@/components/agreement-card';
+import { Breadcrumb } from '@/components/breadcrumb';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { useAuth, useLoginUrl } from '@/lib/auth';
@@ -44,7 +45,7 @@ export function ServiceAgreementDetailPage() {
     retry: false,
   });
 
-  let body: React.ReactNode;
+  let body: ReactNode;
   if (authPending) {
     body = <Skeleton className="h-56 w-full" />;
   } else if (!user) {
@@ -61,16 +62,26 @@ export function ServiceAgreementDetailPage() {
     );
   } else if (agreement.isSuccess) {
     const { title, description, content, consentedAt } = agreement.data;
-    const contentValue = content as ComponentProps<typeof RichTextView>['value'];
     body = (
       <>
         <BackLink />
-        <div className="flex flex-col gap-2">
-          <h2 className="section-heading">{title}</h2>
-          <p className="text-sm text-muted-foreground">Approved {formatConsentedAt(consentedAt)}</p>
-          {description ? <p className="text-sm text-foreground">{description}</p> : null}
-        </div>
-        {contentValue ? <RichTextView value={contentValue} /> : null}
+        <AgreementCard
+          title={title}
+          description={description}
+          content={content as AgreementContent}
+          divided
+          aside={
+            <span className="flex items-center gap-1.5 text-sm font-normal whitespace-nowrap text-muted-foreground">
+              <Icon
+                path={mdiCheckCircle}
+                size="18px"
+                className="text-icon-success"
+                aria-hidden={true}
+              />
+              Approved on {formatConsentedAt(consentedAt)}
+            </span>
+          }
+        />
       </>
     );
   } else if (agreement.error instanceof RequestError && agreement.error.status === 404) {
@@ -97,6 +108,15 @@ export function ServiceAgreementDetailPage() {
           icon={mdiFileDocumentCheckOutline}
           title="Service Agreement"
           subtitle="A record of an agreement you accepted."
+          breadcrumb={
+            <Breadcrumb
+              trail={[
+                { label: 'Account settings', href: '/account' },
+                { label: 'Service Agreements', href: '/account/service-agreements' },
+                { label: agreement.data?.title ?? 'Agreement' },
+              ]}
+            />
+          }
         />
         <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-6 px-4 md:px-8">{body}</div>
       </div>

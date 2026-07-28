@@ -116,12 +116,18 @@ describe('citizen-portal-web /account/service-agreements/:id detail', () => {
         consentedAt: '2027-01-15T12:00:00.000Z',
       }),
     });
+    // The title appears in both the breadcrumb and the AgreementCard (CardTitle, not a heading role).
     expect(
-      await screen.findByRole('heading', { name: 'Privacy Agreement' }, { timeout: 10000 }),
-    ).toBeInTheDocument();
+      (await screen.findAllByText('Privacy Agreement', {}, { timeout: 10000 })).length,
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Our privacy terms')).toBeInTheDocument();
-    expect(screen.getByText(/approved/i)).toBeInTheDocument();
+    expect(screen.getByText(/approved on/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /back to service agreements/i })).toBeInTheDocument();
+    // Breadcrumb roots at the account settings page.
+    expect(screen.getByRole('link', { name: 'Account settings' })).toHaveAttribute(
+      'href',
+      '/account',
+    );
   });
 
   it('shows a not-found message when the agreement 404s', async () => {
