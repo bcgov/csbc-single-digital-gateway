@@ -5,6 +5,15 @@
  * origin with credentialed CORS.
  */
 
+/** Structured OIDC `address` claim (BC Services Card / Keycloak `oidc-address-mapper`). */
+export interface OidcAddress {
+  street_address?: string;
+  locality?: string;
+  region?: string;
+  postal_code?: string;
+  country?: string;
+}
+
 /** OIDC claims surfaced by the BFF — mirrors `@repo/nestjs/auth` `OidcClaims`. */
 export interface OidcClaims {
   sub: string;
@@ -13,6 +22,13 @@ export interface OidcClaims {
   display_name?: string;
   name?: string;
   preferred_username?: string;
+  /** BC Services Card identity claims surfaced on the account page (feature 138). */
+  given_name?: string;
+  family_name?: string;
+  /** OIDC standard `birthdate`, `YYYY-MM-DD`. */
+  birthdate?: string;
+  gender?: string;
+  address?: OidcAddress;
   [claim: string]: unknown;
 }
 

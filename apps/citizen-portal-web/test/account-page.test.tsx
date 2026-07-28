@@ -7,7 +7,22 @@ import { routeTree } from '@/routeTree.gen';
 const authedUser = {
   id: 'c1',
   roles: ['citizen'],
-  claims: { sub: 'subject-1', name: 'Amina Ali', email: 'amina@example.com' },
+  claims: {
+    sub: 'subject-1',
+    display_name: 'Amina Ali',
+    given_name: 'Amina',
+    family_name: 'Ali',
+    email: 'amina@example.com',
+    birthdate: '1990-02-01',
+    gender: 'female',
+    address: {
+      street_address: '20338 - 65 AVENUE',
+      locality: 'LANGLEY',
+      region: 'BC',
+      postal_code: 'V2Y 3J1',
+      country: 'CA',
+    },
+  },
 };
 
 function jsonResponse(body: unknown): Response {
@@ -42,14 +57,51 @@ afterEach(() => {
 });
 
 describe('citizen-portal-web /account page', () => {
-  it('shows the signed-in user’s name and email', async () => {
+  it('renders the personal-information grid from the signed-in user’s claims', async () => {
     renderAccount(jsonResponse(authedUser));
     expect(
       await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 10000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Amina Ali')).toBeInTheDocument();
+
+    // Grid cells: labels + values sourced from /auth/me claims.
+    expect(screen.getByText('Given Names')).toBeInTheDocument();
+    expect(screen.getByText('Amina')).toBeInTheDocument();
+    expect(screen.getByText('Surname')).toBeInTheDocument();
+    expect(screen.getByText('Ali')).toBeInTheDocument();
+    expect(screen.getByText('Date of Birth')).toBeInTheDocument();
+    expect(screen.getByText('1990-02-01')).toBeInTheDocument();
+    expect(screen.getByText('Gender')).toBeInTheDocument();
+    // The claim value `female` is displayed with a capitalized first letter.
+    expect(screen.getByText('Female')).toBeInTheDocument();
     expect(screen.getByText('amina@example.com')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
+    expect(screen.getByText('20338 - 65 AVENUE')).toBeInTheDocument();
+    expect(screen.getByText('LANGLEY, BC V2Y 3J1')).toBeInTheDocument();
+
+    // Settings cards link out to the right places.
+    expect(screen.getByRole('link', { name: /notification preferences/i })).toHaveAttribute(
+      'href',
+      '/account/notifications',
+    );
+    expect(screen.getByRole('link', { name: /service agreements/i })).toHaveAttribute(
+      'href',
+      '/account/service-agreements',
+    );
+
+    // The Log out button was removed from this page.
+    expect(screen.queryByRole('button', { name: /log out/i })).not.toBeInTheDocument();
+  });
+
+  it('renders an em-dash for claims the IdP did not provide', async () => {
+    renderAccount(
+      jsonResponse({
+        id: 'c2',
+        roles: ['citizen'],
+        claims: { sub: 'subject-2', given_name: 'Jo', email: 'jo@example.com' },
+      }),
+    );
+    await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 10000 });
+    // Date of Birth, Gender, Surname, Address all absent → em-dash placeholders.
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
   });
 
   it('prompts an anonymous visitor to log in', async () => {

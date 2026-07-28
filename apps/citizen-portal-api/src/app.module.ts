@@ -22,6 +22,7 @@ import { OutboxRelayModule } from './notifications/outbox-relay.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { ServiceAgreementsModule } from './modules/service-agreements/service-agreements.module';
 
 @Module({
   imports: [
@@ -108,6 +109,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
     CatalogModule,
     ApplicationsModule,
     NotificationsModule,
+    ServiceAgreementsModule,
     // Transactional-outbox relay to the notification-service (no routes; inert under test).
     OutboxRelayModule,
   ],
