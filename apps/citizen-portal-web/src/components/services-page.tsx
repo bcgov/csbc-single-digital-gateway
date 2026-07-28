@@ -1,21 +1,13 @@
 import { Button } from '@repo/ui/button';
-import { Card, CardContent } from '@repo/ui/card';
 import { Input } from '@repo/ui/input';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import { ChevronRight, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { SectionHeading } from '@/components/landing/section-heading';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { ApplicationRow } from '@/components/services/application-row';
-import { useAuth } from '@/lib/auth';
-import {
-  type CatalogService,
-  type MyApplication,
-  myApplicationsQueryOptions,
-  servicesQueryOptions,
-} from '@/lib/catalog';
+import { ServiceCard } from '@/components/services/service-card';
+import { servicesQueryOptions } from '@/lib/catalog';
 
 /** Search box + submit button. Submitting sets the active query term (drives the services query). */
 function ServiceSearch({ onSearch }: { onSearch: (term: string) => void }) {
@@ -50,59 +42,15 @@ function ServiceSearch({ onSearch }: { onSearch: (term: string) => void }) {
 }
 
 /**
- * A single service card in the catalog grid. These cards are purely navigational — they never
- * surface application status (that lives in the "Your applications" band above the grid).
- */
-function ServiceCard({ service }: { service: CatalogService }) {
-  return (
-    <Link
-      to="/services/$serviceId"
-      params={{ serviceId: service.id }}
-      className="group block rounded-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-    >
-      <Card id={service.id} className="h-full transition-shadow group-hover:ring-primary/40">
-        <CardContent className="flex flex-col gap-2 py-4">
-          <span className="inline-flex items-center gap-1 font-heading text-sm font-semibold text-primary group-hover:underline">
-            {service.title}
-            <ChevronRight className="size-4" aria-hidden />
-          </span>
-          <p className="text-xs/relaxed text-muted-foreground">{service.description}</p>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
-
-/** The "Your applications" band shown to authenticated citizens above the catalog. */
-function YourApplications({ applications }: { applications: readonly MyApplication[] }) {
-  if (applications.length === 0) {
-    return null;
-  }
-  return (
-    <section className="flex flex-col ">
-      <SectionHeading title="Your applications" />
-      <div className="mt-4">
-        {applications.map((application) => (
-          <ApplicationRow key={application.id} application={application} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/**
  * The services catalog (`/services`) — browsable by anyone (feature 60). Search + a grid of
- * published service cards; authenticated citizens also see their applications. No categories /
- * availability / recommendations.
+ * published service cards (the shared, fully-clickable {@link ServiceCard}). No categories /
+ * availability / recommendations, and no application tracking — that lives on the home page.
  */
 export function ServicesPage() {
-  const { data: user } = useAuth();
   const [query, setQuery] = useState('');
   const services = useQuery(servicesQueryOptions(query));
-  const applications = useQuery({ ...myApplicationsQueryOptions(), enabled: Boolean(user) });
 
   const items = services.data ?? [];
-  const myApps = applications.data ?? [];
 
   return (
     <CitizenShell activeNav="services">
@@ -113,8 +61,6 @@ export function ServicesPage() {
         </header>
 
         <ServiceSearch onSearch={setQuery} />
-
-        {user ? <YourApplications applications={myApps} /> : null}
 
         <section className="flex flex-col gap-4">
           <SectionHeading title="All services" />

@@ -84,26 +84,26 @@ describe('citizen-portal-web /services page', () => {
     expect(screen.queryByRole('heading', { name: 'Your applications' })).not.toBeInTheDocument();
   });
 
-  it('shows the citizen’s applications when authenticated', async () => {
+  it('does not show a "Your applications" band on the catalog — even when authenticated', async () => {
     mockBff({ me: jsonResponse(authedUser) });
     renderServices();
-    expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
-    expect(await screen.findByText(/20250615-0003/)).toBeInTheDocument();
+    // Wait for the catalog to render, then confirm no application tracking leaked onto this page.
+    await screen.findByRole('link', { name: 'Birth Registration' });
+    expect(screen.queryByRole('heading', { name: 'Your applications' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/20250615-0003/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Review')).not.toBeInTheDocument();
   });
 
-  it('does not show an application status pill on the "All services" catalog card', async () => {
-    mockBff({ me: jsonResponse(authedUser) });
+  it('renders each catalog card as a service-detail link whose text is only the title', async () => {
+    mockBff();
     renderServices();
-    // Wait until applications have loaded (status is available in "Your applications").
-    await screen.findByRole('heading', { name: 'Your applications' });
-
-    const birthRegLinks = await screen.findAllByRole('link', { name: /Birth Registration/i });
-    const catalogCard = birthRegLinks.find((el) =>
-      el.getAttribute('href')?.startsWith('/services/'),
-    );
-    expect(catalogCard).toBeDefined();
-    // The status ("Review") belongs to "Your applications", never the catalog card.
-    expect(catalogCard).not.toHaveTextContent('Review');
+    const card = await screen.findByRole('link', { name: 'Birth Registration' });
+    // The whole card navigates to the service detail...
+    expect(card).toHaveAttribute('href', '/services/s2');
+    // ...but only the title is the link text (so only the title underlines) — the description is
+    // a sibling outside the link and is never part of the underlined link surface.
+    expect(card).not.toHaveTextContent(/Register the birth/i);
+    expect(screen.getByText(/Register the birth of a child/i)).toBeInTheDocument();
   });
 
   it('searches via the catalog endpoint with the q parameter', async () => {

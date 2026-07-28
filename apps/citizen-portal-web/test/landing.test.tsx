@@ -115,10 +115,12 @@ describe('citizen-portal-web home — signed out', () => {
     mockBff();
     renderHome();
     const card = await screen.findByRole('link', { name: /Income and Disability Assistance/i });
-    // The title + disclosure chevron link navigates straight to the service detail page.
+    // The card navigates straight to the service detail page.
     expect(card).toHaveAttribute('href', '/services/s1');
-    // The service description is rendered alongside the title (stacked in the card).
+    // The service description is rendered alongside the title (stacked in the card)...
     expect(screen.getByText('Financial support.')).toBeInTheDocument();
+    // ...but sits OUTSIDE the link, so only the title is the underlined link surface.
+    expect(card).not.toHaveTextContent('Financial support.');
   });
 
   it('does not show "Browse all services" when fewer than 3 services are available', async () => {
