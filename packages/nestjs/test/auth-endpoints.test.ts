@@ -143,6 +143,58 @@ describe('AuthController.callback', () => {
     expect(url.searchParams.get('state')).toBe('state-abc');
   });
 
+  it('restarts login (302 to /auth/login) instead of 500 when a concurrent login clobbered the pending transaction', async () => {
+    // A newer concurrent login overwrote oidcTx (state-new); this older callback carries state-old.
+    const session: Record<string, unknown> = {
+      oidcTx: { state: 'state-new', nonce: 'nonce-new', codeVerifier: 'verifier-new' },
+      returnTo: '/app/services/42',
+    };
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-old',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+    const { controller, registry } = make();
+    await controller.callback(req as never, res as never);
+
+    expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/auth/login'));
+    // The newer pending transaction is preserved so the concurrent login can still complete.
+    expect(session.oidcTx).toBeDefined();
+    // returnTo survives the restart, so the user still lands where they started.
+    expect(session.returnTo).toBe('/app/services/42');
+    expect(session.authUser).toBeUndefined();
+    expect(registry.track).not.toHaveBeenCalled();
+  });
+
+  it('restarts login (302 to /auth/login) instead of 500 on a duplicate/replayed callback with no pending transaction', async () => {
+    const session: Record<string, unknown> = {};
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+    const { controller } = make();
+    await controller.callback(req as never, res as never);
+
+    expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/auth/login'));
+    expect(session.authUser).toBeUndefined();
+  });
+
+  it('preserves the external /login path when a reverse proxy prefix is in play', async () => {
+    const proxied: AuthModuleOptions = {
+      ...options,
+      redirectUri: 'https://app.example.gov/api/auth/callback',
+    };
+    const session: Record<string, unknown> = {};
+    const req = { originalUrl: '/auth/callback?code=c&state=x', session, sessionID: 'sid-1' };
+    const res = { redirect: vi.fn() };
+    await make(proxied).controller.callback(req as never, res as never);
+
+    expect(res.redirect).toHaveBeenCalledWith('https://app.example.gov/api/auth/login');
+  });
+
   it('falls back to postLoginRedirect when no returnTo was stored', async () => {
     const session: Record<string, unknown> = {
       oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },

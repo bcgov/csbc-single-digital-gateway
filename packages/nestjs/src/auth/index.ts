@@ -22,6 +22,7 @@ export {
   buildLoginUrl,
   buildLogoutUrl,
   completeLogin,
+  OidcCallbackError,
   refreshTokens,
   toSessionTokens,
 } from './auth.flow';
