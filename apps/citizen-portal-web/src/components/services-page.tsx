@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { SectionHeading } from '@/components/landing/section-heading';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageHeaderBanner } from '@/components/layout/page-header-banner';
 import { ServiceCard } from '@/components/services/service-card';
 import { servicesQueryOptions } from '@/lib/catalog';
 
@@ -55,11 +56,9 @@ export function ServicesPage() {
   return (
     <CitizenShell activeNav="services">
       <div className="flex flex-col">
-        {/* Header region — heading + search above a full-width bcgov-gold divider (mirrors the
-            citizen Account pages; see settings-page-header.tsx). The rule spans the full main
-            width while its content stays in the constrained column. */}
-        <div className="border-b-2 border-bcgov-gold">
-          <div className="mx-auto flex w-full max-w-280 flex-col gap-6 px-4 py-6 md:px-8">
+        {/* Header region — heading + search above the shared full-width bcgov-gold divider. */}
+        <PageHeaderBanner>
+          <div className="flex flex-col gap-6">
             <header className="flex flex-col gap-2">
               <h1>Services</h1>
               <p className="text-lg">Find and use Government of British Columbia services.</p>
@@ -67,7 +66,7 @@ export function ServicesPage() {
 
             <ServiceSearch onSearch={setQuery} />
           </div>
-        </div>
+        </PageHeaderBanner>
 
         <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
           <section className="flex flex-col gap-4">

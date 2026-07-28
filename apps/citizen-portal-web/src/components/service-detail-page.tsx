@@ -3,6 +3,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageHeaderBanner } from '@/components/layout/page-header-banner';
 import { ServiceSections } from '@/components/services/detail-sections';
 import { Breadcrumb } from '@/components/services/service-content';
 import { serviceQueryOptions } from '@/lib/catalog';
@@ -49,11 +50,10 @@ export function ServiceDetailPage() {
   return (
     <CitizenShell activeNav="services">
       <div className="flex flex-col">
-        {/* Header region — breadcrumb + title/description + action above a full-width bcgov-gold
-            divider (mirrors /services and the citizen Account pages; see feature 143). The rule
-            spans the full main width while its content stays in the constrained column. */}
-        <div className="border-b-2 border-bcgov-gold">
-          <div className="mx-auto flex w-full max-w-280 flex-col gap-3 px-4 py-6 md:px-8">
+        {/* Header region — breadcrumb + title/description + action above the shared full-width
+            bcgov-gold divider. */}
+        <PageHeaderBanner
+          breadcrumb={
             <Breadcrumb
               trail={[
                 { label: 'Home', href: '/' },
@@ -61,20 +61,20 @@ export function ServiceDetailPage() {
                 { label: service.title },
               ]}
             />
-
-            <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-col gap-1">
-                <h1 className="font-heading text-2xl font-semibold text-foreground">
-                  {service.title}
-                </h1>
-                {service.description ? (
-                  <p className="max-w-2xl text-sm text-muted-foreground">{service.description}</p>
-                ) : null}
-              </div>
-              <Button className="shrink-0">Start an application</Button>
-            </header>
-          </div>
-        </div>
+          }
+        >
+          <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <h1 className="font-heading text-2xl font-semibold text-foreground">
+                {service.title}
+              </h1>
+              {service.description ? (
+                <p className="max-w-2xl text-sm text-muted-foreground">{service.description}</p>
+              ) : null}
+            </div>
+            <Button className="shrink-0">Start an application</Button>
+          </header>
+        </PageHeaderBanner>
 
         <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
           <ServiceSections
