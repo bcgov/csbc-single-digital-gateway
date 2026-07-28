@@ -106,6 +106,19 @@ describe('citizen-portal-web /services page', () => {
     expect(screen.getByText(/Register the birth of a child/i)).toBeInTheDocument();
   });
 
+  it('renders the heading and search box above a full-width gold divider (account pattern)', async () => {
+    mockBff();
+    renderServices();
+    const heading = await screen.findByRole('heading', { name: 'Services', level: 1 });
+    const search = screen.getByRole('searchbox', { name: /search services/i });
+
+    const divider = document.querySelector('.border-bcgov-gold');
+    expect(divider).not.toBeNull();
+    // Both the heading and the search box live inside the gold-divided header region.
+    expect(divider).toContainElement(heading);
+    expect(divider).toContainElement(search);
+  });
+
   it('searches via the catalog endpoint with the q parameter', async () => {
     const fetchMock = mockBff();
     const user = userEvent.setup();

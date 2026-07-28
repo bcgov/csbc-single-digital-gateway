@@ -54,35 +54,44 @@ export function ServicesPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
-        <header className="flex flex-col gap-2">
-          <h1>Services</h1>
-          <p className="text-lg">Find and use Government of British Columbia services.</p>
-        </header>
+      <div className="flex flex-col">
+        {/* Header region — heading + search above a full-width bcgov-gold divider (mirrors the
+            citizen Account pages; see settings-page-header.tsx). The rule spans the full main
+            width while its content stays in the constrained column. */}
+        <div className="border-b-2 border-bcgov-gold">
+          <div className="mx-auto flex w-full max-w-280 flex-col gap-6 px-4 py-6 md:px-8">
+            <header className="flex flex-col gap-2">
+              <h1>Services</h1>
+              <p className="text-lg">Find and use Government of British Columbia services.</p>
+            </header>
 
-        <ServiceSearch onSearch={setQuery} />
+            <ServiceSearch onSearch={setQuery} />
+          </div>
+        </div>
 
-        <section className="flex flex-col gap-4">
-          <SectionHeading title="All services" />
+        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
+          <section className="flex flex-col gap-4">
+            <SectionHeading title="All services" />
 
-          {services.isPending ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-24 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : items.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              No services found{query ? ` for “${query}”` : ''}.
-            </p>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {items.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))}
-            </div>
-          )}
-        </section>
+            {services.isPending ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : items.length === 0 ? (
+              <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                No services found{query ? ` for “${query}”` : ''}.
+              </p>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {items.map((service) => (
+                  <ServiceCard key={service.id} service={service} />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
     </CitizenShell>
   );
