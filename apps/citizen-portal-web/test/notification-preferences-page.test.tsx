@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { preferencesDirty } from '@/components/notification-preferences-page';
@@ -63,6 +63,17 @@ afterEach(() => {
 });
 
 describe('notification preferences page', () => {
+  it('shows a breadcrumb back to Account settings', async () => {
+    renderPage();
+    const nav = await screen.findByRole('navigation', { name: 'Breadcrumb' }, { timeout: 10000 });
+    expect(within(nav).getByRole('link', { name: 'Account settings' })).toHaveAttribute(
+      'href',
+      '/account',
+    );
+    // Current page — a non-link crumb marked aria-current.
+    expect(within(nav).getByText('Notification settings')).toHaveAttribute('aria-current', 'page');
+  });
+
   it('renders the seeded toggles and hides the contact email until email is on', async () => {
     const user = userEvent.setup();
     renderPage();

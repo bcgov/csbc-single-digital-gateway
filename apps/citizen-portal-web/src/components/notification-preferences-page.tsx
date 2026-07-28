@@ -9,6 +9,7 @@ import { useBlocker } from '@tanstack/react-router';
 import { Icon } from '@mdi/react';
 import { mdiBellOutline, mdiLogin } from '@mdi/js';
 
+import { Breadcrumb } from '@/components/breadcrumb';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { useAuth, useLoginUrl } from '@/lib/auth';
@@ -216,6 +217,14 @@ export function NotificationPreferencesPage() {
           icon={mdiBellOutline}
           title="Notification settings"
           subtitle="Choose how you hear about updates to your applications."
+          breadcrumb={
+            <Breadcrumb
+              trail={[
+                { label: 'Account settings', href: '/account' },
+                { label: 'Notification settings' },
+              ]}
+            />
+          }
         />
         <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
           {prefs.isSuccess ? (
