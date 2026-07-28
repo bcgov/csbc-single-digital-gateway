@@ -15,7 +15,7 @@ export class ServiceAgreementListDto extends createZodDto(
   z.object({ items: z.array(serviceAgreementListItemSchema) }),
 ) {}
 
-/** The full content of one approved agreement — detail. */
+/** The full content of one agreement decision — detail. */
 export const serviceAgreementDetailSchema = z.object({
   id: z.string(),
   agreementDocumentId: z.string(),
@@ -23,6 +23,10 @@ export const serviceAgreementDetailSchema = z.object({
   description: z.string().nullable(),
   /** The staff-authored Lexical content of the consented version (rendered read-only). */
   content: z.unknown(),
+  /** The recorded decision on this consent event, and the agreement's authored choice labels. */
+  decision: z.enum(['approve', 'reject']),
+  approveLabel: z.string(),
+  rejectLabel: z.string(),
   consentedAt: z.string(),
 });
 export type ServiceAgreementDetail = z.infer<typeof serviceAgreementDetailSchema>;

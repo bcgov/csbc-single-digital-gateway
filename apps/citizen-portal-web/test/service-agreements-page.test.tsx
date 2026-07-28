@@ -104,7 +104,7 @@ describe('citizen-portal-web /account/service-agreements timeline', () => {
 });
 
 describe('citizen-portal-web /account/service-agreements/:id detail', () => {
-  it('renders the agreement title, consent time and description', async () => {
+  it('shows the agreement name as the heading, the decision status, and read-only radios', async () => {
     renderPage({
       path: '/account/service-agreements/a1',
       detail: jsonResponse({
@@ -113,16 +113,26 @@ describe('citizen-portal-web /account/service-agreements/:id detail', () => {
         title: 'Privacy Agreement',
         description: 'Our privacy terms',
         content: null,
+        decision: 'approve',
+        approveLabel: 'I accept',
+        rejectLabel: 'I decline',
         consentedAt: '2027-01-15T12:00:00.000Z',
       }),
     });
-    // The title appears in both the breadcrumb and the AgreementCard (CardTitle, not a heading role).
+    // The agreement name is the page heading (h1).
     expect(
-      (await screen.findAllByText('Privacy Agreement', {}, { timeout: 10000 })).length,
-    ).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Our privacy terms')).toBeInTheDocument();
+      await screen.findByRole(
+        'heading',
+        { name: 'Privacy Agreement', level: 1 },
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument();
+    // The decision + date is the subtitle status line.
     expect(screen.getByText(/approved on/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /back to service agreements/i })).toBeInTheDocument();
+    expect(screen.getByText('Our privacy terms')).toBeInTheDocument();
+    // Read-only radios show the authored labels with the recorded decision selected.
+    expect(screen.getByRole('radio', { name: 'I accept' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'I decline' })).not.toBeChecked();
     // Breadcrumb roots at the account settings page.
     expect(screen.getByRole('link', { name: 'Account settings' })).toHaveAttribute(
       'href',

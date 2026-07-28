@@ -1,21 +1,32 @@
-import type { ReactNode } from 'react';
-import { mdiArrowLeft, mdiCheckCircle, mdiFileDocumentCheckOutline, mdiLogin } from '@mdi/js';
+import type { ComponentProps, ReactNode } from 'react';
+import { mdiArrowLeft, mdiFileDocumentCheckOutline, mdiLogin } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { buttonVariants } from '@repo/ui/button';
+import { Card, CardContent } from '@repo/ui/card';
+import { Field, FieldLabel } from '@repo/ui/field';
+import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
+import { RichTextView } from '@repo/ui/rich-text-view';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
-import { AgreementCard, type AgreementContent } from '@/components/agreement-card';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { useAuth, useLoginUrl } from '@/lib/auth';
-import { RequestError, serviceAgreementQueryOptions } from '@/lib/service-agreements';
+import {
+  RequestError,
+  serviceAgreementQueryOptions,
+  type ServiceAgreementDetail,
+} from '@/lib/service-agreements';
 
 const formatConsentedAt = (iso: string): string =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
 
-/** Link back to the timeline. */
+/** The header subtitle: the recorded decision + when it was made. */
+const statusLine = (a: ServiceAgreementDetail): string =>
+  `${a.decision === 'approve' ? 'Approved' : 'Rejected'} on ${formatConsentedAt(a.consentedAt)}`;
+
+/** Link back to the timeline (shown on the not-found state — the breadcrumb covers the happy path). */
 function BackLink() {
   return (
     <Link
@@ -28,10 +39,47 @@ function BackLink() {
   );
 }
 
+/** The agreement content + a greyed, read-only view of the citizen's recorded decision. */
+function AgreementDetailCard({ agreement }: { agreement: ServiceAgreementDetail }) {
+  const { content, decision, approveLabel, rejectLabel } = agreement;
+  const contentValue = content as ComponentProps<typeof RichTextView>['value'];
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3">
+        {contentValue ? (
+          <RichTextView value={contentValue} />
+        ) : (
+          <p className="text-sm text-muted-foreground italic">No content was provided.</p>
+        )}
+      </CardContent>
+      {/* Greyed, read-only decision — the selected option reflects what the citizen chose. */}
+      <div className="-mb-4 border-t border-border bg-gray-20 px-4 py-4">
+        <p className="mb-2 text-sm font-medium text-muted-foreground">Your response</p>
+        <RadioGroup
+          value={decision}
+          disabled
+          aria-label="Your recorded response"
+          className="flex flex-col gap-2"
+        >
+          <Field orientation="horizontal">
+            <RadioGroupItem id="sa-approve" value="approve" />
+            <FieldLabel htmlFor="sa-approve">{approveLabel}</FieldLabel>
+          </Field>
+          <Field orientation="horizontal">
+            <RadioGroupItem id="sa-reject" value="reject" />
+            <FieldLabel htmlFor="sa-reject">{rejectLabel}</FieldLabel>
+          </Field>
+        </RadioGroup>
+      </div>
+    </Card>
+  );
+}
+
 /**
- * `/account/service-agreements/:serviceAgreementId` (feature 139) — the full content of one approved
- * agreement, scoped to the signed-in citizen. Login-gated; an unknown / not-yours id shows an
- * in-shell not-found (the BFF 404s).
+ * `/account/service-agreements/:serviceAgreementId` (feature 139) — one recorded agreement decision,
+ * scoped to the signed-in citizen. The page heading is the agreement name, the subtitle its
+ * decision + date; the body is the agreement content with a read-only view of the response.
+ * Login-gated; an unknown / not-yours id shows an in-shell not-found (the BFF 404s).
  */
 export function ServiceAgreementDetailPage() {
   const { serviceAgreementId } = useParams({
@@ -61,29 +109,7 @@ export function ServiceAgreementDetailPage() {
       </div>
     );
   } else if (agreement.isSuccess) {
-    const { title, description, content, consentedAt } = agreement.data;
-    body = (
-      <>
-        <BackLink />
-        <AgreementCard
-          title={title}
-          description={description}
-          content={content as AgreementContent}
-          divided
-          aside={
-            <span className="flex items-center gap-1.5 text-sm font-normal whitespace-nowrap text-muted-foreground">
-              <Icon
-                path={mdiCheckCircle}
-                size="18px"
-                className="text-icon-success"
-                aria-hidden={true}
-              />
-              Approved on {formatConsentedAt(consentedAt)}
-            </span>
-          }
-        />
-      </>
-    );
+    body = <AgreementDetailCard agreement={agreement.data} />;
   } else if (agreement.error instanceof RequestError && agreement.error.status === 404) {
     body = (
       <div className="flex flex-col items-start gap-3">
@@ -101,19 +127,29 @@ export function ServiceAgreementDetailPage() {
     body = <Skeleton className="h-56 w-full" />;
   }
 
+  const loaded = agreement.data;
+  const title = loaded?.title ?? 'Service Agreement';
+  // Line 2 = the agreement description; line 3 = the recorded decision + date.
+  const subtitle = loaded ? (loaded.description ?? '') : 'A record of an agreement you accepted.';
+
   return (
     <CitizenShell>
       <div className="flex flex-col">
         <SettingsPageHeader
           icon={mdiFileDocumentCheckOutline}
-          title="Service Agreement"
-          subtitle="A record of an agreement you accepted."
+          title={title}
+          subtitle={subtitle}
+          meta={
+            loaded ? (
+              <p className="text-sm font-medium text-foreground">{statusLine(loaded)}</p>
+            ) : undefined
+          }
           breadcrumb={
             <Breadcrumb
               trail={[
                 { label: 'Account settings', href: '/account' },
                 { label: 'Service Agreements', href: '/account/service-agreements' },
-                { label: agreement.data?.title ?? 'Agreement' },
+                { label: title },
               ]}
             />
           }

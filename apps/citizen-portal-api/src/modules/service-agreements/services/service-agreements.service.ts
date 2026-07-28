@@ -53,7 +53,7 @@ export class ServiceAgreementsService {
     }));
   }
 
-  /** One approval event (by consent id), scoped to the caller. 404 when it's not theirs / unknown. */
+  /** One consent event (by consent id), scoped to the caller. 404 when it's not theirs / unknown. */
   async getMine(userId: string, consentId: string): Promise<ServiceAgreementDetail> {
     // Validate before the query so a malformed id is a clean 400, not a driver 22P02 500.
     if (!z.uuid().safeParse(consentId).success) {
@@ -63,6 +63,7 @@ export class ServiceAgreementsService {
       .select({
         id: serviceAgreementConsents.id,
         agreementDocumentId: serviceAgreementConsents.agreementDocumentId,
+        decision: serviceAgreementConsents.decision,
         data: documentVersions.data,
         createdAt: serviceAgreementConsents.createdAt,
       })
@@ -75,7 +76,6 @@ export class ServiceAgreementsService {
         and(
           eq(serviceAgreementConsents.id, consentId),
           eq(serviceAgreementConsents.userId, userId),
-          eq(serviceAgreementConsents.decision, 'approve'),
         ),
       )
       .limit(1);
@@ -94,6 +94,9 @@ export class ServiceAgreementsService {
           ? data.description
           : null,
       content: data.content ?? null,
+      decision: row.decision,
+      approveLabel: str(data.approveLabel, 'I approve'),
+      rejectLabel: str(data.rejectLabel, 'I do not approve'),
       consentedAt: row.createdAt.toISOString(),
     };
   }

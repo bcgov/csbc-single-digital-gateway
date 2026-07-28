@@ -16,7 +16,10 @@ export interface ServiceAgreementListItem {
   consentedAt: string;
 }
 
-/** The full content of one approved agreement (detail). */
+/** The recorded decision on an agreement. */
+export type ConsentDecision = 'approve' | 'reject';
+
+/** The full content of one agreement decision (detail). */
 export interface ServiceAgreementDetail {
   id: string;
   agreementDocumentId: string;
@@ -24,6 +27,10 @@ export interface ServiceAgreementDetail {
   description: string | null;
   /** Staff-authored Lexical content, rendered read-only via `@repo/ui/rich-text-view`. */
   content: unknown;
+  /** The recorded decision + the agreement's authored choice labels (for the read-only radios). */
+  decision: ConsentDecision;
+  approveLabel: string;
+  rejectLabel: string;
   consentedAt: string;
 }
 

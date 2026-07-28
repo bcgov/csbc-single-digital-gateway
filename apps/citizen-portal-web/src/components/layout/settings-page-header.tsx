@@ -11,11 +11,15 @@ export function SettingsPageHeader({
   icon,
   title,
   subtitle,
+  meta,
   breadcrumb,
 }: {
   icon: string;
   title: string;
-  subtitle: string;
+  /** The line under the title. Falsy → the line is omitted. */
+  subtitle?: string;
+  /** An optional third line under the subtitle (e.g. a status line). */
+  meta?: ReactNode;
   /** Optional breadcrumb, rendered above the title row (e.g. Account settings → Service Agreements). */
   breadcrumb?: ReactNode;
 }) {
@@ -29,7 +33,8 @@ export function SettingsPageHeader({
           </div>
           <div className="flex flex-col gap-1">
             <h1 className="font-heading text-2xl font-semibold text-foreground">{title}</h1>
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
+            {meta}
           </div>
         </div>
       </div>
