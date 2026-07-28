@@ -1,9 +1,12 @@
+import type { ComponentProps } from 'react';
+import { AccordionContent, AccordionItem, AccordionTrigger } from '@repo/ui/accordion';
+import { AccordionGroup } from '@repo/ui/accordion-group';
 import { Button } from '@repo/ui/button';
 import { Field, FieldLabel } from '@repo/ui/field';
 import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
+import { RichTextView } from '@repo/ui/rich-text-view';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { AgreementCard, type AgreementContent } from '@/components/agreement-card';
 import {
   type ConsentDecision,
   type ServiceAgreementConsent,
@@ -95,53 +98,67 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
         </p>
       </div>
 
-      {agreements.map((a) => {
-        const title = str(a.data.title, 'Service agreement');
-        const description = str(a.data.description, '');
-        const content = a.data.content as AgreementContent;
-        const chosen = decisions[a.agreementVersionId] ?? null;
-        const required = !isOptional(a);
-        const blocked = required && chosen === 'reject';
-        return (
-          <AgreementCard
-            key={a.agreementVersionId}
-            title={title}
-            description={description || null}
-            content={content}
-            aside={
-              <span className="text-xs font-normal text-muted-foreground">
-                {required ? 'Required' : 'Optional'}
-              </span>
-            }
-          >
-            <RadioGroup
-              value={chosen}
-              aria-label={`Your decision on ${title}`}
-              onValueChange={(value: unknown) =>
-                choose(a.agreementVersionId, value as ConsentDecision)
-              }
-            >
-              <Field orientation="horizontal">
-                <RadioGroupItem id={`${a.agreementVersionId}-approve`} value="approve" />
-                <FieldLabel htmlFor={`${a.agreementVersionId}-approve`}>
-                  {str(a.data.approveLabel, 'I approve')}
-                </FieldLabel>
-              </Field>
-              <Field orientation="horizontal">
-                <RadioGroupItem id={`${a.agreementVersionId}-reject`} value="reject" />
-                <FieldLabel htmlFor={`${a.agreementVersionId}-reject`}>
-                  {str(a.data.rejectLabel, 'I do not approve')}
-                </FieldLabel>
-              </Field>
-            </RadioGroup>
-            {blocked ? (
-              <p className="text-sm text-destructive">
-                You must approve this agreement to continue your application.
-              </p>
-            ) : null}
-          </AgreementCard>
-        );
-      })}
+      <AccordionGroup
+        values={agreements.map((a) => a.agreementVersionId)}
+        defaultValue={agreements.map((a) => a.agreementVersionId)}
+      >
+        {agreements.map((a) => {
+          const title = str(a.data.title, 'Service agreement');
+          const description = str(a.data.description, '');
+          const content = a.data.content as ComponentProps<typeof RichTextView>['value'];
+          const chosen = decisions[a.agreementVersionId] ?? null;
+          const required = !isOptional(a);
+          const blocked = required && chosen === 'reject';
+          return (
+            <AccordionItem key={a.agreementVersionId} value={a.agreementVersionId}>
+              <AccordionTrigger>
+                <span className="flex flex-1 items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-foreground">{title}</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {required ? 'Required' : 'Optional'}
+                  </span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-4">
+                {description ? (
+                  <p className="text-sm text-muted-foreground">{description}</p>
+                ) : null}
+                {content ? <RichTextView value={content} /> : null}
+                {/* Gray, visually distinct response section (matches the read-only detail view). */}
+                <div className="-mx-2 -mb-4 flex flex-col gap-2 border-t border-border bg-gray-20 px-4 py-4">
+                  <p className="text-sm font-medium text-muted-foreground">Your response</p>
+                  <RadioGroup
+                    value={chosen}
+                    aria-label={`Your decision on ${title}`}
+                    className="flex flex-col gap-2"
+                    onValueChange={(value: unknown) =>
+                      choose(a.agreementVersionId, value as ConsentDecision)
+                    }
+                  >
+                    <Field orientation="horizontal">
+                      <RadioGroupItem id={`${a.agreementVersionId}-approve`} value="approve" />
+                      <FieldLabel htmlFor={`${a.agreementVersionId}-approve`}>
+                        {str(a.data.approveLabel, 'I approve')}
+                      </FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
+                      <RadioGroupItem id={`${a.agreementVersionId}-reject`} value="reject" />
+                      <FieldLabel htmlFor={`${a.agreementVersionId}-reject`}>
+                        {str(a.data.rejectLabel, 'I do not approve')}
+                      </FieldLabel>
+                    </Field>
+                  </RadioGroup>
+                  {blocked ? (
+                    <p className="text-sm text-destructive">
+                      You must approve this agreement to continue your application.
+                    </p>
+                  ) : null}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </AccordionGroup>
 
       {failed ? (
         <p className="text-sm text-destructive" role="alert">
