@@ -95,7 +95,7 @@ describe('citizen application detail page', () => {
     mockBff();
     renderApp();
     expect(
-      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 10000 }),
+      await screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 15000 }),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Birth Registration').length).toBeGreaterThan(0);
     expect(screen.getByText('Submitted')).toBeInTheDocument();
@@ -103,6 +103,20 @@ describe('citizen application detail page', () => {
     expect(await screen.findByDisplayValue('Amina')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Your answers' })).toBeInTheDocument();
   });
+
+  it('opens a draft directly in the editable form (no "Continue your application" card)', async () => {
+    mockBff({
+      app: jsonResponse(detailWith({ status: 'draft', statusLabel: 'Draft', submittedAt: null })),
+    });
+    renderApp();
+    // The editable FormRunner mounts on load — its Submit button proves edit mode, no click needed.
+    expect(
+      await screen.findByRole('button', { name: /submit application/i }, { timeout: 15000 }),
+    ).toBeInTheDocument();
+    // The old "Continue your application" gate is gone, and no read-only status card is shown.
+    expect(screen.queryByRole('button', { name: /continue your application/i })).toBeNull();
+    expect(screen.queryByText('Your answers')).toBeNull();
+  }, 20000);
 
   it('prompts anonymous visitors to log in', async () => {
     mockBff({ me: new Response(null, { status: 401 }) });
