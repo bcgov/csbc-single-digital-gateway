@@ -7,11 +7,23 @@ import type { MyApplication } from '@/lib/catalog';
 
 /**
  * One tracked application, linking to the application page (`/applications/:id`). A thick blue left
- * accent; the title is the service name with the status pill to its right; the subheading is a single
- * metadata line: `<application name> • Ref #<reference> • <last updated>`. Shared by "Track your
- * applications" (home) and a service's "Your activity".
+ * accent; the title (with the status pill to its right) and a single metadata line below it. Shared
+ * by "Track your applications" (home) and a service's "Your activity"; `titleBy` selects which name
+ * leads:
+ * - `'service'` (default, home — disambiguates across services): title = service name; meta =
+ *   `<application name> • Ref #<reference> • <last updated>`.
+ * - `'application'` (a service's own "Your activity", where the service is implicit): title =
+ *   application/form name; meta = `Ref #<reference> • <last updated>` (the form name is the title,
+ *   so it is not repeated).
  */
-export function ApplicationRow({ application }: { application: MyApplication }) {
+export function ApplicationRow({
+  application,
+  titleBy = 'service',
+}: {
+  application: MyApplication;
+  titleBy?: 'service' | 'application';
+}) {
+  const byApplication = titleBy === 'application';
   return (
     <Card className="border-l-4 border-l-blue-70">
       <CardHeader>
@@ -22,7 +34,7 @@ export function ApplicationRow({ application }: { application: MyApplication }) 
               params={{ id: application.id }}
               className="no-underline hover:underline"
             >
-              {application.serviceTitle}
+              {byApplication ? application.formTitle : application.serviceTitle}
               <Icon
                 path={mdiChevronRight}
                 size="20px"
@@ -36,7 +48,8 @@ export function ApplicationRow({ application }: { application: MyApplication }) 
           </Badge>
         </div>
         <CardDescription>
-          {application.formTitle} &#8226; Ref #{application.reference} &#8226;{' '}
+          {byApplication ? null : <>{application.formTitle} &#8226; </>}
+          Ref #{application.reference} &#8226;{' '}
           {new Date(application.lastUpdated).toLocaleDateString()}
         </CardDescription>
       </CardHeader>

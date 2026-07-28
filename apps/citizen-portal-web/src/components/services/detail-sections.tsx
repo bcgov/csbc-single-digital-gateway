@@ -228,7 +228,7 @@ export function YourActivity({ serviceId }: { serviceId: string }) {
   return (
     <div className="flex flex-col gap-3">
       {mine.map((application) => (
-        <ApplicationRow key={application.id} application={application} />
+        <ApplicationRow key={application.id} application={application} titleBy="application" />
       ))}
     </div>
   );
