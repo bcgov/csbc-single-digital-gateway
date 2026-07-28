@@ -16,6 +16,7 @@ import {
   buildLoginUrl,
   buildLogoutUrl,
   completeLogin,
+  OidcCallbackError,
   resolvePostLoginTarget,
   sanitizeReturnTo,
 } from './auth.flow';
@@ -63,7 +64,28 @@ export class AuthController {
     // redirectUri keeps them identical and also avoids trusting the Host header.
     const currentUrl = new URL(this.options.redirectUri);
     currentUrl.search = new URL(req.originalUrl, this.options.redirectUri).search;
-    const { claims, idToken, tokens } = await completeLogin(this.config, currentUrl, req.session);
+
+    let completed;
+    try {
+      completed = await completeLogin(this.config, currentUrl, req.session);
+    } catch (error) {
+      // A stale, duplicate, or concurrently-clobbered callback (no matching OIDC transaction) is not
+      // a server fault — restart the flow instead of 500ing. The browser lands on a fresh
+      // `/auth/login`, which re-initiates PKCE/state and completes cleanly; any `session.returnTo`
+      // survives, so the user still ends up where they started. This is common against a shared IdP
+      // with an active SSO session, which bounces the callback back near-instantly. Genuine exchange
+      // failures are not OidcCallbackError and rethrow (surfaced, never silently retried).
+      if (error instanceof OidcCallbackError) {
+        // Derive the login URL from the *configured* redirectUri (proxy-safe, never the Host header):
+        // its path ends in `.../auth/callback`, so swap the final segment for `login`.
+        const loginUrl = new URL(this.options.redirectUri);
+        loginUrl.pathname = loginUrl.pathname.replace(/\/callback$/, '/login');
+        res.redirect(loginUrl.href);
+        return;
+      }
+      throw error;
+    }
+    const { claims, idToken, tokens } = completed;
     const user = await this.userSync.onSignIn(claims);
     req.session.authUser = user;
     // Keep the id_token solely as the `id_token_hint` for RP-initiated logout.
