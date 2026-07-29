@@ -108,6 +108,20 @@ describe('agreement default toggle', () => {
     });
   });
 
+  it('shows the description as a tooltip on hover instead of inline text', async () => {
+    const user = userEvent.setup();
+    mockBff('admin', []);
+    renderToggle(true);
+
+    const label = await screen.findByText('Workspace default');
+    // Not shown until hovered.
+    expect(screen.queryByText('Applies to every service in this workspace')).toBeNull();
+    await user.hover(label);
+    expect(
+      await screen.findByText('Applies to every service in this workspace'),
+    ).toBeInTheDocument();
+  });
+
   it('renders nothing for a non-admin member', async () => {
     const fetchMock = mockBff('member', []);
     renderToggle(true);

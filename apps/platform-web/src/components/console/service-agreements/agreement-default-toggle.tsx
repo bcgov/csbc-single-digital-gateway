@@ -1,4 +1,5 @@
 import { Switch } from '@repo/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@repo/ui/tooltip';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addDefaultAgreement,
@@ -58,27 +59,31 @@ export function AgreementDefaultToggle({
 
   return (
     <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-2">
-        <Switch
-          id="agreement-workspace-default"
-          aria-label="Workspace default"
-          checked={isDefault}
-          disabled={toggle.isPending}
-          onCheckedChange={(next) => toggle.mutate(next)}
-        />
-        <label htmlFor="agreement-workspace-default" className="text-sm font-medium leading-none">
-          Workspace default
-        </label>
-      </div>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger render={<div className="flex w-fit items-center gap-2" />}>
+            <Switch
+              id="agreement-workspace-default"
+              aria-label="Workspace default"
+              checked={isDefault}
+              disabled={toggle.isPending}
+              onCheckedChange={(next) => toggle.mutate(next)}
+            />
+            <label
+              htmlFor="agreement-workspace-default"
+              className="text-sm font-medium leading-none"
+            >
+              Workspace default
+            </label>
+          </TooltipTrigger>
+          <TooltipContent>Applies to every service in this workspace</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       {toggle.error ? (
         <span role="alert" className="text-xs text-destructive">
           {toggle.error.message}
         </span>
-      ) : (
-        <span className="text-xs text-muted-foreground">
-          Applies to every service in this workspace
-        </span>
-      )}
+      ) : null}
     </div>
   );
 }
