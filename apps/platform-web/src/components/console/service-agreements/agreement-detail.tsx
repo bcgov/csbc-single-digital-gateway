@@ -20,6 +20,7 @@ import {
   type ServiceAgreementDetail,
   updateAgreementDraft,
 } from '@/lib/service-agreements';
+import { AgreementDefaultToggle } from './agreement-default-toggle';
 import { AgreementEditor } from './agreement-editor';
 import type { AgreementScope } from './scope';
 
@@ -123,6 +124,9 @@ function AgreementBody({
 
   const busy = save.isPending || publish.isPending || newVersion.isPending;
   const latestPublished = latest?.status === 'published';
+  // A default resolves the agreement's current published version, so the toggle only offers published
+  // agreements (feature 149); a workspace default belongs to a concrete workspace (never admin scope).
+  const publishedAgreement = versions.some((v) => v.status === 'published');
   const error = save.error ?? publish.error ?? newVersion.error;
 
   return (
@@ -132,6 +136,14 @@ function AgreementBody({
         {backLink}
         <div className="flex items-center gap-2">
           {isGlobal ? <Badge color="grey">Global</Badge> : null}
+          {scope.kind === 'workspace' ? (
+            <AgreementDefaultToggle
+              slug={scope.slug}
+              workspaceId={scope.workspaceId}
+              agreementDocumentId={id}
+              published={publishedAgreement}
+            />
+          ) : null}
           <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
           {latestPublished && editableContext(isGlobal, isAdmin) ? (
             <Button size="sm" type="button" disabled={busy} onClick={() => newVersion.mutate()}>

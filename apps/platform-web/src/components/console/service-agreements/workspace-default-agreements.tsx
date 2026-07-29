@@ -1,6 +1,14 @@
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@repo/ui/card';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -23,8 +31,10 @@ const DEFAULTS_KEY = (workspaceId: string) =>
   ['workspace-default-agreements', workspaceId] as const;
 
 /**
- * Workspace default agreements (feature 98) — agreements that apply to EVERY service in the workspace.
- * Any member sees the list; only a workspace **admin** can add/remove (the API enforces it too).
+ * Workspace default agreements (feature 98; relocated to the Settings screen in feature 149) —
+ * agreements that apply to EVERY service in the workspace. Rendered as a settings Card so its heading
+ * matches General / Danger zone. Any member sees the list; only a workspace **admin** can add/remove
+ * (the API enforces it too).
  */
 export function WorkspaceDefaultAgreements({
   slug,
@@ -45,62 +55,64 @@ export function WorkspaceDefaultAgreements({
   });
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-medium">Default agreements</h2>
-          <p className="text-sm text-muted-foreground">
-            Applied to every service in this workspace, in addition to a service&apos;s own
-            agreements.
-          </p>
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Default agreements</CardTitle>
+        <CardDescription>
+          Applied to every service in this workspace, in addition to a service&apos;s own
+          agreements.
+        </CardDescription>
         {isAdmin ? (
-          <Button size="xs" variant="outline" type="button" onClick={() => setAddOpen(true)}>
-            <Plus className="size-3.5" aria-hidden />
-            Add default
-          </Button>
+          <CardAction>
+            <Button size="sm" variant="outline" type="button" onClick={() => setAddOpen(true)}>
+              <Plus className="size-4" aria-hidden />
+              Add default
+            </Button>
+          </CardAction>
         ) : null}
-      </div>
+      </CardHeader>
 
-      {remove.error ? (
-        <p role="alert" className="text-sm text-destructive">
-          {remove.error.message}
-        </p>
-      ) : null}
+      <CardContent className="flex flex-col gap-3">
+        {remove.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {remove.error.message}
+          </p>
+        ) : null}
 
-      {defaults.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No default agreements for this workspace.</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {defaults.map((def: DefaultAgreement) => (
-            <li
-              key={def.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-border p-3"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-sm font-medium text-foreground">{def.title}</span>
-                <Badge color={def.isOptional ? 'grey' : 'blue'}>
-                  {def.isOptional ? 'Optional' : 'Required'}
-                </Badge>
-                {def.isGlobal ? <Badge color="grey">Global</Badge> : null}
-              </span>
-              {isAdmin ? (
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  type="button"
-                  className="shrink-0 text-destructive"
-                  disabled={remove.isPending && remove.variables === def.id}
-                  onClick={() => remove.mutate(def.id)}
-                >
-                  <Trash2 className="size-3.5" aria-hidden />
-                  Remove
-                </Button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+        {defaults.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No default agreements for this workspace.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {defaults.map((def: DefaultAgreement) => (
+              <li
+                key={def.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border p-3"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-sm font-medium text-foreground">{def.title}</span>
+                  <Badge color={def.isOptional ? 'grey' : 'blue'}>
+                    {def.isOptional ? 'Optional' : 'Required'}
+                  </Badge>
+                  {def.isGlobal ? <Badge color="grey">Global</Badge> : null}
+                </span>
+                {isAdmin ? (
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    type="button"
+                    className="shrink-0 text-destructive"
+                    disabled={remove.isPending && remove.variables === def.id}
+                    onClick={() => remove.mutate(def.id)}
+                  >
+                    <Trash2 className="size-3.5" aria-hidden />
+                    Remove
+                  </Button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
 
       {isAdmin ? (
         <AddDefaultModal
@@ -110,7 +122,7 @@ export function WorkspaceDefaultAgreements({
           defaultedDocumentIds={defaults.map((d) => d.agreementDocumentId)}
         />
       ) : null}
-    </div>
+    </Card>
   );
 }
 
