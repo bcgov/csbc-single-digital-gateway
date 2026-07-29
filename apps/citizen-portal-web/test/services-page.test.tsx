@@ -84,11 +84,39 @@ describe('citizen-portal-web /services page', () => {
     expect(screen.queryByRole('heading', { name: 'Your applications' })).not.toBeInTheDocument();
   });
 
-  it('shows the citizen’s applications when authenticated', async () => {
+  it('does not show a "Your applications" band on the catalog — even when authenticated', async () => {
     mockBff({ me: jsonResponse(authedUser) });
     renderServices();
-    expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
-    expect(await screen.findByText(/20250615-0003/)).toBeInTheDocument();
+    // Wait for the catalog to render, then confirm no application tracking leaked onto this page.
+    await screen.findByRole('link', { name: 'Birth Registration' });
+    expect(screen.queryByRole('heading', { name: 'Your applications' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/20250615-0003/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Review')).not.toBeInTheDocument();
+  });
+
+  it('renders each catalog card as a service-detail link whose text is only the title', async () => {
+    mockBff();
+    renderServices();
+    const card = await screen.findByRole('link', { name: 'Birth Registration' });
+    // The whole card navigates to the service detail...
+    expect(card).toHaveAttribute('href', '/services/s2');
+    // ...but only the title is the link text (so only the title underlines) — the description is
+    // a sibling outside the link and is never part of the underlined link surface.
+    expect(card).not.toHaveTextContent(/Register the birth/i);
+    expect(screen.getByText(/Register the birth of a child/i)).toBeInTheDocument();
+  });
+
+  it('renders the heading and search box above a full-width gold divider (account pattern)', async () => {
+    mockBff();
+    renderServices();
+    const heading = await screen.findByRole('heading', { name: 'Services', level: 1 });
+    const search = screen.getByRole('searchbox', { name: /search services/i });
+
+    const divider = document.querySelector('.border-bcgov-gold');
+    expect(divider).not.toBeNull();
+    // Both the heading and the search box live inside the gold-divided header region.
+    expect(divider).toContainElement(heading);
+    expect(divider).toContainElement(search);
   });
 
   it('searches via the catalog endpoint with the q parameter', async () => {

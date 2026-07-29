@@ -119,6 +119,22 @@ describe('service detail page', () => {
     expect(versionLinks).toHaveLength(0);
   });
 
+  it('renders the header (title + action) above a full-width gold divider', async () => {
+    mockBff();
+    renderRoute('/services/svc-1');
+    const heading = await screen.findByRole(
+      'heading',
+      { name: 'Service One', level: 1 },
+      { timeout: 10000 },
+    );
+    const start = screen.getByRole('button', { name: 'Start an application' });
+
+    const divider = document.querySelector('.border-bcgov-gold');
+    expect(divider).not.toBeNull();
+    expect(divider).toContainElement(heading);
+    expect(divider).toContainElement(start);
+  });
+
   it('surfaces the application forms in How to apply', async () => {
     mockBff();
     renderRoute('/services/svc-1');
@@ -141,6 +157,38 @@ describe('service detail page', () => {
     expect(visit).toHaveAttribute('rel', 'noopener noreferrer');
     // The external method does NOT link into the in-portal apply flow.
     expect(visit).not.toHaveAttribute('href', expect.stringContaining('/apply/'));
+  });
+
+  it('titles the "Your activity" card by application name, then a Ref/date line', async () => {
+    const myApp = {
+      id: 'app-1',
+      serviceId: 'svc-1',
+      serviceVersionId: 'ver-3',
+      serviceTitle: 'Service One',
+      formTitle: 'Service One application',
+      reference: '20250701-0009',
+      status: 'draft',
+      statusLabel: 'Draft',
+      lastUpdated: '2025-07-01T00:00:00.000Z',
+    };
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/versions/')) return jsonResponse(version);
+      if (/\/v1\/services\/[^?]+$/.test(url)) return jsonResponse(detail);
+      if (url.includes('/v1/services')) return jsonResponse({ items: [] });
+      if (url.includes('/v1/me/applications')) return jsonResponse({ items: [myApp] });
+      if (url.includes('/auth/me')) return new Response(null, { status: 401 });
+      return new Response(null, { status: 404 });
+    }) as unknown as typeof fetch;
+
+    renderRoute('/services/svc-1');
+    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
+
+    // First line = the application (form) name, linking to the application page.
+    const activityLink = await screen.findByRole('link', { name: /Service One application/i });
+    expect(activityLink).toHaveAttribute('href', '/applications/app-1');
+    // Second line leads with "Ref #" — the service is implicit here, so no name prefixes the meta.
+    expect(screen.getByText(/^Ref #20250701-0009 •/)).toBeInTheDocument();
   });
 
   it('shows a not-available state on 404', async () => {

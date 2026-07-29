@@ -1,27 +1,15 @@
-import { Card, CardHeader, CardDescription, CardTitle } from '@repo/ui/card';
 import { mdiChevronRight } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Skeleton } from '@repo/ui/skeleton';
 import { Link } from '@tanstack/react-router';
 import { SectionHeading } from '@/components/landing/section-heading';
+import { ServiceCard } from '@/components/services/service-card';
 import type { CatalogService } from '@/lib/catalog';
 
 interface AvailableServicesProps {
   services: readonly CatalogService[];
   /** Render skeleton cards while the services query is loading. */
   loading?: boolean;
-}
-
-/** The disclosure chevron shown at the top-right of a card, signalling "there's more here". */
-function DisclosureChevron() {
-  return (
-    <Icon
-      path={mdiChevronRight}
-      size="20px"
-      className="mt-0.5 shrink-0 text-link"
-      aria-hidden={true}
-    />
-  );
 }
 
 /**
@@ -48,23 +36,7 @@ export function AvailableServices({ services, loading = false }: AvailableServic
                 <Skeleton className="mt-3 h-3 w-full" />
               </div>
             ))
-          : services.map((service) => (
-              <Card key={service.id}>
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold">
-                    <Link
-                      to="/services/$serviceId"
-                      params={{ serviceId: service.id }}
-                      className="flex items-start justify-between gap-2 no-underline hover:underline"
-                    >
-                      <span>{service.title}</span>
-                      <DisclosureChevron />
-                    </Link>
-                  </CardTitle>
-                  <CardDescription className="line-clamp-2">{service.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
+          : services.map((service) => <ServiceCard key={service.id} service={service} />)}
       </div>
       {showBrowseAll ? (
         <div className="mt-6 text-right">
