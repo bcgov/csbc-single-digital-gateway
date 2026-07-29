@@ -52,7 +52,7 @@ export const PRIMARY_NAV: NavItem[] = [
     label: 'Service Agreements',
     to: '/app/$slug/service-agreements',
     icon: FileSignature,
-    subtitle: 'Consent documents applicants approve before applying.',
+    subtitle: 'Terms applicants approve before applying.',
     scoped: true,
   },
   {

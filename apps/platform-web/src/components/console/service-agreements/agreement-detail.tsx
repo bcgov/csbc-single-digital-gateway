@@ -1,4 +1,12 @@
 import { Badge } from '@repo/ui/badge';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@repo/ui/breadcrumb';
 import { Button } from '@repo/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +21,7 @@ import { ChevronDown, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { useAuth } from '@/lib/auth';
+import { useSetPageChrome } from '@/lib/page-chrome';
 import {
   addAgreementVersion,
   agreementQueryOptions,
@@ -20,6 +29,7 @@ import {
   type ServiceAgreementDetail,
   updateAgreementDraft,
 } from '@/lib/service-agreements';
+import { AgreementDefaultToggle } from './agreement-default-toggle';
 import { AgreementEditor } from './agreement-editor';
 import type { AgreementScope } from './scope';
 
@@ -103,35 +113,64 @@ function AgreementBody({
     },
   });
 
+  // Admin shell has no page-chrome breadcrumb bar → keep an inline back link there. The console
+  // (workspace) scope uses the breadcrumb bar below instead (feature 149).
   const backLink =
-    scope.kind === 'workspace' ? (
-      <Link
-        to="/app/$slug/service-agreements"
-        params={{ slug: scope.slug }}
-        className="text-sm text-muted-foreground hover:underline"
-      >
-        ← All agreements
-      </Link>
-    ) : (
+    scope.kind === 'admin' ? (
       <Link
         to="/admin/service-agreements"
         className="text-sm text-muted-foreground hover:underline"
       >
         ← All agreements
       </Link>
-    );
+    ) : null;
 
   const busy = save.isPending || publish.isPending || newVersion.isPending;
   const latestPublished = latest?.status === 'published';
+  // A default resolves the agreement's current published version, so the toggle only offers published
+  // agreements (feature 149); a workspace default belongs to a concrete workspace (never admin scope).
+  const publishedAgreement = versions.some((v) => v.status === 'published');
   const error = save.error ?? publish.error ?? newVersion.error;
+
+  // Console breadcrumb bar (workspace scope): Service agreements → this agreement, mirroring the
+  // service detail (feature 44). No-ops in admin scope (no PageChromeProvider there).
+  useSetPageChrome({
+    title: agreement.title,
+    breadcrumb:
+      scope.kind === 'workspace' ? (
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink
+                render={<Link to="/app/$slug/service-agreements" params={{ slug: scope.slug }} />}
+              >
+                Service agreements
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{agreement.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      ) : undefined,
+  });
 
   return (
     <div className="mx-auto flex max-w-[1000px] flex-col gap-4">
       <UnsavedChangesGuard when={dirty} />
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
         {backLink}
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {isGlobal ? <Badge color="grey">Global</Badge> : null}
+          {scope.kind === 'workspace' ? (
+            <AgreementDefaultToggle
+              slug={scope.slug}
+              workspaceId={scope.workspaceId}
+              agreementDocumentId={id}
+              published={publishedAgreement}
+            />
+          ) : null}
           <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
           {latestPublished && editableContext(isGlobal, isAdmin) ? (
             <Button size="sm" type="button" disabled={busy} onClick={() => newVersion.mutate()}>
@@ -156,7 +195,7 @@ function AgreementBody({
           ) : null}
         </div>
       </div>
-      <h1 className="text-xl font-semibold">{agreement.title}</h1>
+      {scope.kind === 'admin' ? <h1 className="text-xl font-semibold">{agreement.title}</h1> : null}
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error.message}

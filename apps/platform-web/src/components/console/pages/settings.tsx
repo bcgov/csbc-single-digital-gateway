@@ -11,6 +11,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { DeleteWorkspaceButton } from '@/components/console/delete-workspace-button';
+import { WorkspaceDefaultAgreements } from '@/components/console/service-agreements/workspace-default-agreements';
 import { WorkspaceNameForm } from '@/components/console/workspace-name-form';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
 
@@ -43,6 +44,12 @@ export function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      {workspace ? (
+        <WorkspaceDefaultAgreements slug={workspace.slug} workspaceId={workspace.id} />
+      ) : (
+        <Skeleton className="h-24 w-full" />
+      )}
 
       <Card>
         <CardHeader>
