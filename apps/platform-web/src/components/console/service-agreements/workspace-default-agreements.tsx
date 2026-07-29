@@ -63,7 +63,7 @@ export function WorkspaceDefaultAgreements({
           agreements.
         </CardDescription>
         {isAdmin ? (
-          <CardAction>
+          <CardAction className="col-start-2 row-start-1 self-start">
             <Button size="sm" variant="outline" type="button" onClick={() => setAddOpen(true)}>
               <Plus className="size-4" aria-hidden />
               Add default
