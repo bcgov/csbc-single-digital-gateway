@@ -63,17 +63,14 @@ function withAgreements(base: ReturnType<typeof mockAuth>) {
 }
 
 describe('service agreements console', () => {
-  it('lists a workspace’s agreements (plus global) with scope badges', async () => {
+  it('lists a workspace’s OWN agreements only — globals are hidden here (feature 150)', async () => {
     withAgreements(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/service-agreements');
     expect(
       await screen.findByRole('link', { name: 'Terms of service' }, { timeout: 8000 }),
     ).toBeInTheDocument();
-    // The global agreement is visible too, badged "Global".
-    expect(
-      await screen.findByRole('link', { name: 'Privacy policy' }, { timeout: 8000 }),
-    ).toBeInTheDocument();
-    expect(await screen.findByText('Global', undefined, { timeout: 8000 })).toBeInTheDocument();
+    // The global agreement is filtered out of the workspace list (still attachable / defaultable).
+    expect(screen.queryByRole('link', { name: 'Privacy policy' })).not.toBeInTheDocument();
   });
 
   it('opens the New agreement modal (title + description) at /new', async () => {
