@@ -6,6 +6,7 @@
     "jsx": "react-jsx",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"],
+    "allowJs": true,
     "noEmit": true,
     "paths": {
       "@ui/*": ["./src/*"]

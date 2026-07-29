@@ -29,6 +29,9 @@ const entry = Object.fromEntries(
     .filter((f) => f.endsWith('.ts'))
     .map((f) => [f.replace(/\.ts$/, ''), resolve(srcDir, f)]),
 );
+// a11y-types.ts lives in src/a11y/ (not src/ root), so it isn't picked up by the glob above —
+// add it manually so it still builds to a flat dist/a11y-types.{js,cjs,d.ts}.
+entry['a11y-types'] = resolve(srcDir, 'a11y/a11y-types.ts');
 
 // Ship the theme-token stylesheet (consumers run Tailwind v4 against it) and the raw brand
 // assets (src/brand/*.svg → dist/*.svg, exported as URLs for favicon/<img>) verbatim.
@@ -51,6 +54,11 @@ const copyAssets = (): Plugin => ({
         copyFileSync(resolve(brandDir, file), resolve(dist, file));
       }
     }
+
+    copyFileSync(
+      resolve(import.meta.dirname, 'src/a11y/a11y-catalog.json'),
+      resolve(dist, 'a11y-catalog.json'),
+    );
   },
 });
 

@@ -89,6 +89,22 @@ exportsMap['./styles.css'] = {
   development: './src/styles.css',
   default: './dist/styles.css',
 };
+// Accessibility metadata (src/a11y/ — see src/a11y/a11y-types.ts and scripts/gen-a11y-catalog.mjs):
+// a11y-types.ts is a real (type-only) module, built via a manual vite.config.ts entry (it's not
+// at src/ root, so the automatic top-level *.ts glob doesn't pick it up) — the .js/.cjs bundle
+// lands flat at dist/ (from that entry), but vite-plugin-dts mirrors source directory structure
+// for .d.ts output, so `types` points into dist/a11y/, unlike every other subpath here.
+// a11y-catalog.json is generated data, copied verbatim like styles.css (copyAssets plugin).
+exportsMap['./a11y-types'] = {
+  types: './dist/a11y/a11y-types.d.ts',
+  development: './src/a11y/a11y-types.ts',
+  import: './dist/a11y-types.js',
+  require: './dist/a11y-types.cjs',
+};
+exportsMap['./a11y-catalog.json'] = {
+  development: './src/a11y/a11y-catalog.json',
+  default: './dist/a11y-catalog.json',
+};
 pkg.exports = exportsMap;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 

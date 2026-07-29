@@ -14,6 +14,8 @@ import {
   mdiSend,
 } from '@mdi/js';
 import { Icon } from '@mdi/react';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
@@ -174,24 +176,7 @@ export function IconReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            Decorative icons (an icon next to text that already conveys the meaning) always need{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>.
-          </li>
-          <li>
-            An icon-only control (no visible text) needs an{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-label</code> on the
-            interactive element it sits inside (a button or link) — not on the icon itself.
-          </li>
-          <li>
-            Icon has its own <code className="text-xs bg-muted px-1.5 py-0.5 rounded">title</code>/
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">description</code> props for a
-            genuinely standalone, meaningful icon (rare here) — prefer{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-label</code> on the
-            surrounding control instead where one exists.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('icons')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

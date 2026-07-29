@@ -2,6 +2,8 @@ import { mdiArrowRight, mdiOpenInNew, mdiPlay, mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button, buttonVariants } from '@repo/ui/button';
 import { Link } from '@tanstack/react-router';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
@@ -226,26 +228,7 @@ export function ButtonReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            Icon-only buttons (<code className="text-xs bg-muted px-1.5 py-0.5 rounded">size</code>{' '}
-            starting with <code className="text-xs bg-muted px-1.5 py-0.5 rounded">icon</code>)
-            always need an{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-label</code>— there's no
-            visible text for assistive tech to read.
-          </li>
-          <li>
-            Use the native <code className="text-xs bg-muted px-1.5 py-0.5 rounded">disabled</code>{' '}
-            prop rather than styling a button to look disabled — it also blocks pointer and keyboard
-            interaction.
-          </li>
-          <li>
-            When using{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">buttonVariants</code> on a Link
-            or anchor, that element is not a real button — screen readers announce it as a link,
-            which is correct since it navigates rather than performing an action.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('button')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">
