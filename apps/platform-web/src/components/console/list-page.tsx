@@ -36,7 +36,7 @@ export function ListPage({
   children,
 }: ListPageProps) {
   return (
-    <div className="mx-auto flex max-w-[1320px] flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {toolbar || actions ? (
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">{toolbar}</div>

@@ -73,7 +73,7 @@ export function AdminDocumentTypeDetail() {
         </div>
         <Button size="sm" type="button" disabled={add.isPending} onClick={() => add.mutate()}>
           <Plus className="size-4" aria-hidden />
-          Add version
+          New version
         </Button>
       </div>
 
