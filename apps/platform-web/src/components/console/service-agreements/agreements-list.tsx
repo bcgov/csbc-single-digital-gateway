@@ -31,7 +31,7 @@ export function AgreementsList({ scope }: { scope: AgreementScope }) {
   };
 
   return (
-    <div className="mx-auto flex max-w-[1320px] flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">
           {scope.kind === 'admin'

@@ -9,7 +9,7 @@ import {
 import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { useAuth } from '@/lib/auth';
@@ -134,13 +134,8 @@ function AgreementBody({
           {isGlobal ? <Badge color="grey">Global</Badge> : null}
           <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
           {latestPublished && editableContext(isGlobal, isAdmin) ? (
-            <Button
-              size="sm"
-              variant="outline"
-              type="button"
-              disabled={busy}
-              onClick={() => newVersion.mutate()}
-            >
+            <Button size="sm" type="button" disabled={busy} onClick={() => newVersion.mutate()}>
+              <Pencil className="size-4" aria-hidden />
               New version
             </Button>
           ) : null}
