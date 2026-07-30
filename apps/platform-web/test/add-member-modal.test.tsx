@@ -56,6 +56,10 @@ function mockTeamFetch(role: 'admin' | 'member' = 'admin') {
       return json({ items });
     }
     const path = url.split('?')[0] ?? '';
+    // Team list (paginated browse).
+    if (path.endsWith('/members/page')) {
+      return json({ items: members, total: members.length, limit: 20, offset: 0 });
+    }
     if (path.endsWith('/members') && method === 'POST') {
       const body = JSON.parse(String(init?.body)) as { userId: string; role: 'admin' | 'member' };
       const picked = staff.find((u) => u.id === body.userId)!;

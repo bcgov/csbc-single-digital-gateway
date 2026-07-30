@@ -5,8 +5,10 @@ import { ZodSerializerDto } from 'nestjs-zod';
 import {
   CreateServiceAgreementDto,
   ListServiceAgreementsDto,
+  ListServiceAgreementsPageDto,
   ServiceAgreementDetailDto,
   ServiceAgreementListDto,
+  ServiceAgreementListPageDto,
   ServiceAgreementVersionDto,
   ServiceAgreementWithVersionDto,
   UpdateServiceAgreementDto,
@@ -33,6 +35,15 @@ export class ServiceAgreementsV1Controller {
   @ZodSerializerDto(ServiceAgreementListDto)
   async list(@CurrentUser() user: AuthUser, @Query() query: ListServiceAgreementsDto) {
     return { items: await this.agreements.list(this.actor(user), query) };
+  }
+
+  // Paginated/searchable browse for the console + admin list surfaces. Declared before `:id` so the
+  // static segment wins route matching. The unpaginated `GET /` above still feeds the attach/default
+  // pickers (which need the full workspace + global set).
+  @Get('page')
+  @ZodSerializerDto(ServiceAgreementListPageDto)
+  listPage(@CurrentUser() user: AuthUser, @Query() query: ListServiceAgreementsPageDto) {
+    return this.agreements.listPage(this.actor(user), query);
   }
 
   @Get(':id')

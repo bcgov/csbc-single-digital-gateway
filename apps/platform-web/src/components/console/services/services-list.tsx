@@ -1,10 +1,14 @@
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
-import { type ServiceSummary, servicesQueryOptions } from '@/lib/services';
+import { ListPagination } from '@/components/console/list/list-pagination';
+import { ListSearchInput } from '@/components/console/list/list-search-input';
+import { SortableHeader } from '@/components/console/list/sortable-header';
+import { useListSearch } from '@/lib/list-search';
+import { type ServiceSort, type ServiceSummary, servicesQueryOptions } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
 import { ServiceMenu } from './service-menu';
 
@@ -15,21 +19,24 @@ const STATUS_COLOR = {
   none: 'blue',
 } as const;
 
-/** Workspace Services list — service documents with status; "New service" opens the client-first editor. */
+/** Workspace Services list — searchable, sortable, paged; "New service" opens the client-first editor. */
 export function ServicesList() {
   const { slug } = useParams({ from: '/app/$slug' });
   const navigate = useNavigate();
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   const workspaceId = workspace?.id ?? '';
-  const { data: items = [] } = useQuery({
-    ...servicesQueryOptions(workspaceId),
+  const { sort, order, q, limit, offset, setPage, setSort, setQ } = useListSearch<ServiceSort>();
+  const { data, isFetching } = useQuery({
+    ...servicesQueryOptions(workspaceId, { q, sort, order, limit, offset }),
     enabled: workspaceId !== '',
+    placeholderData: keepPreviousData,
   });
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">Service documents in this workspace.</span>
+      <div className="flex flex-col items-end gap-3">
         <Button
           size="sm"
           type="button"
@@ -39,27 +46,49 @@ export function ServicesList() {
           <Plus className="size-4" aria-hidden />
           New service
         </Button>
+        <ListSearchInput value={q} onChange={setQ} placeholder="Search services…" />
       </div>
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Status</TableHead>
+              <SortableHeader
+                column="title"
+                label="Title"
+                active={sort}
+                order={order}
+                onSort={setSort}
+              />
+              <SortableHeader
+                column="status"
+                label="Status"
+                active={sort}
+                order={order}
+                onSort={setSort}
+              />
               <TableHead>Versions</TableHead>
+              <SortableHeader
+                column="updated"
+                label="Updated"
+                active={sort}
+                order={order}
+                onSort={setSort}
+              />
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
-                  No services yet — create one with the New button.
+                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                  {q === ''
+                    ? 'No services yet — create one with the New button.'
+                    : `No services match “${q}”.`}
                 </TableCell>
               </TableRow>
             ) : (
               items.map((service: ServiceSummary) => (
-                <TableRow key={service.id}>
+                <TableRow key={service.id} data-pending={isFetching ? '' : undefined}>
                   <TableCell>
                     <Link
                       to="/app/$slug/services/$id"
@@ -73,6 +102,9 @@ export function ServicesList() {
                     <Badge color={STATUS_COLOR[service.status]}>{service.status}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{service.versionCount}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(service.updatedAt).toLocaleDateString()}
+                  </TableCell>
                   <TableCell>
                     <div className="flex justify-end">
                       <ServiceMenu
@@ -88,6 +120,7 @@ export function ServicesList() {
             )}
           </TableBody>
         </Table>
+        <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
       </div>
     </div>
   );

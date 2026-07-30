@@ -19,9 +19,20 @@ export type SubmissionStatus = z.infer<typeof submissionStatusSchema>;
 
 // ── Requests ────────────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Paginated, sortable, searchable review-queue query (initiative `staff-list-query`). `status` is the
+ * existing tab filter (composes with the always-on draft exclusion — feature 151); `q` is an ILIKE
+ * substring over applicant name, service title, and the submission reference. `sort: 'status'` orders
+ * by the workflow enum's definition order (pending → in_review → … → withdrawn).
+ */
 export const listSubmissionsQuerySchema = z.object({
   workspaceId: z.uuid(),
   status: submissionStatusSchema.optional(),
+  q: z.string().trim().max(255).optional(),
+  sort: z.enum(['submitted', 'updated', 'status']).default('submitted'),
+  order: z.enum(['asc', 'desc']).default('desc'),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 export class ListSubmissionsQueryDto extends createZodDto(listSubmissionsQuerySchema) {}
 export type ListSubmissionsQuery = z.infer<typeof listSubmissionsQuerySchema>;
@@ -52,9 +63,15 @@ export const submissionSummarySchema = z.object({
   updatedAt: z.string(),
 });
 export type SubmissionSummary = z.infer<typeof submissionSummarySchema>;
-export class SubmissionListDto extends createZodDto(
-  z.object({ items: z.array(submissionSummarySchema) }),
-) {}
+/** Paginated review-queue envelope (initiative `staff-list-query`). */
+export const submissionListResponseSchema = z.object({
+  items: z.array(submissionSummarySchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});
+export type SubmissionListResponse = z.infer<typeof submissionListResponseSchema>;
+export class SubmissionListDto extends createZodDto(submissionListResponseSchema) {}
 
 /** One past review decision on the submission. */
 export const reviewEntrySchema = z.object({

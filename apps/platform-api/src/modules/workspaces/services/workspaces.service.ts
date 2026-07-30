@@ -12,8 +12,10 @@ import {
   type AddMemberInput,
   type AddableStaffQuery,
   type CreateWorkspaceInput,
+  type ListMembersQuery,
   type ListWorkspacesQuery,
   type StaffUserResponse,
+  type WorkspaceMemberListPageResponse,
   type TransferOwnershipInput,
   type UpdateMemberInput,
   type UpdateWorkspaceInput,
@@ -85,6 +87,63 @@ export class WorkspacesService {
       .where(and(eq(workspaceMembers.workspaceId, id), isNull(users.deletedAt)))
       .orderBy(asc(sql`${workspaceMembers.role} <> 'admin'`), asc(users.displayName));
     return { items: rows.map((row) => toWorkspaceMemberDto(row, workspace.ownerUserId)) };
+  }
+
+  /**
+   * List a workspace's members — paginated, sortable, searchable (initiative `staff-list-query`).
+   * `sort: 'role'` (default) keeps the admins-first ordering; every sort tiebreaks on display name.
+   * ILIKE search over display name / email. Any member may view.
+   */
+  async listMembersPage(
+    userId: string,
+    id: string,
+    query: ListMembersQuery,
+  ): Promise<WorkspaceMemberListPageResponse> {
+    const { workspace } = await this.requireMembership(userId, id);
+    const q = query.q?.trim();
+    const search =
+      q !== undefined && q !== ''
+        ? or(ilike(users.displayName, `%${q}%`), ilike(users.email, `%${q}%`))
+        : undefined;
+    const where = and(eq(workspaceMembers.workspaceId, id), isNull(users.deletedAt), search);
+    const sortExpr =
+      query.sort === 'name'
+        ? users.displayName
+        : query.sort === 'joined'
+          ? workspaceMembers.createdAt
+          : // 'role' → admins first (false sorts before true under asc).
+            sql`${workspaceMembers.role} <> 'admin'`;
+    const direction = query.order === 'asc' ? asc : desc;
+    const memberCols = {
+      id: workspaceMembers.id,
+      userId: workspaceMembers.userId,
+      role: workspaceMembers.role,
+      status: workspaceMembers.status,
+      displayName: users.displayName,
+      email: users.email,
+      createdAt: workspaceMembers.createdAt,
+    };
+    const [rows, totals] = await Promise.all([
+      this.db
+        .select(memberCols)
+        .from(workspaceMembers)
+        .innerJoin(users, eq(users.id, workspaceMembers.userId))
+        .where(where)
+        .orderBy(direction(sortExpr), asc(users.displayName))
+        .limit(query.limit)
+        .offset(query.offset),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(workspaceMembers)
+        .innerJoin(users, eq(users.id, workspaceMembers.userId))
+        .where(where),
+    ]);
+    return {
+      items: rows.map((row) => toWorkspaceMemberDto(row, workspace.ownerUserId)),
+      total: totals[0]?.count ?? 0,
+      limit: query.limit,
+      offset: query.offset,
+    };
   }
 
   /** Staff users who can be added to the workspace (admin only): platform-audience users

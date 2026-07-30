@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createServiceAgreementSchema,
+  listServiceAgreementsPageSchema,
   listServiceAgreementsSchema,
   toAgreementDto,
   toAgreementVersionDto,
@@ -33,6 +34,24 @@ describe('service agreement DTO schemas', () => {
     expect(listServiceAgreementsSchema.safeParse({ workspaceId: UUID }).success).toBe(true);
     expect(listServiceAgreementsSchema.safeParse({ workspaceId: 'nope' }).success).toBe(false);
   });
+
+  it('page list: defaults paging/sort, coerces limit/offset, bounds + validates sort/order', () => {
+    const parsed = listServiceAgreementsPageSchema.safeParse({});
+    expect(parsed.success && parsed.data).toMatchObject({
+      sort: 'updated',
+      order: 'desc',
+      limit: 20,
+      offset: 0,
+    });
+    const coerced = listServiceAgreementsPageSchema.safeParse({ limit: '50', offset: '10' });
+    expect(coerced.success && coerced.data.limit).toBe(50);
+    expect(coerced.success && coerced.data.offset).toBe(10);
+    expect(listServiceAgreementsPageSchema.safeParse({ workspaceId: 'nope' }).success).toBe(false);
+    expect(listServiceAgreementsPageSchema.safeParse({ limit: 0 }).success).toBe(false);
+    expect(listServiceAgreementsPageSchema.safeParse({ limit: 101 }).success).toBe(false);
+    expect(listServiceAgreementsPageSchema.safeParse({ sort: 'bogus' }).success).toBe(false);
+    expect(listServiceAgreementsPageSchema.safeParse({ order: 'up' }).success).toBe(false);
+  });
 });
 
 describe('service agreement mappers', () => {
@@ -44,10 +63,12 @@ describe('service agreement mappers', () => {
       title: 'Global ToS',
       kind: 'service-agreement',
       createdAt: created,
+      updatedAt: created,
     } as unknown as Parameters<typeof toAgreementDto>[0]);
     expect(global.workspaceId).toBeNull();
     expect(global.title).toBe('Global ToS');
     expect(global.createdAt).toBe('2026-07-07T00:00:00.000Z');
+    expect(global.updatedAt).toBe('2026-07-07T00:00:00.000Z');
   });
 
   it('toAgreementVersionDto maps status + nullable timestamps', () => {

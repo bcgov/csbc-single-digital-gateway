@@ -4,9 +4,9 @@ import { isStaffVisibleSubmission } from '../src/modules/submissions/util/format
 import type { SubmissionStatus } from '../src/modules/submissions/dtos/submission.dtos';
 
 /**
- * Feature 151 — the staff review queue (`list()`) and the staff detail (`get()`) both gate on this
- * predicate, so it is the single source of truth for "what a staff member may see". A draft is a
- * citizen's un-submitted, in-progress application and must be hidden; every submitted/decided state
+ * Feature 151 — the staff detail (`get()`) gates on this predicate, and the review queue (`list()`)
+ * enforces the equivalent rule in SQL (`status <> 'draft'`, initiative `staff-list-query`). A draft is
+ * a citizen's un-submitted, in-progress application and must be hidden; every submitted/decided state
  * stays visible.
  */
 describe('isStaffVisibleSubmission', () => {

@@ -104,6 +104,31 @@ export type WorkspaceMemberResponse = z.infer<typeof workspaceMemberSchema>;
 export const workspaceMemberListSchema = z.object({ items: z.array(workspaceMemberSchema) });
 export class WorkspaceMemberListDto extends createZodDto(workspaceMemberListSchema) {}
 
+/**
+ * Paginated, sortable, searchable members query (initiative `staff-list-query`). `sort: 'role'`
+ * (the default) keeps the established admins-first ordering (admins before members, then by name);
+ * `q` is an ILIKE substring over display name / email.
+ */
+export const listMembersQuerySchema = z.object({
+  q: z.string().trim().max(255).optional(),
+  sort: z.enum(['name', 'role', 'joined']).default('role'),
+  order: z.enum(['asc', 'desc']).default('asc'),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+export class ListMembersQueryDto extends createZodDto(listMembersQuerySchema) {}
+export type ListMembersQuery = z.infer<typeof listMembersQuerySchema>;
+
+/** Paginated members list envelope (initiative `staff-list-query`). */
+export const workspaceMemberListPageSchema = z.object({
+  items: z.array(workspaceMemberSchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});
+export type WorkspaceMemberListPageResponse = z.infer<typeof workspaceMemberListPageSchema>;
+export class WorkspaceMemberListPageDto extends createZodDto(workspaceMemberListPageSchema) {}
+
 /** A staff user eligible to be added to a workspace (addable-staff search result). */
 export const staffUserSchema = z.object({
   id: z.string(),
