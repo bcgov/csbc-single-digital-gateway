@@ -36,8 +36,7 @@ export function ServicesList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <ListSearchInput value={q} onChange={setQ} placeholder="Search services…" />
+      <div className="flex flex-col items-end gap-3">
         <Button
           size="sm"
           type="button"
@@ -47,6 +46,7 @@ export function ServicesList() {
           <Plus className="size-4" aria-hidden />
           New service
         </Button>
+        <ListSearchInput value={q} onChange={setQ} placeholder="Search services…" />
       </div>
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>

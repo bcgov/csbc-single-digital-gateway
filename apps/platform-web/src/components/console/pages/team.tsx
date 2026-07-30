@@ -47,14 +47,14 @@ export function TeamPage() {
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <ListSearchInput value={q} onChange={setQ} placeholder="Search name or email…" />
+        <div className="flex flex-col items-end gap-3">
           {isAdmin ? (
-            <Button variant="outline" size="sm" type="button" onClick={() => setAddOpen(true)}>
+            <Button size="sm" type="button" onClick={() => setAddOpen(true)}>
               <UserPlus className="size-4" aria-hidden />
               Add member
             </Button>
           ) : null}
+          <ListSearchInput value={q} onChange={setQ} placeholder="Search name or email…" />
         </div>
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <Table>

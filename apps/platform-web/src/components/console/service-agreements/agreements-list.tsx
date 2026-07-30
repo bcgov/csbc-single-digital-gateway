@@ -51,12 +51,12 @@ export function AgreementsList({ scope }: { scope: AgreementScope }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <ListSearchInput value={q} onChange={setQ} placeholder="Search agreements…" />
+      <div className="flex flex-col items-end gap-3">
         <Button size="sm" type="button" disabled={!ready} onClick={goNew}>
           <Plus className="size-4" aria-hidden />
           New agreement
         </Button>
+        <ListSearchInput value={q} onChange={setQ} placeholder="Search agreements…" />
       </div>
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
