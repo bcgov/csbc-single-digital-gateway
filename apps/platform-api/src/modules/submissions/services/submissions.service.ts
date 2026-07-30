@@ -23,7 +23,12 @@ import {
 } from '../dtos/submission.dtos';
 import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
-import { normalizeFormStructure, submissionReference, submissionStatusLabel } from '../util/format';
+import {
+  isStaffVisibleSubmission,
+  normalizeFormStructure,
+  submissionReference,
+  submissionStatusLabel,
+} from '../util/format';
 import { reviewNotificationContent } from '../util/notification-content';
 
 type SubmissionRow = typeof submissions.$inferSelect;
@@ -73,9 +78,12 @@ export class SubmissionsService {
       .where(eq(submissions.workspaceId, query.workspaceId))
       .orderBy(desc(submissions.createdAt));
     const items = await Promise.all(subs.map((sub) => this.toSummary(sub)));
+    // Staff never see un-submitted drafts (feature 151) — so `?status=draft` also yields [].
     return items.filter(
       (item): item is SubmissionSummary =>
-        item !== null && (query.status === undefined || item.status === query.status),
+        item !== null &&
+        isStaffVisibleSubmission(item.status) &&
+        (query.status === undefined || item.status === query.status),
     );
   }
 
@@ -84,7 +92,8 @@ export class SubmissionsService {
     const sub = await this.requireSubmission(submissionId);
     await this.requireMembership(userId, sub.workspaceId);
     const summary = await this.toSummary(sub);
-    if (summary === null) {
+    // Drafts are citizen-private; staff can't view one even by direct id (feature 151).
+    if (summary === null || !isStaffVisibleSubmission(summary.status)) {
       throw new NotFoundException('Submission not found');
     }
     const [version] = await this.db
