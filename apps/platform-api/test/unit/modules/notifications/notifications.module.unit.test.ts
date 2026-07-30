@@ -6,7 +6,7 @@ import { NotificationsModule } from '../../../../src/modules/notifications/notif
 import { MyNotificationsV1Controller } from '../../../../src/modules/notifications/controllers/my-notifications-v1.controller';
 import { NotificationsProxyService } from '../../../../src/modules/notifications/services/notifications-proxy.service';
 
-describe('NotificationsModule Unit Tests', () => {
+describe('NotificationsModule Unit Test Suite', () => {
   it('should compile NotificationsModule successfully and resolve all controllers and providers', async () => {
     @Global()
     @Module({

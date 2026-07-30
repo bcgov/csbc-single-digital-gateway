@@ -7,7 +7,7 @@ import { NotificationsProxyService } from '../../../../../src/modules/notificati
 import { M2mTokenClient } from '../../../../../src/notifications/m2m-token.client';
 import type { Env } from '../../../../../src/config/env.schema';
 
-describe('NotificationsProxyService Unit Tests', () => {
+describe('NotificationsProxyService Unit Test Suite', () => {
   let service: NotificationsProxyService;
   let mockConfigService: ConfigService<Env, true>;
   let getTokenSpy: any;

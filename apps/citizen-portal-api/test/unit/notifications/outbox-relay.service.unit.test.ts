@@ -7,7 +7,7 @@ import { M2mTokenClient } from '../../../src/notifications/m2m-token.client';
 import { backoffMs, DEFAULT_BACKOFF_BASE_MS } from '../../../src/notifications/backoff';
 import type { Env } from '../../../src/config/env.schema';
 
-describe('OutboxRelayService Unit Tests', () => {
+describe('OutboxRelayService Unit Test Suite', () => {
   let service: OutboxRelayService;
   let mockDb: any;
   let mockConfigService: any;

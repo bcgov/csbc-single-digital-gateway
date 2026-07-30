@@ -87,7 +87,7 @@ const createDbMock = () => {
   return { dbMock, mockResponse };
 };
 
-describe('ConsentService Unit Tests', () => {
+describe('ConsentService Unit Test Suite', () => {
   let service: ConsentService;
   let dbMock: any;
   let mockResponse: any;

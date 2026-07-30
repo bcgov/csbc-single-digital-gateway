@@ -8,7 +8,7 @@ import { SubmissionsService } from '../../../../src/modules/submissions/services
 
 import { ConfigService } from '@nestjs/config';
 
-describe('SubmissionsModule Unit Tests', () => {
+describe('SubmissionsModule Unit Test Suite', () => {
   it('should compile SubmissionsModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 

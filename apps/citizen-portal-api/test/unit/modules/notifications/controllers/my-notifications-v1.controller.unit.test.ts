@@ -8,7 +8,7 @@ import type {
   UpdatePreferencesDto,
 } from '../../../../../src/modules/notifications/dtos/notification.dtos';
 
-describe('MyNotificationsV1Controller Unit Tests', () => {
+describe('MyNotificationsV1Controller Unit Test Suite', () => {
   let controller: MyNotificationsV1Controller;
   let notificationsProxyServiceMock: any;
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApplicationFormsV1Controller } from '../../../../../src/modules/applications/controllers/application-forms-v1.controller';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
 
-describe('ApplicationFormsV1Controller Unit Tests', () => {
+describe('ApplicationFormsV1Controller Unit Test Suite', () => {
   let controller: ApplicationFormsV1Controller;
   let applicationsServiceMock: any;
 

@@ -6,7 +6,7 @@ import { DefaultAgreementsModule } from '../../../../src/modules/default-agreeme
 import { DefaultAgreementsV1Controller } from '../../../../src/modules/default-agreements/controllers/default-agreements-v1.controller';
 import { DefaultAgreementsService } from '../../../../src/modules/default-agreements/services/default-agreements.service';
 
-describe('DefaultAgreementsModule Unit Tests', () => {
+describe('DefaultAgreementsModule Unit Test Suite', () => {
   it('should compile DefaultAgreementsModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 

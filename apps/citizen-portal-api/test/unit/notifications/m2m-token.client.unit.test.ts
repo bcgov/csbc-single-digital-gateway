@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { M2mTokenClient } from '../../../src/notifications/m2m-token.client';
 
-describe('M2mTokenClient Unit Tests', () => {
+describe('M2mTokenClient Unit Test Suite', () => {
   let client: M2mTokenClient;
   const options = {
     issuer: 'http://auth.issuer',

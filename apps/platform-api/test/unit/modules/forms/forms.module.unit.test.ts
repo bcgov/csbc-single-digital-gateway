@@ -6,7 +6,7 @@ import { FormsModule } from '../../../../src/modules/forms/forms.module';
 import { FormsV1Controller } from '../../../../src/modules/forms/controllers/forms-v1.controller';
 import { FormsService } from '../../../../src/modules/forms/services/forms.service';
 
-describe('FormsModule Unit Tests', () => {
+describe('FormsModule Unit Test Suite', () => {
   it('should compile FormsModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 

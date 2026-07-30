@@ -10,7 +10,7 @@ import { ConsentV1Controller } from '../../../../src/modules/applications/contro
 import { ApplicationsService } from '../../../../src/modules/applications/services/applications.service';
 import { ConsentService } from '../../../../src/modules/applications/services/consent.service';
 
-describe('ApplicationsModule Unit Tests', () => {
+describe('ApplicationsModule Unit Test Suite', () => {
   it('should compile ApplicationsModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
     const mockConfigService = {

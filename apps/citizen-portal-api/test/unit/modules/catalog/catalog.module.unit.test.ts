@@ -6,7 +6,7 @@ import { CatalogModule } from '../../../../src/modules/catalog/catalog.module';
 import { CatalogV1Controller } from '../../../../src/modules/catalog/controllers/catalog-v1.controller';
 import { CatalogService } from '../../../../src/modules/catalog/services/catalog.service';
 
-describe('CatalogModule Unit Tests', () => {
+describe('CatalogModule Unit Test Suite', () => {
   it('should compile CatalogModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 

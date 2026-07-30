@@ -3,7 +3,7 @@ import { CatalogV1Controller } from '../../../../../src/modules/catalog/controll
 import { CatalogService } from '../../../../../src/modules/catalog/services/catalog.service';
 import type { ListServicesQueryDto } from '../../../../../src/modules/catalog/dtos/catalog.dtos';
 
-describe('CatalogV1Controller Unit Tests', () => {
+describe('CatalogV1Controller Unit Test Suite', () => {
   let controller: CatalogV1Controller;
   let catalogServiceMock: any;
 

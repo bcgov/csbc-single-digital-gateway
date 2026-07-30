@@ -8,7 +8,7 @@ import { DocumentTypesV1Controller } from '../../../../src/modules/document-type
 import { DocumentTypesService } from '../../../../src/modules/document-types/services/document-types.service';
 import { DocumentTypeVersionsService } from '../../../../src/modules/document-types/services/document-type-versions.service';
 
-describe('DocumentTypesModule Unit Tests', () => {
+describe('DocumentTypesModule Unit Test Suite', () => {
   it('should compile DocumentTypesModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 

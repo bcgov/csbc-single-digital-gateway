@@ -3,7 +3,7 @@ import { type AuthUser } from '@repo/nestjs/auth';
 import { MyApplicationsV1Controller } from '../../../../../src/modules/applications/controllers/my-applications-v1.controller';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
 
-describe('MyApplicationsV1Controller Unit Tests', () => {
+describe('MyApplicationsV1Controller Unit Test Suite', () => {
   let controller: MyApplicationsV1Controller;
   let applicationsServiceMock: any;
 

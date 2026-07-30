@@ -7,7 +7,7 @@ import { LoggerModule } from '@repo/nestjs/logger';
 import { DatabaseModule } from '@repo/nestjs/database';
 import { ValkeySessionRegistry } from '../../src/auth/valkey-session-registry';
 
-describe('AppModule Unit Tests', () => {
+describe('AppModule Unit Test Suite', () => {
   it('should compile AppModule successfully', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],

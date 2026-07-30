@@ -11,7 +11,7 @@ import { ServiceTypeResolver } from '../../../../src/modules/services/services/s
 import { ReferencesService } from '../../../../src/modules/services/services/references.service';
 import { AgreementRefsService } from '../../../../src/modules/services/services/agreement-refs.service';
 
-describe('ServicesModule Unit Tests', () => {
+describe('ServicesModule Unit Test Suite', () => {
   it('should compile ServicesModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 

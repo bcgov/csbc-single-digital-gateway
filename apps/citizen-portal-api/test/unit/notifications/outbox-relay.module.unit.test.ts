@@ -7,7 +7,7 @@ import { DATABASE_CLIENT } from '@repo/nestjs/database';
 import { OutboxRelayModule } from '../../../src/notifications/outbox-relay.module';
 import { OutboxRelayService } from '../../../src/notifications/outbox-relay.service';
 
-describe('OutboxRelayModule Unit Tests', () => {
+describe('OutboxRelayModule Unit Test Suite', () => {
   it('should compile OutboxRelayModule successfully and resolve OutboxRelayService', async () => {
     const mockDb = {};
     const mockConfigService = {

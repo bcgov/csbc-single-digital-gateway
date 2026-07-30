@@ -79,7 +79,7 @@ const createDbMock = () => {
   return { dbMock, mockResponse };
 };
 
-describe('CatalogService Unit Tests', () => {
+describe('CatalogService Unit Test Suite', () => {
   let service: CatalogService;
   let dbMock: any;
   let mockResponse: any;

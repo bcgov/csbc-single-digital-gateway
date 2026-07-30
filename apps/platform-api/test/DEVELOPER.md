@@ -8,11 +8,10 @@ The Platform API project uses Vitest for QA testing, which is the preferred fram
 
 Unit test files with file name suffix `**/*.unit.test.ts` should be placed inside the [`unit`](./unit) folder, whereas integration test files with file name suffix `**/*.e2e.test.ts` should be placed inside the [integration](./integration/) folder.
 
-| Testing Content  |     File Format     |                  Folder (example)                  |
-| :--------------: | :-----------------: | :------------------------------------------------: |
-|    Unit test     | `**/*.unit.test.ts` | [health/**unit**](../src/modules/health/**unit**/) |
-| Integration test | `**/*.e2e.test.ts`  |           [integration](./integration/)            |
-|  Coverage test   |                     |  coverage.txt [coverage](./coverage/coverage.txt)  |
+| Testing Content  |     File Format     | Folder (example) |
+| :--------------: | :-----------------: | :--------------: |
+|    Unit test     | `**/*.unit.test.ts` | [unit](./unit/)  |
+| Integration test | `**/*.e2e.test.ts`  |  [e2e](./e2e/)   |
 
 ## Configuration
 
@@ -38,30 +37,12 @@ Run integration test on integration files with the following command line:
 npm run test:e2e
 ```
 
-Change directory to `apps/api` and run unit test on a specific test file (same for integration test) with the following command line:
+Run coverage tests with the following command line:
 
 ```bash
-npm run test "path/to/your/testfile.spec.ts"
-```
-
-Run coverage test with one of the following command lines:
-
-```bash
-npm run test:cov:unit
-```
-
-or
-
-```bash
-npm run test:cov:e2e
+npm run test:cov
 ```
 
 ### VSCode Vitest Extension
 
-VSCode Vitest extension (vscode-jest) supports full jest features in vscode environment to make testing accessible for developers. Install [`Vitest`](https://marketplace.visualstudio.com/items?itemName=vitest.explorer) from the VSCode extension marketplace, and it should be available to use. Restart VSCode after installation in case it is not available.
-
-Open a test file and click on the green Run button next any test suite or test case to run tests.
-
-## CI/CD Testing
-
-CI/CD workflows for API quality assurance testing are added to the file [qa-testing.yml](/.github/workflows/qa-testing.yml) for GitHub actions. Automated workflows will be triggered upon creating a pull request from devs' current working branch into the `develop` branch.
+VSCode Vitest extension (vscode-jest) supports full jest features in vscode environment to make testing accessible for developers. Install [`Vitest`](https://marketplace.visualstudio.com/items?itemName=vitest.explorer) from the VSCode extension marketplace, and it should be available to use. Restart VSCode after installation in case it is not available. Open a test file and click on the green Run button next any test suite or test case to run tests.

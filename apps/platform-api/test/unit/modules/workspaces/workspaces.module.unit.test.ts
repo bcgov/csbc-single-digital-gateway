@@ -6,7 +6,7 @@ import { WorkspacesModule } from '../../../../src/modules/workspaces/workspaces.
 import { WorkspacesV1Controller } from '../../../../src/modules/workspaces/controllers/workspaces-v1.controller';
 import { WorkspacesService } from '../../../../src/modules/workspaces/services/workspaces.service';
 
-describe('WorkspacesModule Unit Tests', () => {
+describe('WorkspacesModule Unit Test Suite', () => {
   it('should compile WorkspacesModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 

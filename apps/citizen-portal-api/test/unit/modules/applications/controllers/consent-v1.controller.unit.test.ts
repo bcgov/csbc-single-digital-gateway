@@ -4,7 +4,7 @@ import { ConsentV1Controller } from '../../../../../src/modules/applications/con
 import { ConsentService } from '../../../../../src/modules/applications/services/consent.service';
 import type { ConsentDecision } from '../../../../../src/modules/applications/dtos/consent.dtos';
 
-describe('ConsentV1Controller Unit Tests', () => {
+describe('ConsentV1Controller Unit Test Suite', () => {
   let controller: ConsentV1Controller;
   let consentServiceMock: any;
 
