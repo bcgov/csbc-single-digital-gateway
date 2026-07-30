@@ -75,9 +75,9 @@ export interface UseListSearch<S extends string> {
  * doesn't spam the history stack.
  */
 export function useListSearch<S extends string>(
-  options: { limit?: number; defaultSort?: S } = {},
+  options: { limit?: number; defaultSort?: S; defaultOrder?: SortOrder } = {},
 ): UseListSearch<S> {
-  const { limit = 20, defaultSort } = options;
+  const { limit = 20, defaultSort, defaultOrder = 'desc' } = options;
   // `useSearch`/`useNavigate` are route-typed; this hook is shared across every list route, so we
   // read/write search through minimal loose signatures (still fully typed via `ListSearchParams`,
   // never `any`). The route's `validateSearch` remains the source of truth for defaults/coercion;
@@ -89,7 +89,7 @@ export function useListSearch<S extends string>(
   }) => void;
   const page = search.page ?? 1;
   const sort = (search.sort ?? defaultSort ?? '') as S;
-  const order = search.order ?? 'desc';
+  const order = search.order ?? defaultOrder;
   const q = search.q ?? '';
 
   const update = useCallback(

@@ -6,6 +6,7 @@ import {
   AddMemberDto,
   AddableStaffQueryDto,
   CreateWorkspaceDto,
+  ListMembersQueryDto,
   ListWorkspacesQueryDto,
   StaffUserListDto,
   TransferOwnershipDto,
@@ -15,6 +16,7 @@ import {
   WorkspaceListDto,
   WorkspaceMemberDto,
   WorkspaceMemberListDto,
+  WorkspaceMemberListPageDto,
 } from '../dtos/workspace.dtos';
 import { WorkspacesService } from '../services/workspaces.service';
 
@@ -56,6 +58,18 @@ export class WorkspacesV1Controller {
   @ZodSerializerDto(WorkspaceMemberListDto)
   listMembers(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.service.listMembers(user.id, id);
+  }
+
+  // Paginated/searchable members browse for the Team page. Declared before nothing conflicting;
+  // the unpaginated `GET :id/members` above still feeds the member-detail lookup (full set).
+  @Get(':id/members/page')
+  @ZodSerializerDto(WorkspaceMemberListPageDto)
+  listMembersPage(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query() query: ListMembersQueryDto,
+  ) {
+    return this.service.listMembersPage(user.id, id, query);
   }
 
   @Get(':id/addable-staff')

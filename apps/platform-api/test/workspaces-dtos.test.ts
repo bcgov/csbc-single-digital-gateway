@@ -3,6 +3,7 @@ import {
   addMemberSchema,
   addableStaffQuerySchema,
   createWorkspaceSchema,
+  listMembersQuerySchema,
   listWorkspacesQuerySchema,
   transferOwnershipSchema,
   updateWorkspaceSchema,
@@ -121,6 +122,30 @@ describe('workspace DTO schemas', () => {
       expect(listWorkspacesQuerySchema.safeParse({ limit: 0 }).success).toBe(false);
       expect(listWorkspacesQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
       expect(listWorkspacesQuerySchema.safeParse({ offset: -1 }).success).toBe(false);
+    });
+  });
+
+  describe('listMembersQuerySchema', () => {
+    it('defaults to the admins-first (role) sort and coerces paging', () => {
+      expect(listMembersQuerySchema.parse({})).toEqual({
+        sort: 'role',
+        order: 'asc',
+        limit: 20,
+        offset: 0,
+      });
+      expect(listMembersQuerySchema.parse({ limit: '50', offset: '10' })).toMatchObject({
+        limit: 50,
+        offset: 10,
+      });
+    });
+
+    it('accepts name/joined sorts + a q, rejects unknown sort/order and out-of-range paging', () => {
+      expect(listMembersQuerySchema.safeParse({ sort: 'name', q: 'ann' }).success).toBe(true);
+      expect(listMembersQuerySchema.safeParse({ sort: 'joined' }).success).toBe(true);
+      expect(listMembersQuerySchema.safeParse({ sort: 'bogus' }).success).toBe(false);
+      expect(listMembersQuerySchema.safeParse({ order: 'sideways' }).success).toBe(false);
+      expect(listMembersQuerySchema.safeParse({ limit: 0 }).success).toBe(false);
+      expect(listMembersQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
     });
   });
 });

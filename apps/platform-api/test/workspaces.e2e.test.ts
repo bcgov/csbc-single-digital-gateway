@@ -130,4 +130,19 @@ describe('workspaces (e2e)', () => {
       400,
     );
   });
+
+  it('401s the paginated members browse without a session', async () => {
+    expect((await http().get('/v1/workspaces/abc/members/page')).status).toBe(401);
+  });
+
+  it('400s an invalid members browse query for an authenticated caller', async () => {
+    expect(
+      (await http().get('/v1/workspaces/abc/members/page?limit=0').set('x-test-user', seedUser))
+        .status,
+    ).toBe(400);
+    expect(
+      (await http().get('/v1/workspaces/abc/members/page?sort=bogus').set('x-test-user', seedUser))
+        .status,
+    ).toBe(400);
+  });
 });
