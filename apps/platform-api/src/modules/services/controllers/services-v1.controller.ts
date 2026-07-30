@@ -6,6 +6,7 @@ import {
   CreateServiceDto,
   DefinitionDto,
   FormCatalogListDto,
+  ListServicesPageQueryDto,
   ListServicesQueryDto,
   ServiceDetailDto,
   ServiceListDto,
@@ -30,8 +31,8 @@ export class ServicesV1Controller {
 
   @Get()
   @ZodSerializerDto(ServiceListDto)
-  async list(@CurrentUser() user: AuthUser, @Query() query: ListServicesQueryDto) {
-    return { items: await this.services.list(user.id, query) };
+  list(@CurrentUser() user: AuthUser, @Query() query: ListServicesPageQueryDto) {
+    return this.services.list(user.id, query);
   }
 
   @Post()

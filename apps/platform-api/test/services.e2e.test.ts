@@ -91,4 +91,21 @@ describe('services (e2e)', () => {
       ).status,
     ).toBe(400);
   });
+
+  it('400s a list with out-of-range paging or an unknown sort', async () => {
+    expect(
+      (
+        await http()
+          .get(`/v1/services?workspaceId=${UUID}&limit=0`)
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await http()
+          .get(`/v1/services?workspaceId=${UUID}&sort=bogus`)
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(400);
+  });
 });

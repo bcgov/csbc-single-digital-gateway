@@ -48,6 +48,23 @@ export const listServicesQuerySchema = z.object({ workspaceId: z.uuid() });
 export class ListServicesQueryDto extends createZodDto(listServicesQuerySchema) {}
 export type ListServicesQuery = z.infer<typeof listServicesQuerySchema>;
 
+/**
+ * Paginated, sortable, searchable services list query (initiative `staff-list-query`). Extends the
+ * workspaces list convention: `sort` → column, `order` asc/desc, `limit`/`offset` window, `q` an
+ * ILIKE substring over title/description. `sort: 'status'` orders by the derived status precedence
+ * (published → draft → archived → none).
+ */
+export const listServicesPageQuerySchema = z.object({
+  workspaceId: z.uuid(),
+  q: z.string().trim().max(255).optional(),
+  sort: z.enum(['title', 'updated', 'status']).default('updated'),
+  order: z.enum(['asc', 'desc']).default('desc'),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+export class ListServicesPageQueryDto extends createZodDto(listServicesPageQuerySchema) {}
+export type ListServicesPageQuery = z.infer<typeof listServicesPageQuerySchema>;
+
 /** Composite save of a draft version: form data + (optional) reconciled application references. */
 export const updateVersionDataSchema = z.object({
   data: z.record(z.string(), z.unknown()),
@@ -81,6 +98,7 @@ export const serviceSchema = z.object({
   title: z.string(),
   description: z.string(),
   createdAt: z.string(),
+  updatedAt: z.string(),
 });
 export type ServiceResponse = z.infer<typeof serviceSchema>;
 
@@ -107,9 +125,15 @@ export const serviceSummarySchema = serviceSchema.extend({
   latestPublished: z.boolean(),
 });
 export type ServiceSummary = z.infer<typeof serviceSummarySchema>;
-export class ServiceListDto extends createZodDto(
-  z.object({ items: z.array(serviceSummarySchema) }),
-) {}
+/** Paginated services list envelope (initiative `staff-list-query`). */
+export const serviceListResponseSchema = z.object({
+  items: z.array(serviceSummarySchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});
+export type ServiceListResponse = z.infer<typeof serviceListResponseSchema>;
+export class ServiceListDto extends createZodDto(serviceListResponseSchema) {}
 
 /** Create response: the service + its versions. */
 export const serviceWithVersionsSchema = z.object({
@@ -150,6 +174,7 @@ export function toServiceDto(row: Document): ServiceResponse {
     title: row.title,
     description: row.description,
     createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 

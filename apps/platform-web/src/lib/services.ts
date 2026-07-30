@@ -4,6 +4,7 @@
  */
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
+import type { Paginated, SortOrder } from '@/lib/list-search';
 
 export type VersionStatus = 'draft' | 'published' | 'archived';
 
@@ -13,6 +14,7 @@ export interface Service {
   title: string;
   description: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface ServiceSummary extends Service {
@@ -109,16 +111,31 @@ async function ok<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function servicesQueryOptions(workspaceId: string) {
+export type ServiceSort = 'title' | 'updated' | 'status';
+export interface ServiceListParams {
+  q: string;
+  sort: ServiceSort;
+  order: SortOrder;
+  limit: number;
+  offset: number;
+}
+
+/** Paginated, sortable, searchable services list (initiative `staff-list-query`). */
+export function servicesQueryOptions(workspaceId: string, params: ServiceListParams) {
   return queryOptions({
-    queryKey: ['services', workspaceId] as const,
+    queryKey: ['services', workspaceId, params] as const,
     queryFn: async () => {
-      const envelope = await ok<{ items: ServiceSummary[] }>(
-        await fetch(`${BASE}?workspaceId=${encodeURIComponent(workspaceId)}`, {
-          credentials: 'include',
-        }),
+      const search = new URLSearchParams({
+        workspaceId,
+        sort: params.sort,
+        order: params.order,
+        limit: String(params.limit),
+        offset: String(params.offset),
+      });
+      if (params.q !== '') search.set('q', params.q);
+      return ok<Paginated<ServiceSummary>>(
+        await fetch(`${BASE}?${search.toString()}`, { credentials: 'include' }),
       );
-      return envelope.items;
     },
   });
 }

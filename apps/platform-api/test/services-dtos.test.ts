@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createServiceSchema,
+  listServicesPageQuerySchema,
   listServicesQuerySchema,
   updateVersionDataSchema,
 } from '../src/modules/services/dtos/service.dtos';
@@ -22,6 +23,46 @@ describe('service DTO schemas', () => {
   it('listServicesQuerySchema requires a uuid workspaceId', () => {
     expect(listServicesQuerySchema.safeParse({ workspaceId: UUID }).success).toBe(true);
     expect(listServicesQuerySchema.safeParse({}).success).toBe(false);
+  });
+
+  it('listServicesPageQuerySchema defaults paging/sort and coerces limit/offset', () => {
+    const parsed = listServicesPageQuerySchema.safeParse({ workspaceId: UUID });
+    expect(parsed.success && parsed.data).toMatchObject({
+      sort: 'updated',
+      order: 'desc',
+      limit: 20,
+      offset: 0,
+    });
+    // Coerces numeric strings from the query string.
+    const coerced = listServicesPageQuerySchema.safeParse({
+      workspaceId: UUID,
+      limit: '50',
+      offset: '20',
+    });
+    expect(coerced.success && coerced.data.limit).toBe(50);
+    expect(coerced.success && coerced.data.offset).toBe(20);
+  });
+
+  it('listServicesPageQuerySchema bounds limit and rejects unknown sort/order', () => {
+    expect(listServicesPageQuerySchema.safeParse({ workspaceId: UUID, limit: 0 }).success).toBe(
+      false,
+    );
+    expect(listServicesPageQuerySchema.safeParse({ workspaceId: UUID, limit: 101 }).success).toBe(
+      false,
+    );
+    expect(listServicesPageQuerySchema.safeParse({ workspaceId: UUID, offset: -1 }).success).toBe(
+      false,
+    );
+    expect(
+      listServicesPageQuerySchema.safeParse({ workspaceId: UUID, sort: 'bogus' }).success,
+    ).toBe(false);
+    expect(
+      listServicesPageQuerySchema.safeParse({ workspaceId: UUID, order: 'sideways' }).success,
+    ).toBe(false);
+    // Trimmed search, length-capped.
+    expect(
+      listServicesPageQuerySchema.safeParse({ workspaceId: UUID, q: 'a'.repeat(256) }).success,
+    ).toBe(false);
   });
 
   it('updateVersionDataSchema requires a data object; applications are optional', () => {
