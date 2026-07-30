@@ -5,6 +5,7 @@
  */
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
+import type { Paginated, SortOrder } from '@/lib/list-search';
 
 export type VersionStatus = 'draft' | 'published' | 'archived';
 
@@ -15,6 +16,7 @@ export interface ServiceAgreement {
   title: string;
   kind: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface ServiceAgreementSummary extends ServiceAgreement {
@@ -79,7 +81,8 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
   );
 }
 
-/** List: a workspace's agreements + global ones (staff), or global only (admin, no workspaceId). */
+/** List: a workspace's agreements + global ones (staff), or global only (admin, no workspaceId).
+ * Full (unpaginated) set — feeds the attach/default pickers, which need workspace + global. */
 export function agreementsQueryOptions(workspaceId: string | null) {
   const suffix = workspaceId === null ? '' : `?workspaceId=${encodeURIComponent(workspaceId)}`;
   return queryOptions({
@@ -89,6 +92,39 @@ export function agreementsQueryOptions(workspaceId: string | null) {
         await fetch(`${BASE}${suffix}`, { credentials: 'include' }),
       );
       return envelope.items;
+    },
+  });
+}
+
+export type AgreementSort = 'title' | 'updated' | 'status';
+export interface AgreementListParams {
+  q: string;
+  sort: AgreementSort;
+  order: SortOrder;
+  limit: number;
+  offset: number;
+}
+
+/** Paginated, sortable, searchable agreements browse (initiative `staff-list-query`). Workspace scope
+ * lists the workspace's OWN agreements only (globals excluded, feature 150); `null` = admin/global. */
+export function agreementsPageQueryOptions(
+  workspaceId: string | null,
+  params: AgreementListParams,
+) {
+  return queryOptions({
+    queryKey: ['service-agreements', 'page', workspaceId ?? 'global', params] as const,
+    queryFn: async () => {
+      const search = new URLSearchParams({
+        sort: params.sort,
+        order: params.order,
+        limit: String(params.limit),
+        offset: String(params.offset),
+      });
+      if (workspaceId !== null) search.set('workspaceId', workspaceId);
+      if (params.q !== '') search.set('q', params.q);
+      return ok<Paginated<ServiceAgreementSummary>>(
+        await fetch(`${BASE}/page?${search.toString()}`, { credentials: 'include' }),
+      );
     },
   });
 }

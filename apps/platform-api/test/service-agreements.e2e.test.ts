@@ -26,6 +26,8 @@ const authOptions = {
 const asUser = (roles: string[]): string =>
   JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
 
+const UUID = '11111111-1111-4111-8111-111111111111';
+
 describe('service-agreements (e2e)', () => {
   let app: INestApplication;
 
@@ -102,5 +104,36 @@ describe('service-agreements (e2e)', () => {
           .set('x-test-user', asUser(['staff']))
       ).status,
     ).toBe(403);
+  });
+
+  it('401s the paginated browse without a session', async () => {
+    expect((await http().get('/v1/service-agreements/page')).status).toBe(401);
+  });
+
+  it('403s a non-admin browsing GLOBAL agreements (no workspaceId)', async () => {
+    expect(
+      (
+        await http()
+          .get('/v1/service-agreements/page')
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(403);
+  });
+
+  it('400s the paginated browse with out-of-range paging or an unknown sort', async () => {
+    expect(
+      (
+        await http()
+          .get(`/v1/service-agreements/page?workspaceId=${UUID}&limit=0`)
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await http()
+          .get(`/v1/service-agreements/page?workspaceId=${UUID}&sort=bogus`)
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(400);
   });
 });

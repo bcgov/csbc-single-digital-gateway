@@ -16,12 +16,14 @@ import {
   workspaces,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, desc, eq, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import {
   type AssociatedService,
   type CreateServiceAgreementInput,
+  type ListServiceAgreementsPageQuery,
   type ListServiceAgreementsQuery,
   type ServiceAgreementDetail,
+  type ServiceAgreementListPageResponse,
   type ServiceAgreementSummary,
   type ServiceAgreementVersionResponse,
   type ServiceAgreementWithVersion,
@@ -134,6 +136,81 @@ export class ServiceAgreementsService {
         });
       }),
     );
+  }
+
+  /**
+   * Paginated, sortable, searchable agreements list (initiative `staff-list-query`). Workspace scope
+   * lists the workspace's OWN published agreements only (globals excluded — feature 150); admin scope
+   * lists global published agreements. Paging/sort/search run in SQL; the page's status is derived in
+   * one batched follow-up query (not per-row).
+   */
+  async listPage(
+    actor: Actor,
+    query: ListServiceAgreementsPageQuery,
+  ): Promise<ServiceAgreementListPageResponse> {
+    let scope;
+    if (query.workspaceId !== undefined) {
+      await this.requireMembership(actor.id, query.workspaceId);
+      // Workspace list = the workspace's OWN agreements; globals live on the admin surface and are
+      // reachable when attaching/defaulting, not here (feature 150).
+      scope = eq(documents.workspaceId, query.workspaceId);
+    } else {
+      if (!actor.isAdmin) {
+        throw new ForbiddenException('Only an admin can list global service agreements');
+      }
+      scope = isNull(documents.workspaceId);
+    }
+    const hasPublished = sql`exists (select 1 from ${documentVersions} dv where dv.document_id = ${documents.id} and dv.status = 'published')`;
+    const q = query.q?.trim();
+    const search = q !== undefined && q !== '' ? ilike(documents.title, `%${q}%`) : undefined;
+    const where = and(eq(documents.kind, KIND), scope, hasPublished, search);
+    // Derived status precedence for `sort: 'status'` — published(0) → draft(1) → archived(2) → none(3).
+    const statusRank = sql`(CASE
+      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'published') THEN 0
+      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'draft') THEN 1
+      WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id}) THEN 2
+      ELSE 3 END)`;
+    const sortExpr =
+      query.sort === 'title'
+        ? documents.title
+        : query.sort === 'status'
+          ? statusRank
+          : documents.updatedAt;
+    const direction = query.order === 'asc' ? asc : desc;
+    const [docs, totals] = await Promise.all([
+      this.db
+        .select()
+        .from(documents)
+        .where(where)
+        .orderBy(direction(sortExpr), desc(documents.createdAt))
+        .limit(query.limit)
+        .offset(query.offset),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(documents)
+        .where(where),
+    ]);
+    const docIds = docs.map((doc) => doc.id);
+    const versionRows =
+      docIds.length === 0
+        ? []
+        : await this.db
+            .select({ documentId: documentVersions.documentId, status: documentVersions.status })
+            .from(documentVersions)
+            .where(inArray(documentVersions.documentId, docIds));
+    const statusByDoc = new Map<string, Array<{ status: 'draft' | 'published' | 'archived' }>>();
+    for (const row of versionRows) {
+      const list = statusByDoc.get(row.documentId);
+      if (list) list.push(row);
+      else statusByDoc.set(row.documentId, [row]);
+    }
+    const items = docs.map((doc) =>
+      Object.assign(toAgreementDto(doc), {
+        status: summarizeStatus(statusByDoc.get(doc.id) ?? []),
+        isGlobal: doc.workspaceId === null,
+      }),
+    );
+    return { items, total: totals[0]?.count ?? 0, limit: query.limit, offset: query.offset };
   }
 
   /** An agreement + its versions + the type definition to render the editor. */

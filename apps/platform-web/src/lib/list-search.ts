@@ -71,17 +71,21 @@ export interface UseListSearch<S extends string> {
  * matching `validateSearch` (see `listSearchValidator`). Writes use `replace` so paging/searching
  * doesn't spam the history stack.
  */
-export function useListSearch<S extends string>(limit = 20): UseListSearch<S> {
+export function useListSearch<S extends string>(
+  options: { limit?: number; defaultSort?: S } = {},
+): UseListSearch<S> {
+  const { limit = 20, defaultSort } = options;
   // `useSearch`/`useNavigate` are route-typed; this hook is shared across every list route, so we
   // read/write search through minimal loose signatures (still fully typed via `ListSearchParams`,
-  // never `any`). The route's `validateSearch` remains the source of truth for defaults/coercion.
+  // never `any`). The route's `validateSearch` remains the source of truth for defaults/coercion;
+  // `defaultSort` keeps the hook self-sufficient on any host route that lacks one.
   const search = (useSearch as (opts: { strict: false }) => ListSearchParams<S>)({ strict: false });
   const navigate = useNavigate() as unknown as (opts: {
     search: (prev: Record<string, unknown>) => Record<string, unknown>;
     replace?: boolean;
   }) => void;
   const page = search.page ?? 1;
-  const sort = (search.sort ?? '') as S;
+  const sort = (search.sort ?? defaultSort ?? '') as S;
   const order = search.order ?? 'desc';
   const q = search.q ?? '';
 
