@@ -4,6 +4,7 @@
  */
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
+import type { Paginated, SortOrder } from '@/lib/list-search';
 
 export type SubmissionStatus =
   | 'draft'
@@ -58,16 +59,30 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+export type SubmissionSort = 'submitted' | 'updated' | 'status';
+export interface SubmissionListParams {
+  status?: SubmissionStatus;
+  q: string;
+  sort: SubmissionSort;
+  order: SortOrder;
+  limit: number;
+  offset: number;
+}
+
 export async function listSubmissions(
   workspaceId: string,
-  status?: SubmissionStatus,
-): Promise<SubmissionSummary[]> {
-  const params = new URLSearchParams({ workspaceId });
-  if (status) {
-    params.set('status', status);
-  }
-  const data = await requestJson<{ items: SubmissionSummary[] }>(`/v1/submissions?${params}`);
-  return data.items;
+  params: SubmissionListParams,
+): Promise<Paginated<SubmissionSummary>> {
+  const search = new URLSearchParams({
+    workspaceId,
+    sort: params.sort,
+    order: params.order,
+    limit: String(params.limit),
+    offset: String(params.offset),
+  });
+  if (params.status) search.set('status', params.status);
+  if (params.q !== '') search.set('q', params.q);
+  return requestJson<Paginated<SubmissionSummary>>(`/v1/submissions?${search}`);
 }
 
 export async function getSubmission(id: string): Promise<SubmissionDetail> {
@@ -87,11 +102,11 @@ export async function reviewSubmission(
 /** The query-key root for submissions — invalidated to refresh the list + open detail page. */
 export const SUBMISSIONS_KEY = ['submissions'] as const;
 
-/** Query for a workspace's submissions, optionally filtered by status. */
-export function submissionsQueryOptions(workspaceId: string, status?: SubmissionStatus) {
+/** Query for a workspace's submissions — paginated, sortable, searchable, status-filterable. */
+export function submissionsQueryOptions(workspaceId: string, params: SubmissionListParams) {
   return queryOptions({
-    queryKey: [...SUBMISSIONS_KEY, workspaceId, status ?? 'all'] as const,
-    queryFn: () => listSubmissions(workspaceId, status),
+    queryKey: [...SUBMISSIONS_KEY, workspaceId, params] as const,
+    queryFn: () => listSubmissions(workspaceId, params),
     staleTime: 30 * 1000,
   });
 }

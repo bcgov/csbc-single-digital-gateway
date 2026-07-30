@@ -64,6 +64,9 @@ export interface UseListSearch<S extends string> {
   setSort: (sort: S) => void;
   /** Set the search term (resets to page 1); `''` clears it from the URL. */
   setQ: (q: string) => void;
+  /** Set arbitrary extra filter params kept in the URL alongside the list controls (e.g. a status
+   * tab), resetting to page 1. A `''`/`undefined` value clears that key. */
+  setFilter: (patch: Record<string, string | undefined>) => void;
 }
 
 /**
@@ -90,12 +93,14 @@ export function useListSearch<S extends string>(
   const q = search.q ?? '';
 
   const update = useCallback(
-    (next: ListSearchParams<S>) => {
+    (next: Record<string, unknown>) => {
       navigate({
         search: (prev) => {
           const merged: Record<string, unknown> = { ...prev, ...next };
-          // Drop an empty `q` so it never lingers in the URL.
-          if (merged.q === '' || merged.q === undefined) delete merged.q;
+          // Drop empty string/undefined keys so they never linger in the URL.
+          for (const key of Object.keys(merged)) {
+            if (merged[key] === '' || merged[key] === undefined) delete merged[key];
+          }
           return merged;
         },
         replace: true,
@@ -118,6 +123,10 @@ export function useListSearch<S extends string>(
     [update, sort, order],
   );
   const setQ = useCallback((nextQ: string) => update({ q: nextQ, page: 1 }), [update]);
+  const setFilter = useCallback(
+    (patch: Record<string, string | undefined>) => update({ ...patch, page: 1 }),
+    [update],
+  );
 
   return useMemo(
     () => ({
@@ -130,7 +139,8 @@ export function useListSearch<S extends string>(
       setPage,
       setSort,
       setQ,
+      setFilter,
     }),
-    [page, sort, order, q, limit, setPage, setSort, setQ],
+    [page, sort, order, q, limit, setPage, setSort, setQ, setFilter],
   );
 }

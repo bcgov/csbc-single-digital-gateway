@@ -12,12 +12,13 @@ import {
   workspaceMembers,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import {
   type ListSubmissionsQuery,
   type ReviewEntry,
   type ReviewSubmissionInput,
   type SubmissionDetail,
+  type SubmissionListResponse,
   type SubmissionStatus,
   type SubmissionSummary,
 } from '../dtos/submission.dtos';
@@ -69,22 +70,102 @@ export class SubmissionsService {
     }
   }
 
-  /** All submissions in a workspace (optionally filtered by status), newest first. */
-  async list(userId: string, query: ListSubmissionsQuery): Promise<SubmissionSummary[]> {
+  /**
+   * The workspace review queue — paginated, sortable, searchable (initiative `staff-list-query`).
+   * Everything (join to the latest submission version, applicant, service, the draft exclusion, the
+   * status tab, search, sort, paging) runs in ONE SQL query (+ a count), replacing the previous
+   * fetch-all + per-row `toSummary` N+1. Drafts are always excluded (feature 151); `?status=draft`
+   * therefore yields nothing.
+   */
+  async list(userId: string, query: ListSubmissionsQuery): Promise<SubmissionListResponse> {
     await this.requireMembership(userId, query.workspaceId);
-    const subs = await this.db
-      .select()
-      .from(submissions)
-      .where(eq(submissions.workspaceId, query.workspaceId))
-      .orderBy(desc(submissions.createdAt));
-    const items = await Promise.all(subs.map((sub) => this.toSummary(sub)));
-    // Staff never see un-submitted drafts (feature 151) — so `?status=draft` also yields [].
-    return items.filter(
-      (item): item is SubmissionSummary =>
-        item !== null &&
-        isStaffVisibleSubmission(item.status) &&
-        (query.status === undefined || item.status === query.status),
+    // Join the submission's LATEST version (max version per submission; the pair is unique).
+    const latestVersion = sql`(select max(sv2.version) from submission_versions sv2 where sv2.submission_id = ${submissions.id})`;
+    // The single service that references this submission's form version as an application method.
+    const serviceIdExpr = sql<
+      string | null
+    >`(select dr.owner_document_id from ${documentReferences} dr where dr.target_version_id = ${submissions.documentVersionId} and dr.relation = 'application_form' limit 1)`;
+    const serviceTitleExpr = sql<
+      string | null
+    >`(select d2.title from ${documentReferences} dr join ${documents} d2 on d2.id = dr.owner_document_id where dr.target_version_id = ${submissions.documentVersionId} and dr.relation = 'application_form' limit 1)`;
+    // The human reference (matches `submissionReference`): UTC YYYYMMDD + last-4 id hex, upper.
+    const referenceExpr = sql`(to_char(${submissions.createdAt} at time zone 'UTC', 'YYYYMMDD') || '-' || upper(right(replace(${submissions.id}::text, '-', ''), 4)))`;
+
+    const conditions = [
+      eq(submissions.workspaceId, query.workspaceId),
+      // Staff never see un-submitted drafts (feature 151); the status is the latest version's.
+      sql`${submissionVersions.status} <> 'draft'`,
+    ];
+    if (query.status !== undefined) {
+      conditions.push(eq(submissionVersions.status, query.status));
+    }
+    const q = query.q?.trim();
+    if (q !== undefined && q !== '') {
+      const pattern = `%${q}%`;
+      const search = or(
+        ilike(users.displayName, pattern),
+        sql`${serviceTitleExpr} ilike ${pattern}`,
+        sql`${referenceExpr} ilike ${pattern}`,
+      );
+      if (search) {
+        conditions.push(search);
+      }
+    }
+    const where = and(...conditions);
+    const latestJoin = and(
+      eq(submissionVersions.submissionId, submissions.id),
+      eq(submissionVersions.version, latestVersion),
     );
+    const sortExpr =
+      query.sort === 'updated'
+        ? submissionVersions.updatedAt
+        : query.sort === 'status'
+          ? submissionVersions.status
+          : submissionVersions.submittedAt;
+    const direction = query.order === 'asc' ? asc : desc;
+    const [rows, totals] = await Promise.all([
+      this.db
+        .select({
+          sub: submissions,
+          status: submissionVersions.status,
+          submittedAt: submissionVersions.submittedAt,
+          versionUpdatedAt: submissionVersions.updatedAt,
+          serviceId: serviceIdExpr,
+          serviceTitle: serviceTitleExpr,
+          formTitle: documents.title,
+          applicantName: users.displayName,
+          applicantEmail: users.email,
+        })
+        .from(submissions)
+        .innerJoin(submissionVersions, latestJoin)
+        .leftJoin(users, eq(users.id, submissions.userId))
+        .leftJoin(documents, eq(documents.id, submissions.documentId))
+        .where(where)
+        .orderBy(direction(sortExpr), desc(submissions.createdAt))
+        .limit(query.limit)
+        .offset(query.offset),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(submissions)
+        .innerJoin(submissionVersions, latestJoin)
+        .leftJoin(users, eq(users.id, submissions.userId))
+        .where(where),
+    ]);
+    const items = rows.map((row) => ({
+      id: row.sub.id,
+      serviceId: row.serviceId ?? '',
+      serviceTitle: row.serviceTitle ?? 'Service',
+      formId: row.sub.documentId,
+      formTitle: row.formTitle ?? 'Form',
+      applicantName: row.applicantName ?? 'Anonymous',
+      applicantEmail: row.applicantEmail ?? null,
+      status: row.status,
+      statusLabel: submissionStatusLabel(row.status),
+      reference: submissionReference(row.sub.id, row.sub.createdAt),
+      submittedAt: row.submittedAt?.toISOString() ?? null,
+      updatedAt: (row.versionUpdatedAt ?? row.sub.updatedAt).toISOString(),
+    }));
+    return { items, total: totals[0]?.count ?? 0, limit: query.limit, offset: query.offset };
   }
 
   /** A submission's answers + form render structure + review history. 404 outside the workspace. */
