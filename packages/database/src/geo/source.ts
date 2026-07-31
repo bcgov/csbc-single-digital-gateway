@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import type { NewCity, NewCountry, NewRegion, NewState, NewSubregion } from '../schema/geo';
 
 /**
@@ -8,6 +11,19 @@ export const GEO_DATA_REF = 'v3.2-export.7';
 
 /** Raw JSON base URL at the pinned ref. No user input feeds this — `GEO_DATA_REF` is a constant. */
 export const GEO_BASE_URL = `https://raw.githubusercontent.com/dr5hn/countries-states-cities-database/${GEO_DATA_REF}/json`;
+
+/**
+ * The upstream files the importer reads, in FK/read order. The first four are flat; cities are
+ * extracted from the combined file (there is no standalone cities.json at tagged releases). This
+ * list drives both the build-time vendor download (`download.ts`) and the runtime read.
+ */
+export const GEO_DATA_FILES = [
+  'regions.json',
+  'subregions.json',
+  'countries.json',
+  'states.json',
+  'countries+states+cities.json',
+] as const;
 
 // --- Raw upstream shapes (loose — only the fields we read; everything is coerced below) ---
 
@@ -270,8 +286,8 @@ export function flattenCities(tree: RawCountryTree[]): RawCity[] {
   return cities;
 }
 
-/** Fetch and parse a JSON file from the pinned upstream ref. */
-export async function fetchGeoJson<T>(fileName: string): Promise<T> {
+/** Fetch a file's raw text from the pinned upstream ref (used by the build-time vendor download). */
+export async function fetchGeoText(fileName: string): Promise<string> {
   const url = `${GEO_BASE_URL}/${fileName}`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -279,5 +295,15 @@ export async function fetchGeoJson<T>(fileName: string): Promise<T> {
       `geo import — failed to fetch ${fileName}: ${response.status} ${response.statusText}`,
     );
   }
-  return (await response.json()) as T;
+  return response.text();
+}
+
+/** Fetch and parse a JSON file from the pinned upstream ref. */
+export async function fetchGeoJson<T>(fileName: string): Promise<T> {
+  return JSON.parse(await fetchGeoText(fileName)) as T;
+}
+
+/** Read and parse a vendored JSON file from a local directory (the build-time-baked data). */
+export async function readGeoJson<T>(dir: string, fileName: string): Promise<T> {
+  return JSON.parse(await readFile(join(dir, fileName), 'utf8')) as T;
 }

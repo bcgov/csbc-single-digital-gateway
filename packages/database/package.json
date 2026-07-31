@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "build:scripts": "esbuild src/migrate.ts src/seed.ts geo-import=src/geo/import.ts --bundle --platform=node --format=esm --target=node24 --outdir=dist-scripts --packages=external",
+    "build:scripts": "esbuild src/migrate.ts src/seed.ts geo-import=src/geo/import.ts geo-download=src/geo/download.ts --bundle --platform=node --format=esm --target=node24 --outdir=dist-scripts --packages=external",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:run": "tsx src/migrate.ts",
@@ -24,6 +24,7 @@
     "db:seed:geo": "tsx src/geo/import.ts",
     "db:studio": "drizzle-kit studio",
     "dev": "vite build --watch",
+    "geo:download": "tsx src/geo/download.ts",
     "lint": "oxlint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

@@ -100,8 +100,8 @@ platform-api:
     # Service + Form document types, each with a published v1 — without them the staff console
     # 500s on `GET /v1/services`), then imports the geographic reference data (countries/states/
     # cities, feature 152). All idempotent (fixed ids / upsert), so safe on every deploy.
-    # PREREQUISITE: the geo step fetches ~53MB JSON from raw.githubusercontent.com at runtime, so
-    # the migrate Job needs cluster egress to GitHub and ~512Mi to parse the 46MB combined file
+    # The geo JSON is VENDORED into the db-migrate image at build time (feature 152), so the Job
+    # reads it from disk — NO runtime egress. It still needs ~512Mi to parse the 46MB combined file
     # (the lean 64Mi migrate default would OOM) — resources bumped below.
     command: migrate-seed-geo
     resources:

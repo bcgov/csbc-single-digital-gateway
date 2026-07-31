@@ -15,6 +15,7 @@ import {
   normalizeRegion,
   normalizeState,
   normalizeSubregion,
+  readGeoJson,
 } from './source';
 import type { RawCountry, RawCountryTree, RawRegion, RawState, RawSubregion } from './source';
 
@@ -72,31 +73,42 @@ async function importGeo(): Promise<void> {
     ssl: resolvePgSsl({ mode: process.env.PGSSLMODE, ca: process.env.DATABASE_CA_CERT }),
   });
 
+  // Source selection: read vendored files baked into the image (GEO_DATA_DIR, set in the
+  // db-migrate image so the deploy Job needs NO egress) — else fetch from the pinned upstream ref
+  // (local dev). Same file names either way (see GEO_DATA_FILES).
+  const dataDir = process.env.GEO_DATA_DIR?.trim();
+  const load = <T>(fileName: string): Promise<T> =>
+    dataDir ? readGeoJson<T>(dataDir, fileName) : fetchGeoJson<T>(fileName);
+
   try {
-    console.info('[geo] fetching upstream JSON (pinned release)…');
-    // Fetch in FK order. Cities have no standalone file — extracted from the combined tree.
-    const rawRegions = await fetchGeoJson<RawRegion[]>('regions.json');
+    console.info(
+      dataDir
+        ? `[geo] reading vendored JSON from ${dataDir}`
+        : '[geo] fetching upstream JSON (pinned release)…',
+    );
+    // Read in FK order. Cities have no standalone file — extracted from the combined tree.
+    const rawRegions = await load<RawRegion[]>('regions.json');
     const regionRows = rawRegions.map(normalizeRegion);
     await upsertAll(db, regions, regions.id, regionRows);
     console.info(`[geo] regions: ${regionRows.length}`);
 
-    const rawSubregions = await fetchGeoJson<RawSubregion[]>('subregions.json');
+    const rawSubregions = await load<RawSubregion[]>('subregions.json');
     const subregionRows = rawSubregions.map(normalizeSubregion);
     await upsertAll(db, subregions, subregions.id, subregionRows);
     console.info(`[geo] subregions: ${subregionRows.length}`);
 
-    const rawCountries = await fetchGeoJson<RawCountry[]>('countries.json');
+    const rawCountries = await load<RawCountry[]>('countries.json');
     const countryRows = rawCountries.map(normalizeCountry);
     await upsertAll(db, countries, countries.id, countryRows);
     console.info(`[geo] countries: ${countryRows.length}`);
 
-    const rawStates = await fetchGeoJson<RawState[]>('states.json');
+    const rawStates = await load<RawState[]>('states.json');
     const stateRows = rawStates.map(normalizeState);
     await upsertAll(db, states, states.id, stateRows);
     console.info(`[geo] states: ${stateRows.length}`);
 
-    console.info('[geo] fetching cities (combined countries+states+cities.json, ~46 MB)…');
-    const tree = await fetchGeoJson<RawCountryTree[]>('countries+states+cities.json');
+    console.info('[geo] loading cities (combined countries+states+cities.json, ~46 MB)…');
+    const tree = await load<RawCountryTree[]>('countries+states+cities.json');
     const cityRows = flattenCities(tree).map(normalizeCity);
     await upsertAll(db, cities, cities.id, cityRows);
     console.info(`[geo] cities: ${cityRows.length}`);

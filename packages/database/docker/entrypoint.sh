@@ -6,8 +6,9 @@
 #   migrate            apply all pending migrations                       (default)
 #   seed               run the idempotent reference-data seed (document types)
 #   seed-geo           import the geographic reference data (countries/states/cities, feature 152).
-#                      Fetches ~53MB JSON from GitHub at runtime — needs egress to
-#                      raw.githubusercontent.com and ~512Mi memory (parses a 46MB file).
+#                      Reads the JSON VENDORED into this image at build time ($GEO_DATA_DIR) — no
+#                      runtime egress. Needs ~512Mi memory (parses a 46MB file). (Outside the image,
+#                      with GEO_DATA_DIR unset, the script fetches from GitHub instead.)
 #   migrate-seed       migrate, then seed
 #   migrate-seed-geo   migrate, then seed, then seed-geo (full reference-data deploy)
 #   <anything>         executed verbatim (escape hatch, e.g. `sh`)

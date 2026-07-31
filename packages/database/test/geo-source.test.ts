@@ -1,9 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   fkInt,
   flattenCities,
   GEO_BASE_URL,
+  GEO_DATA_FILES,
   GEO_DATA_REF,
   jsonbOrNull,
   normalizeCity,
@@ -13,6 +18,7 @@ import {
   normalizeSubregion,
   num,
   numericStr,
+  readGeoJson,
   str,
 } from '../src/geo/source';
 import type { RawCountryTree } from '../src/geo/source';
@@ -23,6 +29,38 @@ describe('geo source — pinned upstream ref', () => {
     expect(GEO_BASE_URL).toBe(
       `https://raw.githubusercontent.com/dr5hn/countries-states-cities-database/${GEO_DATA_REF}/json`,
     );
+  });
+
+  it('lists the five upstream files in FK/read order (cities via the combined file)', () => {
+    expect([...GEO_DATA_FILES]).toEqual([
+      'regions.json',
+      'subregions.json',
+      'countries.json',
+      'states.json',
+      'countries+states+cities.json',
+    ]);
+  });
+});
+
+describe('geo source — readGeoJson (vendored / build-time-baked files)', () => {
+  let dir: string;
+
+  beforeAll(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'geo-vendor-'));
+    await writeFile(join(dir, 'regions.json'), JSON.stringify([{ id: 1, name: 'Africa' }]));
+  });
+
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('reads and parses a vendored JSON file from a local directory', async () => {
+    const parsed = await readGeoJson<{ id: number; name: string }[]>(dir, 'regions.json');
+    expect(parsed).toEqual([{ id: 1, name: 'Africa' }]);
+  });
+
+  it('rejects when the vendored file is missing (fail-loud)', async () => {
+    await expect(readGeoJson(dir, 'nope.json')).rejects.toThrow();
   });
 });
 
