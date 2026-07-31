@@ -19,8 +19,12 @@ import {
 import type { RawCountry, RawCountryTree, RawRegion, RawState, RawSubregion } from './source';
 
 // Load this package's own .env (see .env.example) so `npm run db:seed:geo` picks up DATABASE_URL
-// regardless of the cwd it is invoked from.
+// regardless of the cwd it is invoked from. This file runs from TWO depths — `src/geo/` under tsx
+// (dev) and flat `dist-scripts/` when esbuild-compiled for the migrate job image — so try both
+// candidate paths (dotenv ignores a missing file and never overrides an already-set env var; in
+// the deploy Job DATABASE_URL comes from the secret, so both no-op harmlessly).
 config({ path: resolve(import.meta.dirname, '../../.env'), quiet: true });
+config({ path: resolve(import.meta.dirname, '../.env'), quiet: true });
 
 // Rows per INSERT. Sequential within a level — one tx-less pool connection, so batches cannot
 // be parallelised. 1,000 keeps the parameter count well under Postgres' 65,535 bind limit.

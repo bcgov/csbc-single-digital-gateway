@@ -10,6 +10,7 @@
 #   docker run --rm -e DATABASE_URL=postgres://user:pass@host:5432/db db-migrate:local              # migrate (default)
 #   docker run --rm -e DATABASE_URL=postgres://…                     db-migrate:local seed
 #   docker run --rm -e DATABASE_URL=postgres://…                     db-migrate:local migrate-seed
+#   docker run --rm -e DATABASE_URL=postgres://…                     db-migrate:local migrate-seed-geo  # + geo reference data (needs egress + ~512Mi)
 #
 # See .mdd/docs/74-database-migrate-image.md for the rationale.
 

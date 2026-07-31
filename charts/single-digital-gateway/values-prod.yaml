@@ -27,9 +27,11 @@
 #   ---------------------------------------------------------------
 #   STEADY TOTAL            195m / 848Mi    (of 500m / 2048Mi)
 #
-# Transient headroom: a migrate hook runs pre-upgrade while the old pod is still up (+25m / 64Mi;
-# Helm runs release hooks serially, so at most ONE migrate Job exists at a time); with a pgBackRest
-# backup Job also running (+5m / 32Mi) the worst-case peak is 225m / 944Mi — under half the quota.
+# Transient headroom: a migrate hook runs pre-upgrade while the old pod is still up (+50m / 192Mi
+# requests, bursting to a 512Mi limit while it parses the 46MB geo file — feature 152; Helm runs
+# release hooks serially, so at most ONE migrate Job exists at a time); with a pgBackRest backup
+# Job also running (+5m / 32Mi) the worst-case peak is 250m / 1072Mi requests (=<1392Mi with the
+# geo burst) — under the 500m / 2048Mi quota.
 # Apps keep strategy.maxSurge:0 (recreate in place). Prod keeps weekly-full + daily-incremental
 # backups (backup-Job pods are transient).
 #
@@ -94,11 +96,20 @@ platform-api:
     CITIZEN_WEB_URL: https://sdg-portal-prod.apps.gold.devops.gov.bc.ca
     AUTH_RP_LOGOUT: "true"
   migrations:
-    # migrate-seed (not plain migrate): the pre-upgrade hook must also seed the essential
-    # reference data — the Service + Form document types (each with a published v1) — or the
-    # staff console 500s on the first data call (`GET /v1/services`). Idempotent (fixed ids +
-    # onConflictDoNothing), so safe on every deploy.
-    command: migrate-seed
+    # migrate-seed-geo: the pre-upgrade hook migrates, seeds the essential reference data (the
+    # Service + Form document types, each with a published v1 — without them the staff console
+    # 500s on `GET /v1/services`), then imports the geographic reference data (countries/states/
+    # cities, feature 152). All idempotent (fixed ids / upsert), so safe on every deploy.
+    # PREREQUISITE: the geo step fetches ~53MB JSON from raw.githubusercontent.com at runtime, so
+    # the migrate Job needs cluster egress to GitHub and ~512Mi to parse the 46MB combined file
+    # (the lean 64Mi migrate default would OOM) — resources bumped below.
+    command: migrate-seed-geo
+    resources:
+      requests:
+        cpu: 50m
+        memory: 192Mi
+      limits:
+        memory: 512Mi
     image:
       tag: "prod"
 
