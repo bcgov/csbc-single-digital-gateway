@@ -10,3 +10,4 @@ export * from './reviews';
 export * from './service-agreement-consents';
 export * from './workspace-default-agreements';
 export * from './notification-outbox';
+export * from './geo';

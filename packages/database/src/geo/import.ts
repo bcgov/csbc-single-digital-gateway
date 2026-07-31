@@ -1,0 +1,109 @@
+import { resolve } from 'node:path';
+import { config } from 'dotenv';
+import { getTableColumns, sql } from 'drizzle-orm';
+import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
+
+import { createDatabase } from '../client';
+import type { Database } from '../client';
+import { resolvePgSsl } from '../ssl';
+import { cities, countries, regions, states, subregions } from '../schema/geo';
+import {
+  fetchGeoJson,
+  flattenCities,
+  normalizeCity,
+  normalizeCountry,
+  normalizeRegion,
+  normalizeState,
+  normalizeSubregion,
+} from './source';
+import type { RawCountry, RawCountryTree, RawRegion, RawState, RawSubregion } from './source';
+
+// Load this package's own .env (see .env.example) so `npm run db:seed:geo` picks up DATABASE_URL
+// regardless of the cwd it is invoked from.
+config({ path: resolve(import.meta.dirname, '../../.env'), quiet: true });
+
+// Rows per INSERT. Sequential within a level — one tx-less pool connection, so batches cannot
+// be parallelised. 1,000 keeps the parameter count well under Postgres' 65,535 bind limit.
+const BATCH_SIZE = 1000;
+
+function chunk<T>(rows: readonly T[], size: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) {
+    batches.push(rows.slice(i, i + size));
+  }
+  return batches;
+}
+
+/** `SET` clause updating every column except `id` from the conflicting row (upsert refresh). */
+function conflictUpdateExceptId(table: PgTable): Record<string, ReturnType<typeof sql>> {
+  const columns = getTableColumns(table);
+  const entries = Object.entries(columns)
+    .filter(([, column]) => column.name !== 'id')
+    .map(([key, column]) => [key, sql`excluded.${sql.identifier(column.name)}`] as const);
+  return Object.fromEntries(entries);
+}
+
+/** Upsert all rows for one table in sequential batches, keyed on the integer `id` PK. */
+async function upsertAll<TTable extends PgTable>(
+  db: Database,
+  table: TTable,
+  target: AnyPgColumn,
+  rows: TTable['$inferInsert'][],
+): Promise<void> {
+  if (rows.length === 0) return;
+  const set = conflictUpdateExceptId(table);
+  for (const batch of chunk(rows, BATCH_SIZE)) {
+    // eslint-disable-next-line no-await-in-loop -- sequential batches over one pool connection
+    await db.insert(table).values(batch).onConflictDoUpdate({ target, set });
+  }
+}
+
+async function importGeo(): Promise<void> {
+  const url = process.env.DATABASE_URL;
+  if (url === undefined || url.trim() === '') {
+    throw new Error('db:seed:geo — DATABASE_URL is not set (copy .env.example to .env)');
+  }
+
+  const db = createDatabase(url, {
+    ssl: resolvePgSsl({ mode: process.env.PGSSLMODE, ca: process.env.DATABASE_CA_CERT }),
+  });
+
+  try {
+    console.info('[geo] fetching upstream JSON (pinned release)…');
+    // Fetch in FK order. Cities have no standalone file — extracted from the combined tree.
+    const rawRegions = await fetchGeoJson<RawRegion[]>('regions.json');
+    const regionRows = rawRegions.map(normalizeRegion);
+    await upsertAll(db, regions, regions.id, regionRows);
+    console.info(`[geo] regions: ${regionRows.length}`);
+
+    const rawSubregions = await fetchGeoJson<RawSubregion[]>('subregions.json');
+    const subregionRows = rawSubregions.map(normalizeSubregion);
+    await upsertAll(db, subregions, subregions.id, subregionRows);
+    console.info(`[geo] subregions: ${subregionRows.length}`);
+
+    const rawCountries = await fetchGeoJson<RawCountry[]>('countries.json');
+    const countryRows = rawCountries.map(normalizeCountry);
+    await upsertAll(db, countries, countries.id, countryRows);
+    console.info(`[geo] countries: ${countryRows.length}`);
+
+    const rawStates = await fetchGeoJson<RawState[]>('states.json');
+    const stateRows = rawStates.map(normalizeState);
+    await upsertAll(db, states, states.id, stateRows);
+    console.info(`[geo] states: ${stateRows.length}`);
+
+    console.info('[geo] fetching cities (combined countries+states+cities.json, ~46 MB)…');
+    const tree = await fetchGeoJson<RawCountryTree[]>('countries+states+cities.json');
+    const cityRows = flattenCities(tree).map(normalizeCity);
+    await upsertAll(db, cities, cities.id, cityRows);
+    console.info(`[geo] cities: ${cityRows.length}`);
+
+    console.info('[geo] import complete.');
+  } finally {
+    await db.$client.end();
+  }
+}
+
+importGeo().catch((error: unknown) => {
+  console.error('[geo] import failed:', error);
+  process.exitCode = 1;
+});

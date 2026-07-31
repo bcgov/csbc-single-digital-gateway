@@ -21,6 +21,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:run": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts",
+    "db:seed:geo": "tsx src/geo/import.ts",
     "db:studio": "drizzle-kit studio",
     "dev": "vite build --watch",
     "lint": "oxlint",
