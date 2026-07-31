@@ -8,7 +8,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { ZodValidationPipe } from 'nestjs-zod';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DefaultAgreementsModule } from '../src/modules/default-agreements/default-agreements.module';
+import { DefaultAgreementsModule } from '../../src/modules/default-agreements/default-agreements.module';
 
 // Auth (401) + validation (400) only — the paths before any DB query (test DB unreachable).
 const authOptions = {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   staffSubmissionContent,
   submissionReceivedContent,
-} from '../src/modules/applications/util/notification-content';
+} from '../../../../../src/modules/applications/util/notification-content';
 
 describe('submissionReceivedContent', () => {
   it('composes the received confirmation around the reference', () => {

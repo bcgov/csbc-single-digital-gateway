@@ -4,7 +4,7 @@ import type { AuthUser } from '@repo/nestjs/auth';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AppModule } from '../src/app.module';
+import { AppModule } from '../../src/app.module';
 
 /**
  * Auth + validation posture for the citizen notifications proxy (feature 113). The upstream
@@ -13,11 +13,11 @@ import { AppModule } from '../src/app.module';
  * stack in integration.
  */
 const seedUser = (): string =>
-  JSON.stringify({ id: 'u', roles: ['citizen'], claims: { sub: 'u' } } satisfies AuthUser);
-const ORIGIN = 'http://localhost:3000';
+  JSON.stringify({ id: 'u', roles: ['staff'], claims: { sub: 'u' } } satisfies AuthUser);
+const ORIGIN = 'http://localhost:3001';
 const UUID = '11111111-1111-4111-8111-111111111111';
 
-describe('citizen notifications proxy (e2e)', () => {
+describe('platform notifications proxy (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

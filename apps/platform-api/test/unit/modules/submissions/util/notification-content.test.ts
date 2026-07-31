@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reviewNotificationContent } from '../src/modules/submissions/util/notification-content';
+import { reviewNotificationContent } from '../../../../../src/modules/submissions/util/notification-content';
 
 describe('reviewNotificationContent', () => {
   it('maps approved decisions', () => {

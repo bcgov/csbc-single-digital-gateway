@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   recordConsentSchema,
   serviceAgreementConsentSchema,
-} from '../src/modules/applications/dtos/consent.dtos';
+} from '../../../../../src/modules/applications/dtos/consent.dtos';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 

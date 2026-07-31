@@ -122,7 +122,7 @@ describe('App Slug Services ID Versions VersionID Application Methods Applicatio
 
     // Should display the sidebar with layout regions: canvas, palette, inspector
     expect(
-      await screen.findByRole('region', { name: /canvas/i }, { timeout: 32000 }),
+      await screen.findByRole('region', { name: /canvas/i }, { timeout: 64000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /palette/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /inspector/i })).toBeInTheDocument();

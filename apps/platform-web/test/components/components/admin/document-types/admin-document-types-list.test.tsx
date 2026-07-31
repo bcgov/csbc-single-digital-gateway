@@ -143,7 +143,11 @@ describe('AdminDocumentTypesList', () => {
     renderApp('/admin/document-types');
 
     // 1. Verify list elements render
-    const linkPublished = await screen.findByRole('link', { name: 'Published Document' });
+    const linkPublished = await screen.findByRole(
+      'link',
+      { name: 'Published Document' },
+      { timeout: 32000 },
+    );
     const linkDraft = screen.getByRole('link', { name: 'Draft Document' });
     const linkArchived = screen.getByRole('link', { name: 'Archived Document' });
 

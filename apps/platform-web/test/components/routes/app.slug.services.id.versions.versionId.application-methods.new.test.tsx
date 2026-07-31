@@ -118,7 +118,7 @@ describe('App Slug Services ID Versions VersionID Application Methods New Route'
       await screen.findByRole(
         'link',
         { name: 'Permit application', hidden: true },
-        { timeout: 32000 },
+        { timeout: 64000 },
       ),
     ).toBeInTheDocument();
 

@@ -178,6 +178,7 @@ describe('HowToApply Component', () => {
   });
 
   it('renders external applications correctly and handles falsy external URLs', () => {
+    let accessCount = 0;
     const apps = [
       {
         id: 'ext-1',
@@ -193,16 +194,32 @@ describe('HowToApply Component', () => {
         title: 'Empty URL External Service',
         formId: 'f-ext-empty',
       },
+      {
+        id: 'ext-dynamic',
+        kind: 'external-application',
+        get url() {
+          accessCount++;
+          if (accessCount === 1) {
+            return 'https://example.com';
+          }
+          return undefined;
+        },
+        title: 'Dynamic URL External Service',
+        formId: 'f-ext-dynamic',
+      },
     ] as any[];
 
     render(<HowToApply serviceId="svc-1" applications={apps} />);
 
     // External service checks
     expect(screen.getByText('External Service')).toBeInTheDocument();
-    expect(screen.getByText('Apply on an external site.')).toBeInTheDocument();
-    const externalLink = screen.getByRole('link', { name: 'Visit site' });
-    expect(externalLink).toHaveAttribute('href', 'https://external-site.com');
-    expect(externalLink).toHaveAttribute('target', '_blank');
+    expect(screen.getAllByText('Apply on an external site.')).toHaveLength(2);
+    const externalLinks = screen.getAllByText('Visit site');
+    expect(externalLinks).toHaveLength(2);
+    expect(externalLinks[0]).toHaveAttribute('href', 'https://external-site.com');
+    expect(externalLinks[0]).toHaveAttribute('target', '_blank');
+    expect(externalLinks[1]).not.toHaveAttribute('href');
+    expect(externalLinks[1]).toHaveAttribute('target', '_blank');
 
     // Falsy URL checks (falls back to internal)
     expect(screen.getByText('Empty URL External Service')).toBeInTheDocument();
