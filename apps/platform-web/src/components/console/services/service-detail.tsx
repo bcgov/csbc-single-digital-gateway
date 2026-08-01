@@ -250,18 +250,6 @@ export function ServiceDetail({
           </>
         )}
         <ButtonGroup>
-          {/* Current + published → start a new draft to edit; mutually exclusive with Go to current. */}
-          {isLatest && latest?.status === 'published' ? (
-            <Button
-              size="sm"
-              type="button"
-              disabled={addVersion.isPending}
-              onClick={() => addVersion.mutate()}
-            >
-              <Pencil className="size-4" aria-hidden />
-              Edit service details
-            </Button>
-          ) : null}
           {!isLatest && latest ? (
             <Button size="sm" variant="outline" type="button" onClick={goToCurrent}>
               Go to current
@@ -269,6 +257,18 @@ export function ServiceDetail({
           ) : null}
           <VersionPicker versions={versions} selectedId={selected.id} onSelect={goToVersion} />
         </ButtonGroup>
+        {/* Current + published → start a new draft version; sits to the right of the version picker. */}
+        {isLatest && latest?.status === 'published' ? (
+          <Button
+            size="sm"
+            type="button"
+            disabled={addVersion.isPending}
+            onClick={() => addVersion.mutate()}
+          >
+            <Pencil className="size-4" aria-hidden />
+            New version
+          </Button>
+        ) : null}
         <ServiceMenu
           serviceId={id}
           versionId={selected.id}

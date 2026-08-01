@@ -64,9 +64,10 @@ function mockSubmissions() {
     }
     if (url.endsWith('/v1/submissions/sub1')) return json(reviewed ? approved : detail);
     if (url.includes('/v1/submissions')) {
-      return json({
-        items: [reviewed ? { ...summary, status: 'approved', statusLabel: 'Approved' } : summary],
-      });
+      const items = [
+        reviewed ? { ...summary, status: 'approved', statusLabel: 'Approved' } : summary,
+      ];
+      return json({ items, total: items.length, limit: 20, offset: 0 });
     }
     return new Response(null, { status: 404 });
   });
@@ -88,6 +89,31 @@ describe('Console Submissions Integration Test Suite', () => {
     expect(screen.getByText('Income Assistance')).toBeInTheDocument();
     expect(screen.getByText('Income application')).toBeInTheDocument();
     expect(screen.getByText('20260601-AB12')).toBeInTheDocument();
+  });
+
+  it('drives the queue API from the status tab, search, and sort controls', async () => {
+    const fetchMock = mockSubmissions();
+    renderApp('/app/riverton/submissions');
+    await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 5000 });
+    const user = userEvent.setup();
+    const listCall = (predicate: (url: string) => boolean) =>
+      fetchMock.mock.calls.some(([input]) => {
+        const url = String(input);
+        return /\/v1\/submissions\?/.test(url) && predicate(url);
+      });
+    // Default queue request carries paging + the default sort.
+    expect(listCall((url) => url.includes('sort=submitted') && url.includes('limit=20'))).toBe(
+      true,
+    );
+    // The status tab adds a status filter.
+    await user.click(screen.getByRole('tab', { name: 'Approved' }));
+    await waitFor(() => expect(listCall((url) => url.includes('status=approved'))).toBe(true));
+    // Search adds an ILIKE q.
+    await user.type(screen.getByRole('searchbox'), 'amina');
+    await waitFor(() => expect(listCall((url) => url.includes('q=amina'))).toBe(true));
+    // A sortable header changes the sort column.
+    await user.click(screen.getByRole('button', { name: /sort by status/i }));
+    await waitFor(() => expect(listCall((url) => url.includes('sort=status'))).toBe(true));
   });
 
   it('opens a submission and records a review decision', async () => {

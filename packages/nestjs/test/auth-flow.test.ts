@@ -35,6 +35,7 @@ import {
   buildLoginUrl,
   buildLogoutUrl,
   completeLogin,
+  OidcCallbackError,
   refreshTokens,
   resolvePostLoginTarget,
   sanitizeReturnTo,
@@ -96,6 +97,37 @@ describe('completeLogin', () => {
     await expect(
       completeLogin(config, new URL('http://localhost:4001/auth/callback'), {}),
     ).rejects.toThrow();
+  });
+
+  it('throws a recoverable OidcCallbackError (not a 500) on a duplicate/replayed callback with no pending transaction', async () => {
+    await expect(
+      completeLogin(
+        config,
+        new URL('http://localhost:4001/auth/callback?code=c&state=state-abc'),
+        {},
+      ),
+    ).rejects.toBeInstanceOf(OidcCallbackError);
+  });
+
+  it('rejects a state-mismatched (stale/clobbered) callback as recoverable WITHOUT consuming the pending transaction', async () => {
+    // A concurrent second login overwrote oidcTx with a newer transaction (state-new); an OLDER
+    // callback now arrives carrying the stale state. It must be rejected as recoverable AND must
+    // leave the newer pending transaction intact so the concurrent login can still complete.
+    const session: { oidcTx?: OidcTransaction } = {
+      oidcTx: { state: 'state-new', nonce: 'nonce-new', codeVerifier: 'verifier-new' },
+    };
+    await expect(
+      completeLogin(
+        config,
+        new URL('http://localhost:4001/auth/callback?code=c&state=state-old'),
+        session,
+      ),
+    ).rejects.toBeInstanceOf(OidcCallbackError);
+    expect(session.oidcTx).toEqual({
+      state: 'state-new',
+      nonce: 'nonce-new',
+      codeVerifier: 'verifier-new',
+    });
   });
 
   it('consumes the transaction even when the exchange fails (one-time use, no replay)', async () => {

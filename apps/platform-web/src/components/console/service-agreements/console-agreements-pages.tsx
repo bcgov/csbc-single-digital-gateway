@@ -5,7 +5,6 @@ import { AgreementDetail } from './agreement-detail';
 import { AgreementsList } from './agreements-list';
 import { NewAgreementModal } from './new-agreement-modal';
 import type { AgreementScope } from './scope';
-import { WorkspaceDefaultAgreements } from './workspace-default-agreements';
 
 /** Resolve the workspace scope from the active `$slug` (workspaceId is '' until it loads). */
 function useWorkspaceScope(): Extract<AgreementScope, { kind: 'workspace' }> {
@@ -14,18 +13,14 @@ function useWorkspaceScope(): Extract<AgreementScope, { kind: 'workspace' }> {
   return { kind: 'workspace', slug, workspaceId: workspace?.id ?? '' };
 }
 
-/** The workspace Service Agreements view: the agreements list + the workspace defaults panel. */
+/** The workspace Service Agreements view: the agreements list. (Default agreements are managed in the
+ * workspace Settings screen — feature 149.) */
 function WorkspaceAgreementsView({
   scope,
 }: {
   scope: Extract<AgreementScope, { kind: 'workspace' }>;
 }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <AgreementsList scope={scope} />
-      <WorkspaceDefaultAgreements slug={scope.slug} workspaceId={scope.workspaceId} />
-    </div>
-  );
+  return <AgreementsList scope={scope} />;
 }
 
 export function ConsoleAgreementsList() {

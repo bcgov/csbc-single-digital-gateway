@@ -26,6 +26,20 @@ const optional: ServiceAgreementConsent = {
   decision: null,
 };
 
+/** A required agreement already approved on its current version — should be hidden by the gate. */
+const approvedRequired: ServiceAgreementConsent = {
+  agreementVersionId: 'av-done',
+  agreementDocumentId: 'ad-done',
+  data: {
+    title: 'Privacy Policy',
+    content: null,
+    isOptional: false,
+    approveLabel: 'I accept',
+    rejectLabel: 'I decline',
+  },
+  decision: 'approve',
+};
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -97,6 +111,33 @@ describe('ConsentGate', () => {
       ),
     );
     await waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
+  });
+
+  it('presents only agreements still needing a decision, and records only those on Continue', async () => {
+    const user = userEvent.setup();
+    // A mix: one already approved on its current version + one still undecided.
+    const { fetchMock, onContinue } = renderGate([approvedRequired, required]);
+
+    // The already-approved (unchanged) agreement is hidden; only the pending one is presented.
+    expect(screen.queryByText('Privacy Policy')).not.toBeInTheDocument();
+    expect(screen.getByText('Terms of Service')).toBeInTheDocument();
+
+    // Decide the pending agreement and continue.
+    await user.click(screen.getByRole('radio', { name: 'I accept the terms' }));
+    const continueBtn = screen.getByRole('button', { name: 'Continue to application' });
+    await waitFor(() => expect(continueBtn).toBeEnabled());
+    await user.click(continueBtn);
+    await waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
+
+    // Exactly ONE consent POST — the pending agreement. The already-approved one is not re-recorded
+    // (which is what produced duplicate rows in the /account/service-agreements history).
+    const calls = fetchMock.mock.calls as unknown as Array<
+      [RequestInfo | URL, RequestInit | undefined]
+    >;
+    const posts = calls.filter(
+      ([url, init]) => String(url).includes('/v1/me/agreement-consents') && init?.method === 'POST',
+    );
+    expect(posts).toHaveLength(1);
   });
 
   it('lets an optional agreement be rejected and still continue', async () => {

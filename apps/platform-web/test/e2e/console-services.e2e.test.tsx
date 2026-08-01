@@ -73,6 +73,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
                 title: 'New',
                 description: '',
                 createdAt: ISO,
+                updatedAt: ISO,
               },
               versions: [draftVersion],
             },
@@ -87,12 +88,16 @@ function withServices(base: ReturnType<typeof mockAuth>) {
               title: 'Permit application',
               description: '',
               createdAt: ISO,
+              updatedAt: ISO,
               status: 'draft',
               versionCount: 1,
               hasSubmissions: true,
               latestPublished: false,
             },
           ],
+          total: 1,
+          limit: 20,
+          offset: 0,
         });
       }
       if (segs.length === 1) {
@@ -103,6 +108,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
             title: 'Permit application',
             description: '',
             createdAt: ISO,
+            updatedAt: ISO,
           },
           versions: [draftVersion],
           definition,
@@ -152,6 +158,29 @@ describe('Console Services Integration Test Suite', () => {
       await screen.findByRole('link', { name: 'Permit application' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
+  });
+
+  it('drives the list API from the search + sort controls', async () => {
+    const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+    renderApp('/app/riverton/services');
+    await screen.findByRole('link', { name: 'Permit application' });
+    const user = userEvent.setup();
+
+    // Default list request carries the paging window + default sort.
+    const listCall = (predicate: (url: string) => boolean) =>
+      fetchMock.mock.calls.some(([input]) => {
+        const url = String(input);
+        return url.includes('/v1/services?') && predicate(url);
+      });
+    expect(listCall((url) => url.includes('sort=updated') && url.includes('limit=20'))).toBe(true);
+
+    // Typing a term refetches with an ILIKE `q` (debounced).
+    await user.type(screen.getByRole('searchbox'), 'perm');
+    await waitFor(() => expect(listCall((url) => url.includes('q=perm'))).toBe(true));
+
+    // Clicking a sortable header refetches sorted by that column.
+    await user.click(screen.getByRole('button', { name: /sort by title/i }));
+    await waitFor(() => expect(listCall((url) => url.includes('sort=title'))).toBe(true));
   });
 
   it('opens the New service modal (title + description) at /services/new', async () => {

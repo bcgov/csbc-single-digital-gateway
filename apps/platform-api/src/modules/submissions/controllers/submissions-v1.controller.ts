@@ -21,8 +21,8 @@ export class SubmissionsV1Controller {
 
   @Get()
   @ZodSerializerDto(SubmissionListDto)
-  async list(@CurrentUser() user: AuthUser, @Query() query: ListSubmissionsQueryDto) {
-    return { items: await this.submissions.list(user.id, query) };
+  list(@CurrentUser() user: AuthUser, @Query() query: ListSubmissionsQueryDto) {
+    return this.submissions.list(user.id, query);
   }
 
   @Get(':id')

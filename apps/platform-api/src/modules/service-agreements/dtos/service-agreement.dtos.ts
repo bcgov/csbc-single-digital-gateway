@@ -29,6 +29,23 @@ export const listServiceAgreementsSchema = z.object({ workspaceId: z.uuid().opti
 export class ListServiceAgreementsDto extends createZodDto(listServiceAgreementsSchema) {}
 export type ListServiceAgreementsQuery = z.infer<typeof listServiceAgreementsSchema>;
 
+/**
+ * Paginated, sortable, searchable agreements list (initiative `staff-list-query`). Workspace scope
+ * (`workspaceId` present) lists the workspace's OWN agreements only — globals are excluded from the
+ * workspace list (feature 150); admin scope (no `workspaceId`) lists globals. `sort: 'status'` orders
+ * by the derived status precedence (published → draft → archived → none).
+ */
+export const listServiceAgreementsPageSchema = z.object({
+  workspaceId: z.uuid().optional(),
+  q: z.string().trim().max(255).optional(),
+  sort: z.enum(['title', 'updated', 'status']).default('updated'),
+  order: z.enum(['asc', 'desc']).default('desc'),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+export class ListServiceAgreementsPageDto extends createZodDto(listServiceAgreementsPageSchema) {}
+export type ListServiceAgreementsPageQuery = z.infer<typeof listServiceAgreementsPageSchema>;
+
 // ── Response schemas + DTOs ─────────────────────────────────────────────────────────────────────
 
 export const serviceAgreementSchema = z.object({
@@ -38,6 +55,7 @@ export const serviceAgreementSchema = z.object({
   title: z.string(),
   kind: z.string(),
   createdAt: z.string(),
+  updatedAt: z.string(),
 });
 export class ServiceAgreementDto extends createZodDto(serviceAgreementSchema) {}
 export type ServiceAgreementResponse = z.infer<typeof serviceAgreementSchema>;
@@ -97,6 +115,16 @@ export class ServiceAgreementListDto extends createZodDto(
 ) {}
 export type ServiceAgreementSummary = z.infer<typeof serviceAgreementSummarySchema>;
 
+/** Paginated agreements list envelope (initiative `staff-list-query`). */
+export const serviceAgreementListPageSchema = z.object({
+  items: z.array(serviceAgreementSummarySchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});
+export type ServiceAgreementListPageResponse = z.infer<typeof serviceAgreementListPageSchema>;
+export class ServiceAgreementListPageDto extends createZodDto(serviceAgreementListPageSchema) {}
+
 // ── Row → DTO mappers ───────────────────────────────────────────────────────────────────────────
 
 export function toAgreementDto(row: Document): ServiceAgreementResponse {
@@ -106,6 +134,7 @@ export function toAgreementDto(row: Document): ServiceAgreementResponse {
     title: row.title,
     kind: row.kind,
     createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 

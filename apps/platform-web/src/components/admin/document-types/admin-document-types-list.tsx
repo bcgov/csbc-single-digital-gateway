@@ -23,7 +23,7 @@ export function AdminDocumentTypesList() {
   const { data: items = [] } = useQuery(adminDocumentTypesQueryOptions());
 
   return (
-    <div className="mx-auto flex max-w-[1320px] flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <span className="text-sm text-muted-foreground">
         The document type catalog. Open a type to manage its versions.
       </span>

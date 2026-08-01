@@ -25,6 +25,8 @@ import { Route as DevAccordionRouteImport } from './routes/dev/accordion'
 import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
 import { Route as AccountNotificationsRouteImport } from './routes/account_.notifications'
 import { Route as ServicesServiceIdIndexRouteImport } from './routes/services.$serviceId.index'
+import { Route as AccountServiceAgreementsIndexRouteImport } from './routes/account_.service-agreements.index'
+import { Route as AccountServiceAgreementsServiceAgreementIdRouteImport } from './routes/account_.service-agreements.$serviceAgreementId'
 import { Route as ServicesServiceIdVersionsVersionIdRouteImport } from './routes/services.$serviceId.versions.$versionId'
 import { Route as ServicesServiceIdApplyFormIdRouteImport } from './routes/services.$serviceId.apply.$formId'
 
@@ -108,6 +110,18 @@ const ServicesServiceIdIndexRoute = ServicesServiceIdIndexRouteImport.update({
   path: '/services/$serviceId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountServiceAgreementsIndexRoute =
+  AccountServiceAgreementsIndexRouteImport.update({
+    id: '/account_/service-agreements/',
+    path: '/account/service-agreements/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AccountServiceAgreementsServiceAgreementIdRoute =
+  AccountServiceAgreementsServiceAgreementIdRouteImport.update({
+    id: '/account_/service-agreements/$serviceAgreementId',
+    path: '/account/service-agreements/$serviceAgreementId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ServicesServiceIdVersionsVersionIdRoute =
   ServicesServiceIdVersionsVersionIdRouteImport.update({
     id: '/services/$serviceId/versions/$versionId',
@@ -137,6 +151,8 @@ export interface FileRoutesByFullPath {
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/account/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
+  '/account/service-agreements/': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
@@ -156,6 +172,8 @@ export interface FileRoutesByTo {
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev': typeof DevIndexRoute
   '/services': typeof ServicesIndexRoute
+  '/account/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
+  '/account/service-agreements': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
@@ -177,6 +195,8 @@ export interface FileRoutesById {
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/account_/service-agreements/$serviceAgreementId': typeof AccountServiceAgreementsServiceAgreementIdRoute
+  '/account_/service-agreements/': typeof AccountServiceAgreementsIndexRoute
   '/services/$serviceId/': typeof ServicesServiceIdIndexRoute
   '/services/$serviceId/apply/$formId': typeof ServicesServiceIdApplyFormIdRoute
   '/services/$serviceId/versions/$versionId': typeof ServicesServiceIdVersionsVersionIdRoute
@@ -199,6 +219,8 @@ export interface FileRouteTypes {
     | '/dev/status-banner'
     | '/dev/'
     | '/services/'
+    | '/account/service-agreements/$serviceAgreementId'
+    | '/account/service-agreements/'
     | '/services/$serviceId/'
     | '/services/$serviceId/apply/$formId'
     | '/services/$serviceId/versions/$versionId'
@@ -218,6 +240,8 @@ export interface FileRouteTypes {
     | '/dev/status-banner'
     | '/dev'
     | '/services'
+    | '/account/service-agreements/$serviceAgreementId'
+    | '/account/service-agreements'
     | '/services/$serviceId'
     | '/services/$serviceId/apply/$formId'
     | '/services/$serviceId/versions/$versionId'
@@ -238,6 +262,8 @@ export interface FileRouteTypes {
     | '/dev/status-banner'
     | '/dev/'
     | '/services/'
+    | '/account_/service-agreements/$serviceAgreementId'
+    | '/account_/service-agreements/'
     | '/services/$serviceId/'
     | '/services/$serviceId/apply/$formId'
     | '/services/$serviceId/versions/$versionId'
@@ -250,6 +276,8 @@ export interface RootRouteChildren {
   AccountNotificationsRoute: typeof AccountNotificationsRoute
   ApplicationsIdRoute: typeof ApplicationsIdRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
+  AccountServiceAgreementsServiceAgreementIdRoute: typeof AccountServiceAgreementsServiceAgreementIdRoute
+  AccountServiceAgreementsIndexRoute: typeof AccountServiceAgreementsIndexRoute
   ServicesServiceIdIndexRoute: typeof ServicesServiceIdIndexRoute
   ServicesServiceIdApplyFormIdRoute: typeof ServicesServiceIdApplyFormIdRoute
   ServicesServiceIdVersionsVersionIdRoute: typeof ServicesServiceIdVersionsVersionIdRoute
@@ -369,6 +397,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesServiceIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account_/service-agreements/': {
+      id: '/account_/service-agreements/'
+      path: '/account/service-agreements'
+      fullPath: '/account/service-agreements/'
+      preLoaderRoute: typeof AccountServiceAgreementsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account_/service-agreements/$serviceAgreementId': {
+      id: '/account_/service-agreements/$serviceAgreementId'
+      path: '/account/service-agreements/$serviceAgreementId'
+      fullPath: '/account/service-agreements/$serviceAgreementId'
+      preLoaderRoute: typeof AccountServiceAgreementsServiceAgreementIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/$serviceId/versions/$versionId': {
       id: '/services/$serviceId/versions/$versionId'
       path: '/services/$serviceId/versions/$versionId'
@@ -421,6 +463,9 @@ const rootRouteChildren: RootRouteChildren = {
   AccountNotificationsRoute: AccountNotificationsRoute,
   ApplicationsIdRoute: ApplicationsIdRoute,
   ServicesIndexRoute: ServicesIndexRoute,
+  AccountServiceAgreementsServiceAgreementIdRoute:
+    AccountServiceAgreementsServiceAgreementIdRoute,
+  AccountServiceAgreementsIndexRoute: AccountServiceAgreementsIndexRoute,
   ServicesServiceIdIndexRoute: ServicesServiceIdIndexRoute,
   ServicesServiceIdApplyFormIdRoute: ServicesServiceIdApplyFormIdRoute,
   ServicesServiceIdVersionsVersionIdRoute:

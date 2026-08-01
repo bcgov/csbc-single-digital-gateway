@@ -5,6 +5,7 @@
  */
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
+import type { Paginated, SortOrder } from '@/lib/list-search';
 
 export type WorkspaceRole = 'admin' | 'member';
 
@@ -94,7 +95,8 @@ export interface WorkspaceMember {
   joinedAt: string;
 }
 
-/** List a workspace's members (admins first, then by name). */
+/** List a workspace's members (admins first, then by name). Full (unpaginated) set — feeds the
+ * member-detail lookup, which resolves one member out of the whole list. */
 export function workspaceMembersQueryOptions(workspaceId: string) {
   return queryOptions({
     queryKey: ['workspaces', 'members', workspaceId] as const,
@@ -108,6 +110,40 @@ export function workspaceMembersQueryOptions(workspaceId: string) {
       }
       const envelope = (await res.json()) as { items: WorkspaceMember[] };
       return envelope.items;
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+export type MemberSort = 'name' | 'role' | 'joined';
+export interface MemberListParams {
+  q: string;
+  sort: MemberSort;
+  order: SortOrder;
+  limit: number;
+  offset: number;
+}
+
+/** Paginated, sortable, searchable members browse (initiative `staff-list-query`) — the Team page. */
+export function workspaceMembersPageQueryOptions(workspaceId: string, params: MemberListParams) {
+  return queryOptions({
+    queryKey: ['workspaces', 'members', 'page', workspaceId, params] as const,
+    queryFn: async (): Promise<Paginated<WorkspaceMember>> => {
+      const search = new URLSearchParams({
+        sort: params.sort,
+        order: params.order,
+        limit: String(params.limit),
+        offset: String(params.offset),
+      });
+      if (params.q !== '') search.set('q', params.q);
+      const res = await fetch(
+        `${BFF_ORIGIN}/v1/workspaces/${encodeURIComponent(workspaceId)}/members/page?${search}`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) {
+        throw new Error(`GET /v1/workspaces/:id/members/page failed: ${res.status}`);
+      }
+      return (await res.json()) as Paginated<WorkspaceMember>;
     },
     staleTime: 30 * 1000,
   });

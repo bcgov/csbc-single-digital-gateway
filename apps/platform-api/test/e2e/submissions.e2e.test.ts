@@ -83,6 +83,30 @@ describe('submissions (e2e)', () => {
     ).toBe(400);
   });
 
+  it('400s a list with out-of-range paging, an unknown sort, or an invalid status', async () => {
+    expect(
+      (
+        await http()
+          .get(`/v1/submissions?workspaceId=${UUID}&limit=0`)
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await http()
+          .get(`/v1/submissions?workspaceId=${UUID}&sort=bogus`)
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await http()
+          .get(`/v1/submissions?workspaceId=${UUID}&status=nope`)
+          .set('x-test-user', asUser(['staff']))
+      ).status,
+    ).toBe(400);
+  });
+
   it('400s a review with an invalid decision', async () => {
     expect(
       (

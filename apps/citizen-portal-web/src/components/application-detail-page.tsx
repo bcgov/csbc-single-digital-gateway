@@ -86,10 +86,9 @@ export function ApplicationDetailPage() {
     },
   });
 
+  // A draft opens straight into the editable form (feature 140) — no "Continue your application"
+  // card. Only `needs_changes` keeps a banner action (opening a revision draft).
   const bannerAction = (status: ApplicationDetail['status']) => {
-    if (status === 'draft') {
-      return <Button onClick={() => setEditing(true)}>Continue your application</Button>;
-    }
     if (status === 'needs_changes') {
       return (
         <Button onClick={() => revise.mutate()} disabled={revise.isPending}>
@@ -151,11 +150,15 @@ export function ApplicationDetailPage() {
               </p>
             </header>
             <div className="flex flex-col gap-9">
-              {editing ? (
+              {editing || application.status === 'draft' ? (
                 <ReviseForm
                   application={application}
                   onSubmitted={() => setEditing(false)}
                   onCancel={() => setEditing(false)}
+                  submitLabel={
+                    application.status === 'draft' ? 'Submit application' : 'Resubmit application'
+                  }
+                  showCancel={application.status !== 'draft'}
                 />
               ) : (
                 <>
