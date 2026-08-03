@@ -4,7 +4,7 @@ import type { AuthUser } from '@repo/nestjs/auth';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AppModule } from '../src/app.module';
+import { AppModule } from '../../src/app.module';
 
 /**
  * Auth + validation posture for the citizen service-agreement history (feature 139). The test

@@ -6,12 +6,12 @@ The Citizen Portal API project uses Vitest for QA testing, which is the preferre
 
 ## Files and Folders
 
-Unit test files with file name suffix `**/*.unit.test.ts` should be placed inside the [`unit`](./unit) folder, whereas integration test files with file name suffix `**/*.e2e.test.ts` should be placed inside the [integration](./integration/) folder.
+Unit test files with file name suffix `**/*.test.ts` should be placed inside the [`unit`](./unit) folder, whereas integration test files with file name suffix `**/*.e2e.test.ts` should be placed inside the [integration](./integration/) folder.
 
-| Testing Content  |     File Format     | Folder (example) |
-| :--------------: | :-----------------: | :--------------: |
-|    Unit test     | `**/*.unit.test.ts` | [unit](./unit/)  |
-| Integration test | `**/*.e2e.test.ts`  |  [e2e](./e2e/)   |
+| Testing Content  |    File Format     | Folder (example) |
+| :--------------: | :----------------: | :--------------: |
+|    Unit test     |   `**/*.test.ts`   | [unit](./unit/)  |
+| Integration test | `**/*.e2e.test.ts` |  [e2e](./e2e/)   |
 
 ## Configuration
 
@@ -43,16 +43,10 @@ Change directory to `apps/api` and run unit test on a specific test file (same f
 npm run test "path/to/your/testfile.spec.ts"
 ```
 
-Run coverage test with one of the following command lines:
+Run coverage test with the following command line:
 
 ```bash
-npm run test:cov:unit
-```
-
-or
-
-```bash
-npm run test:cov:e2e
+npm run test:cov
 ```
 
 ### VSCode Vitest Extension

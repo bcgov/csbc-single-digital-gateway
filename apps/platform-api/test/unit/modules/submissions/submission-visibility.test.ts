@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { isStaffVisibleSubmission } from '../src/modules/submissions/util/format';
-import type { SubmissionStatus } from '../src/modules/submissions/dtos/submission.dtos';
+import { isStaffVisibleSubmission } from '../../../../src/modules/submissions/util/format';
+import type { SubmissionStatus } from '../../../../src/modules/submissions/dtos/submission.dtos';
 
 /**
  * Feature 151 — the staff detail (`get()`) gates on this predicate, and the review queue (`list()`)

@@ -4,6 +4,15 @@
 
 The citizen portal web project uses Vitest for QA testing, which is the preferred framework for its zero-config setup, mocking capabilities, and broad ecosystem support for this Node.js based project. The main focuses of QA testing for the web application are component and integration tests. Coverage test is also available with coverage threshold that increases as the project expands.
 
+## Files and Folders
+
+Component test files with file name suffix `**/*.test.tsx` should be placed inside the [`component`](./component) folder, whereas integration test files with file name suffix `**/*.e2e.test.tsx` should be placed inside the [integration](./integration/) folder.
+
+| Testing Content  |     File Format     |     Folder (example)      |
+| :--------------: | :-----------------: | :-----------------------: |
+|  Component test  |   `**/*.test.tsx`   | [component](./component/) |
+| Integration test | `**/*.e2e.test.tsx` |       [e2e](./e2e/)       |
+
 ## Configuration
 
 Vitest is available to use with low-to-zero configurations. Refer to file [`vitest.config.ts`](./vitest.config.ts) for configuration.
