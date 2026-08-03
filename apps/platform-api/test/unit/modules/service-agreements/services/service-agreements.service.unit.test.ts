@@ -96,6 +96,7 @@ describe('ServiceAgreementsService', () => {
         kind: 'service-agreement',
         title: 'Terms',
         createdAt: new Date('2026-07-28T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
       };
       const mockVer = {
         id: 'ver-123',
@@ -103,6 +104,7 @@ describe('ServiceAgreementsService', () => {
         status: 'draft',
         data: { title: 'Terms' },
         createdAt: new Date('2026-07-28T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
         publishedAt: null,
         archivedAt: null,
       };
@@ -121,6 +123,7 @@ describe('ServiceAgreementsService', () => {
           title: 'Terms',
           kind: 'service-agreement',
           createdAt: '2026-07-28T12:00:00.000Z',
+          updatedAt: '2026-07-28T12:00:00.000Z',
         },
         version: {
           id: 'ver-123',
@@ -141,6 +144,7 @@ describe('ServiceAgreementsService', () => {
         kind: 'service-agreement',
         title: 'Global Terms',
         createdAt: new Date('2026-07-28T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
       };
       const mockVer = {
         id: 'ver-global',
@@ -148,6 +152,7 @@ describe('ServiceAgreementsService', () => {
         status: 'draft',
         data: { title: 'Global Terms' },
         createdAt: new Date('2026-07-28T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
         publishedAt: null,
         archivedAt: null,
       };
@@ -180,6 +185,7 @@ describe('ServiceAgreementsService', () => {
         kind: 'service-agreement',
         title: 'Untitled service agreement',
         createdAt: new Date('2026-07-28T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
       };
       const mockVer = {
         id: 'ver-123',
@@ -187,6 +193,7 @@ describe('ServiceAgreementsService', () => {
         status: 'draft',
         data: {},
         createdAt: new Date('2026-07-28T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
         publishedAt: null,
         archivedAt: null,
       };
@@ -218,6 +225,7 @@ describe('ServiceAgreementsService', () => {
               title: 'Terms',
               kind: 'service-agreement',
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
             },
           ]),
         ) // select docs
@@ -232,6 +240,7 @@ describe('ServiceAgreementsService', () => {
           title: 'Terms',
           kind: 'service-agreement',
           createdAt: '2026-07-28T12:00:00.000Z',
+          updatedAt: '2026-07-28T12:00:00.000Z',
           status: 'published',
           isGlobal: false,
         },
@@ -248,6 +257,7 @@ describe('ServiceAgreementsService', () => {
               title: 'Draft Global',
               kind: 'service-agreement',
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
             },
             {
               id: 'doc-archived',
@@ -255,6 +265,7 @@ describe('ServiceAgreementsService', () => {
               title: 'Archived Global',
               kind: 'service-agreement',
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
             },
             {
               id: 'doc-none',
@@ -262,6 +273,7 @@ describe('ServiceAgreementsService', () => {
               title: 'None Global',
               kind: 'service-agreement',
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
             },
           ]),
         ) // select docs
@@ -308,6 +320,7 @@ describe('ServiceAgreementsService', () => {
               kind: 'service-agreement',
               title: 'Global Terms',
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
             },
           ]),
         ) // loadAgreement
@@ -319,6 +332,7 @@ describe('ServiceAgreementsService', () => {
               status: 'published',
               data: {},
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
               publishedAt: new Date('2026-07-28T12:00:00.000Z'),
               archivedAt: null,
             },
@@ -336,6 +350,7 @@ describe('ServiceAgreementsService', () => {
           title: 'Global Terms',
           kind: 'service-agreement',
           createdAt: '2026-07-28T12:00:00.000Z',
+          updatedAt: '2026-07-28T12:00:00.000Z',
         },
         versions: [
           {
@@ -366,6 +381,7 @@ describe('ServiceAgreementsService', () => {
               kind: 'service-agreement',
               title: 'Global Terms',
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
             },
           ]),
         ) // loadAgreement
@@ -377,6 +393,7 @@ describe('ServiceAgreementsService', () => {
               status: 'published',
               data: {},
               createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
               publishedAt: new Date('2026-07-28T12:00:00.000Z'),
             },
           ]),

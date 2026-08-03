@@ -340,7 +340,7 @@ describe('ServiceDetail Component Test Suite', () => {
     // Action buttons
     expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /publish service/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /edit service details/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /new version/i })).not.toBeInTheDocument();
   });
 
   it('renders read-only details for a published version', async () => {
@@ -453,7 +453,7 @@ describe('ServiceDetail Component Test Suite', () => {
 
     renderWithSinglePublished();
 
-    const editBtn = await screen.findByRole('button', { name: /edit service details/i });
+    const editBtn = await screen.findByRole('button', { name: /new version/i });
     await user.click(editBtn);
 
     await waitFor(() => {
@@ -622,7 +622,7 @@ describe('ServiceDetail Component Test Suite', () => {
       </QueryClientProvider>,
     );
 
-    const editBtn = await screen.findByRole('button', { name: /edit service details/i });
+    const editBtn = await screen.findByRole('button', { name: /new version/i });
     await user.click(editBtn);
 
     await waitFor(() => {

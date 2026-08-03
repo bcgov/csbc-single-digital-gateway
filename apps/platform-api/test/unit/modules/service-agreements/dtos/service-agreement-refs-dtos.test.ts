@@ -51,6 +51,7 @@ describe('Service Agreements DTOs Unit Test Suite', () => {
         title: 'Global ToS',
         kind: 'service-agreement',
         createdAt: created,
+        updatedAt: new Date(),
       } as unknown as Parameters<typeof toAgreementDto>[0]);
       expect(global.workspaceId).toBeNull();
       expect(global.title).toBe('Global ToS');

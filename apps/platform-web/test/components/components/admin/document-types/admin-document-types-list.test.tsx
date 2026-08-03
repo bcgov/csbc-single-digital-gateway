@@ -57,7 +57,11 @@ describe('AdminDocumentTypesList', () => {
     renderApp('/admin/document-types');
 
     expect(
-      await screen.findByText('The document type catalog. Open a type to manage its versions.'),
+      await screen.findByText(
+        'The document type catalog. Open a type to manage its versions.',
+        undefined,
+        { timeout: 32000 },
+      ),
     ).toBeInTheDocument();
     expect(await screen.findByText('No document types yet.')).toBeInTheDocument();
   });

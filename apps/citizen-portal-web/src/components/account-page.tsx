@@ -56,7 +56,7 @@ function formatAddress(address: OidcAddress | undefined): ReactNode {
 }
 
 /** One labelled read-only field in the account-details grid. */
-function InfoCell({
+export function InfoCell({
   label,
   value,
   className,

@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response as ExpressResponse } from 'express';
 
@@ -144,6 +149,62 @@ describe('NotificationsProxyService Unit Test Suite', () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
 
       await expect(service.request('GET', '/v1/test')).rejects.toThrow(BadGatewayException);
+    });
+
+    it('should throw UnprocessableEntityException with upstream message if status is 422 and json has message string', async () => {
+      const responseMock = {
+        ok: false,
+        status: 422,
+        json: vi.fn().mockResolvedValue({ message: 'Custom validation error' }),
+      } as unknown as Response;
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
+
+      await expect(service.request('GET', '/v1/test')).rejects.toThrow(
+        new UnprocessableEntityException('Custom validation error'),
+      );
+    });
+
+    it('should throw UnprocessableEntityException with fallback message if status is 422 and json lacks message string', async () => {
+      const responseMock = {
+        ok: false,
+        status: 422,
+        json: vi.fn().mockResolvedValue({ error: 'Some other key' }),
+      } as unknown as Response;
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
+
+      await expect(service.request('GET', '/v1/test')).rejects.toThrow(
+        new UnprocessableEntityException('Invalid notifications request'),
+      );
+    });
+
+    it('should throw UnprocessableEntityException with fallback message if status is 422 and json throws/fails', async () => {
+      const responseMock = {
+        ok: false,
+        status: 422,
+        json: vi.fn().mockRejectedValue(new Error('JSON parse error')),
+      } as unknown as Response;
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
+
+      await expect(service.request('GET', '/v1/test')).rejects.toThrow(
+        new UnprocessableEntityException('Invalid notifications request'),
+      );
+    });
+
+    it('should throw UnprocessableEntityException with fallback message if status is 422 and json is null/non-object', async () => {
+      const responseMock = {
+        ok: false,
+        status: 422,
+        json: vi.fn().mockResolvedValue(null),
+      } as unknown as Response;
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(responseMock);
+
+      await expect(service.request('GET', '/v1/test')).rejects.toThrow(
+        new UnprocessableEntityException('Invalid notifications request'),
+      );
     });
   });
 

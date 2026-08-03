@@ -22,9 +22,12 @@ const mockQuery = (resolvedValue: any) => {
   return Object.assign(qb, {
     from: vi.fn().mockReturnValue(qb),
     innerJoin: vi.fn().mockReturnValue(qb),
+    leftJoin: vi.fn().mockReturnValue(qb),
     limit: vi.fn().mockReturnValue(qb),
     orderBy: vi.fn().mockReturnValue(qb),
     where: vi.fn().mockReturnValue(qb),
+    offset: vi.fn().mockReturnValue(qb),
+    groupBy: vi.fn().mockReturnValue(qb),
   });
 };
 
@@ -93,6 +96,7 @@ describe('ServicesService', () => {
         kind: 'service',
         description: 'Service Desc',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-12T00:00:00.000Z'),
       };
       const mockVersion = {
         id: 'service-version-1',
@@ -101,6 +105,7 @@ describe('ServicesService', () => {
         status: 'draft',
         data: {},
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-12T00:00:00.000Z'),
         publishedAt: null,
         archivedAt: null,
       };
@@ -171,8 +176,12 @@ describe('ServicesService', () => {
       vi.mocked(resolveApplications).mockResolvedValueOnce([resolvedApp]);
 
       txMock.returning
-        .mockResolvedValueOnce([{ id: 'service-doc-1', createdAt: new Date() }])
-        .mockResolvedValueOnce([{ id: 'service-version-1', version: 1, createdAt: new Date() }]);
+        .mockResolvedValueOnce([
+          { id: 'service-doc-1', createdAt: new Date(), updatedAt: new Date() },
+        ])
+        .mockResolvedValueOnce([
+          { id: 'service-version-1', version: 1, createdAt: new Date(), updatedAt: new Date() },
+        ]);
 
       await service.create('user-1', {
         ...input,
@@ -276,26 +285,35 @@ describe('ServicesService', () => {
               title: 'Service 1',
               description: 'desc',
               createdAt: new Date('2026-07-12T00:00:00.000Z'),
+              updatedAt: new Date('2026-07-12T00:00:00.000Z'),
             },
           ]),
         )
-        // 3. versionsOf select
+        // 3. totals count select
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
+        // 4. versionRows select
         .mockReturnValueOnce(
           mockQuery([
-            { id: 'version-1', status: 'published', publishedAt: new Date(), version: 1 },
+            {
+              documentId: 'service-1',
+              id: 'version-1',
+              status: 'published',
+              publishedAt: new Date(),
+              version: 1,
+            },
           ]),
         )
-        // 4. hasSubmissions count select
-        .mockReturnValueOnce(mockQuery([{ n: 0 }]));
+        // 5. submissionRows select
+        .mockReturnValueOnce(mockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
-      const result = await service.list('user-1', { workspaceId: 'ws-1' });
+      const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]!.status).toBe('published');
-      expect(result[0]!.versionCount).toBe(1);
-      expect(result[0]!.hasSubmissions).toBe(false);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]!.status).toBe('published');
+      expect(result.items[0]!.versionCount).toBe(1);
+      expect(result.items[0]!.hasSubmissions).toBe(false);
     });
 
     it('returns status draft when service only has draft versions', async () => {
@@ -304,16 +322,33 @@ describe('ServicesService', () => {
         .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
         .mockReturnValueOnce(
           mockQuery([
-            { id: 'service-1', workspaceId: 'ws-1', title: 'Service 1', createdAt: new Date() },
+            {
+              id: 'service-1',
+              workspaceId: 'ws-1',
+              title: 'Service 1',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
           ]),
         )
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft', version: 1 }]))
-        .mockReturnValueOnce(mockQuery([{ n: 0 }]));
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
+        .mockReturnValueOnce(
+          mockQuery([
+            {
+              documentId: 'service-1',
+              id: 'version-1',
+              status: 'draft',
+              publishedAt: null,
+              version: 1,
+            },
+          ]),
+        )
+        .mockReturnValueOnce(mockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
-      const result = await service.list('user-1', { workspaceId: 'ws-1' });
-      expect(result[0]!.status).toBe('draft');
+      const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
+      expect(result.items[0]!.status).toBe('draft');
     });
 
     it('returns status archived when service only has archived versions', async () => {
@@ -322,16 +357,33 @@ describe('ServicesService', () => {
         .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
         .mockReturnValueOnce(
           mockQuery([
-            { id: 'service-1', workspaceId: 'ws-1', title: 'Service 1', createdAt: new Date() },
+            {
+              id: 'service-1',
+              workspaceId: 'ws-1',
+              title: 'Service 1',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
           ]),
         )
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'archived', version: 1 }]))
-        .mockReturnValueOnce(mockQuery([{ n: 0 }]));
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
+        .mockReturnValueOnce(
+          mockQuery([
+            {
+              documentId: 'service-1',
+              id: 'version-1',
+              status: 'archived',
+              publishedAt: null,
+              version: 1,
+            },
+          ]),
+        )
+        .mockReturnValueOnce(mockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
-      const result = await service.list('user-1', { workspaceId: 'ws-1' });
-      expect(result[0]!.status).toBe('archived');
+      const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
+      expect(result.items[0]!.status).toBe('archived');
     });
 
     it('returns status none when service has no versions', async () => {
@@ -340,16 +392,23 @@ describe('ServicesService', () => {
         .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
         .mockReturnValueOnce(
           mockQuery([
-            { id: 'service-1', workspaceId: 'ws-1', title: 'Service 1', createdAt: new Date() },
+            {
+              id: 'service-1',
+              workspaceId: 'ws-1',
+              title: 'Service 1',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
           ]),
         )
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
         .mockReturnValueOnce(mockQuery([])) // empty versions
-        .mockReturnValueOnce(mockQuery([{ n: 0 }]));
+        .mockReturnValueOnce(mockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
-      const result = await service.list('user-1', { workspaceId: 'ws-1' });
-      expect(result[0]!.status).toBe('none');
+      const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
+      expect(result.items[0]!.status).toBe('none');
     });
 
     it('falls back to false for hasSubmissions if count query returns empty', async () => {
@@ -360,23 +419,37 @@ describe('ServicesService', () => {
         // 2. docs select
         .mockReturnValueOnce(
           mockQuery([
-            { id: 'service-1', workspaceId: 'ws-1', title: 'Service 1', createdAt: new Date() },
+            {
+              id: 'service-1',
+              workspaceId: 'ws-1',
+              title: 'Service 1',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
           ]),
         )
-        // 3. versionsOf select
+        // 3. totals count select
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
+        // 4. versionRows select
         .mockReturnValueOnce(
           mockQuery([
-            { id: 'version-1', status: 'published', publishedAt: new Date(), version: 1 },
+            {
+              documentId: 'service-1',
+              id: 'version-1',
+              status: 'published',
+              publishedAt: new Date(),
+              version: 1,
+            },
           ]),
         )
-        // 4. hasSubmissions count select (empty result)
+        // 5. submissionRows select (empty result)
         .mockReturnValueOnce(mockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
-      const result = await service.list('user-1', { workspaceId: 'ws-1' });
+      const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
-      expect(result[0]!.hasSubmissions).toBe(false);
+      expect(result.items[0]!.hasSubmissions).toBe(false);
     });
   });
 
@@ -388,6 +461,7 @@ describe('ServicesService', () => {
         title: 'Service Title',
         description: 'Service Desc',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-12T00:00:00.000Z'),
       };
       dbMock.select = vi
         .fn()
@@ -403,6 +477,7 @@ describe('ServicesService', () => {
               status: 'draft',
               data: { test: true },
               createdAt: new Date('2026-07-12T00:00:00.000Z'),
+              updatedAt: new Date('2026-07-12T00:00:00.000Z'),
               publishedAt: null,
               archivedAt: null,
             },

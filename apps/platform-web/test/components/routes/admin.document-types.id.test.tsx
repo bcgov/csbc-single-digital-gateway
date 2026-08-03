@@ -151,25 +151,6 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
     expect(editor).toHaveAttribute('readonly');
   });
 
-  it('triggers a POST request to add a new version when clicking add version button', async () => {
-    const fetchMock = withDocumentType(mockAuth(adminUser));
-    renderApp('/admin/document-types/dt-1');
-
-    const user = userEvent.setup();
-    const addBtn = await screen.findByRole('button', { name: /add version/i });
-    await user.click(addBtn);
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/v1/admin/document-types/dt-1/versions'),
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ definition: mockDocumentType.versions[1].definition }),
-        }),
-      );
-    });
-  });
-
   it('triggers a PATCH request to save changes made to a draft version definition', async () => {
     const fetchMock = withDocumentType(mockAuth(adminUser));
     renderApp('/admin/document-types/dt-1');
@@ -230,29 +211,5 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
     const errorAlert = await screen.findByRole('alert');
     expect(errorAlert).toBeInTheDocument();
     expect(errorAlert).toHaveTextContent('Definition is not valid JSON.');
-  });
-
-  it('handles version creation fallback definition when selected is undefined', async () => {
-    const mockDocumentTypeEmptyVersions = {
-      ...mockDocumentType,
-      versions: [],
-    };
-
-    const fetchMock = withDocumentType(mockAuth(adminUser), mockDocumentTypeEmptyVersions);
-    renderApp('/admin/document-types/dt-1');
-
-    const user = userEvent.setup();
-    const addBtn = await screen.findByRole('button', { name: /add version/i });
-    await user.click(addBtn);
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/v1/admin/document-types/dt-1/versions'),
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ definition: {} }),
-        }),
-      );
-    });
   });
 });

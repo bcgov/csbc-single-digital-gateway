@@ -4,11 +4,18 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
+import { InfoCell } from '@/components/account-page';
 
 const authedUser = {
   id: 'c1',
   roles: ['citizen'],
-  claims: { sub: 'subject-1', name: 'Amina Ali', email: 'amina@example.com' },
+  claims: {
+    sub: 'subject-1',
+    display_name: 'Amina Ali',
+    given_name: 'Amina',
+    family_name: 'Ali',
+    email: 'amina@example.com',
+  },
 };
 
 function jsonResponse(body: unknown): Response {
@@ -50,9 +57,10 @@ describe('citizen-portal-web /account page', () => {
     expect(
       await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Amina Ali')).toBeInTheDocument();
+    expect(screen.getByText('Amina')).toBeInTheDocument();
+    expect(screen.getByText('Ali')).toBeInTheDocument();
     expect(screen.getByText('amina@example.com')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
   });
 
   it('prompts an anonymous visitor to log in', async () => {
@@ -80,14 +88,20 @@ describe('citizen-portal-web /account page', () => {
     const userNoEmail = {
       id: 'c1',
       roles: ['citizen'],
-      claims: { sub: 'subject-1', name: 'Amina Ali' },
+      claims: {
+        sub: 'subject-1',
+        display_name: 'Amina Ali',
+        given_name: 'Amina',
+        family_name: 'Ali',
+      },
     };
     await renderAccount(jsonResponse(userNoEmail));
     expect(
       await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Amina Ali')).toBeInTheDocument();
-    expect(screen.queryByText('Email')).toBeNull();
+    expect(screen.getByText('Amina')).toBeInTheDocument();
+    expect(screen.getByText('Ali')).toBeInTheDocument();
+    expect(screen.queryByText('amina@example.com')).toBeNull();
   });
 
   it('logs out and redirects to homepage when log out button is clicked', async () => {
@@ -124,7 +138,8 @@ describe('citizen-portal-web /account page', () => {
       await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
-    const logoutBtn = screen.getByRole('button', { name: /log out/i });
+    await user.click(screen.getByRole('button', { name: /account menu/i }));
+    const logoutBtn = await screen.findByRole('menuitem', { name: /log out/i });
     await user.click(logoutBtn);
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -132,5 +147,105 @@ describe('citizen-portal-web /account page', () => {
       expect.objectContaining({ method: 'POST', credentials: 'include' }),
     );
     expect(assign).toHaveBeenCalledWith('/');
+  });
+
+  it('renders full address, gender, and capitalizeFirst helper correctly', async () => {
+    const userWithAddressAndGender = {
+      id: 'c1',
+      roles: ['citizen'],
+      claims: {
+        sub: 'subject-1',
+        display_name: 'Amina Ali',
+        given_name: 'Amina',
+        family_name: 'Ali',
+        email: 'amina@example.com',
+        gender: 'female',
+        birthdate: '1990-01-01',
+        address: {
+          street_address: '123 Main St',
+          locality: 'Victoria',
+          region: 'BC',
+          postal_code: 'V8W 2Y2',
+        },
+      },
+    };
+    await renderAccount(jsonResponse(userWithAddressAndGender));
+    expect(
+      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
+    ).toBeInTheDocument();
+
+    // Verify capitalized gender
+    expect(screen.getByText('Female')).toBeInTheDocument();
+
+    // Verify address lines
+    expect(screen.getByText('123 Main St')).toBeInTheDocument();
+    expect(screen.getByText('Victoria, BC V8W 2Y2')).toBeInTheDocument();
+  });
+
+  it('handles empty and partial address details correctly', async () => {
+    const userWithEmptyAddress = {
+      id: 'c1',
+      roles: ['citizen'],
+      claims: {
+        sub: 'subject-1',
+        display_name: 'Amina Ali',
+        given_name: 'Amina',
+        family_name: 'Ali',
+        email: 'amina@example.com',
+        address: {},
+      },
+    };
+    await renderAccount(jsonResponse(userWithEmptyAddress));
+    expect(
+      await screen.findByRole('heading', { name: 'Account settings' }, { timeout: 32000 }),
+    ).toBeInTheDocument();
+
+    // Verify address is empty/omitted
+    expect(screen.queryByText('Victoria')).toBeNull();
+
+    // Verify partial address with locality only
+    const userWithLocality = {
+      id: 'c1',
+      roles: ['citizen'],
+      claims: {
+        sub: 'subject-1',
+        display_name: 'Amina Ali',
+        given_name: 'Amina',
+        family_name: 'Ali',
+        email: 'amina@example.com',
+        address: {
+          locality: 'Vancouver',
+        },
+      },
+    };
+    await renderAccount(jsonResponse(userWithLocality));
+    expect(await screen.findByText('Vancouver')).toBeInTheDocument();
+
+    // Verify partial address with region/postal only
+    const userWithRegionPostal = {
+      id: 'c1',
+      roles: ['citizen'],
+      claims: {
+        sub: 'subject-1',
+        display_name: 'Amina Ali',
+        given_name: 'Amina',
+        family_name: 'Ali',
+        email: 'amina@example.com',
+        address: {
+          region: 'BC',
+          postal_code: 'V6B 1A1',
+        },
+      },
+    };
+    await renderAccount(jsonResponse(userWithRegionPostal));
+    expect(await screen.findByText('BC V6B 1A1')).toBeInTheDocument();
+  });
+
+  it('renders InfoCell with default className when none is provided', () => {
+    const { container } = render(<InfoCell label="Username" value="Amina" />);
+    const cellElement = container.firstChild;
+    expect(cellElement).toHaveClass('flex', 'flex-col', 'gap-1', 'p-4');
+    expect(screen.getByText('Username')).toBeInTheDocument();
+    expect(screen.getByText('Amina')).toBeInTheDocument();
   });
 });

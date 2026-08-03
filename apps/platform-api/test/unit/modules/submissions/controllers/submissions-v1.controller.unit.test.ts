@@ -34,9 +34,9 @@ describe('SubmissionsV1Controller', () => {
     it('lists submissions via the submissions service', async () => {
       const query: ListSubmissionsQueryDto = {
         workspaceId: 'workspace-1',
-      };
+      } as any;
       const mockResult = [{ id: 'sub-1', status: 'pending' }];
-      submissionsServiceMock.list.mockResolvedValue(mockResult);
+      submissionsServiceMock.list.mockResolvedValue({ items: mockResult });
 
       const result = await controller.list(mockUser, query);
 

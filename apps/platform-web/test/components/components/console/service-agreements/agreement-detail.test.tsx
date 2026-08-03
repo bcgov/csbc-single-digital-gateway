@@ -367,14 +367,13 @@ describe('AgreementDetail Component Test Suite', () => {
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText('Workspace TOS')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Workspace TOS' })).toBeInTheDocument();
     // Global badge should not be present
     expect(screen.queryByText('Global')).not.toBeInTheDocument();
     // Back link should point to workspace agreements
-    expect(screen.getByRole('link', { name: /All agreements/i })).toHaveAttribute(
-      'href',
-      '/app/riverton/service-agreements',
-    );
+    const backLinks = screen.getAllByRole('link', { name: /Service agreements/i });
+    expect(backLinks.length).toBeGreaterThan(0);
+    expect(backLinks[0]).toHaveAttribute('href', '/app/riverton/service-agreements');
   });
 
   it('shows error banner when saving fails, and renders spinner during pending mutations', async () => {
@@ -453,7 +452,7 @@ describe('AgreementDetail Component Test Suite', () => {
     renderApp('/app/riverton/service-agreements/g1');
 
     // Wait for the render/query to load
-    await screen.findByText('Global Privacy Policy', undefined, { timeout: 10000 });
+    await screen.findByRole('heading', { name: 'Global Privacy Policy' }, { timeout: 10000 });
 
     // Buttons should not render as editable since it's global and user is staff
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
@@ -514,7 +513,7 @@ describe('AgreementDetail Component Test Suite', () => {
     setupMocks();
     renderApp('/app/riverton/service-agreements/g1');
     // Wait for the render/query to load
-    await screen.findByText('Global Privacy Policy', undefined, { timeout: 10000 });
+    await screen.findByRole('heading', { name: 'Global Privacy Policy' }, { timeout: 10000 });
     // It should render successfully in read-only mode
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
   });

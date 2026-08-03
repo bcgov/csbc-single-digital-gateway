@@ -80,6 +80,7 @@ describe('service-agreement DTO schemas', () => {
         title: 'Global Terms of Service',
         kind: 'service-agreement',
         createdAt: '2026-07-28T12:00:00.000Z',
+        updatedAt: '2026-07-28T12:00:00.000Z',
       };
       const parsed = serviceAgreementSchema.parse(payload);
       expect(parsed).toEqual(payload);
@@ -111,6 +112,7 @@ describe('service-agreement DTO schemas', () => {
           title: 'Terms',
           kind: 'service-agreement',
           createdAt: '2026-07-28T12:00:00.000Z',
+          updatedAt: '2026-07-28T12:00:00.000Z',
         },
         version: {
           id: VALID_UUID,
@@ -159,6 +161,7 @@ describe('service-agreement DTO schemas', () => {
           title: 'Terms',
           kind: 'service-agreement',
           createdAt: '2026-07-28T12:00:00.000Z',
+          updatedAt: '2026-07-28T12:00:00.000Z',
         },
         versions: [],
         definition: {
@@ -180,6 +183,7 @@ describe('service-agreement DTO schemas', () => {
         title: 'Global Terms',
         kind: 'service-agreement',
         createdAt: '2026-07-28T12:00:00.000Z',
+        updatedAt: '2026-07-28T12:00:00.000Z',
         status: 'published' as const,
         isGlobal: true,
       };

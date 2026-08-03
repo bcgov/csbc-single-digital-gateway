@@ -5,12 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ServicesList } from '@/components/console/services/services-list';
 import type { ServiceSummary } from '@/lib/services';
 
+let mockSearchValue: any = { sort: 'updated', order: 'desc' };
 const mockNavigate = vi.fn();
 const mockParams = { slug: 'riverton' };
-
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
   useParams: () => mockParams,
+  useSearch: () => mockSearchValue,
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;
     if (params) {
@@ -33,6 +34,7 @@ vi.mock('@/components/console/services/service-menu', () => ({
 afterEach(() => {
   vi.restoreAllMocks();
   mockNavigate.mockClear();
+  mockSearchValue = { sort: 'updated', order: 'desc' };
 });
 
 const mockServices: ServiceSummary[] = [
@@ -46,6 +48,7 @@ const mockServices: ServiceSummary[] = [
     hasSubmissions: true,
     latestPublished: true,
     createdAt: '2026-07-15T00:00:00Z',
+    updatedAt: '2026-07-15T00:00:00Z',
   },
   {
     id: 'srv-2',
@@ -57,6 +60,7 @@ const mockServices: ServiceSummary[] = [
     hasSubmissions: false,
     latestPublished: false,
     createdAt: '2026-07-15T00:00:00Z',
+    updatedAt: '2026-07-15T00:00:00Z',
   },
 ];
 
@@ -75,7 +79,13 @@ function renderServicesList(seedWorkspace = true, items: ServiceSummary[] = []) 
     });
   }
 
-  queryClient.setQueryData(['services', 'w1'], items);
+  const params = { q: '', sort: 'updated', order: 'desc', limit: 20, offset: 0 };
+  queryClient.setQueryData(['services', 'w1', params], {
+    items,
+    total: items.length,
+    limit: 20,
+    offset: 0,
+  });
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -140,5 +150,12 @@ describe('ServicesList Component Test Suite', () => {
       to: '/app/$slug/services/new',
       params: { slug: 'riverton' },
     });
+  });
+
+  it('renders no matches empty state when search term returns no results', () => {
+    mockSearchValue = { sort: 'updated', order: 'desc', q: 'nonexistent' };
+    renderServicesList(true, []);
+
+    expect(screen.getByText('No services match “nonexistent”.')).toBeInTheDocument();
   });
 });

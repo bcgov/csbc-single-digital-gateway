@@ -26,6 +26,46 @@ describe('SortableHeader', () => {
     await userEvent.click(screen.getByRole('button', { name: /sort by title/i }));
     expect(onSort).toHaveBeenCalledWith('title');
   });
+
+  it('renders ArrowDown when active and order is desc', () => {
+    const { container } = renderHeader({
+      column: 'title',
+      label: 'Title',
+      active: 'title',
+      order: 'desc',
+      onSort: () => {},
+    });
+    const btn = screen.getByRole('button', { name: /sort by title/i });
+    expect(btn).toHaveClass('text-foreground');
+    expect(btn).not.toHaveClass('flex-row-reverse');
+    expect(container.querySelector('.lucide-arrow-down')).toBeInTheDocument();
+  });
+
+  it('renders ArrowUp when active and order is asc', () => {
+    const { container } = renderHeader({
+      column: 'title',
+      label: 'Title',
+      active: 'title',
+      order: 'asc',
+      onSort: () => {},
+    });
+    const btn = screen.getByRole('button', { name: /sort by title/i });
+    expect(btn).toHaveClass('text-foreground');
+    expect(container.querySelector('.lucide-arrow-up')).toBeInTheDocument();
+  });
+
+  it('renders flex-row-reverse class when align is right', () => {
+    renderHeader({
+      column: 'title',
+      label: 'Title',
+      active: 'updated',
+      order: 'desc',
+      onSort: () => {},
+      align: 'right',
+    });
+    const btn = screen.getByRole('button', { name: /sort by title/i });
+    expect(btn).toHaveClass('flex-row-reverse');
+  });
 });
 
 describe('ListPagination', () => {
@@ -55,6 +95,11 @@ describe('ListPagination', () => {
     rerender(<ListPagination total={45} limit={20} offset={40} onPageChange={() => {}} />);
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
   });
+
+  it('handles total of 0 when limit is negative to cover the edge case branch', () => {
+    render(<ListPagination total={0} limit={-1} offset={0} onPageChange={() => {}} />);
+    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing 0–-1 of 0');
+  });
 });
 
 describe('ListSearchInput', () => {
@@ -72,5 +117,25 @@ describe('ListSearchInput', () => {
     render(<ListSearchInput value="permit" onChange={onChange} />);
     await userEvent.click(screen.getByRole('button', { name: /clear search/i }));
     expect(onChange).toHaveBeenCalledWith('');
+  });
+
+  it('renders with custom placeholder and className', () => {
+    render(
+      <ListSearchInput
+        value=""
+        onChange={() => {}}
+        placeholder="Search things…"
+        className="my-custom-class"
+      />,
+    );
+    expect(screen.getByRole('searchbox')).toHaveAttribute('placeholder', 'Search things…');
+    expect(screen.getByRole('searchbox').closest('.my-custom-class')).toBeInTheDocument();
+  });
+
+  it('adopts external value changes', () => {
+    const { rerender } = render(<ListSearchInput value="first" onChange={() => {}} />);
+    expect(screen.getByRole('searchbox')).toHaveValue('first');
+    rerender(<ListSearchInput value="second" onChange={() => {}} />);
+    expect(screen.getByRole('searchbox')).toHaveValue('second');
   });
 });

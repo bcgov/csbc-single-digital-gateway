@@ -98,8 +98,44 @@ describe('citizen-portal-web /account/service-agreements timeline', () => {
 
   it('prompts an anonymous visitor to log in', async () => {
     renderPage({ me: new Response(null, { status: 401 }) });
-    const link = await screen.findByRole('link', { name: /log in/i }, { timeout: 10000 });
-    expect(link).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+    expect(
+      await screen.findByText(
+        /You need to be signed in to view your service agreements/i,
+        {},
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument();
+    const links = screen.getAllByRole('link', { name: /log in/i });
+    expect(links[0]).toHaveAttribute('href', expect.stringContaining('/auth/login'));
+  });
+
+  it('shows an error message when the service agreements query fails', async () => {
+    // Mock getMe to return authed, but agreements list query to return 500
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) return jsonResponse(authed);
+      if (url.includes('/v1/me/service-agreements')) return new Response(null, { status: 500 });
+      return new Response(null, { status: 404 });
+    }) as unknown as typeof fetch;
+
+    const router = createRouter({
+      routeTree,
+      history: createMemoryHistory({ initialEntries: ['/account/service-agreements'] }),
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText(
+        /service agreements are temporarily unavailable/i,
+        {},
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument();
   });
 });
 
@@ -149,6 +185,91 @@ describe('citizen-portal-web /account/service-agreements/:id detail', () => {
       await screen.findByText(/could not be found/i, {}, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
+
+  it('prompts an anonymous visitor to log in on detail page', async () => {
+    renderPage({
+      path: '/account/service-agreements/a1',
+      me: new Response(null, { status: 401 }),
+    });
+    expect(
+      await screen.findByText(
+        /You need to be signed in to view this service agreement/i,
+        {},
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an error message when the agreement query fails', async () => {
+    renderPage({
+      path: '/account/service-agreements/a1',
+      detail: new Response(null, { status: 500 }),
+    });
+    expect(
+      await screen.findByText(
+        /service agreement is temporarily unavailable/i,
+        {},
+        { timeout: 10000 },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows detail of a rejected agreement with content and no description', async () => {
+    const mockLexicalContent = {
+      root: {
+        children: [
+          {
+            children: [
+              {
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'Acceptable terms content',
+                type: 'text',
+                version: 1,
+              },
+            ],
+            direction: 'ltr',
+            format: '',
+            indent: 0,
+            type: 'paragraph',
+            version: 1,
+          },
+        ],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+      },
+    };
+
+    renderPage({
+      path: '/account/service-agreements/a2',
+      detail: jsonResponse({
+        id: 'a2',
+        agreementDocumentId: 'd2',
+        title: 'Terms of Use',
+        description: null,
+        content: mockLexicalContent,
+        decision: 'reject',
+        approveLabel: 'I accept',
+        rejectLabel: 'I decline',
+        consentedAt: '2027-01-10T12:00:00.000Z',
+      }),
+    });
+    expect(
+      await screen.findByRole('heading', { name: 'Terms of Use', level: 1 }, { timeout: 10000 }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/rejected on/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText('Acceptable terms content', {}, { timeout: 10000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'I accept' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'I decline' })).toBeChecked();
+  });
 });
 
 describe('groupByMonth', () => {
@@ -159,6 +280,29 @@ describe('groupByMonth', () => {
     expect(months[0]!.days).toHaveLength(2);
     expect(months[1]!.days).toHaveLength(1);
     expect(months[0]!.days[0]!.items[0]!.id).toBe('a1');
+  });
+
+  it('groups multiple items on the same day correctly', () => {
+    const items = [
+      {
+        id: 'a1',
+        agreementDocumentId: 'd1',
+        title: 'Privacy Agreement 1',
+        consentedAt: '2027-01-15T12:00:00.000Z',
+      },
+      {
+        id: 'a2',
+        agreementDocumentId: 'd2',
+        title: 'Privacy Agreement 2',
+        consentedAt: '2027-01-15T15:00:00.000Z',
+      },
+    ];
+    const months = groupByMonth(items);
+    expect(months).toHaveLength(1);
+    expect(months[0]!.days).toHaveLength(1);
+    expect(months[0]!.days[0]!.items).toHaveLength(2);
+    expect(months[0]!.days[0]!.items[0]!.id).toBe('a1');
+    expect(months[0]!.days[0]!.items[1]!.id).toBe('a2');
   });
 
   it('returns an empty array for no items', () => {

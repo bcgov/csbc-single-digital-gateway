@@ -11,11 +11,15 @@ import { ConsoleAgreementsList } from '@/components/console/service-agreements/c
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockUseParams = vi.fn(() => ({ slug: 'riverton', id: 'a1' }));
+const mockUseSearch = vi.fn(() => ({}));
+const mockUseNavigate = vi.fn(() => vi.fn());
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<any>();
   return {
     ...actual,
     useParams: () => mockUseParams(),
+    useSearch: () => mockUseSearch(),
+    useNavigate: () => mockUseNavigate(),
   };
 });
 
@@ -154,15 +158,7 @@ describe('Console Agreements  Component Test Suite', () => {
 
     // 1. Verify workspace agreements list renders
     expect(await screen.findByText('Workspace TOS', {}, { timeout: 10000 })).toBeInTheDocument();
-    expect(
-      screen.getByText('Consent documents in this workspace (plus global ones).'),
-    ).toBeInTheDocument();
-
-    // 2. Verify workspace defaults panel renders
-    expect(
-      await screen.findByText('Default agreements', {}, { timeout: 10000 }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('No default agreements for this workspace.')).toBeInTheDocument();
+    expect(screen.getByText('Terms applicants approve before applying.')).toBeInTheDocument();
   });
 
   it('renders ConsoleAgreementsNew (Agreements list + New agreement modal)', async () => {
@@ -171,11 +167,7 @@ describe('Console Agreements  Component Test Suite', () => {
 
     // 1. Verify view loads
     expect(
-      await screen.findByText(
-        'Consent documents in this workspace (plus global ones).',
-        {},
-        { timeout: 10000 },
-      ),
+      await screen.findByText('Terms applicants approve before applying.', {}, { timeout: 10000 }),
     ).toBeInTheDocument();
 
     // 2. Verify modal dialog is open
@@ -208,7 +200,7 @@ describe('Console Agreements  Component Test Suite', () => {
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    expect(screen.getByText('Workspace TOS')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Workspace TOS' })).toBeInTheDocument();
     const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
     expect(titleInput.value).toBe('Workspace TOS');
   });
@@ -223,6 +215,9 @@ describe('Console Agreements  Component Test Suite', () => {
     );
 
     // It should render agreements list in empty/loading state
-    expect(screen.getByText(/Consent documents in this workspace/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /new agreement/i })).toBeDisabled();
+    expect(
+      screen.getByText('No service agreements yet — create one with the New button.'),
+    ).toBeInTheDocument();
   });
 });

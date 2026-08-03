@@ -31,7 +31,7 @@ describe('SubmissionsService', () => {
     tableResponses.get(table)!.push(value);
   };
 
-  const createSelectBuilder = () => {
+  const createSelectBuilder = (selector?: any) => {
     let resolvedValue: any = [];
     /* eslint-disable unicorn/no-thenable */
     const qb: any = {
@@ -40,13 +40,32 @@ describe('SubmissionsService', () => {
     /* eslint-enable unicorn/no-thenable */
     qb.from = vi.fn().mockImplementation((table) => {
       const list = tableResponses.get(table) || [];
-      resolvedValue = list.shift() ?? [];
+      let val = list.shift() ?? [];
+      if (selector && table === submissions && Array.isArray(val)) {
+        const isCount = selector.count !== undefined;
+        if (!isCount) {
+          val = val.map((item: any) => ({
+            sub: item,
+            status: item.status ?? 'pending',
+            submittedAt: item.submittedAt === undefined ? item.createdAt : item.submittedAt,
+            versionUpdatedAt: item.updatedAt,
+            serviceId: item.serviceId,
+            serviceTitle: item.serviceTitle,
+            formTitle: item.formTitle,
+            applicantName: item.applicantName,
+            applicantEmail: item.applicantEmail,
+          }));
+        }
+      }
+      resolvedValue = val;
       return qb;
     });
     qb.innerJoin = vi.fn().mockReturnValue(qb);
+    qb.leftJoin = vi.fn().mockReturnValue(qb);
     qb.where = vi.fn().mockReturnValue(qb);
     qb.orderBy = vi.fn().mockReturnValue(qb);
     qb.limit = vi.fn().mockReturnValue(qb);
+    qb.offset = vi.fn().mockReturnValue(qb);
     return qb;
   };
 
@@ -65,7 +84,7 @@ describe('SubmissionsService', () => {
 
     dbMock = {
       transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
-      select: vi.fn().mockImplementation(() => createSelectBuilder()),
+      select: vi.fn().mockImplementation((selector?: any) => createSelectBuilder(selector)),
     };
 
     configMock = {
@@ -85,7 +104,7 @@ describe('SubmissionsService', () => {
       // requireMembership returns empty
       addMockResponse(workspaceMembers, []);
 
-      await expect(service.list('user-1', { workspaceId: 'ws-1' })).rejects.toThrow(
+      await expect(service.list('user-1', { workspaceId: 'ws-1' } as any)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -99,25 +118,22 @@ describe('SubmissionsService', () => {
         userId: 'applicant-1',
         createdAt: new Date('2026-07-28T00:00:00Z'),
         updatedAt: new Date('2026-07-28T00:00:00Z'),
+        serviceId: 'doc-svc-1',
+        serviceTitle: 'My Service',
+        formTitle: 'My Form',
+        applicantName: 'Jane Doe',
+        applicantEmail: 'jane@example.com',
+        status: 'pending',
+        submittedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
       addMockResponse(submissions, [mockSub]);
-      addMockResponse(documentReferences, [{ serviceId: 'doc-svc-1' }]);
-      addMockResponse(documents, [{ title: 'My Service' }]); // first query in toSummary (service)
-      addMockResponse(documents, [{ title: 'My Form' }]); // second query in toSummary (form)
-      addMockResponse(users, [{ displayName: 'Jane Doe', email: 'jane@example.com' }]);
-      addMockResponse(submissionVersions, [
-        {
-          status: 'pending',
-          submittedAt: new Date('2026-07-28T00:00:00Z'),
-          updatedAt: new Date('2026-07-28T00:00:00Z'),
-        },
-      ]);
+      addMockResponse(submissions, [{ count: 1 }]);
 
-      const result = await service.list('user-1', { workspaceId: 'ws-1' });
+      const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
-      expect(result).toEqual([
+      expect(result.items).toEqual([
         {
           id: 'sub-1',
           serviceId: 'doc-svc-1',
@@ -133,6 +149,7 @@ describe('SubmissionsService', () => {
           updatedAt: '2026-07-28T00:00:00.000Z',
         },
       ]);
+      expect(result.total).toBe(1);
     });
 
     it('filters list of submissions by status if specified', async () => {
@@ -144,6 +161,13 @@ describe('SubmissionsService', () => {
         userId: 'applicant-1',
         createdAt: new Date('2026-07-28T00:00:00Z'),
         updatedAt: new Date('2026-07-28T00:00:00Z'),
+        serviceId: 'doc-svc-1',
+        serviceTitle: 'My Service',
+        formTitle: 'My Form',
+        applicantName: 'Jane Doe',
+        applicantEmail: 'jane@example.com',
+        status: 'pending',
+        submittedAt: new Date('2026-07-28T00:00:00Z'),
       };
       const mockSub2 = {
         id: 'sub-2',
@@ -153,45 +177,27 @@ describe('SubmissionsService', () => {
         userId: 'applicant-1',
         createdAt: new Date('2026-07-28T00:00:00Z'),
         updatedAt: new Date('2026-07-28T00:00:00Z'),
+        serviceId: 'doc-svc-1',
+        serviceTitle: 'My Service',
+        formTitle: 'My Form',
+        applicantName: 'Jane Doe',
+        applicantEmail: 'jane@example.com',
+        status: 'approved',
+        submittedAt: new Date('2026-07-28T00:00:00Z'),
       };
 
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
       addMockResponse(submissions, [mockSub1, mockSub2]);
-
-      // sub-1 summaries
-      addMockResponse(documentReferences, [{ serviceId: 'doc-svc-1' }]);
-      addMockResponse(documents, [{ title: 'My Service' }]);
-      addMockResponse(documents, [{ title: 'My Form' }]);
-      addMockResponse(users, [{ displayName: 'Jane Doe', email: 'jane@example.com' }]);
-      addMockResponse(submissionVersions, [
-        {
-          status: 'pending',
-          submittedAt: new Date('2026-07-28T00:00:00Z'),
-          updatedAt: new Date('2026-07-28T00:00:00Z'),
-        },
-      ]);
-
-      // sub-2 summaries
-      addMockResponse(documentReferences, [{ serviceId: 'doc-svc-1' }]);
-      addMockResponse(documents, [{ title: 'My Service' }]);
-      addMockResponse(documents, [{ title: 'My Form' }]);
-      addMockResponse(users, [{ displayName: 'Jane Doe', email: 'jane@example.com' }]);
-      addMockResponse(submissionVersions, [
-        {
-          status: 'approved',
-          submittedAt: new Date('2026-07-28T00:00:00Z'),
-          updatedAt: new Date('2026-07-28T00:00:00Z'),
-        },
-      ]);
+      addMockResponse(submissions, [{ count: 2 }]);
 
       // query status 'pending'
       const result = await service.list('user-1', {
         workspaceId: 'ws-1',
         status: 'pending',
-      });
+      } as any);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.id).toBe('sub-1');
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0]?.id).toBe('sub-1');
     });
   });
 
@@ -459,17 +465,17 @@ describe('SubmissionsService', () => {
         userId: null,
         createdAt: new Date('2026-07-28T00:00:00Z'),
         updatedAt: new Date('2026-07-28T01:00:00Z'),
+        status: 'draft',
+        submittedAt: null,
       };
 
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
       addMockResponse(submissions, [mockSub]);
-      addMockResponse(documentReferences, []);
-      addMockResponse(documents, []);
-      addMockResponse(submissionVersions, []);
+      addMockResponse(submissions, [{ count: 1 }]);
 
-      const result = await service.list('user-1', { workspaceId: 'ws-1' });
+      const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
-      expect(result).toEqual([
+      expect(result.items).toEqual([
         {
           id: 'sub-1',
           serviceId: '',
@@ -504,6 +510,13 @@ describe('SubmissionsService', () => {
       addMockResponse(documents, []);
       addMockResponse(documents, []);
       addMockResponse(users, []);
+      addMockResponse(submissionVersions, [
+        {
+          status: 'pending',
+          submittedAt: new Date('2026-07-28T00:00:00Z'),
+          updatedAt: new Date('2026-07-28T00:00:00Z'),
+        },
+      ]);
       addMockResponse(submissionVersions, []);
       addMockResponse(documentVersions, []);
       addMockResponse(reviews, []);

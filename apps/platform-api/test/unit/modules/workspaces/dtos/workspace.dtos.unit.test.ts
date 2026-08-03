@@ -7,6 +7,7 @@ import {
   transferOwnershipSchema,
   addMemberSchema,
   addableStaffQuerySchema,
+  listMembersQuerySchema,
   toStaffUserDto,
   toWorkspaceMemberDto,
   toWorkspaceDto,

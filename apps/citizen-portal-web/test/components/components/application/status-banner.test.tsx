@@ -20,7 +20,7 @@ describe('StatusBanner Component', () => {
     // Basic config title matching
     const expectedTitles: Record<ApplicationStatus, string> = {
       draft: 'Draft',
-      pending: 'Submitted',
+      pending: 'Application received',
       in_review: 'Under review',
       approved: 'Approved',
       rejected: 'Not approved',
@@ -28,7 +28,7 @@ describe('StatusBanner Component', () => {
       withdrawn: 'Withdrawn',
     };
 
-    expect(screen.getByText(expectedTitles[status])).toBeInTheDocument();
+    expect(screen.getByText(expectedTitles[status], { selector: 'p' })).toBeInTheDocument();
   });
 
   it('renders review reason when status is needs_changes and reviewReason is provided', () => {

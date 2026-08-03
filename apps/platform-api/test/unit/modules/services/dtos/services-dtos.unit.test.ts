@@ -153,6 +153,7 @@ describe('service DTO schemas', () => {
         title: 'My Service',
         description: 'Service description',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-12T00:00:00.000Z'),
       };
 
       const result = toServiceDto(mockRow as unknown as Document);
@@ -163,6 +164,7 @@ describe('service DTO schemas', () => {
         title: 'My Service',
         description: 'Service description',
         createdAt: '2026-07-12T00:00:00.000Z',
+        updatedAt: '2026-07-12T00:00:00.000Z',
       });
     });
 

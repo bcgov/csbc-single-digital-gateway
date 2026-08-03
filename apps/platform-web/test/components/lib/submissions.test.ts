@@ -5,6 +5,7 @@ import {
   reviewSubmission,
   submissionsQueryOptions,
   submissionQueryOptions,
+  type SubmissionListParams,
 } from '@/lib/submissions';
 
 // Mock BFF origin
@@ -30,23 +31,41 @@ describe('Submissions Unit Test Suite', () => {
 
   it('lists submissions without status filter', async () => {
     mockFetch.mockResolvedValue(
-      mockResponse(200, { items: [{ id: 'sub-1', applicantName: 'John Doe' }] }),
+      mockResponse(200, { items: [{ id: 'sub-1', applicantName: 'John Doe' }], total: 1 }),
     );
 
-    const res = await listSubmissions('ws-1');
-    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/submissions?workspaceId=ws-1', {
-      credentials: 'include',
-    });
-    expect(res).toHaveLength(1);
-    expect(res[0]?.applicantName).toBe('John Doe');
+    const params: SubmissionListParams = {
+      q: '',
+      sort: 'submitted',
+      order: 'desc',
+      limit: 10,
+      offset: 0,
+    };
+    const res = await listSubmissions('ws-1', params);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://bff-test/v1/submissions?workspaceId=ws-1&sort=submitted&order=desc&limit=10&offset=0',
+      {
+        credentials: 'include',
+      },
+    );
+    expect(res.items).toHaveLength(1);
+    expect(res.items[0]?.applicantName).toBe('John Doe');
   });
 
   it('lists submissions with status filter', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { items: [] }));
+    mockFetch.mockResolvedValue(mockResponse(200, { items: [], total: 0 }));
 
-    await listSubmissions('ws-1', 'pending');
+    const params: SubmissionListParams = {
+      q: '',
+      sort: 'submitted',
+      order: 'desc',
+      limit: 10,
+      offset: 0,
+      status: 'pending',
+    };
+    await listSubmissions('ws-1', params);
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://bff-test/v1/submissions?workspaceId=ws-1&status=pending',
+      'http://bff-test/v1/submissions?workspaceId=ws-1&sort=submitted&order=desc&limit=10&offset=0&status=pending',
       {
         credentials: 'include',
       },
@@ -86,17 +105,32 @@ describe('Submissions Unit Test Suite', () => {
   });
 
   it('proposes correct submissionsQueryOptions configuration details', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { items: [] }));
+    mockFetch.mockResolvedValue(mockResponse(200, { items: [], total: 0 }));
 
     // Without status
-    const optsAll = submissionsQueryOptions('ws-1');
-    expect(optsAll.queryKey).toEqual(['submissions', 'ws-1', 'all']);
+    const paramsAll: SubmissionListParams = {
+      q: '',
+      sort: 'submitted',
+      order: 'desc',
+      limit: 10,
+      offset: 0,
+    };
+    const optsAll = submissionsQueryOptions('ws-1', paramsAll);
+    expect(optsAll.queryKey).toEqual(['submissions', 'ws-1', paramsAll]);
     const resAll = await (optsAll.queryFn as any)();
-    expect(resAll).toEqual([]);
+    expect(resAll).toEqual({ items: [], total: 0 });
 
     // With status
-    const optsReview = submissionsQueryOptions('ws-1', 'in_review');
-    expect(optsReview.queryKey).toEqual(['submissions', 'ws-1', 'in_review']);
+    const paramsReview: SubmissionListParams = {
+      q: '',
+      sort: 'submitted',
+      order: 'desc',
+      limit: 10,
+      offset: 0,
+      status: 'in_review',
+    };
+    const optsReview = submissionsQueryOptions('ws-1', paramsReview);
+    expect(optsReview.queryKey).toEqual(['submissions', 'ws-1', paramsReview]);
   });
 
   it('proposes correct submissionQueryOptions details', async () => {

@@ -23,6 +23,7 @@ import {
   detachServiceAgreement,
   createExternalApplication,
   updateExternalApplication,
+  type ServiceListParams,
 } from '@/lib/services';
 
 // Mock BFF origin
@@ -60,14 +61,25 @@ describe('Services Unit Test Suite', () => {
       mockResponse(200, { items: [{ id: 'srv-1', title: 'Service A' }] }),
     );
 
-    const options = servicesQueryOptions('ws-1');
-    expect(options.queryKey).toEqual(['services', 'ws-1']);
+    const params: ServiceListParams = {
+      q: '',
+      sort: 'updated',
+      order: 'desc',
+      limit: 10,
+      offset: 0,
+    };
+    const options = servicesQueryOptions('ws-1', params);
+    expect(options.queryKey).toEqual(['services', 'ws-1', params]);
 
     const items = await (options.queryFn as any)();
-    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/services?workspaceId=ws-1', {
-      credentials: 'include',
-    });
-    expect(items).toHaveLength(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://bff-test/v1/services?workspaceId=ws-1&sort=updated&order=desc&limit=10&offset=0',
+      {
+        credentials: 'include',
+      },
+    );
+    expect(items.items).toHaveLength(1);
+    expect(items.items[0].title).toBe('Service A');
   });
 
   it('queries a single service details by id', async () => {

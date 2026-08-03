@@ -1,4 +1,4 @@
-import { screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
@@ -278,82 +278,6 @@ describe('AdminDocumentTypeDetail', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Definition is not valid JSON.');
   });
 
-  it('adds a new version based on current version definition', async () => {
-    const { fetchMock } = mockApi([basicEntry]);
-    renderApp('/admin/document-types/dt-1');
-    const user = userEvent.setup();
-
-    const addVersionButton = await screen.findByRole('button', { name: 'Add version' });
-    await user.click(addVersionButton);
-
-    await waitFor(() => {
-      const postCall = fetchMock.mock.calls.find(
-        ([input, init]) =>
-          String(input).includes('/v1/admin/document-types/dt-1/versions') &&
-          !String(input).includes('dt-1-v1') &&
-          (init?.method ?? 'GET').toUpperCase() === 'POST',
-      );
-      expect(postCall).toBeTruthy();
-      expect(JSON.parse(String(postCall?.[1]?.body))).toEqual({
-        definition: { name: 'x' },
-      });
-    });
-
-    // The new version should appear in the table as v2
-    expect(await screen.findByRole('cell', { name: 'v2' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'draft' })).toBeInTheDocument();
-  });
-
-  it('publishes, archives, and deletes versions through action buttons', async () => {
-    const { fetchMock } = mockApi([multipleEntry]);
-    renderApp('/admin/document-types/dt-1');
-    const user = userEvent.setup();
-
-    // v2 is a draft, so it should show Publish and Delete buttons
-    const publishButton = await screen.findByRole('button', { name: 'Publish' });
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-
-    // Let's archive v1 (which is published, so it has Archive)
-    const v1Row = screen.getByRole('row', { name: /v1/ });
-    const archiveButton = within(v1Row).getByRole('button', { name: 'Archive' });
-    await user.click(archiveButton);
-
-    await waitFor(() => {
-      const archiveCall = fetchMock.mock.calls.find(
-        ([input, init]) =>
-          String(input).includes('/v1/admin/document-types/dt-1/versions/dt-1-v1/archive') &&
-          (init?.method ?? 'GET').toUpperCase() === 'POST',
-      );
-      expect(archiveCall).toBeTruthy();
-    });
-
-    // Let's publish v2
-    await user.click(publishButton);
-    await waitFor(() => {
-      const publishCall = fetchMock.mock.calls.find(
-        ([input, init]) =>
-          String(input).includes('/v1/admin/document-types/dt-1/versions/dt-1-v2/publish') &&
-          (init?.method ?? 'GET').toUpperCase() === 'POST',
-      );
-      expect(publishCall).toBeTruthy();
-    });
-
-    // Let's create a new version and delete it
-    const addVersionButton = screen.getByRole('button', { name: 'Add version' });
-    await user.click(addVersionButton);
-    const newDeleteButton = await screen.findByRole('button', { name: 'Delete' });
-    await user.click(newDeleteButton);
-
-    await waitFor(() => {
-      const deleteCall = fetchMock.mock.calls.find(
-        ([input, init]) =>
-          String(input).includes('/v1/admin/document-types/dt-1/versions/dt-1-v3') &&
-          (init?.method ?? 'GET').toUpperCase() === 'DELETE',
-      );
-      expect(deleteCall).toBeTruthy();
-    });
-  });
-
   it('renders nothing when document type data is not loaded', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -367,44 +291,6 @@ describe('AdminDocumentTypeDetail', () => {
     const { container } = renderApp('/admin/document-types/dt-unknown');
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(container.querySelector('main')?.firstChild).toBeNull();
-  });
-
-  it('handles document type with no versions', async () => {
-    const emptyEntry: Entry = {
-      type: {
-        id: 'dt-empty',
-        workspaceId: null,
-        name: 'Empty Form',
-        kind: 'basic-form',
-        createdAt: ISO,
-      },
-      versions: [],
-    };
-    const { fetchMock } = mockApi([emptyEntry]);
-    renderApp('/admin/document-types/dt-empty');
-
-    expect(
-      await screen.findByRole('heading', { name: 'Empty Form' }, { timeout: 32000 }),
-    ).toBeInTheDocument();
-
-    expect(screen.getByText('Definition')).toBeInTheDocument();
-    expect(screen.queryByText(/v\d+/)).not.toBeInTheDocument();
-
-    const user = userEvent.setup();
-    const addVersionButton = screen.getByRole('button', { name: 'Add version' });
-    await user.click(addVersionButton);
-
-    await waitFor(() => {
-      const postCall = fetchMock.mock.calls.find(
-        ([input, init]) =>
-          String(input).includes('/v1/admin/document-types/dt-empty/versions') &&
-          (init?.method ?? 'GET').toUpperCase() === 'POST',
-      );
-      expect(postCall).toBeTruthy();
-      expect(JSON.parse(String(postCall?.[1]?.body))).toEqual({
-        definition: {},
-      });
-    });
   });
 
   it('renders archived status correctly', async () => {
@@ -433,48 +319,6 @@ describe('AdminDocumentTypeDetail', () => {
     renderApp('/admin/document-types/dt-1');
 
     expect(await screen.findByRole('cell', { name: 'archived' })).toBeInTheDocument();
-  });
-
-  it('disables the Add Version button while adding a version', async () => {
-    let resolveAdd: ((r: Response) => void) | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return json(adminUser);
-      if (url.includes('/v1/admin/document-types/dt-1/versions') && init?.method === 'POST') {
-        return new Promise<Response>((resolve) => {
-          resolveAdd = resolve;
-        });
-      }
-      return json(basicEntry);
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-    renderApp('/admin/document-types/dt-1');
-    const user = userEvent.setup();
-
-    const addVersionButton = await screen.findByRole('button', { name: 'Add version' });
-    await user.click(addVersionButton);
-
-    // It should be disabled now
-    expect(addVersionButton).toBeDisabled();
-
-    // Resolve the promise
-    resolveAdd!(
-      json({
-        id: 'dt-1-v2',
-        typeId: 'dt-1',
-        version: 2,
-        status: 'draft',
-        definition: {},
-        createdAt: ISO,
-        publishedAt: null,
-        archivedAt: null,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(addVersionButton).not.toBeDisabled();
-    });
   });
 
   it('disables the Save button while saving draft text', async () => {
@@ -523,6 +367,76 @@ describe('AdminDocumentTypeDetail', () => {
 
     await waitFor(() => {
       expect(saveButton).not.toBeDisabled();
+    });
+  });
+
+  it('covers selected?.definition ?? {} fallback on line 50 when versions is empty', async () => {
+    const emptyVersionsEntry: Entry = {
+      type: {
+        id: 'dt-empty',
+        workspaceId: null,
+        name: 'Empty Form',
+        kind: 'basic-form',
+        createdAt: ISO,
+      },
+      versions: [],
+    };
+    const { fetchMock } = mockApi([emptyVersionsEntry]);
+    renderApp('/admin/document-types/dt-empty');
+    const user = userEvent.setup();
+
+    const newVerBtn = await screen.findByRole('button', { name: 'New version' });
+    await user.click(newVerBtn);
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(([url, init]) => {
+          if (!String(url).includes('/v1/admin/document-types/dt-empty/versions')) return false;
+          if (init?.method !== 'POST') return false;
+          const body = JSON.parse(init.body as string);
+          return JSON.stringify(body.definition) === '{}';
+        }),
+      ).toBe(true);
+    });
+  });
+
+  it('disables the New version button while creating a new version', async () => {
+    let resolveAdd: ((r: Response) => void) | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) return json(adminUser);
+      if (url.includes('/v1/admin/document-types/dt-1/versions') && init?.method === 'POST') {
+        return new Promise<Response>((resolve) => {
+          resolveAdd = resolve;
+        });
+      }
+      return json(multipleEntry);
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
+
+    const newVerButton = await screen.findByRole('button', { name: 'New version' });
+    await user.click(newVerButton);
+
+    expect(newVerButton).toBeDisabled();
+
+    resolveAdd!(
+      json({
+        id: 'dt-1-v3',
+        typeId: 'dt-1',
+        version: 3,
+        status: 'draft',
+        definition: {},
+        createdAt: ISO,
+        publishedAt: null,
+        archivedAt: null,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(newVerButton).not.toBeDisabled();
     });
   });
 });

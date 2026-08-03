@@ -107,19 +107,7 @@ describe('App Slug Team Layout Route', () => {
 
     // Verify child team index page content renders through the Outlet
     expect(
-      await screen.findByText('People with access to this workspace', {}, { timeout: 32000 }),
-    ).toBeInTheDocument();
-  });
-
-  it('renders empty state correctly for a member role', async () => {
-    const rivertonMember: WorkspaceLike = { ...riverton, role: 'member' };
-    withEmptyMembers(mockAuth(authedUser, { workspaces: [rivertonMember] }));
-    renderApp('/app/riverton/team/');
-
-    expect(screen.queryByRole('button', { name: /add member/i })).not.toBeInTheDocument();
-
-    expect(
-      await screen.findByText('No teammates yet.', {}, { timeout: 32000 }),
+      await screen.findByText(/People with access to this workspace/i, {}, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 

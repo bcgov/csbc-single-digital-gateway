@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from './support/render-app';
+import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
 
 afterEach(() => {
   vi.restoreAllMocks();

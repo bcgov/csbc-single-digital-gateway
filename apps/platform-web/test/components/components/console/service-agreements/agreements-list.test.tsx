@@ -5,35 +5,42 @@ import { AgreementsList } from '@/components/console/service-agreements/agreemen
 import type { AgreementScope } from '@/components/console/service-agreements/scope';
 
 const mockNavigate = vi.fn();
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => mockNavigate,
-  Link: ({ to, params, children, ...props }: any) => {
-    let href = to;
-    if (params) {
-      Object.entries(params).forEach(([key, val]) => {
-        href = href.replace(`$${key}`, String(val));
-      });
-    }
-    return (
-      <a href={href} {...props}>
-        {children}
-      </a>
-    );
-  },
-}));
+const mockUseSearch = vi.fn(() => ({}));
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useSearch: () => mockUseSearch(),
+    Link: ({ to, params, children, ...props }: any) => {
+      let href = to;
+      if (params) {
+        Object.entries(params).forEach(([key, val]) => {
+          href = href.replace(`$${key}`, String(val));
+        });
+      }
+      return (
+        <a href={href} {...props}>
+          {children}
+        </a>
+      );
+    },
+  };
+});
 
 let mockItems: any[] = [];
 vi.mock('@tanstack/react-query', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
   return {
     ...actual,
-    useQuery: () => ({ data: mockItems, isSuccess: true }),
+    useQuery: () => ({ data: { items: mockItems, total: mockItems.length }, isSuccess: true }),
   };
 });
 
 afterEach(() => {
   vi.clearAllMocks();
   mockItems = [];
+  mockUseSearch.mockReturnValue({});
 });
 
 const workspaceScope: AgreementScope = { kind: 'workspace', slug: 'riverton', workspaceId: 'w1' };
@@ -44,9 +51,6 @@ describe('AgreementsList Component Test Suite', () => {
     mockItems = [];
     render(<AgreementsList scope={workspaceScope} />);
 
-    expect(
-      screen.getByText('Consent documents in this workspace (plus global ones).'),
-    ).toBeInTheDocument();
     expect(
       screen.getByText('No service agreements yet — create one with the New button.'),
     ).toBeInTheDocument();
@@ -64,10 +68,6 @@ describe('AgreementsList Component Test Suite', () => {
     mockItems = [];
     render(<AgreementsList scope={adminScope} />);
 
-    expect(
-      screen.getByText('Global consent documents shared across all workspaces.'),
-    ).toBeInTheDocument();
-
     const newBtn = screen.getByRole('button', { name: /new agreement/i });
     await userEvent.click(newBtn);
 
@@ -83,12 +83,14 @@ describe('AgreementsList Component Test Suite', () => {
         title: 'Workspace TOS',
         status: 'draft',
         isGlobal: false,
+        updatedAt: '2026-07-01T00:00:00.000Z',
       },
       {
         id: '2',
         title: 'Global Privacy Policy',
         status: 'published',
         isGlobal: true,
+        updatedAt: '2026-07-02T00:00:00.000Z',
       },
     ];
 
@@ -102,14 +104,18 @@ describe('AgreementsList Component Test Suite', () => {
     expect(row1Link).toBeInTheDocument();
     expect(row1Link).toHaveAttribute('href', '/app/riverton/service-agreements/1');
     expect(screen.getByText('draft')).toBeInTheDocument();
-    expect(screen.getByText('Workspace')).toBeInTheDocument();
+    expect(
+      screen.getByText(new Date('2026-07-01T00:00:00.000Z').toLocaleDateString()),
+    ).toBeInTheDocument();
 
     // Verify row 2
     const row2Link = screen.getByRole('link', { name: 'Global Privacy Policy' });
     expect(row2Link).toBeInTheDocument();
     expect(row2Link).toHaveAttribute('href', '/app/riverton/service-agreements/2');
     expect(screen.getByText('published')).toBeInTheDocument();
-    expect(screen.getByText('Global')).toBeInTheDocument();
+    expect(
+      screen.getByText(new Date('2026-07-02T00:00:00.000Z').toLocaleDateString()),
+    ).toBeInTheDocument();
   });
 
   it('renders a list of agreements with correct links for admin scope', () => {
@@ -119,6 +125,7 @@ describe('AgreementsList Component Test Suite', () => {
         title: 'Global TOS',
         status: 'draft',
         isGlobal: true,
+        updatedAt: '2026-07-01T00:00:00.000Z',
       },
     ];
 
@@ -127,5 +134,13 @@ describe('AgreementsList Component Test Suite', () => {
     const link = screen.getByRole('link', { name: 'Global TOS' });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/admin/service-agreements/1');
+  });
+
+  it('renders no matches empty state when search term returns no results', () => {
+    mockItems = [];
+    mockUseSearch.mockReturnValue({ q: 'nonexistent' });
+    render(<AgreementsList scope={workspaceScope} />);
+
+    expect(screen.getByText('No agreements match “nonexistent”.')).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, renderApp } from './support/render-app';
+import { authedUser, renderApp } from '../support/render-app';
 
 const ISO = '2026-07-29T00:00:00.000Z';
 const workspace = {

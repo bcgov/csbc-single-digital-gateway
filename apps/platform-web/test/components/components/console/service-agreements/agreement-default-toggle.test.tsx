@@ -4,6 +4,22 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgreementDefaultToggle } from '@/components/console/service-agreements/agreement-default-toggle';
 
+vi.mock('@repo/ui/switch', () => ({
+  Switch: ({ onCheckedChange, checked, ...props }: any) => (
+    <button
+      role="switch"
+      aria-checked={checked}
+      onClick={(e: any) => {
+        const forceFalse = e.currentTarget.getAttribute('data-force-false') === 'true';
+        onCheckedChange(forceFalse ? false : !checked);
+      }}
+      {...props}
+    >
+      Toggle
+    </button>
+  ),
+}));
+
 const ISO = '2026-07-29T00:00:00.000Z';
 
 function json(body: unknown, status = 200): Response {
@@ -135,5 +151,56 @@ describe('agreement default toggle', () => {
     // Give the queries a chance to resolve; the switch must never appear.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.queryByRole('switch')).toBeNull();
+  });
+
+  it('covers the next = false and current = undefined branch by forcing false switch toggle', async () => {
+    const user = userEvent.setup();
+    mockBff('admin', []);
+    renderToggle(true);
+
+    const toggle = await screen.findByRole('switch', { name: 'Workspace default' });
+    toggle.setAttribute('data-force-false', 'true');
+    await user.click(toggle);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+
+  it('renders mutation error alert when the toggle request fails', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/v1/workspaces/by-slug/')) {
+        return json({
+          id: 'w1',
+          slug: 'riverton',
+          name: 'Riverton',
+          role: 'admin',
+          ownerId: 'u1',
+          createdAt: ISO,
+        });
+      }
+      if (url.includes('/v1/workspaces/w1/default-agreements')) {
+        if (init?.method === 'POST') {
+          return new Response(
+            JSON.stringify({ message: 'Server failed to save default agreement' }),
+            {
+              status: 500,
+              headers: { 'content-type': 'application/json' },
+            },
+          );
+        }
+        return json({ items: [] });
+      }
+      return new Response(null, { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderToggle(true);
+
+    const toggle = await screen.findByRole('switch', { name: 'Workspace default' });
+    await user.click(toggle);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Server failed to save default agreement');
   });
 });

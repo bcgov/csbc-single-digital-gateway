@@ -244,13 +244,13 @@ describe('ConsentGate', () => {
   });
 
   it('seeds local decisions from server decisions', async () => {
-    const preApproved: ServiceAgreementConsent = {
+    const preRejected: ServiceAgreementConsent = {
       ...required,
-      agreementVersionId: 'av-pre-app',
-      decision: 'approve',
+      agreementVersionId: 'av-pre-rej',
+      decision: 'reject',
     };
-    renderGate([preApproved]);
-    const radioApprove = screen.getByRole('radio', { name: 'I accept the terms' });
-    expect(radioApprove).toBeChecked();
+    renderGate([preRejected]);
+    const radioReject = screen.getByRole('radio', { name: 'I decline' });
+    expect(radioReject).toBeChecked();
   });
 });

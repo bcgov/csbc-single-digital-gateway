@@ -54,7 +54,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-function mockSubmissionsApi(submissions: any[] = submissionsList) {
+function mockSubmissionsApi(submissions: any[] = submissionsList, workspace: any = mockWorkspace) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
 
@@ -62,10 +62,10 @@ function mockSubmissionsApi(submissions: any[] = submissionsList) {
       return json(authedUser);
     }
     if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return json(mockWorkspace);
+      return json(workspace);
     }
     if (url.includes('/v1/workspaces')) {
-      return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
+      return json({ items: [workspace], total: 1, limit: 100, offset: 0 });
     }
     if (url.includes('/v1/submissions')) {
       const searchParams = new URL(url, 'http://x').searchParams;
@@ -105,14 +105,6 @@ describe('SubmissionsPage Component Test Suite', () => {
       },
       { timeout: 32000 },
     );
-  });
-
-  it('renders empty queue state when there are no submissions', async () => {
-    mockSubmissionsApi([]);
-    renderApp('/app/riverton/submissions');
-
-    expect(await screen.findByText('No submissions yet')).toBeInTheDocument();
-    expect(screen.getByText('They appear here once applicants submit.')).toBeInTheDocument();
   });
 
   it('renders submission records with correct fields and links', async () => {
@@ -289,26 +281,39 @@ describe('SubmissionsPage Component Test Suite', () => {
     expect(container.querySelector('.animate-pulse')).not.toBeInTheDocument();
   });
 
-  it('handles workspace with missing or null ID', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) {
-        return json(authedUser);
-      }
-      if (url.includes('/v1/workspaces/by-slug/riverton')) {
-        // Return workspace without ID
-        return json({ slug: 'riverton', name: 'Riverton', role: 'admin' });
-      }
-      if (url.includes('/v1/submissions')) {
-        return json({ items: [] });
-      }
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  it('falls back to "All" tab when status parameter in search is unknown/not in tabs', async () => {
+    mockSubmissionsApi();
+    renderApp('/app/riverton/submissions?status=withdrawn');
 
+    // Should display empty state because no items match "withdrawn" status
+    expect(
+      await screen.findByText('No submissions yet — they appear here once applicants submit.'),
+    ).toBeInTheDocument();
+
+    const allTab = screen.getByRole('tab', { name: 'All' });
+    expect(allTab).toHaveAttribute('data-active');
+  });
+
+  it('renders no matches empty state when search term returns no results', async () => {
+    mockSubmissionsApi([]);
+    renderApp('/app/riverton/submissions?q=nonexistent');
+
+    expect(await screen.findByText('No submissions match “nonexistent”.')).toBeInTheDocument();
+  });
+
+  it('handles workspace with missing/null id gracefully', async () => {
+    const mockWorkspaceNoId = {
+      id: null as any,
+      slug: 'riverton',
+      name: 'Riverton',
+      role: 'admin' as const,
+      createdAt: ISO,
+    };
+    mockSubmissionsApi([], mockWorkspaceNoId);
     renderApp('/app/riverton/submissions');
 
-    // It should render empty state
-    expect(await screen.findByText('No submissions yet')).toBeInTheDocument();
+    expect(
+      await screen.findByPlaceholderText('Search applicant, service, ref…'),
+    ).toBeInTheDocument();
   });
 });

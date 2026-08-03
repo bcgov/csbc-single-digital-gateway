@@ -113,28 +113,19 @@ describe('displayName', () => {
     claims: { sub: 'usr_123' },
   };
 
-  it('prefers claims.name', () => {
+  it('prefers claims.display_name', () => {
     const user = {
       ...baseUser,
       claims: {
         ...baseUser.claims,
-        name: 'Alice',
-        preferred_username: 'alice123',
+        display_name: 'Alice',
         email: 'alice@example.com',
       },
     };
     expect(displayName(user)).toBe('Alice');
   });
 
-  it('falls back to claims.preferred_username if name is missing', () => {
-    const user = {
-      ...baseUser,
-      claims: { ...baseUser.claims, preferred_username: 'alice123', email: 'alice@example.com' },
-    };
-    expect(displayName(user)).toBe('alice123');
-  });
-
-  it('falls back to claims.email if name and preferred_username are missing', () => {
+  it('falls back to claims.email if display_name is missing', () => {
     const user = {
       ...baseUser,
       claims: { ...baseUser.claims, email: 'alice@example.com' },
@@ -142,7 +133,7 @@ describe('displayName', () => {
     expect(displayName(user)).toBe('alice@example.com');
   });
 
-  it('falls back to user.id if all claims are missing', () => {
+  it('falls back to user.id if display_name and email are missing', () => {
     expect(displayName(baseUser)).toBe('usr_123');
   });
 });

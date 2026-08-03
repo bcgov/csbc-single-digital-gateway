@@ -86,7 +86,7 @@ function mockTeamFetch(role: 'admin' | 'member' = 'admin') {
         201,
       );
     }
-    if (path.endsWith('/members')) return json({ items: members });
+    if (path.includes('/members')) return json({ items: members, total: members.length });
     if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
     if (url.includes('/v1/workspaces')) {
       return json({ items: [ws], total: 1, limit: 100, offset: 0 });
@@ -153,7 +153,7 @@ describe('Add Member Modal Component Test Suite', () => {
         return json({ items: staffWithNoEmail });
       }
       const path = url.split('?')[0] ?? '';
-      if (path.endsWith('/members')) return json({ items: members });
+      if (path.includes('/members')) return json({ items: members, total: members.length });
       if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
       if (url.includes('/v1/workspaces')) {
         return json({ items: [ws], total: 1, limit: 100, offset: 0 });
@@ -183,11 +183,11 @@ describe('Add Member Modal Component Test Suite', () => {
       if (url.includes('/auth/me')) return json(authedUser);
       if (url.includes('/addable-staff')) return json({ items: staff });
       const path = url.split('?')[0] ?? '';
-      if (path.endsWith('/members')) {
+      if (path.includes('/members')) {
         if ((init?.method ?? 'GET').toUpperCase() === 'POST') {
           return json({ message: 'User is already a member of this workspace.' }, 400);
         }
-        return json({ items: members });
+        return json({ items: members, total: members.length });
       }
       if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
       if (url.includes('/v1/workspaces')) {
@@ -221,7 +221,7 @@ describe('Add Member Modal Component Test Suite', () => {
       if (url.includes('/auth/me')) return json(authedUser);
       if (url.includes('/addable-staff')) return json({ items: [] });
       const path = url.split('?')[0] ?? '';
-      if (path.endsWith('/members')) return json({ items: members });
+      if (path.includes('/members')) return json({ items: members, total: members.length });
       if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
       if (url.includes('/v1/workspaces')) {
         return json({ items: [ws], total: 1, limit: 100, offset: 0 });
@@ -252,7 +252,7 @@ describe('Add Member Modal Component Test Suite', () => {
         });
       }
       const path = url.split('?')[0] ?? '';
-      if (path.endsWith('/members')) return json({ items: members });
+      if (path.includes('/members')) return json({ items: members, total: members.length });
       if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
       if (url.includes('/v1/workspaces')) {
         return json({ items: [ws], total: 1, limit: 100, offset: 0 });
@@ -285,13 +285,13 @@ describe('Add Member Modal Component Test Suite', () => {
       if (url.includes('/auth/me')) return json(authedUser);
       if (url.includes('/addable-staff')) return json({ items: staff });
       const path = url.split('?')[0] ?? '';
-      if (path.endsWith('/members')) {
+      if (path.includes('/members')) {
         if ((init?.method ?? 'GET').toUpperCase() === 'POST') {
           return new Promise<Response>((resolve) => {
             resolveAdd = resolve;
           });
         }
-        return json({ items: members });
+        return json({ items: members, total: members.length });
       }
       if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
       if (url.includes('/v1/workspaces')) {
@@ -438,7 +438,7 @@ describe('Add Member Modal Component Test Suite', () => {
           201,
         );
       }
-      if (path.endsWith('/members')) return json({ items: members });
+      if (path.includes('/members')) return json({ items: members, total: members.length });
       if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
       if (url.includes('/v1/workspaces')) {
         return json({ items: [ws], total: 1, limit: 100, offset: 0 });

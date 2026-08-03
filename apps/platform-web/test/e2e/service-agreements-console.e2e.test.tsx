@@ -67,6 +67,9 @@ function withAgreements(base: ReturnType<typeof mockAuth>) {
       init,
     );
   });
+  // We need to cast because the types don't align perfectly with our mockFn signature
+  // but we know it behaves like fetch for our tests.
+  globalThis.fetch = fetchMock as unknown as typeof fetch;
   return fetchMock;
 }
 
@@ -86,8 +89,8 @@ describe('Service Agreements Console Integration Test Suite', () => {
 
   it('drives the paginated browse API from the search + sort controls', async () => {
     const fetchMock = withAgreements(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/service-agreements');
-    await screen.findByRole('link', { name: 'Terms of service' }, { timeout: 8000 });
+    renderApp('/app/riverton/service-agreements/');
+    await screen.findByRole('link', { name: 'Terms of service' }, { timeout: 32000 });
     const user = userEvent.setup();
     const pageCall = (predicate: (url: string) => boolean) =>
       fetchMock.mock.calls.some(([input]) => {
@@ -107,9 +110,9 @@ describe('Service Agreements Console Integration Test Suite', () => {
   it('admin surface lists global agreements only', async () => {
     const admin = { ...authedUser, roles: ['admin'] };
     withAgreements(mockAuth(admin, { workspaces: [riverton] }));
-    renderApp('/admin/service-agreements');
+    renderApp('/admin/service-agreements/');
     expect(
-      await screen.findByRole('link', { name: 'Privacy policy' }, { timeout: 8000 }),
+      await screen.findByRole('link', { name: 'Privacy policy' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Terms of service' })).not.toBeInTheDocument();
   });

@@ -203,28 +203,19 @@ describe('citizen application detail page', () => {
     expect(screen.getByText(/this application has been approved/i)).toBeInTheDocument();
   });
 
-  it('handles draft status with resume and cancel flow', async () => {
+  it('opens drafts straight into the editable form runner', async () => {
     const draftDetail = detailWith({
       status: 'draft',
       statusLabel: 'Draft',
       submittedAt: null,
     });
     mockBff({ app: jsonResponse(draftDetail) });
-    const user = userEvent.setup();
     await renderApp();
 
-    const continueBtn = await screen.findByRole('button', { name: 'Continue your application' });
-    expect(continueBtn).toBeInTheDocument();
-
-    // Click continue to enter edit mode
-    await user.click(continueBtn);
-    const cancelBtn = await screen.findByRole('button', { name: 'Cancel' });
-    expect(cancelBtn).toBeInTheDocument();
-
-    // Click cancel to exit edit mode
-    await user.click(cancelBtn);
+    expect(
+      await screen.findByRole('button', { name: 'Submit application' }, { timeout: 10000 }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue your application' })).toBeInTheDocument();
   });
 
   it('revises an action-needed application: opens a draft and shows the editable form', async () => {
@@ -374,5 +365,29 @@ describe('citizen application detail page', () => {
         { timeout: 10000 },
       ),
     ).toBeInTheDocument();
+  });
+
+  it('revises an action-needed application and exits edit mode on cancel', async () => {
+    mockBff({
+      app: jsonResponse(
+        detailWith({
+          status: 'needs_changes',
+          statusLabel: 'Action needed',
+          reviewReason: 'Please fix your name.',
+          submittedAt: null,
+        }),
+      ),
+    });
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(await screen.findByRole('button', { name: /make changes/i }));
+    const cancelBtn = await screen.findByRole('button', { name: 'Cancel' });
+    expect(cancelBtn).toBeInTheDocument();
+
+    // Click cancel to exit edit mode
+    await user.click(cancelBtn);
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /make changes/i })).toBeInTheDocument();
   });
 });

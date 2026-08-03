@@ -3,6 +3,7 @@ import { ServicesV1Controller } from '../../../../../src/modules/services/contro
 import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateServiceDto,
+  ListServicesPageQueryDto,
   ListServicesQueryDto,
   UpdateVersionDataDto,
 } from '../../../../../src/modules/services/dtos/service.dtos';
@@ -47,11 +48,11 @@ describe('ServicesV1Controller', () => {
 
   describe('list', () => {
     it('returns a list of services wrapped in an items object', async () => {
-      const query: ListServicesQueryDto = {
+      const query: ListServicesPageQueryDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
-      };
+      } as any;
       const mockResult = [{ id: 'service-1', title: 'Service 1' }];
-      servicesServiceMock.list.mockResolvedValue(mockResult);
+      servicesServiceMock.list.mockResolvedValue({ items: mockResult });
 
       const result = await controller.list(mockUser, query);
 
