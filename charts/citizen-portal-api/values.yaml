@@ -30,7 +30,9 @@ serviceAccount:
   name: ""
   annotations: {}
 
-# Pre-created Secret holding: DATABASE_URL, VALKEY_URL, OIDC_CLIENT_SECRET, AUTH_SESSION_SECRET
+# Pre-created Secret holding: VALKEY_URL, OIDC_CLIENT_SECRET, AUTH_SESSION_SECRET,
+# NOTIFICATIONS_M2M_CLIENT_SECRET (DATABASE_URL is sourced from the operator's pguser secret via
+# extraEnv). Add BC_GEOCODER_API_KEY here too if enabling the address-search field (optional).
 existingSecret: citizen-portal-api-secrets
 
 # Non-sensitive env → ConfigMap. Replace the example hosts per environment.
@@ -49,6 +51,10 @@ env:
   AUTH_RP_LOGOUT: "false"
   AUTH_TOKEN_REFRESH_SKEW_SECONDS: "30"
   AUTH_ALLOWED_ORIGINS: https://<citizen-portal-web-host>
+  # BC address geocoder (feature 154). The URL is the public BC OLS endpoint (non-sensitive). The
+  # API KEY is a secret — put BC_GEOCODER_API_KEY in existingSecret. Omit the key to disable the
+  # "Search for your address" field (the CA/BC region is only registered when the key is present).
+  BC_GEOCODER_URL: https://geocoder.api.gov.bc.ca
 
 # Extra raw env entries (support valueFrom) merged into the app AND migrate containers; they take
 # precedence over envFrom keys. Use to source DATABASE_URL from a Crunchy PGO Secret (feature 76)
