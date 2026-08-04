@@ -10,6 +10,24 @@ export function suggestionToPatch(suggestion: AddressSuggestion): Partial<Addres
   return { address_one: suggestion.streetAddress, city: suggestion.city };
 }
 
+/**
+ * Decode an option `value` (a JSON-encoded {@link AddressSuggestion}) back to the suggestion, or `null`
+ * if it isn't valid. The suggestion is round-tripped through the option value so the picked address
+ * both fills the form AND displays its human `label` (not the raw JSON).
+ */
+export function parseSuggestion(raw: string): AddressSuggestion | null {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed !== null &&
+      typeof parsed === 'object' &&
+      typeof (parsed as AddressSuggestion).label === 'string'
+      ? (parsed as AddressSuggestion)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 /** True when the server can run address search for this (country, province) ISO2 pair. */
 export function regionSupported(
   regions: readonly { country: string; province: string }[] | undefined,
@@ -75,13 +93,18 @@ export function AddressSearchField({
   const handleChange = (value: string | string[] | undefined) => {
     const next = Array.isArray(value) ? value[0] : value;
     setSelected(next);
-    if (typeof next === 'string' && next !== '') {
-      try {
-        onFill(suggestionToPatch(JSON.parse(next) as AddressSuggestion));
-      } catch {
-        // A malformed option value should never break the form — ignore.
-      }
+    const suggestion = typeof next === 'string' ? parseSuggestion(next) : null;
+    if (suggestion) {
+      onFill(suggestionToPatch(suggestion));
     }
+  };
+
+  // The option `value` is the JSON-encoded suggestion; without this, AsyncSelect would render the raw
+  // JSON as the selected label. Resolve it back to the human `label` for display.
+  const resolveValue = async (value: string | string[]): Promise<AsyncSelectOption[]> => {
+    const raw = Array.isArray(value) ? value[0] : value;
+    const suggestion = typeof raw === 'string' ? parseSuggestion(raw) : null;
+    return suggestion ? [{ value: raw as string, label: suggestion.label }] : [];
   };
 
   return (
@@ -90,6 +113,7 @@ export function AddressSearchField({
       <AsyncSelect
         value={selected}
         onChange={handleChange}
+        resolveValue={resolveValue}
         loadOptions={loadOptions}
         placeholder="Start typing your address…"
         isDisabled={disabled}

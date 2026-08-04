@@ -4,9 +4,11 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  parseSuggestion,
   regionSupported,
   suggestionToPatch,
 } from '../src/jsonforms-renderers/controls/address/address-search';
+import type { AddressSuggestion } from '../src/jsonforms-renderers/controls/address/geo-context';
 import {
   GeoDataProvider,
   type GeoCountryOption,
@@ -25,6 +27,30 @@ describe('suggestionToPatch', () => {
         provinceCode: 'BC',
       }),
     ).toEqual({ address_one: '1012 Douglas St', city: 'Victoria' });
+  });
+});
+
+describe('parseSuggestion (selected value renders the label, not raw JSON)', () => {
+  const suggestion: AddressSuggestion = {
+    label: '1012 Douglas St, Victoria, BC',
+    streetAddress: '1012 Douglas St',
+    city: 'Victoria',
+    provinceCode: 'BC',
+  };
+
+  it('round-trips an encoded option value back to the suggestion + its human label', () => {
+    const encoded = JSON.stringify(suggestion);
+    const parsed = parseSuggestion(encoded);
+    expect(parsed).toEqual(suggestion);
+    // The display uses `.label` (readable) rather than the encoded value (JSON).
+    expect(parsed?.label).toBe('1012 Douglas St, Victoria, BC');
+    expect(parsed?.label).not.toContain('{');
+  });
+
+  it('returns null for malformed or non-suggestion values', () => {
+    expect(parseSuggestion('not json')).toBeNull();
+    expect(parseSuggestion('"a string"')).toBeNull();
+    expect(parseSuggestion('{"nolabel":true}')).toBeNull();
   });
 });
 
