@@ -157,6 +157,12 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     node.max = 100;
     node.step = 1;
   }
+  if (fieldType === 'address') {
+    // BC-Gov default: a new address field pre-fills Canada / British Columbia (authors can change or
+    // clear it in the inspector). Names must match the geo dataset (feature 153).
+    node.defaultCountry = 'Canada';
+    node.defaultProvince = 'British Columbia';
+  }
   return node;
 }
 

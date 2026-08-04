@@ -16,12 +16,18 @@ describe('form builder — address field', () => {
     expect(def.kind).toBe('control');
   });
 
-  it('createField(address) makes a plain control node (no enum / slider extras)', () => {
+  it('createField(address) makes a control node (no enum / slider extras)', () => {
     const node = createField('address');
     expect(node.kind).toBe('control');
     expect(node.fieldType).toBe('address');
     expect(node.enumOptions).toBeUndefined();
     expect(node.min).toBeUndefined();
+  });
+
+  it('a new address field defaults to Canada / British Columbia', () => {
+    const node = createField('address');
+    expect(node.defaultCountry).toBe('Canada');
+    expect(node.defaultProvince).toBe('British Columbia');
   });
 
   it('serializes to an object property with the six sub-fields + a format:address control', () => {
@@ -95,7 +101,15 @@ describe('form builder — address field', () => {
   });
 
   it('omits schema.default when no defaults are set', () => {
-    const node: ControlNode = { ...createField('address'), key: 'addr' };
+    // A bare node (not via createField, which seeds Canada/BC) has no defaults → no schema.default.
+    const node: ControlNode = {
+      kind: 'control',
+      key: 'addr',
+      fieldType: 'address',
+      label: '',
+      required: false,
+      options: {},
+    };
     const model: FormModel = { title: '', description: '', fields: [node] };
     const { schema } = serializeModel(model);
     const prop = (schema as { properties: Record<string, { default?: unknown } | undefined> })
