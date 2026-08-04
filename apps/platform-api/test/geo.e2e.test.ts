@@ -46,4 +46,24 @@ describe('geo reference data (e2e)', () => {
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);
   });
+
+  // Address search (feature 154). No BC_GEOCODER_API_KEY in the test env → no region is configured,
+  // so these run WITHOUT any DB or upstream call and are fully deterministic.
+  it('reports no address-search regions when the geocoder is unconfigured', async () => {
+    const res = await http().get('/v1/geo/address-search/regions');
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual([]);
+  });
+
+  it('validates GET /v1/geo/address-search query params (400 on missing/blank)', async () => {
+    expect((await http().get('/v1/geo/address-search')).status).toBe(400);
+    expect((await http().get('/v1/geo/address-search?country=CA&province=BC')).status).toBe(400);
+    expect((await http().get('/v1/geo/address-search?country=C&province=BC&q=x')).status).toBe(400);
+  });
+
+  it('returns an empty result for a valid query when unconfigured (200, never 401/403)', async () => {
+    const res = await http().get('/v1/geo/address-search?country=CA&province=BC&q=douglas');
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual([]);
+  });
 });

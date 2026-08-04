@@ -24,6 +24,33 @@ export interface GeoStateOption {
   id: number;
   name: string;
   type: string | null;
+  /** ISO 3166-2 subdivision code (e.g. `BC`) — used to match address-search regions (feature 154). */
+  iso2: string | null;
+}
+
+/** One address suggestion from a regional geocoder (feature 154). No postal code (BC OLS has none). */
+export interface AddressSuggestion {
+  /** Full address to show in the popup. */
+  label: string;
+  /** Street address → fills `address_one`. */
+  streetAddress: string;
+  /** Locality → fills `city`. */
+  city: string;
+  /** Province ISO code (e.g. `BC`). */
+  provinceCode: string;
+}
+
+/** An ISO2 (country, province) pair the server can run address search for (feature 154). */
+export interface AddressSearchRegion {
+  country: string;
+  province: string;
+}
+
+/** Params for a regional address search — ISO2 country + province + the typed query. */
+export interface AddressSearchParams {
+  country: string;
+  province: string;
+  query: string;
 }
 
 /** The result shape the app's data hooks must return (a subset of a TanStack Query result). */
@@ -33,13 +60,20 @@ export interface GeoQueryResult<T> {
 }
 
 /**
- * The geo data port an app provides. Both members are React **hooks** (called unconditionally by the
- * control), so the app can back them with TanStack Query. `useStates(undefined)` must be a no-op
+ * The geo data port an app provides. `useCountries`/`useStates` are React **hooks** (called
+ * unconditionally by the control), backed by TanStack Query; `useStates(undefined)` must be a no-op
  * (disabled) query so the control can call it before a country is chosen.
+ *
+ * The address-search members (feature 154) are **optional** — when absent the control never shows the
+ * "Search for your address" field. `useAddressSearchRegions` reports the (country, province) ISO2
+ * pairs the server can actually search (empty when unconfigured → field hidden); `searchAddresses` is
+ * a plain async function (driven by the debounced typeahead, not a hook).
  */
 export interface GeoData {
   useCountries(): GeoQueryResult<GeoCountryOption[]>;
   useStates(countryId: number | undefined): GeoQueryResult<GeoStateOption[]>;
+  useAddressSearchRegions?(): GeoQueryResult<AddressSearchRegion[]>;
+  searchAddresses?(params: AddressSearchParams): Promise<AddressSuggestion[]>;
 }
 
 const GeoContext = createContext<GeoData | null>(null);

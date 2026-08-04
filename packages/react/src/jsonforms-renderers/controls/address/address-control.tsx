@@ -13,6 +13,7 @@ import { Field, FieldLabel } from '@repo/ui/field';
 import { Input } from '@repo/ui/input';
 import { type ReactNode, useEffect, useId, useRef } from 'react';
 
+import { AddressSearchField } from './address-search';
 import { addressLabelsForIso2 } from './labels';
 import { type AddressValue, isAddressEmpty, normalizeAddress } from './model';
 import { type GeoCountryOption, type GeoData, useGeo } from './geo-context';
@@ -67,6 +68,8 @@ interface BodyProps {
   invalid: boolean;
   onField: (key: keyof AddressValue, next: string) => void;
   onCountry: (next: string) => void;
+  /** Merge several fields at once — used by the geocoder address search to fill line 1 + city. */
+  onFill: (patch: Partial<AddressValue>) => void;
 }
 
 /** The free-text address body — country + province are plain inputs (no geo data available). */
@@ -155,6 +158,7 @@ function GeoBody({
   invalid,
   onField,
   onCountry,
+  onFill,
   geo,
 }: BodyProps & { geo: GeoData }) {
   const { data: countries } = geo.useCountries();
@@ -166,6 +170,13 @@ function GeoBody({
   const { data: statesList } = geo.useStates(hasStates ? selected?.id : undefined);
   const countryNames = (countries ?? []).map((country) => country.name);
   const stateNames = (statesList ?? []).map((state) => state.name);
+  // Regional address search (feature 154) — shown under Country only when the app supplies the
+  // capability AND the selected country/province is a supported geocoder region (decided inside
+  // AddressSearchField from the ISO codes). Mounted whenever the capability exists so its regions
+  // query is stable across province changes.
+  const provinceIso2 = statesList?.find((state) => state.name === value.province)?.iso2 ?? null;
+  const addressSearchAvailable =
+    geo.searchAddresses !== undefined && geo.useAddressSearchRegions !== undefined;
 
   return (
     <>
@@ -195,6 +206,15 @@ function GeoBody({
           </ComboboxContent>
         </Combobox>
       </SubField>
+      {addressSearchAvailable ? (
+        <AddressSearchField
+          geo={geo}
+          countryIso2={selected?.iso2 ?? null}
+          provinceIso2={provinceIso2}
+          disabled={disabled}
+          onFill={onFill}
+        />
+      ) : null}
       <AddressLines baseId={baseId} value={value} disabled={disabled} onField={onField} />
       <Row>
         <CityField baseId={baseId} value={value} disabled={disabled} onField={onField} />
@@ -302,8 +322,9 @@ function AddressControlComponent({
   const onField = (key: keyof AddressValue, next: string) =>
     handleChange(path, { ...value, [key]: next });
   const onCountry = (next: string) => handleChange(path, withCountry(value, next));
+  const onFill = (patch: Partial<AddressValue>) => handleChange(path, { ...value, ...patch });
 
-  const body: BodyProps = { baseId, value, disabled, invalid, onField, onCountry };
+  const body: BodyProps = { baseId, value, disabled, invalid, onField, onCountry, onFill };
 
   return (
     <fieldset className="space-y-3">

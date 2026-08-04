@@ -46,10 +46,10 @@ const COUNTRIES: GeoCountryOption[] = [
 ];
 const STATES: Record<number, GeoStateOption[]> = {
   233: [
-    { id: 1, name: 'California', type: 'state' },
-    { id: 2, name: 'Texas', type: 'state' },
+    { id: 1, name: 'California', type: 'state', iso2: 'CA' },
+    { id: 2, name: 'Texas', type: 'state', iso2: 'TX' },
   ],
-  39: [{ id: 3, name: 'British Columbia', type: 'province' }],
+  39: [{ id: 3, name: 'British Columbia', type: 'province', iso2: 'BC' }],
 };
 
 const geoStub: GeoData = {

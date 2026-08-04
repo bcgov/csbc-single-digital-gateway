@@ -30,6 +30,9 @@ export type {
   GeoCountryOption,
   GeoStateOption,
   GeoQueryResult,
+  AddressSuggestion,
+  AddressSearchRegion,
+  AddressSearchParams,
 } from './controls/address/geo-context';
 export {
   addressLabelsForIso2,

@@ -52,7 +52,7 @@ export class GeoService {
       throw new BadRequestException('country id must be a positive integer');
     }
     return this.db
-      .select({ id: states.id, name: states.name, type: states.type })
+      .select({ id: states.id, name: states.name, type: states.type, iso2: states.iso2 })
       .from(states)
       .where(eq(states.countryId, countryId))
       .orderBy(asc(states.name));
