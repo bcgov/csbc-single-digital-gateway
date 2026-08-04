@@ -58,6 +58,42 @@ function propertySchema(node: ControlNode): JsonObject {
         items: { type: 'string', enum: values },
       });
       break;
+    case 'address': {
+      // A required address requires every field EXCEPT address_two, and each required field must be
+      // NON-EMPTY. `minLength: 1` is essential: the control writes empty strings for untouched fields,
+      // so an object-level `required` alone (which only checks the key exists) would pass on blanks.
+      const requiredSubFields = ['country', 'address_one', 'city', 'province', 'postal_code'];
+      const stringField = (key: string): JsonObject =>
+        node.required && requiredSubFields.includes(key)
+          ? { type: 'string', minLength: 1 }
+          : { type: 'string' };
+      Object.assign(base, {
+        type: 'object',
+        properties: {
+          country: stringField('country'),
+          address_one: stringField('address_one'),
+          address_two: stringField('address_two'),
+          city: stringField('city'),
+          province: stringField('province'),
+          postal_code: stringField('postal_code'),
+        },
+      });
+      if (node.required) {
+        base.required = requiredSubFields;
+      }
+      // Author-set defaults (feature 153) → JSON-Schema `default`, seeded into the field for citizens.
+      const addressDefault: JsonObject = {};
+      if (node.defaultCountry !== undefined && node.defaultCountry !== '') {
+        addressDefault.country = node.defaultCountry;
+      }
+      if (node.defaultProvince !== undefined && node.defaultProvince !== '') {
+        addressDefault.province = node.defaultProvince;
+      }
+      if (Object.keys(addressDefault).length > 0) {
+        base.default = addressDefault;
+      }
+      break;
+    }
     default:
       Object.assign(base, { type: 'string' });
   }
@@ -83,6 +119,9 @@ function controlOptions(node: ControlNode): JsonObject {
   }
   if (node.fieldType === 'richtext') {
     options.format = 'richtext';
+  }
+  if (node.fieldType === 'address') {
+    options.format = 'address';
   }
   if (node.fieldType === 'slider' && node.step !== undefined) {
     options.step = node.step;
@@ -173,6 +212,9 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (options.format === 'richtext') {
     return 'richtext';
   }
+  if (options.format === 'address' || prop.type === 'object') {
+    return 'address';
+  }
   if (prop.type === 'array') {
     return 'multiselect';
   }
@@ -252,6 +294,15 @@ function parseControl(
     node.min = (prop.minimum as number | undefined) ?? 0;
     node.max = (prop.maximum as number | undefined) ?? 100;
     node.step = typeof step === 'number' ? step : 1;
+  }
+  if (fieldType === 'address') {
+    const addressDefault = prop.default as JsonObject | undefined;
+    if (typeof addressDefault?.country === 'string' && addressDefault.country !== '') {
+      node.defaultCountry = addressDefault.country;
+    }
+    if (typeof addressDefault?.province === 'string' && addressDefault.province !== '') {
+      node.defaultProvince = addressDefault.province;
+    }
   }
   return node;
 }

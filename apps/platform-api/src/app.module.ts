@@ -23,6 +23,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { DefaultAgreementsModule } from './modules/default-agreements/default-agreements.module';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { FormsModule } from './modules/forms/forms.module';
+import { GeoModule } from './modules/geo/geo.module';
 import { ServiceAgreementsModule } from './modules/service-agreements/service-agreements.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { ServicesModule } from './modules/services/services.module';
@@ -115,6 +116,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     DocumentTypesModule,
     ServicesModule,
     FormsModule,
+    GeoModule,
     ServiceAgreementsModule,
     SubmissionsModule,
     // Transactional-outbox relay to the notification-service (no routes; inert under test).

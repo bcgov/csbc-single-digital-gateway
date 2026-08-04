@@ -5,6 +5,7 @@ import { Switch } from '@repo/ui/switch';
 import { Textarea } from '@repo/ui/textarea';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { AddressDefaultsEditor } from './address-defaults-editor';
 import { DisplayInspector } from './display-inspector';
 import { ENUM_FIELD_TYPES } from './field-types';
 import type {
@@ -151,6 +152,9 @@ function ControlInspector({
       </div>
       {ENUM_FIELD_TYPES.has(node.fieldType) ? (
         <EnumOptionsEditor node={node} onChange={onChange} />
+      ) : null}
+      {node.fieldType === 'address' ? (
+        <AddressDefaultsEditor node={node} onChange={onChange} />
       ) : null}
       {node.fieldType === 'slider' ? (
         <div className="grid grid-cols-3 gap-2">

@@ -21,6 +21,24 @@ export { MultiEnumControl, multiEnumControlTester } from './controls/multi-enum-
 export { SliderControl, sliderControlTester } from './controls/slider-control';
 export { DateControl, dateControlTester } from './controls/date-control';
 export { RichTextControl, richTextControlTester } from './controls/rich-text-control';
+export { AddressControl, addressControlTester } from './controls/address/address-control';
+// Address field geo-data injection (feature 153): the app wraps its form host in `GeoDataProvider`
+// and supplies country/state data hooks so the address control can filter states by country.
+export { GeoDataProvider, useGeo } from './controls/address/geo-context';
+export type {
+  GeoData,
+  GeoCountryOption,
+  GeoStateOption,
+  GeoQueryResult,
+  AddressSuggestion,
+  AddressSearchRegion,
+  AddressSearchParams,
+} from './controls/address/geo-context';
+export {
+  addressLabelsForIso2,
+  DEFAULT_ADDRESS_LABELS,
+  type AddressLabels,
+} from './controls/address/labels';
 export { VerticalLayoutRenderer, verticalLayoutTester } from './layouts/vertical-layout';
 export { HorizontalLayoutRenderer, horizontalLayoutTester } from './layouts/horizontal-layout';
 export { GroupLayoutRenderer, groupLayoutTester } from './layouts/group-layout';

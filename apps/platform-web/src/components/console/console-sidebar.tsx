@@ -39,8 +39,11 @@ function NavLink({ item, slug }: { item: NavItem; slug: string | undefined }) {
       aria-label={item.label}
       title={item.label}
       activeOptions={{ exact: item.to === '/app/$slug' }}
-      className={`${BASE} text-sidebar-foreground hover:bg-sidebar-accent`}
-      activeProps={{ className: 'bg-sidebar-accent text-sidebar-accent-foreground' }}
+      className={`${BASE} text-sidebar-foreground hover:bg-sidebar-accent no-underline border-l-4 border-l-background`}
+      activeProps={{
+        className:
+          'bg-sidebar-accent text-sidebar-accent-foreground border-l-4 border-l-bcgov-blue ',
+      }}
     >
       {inner}
     </Link>

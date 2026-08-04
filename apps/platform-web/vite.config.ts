@@ -33,6 +33,10 @@ export default defineConfig({
       '@dnd-kit/dom/sortable',
       '@dnd-kit/helpers',
       '@xyflow/react',
+      // Address geocoder search (feature 154) — reached only via the lazy form route through
+      // @repo/ui source, so pre-bundle it or the first builder/preview nav 504s the dynamic import.
+      'react-select',
+      'react-select-async-paginate',
     ],
   },
   server: { port: 3001 },

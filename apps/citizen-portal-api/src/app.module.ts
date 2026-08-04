@@ -22,6 +22,7 @@ import { OutboxRelayModule } from './notifications/outbox-relay.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { GeoModule } from './modules/geo/geo.module';
 import { ServiceAgreementsModule } from './modules/service-agreements/service-agreements.module';
 
 @Module({
@@ -107,6 +108,7 @@ import { ServiceAgreementsModule } from './modules/service-agreements/service-ag
     HealthModule.forRoot({ readiness: [DatabaseHealthIndicator] }),
     // Feature modules live under src/modules/<feature>/.
     CatalogModule,
+    GeoModule,
     ApplicationsModule,
     NotificationsModule,
     ServiceAgreementsModule,

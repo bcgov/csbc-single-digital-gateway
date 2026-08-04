@@ -140,8 +140,8 @@ Notes:
 
   | Secret | Used by | Keys |
   |---|---|---|
-  | `platform-api-secrets` | platform-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET` |
-  | `citizen-portal-api-secrets` | citizen-portal-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET` |
+  | `platform-api-secrets` | platform-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET`, `BC_GEOCODER_API_KEY` (optional) |
+  | `citizen-portal-api-secrets` | citizen-portal-api | `OIDC_CLIENT_SECRET`, `AUTH_SESSION_SECRET`, `VALKEY_URL`, `NOTIFICATIONS_M2M_CLIENT_SECRET`, `BC_GEOCODER_API_KEY` (optional) |
   | `valkey-secrets` | valkey | `VALKEY_PASSWORD` |
   | `notification-service-secrets` | notification-service | `SMTP_URL` |
   | `sdg-pguser-sdg` | both APIs (`DATABASE_URL`) | **operator-generated** — do not create |
@@ -162,7 +162,13 @@ oc -n <slug>-dev create secret generic platform-api-secrets \
   --from-literal=OIDC_CLIENT_SECRET=... \
   --from-literal=AUTH_SESSION_SECRET="$(openssl rand -hex 32)" \
   --from-literal=VALKEY_URL="redis://:<same-password>@sdg-valkey:6379"
+  # optional — enables the address "Search for your address" field (feature 154). Omit to disable:
+  # --from-literal=BC_GEOCODER_API_KEY=<bc-api-portal-key>
 ```
+
+`BC_GEOCODER_API_KEY` is **optional**: add it to each API secret to enable the address-search
+typeahead (BC OLS geocoder, feature 154). When absent, the field is hidden. The non-sensitive
+`BC_GEOCODER_URL` defaults to the public endpoint in each API chart's `env:`.
 
 ---
 

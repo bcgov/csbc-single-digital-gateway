@@ -2,7 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
+import { GeoDataProvider } from '@repo/react/jsonforms-renderers';
 import iconUrl from '@repo/ui/icon.svg';
+import { appGeoData } from './lib/geo';
 import { router } from './router';
 import './styles.css';
 
@@ -28,7 +30,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <GeoDataProvider value={appGeoData}>
+        <RouterProvider router={router} />
+      </GeoDataProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

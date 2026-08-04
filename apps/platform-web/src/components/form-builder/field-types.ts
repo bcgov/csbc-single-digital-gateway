@@ -10,6 +10,7 @@ import {
   Layers,
   ListChecks,
   ListTodo,
+  MapPin,
   Pilcrow,
   SlidersHorizontal,
   TextCursorInput,
@@ -36,6 +37,7 @@ export type FieldTypeId =
   | 'slider'
   | 'toggle'
   | 'oneof'
+  | 'address'
   | 'richtext'
   | 'heading'
   | 'paragraph'
@@ -150,6 +152,15 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     kind: 'control',
     icon: ListTodo,
     keywords: ['enum', 'labelled select'],
+  },
+  {
+    id: 'address',
+    label: 'Address',
+    description: 'Country, street, city, state / province & postal code.',
+    group: 'Advanced',
+    kind: 'control',
+    icon: MapPin,
+    keywords: ['location', 'street', 'postal', 'zip', 'country', 'state', 'province'],
   },
   {
     id: 'richtext',

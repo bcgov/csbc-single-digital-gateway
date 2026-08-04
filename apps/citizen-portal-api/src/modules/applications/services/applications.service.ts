@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
+  countries,
   documentReferences,
   documentVersions,
   documents,
@@ -14,7 +15,7 @@ import {
   workspaces,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import {
   type ApplicationDetail,
   type MyApplication,
@@ -29,7 +30,11 @@ import {
 import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
 import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
-import { validateSubmission } from '../util/validate';
+import {
+  collectAddressPostals,
+  validateAddressPostals,
+  validateSubmission,
+} from '../util/validate';
 import { ConsentService } from './consent.service';
 
 const FORM_KINDS = new Set(['basic-form', 'multi-stage-form']);
@@ -256,6 +261,29 @@ export class ApplicationsService {
   }
 
   /**
+   * Resolve each address field's postal code against the entered country's regex (from geo reference
+   * data). Returns error strings (empty = all valid). Countries with no known regex impose no
+   * constraint; no address fields → no DB read.
+   */
+  private async validateAddressPostals(
+    kind: string,
+    structure: Record<string, unknown>,
+    data: Record<string, unknown>,
+  ): Promise<string[]> {
+    const entries = collectAddressPostals(kind, structure, data);
+    if (entries.length === 0) {
+      return [];
+    }
+    const names = [...new Set(entries.map((entry) => entry.country))];
+    const rows = await this.db
+      .select({ name: countries.name, regex: countries.postalCodeRegex })
+      .from(countries)
+      .where(inArray(countries.name, names));
+    const regexByCountry = new Map(rows.map((row) => [row.name, row.regex]));
+    return validateAddressPostals(entries, (country) => regexByCountry.get(country) ?? null);
+  }
+
+  /**
    * Submit the application: validate the answers against the form schema (422 on failure), then
    * persist the final answers and advance draft → pending. Validation runs only here — drafts are
    * intentionally partial and are never validated.
@@ -273,6 +301,15 @@ export class ApplicationsService {
       throw new UnprocessableEntityException({
         message: 'The application has validation errors',
         errors: result.errors,
+      });
+    }
+    // Address fields (feature 153): postal codes are validated against the entered country's regex
+    // (resolved from geo reference data — country-dependent, so it can't live in the static schema).
+    const postalErrors = await this.validateAddressPostals(form.kind, form.structure, data);
+    if (postalErrors.length > 0) {
+      throw new UnprocessableEntityException({
+        message: 'The application has validation errors',
+        errors: postalErrors,
       });
     }
     // Consent gate: every required service agreement must be approved (against its current version).

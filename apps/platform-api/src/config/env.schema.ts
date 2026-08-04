@@ -70,6 +70,13 @@ export const envSchema = z.object({
   OUTBOX_RELAY_INTERVAL_MS: z.coerce.number().int().min(250).default(5000),
   OUTBOX_RELAY_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(10),
   OUTBOX_RELAY_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
+
+  // --- Address geocoder (feature 154) ------------------------------------------------------------
+  // BC OLS Physical Address Geocoder. OPTIONAL: when the API key is unset the CA/BC address-search
+  // region is not registered, so the builder-preview address control hides the search field. The key
+  // is a secret — server-side only, attached to the upstream request, never sent to the browser.
+  BC_GEOCODER_URL: z.url().default('https://geocoder.api.gov.bc.ca'),
+  BC_GEOCODER_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

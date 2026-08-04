@@ -49,3 +49,16 @@ export {
   type ContactMethod,
   type ContactMethodType,
 } from '../jsonforms-renderers/controls/contact-methods/model';
+
+// The read-only address view (feature 153). Exported so apps can render an address outside a
+// JsonForms dispatch (e.g. a citizen portal review section), mirroring ContactMethodsView.
+export { AddressView } from './controls/address-view';
+export {
+  normalizeAddress,
+  emptyAddress,
+  addressDisplayLines,
+  isAddressEmpty,
+  ADDRESS_FIELD_KEYS,
+  type AddressValue,
+  type AddressFieldKey,
+} from '../jsonforms-renderers/controls/address/model';

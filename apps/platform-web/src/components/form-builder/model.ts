@@ -25,6 +25,10 @@ export interface ControlNode {
   min?: number;
   max?: number;
   step?: number;
+  /** Address field only (feature 153): the author-set default country name, pre-filled for citizens. */
+  defaultCountry?: string;
+  /** Address field only: the author-set default state/province name. Cleared when the country changes. */
+  defaultProvince?: string;
 }
 
 export type HeadingLevel = 2 | 3;
@@ -152,6 +156,12 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     node.min = 0;
     node.max = 100;
     node.step = 1;
+  }
+  if (fieldType === 'address') {
+    // BC-Gov default: a new address field pre-fills Canada / British Columbia (authors can change or
+    // clear it in the inspector). Names must match the geo dataset (feature 153).
+    node.defaultCountry = 'Canada';
+    node.defaultProvince = 'British Columbia';
   }
   return node;
 }
