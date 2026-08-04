@@ -6,6 +6,22 @@ import { createField, serializeModel, type FieldNode } from './model';
 const noop = () => {};
 
 /**
+ * Seed the preview's data from each property's JSON-Schema `default` (e.g. an address field defaulting
+ * to Canada / British Columbia). The canvas card renders the control **readonly**, so the control's own
+ * default-seeding effect (which skips readonly) never fires — we hand it the defaults directly instead.
+ */
+function defaultDataFromSchema(schema: JsonSchema): Record<string, unknown> {
+  const properties = (schema as { properties?: Record<string, { default?: unknown }> }).properties;
+  const data: Record<string, unknown> = {};
+  for (const [key, prop] of Object.entries(properties ?? {})) {
+    if (prop && typeof prop === 'object' && prop.default !== undefined) {
+      data[key] = prop.default;
+    }
+  }
+  return data;
+}
+
+/**
  * Renders a single field exactly as the canvas shows it, so the drag overlay and drop placeholder
  * match the canvas card. Data-collecting controls serialize to a one-field `{ schema, uischema }`
  * and run through the real `@repo/react` renderers (readonly + inert). **Display fields render the
@@ -20,11 +36,12 @@ export function FieldPreview({ node, ghost = false }: { node: FieldNode; ghost?:
     ) : (
       (() => {
         const definition = serializeModel({ title: '', description: '', fields: [node] });
+        const schema = definition.schema as JsonSchema;
         return (
           <JsonForms
-            schema={definition.schema as JsonSchema}
+            schema={schema}
             uischema={definition.uischema as unknown as UISchemaElement}
-            data={{}}
+            data={defaultDataFromSchema(schema)}
             readonly
             onChange={noop}
           />
