@@ -58,7 +58,7 @@ function propertySchema(node: ControlNode): JsonObject {
         items: { type: 'string', enum: values },
       });
       break;
-    case 'address':
+    case 'address': {
       Object.assign(base, {
         type: 'object',
         properties: {
@@ -70,7 +70,19 @@ function propertySchema(node: ControlNode): JsonObject {
           postal_code: { type: 'string' },
         },
       });
+      // Author-set defaults (feature 153) → JSON-Schema `default`, seeded into the field for citizens.
+      const addressDefault: JsonObject = {};
+      if (node.defaultCountry !== undefined && node.defaultCountry !== '') {
+        addressDefault.country = node.defaultCountry;
+      }
+      if (node.defaultProvince !== undefined && node.defaultProvince !== '') {
+        addressDefault.province = node.defaultProvince;
+      }
+      if (Object.keys(addressDefault).length > 0) {
+        base.default = addressDefault;
+      }
       break;
+    }
     default:
       Object.assign(base, { type: 'string' });
   }
@@ -271,6 +283,15 @@ function parseControl(
     node.min = (prop.minimum as number | undefined) ?? 0;
     node.max = (prop.maximum as number | undefined) ?? 100;
     node.step = typeof step === 'number' ? step : 1;
+  }
+  if (fieldType === 'address') {
+    const addressDefault = prop.default as JsonObject | undefined;
+    if (typeof addressDefault?.country === 'string' && addressDefault.country !== '') {
+      node.defaultCountry = addressDefault.country;
+    }
+    if (typeof addressDefault?.province === 'string' && addressDefault.province !== '') {
+      node.defaultProvince = addressDefault.province;
+    }
   }
   return node;
 }

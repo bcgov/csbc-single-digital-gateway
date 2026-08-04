@@ -25,6 +25,10 @@ export interface ControlNode {
   min?: number;
   max?: number;
   step?: number;
+  /** Address field only (feature 153): the author-set default country name, pre-filled for citizens. */
+  defaultCountry?: string;
+  /** Address field only: the author-set default state/province name. Cleared when the country changes. */
+  defaultProvince?: string;
 }
 
 export type HeadingLevel = 2 | 3;

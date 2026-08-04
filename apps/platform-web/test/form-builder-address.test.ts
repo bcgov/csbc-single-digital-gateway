@@ -79,4 +79,40 @@ describe('form builder — address field', () => {
     // The synthesized `format` flag is stripped so options round-trip empty.
     expect(back.options).toEqual({});
   });
+
+  it('serializes author-set defaults into schema.default', () => {
+    const node: ControlNode = {
+      ...createField('address'),
+      key: 'addr',
+      defaultCountry: 'Canada',
+      defaultProvince: 'British Columbia',
+    };
+    const model: FormModel = { title: '', description: '', fields: [node] };
+    const { schema } = serializeModel(model);
+    const prop = (schema as { properties: Record<string, { default?: unknown } | undefined> })
+      .properties.addr!;
+    expect(prop.default).toEqual({ country: 'Canada', province: 'British Columbia' });
+  });
+
+  it('omits schema.default when no defaults are set', () => {
+    const node: ControlNode = { ...createField('address'), key: 'addr' };
+    const model: FormModel = { title: '', description: '', fields: [node] };
+    const { schema } = serializeModel(model);
+    const prop = (schema as { properties: Record<string, { default?: unknown } | undefined> })
+      .properties.addr!;
+    expect(prop.default).toBeUndefined();
+  });
+
+  it('round-trips defaults through serialize → parse', () => {
+    const node: ControlNode = {
+      ...createField('address'),
+      key: 'addr',
+      defaultCountry: 'United States',
+      defaultProvince: 'California',
+    };
+    const model: FormModel = { title: '', description: '', fields: [node] };
+    const back = parseModel(serializeModel(model)).fields[0] as ControlNode;
+    expect(back.defaultCountry).toBe('United States');
+    expect(back.defaultProvince).toBe('California');
+  });
 });

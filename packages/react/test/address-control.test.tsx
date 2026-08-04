@@ -2,6 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode, useState } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { withCountry } from '../src/jsonforms-renderers/controls/address/address-control';
@@ -127,5 +128,71 @@ describe('AddressControl', () => {
     });
     expect(screen.queryByRole('option', { name: 'United States' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Nopostalia' })).not.toBeInTheDocument();
+  });
+});
+
+describe('AddressControl — author-set defaults (schema.default)', () => {
+  const schemaWithDefault: JsonSchema = {
+    type: 'object',
+    properties: {
+      addr: {
+        type: 'object',
+        title: 'Applicant address',
+        default: { country: 'Canada', province: 'Ontario' },
+        properties: {
+          country: { type: 'string' },
+          province: { type: 'string' },
+        },
+      },
+    },
+  };
+
+  function Harness() {
+    const [data, setData] = useState<Record<string, unknown>>({});
+    return (
+      <JsonForms
+        schema={schemaWithDefault}
+        uischema={uischema}
+        data={data}
+        renderers={renderers}
+        onChange={({ data: next }) => setData(next)}
+      />
+    );
+  }
+
+  it('seeds an empty field from schema.default on mount (free-text body, under StrictMode)', async () => {
+    // StrictMode double-invokes effects — a naive seed flag would let the cleanup cancel the only
+    // scheduled write, so this guards that regression (the seed must still fire in dev).
+    render(
+      <StrictMode>
+        <Harness />
+      </StrictMode>,
+    );
+    await waitFor(() => {
+      expect((screen.getByLabelText('Country') as HTMLInputElement).value).toBe('Canada');
+    });
+    expect((screen.getByLabelText('State / Province') as HTMLInputElement).value).toBe('Ontario');
+  });
+
+  it('does NOT seed when the field already has a value', async () => {
+    function Prefilled() {
+      const [data, setData] = useState<Record<string, unknown>>({
+        addr: { country: 'France', province: '' },
+      });
+      return (
+        <JsonForms
+          schema={schemaWithDefault}
+          uischema={uischema}
+          data={data}
+          renderers={renderers}
+          onChange={({ data: next }) => setData(next)}
+        />
+      );
+    }
+    render(<Prefilled />);
+    // The existing value wins; the default never overwrites it.
+    expect((screen.getByLabelText('Country') as HTMLInputElement).value).toBe('France');
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect((screen.getByLabelText('Country') as HTMLInputElement).value).toBe('France');
   });
 });

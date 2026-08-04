@@ -11,10 +11,10 @@ import {
 } from '@repo/ui/combobox';
 import { Field, FieldLabel } from '@repo/ui/field';
 import { Input } from '@repo/ui/input';
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, useEffect, useId, useRef } from 'react';
 
 import { addressLabelsForIso2 } from './labels';
-import { type AddressValue, normalizeAddress } from './model';
+import { type AddressValue, isAddressEmpty, normalizeAddress } from './model';
 import { type GeoCountryOption, type GeoData, useGeo } from './geo-context';
 
 /** Dispatched purely by the uischema option `format: 'address'`, ranked above generic controls. */
@@ -251,6 +251,7 @@ function AddressControlComponent({
   data,
   handleChange,
   path,
+  schema,
   label,
   description,
   errors,
@@ -260,6 +261,36 @@ function AddressControlComponent({
 }: ControlProps) {
   const geo = useGeo();
   const generatedId = useId();
+  const seeded = useRef(false);
+  const rawDefault = (schema as { default?: unknown }).default;
+  const defaultValue =
+    rawDefault !== null && typeof rawDefault === 'object'
+      ? (rawDefault as Record<string, unknown>)
+      : undefined;
+  // Seed the author-set default (feature 153) ONCE, only while the field is still empty and editable —
+  // never clobbers a citizen's edits or a resumed draft (JSONForms hands an object control `{}`, not
+  // `undefined`, so we test emptiness rather than nullishness).
+  //
+  // Two timing hazards handled here:
+  //  1. A `handleChange` fired during the mount commit runs before JsonForms finishes its own init and
+  //     is silently dropped — so the write is DEFERRED a macrotask (`setTimeout`).
+  //  2. `seeded` is flipped INSIDE the timer, not before scheduling it. Under React StrictMode the
+  //     effect runs twice (mount → cleanup → mount); flipping the flag up front would let the cleanup
+  //     cancel the only scheduled write while the second pass sees the flag set and never reschedules,
+  //     so the seed would never fire in dev.
+  useEffect(() => {
+    if (seeded.current || enabled === false) {
+      return undefined;
+    }
+    if (defaultValue === undefined || !isAddressEmpty(normalizeAddress(data))) {
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      seeded.current = true;
+      handleChange(path, defaultValue);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [data, defaultValue, enabled, handleChange, path]);
   if (visible === false) {
     return null;
   }
