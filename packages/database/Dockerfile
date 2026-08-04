@@ -10,6 +10,7 @@
 #   docker run --rm -e DATABASE_URL=postgres://user:pass@host:5432/db db-migrate:local              # migrate (default)
 #   docker run --rm -e DATABASE_URL=postgres://…                     db-migrate:local seed
 #   docker run --rm -e DATABASE_URL=postgres://…                     db-migrate:local migrate-seed
+#   docker run --rm -e DATABASE_URL=postgres://…                     db-migrate:local migrate-seed-geo  # + geo reference data (vendored in-image, no egress; ~512Mi)
 #
 # See .mdd/docs/74-database-migrate-image.md for the rationale.
 
@@ -42,8 +43,12 @@ RUN npm install --ignore-scripts
 COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/tsconfig.base.json ./tsconfig.base.json
 # esbuild bundles the local TS (client + schema) and externalizes node_modules
-# (drizzle-orm, pg, dotenv) → dist-scripts/{migrate,seed}.js run with plain node.
+# (drizzle-orm, pg, dotenv) → dist-scripts/{migrate,seed,geo-import,geo-download}.js (plain node).
 RUN npm run build:scripts -w @repo/database
+# Vendor the geographic reference JSON into the image at BUILD time (CI has GitHub egress) so the
+# runtime migrate Job reads it from disk (GEO_DATA_DIR) with NO runtime egress (feature 152). Adds
+# ~53MB to the image. Pinned to GEO_DATA_REF in src/geo/source.ts.
+RUN node packages/database/dist-scripts/geo-download.js /app/geo-data
 
 # ---------------------------------------------------------------------------
 # runner — PROD-ONLY deps (drizzle-orm, pg, dotenv) + compiled scripts + migrations.
@@ -57,13 +62,17 @@ WORKDIR /app
 COPY --from=pruner --chown=1000:0 /app/out/json/ .
 RUN npm install --omit=dev --ignore-scripts
 
-# Compiled scripts + the raw SQL migrations they apply.
+# Compiled scripts + the raw SQL migrations they apply + the vendored geo reference JSON.
 COPY --from=builder --chown=1000:0 /app/packages/database/dist-scripts ./packages/database/dist-scripts
 COPY --from=builder --chown=1000:0 /app/packages/database/migrations ./packages/database/migrations
+COPY --from=builder --chown=1000:0 /app/geo-data ./packages/database/geo-data
 COPY --chown=1000:0 packages/database/docker/entrypoint.sh /usr/local/bin/db-entrypoint.sh
 RUN chmod +x /usr/local/bin/db-entrypoint.sh
 
 ENV NODE_ENV=production
+# Baked-in geo data (feature 152) — the geo-import script reads these instead of fetching, so the
+# runtime Job needs no egress to raw.githubusercontent.com. Absolute path (WORKDIR changes below).
+ENV GEO_DATA_DIR=/app/packages/database/geo-data
 
 # Run from the package dir so dist-scripts/ and migrations/ resolve; node_modules is hoisted
 # at /app. OpenShift/K8s: numeric non-root USER; the job only READS the image FS

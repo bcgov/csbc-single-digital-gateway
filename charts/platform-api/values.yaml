@@ -87,7 +87,7 @@ route:
 # in citizen-portal-api (shared DB) so migrations run exactly once per deploy.
 migrations:
   enabled: true
-  command: migrate # or "migrate-seed"
+  command: migrate # or "migrate-seed" / "migrate-seed-geo" (adds geographic reference data, feature 152)
   backoffLimit: 2
   image:
     repository: ghcr.io/bcgov/csbc-single-digital-gateway/db-migrate # override per environment
