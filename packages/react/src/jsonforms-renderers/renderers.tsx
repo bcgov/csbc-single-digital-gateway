@@ -1,4 +1,5 @@
 import type { JsonFormsRendererRegistryEntry } from '@jsonforms/core';
+import { AddressControl, addressControlTester } from './controls/address/address-control';
 import { BooleanControl, booleanControlTester } from './controls/boolean-control';
 import {
   ContactMethodsControl,
@@ -50,6 +51,7 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   { tester: richTextControlTester, renderer: RichTextControl },
   { tester: phoneControlTester, renderer: PhoneControl },
   { tester: contactMethodsControlTester, renderer: ContactMethodsControl },
+  { tester: addressControlTester, renderer: AddressControl },
   // Layouts
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },

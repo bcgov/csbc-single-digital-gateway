@@ -58,6 +58,19 @@ function propertySchema(node: ControlNode): JsonObject {
         items: { type: 'string', enum: values },
       });
       break;
+    case 'address':
+      Object.assign(base, {
+        type: 'object',
+        properties: {
+          country: { type: 'string' },
+          address_one: { type: 'string' },
+          address_two: { type: 'string' },
+          city: { type: 'string' },
+          province: { type: 'string' },
+          postal_code: { type: 'string' },
+        },
+      });
+      break;
     default:
       Object.assign(base, { type: 'string' });
   }
@@ -83,6 +96,9 @@ function controlOptions(node: ControlNode): JsonObject {
   }
   if (node.fieldType === 'richtext') {
     options.format = 'richtext';
+  }
+  if (node.fieldType === 'address') {
+    options.format = 'address';
   }
   if (node.fieldType === 'slider' && node.step !== undefined) {
     options.step = node.step;
@@ -172,6 +188,9 @@ export function serializeModel(model: FormModel): FormDefinition {
 function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (options.format === 'richtext') {
     return 'richtext';
+  }
+  if (options.format === 'address' || prop.type === 'object') {
+    return 'address';
   }
   if (prop.type === 'array') {
     return 'multiselect';

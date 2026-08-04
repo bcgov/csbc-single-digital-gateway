@@ -44,6 +44,7 @@ import {
   sliderDisplayTester,
   textDisplayTester,
 } from './controls/primitive-displays';
+import { AddressDisplay, addressDisplayTester } from './controls/address-display';
 import {
   ContactMethodsDisplay,
   contactMethodsDisplayTester,
@@ -73,6 +74,7 @@ export const displayRenderers: JsonFormsRendererRegistryEntry[] = [
   { tester: richTextDisplayTester, renderer: RichTextDisplay },
   { tester: phoneDisplayTester, renderer: PhoneDisplay },
   { tester: contactMethodsDisplayTester, renderer: ContactMethodsDisplay },
+  { tester: addressDisplayTester, renderer: AddressDisplay },
   // Layouts (reused from the form renderer set)
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
