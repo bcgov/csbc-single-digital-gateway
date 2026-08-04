@@ -43,9 +43,14 @@ export const authedUser = {
  * Capture `window.location.assign` calls. jsdom's `assign` is non-configurable so it can't be spied
  * directly — proxy the real location and intercept just `assign`. Returns the mock + a restore fn.
  */
-export function stubLocationAssign(): { assign: ReturnType<typeof vi.fn>; restore: () => void } {
+export function stubLocationAssign(): {
+  assign: ReturnType<typeof vi.fn>;
+  replace: ReturnType<typeof vi.fn>;
+  restore: () => void;
+} {
   const original = window.location;
   const assign = vi.fn();
+  const replace = vi.fn();
   const stub = {
     href: original.href,
     origin: original.origin,
@@ -57,13 +62,14 @@ export function stubLocationAssign(): { assign: ReturnType<typeof vi.fn>; restor
     search: original.search,
     hash: original.hash,
     assign,
-    replace: vi.fn(),
+    replace,
     reload: vi.fn(),
     toString: () => original.href,
   };
   Object.defineProperty(window, 'location', { configurable: true, value: stub });
   return {
     assign,
+    replace,
     restore: () =>
       Object.defineProperty(window, 'location', { configurable: true, value: original }),
   };

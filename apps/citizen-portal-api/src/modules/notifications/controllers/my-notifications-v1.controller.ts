@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { CurrentUser, type AuthUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
@@ -26,6 +27,7 @@ import { NotificationsProxyService } from '../services/notifications-proxy.servi
  * scoped to `@CurrentUser().id` — the browser never names a recipient and never sees the
  * m2m token or the notification-service.
  */
+@ApiTags('Notifications')
 @Controller({ path: 'me', version: '1' })
 export class MyNotificationsV1Controller {
   constructor(private readonly proxy: NotificationsProxyService) {}

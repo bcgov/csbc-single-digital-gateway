@@ -45,5 +45,5 @@ export function initials(name: string): string {
 
 /** Greeting label: just the first name token (`"Amina Ali" → "Amina"`). */
 export function firstName(name: string): string {
-  return name.trim().split(/\s+/).find(Boolean) ?? name;
+  return name.trim().split(/\s+/).find(Boolean) ?? '';
 }

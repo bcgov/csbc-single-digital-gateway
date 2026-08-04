@@ -27,7 +27,7 @@ interface PageChromeApi {
   remove: (id: string) => void;
 }
 
-const PageChromeContext = createContext<PageChromeApi | null>(null);
+export const PageChromeContext = createContext<PageChromeApi | null>(null);
 
 /** Holds a STACK of chrome entries — a child page (e.g. a builder) overlays its parent (the detail),
  * and removing it on unmount restores the parent's chrome. Updates are in place (order preserved). */

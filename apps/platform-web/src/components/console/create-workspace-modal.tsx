@@ -41,10 +41,14 @@ export function CreateWorkspaceModal({
     if (trimmed.length === 0) {
       return;
     }
-    const created = await mutation.mutateAsync(trimmed);
-    await queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-    onOpenChange?.(false);
-    await navigate({ to: '/app/$slug', params: { slug: created.slug } });
+    try {
+      const created = await mutation.mutateAsync(trimmed);
+      await queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      onOpenChange?.(false);
+      await navigate({ to: '/app/$slug', params: { slug: created.slug } });
+    } catch {
+      // Ignored: mutation.isError handles displaying the error alert.
+    }
   }
 
   return (
