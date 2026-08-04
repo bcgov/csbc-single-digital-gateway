@@ -1,6 +1,6 @@
 import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
-import { withJsonFormsControlProps } from '@jsonforms/react';
+import { useJsonForms, withJsonFormsControlProps } from '@jsonforms/react';
 import {
   Combobox,
   ComboboxContent,
@@ -40,18 +40,31 @@ function findCountry(
   return countries?.find((country) => country.name === name);
 }
 
-interface SubFieldProps {
+/** Per-sub-field requiredness + validation message, derived from the object schema (feature 153). */
+interface FieldMeta {
+  required: boolean;
+  error?: string;
+}
+
+/** Resolve the {@link FieldMeta} for a sub-field key. */
+type MetaFor = (key: keyof AddressValue) => FieldMeta;
+
+interface SubFieldProps extends FieldMeta {
   id: string;
   label: string;
   children: ReactNode;
 }
 
 /** One labelled sub-field. Fills its row; `flex-1` when placed inside a {@link Row}. */
-function SubField({ id, label, children }: SubFieldProps) {
+function SubField({ id, label, required, error, children }: SubFieldProps) {
   return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <Field data-invalid={error !== undefined ? true : undefined}>
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required ? ' *' : ''}
+      </FieldLabel>
       {children}
+      {error !== undefined ? <p className="text-sm text-destructive">{error}</p> : null}
     </Field>
   );
 }
@@ -65,44 +78,59 @@ interface BodyProps {
   baseId: string;
   value: AddressValue;
   disabled: boolean;
-  invalid: boolean;
   onField: (key: keyof AddressValue, next: string) => void;
   onCountry: (next: string) => void;
   /** Merge several fields at once — used by the geocoder address search to fill line 1 + city. */
   onFill: (patch: Partial<AddressValue>) => void;
+  /** Per-sub-field requiredness + validation message (feature 153 required-address fix). */
+  meta: MetaFor;
 }
 
 /** The free-text address body — country + province are plain inputs (no geo data available). */
-function PlainBody({ baseId, value, disabled, invalid, onField }: BodyProps) {
+function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
   const labels = addressLabelsForIso2(undefined);
   return (
     <>
-      <SubField id={`${baseId}-country`} label="Country">
+      <SubField id={`${baseId}-country`} label="Country" {...meta('country')}>
         <Input
           id={`${baseId}-country`}
           value={value.country}
           disabled={disabled}
-          aria-invalid={invalid}
+          aria-invalid={meta('country').error !== undefined}
           onChange={(event) => onField('country', event.target.value)}
         />
       </SubField>
-      <AddressLines baseId={baseId} value={value} disabled={disabled} onField={onField} />
+      <AddressLines
+        baseId={baseId}
+        value={value}
+        disabled={disabled}
+        onField={onField}
+        meta={meta}
+      />
       <Row>
-        <CityField baseId={baseId} value={value} disabled={disabled} onField={onField} />
-        <SubField id={`${baseId}-province`} label={labels.stateLabel}>
+        <CityField
+          baseId={baseId}
+          value={value}
+          disabled={disabled}
+          onField={onField}
+          meta={meta}
+        />
+        <SubField id={`${baseId}-province`} label={labels.stateLabel} {...meta('province')}>
           <Input
             id={`${baseId}-province`}
             value={value.province}
             disabled={disabled}
+            aria-invalid={meta('province').error !== undefined}
             onChange={(event) => onField('province', event.target.value)}
           />
         </SubField>
       </Row>
-      <SubField id={`${baseId}-postal_code`} label={labels.postalLabel}>
+      <SubField id={`${baseId}-postal_code`} label={labels.postalLabel} {...meta('postal_code')}>
         <Input
           id={`${baseId}-postal_code`}
           value={value.postal_code}
           disabled={disabled}
+          aria-invalid={meta('postal_code').error !== undefined}
           onChange={(event) => onField('postal_code', event.target.value)}
         />
       </SubField>
@@ -110,21 +138,22 @@ function PlainBody({ baseId, value, disabled, invalid, onField }: BodyProps) {
   );
 }
 
-type LineProps = Pick<BodyProps, 'baseId' | 'value' | 'disabled' | 'onField'>;
+type LineProps = Pick<BodyProps, 'baseId' | 'value' | 'disabled' | 'onField' | 'meta'>;
 
 /** Address line 1 + line 2 — each on its own row, identical across the plain and geo bodies. */
-function AddressLines({ baseId, value, disabled, onField }: LineProps) {
+function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
   return (
     <>
-      <SubField id={`${baseId}-address_one`} label="Address line 1">
+      <SubField id={`${baseId}-address_one`} label="Address line 1" {...meta('address_one')}>
         <Input
           id={`${baseId}-address_one`}
           value={value.address_one}
           disabled={disabled}
+          aria-invalid={meta('address_one').error !== undefined}
           onChange={(event) => onField('address_one', event.target.value)}
         />
       </SubField>
-      <SubField id={`${baseId}-address_two`} label="Address line 2">
+      <SubField id={`${baseId}-address_two`} label="Address line 2" {...meta('address_two')}>
         <Input
           id={`${baseId}-address_two`}
           value={value.address_two}
@@ -137,13 +166,14 @@ function AddressLines({ baseId, value, disabled, onField }: LineProps) {
 }
 
 /** The City sub-field — shared, so both bodies can pair it with their State/Province field in a Row. */
-function CityField({ baseId, value, disabled, onField }: LineProps) {
+function CityField({ baseId, value, disabled, onField, meta }: LineProps) {
   return (
-    <SubField id={`${baseId}-city`} label="City">
+    <SubField id={`${baseId}-city`} label="City" {...meta('city')}>
       <Input
         id={`${baseId}-city`}
         value={value.city}
         disabled={disabled}
+        aria-invalid={meta('city').error !== undefined}
         onChange={(event) => onField('city', event.target.value)}
       />
     </SubField>
@@ -155,10 +185,10 @@ function GeoBody({
   baseId,
   value,
   disabled,
-  invalid,
   onField,
   onCountry,
   onFill,
+  meta,
   geo,
 }: BodyProps & { geo: GeoData }) {
   const { data: countries } = geo.useCountries();
@@ -180,7 +210,7 @@ function GeoBody({
 
   return (
     <>
-      <SubField id={`${baseId}-country`} label="Country">
+      <SubField id={`${baseId}-country`} label="Country" {...meta('country')}>
         <Combobox
           items={countryNames}
           value={value.country}
@@ -191,7 +221,7 @@ function GeoBody({
             id={`${baseId}-country`}
             className="w-full"
             placeholder="Select a country"
-            aria-invalid={invalid}
+            aria-invalid={meta('country').error !== undefined}
           />
           <ComboboxContent>
             <ComboboxEmpty>No country found.</ComboboxEmpty>
@@ -215,10 +245,22 @@ function GeoBody({
           onFill={onFill}
         />
       ) : null}
-      <AddressLines baseId={baseId} value={value} disabled={disabled} onField={onField} />
+      <AddressLines
+        baseId={baseId}
+        value={value}
+        disabled={disabled}
+        onField={onField}
+        meta={meta}
+      />
       <Row>
-        <CityField baseId={baseId} value={value} disabled={disabled} onField={onField} />
-        <SubField id={`${baseId}-province`} label={labels.stateLabel}>
+        <CityField
+          baseId={baseId}
+          value={value}
+          disabled={disabled}
+          onField={onField}
+          meta={meta}
+        />
+        <SubField id={`${baseId}-province`} label={labels.stateLabel} {...meta('province')}>
           {hasStates ? (
             <Combobox
               items={stateNames}
@@ -230,6 +272,7 @@ function GeoBody({
                 id={`${baseId}-province`}
                 className="w-full"
                 placeholder={`Select a ${labels.stateLabel}`}
+                aria-invalid={meta('province').error !== undefined}
               />
               <ComboboxContent>
                 <ComboboxEmpty>No {labels.stateLabel} found.</ComboboxEmpty>
@@ -247,17 +290,19 @@ function GeoBody({
               id={`${baseId}-province`}
               value={value.province}
               disabled={disabled}
+              aria-invalid={meta('province').error !== undefined}
               onChange={(event) => onField('province', event.target.value)}
             />
           )}
         </SubField>
       </Row>
       {hasPostal ? (
-        <SubField id={`${baseId}-postal_code`} label={labels.postalLabel}>
+        <SubField id={`${baseId}-postal_code`} label={labels.postalLabel} {...meta('postal_code')}>
           <Input
             id={`${baseId}-postal_code`}
             value={value.postal_code}
             disabled={disabled}
+            aria-invalid={meta('postal_code').error !== undefined}
             onChange={(event) => onField('postal_code', event.target.value)}
           />
         </SubField>
@@ -280,6 +325,7 @@ function AddressControlComponent({
   visible,
 }: ControlProps) {
   const geo = useGeo();
+  const ctx = useJsonForms();
   const generatedId = useId();
   const seeded = useRef(false);
   const rawDefault = (schema as { default?: unknown }).default;
@@ -316,15 +362,33 @@ function AddressControlComponent({
   }
   const value = normalizeAddress(data);
   const disabled = enabled === false;
-  const invalid = Boolean(errors);
   const baseId = id || generatedId;
+
+  // Required-address validation (feature 153 bug fix): the object schema lists which sub-fields are
+  // required; JSONForms attributes their (child-path) errors below the object control, not on it, so
+  // we surface per-field "required" affordances ourselves. Show messages only when the form is in a
+  // validation-visible mode (FormRunner uses ValidateAndShow); the asterisk shows whenever required.
+  const requiredKeys = new Set<keyof AddressValue>(
+    Array.isArray((schema as { required?: unknown }).required)
+      ? ((schema as { required: string[] }).required as (keyof AddressValue)[])
+      : [],
+  );
+  const validationMode = ctx.core?.validationMode ?? 'ValidateAndShow';
+  const showErrors = validationMode !== 'ValidateAndHide' && validationMode !== 'NoValidation';
+  const meta: MetaFor = (key) => {
+    const isRequired = requiredKeys.has(key);
+    return {
+      required: isRequired,
+      ...(showErrors && isRequired && value[key] === '' ? { error: 'This field is required' } : {}),
+    };
+  };
 
   const onField = (key: keyof AddressValue, next: string) =>
     handleChange(path, { ...value, [key]: next });
   const onCountry = (next: string) => handleChange(path, withCountry(value, next));
   const onFill = (patch: Partial<AddressValue>) => handleChange(path, { ...value, ...patch });
 
-  const body: BodyProps = { baseId, value, disabled, invalid, onField, onCountry, onFill };
+  const body: BodyProps = { baseId, value, disabled, onField, onCountry, onFill, meta };
 
   return (
     <fieldset className="space-y-3">

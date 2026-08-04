@@ -196,3 +196,75 @@ describe('AddressControl — author-set defaults (schema.default)', () => {
     expect((screen.getByLabelText('Country') as HTMLInputElement).value).toBe('France');
   });
 });
+
+describe('AddressControl — required validation (bug fix)', () => {
+  const requiredSchema: JsonSchema = {
+    type: 'object',
+    required: ['addr'],
+    properties: {
+      addr: {
+        type: 'object',
+        required: ['country', 'address_one', 'city', 'province', 'postal_code'],
+        properties: {
+          country: { type: 'string', minLength: 1 },
+          address_one: { type: 'string', minLength: 1 },
+          address_two: { type: 'string' },
+          city: { type: 'string', minLength: 1 },
+          province: { type: 'string', minLength: 1 },
+          postal_code: { type: 'string', minLength: 1 },
+        },
+      },
+    },
+  };
+
+  it('shows a required message on each empty required sub-field (not address line 2)', () => {
+    render(
+      <JsonForms
+        schema={requiredSchema}
+        uischema={uischema}
+        data={{ addr: {} }}
+        renderers={renderers}
+        validationMode="ValidateAndShow"
+      />,
+    );
+    // One "This field is required" per empty required field: country, line 1, city, province, postal.
+    expect(screen.getAllByText('This field is required')).toHaveLength(5);
+    // Address line 2 is optional → its label carries no asterisk and no message.
+    expect(screen.getByText('Address line 2')).toBeInTheDocument();
+    expect(screen.getByText('Address line 2').textContent).not.toContain('*');
+  });
+
+  it('clears a field message once that field is filled', () => {
+    render(
+      <JsonForms
+        schema={requiredSchema}
+        uischema={uischema}
+        data={{
+          addr: {
+            country: 'Canada',
+            address_one: '1 Main St',
+            city: 'Victoria',
+            province: 'British Columbia',
+            postal_code: 'V8W 1A1',
+          },
+        }}
+        renderers={renderers}
+        validationMode="ValidateAndShow"
+      />,
+    );
+    expect(screen.queryByText('This field is required')).not.toBeInTheDocument();
+  });
+
+  it('shows no required messages when validation is hidden', () => {
+    render(
+      <JsonForms
+        schema={requiredSchema}
+        uischema={uischema}
+        data={{ addr: {} }}
+        renderers={renderers}
+        validationMode="ValidateAndHide"
+      />,
+    );
+    expect(screen.queryByText('This field is required')).not.toBeInTheDocument();
+  });
+});

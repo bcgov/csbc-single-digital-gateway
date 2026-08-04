@@ -115,4 +115,57 @@ describe('form builder — address field', () => {
     expect(back.defaultCountry).toBe('United States');
     expect(back.defaultProvince).toBe('California');
   });
+
+  // Required validation (bug fix): a required address requires the 5 fields (NOT address_two) to be
+  // present AND non-empty — `minLength: 1`, since the control writes empty strings for blanks.
+  it('a required address requires the 5 fields (not address_two) with minLength', () => {
+    const node: ControlNode = { ...createField('address'), key: 'addr', required: true };
+    const model: FormModel = { title: '', description: '', fields: [node] };
+    const { schema } = serializeModel(model);
+    const root = schema as {
+      required?: string[];
+      properties: Record<
+        string,
+        { required?: string[]; properties: Record<string, { minLength?: number }> } | undefined
+      >;
+    };
+    const prop = root.properties.addr!;
+    // The object property itself is required at the top level (must be present)…
+    expect(root.required).toContain('addr');
+    // …and its own required set is the 5 fields, address_two excluded.
+    expect(prop.required?.toSorted()).toEqual([
+      'address_one',
+      'city',
+      'country',
+      'postal_code',
+      'province',
+    ]);
+    for (const key of ['country', 'address_one', 'city', 'province', 'postal_code']) {
+      expect(prop.properties[key]?.minLength).toBe(1);
+    }
+    expect(prop.properties.address_two?.minLength).toBeUndefined();
+  });
+
+  it('an optional address adds no sub-field required / minLength', () => {
+    const node: ControlNode = { ...createField('address'), key: 'addr', required: false };
+    const { schema } = serializeModel({ title: '', description: '', fields: [node] });
+    const root = schema as {
+      required?: string[];
+      properties: Record<
+        string,
+        { required?: string[]; properties: Record<string, { minLength?: number }> } | undefined
+      >;
+    };
+    const prop = root.properties.addr!;
+    expect(root.required ?? []).not.toContain('addr');
+    expect(prop.required).toBeUndefined();
+    expect(prop.properties.country?.minLength).toBeUndefined();
+  });
+
+  it('round-trips the required flag through serialize → parse', () => {
+    const node: ControlNode = { ...createField('address'), key: 'addr', required: true };
+    const back = parseModel(serializeModel({ title: '', description: '', fields: [node] }))
+      .fields[0] as ControlNode;
+    expect(back.required).toBe(true);
+  });
 });
