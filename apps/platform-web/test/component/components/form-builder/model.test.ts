@@ -43,6 +43,21 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
+    it('creates number field defaulting to decimal with min 0, no max, and 2 decimal places', () => {
+      const node = createField('number');
+      expect(node).toEqual({
+        kind: 'control',
+        key: '',
+        fieldType: 'number',
+        label: '',
+        required: false,
+        options: {},
+        numberType: 'decimal',
+        min: 0,
+        decimalPlaces: 2,
+      });
+    });
+
     it('creates container layout with default empty children', () => {
       const node = createField('group');
       expect(node).toEqual({

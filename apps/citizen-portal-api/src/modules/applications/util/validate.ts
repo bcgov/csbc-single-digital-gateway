@@ -147,3 +147,84 @@ export function validateAddressPostals(
   }
   return errors;
 }
+
+// ── Number decimal-places validation (feature 155) ─────────────────────────────────────────────────
+//
+// A decimal number control (`options.decimals: N`) limits how many digits may follow the decimal
+// point. This is checked by counting decimals in the submitted value's string form (not via Ajv
+// `multipleOf`, which is floating-point fragile). The renderer enforces the same limit client-side.
+
+/** A decimal-places constraint: the field key and the max digits allowed after the decimal point. */
+export interface DecimalConstraint {
+  key: string;
+  maxDecimals: number;
+}
+
+/** Digits after the decimal point in a number's canonical string form (exponent-aware). */
+function decimalCount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  const s = value.toString().toLowerCase();
+  if (s.includes('e-')) {
+    const [mantissa, expPart] = s.split('e-');
+    return (mantissa?.split('.')[1] ?? '').length + Number(expPart);
+  }
+  return (s.split('.')[1] ?? '').length;
+}
+
+/** Recursively collect the decimal-places constraints of every number control in a uischema tree. */
+function decimalConstraintsFromUischema(
+  uischema: Record<string, unknown> | undefined,
+): DecimalConstraint[] {
+  if (!uischema) {
+    return [];
+  }
+  const constraints: DecimalConstraint[] = [];
+  const options = asRecord(uischema.options);
+  const decimals = options?.decimals;
+  if (uischema.type === 'Control' && typeof decimals === 'number') {
+    const key = ADDRESS_SCOPE.exec(asText(uischema.scope))?.[1];
+    if (key !== undefined) {
+      constraints.push({ key, maxDecimals: decimals });
+    }
+  }
+  const elements = Array.isArray(uischema.elements) ? uischema.elements : [];
+  for (const child of elements) {
+    constraints.push(...decimalConstraintsFromUischema(asRecord(child)));
+  }
+  return constraints;
+}
+
+/** Every number field with a decimal-places limit in the form (basic = one uischema; multi-stage = one per page). */
+export function collectDecimalConstraints(
+  kind: string,
+  structure: Record<string, unknown>,
+): DecimalConstraint[] {
+  const uischemas: Array<Record<string, unknown> | undefined> =
+    kind === 'multi-stage-form'
+      ? ((structure['stages'] as MultiStageStage[] | undefined) ?? []).flatMap((stage) =>
+          (stage.pages ?? []).map((page) => page.uischema),
+        )
+      : [structure['uischema'] as Record<string, unknown> | undefined];
+  const byKey = new Map<string, DecimalConstraint>();
+  for (const c of uischemas.flatMap(decimalConstraintsFromUischema)) {
+    byKey.set(c.key, c);
+  }
+  return [...byKey.values()];
+}
+
+/** Reject any submitted number that exceeds its field's decimal-places limit. Non-numbers are ignored. */
+export function validateDecimals(constraints: DecimalConstraint[], data: unknown): string[] {
+  const record = asRecord(data) ?? {};
+  const errors: string[] = [];
+  for (const { key, maxDecimals } of constraints) {
+    const value = record[key];
+    if (typeof value === 'number' && decimalCount(value) > maxDecimals) {
+      errors.push(
+        `${key}: enter at most ${maxDecimals} decimal place${maxDecimals === 1 ? '' : 's'}`,
+      );
+    }
+  }
+  return errors;
+}

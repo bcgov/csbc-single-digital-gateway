@@ -24,7 +24,14 @@ function propertySchema(node: ControlNode): JsonObject {
   const base: JsonObject = {};
   switch (node.fieldType) {
     case 'number':
-      Object.assign(base, { type: 'number' });
+      // Feature 155: integer vs decimal → schema `type`; optional min/max bounds (omit when unset).
+      base.type = node.numberType === 'integer' ? 'integer' : 'number';
+      if (typeof node.min === 'number') {
+        base.minimum = node.min;
+      }
+      if (typeof node.max === 'number') {
+        base.maximum = node.max;
+      }
       break;
     case 'slider':
       Object.assign(base, {
@@ -123,8 +130,22 @@ function controlOptions(node: ControlNode): JsonObject {
   if (node.fieldType === 'address') {
     options.format = 'address';
   }
-  if (node.fieldType === 'slider' && node.step !== undefined) {
-    options.step = node.step;
+  if (
+    node.fieldType === 'number' &&
+    node.numberType === 'decimal' &&
+    typeof node.decimalPlaces === 'number'
+  ) {
+    // Entry constraint (feature 155): max digits after the decimal point. Kept in options (not a
+    // schema keyword) so it's enforced by explicit client/server passes, not fragile Ajv `multipleOf`.
+    options.decimals = node.decimalPlaces;
+  }
+  if (node.fieldType === 'slider') {
+    // `options.slider` is the JSONForms `isRangeControl` signal AND the codec's sole slider
+    // discriminator (feature 155) — it keeps a number-with-min/max from parsing back as a slider.
+    options.slider = true;
+    if (node.step !== undefined) {
+      options.step = node.step;
+    }
   }
   return options;
 }
@@ -228,7 +249,9 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
     return options.format === 'radio' ? 'radio' : 'select';
   }
   if (prop.type === 'number' || prop.type === 'integer') {
-    return prop.minimum !== undefined && prop.maximum !== undefined ? 'slider' : 'number';
+    // A numeric control is a slider iff explicitly marked (feature 155); otherwise it's a Number
+    // field, whose own min/max no longer imply a slider.
+    return options.slider === true ? 'slider' : 'number';
   }
   if (prop.format === 'date') {
     return 'date';
@@ -269,10 +292,19 @@ function parseControl(
   const fieldType = inferFieldType(prop, rawOptions);
 
   // Drop the synthesized option flags so the node's `options` round-trips to an empty object.
-  const { multi: _m, toggle: _t, format: _f, step, ...userOptions } = rawOptions;
+  const {
+    multi: _m,
+    toggle: _t,
+    format: _f,
+    slider: _s,
+    step,
+    decimals,
+    ...userOptions
+  } = rawOptions;
   void _m;
   void _t;
   void _f;
+  void _s;
 
   const label =
     typeof element.label === 'string' ? element.label : ((prop.title as string | undefined) ?? '');
@@ -289,6 +321,20 @@ function parseControl(
   }
   if (ENUM_FIELD_TYPES.has(fieldType)) {
     node.enumOptions = enumOptionsFromProp(prop);
+  }
+  if (fieldType === 'number') {
+    // Feature 155: recover the authored type + bounds. `numberType` always present (defaults decimal);
+    // min/max only when the schema actually carries them (a bare number stays unbounded).
+    node.numberType = prop.type === 'integer' ? 'integer' : 'decimal';
+    if (typeof prop.minimum === 'number') {
+      node.min = prop.minimum;
+    }
+    if (typeof prop.maximum === 'number') {
+      node.max = prop.maximum;
+    }
+    if (node.numberType === 'decimal' && typeof decimals === 'number') {
+      node.decimalPlaces = decimals;
+    }
   }
   if (fieldType === 'slider') {
     node.min = (prop.minimum as number | undefined) ?? 0;
