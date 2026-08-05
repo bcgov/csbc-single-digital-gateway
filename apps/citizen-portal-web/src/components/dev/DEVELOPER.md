@@ -5,6 +5,10 @@ Every documented `/dev` reference page (`accordion`, `badge`, `button`, `cards`,
 metadata instead of hand-typed prose. The same metadata is what an automated checker runs against,
 so the docs and the enforcement can't drift apart.
 
+This metadata catalog is also the exceptions source for the _real_ app routes (not just `/dev`
+pages) — see [`test/A11Y-TESTING.md`](../../../test/A11Y-TESTING.md) for that broader checker,
+what it does and doesn't cover, and how to keep it useful as the app grows.
+
 ## Why
 
 Hand-typed prose is invisible to AI coding agents and isn't checked by anything — nothing catches
@@ -23,15 +27,15 @@ queryable data, and it's enforced by a test.
                                                     (renders the page)          (axe-core gate)
 ```
 
-| Piece                | Location                                                                                 | Purpose                                                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Schema               | `packages/ui/src/a11y/a11y-types.ts`                                                     | The `ComponentA11yMetadata` type: WCAG criteria, ARIA pattern link, rules, misuses, notes, `knownExceptions`.              |
-| Sidecars (shared)    | `packages/ui/src/a11y/{accordion,badge,button,card}.a11y.ts`                             | Metadata for `@repo/ui` components.                                                                                        |
-| Sidecars (app-local) | `src/a11y/status-banner.a11y.ts`, `src/a11y/{icon,form-elements}-reference-page.a11y.ts` | Metadata for things that aren't `@repo/ui` components (app-local component, or a usage-pattern page with no single owner). |
-| Catalog generator    | `packages/ui/scripts/gen-a11y-catalog.mjs`                                               | Aggregates the 4 shared sidecars into the committed `packages/ui/src/a11y/a11y-catalog.json`.                              |
-| Catalog lookup       | `src/a11y/a11y-catalog.ts`                                                               | Merges the `@repo/ui` catalog with the 3 app-local sidecars; exports `getA11yMetadata(name)`.                              |
-| Rendered section     | `src/components/dev/a11y-rules-section.tsx`                                              | Turns metadata into the badges/rules/exceptions UI on each reference page.                                                 |
-| Checker              | `test/dev-pages-a11y.test.tsx` + `test/support/a11y.ts`                                  | Renders all 9 `/dev` routes and runs `jest-axe` against each.                                                              |
+| Piece                | Location                                                                                 | Purpose                                                                                                                                                                                                                                                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schema               | `packages/ui/src/a11y/a11y-types.ts`                                                     | The `ComponentA11yMetadata` type: WCAG criteria, ARIA pattern link, rules, misuses, notes, `knownExceptions`.                                                                                                                                                                                                                          |
+| Sidecars (shared)    | `packages/ui/src/a11y/{accordion,badge,button,card}.a11y.ts`                             | Metadata for `@repo/ui` components.                                                                                                                                                                                                                                                                                                    |
+| Sidecars (app-local) | `src/a11y/status-banner.a11y.ts`, `src/a11y/{icon,form-elements}-reference-page.a11y.ts` | Metadata for things that aren't `@repo/ui` components (app-local component, or a usage-pattern page with no single owner).                                                                                                                                                                                                             |
+| Catalog generator    | `packages/ui/scripts/gen-a11y-catalog.mjs`                                               | Aggregates the 4 shared sidecars into the committed `packages/ui/src/a11y/a11y-catalog.json`.                                                                                                                                                                                                                                          |
+| Catalog lookup       | `src/a11y/a11y-catalog.ts`                                                               | Merges the `@repo/ui` catalog with the 3 app-local sidecars; exports `getA11yMetadata(name)` (throws on a miss — for `/dev` pages, where the name is always known ahead of time) and `findA11yMetadata(name)` (returns `undefined` on a miss — for aggregating exceptions across whatever components a _real_ page happens to render). |
+| Rendered section     | `src/components/dev/a11y-rules-section.tsx`                                              | Turns metadata into the badges/rules/exceptions UI on each reference page.                                                                                                                                                                                                                                                             |
+| Checker              | `test/dev-pages-a11y.test.tsx` + `test/support/a11y.ts`                                  | Renders all 9 `/dev` routes and runs `jest-axe` against each. (Real app routes have their own, separate checker — see `test/A11Y-TESTING.md`.)                                                                                                                                                                                         |
 
 All accessibility metadata lives in a dedicated `src/a11y/` directory in each package/app — not
 co-located with the component it describes — matching this repo's existing convention of keeping

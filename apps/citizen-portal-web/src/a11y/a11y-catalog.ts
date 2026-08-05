@@ -13,10 +13,17 @@ const catalog: ComponentA11yMetadata[] = [
   ...appLocalCatalog,
 ];
 
+/** Lenient lookup — `undefined` for a component with no sidecar yet, rather than throwing.
+ *  Used where the caller can't know in advance whether every name it passes is documented
+ *  (e.g. aggregating known exceptions across all the primitives a real page renders). */
+export function findA11yMetadata(component: string): ComponentA11yMetadata | undefined {
+  return catalog.find((entry) => entry.component === component);
+}
+
 /** Looks up a documented component's accessibility metadata. Throws on a missing/typo'd
  *  `component` field so a /dev page never silently renders a blank Accessibility section. */
 export function getA11yMetadata(component: string): ComponentA11yMetadata {
-  const metadata = catalog.find((entry) => entry.component === component);
+  const metadata = findA11yMetadata(component);
   if (!metadata) {
     throw new Error(
       `No accessibility metadata found for component "${component}" — check the .a11y.ts sidecar's "component" field and that packages/ui's catalog was regenerated (npm run gen:a11y-catalog -w @repo/ui).`,

@@ -17,7 +17,7 @@ export function A11yRulesSection({ metadata }: { metadata: ComponentA11yMetadata
       {(metadata.wcagCriteria.length > 0 || metadata.ariaPattern) && (
         <div className="flex flex-wrap items-center gap-2">
           {metadata.wcagCriteria.map((criterion) => (
-            <Badge key={criterion.id} color="grey">
+            <Badge key={criterion.id} color="bc-blue">
               WCAG {criterion.id} {criterion.name} ({criterion.level})
             </Badge>
           ))}
@@ -30,19 +30,24 @@ export function A11yRulesSection({ metadata }: { metadata: ComponentA11yMetadata
       )}
 
       {(metadata.rules.length > 0 || metadata.notes.length > 0) && (
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+        <div className="rounded-md border border-border divide-y divide-border text-sm">
           {metadata.rules.map((rule) => (
-            <li key={rule.id}>
-              <Badge color={SEVERITY_COLOR[rule.severity]} className="mr-1 align-middle">
+            <div key={rule.id} className="grid grid-cols-[110px_1fr] gap-3 p-3">
+              <Badge color={SEVERITY_COLOR[rule.severity]} className="h-fit">
                 {rule.severity}
               </Badge>
-              {rule.description}
-            </li>
+              <p className="text-muted-foreground">{rule.description}</p>
+            </div>
           ))}
           {metadata.notes.map((note) => (
-            <li key={note}>{note}</li>
+            <div key={note} className="grid grid-cols-[110px_1fr] gap-3 p-3">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Note
+              </span>
+              <p className="text-muted-foreground">{note}</p>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {metadata.knownExceptions.length > 0 && (
