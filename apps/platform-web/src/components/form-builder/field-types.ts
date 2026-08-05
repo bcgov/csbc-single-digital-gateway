@@ -14,7 +14,6 @@ import {
   Pilcrow,
   SlidersHorizontal,
   TextCursorInput,
-  ToggleRight,
   Type,
   WrapText,
   type LucideIcon,
@@ -28,14 +27,13 @@ import {
 export type FieldTypeId =
   | 'text'
   | 'number'
-  | 'checkbox'
+  | 'boolean'
   | 'select'
   | 'date'
   | 'multiline'
   | 'radio'
   | 'multiselect'
   | 'slider'
-  | 'toggle'
   | 'oneof'
   | 'address'
   | 'richtext'
@@ -78,12 +76,13 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     icon: Hash,
   },
   {
-    id: 'checkbox',
-    label: 'Checkbox',
-    description: 'A single yes / no tick box.',
+    id: 'boolean',
+    label: 'Boolean',
+    description: 'A single yes/no value.',
     group: 'Core',
     kind: 'control',
     icon: CheckSquare,
+    keywords: ['checkbox', 'toggle', 'switch', 'yes/no'],
   },
   {
     id: 'select',
@@ -135,14 +134,6 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     group: 'Advanced',
     kind: 'control',
     icon: SlidersHorizontal,
-  },
-  {
-    id: 'toggle',
-    label: 'Toggle',
-    description: 'An on / off switch.',
-    group: 'Advanced',
-    kind: 'control',
-    icon: ToggleRight,
   },
   {
     id: 'oneof',

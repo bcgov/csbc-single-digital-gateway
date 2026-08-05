@@ -198,6 +198,44 @@ function NumberSettings({
   );
 }
 
+const RENDER_AS: { value: 'checkbox' | 'toggle'; label: string }[] = [
+  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'toggle', label: 'Toggle' },
+];
+
+/** Boolean-field settings (feature 156): render as a tick box or an on/off toggle (Switch). */
+function BooleanSettings({
+  node,
+  onChange,
+}: {
+  node: ControlNode;
+  onChange: (patch: Partial<ControlNode>) => void;
+}) {
+  const activeType = node.renderAs ?? 'checkbox';
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>Display as</Label>
+      <div className="flex gap-2">
+        {RENDER_AS.map((option) => {
+          const active = activeType === option.value;
+          return (
+            <Button
+              key={option.value}
+              type="button"
+              size="sm"
+              variant={active ? 'default' : 'outline'}
+              aria-pressed={active}
+              onClick={() => onChange({ renderAs: option.value })}
+            >
+              {option.label}
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ControlInspector({
   node,
   duplicateKey,
@@ -244,6 +282,7 @@ function ControlInspector({
           onCheckedChange={(checked) => onChange({ required: checked })}
         />
       </div>
+      {node.fieldType === 'boolean' ? <BooleanSettings node={node} onChange={onChange} /> : null}
       {ENUM_FIELD_TYPES.has(node.fieldType) ? (
         <EnumOptionsEditor node={node} onChange={onChange} />
       ) : null}

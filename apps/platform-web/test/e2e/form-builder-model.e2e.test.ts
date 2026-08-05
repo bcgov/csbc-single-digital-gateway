@@ -129,7 +129,7 @@ describe('Form Builder Model Integration Test Suite', () => {
         fields: [
           { ...createField('text'), key: 'name', label: 'Name', required: true },
           { ...createField('number'), key: 'age', label: 'Age', required: false },
-          { ...createField('checkbox'), key: 'agree', label: 'Agree', required: true },
+          { ...createField('boolean'), key: 'agree', label: 'Agree', required: true },
         ],
       };
       expect(parseModel(serializeModel(model))).toEqual(model);
@@ -151,12 +151,14 @@ describe('Form Builder Model Integration Test Suite', () => {
   describe('FIELD_TYPES', () => {
     it('includes core, advanced, rich-text and layout entries', () => {
       const ids = FIELD_TYPES.map((t) => t.id);
-      for (const id of ['text', 'number', 'checkbox', 'select', 'date', 'multiline']) {
+      for (const id of ['text', 'number', 'boolean', 'select', 'date', 'multiline']) {
         expect(ids).toContain(id);
       }
-      for (const id of ['radio', 'multiselect', 'slider', 'toggle', 'oneof']) {
+      for (const id of ['radio', 'multiselect', 'slider', 'oneof']) {
         expect(ids).toContain(id);
       }
+      // Feature 156: the standalone Toggle field is gone — folded into Checkbox's "Display as" option.
+      expect(ids).not.toContain('toggle');
       expect(ids).toContain('richtext');
       for (const id of ['group', 'horizontal']) {
         expect(ids).toContain(id);

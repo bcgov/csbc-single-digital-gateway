@@ -278,26 +278,29 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[0] as any).fieldType).toBe('text');
   });
 
-  it('round-trips checkbox, toggle, date, multiline and richtext control nodes', () => {
+  it('round-trips boolean (as checkbox and as toggle), date, multiline and richtext control nodes', () => {
     const original: FormModel = {
       title: '',
       description: '',
       fields: [
         {
           kind: 'control',
-          fieldType: 'checkbox',
+          fieldType: 'boolean',
           key: 'agree_terms',
           label: 'I agree',
           required: true,
           options: {},
+          renderAs: 'checkbox',
         },
         {
+          // Feature 156: a boolean displayed as a toggle — emits `options.toggle` for the Switch renderer.
           kind: 'control',
-          fieldType: 'toggle',
+          fieldType: 'boolean',
           key: 'enable_notifications',
           label: 'Notifications',
           required: false,
           options: {},
+          renderAs: 'toggle',
         },
         {
           kind: 'control',
@@ -602,7 +605,9 @@ describe('Model Codec Component Test Suite', () => {
 
     expect((parsed.fields[0] as any).fieldType).toBe('number');
     expect((parsed.fields[0] as any).label).toBe('');
-    expect((parsed.fields[1] as any).fieldType).toBe('checkbox');
+    expect((parsed.fields[1] as any).fieldType).toBe('boolean');
+    // Feature 156: a boolean without `options.toggle` parses back with the checkbox display affordance.
+    expect((parsed.fields[1] as any).renderAs).toBe('checkbox');
     expect((parsed.fields[2] as any).enumOptions).toEqual([
       { value: '', label: 'Only Title' },
       { value: 'only_const', label: 'only_const' },

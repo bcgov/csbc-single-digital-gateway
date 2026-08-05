@@ -22,6 +22,12 @@ export interface ControlNode {
   options: Record<string, unknown>;
   description?: string;
   enumOptions?: EnumOption[];
+  /**
+   * Boolean field only (feature 156): on-screen affordance. `'toggle'` serializes
+   * `uischema.options.toggle = true` (→ the `@repo/react` Switch renderer); `'checkbox'` (default)
+   * emits no flag (→ the Checkbox renderer). Same boolean data either way — presentation only.
+   */
+  renderAs?: 'checkbox' | 'toggle';
   /** Number field only (feature 155): integer vs decimal → `schema.type` `integer` | `number`. */
   numberType?: 'integer' | 'decimal';
   /**
@@ -161,6 +167,10 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     node.enumOptions = [
       { value: 'option_1', label: fieldType === 'oneof' ? 'Option 1' : 'option_1' },
     ];
+  }
+  if (fieldType === 'boolean') {
+    // Feature 156: a fresh boolean field renders as a tick box; the inspector can switch it to a toggle.
+    node.renderAs = 'checkbox';
   }
   if (fieldType === 'number') {
     // Default: decimal, floored at 0, 2 decimal places (feature 155). Author can switch type, clear

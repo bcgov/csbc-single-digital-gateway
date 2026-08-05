@@ -41,8 +41,7 @@ function propertySchema(node: ControlNode): JsonObject {
         default: node.min ?? 0,
       });
       break;
-    case 'checkbox':
-    case 'toggle':
+    case 'boolean':
       Object.assign(base, { type: 'boolean' });
       break;
     case 'date':
@@ -118,7 +117,9 @@ function controlOptions(node: ControlNode): JsonObject {
   if (node.fieldType === 'multiline') {
     options.multi = true;
   }
-  if (node.fieldType === 'toggle') {
+  if (node.fieldType === 'boolean' && node.renderAs === 'toggle') {
+    // Feature 156: a boolean field authored to display as a toggle emits the same `options.toggle` flag
+    // the old standalone Toggle field did → the `@repo/react` Switch renderer. `'checkbox'` emits nothing.
     options.toggle = true;
   }
   if (node.fieldType === 'radio') {
@@ -240,7 +241,8 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
     return 'multiselect';
   }
   if (prop.type === 'boolean') {
-    return options.toggle === true ? 'toggle' : 'checkbox';
+    // Feature 156: a boolean is always the Boolean field; `options.toggle` becomes its `renderAs`.
+    return 'boolean';
   }
   if (Array.isArray(prop.oneOf)) {
     return 'oneof';
@@ -321,6 +323,11 @@ function parseControl(
   }
   if (ENUM_FIELD_TYPES.has(fieldType)) {
     node.enumOptions = enumOptionsFromProp(prop);
+  }
+  if (fieldType === 'boolean') {
+    // Feature 156: recover the boolean field's display affordance from the `toggle` option flag
+    // (already stripped from `userOptions` above), so it round-trips as `renderAs`.
+    node.renderAs = rawOptions.toggle === true ? 'toggle' : 'checkbox';
   }
   if (fieldType === 'number') {
     // Feature 155: recover the authored type + bounds. `numberType` always present (defaults decimal);

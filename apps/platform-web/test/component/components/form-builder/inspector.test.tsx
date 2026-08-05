@@ -180,6 +180,66 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.getByText('Another field already uses this key.')).toBeInTheDocument();
   });
 
+  it('renders the boolean field "Display as" control and switches it to a toggle (feature 156)', async () => {
+    const user = userEvent.setup();
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'boolean',
+      key: 'agree',
+      label: 'I agree',
+      required: false,
+      options: {},
+      renderAs: 'checkbox',
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Display as')).toBeInTheDocument();
+    const checkboxBtn = screen.getByRole('button', { name: 'Checkbox' });
+    const toggleBtn = screen.getByRole('button', { name: 'Toggle' });
+    expect(checkboxBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(toggleBtn).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(toggleBtn);
+    expect(handleChangeControl).toHaveBeenCalledWith({ renderAs: 'toggle' });
+  });
+
+  it('does not render the "Display as" control for a non-boolean field (feature 156)', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'name',
+      label: 'Name',
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Display as')).not.toBeInTheDocument();
+  });
+
   it('renders options editor for enum fields and edits value-only option properties', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
