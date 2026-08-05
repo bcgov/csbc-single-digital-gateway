@@ -83,6 +83,14 @@ COPY --from=builder --chown=node:0 /app/packages/database/dist ./packages/databa
 COPY --from=builder --chown=node:0 /app/apps/citizen-portal-api/package.json ./apps/citizen-portal-api/package.json
 COPY --from=builder --chown=node:0 /app/apps/citizen-portal-api/dist ./apps/citizen-portal-api/dist
 
+# The app's own NESTED production deps. A prod dependency installs nested under the app (instead of
+# the hoisted root store) when the root slot is held by a different major — here dev tooling pins
+# ajv-formats@2 at root, so the app's prod ajv-formats@3 lands in apps/citizen-portal-api/node_modules.
+# The runner ships only the root node_modules, so without this the app boots and dies with
+# "Cannot find module 'ajv-formats'". (ajv itself stays hoisted at root; the nested ajv-formats
+# resolves it up the tree.) See .mdd/docs/73-citizen-portal-api-dockerfile.md.
+COPY --from=builder --chown=node:0 /app/apps/citizen-portal-api/node_modules ./apps/citizen-portal-api/node_modules
+
 # OpenShift/K8s hardening: the `restricted-v2` SCC runs the container as an arbitrary
 # assigned UID with GID 0. The COPYs above group-own everything by root (`--chown=…:0`)
 # and npm's default perms already grant the group read+traverse, so any assigned UID can
