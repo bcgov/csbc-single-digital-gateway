@@ -333,6 +333,145 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenCalledWith({ step: 5 });
   });
 
+  it('renders number type, min and max settings for number field type', async () => {
+    const user = userEvent.setup();
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'number',
+      key: 'amount',
+      label: 'Amount',
+      required: false,
+      options: {},
+      numberType: 'decimal',
+      min: 0,
+      max: 100,
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    const minInput = screen.getByLabelText('Min');
+    const maxInput = screen.getByLabelText('Max');
+    expect(minInput).toHaveValue(0);
+    expect(maxInput).toHaveValue(100);
+
+    // Decimal is active; switching to Integer patches numberType.
+    const decimalButton = screen.getByRole('button', { name: 'Decimal' });
+    const integerButton = screen.getByRole('button', { name: 'Integer' });
+    expect(decimalButton).toHaveAttribute('aria-pressed', 'true');
+    expect(integerButton).toHaveAttribute('aria-pressed', 'false');
+    await user.click(integerButton);
+    expect(handleChangeControl).toHaveBeenCalledWith({ numberType: 'integer' });
+
+    // Edit Min / Max.
+    fireEvent.change(minInput, { target: { value: '5' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ min: 5 });
+    fireEvent.change(maxInput, { target: { value: '50' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ max: 50 });
+
+    // Clearing an input removes the bound (undefined, not NaN).
+    fireEvent.change(maxInput, { target: { value: '' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ max: undefined });
+  });
+
+  it('shows an error when the number field max is below its min', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'number',
+      key: 'amount',
+      label: 'Amount',
+      required: false,
+      options: {},
+      numberType: 'decimal',
+      min: 10,
+      max: 5,
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/max.*must be.*min|maximum must be/i)).toBeInTheDocument();
+  });
+
+  it('shows a decimal-places control for a decimal number and edits it', () => {
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'number',
+      key: 'price',
+      label: 'Price',
+      required: false,
+      options: {},
+      numberType: 'decimal',
+      decimalPlaces: 2,
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    const decimals = screen.getByLabelText('Decimal places');
+    expect(decimals).toHaveValue(2);
+    fireEvent.change(decimals, { target: { value: '4' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: 4 });
+    // Clearing removes the limit (unbounded precision).
+    fireEvent.change(decimals, { target: { value: '' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: undefined });
+  });
+
+  it('hides the decimal-places control for an integer number', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'number',
+      key: 'count',
+      label: 'Count',
+      required: false,
+      options: {},
+      numberType: 'integer',
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByLabelText('Decimal places')).not.toBeInTheDocument();
+  });
+
   it('defaults empty values in Container and Control inspectors when properties are omitted', () => {
     const nodeContainer: ContainerNode = {
       kind: 'container',

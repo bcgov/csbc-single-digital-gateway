@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import Ajv from 'ajv';
-import { validateSubmission } from '../../../../../src/modules/applications/util/validate';
+import {
+  collectDecimalConstraints,
+  validateDecimals,
+  validateSubmission,
+} from '../../../../../src/modules/applications/util/validate';
 
 const basic = {
   schema: {
@@ -230,6 +234,72 @@ describe('validate utils', () => {
       });
 
       compileSpy.mockRestore();
+    });
+  });
+
+  describe('decimal-places constraints (feature 155)', () => {
+    const basicForm = {
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [
+          { type: 'Control', scope: '#/properties/price', options: { decimals: 2 } },
+          { type: 'Control', scope: '#/properties/note' },
+          {
+            type: 'Group',
+            elements: [{ type: 'Control', scope: '#/properties/rate', options: { decimals: 3 } }],
+          },
+        ],
+      },
+    };
+
+    const multiStageForm = {
+      stages: [
+        {
+          pages: [
+            {
+              uischema: {
+                type: 'VerticalLayout',
+                elements: [
+                  { type: 'Control', scope: '#/properties/amount', options: { decimals: 1 } },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    it('collects decimal constraints from a basic form (including nested)', () => {
+      const constraints = collectDecimalConstraints('basic-form', basicForm);
+      expect(constraints).toEqual(
+        expect.arrayContaining([
+          { key: 'price', maxDecimals: 2 },
+          { key: 'rate', maxDecimals: 3 },
+        ]),
+      );
+      expect(constraints).toHaveLength(2);
+    });
+
+    it('collects decimal constraints across multi-stage pages', () => {
+      expect(collectDecimalConstraints('multi-stage-form', multiStageForm)).toEqual([
+        { key: 'amount', maxDecimals: 1 },
+      ]);
+    });
+
+    it('flags a value with too many decimal places', () => {
+      const errors = validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 1.234 });
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toMatch(/price/);
+    });
+
+    it('accepts a value within the decimal limit', () => {
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 1.2 })).toEqual([]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 5 })).toEqual([]);
+    });
+
+    it('ignores absent or non-numeric values', () => {
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], {})).toEqual([]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 'x' })).toEqual([]);
     });
   });
 });

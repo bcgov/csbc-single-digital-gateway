@@ -22,8 +22,18 @@ export interface ControlNode {
   options: Record<string, unknown>;
   description?: string;
   enumOptions?: EnumOption[];
-  min?: number;
-  max?: number;
+  /** Number field only (feature 155): integer vs decimal → `schema.type` `integer` | `number`. */
+  numberType?: 'integer' | 'decimal';
+  /**
+   * Decimal number only (feature 155): max digits after the decimal point (default 2). Serialized as
+   * `uischema.options.decimals`; enforced client-side (renderer) and server-side (submit). Explicit
+   * `undefined` clears it (unbounded precision) — the inspector can reset it.
+   */
+  decimalPlaces?: number | undefined;
+  /** Number/slider bound. Explicit `undefined` clears it (unbounded) — number field inspector. */
+  min?: number | undefined;
+  /** Number/slider bound. Explicit `undefined` clears it (unbounded) — number field inspector. */
+  max?: number | undefined;
   step?: number;
   /** Address field only (feature 153): the author-set default country name, pre-filled for citizens. */
   defaultCountry?: string;
@@ -151,6 +161,13 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     node.enumOptions = [
       { value: 'option_1', label: fieldType === 'oneof' ? 'Option 1' : 'option_1' },
     ];
+  }
+  if (fieldType === 'number') {
+    // Default: decimal, floored at 0, 2 decimal places (feature 155). Author can switch type, clear
+    // Min, or change the decimal-places limit in the inspector.
+    node.numberType = 'decimal';
+    node.min = 0;
+    node.decimalPlaces = 2;
   }
   if (fieldType === 'slider') {
     node.min = 0;

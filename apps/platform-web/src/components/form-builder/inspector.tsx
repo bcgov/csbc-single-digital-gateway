@@ -104,6 +104,100 @@ function EnumOptionsEditor({
   );
 }
 
+const NUMBER_TYPES: { value: 'decimal' | 'integer'; label: string }[] = [
+  { value: 'decimal', label: 'Decimal' },
+  { value: 'integer', label: 'Integer' },
+];
+
+/** Parse a bound input: empty or unparseable → `undefined` (clears the bound / unbounded). */
+function parseBound(raw: string): number | undefined {
+  if (raw === '') {
+    return undefined;
+  }
+  const value = Number(raw);
+  return Number.isNaN(value) ? undefined : value;
+}
+
+/** Parse a decimal-places input → a non-negative integer, or `undefined` (unbounded precision). */
+function parseDecimals(raw: string): number | undefined {
+  if (raw === '') {
+    return undefined;
+  }
+  const value = Math.floor(Number(raw));
+  return Number.isNaN(value) || value < 0 ? undefined : value;
+}
+
+/** Number-field settings (feature 155): integer/decimal type + optional min/max bounds. */
+function NumberSettings({
+  node,
+  onChange,
+}: {
+  node: ControlNode;
+  onChange: (patch: Partial<ControlNode>) => void;
+}) {
+  const activeType = node.numberType ?? 'decimal';
+  const boundsInverted =
+    typeof node.min === 'number' && typeof node.max === 'number' && node.max < node.min;
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label>Number type</Label>
+        <div className="flex gap-2">
+          {NUMBER_TYPES.map((option) => {
+            const active = activeType === option.value;
+            return (
+              <Button
+                key={option.value}
+                type="button"
+                size="sm"
+                variant={active ? 'default' : 'outline'}
+                aria-pressed={active}
+                onClick={() => onChange({ numberType: option.value })}
+              >
+                {option.label}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+      {activeType === 'decimal' ? (
+        <Row label="Decimal places" htmlFor="insp-num-decimals">
+          <Input
+            id="insp-num-decimals"
+            type="number"
+            min={0}
+            step={1}
+            value={node.decimalPlaces ?? ''}
+            onChange={(e) => onChange({ decimalPlaces: parseDecimals(e.target.value) })}
+          />
+        </Row>
+      ) : null}
+      <div className="grid grid-cols-2 gap-2">
+        <Row label="Min" htmlFor="insp-num-min">
+          <Input
+            id="insp-num-min"
+            type="number"
+            value={node.min ?? ''}
+            onChange={(e) => onChange({ min: parseBound(e.target.value) })}
+          />
+        </Row>
+        <Row label="Max" htmlFor="insp-num-max">
+          <Input
+            id="insp-num-max"
+            type="number"
+            value={node.max ?? ''}
+            aria-invalid={boundsInverted || undefined}
+            onChange={(e) => onChange({ max: parseBound(e.target.value) })}
+          />
+        </Row>
+      </div>
+      {boundsInverted ? (
+        <p className="text-xs text-destructive">Max must be greater than or equal to Min.</p>
+      ) : null}
+    </div>
+  );
+}
+
 function ControlInspector({
   node,
   duplicateKey,
@@ -156,6 +250,7 @@ function ControlInspector({
       {node.fieldType === 'address' ? (
         <AddressDefaultsEditor node={node} onChange={onChange} />
       ) : null}
+      {node.fieldType === 'number' ? <NumberSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'slider' ? (
         <div className="grid grid-cols-3 gap-2">
           <Row label="Min" htmlFor="insp-min">

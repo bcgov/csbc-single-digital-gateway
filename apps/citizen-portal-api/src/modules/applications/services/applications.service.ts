@@ -32,7 +32,9 @@ import { enqueueNotification } from '../../../notifications/enqueue';
 import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
 import {
   collectAddressPostals,
+  collectDecimalConstraints,
   validateAddressPostals,
+  validateDecimals,
   validateSubmission,
 } from '../util/validate';
 import { ConsentService } from './consent.service';
@@ -301,6 +303,18 @@ export class ApplicationsService {
       throw new UnprocessableEntityException({
         message: 'The application has validation errors',
         errors: result.errors,
+      });
+    }
+    // Number fields (feature 155): enforce each decimal field's decimal-places limit (options.decimals).
+    // Checked here rather than via schema `multipleOf`, which is floating-point fragile.
+    const decimalErrors = validateDecimals(
+      collectDecimalConstraints(form.kind, form.structure),
+      data,
+    );
+    if (decimalErrors.length > 0) {
+      throw new UnprocessableEntityException({
+        message: 'The application has validation errors',
+        errors: decimalErrors,
       });
     }
     // Address fields (feature 153): postal codes are validated against the entered country's regex

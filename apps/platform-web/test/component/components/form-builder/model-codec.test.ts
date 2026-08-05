@@ -23,6 +23,8 @@ describe('Model Codec Component Test Suite', () => {
           label: 'Age',
           required: false,
           options: {},
+          // Feature 155: every parsed number carries a numberType (defaults decimal).
+          numberType: 'decimal',
         },
       ],
     };
@@ -406,6 +408,8 @@ describe('Model Codec Component Test Suite', () => {
           {
             type: 'Control',
             scope: '#/properties/slider_default',
+            // Feature 155: a slider is identified by options.slider, not by having min+max.
+            options: { slider: true },
           },
           {
             type: 'Control',
@@ -676,6 +680,8 @@ describe('Model Codec Component Test Suite', () => {
           {
             type: 'Control',
             scope: '#/properties/slider_nulls',
+            // Feature 155: mark it a slider so null min/max fall back to the slider defaults (0/100).
+            options: { slider: true },
           },
           {
             type: 'Control',
@@ -795,5 +801,229 @@ describe('Model Codec Component Test Suite', () => {
 
     const parsedOneOf = parseModel(defWithNullConstTitle as any);
     expect((parsedOneOf.fields[0] as any).enumOptions).toEqual([{ value: '', label: '' }]);
+  });
+
+  // ── Feature 155: number type (integer/decimal) + min/max bounds ────────────────────────────────
+
+  it('serializes a decimal number field with min and max (no options.slider)', () => {
+    const model: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'number',
+          key: 'amount',
+          label: 'Amount',
+          required: false,
+          options: {},
+          numberType: 'decimal',
+          min: 0,
+          max: 100,
+        },
+      ],
+    };
+
+    const def = serializeModel(model);
+    const prop = (def.schema.properties as any).amount;
+    expect(prop.type).toBe('number');
+    expect(prop.minimum).toBe(0);
+    expect(prop.maximum).toBe(100);
+    // A plain number must NOT carry the slider marker, or it round-trips as a slider.
+    expect((def.uischema as any).elements[0].options).toBeUndefined();
+  });
+
+  it('serializes an integer number field as type integer', () => {
+    const model: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'number',
+          key: 'quantity',
+          label: 'Quantity',
+          required: false,
+          options: {},
+          numberType: 'integer',
+          min: 1,
+        },
+      ],
+    };
+
+    const def = serializeModel(model);
+    const prop = (def.schema.properties as any).quantity;
+    expect(prop.type).toBe('integer');
+    expect(prop.minimum).toBe(1);
+    expect(prop.maximum).toBeUndefined();
+  });
+
+  it('round-trips a number field with numberType and min/max', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'number',
+          key: 'score',
+          label: 'Score',
+          required: false,
+          options: {},
+          numberType: 'integer',
+          min: 0,
+          max: 10,
+        },
+      ],
+    };
+
+    const parsed = parseModel(serializeModel(original));
+    expect(parsed).toEqual(original);
+  });
+
+  it('parses a numeric control as number (not slider) when options.slider is absent, even with min+max', () => {
+    const def = {
+      schema: {
+        type: 'object',
+        properties: {
+          legacy: { type: 'number', minimum: 5, maximum: 25 },
+        },
+      },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'Control', scope: '#/properties/legacy' }],
+      },
+    };
+
+    const parsed = parseModel(def as any);
+    const node = parsed.fields[0] as any;
+    expect(node.fieldType).toBe('number');
+    expect(node.numberType).toBe('decimal');
+    expect(node.min).toBe(5);
+    expect(node.max).toBe(25);
+  });
+
+  it('serializes a slider with options.slider = true and parses it back as a slider', () => {
+    const model: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'slider',
+          key: 'level',
+          label: 'Level',
+          required: false,
+          options: {},
+          min: 0,
+          max: 100,
+          step: 5,
+        },
+      ],
+    };
+
+    const def = serializeModel(model);
+    expect((def.uischema as any).elements[0].options.slider).toBe(true);
+
+    const parsed = parseModel(def);
+    expect((parsed.fields[0] as any).fieldType).toBe('slider');
+    // The slider marker is a synthesized flag — it must not leak into the node's user options.
+    expect((parsed.fields[0] as any).options).toEqual({});
+  });
+
+  it('defaults numberType to decimal when the schema type is number without a slider marker', () => {
+    const def = {
+      schema: { type: 'object', properties: { plain: { type: 'number' } } },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'Control', scope: '#/properties/plain' }],
+      },
+    };
+    const parsed = parseModel(def as any);
+    const node = parsed.fields[0] as any;
+    expect(node.fieldType).toBe('number');
+    expect(node.numberType).toBe('decimal');
+    expect(node.min).toBeUndefined();
+    expect(node.max).toBeUndefined();
+  });
+
+  // ── Feature 155: decimal-places limit ──────────────────────────────────────────────────────────
+
+  it('serializes options.decimals for a decimal number field', () => {
+    const model: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'number',
+          key: 'price',
+          label: 'Price',
+          required: false,
+          options: {},
+          numberType: 'decimal',
+          decimalPlaces: 2,
+        },
+      ],
+    };
+    const def = serializeModel(model);
+    expect((def.uischema as any).elements[0].options.decimals).toBe(2);
+    // Decimals is an entry constraint, not a schema keyword — schema stays a plain number.
+    expect((def.schema.properties as any).price.multipleOf).toBeUndefined();
+  });
+
+  it('does not serialize options.decimals for an integer number field', () => {
+    const model: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'number',
+          key: 'count',
+          label: 'Count',
+          required: false,
+          options: {},
+          numberType: 'integer',
+          decimalPlaces: 2,
+        },
+      ],
+    };
+    const def = serializeModel(model);
+    expect((def.uischema as any).elements[0].options).toBeUndefined();
+  });
+
+  it('round-trips a decimal number field with decimalPlaces', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'number',
+          key: 'amount',
+          label: 'Amount',
+          required: false,
+          options: {},
+          numberType: 'decimal',
+          min: 0,
+          decimalPlaces: 3,
+        },
+      ],
+    };
+    expect(parseModel(serializeModel(original))).toEqual(original);
+  });
+
+  it('leaves decimalPlaces unset for a decimal number with no decimals option (unbounded precision)', () => {
+    const def = {
+      schema: { type: 'object', properties: { x: { type: 'number' } } },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'Control', scope: '#/properties/x' }],
+      },
+    };
+    const node = parseModel(def as any).fields[0] as any;
+    expect(node.numberType).toBe('decimal');
+    expect(node.decimalPlaces).toBeUndefined();
   });
 });

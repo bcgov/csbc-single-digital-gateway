@@ -81,4 +81,77 @@ describe('@repo/react/jsonforms — JsonForms wrapper', () => {
     expect(screen.getByText('custom-override')).toBeInTheDocument();
     expect(screen.queryByLabelText(/full name/i)).not.toBeInTheDocument();
   });
+
+  it('renders an integer number control with step=1 and min/max attributes (feature 155)', () => {
+    const numberSchema: JsonSchema = {
+      type: 'object',
+      properties: {
+        quantity: { type: 'integer', title: 'Quantity', minimum: 1, maximum: 10 },
+      },
+    };
+    render(<JsonForms schema={numberSchema} data={{}} onChange={() => {}} />);
+    const input = screen.getByLabelText(/quantity/i);
+    expect(input).toHaveAttribute('type', 'number');
+    expect(input).toHaveAttribute('step', '1');
+    expect(input).toHaveAttribute('min', '1');
+    expect(input).toHaveAttribute('max', '10');
+  });
+
+  it('renders a decimal number control with step=any and no bounds when unset (feature 155)', () => {
+    const numberSchema: JsonSchema = {
+      type: 'object',
+      properties: { amount: { type: 'number', title: 'Amount' } },
+    };
+    render(<JsonForms schema={numberSchema} data={{}} onChange={() => {}} />);
+    const input = screen.getByLabelText(/amount/i);
+    expect(input).toHaveAttribute('step', 'any');
+    expect(input).not.toHaveAttribute('min');
+    expect(input).not.toHaveAttribute('max');
+  });
+
+  it('sets step from options.decimals and flags over-precision on a decimal number (feature 155)', () => {
+    const numberSchema: JsonSchema = {
+      type: 'object',
+      properties: { price: { type: 'number', title: 'Price' } },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [{ type: 'Control', scope: '#/properties/price', options: { decimals: 2 } }],
+    } as const;
+
+    // A value with 3 decimals exceeds the 2-place limit → client error + aria-invalid.
+    render(
+      <JsonForms
+        schema={numberSchema}
+        uischema={uischema as unknown as import('@jsonforms/core').UISchemaElement}
+        data={{ price: 1.234 }}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByLabelText(/price/i);
+    expect(input).toHaveAttribute('step', '0.01');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/at most 2 decimal/i)).toBeInTheDocument();
+  });
+
+  it('does not flag a decimal value within the options.decimals limit (feature 155)', () => {
+    const numberSchema: JsonSchema = {
+      type: 'object',
+      properties: { price: { type: 'number', title: 'Price' } },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [{ type: 'Control', scope: '#/properties/price', options: { decimals: 2 } }],
+    } as const;
+
+    render(
+      <JsonForms
+        schema={numberSchema}
+        uischema={uischema as unknown as import('@jsonforms/core').UISchemaElement}
+        data={{ price: 1.2 }}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/at most 2 decimal/i)).not.toBeInTheDocument();
+  });
 });
