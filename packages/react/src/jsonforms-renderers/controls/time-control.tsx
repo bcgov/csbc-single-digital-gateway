@@ -1,13 +1,16 @@
-import { isDateControl, rankWith } from '@jsonforms/core';
+import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import { DatePicker } from '@repo/ui/date-picker';
+import { TimePicker } from '@repo/ui/time-picker';
 import { ControlWrapper } from '../util/control-wrapper';
-import { parseISODate, toISODate } from './date-util';
 
-export const dateControlTester: RankedTester = rankWith(3, isDateControl);
+// Dispatched by `options.format: 'time'`; the data is a 24-hour `'HH:MM'` string (pattern-validated).
+export const timeControlTester: RankedTester = rankWith(
+  4,
+  and(uiTypeIs('Control'), optionIs('format', 'time')),
+);
 
-function DateControlComponent({
+function TimeControlComponent({
   id,
   data,
   handleChange,
@@ -22,8 +25,6 @@ function DateControlComponent({
   if (visible === false) {
     return null;
   }
-  const selected = parseISODate(data);
-
   return (
     <ControlWrapper
       id={id}
@@ -32,15 +33,15 @@ function DateControlComponent({
       {...(description ? { description } : {})}
       errors={errors}
     >
-      <DatePicker
+      <TimePicker
         id={id}
-        value={selected}
+        value={typeof data === 'string' ? data : undefined}
         disabled={enabled === false}
         invalid={Boolean(errors)}
-        onChange={(date) => handleChange(path, date ? toISODate(date) : undefined)}
+        onChange={(next) => handleChange(path, next)}
       />
     </ControlWrapper>
   );
 }
 
-export const DateControl = withJsonFormsControlProps(DateControlComponent);
+export const TimeControl = withJsonFormsControlProps(TimeControlComponent);

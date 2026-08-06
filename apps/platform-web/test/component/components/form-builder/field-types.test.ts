@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FIELD_TYPES,
   FIELD_TYPE_BY_ID,
-  ENUM_FIELD_TYPES,
+  CHOICE_FIELD_TYPES,
 } from '@/components/form-builder/field-types';
 
 describe('Field Types Component Test Suite', () => {
@@ -21,16 +21,15 @@ describe('Field Types Component Test Suite', () => {
     });
   });
 
-  it('defines enum fields set correctly', () => {
-    expect(ENUM_FIELD_TYPES).toBeInstanceOf(Set);
-    expect(ENUM_FIELD_TYPES.has('select')).toBe(true);
-    expect(ENUM_FIELD_TYPES.has('radio')).toBe(true);
-    expect(ENUM_FIELD_TYPES.has('multiselect')).toBe(true);
-    expect(ENUM_FIELD_TYPES.has('oneof')).toBe(true);
+  it('defines the choice fields set correctly', () => {
+    expect(CHOICE_FIELD_TYPES).toBeInstanceOf(Set);
+    expect(CHOICE_FIELD_TYPES.has('select')).toBe(true);
+    expect(CHOICE_FIELD_TYPES.has('radio')).toBe(true);
+    expect(CHOICE_FIELD_TYPES.has('checkboxes')).toBe(true);
 
-    // Some non-enum fields shouldn't be in the set
-    expect(ENUM_FIELD_TYPES.has('text')).toBe(false);
-    expect(ENUM_FIELD_TYPES.has('heading')).toBe(false);
+    // Non-choice fields shouldn't be in the set.
+    expect(CHOICE_FIELD_TYPES.has('text')).toBe(false);
+    expect(CHOICE_FIELD_TYPES.has('heading')).toBe(false);
   });
 
   it('classifies groups and layout containers correctly', () => {

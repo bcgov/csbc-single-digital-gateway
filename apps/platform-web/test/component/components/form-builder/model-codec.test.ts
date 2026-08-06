@@ -161,7 +161,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
-  it('round-trips enum selection control types (select, radio, oneof, multiselect)', () => {
+  it('round-trips the choice family (select single/multi, radio, checkbox group) — feature 156 Step 2', () => {
     const original: FormModel = {
       title: 'Selection Form',
       description: '',
@@ -173,10 +173,21 @@ describe('Model Codec Component Test Suite', () => {
           label: 'Dropdown',
           required: false,
           options: {},
+          multiple: false,
           enumOptions: [
-            { value: 'opt1', label: 'opt1' },
-            { value: 'opt2', label: 'opt2' },
+            { value: 'opt1', label: 'Option 1' },
+            { value: 'opt2', label: 'Option 2' },
           ],
+        },
+        {
+          kind: 'control',
+          fieldType: 'select',
+          key: 'multi_sel',
+          label: 'Multi dropdown',
+          required: true,
+          options: {},
+          multiple: true,
+          enumOptions: [{ value: 'a', label: 'A' }],
         },
         {
           kind: 'control',
@@ -185,38 +196,45 @@ describe('Model Codec Component Test Suite', () => {
           label: 'Radio Options',
           required: false,
           options: {},
-          enumOptions: [{ value: 'yes', label: 'yes' }],
+          enumOptions: [{ value: 'yes', label: 'Yes' }],
         },
         {
           kind: 'control',
-          fieldType: 'oneof',
-          key: 'oneof_field',
-          label: 'Labeled choices',
-          required: false,
-          options: {},
-          enumOptions: [{ value: 'v1', label: 'Label 1' }],
-        },
-        {
-          kind: 'control',
-          fieldType: 'multiselect',
+          fieldType: 'checkboxes',
           key: 'multi_field',
           label: 'Checkboxes list',
           required: false,
           options: {},
-          enumOptions: [{ value: 'm1', label: 'm1' }],
+          enumOptions: [{ value: 'm1', label: 'M1' }],
         },
       ],
     };
 
     const definition = serializeModel(original);
 
-    // Check enum mappings in properties schema
+    // Values live in the schema (for Ajv); labels + presentation live in the uischema options.
     const props = definition.schema.properties as any;
     expect(props.sel_field.enum).toEqual(['opt1', 'opt2']);
+    expect(props.multi_sel.type).toBe('array');
+    expect(props.multi_sel.items.enum).toEqual(['a']);
+    expect(props.multi_sel.minItems).toBe(1); // required multi → ≥1
     expect(props.rad_field.enum).toEqual(['yes']);
-    expect(props.oneof_field.oneOf).toEqual([{ const: 'v1', title: 'Label 1' }]);
     expect(props.multi_field.type).toBe('array');
     expect(props.multi_field.items.enum).toEqual(['m1']);
+
+    const els = (definition.uischema as any).elements;
+    expect(els[0].options).toMatchObject({
+      format: 'choice',
+      display: 'select',
+      multiple: false,
+      choices: [
+        { value: 'opt1', label: 'Option 1' },
+        { value: 'opt2', label: 'Option 2' },
+      ],
+    });
+    expect(els[1].options).toMatchObject({ display: 'select', multiple: true });
+    expect(els[2].options).toMatchObject({ format: 'choice', display: 'radio' });
+    expect(els[3].options).toMatchObject({ format: 'choice', display: 'checkboxes' });
 
     const parsed = parseModel(definition);
     expect(parsed).toEqual(original);
@@ -341,6 +359,86 @@ describe('Model Codec Component Test Suite', () => {
 
     const parsed = parseModel(definition);
     expect(parsed).toEqual(original);
+  });
+
+  it('round-trips a date range field (feature 157) — object start/end + options.format:daterange', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'daterange',
+          key: 'trip',
+          label: 'Trip dates',
+          required: true,
+          options: {},
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const prop = (definition.schema.properties as any).trip;
+    expect(prop.type).toBe('object');
+    expect(prop.properties.start).toEqual({ type: 'string', format: 'date' });
+    expect(prop.properties.end).toEqual({ type: 'string', format: 'date' });
+    expect(prop.required).toEqual(['start', 'end']); // required range → both endpoints
+    expect(definition.schema.required as string[]).toContain('trip'); // parent-level key presence
+    expect((definition.uischema as any).elements[0].options.format).toBe('daterange');
+
+    expect(parseModel(definition)).toEqual(original);
+  });
+
+  it('round-trips a time field (feature 157) — string pattern + options.format:time', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'time',
+          key: 'start_at',
+          label: 'Start time',
+          required: false,
+          options: {},
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const prop = (definition.schema.properties as any).start_at;
+    expect(prop.type).toBe('string');
+    expect(prop.pattern).toBe('^([01]\\d|2[0-3]):[0-5]\\d$');
+    expect(prop.format).toBeUndefined(); // NOT format:'time' (ajv-formats requires seconds)
+    expect((definition.uischema as any).elements[0].options.format).toBe('time');
+
+    expect(parseModel(definition)).toEqual(original);
+  });
+
+  it('round-trips a datetime field (feature 157) — string pattern + options.format:datetime', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'datetime',
+          key: 'when',
+          label: 'When',
+          required: false,
+          options: {},
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const prop = (definition.schema.properties as any).when;
+    expect(prop.type).toBe('string');
+    expect(prop.pattern).toBe('^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d$');
+    expect(prop.format).toBeUndefined(); // NOT format:'date-time' (ajv-formats requires an offset)
+    expect((definition.uischema as any).elements[0].options.format).toBe('datetime');
+
+    expect(parseModel(definition)).toEqual(original);
   });
 
   it('handles default values and fallbacks during serialization', () => {
@@ -553,7 +651,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed.fields[0]!.kind).toBe('control');
   });
 
-  it('covers parsing branches for integer, boolean without toggle, oneOf without const/title, missing schema/uischema fields, and HorizontalLayout', () => {
+  it('covers parsing branches for integer, boolean without toggle, a choice control, missing schema/uischema fields, and HorizontalLayout', () => {
     const customDef = {
       uischema: {
         type: 'VerticalLayout',
@@ -569,7 +667,8 @@ describe('Model Codec Component Test Suite', () => {
           },
           {
             type: 'Control',
-            scope: '#/properties/oneof_partial',
+            scope: '#/properties/choice_field',
+            options: { format: 'choice', display: 'radio', choices: [{ value: 'a', label: 'A' }] },
           },
           {
             type: 'HorizontalLayout',
@@ -594,9 +693,7 @@ describe('Model Codec Component Test Suite', () => {
         properties: {
           int_field: { type: 'integer' },
           bool_field: { type: 'boolean' },
-          oneof_partial: {
-            oneOf: [{ title: 'Only Title' }, { const: 'only_const' }],
-          },
+          choice_field: { type: 'string', enum: ['a'] },
         },
       },
     };
@@ -608,16 +705,14 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[1] as any).fieldType).toBe('boolean');
     // Feature 156: a boolean without `options.toggle` parses back with the checkbox display affordance.
     expect((parsed.fields[1] as any).renderAs).toBe('checkbox');
-    expect((parsed.fields[2] as any).enumOptions).toEqual([
-      { value: '', label: 'Only Title' },
-      { value: 'only_const', label: 'only_const' },
-    ]);
+    expect((parsed.fields[2] as any).fieldType).toBe('radio');
+    expect((parsed.fields[2] as any).enumOptions).toEqual([{ value: 'a', label: 'A' }]);
     expect(parsed.fields[3]!.kind).toBe('container');
     expect((parsed.fields[3] as any).layout).toBe('horizontal');
     expect((parsed.fields[3] as any).label).toBe('Horizontal Section');
   });
 
-  it('covers prop description, array enum fallback, and container without elements', () => {
+  it('covers prop description, choice controls with no authored options, and container without elements', () => {
     const customDef = {
       schema: {
         type: 'object',
@@ -626,13 +721,8 @@ describe('Model Codec Component Test Suite', () => {
             type: 'string',
             description: 'Helpful field description',
           },
-          array_no_enum: {
-            type: 'array',
-            items: {},
-          },
-          array_no_items: {
-            type: 'array',
-          },
+          empty_checkboxes: { type: 'array', items: { type: 'string', enum: [] } },
+          empty_select: { type: 'string', enum: [] },
         },
       },
       uischema: {
@@ -644,11 +734,13 @@ describe('Model Codec Component Test Suite', () => {
           },
           {
             type: 'Control',
-            scope: '#/properties/array_no_enum',
+            scope: '#/properties/empty_checkboxes',
+            options: { format: 'choice', display: 'checkboxes' },
           },
           {
             type: 'Control',
-            scope: '#/properties/array_no_items',
+            scope: '#/properties/empty_select',
+            options: { format: 'choice', display: 'select' },
           },
           {
             type: 'Group',
@@ -661,8 +753,12 @@ describe('Model Codec Component Test Suite', () => {
     const parsed = parseModel(customDef as any);
 
     expect((parsed.fields[0] as any).description).toBe('Helpful field description');
+    // Choice fields with no `options.choices` recover an empty list (never throw).
+    expect((parsed.fields[1] as any).fieldType).toBe('checkboxes');
     expect((parsed.fields[1] as any).enumOptions).toEqual([]);
+    expect((parsed.fields[2] as any).fieldType).toBe('select');
     expect((parsed.fields[2] as any).enumOptions).toEqual([]);
+    expect((parsed.fields[2] as any).multiple).toBe(false);
     expect((parsed.fields[3] as any).children).toEqual([]);
   });
 
@@ -715,7 +811,7 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed.fields).toEqual([]);
   });
 
-  it('covers propertySchema slider/oneof/enumOptions fallbacks, enumOptionsFromProp nullish const/title, and missing schema properties', () => {
+  it('covers propertySchema slider/choice enum fallbacks, malformed choices, and missing schema properties', () => {
     const modelWithNulls: FormModel = {
       title: '',
       description: '',
@@ -725,14 +821,6 @@ describe('Model Codec Component Test Suite', () => {
           fieldType: 'slider',
           key: 'slider_null_bounds',
           label: 'Slider Bounds',
-          required: false,
-          options: {},
-        },
-        {
-          kind: 'control',
-          fieldType: 'oneof',
-          key: 'oneof_no_enum',
-          label: 'OneOf No Enum',
           required: false,
           options: {},
         },
@@ -750,8 +838,9 @@ describe('Model Codec Component Test Suite', () => {
     const serialized = serializeModel(modelWithNulls);
     expect((serialized.schema.properties as any).slider_null_bounds.minimum).toBe(0);
     expect((serialized.schema.properties as any).slider_null_bounds.maximum).toBe(100);
-    expect((serialized.schema.properties as any).oneof_no_enum.oneOf).toEqual([]);
+    // A choice field with no authored options serializes an empty enum + empty options.choices.
     expect((serialized.schema.properties as any).select_no_enum.enum).toEqual([]);
+    expect((serialized.uischema as any).elements[1].options.choices).toEqual([]);
 
     const defWithMissingProps = {
       schema: {
@@ -777,14 +866,11 @@ describe('Model Codec Component Test Suite', () => {
       },
     };
 
-    const defWithNullConstTitle = {
+    const defWithMalformedChoices = {
       schema: {
         type: 'object',
         properties: {
-          oneof_null_const: {
-            type: 'string',
-            oneOf: [{}],
-          },
+          choice_bad: { type: 'string', enum: ['x'] },
         },
       },
       uischema: {
@@ -792,7 +878,12 @@ describe('Model Codec Component Test Suite', () => {
         elements: [
           {
             type: 'Control',
-            scope: '#/properties/oneof_null_const',
+            scope: '#/properties/choice_bad',
+            options: {
+              format: 'choice',
+              display: 'select',
+              choices: [null, 'str', { value: 'x' }, { value: 'y', label: '' }],
+            },
           },
         ],
       },
@@ -804,8 +895,12 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsedProps.fields[1] as any).children).toEqual([]);
     expect((parsedProps.fields[2] as any).key).toBe('missing_props_key');
 
-    const parsedOneOf = parseModel(defWithNullConstTitle as any);
-    expect((parsedOneOf.fields[0] as any).enumOptions).toEqual([{ value: '', label: '' }]);
+    // choicesFromOptions drops non-objects and falls back label→value (missing or empty label).
+    const parsedBad = parseModel(defWithMalformedChoices as any);
+    expect((parsedBad.fields[0] as any).enumOptions).toEqual([
+      { value: 'x', label: 'x' },
+      { value: 'y', label: 'y' },
+    ]);
   });
 
   // ── Feature 155: number type (integer/decimal) + min/max bounds ────────────────────────────────

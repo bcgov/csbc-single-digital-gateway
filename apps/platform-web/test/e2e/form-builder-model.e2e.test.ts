@@ -154,11 +154,14 @@ describe('Form Builder Model Integration Test Suite', () => {
       for (const id of ['text', 'number', 'boolean', 'select', 'date', 'multiline']) {
         expect(ids).toContain(id);
       }
-      for (const id of ['radio', 'multiselect', 'slider', 'oneof']) {
+      for (const id of ['radio', 'checkboxes', 'slider', 'daterange', 'time', 'datetime']) {
         expect(ids).toContain(id);
       }
-      // Feature 156: the standalone Toggle field is gone — folded into Checkbox's "Display as" option.
+      // Feature 156 Step 1: the standalone Toggle field folded into Boolean's "Display as" option.
       expect(ids).not.toContain('toggle');
+      // Feature 156 Step 2: Multi-select + One-of collapsed into Select (single/multi) + Checkbox group.
+      expect(ids).not.toContain('multiselect');
+      expect(ids).not.toContain('oneof');
       expect(ids).toContain('richtext');
       for (const id of ['group', 'horizontal']) {
         expect(ids).toContain(id);

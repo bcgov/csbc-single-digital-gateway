@@ -270,14 +270,15 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
-    it('creates oneof enum field with user-friendly label', () => {
-      const node = createField('oneof');
+    it('creates a checkbox-group field with a user-friendly labelled option', () => {
+      const node = createField('checkboxes');
       expect((node as any).enumOptions).toEqual([{ value: 'option_1', label: 'Option 1' }]);
     });
 
-    it('creates select enum field with raw value label', () => {
+    it('creates a select field with a labelled option, defaulting to single choice', () => {
       const node = createField('select');
-      expect((node as any).enumOptions).toEqual([{ value: 'option_1', label: 'option_1' }]);
+      expect((node as any).enumOptions).toEqual([{ value: 'option_1', label: 'Option 1' }]);
+      expect((node as any).multiple).toBe(false);
     });
 
     it('creates slider field with range settings', () => {

@@ -14,7 +14,7 @@ export default defineConfig({
   // The address geocoder search (feature 154) reaches react-select(-async-paginate) only through the
   // lazily code-split form route via @repo/ui source, so Vite's scanner may miss it — pre-bundle it
   // explicitly or the first form navigation 504s the dynamic import.
-  optimizeDeps: { include: ['react-select', 'react-select-async-paginate'] },
+  optimizeDeps: { include: ['react-select', 'react-select-async-paginate', 'use-mask-input'] },
   resolve: {
     // @repo/react + @repo/ui (source via the `development` export) and @jsonforms/react / Lexical
     // must all share ONE React instance, or hooks throw.

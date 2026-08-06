@@ -1,15 +1,17 @@
 import {
   Calendar,
+  CalendarClock,
+  CalendarRange,
   CheckSquare,
   ChevronDownSquare,
   CircleDot,
+  Clock,
   Columns2,
   FileText,
   Hash,
   Heading,
   Layers,
   ListChecks,
-  ListTodo,
   MapPin,
   Pilcrow,
   SlidersHorizontal,
@@ -30,11 +32,13 @@ export type FieldTypeId =
   | 'boolean'
   | 'select'
   | 'date'
+  | 'daterange'
+  | 'time'
+  | 'datetime'
   | 'multiline'
   | 'radio'
-  | 'multiselect'
+  | 'checkboxes'
   | 'slider'
-  | 'oneof'
   | 'address'
   | 'richtext'
   | 'heading'
@@ -87,11 +91,11 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'select',
     label: 'Select',
-    description: 'Pick one option from a dropdown.',
+    description: 'Pick from a dropdown — single or multiple.',
     group: 'Core',
     kind: 'control',
     icon: ChevronDownSquare,
-    keywords: ['dropdown', 'enum'],
+    keywords: ['dropdown', 'enum', 'choice', 'multi-select'],
   },
   {
     id: 'date',
@@ -117,15 +121,16 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     group: 'Advanced',
     kind: 'control',
     icon: CircleDot,
+    keywords: ['choice', 'single'],
   },
   {
-    id: 'multiselect',
-    label: 'Multi-select',
-    description: 'Pick several options.',
+    id: 'checkboxes',
+    label: 'Checkbox group',
+    description: 'Pick several from a visible list.',
     group: 'Advanced',
     kind: 'control',
     icon: ListChecks,
-    keywords: ['checkboxes', 'tags'],
+    keywords: ['checkboxes', 'multi', 'tags', 'choice'],
   },
   {
     id: 'slider',
@@ -136,13 +141,31 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     icon: SlidersHorizontal,
   },
   {
-    id: 'oneof',
-    label: 'One of',
-    description: 'Pick one labelled option.',
+    id: 'daterange',
+    label: 'Date range',
+    description: 'Pick a start and end date.',
     group: 'Advanced',
     kind: 'control',
-    icon: ListTodo,
-    keywords: ['enum', 'labelled select'],
+    icon: CalendarRange,
+    keywords: ['range', 'dates', 'period', 'from', 'to'],
+  },
+  {
+    id: 'time',
+    label: 'Time',
+    description: 'Pick a time of day.',
+    group: 'Advanced',
+    kind: 'control',
+    icon: Clock,
+    keywords: ['hour', 'minute', 'am', 'pm', 'clock'],
+  },
+  {
+    id: 'datetime',
+    label: 'Date & time',
+    description: 'Pick a date and time.',
+    group: 'Advanced',
+    kind: 'control',
+    icon: CalendarClock,
+    keywords: ['datetime', 'date', 'time', 'timestamp', 'when'],
   },
   {
     id: 'address',
@@ -211,5 +234,9 @@ export const FIELD_TYPE_BY_ID: Record<FieldTypeId, FieldTypeDef> = Object.fromEn
   FIELD_TYPES.map((t) => [t.id, t]),
 ) as Record<FieldTypeId, FieldTypeDef>;
 
-/** Field types whose schema carries an enumeration the inspector edits. */
-export const ENUM_FIELD_TYPES = new Set<FieldTypeId>(['select', 'radio', 'multiselect', 'oneof']);
+/**
+ * Choice fields (feature 156, Step 2): every one carries an authored `{ label, value }[]` the inspector
+ * edits (with reordering) and serializes to `uischema.options.choices` for the unified choice renderer.
+ * `select` also carries a single/multi switch; `radio` is single, `checkboxes` multi.
+ */
+export const CHOICE_FIELD_TYPES = new Set<FieldTypeId>(['select', 'radio', 'checkboxes']);

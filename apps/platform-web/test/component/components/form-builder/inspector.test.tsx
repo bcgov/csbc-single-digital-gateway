@@ -240,7 +240,7 @@ describe('Inspector Component Test Suite', () => {
     expect(screen.queryByText('Display as')).not.toBeInTheDocument();
   });
 
-  it('renders options editor for enum fields and edits value-only option properties', async () => {
+  it('renders the choice options editor and edits value/label independently (feature 156 Step 2)', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
@@ -270,15 +270,14 @@ describe('Inspector Component Test Suite', () => {
 
     expect(screen.getByText('Options')).toBeInTheDocument();
 
-    // Edit option value
+    // Edit option value — label is now independent of the value (feature 156 Step 2).
     const optionInput = screen.getByLabelText('Option 1 value');
     expect(optionInput).toHaveValue('red');
     await user.type(optionInput, 's');
 
-    // For value-only field (select), value change propagates identical value to label
     expect(handleChangeControl).toHaveBeenCalledWith({
       enumOptions: [
-        { value: 'reds', label: 'reds' },
+        { value: 'reds', label: 'Red Label' },
         { value: 'blue', label: 'Blue Label' },
       ],
     });
@@ -302,12 +301,12 @@ describe('Inspector Component Test Suite', () => {
     });
   });
 
-  it('renders options editor with label inputs for oneof fields', async () => {
+  it('renders value + label inputs for every choice field (radio) — feature 156 Step 2', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
       kind: 'control',
-      fieldType: 'oneof', // with labels
+      fieldType: 'radio',
       key: 'options',
       label: 'Options List',
       required: false,
@@ -327,7 +326,7 @@ describe('Inspector Component Test Suite', () => {
       />,
     );
 
-    // Option value and option label inputs should exist for oneof fields
+    // Both a value and a label input exist for a radio field too (not just the old oneof).
     const valueInput = screen.getByLabelText('Option 1 value');
     const labelInput = screen.getByLabelText('Option 1 label');
     expect(valueInput).toHaveValue('v1');
@@ -344,6 +343,93 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenLastCalledWith({
       enumOptions: [{ value: 'v12', label: 'Label 1' }],
     });
+  });
+
+  it('reorders choice options and toggles the Select "Allow multiple" switch (feature 156 Step 2)', async () => {
+    const user = userEvent.setup();
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'select',
+      key: 'colors',
+      label: 'Colors',
+      required: false,
+      options: {},
+      multiple: false,
+      enumOptions: [
+        { value: 'red', label: 'Red' },
+        { value: 'blue', label: 'Blue' },
+      ],
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // Move option 1 down swaps the two options (order is the citizen-facing order).
+    await user.click(screen.getByRole('button', { name: 'Move option 1 down' }));
+    expect(handleChangeControl).toHaveBeenLastCalledWith({
+      enumOptions: [
+        { value: 'blue', label: 'Blue' },
+        { value: 'red', label: 'Red' },
+      ],
+    });
+    // First option can't move up; last can't move down.
+    expect(screen.getByRole('button', { name: 'Move option 1 up' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move option 2 down' })).toBeDisabled();
+
+    // Select fields expose a single/multi switch.
+    const multiple = screen.getByRole('switch', { name: 'Allow multiple' });
+    expect(multiple).not.toBeChecked();
+    await user.click(multiple);
+    expect(handleChangeControl).toHaveBeenLastCalledWith({ multiple: true });
+  });
+
+  it('orders each choice option Label-then-Value inside a capped scroll list (feature 156 Step 2)', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'checkboxes',
+      key: 'colors',
+      label: 'Colors',
+      required: false,
+      options: {},
+      enumOptions: Array.from({ length: 6 }, (_, i) => ({
+        value: `v${i + 1}`,
+        label: `Label ${i + 1}`,
+      })),
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // The Label input precedes the Value input for each option.
+    const firstLabel = screen.getByLabelText('Option 1 label');
+    const firstValue = screen.getByLabelText('Option 1 value');
+    expect(
+      firstLabel.compareDocumentPosition(firstValue) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // The options live in a height-capped, scrollable container (≈5 rows before scrolling).
+    const scroller = firstLabel.closest('.overflow-y-auto');
+    expect(scroller).not.toBeNull();
+    expect(scroller?.className).toContain('max-h-');
   });
 
   it('renders slider config settings for slider field type', async () => {

@@ -35,6 +35,14 @@ function Form({
   );
 }
 
+/** Render a form and return the class list of its first field label (then unmount). */
+function fieldLabelClassName(ui: Parameters<typeof render>[0]): string {
+  const view = render(ui);
+  const className = view.container.querySelector('[data-slot="field-label"]')?.className ?? '';
+  view.unmount();
+  return className;
+}
+
 describe('@repo/react/jsonforms-renderers — registry', () => {
   it('exports a non-empty renderer registry of { tester, renderer } entries', () => {
     expect(Array.isArray(renderers)).toBe(true);
@@ -94,6 +102,95 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
       const last = onData.mock.calls.at(-1)?.[0] as { subscribe?: unknown } | undefined;
       expect(last?.subscribe).toBe(true);
     });
+  });
+
+  it('places a boolean control help text on the next line (inside the FieldContent column)', () => {
+    render(
+      <Form
+        schema={{
+          type: 'object',
+          properties: {
+            subscribe: { type: 'boolean', title: 'Subscribe', description: 'We will email you' },
+          },
+        }}
+      />,
+    );
+    // The help text lives in the stacked label/description column beside the checkbox — not inline.
+    const help = screen.getByText('We will email you');
+    expect(help).toHaveAttribute('data-slot', 'field-description');
+    expect(help.closest('[data-slot="field-content"]')).not.toBeNull();
+  });
+
+  it('positions the checkbox on the left of its label column', () => {
+    const { container } = render(
+      <Form
+        schema={{ type: 'object', properties: { agree: { type: 'boolean', title: 'Agree' } } }}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox', { name: /agree/i });
+    const content = container.querySelector('[data-slot="field-content"]');
+    expect(content).not.toBeNull();
+    // The checkbox precedes the label column (control on the left).
+    expect(
+      checkbox.compareDocumentPosition(content as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('positions the toggle on the right of its label column', () => {
+    const { container } = render(
+      <Form
+        schema={{ type: 'object', properties: { agree: { type: 'boolean', title: 'Agree' } } }}
+        uischema={
+          {
+            type: 'Control',
+            scope: '#/properties/agree',
+            options: { toggle: true },
+          } as UISchemaElement
+        }
+      />,
+    );
+    const toggle = screen.getByRole('switch', { name: /agree/i });
+    const content = container.querySelector('[data-slot="field-content"]');
+    expect(content).not.toBeNull();
+    // The label column precedes the switch (control pushed to the right edge).
+    expect(
+      (content as Node).compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('renders every field label a step heavier (font-semibold) — text, checkbox and toggle', () => {
+    const boolSchema = {
+      type: 'object' as const,
+      properties: { agree: { type: 'boolean' as const, title: 'Agree' } },
+    };
+
+    // Text control (vertical).
+    expect(
+      fieldLabelClassName(
+        <Form
+          schema={{ type: 'object', properties: { name: { type: 'string', title: 'Full name' } } }}
+        />,
+      ),
+    ).toContain('font-semibold');
+
+    // Checkbox (horizontal, control-left).
+    expect(fieldLabelClassName(<Form schema={boolSchema} />)).toContain('font-semibold');
+
+    // Toggle (horizontal, control-right).
+    expect(
+      fieldLabelClassName(
+        <Form
+          schema={boolSchema}
+          uischema={
+            {
+              type: 'Control',
+              scope: '#/properties/agree',
+              options: { toggle: true },
+            } as UISchemaElement
+          }
+        />,
+      ),
+    ).toContain('font-semibold');
   });
 
   it('renders a multiline string control as a textarea', () => {

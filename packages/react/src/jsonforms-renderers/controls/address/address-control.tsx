@@ -393,16 +393,18 @@ function AddressControlComponent({
   return (
     <fieldset className="space-y-3">
       {label ? (
-        <legend className="text-sm font-medium text-foreground">
+        // Match the single-field label style (ControlWrapper renders `text-xs font-semibold`); this
+        // composite control renders its own fieldset/legend, so it has to mirror that style by hand.
+        <legend className="text-xs font-semibold text-foreground">
           {label}
           {required ? ' *' : ''}
         </legend>
       ) : null}
-      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
       <div className="flex flex-col gap-3">
         {geo ? <GeoBody {...body} geo={geo} /> : <PlainBody {...body} />}
       </div>
-      {errors ? <p className="text-sm text-destructive">{errors}</p> : null}
+      {errors ? <p className="text-xs text-destructive">{errors}</p> : null}
     </fieldset>
   );
 }

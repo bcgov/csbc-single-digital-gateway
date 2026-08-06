@@ -33,6 +33,7 @@ function BooleanToggleControlComponent({
       {...(description ? { description } : {})}
       errors={errors}
       orientation="horizontal"
+      controlPosition="right"
     >
       <Switch
         id={id}

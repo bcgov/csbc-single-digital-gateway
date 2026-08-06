@@ -3,7 +3,7 @@
  * (`{ schema, uischema }` as stored in `document_versions.schema`). The model — not the raw
  * schema/uischema — is the editor's source of truth; `parseModel`/`serializeModel` round-trip.
  */
-import { ENUM_FIELD_TYPES, type FieldTypeId } from './field-types';
+import { CHOICE_FIELD_TYPES, type FieldTypeId } from './field-types';
 
 export { FIELD_TYPES } from './field-types';
 export type { FieldTypeId, FieldTypeDef, FieldGroup } from './field-types';
@@ -21,7 +21,10 @@ export interface ControlNode {
   required: boolean;
   options: Record<string, unknown>;
   description?: string;
+  /** Choice fields (select/radio/checkboxes): the authored `{ value, label }[]`, order preserved. */
   enumOptions?: EnumOption[];
+  /** Select field only (feature 156, Step 2): single (string enum) vs multi (array). Default false. */
+  multiple?: boolean;
   /**
    * Boolean field only (feature 156): on-screen affordance. `'toggle'` serializes
    * `uischema.options.toggle = true` (→ the `@repo/react` Switch renderer); `'checkbox'` (default)
@@ -163,10 +166,12 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     required: false,
     options: {},
   };
-  if (ENUM_FIELD_TYPES.has(fieldType)) {
-    node.enumOptions = [
-      { value: 'option_1', label: fieldType === 'oneof' ? 'Option 1' : 'option_1' },
-    ];
+  if (CHOICE_FIELD_TYPES.has(fieldType)) {
+    // Feature 156 (Step 2): every choice field authors labelled options; select defaults to single.
+    node.enumOptions = [{ value: 'option_1', label: 'Option 1' }];
+    if (fieldType === 'select') {
+      node.multiple = false;
+    }
   }
   if (fieldType === 'boolean') {
     // Feature 156: a fresh boolean field renders as a tick box; the inspector can switch it to a toggle.
