@@ -3,6 +3,7 @@ import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Switch } from '@repo/ui/switch';
 import { Textarea } from '@repo/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { AddressDefaultsEditor } from './address-defaults-editor';
@@ -31,6 +32,49 @@ function Row({
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
     </div>
+  );
+}
+
+/**
+ * A single-select segmented toggle group (`spacing={0}`) with a clear primary selection. Base UI's
+ * ToggleGroup value is an array, so we bind `[value]` and pick the newly-pressed item (never allowing
+ * an empty selection). Used by the Boolean "Display as" and Number "Number type" settings.
+ */
+function SegmentedToggle<T extends string>({
+  options,
+  value,
+  onValueChange,
+  fullWidth = false,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onValueChange: (value: T) => void;
+  /** Stretch the group to its container's width, with items sharing it equally. */
+  fullWidth?: boolean;
+}) {
+  // The default "on" style is bg-muted (same as hover) — too subtle. Use a clear primary fill.
+  const pressed =
+    'aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-pressed:hover:text-primary-foreground';
+  return (
+    <ToggleGroup
+      variant="outline"
+      spacing={0}
+      {...(fullWidth ? { className: 'w-full' } : {})}
+      value={[value]}
+      onValueChange={(values: string[]) =>
+        onValueChange((values.find((v) => v !== value) ?? value) as T)
+      }
+    >
+      {options.map((option) => (
+        <ToggleGroupItem
+          key={option.value}
+          value={option.value}
+          className={fullWidth ? `flex-1 ${pressed}` : pressed}
+        >
+          {option.label}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }
 
@@ -201,23 +245,12 @@ function NumberSettings({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label>Number type</Label>
-        <div className="flex gap-2">
-          {NUMBER_TYPES.map((option) => {
-            const active = activeType === option.value;
-            return (
-              <Button
-                key={option.value}
-                type="button"
-                size="sm"
-                variant={active ? 'default' : 'outline'}
-                aria-pressed={active}
-                onClick={() => onChange({ numberType: option.value })}
-              >
-                {option.label}
-              </Button>
-            );
-          })}
-        </div>
+        <SegmentedToggle
+          fullWidth
+          options={NUMBER_TYPES}
+          value={activeType}
+          onValueChange={(numberType) => onChange({ numberType })}
+        />
       </div>
       {activeType === 'decimal' ? (
         <Row label="Decimal places" htmlFor="insp-num-decimals">
@@ -274,23 +307,12 @@ function BooleanSettings({
   return (
     <div className="flex flex-col gap-1.5">
       <Label>Display as</Label>
-      <div className="flex gap-2">
-        {RENDER_AS.map((option) => {
-          const active = activeType === option.value;
-          return (
-            <Button
-              key={option.value}
-              type="button"
-              size="sm"
-              variant={active ? 'default' : 'outline'}
-              aria-pressed={active}
-              onClick={() => onChange({ renderAs: option.value })}
-            >
-              {option.label}
-            </Button>
-          );
-        })}
-      </div>
+      <SegmentedToggle
+        fullWidth
+        options={RENDER_AS}
+        value={activeType}
+        onValueChange={(renderAs) => onChange({ renderAs })}
+      />
     </div>
   );
 }
@@ -472,8 +494,12 @@ export function Inspector({
             <Input
               id="settings-title"
               value={form.title}
+              aria-invalid={form.title.trim() === '' || undefined}
               onChange={(e) => onChangeForm({ title: e.target.value })}
             />
+            {form.title.trim() === '' ? (
+              <p className="text-xs text-destructive">A title is required.</p>
+            ) : null}
           </Row>
           <Row label="Description" htmlFor="settings-desc">
             <Textarea

@@ -5,6 +5,7 @@ import type { ComponentProps } from 'react';
 import { Input } from '@repo/ui/input';
 import { Textarea } from '@repo/ui/textarea';
 import { useMaskInput } from 'use-mask-input';
+import { ClearableInput } from '../util/clearable-input';
 import { ControlWrapper } from '../util/control-wrapper';
 
 // The lowest-ranked string renderer — wins for any plain string with no more specific tester (enum,
@@ -79,7 +80,7 @@ function TextControlComponent({
       ) : options.mask ? (
         <MaskedTextInput mask={options.mask} {...shared} onChange={onChange} />
       ) : (
-        <Input {...shared} onChange={onChange} />
+        <ClearableInput {...shared} onChange={onChange} onClear={() => commit('')} />
       )}
       {maxLength !== undefined ? (
         <div className="text-right text-xs text-muted-foreground tabular-nums">

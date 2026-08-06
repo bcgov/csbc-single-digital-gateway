@@ -43,6 +43,22 @@ describe('Canvas Component Test Suite', () => {
     expect(descTextarea).toHaveValue('Please answer these questions honestly.');
   });
 
+  it('flags an empty form title as required', () => {
+    render(
+      <Canvas
+        model={{ title: '', description: '', fields: [] }}
+        selectedPath={null}
+        paletteDragType={null}
+        onSelect={vi.fn()}
+        onDelete={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('A title is required.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('triggers onChangeForm when typing in title or description', async () => {
     const user = userEvent.setup();
     const handleChangeForm = vi.fn();

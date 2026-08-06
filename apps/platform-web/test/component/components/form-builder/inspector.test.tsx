@@ -53,6 +53,21 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeForm).toHaveBeenCalledWith({ description: 'Please answer accurately.!' });
   });
 
+  it('flags an empty form title as required', () => {
+    render(
+      <Inspector
+        node={null}
+        form={{ title: '', description: '' }}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('A title is required.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('renders container settings when node is a ContainerNode', async () => {
     const user = userEvent.setup();
     const handleChangeContainer = vi.fn();

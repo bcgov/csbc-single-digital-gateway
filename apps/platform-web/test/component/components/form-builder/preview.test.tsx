@@ -38,6 +38,26 @@ describe('Preview Component Test Suite', () => {
     expect(screen.getByText(/Full Name/)).toBeInTheDocument();
   });
 
+  it('renders the form title and description as a header', () => {
+    render(
+      <Preview
+        definition={
+          {
+            schema: {
+              type: 'object',
+              title: 'My Form',
+              description: 'Fill this out',
+              properties: {},
+            },
+            uischema: { type: 'VerticalLayout', elements: [] },
+          } as any
+        }
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'My Form' })).toBeInTheDocument();
+    expect(screen.getByText('Fill this out')).toBeInTheDocument();
+  });
+
   it('updates form runner data on onChange triggers', async () => {
     const user = userEvent.setup();
     render(<Preview definition={mockDefinition as any} />);

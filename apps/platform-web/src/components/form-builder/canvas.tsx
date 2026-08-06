@@ -68,9 +68,13 @@ export function Canvas({
             id="canvas-form-title"
             placeholder="Untitled"
             value={model.title}
+            aria-invalid={model.title.trim() === '' || undefined}
             onChange={(event) => onChangeForm({ title: event.target.value })}
             onFocus={() => onSelect(null)}
           />
+          {model.title.trim() === '' ? (
+            <p className="text-xs text-destructive">A title is required.</p>
+          ) : null}
         </div>
         <div className="mt-3 flex flex-col gap-1.5">
           <Label htmlFor="canvas-form-description">Description</Label>

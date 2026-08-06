@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { format as formatDate, isValid, parse } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, X } from 'lucide-react';
 import { useMaskInput } from 'use-mask-input';
 
 import { Calendar } from '@ui/components/ui/calendar';
@@ -103,6 +103,18 @@ export function DatePicker({
           onChange={(event) => onType(event.target.value)}
         />
         <InputGroupAddon align="inline-end">
+          {value && !disabled ? (
+            <InputGroupButton
+              type="button"
+              aria-label="Clear"
+              onClick={() => {
+                onChange(undefined);
+                setText('');
+              }}
+            >
+              <X className="size-3.5" aria-hidden />
+            </InputGroupButton>
+          ) : null}
           <PopoverTrigger
             render={<InputGroupButton aria-label="Open calendar" disabled={disabled} />}
           >
