@@ -45,6 +45,10 @@ import {
   textDisplayTester,
 } from './controls/primitive-displays';
 import { AddressDisplay, addressDisplayTester } from './controls/address-display';
+import { ChoiceDisplay, choiceDisplayTester } from './controls/choice-view';
+import { DateRangeDisplay, dateRangeDisplayTester } from './controls/date-range-display';
+import { DateTimeDisplay, dateTimeDisplayTester } from './controls/datetime-display';
+import { TimeDisplay, timeDisplayTester } from './controls/time-display';
 import {
   ContactMethodsDisplay,
   contactMethodsDisplayTester,
@@ -69,8 +73,13 @@ export const displayRenderers: JsonFormsRendererRegistryEntry[] = [
   { tester: enumRadioDisplayTester, renderer: EnumRadioDisplay },
   { tester: oneOfEnumDisplayTester, renderer: OneOfEnumDisplay },
   { tester: multiEnumDisplayTester, renderer: MultiEnumDisplay },
+  // Feature 156 (Step 2): the unified choice display (options.format:'choice') outranks the above.
+  { tester: choiceDisplayTester, renderer: ChoiceDisplay },
   { tester: sliderDisplayTester, renderer: SliderDisplay },
   { tester: dateDisplayTester, renderer: DateDisplay },
+  { tester: dateRangeDisplayTester, renderer: DateRangeDisplay },
+  { tester: timeDisplayTester, renderer: TimeDisplay },
+  { tester: dateTimeDisplayTester, renderer: DateTimeDisplay },
   { tester: richTextDisplayTester, renderer: RichTextDisplay },
   { tester: phoneDisplayTester, renderer: PhoneDisplay },
   { tester: contactMethodsDisplayTester, renderer: ContactMethodsDisplay },

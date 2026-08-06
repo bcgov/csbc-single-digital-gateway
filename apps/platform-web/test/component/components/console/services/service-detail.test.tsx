@@ -8,6 +8,10 @@ let capturedSaveFn: any = null;
 let capturedPublishFn: any = null;
 let mockState: any = null;
 export let mockReferencesOverride: any = null;
+// When true, the mocked ServiceEditor mimics @jsonforms/react's DEBOUNCED mount-time onChange: it emits
+// the data it was MOUNTED with, slightly later (after the parent's seeding). Off by default so it only
+// affects the regression test that exercises the warm-cache seeding race.
+let mockSimulateEditorMountEmit = false;
 
 vi.mock('@tanstack/react-query', async (importOriginal) => {
   const original = await importOriginal<typeof import('@tanstack/react-query')>();
@@ -84,19 +88,36 @@ vi.mock('@/components/console/unsaved-changes-guard', () => ({
   UnsavedChangesGuard: () => null,
 }));
 
-vi.mock('@/components/console/services/service-editor', () => ({
-  ServiceEditor: ({ data, onChange, readonly }: any) => (
-    <div>
-      <label htmlFor="title-input">Title</label>
-      <input
-        id="title-input"
-        value={data.title ?? ''}
-        disabled={readonly}
-        onChange={(e) => onChange({ ...data, title: e.target.value })}
-      />
-    </div>
-  ),
-}));
+vi.mock('@/components/console/services/service-editor', async () => {
+  const react = await vi.importActual<typeof import('react')>('react');
+  return {
+    ServiceEditor: ({ data, onChange, readonly }: any) => {
+      // Capture the data this editor MOUNTED with; when simulating JsonForms, re-emit it after the
+      // debounce window. If the parent only seeds formData in a post-commit effect, that stale emit
+      // clobbers the title back to empty (the production bug).
+      const initial = react.useRef(data);
+      react.useEffect(() => {
+        if (!mockSimulateEditorMountEmit || readonly) {
+          return undefined;
+        }
+        const timer = setTimeout(() => onChange(initial.current), 15);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only, mimics the debounced emit
+      }, []);
+      return (
+        <div>
+          <label htmlFor="title-input">Title</label>
+          <input
+            id="title-input"
+            value={data.title ?? ''}
+            disabled={readonly}
+            onChange={(e) => onChange({ ...data, title: e.target.value })}
+          />
+        </div>
+      );
+    },
+  };
+});
 
 export let capturedApplicationMethodsProps: any = null;
 
@@ -204,6 +225,7 @@ afterEach(() => {
   capturedPublishFn = null;
   mockState = null;
   mockReferencesOverride = null;
+  mockSimulateEditorMountEmit = false;
   capturedApplicationMethodsProps = null;
 });
 
@@ -341,6 +363,26 @@ describe('ServiceDetail Component Test Suite', () => {
     expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /publish service/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /new version/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the title seeded when the editor re-emits its mount data on a warm cache (regression)', async () => {
+    // Reproduces the navigate-back bug: with a warm query cache the editor mounts on the first render,
+    // and JsonForms' debounced mount-time onChange re-emits the data it mounted with. If formData is
+    // seeded only in a post-commit effect, that stale emit clobbers the title to empty and falsely marks
+    // the form dirty. Seeding during render mounts the editor with the real data, so the emit is a no-op.
+    mockSimulateEditorMountEmit = true;
+
+    renderServiceDetail({ versionId: 'v2', tab: 'details' });
+
+    const titleInput = await screen.findByLabelText(/title/i);
+    expect(titleInput).toHaveValue('Municipal Permits V2');
+
+    // Let the simulated debounced mount-emit fire; the title must survive and the form stay clean.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+    expect(titleInput).toHaveValue('Municipal Permits V2');
+    expect(screen.getByRole('button', { name: /save draft/i })).toBeDisabled();
   });
 
   it('renders read-only details for a published version', async () => {

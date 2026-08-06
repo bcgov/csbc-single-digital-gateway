@@ -67,7 +67,7 @@ describe('ConsoleSidebar Component Test Suite', () => {
     expect(overviewLink).toHaveAttribute('data-active-options', '{"exact":true}');
     expect(overviewLink).toHaveAttribute(
       'data-active-props',
-      '{"className":"bg-sidebar-accent text-sidebar-accent-foreground"}',
+      '{"className":"bg-sidebar-accent text-sidebar-accent-foreground border-l-4 border-l-bcgov-blue "}',
     );
 
     const servicesLink = screen.getByRole('link', { name: 'Services' });

@@ -3,7 +3,7 @@
  * (`{ schema, uischema }`). `parseModel`/`serializeModel` round-trip; the model is the editor's
  * source of truth (see model.ts). Split from model.ts to keep each file under the size gate.
  */
-import { ENUM_FIELD_TYPES, type FieldTypeId } from './field-types';
+import { CHOICE_FIELD_TYPES, type FieldTypeId } from './field-types';
 import type {
   ContainerNode,
   ControlNode,
@@ -41,29 +41,70 @@ function propertySchema(node: ControlNode): JsonObject {
         default: node.min ?? 0,
       });
       break;
-    case 'checkbox':
-    case 'toggle':
+    case 'boolean':
       Object.assign(base, { type: 'boolean' });
       break;
     case 'date':
       Object.assign(base, { type: 'string', format: 'date' });
       break;
-    case 'select':
-    case 'radio':
-      Object.assign(base, { type: 'string', enum: values });
+    case 'time':
+      // Feature 157: a 24-hour HH:MM string. Validated by `pattern` (NOT JSON-Schema `format:'time'`,
+      // which ajv-formats requires to carry seconds), so a bare HH:MM passes submit validation.
+      Object.assign(base, { type: 'string', pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' });
       break;
-    case 'oneof':
+    case 'datetime':
+      // Feature 157: a local wall-clock 'YYYY-MM-DDTHH:MM' string. `pattern` (not `format:'date-time'`,
+      // which ajv-formats requires a timezone offset for) so a bare local datetime passes validation.
       Object.assign(base, {
         type: 'string',
-        oneOf: (node.enumOptions ?? []).map((o) => ({ const: o.value, title: o.label })),
+        pattern: '^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d$',
       });
       break;
-    case 'multiselect':
+    case 'daterange': {
+      // Feature 157: an object of two ISO dates. A required range requires BOTH endpoints (the object's
+      // own `required`), on top of the parent-level `required` (the key must exist) added below.
+      Object.assign(base, {
+        type: 'object',
+        properties: {
+          start: { type: 'string', format: 'date' },
+          end: { type: 'string', format: 'date' },
+        },
+      });
+      if (node.required) {
+        base.required = ['start', 'end'];
+      }
+      break;
+    }
+    case 'radio':
+      // Feature 156 (Step 2): single choice → a string enum (values only; labels live in options.choices).
+      Object.assign(base, { type: 'string', enum: values });
+      break;
+    case 'select':
+      // Single → string enum; multi → array of enum (uniqueItems). Labels are carried in options.choices.
+      if (node.multiple === true) {
+        Object.assign(base, {
+          type: 'array',
+          uniqueItems: true,
+          items: { type: 'string', enum: values },
+        });
+        if (node.required) {
+          base.minItems = 1;
+        }
+      } else {
+        Object.assign(base, { type: 'string', enum: values });
+      }
+      break;
+    case 'checkboxes':
       Object.assign(base, {
         type: 'array',
         uniqueItems: true,
         items: { type: 'string', enum: values },
       });
+      if (node.required) {
+        // A required checkbox group must have ≥1 box ticked — object-level `required` only checks the
+        // key exists (an empty array would pass), so pin non-emptiness with `minItems`.
+        base.minItems = 1;
+      }
       break;
     case 'address': {
       // A required address requires every field EXCEPT address_two, and each required field must be
@@ -101,6 +142,13 @@ function propertySchema(node: ControlNode): JsonObject {
       }
       break;
     }
+    case 'text':
+      // Feature 158: a plain string; a max length becomes `schema.maxLength` (Ajv-validated on submit).
+      Object.assign(base, { type: 'string' });
+      if (typeof node.maxLength === 'number') {
+        base.maxLength = node.maxLength;
+      }
+      break;
     default:
       Object.assign(base, { type: 'string' });
   }
@@ -115,20 +163,51 @@ function propertySchema(node: ControlNode): JsonObject {
 
 function controlOptions(node: ControlNode): JsonObject {
   const options: JsonObject = { ...node.options };
-  if (node.fieldType === 'multiline') {
-    options.multi = true;
+  if (node.fieldType === 'text') {
+    // Feature 158: multi-line, visible rows and placeholder are presentational → uischema options.
+    if (node.multiline === true) {
+      options.multi = true;
+    } else if (node.mask !== undefined && node.mask !== '') {
+      // Input mask is single-line only (masks don't apply to a textarea).
+      options.mask = node.mask;
+    }
+    if (node.placeholder !== undefined && node.placeholder !== '') {
+      options.placeholder = node.placeholder;
+    }
   }
-  if (node.fieldType === 'toggle') {
+  if (node.fieldType === 'boolean' && node.renderAs === 'toggle') {
+    // Feature 156: a boolean field authored to display as a toggle emits the same `options.toggle` flag
+    // the old standalone Toggle field did → the `@repo/react` Switch renderer. `'checkbox'` emits nothing.
     options.toggle = true;
   }
-  if (node.fieldType === 'radio') {
-    options.format = 'radio';
+  if (CHOICE_FIELD_TYPES.has(node.fieldType)) {
+    // Feature 156 (Step 2): the unified choice control reads its presentation + labelled options here.
+    options.format = 'choice';
+    options.display =
+      node.fieldType === 'radio'
+        ? 'radio'
+        : node.fieldType === 'checkboxes'
+          ? 'checkboxes'
+          : 'select';
+    if (node.fieldType === 'select') {
+      options.multiple = node.multiple === true;
+    }
+    options.choices = (node.enumOptions ?? []).map((o) => ({ value: o.value, label: o.label }));
   }
   if (node.fieldType === 'richtext') {
     options.format = 'richtext';
   }
   if (node.fieldType === 'address') {
     options.format = 'address';
+  }
+  if (node.fieldType === 'daterange') {
+    options.format = 'daterange';
+  }
+  if (node.fieldType === 'time') {
+    options.format = 'time';
+  }
+  if (node.fieldType === 'datetime') {
+    options.format = 'datetime';
   }
   if (
     node.fieldType === 'number' &&
@@ -154,6 +233,10 @@ function controlElement(node: ControlNode): JsonObject {
   const element: JsonObject = { type: 'Control', scope: `#/properties/${node.key}` };
   if (node.label !== '') {
     element.label = node.label;
+  } else {
+    // Feature 159: an empty label renders BLANK — `label: false` stops JSONForms from falling back to
+    // the scope (the auto-generated key) as the label.
+    element.label = false;
   }
   const options = controlOptions(node);
   if (Object.keys(options).length > 0) {
@@ -233,20 +316,33 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (options.format === 'richtext') {
     return 'richtext';
   }
+  if (options.format === 'daterange') {
+    // Feature 157: also an object schema — must be checked before the generic object→address branch.
+    return 'daterange';
+  }
+  if (options.format === 'time') {
+    // Feature 157: a plain pattern-validated string — needs the option flag to not fall through to text.
+    return 'time';
+  }
+  if (options.format === 'datetime') {
+    return 'datetime';
+  }
   if (options.format === 'address' || prop.type === 'object') {
     return 'address';
   }
-  if (prop.type === 'array') {
-    return 'multiselect';
+  if (options.format === 'choice') {
+    // Feature 156 (Step 2): the choice family is discriminated by `options.display`.
+    if (options.display === 'radio') {
+      return 'radio';
+    }
+    if (options.display === 'checkboxes') {
+      return 'checkboxes';
+    }
+    return 'select';
   }
   if (prop.type === 'boolean') {
-    return options.toggle === true ? 'toggle' : 'checkbox';
-  }
-  if (Array.isArray(prop.oneOf)) {
-    return 'oneof';
-  }
-  if (Array.isArray(prop.enum)) {
-    return options.format === 'radio' ? 'radio' : 'select';
+    // Feature 156: a boolean is always the Boolean field; `options.toggle` becomes its `renderAs`.
+    return 'boolean';
   }
   if (prop.type === 'number' || prop.type === 'integer') {
     // A numeric control is a slider iff explicitly marked (feature 155); otherwise it's a Number
@@ -256,22 +352,23 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (prop.format === 'date') {
     return 'date';
   }
-  if (options.multi === true) {
-    return 'multiline';
-  }
+  // Feature 158: a plain string is always the Text field; `options.multi` becomes its `multiline` flag.
   return 'text';
 }
 
-function enumOptionsFromProp(prop: JsonObject): EnumOption[] {
-  if (Array.isArray(prop.oneOf)) {
-    return (prop.oneOf as Array<{ const?: unknown; title?: unknown }>).map((o) => ({
-      value: String(o.const ?? ''),
-      label: String(o.title ?? o.const ?? ''),
-    }));
+/** Feature 156 (Step 2): recover the authored `{ value, label }[]` from `uischema.options.choices`. */
+function choicesFromOptions(rawOptions: JsonObject): EnumOption[] {
+  const raw = rawOptions.choices;
+  if (!Array.isArray(raw)) {
+    return [];
   }
-  const items = (prop.type === 'array' ? (prop.items as JsonObject | undefined) : prop) ?? prop;
-  const values = (items.enum as unknown[] | undefined) ?? [];
-  return values.map((v) => ({ value: String(v), label: String(v) }));
+  return raw
+    .filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === 'object')
+    .map((entry) => {
+      const value = String(entry.value ?? '');
+      const label = entry.label === undefined || entry.label === '' ? value : String(entry.label);
+      return { value, label };
+    });
 }
 
 const KEY_FROM_SCOPE = /^#\/properties\/(.+)$/;
@@ -297,6 +394,12 @@ function parseControl(
     toggle: _t,
     format: _f,
     slider: _s,
+    display: _d,
+    multiple: _mult,
+    choices: _c,
+    placeholder: _ph,
+    rows: _r,
+    mask: _mk,
     step,
     decimals,
     ...userOptions
@@ -305,6 +408,12 @@ function parseControl(
   void _t;
   void _f;
   void _s;
+  void _d;
+  void _mult;
+  void _c;
+  void _ph;
+  void _r;
+  void _mk;
 
   const label =
     typeof element.label === 'string' ? element.label : ((prop.title as string | undefined) ?? '');
@@ -319,8 +428,31 @@ function parseControl(
   if (typeof prop.description === 'string') {
     node.description = prop.description;
   }
-  if (ENUM_FIELD_TYPES.has(fieldType)) {
-    node.enumOptions = enumOptionsFromProp(prop);
+  if (fieldType === 'text') {
+    // Feature 158: recover multiline/placeholder/rows from options + maxLength from the schema.
+    if (rawOptions.multi === true) {
+      node.multiline = true;
+    }
+    if (typeof rawOptions.placeholder === 'string' && rawOptions.placeholder !== '') {
+      node.placeholder = rawOptions.placeholder;
+    }
+    if (typeof rawOptions.mask === 'string' && rawOptions.mask !== '') {
+      node.mask = rawOptions.mask;
+    }
+    if (typeof prop.maxLength === 'number') {
+      node.maxLength = prop.maxLength;
+    }
+  }
+  if (CHOICE_FIELD_TYPES.has(fieldType)) {
+    node.enumOptions = choicesFromOptions(rawOptions);
+    if (fieldType === 'select') {
+      node.multiple = rawOptions.multiple === true;
+    }
+  }
+  if (fieldType === 'boolean') {
+    // Feature 156: recover the boolean field's display affordance from the `toggle` option flag
+    // (already stripped from `userOptions` above), so it round-trips as `renderAs`.
+    node.renderAs = rawOptions.toggle === true ? 'toggle' : 'checkbox';
   }
   if (fieldType === 'number') {
     // Feature 155: recover the authored type + bounds. `numberType` always present (defaults decimal);

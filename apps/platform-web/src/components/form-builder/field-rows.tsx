@@ -93,11 +93,18 @@ export function FieldRow({
       ) : null}
       <div className="relative">
         <DeleteHandle label="Remove field" onDelete={() => onDelete(path)} />
-        <div className="flex items-start gap-2 rounded-lg border border-border bg-card p-3 group-data-[dragging]:opacity-40 group-data-[selected]:border-primary group-data-[selected]:ring-1 group-data-[selected]:ring-primary">
+        {/* Clicking anywhere in the card selects it. The drag handle stops propagation so it never
+            selects, and the inner control/display keep their own keyboard-select affordance. */}
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+        <div
+          onClick={() => onSelect(path)}
+          className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-card p-3 group-data-[dragging]:opacity-40 group-data-[selected]:border-primary group-data-[selected]:ring-1 group-data-[selected]:ring-primary"
+        >
           <button
             ref={handleRef}
             type="button"
             aria-label="Reorder field"
+            onClick={(event) => event.stopPropagation()}
             className="mt-1 cursor-grab text-muted-foreground"
           >
             <GripVertical className="size-4" aria-hidden />

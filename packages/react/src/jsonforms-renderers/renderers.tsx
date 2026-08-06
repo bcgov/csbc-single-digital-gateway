@@ -9,17 +9,20 @@ import {
   BooleanToggleControl,
   booleanToggleControlTester,
 } from './controls/boolean-toggle-control';
+import { ChoiceControl, choiceControlTester } from './controls/choice/choice-control';
 import { DateControl, dateControlTester } from './controls/date-control';
+import { DateRangeControl, dateRangeControlTester } from './controls/date-range-control';
+import { DateTimeControl, dateTimeControlTester } from './controls/datetime-control';
 import { EnumControl, enumControlTester } from './controls/enum-control';
 import { EnumRadioControl, enumRadioControlTester } from './controls/enum-radio-control';
 import { MultiEnumControl, multiEnumControlTester } from './controls/multi-enum-control';
-import { MultilineControl, multilineControlTester } from './controls/multiline-control';
 import { NumberControl, numberControlTester } from './controls/number-control';
 import { OneOfEnumControl, oneOfEnumControlTester } from './controls/oneof-enum-control';
 import { PhoneControl, phoneControlTester } from './controls/phone-control';
 import { RichTextControl, richTextControlTester } from './controls/rich-text-control';
 import { SliderControl, sliderControlTester } from './controls/slider-control';
 import { TextControl, textControlTester } from './controls/text-control';
+import { TimeControl, timeControlTester } from './controls/time-control';
 import {
   CategorizationLayoutRenderer,
   categorizationTester,
@@ -32,8 +35,8 @@ import { VerticalLayoutRenderer, verticalLayoutTester } from './layouts/vertical
 /**
  * The complete @repo/ui renderer registry — pass to `<JsonForms renderers={renderers} />`
  * (or rely on the `@repo/react/jsonforms` wrapper, which defaults to this set). Higher
- * ranks win dispatch, so the specific controls (multiline, radio, toggle, slider, date,
- * multi-enum) outrank their generic counterparts.
+ * ranks win dispatch, so the specific controls (radio, toggle, slider, date, multi-enum) outrank
+ * their generic counterparts. The single text control (feature 158) branches Input/Textarea internally.
  */
 export const renderers: JsonFormsRendererRegistryEntry[] = [
   // Controls
@@ -41,13 +44,17 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   { tester: numberControlTester, renderer: NumberControl },
   { tester: booleanControlTester, renderer: BooleanControl },
   { tester: booleanToggleControlTester, renderer: BooleanToggleControl },
-  { tester: multilineControlTester, renderer: MultilineControl },
   { tester: enumControlTester, renderer: EnumControl },
   { tester: enumRadioControlTester, renderer: EnumRadioControl },
   { tester: oneOfEnumControlTester, renderer: OneOfEnumControl },
   { tester: multiEnumControlTester, renderer: MultiEnumControl },
+  // Feature 156 (Step 2): the unified choice control (options.format:'choice') outranks the above.
+  { tester: choiceControlTester, renderer: ChoiceControl },
   { tester: sliderControlTester, renderer: SliderControl },
   { tester: dateControlTester, renderer: DateControl },
+  { tester: dateRangeControlTester, renderer: DateRangeControl },
+  { tester: timeControlTester, renderer: TimeControl },
+  { tester: dateTimeControlTester, renderer: DateTimeControl },
   { tester: richTextControlTester, renderer: RichTextControl },
   { tester: phoneControlTester, renderer: PhoneControl },
   { tester: contactMethodsControlTester, renderer: ContactMethodsControl },

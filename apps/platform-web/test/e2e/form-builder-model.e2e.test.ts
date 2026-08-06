@@ -129,7 +129,7 @@ describe('Form Builder Model Integration Test Suite', () => {
         fields: [
           { ...createField('text'), key: 'name', label: 'Name', required: true },
           { ...createField('number'), key: 'age', label: 'Age', required: false },
-          { ...createField('checkbox'), key: 'agree', label: 'Agree', required: true },
+          { ...createField('boolean'), key: 'agree', label: 'Agree', required: true },
         ],
       };
       expect(parseModel(serializeModel(model))).toEqual(model);
@@ -151,12 +151,19 @@ describe('Form Builder Model Integration Test Suite', () => {
   describe('FIELD_TYPES', () => {
     it('includes core, advanced, rich-text and layout entries', () => {
       const ids = FIELD_TYPES.map((t) => t.id);
-      for (const id of ['text', 'number', 'checkbox', 'select', 'date', 'multiline']) {
+      for (const id of ['text', 'number', 'boolean', 'select', 'date']) {
         expect(ids).toContain(id);
       }
-      for (const id of ['radio', 'multiselect', 'slider', 'toggle', 'oneof']) {
+      // Feature 158: Multiline folded into Text (single/multi-line toggle).
+      expect(ids).not.toContain('multiline');
+      for (const id of ['radio', 'checkboxes', 'slider', 'daterange', 'time', 'datetime']) {
         expect(ids).toContain(id);
       }
+      // Feature 156 Step 1: the standalone Toggle field folded into Boolean's "Display as" option.
+      expect(ids).not.toContain('toggle');
+      // Feature 156 Step 2: Multi-select + One-of collapsed into Select (single/multi) + Checkbox group.
+      expect(ids).not.toContain('multiselect');
+      expect(ids).not.toContain('oneof');
       expect(ids).toContain('richtext');
       for (const id of ['group', 'horizontal']) {
         expect(ids).toContain(id);

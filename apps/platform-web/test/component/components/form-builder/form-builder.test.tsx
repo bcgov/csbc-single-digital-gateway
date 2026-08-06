@@ -378,17 +378,13 @@ describe('FormBuilder Component Test Suite', () => {
     const addBtn = screen.getByRole('button', { name: 'Add Text Field' });
     await user.click(addBtn);
 
-    // Verify schema properties now contains two fields (the original fullname + newly created text field)
-    expect(handleChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        schema: expect.objectContaining({
-          properties: expect.objectContaining({
-            fullname: expect.any(Object),
-            text: expect.any(Object),
-          }),
-        }),
-      }),
-    );
+    // Keys are auto-generated (nanoid, feature 159), so assert a new field was added — not its name.
+    const lastArg = handleChange.mock.calls.at(-1)?.[0] as {
+      schema: { properties: Record<string, unknown> };
+    };
+    const props = lastArg.schema.properties;
+    expect(Object.keys(props)).toContain('fullname');
+    expect(Object.keys(props)).toHaveLength(2); // fullname + the new text field
   });
 
   it('renders optional title and actions toolbars when provided', () => {
@@ -417,26 +413,24 @@ describe('FormBuilder Component Test Suite', () => {
     expect(handleChange).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Drag End Palette Zone' }));
-    expect(handleChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        schema: expect.objectContaining({
-          properties: expect.objectContaining({
-            text: expect.any(Object),
-          }),
-        }),
-      }),
-    );
+    {
+      const lastArg = handleChange.mock.calls.at(-1)?.[0] as {
+        schema: { properties: Record<string, unknown> };
+      };
+      // Auto-generated keys (feature 159) → assert a field was added, not a specific key name.
+      expect(Object.keys(lastArg.schema.properties)).toContain('fullname');
+      expect(Object.keys(lastArg.schema.properties).length).toBeGreaterThan(1);
+    }
 
     await user.click(screen.getByRole('button', { name: 'Drag End Palette Append' }));
-    expect(handleChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        schema: expect.objectContaining({
-          properties: expect.objectContaining({
-            text: expect.any(Object),
-          }),
-        }),
-      }),
-    );
+    {
+      const lastArg = handleChange.mock.calls.at(-1)?.[0] as {
+        schema: { properties: Record<string, unknown> };
+      };
+      // Auto-generated keys (feature 159) → assert a field was added, not a specific key name.
+      expect(Object.keys(lastArg.schema.properties)).toContain('fullname');
+      expect(Object.keys(lastArg.schema.properties).length).toBeGreaterThan(1);
+    }
 
     await user.click(screen.getByRole('button', { name: 'Drag End Move Zone' }));
     expect(handleChange).toHaveBeenLastCalledWith(
@@ -679,7 +673,7 @@ describe('FormBuilder Component Test Suite', () => {
     const user = userEvent.setup();
     render(<Harness />);
     const palette = screen.getByRole('region', { name: /palette/i });
-    await user.type(within(palette).getByRole('searchbox'), 'numb');
+    await user.type(within(palette).getByRole('textbox', { name: 'Search components' }), 'numb');
     expect(within(palette).getByRole('button', { name: /number/i })).toBeInTheDocument();
     expect(within(palette).queryByRole('button', { name: /^text$/i })).not.toBeInTheDocument();
   });
@@ -729,6 +723,8 @@ describe('FormBuilder Component Test Suite', () => {
     await user.click(
       within(canvas).getByRole('button', { name: /select field|edit field|field 1/i }),
     );
+    // New fields are optional by default; toggling Required on adds it to schema.required.
+    expect(dump().schema.required.length).toBe(0);
     const inspector = screen.getByRole('region', { name: /inspector/i });
     await user.click(within(inspector).getByRole('switch', { name: /required/i }));
     expect(dump().schema.required.length).toBe(1);

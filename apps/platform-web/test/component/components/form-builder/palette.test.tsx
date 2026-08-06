@@ -23,7 +23,7 @@ describe('Palette Component Test Suite', () => {
     // Renders specific fields
     expect(screen.getByRole('button', { name: 'Text' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Number' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Checkbox' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Boolean' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Select' })).toBeInTheDocument();
   });
 
@@ -47,13 +47,13 @@ describe('Palette Component Test Suite', () => {
     // Type "text"
     await user.type(searchInput, 'text');
 
-    // "Text" and "Multiline" should match and be visible
+    // "Text" should match and be visible (Multiline folded into Text — feature 158)
     expect(screen.getByRole('button', { name: 'Text' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Multiline' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Multiline' })).not.toBeInTheDocument();
 
-    // "Number" and "Checkbox" should NOT be visible
+    // "Number" and "Boolean" should NOT be visible
     expect(screen.queryByRole('button', { name: 'Number' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Checkbox' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Boolean' })).not.toBeInTheDocument();
   });
 
   it('matches components by their keywords', async () => {

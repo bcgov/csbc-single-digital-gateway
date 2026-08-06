@@ -53,6 +53,21 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeForm).toHaveBeenCalledWith({ description: 'Please answer accurately.!' });
   });
 
+  it('flags an empty form title as required', () => {
+    render(
+      <Inspector
+        node={null}
+        form={{ title: '', description: '' }}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('A title is required.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('renders container settings when node is a ContainerNode', async () => {
     const user = userEvent.setup();
     const handleChangeContainer = vi.fn();
@@ -116,22 +131,21 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeDisplay).toHaveBeenCalledWith({ text: 'updated display text' });
   });
 
-  it('renders control inspector with basic settings and duplicate key warnings', async () => {
+  it('renders control inspector with basic settings; no editable field key (feature 159)', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'text',
-      key: 'username',
+      key: 'V1StGXR8',
       label: 'Username',
       required: false,
       options: {},
     };
 
-    const { rerender } = render(
+    render(
       <Inspector
         node={node}
-        allKeys={['username']} // No duplicate key
         form={defaultForm}
         onChangeControl={handleChangeControl}
         onChangeContainer={vi.fn()}
@@ -142,21 +156,16 @@ describe('Inspector Component Test Suite', () => {
 
     expect(screen.getByText('Field settings')).toBeInTheDocument();
     expect(screen.getByLabelText('Label')).toHaveValue('Username');
-    expect(screen.getByLabelText('Field key')).toHaveValue('username');
-    expect(screen.queryByText('Another field already uses this key.')).not.toBeInTheDocument();
+    // No editable "Field key" input anymore — the key is auto-generated.
+    expect(screen.queryByLabelText('Field key')).not.toBeInTheDocument();
 
     // Edit Label
     await user.type(screen.getByLabelText('Label'), '!');
     expect(handleChangeControl).toHaveBeenCalledWith({ label: 'Username!' });
 
-    // Edit Field key
-    const keyInput = screen.getByLabelText('Field key');
-    await user.type(keyInput, '1');
-    expect(handleChangeControl).toHaveBeenLastCalledWith({ key: 'username1' });
-
-    // Edit Help text
-    const helpInput = screen.getByLabelText('Help text');
-    await user.type(helpInput, '?');
+    // Field description (was "Help text")
+    const descInput = screen.getByLabelText('Field description');
+    await user.type(descInput, '?');
     expect(handleChangeControl).toHaveBeenLastCalledWith({ description: '?' });
 
     // Toggle required
@@ -164,12 +173,77 @@ describe('Inspector Component Test Suite', () => {
     expect(requiredSwitch).not.toBeChecked();
     await user.click(requiredSwitch);
     expect(handleChangeControl).toHaveBeenCalledWith({ required: true });
+  });
 
-    // Rerender with duplicate keys
-    rerender(
+  it('flags an empty field label as required (feature 159)', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'V1StGXR8',
+      label: '',
+      required: true,
+      options: {},
+    };
+    render(
       <Inspector
         node={node}
-        allKeys={['username', 'username']} // Duplicate key
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('A label is required.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Label')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('shows a muted, click-to-copy field ID for a control field (feature 159)', async () => {
+    const user = userEvent.setup(); // installs a clipboard stub (jsdom's is getter-only)
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'V1StGXR8',
+      label: 'Username',
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    const idButton = screen.getByRole('button', { name: 'Copy field ID V1StGXR8' });
+    expect(idButton).toHaveTextContent('ID: V1StGXR8');
+    await user.click(idButton);
+    expect(await navigator.clipboard.readText()).toBe('V1StGXR8');
+    expect(idButton).toHaveTextContent('Copied!');
+  });
+
+  it('renders the boolean field "Display as" control and switches it to a toggle (feature 156)', async () => {
+    const user = userEvent.setup();
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'boolean',
+      key: 'agree',
+      label: 'I agree',
+      required: false,
+      options: {},
+      renderAs: 'checkbox',
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
         form={defaultForm}
         onChangeControl={handleChangeControl}
         onChangeContainer={vi.fn()}
@@ -177,10 +251,43 @@ describe('Inspector Component Test Suite', () => {
         onChangeForm={vi.fn()}
       />,
     );
-    expect(screen.getByText('Another field already uses this key.')).toBeInTheDocument();
+
+    expect(screen.getByText('Display as')).toBeInTheDocument();
+    const checkboxBtn = screen.getByRole('button', { name: 'Checkbox' });
+    const toggleBtn = screen.getByRole('button', { name: 'Toggle' });
+    expect(checkboxBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(toggleBtn).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(toggleBtn);
+    expect(handleChangeControl).toHaveBeenCalledWith({ renderAs: 'toggle' });
   });
 
-  it('renders options editor for enum fields and edits value-only option properties', async () => {
+  it('does not render the "Display as" control for a non-boolean field (feature 156)', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'name',
+      label: 'Name',
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Display as')).not.toBeInTheDocument();
+  });
+
+  it('renders the choice options editor and edits value/label independently (feature 156 Step 2)', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
@@ -210,15 +317,14 @@ describe('Inspector Component Test Suite', () => {
 
     expect(screen.getByText('Options')).toBeInTheDocument();
 
-    // Edit option value
+    // Edit option value — label is now independent of the value (feature 156 Step 2).
     const optionInput = screen.getByLabelText('Option 1 value');
     expect(optionInput).toHaveValue('red');
     await user.type(optionInput, 's');
 
-    // For value-only field (select), value change propagates identical value to label
     expect(handleChangeControl).toHaveBeenCalledWith({
       enumOptions: [
-        { value: 'reds', label: 'reds' },
+        { value: 'reds', label: 'Red Label' },
         { value: 'blue', label: 'Blue Label' },
       ],
     });
@@ -242,12 +348,12 @@ describe('Inspector Component Test Suite', () => {
     });
   });
 
-  it('renders options editor with label inputs for oneof fields', async () => {
+  it('renders value + label inputs for every choice field (radio) — feature 156 Step 2', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
       kind: 'control',
-      fieldType: 'oneof', // with labels
+      fieldType: 'radio',
       key: 'options',
       label: 'Options List',
       required: false,
@@ -267,7 +373,7 @@ describe('Inspector Component Test Suite', () => {
       />,
     );
 
-    // Option value and option label inputs should exist for oneof fields
+    // Both a value and a label input exist for a radio field too (not just the old oneof).
     const valueInput = screen.getByLabelText('Option 1 value');
     const labelInput = screen.getByLabelText('Option 1 label');
     expect(valueInput).toHaveValue('v1');
@@ -284,6 +390,148 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenLastCalledWith({
       enumOptions: [{ value: 'v12', label: 'Label 1' }],
     });
+  });
+
+  it('reorders choice options and toggles the Select "Allow multiple" switch (feature 156 Step 2)', async () => {
+    const user = userEvent.setup();
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'select',
+      key: 'colors',
+      label: 'Colors',
+      required: false,
+      options: {},
+      multiple: false,
+      enumOptions: [
+        { value: 'red', label: 'Red' },
+        { value: 'blue', label: 'Blue' },
+      ],
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // Move option 1 down swaps the two options (order is the citizen-facing order).
+    await user.click(screen.getByRole('button', { name: 'Move option 1 down' }));
+    expect(handleChangeControl).toHaveBeenLastCalledWith({
+      enumOptions: [
+        { value: 'blue', label: 'Blue' },
+        { value: 'red', label: 'Red' },
+      ],
+    });
+    // First option can't move up; last can't move down.
+    expect(screen.getByRole('button', { name: 'Move option 1 up' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move option 2 down' })).toBeDisabled();
+
+    // Select fields expose a single/multi switch.
+    const multiple = screen.getByRole('switch', { name: 'Allow multiple' });
+    expect(multiple).not.toBeChecked();
+    await user.click(multiple);
+    expect(handleChangeControl).toHaveBeenLastCalledWith({ multiple: true });
+  });
+
+  it('renders text field settings: placeholder, multiline and max length (feature 158)', async () => {
+    const user = userEvent.setup();
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'bio',
+      label: 'Bio',
+      required: false,
+      options: {},
+      multiline: false,
+    };
+
+    const { rerender } = render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Placeholder'), { target: { value: 'Tell us' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ placeholder: 'Tell us' });
+
+    fireEvent.change(screen.getByLabelText('Max length'), { target: { value: '280' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ maxLength: 280 });
+
+    // Single-line shows the input mask; editing it fires onChange.
+    fireEvent.change(screen.getByLabelText('Input mask'), { target: { value: '(999) 999-9999' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ mask: '(999) 999-9999' });
+
+    // No author-set rows anymore — multiline is a plain on/off toggle.
+    expect(screen.queryByLabelText('Visible rows')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('switch', { name: 'Multiline' }));
+    expect(handleChangeControl).toHaveBeenCalledWith({ multiline: true });
+
+    // The input mask is single-line only — hidden once multiline is on.
+    rerender(
+      <Inspector
+        node={{ ...node, multiline: true }}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText('Input mask')).not.toBeInTheDocument();
+  });
+
+  it('orders each choice option Label-then-Value inside a capped scroll list (feature 156 Step 2)', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'checkboxes',
+      key: 'colors',
+      label: 'Colors',
+      required: false,
+      options: {},
+      enumOptions: Array.from({ length: 6 }, (_, i) => ({
+        value: `v${i + 1}`,
+        label: `Label ${i + 1}`,
+      })),
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // The Label input precedes the Value input for each option.
+    const firstLabel = screen.getByLabelText('Option 1 label');
+    const firstValue = screen.getByLabelText('Option 1 value');
+    expect(
+      firstLabel.compareDocumentPosition(firstValue) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // The options live in a height-capped, scrollable container (≈5 rows before scrolling).
+    const scroller = firstLabel.closest('.overflow-y-auto');
+    expect(scroller).not.toBeNull();
+    expect(scroller?.className).toContain('max-h-');
   });
 
   it('renders slider config settings for slider field type', async () => {
@@ -514,7 +762,7 @@ describe('Inspector Component Test Suite', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Help text')).toHaveValue('');
+    expect(screen.getByLabelText('Field description')).toHaveValue('');
 
     const nodeSlider: ControlNode = {
       kind: 'control',

@@ -1,22 +1,22 @@
 import {
   Calendar,
+  CalendarClock,
+  CalendarRange,
   CheckSquare,
   ChevronDownSquare,
   CircleDot,
+  Clock,
   Columns2,
   FileText,
   Hash,
   Heading,
   Layers,
   ListChecks,
-  ListTodo,
   MapPin,
   Pilcrow,
   SlidersHorizontal,
   TextCursorInput,
-  ToggleRight,
   Type,
-  WrapText,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -28,15 +28,15 @@ import {
 export type FieldTypeId =
   | 'text'
   | 'number'
-  | 'checkbox'
+  | 'boolean'
   | 'select'
   | 'date'
-  | 'multiline'
+  | 'daterange'
+  | 'time'
+  | 'datetime'
   | 'radio'
-  | 'multiselect'
+  | 'checkboxes'
   | 'slider'
-  | 'toggle'
-  | 'oneof'
   | 'address'
   | 'richtext'
   | 'heading'
@@ -45,7 +45,14 @@ export type FieldTypeId =
   | 'group'
   | 'horizontal';
 
-export type FieldGroup = 'Core' | 'Advanced' | 'Rich text' | 'Display' | 'Layout';
+export type FieldGroup =
+  | 'Core'
+  | 'Choice'
+  | 'Date & time'
+  | 'Advanced'
+  | 'Display'
+  | 'Layout'
+  | 'Other';
 
 export interface FieldTypeDef {
   id: FieldTypeId;
@@ -62,12 +69,13 @@ export interface FieldTypeDef {
 /** The palette catalogue. Order here is the palette render order within each group. */
 export const FIELD_TYPES: FieldTypeDef[] = [
   {
-    id: 'text',
-    label: 'Text',
-    description: 'A single line of text.',
+    id: 'boolean',
+    label: 'Boolean',
+    description: 'A single yes/no value.',
     group: 'Core',
     kind: 'control',
-    icon: Type,
+    icon: CheckSquare,
+    keywords: ['checkbox', 'toggle', 'switch', 'yes/no'],
   },
   {
     id: 'number',
@@ -78,85 +86,80 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     icon: Hash,
   },
   {
-    id: 'checkbox',
-    label: 'Checkbox',
-    description: 'A single yes / no tick box.',
+    id: 'text',
+    label: 'Text',
+    description: 'One or more lines of text.',
     group: 'Core',
     kind: 'control',
-    icon: CheckSquare,
+    icon: Type,
+    keywords: ['textarea', 'paragraph', 'multiline', 'string'],
   },
   {
-    id: 'select',
-    label: 'Select',
-    description: 'Pick one option from a dropdown.',
-    group: 'Core',
+    id: 'checkboxes',
+    label: 'Checkbox group',
+    description: 'Pick several from a visible list.',
+    group: 'Choice',
     kind: 'control',
-    icon: ChevronDownSquare,
-    keywords: ['dropdown', 'enum'],
-  },
-  {
-    id: 'date',
-    label: 'Date',
-    description: 'Pick a date from a calendar.',
-    group: 'Core',
-    kind: 'control',
-    icon: Calendar,
-  },
-  {
-    id: 'multiline',
-    label: 'Multiline',
-    description: 'A multi-line text area.',
-    group: 'Core',
-    kind: 'control',
-    icon: WrapText,
-    keywords: ['textarea', 'paragraph'],
+    icon: ListChecks,
+    keywords: ['checkboxes', 'multi', 'tags', 'choice'],
   },
   {
     id: 'radio',
     label: 'Radio',
     description: 'Pick one option from a visible list.',
-    group: 'Advanced',
+    group: 'Choice',
     kind: 'control',
     icon: CircleDot,
+    keywords: ['choice', 'single'],
   },
   {
-    id: 'multiselect',
-    label: 'Multi-select',
-    description: 'Pick several options.',
-    group: 'Advanced',
+    id: 'select',
+    label: 'Select',
+    description: 'Pick from a dropdown — single or multiple.',
+    group: 'Choice',
     kind: 'control',
-    icon: ListChecks,
-    keywords: ['checkboxes', 'tags'],
+    icon: ChevronDownSquare,
+    keywords: ['dropdown', 'enum', 'choice', 'multi-select'],
   },
   {
-    id: 'slider',
-    label: 'Slider',
-    description: 'Choose a number on a range.',
-    group: 'Advanced',
+    id: 'date',
+    label: 'Date',
+    description: 'Pick a date from a calendar.',
+    group: 'Date & time',
     kind: 'control',
-    icon: SlidersHorizontal,
+    icon: Calendar,
   },
   {
-    id: 'toggle',
-    label: 'Toggle',
-    description: 'An on / off switch.',
-    group: 'Advanced',
+    id: 'daterange',
+    label: 'Date range',
+    description: 'Pick a start and end date.',
+    group: 'Date & time',
     kind: 'control',
-    icon: ToggleRight,
+    icon: CalendarRange,
+    keywords: ['range', 'dates', 'period', 'from', 'to'],
   },
   {
-    id: 'oneof',
-    label: 'One of',
-    description: 'Pick one labelled option.',
-    group: 'Advanced',
+    id: 'datetime',
+    label: 'Date & time',
+    description: 'Pick a date and time.',
+    group: 'Date & time',
     kind: 'control',
-    icon: ListTodo,
-    keywords: ['enum', 'labelled select'],
+    icon: CalendarClock,
+    keywords: ['datetime', 'date', 'time', 'timestamp', 'when'],
+  },
+  {
+    id: 'time',
+    label: 'Time',
+    description: 'Pick a time of day.',
+    group: 'Date & time',
+    kind: 'control',
+    icon: Clock,
+    keywords: ['hour', 'minute', 'am', 'pm', 'clock'],
   },
   {
     id: 'address',
     label: 'Address',
-    description: 'Country, street, city, state / province & postal code.',
+    description: 'An address value.',
     group: 'Advanced',
     kind: 'control',
     icon: MapPin,
@@ -166,7 +169,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     id: 'richtext',
     label: 'Rich text',
     description: 'Formatted text with styling.',
-    group: 'Rich text',
+    group: 'Advanced',
     kind: 'control',
     icon: TextCursorInput,
     keywords: ['wysiwyg', 'lexical'],
@@ -174,7 +177,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'heading',
     label: 'Heading',
-    description: 'A section heading. Displays only — collects no data.',
+    description: 'Display only — a section heading.',
     group: 'Display',
     kind: 'display',
     icon: Heading,
@@ -183,7 +186,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'paragraph',
     label: 'Paragraph',
-    description: 'A block of guidance text. Displays only — collects no data.',
+    description: 'Display only — a block of guidance text.',
     group: 'Display',
     kind: 'display',
     icon: Pilcrow,
@@ -192,7 +195,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'richtextdisplay',
     label: 'Rich text',
-    description: 'Formatted content to read. Displays only — collects no data.',
+    description: 'Display only — formatted content to read.',
     group: 'Display',
     kind: 'display',
     icon: FileText,
@@ -214,11 +217,23 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     kind: 'container',
     icon: Columns2,
   },
+  {
+    id: 'slider',
+    label: 'Slider',
+    description: 'Choose a number on a range.',
+    group: 'Other',
+    kind: 'control',
+    icon: SlidersHorizontal,
+  },
 ];
 
 export const FIELD_TYPE_BY_ID: Record<FieldTypeId, FieldTypeDef> = Object.fromEntries(
   FIELD_TYPES.map((t) => [t.id, t]),
 ) as Record<FieldTypeId, FieldTypeDef>;
 
-/** Field types whose schema carries an enumeration the inspector edits. */
-export const ENUM_FIELD_TYPES = new Set<FieldTypeId>(['select', 'radio', 'multiselect', 'oneof']);
+/**
+ * Choice fields (feature 156, Step 2): every one carries an authored `{ label, value }[]` the inspector
+ * edits (with reordering) and serializes to `uischema.options.choices` for the unified choice renderer.
+ * `select` also carries a single/multi switch; `radio` is single, `checkboxes` multi.
+ */
+export const CHOICE_FIELD_TYPES = new Set<FieldTypeId>(['select', 'radio', 'checkboxes']);

@@ -116,6 +116,35 @@ describe('Field Rows Component Test Suite', () => {
       expect(handleDelete).toHaveBeenCalledWith([0]);
     });
 
+    it('selects when clicking anywhere in the card, but not via the drag handle', async () => {
+      const user = userEvent.setup();
+      const handleSelect = vi.fn();
+
+      render(
+        <FieldRow
+          node={mockControlNode}
+          index={0}
+          group="root"
+          path={[0]}
+          selected={false}
+          paletteDragType={null}
+          onSelect={handleSelect}
+          onDelete={vi.fn()}
+          onChangeDisplay={vi.fn()}
+        />,
+      );
+
+      const handle = screen.getByRole('button', { name: 'Reorder field' });
+      // The drag handle stops propagation → clicking it never selects.
+      await user.click(handle);
+      expect(handleSelect).not.toHaveBeenCalled();
+
+      // Clicking the card container (padding/whitespace, not the inner body) selects it.
+      const card = handle.parentElement as HTMLElement;
+      await user.click(card);
+      expect(handleSelect).toHaveBeenCalledWith([0]);
+    });
+
     it('renders display node using DisplayCard', () => {
       const mockDisplayNode: DisplayNode = {
         kind: 'display',
