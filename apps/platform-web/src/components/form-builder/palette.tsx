@@ -60,7 +60,7 @@ export function Palette({ onAdd }: { onAdd: (id: FieldTypeId) => void }) {
       className="flex h-full flex-col gap-3 overflow-y-auto border-r border-border bg-card p-3"
     >
       <ClearableInput
-        type="search"
+        type="text"
         aria-label="Search components"
         placeholder="Search components"
         value={query}
