@@ -673,7 +673,7 @@ describe('FormBuilder Component Test Suite', () => {
     const user = userEvent.setup();
     render(<Harness />);
     const palette = screen.getByRole('region', { name: /palette/i });
-    await user.type(within(palette).getByRole('searchbox'), 'numb');
+    await user.type(within(palette).getByRole('textbox', { name: 'Search components' }), 'numb');
     expect(within(palette).getByRole('button', { name: /number/i })).toBeInTheDocument();
     expect(within(palette).queryByRole('button', { name: /^text$/i })).not.toBeInTheDocument();
   });

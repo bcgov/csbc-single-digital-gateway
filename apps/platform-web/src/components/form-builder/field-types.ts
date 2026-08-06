@@ -45,7 +45,14 @@ export type FieldTypeId =
   | 'group'
   | 'horizontal';
 
-export type FieldGroup = 'Core' | 'Advanced' | 'Rich text' | 'Display' | 'Layout';
+export type FieldGroup =
+  | 'Core'
+  | 'Choice'
+  | 'Date & time'
+  | 'Advanced'
+  | 'Display'
+  | 'Layout'
+  | 'Other';
 
 export interface FieldTypeDef {
   id: FieldTypeId;
@@ -62,13 +69,13 @@ export interface FieldTypeDef {
 /** The palette catalogue. Order here is the palette render order within each group. */
 export const FIELD_TYPES: FieldTypeDef[] = [
   {
-    id: 'text',
-    label: 'Text',
-    description: 'One or more lines of text.',
+    id: 'boolean',
+    label: 'Boolean',
+    description: 'A single yes/no value.',
     group: 'Core',
     kind: 'control',
-    icon: Type,
-    keywords: ['textarea', 'paragraph', 'multiline', 'string'],
+    icon: CheckSquare,
+    keywords: ['checkbox', 'toggle', 'switch', 'yes/no'],
   },
   {
     id: 'number',
@@ -79,19 +86,37 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     icon: Hash,
   },
   {
-    id: 'boolean',
-    label: 'Boolean',
-    description: 'A single yes/no value.',
+    id: 'text',
+    label: 'Text',
+    description: 'One or more lines of text.',
     group: 'Core',
     kind: 'control',
-    icon: CheckSquare,
-    keywords: ['checkbox', 'toggle', 'switch', 'yes/no'],
+    icon: Type,
+    keywords: ['textarea', 'paragraph', 'multiline', 'string'],
+  },
+  {
+    id: 'checkboxes',
+    label: 'Checkbox group',
+    description: 'Pick several from a visible list.',
+    group: 'Choice',
+    kind: 'control',
+    icon: ListChecks,
+    keywords: ['checkboxes', 'multi', 'tags', 'choice'],
+  },
+  {
+    id: 'radio',
+    label: 'Radio',
+    description: 'Pick one option from a visible list.',
+    group: 'Choice',
+    kind: 'control',
+    icon: CircleDot,
+    keywords: ['choice', 'single'],
   },
   {
     id: 'select',
     label: 'Select',
     description: 'Pick from a dropdown — single or multiple.',
-    group: 'Core',
+    group: 'Choice',
     kind: 'control',
     icon: ChevronDownSquare,
     keywords: ['dropdown', 'enum', 'choice', 'multi-select'],
@@ -100,62 +125,36 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     id: 'date',
     label: 'Date',
     description: 'Pick a date from a calendar.',
-    group: 'Core',
+    group: 'Date & time',
     kind: 'control',
     icon: Calendar,
-  },
-  {
-    id: 'radio',
-    label: 'Radio',
-    description: 'Pick one option from a visible list.',
-    group: 'Advanced',
-    kind: 'control',
-    icon: CircleDot,
-    keywords: ['choice', 'single'],
-  },
-  {
-    id: 'checkboxes',
-    label: 'Checkbox group',
-    description: 'Pick several from a visible list.',
-    group: 'Advanced',
-    kind: 'control',
-    icon: ListChecks,
-    keywords: ['checkboxes', 'multi', 'tags', 'choice'],
-  },
-  {
-    id: 'slider',
-    label: 'Slider',
-    description: 'Choose a number on a range.',
-    group: 'Advanced',
-    kind: 'control',
-    icon: SlidersHorizontal,
   },
   {
     id: 'daterange',
     label: 'Date range',
     description: 'Pick a start and end date.',
-    group: 'Advanced',
+    group: 'Date & time',
     kind: 'control',
     icon: CalendarRange,
     keywords: ['range', 'dates', 'period', 'from', 'to'],
   },
   {
-    id: 'time',
-    label: 'Time',
-    description: 'Pick a time of day.',
-    group: 'Advanced',
-    kind: 'control',
-    icon: Clock,
-    keywords: ['hour', 'minute', 'am', 'pm', 'clock'],
-  },
-  {
     id: 'datetime',
     label: 'Date & time',
     description: 'Pick a date and time.',
-    group: 'Advanced',
+    group: 'Date & time',
     kind: 'control',
     icon: CalendarClock,
     keywords: ['datetime', 'date', 'time', 'timestamp', 'when'],
+  },
+  {
+    id: 'time',
+    label: 'Time',
+    description: 'Pick a time of day.',
+    group: 'Date & time',
+    kind: 'control',
+    icon: Clock,
+    keywords: ['hour', 'minute', 'am', 'pm', 'clock'],
   },
   {
     id: 'address',
@@ -170,7 +169,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     id: 'richtext',
     label: 'Rich text',
     description: 'Formatted text with styling.',
-    group: 'Rich text',
+    group: 'Advanced',
     kind: 'control',
     icon: TextCursorInput,
     keywords: ['wysiwyg', 'lexical'],
@@ -217,6 +216,14 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     group: 'Layout',
     kind: 'container',
     icon: Columns2,
+  },
+  {
+    id: 'slider',
+    label: 'Slider',
+    description: 'Choose a number on a range.',
+    group: 'Other',
+    kind: 'control',
+    icon: SlidersHorizontal,
   },
 ];
 

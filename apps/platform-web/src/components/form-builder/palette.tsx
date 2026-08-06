@@ -3,7 +3,15 @@ import { useMemo, useState } from 'react';
 import { ClearableInput } from './clearable-input';
 import { FIELD_TYPES, type FieldGroup, type FieldTypeDef, type FieldTypeId } from './field-types';
 
-const GROUP_ORDER: FieldGroup[] = ['Core', 'Advanced', 'Rich text', 'Display', 'Layout'];
+const GROUP_ORDER: FieldGroup[] = [
+  'Core',
+  'Choice',
+  'Date & time',
+  'Advanced',
+  'Display',
+  'Layout',
+  'Other',
+];
 
 function matches(def: FieldTypeDef, query: string): boolean {
   if (query === '') {
