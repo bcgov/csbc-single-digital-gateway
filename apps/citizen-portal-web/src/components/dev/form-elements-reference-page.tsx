@@ -72,7 +72,7 @@ export function FormElementsReferencePage() {
       navLabel="On this page"
       navClassName="sticky top-0 h-screen overflow-y-auto"
     >
-      <Alert variant="destructive">This is very much WIP</Alert>
+      <Alert variant="danger">This is very much WIP</Alert>
 
       <DevSection id="full-example" title="Full example">
         <ExamplePreview code={schemaCode(FULL_EXAMPLE_SCHEMA, FULL_EXAMPLE_UISCHEMA)}>

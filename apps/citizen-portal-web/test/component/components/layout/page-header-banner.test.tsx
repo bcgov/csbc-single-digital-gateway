@@ -21,10 +21,11 @@ describe('PageHeaderBanner', () => {
         <h1>My header</h1>
       </PageHeaderBanner>,
     );
-    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument();
-    const container = document.querySelector('.border-bcgov-gold > div');
-    const children = container ? Array.from(container.children) : [];
-    expect(children[0]?.getAttribute('aria-label')).toBe('Breadcrumb');
+    const nav = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    const heading = screen.getByRole('heading', { name: 'My header', level: 1 });
+    // Asserts DOM order directly rather than a specific wrapper nesting, so it doesn't break
+    // if the breadcrumb/content wrapper divs change shape.
+    expect(nav.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('renders no breadcrumb node when the prop is omitted', () => {

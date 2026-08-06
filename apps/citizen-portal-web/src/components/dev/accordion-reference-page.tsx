@@ -9,9 +9,11 @@ import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
 import { DevSection } from '@/components/dev/dev-section';
 import { ExamplePreview } from '@/components/dev/example-preview';
+import { extractExample } from '@/components/dev/extract-example';
 import { ExternalLink } from '@/components/dev/external-link';
 import { NavLinkItem } from '@/components/dev/nav-link-item';
 import { PropTable } from '@/components/dev/prop-table';
+import selfSource from './accordion-reference-page.tsx?raw';
 
 const navItems: DevNavItem[] = [
   { id: 'full-example', text: 'Full example', level: 2 },
@@ -22,42 +24,6 @@ const navItems: DevNavItem[] = [
   { id: 'accessibility', text: 'Accessibility', level: 2 },
   { id: 'api-reference', text: 'API reference', level: 2 },
 ];
-
-const FULL_EXAMPLE_CODE = `<AccordionGroup
-  title="Resources & Support"
-  values={["recommended-reading", "application-support"]}
->
-  <AccordionItem value="recommended-reading">
-    <AccordionTrigger>Recommended reading</AccordionTrigger>
-    <AccordionContent className="p-0">
-      <div className="px-4 py-3">
-        <ul className="space-y-2">
-          <li>
-            <ExternalLink href="https://gov.bc.ca">Apply for assistance</ExternalLink>
-          </li>
-          <li>
-            <ExternalLink href="https://gov.bc.ca">On assistance</ExternalLink>
-          </li>
-        </ul>
-      </div>
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="application-support">
-    <AccordionTrigger>Application support</AccordionTrigger>
-    <AccordionContent className="p-0">
-      <ul className="divide-y divide-neutral-300">
-        <li>
-          <NavLinkItem
-            icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
-            title="Service B.C."
-            description="Run by the Ministry of Citizens' Services"
-          />
-        </li>
-      </ul>
-    </AccordionContent>
-  </AccordionItem>
-</AccordionGroup>`;
 
 const USAGE_IMPORT_CODE = `import {
   Accordion,
@@ -80,65 +46,77 @@ const COMPOSITION_TREE = `AccordionGroup
         ├── AccordionTrigger
         └── AccordionContent`;
 
-const BASIC_CODE = `<Accordion className="w-full">
-  <AccordionItem value="item-1">
-    <AccordionTrigger>Is it accessible?</AccordionTrigger>
-    <AccordionContent>Yes — built on base-ui, which handles the aria wiring.</AccordionContent>
-  </AccordionItem>
-  <AccordionItem value="item-2">
-    <AccordionTrigger>Can more than one be open?</AccordionTrigger>
-    <AccordionContent>
-      Only with the multiple prop — by default opening one closes the others.
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>`;
+// #region basic
+function BasicAccordionExample() {
+  return (
+    <Accordion className="w-full">
+      <AccordionItem value="item-1">
+        <AccordionTrigger>Is it accessible?</AccordionTrigger>
+        <AccordionContent>Yes — built on base-ui, which handles the aria wiring.</AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="item-2">
+        <AccordionTrigger>Can more than one be open?</AccordionTrigger>
+        <AccordionContent>
+          Only with the multiple prop — by default opening one closes the others.
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+// #endregion basic
 
-const GROUP_CODE = `<AccordionGroup
-  title="Resources & Support"
-  values={["recommended-reading", "application-support"]}
->
-  <AccordionItem value="recommended-reading">
-    <AccordionTrigger>Recommended reading</AccordionTrigger>
-    <AccordionContent className="p-0">
-      <div className="px-4 py-3">
-        <ul className="space-y-2">
-          <li>
-            <ExternalLink href="https://gov.bc.ca">Apply for assistance</ExternalLink>
-          </li>
-          <li>
-            <ExternalLink href="https://gov.bc.ca">On assistance</ExternalLink>
-          </li>
-        </ul>
-      </div>
-    </AccordionContent>
-  </AccordionItem>
+/** Shared by "Full example" and "Accordion group" — same content, both sections describe it
+ *  from a different angle (the composed result vs. AccordionGroup specifically). */
+// #region full-example
+function FullExampleAccordionGroup() {
+  return (
+    <AccordionGroup
+      title="Resources & Support"
+      values={['recommended-reading', 'application-support']}
+    >
+      <AccordionItem value="recommended-reading">
+        <AccordionTrigger>Recommended reading</AccordionTrigger>
+        <AccordionContent>
+          <ul>
+            <li>
+              <ExternalLink href="https://gov.bc.ca">Apply for assistance</ExternalLink>
+            </li>
+            <li>
+              <ExternalLink href="https://gov.bc.ca">On assistance</ExternalLink>
+            </li>
+          </ul>
+        </AccordionContent>
+      </AccordionItem>
 
-  <AccordionItem value="application-support">
-    <AccordionTrigger>Application support</AccordionTrigger>
-    <AccordionContent className="p-0">
-      <ul className="divide-y divide-neutral-300">
-        <li>
-          <NavLinkItem
-            icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
-            title="Service B.C."
-            description="Run by the Ministry of Citizens' Services"
-          />
-        </li>
-        <li>
-          <NavLinkItem
-            icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
-            title="Public Guardian and Trustee of BC"
-            description="We work for British Columbians to protect the legal and
-  financial interests of children under the age of 19 years,
-  protect the legal, financial, personal and health care
-  interests of adults who need help with decision making, and
-  administer estates of deceased and missing persons."
-          />
-        </li>
-      </ul>
-    </AccordionContent>
-  </AccordionItem>
-</AccordionGroup>`;
+      <AccordionItem value="application-support">
+        <AccordionTrigger>Application support</AccordionTrigger>
+        <AccordionContent className="p-0">
+          <ul className="divide-y divide-neutral-300">
+            <li>
+              <NavLinkItem
+                icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
+                title="Service B.C."
+                description="Run by the Ministry of Citizens' Services"
+              />
+            </li>
+            <li>
+              <NavLinkItem
+                icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
+                title="Public Guardian and Trustee of BC"
+                description="We work for British Columbians to protect the legal and
+                  financial interests of children under the age of 19 years,
+                  protect the legal, financial, personal and health care
+                  interests of adults who need help with decision making, and
+                  administer estates of deceased and missing persons."
+              />
+            </li>
+          </ul>
+        </AccordionContent>
+      </AccordionItem>
+    </AccordionGroup>
+  );
+}
+// #endregion full-example
 
 export function AccordionReferencePage() {
   return (
@@ -150,42 +128,8 @@ export function AccordionReferencePage() {
       navClassName="sticky top-0 h-screen overflow-y-auto"
     >
       <DevSection id="full-example" title="Full example">
-        <ExamplePreview code={FULL_EXAMPLE_CODE}>
-          <AccordionGroup
-            title="Resources & Support"
-            values={['recommended-reading', 'application-support']}
-          >
-            <AccordionItem value="recommended-reading">
-              <AccordionTrigger>Recommended reading</AccordionTrigger>
-              <AccordionContent className="p-0">
-                <div className="px-4 py-3">
-                  <ul className="space-y-2">
-                    <li>
-                      <ExternalLink href="https://gov.bc.ca">Apply for assistance</ExternalLink>
-                    </li>
-                    <li>
-                      <ExternalLink href="https://gov.bc.ca">On assistance</ExternalLink>
-                    </li>
-                  </ul>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="application-support">
-              <AccordionTrigger>Application support</AccordionTrigger>
-              <AccordionContent className="p-0">
-                <ul className="divide-y divide-neutral-300">
-                  <li>
-                    <NavLinkItem
-                      icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
-                      title="Service B.C."
-                      description="Run by the Ministry of Citizens' Services"
-                    />
-                  </li>
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-          </AccordionGroup>
+        <ExamplePreview code={extractExample(selfSource, 'full-example')}>
+          <FullExampleAccordionGroup />
         </ExamplePreview>
       </DevSection>
 
@@ -215,21 +159,8 @@ export function AccordionReferencePage() {
         title="Basic accordion"
         description="Accordion directly, no group wrapper — single item open at a time by default."
       >
-        <ExamplePreview code={BASIC_CODE}>
-          <Accordion className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Is it accessible?</AccordionTrigger>
-              <AccordionContent>
-                Yes — built on base-ui, which handles the aria wiring.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger>Can more than one be open?</AccordionTrigger>
-              <AccordionContent>
-                Only with the multiple prop — by default opening one closes the others.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+        <ExamplePreview code={extractExample(selfSource, 'basic')}>
+          <BasicAccordionExample />
         </ExamplePreview>
       </DevSection>
 
@@ -238,53 +169,8 @@ export function AccordionReferencePage() {
         title="Accordion group"
         description="AccordionGroup adds a title/description header and an expand-all/collapse-all control. NavLinkItem and ExternalLink are custom components created for the sidebar accordions."
       >
-        <ExamplePreview code={GROUP_CODE}>
-          <AccordionGroup
-            title="Resources & Support"
-            values={['recommended-reading', 'application-support']}
-          >
-            <AccordionItem value="recommended-reading">
-              <AccordionTrigger>Recommended reading</AccordionTrigger>
-              <AccordionContent className="p-0">
-                <div className="px-4 py-3">
-                  <ul className="space-y-2">
-                    <li>
-                      <ExternalLink href="https://gov.bc.ca">Apply for assistance</ExternalLink>
-                    </li>
-                    <li>
-                      <ExternalLink href="https://gov.bc.ca">On assistance</ExternalLink>
-                    </li>
-                  </ul>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="application-support">
-              <AccordionTrigger>Application support</AccordionTrigger>
-              <AccordionContent className="p-0">
-                <ul className="divide-y divide-neutral-300">
-                  <li>
-                    <NavLinkItem
-                      icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
-                      title="Service B.C."
-                      description="Run by the Ministry of Citizens' Services"
-                    />
-                  </li>
-                  <li>
-                    <NavLinkItem
-                      icon={<Icon path={mdiCake} size="20px" className="text-bcgov-blue" />}
-                      title="Public Guardian and Trustee of BC"
-                      description="We work for British Columbians to protect the legal and
-                  financial interests of children under the age of 19 years,
-                  protect the legal, financial, personal and health care
-                  interests of adults who need help with decision making, and
-                  administer estates of deceased and missing persons."
-                    />
-                  </li>
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-          </AccordionGroup>
+        <ExamplePreview code={extractExample(selfSource, 'full-example')}>
+          <FullExampleAccordionGroup />
         </ExamplePreview>
       </DevSection>
 

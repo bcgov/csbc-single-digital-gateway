@@ -2,11 +2,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Breadcrumb, ServiceContent } from '@/components/services/service-content';
 
-// Mock Lucide Icons
-vi.mock('lucide-react', () => ({
-  ChevronRight: () => <span data-testid="chevron-right" />,
-}));
-
 // Mock @tanstack/react-router Link component
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: any) => <a href={to}>{children}</a>,
@@ -40,14 +35,14 @@ describe('Breadcrumb Component', () => {
     expect(items.length).toBe(0);
   });
 
-  it('renders a mix of links and plain text breadcrumbs with chevrons in between', () => {
+  it('renders a mix of links and plain text breadcrumbs with separators in between', () => {
     const trail = [
       { label: 'Home', href: '/' },
       { label: 'Services', href: '/services' },
       { label: 'Detail' }, // last item, no href
     ];
 
-    render(<Breadcrumb trail={trail} />);
+    const { container } = render(<Breadcrumb trail={trail} />);
 
     const nav = screen.getByRole('navigation', { name: /breadcrumb/i });
     expect(nav).toBeInTheDocument();
@@ -64,9 +59,10 @@ describe('Breadcrumb Component', () => {
     expect(activeSpan.tagName).toBe('SPAN');
     expect(activeSpan).toHaveAttribute('aria-current', 'page');
 
-    // 3 items means we should have 2 chevron icons separating them (since index > 0)
-    const chevrons = screen.getAllByTestId('chevron-right');
-    expect(chevrons.length).toBe(2);
+    // 3 items means we should have 2 separator icons between them (index > 0), each hidden from
+    // the accessibility tree.
+    const separators = container.querySelectorAll('svg[aria-hidden="true"]');
+    expect(separators.length).toBe(2);
   });
 });
 

@@ -17,10 +17,14 @@ import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as DevStatusBannerRouteImport } from './routes/dev/status-banner'
 import { Route as DevIconsRouteImport } from './routes/dev/icons'
 import { Route as DevFormElementsRouteImport } from './routes/dev/form-elements'
+import { Route as DevDropdownMenuRouteImport } from './routes/dev/dropdown-menu'
 import { Route as DevDraggableRouteImport } from './routes/dev/draggable'
+import { Route as DevDialogRouteImport } from './routes/dev/dialog'
 import { Route as DevCardsRouteImport } from './routes/dev/cards'
 import { Route as DevButtonRouteImport } from './routes/dev/button'
+import { Route as DevBreadcrumbRouteImport } from './routes/dev/breadcrumb'
 import { Route as DevBadgeRouteImport } from './routes/dev/badge'
+import { Route as DevAlertRouteImport } from './routes/dev/alert'
 import { Route as DevAccordionRouteImport } from './routes/dev/accordion'
 import { Route as ApplicationsIdRouteImport } from './routes/applications.$id'
 import { Route as AccountNotificationsRouteImport } from './routes/account_.notifications'
@@ -70,9 +74,19 @@ const DevFormElementsRoute = DevFormElementsRouteImport.update({
   path: '/form-elements',
   getParentRoute: () => DevRouteRoute,
 } as any)
+const DevDropdownMenuRoute = DevDropdownMenuRouteImport.update({
+  id: '/dropdown-menu',
+  path: '/dropdown-menu',
+  getParentRoute: () => DevRouteRoute,
+} as any)
 const DevDraggableRoute = DevDraggableRouteImport.update({
   id: '/draggable',
   path: '/draggable',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevDialogRoute = DevDialogRouteImport.update({
+  id: '/dialog',
+  path: '/dialog',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevCardsRoute = DevCardsRouteImport.update({
@@ -85,9 +99,19 @@ const DevButtonRoute = DevButtonRouteImport.update({
   path: '/button',
   getParentRoute: () => DevRouteRoute,
 } as any)
+const DevBreadcrumbRoute = DevBreadcrumbRouteImport.update({
+  id: '/breadcrumb',
+  path: '/breadcrumb',
+  getParentRoute: () => DevRouteRoute,
+} as any)
 const DevBadgeRoute = DevBadgeRouteImport.update({
   id: '/badge',
   path: '/badge',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevAlertRoute = DevAlertRouteImport.update({
+  id: '/alert',
+  path: '/alert',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevAccordionRoute = DevAccordionRouteImport.update({
@@ -142,10 +166,14 @@ export interface FileRoutesByFullPath {
   '/account/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
+  '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
+  '/dev/breadcrumb': typeof DevBreadcrumbRoute
   '/dev/button': typeof DevButtonRoute
   '/dev/cards': typeof DevCardsRoute
+  '/dev/dialog': typeof DevDialogRoute
   '/dev/draggable': typeof DevDraggableRoute
+  '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
@@ -163,10 +191,14 @@ export interface FileRoutesByTo {
   '/account/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
+  '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
+  '/dev/breadcrumb': typeof DevBreadcrumbRoute
   '/dev/button': typeof DevButtonRoute
   '/dev/cards': typeof DevCardsRoute
+  '/dev/dialog': typeof DevDialogRoute
   '/dev/draggable': typeof DevDraggableRoute
+  '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
@@ -186,10 +218,14 @@ export interface FileRoutesById {
   '/account_/notifications': typeof AccountNotificationsRoute
   '/applications/$id': typeof ApplicationsIdRoute
   '/dev/accordion': typeof DevAccordionRoute
+  '/dev/alert': typeof DevAlertRoute
   '/dev/badge': typeof DevBadgeRoute
+  '/dev/breadcrumb': typeof DevBreadcrumbRoute
   '/dev/button': typeof DevButtonRoute
   '/dev/cards': typeof DevCardsRoute
+  '/dev/dialog': typeof DevDialogRoute
   '/dev/draggable': typeof DevDraggableRoute
+  '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
@@ -210,10 +246,14 @@ export interface FileRouteTypes {
     | '/account/notifications'
     | '/applications/$id'
     | '/dev/accordion'
+    | '/dev/alert'
     | '/dev/badge'
+    | '/dev/breadcrumb'
     | '/dev/button'
     | '/dev/cards'
+    | '/dev/dialog'
     | '/dev/draggable'
+    | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
     | '/dev/status-banner'
@@ -231,10 +271,14 @@ export interface FileRouteTypes {
     | '/account/notifications'
     | '/applications/$id'
     | '/dev/accordion'
+    | '/dev/alert'
     | '/dev/badge'
+    | '/dev/breadcrumb'
     | '/dev/button'
     | '/dev/cards'
+    | '/dev/dialog'
     | '/dev/draggable'
+    | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
     | '/dev/status-banner'
@@ -253,10 +297,14 @@ export interface FileRouteTypes {
     | '/account_/notifications'
     | '/applications/$id'
     | '/dev/accordion'
+    | '/dev/alert'
     | '/dev/badge'
+    | '/dev/breadcrumb'
     | '/dev/button'
     | '/dev/cards'
+    | '/dev/dialog'
     | '/dev/draggable'
+    | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
     | '/dev/status-banner'
@@ -341,11 +389,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevFormElementsRouteImport
       parentRoute: typeof DevRouteRoute
     }
+    '/dev/dropdown-menu': {
+      id: '/dev/dropdown-menu'
+      path: '/dropdown-menu'
+      fullPath: '/dev/dropdown-menu'
+      preLoaderRoute: typeof DevDropdownMenuRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
     '/dev/draggable': {
       id: '/dev/draggable'
       path: '/draggable'
       fullPath: '/dev/draggable'
       preLoaderRoute: typeof DevDraggableRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/dialog': {
+      id: '/dev/dialog'
+      path: '/dialog'
+      fullPath: '/dev/dialog'
+      preLoaderRoute: typeof DevDialogRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/cards': {
@@ -362,11 +424,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevButtonRouteImport
       parentRoute: typeof DevRouteRoute
     }
+    '/dev/breadcrumb': {
+      id: '/dev/breadcrumb'
+      path: '/breadcrumb'
+      fullPath: '/dev/breadcrumb'
+      preLoaderRoute: typeof DevBreadcrumbRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
     '/dev/badge': {
       id: '/dev/badge'
       path: '/badge'
       fullPath: '/dev/badge'
       preLoaderRoute: typeof DevBadgeRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/alert': {
+      id: '/dev/alert'
+      path: '/alert'
+      fullPath: '/dev/alert'
+      preLoaderRoute: typeof DevAlertRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/accordion': {
@@ -430,10 +506,14 @@ declare module '@tanstack/react-router' {
 
 interface DevRouteRouteChildren {
   DevAccordionRoute: typeof DevAccordionRoute
+  DevAlertRoute: typeof DevAlertRoute
   DevBadgeRoute: typeof DevBadgeRoute
+  DevBreadcrumbRoute: typeof DevBreadcrumbRoute
   DevButtonRoute: typeof DevButtonRoute
   DevCardsRoute: typeof DevCardsRoute
+  DevDialogRoute: typeof DevDialogRoute
   DevDraggableRoute: typeof DevDraggableRoute
+  DevDropdownMenuRoute: typeof DevDropdownMenuRoute
   DevFormElementsRoute: typeof DevFormElementsRoute
   DevIconsRoute: typeof DevIconsRoute
   DevStatusBannerRoute: typeof DevStatusBannerRoute
@@ -442,10 +522,14 @@ interface DevRouteRouteChildren {
 
 const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevAccordionRoute: DevAccordionRoute,
+  DevAlertRoute: DevAlertRoute,
   DevBadgeRoute: DevBadgeRoute,
+  DevBreadcrumbRoute: DevBreadcrumbRoute,
   DevButtonRoute: DevButtonRoute,
   DevCardsRoute: DevCardsRoute,
+  DevDialogRoute: DevDialogRoute,
   DevDraggableRoute: DevDraggableRoute,
+  DevDropdownMenuRoute: DevDropdownMenuRoute,
   DevFormElementsRoute: DevFormElementsRoute,
   DevIconsRoute: DevIconsRoute,
   DevStatusBannerRoute: DevStatusBannerRoute,

@@ -19,8 +19,12 @@ export function PageHeaderBanner({
 }) {
   return (
     <div className="border-b-2 border-bcgov-gold">
-      <div className="mx-auto flex w-full max-w-280 flex-col gap-3 px-4 py-6 md:px-8">
-        {breadcrumb}
+      {breadcrumb && (
+        <div className="border-b bg-background">
+          <div className="mx-auto px-4 md:px-8 py-2 w-full max-w-280 flex">{breadcrumb}</div>
+        </div>
+      )}
+      <div className="mx-auto flex w-full max-w-280 flex-col gap-3 px-4 pt-10 pb-4 md:px-8">
         {children}
       </div>
     </div>

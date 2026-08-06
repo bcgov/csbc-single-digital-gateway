@@ -51,26 +51,85 @@ const SAMPLE_ICONS = [
   { path: mdiMenu, name: 'mdiMenu' },
 ] as const;
 
-const FULL_EXAMPLE_CODE = `<Icon path={mdiCake} size="24px" className="text-blue-80" aria-hidden={true} />
-<Icon path={mdiCheckCircle} size="24px" className="text-success-border" aria-hidden={true} />
-<Icon path={mdiAlertCircle} size="24px" className="text-danger-border" aria-hidden={true} />
-<Icon path={mdiSend} size="24px" aria-hidden={true} />`;
+/** `className: ''` means "no className prop at all" — kept as a sentinel so the generated code
+ *  string can omit the attribute entirely, matching how you'd actually write an uncolored icon. */
+const FULL_EXAMPLE_ICONS = [
+  { path: mdiCake, name: 'mdiCake', className: 'text-blue-80' },
+  { path: mdiCheckCircle, name: 'mdiCheckCircle', className: 'text-success-border' },
+  { path: mdiAlertCircle, name: 'mdiAlertCircle', className: 'text-danger-border' },
+  { path: mdiSend, name: 'mdiSend', className: '' },
+] as const;
+
+function iconCode(name: string, size: string, className: string): string {
+  return className
+    ? `<Icon path={${name}} size="${size}" className="${className}" aria-hidden={true} />`
+    : `<Icon path={${name}} size="${size}" aria-hidden={true} />`;
+}
+
+function FullExampleIcons() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      {FULL_EXAMPLE_ICONS.map((icon) => (
+        <Icon
+          key={icon.name}
+          path={icon.path}
+          size="24px"
+          aria-hidden={true}
+          {...(icon.className ? { className: icon.className } : {})}
+        />
+      ))}
+    </div>
+  );
+}
+
+const FULL_EXAMPLE_CODE = FULL_EXAMPLE_ICONS.map((icon) =>
+  iconCode(icon.name, '24px', icon.className),
+).join('\n');
 
 const USAGE_IMPORT_CODE = `import { mdiCake } from "@mdi/js";
 import { Icon } from "@mdi/react";`;
 
 const USAGE_SKELETON_CODE = `<Icon path={mdiCake} size="24px" aria-hidden={true} />`;
 
-const SIZES_CODE = `<Icon path={mdiCake} size="16px" aria-hidden={true} />
-<Icon path={mdiCake} size="20px" aria-hidden={true} />
-<Icon path={mdiCake} size="24px" aria-hidden={true} />
-<Icon path={mdiCake} size="32px" aria-hidden={true} />`;
+const SIZES = ['16px', '20px', '24px', '32px'] as const;
 
-const COLORS_CODE = `<Icon path={mdiCake} size="24px" aria-hidden={true} />
-<Icon path={mdiCake} size="24px" className="text-link" aria-hidden={true} />
-<Icon path={mdiCake} size="24px" className="text-blue-80" aria-hidden={true} />
-<Icon path={mdiCake} size="24px" className="text-muted-foreground" aria-hidden={true} />
-<Icon path={mdiCake} size="24px" className="text-danger-border" aria-hidden={true} />`;
+function SizesExample() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      {SIZES.map((size) => (
+        <Icon key={size} path={mdiCake} size={size} aria-hidden={true} />
+      ))}
+    </div>
+  );
+}
+
+const SIZES_CODE = SIZES.map((size) => iconCode('mdiCake', size, '')).join('\n');
+
+const COLOR_CLASSES = [
+  '',
+  'text-link',
+  'text-blue-80',
+  'text-muted-foreground',
+  'text-danger-border',
+] as const;
+
+function ColorsExample() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      {COLOR_CLASSES.map((cls) => (
+        <Icon
+          key={cls || 'none'}
+          path={mdiCake}
+          size="24px"
+          aria-hidden={true}
+          {...(cls ? { className: cls } : {})}
+        />
+      ))}
+    </div>
+  );
+}
+
+const COLORS_CODE = COLOR_CLASSES.map((cls) => iconCode('mdiCake', '24px', cls)).join('\n');
 
 export function IconReferencePage() {
   return (
@@ -83,22 +142,7 @@ export function IconReferencePage() {
     >
       <DevSection id="full-example" title="Full example">
         <ExamplePreview code={FULL_EXAMPLE_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Icon path={mdiCake} size="24px" className="text-blue-80" aria-hidden={true} />
-            <Icon
-              path={mdiCheckCircle}
-              size="24px"
-              className="text-success-border"
-              aria-hidden={true}
-            />
-            <Icon
-              path={mdiAlertCircle}
-              size="24px"
-              className="text-danger-border"
-              aria-hidden={true}
-            />
-            <Icon path={mdiSend} size="24px" aria-hidden={true} />
-          </div>
+          <FullExampleIcons />
         </ExamplePreview>
       </DevSection>
 
@@ -132,12 +176,7 @@ export function IconReferencePage() {
 
       <DevSection id="sizes" title="Sizes">
         <ExamplePreview code={SIZES_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Icon path={mdiCake} size="16px" aria-hidden={true} />
-            <Icon path={mdiCake} size="20px" aria-hidden={true} />
-            <Icon path={mdiCake} size="24px" aria-hidden={true} />
-            <Icon path={mdiCake} size="32px" aria-hidden={true} />
-          </div>
+          <SizesExample />
         </ExamplePreview>
       </DevSection>
 
@@ -147,13 +186,7 @@ export function IconReferencePage() {
         description="Icon has no color prop of its own here — pass a text-* className and the SVG inherits it via currentColor."
       >
         <ExamplePreview code={COLORS_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Icon path={mdiCake} size="24px" aria-hidden={true} />
-            <Icon path={mdiCake} size="24px" className="text-link" aria-hidden={true} />
-            <Icon path={mdiCake} size="24px" className="text-blue-80" aria-hidden={true} />
-            <Icon path={mdiCake} size="24px" className="text-muted-foreground" aria-hidden={true} />
-            <Icon path={mdiCake} size="24px" className="text-danger-border" aria-hidden={true} />
-          </div>
+          <ColorsExample />
         </ExamplePreview>
       </DevSection>
 

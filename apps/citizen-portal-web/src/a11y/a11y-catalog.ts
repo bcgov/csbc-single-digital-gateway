@@ -1,12 +1,18 @@
 import type { ComponentA11yMetadata } from '@repo/ui/a11y-types';
 import uiCatalog from '@repo/ui/a11y-catalog.json';
+import breadcrumbA11y from './breadcrumb.a11y';
 import formElementsA11y from './form-elements-reference-page.a11y';
 import iconA11y from './icon-reference-page.a11y';
 import statusBannerA11y from './status-banner.a11y';
 
 // Components documented in this app but not owned by @repo/ui (app-local components, or
 // /dev pattern pages with no single owning component) — too few to warrant their own generator.
-const appLocalCatalog: ComponentA11yMetadata[] = [statusBannerA11y, iconA11y, formElementsA11y];
+const appLocalCatalog: ComponentA11yMetadata[] = [
+  statusBannerA11y,
+  iconA11y,
+  formElementsA11y,
+  breadcrumbA11y,
+];
 
 const catalog: ComponentA11yMetadata[] = [
   ...(uiCatalog as ComponentA11yMetadata[]),
