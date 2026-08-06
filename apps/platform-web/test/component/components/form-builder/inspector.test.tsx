@@ -116,22 +116,21 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeDisplay).toHaveBeenCalledWith({ text: 'updated display text' });
   });
 
-  it('renders control inspector with basic settings and duplicate key warnings', async () => {
+  it('renders control inspector with basic settings; no editable field key (feature 159)', async () => {
     const user = userEvent.setup();
     const handleChangeControl = vi.fn();
     const node: ControlNode = {
       kind: 'control',
       fieldType: 'text',
-      key: 'username',
+      key: 'V1StGXR8',
       label: 'Username',
       required: false,
       options: {},
     };
 
-    const { rerender } = render(
+    render(
       <Inspector
         node={node}
-        allKeys={['username']} // No duplicate key
         form={defaultForm}
         onChangeControl={handleChangeControl}
         onChangeContainer={vi.fn()}
@@ -142,21 +141,16 @@ describe('Inspector Component Test Suite', () => {
 
     expect(screen.getByText('Field settings')).toBeInTheDocument();
     expect(screen.getByLabelText('Label')).toHaveValue('Username');
-    expect(screen.getByLabelText('Field key')).toHaveValue('username');
-    expect(screen.queryByText('Another field already uses this key.')).not.toBeInTheDocument();
+    // No editable "Field key" input anymore — the key is auto-generated.
+    expect(screen.queryByLabelText('Field key')).not.toBeInTheDocument();
 
     // Edit Label
     await user.type(screen.getByLabelText('Label'), '!');
     expect(handleChangeControl).toHaveBeenCalledWith({ label: 'Username!' });
 
-    // Edit Field key
-    const keyInput = screen.getByLabelText('Field key');
-    await user.type(keyInput, '1');
-    expect(handleChangeControl).toHaveBeenLastCalledWith({ key: 'username1' });
-
-    // Edit Help text
-    const helpInput = screen.getByLabelText('Help text');
-    await user.type(helpInput, '?');
+    // Field description (was "Help text")
+    const descInput = screen.getByLabelText('Field description');
+    await user.type(descInput, '?');
     expect(handleChangeControl).toHaveBeenLastCalledWith({ description: '?' });
 
     // Toggle required
@@ -164,20 +158,58 @@ describe('Inspector Component Test Suite', () => {
     expect(requiredSwitch).not.toBeChecked();
     await user.click(requiredSwitch);
     expect(handleChangeControl).toHaveBeenCalledWith({ required: true });
+  });
 
-    // Rerender with duplicate keys
-    rerender(
+  it('flags an empty field label as required (feature 159)', () => {
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'V1StGXR8',
+      label: '',
+      required: true,
+      options: {},
+    };
+    render(
       <Inspector
         node={node}
-        allKeys={['username', 'username']} // Duplicate key
         form={defaultForm}
-        onChangeControl={handleChangeControl}
+        onChangeControl={vi.fn()}
         onChangeContainer={vi.fn()}
         onChangeDisplay={vi.fn()}
         onChangeForm={vi.fn()}
       />,
     );
-    expect(screen.getByText('Another field already uses this key.')).toBeInTheDocument();
+    expect(screen.getByText('A label is required.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Label')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('shows a muted, click-to-copy field ID for a control field (feature 159)', async () => {
+    const user = userEvent.setup(); // installs a clipboard stub (jsdom's is getter-only)
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'V1StGXR8',
+      label: 'Username',
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    const idButton = screen.getByRole('button', { name: 'Copy field ID V1StGXR8' });
+    expect(idButton).toHaveTextContent('ID: V1StGXR8');
+    await user.click(idButton);
+    expect(await navigator.clipboard.readText()).toBe('V1StGXR8');
+    expect(idButton).toHaveTextContent('Copied!');
   });
 
   it('renders the boolean field "Display as" control and switches it to a toggle (feature 156)', async () => {
@@ -715,7 +747,7 @@ describe('Inspector Component Test Suite', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Help text')).toHaveValue('');
+    expect(screen.getByLabelText('Field description')).toHaveValue('');
 
     const nodeSlider: ControlNode = {
       kind: 'control',

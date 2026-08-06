@@ -233,6 +233,10 @@ function controlElement(node: ControlNode): JsonObject {
   const element: JsonObject = { type: 'Control', scope: `#/properties/${node.key}` };
   if (node.label !== '') {
     element.label = node.label;
+  } else {
+    // Feature 159: an empty label renders BLANK — `label: false` stops JSONForms from falling back to
+    // the scope (the auto-generated key) as the label.
+    element.label = false;
   }
   const options = controlOptions(node);
   if (Object.keys(options).length > 0) {

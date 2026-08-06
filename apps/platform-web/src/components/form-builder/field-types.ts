@@ -160,7 +160,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'address',
     label: 'Address',
-    description: 'Country, street, city, state / province & postal code.',
+    description: 'An address value.',
     group: 'Advanced',
     kind: 'control',
     icon: MapPin,
@@ -178,7 +178,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'heading',
     label: 'Heading',
-    description: 'A section heading. Displays only — collects no data.',
+    description: 'Display only — a section heading.',
     group: 'Display',
     kind: 'display',
     icon: Heading,
@@ -187,7 +187,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'paragraph',
     label: 'Paragraph',
-    description: 'A block of guidance text. Displays only — collects no data.',
+    description: 'Display only — a block of guidance text.',
     group: 'Display',
     kind: 'display',
     icon: Pilcrow,
@@ -196,7 +196,7 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'richtextdisplay',
     label: 'Rich text',
-    description: 'Formatted content to read. Displays only — collects no data.',
+    description: 'Display only — formatted content to read.',
     group: 'Display',
     kind: 'display',
     icon: FileText,

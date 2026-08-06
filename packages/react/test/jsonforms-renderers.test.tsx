@@ -193,6 +193,19 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
     ).toContain('font-semibold');
   });
 
+  it('renders no label when the uischema label is false — never the scope/key (feature 159)', () => {
+    const { container } = render(
+      <Form
+        schema={{ type: 'object', properties: { V1StGXR8: { type: 'string' } } }}
+        uischema={
+          { type: 'Control', scope: '#/properties/V1StGXR8', label: false } as UISchemaElement
+        }
+      />,
+    );
+    expect(container.querySelector('[data-slot="field-label"]')).toBeNull();
+    expect(screen.queryByText(/V1StGXR8/)).toBeNull();
+  });
+
   it('renders a multiline string control as a textarea', () => {
     render(
       <Form

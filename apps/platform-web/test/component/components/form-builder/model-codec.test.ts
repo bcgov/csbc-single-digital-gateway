@@ -512,6 +512,27 @@ describe('Model Codec Component Test Suite', () => {
     expect((multi.uischema as any).elements[0].options.multi).toBe(true);
   });
 
+  it('serializes an empty label as `label: false` so the field renders blank, not its key (feature 159)', () => {
+    const definition = serializeModel({
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'text',
+          key: 'V1StGXR8',
+          label: '',
+          required: false,
+          options: {},
+        },
+      ],
+    });
+    expect((definition.uischema as any).elements[0].label).toBe(false);
+    expect((definition.schema.properties as any).V1StGXR8.title).toBeUndefined();
+    // Round-trips back to an empty label.
+    expect((parseModel(definition).fields[0] as any).label).toBe('');
+  });
+
   it('handles default values and fallbacks during serialization', () => {
     const original: FormModel = {
       title: '',

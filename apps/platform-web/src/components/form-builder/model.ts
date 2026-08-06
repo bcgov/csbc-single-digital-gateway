@@ -3,7 +3,8 @@
  * (`{ schema, uischema }` as stored in `document_versions.schema`). The model — not the raw
  * schema/uischema — is the editor's source of truth; `parseModel`/`serializeModel` round-trip.
  */
-import { CHOICE_FIELD_TYPES, type FieldTypeId } from './field-types';
+import { nanoid } from 'nanoid';
+import { CHOICE_FIELD_TYPES, FIELD_TYPE_BY_ID, type FieldTypeId } from './field-types';
 
 export { FIELD_TYPES } from './field-types';
 export type { FieldTypeId, FieldTypeDef, FieldGroup } from './field-types';
@@ -105,6 +106,39 @@ export interface FormDefinition {
 export { parseModel, serializeModel } from './model-codec';
 
 // ── Key helpers ───────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Feature 159: a fresh field key. Keys are auto-generated (not authored) — a `nanoid(8)` gives an
+ * ~2.8e14 keyspace, so per-form collisions are negligible and no uniqueness pass is needed. The value
+ * is also the property's JSON-Schema key (`#/properties/<key>`); an arbitrary nanoid resolves fine.
+ */
+export function newFieldKey(): string {
+  return nanoid(8);
+}
+
+/** Count existing control nodes of a given field type (top-level + nested). */
+function countControlsOfType(model: FormModel, fieldType: FieldTypeId): number {
+  let count = 0;
+  for (const field of model.fields) {
+    if (field.kind === 'control' && field.fieldType === fieldType) {
+      count += 1;
+    } else if (field.kind === 'container') {
+      count += field.children.filter(
+        (c) => c.kind === 'control' && c.fieldType === fieldType,
+      ).length;
+    }
+  }
+  return count;
+}
+
+/**
+ * Feature 159: the default label for a freshly-added control — `"<Type> <n>"` (e.g. `"Text 1"`), so a
+ * field is never blank and never falls back to showing its (auto-generated) key as the label.
+ */
+export function defaultFieldLabel(model: FormModel, fieldType: FieldTypeId): string {
+  const typeLabel = FIELD_TYPE_BY_ID[fieldType]?.label ?? 'Field';
+  return `${typeLabel} ${countControlsOfType(model, fieldType) + 1}`;
+}
 
 /** Slugify a label into a JSON-Schema-safe property key (`^[a-zA-Z_][a-zA-Z0-9_]*$`). */
 export function fieldKeyFromLabel(label: string): string {

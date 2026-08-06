@@ -3,12 +3,33 @@ import {
   fieldKeyFromLabel,
   uniqueKey,
   createField,
+  defaultFieldLabel,
   getNodeAt,
   insertField,
   moveField,
+  newFieldKey,
   allKeys,
 } from '@/components/form-builder/model';
 import type { FormModel } from '@/components/form-builder/model';
+
+describe('newFieldKey / defaultFieldLabel (feature 159)', () => {
+  it('newFieldKey returns an 8-char nanoid', () => {
+    const key = newFieldKey();
+    expect(key).toHaveLength(8);
+    expect(newFieldKey()).not.toBe(key); // unique
+  });
+
+  it('defaultFieldLabel numbers per field type', () => {
+    const model: FormModel = {
+      title: '',
+      description: '',
+      fields: [{ ...createField('text'), key: 'a' }],
+    };
+    expect(defaultFieldLabel(model, 'text')).toBe('Text 2'); // one Text exists → next is 2
+    expect(defaultFieldLabel(model, 'number')).toBe('Number 1');
+    expect(defaultFieldLabel(model, 'select')).toBe('Select 1');
+  });
+});
 
 describe('Form Builder Model Component Test Suite', () => {
   describe('fieldKeyFromLabel', () => {

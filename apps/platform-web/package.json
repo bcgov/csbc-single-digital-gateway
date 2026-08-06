@@ -25,6 +25,7 @@
     "@tanstack/react-router": "1.170.16",
     "@xyflow/react": "^12.11.1",
     "lucide-react": "^1.21.0",
+    "nanoid": "^3.3.17",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-phone-number-input": "^3.4.17"

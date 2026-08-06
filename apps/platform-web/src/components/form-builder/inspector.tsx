@@ -4,7 +4,7 @@ import { Label } from '@repo/ui/label';
 import { Switch } from '@repo/ui/switch';
 import { Textarea } from '@repo/ui/textarea';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { AddressDefaultsEditor } from './address-defaults-editor';
 import { DisplayInspector } from './display-inspector';
 import { CHOICE_FIELD_TYPES } from './field-types';
@@ -31,6 +31,27 @@ function Row({
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
     </div>
+  );
+}
+
+/** The field's auto-generated id (feature 159), muted — click to copy it to the clipboard. */
+function FieldIdBadge({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard?.writeText(id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title="Copy field ID"
+      aria-label={`Copy field ID ${id}`}
+      className="shrink-0 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {copied ? 'Copied!' : `ID: ${id}`}
+    </button>
   );
 }
 
@@ -337,11 +358,9 @@ function TextSettings({
 
 function ControlInspector({
   node,
-  duplicateKey,
   onChange,
 }: {
   node: ControlNode;
-  duplicateKey: boolean;
   onChange: (patch: Partial<ControlNode>) => void;
 }) {
   return (
@@ -350,26 +369,20 @@ function ControlInspector({
         <Input
           id="insp-label"
           value={node.label}
+          aria-invalid={node.label.trim() === '' || undefined}
           onChange={(e) => onChange({ label: e.target.value })}
         />
-      </Row>
-      <Row label="Field key" htmlFor="insp-key">
-        <Input
-          id="insp-key"
-          value={node.key}
-          aria-invalid={duplicateKey || undefined}
-          onChange={(e) => onChange({ key: e.target.value })}
-        />
-        {duplicateKey ? (
-          <p className="text-xs text-destructive">Another field already uses this key.</p>
+        {node.label.trim() === '' ? (
+          <p className="text-xs text-destructive">A label is required.</p>
         ) : null}
       </Row>
-      <Row label="Help text" htmlFor="insp-help">
+      <Row label="Field description" htmlFor="insp-help">
         <Textarea
           id="insp-help"
           rows={2}
           value={node.description ?? ''}
           onChange={(e) => onChange({ description: e.target.value })}
+          placeholder="Additional guidance for the user (optional)"
         />
       </Row>
       <div className="flex items-center justify-between">
@@ -436,7 +449,6 @@ function ControlInspector({
 /** Right column: config for the selected field, or form-level settings when nothing is selected. */
 export function Inspector({
   node,
-  allKeys,
   form,
   onChangeControl,
   onChangeContainer,
@@ -444,7 +456,8 @@ export function Inspector({
   onChangeForm,
 }: {
   node: FieldNode | null;
-  allKeys: string[];
+  /** Retained for the caller's convenience; no longer used (keys are auto-generated — feature 159). */
+  allKeys?: string[];
   form: Pick<FormModel, 'title' | 'description'>;
   onChangeControl: (patch: Partial<ControlNode>) => void;
   onChangeContainer: (patch: Partial<ContainerNode>) => void;
@@ -487,8 +500,7 @@ export function Inspector({
     if (node.kind === 'display') {
       return <DisplayInspector node={node} onChange={onChangeDisplay} />;
     }
-    const duplicateKey = allKeys.filter((k) => k === node.key).length > 1;
-    return <ControlInspector node={node} duplicateKey={duplicateKey} onChange={onChangeControl} />;
+    return <ControlInspector node={node} onChange={onChangeControl} />;
   })();
 
   const heading =
@@ -505,7 +517,10 @@ export function Inspector({
       aria-label="Inspector"
       className="flex h-full flex-col gap-3 overflow-y-auto border-l border-border bg-card p-4"
     >
-      <h2 className="text-sm font-semibold">{heading}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">{heading}</h2>
+        {node !== null && node.kind === 'control' ? <FieldIdBadge id={node.key} /> : null}
+      </div>
       {body}
     </section>
   );
