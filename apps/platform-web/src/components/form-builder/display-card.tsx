@@ -1,7 +1,7 @@
-import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { RichTextInput, type RichTextInputProps } from '@repo/ui/rich-text-input';
 import { Textarea } from '@repo/ui/textarea';
+import { ClearableInput } from './clearable-input';
 import type { DisplayNode, Path, TextAlign } from './model';
 
 /** Tailwind text-align class per alignment (shared shape with the LabelRenderer). */
@@ -39,11 +39,12 @@ export function DisplayCard({
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={fieldId}>{FIELD_LABEL[node.displayType]}</Label>
       {node.displayType === 'heading' ? (
-        <Input
+        <ClearableInput
           id={fieldId}
           placeholder="Heading"
           value={node.text}
           onChange={(e) => onChange(path, { text: e.target.value })}
+          onClear={() => onChange(path, { text: '' })}
           className={`h-auto py-1.5 font-semibold ${
             (node.level ?? 2) === 3 ? 'text-lg md:text-lg' : 'text-xl md:text-xl'
           }`}

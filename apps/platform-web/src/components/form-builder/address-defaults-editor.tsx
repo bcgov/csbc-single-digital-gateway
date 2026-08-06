@@ -7,11 +7,11 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '@repo/ui/combobox';
-import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { useQuery } from '@tanstack/react-query';
 
 import { countriesQueryOptions, statesQueryOptions } from '@/lib/geo';
+import { ClearableInput } from './clearable-input';
 import type { ControlNode } from './model';
 
 /**
@@ -96,12 +96,13 @@ export function AddressDefaultsEditor({
             </ComboboxContent>
           </Combobox>
         ) : (
-          <Input
+          <ClearableInput
             id="insp-address-default-province"
             value={node.defaultProvince ?? ''}
             placeholder={selected ? 'No default' : 'Choose a country first'}
             disabled={!selected}
             onChange={(event) => setProvince(event.target.value)}
+            onClear={() => setProvince('')}
           />
         )}
       </div>

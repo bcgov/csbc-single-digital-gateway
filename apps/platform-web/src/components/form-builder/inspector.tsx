@@ -7,6 +7,7 @@ import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { AddressDefaultsEditor } from './address-defaults-editor';
+import { ClearableInput } from './clearable-input';
 import { DisplayInspector } from './display-inspector';
 import { CHOICE_FIELD_TYPES } from './field-types';
 import type {
@@ -254,32 +255,35 @@ function NumberSettings({
       </div>
       {activeType === 'decimal' ? (
         <Row label="Decimal places" htmlFor="insp-num-decimals">
-          <Input
+          <ClearableInput
             id="insp-num-decimals"
             type="number"
             min={0}
             step={1}
             value={node.decimalPlaces ?? ''}
             onChange={(e) => onChange({ decimalPlaces: parseDecimals(e.target.value) })}
+            onClear={() => onChange({ decimalPlaces: undefined })}
           />
         </Row>
       ) : null}
       <div className="grid grid-cols-2 gap-2">
         <Row label="Min" htmlFor="insp-num-min">
-          <Input
+          <ClearableInput
             id="insp-num-min"
             type="number"
             value={node.min ?? ''}
             onChange={(e) => onChange({ min: parseBound(e.target.value) })}
+            onClear={() => onChange({ min: undefined })}
           />
         </Row>
         <Row label="Max" htmlFor="insp-num-max">
-          <Input
+          <ClearableInput
             id="insp-num-max"
             type="number"
             value={node.max ?? ''}
             aria-invalid={boundsInverted || undefined}
             onChange={(e) => onChange({ max: parseBound(e.target.value) })}
+            onClear={() => onChange({ max: undefined })}
           />
         </Row>
       </div>
@@ -337,10 +341,11 @@ function TextSettings({
   return (
     <div className="flex flex-col gap-4">
       <Row label="Placeholder" htmlFor="insp-placeholder">
-        <Input
+        <ClearableInput
           id="insp-placeholder"
           value={node.placeholder ?? ''}
           onChange={(e) => onChange({ placeholder: e.target.value })}
+          onClear={() => onChange({ placeholder: '' })}
         />
       </Row>
       <div className="flex items-center justify-between">
@@ -354,11 +359,12 @@ function TextSettings({
       </div>
       {node.multiline !== true ? (
         <Row label="Input mask" htmlFor="insp-mask">
-          <Input
+          <ClearableInput
             id="insp-mask"
             placeholder="(999) 999-9999"
             value={node.mask ?? ''}
             onChange={(e) => onChange({ mask: e.target.value })}
+            onClear={() => onChange({ mask: '' })}
           />
           <p className="text-xs text-muted-foreground">
             inputmask pattern — 9 = digit, a = letter, * = alphanumeric.
@@ -366,12 +372,13 @@ function TextSettings({
         </Row>
       ) : null}
       <Row label="Max length" htmlFor="insp-maxlength">
-        <Input
+        <ClearableInput
           id="insp-maxlength"
           type="number"
           min={1}
           value={node.maxLength ?? ''}
           onChange={(e) => onChange({ maxLength: parsePositiveInt(e.target.value) })}
+          onClear={() => onChange({ maxLength: undefined })}
         />
       </Row>
     </div>
@@ -388,11 +395,12 @@ function ControlInspector({
   return (
     <div className="flex flex-col gap-4">
       <Row label="Label" htmlFor="insp-label">
-        <Input
+        <ClearableInput
           id="insp-label"
           value={node.label}
           aria-invalid={node.label.trim() === '' || undefined}
           onChange={(e) => onChange({ label: e.target.value })}
+          onClear={() => onChange({ label: '' })}
         />
         {node.label.trim() === '' ? (
           <p className="text-xs text-destructive">A label is required.</p>
@@ -491,11 +499,12 @@ export function Inspector({
       return (
         <div className="flex flex-col gap-4">
           <Row label="Title" htmlFor="settings-title">
-            <Input
+            <ClearableInput
               id="settings-title"
               value={form.title}
               aria-invalid={form.title.trim() === '' || undefined}
               onChange={(e) => onChangeForm({ title: e.target.value })}
+              onClear={() => onChangeForm({ title: '' })}
             />
             {form.title.trim() === '' ? (
               <p className="text-xs text-destructive">A title is required.</p>
@@ -515,10 +524,11 @@ export function Inspector({
     if (node.kind === 'container') {
       return (
         <Row label="Section title" htmlFor="insp-container-label">
-          <Input
+          <ClearableInput
             id="insp-container-label"
             value={node.label ?? ''}
             onChange={(e) => onChangeContainer({ label: e.target.value })}
+            onClear={() => onChangeContainer({ label: '' })}
           />
         </Row>
       );

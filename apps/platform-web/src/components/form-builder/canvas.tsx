@@ -1,6 +1,6 @@
-import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Textarea } from '@repo/ui/textarea';
+import { ClearableInput } from './clearable-input';
 import { ROOT_GROUP } from './dnd';
 import { ContainerRow, EmptyDropZone, EndZone, FieldRow, pathEq } from './field-rows';
 import type { FieldTypeId } from './field-types';
@@ -64,13 +64,14 @@ export function Canvas({
       <div className="mx-auto w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="canvas-form-title">Title</Label>
-          <Input
+          <ClearableInput
             id="canvas-form-title"
             placeholder="Untitled"
             value={model.title}
             aria-invalid={model.title.trim() === '' || undefined}
             onChange={(event) => onChangeForm({ title: event.target.value })}
             onFocus={() => onSelect(null)}
+            onClear={() => onChangeForm({ title: '' })}
           />
           {model.title.trim() === '' ? (
             <p className="text-xs text-destructive">A title is required.</p>
