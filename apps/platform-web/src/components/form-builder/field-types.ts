@@ -17,7 +17,6 @@ import {
   SlidersHorizontal,
   TextCursorInput,
   Type,
-  WrapText,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,7 +34,6 @@ export type FieldTypeId =
   | 'daterange'
   | 'time'
   | 'datetime'
-  | 'multiline'
   | 'radio'
   | 'checkboxes'
   | 'slider'
@@ -66,10 +64,11 @@ export const FIELD_TYPES: FieldTypeDef[] = [
   {
     id: 'text',
     label: 'Text',
-    description: 'A single line of text.',
+    description: 'One or more lines of text.',
     group: 'Core',
     kind: 'control',
     icon: Type,
+    keywords: ['textarea', 'paragraph', 'multiline', 'string'],
   },
   {
     id: 'number',
@@ -104,15 +103,6 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     group: 'Core',
     kind: 'control',
     icon: Calendar,
-  },
-  {
-    id: 'multiline',
-    label: 'Multiline',
-    description: 'A multi-line text area.',
-    group: 'Core',
-    kind: 'control',
-    icon: WrapText,
-    keywords: ['textarea', 'paragraph'],
   },
   {
     id: 'radio',

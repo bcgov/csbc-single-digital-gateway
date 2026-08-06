@@ -210,6 +210,77 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
     expect(field.tagName).toBe('TEXTAREA');
   });
 
+  it('applies maxLength (hard cap) and shows an n/max counter (feature 158)', () => {
+    render(
+      <Form
+        schema={{
+          type: 'object',
+          properties: { bio: { type: 'string', title: 'Bio', maxLength: 40 } },
+        }}
+        initial={{ bio: 'hello' }}
+      />,
+    );
+    const input = screen.getByLabelText(/bio/i);
+    expect(input).toHaveAttribute('maxlength', '40');
+    expect(screen.getByText('5/40')).toBeInTheDocument();
+  });
+
+  it('applies an input mask to a single-line text field (feature 158)', () => {
+    // inputmask no-ops under jsdom → render-safety (it renders a plain input without throwing).
+    expect(() =>
+      render(
+        <Form
+          schema={{ type: 'object', properties: { phone: { type: 'string', title: 'Phone' } } }}
+          uischema={
+            {
+              type: 'Control',
+              scope: '#/properties/phone',
+              options: { mask: '(999) 999-9999' },
+            } as UISchemaElement
+          }
+        />,
+      ),
+    ).not.toThrow();
+    const input = screen.getByLabelText(/phone/i);
+    expect(input.tagName).toBe('INPUT');
+  });
+
+  it('renders a placeholder from options.placeholder (feature 158)', () => {
+    render(
+      <Form
+        schema={{ type: 'object', properties: { name: { type: 'string', title: 'Name' } } }}
+        uischema={
+          {
+            type: 'Control',
+            scope: '#/properties/name',
+            options: { placeholder: 'Your name' },
+          } as UISchemaElement
+        }
+      />,
+    );
+    expect(screen.getByLabelText(/name/i)).toHaveAttribute('placeholder', 'Your name');
+  });
+
+  it('renders a multiline textarea ~5 rows tall that still auto-grows (feature 158)', () => {
+    render(
+      <Form
+        schema={{ type: 'object', properties: { bio: { type: 'string', title: 'Bio' } } }}
+        uischema={
+          {
+            type: 'Control',
+            scope: '#/properties/bio',
+            options: { multi: true },
+          } as UISchemaElement
+        }
+      />,
+    );
+    const field = screen.getByLabelText(/bio/i);
+    expect(field.tagName).toBe('TEXTAREA');
+    // A raised min-height (≈5 rows) with `field-sizing-content` retained → grows with content.
+    expect(field.className).toContain('min-h-[7.5rem]');
+    expect(field.className).toContain('field-sizing-content');
+  });
+
   it('marks a required, empty control as aria-invalid and clears it when valid', () => {
     const schema: JsonSchema = {
       type: 'object',

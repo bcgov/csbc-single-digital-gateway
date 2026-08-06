@@ -393,6 +393,61 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeControl).toHaveBeenLastCalledWith({ multiple: true });
   });
 
+  it('renders text field settings: placeholder, multiline and max length (feature 158)', async () => {
+    const user = userEvent.setup();
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'bio',
+      label: 'Bio',
+      required: false,
+      options: {},
+      multiline: false,
+    };
+
+    const { rerender } = render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Placeholder'), { target: { value: 'Tell us' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ placeholder: 'Tell us' });
+
+    fireEvent.change(screen.getByLabelText('Max length'), { target: { value: '280' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ maxLength: 280 });
+
+    // Single-line shows the input mask; editing it fires onChange.
+    fireEvent.change(screen.getByLabelText('Input mask'), { target: { value: '(999) 999-9999' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ mask: '(999) 999-9999' });
+
+    // No author-set rows anymore — multiline is a plain on/off toggle.
+    expect(screen.queryByLabelText('Visible rows')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('switch', { name: 'Multiline' }));
+    expect(handleChangeControl).toHaveBeenCalledWith({ multiline: true });
+
+    // The input mask is single-line only — hidden once multiline is on.
+    rerender(
+      <Inspector
+        node={{ ...node, multiline: true }}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText('Input mask')).not.toBeInTheDocument();
+  });
+
   it('orders each choice option Label-then-Value inside a capped scroll list (feature 156 Step 2)', () => {
     const node: ControlNode = {
       kind: 'control',

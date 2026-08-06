@@ -47,9 +47,9 @@ describe('Palette Component Test Suite', () => {
     // Type "text"
     await user.type(searchInput, 'text');
 
-    // "Text" and "Multiline" should match and be visible
+    // "Text" should match and be visible (Multiline folded into Text — feature 158)
     expect(screen.getByRole('button', { name: 'Text' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Multiline' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Multiline' })).not.toBeInTheDocument();
 
     // "Number" and "Boolean" should NOT be visible
     expect(screen.queryByRole('button', { name: 'Number' })).not.toBeInTheDocument();

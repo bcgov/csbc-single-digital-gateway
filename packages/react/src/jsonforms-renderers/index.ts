@@ -13,7 +13,6 @@ export {
   BooleanToggleControl,
   booleanToggleControlTester,
 } from './controls/boolean-toggle-control';
-export { MultilineControl, multilineControlTester } from './controls/multiline-control';
 export { EnumControl, enumControlTester } from './controls/enum-control';
 export { EnumRadioControl, enumRadioControlTester } from './controls/enum-radio-control';
 export { OneOfEnumControl, oneOfEnumControlTester } from './controls/oneof-enum-control';

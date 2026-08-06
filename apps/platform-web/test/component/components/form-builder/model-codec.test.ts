@@ -296,7 +296,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsed.fields[0] as any).fieldType).toBe('text');
   });
 
-  it('round-trips boolean (as checkbox and as toggle), date, multiline and richtext control nodes', () => {
+  it('round-trips boolean (as checkbox and as toggle), date, multiline text and richtext control nodes', () => {
     const original: FormModel = {
       title: '',
       description: '',
@@ -329,12 +329,14 @@ describe('Model Codec Component Test Suite', () => {
           options: {},
         },
         {
+          // Feature 158: multiline is now the Text field with `multiline: true` (→ options.multi).
           kind: 'control',
-          fieldType: 'multiline',
+          fieldType: 'text',
           key: 'user_bio',
           label: 'Bio',
           required: false,
           options: {},
+          multiline: true,
         },
         {
           kind: 'control',
@@ -439,6 +441,75 @@ describe('Model Codec Component Test Suite', () => {
     expect((definition.uischema as any).elements[0].options.format).toBe('datetime');
 
     expect(parseModel(definition)).toEqual(original);
+  });
+
+  it('round-trips a text field with placeholder, maxLength and multiline (feature 158)', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'text',
+          key: 'bio',
+          label: 'Bio',
+          required: false,
+          options: {},
+          placeholder: 'Tell us about yourself',
+          multiline: true,
+          maxLength: 280,
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const prop = (definition.schema.properties as any).bio;
+    const opts = (definition.uischema as any).elements[0].options;
+    expect(prop).toEqual({ type: 'string', maxLength: 280, title: 'Bio' });
+    expect(opts).toEqual({ multi: true, placeholder: 'Tell us about yourself' });
+
+    expect(parseModel(definition)).toEqual(original);
+  });
+
+  it('round-trips a single-line text mask; multiline drops it (feature 158)', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'text',
+          key: 'phone',
+          label: 'Phone',
+          required: false,
+          options: {},
+          mask: '(999) 999-9999',
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    expect((definition.uischema as any).elements[0].options.mask).toBe('(999) 999-9999');
+    expect(parseModel(definition)).toEqual(original);
+
+    // A mask on a multiline node is dropped (masks are single-line only).
+    const multi = serializeModel({
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'text',
+          key: 'x',
+          label: 'X',
+          required: false,
+          options: {},
+          multiline: true,
+          mask: '999',
+        },
+      ],
+    });
+    expect((multi.uischema as any).elements[0].options.mask).toBeUndefined();
+    expect((multi.uischema as any).elements[0].options.multi).toBe(true);
   });
 
   it('handles default values and fallbacks during serialization', () => {

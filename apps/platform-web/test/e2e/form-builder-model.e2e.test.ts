@@ -151,9 +151,11 @@ describe('Form Builder Model Integration Test Suite', () => {
   describe('FIELD_TYPES', () => {
     it('includes core, advanced, rich-text and layout entries', () => {
       const ids = FIELD_TYPES.map((t) => t.id);
-      for (const id of ['text', 'number', 'boolean', 'select', 'date', 'multiline']) {
+      for (const id of ['text', 'number', 'boolean', 'select', 'date']) {
         expect(ids).toContain(id);
       }
+      // Feature 158: Multiline folded into Text (single/multi-line toggle).
+      expect(ids).not.toContain('multiline');
       for (const id of ['radio', 'checkboxes', 'slider', 'daterange', 'time', 'datetime']) {
         expect(ids).toContain(id);
       }

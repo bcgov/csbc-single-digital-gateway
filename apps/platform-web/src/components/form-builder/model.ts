@@ -21,6 +21,14 @@ export interface ControlNode {
   required: boolean;
   options: Record<string, unknown>;
   description?: string;
+  /** Text field (feature 158): placeholder text → `uischema.options.placeholder`. */
+  placeholder?: string;
+  /** Text field (feature 158): render as a multi-line textarea → `uischema.options.multi`. */
+  multiline?: boolean;
+  /** Text field, single-line only (feature 158): use-mask-input pattern → `uischema.options.mask`. */
+  mask?: string;
+  /** Text field (feature 158): max characters → `schema.maxLength` (hard cap + Ajv + n/max counter). */
+  maxLength?: number | undefined;
   /** Choice fields (select/radio/checkboxes): the authored `{ value, label }[]`, order preserved. */
   enumOptions?: EnumOption[];
   /** Select field only (feature 156, Step 2): single (string enum) vs multi (array). Default false. */

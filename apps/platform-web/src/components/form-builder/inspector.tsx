@@ -274,6 +274,67 @@ function BooleanSettings({
   );
 }
 
+/** Parse a positive-integer input → an integer ≥ 1, or `undefined` (empty / invalid → clears). */
+function parsePositiveInt(raw: string): number | undefined {
+  if (raw === '') {
+    return undefined;
+  }
+  const value = Math.floor(Number(raw));
+  return Number.isNaN(value) || value < 1 ? undefined : value;
+}
+
+/** Text-field settings (feature 158): placeholder, multiline toggle, visible rows, max length. */
+function TextSettings({
+  node,
+  onChange,
+}: {
+  node: ControlNode;
+  onChange: (patch: Partial<ControlNode>) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <Row label="Placeholder" htmlFor="insp-placeholder">
+        <Input
+          id="insp-placeholder"
+          value={node.placeholder ?? ''}
+          onChange={(e) => onChange({ placeholder: e.target.value })}
+        />
+      </Row>
+      <div className="flex items-center justify-between">
+        <Label htmlFor="insp-multiline">Multiline</Label>
+        <Switch
+          id="insp-multiline"
+          aria-label="Multiline"
+          checked={node.multiline === true}
+          onCheckedChange={(checked) => onChange({ multiline: checked })}
+        />
+      </div>
+      {node.multiline !== true ? (
+        <Row label="Input mask" htmlFor="insp-mask">
+          <Input
+            id="insp-mask"
+            placeholder="(999) 999-9999"
+            value={node.mask ?? ''}
+            onChange={(e) => onChange({ mask: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">
+            inputmask pattern — 9 = digit, a = letter, * = alphanumeric.
+          </p>
+        </Row>
+      ) : null}
+      <Row label="Max length" htmlFor="insp-maxlength">
+        <Input
+          id="insp-maxlength"
+          type="number"
+          min={1}
+          value={node.maxLength ?? ''}
+          onChange={(e) => onChange({ maxLength: parsePositiveInt(e.target.value) })}
+        />
+      </Row>
+    </div>
+  );
+}
+
 function ControlInspector({
   node,
   duplicateKey,
@@ -320,6 +381,7 @@ function ControlInspector({
           onCheckedChange={(checked) => onChange({ required: checked })}
         />
       </div>
+      {node.fieldType === 'text' ? <TextSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'boolean' ? <BooleanSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'select' ? (
         <div className="flex items-center justify-between">

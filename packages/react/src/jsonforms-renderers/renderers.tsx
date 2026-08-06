@@ -16,7 +16,6 @@ import { DateTimeControl, dateTimeControlTester } from './controls/datetime-cont
 import { EnumControl, enumControlTester } from './controls/enum-control';
 import { EnumRadioControl, enumRadioControlTester } from './controls/enum-radio-control';
 import { MultiEnumControl, multiEnumControlTester } from './controls/multi-enum-control';
-import { MultilineControl, multilineControlTester } from './controls/multiline-control';
 import { NumberControl, numberControlTester } from './controls/number-control';
 import { OneOfEnumControl, oneOfEnumControlTester } from './controls/oneof-enum-control';
 import { PhoneControl, phoneControlTester } from './controls/phone-control';
@@ -36,8 +35,8 @@ import { VerticalLayoutRenderer, verticalLayoutTester } from './layouts/vertical
 /**
  * The complete @repo/ui renderer registry — pass to `<JsonForms renderers={renderers} />`
  * (or rely on the `@repo/react/jsonforms` wrapper, which defaults to this set). Higher
- * ranks win dispatch, so the specific controls (multiline, radio, toggle, slider, date,
- * multi-enum) outrank their generic counterparts.
+ * ranks win dispatch, so the specific controls (radio, toggle, slider, date, multi-enum) outrank
+ * their generic counterparts. The single text control (feature 158) branches Input/Textarea internally.
  */
 export const renderers: JsonFormsRendererRegistryEntry[] = [
   // Controls
@@ -45,7 +44,6 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   { tester: numberControlTester, renderer: NumberControl },
   { tester: booleanControlTester, renderer: BooleanControl },
   { tester: booleanToggleControlTester, renderer: BooleanToggleControl },
-  { tester: multilineControlTester, renderer: MultilineControl },
   { tester: enumControlTester, renderer: EnumControl },
   { tester: enumRadioControlTester, renderer: EnumRadioControl },
   { tester: oneOfEnumControlTester, renderer: OneOfEnumControl },

@@ -142,6 +142,13 @@ function propertySchema(node: ControlNode): JsonObject {
       }
       break;
     }
+    case 'text':
+      // Feature 158: a plain string; a max length becomes `schema.maxLength` (Ajv-validated on submit).
+      Object.assign(base, { type: 'string' });
+      if (typeof node.maxLength === 'number') {
+        base.maxLength = node.maxLength;
+      }
+      break;
     default:
       Object.assign(base, { type: 'string' });
   }
@@ -156,8 +163,17 @@ function propertySchema(node: ControlNode): JsonObject {
 
 function controlOptions(node: ControlNode): JsonObject {
   const options: JsonObject = { ...node.options };
-  if (node.fieldType === 'multiline') {
-    options.multi = true;
+  if (node.fieldType === 'text') {
+    // Feature 158: multi-line, visible rows and placeholder are presentational → uischema options.
+    if (node.multiline === true) {
+      options.multi = true;
+    } else if (node.mask !== undefined && node.mask !== '') {
+      // Input mask is single-line only (masks don't apply to a textarea).
+      options.mask = node.mask;
+    }
+    if (node.placeholder !== undefined && node.placeholder !== '') {
+      options.placeholder = node.placeholder;
+    }
   }
   if (node.fieldType === 'boolean' && node.renderAs === 'toggle') {
     // Feature 156: a boolean field authored to display as a toggle emits the same `options.toggle` flag
@@ -332,9 +348,7 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (prop.format === 'date') {
     return 'date';
   }
-  if (options.multi === true) {
-    return 'multiline';
-  }
+  // Feature 158: a plain string is always the Text field; `options.multi` becomes its `multiline` flag.
   return 'text';
 }
 
@@ -379,6 +393,9 @@ function parseControl(
     display: _d,
     multiple: _mult,
     choices: _c,
+    placeholder: _ph,
+    rows: _r,
+    mask: _mk,
     step,
     decimals,
     ...userOptions
@@ -390,6 +407,9 @@ function parseControl(
   void _d;
   void _mult;
   void _c;
+  void _ph;
+  void _r;
+  void _mk;
 
   const label =
     typeof element.label === 'string' ? element.label : ((prop.title as string | undefined) ?? '');
@@ -403,6 +423,21 @@ function parseControl(
   };
   if (typeof prop.description === 'string') {
     node.description = prop.description;
+  }
+  if (fieldType === 'text') {
+    // Feature 158: recover multiline/placeholder/rows from options + maxLength from the schema.
+    if (rawOptions.multi === true) {
+      node.multiline = true;
+    }
+    if (typeof rawOptions.placeholder === 'string' && rawOptions.placeholder !== '') {
+      node.placeholder = rawOptions.placeholder;
+    }
+    if (typeof rawOptions.mask === 'string' && rawOptions.mask !== '') {
+      node.mask = rawOptions.mask;
+    }
+    if (typeof prop.maxLength === 'number') {
+      node.maxLength = prop.maxLength;
+    }
   }
   if (CHOICE_FIELD_TYPES.has(fieldType)) {
     node.enumOptions = choicesFromOptions(rawOptions);
