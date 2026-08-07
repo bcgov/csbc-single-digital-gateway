@@ -77,7 +77,7 @@ describe('App Slug Services Index Route', () => {
 
     // Verify page header and layout
     expect(
-      await screen.findByRole('button', { name: /New service/i }, { timeout: 32000 }),
+      await screen.findByRole('button', { name: /^New$/i }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify services are listed in the table
@@ -86,6 +86,6 @@ describe('App Slug Services Index Route', () => {
     expect(screen.getByText('1')).toBeInTheDocument();
 
     // Check actions menu button
-    expect(screen.getByRole('button', { name: /New service/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^New$/i })).toBeInTheDocument();
   });
 });

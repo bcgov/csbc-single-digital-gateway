@@ -3,7 +3,7 @@ import { Button } from '@repo/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
+import { CircleHelp, EllipsisVertical, Plus } from 'lucide-react';
 import { PageBody, PageHeader } from '@/components/console/page-header';
 import { ListPagination } from '@/components/console/list/list-pagination';
 import { ListSearchInput } from '@/components/console/list/list-search-input';
@@ -39,20 +39,34 @@ export function ServicesList() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Services"
-        description="Service documents that group related applications."
         size="lg"
-      />
-      <PageBody className="flex flex-col gap-4">
-        <div className="flex flex-col items-end gap-3">
+        extra={[
           <Button
+            key="more"
+            variant="outline"
+            size="icon-sm"
+            type="button"
+            aria-label="More options"
+          >
+            <EllipsisVertical className="size-[18px]" aria-hidden />
+          </Button>,
+          <Button key="help" variant="outline" size="icon-sm" type="button" aria-label="Help">
+            <CircleHelp className="size-[18px]" aria-hidden />
+          </Button>,
+          <Button
+            key="new"
             size="sm"
             type="button"
             disabled={workspaceId === ''}
             onClick={() => void navigate({ to: '/app/$slug/services/new', params: { slug } })}
           >
             <Plus className="size-4" aria-hidden />
-            New service
-          </Button>
+            New
+          </Button>,
+        ]}
+      />
+      <PageBody className="flex flex-col gap-4">
+        <div className="flex justify-end">
           <ListSearchInput value={q} onChange={setQ} placeholder="Search services…" />
         </div>
         <div className="overflow-hidden rounded-xl border border-border bg-card">

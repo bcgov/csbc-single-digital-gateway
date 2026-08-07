@@ -98,7 +98,7 @@ describe('ServicesList Component Test Suite', () => {
   it('disables "New service" button when workspace is loading/empty', () => {
     renderServicesList(false, []);
 
-    const newBtn = screen.getByRole('button', { name: /new service/i });
+    const newBtn = screen.getByRole('button', { name: /^new$/i });
     expect(newBtn).toBeDisabled();
     expect(
       screen.getByText('No services yet — create one with the New button.'),
@@ -108,7 +108,7 @@ describe('ServicesList Component Test Suite', () => {
   it('renders empty list state with enabled button when workspace loaded', () => {
     renderServicesList(true, []);
 
-    const newBtn = screen.getByRole('button', { name: /new service/i });
+    const newBtn = screen.getByRole('button', { name: /^new$/i });
     expect(newBtn).not.toBeDisabled();
     expect(
       screen.getByText('No services yet — create one with the New button.'),
@@ -143,7 +143,7 @@ describe('ServicesList Component Test Suite', () => {
     const user = userEvent.setup();
     renderServicesList(true, []);
 
-    const newBtn = screen.getByRole('button', { name: /new service/i });
+    const newBtn = screen.getByRole('button', { name: /^new$/i });
     await user.click(newBtn);
 
     expect(mockNavigate).toHaveBeenCalledWith({

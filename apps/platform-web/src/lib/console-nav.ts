@@ -45,7 +45,7 @@ export const SERVICES_NAV: NavItem = {
   label: 'Services',
   to: '/app/$slug/services',
   icon: Package,
-  subtitle: 'Service documents that group related applications.',
+  subtitle: '',
   scoped: true,
 };
 
