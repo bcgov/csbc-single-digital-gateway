@@ -6,9 +6,9 @@ const exportsMap = pkg.exports as Record<string, unknown>;
 describe('@repo/ui exports map', () => {
   it('gives every component a dev (source) + prod (dist) condition', () => {
     for (const [key, value] of Object.entries(exportsMap)) {
-      // Raw asset exports (styles.css, brand *.svg) carry a development/default shape,
-      // not the module conditions — they're files, not modules.
-      if (/\.(css|svg)$/.test(key)) continue;
+      // Raw asset exports (styles.css, brand *.svg, the generated a11y catalog JSON) carry a
+      // development/default shape, not the module conditions — they're files, not modules.
+      if (/\.(css|svg|json)$/.test(key)) continue;
       expect(value, key).toMatchObject({
         types: expect.stringContaining('./dist/'),
         development: expect.stringContaining('./src/'),
@@ -32,5 +32,12 @@ describe('@repo/ui exports map', () => {
         default: `./dist/${name}.svg`,
       });
     }
+  });
+
+  it('serves the a11y catalog JSON from source in dev and dist in prod', () => {
+    expect(exportsMap['./a11y-catalog.json']).toEqual({
+      development: './src/a11y/a11y-catalog.json',
+      default: './dist/a11y-catalog.json',
+    });
   });
 });

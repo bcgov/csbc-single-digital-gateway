@@ -13,6 +13,8 @@ import {
   CardTitle,
 } from '@repo/ui/card';
 import { Link } from '@tanstack/react-router';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CardChevron } from '@/components/dev/card-chevron';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
@@ -954,32 +956,7 @@ export function CardsReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            Always add{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>{' '}
-            to decorative icons.
-          </li>
-          <li>
-            Add{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>{' '}
-            to the <code className="text-xs bg-muted px-1.5 py-0.5 rounded">CardAction</code>{' '}
-            containing an avatar or icon when the card is inside a{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'<Link>'}</code> — prevents
-            initials being read as link text.
-          </li>
-          <li>
-            Inline title links need{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">hover:underline</code> to be
-            accessible on keyboard.
-          </li>
-          <li>
-            Add <code className="text-xs bg-muted px-1.5 py-0.5 rounded">h-full</code> on Card when
-            it is inside a{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'<Link>'}</code> inside a grid
-            — required for equal-height rows.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('card')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

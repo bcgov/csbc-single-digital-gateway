@@ -1,5 +1,7 @@
 import { Button } from '@repo/ui/button';
 import type { ApplicationStatus } from '@/lib/catalog';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
@@ -141,14 +143,7 @@ export function StatusBannerReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            The status icon is decorative (the title and description already convey the meaning) —
-            it's always rendered with{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>.
-          </li>
-          <li>Don't rely on tone/color alone — every banner always renders a text title.</li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('status-banner')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

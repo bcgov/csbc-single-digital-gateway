@@ -1,6 +1,8 @@
 import { mdiAlertCircle, mdiCheckCircle } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Badge } from '@repo/ui/badge';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
@@ -149,18 +151,7 @@ export function BadgeReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            Don't rely on color alone to carry status meaning — Badge always renders text content,
-            which is what makes that safe by default; don't remove it in favour of an icon-only
-            badge without adding an{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-label</code>.
-          </li>
-          <li>
-            Icons inside a badge are decorative (the text already conveys the meaning) — always add{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('badge')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

@@ -2,6 +2,8 @@ import { mdiCake } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@repo/ui/accordion';
 import { AccordionGroup } from '@repo/ui/accordion-group';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
@@ -287,19 +289,7 @@ export function AccordionReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            base-ui's Accordion wires up{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">aria-expanded</code> and panel{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">role</code>s automatically — no
-            manual aria props needed on Trigger/Content.
-          </li>
-          <li>
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">values</code> on AccordionGroup
-            must list every item's value, or expand-all/collapse-all won't include items you forgot
-            to list.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('accordion')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">
