@@ -40,7 +40,9 @@ describe('App Slug Settings Route', () => {
     renderApp('/app/riverton/settings');
 
     // Wait for General settings card title to render
-    expect(await screen.findByText('General', {}, { timeout: 32000 })).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText('Workspace name', {}, { timeout: 32000 }),
+    ).toBeInTheDocument();
 
     // Check basic description
     expect(screen.getByText('Basic workspace information.')).toBeInTheDocument();

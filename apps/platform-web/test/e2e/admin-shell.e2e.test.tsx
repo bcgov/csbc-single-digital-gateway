@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
 import '@/routes/admin';
@@ -48,20 +49,28 @@ describe('Admin Shell Integration Test Suite', () => {
   });
 });
 
-describe('admin entry in the staff sidebar', () => {
+describe('admin entry in the account menu', () => {
   it('shows an Admin link for admins', async () => {
     mockAuth(adminUser, { workspaces: [riverton] });
     renderApp('/app/riverton');
 
-    await screen.findByRole('button', { name: /Maya Reyes/ }, { timeout: 32000 });
-    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('button', { name: /account menu/i }, { timeout: 32000 }),
+    );
+    expect(await screen.findByRole('menuitem', { name: 'Admin' })).toHaveAttribute(
+      'href',
+      '/admin',
+    );
   });
 
   it('hides the Admin link for non-admins', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     renderApp('/app/riverton');
 
-    await screen.findByRole('button', { name: /Maya Reyes/ });
-    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /account menu/i }));
+    await screen.findByRole('menuitem', { name: /account settings/i });
+    expect(screen.queryByRole('menuitem', { name: 'Admin' })).not.toBeInTheDocument();
   });
 });

@@ -46,7 +46,9 @@ describe('workspace settings — default agreements section', () => {
     renderApp('/app/riverton/settings');
 
     // CardTitle / the panel heading render styled divs (no heading role) — match by text.
-    const general = await screen.findByText('General', undefined, { timeout: 5000 });
+    // "General" also appears in the Settings sub-nav tab (feature 160); take the card title (last).
+    const generals = await screen.findAllByText('General', undefined, { timeout: 5000 });
+    const general = generals[generals.length - 1]!;
     const defaults = await screen.findByText('Default agreements');
     const danger = await screen.findByText('Danger zone');
 

@@ -1,5 +1,6 @@
 import { Button } from '@repo/ui/button';
 import { Logo } from '@repo/ui/logo';
+import { ProductWordmark } from '@/components/product-wordmark';
 import { loginUrl } from '@/lib/bff';
 
 /**
@@ -12,8 +13,8 @@ export function HomePage() {
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background px-4 py-12">
       <div className="flex flex-col items-center gap-4">
         <Logo className="h-12 w-auto" aria-label="Single Digital Gateway" />
-        <h1 className="text-center font-heading text-2xl font-bold text-foreground">
-          Single Digital Gateway Platform
+        <h1 className="text-center font-heading text-foreground">
+          <ProductWordmark className="text-2xl" />
         </h1>
       </div>
 

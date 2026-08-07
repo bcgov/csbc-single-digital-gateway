@@ -38,9 +38,7 @@ describe('Index Route Integration', () => {
     mockAuth(null);
     renderApp('/');
 
-    expect(
-      await screen.findByRole('heading', { name: 'Single Digital Gateway Platform' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Operations Portal/i })).toBeInTheDocument();
     expect(screen.getByText('To continue, log in:')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Log in with IDIR' })).toBeInTheDocument();
   });

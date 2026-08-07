@@ -77,7 +77,7 @@ describe('App Slug Services Index Route', () => {
 
     // Verify page header and layout
     expect(
-      await screen.findByText(/Service documents/i, {}, { timeout: 32000 }),
+      await screen.findByRole('button', { name: /New service/i }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify services are listed in the table

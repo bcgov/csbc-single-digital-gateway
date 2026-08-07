@@ -105,9 +105,9 @@ describe('App Slug Team Layout Route', () => {
     withEmptyMembers(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/team/');
 
-    // Verify child team index page content renders through the Outlet
+    // Verify child team index page content renders through the Outlet (Team sub-nav tab).
     expect(
-      await screen.findByText(/People with access to this workspace/i, {}, { timeout: 32000 }),
+      await screen.findByRole('link', { name: 'Team' }, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 

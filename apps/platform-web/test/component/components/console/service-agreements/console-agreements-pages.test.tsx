@@ -158,17 +158,14 @@ describe('Console Agreements  Component Test Suite', () => {
 
     // 1. Verify workspace agreements list renders
     expect(await screen.findByText('Workspace TOS', {}, { timeout: 10000 })).toBeInTheDocument();
-    expect(screen.getByText('Terms applicants approve before applying.')).toBeInTheDocument();
   });
 
   it('renders ConsoleAgreementsNew (Agreements list + New agreement modal)', async () => {
     const fetchMock = setupMocks();
     renderApp('/app/riverton/service-agreements/new');
 
-    // 1. Verify view loads
-    expect(
-      await screen.findByText('Terms applicants approve before applying.', {}, { timeout: 10000 }),
-    ).toBeInTheDocument();
+    // 1. Verify view loads (agreements list renders behind the modal)
+    expect(await screen.findByText('Workspace TOS', {}, { timeout: 10000 })).toBeInTheDocument();
 
     // 2. Verify modal dialog is open
     const modal = await screen.findByRole('dialog', { name: /new service agreement/i });

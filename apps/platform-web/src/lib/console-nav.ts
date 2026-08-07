@@ -1,13 +1,17 @@
 /**
- * Console navigation model (features 31/32). One source of truth for the sidebar links, the command
- * palette destinations, and the header title/subtitle. Section routes are workspace-scoped
+ * Console navigation model (features 31/32/160). One source of truth for the top-bar nav links, the
+ * command-palette destinations, and `sectionFor`. Section routes are workspace-scoped
  * (`/app/$slug/...`); Account is user-scoped.
+ *
+ * Feature 160 flattened the old sidebar (primary/secondary/settings groups) into a single horizontal
+ * top-bar list (`TOP_NAV`). Service Agreements and Team are still reachable (the Shared Resources hub
+ * links to Service Agreements; Team is surfaced inside Settings) but are not top-bar entries.
  */
 import {
-  BarChart3,
   FileSignature,
   Inbox,
   LayoutDashboard,
+  Library,
   type LucideIcon,
   Package,
   Settings,
@@ -36,56 +40,38 @@ export const OVERVIEW_NAV: NavItem = {
   scoped: true,
 };
 
-/** Primary sidebar group (top of the rail). */
-export const PRIMARY_NAV: NavItem[] = [
-  OVERVIEW_NAV,
-  {
-    key: 'services',
-    label: 'Services',
-    to: '/app/$slug/services',
-    icon: Package,
-    subtitle: 'Service documents that group related applications.',
-    scoped: true,
-  },
-  {
-    key: 'service-agreements',
-    label: 'Service Agreements',
-    to: '/app/$slug/service-agreements',
-    icon: FileSignature,
-    subtitle: 'Terms applicants approve before applying.',
-    scoped: true,
-  },
-  {
-    key: 'submissions',
-    label: 'Submissions',
-    to: '/app/$slug/submissions',
-    icon: Inbox,
-    subtitle: 'Applications submitted for review.',
-    scoped: true,
-  },
-  {
-    key: 'team',
-    label: 'Team',
-    to: '/app/$slug/team',
-    icon: Users,
-    subtitle: 'People with access to this workspace.',
-    scoped: true,
-  },
-];
+export const SERVICES_NAV: NavItem = {
+  key: 'services',
+  label: 'Services',
+  to: '/app/$slug/services',
+  icon: Package,
+  subtitle: 'Service documents that group related applications.',
+  scoped: true,
+};
 
-/** Secondary sidebar group (below the divider). */
-export const SECONDARY_NAV: NavItem[] = [
-  {
-    key: 'reports',
-    label: 'Reports',
-    to: '/app/$slug/reports',
-    icon: BarChart3,
-    subtitle: 'Saved reports for this workspace.',
-    scoped: true,
-  },
-];
+/**
+ * Feature 160 renamed "Submissions" → "Service Requests" (label only). The key/route stay
+ * `submissions` so existing links, routes, and `sectionFor` keep resolving.
+ */
+export const SERVICE_REQUESTS_NAV: NavItem = {
+  key: 'submissions',
+  label: 'Service Requests',
+  to: '/app/$slug/submissions',
+  icon: Inbox,
+  subtitle: 'Applications submitted for review.',
+  scoped: true,
+};
 
-/** Pinned to the bottom of the rail. */
+/** New hub grouping shared, cross-service resources (Service Agreements today; more later). */
+export const SHARED_RESOURCES_NAV: NavItem = {
+  key: 'shared-resources',
+  label: 'Shared Resources',
+  to: '/app/$slug/shared-resources',
+  icon: Library,
+  subtitle: 'Resources shared across the services in this workspace.',
+  scoped: true,
+};
+
 export const SETTINGS_NAV: NavItem = {
   key: 'settings',
   label: 'Settings',
@@ -95,7 +81,27 @@ export const SETTINGS_NAV: NavItem = {
   scoped: true,
 };
 
-/** Reachable from the profile menu only (not a sidebar link), and not workspace-scoped. */
+/** Reachable from the Shared Resources hub (not a top-bar entry). */
+export const SERVICE_AGREEMENTS_NAV: NavItem = {
+  key: 'service-agreements',
+  label: 'Service Agreements',
+  to: '/app/$slug/service-agreements',
+  icon: FileSignature,
+  subtitle: 'Terms applicants approve before applying.',
+  scoped: true,
+};
+
+/** Reachable from within Settings (not a top-bar entry). */
+export const TEAM_NAV: NavItem = {
+  key: 'team',
+  label: 'Team',
+  to: '/app/$slug/team',
+  icon: Users,
+  subtitle: 'People with access to this workspace.',
+  scoped: true,
+};
+
+/** Reachable from the avatar menu only, and not workspace-scoped. */
 export const ACCOUNT_NAV: NavItem = {
   key: 'account',
   label: 'Account',
@@ -105,10 +111,23 @@ export const ACCOUNT_NAV: NavItem = {
   scoped: false,
 };
 
+/** Primary top-bar navigation, in display order. */
+export const TOP_NAV: NavItem[] = [
+  OVERVIEW_NAV,
+  SERVICES_NAV,
+  SERVICE_REQUESTS_NAV,
+  SHARED_RESOURCES_NAV,
+  SETTINGS_NAV,
+];
+
 /** Every destination, used by the command palette. */
 export const ALL_DESTINATIONS: NavItem[] = [
-  ...PRIMARY_NAV,
-  ...SECONDARY_NAV,
+  OVERVIEW_NAV,
+  SERVICES_NAV,
+  SERVICE_REQUESTS_NAV,
+  SHARED_RESOURCES_NAV,
+  SERVICE_AGREEMENTS_NAV,
+  TEAM_NAV,
   SETTINGS_NAV,
   ACCOUNT_NAV,
 ];

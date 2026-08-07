@@ -7,30 +7,31 @@ let mockPathname = '/app/riverton/services';
 vi.mock('@tanstack/react-router', () => ({
   useLocation: (options?: { select?: (location: any) => any }) => {
     const location = { pathname: mockPathname };
-    if (options?.select) {
-      return options.select(location);
-    }
-    return location;
+    return options?.select ? options.select(location) : location;
   },
+  Link: ({ to, params, children, ...props }: any) => (
+    <a href={to.replace('$slug', params?.slug ?? '')} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
-let mockChrome: any = null;
-vi.mock('@/lib/page-chrome', () => ({
-  usePageChrome: () => mockChrome,
+vi.mock('@repo/ui/icon', () => ({
+  Icon: (props: any) => <svg data-testid="mock-icon" {...props} />,
+}));
+
+vi.mock('@/components/console/workspace-switcher', () => ({
+  WorkspaceSwitcher: () => <div data-testid="mock-workspace-switcher">Workspace Switcher</div>,
+}));
+
+vi.mock('@/components/console/profile-menu', () => ({
+  ProfileMenu: () => <div data-testid="mock-profile-menu">Profile Menu</div>,
 }));
 
 vi.mock('@/components/console/notifications-menu', () => ({
   NotificationsMenu: ({ disabled }: { disabled: boolean }) => (
     <div data-testid="mock-notifications-menu" data-disabled={String(disabled)}>
       Notifications Menu
-    </div>
-  ),
-}));
-
-vi.mock('@/components/console/new-sheet', () => ({
-  NewSheet: ({ slug }: { slug: string | undefined }) => (
-    <div data-testid="mock-new-sheet" data-slug={slug ?? ''}>
-      New Sheet
     </div>
   ),
 }));
@@ -44,81 +45,94 @@ vi.mock('@/components/console/command-palette', () => ({
   ),
 }));
 
-describe('ConsoleHeader Component Test Suite', () => {
+describe('ConsoleHeader (top bar) Component Test Suite', () => {
   beforeEach(() => {
     mockPathname = '/app/riverton/services';
-    mockChrome = null;
     vi.clearAllMocks();
   });
 
-  it('triggers onToggleSidebar on clicking sidebar toggle button', async () => {
+  it('renders the brand, workspace switcher, and account menu', () => {
+    render(<ConsoleHeader slug="riverton" />);
+
+    expect(screen.getByText('Operations Portal')).toBeInTheDocument();
+    expect(screen.getByText('alpha')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-workspace-switcher')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-profile-menu')).toBeInTheDocument();
+  });
+
+  it('renders the five primary nav links with slug-resolved hrefs', () => {
+    render(<ConsoleHeader slug="riverton" />);
+
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/app/riverton');
+    expect(screen.getByRole('link', { name: 'Services' })).toHaveAttribute(
+      'href',
+      '/app/riverton/services',
+    );
+    expect(screen.getByRole('link', { name: 'Service Requests' })).toHaveAttribute(
+      'href',
+      '/app/riverton/submissions',
+    );
+    expect(screen.getByRole('link', { name: 'Shared Resources' })).toHaveAttribute(
+      'href',
+      '/app/riverton/shared-resources',
+    );
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
+      'href',
+      '/app/riverton/settings',
+    );
+  });
+
+  it('does not render the removed sidebar toggle or the global "New" action', () => {
+    render(<ConsoleHeader slug="riverton" />);
+
+    expect(screen.queryByRole('button', { name: /toggle sidebar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^new$/i })).not.toBeInTheDocument();
+  });
+
+  it('enables search + notifications and opens the command palette when a workspace is active', async () => {
     const user = userEvent.setup();
-    const handleToggle = vi.fn();
-    render(<ConsoleHeader onToggleSidebar={handleToggle} slug="riverton" />);
+    render(<ConsoleHeader slug="riverton" />);
 
-    const toggleBtn = screen.getByRole('button', { name: /toggle sidebar/i });
-    await user.click(toggleBtn);
-
-    expect(handleToggle).toHaveBeenCalledTimes(1);
-  });
-
-  it('renders default section title and subtitle when page chrome is not set', () => {
-    mockPathname = '/app/riverton/services';
-    render(<ConsoleHeader onToggleSidebar={vi.fn()} slug="riverton" />);
-
-    expect(screen.getByRole('heading', { name: 'Services' })).toBeInTheDocument();
-    expect(
-      screen.getByText('Service documents that group related applications.'),
-    ).toBeInTheDocument();
-  });
-
-  it('renders overridden title and subtitle when page chrome is active', () => {
-    mockPathname = '/app/riverton/services/srv-123';
-    mockChrome = {
-      title: 'Zoning Permits Detail',
-      description: 'Review document metadata and stages',
-    };
-    render(<ConsoleHeader onToggleSidebar={vi.fn()} slug="riverton" />);
-
-    expect(screen.getByRole('heading', { name: 'Zoning Permits Detail' })).toBeInTheDocument();
-    expect(screen.getByText('Review document metadata and stages')).toBeInTheDocument();
-  });
-
-  it('renders header as enabled when workspace slug is defined', async () => {
-    const user = userEvent.setup();
-    render(<ConsoleHeader onToggleSidebar={vi.fn()} slug="riverton" />);
-
-    // Search button enabled
     const searchBtn = screen.getByRole('button', { name: 'Search' });
     expect(searchBtn).toBeEnabled();
-
-    // Notifications and new sheet correctly setup
     expect(screen.getByTestId('mock-notifications-menu')).toHaveAttribute('data-disabled', 'false');
-    expect(screen.getByTestId('mock-new-sheet')).toHaveAttribute('data-slug', 'riverton');
 
-    // Clicking search opens command palette
     await user.click(searchBtn);
     const palette = screen.getByTestId('mock-command-palette');
     expect(palette).toHaveAttribute('data-open', 'true');
     expect(palette).toHaveAttribute('data-slug', 'riverton');
 
-    // Closing works
-    const closeBtn = screen.getByRole('button', { name: 'Close Palette' });
-    await user.click(closeBtn);
+    await user.click(screen.getByRole('button', { name: 'Close Palette' }));
     expect(palette).toHaveAttribute('data-open', 'false');
   });
 
-  it('renders header as disabled when workspace slug is undefined', () => {
-    render(<ConsoleHeader onToggleSidebar={vi.fn()} slug={undefined} />);
+  it('disables actions and shows non-navigable nav when there is no active workspace', () => {
+    render(<ConsoleHeader slug={undefined} />);
 
-    // Search button disabled
-    const searchBtn = screen.getByRole('button', { name: 'Search' });
-    expect(searchBtn).toBeDisabled();
-
-    // Notifications menu is disabled
+    expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled();
     expect(screen.getByTestId('mock-notifications-menu')).toHaveAttribute('data-disabled', 'true');
-
-    // Command palette is not rendered (slug is undefined)
     expect(screen.queryByTestId('mock-command-palette')).not.toBeInTheDocument();
+
+    // Nav labels still render, but as disabled spans (not links).
+    expect(screen.queryByRole('link', { name: 'Services' })).not.toBeInTheDocument();
+    const disabled = screen.getByText('Services');
+    expect(disabled).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('renders the minimal variant (brand + notifications + avatar only) with no workspace context', () => {
+    render(<ConsoleHeader slug={undefined} minimal />);
+
+    // Brand + right-side actions remain.
+    expect(screen.getByText('Operations Portal')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-notifications-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-profile-menu')).toBeInTheDocument();
+
+    // Switcher, primary nav, and search are all gone.
+    expect(screen.queryByTestId('mock-workspace-switcher')).not.toBeInTheDocument();
+    expect(screen.queryByText('Services')).not.toBeInTheDocument();
+    expect(screen.queryByText('Overview')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
   });
 });

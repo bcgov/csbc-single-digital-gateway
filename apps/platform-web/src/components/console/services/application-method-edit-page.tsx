@@ -138,6 +138,7 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
         <FormBuilder
           value={value}
           onChange={setValue}
+          title={<h1 className="truncate text-base font-semibold">{titleOf(value)}</h1>}
           actions={
             <>
               <Badge color="blue">{status}</Badge>
@@ -242,6 +243,9 @@ function StageEdit({ form }: { form: FormWithVersion }) {
         <StageBuilder
           value={value}
           onChange={setValue}
+          title={
+            <h1 className="truncate text-base font-semibold">{value.name || form.form.title}</h1>
+          }
           actions={
             <>
               <Badge color="blue">{status}</Badge>

@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
+import { PageBody, PageHeader } from '@/components/console/page-header';
 import { ListPagination } from '@/components/console/list/list-pagination';
 import { ListSearchInput } from '@/components/console/list/list-search-input';
 import { SortableHeader } from '@/components/console/list/sortable-header';
@@ -36,92 +37,99 @@ export function ServicesList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-end gap-3">
-        <Button
-          size="sm"
-          type="button"
-          disabled={workspaceId === ''}
-          onClick={() => void navigate({ to: '/app/$slug/services/new', params: { slug } })}
-        >
-          <Plus className="size-4" aria-hidden />
-          New service
-        </Button>
-        <ListSearchInput value={q} onChange={setQ} placeholder="Search services…" />
-      </div>
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableHeader
-                column="title"
-                label="Title"
-                active={sort}
-                order={order}
-                onSort={setSort}
-              />
-              <SortableHeader
-                column="status"
-                label="Status"
-                active={sort}
-                order={order}
-                onSort={setSort}
-              />
-              <TableHead>Versions</TableHead>
-              <SortableHeader
-                column="updated"
-                label="Updated"
-                active={sort}
-                order={order}
-                onSort={setSort}
-              />
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.length === 0 ? (
+      <PageHeader
+        title="Services"
+        description="Service documents that group related applications."
+        size="lg"
+      />
+      <PageBody className="flex flex-col gap-4">
+        <div className="flex flex-col items-end gap-3">
+          <Button
+            size="sm"
+            type="button"
+            disabled={workspaceId === ''}
+            onClick={() => void navigate({ to: '/app/$slug/services/new', params: { slug } })}
+          >
+            <Plus className="size-4" aria-hidden />
+            New service
+          </Button>
+          <ListSearchInput value={q} onChange={setQ} placeholder="Search services…" />
+        </div>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                  {q === ''
-                    ? 'No services yet — create one with the New button.'
-                    : `No services match “${q}”.`}
-                </TableCell>
+                <SortableHeader
+                  column="title"
+                  label="Title"
+                  active={sort}
+                  order={order}
+                  onSort={setSort}
+                />
+                <SortableHeader
+                  column="status"
+                  label="Status"
+                  active={sort}
+                  order={order}
+                  onSort={setSort}
+                />
+                <TableHead>Versions</TableHead>
+                <SortableHeader
+                  column="updated"
+                  label="Updated"
+                  active={sort}
+                  order={order}
+                  onSort={setSort}
+                />
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              items.map((service: ServiceSummary) => (
-                <TableRow key={service.id} data-pending={isFetching ? '' : undefined}>
-                  <TableCell>
-                    <Link
-                      to="/app/$slug/services/$id"
-                      params={{ slug, id: service.id }}
-                      className="font-medium text-foreground hover:underline"
-                    >
-                      {service.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge color={STATUS_COLOR[service.status]}>{service.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{service.versionCount}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(service.updatedAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <ServiceMenu
-                        serviceId={service.id}
-                        hasSubmissions={service.hasSubmissions}
-                        archived={service.status === 'archived'}
-                        latestPublished={service.latestPublished}
-                      />
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    {q === ''
+                      ? 'No services yet — create one with the New button.'
+                      : `No services match “${q}”.`}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
-      </div>
+              ) : (
+                items.map((service: ServiceSummary) => (
+                  <TableRow key={service.id} data-pending={isFetching ? '' : undefined}>
+                    <TableCell>
+                      <Link
+                        to="/app/$slug/services/$id"
+                        params={{ slug, id: service.id }}
+                        className="font-medium text-foreground hover:underline"
+                      >
+                        {service.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Badge color={STATUS_COLOR[service.status]}>{service.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{service.versionCount}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(service.updatedAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        <ServiceMenu
+                          serviceId={service.id}
+                          hasSubmissions={service.hasSubmissions}
+                          archived={service.status === 'archived'}
+                          latestPublished={service.latestPublished}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
+        </div>
+      </PageBody>
     </div>
   );
 }
