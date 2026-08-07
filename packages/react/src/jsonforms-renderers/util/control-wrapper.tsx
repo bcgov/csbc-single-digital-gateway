@@ -48,22 +48,27 @@ export function ControlWrapper({
         .filter(Boolean)
         .map((message) => ({ message }))
     : [];
+
   const htmlFor = labelFor === false ? undefined : (labelFor ?? id);
   const renderLabel = (extra?: string) => {
     // Every field label sits one step heavier than the @repo/ui default (`font-medium`) so it reads as
     // the primary line of each field — this includes the boolean checkbox and toggle.
-    const className = extra ? `${extra} font-semibold` : 'font-semibold';
+    const className = extra
+      ? `${extra} font-semibold`
+      : 'font-semibold flex flex-row space-between';
     return label === false || label === undefined || label === '' ? null : (
       <FieldLabel htmlFor={htmlFor} {...(className ? { className } : {})}>
-        {label}
-        {required ? ' *' : ''}
+        <span className="flex grow">{label}</span>
+        <span className="flex font-normal">{required ? ' required' : ''}</span>
       </FieldLabel>
     );
   };
   const labelNode = renderLabel();
 
   const descriptionNode = description ? <FieldDescription>{description}</FieldDescription> : null;
-  const errorNode = <FieldError errors={errorList} />;
+  const errorNode = (
+    <FieldError errors={errorList.filter((error) => error.message !== 'is a required property')} />
+  );
   const invalid = errorList.length > 0 ? true : undefined;
 
   // Horizontal controls stack the label + help text in a FieldContent column (flex-1) so the description

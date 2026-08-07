@@ -54,11 +54,7 @@ export function SubmissionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Service Requests"
-        description="Applications submitted for review."
-        size="lg"
-      />
+      <PageHeader title="Service Requests" size="lg" />
       <PageBody className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <Tabs
@@ -67,9 +63,13 @@ export function SubmissionsPage() {
               setFilter({ status: STATUS_TABS.find((t) => t.value === value)?.status })
             }
           >
-            <TabsList>
+            <TabsList className="gap-2">
               {STATUS_TABS.map((t) => (
-                <TabsTrigger key={t.value} value={t.value}>
+                <TabsTrigger
+                  key={t.value}
+                  value={t.value}
+                  className="bg-gray-20 rounded-full data-active:bg-bcgov-blue data-active:text-background hover:data-active:text-background"
+                >
                   {t.label}
                 </TabsTrigger>
               ))}

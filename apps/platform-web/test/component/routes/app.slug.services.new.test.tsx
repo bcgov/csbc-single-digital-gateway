@@ -63,20 +63,14 @@ describe('App Slug Services New Route', () => {
     withEmptyServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/new');
 
-    // Verify modal is open and has the heading "New service"
+    // Verify modal is open and has the New service heading (JSONForms fields inside).
     expect(
-      await screen.findByRole('heading', { name: 'New service' }, { timeout: 32000 }),
+      await screen.findByRole('heading', { name: /new service/i }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
-    // Check modal description and input labels
-    expect(
-      screen.getByText(
-        'Give the service a title and description — you can configure the rest after it’s created.',
-      ),
-    ).toBeInTheDocument();
-
-    expect(screen.getByLabelText('Title')).toBeInTheDocument();
-    expect(screen.getByLabelText('Description')).toBeInTheDocument();
+    // Check the JSONForms field labels (title is required → its label carries a marker, match loosely).
+    expect(screen.getByLabelText(/name of the service/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Short description')).toBeInTheDocument();
 
     // Check action buttons
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();

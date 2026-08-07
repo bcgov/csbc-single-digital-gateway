@@ -187,8 +187,8 @@ describe('Console Services Integration Test Suite', () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/new');
     const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 32000 });
-    expect(within(modal).getByLabelText(/title/i)).toBeInTheDocument();
-    expect(within(modal).getByLabelText(/description/i)).toBeInTheDocument();
+    expect(within(modal).getByLabelText(/name of the service/i)).toBeInTheDocument();
+    expect(within(modal).getByLabelText('Short description')).toBeInTheDocument();
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 

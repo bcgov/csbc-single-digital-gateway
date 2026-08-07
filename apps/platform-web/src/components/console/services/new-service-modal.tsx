@@ -1,3 +1,4 @@
+import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
 import {
   Dialog,
@@ -6,31 +7,57 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/dialog';
-import { Input } from '@repo/ui/input';
-import { Label } from '@repo/ui/label';
 import { Spinner } from '@repo/ui/spinner';
-import { Textarea } from '@repo/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createService } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
 
-/** "New service" modal over the services list (route `/services/new`). Collects only a title +
- * description; everything else (the form/version config) is done on the service detail afterwards. */
+/** JSONForms schema/uischema for the new-service fields (name + short description). */
+const schema: JsonSchema = {
+  type: 'object',
+  properties: {
+    title: { type: 'string', maxLength: 64 },
+    description: { type: 'string', maxLength: 96 },
+  },
+  required: ['title'],
+};
+
+const uischema = {
+  type: 'VerticalLayout',
+  elements: [
+    { type: 'Label', text: 'Name & description', options: { format: 'heading', level: 6 } },
+    {
+      type: 'Group',
+      elements: [
+        { type: 'Control', scope: '#/properties/title', label: 'Name of the service' },
+        { type: 'Control', scope: '#/properties/description', label: 'Short description' },
+      ],
+    },
+  ],
+} as unknown as UISchemaElement;
+
+interface ServiceFormData {
+  title?: string;
+  description?: string;
+}
+
+/** "New service" modal over the services list (route `/services/new`). Collects a name + short
+ * description via JSONForms; everything else (the form/version config) is done on the service detail
+ * afterwards. */
 export function NewServiceModal() {
   const { slug } = useParams({ from: '/app/$slug' });
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   const workspaceId = workspace?.id ?? '';
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [data, setData] = useState<ServiceFormData>({});
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const close = () => navigate({ to: '/app/$slug/services', params: { slug } });
   const create = useMutation({
     mutationFn: () => {
-      const trimmed = title.trim();
+      const trimmed = (data.title ?? '').trim();
       if (trimmed === '') {
         throw new Error('A title is required');
       }
@@ -40,7 +67,7 @@ export function NewServiceModal() {
       return createService({
         workspaceId,
         title: trimmed,
-        data: { title: trimmed, description: description.trim() },
+        data: { title: trimmed, description: (data.description ?? '').trim() },
         applications: [],
       });
     },
@@ -63,13 +90,10 @@ export function NewServiceModal() {
         }
       }}
     >
-      <DialogContent>
+      <DialogContent className="min-w-lg">
         <DialogHeader>
-          <DialogTitle>New service</DialogTitle>
-          <DialogDescription>
-            Give the service a title and description — you can configure the rest after it’s
-            created.
-          </DialogDescription>
+          <DialogTitle>Create New service</DialogTitle>
+          <DialogDescription></DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-3"
@@ -78,25 +102,12 @@ export function NewServiceModal() {
             create.mutate();
           }}
         >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-service-title">Title</Label>
-            <Input
-              id="new-service-title"
-              value={title}
-              autoFocus
-              required
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-service-description">Description</Label>
-            <Textarea
-              id="new-service-description"
-              value={description}
-              rows={3}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </div>
+          <JsonForms
+            schema={schema}
+            uischema={uischema}
+            data={data}
+            onChange={({ data: next }) => setData(next as ServiceFormData)}
+          />
           {create.error ? (
             <p role="alert" className="text-sm text-destructive">
               {create.error.message}
