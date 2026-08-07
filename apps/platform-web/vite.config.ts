@@ -37,6 +37,8 @@ export default defineConfig({
       // @repo/ui source, so pre-bundle it or the first builder/preview nav 504s the dynamic import.
       'react-select',
       'react-select-async-paginate',
+      // Date-picker input mask (feature 157) — same lazy-route-through-@repo/ui-source reason.
+      'use-mask-input',
     ],
   },
   server: { port: 3001 },

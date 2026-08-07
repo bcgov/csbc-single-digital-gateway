@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Pencil } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   addServiceVersion,
   publishVersion,
@@ -122,11 +122,20 @@ export function ServiceDetail({
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [formBaseline, setFormBaseline] = useState<Record<string, unknown>>({});
   const [publishOpen, setPublishOpen] = useState(false);
-  useEffect(() => {
-    setFormData(selected?.data ?? {});
-    setFormBaseline(selected?.data ?? {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reseed only when the version changes
-  }, [selected?.id]);
+  // Seed the editable form from the selected version DURING render, keyed on the version id — NOT in a
+  // post-commit effect. With a warm cache (e.g. navigating back to a service) the service + references
+  // queries resolve on the first render, so <ServiceEditor> (and its <JsonForms>) mount immediately; an
+  // effect would seed formData only *after* that first commit, and JsonForms' mount-time debounced
+  // onChange would then emit its empty initial data and clobber the seeded value (the title vanishes,
+  // and formData !== baseline falsely marks the form dirty). Setting state during render re-renders
+  // before commit, so the editor mounts with the real data. Reseeds only when the version id changes,
+  // so a background refetch (stale-while-revalidate) never discards in-progress edits.
+  const seededVersionId = useRef<string | undefined>(undefined);
+  if (selected !== undefined && seededVersionId.current !== selected.id) {
+    seededVersionId.current = selected.id;
+    setFormData(selected.data ?? {});
+    setFormBaseline(selected.data ?? {});
+  }
 
   // Application-method order (feature 132): drag reorders this held list; it's saved with the service.
   const appMethodIds = references

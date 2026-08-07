@@ -1,9 +1,17 @@
 import { useDraggable } from '@dnd-kit/react';
-import { Input } from '@repo/ui/input';
 import { useMemo, useState } from 'react';
+import { ClearableInput } from './clearable-input';
 import { FIELD_TYPES, type FieldGroup, type FieldTypeDef, type FieldTypeId } from './field-types';
 
-const GROUP_ORDER: FieldGroup[] = ['Core', 'Advanced', 'Rich text', 'Display', 'Layout'];
+const GROUP_ORDER: FieldGroup[] = [
+  'Core',
+  'Choice',
+  'Date & time',
+  'Advanced',
+  'Display',
+  'Layout',
+  'Other',
+];
 
 function matches(def: FieldTypeDef, query: string): boolean {
   if (query === '') {
@@ -59,12 +67,13 @@ export function Palette({ onAdd }: { onAdd: (id: FieldTypeId) => void }) {
       aria-label="Palette"
       className="flex h-full flex-col gap-3 overflow-y-auto border-r border-border bg-card p-3"
     >
-      <Input
-        type="search"
+      <ClearableInput
+        type="text"
         aria-label="Search components"
         placeholder="Search components"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
+        onClear={() => setQuery('')}
       />
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">No components match.</p>

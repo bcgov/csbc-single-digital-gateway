@@ -35,6 +35,14 @@ function Form({
   );
 }
 
+/** Render a form and return the class list of its first field label (then unmount). */
+function fieldLabelClassName(ui: Parameters<typeof render>[0]): string {
+  const view = render(ui);
+  const className = view.container.querySelector('[data-slot="field-label"]')?.className ?? '';
+  view.unmount();
+  return className;
+}
+
 describe('@repo/react/jsonforms-renderers — registry', () => {
   it('exports a non-empty renderer registry of { tester, renderer } entries', () => {
     expect(Array.isArray(renderers)).toBe(true);
@@ -96,6 +104,108 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
     });
   });
 
+  it('places a boolean control help text on the next line (inside the FieldContent column)', () => {
+    render(
+      <Form
+        schema={{
+          type: 'object',
+          properties: {
+            subscribe: { type: 'boolean', title: 'Subscribe', description: 'We will email you' },
+          },
+        }}
+      />,
+    );
+    // The help text lives in the stacked label/description column beside the checkbox — not inline.
+    const help = screen.getByText('We will email you');
+    expect(help).toHaveAttribute('data-slot', 'field-description');
+    expect(help.closest('[data-slot="field-content"]')).not.toBeNull();
+  });
+
+  it('positions the checkbox on the left of its label column', () => {
+    const { container } = render(
+      <Form
+        schema={{ type: 'object', properties: { agree: { type: 'boolean', title: 'Agree' } } }}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox', { name: /agree/i });
+    const content = container.querySelector('[data-slot="field-content"]');
+    expect(content).not.toBeNull();
+    // The checkbox precedes the label column (control on the left).
+    expect(
+      checkbox.compareDocumentPosition(content as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('positions the toggle on the right of its label column', () => {
+    const { container } = render(
+      <Form
+        schema={{ type: 'object', properties: { agree: { type: 'boolean', title: 'Agree' } } }}
+        uischema={
+          {
+            type: 'Control',
+            scope: '#/properties/agree',
+            options: { toggle: true },
+          } as UISchemaElement
+        }
+      />,
+    );
+    const toggle = screen.getByRole('switch', { name: /agree/i });
+    const content = container.querySelector('[data-slot="field-content"]');
+    expect(content).not.toBeNull();
+    // The label column precedes the switch (control pushed to the right edge).
+    expect(
+      (content as Node).compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('renders every field label a step heavier (font-semibold) — text, checkbox and toggle', () => {
+    const boolSchema = {
+      type: 'object' as const,
+      properties: { agree: { type: 'boolean' as const, title: 'Agree' } },
+    };
+
+    // Text control (vertical).
+    expect(
+      fieldLabelClassName(
+        <Form
+          schema={{ type: 'object', properties: { name: { type: 'string', title: 'Full name' } } }}
+        />,
+      ),
+    ).toContain('font-semibold');
+
+    // Checkbox (horizontal, control-left).
+    expect(fieldLabelClassName(<Form schema={boolSchema} />)).toContain('font-semibold');
+
+    // Toggle (horizontal, control-right).
+    expect(
+      fieldLabelClassName(
+        <Form
+          schema={boolSchema}
+          uischema={
+            {
+              type: 'Control',
+              scope: '#/properties/agree',
+              options: { toggle: true },
+            } as UISchemaElement
+          }
+        />,
+      ),
+    ).toContain('font-semibold');
+  });
+
+  it('renders no label when the uischema label is false — never the scope/key (feature 159)', () => {
+    const { container } = render(
+      <Form
+        schema={{ type: 'object', properties: { V1StGXR8: { type: 'string' } } }}
+        uischema={
+          { type: 'Control', scope: '#/properties/V1StGXR8', label: false } as UISchemaElement
+        }
+      />,
+    );
+    expect(container.querySelector('[data-slot="field-label"]')).toBeNull();
+    expect(screen.queryByText(/V1StGXR8/)).toBeNull();
+  });
+
   it('renders a multiline string control as a textarea', () => {
     render(
       <Form
@@ -111,6 +221,77 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
     );
     const field = screen.getByLabelText(/bio/i);
     expect(field.tagName).toBe('TEXTAREA');
+  });
+
+  it('applies maxLength (hard cap) and shows an n/max counter (feature 158)', () => {
+    render(
+      <Form
+        schema={{
+          type: 'object',
+          properties: { bio: { type: 'string', title: 'Bio', maxLength: 40 } },
+        }}
+        initial={{ bio: 'hello' }}
+      />,
+    );
+    const input = screen.getByLabelText(/bio/i);
+    expect(input).toHaveAttribute('maxlength', '40');
+    expect(screen.getByText('5/40')).toBeInTheDocument();
+  });
+
+  it('applies an input mask to a single-line text field (feature 158)', () => {
+    // inputmask no-ops under jsdom → render-safety (it renders a plain input without throwing).
+    expect(() =>
+      render(
+        <Form
+          schema={{ type: 'object', properties: { phone: { type: 'string', title: 'Phone' } } }}
+          uischema={
+            {
+              type: 'Control',
+              scope: '#/properties/phone',
+              options: { mask: '(999) 999-9999' },
+            } as UISchemaElement
+          }
+        />,
+      ),
+    ).not.toThrow();
+    const input = screen.getByLabelText(/phone/i);
+    expect(input.tagName).toBe('INPUT');
+  });
+
+  it('renders a placeholder from options.placeholder (feature 158)', () => {
+    render(
+      <Form
+        schema={{ type: 'object', properties: { name: { type: 'string', title: 'Name' } } }}
+        uischema={
+          {
+            type: 'Control',
+            scope: '#/properties/name',
+            options: { placeholder: 'Your name' },
+          } as UISchemaElement
+        }
+      />,
+    );
+    expect(screen.getByLabelText(/name/i)).toHaveAttribute('placeholder', 'Your name');
+  });
+
+  it('renders a multiline textarea ~5 rows tall that still auto-grows (feature 158)', () => {
+    render(
+      <Form
+        schema={{ type: 'object', properties: { bio: { type: 'string', title: 'Bio' } } }}
+        uischema={
+          {
+            type: 'Control',
+            scope: '#/properties/bio',
+            options: { multi: true },
+          } as UISchemaElement
+        }
+      />,
+    );
+    const field = screen.getByLabelText(/bio/i);
+    expect(field.tagName).toBe('TEXTAREA');
+    // A raised min-height (≈5 rows) with `field-sizing-content` retained → grows with content.
+    expect(field.className).toContain('min-h-[7.5rem]');
+    expect(field.className).toContain('field-sizing-content');
   });
 
   it('marks a required, empty control as aria-invalid and clears it when valid', () => {

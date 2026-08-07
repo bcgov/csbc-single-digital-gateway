@@ -17,12 +17,13 @@ import {
   type Path,
   allKeys,
   createField,
+  defaultFieldLabel,
   getNodeAt,
   insertField,
   moveField,
+  newFieldKey,
   parseModel,
   serializeModel,
-  uniqueKey,
 } from './model';
 import { Palette } from './palette';
 
@@ -60,7 +61,8 @@ export function FormBuilder({
   const addField = (fieldType: FieldTypeId) => {
     const node = createField(fieldType);
     if (node.kind === 'control') {
-      node.key = uniqueKey(fieldType, allKeys(model));
+      node.key = newFieldKey();
+      node.label = defaultFieldLabel(model, fieldType);
     }
     // A control or display field added while a container is selected drops into that container.
     const target = selectedPath !== null ? model.fields[selectedPath[0] as number] : undefined;
@@ -115,7 +117,9 @@ export function FormBuilder({
         if (source.type === 'palette-item') {
           const node = createField(source.data.fieldType as FieldTypeId);
           if (node.kind === 'control') {
-            node.key = uniqueKey(source.data.fieldType as FieldTypeId, allKeys(model));
+            const ft = source.data.fieldType as FieldTypeId;
+            node.key = newFieldKey();
+            node.label = defaultFieldLabel(model, ft);
           }
           const at =
             typeof data.index === 'number'

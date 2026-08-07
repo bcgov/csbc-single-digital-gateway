@@ -1,7 +1,7 @@
 import { isIntegerControl, isNumberControl, or, rankWith } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import { Input } from '@repo/ui/input';
+import { ClearableInput } from '../util/clearable-input';
 import { ControlWrapper } from '../util/control-wrapper';
 
 // Slider variants (options.slider) are handled by the higher-ranked slider renderer.
@@ -73,7 +73,7 @@ function NumberControlComponent({
       {...(description ? { description } : {})}
       errors={combinedErrors}
     >
-      <Input
+      <ClearableInput
         id={id}
         type="number"
         step={step}
@@ -83,6 +83,7 @@ function NumberControlComponent({
         disabled={enabled === false}
         aria-invalid={Boolean(combinedErrors)}
         onChange={(event) => handleChange(path, parse(event.target.value))}
+        onClear={() => handleChange(path, undefined)}
       />
     </ControlWrapper>
   );

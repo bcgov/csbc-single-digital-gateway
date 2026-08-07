@@ -10,9 +10,9 @@ import {
   ComboboxList,
 } from '@repo/ui/combobox';
 import { Field, FieldLabel } from '@repo/ui/field';
-import { Input } from '@repo/ui/input';
 import { type ReactNode, useEffect, useId, useRef } from 'react';
 
+import { ClearableInput } from '../../util/clearable-input';
 import { AddressSearchField } from './address-search';
 import { addressLabelsForIso2 } from './labels';
 import { type AddressValue, isAddressEmpty, normalizeAddress } from './model';
@@ -92,12 +92,13 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
   return (
     <>
       <SubField id={`${baseId}-country`} label="Country" {...meta('country')}>
-        <Input
+        <ClearableInput
           id={`${baseId}-country`}
           value={value.country}
           disabled={disabled}
           aria-invalid={meta('country').error !== undefined}
           onChange={(event) => onField('country', event.target.value)}
+          onClear={() => onField('country', '')}
         />
       </SubField>
       <AddressLines
@@ -116,22 +117,24 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
           meta={meta}
         />
         <SubField id={`${baseId}-province`} label={labels.stateLabel} {...meta('province')}>
-          <Input
+          <ClearableInput
             id={`${baseId}-province`}
             value={value.province}
             disabled={disabled}
             aria-invalid={meta('province').error !== undefined}
             onChange={(event) => onField('province', event.target.value)}
+            onClear={() => onField('province', '')}
           />
         </SubField>
       </Row>
       <SubField id={`${baseId}-postal_code`} label={labels.postalLabel} {...meta('postal_code')}>
-        <Input
+        <ClearableInput
           id={`${baseId}-postal_code`}
           value={value.postal_code}
           disabled={disabled}
           aria-invalid={meta('postal_code').error !== undefined}
           onChange={(event) => onField('postal_code', event.target.value)}
+          onClear={() => onField('postal_code', '')}
         />
       </SubField>
     </>
@@ -145,20 +148,22 @@ function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
   return (
     <>
       <SubField id={`${baseId}-address_one`} label="Address line 1" {...meta('address_one')}>
-        <Input
+        <ClearableInput
           id={`${baseId}-address_one`}
           value={value.address_one}
           disabled={disabled}
           aria-invalid={meta('address_one').error !== undefined}
           onChange={(event) => onField('address_one', event.target.value)}
+          onClear={() => onField('address_one', '')}
         />
       </SubField>
       <SubField id={`${baseId}-address_two`} label="Address line 2" {...meta('address_two')}>
-        <Input
+        <ClearableInput
           id={`${baseId}-address_two`}
           value={value.address_two}
           disabled={disabled}
           onChange={(event) => onField('address_two', event.target.value)}
+          onClear={() => onField('address_two', '')}
         />
       </SubField>
     </>
@@ -169,12 +174,13 @@ function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
 function CityField({ baseId, value, disabled, onField, meta }: LineProps) {
   return (
     <SubField id={`${baseId}-city`} label="City" {...meta('city')}>
-      <Input
+      <ClearableInput
         id={`${baseId}-city`}
         value={value.city}
         disabled={disabled}
         aria-invalid={meta('city').error !== undefined}
         onChange={(event) => onField('city', event.target.value)}
+        onClear={() => onField('city', '')}
       />
     </SubField>
   );
@@ -286,24 +292,26 @@ function GeoBody({
               </ComboboxContent>
             </Combobox>
           ) : (
-            <Input
+            <ClearableInput
               id={`${baseId}-province`}
               value={value.province}
               disabled={disabled}
               aria-invalid={meta('province').error !== undefined}
               onChange={(event) => onField('province', event.target.value)}
+              onClear={() => onField('province', '')}
             />
           )}
         </SubField>
       </Row>
       {hasPostal ? (
         <SubField id={`${baseId}-postal_code`} label={labels.postalLabel} {...meta('postal_code')}>
-          <Input
+          <ClearableInput
             id={`${baseId}-postal_code`}
             value={value.postal_code}
             disabled={disabled}
             aria-invalid={meta('postal_code').error !== undefined}
             onChange={(event) => onField('postal_code', event.target.value)}
+            onClear={() => onField('postal_code', '')}
           />
         </SubField>
       ) : null}
@@ -393,16 +401,18 @@ function AddressControlComponent({
   return (
     <fieldset className="space-y-3">
       {label ? (
-        <legend className="text-sm font-medium text-foreground">
+        // Match the single-field label style (ControlWrapper renders `text-xs font-semibold`); this
+        // composite control renders its own fieldset/legend, so it has to mirror that style by hand.
+        <legend className="text-xs font-semibold text-foreground">
           {label}
           {required ? ' *' : ''}
         </legend>
       ) : null}
-      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
       <div className="flex flex-col gap-3">
         {geo ? <GeoBody {...body} geo={geo} /> : <PlainBody {...body} />}
       </div>
-      {errors ? <p className="text-sm text-destructive">{errors}</p> : null}
+      {errors ? <p className="text-xs text-destructive">{errors}</p> : null}
     </fieldset>
   );
 }
