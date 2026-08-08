@@ -1,33 +1,70 @@
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
+import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { CircleHelp, EllipsisVertical, Plus } from 'lucide-react';
+import { ChevronRight, CircleHelp, EllipsisVertical, Plus } from 'lucide-react';
 import { PageBody, PageHeader } from '@/components/console/page-header';
 import { ListPagination } from '@/components/console/list/list-pagination';
-import { ListSearchInput } from '@/components/console/list/list-search-input';
-import { SortableHeader } from '@/components/console/list/sortable-header';
 import { useListSearch } from '@/lib/list-search';
 import { type ServiceSort, type ServiceSummary, servicesQueryOptions } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
-import { ServiceMenu } from './service-menu';
 
-const STATUS_COLOR = {
-  draft: 'yellow',
-  published: 'green',
-  archived: 'blue',
-  none: 'blue',
+/** Status → 4px left-border color (published green, archived red; draft/none the subtle default border). */
+const STATUS_BORDER = {
+  published: 'border-l-success-border',
+  draft: 'border-l-border',
+  archived: 'border-l-danger-border',
+  none: 'border-l-border',
 } as const;
 
-/** Workspace Services list — searchable, sortable, paged; "New service" opens the client-first editor. */
+/** Status → Badge color (mirrors the border). */
+const STATUS_BADGE = {
+  published: 'green',
+  draft: 'grey',
+  archived: 'red',
+  none: 'grey',
+} as const;
+
+/** "Last updated: Aug 7, 2026, 2:05 PM" (no date-fns in platform-web). */
+const lastUpdated = (iso: string): string =>
+  `Last updated: ${new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })}`;
+
+function ServiceCard({ service, slug }: { service: ServiceSummary; slug: string }) {
+  return (
+    <Link to="/app/$slug/services/$id" params={{ slug, id: service.id }} className="no-underline">
+      <Card
+        column
+        className={`border-l-4 ${STATUS_BORDER[service.status]} transition-colors hover:bg-blue-10`}
+      >
+        <CardHeader className="flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>{service.title}</CardTitle>
+            <Badge color={STATUS_BADGE[service.status]}>{service.status}</Badge>
+          </div>
+          <CardDescription>{lastUpdated(service.updatedAt)}</CardDescription>
+        </CardHeader>
+        <ChevronRight className="mr-4 size-5 shrink-0 text-muted-foreground" aria-hidden />
+      </Card>
+    </Link>
+  );
+}
+
+/** Workspace Services list — a status-bordered card list; "New" opens the client-first editor. */
 export function ServicesList() {
   const { slug } = useParams({ from: '/app/$slug' });
   const navigate = useNavigate();
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   const workspaceId = workspace?.id ?? '';
-  const { sort, order, q, limit, offset, setPage, setSort, setQ } = useListSearch<ServiceSort>();
-  const { data, isFetching } = useQuery({
+  const { sort, order, q, limit, offset, setPage } = useListSearch<ServiceSort>();
+  const { data } = useQuery({
     ...servicesQueryOptions(workspaceId, { q, sort, order, limit, offset }),
     enabled: workspaceId !== '',
     placeholderData: keepPreviousData,
@@ -66,83 +103,18 @@ export function ServicesList() {
         ]}
       />
       <PageBody className="flex flex-col gap-4">
-        <div className="flex justify-end">
-          <ListSearchInput value={q} onChange={setQ} placeholder="Search services…" />
-        </div>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHeader
-                  column="title"
-                  label="Title"
-                  active={sort}
-                  order={order}
-                  onSort={setSort}
-                />
-                <SortableHeader
-                  column="status"
-                  label="Status"
-                  active={sort}
-                  order={order}
-                  onSort={setSort}
-                />
-                <TableHead>Versions</TableHead>
-                <SortableHeader
-                  column="updated"
-                  label="Updated"
-                  active={sort}
-                  order={order}
-                  onSort={setSort}
-                />
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                    {q === ''
-                      ? 'No services yet — create one with the New button.'
-                      : `No services match “${q}”.`}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((service: ServiceSummary) => (
-                  <TableRow key={service.id} data-pending={isFetching ? '' : undefined}>
-                    <TableCell>
-                      <Link
-                        to="/app/$slug/services/$id"
-                        params={{ slug, id: service.id }}
-                        className="font-medium text-foreground hover:underline"
-                      >
-                        {service.title}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge color={STATUS_COLOR[service.status]}>{service.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{service.versionCount}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(service.updatedAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        <ServiceMenu
-                          serviceId={service.id}
-                          hasSubmissions={service.hasSubmissions}
-                          archived={service.status === 'archived'}
-                          latestPublished={service.latestPublished}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
-        </div>
+        {items.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card py-10 text-center text-muted-foreground">
+            No services yet — create one with the New button.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {items.map((service) => (
+              <ServiceCard key={service.id} service={service} slug={slug} />
+            ))}
+          </div>
+        )}
+        <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
       </PageBody>
     </div>
   );

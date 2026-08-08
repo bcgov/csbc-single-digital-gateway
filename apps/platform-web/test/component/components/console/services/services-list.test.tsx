@@ -27,41 +27,30 @@ vi.mock('@tanstack/react-router', () => ({
   },
 }));
 
-vi.mock('@/components/console/services/service-menu', () => ({
-  ServiceMenu: () => <div data-testid="mock-service-menu">Menu</div>,
-}));
-
 afterEach(() => {
   vi.restoreAllMocks();
   mockNavigate.mockClear();
   mockSearchValue = { sort: 'updated', order: 'desc' };
 });
 
+const service = (over: Partial<ServiceSummary>): ServiceSummary => ({
+  id: 'srv-1',
+  workspaceId: 'ws-1',
+  title: 'Parking Permits',
+  description: '',
+  status: 'published',
+  versionCount: 2,
+  hasSubmissions: true,
+  latestPublished: true,
+  createdAt: '2026-07-15T00:00:00Z',
+  updatedAt: '2026-07-15T12:30:00Z',
+  ...over,
+});
+
 const mockServices: ServiceSummary[] = [
-  {
-    id: 'srv-1',
-    workspaceId: 'ws-1',
-    title: 'Parking Permits',
-    description: 'Parking Permits description',
-    status: 'published',
-    versionCount: 2,
-    hasSubmissions: true,
-    latestPublished: true,
-    createdAt: '2026-07-15T00:00:00Z',
-    updatedAt: '2026-07-15T00:00:00Z',
-  },
-  {
-    id: 'srv-2',
-    workspaceId: 'ws-1',
-    title: 'Business Licensing',
-    description: 'Business Licensing description',
-    status: 'draft',
-    versionCount: 1,
-    hasSubmissions: false,
-    latestPublished: false,
-    createdAt: '2026-07-15T00:00:00Z',
-    updatedAt: '2026-07-15T00:00:00Z',
-  },
+  service({ id: 'srv-1', title: 'Parking Permits', status: 'published' }),
+  service({ id: 'srv-2', title: 'Business Licensing', status: 'draft' }),
+  service({ id: 'srv-3', title: 'Old Program', status: 'archived' }),
 ];
 
 function renderServicesList(seedWorkspace = true, items: ServiceSummary[] = []) {
@@ -94,68 +83,73 @@ function renderServicesList(seedWorkspace = true, items: ServiceSummary[] = []) 
   );
 }
 
+/** The card element inside a service's link. */
+const cardOf = (name: RegExp) =>
+  screen.getByRole('link', { name }).querySelector('[data-slot="card"]');
+
 describe('ServicesList Component Test Suite', () => {
-  it('disables "New service" button when workspace is loading/empty', () => {
+  it('disables the New button and shows the empty state when workspace is loading/empty', () => {
     renderServicesList(false, []);
 
-    const newBtn = screen.getByRole('button', { name: /^new$/i });
-    expect(newBtn).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^new$/i })).toBeDisabled();
     expect(
       screen.getByText('No services yet — create one with the New button.'),
     ).toBeInTheDocument();
   });
 
-  it('renders empty list state with enabled button when workspace loaded', () => {
+  it('enables the New button with an empty list when the workspace is loaded', () => {
     renderServicesList(true, []);
 
-    const newBtn = screen.getByRole('button', { name: /^new$/i });
-    expect(newBtn).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /^new$/i })).not.toBeDisabled();
     expect(
       screen.getByText('No services yet — create one with the New button.'),
     ).toBeInTheDocument();
   });
 
-  it('renders services rows with links, badges, version counts, and menus', () => {
+  it('renders each service as a status-bordered card link with a badge and last-updated line', () => {
     renderServicesList(true, mockServices);
 
-    // Verify row links
-    const link1 = screen.getByRole('link', { name: 'Parking Permits' });
-    expect(link1).toBeInTheDocument();
-    expect(link1.getAttribute('href')).toBe('/app/riverton/services/srv-1');
+    // Full-card links to the service detail.
+    expect(screen.getByRole('link', { name: /parking permits/i })).toHaveAttribute(
+      'href',
+      '/app/riverton/services/srv-1',
+    );
+    expect(screen.getByRole('link', { name: /business licensing/i })).toHaveAttribute(
+      'href',
+      '/app/riverton/services/srv-2',
+    );
+    expect(screen.getByRole('link', { name: /old program/i })).toHaveAttribute(
+      'href',
+      '/app/riverton/services/srv-3',
+    );
 
-    const link2 = screen.getByRole('link', { name: 'Business Licensing' });
-    expect(link2).toBeInTheDocument();
-    expect(link2.getAttribute('href')).toBe('/app/riverton/services/srv-2');
-
-    // Badges
+    // Status badges.
     expect(screen.getByText('published')).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
+    expect(screen.getByText('archived')).toBeInTheDocument();
 
-    // Version counts
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    // Status-colored left border.
+    expect(cardOf(/parking permits/i)).toHaveClass('border-l-success-border');
+    expect(cardOf(/business licensing/i)).toHaveClass('border-l-border');
+    expect(cardOf(/old program/i)).toHaveClass('border-l-danger-border');
 
-    // Menus
-    expect(screen.getAllByTestId('mock-service-menu')).toHaveLength(2);
+    // One "Last updated:" line per service (exact time is timezone-dependent — match the label).
+    expect(screen.getAllByText(/Last updated:/)).toHaveLength(3);
+
+    // No table, no per-row actions menu.
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /more actions/i })).not.toBeInTheDocument();
   });
 
-  it('navigates to services new form on New Service button click', async () => {
+  it('navigates to the new-service form when the New button is clicked', async () => {
     const user = userEvent.setup();
     renderServicesList(true, []);
 
-    const newBtn = screen.getByRole('button', { name: /^new$/i });
-    await user.click(newBtn);
+    await user.click(screen.getByRole('button', { name: /^new$/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/app/$slug/services/new',
       params: { slug: 'riverton' },
     });
-  });
-
-  it('renders no matches empty state when search term returns no results', () => {
-    mockSearchValue = { sort: 'updated', order: 'desc', q: 'nonexistent' };
-    renderServicesList(true, []);
-
-    expect(screen.getByText('No services match “nonexistent”.')).toBeInTheDocument();
   });
 });

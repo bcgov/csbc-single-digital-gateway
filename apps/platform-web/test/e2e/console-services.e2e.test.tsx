@@ -155,32 +155,23 @@ describe('Console Services Integration Test Suite', () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/');
     expect(
-      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 32000 }),
+      await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
-  it('drives the list API from the search + sort controls', async () => {
+  it('requests the paged list with the default sort', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services');
-    await screen.findByRole('link', { name: 'Permit application' });
-    const user = userEvent.setup();
+    await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 });
 
-    // Default list request carries the paging window + default sort.
+    // Default list request carries the paging window + default sort (no search/sort UI anymore).
     const listCall = (predicate: (url: string) => boolean) =>
       fetchMock.mock.calls.some(([input]) => {
         const url = String(input);
         return url.includes('/v1/services?') && predicate(url);
       });
     expect(listCall((url) => url.includes('sort=updated') && url.includes('limit=20'))).toBe(true);
-
-    // Typing a term refetches with an ILIKE `q` (debounced).
-    await user.type(screen.getByRole('searchbox'), 'perm');
-    await waitFor(() => expect(listCall((url) => url.includes('q=perm'))).toBe(true));
-
-    // Clicking a sortable header refetches sorted by that column.
-    await user.click(screen.getByRole('button', { name: /sort by title/i }));
-    await waitFor(() => expect(listCall((url) => url.includes('sort=title'))).toBe(true));
   });
 
   it('opens the New service modal (title + description) at /services/new', async () => {

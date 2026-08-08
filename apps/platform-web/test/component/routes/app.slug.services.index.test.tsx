@@ -80,12 +80,8 @@ describe('App Slug Services Index Route', () => {
       await screen.findByRole('button', { name: /^New$/i }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
-    // Verify services are listed in the table
+    // Verify services are listed as cards (title + status badge).
     expect(await screen.findByText('Permit application')).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
-
-    // Check actions menu button
-    expect(screen.getByRole('button', { name: /^New$/i })).toBeInTheDocument();
   });
 });
