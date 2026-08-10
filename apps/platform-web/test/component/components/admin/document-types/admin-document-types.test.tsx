@@ -10,6 +10,12 @@ vi.mock('@monaco-editor/react', () => ({
   ),
 }));
 
+// The detail page's live preview renders through JSONForms (heavy) — stub it (covered in @repo/react).
+vi.mock('@repo/react/jsonforms', () => ({
+  JsonForms: () => <div data-testid="jsonforms" />,
+}));
+vi.mock('@repo/react/jsonforms-renderers-display', () => ({ displayRenderers: [] }));
+
 afterEach(() => {
   vi.restoreAllMocks();
 });

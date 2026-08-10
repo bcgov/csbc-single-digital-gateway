@@ -36,6 +36,14 @@ vi.mock('@monaco-editor/react', () => ({
   ),
 }));
 
+// The live preview renders through JSONForms (heavy; covered in @repo/react) — stub it here.
+vi.mock('@repo/react/jsonforms', () => ({
+  JsonForms: ({ readonly }: { readonly?: boolean }) => (
+    <div data-testid="jsonforms">{readonly ? 'readonly' : 'interactive'}</div>
+  ),
+}));
+vi.mock('@repo/react/jsonforms-renderers-display', () => ({ displayRenderers: [] }));
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -117,37 +125,39 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
     expect(Route.options.component).toBeDefined();
   });
 
-  it('renders the document type name, kind, and versions list through the router', async () => {
+  it('renders the document type name, kind, and version dropdown through the router', async () => {
     withDocumentType(mockAuth(adminUser));
     renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
 
     expect(
       await screen.findByRole('heading', { name: 'Passport Application Form' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('basic-form')).toBeInTheDocument();
 
-    // Check version table contents
-    expect(screen.getByText('v1')).toBeInTheDocument();
-    expect(screen.getByText('published')).toBeInTheDocument();
-    expect(screen.getByText('v2')).toBeInTheDocument();
-    expect(screen.getByText('draft')).toBeInTheDocument();
+    // Latest (v2) is selected; the dropdown lists both versions with their statuses.
+    await user.click(screen.getByRole('button', { name: /version v2/i }));
+    expect(await screen.findByRole('menuitem', { name: /v1/i })).toHaveTextContent('published');
+    expect(screen.getByRole('menuitem', { name: /v2/i })).toHaveTextContent('draft');
   });
 
   it('loads and switches the editor definition when selecting different versions', async () => {
     withDocumentType(mockAuth(adminUser));
     renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
 
     // Default selected version should be the latest (v2)
-    const editor = await screen.findByTestId('mock-monaco-editor');
+    const editor = await screen.findByTestId('mock-monaco-editor', undefined, { timeout: 32000 });
     expect(editor).toHaveValue(JSON.stringify(mockDocumentType.versions[1].definition, null, 2));
     expect(editor).not.toHaveAttribute('readonly');
 
-    // Click on version 1 row to view read-only definition
-    const user = userEvent.setup();
-    const v1Row = screen.getByText('v1').closest('tr')!;
-    await user.click(v1Row);
+    // Select v1 from the dropdown → its read-only definition loads
+    await user.click(screen.getByRole('button', { name: /version v2/i }));
+    await user.click(await screen.findByRole('menuitem', { name: /v1/i }));
 
-    expect(editor).toHaveValue(JSON.stringify(mockDocumentType.versions[0].definition, null, 2));
+    await waitFor(() =>
+      expect(editor).toHaveValue(JSON.stringify(mockDocumentType.versions[0].definition, null, 2)),
+    );
     expect(editor).toHaveAttribute('readonly');
   });
 
@@ -176,7 +186,7 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
     });
   });
 
-  it('renders blue badge for archived status version', async () => {
+  it('lists an archived version in the version dropdown', async () => {
     const mockDocumentTypeWithArchived = {
       ...mockDocumentType,
       versions: [
@@ -192,8 +202,13 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
 
     withDocumentType(mockAuth(adminUser), mockDocumentTypeWithArchived);
     renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
 
-    expect(await screen.findByText('archived', {}, { timeout: 32000 })).toBeInTheDocument();
+    // Latest is now v3 (archived).
+    await user.click(
+      await screen.findByRole('button', { name: /version v3/i }, { timeout: 32000 }),
+    );
+    expect(await screen.findByRole('menuitem', { name: /v3/i })).toHaveTextContent('archived');
   });
 
   it('renders validation error when saving invalid json draft definition', async () => {
