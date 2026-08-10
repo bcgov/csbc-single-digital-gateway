@@ -174,9 +174,16 @@ describe('Console Services Integration Test Suite', () => {
     expect(listCall((url) => url.includes('sort=updated') && url.includes('limit=20'))).toBe(true);
   });
 
-  it('opens the New service modal (title + description) at /services/new', async () => {
+  it('opens the New service modal (title + description) from the services list New button', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/new');
+    renderApp('/app/riverton/services');
+    const user = userEvent.setup();
+
+    const newButton = await screen.findByRole('button', { name: /^new$/i }, { timeout: 32000 });
+    await waitFor(() => expect(newButton).toBeEnabled());
+    await user.click(newButton);
+
+    // The modal + its JSONForms bundle are lazy-loaded on click — allow for the first compile.
     const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 32000 });
     expect(within(modal).getByLabelText(/name of the service/i)).toBeInTheDocument();
     expect(within(modal).getByLabelText('Short description')).toBeInTheDocument();

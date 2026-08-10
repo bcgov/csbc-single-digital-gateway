@@ -2,13 +2,21 @@ import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { ChevronRight, CircleHelp, EllipsisVertical, Plus } from 'lucide-react';
+import { lazy, Suspense, useState } from 'react';
 import { PageBody, PageHeader } from '@/components/console/page-header';
 import { ListPagination } from '@/components/console/list/list-pagination';
 import { useListSearch } from '@/lib/list-search';
 import { type ServiceSort, type ServiceSummary, servicesQueryOptions } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
+
+// Lazy so the heavy JSONForms/Lexical modal bundle loads only when "New" is clicked.
+const NewServiceModal = lazy(() =>
+  import('@/components/console/services/new-service-modal').then((m) => ({
+    default: m.NewServiceModal,
+  })),
+);
 
 /** Status → 4px left-border color (published green, archived red; draft/none the subtle default border). */
 const STATUS_BORDER = {
@@ -37,7 +45,7 @@ const lastUpdated = (iso: string): string =>
     hour12: true,
   })}`;
 
-function ServiceCard({ service, slug }: { service: ServiceSummary; slug: string }) {
+export function ServiceCard({ service, slug }: { service: ServiceSummary; slug: string }) {
   return (
     <Link to="/app/$slug/services/$id" params={{ slug, id: service.id }} className="no-underline">
       <Card
@@ -60,7 +68,7 @@ function ServiceCard({ service, slug }: { service: ServiceSummary; slug: string 
 /** Workspace Services list — a status-bordered card list; "New" opens the client-first editor. */
 export function ServicesList() {
   const { slug } = useParams({ from: '/app/$slug' });
-  const navigate = useNavigate();
+  const [newOpen, setNewOpen] = useState(false);
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   const workspaceId = workspace?.id ?? '';
   const { sort, order, q, limit, offset, setPage } = useListSearch<ServiceSort>();
@@ -95,7 +103,7 @@ export function ServicesList() {
             size="sm"
             type="button"
             disabled={workspaceId === ''}
-            onClick={() => void navigate({ to: '/app/$slug/services/new', params: { slug } })}
+            onClick={() => setNewOpen(true)}
           >
             <Plus className="size-4" aria-hidden />
             New
@@ -116,6 +124,11 @@ export function ServicesList() {
         )}
         <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
       </PageBody>
+      {newOpen ? (
+        <Suspense fallback={null}>
+          <NewServiceModal open={newOpen} onOpenChange={setNewOpen} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

@@ -41,6 +41,7 @@ vi.mock('@repo/ui/dialog', () => {
 
 const mockNavigate = vi.fn();
 const mockParams = { slug: 'riverton' };
+const mockOnOpenChange = vi.fn();
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
@@ -77,7 +78,7 @@ function renderNewServiceModal(seedWorkspace = true) {
 
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <NewServiceModal />
+      <NewServiceModal open onOpenChange={mockOnOpenChange} />
     </QueryClientProvider>,
   );
 
@@ -143,16 +144,14 @@ describe('New Service Modal Component Test Suite', () => {
     });
   });
 
-  it('navigates back to services list when clicking cancel', async () => {
+  it('closes the modal (onOpenChange false) when clicking cancel', async () => {
     const user = userEvent.setup();
     renderNewServiceModal(true);
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
 
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services',
-      params: { slug: 'riverton' },
-    });
+    expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('displays an error message when service creation fails', async () => {
@@ -201,10 +200,7 @@ describe('New Service Modal Component Test Suite', () => {
 
     await user.keyboard('{Escape}');
 
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services',
-      params: { slug: 'riverton' },
-    });
+    expect(mockOnOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('shows a spinner and disables submit while creation is pending', async () => {
@@ -250,6 +246,6 @@ describe('New Service Modal Component Test Suite', () => {
 
     await user.click(screen.getByTestId('trigger-open-true'));
 
-    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mockOnOpenChange).not.toHaveBeenCalled();
   });
 });

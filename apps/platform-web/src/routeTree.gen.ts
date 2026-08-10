@@ -36,7 +36,6 @@ import { Route as AppSlugServicesIndexRouteImport } from './routes/app.$slug.ser
 import { Route as AppSlugServiceAgreementsIndexRouteImport } from './routes/app.$slug.service-agreements.index'
 import { Route as AppSlugTeamMemberIdRouteImport } from './routes/app.$slug.team.$memberId'
 import { Route as AppSlugSubmissionsIdRouteImport } from './routes/app.$slug.submissions.$id'
-import { Route as AppSlugServicesNewRouteImport } from './routes/app.$slug.services.new'
 import { Route as AppSlugServicesIdRouteImport } from './routes/app.$slug.services.$id'
 import { Route as AppSlugServiceAgreementsNewRouteImport } from './routes/app.$slug.service-agreements.new'
 import { Route as AppSlugServiceAgreementsIdRouteImport } from './routes/app.$slug.service-agreements.$id'
@@ -196,11 +195,6 @@ const AppSlugSubmissionsIdRoute = AppSlugSubmissionsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppSlugSubmissionsRoute,
 } as any)
-const AppSlugServicesNewRoute = AppSlugServicesNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AppSlugServicesRoute,
-} as any)
 const AppSlugServicesIdRoute = AppSlugServicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -341,7 +335,6 @@ export interface FileRoutesByFullPath {
   '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
   '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRouteWithChildren
-  '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/submissions/$id': typeof AppSlugSubmissionsIdRoute
   '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
   '/app/$slug/service-agreements/': typeof AppSlugServiceAgreementsIndexRoute
@@ -379,7 +372,6 @@ export interface FileRoutesByTo {
   '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
   '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdConsoleIndexRoute
-  '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/submissions/$id': typeof AppSlugSubmissionsIdRoute
   '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
   '/app/$slug/service-agreements': typeof AppSlugServiceAgreementsIndexRoute
@@ -425,7 +417,6 @@ export interface FileRoutesById {
   '/app/$slug/service-agreements/$id': typeof AppSlugServiceAgreementsIdRoute
   '/app/$slug/service-agreements/new': typeof AppSlugServiceAgreementsNewRoute
   '/app/$slug/services/$id': typeof AppSlugServicesIdRouteWithChildren
-  '/app/$slug/services/new': typeof AppSlugServicesNewRoute
   '/app/$slug/submissions/$id': typeof AppSlugSubmissionsIdRoute
   '/app/$slug/team/$memberId': typeof AppSlugTeamMemberIdRoute
   '/app/$slug/service-agreements/': typeof AppSlugServiceAgreementsIndexRoute
@@ -475,7 +466,6 @@ export interface FileRouteTypes {
     | '/app/$slug/service-agreements/$id'
     | '/app/$slug/service-agreements/new'
     | '/app/$slug/services/$id'
-    | '/app/$slug/services/new'
     | '/app/$slug/submissions/$id'
     | '/app/$slug/team/$memberId'
     | '/app/$slug/service-agreements/'
@@ -513,7 +503,6 @@ export interface FileRouteTypes {
     | '/app/$slug/service-agreements/$id'
     | '/app/$slug/service-agreements/new'
     | '/app/$slug/services/$id'
-    | '/app/$slug/services/new'
     | '/app/$slug/submissions/$id'
     | '/app/$slug/team/$memberId'
     | '/app/$slug/service-agreements'
@@ -558,7 +547,6 @@ export interface FileRouteTypes {
     | '/app/$slug/service-agreements/$id'
     | '/app/$slug/service-agreements/new'
     | '/app/$slug/services/$id'
-    | '/app/$slug/services/new'
     | '/app/$slug/submissions/$id'
     | '/app/$slug/team/$memberId'
     | '/app/$slug/service-agreements/'
@@ -778,13 +766,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/$slug/submissions/$id'
       preLoaderRoute: typeof AppSlugSubmissionsIdRouteImport
       parentRoute: typeof AppSlugSubmissionsRoute
-    }
-    '/app/$slug/services/new': {
-      id: '/app/$slug/services/new'
-      path: '/new'
-      fullPath: '/app/$slug/services/new'
-      preLoaderRoute: typeof AppSlugServicesNewRouteImport
-      parentRoute: typeof AppSlugServicesRoute
     }
     '/app/$slug/services/$id': {
       id: '/app/$slug/services/$id'
@@ -1053,13 +1034,11 @@ const AppSlugServicesIdRouteWithChildren =
 
 interface AppSlugServicesRouteChildren {
   AppSlugServicesIdRoute: typeof AppSlugServicesIdRouteWithChildren
-  AppSlugServicesNewRoute: typeof AppSlugServicesNewRoute
   AppSlugServicesIndexRoute: typeof AppSlugServicesIndexRoute
 }
 
 const AppSlugServicesRouteChildren: AppSlugServicesRouteChildren = {
   AppSlugServicesIdRoute: AppSlugServicesIdRouteWithChildren,
-  AppSlugServicesNewRoute: AppSlugServicesNewRoute,
   AppSlugServicesIndexRoute: AppSlugServicesIndexRoute,
 }
 

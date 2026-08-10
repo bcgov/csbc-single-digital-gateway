@@ -43,10 +43,18 @@ interface ServiceFormData {
   description?: string;
 }
 
-/** "New service" modal over the services list (route `/services/new`). Collects a name + short
- * description via JSONForms; everything else (the form/version config) is done on the service detail
- * afterwards. */
-export function NewServiceModal() {
+interface NewServiceModalProps {
+  /** Whether the modal is open (controlled by the parent). */
+  open: boolean;
+  /** Called to open/close the modal — the parent owns the boolean. */
+  onOpenChange: (open: boolean) => void;
+}
+
+/** "New service" modal — a controlled dialog opened from the Services list "New" button and the
+ * workspace Overview "Create new service" card. Collects a name + short description via JSONForms;
+ * everything else (the form/version config) is done on the service detail afterwards. On success it
+ * navigates to the new service; cancel/escape just closes and resets. */
+export function NewServiceModal({ open, onOpenChange }: NewServiceModalProps) {
   const { slug } = useParams({ from: '/app/$slug' });
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   const workspaceId = workspace?.id ?? '';
@@ -54,7 +62,6 @@ export function NewServiceModal() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const close = () => navigate({ to: '/app/$slug/services', params: { slug } });
   const create = useMutation({
     mutationFn: () => {
       const trimmed = (data.title ?? '').trim();
@@ -73,6 +80,7 @@ export function NewServiceModal() {
     },
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['services'] });
+      onOpenChange(false);
       await navigate({
         to: '/app/$slug/services/$id/old/edit',
         params: { slug, id: result.service.id },
@@ -81,12 +89,19 @@ export function NewServiceModal() {
     },
   });
 
+  /** Close and reset the form so a re-open starts clean (the modal stays mounted between opens). */
+  const close = () => {
+    setData({});
+    create.reset();
+    onOpenChange(false);
+  };
+
   return (
     <Dialog
-      open
+      open={open}
       onOpenChange={(next) => {
         if (!next) {
-          void close();
+          close();
         }
       }}
     >
@@ -114,7 +129,7 @@ export function NewServiceModal() {
             </p>
           ) : null}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => void close()}>
+            <Button type="button" variant="outline" onClick={close}>
               Cancel
             </Button>
             <Button type="submit" disabled={create.isPending || workspaceId === ''}>

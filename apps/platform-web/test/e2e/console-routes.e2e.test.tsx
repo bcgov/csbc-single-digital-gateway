@@ -33,7 +33,7 @@ describe('Console Routes Integration Test Suite', () => {
   it('renders the Overview placeholder at /app/:slug', async () => {
     renderScoped('/app/riverton');
     expect(
-      await screen.findByText(/Overview is being set up/i, undefined, { timeout: 32000 }),
+      await screen.findByText(/Create new service/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 

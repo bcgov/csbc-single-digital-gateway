@@ -27,6 +27,11 @@ vi.mock('@tanstack/react-router', () => ({
   },
 }));
 
+// The New service modal has its own test suite; here we only assert the New button toggles it open.
+vi.mock('@/components/console/services/new-service-modal', () => ({
+  NewServiceModal: ({ open }: any) => (open ? <div data-testid="new-service-modal" /> : null),
+}));
+
 afterEach(() => {
   vi.restoreAllMocks();
   mockNavigate.mockClear();
@@ -141,15 +146,14 @@ describe('ServicesList Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /more actions/i })).not.toBeInTheDocument();
   });
 
-  it('navigates to the new-service form when the New button is clicked', async () => {
+  it('opens the New service modal when the New button is clicked', async () => {
     const user = userEvent.setup();
     renderServicesList(true, []);
 
+    expect(screen.queryByTestId('new-service-modal')).not.toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: /^new$/i }));
 
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/new',
-      params: { slug: 'riverton' },
-    });
+    expect(await screen.findByTestId('new-service-modal')).toBeInTheDocument();
   });
 });
