@@ -7,6 +7,6 @@ function VersionDetail() {
   return <ServiceDetail slug={slug} id={id} versionId={versionId} tab="details" />;
 }
 
-export const Route = createFileRoute('/app/$slug/services/$id/versions/$versionId/')({
+export const Route = createFileRoute('/app/$slug/services/$id/old/edit/versions/$versionId/')({
   component: VersionDetail,
 });

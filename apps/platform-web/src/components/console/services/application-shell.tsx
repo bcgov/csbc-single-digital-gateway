@@ -54,7 +54,7 @@ export function ApplicationShell({
           type="button"
           variant="outline"
           onClick={() =>
-            navigate({ to: '/app/$slug/services/$id', params: { slug, id: serviceId } })
+            navigate({ to: '/app/$slug/services/$id/old/edit', params: { slug, id: serviceId } })
           }
         >
           Back

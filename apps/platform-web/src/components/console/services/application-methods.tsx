@@ -105,7 +105,7 @@ function MethodRowBody({
             <span className="block truncate text-sm font-medium">{reference.targetTitle}</span>
           ) : (
             <Link
-              to="/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId"
+              to="/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId"
               params={{
                 slug,
                 id: serviceId,
@@ -301,7 +301,7 @@ export function ApplicationMethods({
             type="button"
             onClick={() =>
               navigate({
-                to: '/app/$slug/services/$id/versions/$versionId/application-methods/new',
+                to: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new',
                 params: { slug, id: serviceId, versionId },
               })
             }

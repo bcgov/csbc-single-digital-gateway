@@ -8,7 +8,7 @@ function VersionMethods() {
 }
 
 export const Route = createFileRoute(
-  '/app/$slug/services/$id/versions/$versionId/application-methods/',
+  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/',
 )({
   component: VersionMethods,
 });

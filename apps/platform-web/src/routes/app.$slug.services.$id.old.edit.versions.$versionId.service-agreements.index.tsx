@@ -8,7 +8,7 @@ function VersionAgreements() {
 }
 
 export const Route = createFileRoute(
-  '/app/$slug/services/$id/versions/$versionId/service-agreements/',
+  '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements/',
 )({
   component: VersionAgreements,
 });

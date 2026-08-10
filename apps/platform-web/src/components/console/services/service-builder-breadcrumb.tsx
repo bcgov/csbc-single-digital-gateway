@@ -31,7 +31,7 @@ export function ServiceBuilderBreadcrumb({
         <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink
-            render={<Link to="/app/$slug/services/$id" params={{ slug, id: serviceId }} />}
+            render={<Link to="/app/$slug/services/$id/old/edit" params={{ slug, id: serviceId }} />}
           >
             {serviceTitle}
           </BreadcrumbLink>

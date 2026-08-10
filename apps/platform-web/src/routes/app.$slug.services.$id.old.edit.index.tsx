@@ -7,6 +7,6 @@ function ServiceIndex() {
   return <ServiceDetail slug={slug} id={id} tab="details" />;
 }
 
-export const Route = createFileRoute('/app/$slug/services/$id/')({
+export const Route = createFileRoute('/app/$slug/services/$id/old/edit/')({
   component: ServiceIndex,
 });

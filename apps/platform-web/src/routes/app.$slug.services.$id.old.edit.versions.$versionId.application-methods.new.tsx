@@ -14,7 +14,7 @@ function NewApplicationMethod() {
 }
 
 export const Route = createFileRoute(
-  '/app/$slug/services/$id/versions/$versionId/application-methods/new',
+  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new',
 )({
   component: NewApplicationMethod,
 });

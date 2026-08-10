@@ -111,7 +111,7 @@ function withServicesAndDocumentTypes(base: ReturnType<typeof mockAuth>) {
 describe('App Slug Services ID Versions VersionID Application Methods New Route', () => {
   it('renders the services detail page with the new application method modal open', async () => {
     withServicesAndDocumentTypes(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/s1/versions/sv1/application-methods/new');
+    renderApp('/app/riverton/services/s1/old/edit/versions/sv1/application-methods/new');
 
     // Breadcrumb page title (will be aria-hidden/inert when dialog is open)
     expect(

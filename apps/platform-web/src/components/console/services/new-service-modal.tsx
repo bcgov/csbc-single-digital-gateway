@@ -74,7 +74,7 @@ export function NewServiceModal() {
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['services'] });
       await navigate({
-        to: '/app/$slug/services/$id',
+        to: '/app/$slug/services/$id/old/edit',
         params: { slug, id: result.service.id },
         replace: true,
       });

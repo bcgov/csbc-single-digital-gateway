@@ -136,7 +136,7 @@ describe('New Service Modal Component Test Suite', () => {
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/app/$slug/services/$id',
+        to: '/app/$slug/services/$id/old/edit',
         params: { slug: 'riverton', id: 'srv-999' },
         replace: true,
       });

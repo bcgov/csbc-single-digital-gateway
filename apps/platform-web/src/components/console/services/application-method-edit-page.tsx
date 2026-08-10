@@ -21,7 +21,8 @@ import { serviceQueryOptions } from '@/lib/services';
 import { UnsavedChangesGuard } from '../unsaved-changes-guard';
 import { ApplicationShell } from './application-shell';
 
-const FROM = '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId';
+const FROM =
+  '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId';
 
 const titleOf = (def: FormDefinition): string => {
   const title = def.schema.title;
@@ -75,7 +76,10 @@ function BasicEdit({ form }: { form: FormWithVersion }) {
   const shell = useShellProps();
   const navigate = useNavigate();
   const toDetail = () =>
-    navigate({ to: '/app/$slug/services/$id', params: { slug: shell.slug, id: shell.serviceId } });
+    navigate({
+      to: '/app/$slug/services/$id/old/edit',
+      params: { slug: shell.slug, id: shell.serviceId },
+    });
   const status = form.version.status;
   const readOnly = status !== 'draft';
   // Seed the editable form. A freshly-created form has no schema.title yet → default it to the
@@ -198,7 +202,10 @@ function StageEdit({ form }: { form: FormWithVersion }) {
   const shell = useShellProps();
   const navigate = useNavigate();
   const toDetail = () =>
-    navigate({ to: '/app/$slug/services/$id', params: { slug: shell.slug, id: shell.serviceId } });
+    navigate({
+      to: '/app/$slug/services/$id/old/edit',
+      params: { slug: shell.slug, id: shell.serviceId },
+    });
   const status = form.version.status;
   const readOnly = status !== 'draft';
   // The stored schema may be a barebones template ({ stages } with no edges/name) — normalize so the

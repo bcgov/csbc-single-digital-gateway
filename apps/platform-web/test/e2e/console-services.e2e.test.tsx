@@ -185,7 +185,7 @@ describe('Console Services Integration Test Suite', () => {
 
   it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/s1');
+    renderApp('/app/riverton/services/s1/old/edit');
     const user = userEvent.setup();
 
     // Service details tab (default): the JSONForms title control.

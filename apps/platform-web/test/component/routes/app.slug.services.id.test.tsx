@@ -102,13 +102,12 @@ describe('App Slug Services ID Layout Route', () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/s1/');
 
-    // Breadcrumb page title
+    // The bare service route renders the console shell's Dashboard child through the $id Outlet.
     expect(
-      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 32000 }),
+      await screen.findByRole('heading', { name: 'Dashboard' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
-    // Verify service details tab is active (rendered in the child route component)
-    const detailsTab = screen.getByRole('tab', { name: /Service details/i });
-    expect(detailsTab).toHaveAttribute('data-active');
+    // The sidebar section nav (a child of the shell) is present.
+    expect(screen.getByRole('link', { name: 'Service details' })).toBeInTheDocument();
   });
 });

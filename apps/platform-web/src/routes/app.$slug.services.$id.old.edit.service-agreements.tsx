@@ -7,6 +7,6 @@ function CurrentAgreements() {
   return <ServiceDetail slug={slug} id={id} tab="agreements" />;
 }
 
-export const Route = createFileRoute('/app/$slug/services/$id/service-agreements')({
+export const Route = createFileRoute('/app/$slug/services/$id/old/edit/service-agreements')({
   component: CurrentAgreements,
 });
