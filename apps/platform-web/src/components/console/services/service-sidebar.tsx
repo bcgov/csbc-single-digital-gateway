@@ -68,7 +68,7 @@ export function ServiceSidebar({
       data-collapsed={collapsed}
       className="group/rail flex w-[248px] shrink-0 flex-col gap-1 border-r border-border bg-background pb-3.5 transition-[width] data-[collapsed=true]:w-[64px]"
     >
-      <div className="flex h-[58px] items-center gap-2 px-1.5 group-data-[collapsed=true]/rail:justify-center group-data-[collapsed=true]/rail:px-0">
+      <div className="flex h-[58px] items-center gap-2 px-4 group-data-[collapsed=true]/rail:justify-center group-data-[collapsed=true]/rail:px-0">
         <span
           className="flex-1 truncate text-sm font-semibold group-data-[collapsed=true]/rail:hidden"
           title={serviceName}
