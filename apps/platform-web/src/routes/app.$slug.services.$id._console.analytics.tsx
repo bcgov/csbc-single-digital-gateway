@@ -3,9 +3,7 @@ import { ServiceConsolePage } from '@/components/console/services/service-consol
 
 /** Analytics section. */
 function ServiceAnalyticsSection() {
-  return (
-    <ServiceConsolePage title="Analytics" description="Usage and performance for this service." />
-  );
+  return <ServiceConsolePage title="Analytics" />;
 }
 
 export const Route = createFileRoute('/app/$slug/services/$id/_console/analytics')({

@@ -3,7 +3,7 @@ import { ServiceConsolePage } from '@/components/console/services/service-consol
 
 /** Settings section. */
 function ServiceSettingsSection() {
-  return <ServiceConsolePage title="Settings" description="Manage this service's settings." />;
+  return <ServiceConsolePage title="Settings" />;
 }
 
 export const Route = createFileRoute('/app/$slug/services/$id/_console/settings')({

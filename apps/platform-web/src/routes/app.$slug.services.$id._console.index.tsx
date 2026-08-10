@@ -3,7 +3,7 @@ import { ServiceConsolePage } from '@/components/console/services/service-consol
 
 /** Dashboard — the default section at the bare `…/services/:id` route. */
 function ServiceDashboard() {
-  return <ServiceConsolePage title="Dashboard" description="Overview of this service." />;
+  return <ServiceConsolePage title="Dashboard" />;
 }
 
 export const Route = createFileRoute('/app/$slug/services/$id/_console/')({

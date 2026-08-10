@@ -3,12 +3,7 @@ import { ServiceConsolePage } from '@/components/console/services/service-consol
 
 /** Service requests section. */
 function ServiceRequestsSection() {
-  return (
-    <ServiceConsolePage
-      title="Service requests"
-      description="Applications submitted to this service."
-    />
-  );
+  return <ServiceConsolePage title="Service requests" />;
 }
 
 export const Route = createFileRoute('/app/$slug/services/$id/_console/requests')({

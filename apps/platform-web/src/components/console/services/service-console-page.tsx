@@ -8,18 +8,10 @@ import { PageHeader } from '@/components/console/page-header';
  * The five sidebar sections are placeholder scaffolds for now — omit `children` to show the default
  * "coming soon" note; later features fill each body in.
  */
-export function ServiceConsolePage({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children?: ReactNode;
-}) {
+export function ServiceConsolePage({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <>
-      <PageHeader title={title} description={description} fluid />
+      <PageHeader title={title} fluid />
       <div className="pt-6">
         {children ?? <p className="text-sm text-muted-foreground">This section is coming soon.</p>}
       </div>

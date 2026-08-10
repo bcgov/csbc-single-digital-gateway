@@ -25,7 +25,7 @@ export function ServiceDetailsPage() {
   useHashScroll(hash);
 
   return (
-    <ServiceConsolePage title="Service details" description="Configure this service's details.">
+    <ServiceConsolePage title="Service details">
       <div className="flex flex-col gap-10">
         {SERVICE_DETAILS_SECTIONS.map((section) => (
           <section key={section.key} id={section.key} className="flex scroll-mt-6 flex-col gap-3">
