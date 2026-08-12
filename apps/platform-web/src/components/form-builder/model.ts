@@ -35,6 +35,11 @@ export interface ControlNode {
   /** Select field only (feature 156, Step 2): single (string enum) vs multi (array). Default false. */
   multiple?: boolean;
   /**
+   * Select field only (feature 168): render a filterable Combobox (chips for multi) instead of the
+   * plain dropdown → `uischema.options.combobox = true`. Opt-in, default false.
+   */
+  combobox?: boolean;
+  /**
    * Boolean field only (feature 156): on-screen affordance. `'toggle'` serializes
    * `uischema.options.toggle = true` (→ the `@repo/react` Switch renderer); `'checkbox'` (default)
    * emits no flag (→ the Checkbox renderer). Same boolean data either way — presentation only.

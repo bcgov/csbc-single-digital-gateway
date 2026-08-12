@@ -233,7 +233,7 @@ export const FIELD_TYPE_BY_ID: Record<FieldTypeId, FieldTypeDef> = Object.fromEn
 
 /**
  * Choice fields (feature 156, Step 2): every one carries an authored `{ label, value }[]` the inspector
- * edits (with reordering) and serializes to `uischema.options.choices` for the unified choice renderer.
- * `select` also carries a single/multi switch; `radio` is single, `checkboxes` multi.
+ * edits (with reordering) and serializes to schema-native `oneOf`/`const`/`title` (feature 167) for the
+ * unified choice renderer. `select` also carries a single/multi switch; `radio` is single, `checkboxes` multi.
  */
 export const CHOICE_FIELD_TYPES = new Set<FieldTypeId>(['select', 'radio', 'checkboxes']);

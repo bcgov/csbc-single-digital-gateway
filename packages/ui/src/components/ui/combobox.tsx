@@ -49,10 +49,13 @@ function ComboboxInput({
   disabled = false,
   showTrigger = true,
   showClear = false,
+  clearLabel,
   ...props
 }: ComboboxPrimitive.Input.Props & {
   showTrigger?: boolean;
   showClear?: boolean;
+  /** Accessible name for the clear button (it renders an icon only). Omit only for a decorative use. */
+  clearLabel?: string;
 }) {
   return (
     <InputGroup className={cn('w-auto', className)}>
@@ -68,7 +71,12 @@ function ComboboxInput({
             disabled={disabled}
           />
         )}
-        {showClear && <ComboboxClear disabled={disabled} />}
+        {showClear && (
+          <ComboboxClear
+            disabled={disabled}
+            {...(clearLabel ? { 'aria-label': clearLabel } : {})}
+          />
+        )}
       </InputGroupAddon>
       {children}
     </InputGroup>
@@ -210,9 +218,12 @@ function ComboboxChip({
   className,
   children,
   showRemove = true,
+  removeLabel,
   ...props
 }: ComboboxPrimitive.Chip.Props & {
   showRemove?: boolean;
+  /** Accessible name for the remove button (it renders an icon only). Omit only for a decorative chip. */
+  removeLabel?: string;
 }) {
   return (
     <ComboboxPrimitive.Chip
@@ -229,6 +240,7 @@ function ComboboxChip({
           render={<Button variant="ghost" size="icon-xs" />}
           className="-ml-1 opacity-50 hover:opacity-100"
           data-slot="combobox-chip-remove"
+          {...(removeLabel ? { 'aria-label': removeLabel } : {})}
         >
           <XIcon className="pointer-events-none" />
         </ComboboxPrimitive.ChipRemove>
@@ -265,6 +277,7 @@ export {
   ComboboxChips,
   ComboboxChip,
   ComboboxChipsInput,
+  ComboboxClear,
   ComboboxTrigger,
   ComboboxValue,
   useComboboxAnchor,

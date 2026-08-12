@@ -19,8 +19,13 @@ type JsonObject = Record<string, unknown>;
 
 // ── Serialize: model → { schema, uischema } ──────────────────────────────────────────────────────
 
+/** Feature 167: an authored `{ value, label }[]` → schema-native `oneOf` (`{ const, title }[]`). */
+function oneOfFromEnumOptions(options: EnumOption[] | undefined): JsonObject[] {
+  return (options ?? []).map((o) => ({ const: o.value, title: o.label }));
+}
+
 function propertySchema(node: ControlNode): JsonObject {
-  const values = (node.enumOptions ?? []).map((o) => o.value);
+  const oneOf = oneOfFromEnumOptions(node.enumOptions);
   const base: JsonObject = {};
   switch (node.fieldType) {
     case 'number':
@@ -76,29 +81,31 @@ function propertySchema(node: ControlNode): JsonObject {
       break;
     }
     case 'radio':
-      // Feature 156 (Step 2): single choice → a string enum (values only; labels live in options.choices).
-      Object.assign(base, { type: 'string', enum: values });
+      // Feature 167: single choice → a string with a schema-native oneOf (values AND labels; Ajv
+      // validates the `const`, the citizen sees the `title`).
+      Object.assign(base, { type: 'string', oneOf });
       break;
     case 'select':
-      // Single → string enum; multi → array of enum (uniqueItems). Labels are carried in options.choices.
+      // Single → string oneOf; multi → array of oneOf items (uniqueItems). Multiplicity is the schema
+      // shape itself now — no separate `options.multiple` flag.
       if (node.multiple === true) {
         Object.assign(base, {
           type: 'array',
           uniqueItems: true,
-          items: { type: 'string', enum: values },
+          items: { type: 'string', oneOf },
         });
         if (node.required) {
           base.minItems = 1;
         }
       } else {
-        Object.assign(base, { type: 'string', enum: values });
+        Object.assign(base, { type: 'string', oneOf });
       }
       break;
     case 'checkboxes':
       Object.assign(base, {
         type: 'array',
         uniqueItems: true,
-        items: { type: 'string', enum: values },
+        items: { type: 'string', oneOf },
       });
       if (node.required) {
         // A required checkbox group must have ≥1 box ticked — object-level `required` only checks the
@@ -181,18 +188,20 @@ function controlOptions(node: ControlNode): JsonObject {
     options.toggle = true;
   }
   if (CHOICE_FIELD_TYPES.has(node.fieldType)) {
-    // Feature 156 (Step 2): the unified choice control reads its presentation + labelled options here.
-    options.format = 'choice';
+    // Feature 167: values + labels now live in schema.oneOf/schema.items.oneOf. Only presentation
+    // (`display`) stays in uischema.options — it's the sole signal that disambiguates `select` from
+    // `radio` (both `string`+`oneOf`) and multi-`select` from `checkboxes` (both `array` of the same
+    // item schema); `multiple` is no longer authored here — it's inferred from the schema shape.
     options.display =
       node.fieldType === 'radio'
         ? 'radio'
         : node.fieldType === 'checkboxes'
           ? 'checkboxes'
           : 'select';
-    if (node.fieldType === 'select') {
-      options.multiple = node.multiple === true;
+    if (node.fieldType === 'select' && node.combobox === true) {
+      // Feature 168: opt-in per field; only emitted when true (unset/false stays the plain dropdown).
+      options.combobox = true;
     }
-    options.choices = (node.enumOptions ?? []).map((o) => ({ value: o.value, label: o.label }));
   }
   if (node.fieldType === 'richtext') {
     options.format = 'richtext';
@@ -330,8 +339,9 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (options.format === 'address' || prop.type === 'object') {
     return 'address';
   }
-  if (options.format === 'choice') {
-    // Feature 156 (Step 2): the choice family is discriminated by `options.display`.
+  if (isChoiceProp(prop)) {
+    // Feature 167: a choice field is recognised by schema shape (a `oneOf`, single or array-of-item);
+    // `options.display` still discriminates select/radio/checkboxes, defaulting to `select`.
     if (options.display === 'radio') {
       return 'radio';
     }
@@ -356,17 +366,30 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   return 'text';
 }
 
-/** Feature 156 (Step 2): recover the authored `{ value, label }[]` from `uischema.options.choices`. */
-function choicesFromOptions(rawOptions: JsonObject): EnumOption[] {
-  const raw = rawOptions.choices;
-  if (!Array.isArray(raw)) {
+/** The schema that would carry `oneOf` for a property — itself for single-value, `items` for array. */
+function oneOfHostSchema(prop: JsonObject): JsonObject {
+  return prop.type === 'array' ? ((prop.items as JsonObject | undefined) ?? {}) : prop;
+}
+
+/**
+ * Feature 167: true when a property schema is choice-shaped — a `oneOf` (single or array-of-item),
+ * even an empty one (a choice field with every option removed is still a choice field).
+ */
+function isChoiceProp(prop: JsonObject): boolean {
+  return Array.isArray(oneOfHostSchema(prop).oneOf);
+}
+
+/** Feature 167: recover the authored `{ value, label }[]` from a property's schema-native `oneOf`. */
+function choicesFromSchema(prop: JsonObject): EnumOption[] {
+  const oneOf = oneOfHostSchema(prop).oneOf;
+  if (!Array.isArray(oneOf)) {
     return [];
   }
-  return raw
+  return oneOf
     .filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === 'object')
     .map((entry) => {
-      const value = String(entry.value ?? '');
-      const label = entry.label === undefined || entry.label === '' ? value : String(entry.label);
+      const value = String(entry.const ?? '');
+      const label = entry.title === undefined || entry.title === '' ? value : String(entry.title);
       return { value, label };
     });
 }
@@ -397,6 +420,7 @@ function parseControl(
     display: _d,
     multiple: _mult,
     choices: _c,
+    combobox: _cb,
     placeholder: _ph,
     rows: _r,
     mask: _mk,
@@ -411,6 +435,7 @@ function parseControl(
   void _d;
   void _mult;
   void _c;
+  void _cb;
   void _ph;
   void _r;
   void _mk;
@@ -444,9 +469,12 @@ function parseControl(
     }
   }
   if (CHOICE_FIELD_TYPES.has(fieldType)) {
-    node.enumOptions = choicesFromOptions(rawOptions);
+    // Feature 167: values + labels come from the schema's `oneOf`; multiplicity from its shape.
+    node.enumOptions = choicesFromSchema(prop);
     if (fieldType === 'select') {
-      node.multiple = rawOptions.multiple === true;
+      node.multiple = prop.type === 'array';
+      // Feature 168: opt-in per field, defaults false when the flag is absent (e.g. legacy data).
+      node.combobox = rawOptions.combobox === true;
     }
   }
   if (fieldType === 'boolean') {

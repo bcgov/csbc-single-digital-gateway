@@ -1,22 +1,31 @@
-import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
+import { and, rankWith, schemaMatches, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Checkbox } from '@repo/ui/checkbox';
 import { Field, FieldLabel } from '@repo/ui/field';
 import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
+import {
+  Select,
+  SelectClear,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/select';
 import { ControlWrapper } from '../../util/control-wrapper';
-import { labelForValue, readChoiceOptions } from './model';
+import { ChoiceComboboxMulti, ChoiceComboboxSingle } from './choice-combobox';
+import { isChoiceSchema, labelForValue, readChoiceOptions } from './model';
 
 /**
- * The unified choice control (feature 156, Step 2). Dispatched purely by `options.format: 'choice'`,
- * ranked above the generic enum/oneOf/multi-enum renderers so it owns every builder-authored choice
- * field. Presentation comes from `options.display` (+ `options.multiple` for `select`); the visible
- * labels come from `options.choices` — the schema only carries the values (for Ajv).
+ * The unified choice control (feature 156, Step 2; schema-shape dispatch since feature 167).
+ * Dispatched by schema shape — a `oneOf` of `{ const, title }` (single) or an array of such (multi) —
+ * ranked above the generic enum/oneOf/multi-enum renderers so it owns every choice-shaped schema, with
+ * no `options` required (a bare `{ type: 'Control', scope }` uischema defaults to a `select`).
+ * Presentation comes from `options.display`; the visible labels come from the schema's `oneOf`.
  */
 export const choiceControlTester: RankedTester = rankWith(
   6,
-  and(uiTypeIs('Control'), optionIs('format', 'choice')),
+  and(uiTypeIs('Control'), schemaMatches(isChoiceSchema)),
 );
 
 function ChoiceControlComponent({
@@ -31,11 +40,12 @@ function ChoiceControlComponent({
   enabled,
   visible,
   uischema,
+  schema,
 }: ControlProps) {
   if (visible === false) {
     return null;
   }
-  const { display, multiple, choices } = readChoiceOptions(uischema.options);
+  const { display, multiple, combobox, choices } = readChoiceOptions(uischema.options, schema);
   const disabled = enabled === false;
   const invalid = Boolean(errors);
   const selected: unknown[] = Array.isArray(data) ? data : [];
@@ -104,6 +114,40 @@ function ChoiceControlComponent({
     );
   }
 
+  // display === 'select', combobox === true (feature 168, opt-in): a filterable Combobox instead of the
+  // plain dropdown — chips for multi, a Clear button for single.
+  if (combobox) {
+    return (
+      <ControlWrapper
+        id={id}
+        label={label}
+        required={required}
+        {...(description ? { description } : {})}
+        errors={errors}
+      >
+        {multiple ? (
+          <ChoiceComboboxMulti
+            id={id}
+            choices={choices}
+            selected={selected}
+            disabled={disabled}
+            invalid={invalid}
+            onPick={(next) => handleChange(path, next)}
+          />
+        ) : (
+          <ChoiceComboboxSingle
+            id={id}
+            choices={choices}
+            data={data}
+            disabled={disabled}
+            invalid={invalid}
+            onPick={(next) => handleChange(path, next)}
+          />
+        )}
+      </ControlWrapper>
+    );
+  }
+
   // display === 'select' — a single or multi Base UI (@repo/ui) dropdown. The value is rendered as the
   // authored label(s); `multiple` is passed as a literal in each branch so its generic type resolves.
   const valueDisplay = (
@@ -140,9 +184,18 @@ function ChoiceControlComponent({
           disabled={disabled}
           onValueChange={(next: string[]) => handleChange(path, next)}
         >
-          <SelectTrigger id={id} aria-invalid={invalid} className="w-full">
-            {valueDisplay}
-          </SelectTrigger>
+          <div className="group relative">
+            <SelectTrigger id={id} aria-invalid={invalid} className="w-full">
+              {valueDisplay}
+            </SelectTrigger>
+            {selected.length > 0 && (
+              <SelectClear
+                aria-label="Clear all"
+                disabled={disabled}
+                onClick={() => handleChange(path, [])}
+              />
+            )}
+          </div>
           <SelectContent>{items}</SelectContent>
         </Select>
       ) : (
@@ -151,9 +204,18 @@ function ChoiceControlComponent({
           disabled={disabled}
           onValueChange={(next: string | null) => handleChange(path, next ?? undefined)}
         >
-          <SelectTrigger id={id} aria-invalid={invalid} className="w-full">
-            {valueDisplay}
-          </SelectTrigger>
+          <div className="group relative">
+            <SelectTrigger id={id} aria-invalid={invalid} className="w-full">
+              {valueDisplay}
+            </SelectTrigger>
+            {data !== undefined && data !== null && data !== '' && (
+              <SelectClear
+                aria-label="Clear"
+                disabled={disabled}
+                onClick={() => handleChange(path, undefined)}
+              />
+            )}
+          </div>
           <SelectContent>{items}</SelectContent>
         </Select>
       )}

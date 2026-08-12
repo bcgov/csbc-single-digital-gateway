@@ -103,7 +103,8 @@ function FieldIdBadge({ id }: { id: string }) {
 /**
  * Choice-field options editor (feature 156, Step 2). Every choice field (select / radio / checkbox
  * group) authors independent `{ value, label }` pairs — the value is stored/validated, the label is
- * shown — and the list is reorderable (its order is the citizen-facing order via options.choices).
+ * shown — and the list is reorderable (its order is the citizen-facing order, serialized to
+ * schema-native `oneOf`/`const`/`title` — feature 167).
  */
 function ChoiceOptionsEditor({
   node,
@@ -427,15 +428,26 @@ function ControlInspector({
       {node.fieldType === 'text' ? <TextSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'boolean' ? <BooleanSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'select' ? (
-        <div className="flex items-center justify-between">
-          <Label htmlFor="insp-multiple">Allow multiple</Label>
-          <Switch
-            id="insp-multiple"
-            aria-label="Allow multiple"
-            checked={node.multiple === true}
-            onCheckedChange={(checked) => onChange({ multiple: checked })}
-          />
-        </div>
+        <>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="insp-multiple">Allow multiple</Label>
+            <Switch
+              id="insp-multiple"
+              aria-label="Allow multiple"
+              checked={node.multiple === true}
+              onCheckedChange={(checked) => onChange({ multiple: checked })}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="insp-combobox">Combobox</Label>
+            <Switch
+              id="insp-combobox"
+              aria-label="Combobox"
+              checked={node.combobox === true}
+              onCheckedChange={(checked) => onChange({ combobox: checked })}
+            />
+          </div>
+        </>
       ) : null}
       {CHOICE_FIELD_TYPES.has(node.fieldType) ? (
         <ChoiceOptionsEditor node={node} onChange={onChange} />

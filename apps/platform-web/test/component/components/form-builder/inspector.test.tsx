@@ -438,6 +438,12 @@ describe('Inspector Component Test Suite', () => {
     expect(multiple).not.toBeChecked();
     await user.click(multiple);
     expect(handleChangeControl).toHaveBeenLastCalledWith({ multiple: true });
+
+    // Select fields also expose the opt-in Combobox switch (feature 168), off by default.
+    const combobox = screen.getByRole('switch', { name: 'Combobox' });
+    expect(combobox).not.toBeChecked();
+    await user.click(combobox);
+    expect(handleChangeControl).toHaveBeenLastCalledWith({ combobox: true });
   });
 
   it('renders text field settings: placeholder, multiline and max length (feature 158)', async () => {

@@ -4,7 +4,8 @@ import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 
 import { cn } from '@ui/lib/utils';
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react';
+import { Button } from '@ui/components/ui/button';
+import { ChevronDownIcon, CheckIcon, ChevronUpIcon, XIcon } from 'lucide-react';
 
 const Select = SelectPrimitive.Root;
 
@@ -48,7 +49,11 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon
-        render={<ChevronDownIcon className="pointer-events-none size-3.5 text-muted-foreground" />}
+        render={
+          // Hidden when a `SelectClear` sibling is present (requires a `group` ancestor around both,
+          // e.g. `<div className="group relative">`) — the clear icon then occupies the same slot.
+          <ChevronDownIcon className="pointer-events-none size-3.5 text-muted-foreground group-has-data-[slot=select-clear]:hidden" />
+        }
       />
     </SelectPrimitive.Trigger>
   );
@@ -61,7 +66,7 @@ function SelectContent({
   sideOffset = 4,
   align = 'center',
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -130,6 +135,31 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
   );
 }
 
+/**
+ * An external clear affordance for `Select` — Base UI's Select has no built-in `Clear` part (unlike
+ * `Combobox`); its own docs recommend either a `null` item in the list or an external reset button.
+ * Render this as a SIBLING of `SelectTrigger` (not a descendant — the trigger is itself a `<button>`,
+ * and nesting an interactive element inside it is invalid HTML) inside a `group relative` wrapper, e.g.
+ * `<div className="group relative"><SelectTrigger>...</SelectTrigger><SelectClear .../></div>`. It's
+ * positioned in the same slot the chevron occupies — `SelectTrigger`'s chevron hides itself (via a
+ * `group-has-data-[slot=select-clear]` selector) whenever this is present, so the clear icon replaces
+ * the chevron rather than sitting beside it.
+ */
+function SelectClear({ className, ...props }: React.ComponentProps<typeof Button>) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      data-slot="select-clear"
+      className={cn('absolute top-1/2 right-1.5 -translate-y-1/2', className)}
+      {...props}
+    >
+      <XIcon className="pointer-events-none" />
+    </Button>
+  );
+}
+
 function SelectSeparator({ className, ...props }: SelectPrimitive.Separator.Props) {
   return (
     <SelectPrimitive.Separator
@@ -178,6 +208,7 @@ function SelectScrollDownButton({
 
 export {
   Select,
+  SelectClear,
   SelectContent,
   SelectGroup,
   SelectItem,

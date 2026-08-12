@@ -1,9 +1,10 @@
-import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
+import { and, rankWith, schemaMatches, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Badge } from '@repo/ui/badge';
 import {
   type ChoiceOption,
+  isChoiceSchema,
   labelForValue,
   readChoiceOptions,
 } from '../../jsonforms-renderers/controls/choice/model';
@@ -39,14 +40,21 @@ export function ChoiceView({ value, choices }: { value: unknown; choices: Choice
 
 export const choiceDisplayTester: RankedTester = rankWith(
   6,
-  and(uiTypeIs('Control'), optionIs('format', 'choice')),
+  and(uiTypeIs('Control'), schemaMatches(isChoiceSchema)),
 );
 
-function ChoiceDisplayComponent({ data, label, description, visible, uischema }: ControlProps) {
+function ChoiceDisplayComponent({
+  data,
+  label,
+  description,
+  visible,
+  uischema,
+  schema,
+}: ControlProps) {
   if (visible === false) {
     return null;
   }
-  const { choices } = readChoiceOptions(uischema.options);
+  const { choices } = readChoiceOptions(uischema.options, schema);
   return (
     <DisplayField label={label} {...(description ? { description } : {})}>
       <ChoiceView value={data} choices={choices} />

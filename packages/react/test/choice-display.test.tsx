@@ -4,9 +4,9 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { displayRenderers } from '../src/jsonforms-renderers-display';
 
-const CHOICES = [
-  { value: 'r', label: 'Red' },
-  { value: 'g', label: 'Green' },
+const ONE_OF = [
+  { const: 'r', title: 'Red' },
+  { const: 'g', title: 'Green' },
 ];
 
 function Display({
@@ -30,19 +30,18 @@ function Display({
   );
 }
 
-describe('ChoiceDisplay (feature 156, Step 2)', () => {
+describe('ChoiceDisplay (feature 167 — schema-native oneOf/const/title)', () => {
   const singleSchema: JsonSchema = {
     type: 'object',
-    properties: { color: { type: 'string', enum: ['r', 'g'] } },
+    properties: { color: { type: 'string', oneOf: ONE_OF } },
   };
   const singleUi = {
     type: 'Control',
     scope: '#/properties/color',
     label: 'Colour',
-    options: { format: 'choice', display: 'select', choices: CHOICES },
   } as UISchemaElement;
 
-  it('renders a single value as its authored label', () => {
+  it('renders a single value as its authored label from schema.oneOf', () => {
     render(<Display schema={singleSchema} uischema={singleUi} data={{ color: 'g' }} />);
     expect(screen.getByText('Green')).toBeInTheDocument();
   });
@@ -57,14 +56,16 @@ describe('ChoiceDisplay (feature 156, Step 2)', () => {
       <Display
         schema={{
           type: 'object',
-          properties: { tags: { type: 'array', items: { type: 'string', enum: ['r', 'g'] } } },
+          properties: {
+            tags: { type: 'array', items: { type: 'string', oneOf: ONE_OF }, uniqueItems: true },
+          },
         }}
         uischema={
           {
             type: 'Control',
             scope: '#/properties/tags',
             label: 'Tags',
-            options: { format: 'choice', display: 'checkboxes', choices: CHOICES },
+            options: { display: 'checkboxes' },
           } as UISchemaElement
         }
         data={{ tags: ['r', 'g'] }}

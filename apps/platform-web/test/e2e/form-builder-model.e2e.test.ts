@@ -106,7 +106,7 @@ describe('Form Builder Model Integration Test Suite', () => {
       expect(schema.required).toEqual(['a']);
     });
 
-    it('emits enum options for a select field', () => {
+    it('emits oneOf/const/title options for a select field', () => {
       const select = createField('select');
       select.key = 'colour';
       select.enumOptions = [
@@ -114,9 +114,12 @@ describe('Form Builder Model Integration Test Suite', () => {
         { value: 'blue', label: 'Blue' },
       ];
       const { schema } = serializeModel({ title: '', description: '', fields: [select] });
-      expect((schema.properties as Record<string, { enum?: string[] }>).colour?.enum).toEqual([
-        'red',
-        'blue',
+      expect(
+        (schema.properties as Record<string, { oneOf?: { const: string; title: string }[] }>).colour
+          ?.oneOf,
+      ).toEqual([
+        { const: 'red', title: 'Red' },
+        { const: 'blue', title: 'Blue' },
       ]);
     });
   });
