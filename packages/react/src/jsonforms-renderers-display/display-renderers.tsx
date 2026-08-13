@@ -5,6 +5,7 @@ import {
   CategorizationLayoutRenderer,
   categorizationTester,
 } from '../jsonforms-renderers/layouts/categorization-layout';
+import { GridLayoutRenderer, gridLayoutTester } from '../jsonforms-renderers/layouts/grid-layout';
 import {
   GroupLayoutRenderer,
   groupLayoutTester,
@@ -87,6 +88,7 @@ export const displayRenderers: JsonFormsRendererRegistryEntry[] = [
   // Layouts (reused from the form renderer set)
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
+  { tester: gridLayoutTester, renderer: GridLayoutRenderer },
   { tester: groupLayoutTester, renderer: GroupLayoutRenderer },
   { tester: categorizationTester, renderer: CategorizationLayoutRenderer },
   { tester: labelRendererTester, renderer: LabelRenderer },

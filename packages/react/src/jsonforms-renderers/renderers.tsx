@@ -27,6 +27,7 @@ import {
   CategorizationLayoutRenderer,
   categorizationTester,
 } from './layouts/categorization-layout';
+import { GridLayoutRenderer, gridLayoutTester } from './layouts/grid-layout';
 import { GroupLayoutRenderer, groupLayoutTester } from './layouts/group-layout';
 import { HorizontalLayoutRenderer, horizontalLayoutTester } from './layouts/horizontal-layout';
 import { LabelRenderer, labelRendererTester } from './layouts/label-renderer';
@@ -62,6 +63,7 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   // Layouts
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
+  { tester: gridLayoutTester, renderer: GridLayoutRenderer },
   { tester: groupLayoutTester, renderer: GroupLayoutRenderer },
   { tester: categorizationTester, renderer: CategorizationLayoutRenderer },
   { tester: labelRendererTester, renderer: LabelRenderer },

@@ -168,7 +168,7 @@ describe('Form Builder Model Integration Test Suite', () => {
       expect(ids).not.toContain('multiselect');
       expect(ids).not.toContain('oneof');
       expect(ids).toContain('richtext');
-      for (const id of ['group', 'horizontal']) {
+      for (const id of ['group', 'horizontal', 'grid']) {
         expect(ids).toContain(id);
       }
     });

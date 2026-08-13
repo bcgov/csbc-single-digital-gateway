@@ -161,6 +161,69 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
+  it('round-trips a grid container with its column count (feature 169)', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'container',
+          layout: 'grid',
+          columns: 4,
+          children: [
+            {
+              kind: 'control',
+              fieldType: 'text',
+              key: 'a',
+              label: 'A',
+              required: false,
+              options: {},
+            },
+          ],
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const els = (definition.uischema as any).elements;
+    expect(els[0].type).toBe('GridLayout');
+    expect(els[0].options).toEqual({ columns: 4 });
+    // No Section title for grid — matches Horizontal's title-less behavior.
+    expect(els[0].label).toBeUndefined();
+
+    const parsed = parseModel(definition);
+    expect(parsed).toEqual(original);
+  });
+
+  it('clamps an out-of-range or missing GridLayout columns to 2–6 on parse (feature 169)', () => {
+    const tooMany = parseModel({
+      schema: { type: 'object', properties: {} },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'GridLayout', options: { columns: 99 }, elements: [] }],
+      },
+    } as any);
+    expect((tooMany.fields[0] as any).columns).toBe(6);
+
+    const tooFew = parseModel({
+      schema: { type: 'object', properties: {} },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'GridLayout', options: { columns: 0 }, elements: [] }],
+      },
+    } as any);
+    expect((tooFew.fields[0] as any).columns).toBe(2);
+
+    const missing = parseModel({
+      schema: { type: 'object', properties: {} },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'GridLayout', elements: [] }],
+      },
+    } as any);
+    expect((missing.fields[0] as any).columns).toBe(2);
+  });
+
   it('round-trips the choice family (select single/multi, radio, checkbox group) — feature 156 Step 2', () => {
     const original: FormModel = {
       title: 'Selection Form',

@@ -292,13 +292,22 @@ export function serializeModel(model: FormModel): FormDefinition {
 
   for (const field of model.fields) {
     if (field.kind === 'container') {
-      const layoutType = field.layout === 'group' ? 'Group' : 'HorizontalLayout';
+      const layoutType =
+        field.layout === 'group'
+          ? 'Group'
+          : field.layout === 'grid'
+            ? 'GridLayout'
+            : 'HorizontalLayout';
       const child = {
         type: layoutType,
         elements: field.children.map(serializeChild),
       } as JsonObject;
       if (field.layout === 'group' && field.label !== undefined && field.label !== '') {
         child.label = field.label;
+      }
+      if (field.layout === 'grid') {
+        // Feature 169: no Section title for grid (matches Horizontal's title-less behavior).
+        child.options = { columns: field.columns ?? 2 };
       }
       elements.push(child);
     } else {
@@ -569,17 +578,33 @@ export function parseModel(definition: FormDefinition): FormModel {
       if (display !== null) {
         fields.push(display);
       }
-    } else if (element.type === 'Group' || element.type === 'HorizontalLayout') {
+    } else if (
+      element.type === 'Group' ||
+      element.type === 'HorizontalLayout' ||
+      element.type === 'GridLayout'
+    ) {
       const children = ((element.elements as JsonObject[] | undefined) ?? [])
         .map((child) => parseChild(child, schema, required))
         .filter((c): c is ControlNode | DisplayNode => c !== null);
       const node: ContainerNode = {
         kind: 'container',
-        layout: element.type === 'Group' ? 'group' : 'horizontal',
+        layout:
+          element.type === 'Group'
+            ? 'group'
+            : element.type === 'GridLayout'
+              ? 'grid'
+              : 'horizontal',
         children,
       };
       if (typeof element.label === 'string') {
         node.label = element.label;
+      }
+      if (element.type === 'GridLayout') {
+        // Feature 169: clamp defensively — never produce a 0-column or absurd-column grid from
+        // malformed/legacy uischema.
+        const rawColumns = (element.options as JsonObject | undefined)?.columns;
+        const columns = typeof rawColumns === 'number' ? rawColumns : 2;
+        node.columns = Math.min(6, Math.max(2, columns));
       }
       fields.push(node);
     }

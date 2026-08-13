@@ -217,7 +217,8 @@ export function ContainerRow({
   onDelete: (path: Path) => void;
   onChangeDisplay: (path: Path, patch: Partial<DisplayNode>) => void;
 }) {
-  const label = node.label ?? (node.layout === 'group' ? 'Group' : 'Row');
+  const label =
+    node.label ?? (node.layout === 'group' ? 'Group' : node.layout === 'grid' ? 'Grid' : 'Row');
   const { ref, handleRef, isDragSource, isDropTarget } = useSortable({
     id: containerId(index),
     index,
@@ -262,7 +263,14 @@ export function ContainerRow({
             className={
               node.layout === 'horizontal'
                 ? 'mt-2 grid gap-2 sm:grid-cols-2'
-                : 'mt-2 flex flex-col gap-2'
+                : node.layout === 'grid'
+                  ? 'mt-2 grid gap-2'
+                  : 'mt-2 flex flex-col gap-2'
+            }
+            style={
+              node.layout === 'grid'
+                ? { gridTemplateColumns: `repeat(${node.columns ?? 2}, minmax(0, 1fr))` }
+                : undefined
             }
           >
             {node.children.map((child, childIndex) => (

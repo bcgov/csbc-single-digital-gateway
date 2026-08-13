@@ -534,6 +534,25 @@ export function Inspector({
       );
     }
     if (node.kind === 'container') {
+      if (node.layout === 'grid') {
+        // Feature 169: Grid authors a fixed column count, not a Section title (matches Horizontal's
+        // title-less behavior).
+        return (
+          <Row label="Columns" htmlFor="insp-container-columns">
+            <Input
+              id="insp-container-columns"
+              type="number"
+              min={2}
+              max={6}
+              value={node.columns ?? 2}
+              onChange={(e) => {
+                const next = Math.min(6, Math.max(2, Number(e.target.value) || 2));
+                onChangeContainer({ columns: next });
+              }}
+            />
+          </Row>
+        );
+      }
       return (
         <Row label="Section title" htmlFor="insp-container-label">
           <ClearableInput

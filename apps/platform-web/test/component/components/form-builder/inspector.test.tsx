@@ -100,6 +100,43 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeContainer).toHaveBeenCalledWith({ label: 'Main Section!' });
   });
 
+  it('renders a Columns input (not Section title) for a grid container (feature 169)', () => {
+    const handleChangeContainer = vi.fn();
+    const node: ContainerNode = {
+      kind: 'container',
+      layout: 'grid',
+      columns: 3,
+      children: [],
+    };
+
+    render(
+      <Inspector
+        node={node}
+        allKeys={[]}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={handleChangeContainer}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByLabelText('Section title')).not.toBeInTheDocument();
+    const columnsInput = screen.getByLabelText('Columns');
+    expect(columnsInput).toHaveValue(3);
+    expect(columnsInput).toHaveAttribute('min', '2');
+    expect(columnsInput).toHaveAttribute('max', '6');
+
+    fireEvent.change(columnsInput, { target: { value: '5' } });
+    expect(handleChangeContainer).toHaveBeenLastCalledWith({ columns: 5 });
+
+    // Out-of-range values are clamped to 2–6, not passed through raw.
+    fireEvent.change(columnsInput, { target: { value: '99' } });
+    expect(handleChangeContainer).toHaveBeenLastCalledWith({ columns: 6 });
+    fireEvent.change(columnsInput, { target: { value: '0' } });
+    expect(handleChangeContainer).toHaveBeenLastCalledWith({ columns: 2 });
+  });
+
   it('renders display inspector when node is a DisplayNode', () => {
     const handleChangeDisplay = vi.fn();
     const node: DisplayNode = {

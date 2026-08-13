@@ -373,6 +373,51 @@ describe('Field Rows Component Test Suite', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Row');
+
+    const gridContainer: ContainerNode = {
+      kind: 'container',
+      layout: 'grid',
+      columns: 2,
+      children: [],
+    };
+
+    rerender(
+      <ContainerRow
+        node={gridContainer}
+        index={0}
+        selectedPath={null}
+        paletteDragType={null}
+        onSelect={vi.fn()}
+        onDelete={vi.fn()}
+        onChangeDisplay={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Select section 1' })).toHaveTextContent('Grid');
+  });
+
+  it('previews a grid container with its authored column count (feature 169)', () => {
+    const gridContainer: ContainerNode = {
+      kind: 'container',
+      layout: 'grid',
+      columns: 4,
+      children: [],
+    };
+
+    const { container } = render(
+      <ContainerRow
+        node={gridContainer}
+        index={0}
+        selectedPath={null}
+        paletteDragType={null}
+        onSelect={vi.fn()}
+        onDelete={vi.fn()}
+        onChangeDisplay={vi.fn()}
+      />,
+    );
+
+    const grid = container.querySelector('[style*="grid-template-columns"]');
+    expect(grid?.getAttribute('style')).toContain('repeat(4, minmax(0, 1fr))');
   });
 
   it('handles FieldRow selection on display focus capture and control keydown', () => {

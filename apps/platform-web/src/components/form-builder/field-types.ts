@@ -11,6 +11,7 @@ import {
   Hash,
   Heading,
   Layers,
+  LayoutGrid,
   ListChecks,
   MapPin,
   Pilcrow,
@@ -43,7 +44,8 @@ export type FieldTypeId =
   | 'paragraph'
   | 'richtextdisplay'
   | 'group'
-  | 'horizontal';
+  | 'horizontal'
+  | 'grid';
 
 export type FieldGroup =
   | 'Core'
@@ -216,6 +218,15 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     group: 'Layout',
     kind: 'container',
     icon: Columns2,
+  },
+  {
+    id: 'grid',
+    label: 'Grid',
+    description: 'Lay fields out in a fixed-column grid.',
+    group: 'Layout',
+    kind: 'container',
+    icon: LayoutGrid,
+    keywords: ['columns', 'rows', 'grid'],
   },
   {
     id: 'slider',

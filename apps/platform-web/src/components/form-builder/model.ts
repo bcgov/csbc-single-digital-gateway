@@ -89,8 +89,10 @@ export interface DisplayNode {
 
 export interface ContainerNode {
   kind: 'container';
-  layout: 'group' | 'horizontal';
+  layout: 'group' | 'horizontal' | 'grid';
   label?: string;
+  /** Grid only (feature 169): fixed column count, 2–6, default 2. Children wrap once it fills up. */
+  columns?: number;
   children: (ControlNode | DisplayNode)[];
 }
 
@@ -174,7 +176,10 @@ export function uniqueKey(base: string, existing: string[]): string {
 // ── Field factory ───────────────────────────────────────────────────────────────────────────────
 
 type DisplayFieldTypeId = 'heading' | 'paragraph' | 'richtextdisplay';
-type ControlFieldTypeId = Exclude<FieldTypeId, 'group' | 'horizontal' | DisplayFieldTypeId>;
+type ControlFieldTypeId = Exclude<
+  FieldTypeId,
+  'group' | 'horizontal' | 'grid' | DisplayFieldTypeId
+>;
 
 /** Generate a stable, unique id for a display node (persisted in the uischema for dnd identity). */
 function newDisplayId(): string {
@@ -196,11 +201,15 @@ function createDisplayField(fieldType: DisplayFieldTypeId): DisplayNode {
 /** A fresh node for a palette field type, with sensible defaults that round-trip. */
 export function createField(fieldType: ControlFieldTypeId): ControlNode;
 export function createField(fieldType: DisplayFieldTypeId): DisplayNode;
-export function createField(fieldType: 'group' | 'horizontal'): ContainerNode;
+export function createField(fieldType: 'group' | 'horizontal' | 'grid'): ContainerNode;
 export function createField(fieldType: FieldTypeId): FieldNode;
 export function createField(fieldType: FieldTypeId): FieldNode {
   if (fieldType === 'group' || fieldType === 'horizontal') {
     return { kind: 'container', layout: fieldType, children: [] };
+  }
+  if (fieldType === 'grid') {
+    // Feature 169: a fresh grid always starts at the 2-column default.
+    return { kind: 'container', layout: 'grid', children: [], columns: 2 };
   }
   if (fieldType === 'heading' || fieldType === 'paragraph' || fieldType === 'richtextdisplay') {
     return createDisplayField(fieldType);
