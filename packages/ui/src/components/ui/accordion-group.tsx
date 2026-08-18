@@ -37,17 +37,17 @@ function AccordionGroup({
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {(title || description || values.length > 0) && (
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
-            {title && <h3 className="text-lg leading-none">{title}</h3>}
-            {description && <p className="text-muted-foreground text-sm">{description}</p>}
+            {title && <p className="text-h6 font-bold leading-none">{title}</p>}
+            {description && <p className="text-sm">{description}</p>}
           </div>
           {values.length > 0 && (
             <button
               type="button"
               onClick={toggleAll}
               aria-label={`${allExpanded ? 'Collapse' : 'Expand'} all sections in ${title}`}
-              className="text-muted-foreground shrink-0 cursor-pointer text-sm hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center"
+              className="shrink-0 cursor-pointer hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center items-center"
             >
               {allExpanded ? <ChevronsUp size={20} /> : <ChevronsDown size={20} />}
               {allExpanded ? 'Collapse all' : 'Expand all'}

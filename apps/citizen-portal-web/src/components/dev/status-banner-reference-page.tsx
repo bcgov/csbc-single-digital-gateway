@@ -1,12 +1,16 @@
 import { Button } from '@repo/ui/button';
 import type { ApplicationStatus } from '@/lib/catalog';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
 import { DevSection } from '@/components/dev/dev-section';
 import { ExamplePreview } from '@/components/dev/example-preview';
+import { extractExample } from '@/components/dev/extract-example';
 import { PropTable } from '@/components/dev/prop-table';
 import { StatusBanner } from '@/components/application/status-banner';
+import selfSource from './status-banner-reference-page.tsx?raw';
 
 const navItems: DevNavItem[] = [
   { id: 'full-example', text: 'Full example', level: 2 },
@@ -29,20 +33,41 @@ const STATUSES: ApplicationStatus[] = [
   'withdrawn',
 ];
 
-const FULL_EXAMPLE_CODE = `<StatusBanner status="needs_changes" reviewReason="Please attach a recent proof of address." />`;
-
 const USAGE_IMPORT_CODE = `import { StatusBanner } from "@/components/application/status-banner";`;
 
 const USAGE_SKELETON_CODE = `<StatusBanner status={application.status} />`;
 
+/** Already DRY without extraction — both the rendered stack and the shown code derive from this
+ *  one array, so there's no separately-maintained duplicate to fall out of sync. */
 const STATUSES_CODE = STATUSES.map((status) => `<StatusBanner status="${status}" />`).join('\n');
 
-const REVIEW_REASON_CODE = `<StatusBanner
-  status="needs_changes"
-  reviewReason="Please attach a recent proof of address."
-/>
-<StatusBanner status="rejected" reviewReason="This service isn't available in your region." />`;
+// #region full-example
+function FullExampleBanner() {
+  return (
+    <StatusBanner status="needs_changes" reviewReason="Please attach a recent proof of address." />
+  );
+}
+// #endregion full-example
 
+function ReviewReasonExample() {
+  return (
+    <div className="flex flex-col gap-4">
+      {/* #region review-reason */}
+      <StatusBanner
+        status="needs_changes"
+        reviewReason="Please attach a recent proof of address."
+      />
+      <StatusBanner status="rejected" reviewReason="This service isn't available in your region." />
+      {/* #endregion review-reason */}
+    </div>
+  );
+}
+
+/** ACTION_CODE is deliberately NOT derived from the rendered example below — it illustrates a
+ *  realistic caller (wiring the action to a real mutation), which would throw if actually
+ *  rendered here (no `revise` mutation exists on this static reference page). The live demo
+ *  simplifies to a plain, non-functional button instead. This divergence is intentional, not
+ *  duplication that can drift — there's nothing to keep in sync since they're not meant to match. */
 const ACTION_CODE = `<StatusBanner
   status="needs_changes"
   reviewReason="Please attach a recent proof of address."
@@ -63,11 +88,8 @@ export function StatusBannerReferencePage() {
       navClassName="sticky top-0 h-screen overflow-y-auto"
     >
       <DevSection id="full-example" title="Full example">
-        <ExamplePreview code={FULL_EXAMPLE_CODE}>
-          <StatusBanner
-            status="needs_changes"
-            reviewReason="Please attach a recent proof of address."
-          />
+        <ExamplePreview code={extractExample(selfSource, 'full-example')}>
+          <FullExampleBanner />
         </ExamplePreview>
       </DevSection>
 
@@ -112,17 +134,8 @@ export function StatusBannerReferencePage() {
         title="Review reason"
         description="reviewReason only renders for the statuses a reviewer produces — needs_changes and rejected — and only when a reason is present."
       >
-        <ExamplePreview code={REVIEW_REASON_CODE}>
-          <div className="flex flex-col gap-4">
-            <StatusBanner
-              status="needs_changes"
-              reviewReason="Please attach a recent proof of address."
-            />
-            <StatusBanner
-              status="rejected"
-              reviewReason="This service isn't available in your region."
-            />
-          </div>
+        <ExamplePreview code={extractExample(selfSource, 'review-reason')}>
+          <ReviewReasonExample />
         </ExamplePreview>
       </DevSection>
 
@@ -141,14 +154,7 @@ export function StatusBannerReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            The status icon is decorative (the title and description already convey the meaning) —
-            it's always rendered with{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>.
-          </li>
-          <li>Don't rely on tone/color alone — every banner always renders a text title.</li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('status-banner')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

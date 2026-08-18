@@ -23,9 +23,11 @@ describe('ButtonGroup', () => {
         <Button>One</Button>
       </ButtonGroup>,
     );
+    const group = screen.getByRole('group');
     // orientation prop is undefined by default, so data-orientation is not set,
-    // but the horizontal variant classes are applied via cva defaultVariants.
-    expect(screen.getByRole('group').className).toContain('rounded-r-none');
+    // and none of the vertical-only classes (flex-col) are applied.
+    expect(group).not.toHaveAttribute('data-orientation');
+    expect(group.className).not.toContain('flex-col');
   });
 
   it('reflects an explicit vertical orientation', () => {

@@ -12,8 +12,6 @@ const buttonVariants = cva(
           'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none bg-primary text-primary-foreground hover:bg-primary/80',
         outline:
           'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none !border-border-dark bg-background hover:bg-secondary-hover hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground shadow-xs',
-        secondary:
-          'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
         ghost:
           'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none hover:bg-secondary-hover hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground',
         destructive:

@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback } from '@repo/ui/avatar';
-import { buttonVariants } from '@repo/ui/button';
+import { Button, buttonVariants } from '@repo/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@repo/ui/dialog';
 import {
   DropdownMenu,
@@ -96,7 +96,8 @@ function MobileMenu({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         aria-label="Menu"
-        className="inline-flex items-center justify-center rounded-md p-2 focus-visible:ring-[3px] focus-visible:ring-ring/50 lg:hidden"
+        className="lg:hidden"
+        render={<Button variant="ghost" size="icon" />}
       >
         <Menu className="size-6" aria-hidden />
       </DialogTrigger>
@@ -111,10 +112,7 @@ function MobileMenu({
           <div className="mx-auto px-4 md:px-8 w-full max-w-280 flex items-center gap-4">
             <BrandLockup />
             <div className="ml-auto flex items-center gap-2 lg:gap-6">
-              <DialogClose
-                aria-label="Close menu"
-                className="inline-flex items-center justify-center rounded-md p-2 focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
+              <DialogClose aria-label="Close menu" render={<Button variant="ghost" size="icon" />}>
                 <X className="size-6" aria-hidden />
               </DialogClose>
             </div>
@@ -162,8 +160,8 @@ function ProfileMenu({
         className="rounded-full focus-visible:ring-[3px] focus-visible:ring-ring/50"
         aria-label="Account menu"
       >
-        <Avatar size="sm">
-          <AvatarFallback>{user ? initials(label) : '··'}</AvatarFallback>
+        <Avatar variant="card">
+          <AvatarFallback variant="card">{user ? initials(label) : '··'}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

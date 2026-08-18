@@ -122,7 +122,7 @@ function AccountDetails({ user }: { user: AuthUser }) {
             Photograph
           </span>
           <div className="flex flex-row mx-auto h-44 w-36 items-center justify-center rounded-md bg-blue-10 text-blue-80">
-            <Icon path={mdiAccountCircle} size="88px" aria-label="Profile photo placeholder" />
+            <Icon path={mdiAccountCircle} size="88px" title="Profile photo placeholder" />
           </div>
         </div>
         {/* Details — two columns of labelled cells with light-gray internal borders. */}

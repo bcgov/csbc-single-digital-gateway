@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Alert } from '@repo/ui/alert';
 import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
@@ -70,7 +72,7 @@ export function FormElementsReferencePage() {
       navLabel="On this page"
       navClassName="sticky top-0 h-screen overflow-y-auto"
     >
-      <Alert variant="destructive">This is very much WIP</Alert>
+      <Alert variant="danger">This is very much WIP</Alert>
 
       <DevSection id="full-example" title="Full example">
         <ExamplePreview code={schemaCode(FULL_EXAMPLE_SCHEMA, FULL_EXAMPLE_UISCHEMA)}>
@@ -232,22 +234,7 @@ export function FormElementsReferencePage() {
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            Labels and descriptions come from the{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">uischema</code>{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">label</code> and{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">schema</code>{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">description</code> — the
-            renderers wire these to the input via FieldWrapper, so a missing label means a missing
-            accessible name.
-          </li>
-          <li>
-            Always test generated controls with a keyboard and check that validation errors are
-            announced, not just shown visually — this hasn't been audited yet (see the WIP notice
-            above).
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('form-elements')} />
       </DevSection>
     </DevPageLayout>
   );

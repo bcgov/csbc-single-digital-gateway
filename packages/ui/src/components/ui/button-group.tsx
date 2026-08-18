@@ -10,14 +10,41 @@ const buttonGroupVariants = cva(
   {
     variants: {
       orientation: {
-        horizontal:
-          '*:data-slot:rounded-r-none [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-md! [&>[data-slot]~[data-slot]]:rounded-l-none [&>[data-slot]~[data-slot]]:border-l-0',
-        vertical:
-          'flex-col *:data-slot:rounded-b-none [&>[data-slot]:not(:has(~[data-slot]))]:rounded-b-md! [&>[data-slot]~[data-slot]]:rounded-t-none [&>[data-slot]~[data-slot]]:border-t-0',
+        horizontal: '',
+        vertical: 'flex-col',
+      },
+      variant: {
+        // BCDS's ButtonGroup — a semantic grouping only, buttons keep their normal styling and
+        // spacing.
+        default: 'gap-2',
+        // shadcn's segmented-control look — adjoining buttons with shared borders and only the
+        // outer corners rounded. Kept as an opt-in for cases that want it.
+        joined: '',
+      },
+      alignment: {
+        start: 'justify-start',
+        center: 'justify-center',
+        end: 'justify-end',
       },
     },
+    compoundVariants: [
+      {
+        variant: 'joined',
+        orientation: 'horizontal',
+        className:
+          '*:data-slot:rounded-r-none [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-md! [&>[data-slot]~[data-slot]]:rounded-l-none [&>[data-slot]~[data-slot]]:border-l-0',
+      },
+      {
+        variant: 'joined',
+        orientation: 'vertical',
+        className:
+          '*:data-slot:rounded-b-none [&>[data-slot]:not(:has(~[data-slot]))]:rounded-b-md! [&>[data-slot]~[data-slot]]:rounded-t-none [&>[data-slot]~[data-slot]]:border-t-0',
+      },
+    ],
     defaultVariants: {
       orientation: 'horizontal',
+      variant: 'default',
+      alignment: 'start',
     },
   },
 );
@@ -25,6 +52,8 @@ const buttonGroupVariants = cva(
 function ButtonGroup({
   className,
   orientation,
+  variant,
+  alignment,
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof buttonGroupVariants>) {
   return (
@@ -32,7 +61,8 @@ function ButtonGroup({
       role="group"
       data-slot="button-group"
       data-orientation={orientation}
-      className={cn(buttonGroupVariants({ orientation }), className)}
+      data-variant={variant}
+      className={cn(buttonGroupVariants({ orientation, variant, alignment }), className)}
       {...props}
     />
   );

@@ -13,13 +13,17 @@ import {
   CardTitle,
 } from '@repo/ui/card';
 import { Link } from '@tanstack/react-router';
+import { getA11yMetadata } from '@/a11y/a11y-catalog';
+import { A11yRulesSection } from '@/components/dev/a11y-rules-section';
 import { CardChevron } from '@/components/dev/card-chevron';
 import { CodeBlock } from '@/components/dev/code-block';
 import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
 import { DevSection } from '@/components/dev/dev-section';
 import { ExamplePreview } from '@/components/dev/example-preview';
+import { extractExample } from '@/components/dev/extract-example';
 import { PropTable } from '@/components/dev/prop-table';
+import selfSource from './cards-reference-page.tsx?raw';
 
 const navItems: DevNavItem[] = [
   { id: 'full-example', text: 'Full example', level: 2 },
@@ -38,24 +42,6 @@ const navItems: DevNavItem[] = [
   { id: 'accessibility', text: 'Accessibility', level: 2 },
   { id: 'api-reference', text: 'API reference', level: 2 },
 ];
-
-const FULL_EXAMPLE_CODE = `<Card centered>
-  <CardIconAction size="lg">
-    <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-  </CardIconAction>
-  <CardHeader>
-    <CardTitle>Card title</CardTitle>
-    <CardDescription>Supporting description text that can wrap onto two lines.</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <p>Additional content goes here — any supporting copy, a list, or form elements.</p>
-  </CardContent>
-  <CardFooter className="justify-center">
-    <Button size="sm" variant="outline">
-      Learn more
-    </Button>
-  </CardFooter>
-</Card>`;
 
 const USAGE_IMPORT_CODE = `import {
   Card,
@@ -85,360 +71,449 @@ const COMPOSITION_TREE = `Card
 ├── CardContent
 └── CardFooter`;
 
-const FW_COLUMN_LINK_CODE = `<div className="flex flex-col">
-  <Link to="/" className="no-underline">
-    <Card column className="hover:bg-blue-10 transition-colors border-l-4 border-l-gray-110">
-      <CardAction className="pr-0" aria-hidden={true}>
-        <Avatar variant="card">
-          <AvatarFallback variant="card">AA</AvatarFallback>
-        </Avatar>
-      </CardAction>
-      <CardHeader>
-        <CardTitle>Amina Ali</CardTitle>
-        <CardDescription>You • amina9990ali@bcmail.com</CardDescription>
-      </CardHeader>
-      <CardChevron />
-    </Card>
-  </Link>
-  <Link to="/" className="no-underline">
-    <Card column className="hover:bg-blue-10 transition-colors border-l-4 border-l-success-border">
-      <CardAction className="pr-0" aria-hidden={true}>
-        <Avatar variant="card">
-          <AvatarFallback variant="card">MK</AvatarFallback>
-        </Avatar>
-      </CardAction>
-      <CardHeader>
-        <CardTitle>Marcus Kim</CardTitle>
-        <CardDescription>marcus.kim@bcmail.com</CardDescription>
-      </CardHeader>
-      <CardChevron />
-    </Card>
-  </Link>
-</div>`;
-
-const FW_COLUMN_NO_LINK_CODE = `<Card column>
-  <CardIconAction size="sm">
-    <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-  </CardIconAction>
-  <CardHeader>
-    <CardTitle>Card Title</CardTitle>
-    <CardDescription>Supporting description text</CardDescription>
-  </CardHeader>
-</Card>`;
-
-const FW_ROW_LEFT_CODE = `<Card>
-  <CardIconAction size="lg">
-    <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-  </CardIconAction>
-  <CardHeader>
-    <CardTitle>Card Title</CardTitle>
-    <CardDescription>Supporting description text</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <p>Additional content goes here</p>
-  </CardContent>
-</Card>`;
-
-const FW_ROW_CENTERED_CODE = `<Card centered>
-  <CardIconAction size="lg">
-    <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-  </CardIconAction>
-  <CardHeader>
-    <CardTitle>Card Title</CardTitle>
-    <CardDescription>Supporting description text</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <p>Additional content goes here</p>
-  </CardContent>
-</Card>`;
-
-const TWO_UP_GAP_CENTERED_CODE = `<div className="grid grid-cols-2 gap-6">
-  <Card centered>
-    <CardIconAction size="lg">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardHeader>
-      <CardTitle>
-        <Link to="/" className="no-underline hover:underline">
-          Online application
-          <Icon
-            path={mdiChevronRight}
-            size="20px"
-            className="inline-flex text-link"
-            aria-hidden={true}
-          />
-        </Link>
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <p>Apply online through MyBC</p>
-    </CardContent>
-  </Card>
-  <Card centered>
-    <CardIconAction size="lg">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardHeader>
-      <CardTitle>
-        <Link to="/" className="no-underline hover:underline">
-          Paper form
-          <Icon
-            path={mdiChevronRight}
-            size="20px"
-            className="inline-flex text-link"
-            aria-hidden={true}
-          />
-        </Link>
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      <p>You can apply by mail or in person</p>
-    </CardContent>
-  </Card>
-  <Link to="/" className="no-underline">
-    <Card centered className="hover:bg-blue-10 transition-colors h-full">
-      <CardAction aria-hidden={true}>
-        <Avatar variant="card">
-          <AvatarFallback variant="card">BC</AvatarFallback>
-        </Avatar>
-      </CardAction>
-      <CardHeader>
-        <CardTitle>Avatar action</CardTitle>
-        <CardDescription>Centered with avatar</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p>Card content flows on to two lines to show that the cards will equalize height.</p>
-      </CardContent>
-    </Card>
-  </Link>
-  <Link to="/" className="no-underline">
-    <Card centered className="hover:bg-blue-10 transition-colors h-full">
-      <CardAction aria-hidden={true}>
-        <Avatar variant="card">
-          <AvatarFallback variant="card">MK</AvatarFallback>
-        </Avatar>
-      </CardAction>
-      <CardHeader>
-        <CardTitle>Avatar action</CardTitle>
-        <CardDescription>Centered with avatar</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p>Card content</p>
-      </CardContent>
-    </Card>
-  </Link>
-</div>`;
-
-const TWO_UP_GAP_LEFT_CODE = `<div className="grid grid-cols-2 gap-6">
-  <Card>
-    <CardIconAction size="sm">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardContent>
-      <p className="font-semibold">Income Assistance</p>
-      <CardDescription>
-        Financial assistance to support your transition to employment.
-      </CardDescription>
-    </CardContent>
-  </Card>
-  <Card>
-    <CardIconAction size="sm">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardContent>
-      <p className="font-semibold">Person with Disabilities Designation Application</p>
-      <CardDescription>
-        Health and financial support for Income Assistance applicants with disabilities.
-      </CardDescription>
-    </CardContent>
-  </Card>
-  <Card>
-    <CardAction>
-      <Avatar variant="card">
-        <AvatarFallback variant="card">JD</AvatarFallback>
-      </Avatar>
-    </CardAction>
-    <CardHeader>
-      <CardTitle>Avatar action</CardTitle>
-      <CardDescription>Left aligned with avatar</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p>Card content flows on to two lines to show that the cards will equalize height.</p>
-    </CardContent>
-  </Card>
-  <Card>
-    <CardAction>
-      <Avatar variant="card">
-        <AvatarFallback variant="card">MK</AvatarFallback>
-      </Avatar>
-    </CardAction>
-    <CardHeader>
-      <CardTitle>Avatar action</CardTitle>
-      <CardDescription>Left aligned with avatar</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p>Card content</p>
-    </CardContent>
-  </Card>
-</div>`;
-
-const TWO_UP_NOGAP_ROW_CODE = `<div className="grid grid-cols-2 gap-y-4">
-  <Link to="/" className="no-underline">
-    <Card centered className="hover:bg-blue-10 transition-colors h-full">
+/** The wrapping centered/max-w-xs layout below is demo-only (constrains the card for this page's
+ *  column of examples) — kept out of the region marker so the shown code is just the card itself. */
+// #region full-example
+function FullExampleCard() {
+  return (
+    <Card centered>
       <CardIconAction size="lg">
         <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
       </CardIconAction>
       <CardHeader>
-        <CardTitle>Consent history</CardTitle>
-        <CardDescription>View a record of the consents you've provided.</CardDescription>
+        <CardTitle>Card title</CardTitle>
+        <CardDescription>Supporting description text that can wrap onto two lines.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p>Additional content goes here — any supporting copy, a list, or form elements.</p>
+      </CardContent>
+      <CardFooter className="justify-center">
+        <Button size="sm" variant="outline">
+          Learn more
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+// #endregion full-example
+
+// #region fw-column-link
+function FwColumnLinkExample() {
+  return (
+    <div className="flex flex-col">
+      <Link to="/" className="no-underline">
+        <Card column className="hover:bg-blue-10 transition-colors border-l-4 border-l-gray-110">
+          <CardAction className="pr-0" aria-hidden={true}>
+            <Avatar variant="card">
+              <AvatarFallback variant="card">AA</AvatarFallback>
+            </Avatar>
+          </CardAction>
+          <CardHeader>
+            <CardTitle>Amina Ali</CardTitle>
+            <CardDescription>You • amina9990ali@bcmail.com</CardDescription>
+          </CardHeader>
+          <CardChevron />
+        </Card>
+      </Link>
+      <Link to="/" className="no-underline">
+        <Card
+          column
+          className="hover:bg-blue-10 transition-colors border-l-4 border-l-success-border"
+        >
+          <CardAction className="pr-0" aria-hidden={true}>
+            <Avatar variant="card">
+              <AvatarFallback variant="card">MK</AvatarFallback>
+            </Avatar>
+          </CardAction>
+          <CardHeader>
+            <CardTitle>Marcus Kim</CardTitle>
+            <CardDescription>marcus.kim@bcmail.com</CardDescription>
+          </CardHeader>
+          <CardChevron />
+        </Card>
+      </Link>
+    </div>
+  );
+}
+// #endregion fw-column-link
+
+// #region fw-column-no-link
+function FwColumnNoLinkExample() {
+  return (
+    <Card column>
+      <CardIconAction size="sm">
+        <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+      </CardIconAction>
+      <CardHeader>
+        <CardTitle>Card Title</CardTitle>
+        <CardDescription>Supporting description text</CardDescription>
+      </CardHeader>
+    </Card>
+  );
+}
+// #endregion fw-column-no-link
+
+// #region fw-row-left
+function FwRowLeftExample() {
+  return (
+    <Card>
+      <CardIconAction size="lg">
+        <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+      </CardIconAction>
+      <CardHeader>
+        <CardTitle>Card Title</CardTitle>
+        <CardDescription>Supporting description text</CardDescription>
       </CardHeader>
       <CardContent>
         <p>Additional content goes here</p>
       </CardContent>
     </Card>
-  </Link>
-  <Link to="/" className="no-underline">
-    <Card centered className="hover:bg-blue-10 transition-colors h-full">
+  );
+}
+// #endregion fw-row-left
+
+// #region fw-row-centered
+function FwRowCenteredExample() {
+  return (
+    <Card centered>
       <CardIconAction size="lg">
         <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
       </CardIconAction>
       <CardHeader>
-        <CardTitle>Manage delegates</CardTitle>
-        <CardDescription>Manage people who can act on your behalf.</CardDescription>
-      </CardHeader>
-    </Card>
-  </Link>
-</div>`;
-
-const TWO_UP_NOGAP_COL_LINK_CODE = `<div className="grid grid-cols-2 gap-y-4">
-  <Link to="/" className="no-underline">
-    <Card column className="hover:bg-blue-10 transition-colors h-full">
-      <CardAction className="pr-0" aria-hidden={true}>
-        <Avatar variant="card">
-          <AvatarFallback variant="card">AA</AvatarFallback>
-        </Avatar>
-      </CardAction>
-      <CardHeader>
-        <CardTitle>Amina Ali</CardTitle>
-        <CardDescription>amina9990ali@bcmail.com</CardDescription>
-      </CardHeader>
-      <CardChevron />
-    </Card>
-  </Link>
-  <Link to="/" className="no-underline">
-    <Card column className="hover:bg-blue-10 transition-colors h-full">
-      <CardAction className="pr-0" aria-hidden={true}>
-        <Avatar variant="card">
-          <AvatarFallback variant="card">MK</AvatarFallback>
-        </Avatar>
-      </CardAction>
-      <CardHeader>
-        <CardTitle>Marcus Kim</CardTitle>
-        <CardDescription>marcus.kim@bcmail.com</CardDescription>
-      </CardHeader>
-      <CardChevron />
-    </Card>
-  </Link>
-  <Link to="/" className="no-underline">
-    <Card column className="hover:bg-blue-10 transition-colors h-full">
-      <CardIconAction size="sm">
-        <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-      </CardIconAction>
-      <CardHeader>
         <CardTitle>Card Title</CardTitle>
-        <CardDescription>Supporting description</CardDescription>
+        <CardDescription>Supporting description text</CardDescription>
       </CardHeader>
-      <CardChevron />
+      <CardContent>
+        <p>Additional content goes here</p>
+      </CardContent>
     </Card>
-  </Link>
-  <Link to="/" className="no-underline">
-    <Card column className="hover:bg-blue-10 transition-colors h-full">
-      <CardIconAction size="sm">
-        <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-      </CardIconAction>
-      <CardHeader>
-        <CardTitle>Card Title</CardTitle>
-        <CardDescription>Supporting description</CardDescription>
-      </CardHeader>
-      <CardChevron />
-    </Card>
-  </Link>
-</div>`;
+  );
+}
+// #endregion fw-row-centered
 
-const TWO_UP_NOGAP_COL_NO_LINK_CODE = `<div className="grid grid-cols-2 gap-y-4">
-  <Card column>
-    <CardAction className="pr-0">
-      <Avatar variant="card">
-        <AvatarFallback variant="card">AA</AvatarFallback>
-      </Avatar>
-    </CardAction>
-    <CardHeader>
-      <CardTitle>Amina Ali</CardTitle>
-      <CardDescription>amina9990ali@bcmail.com</CardDescription>
-    </CardHeader>
-  </Card>
-  <Card column>
-    <CardAction className="pr-0">
-      <Avatar variant="card">
-        <AvatarFallback variant="card">MK</AvatarFallback>
-      </Avatar>
-    </CardAction>
-    <CardHeader>
-      <CardTitle>Marcus Kim</CardTitle>
-      <CardDescription>marcus.kim@bcmail.com</CardDescription>
-    </CardHeader>
-  </Card>
-  <Card column>
-    <CardIconAction size="sm">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardHeader>
-      <CardTitle>Card Title</CardTitle>
-      <CardDescription>Supporting description</CardDescription>
-    </CardHeader>
-  </Card>
-  <Card column>
-    <CardIconAction size="sm">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardHeader>
-      <CardTitle>Card Title</CardTitle>
-      <CardDescription>Supporting description</CardDescription>
-    </CardHeader>
-  </Card>
-</div>`;
+// #region 2up-gap-centered
+function TwoUpGapCenteredExample() {
+  return (
+    <div className="grid grid-cols-2 gap-6">
+      <Card centered>
+        <CardIconAction size="lg">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>
+            <Link to="/" className="no-underline hover:underline">
+              Online application
+              <Icon
+                path={mdiChevronRight}
+                size="20px"
+                className="inline-flex text-link"
+                aria-hidden={true}
+              />
+            </Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Apply online through MyBC</p>
+        </CardContent>
+      </Card>
+      <Card centered>
+        <CardIconAction size="lg">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>
+            <Link to="/" className="no-underline hover:underline">
+              Paper form
+              <Icon
+                path={mdiChevronRight}
+                size="20px"
+                className="inline-flex text-link"
+                aria-hidden={true}
+              />
+            </Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>You can apply by mail or in person</p>
+        </CardContent>
+      </Card>
+      <Link to="/" className="no-underline">
+        <Card centered className="hover:bg-blue-10 transition-colors h-full">
+          <CardAction aria-hidden={true}>
+            <Avatar variant="card">
+              <AvatarFallback variant="card">BC</AvatarFallback>
+            </Avatar>
+          </CardAction>
+          <CardHeader>
+            <CardTitle>Avatar action</CardTitle>
+            <CardDescription>Centered with avatar</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Card content flows on to two lines to show that the cards will equalize height.</p>
+          </CardContent>
+        </Card>
+      </Link>
+      <Link to="/" className="no-underline">
+        <Card centered className="hover:bg-blue-10 transition-colors h-full">
+          <CardAction aria-hidden={true}>
+            <Avatar variant="card">
+              <AvatarFallback variant="card">MK</AvatarFallback>
+            </Avatar>
+          </CardAction>
+          <CardHeader>
+            <CardTitle>Avatar action</CardTitle>
+            <CardDescription>Centered with avatar</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Card content</p>
+          </CardContent>
+        </Card>
+      </Link>
+    </div>
+  );
+}
+// #endregion 2up-gap-centered
 
-const THREE_UP_GAP_CENTERED_CODE = `<div className="grid grid-cols-3 gap-6">
-  <Card centered>
-    <CardIconAction size="lg">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardHeader>
-      <CardTitle>Discover services</CardTitle>
-      <CardDescription>Browse and search for government services.</CardDescription>
-    </CardHeader>
-  </Card>
-  <Card centered>
-    <CardIconAction size="lg">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardHeader>
-      <CardTitle>Apply and track your requests</CardTitle>
-      <CardDescription>
-        Submit applications online and check the status of your requests.
-      </CardDescription>
-    </CardHeader>
-  </Card>
-  <Card centered>
-    <CardIconAction size="lg">
-      <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-    </CardIconAction>
-    <CardHeader>
-      <CardTitle>Manage your information</CardTitle>
-      <CardDescription>View and update your information in one place.</CardDescription>
-    </CardHeader>
-  </Card>
-</div>`;
+// #region 2up-gap-left
+function TwoUpGapLeftExample() {
+  return (
+    <div className="grid grid-cols-2 gap-6">
+      <Card>
+        <CardIconAction size="sm">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardContent>
+          <p className="font-semibold">Income Assistance</p>
+          <CardDescription>
+            Financial assistance to support your transition to employment.
+          </CardDescription>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardIconAction size="sm">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardContent>
+          <p className="font-semibold">Person with Disabilities Designation Application</p>
+          <CardDescription>
+            Health and financial support for Income Assistance applicants with disabilities.
+          </CardDescription>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardAction>
+          <Avatar variant="card">
+            <AvatarFallback variant="card">JD</AvatarFallback>
+          </Avatar>
+        </CardAction>
+        <CardHeader>
+          <CardTitle>Avatar action</CardTitle>
+          <CardDescription>Left aligned with avatar</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>Card content flows on to two lines to show that the cards will equalize height.</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardAction>
+          <Avatar variant="card">
+            <AvatarFallback variant="card">MK</AvatarFallback>
+          </Avatar>
+        </CardAction>
+        <CardHeader>
+          <CardTitle>Avatar action</CardTitle>
+          <CardDescription>Left aligned with avatar</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>Card content</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+// #endregion 2up-gap-left
+
+// #region 2up-nogap-row
+function TwoUpNogapRowExample() {
+  return (
+    <div className="grid grid-cols-2 gap-y-4">
+      <Link to="/" className="no-underline">
+        <Card centered className="hover:bg-blue-10 transition-colors h-full">
+          <CardIconAction size="lg">
+            <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+          </CardIconAction>
+          <CardHeader>
+            <CardTitle>Consent history</CardTitle>
+            <CardDescription>View a record of the consents you've provided.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Additional content goes here</p>
+          </CardContent>
+        </Card>
+      </Link>
+      <Link to="/" className="no-underline">
+        <Card centered className="hover:bg-blue-10 transition-colors h-full">
+          <CardIconAction size="lg">
+            <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+          </CardIconAction>
+          <CardHeader>
+            <CardTitle>Manage delegates</CardTitle>
+            <CardDescription>Manage people who can act on your behalf.</CardDescription>
+          </CardHeader>
+        </Card>
+      </Link>
+    </div>
+  );
+}
+// #endregion 2up-nogap-row
+
+// #region 2up-nogap-col-link
+function TwoUpNogapColLinkExample() {
+  return (
+    <div className="grid grid-cols-2 gap-y-4">
+      <Link to="/" className="no-underline">
+        <Card column className="hover:bg-blue-10 transition-colors h-full">
+          <CardAction className="pr-0" aria-hidden={true}>
+            <Avatar variant="card">
+              <AvatarFallback variant="card">AA</AvatarFallback>
+            </Avatar>
+          </CardAction>
+          <CardHeader>
+            <CardTitle>Amina Ali</CardTitle>
+            <CardDescription>amina9990ali@bcmail.com</CardDescription>
+          </CardHeader>
+          <CardChevron />
+        </Card>
+      </Link>
+      <Link to="/" className="no-underline">
+        <Card column className="hover:bg-blue-10 transition-colors h-full">
+          <CardAction className="pr-0" aria-hidden={true}>
+            <Avatar variant="card">
+              <AvatarFallback variant="card">MK</AvatarFallback>
+            </Avatar>
+          </CardAction>
+          <CardHeader>
+            <CardTitle>Marcus Kim</CardTitle>
+            <CardDescription>marcus.kim@bcmail.com</CardDescription>
+          </CardHeader>
+          <CardChevron />
+        </Card>
+      </Link>
+      <Link to="/" className="no-underline">
+        <Card column className="hover:bg-blue-10 transition-colors h-full">
+          <CardIconAction size="sm">
+            <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+          </CardIconAction>
+          <CardHeader>
+            <CardTitle>Card Title</CardTitle>
+            <CardDescription>Supporting description</CardDescription>
+          </CardHeader>
+          <CardChevron />
+        </Card>
+      </Link>
+      <Link to="/" className="no-underline">
+        <Card column className="hover:bg-blue-10 transition-colors h-full">
+          <CardIconAction size="sm">
+            <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+          </CardIconAction>
+          <CardHeader>
+            <CardTitle>Card Title</CardTitle>
+            <CardDescription>Supporting description</CardDescription>
+          </CardHeader>
+          <CardChevron />
+        </Card>
+      </Link>
+    </div>
+  );
+}
+// #endregion 2up-nogap-col-link
+
+// #region 2up-nogap-col-no-link
+function TwoUpNogapColNoLinkExample() {
+  return (
+    <div className="grid grid-cols-2 gap-y-4">
+      <Card column>
+        <CardAction className="pr-0">
+          <Avatar variant="card">
+            <AvatarFallback variant="card">AA</AvatarFallback>
+          </Avatar>
+        </CardAction>
+        <CardHeader>
+          <CardTitle>Amina Ali</CardTitle>
+          <CardDescription>amina9990ali@bcmail.com</CardDescription>
+        </CardHeader>
+      </Card>
+      <Card column>
+        <CardAction className="pr-0">
+          <Avatar variant="card">
+            <AvatarFallback variant="card">MK</AvatarFallback>
+          </Avatar>
+        </CardAction>
+        <CardHeader>
+          <CardTitle>Marcus Kim</CardTitle>
+          <CardDescription>marcus.kim@bcmail.com</CardDescription>
+        </CardHeader>
+      </Card>
+      <Card column>
+        <CardIconAction size="sm">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>Card Title</CardTitle>
+          <CardDescription>Supporting description</CardDescription>
+        </CardHeader>
+      </Card>
+      <Card column>
+        <CardIconAction size="sm">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>Card Title</CardTitle>
+          <CardDescription>Supporting description</CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+}
+// #endregion 2up-nogap-col-no-link
+
+// #region 3up-gap-centered
+function ThreeUpGapCenteredExample() {
+  return (
+    <div className="grid grid-cols-3 gap-6">
+      <Card centered>
+        <CardIconAction size="lg">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>Discover services</CardTitle>
+          <CardDescription>Browse and search for government services.</CardDescription>
+        </CardHeader>
+      </Card>
+      <Card centered>
+        <CardIconAction size="lg">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>Apply and track your requests</CardTitle>
+          <CardDescription>
+            Submit applications online and check the status of your requests.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+      <Card centered>
+        <CardIconAction size="lg">
+          <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
+        </CardIconAction>
+        <CardHeader>
+          <CardTitle>Manage your information</CardTitle>
+          <CardDescription>View and update your information in one place.</CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+}
+// #endregion 3up-gap-centered
 
 export function CardsReferencePage() {
   return (
@@ -450,27 +525,11 @@ export function CardsReferencePage() {
       navClassName="sticky top-0 h-screen overflow-y-auto"
     >
       <DevSection id="full-example" title="Full example">
-        <ExamplePreview code={FULL_EXAMPLE_CODE}>
+        <ExamplePreview code={extractExample(selfSource, 'full-example')}>
           <div className="flex justify-center">
-            <Card centered className="max-w-xs">
-              <CardIconAction size="lg">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>Card title</CardTitle>
-                <CardDescription>
-                  Supporting description text that can wrap onto two lines.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Additional content goes here — any supporting copy, a list, or form elements.</p>
-              </CardContent>
-              <CardFooter className="justify-center">
-                <Button size="sm" variant="outline">
-                  Learn more
-                </Button>
-              </CardFooter>
-            </Card>
+            <div className="max-w-xs">
+              <FullExampleCard />
+            </div>
           </div>
         </ExamplePreview>
       </DevSection>
@@ -513,43 +572,8 @@ export function CardsReferencePage() {
         title="Full width — column layout (link)"
         description="column on Card. Action | Title + Description | Chevron. Wrapped in TanStack Link. Stacked with no gap between cards. Optional: a colored left border (border-l-4 border-l-<color>) to flag status/category — shown here on both cards."
       >
-        <ExamplePreview code={FW_COLUMN_LINK_CODE}>
-          <div className="flex flex-col">
-            <Link to="/" className="no-underline">
-              <Card
-                column
-                className="hover:bg-blue-10 transition-colors border-l-4 border-l-gray-110"
-              >
-                <CardAction className="pr-0" aria-hidden={true}>
-                  <Avatar variant="card">
-                    <AvatarFallback variant="card">AA</AvatarFallback>
-                  </Avatar>
-                </CardAction>
-                <CardHeader>
-                  <CardTitle>Amina Ali</CardTitle>
-                  <CardDescription>You • amina9990ali@bcmail.com</CardDescription>
-                </CardHeader>
-                <CardChevron />
-              </Card>
-            </Link>
-            <Link to="/" className="no-underline">
-              <Card
-                column
-                className="hover:bg-blue-10 transition-colors border-l-4 border-l-success-border"
-              >
-                <CardAction className="pr-0" aria-hidden={true}>
-                  <Avatar variant="card">
-                    <AvatarFallback variant="card">MK</AvatarFallback>
-                  </Avatar>
-                </CardAction>
-                <CardHeader>
-                  <CardTitle>Marcus Kim</CardTitle>
-                  <CardDescription>marcus.kim@bcmail.com</CardDescription>
-                </CardHeader>
-                <CardChevron />
-              </Card>
-            </Link>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, 'fw-column-link')}>
+          <FwColumnLinkExample />
         </ExamplePreview>
       </DevSection>
 
@@ -558,16 +582,8 @@ export function CardsReferencePage() {
         title="Full width — column layout (no link)"
         description="Same structure, not wrapped in Link."
       >
-        <ExamplePreview code={FW_COLUMN_NO_LINK_CODE}>
-          <Card column>
-            <CardIconAction size="sm">
-              <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-            </CardIconAction>
-            <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Supporting description text</CardDescription>
-            </CardHeader>
-          </Card>
+        <ExamplePreview code={extractExample(selfSource, 'fw-column-no-link')}>
+          <FwColumnNoLinkExample />
         </ExamplePreview>
       </DevSection>
 
@@ -576,19 +592,8 @@ export function CardsReferencePage() {
         title="Full width — row layout, left aligned"
         description="Default Card (flex-col). Action, Title, Description, Content stacked vertically."
       >
-        <ExamplePreview code={FW_ROW_LEFT_CODE}>
-          <Card>
-            <CardIconAction size="lg">
-              <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-            </CardIconAction>
-            <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Supporting description text</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Additional content goes here</p>
-            </CardContent>
-          </Card>
+        <ExamplePreview code={extractExample(selfSource, 'fw-row-left')}>
+          <FwRowLeftExample />
         </ExamplePreview>
       </DevSection>
 
@@ -597,19 +602,8 @@ export function CardsReferencePage() {
         title="Full width — row layout, centered"
         description="centered prop on Card centers text and CardAction."
       >
-        <ExamplePreview code={FW_ROW_CENTERED_CODE}>
-          <Card centered>
-            <CardIconAction size="lg">
-              <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-            </CardIconAction>
-            <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Supporting description text</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Additional content goes here</p>
-            </CardContent>
-          </Card>
+        <ExamplePreview code={extractExample(selfSource, 'fw-row-centered')}>
+          <FwRowCenteredExample />
         </ExamplePreview>
       </DevSection>
 
@@ -618,85 +612,8 @@ export function CardsReferencePage() {
         title="2-up (24px gap) — row layout, centered"
         description="grid grid-cols-2 gap-6. Icon action and avatar action variants."
       >
-        <ExamplePreview code={TWO_UP_GAP_CENTERED_CODE}>
-          <div className="grid grid-cols-2 gap-6">
-            <Card centered>
-              <CardIconAction size="lg">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>
-                  <Link to="/" className="no-underline hover:underline">
-                    Online application
-                    <Icon
-                      path={mdiChevronRight}
-                      size="20px"
-                      className="inline-flex text-link"
-                      aria-hidden={true}
-                    />
-                  </Link>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Apply online through MyBC</p>
-              </CardContent>
-            </Card>
-            <Card centered>
-              <CardIconAction size="lg">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>
-                  <Link to="/" className="no-underline hover:underline">
-                    Paper form
-                    <Icon
-                      path={mdiChevronRight}
-                      size="20px"
-                      className="inline-flex text-link"
-                      aria-hidden={true}
-                    />
-                  </Link>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>You can apply by mail or in person</p>
-              </CardContent>
-            </Card>
-            <Link to="/" className="no-underline">
-              <Card centered className="hover:bg-blue-10 transition-colors h-full">
-                <CardAction aria-hidden={true}>
-                  <Avatar variant="card">
-                    <AvatarFallback variant="card">BC</AvatarFallback>
-                  </Avatar>
-                </CardAction>
-                <CardHeader>
-                  <CardTitle>Avatar action</CardTitle>
-                  <CardDescription>Centered with avatar</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>
-                    Card content flows on to two lines to show that the cards will equalize height.
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link to="/" className="no-underline">
-              <Card centered className="hover:bg-blue-10 transition-colors h-full">
-                <CardAction aria-hidden={true}>
-                  <Avatar variant="card">
-                    <AvatarFallback variant="card">MK</AvatarFallback>
-                  </Avatar>
-                </CardAction>
-                <CardHeader>
-                  <CardTitle>Avatar action</CardTitle>
-                  <CardDescription>Centered with avatar</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Card content</p>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, '2up-gap-centered')}>
+          <TwoUpGapCenteredExample />
         </ExamplePreview>
       </DevSection>
 
@@ -705,61 +622,8 @@ export function CardsReferencePage() {
         title="2-up (24px gap) — row layout, left aligned"
         description="grid grid-cols-2 gap-6. Icon action and avatar action variants."
       >
-        <ExamplePreview code={TWO_UP_GAP_LEFT_CODE}>
-          <div className="grid grid-cols-2 gap-6">
-            <Card>
-              <CardIconAction size="sm">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardContent>
-                <p className="font-semibold">Income Assistance</p>
-                <CardDescription>
-                  Financial assistance to support your transition to employment.
-                </CardDescription>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardIconAction size="sm">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardContent>
-                <p className="font-semibold">Person with Disabilities Designation Application</p>
-                <CardDescription>
-                  Health and financial support for Income Assistance applicants with disabilities.
-                </CardDescription>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardAction>
-                <Avatar variant="card">
-                  <AvatarFallback variant="card">JD</AvatarFallback>
-                </Avatar>
-              </CardAction>
-              <CardHeader>
-                <CardTitle>Avatar action</CardTitle>
-                <CardDescription>Left aligned with avatar</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>
-                  Card content flows on to two lines to show that the cards will equalize height.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardAction>
-                <Avatar variant="card">
-                  <AvatarFallback variant="card">MK</AvatarFallback>
-                </Avatar>
-              </CardAction>
-              <CardHeader>
-                <CardTitle>Avatar action</CardTitle>
-                <CardDescription>Left aligned with avatar</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Card content</p>
-              </CardContent>
-            </Card>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, '2up-gap-left')}>
+          <TwoUpGapLeftExample />
         </ExamplePreview>
       </DevSection>
 
@@ -768,34 +632,8 @@ export function CardsReferencePage() {
         title="2-up (no column gap, 16px row gap) — row layout, centered (link)"
         description="grid grid-cols-2 gap-y-4. Centered row layout. Full card wrapped in Link."
       >
-        <ExamplePreview code={TWO_UP_NOGAP_ROW_CODE}>
-          <div className="grid grid-cols-2 gap-y-4">
-            <Link to="/" className="no-underline">
-              <Card centered className="hover:bg-blue-10 transition-colors h-full">
-                <CardIconAction size="lg">
-                  <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-                </CardIconAction>
-                <CardHeader>
-                  <CardTitle>Consent history</CardTitle>
-                  <CardDescription>View a record of the consents you've provided.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Additional content goes here</p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link to="/" className="no-underline">
-              <Card centered className="hover:bg-blue-10 transition-colors h-full">
-                <CardIconAction size="lg">
-                  <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-                </CardIconAction>
-                <CardHeader>
-                  <CardTitle>Manage delegates</CardTitle>
-                  <CardDescription>Manage people who can act on your behalf.</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, '2up-nogap-row')}>
+          <TwoUpNogapRowExample />
         </ExamplePreview>
       </DevSection>
 
@@ -804,61 +642,8 @@ export function CardsReferencePage() {
         title="2-up (no column gap, 16px row gap) — column layout (link)"
         description="grid grid-cols-2 gap-y-4. column on Card. Wrapped in TanStack Link."
       >
-        <ExamplePreview code={TWO_UP_NOGAP_COL_LINK_CODE}>
-          <div className="grid grid-cols-2 gap-y-4">
-            <Link to="/" className="no-underline">
-              <Card column className="hover:bg-blue-10 transition-colors h-full">
-                <CardAction className="pr-0" aria-hidden={true}>
-                  <Avatar variant="card">
-                    <AvatarFallback variant="card">AA</AvatarFallback>
-                  </Avatar>
-                </CardAction>
-                <CardHeader>
-                  <CardTitle>Amina Ali</CardTitle>
-                  <CardDescription>amina9990ali@bcmail.com</CardDescription>
-                </CardHeader>
-                <CardChevron />
-              </Card>
-            </Link>
-            <Link to="/" className="no-underline">
-              <Card column className="hover:bg-blue-10 transition-colors h-full">
-                <CardAction className="pr-0" aria-hidden={true}>
-                  <Avatar variant="card">
-                    <AvatarFallback variant="card">MK</AvatarFallback>
-                  </Avatar>
-                </CardAction>
-                <CardHeader>
-                  <CardTitle>Marcus Kim</CardTitle>
-                  <CardDescription>marcus.kim@bcmail.com</CardDescription>
-                </CardHeader>
-                <CardChevron />
-              </Card>
-            </Link>
-            <Link to="/" className="no-underline">
-              <Card column className="hover:bg-blue-10 transition-colors h-full">
-                <CardIconAction size="sm">
-                  <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-                </CardIconAction>
-                <CardHeader>
-                  <CardTitle>Card Title</CardTitle>
-                  <CardDescription>Supporting description</CardDescription>
-                </CardHeader>
-                <CardChevron />
-              </Card>
-            </Link>
-            <Link to="/" className="no-underline">
-              <Card column className="hover:bg-blue-10 transition-colors h-full">
-                <CardIconAction size="sm">
-                  <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-                </CardIconAction>
-                <CardHeader>
-                  <CardTitle>Card Title</CardTitle>
-                  <CardDescription>Supporting description</CardDescription>
-                </CardHeader>
-                <CardChevron />
-              </Card>
-            </Link>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, '2up-nogap-col-link')}>
+          <TwoUpNogapColLinkExample />
         </ExamplePreview>
       </DevSection>
 
@@ -867,49 +652,8 @@ export function CardsReferencePage() {
         title="2-up (no column gap, 16px row gap) — column layout (no link)"
         description="Same structure, not wrapped in Link."
       >
-        <ExamplePreview code={TWO_UP_NOGAP_COL_NO_LINK_CODE}>
-          <div className="grid grid-cols-2 gap-y-4">
-            <Card column>
-              <CardAction className="pr-0">
-                <Avatar variant="card">
-                  <AvatarFallback variant="card">AA</AvatarFallback>
-                </Avatar>
-              </CardAction>
-              <CardHeader>
-                <CardTitle>Amina Ali</CardTitle>
-                <CardDescription>amina9990ali@bcmail.com</CardDescription>
-              </CardHeader>
-            </Card>
-            <Card column>
-              <CardAction className="pr-0">
-                <Avatar variant="card">
-                  <AvatarFallback variant="card">MK</AvatarFallback>
-                </Avatar>
-              </CardAction>
-              <CardHeader>
-                <CardTitle>Marcus Kim</CardTitle>
-                <CardDescription>marcus.kim@bcmail.com</CardDescription>
-              </CardHeader>
-            </Card>
-            <Card column>
-              <CardIconAction size="sm">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>Card Title</CardTitle>
-                <CardDescription>Supporting description</CardDescription>
-              </CardHeader>
-            </Card>
-            <Card column>
-              <CardIconAction size="sm">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>Card Title</CardTitle>
-                <CardDescription>Supporting description</CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, '2up-nogap-col-no-link')}>
+          <TwoUpNogapColNoLinkExample />
         </ExamplePreview>
       </DevSection>
 
@@ -918,68 +662,13 @@ export function CardsReferencePage() {
         title="3-up (24px gap) — row layout, centered"
         description="grid grid-cols-3 gap-6. Centered, icon action, no link."
       >
-        <ExamplePreview code={THREE_UP_GAP_CENTERED_CODE}>
-          <div className="grid grid-cols-3 gap-6">
-            <Card centered>
-              <CardIconAction size="lg">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>Discover services</CardTitle>
-                <CardDescription>Browse and search for government services.</CardDescription>
-              </CardHeader>
-            </Card>
-            <Card centered>
-              <CardIconAction size="lg">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>Apply and track your requests</CardTitle>
-                <CardDescription>
-                  Submit applications online and check the status of your requests.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card centered>
-              <CardIconAction size="lg">
-                <Icon path={mdiCake} size="32px" className="text-blue-80" aria-hidden={true} />
-              </CardIconAction>
-              <CardHeader>
-                <CardTitle>Manage your information</CardTitle>
-                <CardDescription>View and update your information in one place.</CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, '3up-gap-centered')}>
+          <ThreeUpGapCenteredExample />
         </ExamplePreview>
       </DevSection>
 
       <DevSection id="accessibility" title="Accessibility">
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>
-            Always add{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>{' '}
-            to decorative icons.
-          </li>
-          <li>
-            Add{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'aria-hidden={true}'}</code>{' '}
-            to the <code className="text-xs bg-muted px-1.5 py-0.5 rounded">CardAction</code>{' '}
-            containing an avatar or icon when the card is inside a{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'<Link>'}</code> — prevents
-            initials being read as link text.
-          </li>
-          <li>
-            Inline title links need{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">hover:underline</code> to be
-            accessible on keyboard.
-          </li>
-          <li>
-            Add <code className="text-xs bg-muted px-1.5 py-0.5 rounded">h-full</code> on Card when
-            it is inside a{' '}
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{'<Link>'}</code> inside a grid
-            — required for equal-height rows.
-          </li>
-        </ul>
+        <A11yRulesSection metadata={getA11yMetadata('card')} />
       </DevSection>
 
       <DevSection id="api-reference" title="API reference">

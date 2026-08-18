@@ -131,7 +131,7 @@ export function ConsentGate({ agreements, serviceId, onContinue }: ConsentGatePr
                 ) : null}
                 {content ? <RichTextView value={content} /> : null}
                 {/* Gray, visually distinct response section (matches the read-only detail view). */}
-                <div className="-mx-2 -mb-4 flex flex-col gap-2 border-t border-border bg-gray-20 px-4 py-4">
+                <div className="-mx-4 -mb-4 flex flex-col gap-2 border-t border-border bg-gray-20 px-4 py-4">
                   <p className="text-sm font-medium text-muted-foreground">Your response</p>
                   <RadioGroup
                     value={chosen}
