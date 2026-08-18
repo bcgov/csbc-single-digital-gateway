@@ -62,6 +62,15 @@ export interface ControlNode {
   defaultCountry?: string;
   /** Address field only: the author-set default state/province name. Cleared when the country changes. */
   defaultProvince?: string;
+  /**
+   * Address field only (feature 170): lock the country sub-field so citizens see the default but
+   * cannot change it. Optional on the shared `ControlNode` (it is meaningless for other field types),
+   * but ALWAYS populated for an address node — the factory and the parser both set it — so the
+   * inspector Switch is always a controlled input. Absent reads as `false`.
+   */
+  readOnlyCountry?: boolean;
+  /** Address field only (feature 170): the same lock for the state/province sub-field. */
+  readOnlyProvince?: boolean;
 }
 
 export type HeadingLevel = 2 | 3;
@@ -250,6 +259,10 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     // clear it in the inspector). Names must match the geo dataset (feature 153).
     node.defaultCountry = 'Canada';
     node.defaultProvince = 'British Columbia';
+    // Feature 170: locks start OFF — a default is pre-filled but stays editable until the author says
+    // otherwise. Set explicitly (not left undefined) so the inspector Switches are controlled.
+    node.readOnlyCountry = false;
+    node.readOnlyProvince = false;
   }
   return node;
 }

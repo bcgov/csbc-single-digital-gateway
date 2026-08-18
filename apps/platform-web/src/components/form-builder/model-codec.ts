@@ -208,6 +208,19 @@ function controlOptions(node: ControlNode): JsonObject {
   }
   if (node.fieldType === 'address') {
     options.format = 'address';
+    // Feature 170: per-sub-field locks nest under ONE `fields` key, parallel to the address value
+    // shape. Only `true` is emitted — a sub-field at its defaults contributes no bag, and `fields`
+    // itself is omitted when empty, so an unlocked address serializes exactly as it did before.
+    const fields: JsonObject = {};
+    if (node.readOnlyCountry === true) {
+      fields.country = { readOnly: true };
+    }
+    if (node.readOnlyProvince === true) {
+      fields.province = { readOnly: true };
+    }
+    if (Object.keys(fields).length > 0) {
+      options.fields = fields;
+    }
   }
   if (node.fieldType === 'daterange') {
     options.format = 'daterange';
@@ -433,6 +446,7 @@ function parseControl(
     placeholder: _ph,
     rows: _r,
     mask: _mk,
+    fields: _fld,
     step,
     decimals,
     ...userOptions
@@ -448,6 +462,7 @@ function parseControl(
   void _ph;
   void _r;
   void _mk;
+  void _fld;
 
   const label =
     typeof element.label === 'string' ? element.label : ((prop.title as string | undefined) ?? '');
@@ -518,6 +533,15 @@ function parseControl(
     if (typeof addressDefault?.province === 'string' && addressDefault.province !== '') {
       node.defaultProvince = addressDefault.province;
     }
+    // Feature 170: an absent bag, an absent key, or a non-boolean all read back as `false`, so an
+    // address node always carries definite booleans and the inspector Switches stay controlled.
+    const addressFields = rawOptions.fields as JsonObject | undefined;
+    const lockOf = (key: string): boolean => {
+      const bag = addressFields?.[key] as JsonObject | undefined;
+      return bag?.readOnly === true;
+    };
+    node.readOnlyCountry = lockOf('country');
+    node.readOnlyProvince = lockOf('province');
   }
   return node;
 }
