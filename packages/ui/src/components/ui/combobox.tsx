@@ -60,24 +60,28 @@ function ComboboxInput({
   return (
     <InputGroup className={cn('w-auto', className)}>
       <ComboboxPrimitive.Input render={<InputGroupInput disabled={disabled} />} {...props} />
-      <InputGroupAddon align="inline-end">
-        {showTrigger && (
-          <InputGroupButton
-            size="icon-xs"
-            variant="ghost"
-            render={<ComboboxTrigger />}
-            data-slot="input-group-button"
-            className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
-            disabled={disabled}
-          />
-        )}
-        {showClear && (
-          <ComboboxClear
-            disabled={disabled}
-            {...(clearLabel ? { 'aria-label': clearLabel } : {})}
-          />
-        )}
-      </InputGroupAddon>
+      {/* Render the addon only when it has something in it — an empty addon leaves a padded, visibly
+          different strip at the trailing edge (e.g. a read-only combobox with its trigger hidden). */}
+      {(showTrigger || showClear) && (
+        <InputGroupAddon align="inline-end">
+          {showTrigger && (
+            <InputGroupButton
+              size="icon-xs"
+              variant="ghost"
+              render={<ComboboxTrigger />}
+              data-slot="input-group-button"
+              className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
+              disabled={disabled}
+            />
+          )}
+          {showClear && (
+            <ComboboxClear
+              disabled={disabled}
+              {...(clearLabel ? { 'aria-label': clearLabel } : {})}
+            />
+          )}
+        </InputGroupAddon>
+      )}
       {children}
     </InputGroup>
   );
