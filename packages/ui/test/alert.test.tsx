@@ -2,30 +2,37 @@ import { render, screen } from '@testing-library/react';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@ui/components/ui/alert';
 
 describe('Alert', () => {
-  it('renders with the alert role and its content', () => {
+  it('renders with the note role by default and its content', () => {
     render(
       <Alert>
         <AlertTitle>Heads up</AlertTitle>
         <AlertDescription>Something happened.</AlertDescription>
       </Alert>,
     );
-    const alert = screen.getByRole('alert');
+    const alert = screen.getByRole('note');
     expect(alert).toBeInTheDocument();
     expect(screen.getByText('Heads up')).toBeInTheDocument();
     expect(screen.getByText('Something happened.')).toBeInTheDocument();
   });
 
-  it('applies the default variant classes', () => {
-    render(<Alert>Default</Alert>);
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveClass('bg-card');
-    expect(alert.className).toContain('text-card-foreground');
+  it('accepts a role override, e.g. for alerts that need immediate attention', () => {
+    render(<Alert role="alert">Urgent</Alert>);
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
 
-  it('applies the destructive variant classes', () => {
-    render(<Alert variant="destructive">Bad</Alert>);
-    const alert = screen.getByRole('alert');
-    expect(alert.className).toContain('text-destructive');
+  it('applies the info variant classes by default', () => {
+    render(<Alert>Default</Alert>);
+    const alert = screen.getByRole('note');
+    expect(alert).toHaveClass('bg-info-surface');
+    expect(alert.className).toContain('border-info-border');
+  });
+
+  it('applies the danger variant classes', () => {
+    render(<Alert variant="danger">Bad</Alert>);
+    const alert = screen.getByRole('note');
+    expect(alert.className).toContain('bg-danger-surface');
+    expect(alert.className).toContain('border-danger-border');
   });
 
   it('exposes data-slot attributes for each part', () => {
@@ -38,7 +45,7 @@ describe('Alert', () => {
         </AlertAction>
       </Alert>,
     );
-    expect(screen.getByRole('alert')).toHaveAttribute('data-slot', 'alert');
+    expect(screen.getByRole('note')).toHaveAttribute('data-slot', 'alert');
     expect(screen.getByText('Title')).toHaveAttribute('data-slot', 'alert-title');
     expect(screen.getByText('Body')).toHaveAttribute('data-slot', 'alert-description');
     expect(screen.getByRole('button', { name: 'Undo' }).parentElement).toHaveAttribute(
@@ -49,6 +56,6 @@ describe('Alert', () => {
 
   it('merges a custom className onto the root', () => {
     render(<Alert className="custom-alert">Hi</Alert>);
-    expect(screen.getByRole('alert')).toHaveClass('custom-alert');
+    expect(screen.getByRole('note')).toHaveClass('custom-alert');
   });
 });

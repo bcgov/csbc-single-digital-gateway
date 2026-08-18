@@ -16,6 +16,7 @@ const DEV_PAGES: { path: string; component?: string }[] = [
   { path: '/dev' },
   { path: '/dev/cards', component: 'card' },
   { path: '/dev/badge', component: 'badge' },
+  { path: '/dev/breadcrumb', component: 'breadcrumb' },
   { path: '/dev/button', component: 'button' },
   { path: '/dev/accordion', component: 'accordion' },
   { path: '/dev/icons', component: 'icons' },

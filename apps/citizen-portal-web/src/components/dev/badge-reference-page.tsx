@@ -8,7 +8,9 @@ import { DevPageLayout } from '@/components/dev/dev-page-layout';
 import type { DevNavItem } from '@/components/dev/dev-page-nav';
 import { DevSection } from '@/components/dev/dev-section';
 import { ExamplePreview } from '@/components/dev/example-preview';
+import { extractExample } from '@/components/dev/extract-example';
 import { PropTable } from '@/components/dev/prop-table';
+import selfSource from './badge-reference-page.tsx?raw';
 
 const navItems: DevNavItem[] = [
   { id: 'full-example', text: 'Full example', level: 2 },
@@ -23,35 +25,80 @@ const navItems: DevNavItem[] = [
 ];
 
 const COLORS = ['bc-blue', 'bc-gold', 'dark', 'blue', 'grey', 'green', 'red', 'yellow'] as const;
+const SHAPES = [
+  { shape: 'rectangular', label: 'Rectangular' },
+  { shape: 'rounded', label: 'Rounded' },
+] as const;
+const SIZES = [
+  { size: 'sm', label: 'Small' },
+  { size: 'medium', label: 'Medium' },
+] as const;
 
-const FULL_EXAMPLE_CODE = `<Badge color="bc-blue">bc-blue</Badge>
-<Badge color="bc-gold">bc-gold</Badge>
-<Badge color="dark">dark</Badge>
-<Badge color="blue">blue</Badge>
-<Badge color="grey">grey</Badge>
-<Badge color="green">green</Badge>
-<Badge color="red">red</Badge>
-<Badge color="yellow">yellow</Badge>`;
+/** Shared by "Full example" and "Colors" — same sweep, different framing. */
+function ColorSweepExample() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {COLORS.map((color) => (
+        <Badge key={color} color={color}>
+          {color}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+const FULL_EXAMPLE_CODE = COLORS.map((color) => `<Badge color="${color}">${color}</Badge>`).join(
+  '\n',
+);
+
+function ShapesExample() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {SHAPES.map((s) => (
+        <Badge key={s.shape} shape={s.shape}>
+          {s.label}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+const SHAPES_CODE = SHAPES.map((s) => `<Badge shape="${s.shape}">${s.label}</Badge>`).join('\n');
+
+function SizesExample() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {SIZES.map((s) => (
+        <Badge key={s.size} size={s.size}>
+          {s.label}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+const SIZES_CODE = SIZES.map((s) => `<Badge size="${s.size}">${s.label}</Badge>`).join('\n');
 
 const USAGE_IMPORT_CODE = `import { Badge } from "@repo/ui/badge";`;
 
 const USAGE_SKELETON_CODE = `<Badge>Badge</Badge>`;
 
-const SHAPES_CODE = `<Badge shape="rectangular">Rectangular</Badge>
-<Badge shape="rounded">Rounded</Badge>`;
-
-const SIZES_CODE = `<Badge size="sm">Small</Badge>
-<Badge size="medium">Medium</Badge>`;
-
-const ICONS_CODE = `<Badge color="green">
-  <Icon path={mdiCheckCircle} size="12px" data-icon="inline-start" aria-hidden={true} />
-  Verified
-</Badge>
-
-<Badge color="red">
-  Action needed
-  <Icon path={mdiAlertCircle} size="12px" data-icon="inline-end" aria-hidden={true} />
-</Badge>`;
+function IconsExample() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {/* #region icons */}
+      <Badge color="green">
+        <Icon path={mdiCheckCircle} size="12px" data-icon="inline-start" aria-hidden={true} />
+        Verified
+      </Badge>
+      <Badge color="red">
+        Action needed
+        <Icon path={mdiAlertCircle} size="12px" data-icon="inline-end" aria-hidden={true} />
+      </Badge>
+      {/* #endregion icons */}
+    </div>
+  );
+}
 
 export function BadgeReferencePage() {
   return (
@@ -64,13 +111,7 @@ export function BadgeReferencePage() {
     >
       <DevSection id="full-example" title="Full example">
         <ExamplePreview code={FULL_EXAMPLE_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {COLORS.map((color) => (
-              <Badge key={color} color={color}>
-                {color}
-              </Badge>
-            ))}
-          </div>
+          <ColorSweepExample />
         </ExamplePreview>
       </DevSection>
 
@@ -101,31 +142,19 @@ export function BadgeReferencePage() {
         description="bc-blue, bc-gold, and dark are solid backgrounds. blue, grey, green, red, and yellow use a light background with a matching border — text stays the default foreground color rather than a tinted one."
       >
         <ExamplePreview code={FULL_EXAMPLE_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {COLORS.map((color) => (
-              <Badge key={color} color={color}>
-                {color}
-              </Badge>
-            ))}
-          </div>
+          <ColorSweepExample />
         </ExamplePreview>
       </DevSection>
 
       <DevSection id="shapes" title="Shapes">
         <ExamplePreview code={SHAPES_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Badge shape="rectangular">Rectangular</Badge>
-            <Badge shape="rounded">Rounded</Badge>
-          </div>
+          <ShapesExample />
         </ExamplePreview>
       </DevSection>
 
       <DevSection id="sizes" title="Sizes">
         <ExamplePreview code={SIZES_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Badge size="sm">Small</Badge>
-            <Badge size="medium">Medium</Badge>
-          </div>
+          <SizesExample />
         </ExamplePreview>
       </DevSection>
 
@@ -136,17 +165,8 @@ export function BadgeReferencePage() {
           'Set data-icon="inline-start" or "inline-end" on the icon so the badge adjusts its padding.'
         }
       >
-        <ExamplePreview code={ICONS_CODE}>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Badge color="green">
-              <Icon path={mdiCheckCircle} size="12px" data-icon="inline-start" aria-hidden={true} />
-              Verified
-            </Badge>
-            <Badge color="red">
-              Action needed
-              <Icon path={mdiAlertCircle} size="12px" data-icon="inline-end" aria-hidden={true} />
-            </Badge>
-          </div>
+        <ExamplePreview code={extractExample(selfSource, 'icons')}>
+          <IconsExample />
         </ExamplePreview>
       </DevSection>
 
