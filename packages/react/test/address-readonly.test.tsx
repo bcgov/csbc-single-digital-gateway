@@ -117,8 +117,8 @@ describe('Address per-sub-field options — normalizing reader (rule 5, "normali
     const fields = readAddressFieldsOptions({
       fields: { country: { readOnly: true }, nonsense: { readOnly: true } },
     });
-    expect(Object.keys(fields).sort()).toEqual(
-      ['address_one', 'address_two', 'city', 'country', 'postal_code', 'province'].sort(),
+    expect(Object.keys(fields).toSorted()).toEqual(
+      ['address_one', 'address_two', 'city', 'country', 'postal_code', 'province'].toSorted(),
     );
     expect(fields.country.readOnly).toBe(true);
   });
@@ -284,10 +284,10 @@ describe('AddressControl — seeding is unchanged by a lock (rule 8)', () => {
   });
 });
 
-describe('withFill — geocoder autofill respects locks (edge case, feature 154)', () => {
-  const locks = (fields: Record<string, { readOnly?: boolean }>) =>
-    readAddressFieldsOptions({ fields });
+const locks = (fields: Record<string, { readOnly?: boolean }>) =>
+  readAddressFieldsOptions({ fields });
 
+describe('withFill — geocoder autofill respects locks (edge case, feature 154)', () => {
   it('does not overwrite a locked country when autofill supplies a different one', () => {
     const prev = { ...emptyAddress(), country: 'Canada' };
     const next = withFill(

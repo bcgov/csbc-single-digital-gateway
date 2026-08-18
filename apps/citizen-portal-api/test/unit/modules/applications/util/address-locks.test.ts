@@ -79,7 +79,7 @@ describe('collectAddressLocks — walking the definition', () => {
       stages: [{ pages: [page('home')] }, { pages: [page('mailing')] }],
     };
     const found = collectAddressLocks('multi-stage-form', structure);
-    expect(found.map((c) => c.key).sort()).toEqual(['home', 'mailing']);
+    expect(found.map((c) => c.key).toSorted()).toEqual(['home', 'mailing']);
   });
 
   it('collects locks from an address nested inside a layout element', () => {

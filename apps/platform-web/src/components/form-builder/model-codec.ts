@@ -536,8 +536,8 @@ function parseControl(
     // Feature 170: an absent bag, an absent key, or a non-boolean all read back as `false`, so an
     // address node always carries definite booleans and the inspector Switches stay controlled.
     const addressFields = rawOptions.fields as JsonObject | undefined;
-    const lockOf = (key: string): boolean => {
-      const bag = addressFields?.[key] as JsonObject | undefined;
+    const lockOf = (subField: string): boolean => {
+      const bag = addressFields?.[subField] as JsonObject | undefined;
       return bag?.readOnly === true;
     };
     node.readOnlyCountry = lockOf('country');
