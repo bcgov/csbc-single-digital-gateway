@@ -19,6 +19,12 @@ export interface AccordionItemRowProps {
   group: string;
   /** The author's `options.itemLabel`; drives every accessible name on the row. */
   itemLabel: unknown;
+  /**
+   * Validation messages for THIS row, keyed by field (`title`, `description`). Item-level errors
+   * never reach a control through JSONForms' own `errors` prop — the control claims them from core
+   * and distributes them per row (doc 171, rule 16).
+   */
+  errors: Record<string, string>;
   disabled: boolean;
   onChange: (patch: Partial<AccordionItem>) => void;
   onMove: (delta: number) => void;
@@ -32,6 +38,7 @@ function ItemRowBody({
   count,
   itemLabel,
   disabled,
+  errors,
   onChange,
   onMove,
   onRemove,
@@ -90,8 +97,15 @@ function ItemRowBody({
             id={titleId}
             value={item.title}
             readOnly={disabled}
+            aria-invalid={errors.title === undefined ? undefined : true}
+            aria-describedby={errors.title === undefined ? undefined : `${titleId}-error`}
             onChange={(event) => onChange({ title: event.target.value })}
           />
+          {errors.title === undefined ? null : (
+            <p id={`${titleId}-error`} className="text-sm text-destructive">
+              {errors.title}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -103,8 +117,14 @@ function ItemRowBody({
             aria-labelledby={descriptionLabelId}
             value={(item.description ?? null) as Exclude<RichTextInputProps['value'], undefined>}
             disabled={disabled}
+            {...(errors.description === undefined ? {} : { 'aria-invalid': true })}
             onChange={(value) => onChange({ description: value })}
           />
+          {errors.description === undefined ? null : (
+            <p id={`${descriptionId}-error`} className="text-sm text-destructive">
+              {errors.description}
+            </p>
+          )}
         </div>
       </div>
 

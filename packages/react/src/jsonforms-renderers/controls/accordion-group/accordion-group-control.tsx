@@ -2,11 +2,12 @@ import { move } from '@dnd-kit/helpers';
 import { DragDropProvider } from '@dnd-kit/react';
 import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
-import { withJsonFormsControlProps } from '@jsonforms/react';
+import { useJsonForms, withJsonFormsControlProps } from '@jsonforms/react';
 import { Button } from '@repo/ui/button';
 import { Plus } from 'lucide-react';
 import { ControlWrapper } from '../../util/control-wrapper';
 import { AccordionItemRow } from './accordion-item-row';
+import { itemFieldErrors, messagesForIndex } from './child-errors';
 import {
   addItemText,
   emptyAccordionItem,
@@ -35,12 +36,16 @@ function AccordionGroupControlComponent({
   visible,
   uischema,
 }: ControlProps) {
+  const ctx = useJsonForms();
   if (visible === false) {
     return null;
   }
   const options = (uischema.options ?? {}) as Record<string, unknown>;
   const itemLabel = options.itemLabel;
   const disabled = enabled === false;
+  // JSONForms scopes `errors` to this control's own path, so the item-level failures
+  // (`/faq/0/title`) have to be claimed from core (doc 171, rule 16).
+  const itemErrors = itemFieldErrors(ctx.core?.errors ?? [], path);
 
   // The control edits the RAW array so half-typed items persist (the feature-130 rule). Only the
   // render path normalizes — and only enough to guarantee an id for the dnd/React key.
@@ -93,6 +98,7 @@ function AccordionGroupControlComponent({
       group={group}
       itemLabel={itemLabel}
       disabled={disabled}
+      errors={messagesForIndex(itemErrors, index)}
       onChange={(changes) => patch(index, changes)}
       onMove={(delta) => moveBy(index, delta)}
       onRemove={() => remove(index)}

@@ -58,6 +58,33 @@ function itemsOf(data: Record<string, unknown>): AccordionItem[] {
 const rowOf = (container: HTMLElement): HTMLElement =>
   container.querySelector('li > div') as HTMLElement;
 
+/**
+ * A genuinely valid Lexical editor state. `{ root: {} }` is object-shaped enough to satisfy the
+ * schema, but Lexical CRASHES on it when rendering ("parseEditorState: type undefined not found"),
+ * so anything that reaches a RichTextInput in a test must be the real thing.
+ */
+const richText = (text: string) => ({
+  root: {
+    type: 'root',
+    format: '',
+    indent: 0,
+    version: 1,
+    direction: 'ltr',
+    children: [
+      {
+        type: 'paragraph',
+        format: '',
+        indent: 0,
+        version: 1,
+        direction: 'ltr',
+        children: [
+          { type: 'text', text, format: 0, style: '', mode: 'normal', detail: 0, version: 1 },
+        ],
+      },
+    ],
+  },
+});
+
 const seeded = (titles: string[]): AccordionItem[] =>
   titles.map((title, i) => ({ id: `id${i}`, title, description: null }));
 
@@ -409,17 +436,56 @@ describe('accordion-group control (feature 171)', () => {
       );
     });
 
-    it('renders NO error message for an incomplete item (known defect)', () => {
-      // JSONForms scopes a control's `errors` to its own path, so faq/0/title never reaches the
-      // accordion control. Enforcement works; the explanation does not. Pinned so that a future fix
-      // has to update this test deliberately rather than by accident.
+    it('shows a message on the offending field of the offending row', () => {
+      render(
+        <Form
+          formSchema={completeSchema}
+          initial={{
+            faq: [
+              { id: 'a', title: '', description: null },
+              { id: 'b', title: 'Complete', description: richText('An answer') },
+            ],
+          }}
+        />,
+      );
+      const rows = screen.getAllByRole('listitem');
+      const first = within(rows[0] as HTMLElement);
+      expect(first.getByText('Title is required')).toBeInTheDocument();
+      expect(first.getByText('Description is required')).toBeInTheDocument();
+      // The complete row stays clean — errors are per row, not per control.
+      expect(within(rows[1] as HTMLElement).queryByText(/is required/)).toBeNull();
+    });
+
+    it('associates each message with its input for assistive technology', () => {
       render(
         <Form
           formSchema={completeSchema}
           initial={{ faq: [{ id: 'a', title: '', description: null }] }}
         />,
       );
-      expect(document.body.textContent).not.toMatch(/must (be|match|have)/);
+      const title = screen.getByLabelText('Title');
+      expect(title).toHaveAttribute('aria-invalid', 'true');
+      // The row is a grid, so visual proximity is not association — the link must be explicit.
+      const describedBy = title.getAttribute('aria-describedby');
+      expect(describedBy).not.toBeNull();
+      expect(document.getElementById(describedBy as string)?.textContent).toBe('Title is required');
+    });
+
+    it('clears the message once the field is filled in', async () => {
+      const user = userEvent.setup();
+      render(
+        <Form
+          formSchema={completeSchema}
+          initial={{ faq: [{ id: 'a', title: '', description: null }] }}
+        />,
+      );
+      expect(screen.getByText('Title is required')).toBeInTheDocument();
+
+      await user.type(screen.getByLabelText('Title'), 'Q');
+
+      await waitFor(() => expect(screen.queryByText('Title is required')).toBeNull());
+      // The description is still missing, so its message stays.
+      expect(screen.getByText('Description is required')).toBeInTheDocument();
     });
   });
 
