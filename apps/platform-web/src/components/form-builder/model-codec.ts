@@ -109,9 +109,16 @@ function propertySchema(node: ControlNode): JsonObject {
         type: 'array',
         items: {
           type: 'object',
+          // Feature 171 (revision 2): an item that EXISTS must be complete, independent of whether
+          // the field itself is required. `required` alone only checks key presence, so the title
+          // also carries `pattern: '\\S'` — at least one non-whitespace character, which subsumes
+          // `minLength: 1` and rejects a space-only title. `description` is a Lexical editor state;
+          // `type: 'object'` rejects the `null` a fresh item carries. Drafts are never validated,
+          // so half-typed items still SAVE — this only gates submit.
+          required: ['title', 'description'],
           properties: {
             id: { type: 'string' },
-            title: { type: 'string' },
+            title: { type: 'string', pattern: '\\S' },
             description: { type: 'object' },
           },
         },

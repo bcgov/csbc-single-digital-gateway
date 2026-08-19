@@ -1,4 +1,5 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import Ajv from 'ajv';
 import { JsonForms } from '@jsonforms/react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -352,6 +353,73 @@ describe('accordion-group control (feature 171)', () => {
     it('renders the title input read-only', () => {
       render(<Form initial={{ faq: seeded(['One']) }} readonly />);
       expect(screen.getByLabelText('Title')).toHaveAttribute('readonly');
+    });
+  });
+
+  describe('per-item completeness (doc 171, rules 13-15)', () => {
+    /** The items schema the form builder now emits for an accordion group. */
+    const itemsSchema = {
+      type: 'object',
+      required: ['title', 'description'],
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string', pattern: '\\S' },
+        description: { type: 'object' },
+      },
+    };
+
+    const completeSchema: JsonSchema = {
+      type: 'object',
+      properties: { faq: { type: 'array', title: 'FAQ', items: itemsSchema } },
+    };
+
+    const errorsFor = (item: Record<string, unknown>): string[] => {
+      // Assert against a real Ajv run — this is what the citizen-portal submit gate does.
+      const validate = new Ajv({ allErrors: true }).compile(completeSchema);
+      return validate({ faq: [item] }) ? [] : (validate.errors ?? []).map((e) => e.message ?? '');
+    };
+
+    it('rejects a fresh item, whose description is null', () => {
+      expect(errorsFor({ id: 'a', title: 'Q', description: null })).toContain('must be object');
+    });
+
+    it('rejects an item missing the keys entirely', () => {
+      const messages = errorsFor({ id: 'a' });
+      expect(messages).toContain("must have required property 'title'");
+      expect(messages).toContain("must have required property 'description'");
+    });
+
+    it('rejects a blank or whitespace-only title', () => {
+      for (const title of ['', '   ']) {
+        expect(errorsFor({ id: 'a', title, description: { root: {} } })).toContain(
+          'must match pattern "\\S"',
+        );
+      }
+    });
+
+    it('accepts a fully populated item', () => {
+      expect(errorsFor({ id: 'a', title: 'Q', description: { root: {} } })).toEqual([]);
+    });
+
+    it('does NOT reject a touched-then-emptied description (rule 15, a known limit)', () => {
+      // Clearing a Lexical editor leaves a valid object, not null — the schema cannot see the
+      // difference. Documented as a known issue; closing it needs a runtime pass on submit.
+      expect(errorsFor({ id: 'a', title: 'Q', description: { root: { children: [] } } })).toEqual(
+        [],
+      );
+    });
+
+    it('renders NO error message for an incomplete item (known defect)', () => {
+      // JSONForms scopes a control's `errors` to its own path, so faq/0/title never reaches the
+      // accordion control. Enforcement works; the explanation does not. Pinned so that a future fix
+      // has to update this test deliberately rather than by accident.
+      render(
+        <Form
+          formSchema={completeSchema}
+          initial={{ faq: [{ id: 'a', title: '', description: null }] }}
+        />,
+      );
+      expect(document.body.textContent).not.toMatch(/must (be|match|have)/);
     });
   });
 

@@ -1364,12 +1364,35 @@ describe('Accordion group codec (feature 171)', () => {
     expect(prop.type).toBe('array');
     expect(prop.items).toEqual({
       type: 'object',
+      required: ['title', 'description'],
       properties: {
         id: { type: 'string' },
-        title: { type: 'string' },
+        title: { type: 'string', pattern: '\\S' },
         description: { type: 'object' },
       },
     });
+  });
+
+  it('emits per-item completeness even when the field itself is optional', () => {
+    // Rule 13: "required" on the FIELD governs how many items; items.required governs what an item
+    // must contain. An optional group may be empty, but any item in it must be filled in.
+    const optional = propOf(serializeModel(modelWith(accordionNode({ required: false }))));
+    const required = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+    for (const prop of [optional, required]) {
+      expect((prop.items as Record<string, unknown>).required).toEqual(['title', 'description']);
+    }
+    expect(optional.minItems).toBeUndefined();
+    expect(required.minItems).toBe(1);
+  });
+
+  it('requires a non-whitespace character in the item title', () => {
+    // `required` alone passes on the '' the control writes on add; minLength: 1 would pass ' '.
+    const items = propOf(serializeModel(modelWith(accordionNode()))).items as Record<
+      string,
+      unknown
+    >;
+    const properties = items.properties as Record<string, Record<string, unknown> | undefined>;
+    expect(properties.title?.pattern).toBe('\\S');
   });
 
   it('emits options.format = "accordion-group" on the uischema element', () => {
