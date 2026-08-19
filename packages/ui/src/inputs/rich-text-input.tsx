@@ -197,7 +197,7 @@ export function RichTextInput({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-md border border-input bg-input/20 text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:bg-input/30',
+        'overflow-hidden rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
         className,
       )}
       aria-invalid={ariaInvalid}
