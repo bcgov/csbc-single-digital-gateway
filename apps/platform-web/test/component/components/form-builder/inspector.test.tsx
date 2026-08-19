@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Inspector } from '@/components/form-builder/inspector';
+import { createField } from '@/components/form-builder/model';
 import type { ContainerNode, ControlNode, DisplayNode } from '@/components/form-builder/model';
 
 // Mock DisplayInspector
@@ -882,5 +883,132 @@ describe('Inspector Component Test Suite', () => {
     );
 
     expect(screen.getByText('Add at least one option.')).toBeInTheDocument();
+  });
+});
+
+const accordionNode: ControlNode = {
+  kind: 'control',
+  fieldType: 'accordiongroup',
+  key: 'faq',
+  label: 'Frequently asked questions',
+  required: false,
+  options: {},
+  itemLabel: 'item',
+  defaultOpen: 'none',
+};
+
+const renderControlInspector = (node: ControlNode, onChangeControl = vi.fn()) => {
+  render(
+    <Inspector
+      node={node}
+      allKeys={[]}
+      form={{ title: '', description: '' }}
+      onChangeControl={onChangeControl}
+      onChangeContainer={vi.fn()}
+      onChangeDisplay={vi.fn()}
+      onChangeForm={vi.fn()}
+    />,
+  );
+  return onChangeControl;
+};
+
+describe('Accordion group inspector settings (feature 171)', () => {
+  it('renders the item-noun input for an accordiongroup node', () => {
+    renderControlInspector(accordionNode);
+    expect(screen.getByLabelText('Item noun')).toHaveValue('item');
+  });
+
+  it('emits itemLabel when the author types a noun', async () => {
+    const user = userEvent.setup();
+    const onChangeControl = renderControlInspector(accordionNode);
+
+    await user.type(screen.getByLabelText('Item noun'), 's');
+
+    expect(onChangeControl).toHaveBeenCalledWith({ itemLabel: 'items' });
+  });
+
+  it('renders the default-open control with None, First and All', () => {
+    renderControlInspector(accordionNode);
+    expect(screen.getByRole('button', { name: 'None' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'First' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument();
+    // "Specific item" is deliberately absent — the author never sees the filler's items.
+    expect(screen.queryByRole('button', { name: /specific/i })).not.toBeInTheDocument();
+  });
+
+  it('emits defaultOpen when the author picks an option', async () => {
+    const user = userEvent.setup();
+    const onChangeControl = renderControlInspector(accordionNode);
+
+    await user.click(screen.getByRole('button', { name: 'First' }));
+
+    expect(onChangeControl).toHaveBeenCalledWith({ defaultOpen: 'first' });
+  });
+
+  it('keeps both controls controlled (createField sets them explicitly)', () => {
+    // The lesson from the address read-only switches — an undefined value makes an uncontrolled input.
+    const fresh = createField('accordiongroup');
+    expect(fresh.itemLabel).toBe('item');
+    expect(fresh.defaultOpen).toBe('none');
+
+    renderControlInspector({ ...accordionNode, itemLabel: 'question', defaultOpen: 'all' });
+    expect(screen.getByLabelText('Item noun')).toHaveValue('question');
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('does not render accordion settings for a non-accordiongroup node', () => {
+    renderControlInspector({ ...accordionNode, fieldType: 'text' });
+    expect(screen.queryByLabelText('Item noun')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'None' })).not.toBeInTheDocument();
+  });
+});
+
+const containerNode = (overrides: Partial<ContainerNode> = {}): ContainerNode => ({
+  kind: 'container',
+  layout: 'section',
+  children: [],
+  ...overrides,
+});
+
+const renderContainerInspector = (node: ContainerNode, onChangeContainer = vi.fn()) => {
+  render(
+    <Inspector
+      node={node}
+      allKeys={[]}
+      form={{ title: '', description: '' }}
+      onChangeControl={vi.fn()}
+      onChangeContainer={onChangeContainer}
+      onChangeDisplay={vi.fn()}
+      onChangeForm={vi.fn()}
+    />,
+  );
+  return onChangeContainer;
+};
+
+describe('Section inspector settings (feature 172)', () => {
+  it('renders the Section title row for a section container', () => {
+    renderContainerInspector(containerNode({ label: 'Applicant details' }));
+    expect(screen.getByLabelText('Section title')).toHaveValue('Applicant details');
+  });
+
+  it('renders the Description row for a section container', () => {
+    renderContainerInspector(containerNode({ description: 'Tell us who you are.' }));
+    expect(screen.getByLabelText('Description')).toHaveValue('Tell us who you are.');
+  });
+
+  it('emits the description when the author types one', async () => {
+    const user = userEvent.setup();
+    const onChangeContainer = renderContainerInspector(containerNode({ description: '' }));
+
+    await user.type(screen.getByLabelText('Description'), 'X');
+
+    expect(onChangeContainer).toHaveBeenCalledWith({ description: 'X' });
+  });
+
+  it('does not offer a Description row for a group container', () => {
+    // Only a Section serializes options.description (doc 172, rule 10).
+    renderContainerInspector(containerNode({ layout: 'group', label: 'G' }));
+    expect(screen.getByLabelText('Section title')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Description')).not.toBeInTheDocument();
   });
 });

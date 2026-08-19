@@ -21,6 +21,23 @@ export { SliderControl, sliderControlTester } from './controls/slider-control';
 export { DateControl, dateControlTester } from './controls/date-control';
 export { RichTextControl, richTextControlTester } from './controls/rich-text-control';
 export { AddressControl, addressControlTester } from './controls/address/address-control';
+// Accordion group field (feature 171): a repeatable list of title + rich-text-description items.
+export {
+  AccordionGroupControl,
+  accordionGroupControlTester,
+} from './controls/accordion-group/accordion-group-control';
+export {
+  normalizeAccordionItems,
+  emptyAccordionItem,
+  resolveDefaultOpen,
+  itemNoun,
+  addItemText,
+  emptyStateText,
+  isAccordionDefaultOpen,
+  ACCORDION_DEFAULT_OPEN_VALUES,
+  type AccordionItem,
+  type AccordionDefaultOpen,
+} from './controls/accordion-group/model';
 // Address field geo-data injection (feature 153): the app wraps its form host in `GeoDataProvider`
 // and supplies country/state data hooks so the address control can filter states by country.
 export { GeoDataProvider, useGeo } from './controls/address/geo-context';
@@ -41,6 +58,7 @@ export {
 export { VerticalLayoutRenderer, verticalLayoutTester } from './layouts/vertical-layout';
 export { HorizontalLayoutRenderer, horizontalLayoutTester } from './layouts/horizontal-layout';
 export { GroupLayoutRenderer, groupLayoutTester } from './layouts/group-layout';
+export { SectionLayoutRenderer, sectionLayoutTester } from './layouts/section-layout';
 export {
   CategorizationLayoutRenderer,
   categorizationTester,

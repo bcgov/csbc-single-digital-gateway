@@ -62,3 +62,17 @@ export {
   type AddressValue,
   type AddressFieldKey,
 } from '../jsonforms-renderers/controls/address/model';
+
+// The read-only accordion group (feature 171). `AccordionGroupView` is exported so apps can render
+// the value outside a JsonForms dispatch, mirroring ContactMethodsView / AddressView.
+export {
+  AccordionGroupDisplay,
+  accordionGroupDisplayTester,
+} from './controls/accordion-group-display';
+export { AccordionGroupView, type AccordionGroupViewProps } from './controls/accordion-group-view';
+export {
+  normalizeAccordionItems,
+  resolveDefaultOpen,
+  type AccordionItem,
+  type AccordionDefaultOpen,
+} from '../jsonforms-renderers/controls/accordion-group/model';

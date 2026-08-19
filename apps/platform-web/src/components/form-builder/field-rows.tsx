@@ -218,7 +218,14 @@ export function ContainerRow({
   onChangeDisplay: (path: Path, patch: Partial<DisplayNode>) => void;
 }) {
   const label =
-    node.label ?? (node.layout === 'group' ? 'Group' : node.layout === 'grid' ? 'Grid' : 'Row');
+    node.label ??
+    (node.layout === 'group'
+      ? 'Group'
+      : node.layout === 'grid'
+        ? 'Grid'
+        : node.layout === 'section'
+          ? 'Section'
+          : 'Row');
   const { ref, handleRef, isDragSource, isDropTarget } = useSortable({
     id: containerId(index),
     index,

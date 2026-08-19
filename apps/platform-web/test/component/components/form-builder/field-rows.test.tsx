@@ -597,3 +597,37 @@ describe('Field Rows Component Test Suite', () => {
     expect(screen.getByText('DisplayCard: Nested Heading')).toBeInTheDocument();
   });
 });
+
+const sectionNode = (label?: string): ContainerNode => ({
+  kind: 'container',
+  layout: 'section',
+  ...(label === undefined ? {} : { label }),
+  children: [],
+});
+
+const renderContainer = (node: ContainerNode) =>
+  render(
+    <ContainerRow
+      node={node}
+      index={0}
+      selectedPath={null}
+      paletteDragType={null}
+      onSelect={vi.fn()}
+      onDelete={vi.fn()}
+      onChangeDisplay={vi.fn()}
+    />,
+  );
+
+describe('Section canvas card (feature 172)', () => {
+  it('labels an untitled section container "Section", not "Row"', () => {
+    renderContainer(sectionNode());
+    expect(screen.getByText('Section')).toBeInTheDocument();
+    expect(screen.queryByText('Row')).not.toBeInTheDocument();
+  });
+
+  it('prefers the author title over the type fallback', () => {
+    renderContainer(sectionNode('Applicant details'));
+    expect(screen.getByText('Applicant details')).toBeInTheDocument();
+    expect(screen.queryByText('Section')).not.toBeInTheDocument();
+  });
+});

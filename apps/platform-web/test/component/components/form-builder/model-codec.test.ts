@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { serializeModel, parseModel } from '@/components/form-builder/model-codec';
-import type { FormModel } from '@/components/form-builder/model';
+import type {
+  ContainerNode,
+  ControlNode,
+  FormDefinition,
+  FormModel,
+} from '@/components/form-builder/model';
 
 describe('Model Codec Component Test Suite', () => {
   it('successfully round-trips form title, description and basic control nodes', () => {
@@ -1318,5 +1323,254 @@ describe('Model Codec Component Test Suite', () => {
     const node = parseModel(def as any).fields[0] as any;
     expect(node.numberType).toBe('decimal');
     expect(node.decimalPlaces).toBeUndefined();
+  });
+});
+
+// ── Feature 171: accordion group field ──────────────────────────────────────────────────────────
+
+const accordionNode = (overrides: Partial<ControlNode> = {}): ControlNode => ({
+  kind: 'control',
+  fieldType: 'accordiongroup',
+  key: 'faq',
+  label: 'Frequently asked questions',
+  required: false,
+  options: {},
+  itemLabel: 'item',
+  defaultOpen: 'none',
+  ...overrides,
+});
+
+const modelWith = (node: ControlNode): FormModel => ({
+  title: '',
+  description: '',
+  fields: [node],
+});
+
+const propOf = (definition: FormDefinition): Record<string, unknown> =>
+  (definition.schema.properties as Record<string, Record<string, unknown>>).faq as Record<
+    string,
+    unknown
+  >;
+
+const elementOf = (definition: FormDefinition): Record<string, unknown> =>
+  (definition.uischema.elements as Record<string, unknown>[])[0] as Record<string, unknown>;
+
+const optionsOf = (definition: FormDefinition): Record<string, unknown> =>
+  (elementOf(definition).options ?? {}) as Record<string, unknown>;
+
+describe('Accordion group codec (feature 171)', () => {
+  it('serializes an array property whose items carry id, title and an object description', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode())));
+    expect(prop.type).toBe('array');
+    expect(prop.items).toEqual({
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'object' },
+      },
+    });
+  });
+
+  it('emits options.format = "accordion-group" on the uischema element', () => {
+    expect(optionsOf(serializeModel(modelWith(accordionNode()))).format).toBe('accordion-group');
+  });
+
+  it('emits options.itemLabel only when the author set a noun', () => {
+    expect(optionsOf(serializeModel(modelWith(accordionNode()))).itemLabel).toBeUndefined();
+    expect(
+      optionsOf(serializeModel(modelWith(accordionNode({ itemLabel: 'question' })))).itemLabel,
+    ).toBe('question');
+  });
+
+  it('emits options.defaultOpen only when it is not "none"', () => {
+    expect(optionsOf(serializeModel(modelWith(accordionNode()))).defaultOpen).toBeUndefined();
+    expect(
+      optionsOf(serializeModel(modelWith(accordionNode({ defaultOpen: 'first' })))).defaultOpen,
+    ).toBe('first');
+  });
+
+  it('emits minItems: 1 when the field is required', () => {
+    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+    expect(propOf(definition).minItems).toBe(1);
+    expect(definition.schema.required).toContain('faq');
+  });
+
+  it('omits minItems when the field is not required', () => {
+    expect(propOf(serializeModel(modelWith(accordionNode()))).minItems).toBeUndefined();
+  });
+
+  it('does not read minItems back into the model on parse (it is derived from required)', () => {
+    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.required).toBe(true);
+    expect(node.options).toEqual({});
+    expect(node.options).not.toHaveProperty('minItems');
+  });
+
+  it('infers the accordiongroup field type from options.format, not the schema shape', () => {
+    // The branch must sit EARLY (beside richtext/daterange) — an array otherwise falls through
+    // isChoiceProp and lands on `text`.
+    const definition = {
+      schema: { type: 'object', properties: { faq: { type: 'array' } }, required: [] },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [
+          {
+            type: 'Control',
+            scope: '#/properties/faq',
+            options: { format: 'accordion-group' },
+          },
+        ],
+      },
+    } as unknown as FormDefinition;
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.fieldType).toBe('accordiongroup');
+  });
+
+  it('drops itemLabel and defaultOpen from the parsed node.options', () => {
+    // parseControl's drop-list runs for ALL field types (memory `address-readonly-locks`) —
+    // a synthesized option left in leaks into node.options and breaks the round-trip.
+    const definition = serializeModel(
+      modelWith(accordionNode({ itemLabel: 'question', defaultOpen: 'all' })),
+    );
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.options).toEqual({});
+    expect(node.itemLabel).toBe('question');
+    expect(node.defaultOpen).toBe('all');
+  });
+
+  it('defaults itemLabel and defaultOpen to definite values when the options are absent', () => {
+    const definition = serializeModel(modelWith(accordionNode()));
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.itemLabel).toBe('item');
+    expect(node.defaultOpen).toBe('none');
+  });
+
+  it('round-trips an accordion group node unchanged through serialize → parse', () => {
+    const original = accordionNode({
+      required: true,
+      itemLabel: 'question',
+      defaultOpen: 'first',
+      description: 'Add one per question',
+    });
+    const node = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
+    expect(node).toEqual(original);
+  });
+});
+
+// ── Feature 172: Section layout container ───────────────────────────────────────────────────────
+
+const sectionNode = (overrides: Partial<ContainerNode> = {}): ContainerNode => ({
+  kind: 'container',
+  layout: 'section',
+  children: [],
+  ...overrides,
+});
+
+const withFields = (fields: FormModel['fields']): FormModel => ({
+  title: '',
+  description: '',
+  fields,
+});
+
+const firstElement = (definition: FormDefinition): Record<string, unknown> =>
+  (definition.uischema.elements as Record<string, unknown>[])[0] as Record<string, unknown>;
+
+describe('Section layout codec (feature 172)', () => {
+  it('serializes a section container to a "Section" uischema element', () => {
+    const definition = serializeModel(withFields([sectionNode()]));
+    expect(firstElement(definition).type).toBe('Section');
+  });
+
+  it('emits the label on the element (the future <legend>)', () => {
+    const definition = serializeModel(withFields([sectionNode({ label: 'Applicant details' })]));
+    expect(firstElement(definition).label).toBe('Applicant details');
+  });
+
+  it('omits the label when it is blank', () => {
+    const definition = serializeModel(withFields([sectionNode({ label: '' })]));
+    expect(firstElement(definition)).not.toHaveProperty('label');
+  });
+
+  it('emits options.description when the author set one', () => {
+    const definition = serializeModel(
+      withFields([sectionNode({ label: 'A', description: 'Tell us who you are.' })]),
+    );
+    expect(firstElement(definition).options).toEqual({ description: 'Tell us who you are.' });
+  });
+
+  it('omits options entirely when there is no description', () => {
+    const definition = serializeModel(withFields([sectionNode({ label: 'A' })]));
+    expect(firstElement(definition)).not.toHaveProperty('options');
+  });
+
+  it('does NOT emit options.description for a group container', () => {
+    // Group's renderer reads options.description, but wiring its serialization is separate
+    // in-flight work — Group's output must stay byte-identical (doc 172, rule 10).
+    const definition = serializeModel(
+      withFields([
+        { kind: 'container', layout: 'group', label: 'G', description: 'ignored', children: [] },
+      ]),
+    );
+    expect(firstElement(definition)).not.toHaveProperty('options');
+    expect(firstElement(definition).label).toBe('G');
+  });
+
+  it('parses a "Section" element back into a section container', () => {
+    const model = parseModel(serializeModel(withFields([sectionNode({ label: 'A' })])));
+    const node = model.fields[0] as ContainerNode;
+    expect(node.kind).toBe('container');
+    expect(node.layout).toBe('section');
+    expect(node.label).toBe('A');
+  });
+
+  it('recovers the description from options on parse', () => {
+    const definition = serializeModel(
+      withFields([sectionNode({ label: 'A', description: 'Sub-heading' })]),
+    );
+    const node = parseModel(definition).fields[0] as ContainerNode;
+    expect(node.description).toBe('Sub-heading');
+  });
+
+  it('round-trips a section container with children unchanged', () => {
+    const original = sectionNode({
+      label: 'Applicant details',
+      description: 'Tell us who you are.',
+      children: [
+        {
+          kind: 'control',
+          fieldType: 'text',
+          key: 'first_name',
+          label: 'First name',
+          required: false,
+          options: {},
+        },
+      ],
+    });
+    const node = parseModel(serializeModel(withFields([original]))).fields[0] as ContainerNode;
+    expect(node).toEqual(original);
+  });
+
+  it('serializes controls nested in a section into schema.properties', () => {
+    // A container contributes no schema of its own, but its children still must.
+    const definition = serializeModel(
+      withFields([
+        sectionNode({
+          children: [
+            {
+              kind: 'control',
+              fieldType: 'text',
+              key: 'first_name',
+              label: 'First name',
+              required: true,
+              options: {},
+            },
+          ],
+        }),
+      ]),
+    );
+    expect(definition.schema.properties).toHaveProperty('first_name');
+    expect(definition.schema.required).toContain('first_name');
   });
 });

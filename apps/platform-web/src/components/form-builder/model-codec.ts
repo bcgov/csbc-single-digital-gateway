@@ -4,6 +4,7 @@
  * source of truth (see model.ts). Split from model.ts to keep each file under the size gate.
  */
 import { CHOICE_FIELD_TYPES, type FieldTypeId } from './field-types';
+import { isAccordionDefaultOpen } from './model';
 import type {
   ContainerNode,
   ControlNode,
@@ -99,6 +100,27 @@ function propertySchema(node: ControlNode): JsonObject {
         }
       } else {
         Object.assign(base, { type: 'string', oneOf });
+      }
+      break;
+    case 'accordiongroup':
+      // Feature 171: a repeatable list of { id, title, rich-text description }. `description` is an
+      // object because a Lexical editor state is one (same convention as the richtext control).
+      Object.assign(base, {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string' },
+            description: { type: 'object' },
+          },
+        },
+      });
+      if (node.required) {
+        // Ajv treats `[]` as PRESENT, so object-level `required` alone would let an empty group
+        // submit — pin non-emptiness with `minItems`, exactly as the checkbox group does. It is
+        // DERIVED from `required` (never authored), so parse must not read it back into the model.
+        base.minItems = 1;
       }
       break;
     case 'checkboxes':
@@ -222,6 +244,17 @@ function controlOptions(node: ControlNode): JsonObject {
       options.fields = fields;
     }
   }
+  if (node.fieldType === 'accordiongroup') {
+    options.format = 'accordion-group';
+    // Both are emitted only when they differ from the renderer's own defaults ("item" / 'none'), so
+    // a field left at its defaults serializes to just the format flag.
+    if (node.itemLabel !== undefined && node.itemLabel !== '' && node.itemLabel !== 'item') {
+      options.itemLabel = node.itemLabel;
+    }
+    if (node.defaultOpen !== undefined && node.defaultOpen !== 'none') {
+      options.defaultOpen = node.defaultOpen;
+    }
+  }
   if (node.fieldType === 'daterange') {
     options.format = 'daterange';
   }
@@ -310,13 +343,28 @@ export function serializeModel(model: FormModel): FormDefinition {
           ? 'Group'
           : field.layout === 'grid'
             ? 'GridLayout'
-            : 'HorizontalLayout';
+            : field.layout === 'section'
+              ? 'Section'
+              : 'HorizontalLayout';
       const child = {
         type: layoutType,
         elements: field.children.map(serializeChild),
       } as JsonObject;
-      if (field.layout === 'group' && field.label !== undefined && field.label !== '') {
+      if (
+        (field.layout === 'group' || field.layout === 'section') &&
+        field.label !== undefined &&
+        field.label !== ''
+      ) {
         child.label = field.label;
+      }
+      if (
+        field.layout === 'section' &&
+        field.description !== undefined &&
+        field.description !== ''
+      ) {
+        // Feature 172: the sub-heading under the <legend>. Emitted for a SECTION ONLY — Group's
+        // renderer reads the same option but its serialization stays byte-identical (rule 10).
+        child.options = { description: field.description };
       }
       if (field.layout === 'grid') {
         // Feature 169: no Section title for grid (matches Horizontal's title-less behavior).
@@ -346,6 +394,10 @@ export function serializeModel(model: FormModel): FormDefinition {
 function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (options.format === 'richtext') {
     return 'richtext';
+  }
+  if (options.format === 'accordion-group') {
+    // Feature 171: an array schema — must be checked early, or it falls through isChoiceProp to text.
+    return 'accordiongroup';
   }
   if (options.format === 'daterange') {
     // Feature 157: also an object schema — must be checked before the generic object→address branch.
@@ -447,6 +499,8 @@ function parseControl(
     rows: _r,
     mask: _mk,
     fields: _fld,
+    itemLabel: _il,
+    defaultOpen: _do,
     step,
     decimals,
     ...userOptions
@@ -463,6 +517,8 @@ function parseControl(
   void _r;
   void _mk;
   void _fld;
+  void _il;
+  void _do;
 
   const label =
     typeof element.label === 'string' ? element.label : ((prop.title as string | undefined) ?? '');
@@ -524,6 +580,17 @@ function parseControl(
     node.min = (prop.minimum as number | undefined) ?? 0;
     node.max = (prop.maximum as number | undefined) ?? 100;
     node.step = typeof step === 'number' ? step : 1;
+  }
+  if (fieldType === 'accordiongroup') {
+    // Feature 171: both always definite so the inspector inputs stay controlled. `minItems` is NOT
+    // read back — it is derived from `required`, which the node already carries.
+    node.itemLabel =
+      typeof rawOptions.itemLabel === 'string' && rawOptions.itemLabel !== ''
+        ? rawOptions.itemLabel
+        : 'item';
+    node.defaultOpen = isAccordionDefaultOpen(rawOptions.defaultOpen)
+      ? rawOptions.defaultOpen
+      : 'none';
   }
   if (fieldType === 'address') {
     const addressDefault = prop.default as JsonObject | undefined;
@@ -605,7 +672,8 @@ export function parseModel(definition: FormDefinition): FormModel {
     } else if (
       element.type === 'Group' ||
       element.type === 'HorizontalLayout' ||
-      element.type === 'GridLayout'
+      element.type === 'GridLayout' ||
+      element.type === 'Section'
     ) {
       const children = ((element.elements as JsonObject[] | undefined) ?? [])
         .map((child) => parseChild(child, schema, required))
@@ -617,11 +685,20 @@ export function parseModel(definition: FormDefinition): FormModel {
             ? 'group'
             : element.type === 'GridLayout'
               ? 'grid'
-              : 'horizontal',
+              : element.type === 'Section'
+                ? 'section'
+                : 'horizontal',
         children,
       };
       if (typeof element.label === 'string') {
         node.label = element.label;
+      }
+      if (element.type === 'Section') {
+        // Feature 172: recover the authored sub-heading; anything non-string reads as absent.
+        const description = (element.options as JsonObject | undefined)?.description;
+        if (typeof description === 'string' && description !== '') {
+          node.description = description;
+        }
       }
       if (element.type === 'GridLayout') {
         // Feature 169: clamp defensively — never produce a 0-column or absurd-column grid from

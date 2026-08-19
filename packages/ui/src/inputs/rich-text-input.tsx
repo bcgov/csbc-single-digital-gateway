@@ -40,6 +40,13 @@ export interface RichTextInputProps {
   onChange?: (value: SerializedEditorState) => void;
   disabled?: boolean;
   'aria-invalid'?: boolean;
+  /**
+   * The editor is a Lexical `ContentEditable` — a `div`, which `<label for>` cannot name. Pass one
+   * of these so the editor has an accessible name (`aria-labelledby` pointing at your own label
+   * element is preferred when a visible caption exists).
+   */
+  'aria-label'?: string;
+  'aria-labelledby'?: string;
   className?: string;
 }
 
@@ -170,6 +177,9 @@ export function RichTextInput({
   ...props
 }: RichTextInputProps) {
   const ariaInvalid = props['aria-invalid'];
+  // The ContentEditable is a `div`, so `<label for>` cannot name it — forward the aria hooks instead.
+  const ariaLabel = props['aria-label'];
+  const ariaLabelledBy = props['aria-labelledby'];
   const initialConfig = {
     namespace: 'rich-text-input',
     nodes: richTextNodes,
@@ -200,6 +210,8 @@ export function RichTextInput({
               <ContentEditable
                 id={id}
                 aria-invalid={ariaInvalid}
+                {...(ariaLabel === undefined ? {} : { 'aria-label': ariaLabel })}
+                {...(ariaLabelledBy === undefined ? {} : { 'aria-labelledby': ariaLabelledBy })}
                 className="min-h-28 px-3 py-2 outline-none [&_a]:cursor-pointer"
               />
             }

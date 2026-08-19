@@ -13,6 +13,8 @@ import {
   Layers,
   LayoutGrid,
   ListChecks,
+  ListCollapse,
+  RectangleHorizontal,
   MapPin,
   Pilcrow,
   SlidersHorizontal,
@@ -27,6 +29,7 @@ import {
  * data (they emit a `Label` uischema element with no `schema.properties` entry — see feature 81).
  */
 export type FieldTypeId =
+  | 'accordiongroup'
   | 'text'
   | 'number'
   | 'boolean'
@@ -45,7 +48,8 @@ export type FieldTypeId =
   | 'richtextdisplay'
   | 'group'
   | 'horizontal'
-  | 'grid';
+  | 'grid'
+  | 'section';
 
 export type FieldGroup =
   | 'Core'
@@ -168,6 +172,15 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     keywords: ['location', 'street', 'postal', 'zip', 'country', 'state', 'province'],
   },
   {
+    id: 'accordiongroup',
+    label: 'Accordion group',
+    description: 'A repeatable list of collapsible titled sections.',
+    group: 'Advanced',
+    kind: 'control',
+    icon: ListCollapse,
+    keywords: ['accordion', 'faq', 'collapsible', 'expandable', 'repeatable', 'list'],
+  },
+  {
     id: 'richtext',
     label: 'Rich text',
     description: 'Formatted text with styling.',
@@ -218,6 +231,15 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     group: 'Layout',
     kind: 'container',
     icon: Columns2,
+  },
+  {
+    id: 'section',
+    label: 'Section',
+    description: 'Band related fields on a shaded panel.',
+    group: 'Layout',
+    kind: 'container',
+    icon: RectangleHorizontal,
+    keywords: ['fieldset', 'panel', 'band', 'legend', 'box'],
   },
   {
     id: 'grid',

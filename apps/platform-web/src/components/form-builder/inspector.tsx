@@ -3,11 +3,12 @@ import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Switch } from '@repo/ui/switch';
 import { Textarea } from '@repo/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { AddressDefaultsEditor } from './address-defaults-editor';
+import { AccordionGroupSettings } from './accordion-group-settings';
 import { ClearableInput } from './clearable-input';
+import { Row, SegmentedToggle } from './inspector-controls';
 import { DisplayInspector } from './display-inspector';
 import { CHOICE_FIELD_TYPES } from './field-types';
 import type {
@@ -18,66 +19,6 @@ import type {
   FieldNode,
   FormModel,
 } from './model';
-
-function Row({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-/**
- * A single-select segmented toggle group (`spacing={0}`) with a clear primary selection. Base UI's
- * ToggleGroup value is an array, so we bind `[value]` and pick the newly-pressed item (never allowing
- * an empty selection). Used by the Boolean "Display as" and Number "Number type" settings.
- */
-function SegmentedToggle<T extends string>({
-  options,
-  value,
-  onValueChange,
-  fullWidth = false,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onValueChange: (value: T) => void;
-  /** Stretch the group to its container's width, with items sharing it equally. */
-  fullWidth?: boolean;
-}) {
-  // The default "on" style is bg-muted (same as hover) — too subtle. Use a clear primary fill.
-  const pressed =
-    'aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-pressed:hover:text-primary-foreground';
-  return (
-    <ToggleGroup
-      variant="outline"
-      spacing={0}
-      {...(fullWidth ? { className: 'w-full' } : {})}
-      value={[value]}
-      onValueChange={(values: string[]) =>
-        onValueChange((values.find((v) => v !== value) ?? value) as T)
-      }
-    >
-      {options.map((option) => (
-        <ToggleGroupItem
-          key={option.value}
-          value={option.value}
-          className={fullWidth ? `flex-1 ${pressed}` : pressed}
-        >
-          {option.label}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  );
-}
 
 /** The field's auto-generated id (feature 159), muted — click to copy it to the clipboard. */
 function FieldIdBadge({ id }: { id: string }) {
@@ -455,6 +396,9 @@ function ControlInspector({
       {node.fieldType === 'address' ? (
         <AddressDefaultsEditor node={node} onChange={onChange} />
       ) : null}
+      {node.fieldType === 'accordiongroup' ? (
+        <AccordionGroupSettings node={node} onChange={onChange} />
+      ) : null}
       {node.fieldType === 'number' ? <NumberSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'slider' ? (
         <div className="grid grid-cols-3 gap-2">
@@ -554,14 +498,28 @@ export function Inspector({
         );
       }
       return (
-        <Row label="Section title" htmlFor="insp-container-label">
-          <ClearableInput
-            id="insp-container-label"
-            value={node.label ?? ''}
-            onChange={(e) => onChangeContainer({ label: e.target.value })}
-            onClear={() => onChangeContainer({ label: '' })}
-          />
-        </Row>
+        <div className="flex flex-col gap-4">
+          <Row label="Section title" htmlFor="insp-container-label">
+            <ClearableInput
+              id="insp-container-label"
+              value={node.label ?? ''}
+              onChange={(e) => onChangeContainer({ label: e.target.value })}
+              onClear={() => onChangeContainer({ label: '' })}
+            />
+          </Row>
+          {node.layout === 'section' ? (
+            // Feature 172: only a Section serializes options.description (its <legend> sub-heading).
+            <Row label="Description" htmlFor="insp-container-description">
+              <Textarea
+                id="insp-container-description"
+                rows={2}
+                value={node.description ?? ''}
+                onChange={(e) => onChangeContainer({ description: e.target.value })}
+                placeholder="Optional copy shown under the section title"
+              />
+            </Row>
+          ) : null}
+        </div>
       );
     }
     if (node.kind === 'display') {

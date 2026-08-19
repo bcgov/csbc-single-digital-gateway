@@ -71,6 +71,36 @@ export interface ControlNode {
   readOnlyCountry?: boolean;
   /** Address field only (feature 170): the same lock for the state/province sub-field. */
   readOnlyProvince?: boolean;
+  /**
+   * Accordion group only (feature 171): the author's noun for one entry ("question"), used for the
+   * "Add <noun>" row, the empty state and every row's accessible name → `uischema.options.itemLabel`.
+   * Always populated for an accordion node (factory + parser both set it) so the inspector input
+   * stays controlled.
+   */
+  itemLabel?: string;
+  /**
+   * Accordion group only (feature 171): which sections the READ-ONLY view opens on first render →
+   * `uischema.options.defaultOpen`. Always populated for an accordion node, same reason as above.
+   */
+  defaultOpen?: AccordionDefaultOpen;
+}
+
+/** Accordion group (feature 171): the authored initial open state of the read-only accordion. */
+export type AccordionDefaultOpen = 'none' | 'first' | 'all';
+
+/** The three authorable open states, in inspector order. "Specific item" is deliberately absent —
+ *  the author configures the field but never sees the items, so an index-based choice misfires. */
+export const ACCORDION_DEFAULT_OPEN_OPTIONS: readonly {
+  value: AccordionDefaultOpen;
+  label: string;
+}[] = [
+  { value: 'none', label: 'None' },
+  { value: 'first', label: 'First' },
+  { value: 'all', label: 'All' },
+];
+
+export function isAccordionDefaultOpen(value: unknown): value is AccordionDefaultOpen {
+  return value === 'none' || value === 'first' || value === 'all';
 }
 
 export type HeadingLevel = 2 | 3;
@@ -98,8 +128,14 @@ export interface DisplayNode {
 
 export interface ContainerNode {
   kind: 'container';
-  layout: 'group' | 'horizontal' | 'grid';
+  layout: 'group' | 'horizontal' | 'grid' | 'section';
   label?: string;
+  /**
+   * Section only (feature 172): sub-heading copy rendered under the `<legend>` inside the fieldset
+   * → `uischema.options.description`. Group's renderer reads the same option, but only a section
+   * SERIALIZES it — wiring Group is separate in-flight work (doc 172, rule 10).
+   */
+  description?: string;
   /** Grid only (feature 169): fixed column count, 2–6, default 2. Children wrap once it fills up. */
   columns?: number;
   children: (ControlNode | DisplayNode)[];
@@ -187,7 +223,7 @@ export function uniqueKey(base: string, existing: string[]): string {
 type DisplayFieldTypeId = 'heading' | 'paragraph' | 'richtextdisplay';
 type ControlFieldTypeId = Exclude<
   FieldTypeId,
-  'group' | 'horizontal' | 'grid' | DisplayFieldTypeId
+  'group' | 'horizontal' | 'grid' | 'section' | DisplayFieldTypeId
 >;
 
 /** Generate a stable, unique id for a display node (persisted in the uischema for dnd identity). */
@@ -210,10 +246,10 @@ function createDisplayField(fieldType: DisplayFieldTypeId): DisplayNode {
 /** A fresh node for a palette field type, with sensible defaults that round-trip. */
 export function createField(fieldType: ControlFieldTypeId): ControlNode;
 export function createField(fieldType: DisplayFieldTypeId): DisplayNode;
-export function createField(fieldType: 'group' | 'horizontal' | 'grid'): ContainerNode;
+export function createField(fieldType: 'group' | 'horizontal' | 'grid' | 'section'): ContainerNode;
 export function createField(fieldType: FieldTypeId): FieldNode;
 export function createField(fieldType: FieldTypeId): FieldNode {
-  if (fieldType === 'group' || fieldType === 'horizontal') {
+  if (fieldType === 'group' || fieldType === 'horizontal' || fieldType === 'section') {
     return { kind: 'container', layout: fieldType, children: [] };
   }
   if (fieldType === 'grid') {
@@ -253,6 +289,11 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     node.min = 0;
     node.max = 100;
     node.step = 1;
+  }
+  if (fieldType === 'accordiongroup') {
+    // Feature 171: both set explicitly (never left undefined) so the inspector inputs are controlled.
+    node.itemLabel = 'item';
+    node.defaultOpen = 'none';
   }
   if (fieldType === 'address') {
     // BC-Gov default: a new address field pre-fills Canada / British Columbia (authors can change or
