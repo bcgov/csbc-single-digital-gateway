@@ -29,7 +29,7 @@ function SectionLayoutComponent({ uischema, schema, path, enabled, visible }: La
   const description = asText(section.options?.description);
 
   return (
-    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md bg-gray-10 p-4">
+    <fieldset className="flex min-w-0 flex-col gap-4 rounded-md bg-gray-10 p-4 border border-border">
       {/* The fieldset is a flex column, so the legend is an ordinary flex item here (no border to
           notch into) — it needs no float/width hack to sit on its own line. */}
       {legend === '' ? null : <legend className="section-heading">{legend}</legend>}

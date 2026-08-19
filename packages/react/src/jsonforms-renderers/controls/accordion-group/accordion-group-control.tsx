@@ -101,7 +101,7 @@ function AccordionGroupControlComponent({
 
   const list =
     items.length === 0 ? (
-      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+      <p className="rounded-lg border border-border px-3 py-6 text-center text-sm text-muted-foreground bg-gray-10">
         {emptyStateText(itemLabel)}
       </p>
     ) : disabled ? (
@@ -131,8 +131,8 @@ function AccordionGroupControlComponent({
             auto-focus the new row, so it never steals focus from wherever the user was typing. */}
         <Button
           type="button"
-          variant="outline"
-          className="w-full justify-center border-dashed"
+          variant="ghost"
+          className="w-full justify-start border-border bg-gray-10 text-sm"
           disabled={disabled}
           onClick={add}
         >

@@ -45,8 +45,11 @@ function ItemRowBody({
   const nameFor = (action: string) => itemActionLabel(action, itemLabel, index);
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3">
-      <div className="flex items-center gap-1">
+    // Three columns — reorder | content | destroy (doc 171, rule 6). Keeping the destructive
+    // control in its own column means it never sits next to the two buttons a user clicks
+    // repeatedly. Outer columns are `auto`, so they are only as wide as their icon buttons.
+    <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-lg border border-border bg-gray-10 p-3">
+      <div className="flex flex-col items-center gap-1">
         <button
           type="button"
           ref={handleRef}
@@ -56,65 +59,65 @@ function ItemRowBody({
         >
           <GripVertical className="size-4" aria-hidden />
         </button>
-        <span className="text-xs font-medium text-muted-foreground">{index + 1}</span>
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={nameFor('Move up')}
-            disabled={disabled || index === 0}
-            onClick={() => onMove(-1)}
-          >
-            <ChevronUp aria-hidden />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={nameFor('Move down')}
-            disabled={disabled || index === count - 1}
-            onClick={() => onMove(1)}
-          >
-            <ChevronDown aria-hidden />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={nameFor('Remove')}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={nameFor('Move up')}
+          disabled={disabled || index === 0}
+          onClick={() => onMove(-1)}
+        >
+          <ChevronUp aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={nameFor('Move down')}
+          disabled={disabled || index === count - 1}
+          onClick={() => onMove(1)}
+        >
+          <ChevronDown aria-hidden />
+        </Button>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={titleId} className="font-medium">
+            Title
+          </Label>
+          <Input
+            id={titleId}
+            value={item.title}
+            readOnly={disabled}
+            onChange={(event) => onChange({ title: event.target.value })}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label id={descriptionLabelId} className="font-medium">
+            Description
+          </Label>
+          <RichTextInput
+            id={descriptionId}
+            aria-labelledby={descriptionLabelId}
+            value={(item.description ?? null) as Exclude<RichTextInputProps['value'], undefined>}
             disabled={disabled}
-            onClick={onRemove}
-          >
-            <Trash2 aria-hidden />
-          </Button>
+            onChange={(value) => onChange({ description: value })}
+          />
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <Label htmlFor={titleId} className="font-medium">
-          Title
-        </Label>
-        <Input
-          id={titleId}
-          value={item.title}
-          readOnly={disabled}
-          onChange={(event) => onChange({ title: event.target.value })}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <Label id={descriptionLabelId} className="font-medium">
-          Description
-        </Label>
-        <RichTextInput
-          id={descriptionId}
-          aria-labelledby={descriptionLabelId}
-          value={(item.description ?? null) as Exclude<RichTextInputProps['value'], undefined>}
-          disabled={disabled}
-          onChange={(value) => onChange({ description: value })}
-        />
-      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label={nameFor('Remove')}
+        disabled={disabled}
+        onClick={onRemove}
+      >
+        <Trash2 aria-hidden />
+      </Button>
     </div>
   );
 }

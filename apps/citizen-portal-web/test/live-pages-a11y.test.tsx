@@ -373,7 +373,9 @@ const CASES: RealPageCase[] = [
     fetchImpl: applyFlowFetch,
     ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
     interact: async () => {
-      const nameInput = screen.getByLabelText('Name *');
+      // A required control's label is "<title> required" (@repo/react ControlWrapper appends the
+      // word, not an asterisk) — match on a prefix rather than an exact string.
+      const nameInput = screen.getByLabelText(/^Name/);
       await userEvent.setup().clear(nameInput);
       await vi.waitFor(() => expect(nameInput).toHaveAttribute('aria-invalid', 'true'));
     },

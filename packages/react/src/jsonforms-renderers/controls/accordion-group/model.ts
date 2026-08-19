@@ -121,7 +121,7 @@ export function pluralizeNoun(noun: string): string {
 
 /** The add-row text: "Add question". */
 export function addItemText(itemLabel: unknown): string {
-  return `Add ${itemNoun(itemLabel)}`;
+  return `Add ${itemNoun(itemLabel)} block`;
 }
 
 /** The empty-state text: "No questions yet.". */

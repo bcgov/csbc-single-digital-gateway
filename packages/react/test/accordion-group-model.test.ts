@@ -88,7 +88,7 @@ describe('accordion-group model (feature 171)', () => {
     });
 
     it('lower-cases the author noun for the add row and the aria labels', () => {
-      expect(addItemText('Question')).toBe('Add question');
+      expect(addItemText('Question')).toBe('Add question block');
       expect(itemActionLabel('Remove', 'Question', 1)).toBe('Remove question 2');
       expect(itemActionLabel('Move up', 'Question', 0)).toBe('Move up question 1');
     });

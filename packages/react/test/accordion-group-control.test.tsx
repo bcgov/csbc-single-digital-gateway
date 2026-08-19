@@ -53,6 +53,10 @@ function itemsOf(data: Record<string, unknown>): AccordionItem[] {
   return (data.faq ?? []) as AccordionItem[];
 }
 
+/** The row element itself — the grid whose three columns are asserted below. */
+const rowOf = (container: HTMLElement): HTMLElement =>
+  container.querySelector('li > div') as HTMLElement;
+
 const seeded = (titles: string[]): AccordionItem[] =>
   titles.map((title, i) => ({ id: `id${i}`, title, description: null }));
 
@@ -154,7 +158,7 @@ describe('accordion-group control (feature 171)', () => {
 
     it('renders the add row last, labelled from options.itemLabel', () => {
       render(<Form initial={{ faq: seeded(['One']) }} options={{ itemLabel: 'question' }} />);
-      const addButton = screen.getByRole('button', { name: 'Add question' });
+      const addButton = screen.getByRole('button', { name: 'Add question block' });
       const list = screen.getByRole('list');
       // The add row follows the item list in document order.
       expect(list.compareDocumentPosition(addButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -167,7 +171,7 @@ describe('accordion-group control (feature 171)', () => {
       let latest: Record<string, unknown> = {};
       render(<Form initial={{ faq: seeded(['One']) }} onData={(d) => (latest = d)} />);
 
-      await user.click(screen.getByRole('button', { name: 'Add item' }));
+      await user.click(screen.getByRole('button', { name: 'Add item block' }));
 
       await waitFor(() => expect(itemsOf(latest)).toHaveLength(2));
       const added = itemsOf(latest)[1];
@@ -180,7 +184,7 @@ describe('accordion-group control (feature 171)', () => {
     it('does not steal focus into the new row', async () => {
       const user = userEvent.setup();
       render(<Form />);
-      const addButton = screen.getByRole('button', { name: 'Add item' });
+      const addButton = screen.getByRole('button', { name: 'Add item block' });
 
       await user.click(addButton);
 
@@ -290,11 +294,55 @@ describe('accordion-group control (feature 171)', () => {
     });
   });
 
+  describe('row layout (doc 171, rule 6)', () => {
+    it('lays each row out as three columns — narrow, wide, narrow', () => {
+      const { container } = render(<Form initial={{ faq: seeded(['One']) }} />);
+      expect(rowOf(container).className).toContain('grid-cols-[auto_1fr_auto]');
+    });
+
+    it('stacks the drag handle and both move buttons in the first column', () => {
+      const { container } = render(<Form initial={{ faq: seeded(['One', 'Two']) }} />);
+      const firstColumn = rowOf(container).children[0] as HTMLElement;
+      expect(
+        within(firstColumn).getByRole('button', { name: 'Reorder item 1' }),
+      ).toBeInTheDocument();
+      expect(
+        within(firstColumn).getByRole('button', { name: 'Move up item 1' }),
+      ).toBeInTheDocument();
+      expect(
+        within(firstColumn).getByRole('button', { name: 'Move down item 1' }),
+      ).toBeInTheDocument();
+    });
+
+    it('puts the title and description in the middle column', () => {
+      const { container } = render(<Form initial={{ faq: seeded(['One']) }} />);
+      const middleColumn = rowOf(container).children[1] as HTMLElement;
+      expect(within(middleColumn).getByLabelText('Title')).toBeInTheDocument();
+      expect(within(middleColumn).getByLabelText('Description')).toBeInTheDocument();
+    });
+
+    it('isolates the remove control in its own last column', () => {
+      // The point of the split: the destructive action never sits beside the reorder buttons.
+      const { container } = render(<Form initial={{ faq: seeded(['One']) }} />);
+      const row = rowOf(container);
+      const lastColumn = row.children[row.children.length - 1] as HTMLElement;
+      expect(lastColumn).toHaveAttribute('aria-label', 'Remove item 1');
+      expect(
+        within(row.children[0] as HTMLElement).queryByRole('button', { name: /Remove/ }),
+      ).toBeNull();
+    });
+
+    it('renders no visible position number (the accessible names carry it)', () => {
+      const { container } = render(<Form initial={{ faq: seeded(['One', 'Two']) }} />);
+      expect(within(rowOf(container)).queryByText('1')).toBeNull();
+    });
+  });
+
   describe('readonly (enabled === false)', () => {
     it('disables add, remove, both reorder buttons and the drag handle', () => {
       // Load-bearing: the form-builder canvas renders this control readonly for its drag preview.
       render(<Form initial={{ faq: seeded(['One', 'Two']) }} readonly />);
-      expect(screen.getByRole('button', { name: 'Add item' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Add item block' })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Remove item 1' })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Move down item 1' })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Move up item 2' })).toBeDisabled();
