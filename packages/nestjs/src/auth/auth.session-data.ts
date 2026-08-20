@@ -15,6 +15,10 @@ declare module 'express-session' {
     // A sanitized, site-relative path to return the browser to after login (single-use). Set at
     // /auth/login, consumed + cleared at /auth/callback. Never a full URL, never sent to the client.
     returnTo?: string;
+    // How many times the callback has auto-restarted login for THIS session. Bounds the restart so a
+    // persistently-failing callback (e.g. a badly skewed clock) surfaces an error instead of
+    // bouncing the browser between /auth/login and /auth/callback forever. Cleared on success.
+    loginRetry?: number;
   }
 }
 

@@ -79,6 +79,18 @@ export interface AuthModuleOptions {
    * Default 30.
    */
   tokenRefreshSkewSeconds?: number;
+  /**
+   * Seconds of clock drift tolerated when validating JWT `exp`/`iat`/`nbf` claims.
+   *
+   * **openid-client already defaults this to 30**, so leaving it unset is the norm and the
+   * discovery call stays byte-identical to not passing it at all. Raise it only when a deployment
+   * has real drift beyond 30s between the IdP and the BFF — the symptom being a code exchange that
+   * fails with oauth4webapi's `OAUTH_JWT_TIMESTAMP_CHECK_FAILED` on a freshly-issued id_token.
+   *
+   * Prefer fixing the clocks (NTP) over raising this: a large tolerance widens the window in which
+   * a genuinely expired token is still accepted.
+   */
+  clockToleranceSeconds?: number;
   /** Pre-built OIDC `Configuration`; when set, discovery is skipped (tests / advanced wiring). */
   config?: Configuration;
 }

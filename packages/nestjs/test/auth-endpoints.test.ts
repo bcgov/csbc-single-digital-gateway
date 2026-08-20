@@ -50,6 +50,19 @@ const make = (opts: AuthModuleOptions = options, registry = makeRegistry()) => (
   registry,
 });
 
+/** The shape oauth4webapi throws: an Error carrying a `code` string, not an exported class. */
+const timestampError = (): Error =>
+  Object.assign(
+    new Error(
+      'JWT timestamp claim value failed validation: unexpected JWT "exp" (expiration time) claim value, expiration is past current timestamp',
+    ),
+    { code: 'OAUTH_JWT_TIMESTAMP_CHECK_FAILED' },
+  );
+
+const pendingSession = (): Record<string, unknown> => ({
+  oidcTx: { state: 'state-abc', nonce: 'nonce-def', codeVerifier: 'verifier-xyz' },
+});
+
 describe('AuthController.login', () => {
   it('stores the OIDC transaction and 302s to the IdP', async () => {
     const session: Record<string, unknown> = {};
@@ -180,6 +193,80 @@ describe('AuthController.callback', () => {
 
     expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/auth/login'));
     expect(session.authUser).toBeUndefined();
+  });
+
+  // ── Expired id_token (oauth4webapi OAUTH_JWT_TIMESTAMP_CHECK_FAILED) ───────────────────────────
+  // The authorization page sat open past the id_token lifespan, or the clocks disagree. A fresh
+  // authorization mints a fresh token, so ONE restart fixes the first cause; the cap stops the
+  // second from bouncing the browser between /login and /callback forever.
+
+  it('restarts login instead of 500 when the id_token has already expired', async () => {
+    vi.mocked(authorizationCodeGrant).mockRejectedValueOnce(timestampError());
+    const session = pendingSession();
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+    await make().controller.callback(req as never, res as never);
+
+    expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/auth/login'));
+    expect(session.loginRetry).toBe(1);
+    expect(session.authUser).toBeUndefined();
+  });
+
+  it('gives up with a 401 rather than looping once the retry budget is spent', async () => {
+    vi.mocked(authorizationCodeGrant).mockRejectedValueOnce(timestampError());
+    // A previous callback already consumed the single restart.
+    const session: Record<string, unknown> = { ...pendingSession(), loginRetry: 1 };
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+
+    await expect(make().controller.callback(req as never, res as never)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    // No redirect at all — the loop is what we are preventing.
+    expect(res.redirect).not.toHaveBeenCalled();
+    // Budget cleared so a later, genuinely-fresh attempt is not pre-poisoned.
+    expect(session.loginRetry).toBeUndefined();
+  });
+
+  it('does NOT restart on a genuine exchange failure (invalid_grant surfaces)', async () => {
+    vi.mocked(authorizationCodeGrant).mockRejectedValueOnce(
+      Object.assign(new Error('invalid_grant'), { code: 'OAUTH_RESPONSE_BODY_ERROR' }),
+    );
+    const session = pendingSession();
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+
+    await expect(make().controller.callback(req as never, res as never)).rejects.toThrow(
+      'invalid_grant',
+    );
+    expect(res.redirect).not.toHaveBeenCalled();
+    expect(session.loginRetry).toBeUndefined();
+  });
+
+  it('clears the retry budget once a login completes', async () => {
+    const session: Record<string, unknown> = { ...pendingSession(), loginRetry: 1 };
+    const req = {
+      originalUrl: '/auth/callback?code=c&state=state-abc',
+      session,
+      sessionID: 'sid-1',
+    };
+    const res = { redirect: vi.fn() };
+    await make().controller.callback(req as never, res as never);
+
+    expect(session.loginRetry).toBeUndefined();
+    expect((session.authUser as AuthUser).id).toBe('user-1');
   });
 
   it('preserves the external /login path when a reverse proxy prefix is in play', async () => {
