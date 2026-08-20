@@ -123,11 +123,16 @@ function propertySchema(node: ControlNode): JsonObject {
           },
         },
       });
-      if (node.required) {
-        // Ajv treats `[]` as PRESENT, so object-level `required` alone would let an empty group
-        // submit — pin non-emptiness with `minItems`, exactly as the checkbox group does. It is
-        // DERIVED from `required` (never authored), so parse must not read it back into the model.
+      // Feature 171 (revision 3): an author-set minimum wins; otherwise `required` still pins
+      // non-emptiness at 1, since Ajv treats `[]` as PRESENT and object-level `required` alone
+      // would let an empty group submit.
+      if (node.minItems !== undefined && node.minItems >= 1) {
+        base.minItems = node.minItems;
+      } else if (node.required) {
         base.minItems = 1;
+      }
+      if (node.maxItems !== undefined) {
+        base.maxItems = node.maxItems;
       }
       break;
     case 'checkboxes':
@@ -589,6 +594,15 @@ function parseControl(
     node.step = typeof step === 'number' ? step : 1;
   }
   if (fieldType === 'accordiongroup') {
+    // Feature 171 (revision 3): recover the authored bounds. A `minItems` of exactly 1 on a required
+    // field is indistinguishable from the one `required` emits on its own — reading it back either
+    // way round-trips identically, because a minimum of 1 implies required.
+    if (typeof prop.minItems === 'number') {
+      node.minItems = prop.minItems;
+    }
+    if (typeof prop.maxItems === 'number') {
+      node.maxItems = prop.maxItems;
+    }
     // Feature 171: both always definite so the inspector inputs stay controlled. `minItems` is NOT
     // read back — it is derived from `required`, which the node already carries.
     node.itemLabel =

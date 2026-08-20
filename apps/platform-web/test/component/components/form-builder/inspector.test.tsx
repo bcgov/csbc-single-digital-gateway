@@ -956,6 +956,29 @@ describe('Accordion group inspector settings (feature 171)', () => {
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('renders Min and Max item inputs, blank when unbounded', () => {
+    renderControlInspector(accordionNode);
+    expect(screen.getByLabelText('Min items')).toHaveValue(null);
+    expect(screen.getByLabelText('Max items')).toHaveValue(null);
+  });
+
+  it('shows the authored bounds', () => {
+    renderControlInspector({ ...accordionNode, minItems: 2, maxItems: 5 });
+    expect(screen.getByLabelText('Min items')).toHaveValue(2);
+    expect(screen.getByLabelText('Max items')).toHaveValue(5);
+  });
+
+  it('marks the field required when a minimum is entered', async () => {
+    const user = userEvent.setup();
+    const onChangeControl = renderControlInspector(accordionNode);
+
+    await user.type(screen.getByLabelText('Min items'), '2');
+
+    expect(onChangeControl).toHaveBeenCalledWith(
+      expect.objectContaining({ minItems: 2, required: true }),
+    );
+  });
+
   it('does not render accordion settings for a non-accordiongroup node', () => {
     renderControlInspector({ ...accordionNode, fieldType: 'text' });
     expect(screen.queryByLabelText('Item noun')).not.toBeInTheDocument();

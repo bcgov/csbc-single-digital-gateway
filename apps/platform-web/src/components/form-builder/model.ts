@@ -83,6 +83,14 @@ export interface ControlNode {
    * `uischema.options.defaultOpen`. Always populated for an accordion node, same reason as above.
    */
   defaultOpen?: AccordionDefaultOpen;
+  /**
+   * Accordion group only (feature 171, revision 3): the author-set bounds on HOW MANY items →
+   * `schema.minItems` / `schema.maxItems`. Distinct from per-item completeness (which governs what
+   * an item contains). Absent = unbounded; a `minItems` of 1 or more IMPLIES the field is required
+   * (see `applyItemBounds`), so the two can never contradict each other.
+   */
+  minItems?: number | undefined;
+  maxItems?: number | undefined;
 }
 
 /** Accordion group (feature 171): the authored initial open state of the read-only accordion. */

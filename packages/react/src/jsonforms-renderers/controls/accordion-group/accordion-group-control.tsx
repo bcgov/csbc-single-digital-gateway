@@ -10,6 +10,7 @@ import { AccordionItemRow } from './accordion-item-row';
 import { itemFieldErrors, messagesForIndex } from './child-errors';
 import {
   addItemText,
+  atLimitText,
   emptyAccordionItem,
   emptyStateText,
   normalizeAccordionItems,
@@ -35,6 +36,7 @@ function AccordionGroupControlComponent({
   enabled,
   visible,
   uischema,
+  schema,
 }: ControlProps) {
   const ctx = useJsonForms();
   if (visible === false) {
@@ -88,6 +90,12 @@ function AccordionGroupControlComponent({
     }
   };
 
+  // Feature 171 (revision 3): the author's cap lives in the SCHEMA (`maxItems`), not the uischema,
+  // so the limit is visible before it is violated rather than only at submit.
+  const rawMax = (schema as { maxItems?: unknown } | undefined)?.maxItems;
+  const maxItems = typeof rawMax === 'number' ? rawMax : undefined;
+  const atLimit = maxItems !== undefined && items.length >= maxItems;
+
   const group = `accordion-group-${id}`;
   const rows = items.map((item, index) => (
     <AccordionItemRow
@@ -139,12 +147,15 @@ function AccordionGroupControlComponent({
           type="button"
           variant="ghost"
           className="w-full justify-start border-border bg-gray-10 text-sm"
-          disabled={disabled}
+          disabled={disabled || atLimit}
           onClick={add}
         >
           <Plus aria-hidden />
           {addItemText(itemLabel)}
         </Button>
+        {atLimit ? (
+          <p className="text-xs text-muted-foreground">{atLimitText(itemLabel, maxItems)}</p>
+        ) : null}
       </div>
     </ControlWrapper>
   );

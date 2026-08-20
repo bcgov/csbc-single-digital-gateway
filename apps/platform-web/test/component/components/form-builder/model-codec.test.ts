@@ -1470,13 +1470,54 @@ describe('Accordion group codec (feature 171)', () => {
     expect(node.defaultOpen).toBe('none');
   });
 
-  it('round-trips an accordion group node unchanged through serialize → parse', () => {
+  it('emits an author-set minimum in place of the required default', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true, minItems: 3 }))));
+    expect(prop.minItems).toBe(3);
+  });
+
+  it('emits an author-set maximum', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode({ maxItems: 4 }))));
+    expect(prop.maxItems).toBe(4);
+  });
+
+  it('falls back to minItems 1 for a required field with no authored minimum', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+    expect(prop.minItems).toBe(1);
+  });
+
+  it('emits neither bound when the field is optional and unbounded', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode())));
+    expect(prop.minItems).toBeUndefined();
+    expect(prop.maxItems).toBeUndefined();
+  });
+
+  it('round-trips the authored bounds', () => {
+    const original = accordionNode({ required: true, minItems: 2, maxItems: 5 });
+    const parsed = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
+    expect(parsed.minItems).toBe(2);
+    expect(parsed.maxItems).toBe(5);
+    expect(parsed.required).toBe(true);
+  });
+
+  it('round-trips an accordion group node, normalising required to an explicit minimum', () => {
+    // A required field emits minItems: 1, which reads back as an explicit minimum. No information
+    // is lost or invented: a minimum of 1 and "required" mean the same thing (invariant 1), so the
+    // parsed node is equivalent, and a second round trip is a fixed point.
     const original = accordionNode({
       required: true,
       itemLabel: 'question',
       defaultOpen: 'first',
       description: 'Add one per question',
     });
+    const node = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
+    expect(node).toEqual({ ...original, minItems: 1 });
+
+    const again = parseModel(serializeModel(modelWith(node))).fields[0] as ControlNode;
+    expect(again).toEqual(node);
+  });
+
+  it('round-trips an optional, unbounded node exactly', () => {
+    const original = accordionNode({ itemLabel: 'question', defaultOpen: 'first' });
     const node = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
     expect(node).toEqual(original);
   });

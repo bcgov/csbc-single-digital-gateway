@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AddressDefaultsEditor } from './address-defaults-editor';
 import { AccordionGroupSettings } from './accordion-group-settings';
+import { applyRequiredToggle } from './item-bounds';
 import { ClearableInput } from './clearable-input';
 import { Row, SegmentedToggle } from './inspector-controls';
 import { DisplayInspector } from './display-inspector';
@@ -363,7 +364,13 @@ function ControlInspector({
           id="insp-required"
           aria-label="Required"
           checked={node.required}
-          onCheckedChange={(checked) => onChange({ required: checked })}
+          onCheckedChange={(checked) =>
+            onChange(
+              node.fieldType === 'accordiongroup'
+                ? applyRequiredToggle(checked)
+                : { required: checked },
+            )
+          }
         />
       </div>
       {node.fieldType === 'text' ? <TextSettings node={node} onChange={onChange} /> : null}

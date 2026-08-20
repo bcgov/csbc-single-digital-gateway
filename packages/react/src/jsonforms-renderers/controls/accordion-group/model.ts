@@ -129,6 +129,12 @@ export function emptyStateText(itemLabel: unknown): string {
   return `No ${pluralizeNoun(itemNoun(itemLabel))} yet.`;
 }
 
+/** The hint shown once the author's cap is reached: "Maximum of 4 questions." */
+export function atLimitText(itemLabel: unknown, max: number): string {
+  const noun = max === 1 ? itemNoun(itemLabel) : pluralizeNoun(itemNoun(itemLabel));
+  return `Maximum of ${max} ${noun}.`;
+}
+
 /** A row control's accessible name: "Remove question 2" (1-based position). */
 export function itemActionLabel(action: string, itemLabel: unknown, index: number): string {
   return `${action} ${itemNoun(itemLabel)} ${index + 1}`;

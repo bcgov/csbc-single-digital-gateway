@@ -366,6 +366,45 @@ describe('accordion-group control (feature 171)', () => {
     });
   });
 
+  describe('item cap (doc 171, rule 21)', () => {
+    const cappedSchema = (maxItems: number): JsonSchema => ({
+      type: 'object',
+      properties: { faq: { ...(schema.properties?.faq as object), maxItems } },
+    });
+
+    it('disables the add row once the cap is reached', () => {
+      render(<Form formSchema={cappedSchema(2)} initial={{ faq: seeded(['One', 'Two']) }} />);
+      expect(screen.getByRole('button', { name: 'Add item block' })).toBeDisabled();
+    });
+
+    it('explains why, rather than just greying out', () => {
+      render(
+        <Form
+          formSchema={cappedSchema(2)}
+          initial={{ faq: seeded(['One', 'Two']) }}
+          options={{ itemLabel: 'question' }}
+        />,
+      );
+      expect(screen.getByText('Maximum of 2 questions.')).toBeInTheDocument();
+    });
+
+    it('keeps the add row live below the cap', () => {
+      render(<Form formSchema={cappedSchema(3)} initial={{ faq: seeded(['One', 'Two']) }} />);
+      expect(screen.getByRole('button', { name: 'Add item block' })).toBeEnabled();
+      expect(screen.queryByText(/Maximum of/)).toBeNull();
+    });
+
+    it('says "item" rather than "items" for a cap of one', () => {
+      render(<Form formSchema={cappedSchema(1)} initial={{ faq: seeded(['One']) }} />);
+      expect(screen.getByText('Maximum of 1 item.')).toBeInTheDocument();
+    });
+
+    it('leaves the add row alone when the schema sets no cap', () => {
+      render(<Form initial={{ faq: seeded(['One', 'Two', 'Three']) }} />);
+      expect(screen.getByRole('button', { name: 'Add item block' })).toBeEnabled();
+    });
+  });
+
   describe('readonly (enabled === false)', () => {
     it('disables add, remove, both reorder buttons and the drag handle', () => {
       // Load-bearing: the form-builder canvas renders this control readonly for its drag preview.

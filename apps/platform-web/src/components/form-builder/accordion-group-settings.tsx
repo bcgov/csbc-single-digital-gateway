@@ -1,4 +1,6 @@
+import { Input } from '@repo/ui/input';
 import { ClearableInput } from './clearable-input';
+import { applyItemBound, parseItemBound } from './item-bounds';
 import { Row, SegmentedToggle } from './inspector-controls';
 import {
   ACCORDION_DEFAULT_OPEN_OPTIONS,
@@ -16,6 +18,10 @@ import {
  * "specific item" option on purpose: the author configures the field but never sees the items (they
  * are entered by whoever fills the form), so an index-based choice would silently misfire. An author
  * who wants a particular item open reorders it to first.
+ *
+ * **Min / Max items** — bounds on HOW MANY items, distinct from per-item completeness. A minimum of
+ * 1 or more implies the field is required, and the range is kept satisfiable; both invariants live
+ * in `item-bounds.ts`.
  */
 export function AccordionGroupSettings({
   node,
@@ -38,6 +44,35 @@ export function AccordionGroupSettings({
           Names one entry — the add button reads “Add {(node.itemLabel ?? 'item').toLowerCase()}”.
         </p>
       </Row>
+      <div className="grid grid-cols-2 gap-2">
+        <Row label="Min items" htmlFor="insp-min-items">
+          <Input
+            id="insp-min-items"
+            type="number"
+            min={0}
+            value={node.minItems ?? ''}
+            placeholder="Any"
+            onChange={(e) =>
+              onChange(applyItemBound(node, 'minItems', parseItemBound(e.target.value)))
+            }
+          />
+        </Row>
+        <Row label="Max items" htmlFor="insp-max-items">
+          <Input
+            id="insp-max-items"
+            type="number"
+            min={0}
+            value={node.maxItems ?? ''}
+            placeholder="Any"
+            onChange={(e) =>
+              onChange(applyItemBound(node, 'maxItems', parseItemBound(e.target.value)))
+            }
+          />
+        </Row>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Leave blank for no limit. A minimum of 1 or more makes the field required.
+      </p>
       <Row label="Open by default" htmlFor="insp-default-open">
         <SegmentedToggle<AccordionDefaultOpen>
           fullWidth
