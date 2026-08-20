@@ -60,20 +60,16 @@ export const SERVICE_NAV = [
   },
 ] as const satisfies readonly ServiceNavItem[];
 
-export interface ServiceDetailsSection {
-  /** Anchor id — matches the section element's `id` and the `#hash` the sidebar link scrolls to. */
-  key: string;
-  label: string;
-}
+// Feature 174 removed the static `SERVICE_DETAILS_SECTIONS` list: the details page's sections are
+// now DERIVED from the top-level `Group` elements of the service definition's uischema (see
+// `lib/service-sections.ts`), and the sidebar submenu derives its anchors from the same helper.
 
 /**
- * The Service details page is one scrollable page of sections; the sidebar's "Service details" item
- * expands into these anchors, each scrolling to the matching `<section id>` header on `…/details`.
+ * Sections the console ALWAYS shows on the Service details page, appended after whatever the
+ * definition derives. These are console-owned concerns rather than authored content — they collect
+ * no service data, so they can never come from the schema and must not depend on how the Service
+ * document type happens to be authored.
  */
-export const SERVICE_DETAILS_SECTIONS: readonly ServiceDetailsSection[] = [
-  { key: 'service-description', label: 'Service description' },
-  { key: 'eligibility-criteria', label: 'Eligibility criteria' },
-  { key: 'application-methods', label: 'Application methods' },
-  { key: 'data-privacy', label: 'Data & privacy' },
-  { key: 'configuration', label: 'Configuration' },
+export const SERVICE_ALWAYS_SECTIONS: readonly { anchor: string; label: string }[] = [
+  { anchor: 'configuration', label: 'Configuration' },
 ];

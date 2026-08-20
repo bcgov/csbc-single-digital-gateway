@@ -29,6 +29,8 @@ export interface ServiceSummary extends Service {
 export interface ServiceVersion {
   id: string;
   documentId: string;
+  /** The document type version this version is pinned to — selects its render template (feature 174). */
+  typeVersionId: string;
   version: number;
   status: VersionStatus;
   data: Record<string, unknown>;
@@ -40,7 +42,14 @@ export interface ServiceVersion {
 export interface ServiceDetail {
   service: Service;
   versions: ServiceVersion[];
-  definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
+  /** The template for the current version (latest published, else latest). */
+  definition: FormDefinition;
+  /**
+   * Every template the service's versions span, keyed by `typeVersionId` (feature 174). Read
+   * surfaces must look up `definitions[version.typeVersionId]` so a version authored before a
+   * Service type reshape renders against its OWN template. Usually a single entry.
+   */
+  definitions: Record<string, FormDefinition>;
   /** Whether any of the service's application forms has submissions — gates delete vs archive. */
   hasSubmissions: boolean;
 }
@@ -149,6 +158,39 @@ export function serviceQueryOptions(id: string) {
       ),
     staleTime: 10_000,
   });
+}
+
+/**
+ * The version a details URL resolves to: the one named in the path, else the published one
+ * (feature 174). `undefined` when the service has no published version / the id is unknown.
+ */
+export function selectServiceVersion(
+  versions: readonly ServiceVersion[],
+  versionId?: string,
+): ServiceVersion | undefined {
+  if (versionId !== undefined) {
+    return versions.find((version) => version.id === versionId);
+  }
+  return versions.find((version) => version.status === 'published');
+}
+
+/**
+ * The template the selected version was authored under (feature 174) — looked up by the version's
+ * `typeVersionId`, so a version predating a Service type reshape renders against its OWN schema and
+ * uischema. Falls back to the detail's current `definition`, then to empty.
+ */
+export function definitionForServiceVersion(
+  detail: ServiceDetail | undefined,
+  versionId?: string,
+): FormDefinition | undefined {
+  if (detail === undefined) {
+    return undefined;
+  }
+  const version = selectServiceVersion(detail.versions, versionId);
+  if (version === undefined) {
+    return undefined;
+  }
+  return detail.definitions[version.typeVersionId] ?? detail.definition;
 }
 
 export function serviceDefinitionQueryOptions() {
