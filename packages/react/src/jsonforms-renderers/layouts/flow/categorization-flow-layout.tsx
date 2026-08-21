@@ -170,7 +170,7 @@ function CategorizationFlowLayoutComponent({
         {/* The CONTENT scrolls, not the page: the rail and the action bar stay fixed either side.
             Full-bleed with INNER padding, so the scrollbar sits on the pane edge and the fields
             still line up with the header above and the bar below. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+        <div className="relative flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {step.elements.map((child, childIndex) => (
             <JsonFormsDispatch
               key={childIndex}

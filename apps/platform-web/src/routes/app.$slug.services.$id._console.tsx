@@ -51,7 +51,13 @@ function ServiceConsoleShell() {
   return (
     <div className="-m-6 flex h-[calc(100%+3rem)]">
       <ServiceSidebar slug={slug} id={id} serviceName={serviceTitle} />
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
+      {/* `relative` on the SCROLL CONTAINER is load-bearing. Tailwind's `sr-only` is
+          `position: absolute` with no offsets, so it is only contained by a positioned ancestor.
+          Without this it resolves against the initial containing block — landing far down the page
+          in the scrolled content's coordinate space — and adds real layout overflow to whatever
+          ancestor does contain it, which then scrolls the whole app on an anchor jump. Contained
+          here, each span sits exactly where it renders and adds no overflow at all. */}
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
         <Outlet />
       </div>
     </div>

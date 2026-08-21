@@ -136,7 +136,9 @@ export function SectionEditPage() {
   // compensating for whatever padding its host happens to have.
   return (
     <div className="-m-6 flex h-[calc(100%+3rem)] flex-col">
-      <div className="min-h-0 flex-1 overflow-hidden">{body()}</div>
+      {/* `overflow-clip` so this can never become a scroll container of its own — the editor owns
+          the scrolling (see the app shell for why `hidden` is not enough). */}
+      <div className="min-h-0 flex-1 overflow-clip">{body()}</div>
     </div>
   );
 }

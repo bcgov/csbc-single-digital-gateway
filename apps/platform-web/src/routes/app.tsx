@@ -36,14 +36,12 @@ function ConsoleLayout() {
 
   return (
     <PageChromeProvider>
-      {/* `relative` is load-bearing, not decoration. Tailwind's `sr-only` is `position: absolute`
-          with no offsets, and an absolutely-positioned box is only clipped by an ancestor that is
-          ITSELF positioned. Without this, screen-reader-only text deep inside a scrolled page
-          resolves against the initial containing block and adds real layout overflow to the ROOT —
-          the whole app then wheel-scrolls out of view whenever the pointer is over something that
-          can't scroll (measured: 406px of it on the service details page). Making the shell the
-          containing block lets its `overflow-hidden` clip them. */}
-      <div className="relative flex h-svh w-full flex-col overflow-hidden bg-background text-foreground">
+      {/* `overflow-clip`, NOT `overflow-hidden`. `hidden` still creates a scroll container — it only
+          hides the scrollbar — so `scrollIntoView` (any anchor jump) happily scrolls it and the whole
+          app slides out of view. `clip` creates no scroll container at all, so the shell can never
+          be scrolled by anything. Pair this with `relative` on the real scroll containers: see the
+          note there for why `sr-only` is what generates the overflow in the first place. */}
+      <div className="flex h-svh w-full flex-col overflow-clip bg-background text-foreground">
         <ConsoleHeader slug={activeSlug} minimal={minimal} />
         <ConsoleBreadcrumbBar />
         <main className="min-h-0 flex-1 overflow-auto bg-muted p-6">

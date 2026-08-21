@@ -107,7 +107,9 @@ export function FlowNav({
         </Button>
       </div>
 
-      <ol className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+      {/* `relative`: the step buttons carry `sr-only` status text, which is absolutely positioned and
+          would otherwise escape this scroller and add layout overflow to a distant ancestor. */}
+      <ol className="relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {steps.map((step, index) => {
           const status = statuses[index] ?? 'upcoming';
           const label = stepLabel(step, index);
