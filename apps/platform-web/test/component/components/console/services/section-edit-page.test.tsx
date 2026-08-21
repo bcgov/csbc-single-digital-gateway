@@ -1,21 +1,32 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
+import type { PageChrome } from '@/lib/page-chrome';
 import type { ServiceDetail, ServiceVersion } from '@/lib/services';
 
-const { navigateMock, queryRef, updateDraftMock, invalidateMock, mutateRef } = vi.hoisted(() => ({
-  navigateMock: vi.fn(),
-  queryRef: {
-    current: { data: undefined, isPending: false, isError: false } as {
-      data: unknown;
-      isPending: boolean;
-      isError: boolean;
+const { navigateMock, queryRef, updateDraftMock, invalidateMock, paramsRef, chromeRef } =
+  vi.hoisted(() => ({
+    navigateMock: vi.fn(),
+    queryRef: {
+      current: { data: undefined, isPending: false, isError: false } as {
+        data: unknown;
+        isPending: boolean;
+        isError: boolean;
+      },
     },
-  },
-  updateDraftMock: vi.fn(),
-  invalidateMock: vi.fn(),
-  mutateRef: { current: null as null | ((data: Record<string, unknown>) => void) },
-}));
+    updateDraftMock: vi.fn(),
+    invalidateMock: vi.fn(),
+    paramsRef: {
+      current: {
+        slug: 'riverton',
+        id: 'svc-1',
+        versionId: 'ver-2',
+        sectionId: 'service-description',
+      } as Record<string, string | undefined>,
+    },
+    chromeRef: { current: null as PageChrome | null },
+  }));
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: () => queryRef.current,
@@ -28,22 +39,28 @@ vi.mock('@tanstack/react-query', () => ({
     mutationFn: (d: Record<string, unknown>) => Promise<unknown>;
     onSuccess: () => Promise<void> | void;
   }) => {
-    mutateRef.current = async (d) => {
+    const mutate = async (d: Record<string, unknown>) => {
       await mutationFn(d);
       await onSuccess();
     };
-    return { mutate: mutateRef.current, isPending: false, isError: false, error: null };
+    return { mutate, mutateAsync: mutate, isPending: false, isError: false, error: null };
   },
 }));
 
+// The page reads params LOOSELY (`strict: false`) because two routes with different param shapes
+// render it — `versionId` is simply absent on the canonical one.
 vi.mock('@tanstack/react-router', () => ({
-  useParams: () => ({
-    slug: 'riverton',
-    id: 'svc-1',
-    versionId: 'ver-2',
-    sectionId: 'service-description',
-  }),
+  useParams: () => paramsRef.current,
   useNavigate: () => navigateMock,
+  Link: ({ children }: { children?: ReactNode }) => <a href="/stub">{children}</a>,
+}));
+
+// Capture the chrome the page registers — the breadcrumb bar is app-level, so this is the only way
+// to assert what a sidebar-free page puts at the top.
+vi.mock('@/lib/page-chrome', () => ({
+  useSetPageChrome: (chrome: PageChrome) => {
+    chromeRef.current = chrome;
+  },
 }));
 
 vi.mock('@/lib/services', async (importOriginal) => ({
@@ -51,8 +68,6 @@ vi.mock('@/lib/services', async (importOriginal) => ({
   updateDraft: updateDraftMock,
 }));
 
-// FormRunner pulls JSONForms + Lexical; its behaviour is covered in @repo/react. Stand in a stub
-// that exposes the schema it was handed and a Save that emits the merged data.
 vi.mock('@repo/react/form-runner', () => ({
   FormRunner: ({
     definition,
@@ -75,7 +90,7 @@ vi.mock('@repo/react/form-runner', () => ({
   ),
 }));
 
-import { SectionEditDialog } from '@/components/console/services/section-edit/section-edit-dialog';
+import { SectionEditPage } from '@/components/console/services/section-edit/section-edit-page';
 
 const UISCHEMA = {
   type: 'VerticalLayout',
@@ -132,17 +147,40 @@ const detail = (over: Partial<ServiceVersion> = {}): ServiceDetail => ({
 beforeEach(() => {
   vi.clearAllMocks();
   queryRef.current = { data: detail(), isPending: false, isError: false };
+  paramsRef.current = {
+    slug: 'riverton',
+    id: 'svc-1',
+    versionId: 'ver-2',
+    sectionId: 'service-description',
+  };
+  chromeRef.current = null;
   updateDraftMock.mockResolvedValue(version());
 });
 
-describe('SectionEditDialog', () => {
-  it('titles the window with the section label', async () => {
-    render(<SectionEditDialog />);
-    expect(await screen.findByText('Service description')).toBeInTheDocument();
+describe('SectionEditPage', () => {
+  it('renders as a page — a heading, not a dialog', async () => {
+    render(<SectionEditPage />);
+
+    expect(await screen.findByRole('heading', { name: 'Service description' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('puts a breadcrumb at the top through the app-level chrome', () => {
+    render(<SectionEditPage />);
+
+    expect(chromeRef.current?.breadcrumb).toBeTruthy();
+    expect(chromeRef.current?.title).toBe('Service description');
+  });
+
+  it('still registers a breadcrumb when the section cannot be resolved (the only way back)', () => {
+    queryRef.current = { data: undefined, isPending: false, isError: true };
+    render(<SectionEditPage />);
+
+    expect(chromeRef.current?.breadcrumb).toBeTruthy();
   });
 
   it('scopes required to the section so another section cannot block Save', async () => {
-    render(<SectionEditDialog />);
+    render(<SectionEditPage />);
     // `eligibility` is required by the service schema but lives outside this section.
     expect(JSON.parse((await screen.findByTestId('scoped-required')).textContent ?? '')).toEqual([
       'summary',
@@ -150,23 +188,26 @@ describe('SectionEditDialog', () => {
   });
 
   it("hands FormRunner the group's CHILDREN, not the group (no repeated heading)", async () => {
-    render(<SectionEditDialog />);
+    render(<SectionEditPage />);
     const uischema = JSON.parse((await screen.findByTestId('runner-uischema')).textContent ?? '');
+
     expect(uischema.elements).toEqual([{ type: 'Control', scope: '#/properties/summary' }]);
   });
 
   it('saves the whole merged data object so other sections survive', async () => {
-    render(<SectionEditDialog />);
+    render(<SectionEditPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
+
     expect(updateDraftMock).toHaveBeenCalledWith('svc-1', 'ver-2', {
       data: { summary: 'edited', eligibility: 'keep me' },
     });
     expect(invalidateMock).toHaveBeenCalledWith({ queryKey: ['services'] });
   });
 
-  it('navigates back to the section anchor after a save', async () => {
-    render(<SectionEditDialog />);
+  it('navigates back to the version permalink anchor after a save', async () => {
+    render(<SectionEditPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
+
     expect(navigateMock).toHaveBeenCalledWith({
       to: '/app/$slug/services/$id/versions/$versionId/details',
       params: { slug: 'riverton', id: 'svc-1', versionId: 'ver-2' },
@@ -175,12 +216,9 @@ describe('SectionEditDialog', () => {
   });
 
   it('refuses to edit a non-draft version', async () => {
-    queryRef.current = {
-      data: detail({ status: 'published' }),
-      isPending: false,
-      isError: false,
-    };
-    render(<SectionEditDialog />);
+    queryRef.current = { data: detail({ status: 'published' }), isPending: false, isError: false };
+    render(<SectionEditPage />);
+
     expect(await screen.findByText(/Only draft versions can be edited/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
   });
@@ -192,32 +230,67 @@ describe('SectionEditDialog', () => {
       uischema: { type: 'VerticalLayout', elements: [] },
     };
     queryRef.current = { data: stale, isPending: false, isError: false };
-    render(<SectionEditDialog />);
+    render(<SectionEditPage />);
+
     expect(await screen.findByText(/no longer part of the service definition/)).toBeInTheDocument();
   });
 
-  it('surfaces an unregistered editor key instead of a blank window', async () => {
+  it('surfaces an unregistered editor key instead of a blank page', async () => {
     const named = detail();
-    const uischema = {
-      type: 'VerticalLayout',
-      elements: [
-        {
-          type: 'Group',
-          label: 'Service description',
-          options: { edit: { editor: 'nope' } },
-          elements: [],
-        },
-      ],
+    named.definitions['tv-1'] = {
+      schema: SCHEMA,
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [
+          {
+            type: 'Group',
+            label: 'Service description',
+            options: { edit: { editor: 'nope' } },
+            elements: [],
+          },
+        ],
+      },
     };
-    named.definitions['tv-1'] = { schema: SCHEMA, uischema };
     queryRef.current = { data: named, isPending: false, isError: false };
-    render(<SectionEditDialog />);
+    render(<SectionEditPage />);
+
     expect(await screen.findByText(/No editor is registered for/)).toBeInTheDocument();
   });
 
   it('reports a failed load', async () => {
     queryRef.current = { data: undefined, isPending: false, isError: true };
-    render(<SectionEditDialog />);
+    render(<SectionEditPage />);
+
     expect(await screen.findByText(/couldn’t be loaded/)).toBeInTheDocument();
+  });
+});
+
+describe('SectionEditPage — canonical (no versionId) route', () => {
+  beforeEach(() => {
+    paramsRef.current = { slug: 'riverton', id: 'svc-1', sectionId: 'service-description' };
+  });
+
+  it('edits the sole draft version when nothing is published', async () => {
+    render(<SectionEditPage />);
+
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
+  });
+
+  it('navigates back to the canonical details anchor after a save', async () => {
+    render(<SectionEditPage />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
+
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/app/$slug/services/$id/details',
+      params: { slug: 'riverton', id: 'svc-1' },
+      hash: 'service-description',
+    });
+  });
+
+  it('refuses the edit once a published version exists (it resolves to that one)', async () => {
+    queryRef.current = { data: detail({ status: 'published' }), isPending: false, isError: false };
+    render(<SectionEditPage />);
+
+    expect(await screen.findByText(/Only draft versions can be edited/)).toBeInTheDocument();
   });
 });
