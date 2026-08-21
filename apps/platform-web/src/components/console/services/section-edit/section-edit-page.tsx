@@ -123,15 +123,25 @@ export function SectionEditPage() {
     );
   };
 
+  // Full-bleed, full-height: `-m-6` cancels the console `<main>`'s padding and the height adds it
+  // back, so the page fills the content area exactly and `<main>` itself never scrolls (the
+  // `ApplicationShell` builders do the same). Editing a section wants every pixel of width — the
+  // flow layout puts a step rail beside the fields — so nothing here is capped at a reading column.
+  //
+  // The BODY is the scroll region, and it deliberately carries no bottom padding: a `sticky
+  // bottom-0` action bar inside the editor pins against its scrollport's CONTENT box, so any
+  // padding-bottom would float the bar above the edge and let content show underneath. Owning the
+  // scrollport here is what lets the shared renderer keep a plain `sticky bottom-0` instead of
+  // compensating for whatever padding its host happens to have.
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <header className="flex flex-col gap-1">
+    <div className="-m-6 flex h-[calc(100%+3rem)] flex-col">
+      <header className="flex shrink-0 flex-col gap-1 px-6 pt-6">
         <h1 className="text-xl font-semibold">{label}</h1>
         <p className="text-sm text-muted-foreground">
           Changes are saved to this draft version. Publish the version to make them public.
         </p>
       </header>
-      {body()}
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6">{body()}</div>
     </div>
   );
 }
