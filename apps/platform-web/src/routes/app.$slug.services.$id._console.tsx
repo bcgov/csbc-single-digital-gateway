@@ -44,10 +44,14 @@ function ServiceConsoleShell() {
     ),
   });
 
+  // The shell fills the content area EXACTLY (`h-` not `min-h-`) and the section column is the
+  // scroller, so the sidebar stays put. With `min-h-full` the shell grew to content height and the
+  // sidebar — a stretched flex child — scrolled away with it, leaving an empty column tracking
+  // alongside the content: one scroll region that read as two.
   return (
-    <div className="-m-6 flex min-h-full">
+    <div className="-m-6 flex h-[calc(100%+3rem)]">
       <ServiceSidebar slug={slug} id={id} serviceName={serviceTitle} />
-      <div className="min-w-0 flex-1 p-6">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
         <Outlet />
       </div>
     </div>

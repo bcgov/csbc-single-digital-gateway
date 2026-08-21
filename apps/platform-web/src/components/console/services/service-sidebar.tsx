@@ -133,7 +133,9 @@ export function ServiceSidebar({
   return (
     <aside
       data-collapsed={collapsed}
-      className="group/rail flex w-[248px] shrink-0 flex-col gap-1 border-r border-border bg-background pb-3.5 transition-[width] data-[collapsed=true]:w-[64px]"
+      // `overflow-y-auto`: the rail no longer scrolls with the page, so a nav list taller than the
+      // viewport has to scroll within itself or its last items become unreachable.
+      className="group/rail flex w-[248px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-border bg-background pb-3.5 transition-[width] data-[collapsed=true]:w-[64px]"
     >
       <div className="flex h-[58px] items-center gap-2 px-4 group-data-[collapsed=true]/rail:justify-center group-data-[collapsed=true]/rail:px-0">
         <span
