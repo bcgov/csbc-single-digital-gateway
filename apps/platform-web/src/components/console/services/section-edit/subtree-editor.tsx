@@ -88,10 +88,18 @@ export function SubtreeSectionEditor({
       kind="basic-form"
       definition={{
         schema: scopedSchema(schema, elements),
-        uischema: { type: 'VerticalLayout', elements },
+        // A flow subtree is a SINGLE Categorization, so it is passed as the uischema root rather
+        // than wrapped: the wrapper's `VerticalLayout` renderer is an auto-height div, and an
+        // auto-height ancestor is exactly what stops the flow layout's `h-full` from resolving —
+        // its internal scroll region would collapse and the page would grow instead.
+        uischema: flow
+          ? (elements[0] as Record<string, unknown>)
+          : { type: 'VerticalLayout', elements },
       }}
       data={data}
       onChange={setData}
+      // Flow sections own an internal scroll region, so hand the runner a definite height box.
+      fill={flow}
       // The flow layout owns saving; handing FormRunner an onSubmit here would stack a second bar.
       {...(flow ? {} : { onSubmit: (next: Record<string, unknown>) => save.mutate(next) })}
       submitting={save.isPending}
@@ -100,7 +108,7 @@ export function SubtreeSectionEditor({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={flow ? 'flex h-full min-h-0 flex-col gap-4' : 'flex flex-col gap-4'}>
       {save.isError ? (
         <p className="text-sm text-destructive" role="alert">
           {save.error instanceof Error ? save.error.message : 'This section couldn’t be saved.'}

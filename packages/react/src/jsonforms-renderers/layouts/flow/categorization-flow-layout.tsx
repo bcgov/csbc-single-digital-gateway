@@ -53,7 +53,10 @@ function FlowActionBar({
   busy: boolean;
 }) {
   return (
-    <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border bg-background py-3">
+    // A real flex footer now, not a sticky overlay: the pane above owns the scrolling, so the bar
+    // simply sits at the bottom of the column. `-mx-6 px-6` bleeds its top border out to the pane
+    // edges, matching the banner header's divider at the top.
+    <div className="-mx-6 flex shrink-0 items-center justify-between gap-3 border-t border-border bg-background px-6 py-3">
       <Button type="button" variant="outline" disabled={!canGoBack} onClick={onBack}>
         Back
       </Button>
@@ -134,8 +137,11 @@ function CategorizationFlowLayoutComponent({
     }
   };
 
+  // `h-full min-h-0` so a host that hands this a definite height (the section edit page, via
+  // FormRunner's `fill`) gets a rail that stays put and a content pane that scrolls on its own.
+  // With an auto-height host the percentage resolves to auto and it degrades to normal flow.
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+    <div className="flex h-full min-h-0 flex-col gap-6 lg:flex-row lg:gap-8">
       <FlowNav
         title={flowNavTitle(uischema)}
         steps={steps}
@@ -145,7 +151,10 @@ function CategorizationFlowLayoutComponent({
         onToggleCollapsed={() => setCollapsed((value) => !value)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
+      {/* `px-6` is what the banner PageHeader and the action bar bleed back out of (`-mx-6`), so both
+          span the pane edge-to-edge while the fields stay inset. Without it the header's bleed has
+          nothing to cancel and overflows the pane horizontally. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col px-6">
         <FlowStepIndicator steps={steps} current={index} />
         <PageHeader
           title={step.label === '' ? `Step ${index + 1}` : step.label}
@@ -154,7 +163,8 @@ function CategorizationFlowLayoutComponent({
           fluid
         />
 
-        <div className="flex flex-col gap-4">
+        {/* The CONTENT scrolls, not the page: the rail and the action bar stay fixed either side. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4">
           {step.elements.map((child, childIndex) => (
             <JsonFormsDispatch
               key={childIndex}

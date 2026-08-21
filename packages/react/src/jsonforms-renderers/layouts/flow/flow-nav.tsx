@@ -1,3 +1,4 @@
+import { Button } from '@repo/ui/button';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import type { FlowStep, FlowStepStatus } from './model';
 
@@ -73,32 +74,40 @@ export function FlowNav({
       className={`hidden shrink-0 flex-col border-border lg:flex lg:border-r ${
         collapsed ? 'lg:w-16' : 'lg:w-60'
       }`}
+      // The rail does NOT scroll with the content — the pane beside it owns the scrolling. Only a
+      // step list too long for the height scrolls, and only within the list itself.
     >
       {/* Header bar: title on the left, the collapse control on its right. Collapsed, the title is
-          dropped and the control centres so the bar keeps to the rail's narrow width. */}
+          dropped and the control centres so the bar keeps to the rail's narrow width.
+
+          Styled to match the service console's own sidebar header (`ServiceSidebar`), which is the
+          rail this one sits next to in the same product: a 58px row, `px-4`, a `text-sm font-semibold`
+          truncating title, and a ghost icon-sm toggle. Two collapsible rails a click apart should not
+          have two different header treatments. */}
       <div
-        className={`flex h-10 shrink-0 items-center border-b border-border ${
-          collapsed ? 'justify-center px-1' : 'justify-between pr-1 pl-3'
+        className={`flex h-[58px] shrink-0 items-center gap-2 ${
+          collapsed ? 'justify-center px-0' : 'px-4'
         }`}
       >
         {collapsed ? null : (
-          <h2 className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          <h2 className="flex-1 truncate text-sm font-semibold" title={title}>
             {title}
           </h2>
         )}
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           type="button"
-          onClick={onToggleCollapsed}
-          aria-expanded={!collapsed}
+          className="shrink-0"
           aria-label={toggleLabel}
-          title={toggleLabel}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-pressed={collapsed}
+          onClick={onToggleCollapsed}
         >
-          <ToggleIcon className="size-4 shrink-0" aria-hidden />
-        </button>
+          <ToggleIcon className="size-4" aria-hidden />
+        </Button>
       </div>
 
-      <ol className="flex flex-col gap-1 pt-2">
+      <ol className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {steps.map((step, index) => {
           const status = statuses[index] ?? 'upcoming';
           const label = stepLabel(step, index);

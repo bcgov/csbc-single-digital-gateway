@@ -158,10 +158,11 @@ beforeEach(() => {
 });
 
 describe('SectionEditPage', () => {
-  it('renders as a page — a heading, not a dialog', async () => {
+  it('renders as a page, not a dialog', async () => {
     render(<SectionEditPage />);
 
-    expect(await screen.findByRole('heading', { name: 'Service description' })).toBeInTheDocument();
+    // The section name lives in the breadcrumb, not a page heading — the editor owns the whole area.
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 

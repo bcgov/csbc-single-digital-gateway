@@ -128,20 +128,15 @@ export function SectionEditPage() {
   // `ApplicationShell` builders do the same). Editing a section wants every pixel of width — the
   // flow layout puts a step rail beside the fields — so nothing here is capped at a reading column.
   //
-  // The BODY is the scroll region, and it deliberately carries no bottom padding: a `sticky
-  // bottom-0` action bar inside the editor pins against its scrollport's CONTENT box, so any
-  // padding-bottom would float the bar above the edge and let content show underneath. Owning the
-  // scrollport here is what lets the shared renderer keep a plain `sticky bottom-0` instead of
+  // The BODY is the scroll region and carries NO padding. `padding-bottom` in particular must never
+  // be added here: a `sticky bottom-0` action bar inside the editor pins against its scrollport's
+  // CONTENT box, so padding floats the bar above the edge and lets content show through the gap
+  // (which is exactly what the console `<main>`'s own `p-6` did before the page took the scrollport
+  // over). Owning it here is what lets the shared renderer keep a plain `sticky bottom-0` instead of
   // compensating for whatever padding its host happens to have.
   return (
     <div className="-m-6 flex h-[calc(100%+3rem)] flex-col">
-      <header className="flex shrink-0 flex-col gap-1 px-6 pt-6">
-        <h1 className="text-xl font-semibold">{label}</h1>
-        <p className="text-sm text-muted-foreground">
-          Changes are saved to this draft version. Publish the version to make them public.
-        </p>
-      </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6">{body()}</div>
+      <div className="min-h-0 flex-1 overflow-hidden">{body()}</div>
     </div>
   );
 }
