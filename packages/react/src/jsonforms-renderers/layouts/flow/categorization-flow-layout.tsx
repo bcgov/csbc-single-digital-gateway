@@ -54,9 +54,9 @@ function FlowActionBar({
 }) {
   return (
     // A real flex footer now, not a sticky overlay: the pane above owns the scrolling, so the bar
-    // simply sits at the bottom of the column. `-mx-6 px-6` bleeds its top border out to the pane
-    // edges, matching the banner header's divider at the top.
-    <div className="-mx-6 flex shrink-0 items-center justify-between gap-3 border-t border-border bg-background px-6 py-3">
+    // simply sits at the bottom of the column. Full-bleed with inner padding, so its top border runs
+    // the full pane width like the banner header's divider does.
+    <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-background px-6 py-3">
       <Button type="button" variant="outline" disabled={!canGoBack} onClick={onBack}>
         Back
       </Button>
@@ -141,7 +141,7 @@ function CategorizationFlowLayoutComponent({
   // FormRunner's `fill`) gets a rail that stays put and a content pane that scrolls on its own.
   // With an auto-height host the percentage resolves to auto and it degrades to normal flow.
   return (
-    <div className="flex h-full min-h-0 flex-col gap-6 lg:flex-row lg:gap-8">
+    <div className="flex h-full min-h-0 flex-col lg:flex-row">
       <FlowNav
         title={flowNavTitle(uischema)}
         steps={steps}
@@ -151,20 +151,26 @@ function CategorizationFlowLayoutComponent({
         onToggleCollapsed={() => setCollapsed((value) => !value)}
       />
 
-      {/* `px-6` is what the banner PageHeader and the action bar bleed back out of (`-mx-6`), so both
-          span the pane edge-to-edge while the fields stay inset. Without it the header's bleed has
-          nothing to cancel and overflows the pane horizontally. */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col px-6">
+      {/* The column itself is UNPADDED — each child owns its horizontal padding instead. Putting
+          `px-6` on the column would inset the scroll container too, so its scrollbar would float 24px
+          off the pane's edge rather than riding it. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <FlowStepIndicator steps={steps} current={index} />
-        <PageHeader
-          title={step.label === '' ? `Step ${index + 1}` : step.label}
-          variant="banner"
-          {...(step.description === '' ? {} : { description: step.description })}
-          fluid
-        />
+        {/* The wrapper's `px-6` exists solely for the banner header's `-mx-6` to cancel, so the gold
+            divider spans the pane edge-to-edge while its title stays inset. */}
+        <div className="shrink-0 px-6">
+          <PageHeader
+            title={step.label === '' ? `Step ${index + 1}` : step.label}
+            variant="banner"
+            {...(step.description === '' ? {} : { description: step.description })}
+            fluid
+          />
+        </div>
 
-        {/* The CONTENT scrolls, not the page: the rail and the action bar stay fixed either side. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4">
+        {/* The CONTENT scrolls, not the page: the rail and the action bar stay fixed either side.
+            Full-bleed with INNER padding, so the scrollbar sits on the pane edge and the fields
+            still line up with the header above and the bar below. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {step.elements.map((child, childIndex) => (
             <JsonFormsDispatch
               key={childIndex}
