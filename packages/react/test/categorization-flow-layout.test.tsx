@@ -58,13 +58,16 @@ const category = (label: string, property: string, description?: string) => ({
 /** `variant: null` authors NO `options` at all — the shape every Categorization has today. */
 function flowUischema({
   variant = 'flow',
+  label,
   elements,
 }: {
   variant?: string | null;
+  label?: string;
   elements?: unknown[];
 } = {}): UISchemaElement {
   return {
     type: 'Categorization',
+    ...(label === undefined ? {} : { label }),
     ...(variant === null ? {} : { options: { variant } }),
     elements: elements ?? [
       category('Overview', 'a', 'Who the service is for'),
@@ -111,7 +114,9 @@ const stubActions = (overrides: Partial<FlowActions> = {}): FlowActions => ({
 });
 
 const rail = () => screen.getByRole('navigation', { name: 'Form steps' });
-const stepButtons = () => within(rail()).getAllByRole('button').slice(0, 3);
+// Scoped to the <ol>, NOT the whole <nav> — the rail's header bar carries the collapse control,
+// so `within(rail()).getAllByRole('button')` would lead with it.
+const stepButtons = () => within(within(rail()).getByRole('list')).getAllByRole('button');
 
 describe('flow layout — dispatch', () => {
   it("matches a Categorization carrying options.variant === 'flow' at rank 2", () => {
@@ -303,6 +308,42 @@ describe('flow layout — step rail', () => {
       ).toBeInTheDocument(),
     );
     expect(within(stepButtons()[1] as HTMLElement).getByText('complete')).toBeInTheDocument();
+  });
+
+  it('renders a header bar above the steps, with the collapse control on its right', () => {
+    renderFlow();
+    const nav = rail();
+    const heading = within(nav).getByRole('heading', { name: 'Steps' });
+    const toggle = within(nav).getByRole('button', { name: 'Collapse step list' });
+
+    // Same bar, and it precedes the step list.
+    const bar = heading.parentElement as HTMLElement;
+    expect(bar).toContainElement(toggle);
+    expect(bar.compareDocumentPosition(within(nav).getByRole('list'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('separates the rail from the content pane with a right border', () => {
+    renderFlow();
+
+    expect(rail()).toHaveClass('lg:border-r', 'border-border');
+  });
+
+  it("titles the header bar with the Categorization's own label when authored", () => {
+    renderFlow({ uischema: flowUischema({ label: 'Service description' }) });
+
+    expect(rail()).toHaveTextContent('Service description');
+  });
+
+  it('keeps the collapse control in the header bar when collapsed, dropping the title', async () => {
+    const user = userEvent.setup();
+    renderFlow();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse step list' }));
+
+    expect(within(rail()).queryByRole('heading', { name: 'Steps' })).toBeNull();
+    expect(within(rail()).getByRole('button', { name: 'Expand step list' })).toBeInTheDocument();
   });
 
   it('collapses to an icon rail, keeping each item an accessible name', async () => {

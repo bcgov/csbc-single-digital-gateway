@@ -40,6 +40,8 @@ const NUMERAL =
   'flex size-7 shrink-0 items-center justify-center text-sm font-semibold tabular-nums';
 
 export interface FlowNavProps {
+  /** Header-bar title, sitting above the steps. */
+  title: string;
   steps: readonly FlowStep[];
   /** Parallel to `steps` — carries which one is current, so the rail needs no index of its own. */
   statuses: readonly FlowStepStatus[];
@@ -52,15 +54,51 @@ export interface FlowNavProps {
 const stepLabel = (step: FlowStep, index: number): string =>
   step.label === '' ? `Step ${index + 1}` : step.label;
 
-export function FlowNav({ steps, statuses, onJump, collapsed, onToggleCollapsed }: FlowNavProps) {
+export function FlowNav({
+  title,
+  steps,
+  statuses,
+  onJump,
+  collapsed,
+  onToggleCollapsed,
+}: FlowNavProps) {
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
+  const toggleLabel = collapsed ? 'Expand step list' : 'Collapse step list';
 
   return (
     <nav
       aria-label="Form steps"
-      className={`hidden shrink-0 flex-col gap-2 lg:flex ${collapsed ? 'lg:w-16' : 'lg:w-60'}`}
+      // `border-r` separates the rail from the content pane; the enclosing flex `gap` then sits
+      // BETWEEN that divider and the content, so the border reads as belonging to the rail.
+      className={`hidden shrink-0 flex-col border-border lg:flex lg:border-r ${
+        collapsed ? 'lg:w-16' : 'lg:w-60'
+      }`}
     >
-      <ol className="flex flex-col gap-1">
+      {/* Header bar: title on the left, the collapse control on its right. Collapsed, the title is
+          dropped and the control centres so the bar keeps to the rail's narrow width. */}
+      <div
+        className={`flex h-10 shrink-0 items-center border-b border-border ${
+          collapsed ? 'justify-center px-1' : 'justify-between pr-1 pl-3'
+        }`}
+      >
+        {collapsed ? null : (
+          <h2 className="truncate text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+            {title}
+          </h2>
+        )}
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <ToggleIcon className="size-4 shrink-0" aria-hidden />
+        </button>
+      </div>
+
+      <ol className="flex flex-col gap-1 pt-2">
         {steps.map((step, index) => {
           const status = statuses[index] ?? 'upcoming';
           const label = stepLabel(step, index);
@@ -99,20 +137,6 @@ export function FlowNav({ steps, statuses, onJump, collapsed, onToggleCollapsed 
           );
         })}
       </ol>
-
-      <button
-        type="button"
-        onClick={onToggleCollapsed}
-        aria-expanded={!collapsed}
-        aria-label={collapsed ? 'Expand step list' : 'Collapse step list'}
-        title={collapsed ? 'Expand step list' : 'Collapse step list'}
-        className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground ${
-          collapsed ? 'justify-center px-1' : ''
-        }`}
-      >
-        <ToggleIcon className="size-4 shrink-0" aria-hidden />
-        {collapsed ? null : <span>Collapse</span>}
-      </button>
     </nav>
   );
 }

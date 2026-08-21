@@ -9,6 +9,7 @@ import { useFlowActions, type FlowActions } from './flow-actions-context';
 import {
   categoriesOf,
   clampStepIndex,
+  flowNavTitle,
   stepOwnsError,
   stepStatuses,
   FLOW_VARIANT,
@@ -136,6 +137,7 @@ function CategorizationFlowLayoutComponent({
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
       <FlowNav
+        title={flowNavTitle(uischema)}
         steps={steps}
         statuses={statuses}
         onJump={goTo}
@@ -147,6 +149,7 @@ function CategorizationFlowLayoutComponent({
         <FlowStepIndicator steps={steps} current={index} />
         <PageHeader
           title={step.label === '' ? `Step ${index + 1}` : step.label}
+          variant="banner"
           {...(step.description === '' ? {} : { description: step.description })}
           fluid
         />

@@ -28,12 +28,12 @@ const EXTRA_HEIGHT: Record<Size, string> = {
 };
 
 /**
- * The console treatment, isolated so it stays opt-in (feature 176). The negative margins
- * deliberately bleed past the console `<main>`'s `p-6` so the divider spans the whole window; the
- * `bcgov-gold` border is the brand divider. Both are wrong inside a form pane, which is why
- * `variant` defaults to `plain`.
+ * The banner treatment, isolated so it stays opt-in (feature 176). `-mx-6` bleeds past the enclosing
+ * column's `px-6` so the `bcgov-gold` divider spans its full width. It is HORIZONTAL bleed only —
+ * no `-mt-6` — which is what lets a pane (the Categorization flow layout's content side) use the
+ * banner without pulling itself up over whatever sits above it.
  */
-const BANNER = '-mx-6 -mt-6 border-b-2 border-bcgov-gold';
+const BANNER = '-mx-6 border-b-2 border-bcgov-gold';
 
 /**
  * The shared page content column: a window-centered `max-w-6xl` container with `px-6`. Used for the
@@ -70,11 +70,11 @@ interface PageHeaderProps {
  * `fluid` makes the content full-width (else it sits in a centered container).
  *
  * **`variant` is the promotion's whole point.** The component was born inside the platform console
- * and hard-coded that shell's chrome: a `-mx-6 -mt-6` bleed past the `<main>` padding and a
- * `bcgov-gold` divider. Shared code can't assume either — `@repo/react`'s Categorization flow layout
- * renders this header inside a form pane, where a full-window bleed would tear through the pane's
- * edges. So the chrome moved behind `variant="banner"` and the default became `plain`; the console
- * opts back in through its own re-export, leaving all of its pages rendering unchanged.
+ * and hard-coded that shell's chrome: a negative-margin bleed past the `<main>` padding plus a
+ * `bcgov-gold` divider. Shared code can't assume either, so it moved behind `variant="banner"` and
+ * the default became `plain`; the console opts back in through its own re-export, leaving all of its
+ * pages rendering unchanged. `@repo/react`'s Categorization flow layout also opts in — the banner
+ * reads correctly inside a form pane now that the bleed is horizontal-only.
  */
 export function PageHeader({
   title,

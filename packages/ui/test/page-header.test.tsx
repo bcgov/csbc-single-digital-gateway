@@ -78,13 +78,14 @@ describe('@repo/ui PageHeader — opt-in console chrome', () => {
     expect(outer.className).not.toContain('-mt-6');
   });
 
-  it('renders the bcgov-gold divider and the bleed when the console chrome is opted in', () => {
+  it('renders the bcgov-gold divider and the horizontal bleed when the console chrome is opted in', () => {
     const { container } = render(<PageHeader title="Banner" variant="banner" />);
     const outer = container.firstChild as HTMLElement;
 
     expect(outer).toHaveClass('border-bcgov-gold');
+    // Horizontal bleed only — the banner deliberately does NOT pull up past the shell's top padding.
     expect(outer.className).toContain('-mx-6');
-    expect(outer.className).toContain('-mt-6');
+    expect(outer.className).not.toContain('-mt-6');
   });
 });
 

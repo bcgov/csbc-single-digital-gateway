@@ -75,6 +75,16 @@ export function categoriesOf(uischema: unknown): FlowStep[] {
     }));
 }
 
+/**
+ * The rail's header title. The Categorization's own `label` when authored, else a neutral default —
+ * the enclosing surface (a dialog title, a page heading) usually already names the section, so the
+ * rail only needs to say what the list *is*.
+ */
+export function flowNavTitle(uischema: unknown): string {
+  const label = asText(asRecord(uischema).label);
+  return label === '' ? 'Steps' : label;
+}
+
 /** The `instancePath` of one Ajv error — the only field of an error this model reads. */
 export interface FlowError {
   instancePath?: unknown;
