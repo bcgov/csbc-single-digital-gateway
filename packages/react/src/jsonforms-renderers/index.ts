@@ -63,6 +63,26 @@ export {
   CategorizationLayoutRenderer,
   categorizationTester,
 } from './layouts/categorization-layout';
+// Categorization "flow" variant (feature 176): a step rail + windowed content + pinned save bar,
+// opted into with `options.variant: 'flow'`. The app wraps its form host in `FlowActionProvider` to
+// supply Save & next / Save & exit — no provider → the bar is navigation-only and never throws.
+export {
+  CategorizationFlowLayoutRenderer,
+  categorizationFlowTester,
+} from './layouts/flow/categorization-flow-layout';
+export {
+  FlowActionProvider,
+  useFlowActions,
+  type FlowActions,
+} from './layouts/flow/flow-actions-context';
+export {
+  categoriesOf,
+  isFlowVariant,
+  stepStatuses,
+  FLOW_VARIANT,
+  type FlowStep,
+  type FlowStepStatus,
+} from './layouts/flow/model';
 export { LabelRenderer, labelRendererTester } from './layouts/label-renderer';
 // Windowed section editing (feature 175): the app wraps its read-only surface in
 // `EditActionProvider` and returns an affordance per section marked `options.edit` in the uischema.

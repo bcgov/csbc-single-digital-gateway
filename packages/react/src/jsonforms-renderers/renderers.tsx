@@ -31,6 +31,10 @@ import {
   CategorizationLayoutRenderer,
   categorizationTester,
 } from './layouts/categorization-layout';
+import {
+  CategorizationFlowLayoutRenderer,
+  categorizationFlowTester,
+} from './layouts/flow/categorization-flow-layout';
 import { GridLayoutRenderer, gridLayoutTester } from './layouts/grid-layout';
 import { GroupLayoutRenderer, groupLayoutTester } from './layouts/group-layout';
 import { HorizontalLayoutRenderer, horizontalLayoutTester } from './layouts/horizontal-layout';
@@ -75,5 +79,8 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   // Feature 172: a fieldset+legend band of related fields.
   { tester: sectionLayoutTester, renderer: SectionLayoutRenderer },
   { tester: categorizationTester, renderer: CategorizationLayoutRenderer },
+  // Feature 176: the flow variant outranks the tabs renderer above, so an absent or unrecognised
+  // `options.variant` still falls through to tabs — which is every Categorization authored to date.
+  { tester: categorizationFlowTester, renderer: CategorizationFlowLayoutRenderer },
   { tester: labelRendererTester, renderer: LabelRenderer },
 ];
