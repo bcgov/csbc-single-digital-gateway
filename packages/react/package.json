@@ -40,6 +40,12 @@
       "development": "./src/notification-center.ts",
       "import": "./dist/notification-center.js",
       "require": "./dist/notification-center.cjs"
+    },
+    "./uischema-edit": {
+      "types": "./dist/uischema-edit.d.ts",
+      "development": "./src/uischema-edit.ts",
+      "import": "./dist/uischema-edit.js",
+      "require": "./dist/uischema-edit.cjs"
     }
   },
   "files": [

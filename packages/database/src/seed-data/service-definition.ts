@@ -12,6 +12,13 @@
  * `<section>`; its `label` becomes the heading and the slug of that label becomes the anchor.
  * Reordering, renaming, adding or removing a top-level Group changes the page's sections.
  *
+ * **Windowed editing (feature 175).** A layout element marked `options.edit` gets an Edit button
+ * beside its heading on the details page, opening a window scoped to that element. Two modes:
+ * `edit: true` edits the element's own children; `edit: { editor: '<key>' }` mounts a component
+ * from the console's `SECTION_EDITORS` registry — which is what the three Groups below with
+ * `elements: []` use, since their content lives outside the schema (references, agreement refs).
+ * The marker works at ANY depth, so a nested Group inside a Category can be made editable too.
+ *
  * DEVIATION from the authored definition: it carried `schema.required: ['faq']` at the TOP level,
  * but `faq` lives at `details.faq` — there is no root-level `faq` property. Ajv reads that as
  * "the root object must have a `faq` key", which no service payload ever has, so saving or
@@ -354,6 +361,9 @@ export const serviceDefinition = {
         label: 'Service description',
         options: {
           description: 'Describe the service',
+          // Windowed editing (feature 175): subtree mode — the console renders an Edit button
+          // beside this heading and edits this Group's own children.
+          edit: true,
         },
         elements: [
           {
@@ -587,6 +597,9 @@ export const serviceDefinition = {
         label: 'Eligibility criteria',
         options: {
           description: 'Define the eligibility criteria.',
+          // Windowed editing (feature 175): this Group carries no fields — its content lives
+          // outside the schema — so it names a bespoke editor from the console's registry.
+          edit: { editor: 'eligibility-criteria' },
         },
         elements: [],
       },
@@ -595,6 +608,9 @@ export const serviceDefinition = {
         label: 'Application methods',
         options: {
           description: 'Map the user journey.',
+          // Windowed editing (feature 175): this Group carries no fields — its content lives
+          // outside the schema — so it names a bespoke editor from the console's registry.
+          edit: { editor: 'application-methods' },
         },
         elements: [],
       },
@@ -603,6 +619,9 @@ export const serviceDefinition = {
         label: 'Data & Privacy',
         options: {
           description: 'Set up service agreements.',
+          // Windowed editing (feature 175): this Group carries no fields — its content lives
+          // outside the schema — so it names a bespoke editor from the console's registry.
+          edit: { editor: 'data-privacy' },
         },
         elements: [],
       },

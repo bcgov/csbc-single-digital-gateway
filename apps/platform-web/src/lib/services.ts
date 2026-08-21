@@ -161,8 +161,16 @@ export function serviceQueryOptions(id: string) {
 }
 
 /**
- * The version a details URL resolves to: the one named in the path, else the published one
- * (feature 174). `undefined` when the service has no published version / the id is unknown.
+ * The version a details URL resolves to: the one named in the path, else the published one, else the
+ * LATEST one (features 174, 175).
+ *
+ * The latest-version fallback is what lets a service that has never been published still show its
+ * content — otherwise a brand-new service's only page was an empty state until someone published it.
+ * It mirrors how the API picks the detail response's `definition`
+ * (`findLast(publishedAt != null) ?? versions.at(-1)` in `services.service.ts`), so the template and
+ * the data can't disagree about which version is being shown.
+ *
+ * `undefined` only when the service has no versions at all, or the path names an unknown id.
  */
 export function selectServiceVersion(
   versions: readonly ServiceVersion[],
@@ -171,7 +179,8 @@ export function selectServiceVersion(
   if (versionId !== undefined) {
     return versions.find((version) => version.id === versionId);
   }
-  return versions.find((version) => version.status === 'published');
+  // Versions arrive oldest-first, so the last entry is the newest.
+  return versions.find((version) => version.status === 'published') ?? versions.at(-1);
 }
 
 /**

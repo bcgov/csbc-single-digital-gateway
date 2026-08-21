@@ -93,11 +93,15 @@ export function ServiceDetailsPage({ versionId: versionIdProp }: { versionId?: s
       ) : selected === undefined || definition === undefined ? (
         <p className="text-sm text-muted-foreground">
           {versionId === undefined
-            ? 'This service hasn’t been published yet.'
+            ? 'This service has no versions yet.'
             : 'That version of this service doesn’t exist.'}
         </p>
       ) : (
         <ServiceDetailsBody
+          slug={slug}
+          serviceId={id}
+          versionId={selected.id}
+          isDraft={selected.status === 'draft'}
           schema={definition.schema}
           uischema={definition.uischema}
           data={selected.data}

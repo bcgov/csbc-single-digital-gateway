@@ -64,3 +64,14 @@ export {
   categorizationTester,
 } from './layouts/categorization-layout';
 export { LabelRenderer, labelRendererTester } from './layouts/label-renderer';
+// Windowed section editing (feature 175): the app wraps its read-only surface in
+// `EditActionProvider` and returns an affordance per section marked `options.edit` in the uischema.
+// No provider → the layouts render exactly as before. Pair with `@repo/react/uischema-edit`, whose
+// `stampEditIds` resolves the section ids the renderers read.
+export {
+  EditActionProvider,
+  useEditActions,
+  useEditAction,
+  type EditActions,
+  type EditActionSection,
+} from './layouts/edit-actions-context';

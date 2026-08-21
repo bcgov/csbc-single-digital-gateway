@@ -11,6 +11,13 @@
  * into the shell.
  */
 
+// `slugify` is shared with `@repo/react/uischema-edit` so a section's `#hash` anchor and its
+// windowed-edit id are produced by ONE rule and can never drift. That module is pure (no React, no
+// `@jsonforms/*`), so importing it here keeps this file free of the lazy JSONForms chunk.
+import { slugify } from '@repo/react/uischema-edit';
+
+export { slugify };
+
 /** The shape we inspect on a uischema element. Anything else on the element is passed through. */
 export interface UiElement {
   type?: unknown;
@@ -41,18 +48,6 @@ export type DerivedRun = SectionRun | LooseRun;
 export interface ServiceSectionAnchor {
   anchor: string;
   label: string;
-}
-
-/**
- * Lowercase, collapse every run of non-alphanumerics to a single dash, trim dashes off both ends.
- * `'Data & privacy'` → `'data-privacy'`, `'Service description'` → `'service-description'` — which
- * is why the derived anchors match the section keys the sidebar used before this feature.
- */
-export function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 const asElements = (uischema: unknown): UiElement[] => {

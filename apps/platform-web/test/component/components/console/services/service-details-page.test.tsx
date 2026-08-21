@@ -372,12 +372,22 @@ describe('ServiceDetailsPage', () => {
   });
 
   describe('empty and error states', () => {
-    it('should render the not-published empty state for a service with no published version', () => {
+    it('should fall back to the latest version when nothing is published (feature 175)', () => {
       arrange(detail({ versions: [version({ status: 'draft', publishedAt: null })] }));
 
       const { container } = render(<ServiceDetailsPage />);
 
-      expect(screen.getByText(/hasn’t been published yet/)).toBeInTheDocument();
+      // The draft renders rather than an empty state — an unpublished service still has content.
+      expect(screen.queryByText(/no versions yet/)).toBeNull();
+      expect(sections(container).length).toBeGreaterThan(0);
+    });
+
+    it('should render the no-versions empty state for a service with no versions at all', () => {
+      arrange(detail({ versions: [] }));
+
+      const { container } = render(<ServiceDetailsPage />);
+
+      expect(screen.getByText(/no versions yet/)).toBeInTheDocument();
       // No version selected → no body at all, not even the always-on section.
       expect(sections(container)).toHaveLength(0);
     });

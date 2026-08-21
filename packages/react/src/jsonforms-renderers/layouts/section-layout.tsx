@@ -1,6 +1,7 @@
 import { rankWith, uiTypeIs } from '@jsonforms/core';
 import type { Layout, LayoutProps, RankedTester } from '@jsonforms/core';
 import { JsonFormsDispatch, withJsonFormsLayoutProps } from '@jsonforms/react';
+import { useEditAction } from './edit-actions-context';
 
 export const sectionLayoutTester: RankedTester = rankWith(1, uiTypeIs('Section'));
 
@@ -21,18 +22,29 @@ const asText = (value: unknown): string => (typeof value === 'string' ? value.tr
  * without it a Section placed in a Grid column or a flex row refuses to shrink and overflows.
  */
 function SectionLayoutComponent({ uischema, schema, path, enabled, visible }: LayoutProps) {
-  if (visible === false) {
-    return null;
-  }
   const section = uischema as SectionElement;
   const legend = asText(section.label);
   const description = asText(section.options?.description);
+  // Windowed section editing (feature 175) — before the `visible` bail, so hook order is stable.
+  const editAction = useEditAction(uischema, legend);
+
+  if (visible === false) {
+    return null;
+  }
 
   return (
     <fieldset className="flex min-w-0 flex-col gap-4 rounded-md bg-gray-10 p-4 border border-border">
       {/* The fieldset is a flex column, so the legend is an ordinary flex item here (no border to
           notch into) — it needs no float/width hack to sit on its own line. */}
-      {legend === '' ? null : <legend className="section-heading">{legend}</legend>}
+      {/* The edit affordance lives INSIDE the legend: a `<legend>` must stay a direct child of
+          its `<fieldset>` for assistive tech to announce it with every enclosed control, so it
+          cannot be wrapped in a flex row alongside a sibling button. */}
+      {legend === '' && editAction === null ? null : (
+        <legend className="section-heading flex w-full items-center justify-between gap-3">
+          {legend}
+          {editAction}
+        </legend>
+      )}
       {description === '' ? null : <p className="text-sm text-muted-foreground">{description}</p>}
       {section.elements.map((child, index) => (
         <JsonFormsDispatch
