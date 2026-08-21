@@ -1,5 +1,6 @@
 // Regenerates the per-component public API from the component sources:
-//   - src/components/ui/*.tsx  (shadcn primitives)  and  src/brand/*.tsx  (brand marks)
+//   - src/components/ui/*.tsx (shadcn primitives), src/brand/*.tsx (brand marks),
+//     src/inputs/*.tsx (non-shadcn inputs) and src/layout/*.tsx (layout primitives)
 //   - a flat re-export file  src/<name>.ts          (one Vite/dts entry per component)
 //   - the barrel             src/index.ts
 //   - the package.json "exports" map               (one subpath per component, plus a raw
@@ -15,6 +16,10 @@ const brandDir = resolve(root, 'src/brand');
 // Non-shadcn input components (e.g. the Lexical rich-text input) live here, NOT under components/ui.
 // Only top-level *.tsx are globbed → helper files go in a subdir (src/inputs/<name>/) and aren't exported.
 const inputsDir = resolve(root, 'src/inputs');
+// Hand-written layout primitives (e.g. PageHeader) live here, NOT under components/ui — that path
+// carries the vendored-shadcn lint exceptions (no-shadow, no-underscore-dangle), which must not
+// extend to code we author. Same top-level-*.tsx-only rule as src/inputs.
+const layoutDir = resolve(root, 'src/layout');
 
 const tsxNames = (dir) =>
   existsSync(dir)
@@ -27,12 +32,14 @@ const tsxNames = (dir) =>
 const uiNames = tsxNames(uiDir);
 const brandNames = tsxNames(brandDir);
 const inputNames = tsxNames(inputsDir);
+const layoutNames = tsxNames(layoutDir);
 const sourceDir = new Map([
   ...uiNames.map((n) => [n, 'components/ui']),
   ...brandNames.map((n) => [n, 'brand']),
   ...inputNames.map((n) => [n, 'inputs']),
+  ...layoutNames.map((n) => [n, 'layout']),
 ]);
-const names = [...uiNames, ...brandNames, ...inputNames].toSorted();
+const names = [...uiNames, ...brandNames, ...inputNames, ...layoutNames].toSorted();
 
 // Raw brand assets shipped verbatim (icon.svg, logo.svg) — exported as URLs.
 const brandSvgs = existsSync(brandDir)

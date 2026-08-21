@@ -265,6 +265,12 @@
       "import": "./dist/navigation-menu.js",
       "require": "./dist/navigation-menu.cjs"
     },
+    "./page-header": {
+      "types": "./dist/page-header.d.ts",
+      "development": "./src/page-header.ts",
+      "import": "./dist/page-header.js",
+      "require": "./dist/page-header.cjs"
+    },
     "./pagination": {
       "types": "./dist/pagination.d.ts",
       "development": "./src/pagination.ts",
