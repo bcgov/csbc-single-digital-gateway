@@ -1,4 +1,5 @@
 import { FormRunner } from '@repo/react/form-runner';
+import { FlowActionProvider, isFlowVariant } from '@repo/react/jsonforms-renderers';
 import { scopedSchema, type UiElement } from '@repo/react/uischema-edit';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
@@ -7,6 +8,17 @@ import type { SectionEditorProps } from './editors';
 
 const childrenOf = (element: UiElement): UiElement[] =>
   Array.isArray(element.elements) ? (element.elements as UiElement[]) : [];
+
+/**
+ * True when this window's content is a single flow-variant `Categorization` (feature 176).
+ *
+ * The flow layout draws its OWN pinned Back / Save & next / Save & exit bar, so the window must not
+ * also hand `FormRunner` an `onSubmit` — that would stack a second action row underneath. Detected
+ * on the subtree rather than configured, so opting a section into the flow is still a one-key
+ * uischema edit with no console change.
+ */
+const isFlowSubtree = (elements: readonly UiElement[]): boolean =>
+  elements.length === 1 && isFlowVariant(elements[0]);
 
 /**
  * The `options.edit: true` editor — the marked element's own children, rendered editable.
@@ -22,6 +34,11 @@ const childrenOf = (element: UiElement): UiElement[] =>
  * `updateDraft` REPLACES `data` wholesale, so the whole merged object is sent: JSONForms preserves
  * the keys absent from this window's uischema, which is what keeps the other sections intact.
  * Drafts are saved unvalidated; `publish` runs the full Ajv pass.
+ *
+ * **Two save surfaces, never both (feature 176).** A flow-variant `Categorization` owns its own
+ * pinned save bar, so this window mounts a `FlowActionProvider` and OMITS `onSubmit` — `FormRunner`
+ * already treats an absent `onSubmit` as no-submit (preview) mode, so its own Submit button and its
+ * whole-page error gate simply stop rendering. Everything else keeps the original Submit path.
  */
 export function SubtreeSectionEditor({
   section,
@@ -32,6 +49,7 @@ export function SubtreeSectionEditor({
 }: SectionEditorProps) {
   const queryClient = useQueryClient();
   const elements = childrenOf(section.element);
+  const flow = isFlowSubtree(elements);
 
   // Seed DURING render, ref-keyed on the version id. A post-commit effect would let JSONForms'
   // debounced mount emit clobber the seeded data on a warm-cache navigation (memory
@@ -48,7 +66,11 @@ export function SubtreeSectionEditor({
       updateDraft(serviceId, version.id, { data: next }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['services'] });
-      onClose();
+      // The plain Submit path closes on save; the flow path must NOT — "Save & next" saves and
+      // stays in the window, and only "Save & exit" closes it (through `onExit` below).
+      if (!flow) {
+        onClose();
+      }
     },
   });
 
@@ -61,6 +83,22 @@ export function SubtreeSectionEditor({
     );
   }
 
+  const runner = (
+    <FormRunner
+      kind="basic-form"
+      definition={{
+        schema: scopedSchema(schema, elements),
+        uischema: { type: 'VerticalLayout', elements },
+      }}
+      data={data}
+      onChange={setData}
+      // The flow layout owns saving; handing FormRunner an onSubmit here would stack a second bar.
+      {...(flow ? {} : { onSubmit: (next: Record<string, unknown>) => save.mutate(next) })}
+      submitting={save.isPending}
+      submitLabel="Save"
+    />
+  );
+
   return (
     <div className="flex flex-col gap-4">
       {save.isError ? (
@@ -68,18 +106,24 @@ export function SubtreeSectionEditor({
           {save.error instanceof Error ? save.error.message : 'This section couldn’t be saved.'}
         </p>
       ) : null}
-      <FormRunner
-        kind="basic-form"
-        definition={{
-          schema: scopedSchema(schema, elements),
-          uischema: { type: 'VerticalLayout', elements },
-        }}
-        data={data}
-        onChange={setData}
-        onSubmit={(next) => save.mutate(next)}
-        submitting={save.isPending}
-        submitLabel="Save"
-      />
+      {flow ? (
+        <FlowActionProvider
+          value={{
+            // `mutateAsync` REJECTS on failure, which is exactly the contract the flow bar wants:
+            // it awaits this before navigating, so a failed save leaves the user on the step with
+            // the error above still rendered.
+            onSave: async (next) => {
+              await save.mutateAsync(next);
+            },
+            onExit: onClose,
+            saving: save.isPending,
+          }}
+        >
+          {runner}
+        </FlowActionProvider>
+      ) : (
+        runner
+      )}
     </div>
   );
 }

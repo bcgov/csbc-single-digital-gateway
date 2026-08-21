@@ -104,6 +104,12 @@ function renderFlow({
   );
 }
 
+const stubActions = (overrides: Partial<FlowActions> = {}): FlowActions => ({
+  onSave: vi.fn(),
+  onExit: vi.fn(),
+  ...overrides,
+});
+
 const rail = () => screen.getByRole('navigation', { name: 'Form steps' });
 const stepButtons = () => within(rail()).getAllByRole('button').slice(0, 3);
 
@@ -356,12 +362,6 @@ describe('flow layout — save bar without a FlowActionProvider', () => {
 });
 
 describe('flow layout — save bar with a FlowActionProvider', () => {
-  const stubActions = (overrides: Partial<FlowActions> = {}): FlowActions => ({
-    onSave: vi.fn(),
-    onExit: vi.fn(),
-    ...overrides,
-  });
-
   it('disables Back on the first step', () => {
     renderFlow({ actions: stubActions() });
 

@@ -12,6 +12,12 @@
  * `<section>`; its `label` becomes the heading and the slug of that label becomes the anchor.
  * Reordering, renaming, adding or removing a top-level Group changes the page's sections.
  *
+ * **Step flow (feature 176).** The `Categorization` inside the first Group carries
+ * `options.variant: 'flow'`, which dispatches the flow layout renderer (step rail + one category at
+ * a time + a pinned save bar) instead of the default tab strip. Removing that one key restores
+ * tabs; no other Categorization in the tree has it, and an unrecognised variant falls through to
+ * tabs too.
+ *
  * **Windowed editing (feature 175).** A layout element marked `options.edit` gets an Edit button
  * beside its heading on the details page, opening a window scoped to that element. Two modes:
  * `edit: true` edits the element's own children; `edit: { editor: '<key>' }` mounts a component
@@ -368,6 +374,12 @@ export const serviceDefinition = {
         elements: [
           {
             type: 'Categorization',
+            options: {
+              // Windowed editing (feature 176): render these categories as a step flow — a
+              // collapsible step rail beside one category at a time, with a pinned save bar —
+              // rather than the default tab strip. Remove this key to fall back to tabs.
+              variant: 'flow',
+            },
             elements: [
               {
                 type: 'Category',
