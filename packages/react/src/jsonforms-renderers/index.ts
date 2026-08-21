@@ -75,9 +75,17 @@ export {
   useFlowActions,
   type FlowActions,
 } from './layouts/flow/flow-actions-context';
+// Feature 177: a host that wants the current step in the URL mounts `FlowStepProvider` and drives it
+// — no provider → the layout keeps its own local step state, exactly as before.
+export {
+  FlowStepProvider,
+  useFlowStep,
+  type FlowStepControl,
+} from './layouts/flow/flow-step-context';
 export {
   categoriesOf,
   isFlowVariant,
+  resolveStepIndex,
   stepStatuses,
   FLOW_VARIANT,
   type FlowStep,

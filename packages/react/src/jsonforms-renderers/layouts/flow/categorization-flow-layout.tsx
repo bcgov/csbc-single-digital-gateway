@@ -3,13 +3,15 @@ import type { LayoutProps, RankedTester } from '@jsonforms/core';
 import { JsonFormsDispatch, useJsonForms, withJsonFormsLayoutProps } from '@jsonforms/react';
 import { Button } from '@repo/ui/button';
 import { PageHeader } from '@repo/ui/page-header';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlowNav, FlowStepIndicator } from './flow-nav';
 import { useFlowActions, type FlowActions } from './flow-actions-context';
+import { useFlowStep } from './flow-step-context';
 import {
   categoriesOf,
   clampStepIndex,
   flowNavTitle,
+  resolveStepIndex,
   stepOwnsError,
   stepStatuses,
   FLOW_VARIANT,
@@ -88,15 +90,40 @@ function CategorizationFlowLayoutComponent({
   // definition that loses its categories (the same rule group-layout and section-layout follow).
   const ctx = useJsonForms();
   const actions = useFlowActions();
+  const control = useFlowStep();
   const [current, setCurrent] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const steps = categoriesOf(uischema);
   const total = steps.length;
-  // Clamped rather than trusted: a definition can shrink between renders, and the rail can jump.
-  const index = clampStepIndex(current, total);
+  // Two sources, one shape. With a host mounted (feature 177) the step comes from OUTSIDE — the URL,
+  // via `FlowStepProvider` — and this component never moves itself; without one it keeps its own
+  // state, which is every other host (the builder preview, the citizen application, unit tests).
+  // Clamped either way: a definition can shrink between renders, and the rail can jump.
+  const index = clampStepIndex(
+    control === null ? current : resolveStepIndex(steps, control.stepId),
+    total,
+  );
   const step: FlowStep | undefined = steps[index];
+
+  const errors = ctx.core?.errors ?? [];
+  // Gating is PER-STEP, not per-document: a required field on step 4 must never block saving
+  // step 1. This is the save-button counterpart of feature 175's `scopedSchema`.
+  const blocked = step === undefined ? false : stepOwnsError(step, errors);
+
+  // Report the gate outward, so a host-rendered Save (the unsaved-changes dialog) can honour the
+  // same rule as the bar below. Guarded by the last reported value, so an inline provider `value`
+  // — a new object identity every render — still calls the host only when the flag actually flips.
+  const report = control?.onBlockedChange;
+  const reported = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (report === undefined || reported.current === blocked) {
+      return;
+    }
+    reported.current = blocked;
+    report(blocked);
+  }, [report, blocked]);
 
   if (visible === false) {
     return null;
@@ -105,15 +132,20 @@ function CategorizationFlowLayoutComponent({
     return <p className="text-sm text-muted-foreground">This section has no steps to show.</p>;
   }
 
-  const errors = ctx.core?.errors ?? [];
   const data = (ctx.core?.data ?? {}) as Record<string, unknown>;
   const statuses = stepStatuses(steps, index, errors);
   const isLast = index >= total - 1;
-  // Gating is PER-STEP, not per-document: a required field on step 4 must never block saving
-  // step 1. This is the save-button counterpart of feature 175's `scopedSchema`.
-  const blocked = stepOwnsError(step, errors);
 
-  const goTo = (next: number) => setCurrent(clampStepIndex(next, total));
+  const goTo = (next: number) => {
+    const clamped = clampStepIndex(next, total);
+    const target = steps[clamped];
+    if (control === null || target === undefined) {
+      setCurrent(clamped);
+      return;
+    }
+    // Request, don't move: the host navigates and hands the new step back through `stepId`.
+    control.onStepChange(target.id);
+  };
 
   const save = async () => {
     if (actions === null || blocked || busy) {

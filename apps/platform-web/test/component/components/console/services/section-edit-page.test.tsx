@@ -52,6 +52,8 @@ vi.mock('@tanstack/react-query', () => ({
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => paramsRef.current,
   useNavigate: () => navigateMock,
+  // The editor mounts the unsaved-changes guard (feature 177), which registers a blocker.
+  useBlocker: () => ({ status: 'idle', reset: undefined, proceed: undefined }),
   Link: ({ children }: { children?: ReactNode }) => <a href="/stub">{children}</a>,
 }));
 
@@ -110,6 +112,36 @@ const UISCHEMA = {
   ],
 };
 
+/** The same editable Group, but its single child is a flow-variant Categorization (feature 176). */
+const FLOW_UISCHEMA = {
+  type: 'VerticalLayout',
+  elements: [
+    {
+      type: 'Group',
+      label: 'Service description',
+      options: { edit: true },
+      elements: [
+        {
+          type: 'Categorization',
+          options: { variant: 'flow' },
+          elements: [
+            {
+              type: 'Category',
+              label: 'Overview',
+              elements: [{ type: 'Control', scope: '#/properties/summary' }],
+            },
+            {
+              type: 'Category',
+              label: 'Details',
+              elements: [{ type: 'Control', scope: '#/properties/eligibility' }],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 const SCHEMA = {
   type: 'object',
   required: ['summary', 'eligibility'],
@@ -143,6 +175,22 @@ const detail = (over: Partial<ServiceVersion> = {}): ServiceDetail => ({
   definitions: { 'tv-1': { schema: SCHEMA, uischema: UISCHEMA } },
   hasSubmissions: false,
 });
+
+/** The same detail, with the flow-variant definition on both lookup paths. */
+const flowDetail = (): ServiceDetail => ({
+  ...detail(),
+  definition: { schema: SCHEMA, uischema: FLOW_UISCHEMA },
+  definitions: { 'tv-1': { schema: SCHEMA, uischema: FLOW_UISCHEMA } },
+});
+
+/** Only the navigations aimed at the section editor itself — `close()` uses this mock too. */
+const editNavigations = () =>
+  navigateMock.mock.calls
+    .map(
+      ([options]) =>
+        options as { to?: string; params?: Record<string, unknown>; replace?: boolean },
+    )
+    .filter((options) => (options.to ?? '').includes('/details/edit/'));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -293,5 +341,70 @@ describe('SectionEditPage — canonical (no versionId) route', () => {
     render(<SectionEditPage />);
 
     expect(await screen.findByText(/Only draft versions can be edited/)).toBeInTheDocument();
+  });
+});
+
+/**
+ * Feature 177 — the page as a routing adapter: it reads `params.stepId` and hands the editor a
+ * `step` navigator bound to the right route template (canonical vs version permalink).
+ *
+ * Everything here is observed through the navigations the editor asks for, which is the only way
+ * the page's half of the mechanism is visible from outside.
+ */
+describe('SectionEditPage — step routing (feature 177)', () => {
+  beforeEach(() => {
+    queryRef.current = { data: flowDetail(), isPending: false, isError: false };
+  });
+
+  it('passes the stepId from the route params to the editor', () => {
+    paramsRef.current = { ...paramsRef.current, stepId: 'details' };
+    render(<SectionEditPage />);
+
+    // A step the definition really has: nothing to correct, so the address is left alone.
+    expect(editNavigations()).toEqual([]);
+  });
+
+  it('passes a null step id when the URL carries no step segment', () => {
+    render(<SectionEditPage />);
+
+    expect(editNavigations()[0]?.params).toMatchObject({ stepId: 'overview' });
+  });
+
+  it('resolves an unknown step id rather than dead-ending on it', () => {
+    paramsRef.current = { ...paramsRef.current, stepId: 'renamed-away' };
+    render(<SectionEditPage />);
+
+    expect(editNavigations()[0]?.params).toMatchObject({ stepId: 'overview' });
+  });
+
+  it('navigates on the canonical route template when there is no versionId', () => {
+    paramsRef.current = { slug: 'riverton', id: 'svc-1', sectionId: 'service-description' };
+    render(<SectionEditPage />);
+
+    const [navigation] = editNavigations();
+    expect(navigation?.to).toBe('/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}');
+    expect(navigation?.params).toEqual({
+      slug: 'riverton',
+      id: 'svc-1',
+      sectionId: 'service-description',
+      stepId: 'overview',
+    });
+  });
+
+  it('navigates on the version permalink template when there is a versionId', () => {
+    render(<SectionEditPage />);
+
+    const [navigation] = editNavigations();
+    expect(navigation?.to).toBe(
+      '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}',
+    );
+    expect(navigation?.params).toMatchObject({ versionId: 'ver-2', stepId: 'overview' });
+  });
+
+  it('replaces rather than pushes when the navigator is asked to', () => {
+    render(<SectionEditPage />);
+
+    // Correcting an address the user never chose must not leave a history entry behind it.
+    expect(editNavigations()[0]?.replace).toBe(true);
   });
 });

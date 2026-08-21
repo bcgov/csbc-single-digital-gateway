@@ -101,7 +101,7 @@ describe('ServiceDetailsBody windowed editing', () => {
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute(
       'href',
-      '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId',
+      '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}',
     );
     expect(JSON.parse(link.getAttribute('data-params') ?? '{}')).toEqual({
       slug: 'riverton',

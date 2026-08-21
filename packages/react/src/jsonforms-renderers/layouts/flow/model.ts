@@ -1,4 +1,4 @@
-import { collectScopes, scopePath, type UiElement } from '../../../uischema-edit';
+import { collectScopes, scopePath, slugify, type UiElement } from '../../../uischema-edit';
 
 /**
  * Shared model for the Categorization "flow" layout (feature 176). One source of truth for step
@@ -20,6 +20,13 @@ export const FLOW_VARIANT = 'flow';
 
 /** One derived step: a `Category` child of the Categorization. */
 export interface FlowStep {
+  /**
+   * Stable, document-unique id — the value a host puts in the URL (feature 177).
+   *
+   * Derived, never stored: an authored `options.id` wins, else the slugified label, else
+   * `step-<n>`; a repeat takes a `-2`, `-3` … suffix. See {@link categoriesOf}.
+   */
+  id: string;
   /** The authored `label`, or `''` when absent/malformed. */
   label: string;
   /** The authored `options.description`, or `''` when absent/malformed. */
@@ -64,15 +71,48 @@ export function isFlowVariant(uischema: unknown): boolean {
  * Non-Category children are dropped — the same filter the tabs renderer applies, so switching
  * variants can never change which children are reachable. A nested `Categorization` is only rendered
  * when it is wrapped in a `Category`, where its own renderer picks it up recursively.
+ *
+ * **Ids (feature 177) mirror `collectEditableSections` exactly** — the same precedence, the same
+ * `slugify`, the same de-duplication — so the id in a step's URL and the id in a section's URL can
+ * never drift apart. Like that one, this is a pure function of the tree: the layout and its host
+ * resolve the same id without sharing any state.
  */
 export function categoriesOf(uischema: unknown): FlowStep[] {
+  const used = new Map<string, number>();
+
   return childrenOf(uischema)
     .filter((element) => asRecord(element).type === 'Category')
-    .map((category) => ({
-      label: asText(asRecord(category).label),
-      description: asText(asRecord(asRecord(category).options).description),
-      elements: childrenOf(category),
-    }));
+    .map((category, position) => {
+      const label = asText(asRecord(category).label);
+      const options = asRecord(asRecord(category).options);
+      const authored = asText(options.id);
+      const slug = slugify(label);
+      const base = authored === '' ? (slug === '' ? `step-${position + 1}` : slug) : authored;
+      const seen = used.get(base) ?? 0;
+      used.set(base, seen + 1);
+
+      return {
+        id: seen === 0 ? base : `${base}-${seen + 1}`,
+        label,
+        description: asText(options.description),
+        elements: childrenOf(category),
+      };
+    });
+}
+
+/**
+ * The index of the step with the given id, or **`0`** when `id` is `null` or matches nothing.
+ *
+ * An unrecognised id is never an error state (feature 177): a category that was relabelled or
+ * removed since a link was shared resolves to the first step rather than dead-ending, and the host
+ * rewrites the address to match what is actually on screen.
+ */
+export function resolveStepIndex(steps: readonly FlowStep[], id: string | null): number {
+  if (id === null || id === '') {
+    return 0;
+  }
+  const index = steps.findIndex((step) => step.id === id);
+  return index === -1 ? 0 : index;
 }
 
 /**

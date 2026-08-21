@@ -2,7 +2,7 @@ import { findEditableSection } from '@repo/react/uischema-edit';
 import { Spinner } from '@repo/ui/spinner';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import {
   definitionForServiceVersion,
   selectServiceVersion,
@@ -41,6 +41,7 @@ export function SectionEditPage() {
   const id = params.id ?? '';
   const sectionId = params.sectionId ?? '';
   const versionId = params.versionId;
+  const stepId = params.stepId;
 
   const navigate = useNavigate();
   const { data: detail, isPending, isError } = useQuery(serviceQueryOptions(id));
@@ -68,6 +69,31 @@ export function SectionEditPage() {
       />
     ),
   });
+
+  /**
+   * The step navigator handed to the editor (feature 177) — the page is the only part of this tree
+   * that knows about routes. `undefined` clears the optional segment; `replace` is how the editor
+   * silently corrects an address that names no real step.
+   */
+  const go = useCallback(
+    (nextStepId: string | undefined, options?: { replace?: boolean }) => {
+      const replace = options?.replace ?? false;
+      void (versionId === undefined
+        ? navigate({
+            to: '/app/$slug/services/$id/details/edit/$sectionId/{-$stepId}',
+            params: { slug, id, sectionId, stepId: nextStepId },
+            replace,
+          })
+        : navigate({
+            to: '/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}',
+            params: { slug, id, versionId, sectionId, stepId: nextStepId },
+            replace,
+          }));
+    },
+    [navigate, slug, id, sectionId, versionId],
+  );
+
+  const step = useMemo(() => ({ id: stepId ?? null, go }), [stepId, go]);
 
   /** Back to the details page the editor was opened from, anchored on the edited section. */
   const close = () => {
@@ -119,6 +145,7 @@ export function SectionEditPage() {
         serviceId={id}
         version={version}
         onClose={close}
+        step={step}
       />
     );
   };

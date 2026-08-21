@@ -99,8 +99,10 @@ export function ServiceDetailsBody({
             size="sm"
             variant="outline"
             render={
+              // `{-$stepId}` is optional (feature 177) — omitted here, so the editor opens on the
+              // section's first step and rewrites the address to name it.
               <Link
-                to="/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId"
+                to="/app/$slug/services/$id/versions/$versionId/details/edit/$sectionId/{-$stepId}"
                 params={{ slug, id: serviceId, versionId, sectionId: section.id }}
               />
             }

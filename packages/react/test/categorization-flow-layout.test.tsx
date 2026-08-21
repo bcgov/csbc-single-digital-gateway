@@ -16,6 +16,10 @@ import {
   FlowActionProvider,
   type FlowActions,
 } from '../src/jsonforms-renderers/layouts/flow/flow-actions-context';
+import {
+  FlowStepProvider,
+  type FlowStepControl,
+} from '../src/jsonforms-renderers/layouts/flow/flow-step-context';
 import { displayRenderers } from '../src/jsonforms-renderers-display';
 
 /**
@@ -84,11 +88,13 @@ function renderFlow({
   uischema = flowUischema(),
   data = validData(),
   actions,
+  stepControl,
   registry = renderers,
 }: {
   uischema?: UISchemaElement;
   data?: Record<string, unknown>;
   actions?: FlowActions;
+  stepControl?: FlowStepControl;
   registry?: typeof renderers;
 } = {}) {
   const form = (
@@ -102,10 +108,22 @@ function renderFlow({
       onChange={() => {}}
     />
   );
+  const withActions =
+    actions === undefined ? form : <FlowActionProvider value={actions}>{form}</FlowActionProvider>;
   return render(
-    actions === undefined ? form : <FlowActionProvider value={actions}>{form}</FlowActionProvider>,
+    stepControl === undefined ? (
+      withActions
+    ) : (
+      <FlowStepProvider value={stepControl}>{withActions}</FlowStepProvider>
+    ),
   );
 }
+
+const stubControl = (overrides: Partial<FlowStepControl> = {}): FlowStepControl => ({
+  stepId: null,
+  onStepChange: vi.fn(),
+  ...overrides,
+});
 
 const stubActions = (overrides: Partial<FlowActions> = {}): FlowActions => ({
   onSave: vi.fn(),
@@ -501,5 +519,112 @@ describe('flow layout — save bar with a FlowActionProvider', () => {
     renderFlow({ actions: stubActions(), data: { details: { a: 'x', b: '', c: 'z' } } });
 
     expect(screen.getByRole('button', { name: 'Save & next' })).toBeEnabled();
+  });
+});
+
+/**
+ * Feature 177 — the `FlowStepProvider` port: the host controls which step is shown.
+ *
+ * With the port mounted the layout is CONTROLLED — it never sets its own step, it reports every
+ * requested change through `onStepChange`, and it reports its current-step validity through
+ * `onBlockedChange` (a flag only the layout can compute, needed by a dialog the host renders).
+ */
+describe('flow layout — step control port', () => {
+  it('renders the step named by the port rather than the first one', () => {
+    renderFlow({ stepControl: stubControl({ stepId: 'details' }) });
+
+    expect(screen.getByRole('heading', { name: 'Details' })).toBeInTheDocument();
+  });
+
+  it('falls back to the first step when the port carries a null id', () => {
+    renderFlow({ stepControl: stubControl({ stepId: null }) });
+
+    expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+  });
+
+  it('falls back to the first step when the port carries an unknown id', () => {
+    // What a link shared before the category was relabelled looks like.
+    renderFlow({ stepControl: stubControl({ stepId: 'renamed-away' }) });
+
+    expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+  });
+
+  it('reports a rail jump through onStepChange instead of moving itself', async () => {
+    const user = userEvent.setup();
+    const stepControl = stubControl();
+    renderFlow({ stepControl });
+
+    await user.click(stepButtons()[2] as HTMLElement);
+
+    expect(stepControl.onStepChange).toHaveBeenCalledWith('extras');
+    // Still on step 1: the host owns the move, so nothing changes until it sends a new stepId.
+    expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+  });
+
+  it('reports Back and Next through onStepChange', async () => {
+    const user = userEvent.setup();
+    const stepControl = stubControl({ stepId: 'details' });
+    renderFlow({ stepControl });
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(stepControl.onStepChange).toHaveBeenLastCalledWith('extras');
+
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(stepControl.onStepChange).toHaveBeenLastCalledWith('overview');
+  });
+
+  it('reports the next step through onStepChange after Save & next resolves', async () => {
+    const user = userEvent.setup();
+    const stepControl = stubControl({ stepId: 'overview' });
+    const actions = stubActions();
+    renderFlow({ actions, stepControl });
+
+    await user.click(screen.getByRole('button', { name: 'Save & next' }));
+
+    await waitFor(() => expect(stepControl.onStepChange).toHaveBeenCalledWith('details'));
+    expect(actions.onSave).toHaveBeenCalledWith(validData());
+  });
+
+  it('reports onBlockedChange(true) when the current step owns a validation error', () => {
+    const onBlockedChange = vi.fn();
+    renderFlow({
+      stepControl: stubControl({ onBlockedChange }),
+      data: { details: { b: 'y', c: 'z' } },
+    });
+
+    expect(onBlockedChange).toHaveBeenCalledWith(true);
+  });
+
+  it('reports onBlockedChange(false) once the current step validates', async () => {
+    const user = userEvent.setup();
+    const onBlockedChange = vi.fn();
+    renderFlow({
+      stepControl: stubControl({ onBlockedChange }),
+      data: { details: { b: 'y', c: 'z' } },
+    });
+    expect(onBlockedChange).toHaveBeenLastCalledWith(true);
+
+    await user.type(screen.getByLabelText(/Overview field/), 'filled');
+
+    await waitFor(() => expect(onBlockedChange).toHaveBeenLastCalledWith(false));
+  });
+
+  it('only reports onBlockedChange when the flag actually flips', () => {
+    const onBlockedChange = vi.fn();
+    renderFlow({ stepControl: stubControl({ onBlockedChange }) });
+
+    // An inline provider `value` is a fresh object every render; the layout must still call the
+    // host once, not once per render.
+    expect(onBlockedChange).toHaveBeenCalledTimes(1);
+    expect(onBlockedChange).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps its own local step state when no provider is mounted', async () => {
+    const user = userEvent.setup();
+    renderFlow();
+
+    await user.click(stepButtons()[2] as HTMLElement);
+
+    expect(screen.getByRole('heading', { name: 'Extras' })).toBeInTheDocument();
   });
 });

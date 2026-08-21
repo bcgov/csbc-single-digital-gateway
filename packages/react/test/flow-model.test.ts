@@ -3,6 +3,7 @@ import {
   categoriesOf,
   clampStepIndex,
   isFlowVariant,
+  resolveStepIndex,
   stepOwnsError,
   stepStatuses,
   type FlowStep,
@@ -206,5 +207,81 @@ describe('flow model — step status', () => {
     expect(clampStepIndex(Number.NaN, 3)).toBe(0);
 
     expect(stepStatuses(threeSteps(), 99, [])).toEqual(['valid', 'valid', 'current']);
+  });
+});
+
+/**
+ * Feature 177 — step ids and id → index resolution.
+ *
+ * Ids mirror `collectEditableSections` (feature 175) exactly: authored `options.id` → slugified
+ * label → positional fallback, with `-2`, `-3` … on repeats. The two schemes must never drift.
+ */
+describe('step ids', () => {
+  it('derives an id from the slugified category label', () => {
+    const steps = categoriesOf(
+      categorization([category('Overview', ['a']), category('Data & privacy', ['b'])]),
+    );
+
+    expect(steps.map((step) => step.id)).toEqual(['overview', 'data-privacy']);
+  });
+
+  it('prefers an authored options.id over the label', () => {
+    const steps = categoriesOf(
+      categorization([
+        { type: 'Category', label: 'Overview', options: { id: 'intro' }, elements: [] },
+      ]),
+    );
+
+    expect(steps[0]?.id).toBe('intro');
+    // The label is untouched — only the id is overridden.
+    expect(steps[0]?.label).toBe('Overview');
+  });
+
+  it('falls back to step-<n> when the label is absent or slugifies to nothing', () => {
+    const steps = categoriesOf(
+      categorization([
+        { type: 'Category', elements: [] },
+        { type: 'Category', label: '   ', elements: [] },
+        { type: 'Category', label: '—', elements: [] },
+      ]),
+    );
+
+    expect(steps.map((step) => step.id)).toEqual(['step-1', 'step-2', 'step-3']);
+  });
+
+  it('suffixes repeats -2, -3 in document order', () => {
+    const steps = categoriesOf(
+      categorization([
+        category('Contact', ['a']),
+        category('Contact', ['b']),
+        category('Contact', ['c']),
+      ]),
+    );
+
+    expect(steps.map((step) => step.id)).toEqual(['contact', 'contact-2', 'contact-3']);
+  });
+});
+
+describe('resolveStepIndex', () => {
+  it('returns the index of the matching step', () => {
+    const steps = threeSteps();
+
+    expect(resolveStepIndex(steps, 'one')).toBe(0);
+    expect(resolveStepIndex(steps, 'two')).toBe(1);
+    expect(resolveStepIndex(steps, 'three')).toBe(2);
+  });
+
+  it('returns 0 for a null id', () => {
+    expect(resolveStepIndex(threeSteps(), null)).toBe(0);
+  });
+
+  it('returns 0 for an id that matches no step', () => {
+    // A category that was relabelled or removed since the link was shared.
+    expect(resolveStepIndex(threeSteps(), 'renamed-away')).toBe(0);
+    expect(resolveStepIndex(threeSteps(), '')).toBe(0);
+  });
+
+  it('returns 0 when there are no steps', () => {
+    expect(resolveStepIndex([], 'one')).toBe(0);
   });
 });

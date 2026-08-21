@@ -15,6 +15,20 @@ import type { ServiceVersion } from '@/lib/services';
  * `options.edit: true` (no key) is the other mode and needs no entry here — it falls back to
  * `SubtreeSectionEditor`.
  */
+/**
+ * URL-backed step control handed down by the page (feature 177).
+ *
+ * The page is the only part of this tree that knows about routes; an editor that has steps (today,
+ * a flow-variant `Categorization`) receives the current one and a way to move, and decides for
+ * itself what the address should say.
+ */
+export interface SectionStepControl {
+  /** The step id in the URL, or `null` when the URL carries no step segment. */
+  id: string | null;
+  /** Navigate to a step. `undefined` clears the segment; `replace` is for silent corrections. */
+  go: (stepId: string | undefined, options?: { replace?: boolean }) => void;
+}
+
 export interface SectionEditorProps {
   section: EditableSection;
   /** The viewed version's full schema — the editor scopes it itself if it needs to. */
@@ -23,6 +37,8 @@ export interface SectionEditorProps {
   version: ServiceVersion;
   /** Close the window. Editors call this after a successful save. */
   onClose: () => void;
+  /** The URL-backed step, for editors that have steps. Ignored by the ones that don't. */
+  step?: SectionStepControl;
 }
 
 export const SECTION_EDITORS: Record<string, ComponentType<SectionEditorProps>> = {};
