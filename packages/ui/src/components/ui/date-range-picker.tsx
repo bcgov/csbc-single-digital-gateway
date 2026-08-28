@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { format as formatDate } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { mdiCalendar } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import type { DateRange } from 'react-day-picker';
 import { useMaskInput } from 'use-mask-input';
 
@@ -48,6 +49,7 @@ export interface DateRangePickerProps {
   invalid?: boolean | undefined;
   placeholder?: string | undefined;
   className?: string | undefined;
+  'aria-describedby'?: string | undefined;
 }
 
 /**
@@ -64,6 +66,7 @@ export function DateRangePicker({
   invalid,
   placeholder = 'mm/dd/yyyy - mm/dd/yyyy',
   className,
+  'aria-describedby': ariaDescribedBy,
 }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [text, setText] = React.useState(() => rangeText(value));
@@ -94,6 +97,7 @@ export function DateRangePicker({
           disabled={disabled}
           placeholder={placeholder}
           aria-invalid={invalid || undefined}
+          aria-describedby={ariaDescribedBy}
           onFocus={() => {
             focused.current = true;
           }}
@@ -107,7 +111,7 @@ export function DateRangePicker({
           <PopoverTrigger
             render={<InputGroupButton aria-label="Open calendar" disabled={disabled} />}
           >
-            <CalendarIcon className="size-3.5" aria-hidden />
+            <Icon path={mdiCalendar} size="14px" aria-hidden />
           </PopoverTrigger>
         </InputGroupAddon>
       </InputGroup>

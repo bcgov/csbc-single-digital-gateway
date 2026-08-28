@@ -62,10 +62,19 @@ export interface TimePickerProps {
   disabled?: boolean | undefined;
   invalid?: boolean | undefined;
   className?: string | undefined;
+  'aria-describedby'?: string | undefined;
 }
 
 /** A 12-hour time picker: hour (1–12) + minute (00–59) + AM/PM, emitting a 24-hour `'HH:MM'` string. */
-export function TimePicker({ value, onChange, id, disabled, invalid, className }: TimePickerProps) {
+export function TimePicker({
+  value,
+  onChange,
+  id,
+  disabled,
+  invalid,
+  className,
+  'aria-describedby': ariaDescribedBy,
+}: TimePickerProps) {
   const parts = parse24Hour(value);
   const [hour12, setHour12] = React.useState(parts.hour12 ?? '');
   const [minute, setMinute] = React.useState(parts.minute ?? '');
@@ -94,6 +103,7 @@ export function TimePicker({ value, onChange, id, disabled, invalid, className }
         <SelectTrigger
           id={id}
           aria-invalid={invalid || undefined}
+          aria-describedby={ariaDescribedBy}
           aria-label="Hour"
           className="w-16"
         >

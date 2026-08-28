@@ -2,7 +2,7 @@ import { isDateControl, rankWith } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { DatePicker } from '@repo/ui/date-picker';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 import { parseISODate, toISODate } from './date-util';
 
 export const dateControlTester: RankedTester = rankWith(3, isDateControl);
@@ -37,6 +37,7 @@ function DateControlComponent({
         value={selected}
         disabled={enabled === false}
         invalid={Boolean(errors)}
+        aria-describedby={describedByIds(id, { description, errors })}
         onChange={(date) => handleChange(path, date ? toISODate(date) : undefined)}
       />
     </ControlWrapper>

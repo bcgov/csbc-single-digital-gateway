@@ -5,7 +5,8 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@repo/ui/input-group';
-import { X } from 'lucide-react';
+import { mdiClose } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 /**
  * A text/number input with a trailing clear "x" that appears only when the field has a value (feature
@@ -24,7 +25,7 @@ export function ClearableInput({
       {hasValue && disabled !== true ? (
         <InputGroupAddon align="inline-end">
           <InputGroupButton type="button" aria-label="Clear" onClick={onClear}>
-            <X className="size-3.5" aria-hidden />
+            <Icon path={mdiClose} size="14px" aria-hidden />
           </InputGroupButton>
         </InputGroupAddon>
       ) : null}

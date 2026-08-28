@@ -2,7 +2,7 @@ import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { DateTimePicker } from '@repo/ui/datetime-picker';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // Dispatched by `options.format: 'datetime'`; the data is a local `'YYYY-MM-DDTHH:MM'` string.
 export const dateTimeControlTester: RankedTester = rankWith(
@@ -38,6 +38,7 @@ function DateTimeControlComponent({
         value={typeof data === 'string' ? data : undefined}
         disabled={enabled === false}
         invalid={Boolean(errors)}
+        aria-describedby={describedByIds(id, { description, errors })}
         onChange={(next) => handleChange(path, next)}
       />
     </ControlWrapper>

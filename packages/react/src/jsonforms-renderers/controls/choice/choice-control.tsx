@@ -5,7 +5,7 @@ import { Checkbox } from '@repo/ui/checkbox';
 import { Field, FieldLabel } from '@repo/ui/field';
 import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
-import { ControlWrapper } from '../../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../../util/control-wrapper';
 import { labelForValue, readChoiceOptions } from './model';
 
 /**
@@ -54,6 +54,8 @@ function ChoiceControlComponent({
           value={(data as string | null | undefined) ?? null}
           disabled={disabled}
           aria-invalid={invalid}
+          aria-labelledby={label ? `${id}-label` : undefined}
+          aria-describedby={describedByIds(id, { description, errors })}
           onValueChange={(value: unknown) => handleChange(path, value ?? undefined)}
         >
           {choices.map((choice) => {
@@ -84,7 +86,14 @@ function ChoiceControlComponent({
         errors={errors}
         labelFor={false}
       >
-        <div data-slot="checkbox-group" className="grid gap-3" aria-invalid={invalid}>
+        <div
+          data-slot="checkbox-group"
+          role="group"
+          aria-invalid={invalid}
+          aria-labelledby={label ? `${id}-label` : undefined}
+          aria-describedby={describedByIds(id, { description, errors })}
+          className="grid gap-3"
+        >
           {choices.map((choice) => {
             const itemId = `${id}-${choice.value}`;
             return (
@@ -140,7 +149,12 @@ function ChoiceControlComponent({
           disabled={disabled}
           onValueChange={(next: string[]) => handleChange(path, next)}
         >
-          <SelectTrigger id={id} aria-invalid={invalid} className="w-full">
+          <SelectTrigger
+            id={id}
+            aria-invalid={invalid}
+            aria-describedby={describedByIds(id, { description, errors })}
+            className="w-full"
+          >
             {valueDisplay}
           </SelectTrigger>
           <SelectContent>{items}</SelectContent>
@@ -151,7 +165,12 @@ function ChoiceControlComponent({
           disabled={disabled}
           onValueChange={(next: string | null) => handleChange(path, next ?? undefined)}
         >
-          <SelectTrigger id={id} aria-invalid={invalid} className="w-full">
+          <SelectTrigger
+            id={id}
+            aria-invalid={invalid}
+            aria-describedby={describedByIds(id, { description, errors })}
+            className="w-full"
+          >
             {valueDisplay}
           </SelectTrigger>
           <SelectContent>{items}</SelectContent>

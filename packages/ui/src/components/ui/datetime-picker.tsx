@@ -47,6 +47,7 @@ export interface DateTimePickerProps {
   disabled?: boolean;
   invalid?: boolean;
   className?: string;
+  'aria-describedby'?: string | undefined;
 }
 
 /**
@@ -61,6 +62,7 @@ export function DateTimePicker({
   disabled,
   invalid,
   className,
+  'aria-describedby': ariaDescribedBy,
 }: DateTimePickerProps) {
   const initial = splitDateTime(value);
   const [datePart, setDatePart] = React.useState<Date | undefined>(initial.date);
@@ -74,12 +76,13 @@ export function DateTimePicker({
   }, [value]);
 
   return (
-    <div className={cn('flex flex-col gap-2 sm:flex-row sm:items-center', className)}>
+    <div className={cn('flex flex-col gap-2 sm:flex-row sm:items-stretch', className)}>
       <DatePicker
         id={id}
         value={datePart}
         disabled={disabled}
         invalid={invalid}
+        aria-describedby={ariaDescribedBy}
         onChange={(date) => {
           setDatePart(date);
           onChange(combineDateTime(date, timePart));
@@ -89,6 +92,7 @@ export function DateTimePicker({
         value={timePart}
         disabled={disabled}
         invalid={invalid}
+        aria-describedby={ariaDescribedBy}
         onChange={(time) => {
           setTimePart(time);
           onChange(combineDateTime(datePart, time));

@@ -4,7 +4,8 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-react';
+import { mdiChevronDown, mdiChevronUp, mdiPencil, mdiPlus, mdiTrashCan } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { useState } from 'react';
 import { ControlWrapper } from '../../util/control-wrapper';
 import { MethodDialog, type DialogState } from './method-dialog';
@@ -82,7 +83,7 @@ function ContactMethodsControlComponent({
       <Card>
         <CardContent className="flex flex-col gap-3 py-4">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-heading text-sm font-medium text-foreground">
+            <h3 id={`${id}-heading`} className="font-heading text-sm font-medium text-foreground">
               {heading}
               {required ? ' *' : ''}
             </h3>
@@ -93,11 +94,11 @@ function ContactMethodsControlComponent({
               disabled={disabled}
               onClick={() => setDialog({ open: true, index: null, draft: null })}
             >
-              <Plus aria-hidden />
+              <Icon path={mdiPlus} size="16px" aria-hidden />
               Add Contact Method
             </Button>
           </div>
-          <Table>
+          <Table aria-labelledby={`${id}-heading`}>
             <TableHeader>
               <TableRow>
                 <TableHead>Contact method</TableHead>
@@ -115,14 +116,18 @@ function ContactMethodsControlComponent({
               ) : (
                 methods.map((method, index) => {
                   const meta = CONTACT_METHOD_META[method.type];
-                  const Icon = meta.icon;
                   const details = methodDetailLines(method).join(', ');
                   return (
                     // Rows have no stable key; index is safe (reorder rewrites the whole array).
                     <TableRow key={index}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Icon className="size-4 text-muted-foreground" aria-hidden />
+                          <Icon
+                            path={meta.icon}
+                            size="16px"
+                            className="text-muted-foreground"
+                            aria-hidden
+                          />
                           <div className="flex flex-col">
                             <span className="font-medium text-foreground">
                               {method.label || meta.label}
@@ -142,7 +147,7 @@ function ContactMethodsControlComponent({
                             disabled={disabled || index === 0}
                             onClick={() => move(index, -1)}
                           >
-                            <ChevronUp aria-hidden />
+                            <Icon path={mdiChevronUp} size="16px" aria-hidden />
                           </Button>
                           <Button
                             type="button"
@@ -152,7 +157,7 @@ function ContactMethodsControlComponent({
                             disabled={disabled || index === methods.length - 1}
                             onClick={() => move(index, 1)}
                           >
-                            <ChevronDown aria-hidden />
+                            <Icon path={mdiChevronDown} size="16px" aria-hidden />
                           </Button>
                           <Button
                             type="button"
@@ -162,7 +167,7 @@ function ContactMethodsControlComponent({
                             disabled={disabled}
                             onClick={() => setDialog({ open: true, index, draft: { ...method } })}
                           >
-                            <Pencil aria-hidden />
+                            <Icon path={mdiPencil} size="16px" aria-hidden />
                           </Button>
                           <Button
                             type="button"
@@ -172,7 +177,7 @@ function ContactMethodsControlComponent({
                             disabled={disabled}
                             onClick={() => remove(index)}
                           >
-                            <Trash2 aria-hidden />
+                            <Icon path={mdiTrashCan} size="16px" aria-hidden />
                           </Button>
                         </div>
                       </TableCell>

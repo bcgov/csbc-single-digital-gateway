@@ -1,11 +1,9 @@
 import type { ComponentA11yMetadata } from './a11y-types';
+import { WCAG } from './wcag-criteria';
 
 export default {
   component: 'card',
-  wcagCriteria: [
-    { id: '1.1.1', name: 'Non-text Content', level: 'A' },
-    { id: '2.4.4', name: 'Link Purpose (In Context)', level: 'A' },
-  ],
+  wcagCriteria: [WCAG.nonTextContent, WCAG.linkPurposeInContext],
   rules: [
     {
       id: 'decorative-icons-hidden',

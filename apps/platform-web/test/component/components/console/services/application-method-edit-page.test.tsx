@@ -270,7 +270,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     // The container should render the spinner
     await waitFor(
       () => {
-        expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+        expect(container.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
       },
       { timeout: 32000 },
     );
@@ -652,7 +652,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     await user.click(saveBtn);
 
     const saveButton = screen.getByRole('button', { name: /save form/i });
-    expect(saveButton.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(saveButton.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
 
     resolveSave!(
       json({
@@ -666,7 +666,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     );
 
     await waitFor(() => {
-      expect(saveButton.querySelector('.animate-spin')).not.toBeInTheDocument();
+      expect(saveButton.querySelector('[data-slot="spinner"]')).not.toBeInTheDocument();
     });
   });
 

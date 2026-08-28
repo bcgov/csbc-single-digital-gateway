@@ -7,7 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/card';
-import { ArrowRight } from 'lucide-react';
+import { mdiArrowRight } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import {
   CONTACT_METHOD_META,
   type ContactMethod,
@@ -71,7 +72,6 @@ function contactAction(method: ContactMethod): ContactAction | null {
  */
 function MethodRowCard({ method }: { method: ContactMethod }) {
   const meta = CONTACT_METHOD_META[method.type];
-  const Icon = meta.icon;
   const lines = methodDetailLines(method);
   const action = contactAction(method);
 
@@ -87,7 +87,7 @@ function MethodRowCard({ method }: { method: ContactMethod }) {
       <CardAction className="pr-0" aria-hidden={true}>
         <Avatar variant="card">
           <AvatarFallback variant="card">
-            <Icon className="size-5" aria-hidden />
+            <Icon path={meta.icon} size="20px" aria-hidden />
           </AvatarFallback>
         </Avatar>
       </CardAction>
@@ -100,7 +100,7 @@ function MethodRowCard({ method }: { method: ContactMethod }) {
       {action ? (
         <div className="flex shrink-0 items-center gap-1 px-4 text-base font-medium text-link">
           {action.cta}
-          <ArrowRight className="size-4" aria-hidden />
+          <Icon path={mdiArrowRight} size="16px" aria-hidden />
         </div>
       ) : null}
     </Card>
@@ -123,14 +123,13 @@ function MethodRowCard({ method }: { method: ContactMethod }) {
 /** Grid (platform) card — stacked, with the type sub-label. */
 function MethodGridCard({ method }: { method: ContactMethod }) {
   const meta = CONTACT_METHOD_META[method.type];
-  const Icon = meta.icon;
   const lines = methodDetailLines(method);
   return (
     <Card>
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Icon className="size-4" aria-hidden />
+            <Icon path={meta.icon} size="16px" aria-hidden />
           </span>
           <div className="flex flex-col">
             <span className="font-heading text-sm font-semibold text-foreground">

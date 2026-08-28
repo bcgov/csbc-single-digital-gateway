@@ -5,7 +5,8 @@ import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
 
 import { cn } from '@ui/lib/utils';
 import { Button } from '@ui/components/ui/button';
-import { XIcon } from 'lucide-react';
+import { mdiClose } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -64,7 +65,7 @@ function SheetContent({
             data-slot="sheet-close"
             render={<Button variant="ghost" className="absolute top-4 right-4" size="icon-sm" />}
           >
-            <XIcon />
+            <Icon path={mdiClose} size="20px" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
         )}

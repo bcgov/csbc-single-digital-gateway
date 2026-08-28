@@ -2,7 +2,7 @@ import { isOneOfEnumControl, rankWith } from '@jsonforms/core';
 import type { ControlProps, OwnPropsOfEnum, RankedTester } from '@jsonforms/core';
 import { withJsonFormsOneOfEnumProps } from '@jsonforms/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // `oneOf` enums carry `{ const, title }` entries; the HOC normalises them into `options`.
 export const oneOfEnumControlTester: RankedTester = rankWith(3, isOneOfEnumControl);
@@ -36,8 +36,19 @@ function OneOfEnumControlComponent({
         disabled={enabled === false}
         onValueChange={(value: unknown) => handleChange(path, value ?? undefined)}
       >
-        <SelectTrigger id={id} aria-invalid={Boolean(errors)} className="w-full">
-          <SelectValue placeholder="Select…" />
+        <SelectTrigger
+          id={id}
+          aria-invalid={Boolean(errors)}
+          aria-describedby={describedByIds(id, { description, errors })}
+          className="w-full"
+        >
+          <SelectValue placeholder="Select…">
+            {(current: unknown) =>
+              current === undefined || current === null || current === ''
+                ? 'Select…'
+                : (options?.find((option) => option.value === current)?.label ?? String(current))
+            }
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options?.map((option) => (

@@ -16,7 +16,8 @@ describe('Spinner', () => {
 
     const spinner = screen.getByRole('status');
     expect(spinner).toHaveAttribute('data-slot', 'spinner');
-    expect(spinner).toHaveClass('animate-spin');
+    // @mdi/react's `spin` prop rotates a nested <g>, rather than the Tailwind `animate-spin` class.
+    expect(spinner.querySelector('g')?.getAttribute('style')).toContain('animation');
   });
 
   it('merges custom classes and forwards props', () => {
@@ -24,6 +25,5 @@ describe('Spinner', () => {
 
     const spinner = screen.getByTestId('busy');
     expect(spinner).toHaveClass('size-8');
-    expect(spinner).toHaveClass('animate-spin');
   });
 });

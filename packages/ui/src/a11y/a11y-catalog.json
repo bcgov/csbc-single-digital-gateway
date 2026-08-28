@@ -5,12 +5,14 @@
       {
         "id": "4.1.2",
         "name": "Name, Role, Value",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
       },
       {
         "id": "2.1.1",
         "name": "Keyboard",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
       }
     ],
     "ariaPattern": {
@@ -39,12 +41,14 @@
       {
         "id": "1.4.1",
         "name": "Use of Color",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html"
       },
       {
         "id": "1.1.1",
         "name": "Non-text Content",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/non-text-content.html"
       }
     ],
     "rules": [
@@ -69,17 +73,20 @@
       {
         "id": "4.1.2",
         "name": "Name, Role, Value",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
       },
       {
         "id": "2.1.1",
         "name": "Keyboard",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
       },
       {
         "id": "1.3.1",
         "name": "Info and Relationships",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
       }
     ],
     "rules": [
@@ -121,12 +128,14 @@
       {
         "id": "1.1.1",
         "name": "Non-text Content",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/non-text-content.html"
       },
       {
         "id": "2.4.4",
         "name": "Link Purpose (In Context)",
-        "level": "A"
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html"
       }
     ],
     "rules": [
@@ -153,6 +162,1009 @@
     ],
     "commonMisuses": [],
     "notes": [],
+    "knownExceptions": []
+  },
+  {
+    "component": "checkbox",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "1.3.1",
+        "name": "Info and Relationships",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Checkbox",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/"
+    },
+    "rules": [
+      {
+        "id": "no-manual-aria-checked",
+        "description": "base-ui's Checkbox wires role=\"checkbox\" and aria-checked automatically from its own checked state — never set aria-checked manually.",
+        "severity": "forbidden"
+      },
+      {
+        "id": "needs-external-label",
+        "description": "Checkbox renders no visible text of its own — always pair it with a FieldLabel whose htmlFor matches the checkbox id, the way multi-enum-control.tsx does for every checkbox-group option.",
+        "severity": "required"
+      },
+      {
+        "id": "group-invalid-state-must-be-wired-explicitly",
+        "description": "A checkbox-group's \"invalid\" signal has to be set by hand on the group container — and the two renderers that build a checkbox group in this system disagree on whether they do it. choice-control.tsx's `display: 'checkboxes'` branch sets `aria-invalid={invalid}` on its role=\"group\" wrapper div; multi-enum-control.tsx (the renderer for a plain array-of-enum schema, no `format: 'choice'` authored) never sets aria-invalid anywhere — not on its role=\"group\" div, not on any individual Checkbox — even though it receives `errors` and already wires aria-describedby from them. A required multi-select checkbox group left empty shows red FieldError text below it (via ControlWrapper) but the group and its checkboxes themselves never read as invalid to a screen reader.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Wrapping a set of related checkboxes in a plain div without role=\"group\" and aria-labelledby on the container — sighted users see a heading above the set, but a screen reader user tabbing into the group hears each checkbox in isolation, with no sense they belong together.",
+      "Assuming a checkbox-group's invalid styling reaches individual checkboxes — even where the group container does get aria-invalid (choice-control.tsx's checkboxes branch), that attribute is never propagated down to the individual Checkbox items, and Checkbox's own aria-invalid CSS hooks (border-destructive, ring) only fire on the item itself. So even an author who wires the group correctly still gets a checkbox set with no per-item destructive styling — only the surrounding FieldError text signals the problem visually."
+    ],
+    "notes": [
+      "There is no dedicated CheckboxGroup component in @repo/ui — a related set of checkboxes (e.g. a multi-select enum) must be wrapped by the caller in a container with role=\"group\" and aria-labelledby (see packages/react/src/jsonforms-renderers/controls/multi-enum-control.tsx, which wires both onto its container div) or the set has no accessible group name.",
+      "checkbox.tsx has a specific combined state style — `aria-invalid:aria-checked:border-primary` — that keeps the border primary-colored (not destructive-red) once a previously-invalid checkbox becomes checked, while the ring stays destructive. This only matters for a SINGLE required checkbox (boolean-control.tsx, e.g. \"I agree to the terms\") whose aria-invalid stays true until the surrounding form re-validates; it doesn't apply to checkbox-group items, which never receive aria-invalid at all (see the group-invalid rule above).",
+      "boolean-control.tsx (the single required-checkbox case) correctly computes `aria-invalid={Boolean(errors)}` fresh every render under the form runner's validationMode='ValidateAndShow' — so a required, unchecked single checkbox can read as invalid on its very first render, before the user has interacted with it at all, exactly like the text/number controls."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "combobox",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Combobox",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/"
+    },
+    "rules": [
+      {
+        "id": "no-manual-aria",
+        "description": "base-ui wires the full editable-combobox pattern automatically on ComboboxInput — role=\"combobox\", aria-expanded, aria-haspopup=\"listbox\", aria-controls, and aria-autocomplete — plus role=\"listbox\"/\"option\" on ComboboxList/ComboboxItem — no manual aria props needed on any of these.",
+        "severity": "forbidden"
+      },
+      {
+        "id": "needs-external-label",
+        "description": "ComboboxInput has no visible label of its own — always pair it with a FieldLabel (htmlFor matching the input id) via Field/ControlWrapper, e.g. for the address country/province search use.",
+        "severity": "required"
+      },
+      {
+        "id": "empty-state-is-a-status",
+        "description": "ComboboxEmpty already renders with role=\"status\" — keep its text meaningful (e.g. \"No country found.\") since it is the only feedback a screen reader user gets when a search matches nothing.",
+        "severity": "recommended"
+      },
+      {
+        "id": "function-child-is-required-for-real-filtering",
+        "description": "ComboboxList only filters to the typed query when its children is a FUNCTION (per-item render callback) — base-ui renders the pre-filtered set through that callback. address-control.tsx's GeoBody deliberately uses `{(name: string) => <ComboboxItem>...}` rather than a static `.map()` over the full items array (its own inline comment calls this out: \"a manual .map is not filtered\"). Rendering a static list of ComboboxItems instead breaks the entire premise of a searchable field: the listbox stops narrowing as the user types, silently contradicting the `aria-autocomplete=\"list\"` semantics base-ui already declared on the input, which tells assistive tech to expect the option set to track what was typed.",
+        "severity": "required"
+      },
+      {
+        "id": "per-field-error-text-needs-its-own-id-and-describedby",
+        "description": "address-control.tsx's SubField wrapper (used around the Combobox for country and province) renders its own inline error paragraph — `<p className=\"text-sm text-destructive\">{error}</p>` — with NO id, and the Combobox's ComboboxInput only ever receives `aria-invalid`, never an `aria-describedby` pointing at that paragraph. A screen reader user who tabs to an invalid country/province Combobox hears \"invalid\" (from aria-invalid) but never hears WHY (\"This field is required\") unless they separately discover the visually-adjacent paragraph by browsing. This is a real, fixable gap: give the SubField's error `<p>` a stable id (e.g. `${id}-error`) and wire it into ComboboxInput's aria-describedby the same way describedByIds does everywhere else in this system.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Using Combobox for a small, fixed set of mutually exclusive options with no search need — that's Select's job (the select-only combobox pattern); reach for Combobox specifically when users benefit from typing to filter, like searching a country or province list.",
+      "Copying address-control.tsx's SubField pattern (a hand-rolled Field + FieldLabel + inline error paragraph, bypassing ControlWrapper entirely) for a new composite control without also copying — or fixing — its missing aria-describedby wiring; the per-field error rule above is exactly this trap."
+    ],
+    "notes": [
+      "ComboboxChips (the multi-select chip variant) wraps its chip row in role=\"toolbar\" — each chip's remove button is a real tab stop inside that toolbar, so keyboard users can tab (not just arrow) directly to a specific chip's remove control.",
+      "address-control.tsx's outer `<fieldset aria-describedby={describedByIds(baseId, { description, errors })}>` puts the field-level description/object-level error on the FIELDSET itself, not on any individual focusable sub-field (Combobox or otherwise). A `<fieldset>` is not itself a focusable/interactive element, so most screen readers never announce a fieldset's own aria-describedby as focus moves among its children — meaning the address control's top-level description text and object-level error message are effectively unreachable to a screen reader user navigating field-by-field through the country/province Comboboxes and the other address sub-fields. Only the legend (the visible label) and each sub-field's OWN error (see the rule above, itself incompletely wired) are what an AT user actually encounters.",
+      "In address-control.tsx's GeoBody, choosing a new Country deliberately clears Province via `withCountry` (a province from the old country never applies to the new one) — but this reset is silent: there is no aria-live announcement telling a screen reader user that Province was just cleared as a side effect of their Country selection. A user who then tabs past Province without re-opening it may not realize it needs to be re-selected.",
+      "There is no aria-live region anywhere in the Combobox implementation announcing the filtered result count as the user types (e.g. \"3 results\") — the only feedback beyond the (now-shorter) list of ComboboxItems themselves is the role=\"status\" ComboboxEmpty text, and only once the count reaches exactly zero. A search that narrows from 195 countries to 2 without ever hitting zero gives a screen reader user no indication of how much the list has narrowed short of arrowing into it."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "date-picker",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "clear-and-calendar-buttons-have-labels",
+        "description": "The clear (\"×\") and calendar-toggle buttons are icon-only — both already carry an aria-label (\"Clear\" / \"Open calendar\"); keep those labels if you customize the InputGroupAddon.",
+        "severity": "required"
+      },
+      {
+        "id": "invalid-drives-aria-invalid",
+        "description": "Pass invalid (mapped to aria-invalid on the masked input) whenever the typed value fails validation — the text input has no other accessible signal that what was typed didn't parse.",
+        "severity": "required"
+      },
+      {
+        "id": "typed-input-is-the-primary-path",
+        "description": "The calendar popover is a convenience, not the only path — typing is masked to MM/dd/yyyy and parses live, so a screen reader or keyboard-only user never has to open the popover to set a date.",
+        "severity": "recommended"
+      },
+      {
+        "id": "unparseable-typed-text-gets-no-error-at-all",
+        "description": "date-control.tsx only ever passes `invalid={Boolean(errors)}`, where `errors` comes exclusively from Ajv validating the already-committed ISO value. Unlike number-control.tsx (which merges a client-side over-precision check into its own error string), nothing in date-control.tsx or DatePicker itself ever flags a typed string that fails `parseTypedDate` — `onType` simply never calls `onChange` when parsing fails, so the stored schema value doesn't change and, if the field wasn't already invalid for some other reason (e.g. required-and-empty), aria-invalid stays false. Typing \"13/45/2026\" produces zero visual or programmatic error feedback of any kind.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Assuming the calendar popover traps focus like a modal — it's a base-ui Popover (role=\"dialog\", non-modal); outside clicks and Escape close it, but focus isn't forced into the grid, so don't test it with modal-dialog assumptions.",
+      "Treating a garbled typed date as \"safely rejected\" because the stored value doesn't change — DatePicker's onBlur handler resets its local text state to `displayValue(value)` (the last successfully committed date, or empty) the moment the field loses focus. A user who types an unparseable date and tabs away sees/hears their typed text silently disappear and replaced with nothing, with no error message explaining why — this is worth a manual check with a screen reader, since it reads as data loss with no cause given."
+    ],
+    "notes": [
+      "The popover's calendar (day buttons, month/year dropdowns) is react-day-picker's own default keyboard and focus-management implementation — this wrapper doesn't add ARIA to it.",
+      "captionLayout=\"dropdown\" (what this wrapper always passes to Calendar) renders the month and year captions as real, natively-operable `<select>` elements absolutely positioned and made invisible (`bg-popover opacity-0`) over the styled caption text (calendar.tsx's `dropdown` className) — despite looking like plain bold text with a chevron, the month/year picker is a genuine native select underneath, fully keyboard- and screen-reader-operable without any custom ARIA. Don't mistake it for inert decoration when reviewing the calendar visually.",
+      "CalendarDayButton (calendar.tsx) imperatively calls `.focus()` on the currently-focused day whenever react-day-picker's `modifiers.focused` changes — this is what makes arrow-key navigation between days work (react-day-picker manages a roving \"focused day\" in its own state; the wrapper is responsible for actually moving DOM focus to match it). If a future refactor changes how DayButton is composed, losing this effect would silently break keyboard navigation within the grid while everything still looked correct visually."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "date-range-picker",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "calendar-button-has-a-label",
+        "description": "The calendar-toggle button is icon-only — it already carries aria-label=\"Open calendar\"; keep that label if you customize the InputGroupAddon.",
+        "severity": "required"
+      },
+      {
+        "id": "invalid-drives-aria-invalid",
+        "description": "Pass invalid (mapped to aria-invalid on the masked input) whenever the typed range fails to parse — the single text input has no other accessible signal that either half didn't parse.",
+        "severity": "required"
+      },
+      {
+        "id": "typed-input-is-the-primary-path",
+        "description": "Typing \"mm/dd/yyyy - mm/dd/yyyy\" parses both halves live, so a screen reader or keyboard-only user never has to open the two-month calendar popover to set a range.",
+        "severity": "recommended"
+      },
+      {
+        "id": "single-invalid-flag-cant-say-which-half-failed",
+        "description": "DateRangeControl passes exactly one `invalid={Boolean(errors)}` boolean covering the whole \"start - end\" text field, and — like DatePicker — nothing in date-range-control.tsx or DateRangePicker itself flags a half that fails to parse (`parseTypedRange` silently drops whichever half doesn't parse rather than surfacing an error). A screen reader user who mistypes only the END date has no way to learn, from either the ARIA state or any announced text, that specifically the second half of the value was rejected — the single input either reads as invalid (for an unrelated schema reason) or doesn't, with no half-specific diagnosis possible.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Assuming there's a built-in clear control — unlike DatePicker, DateRangePicker has no clear (\"×\") button; if the field needs to be clearable, add one and give it its own aria-label.",
+      "Treating a garbled typed range as \"safely rejected\" because the stored value doesn't change — DateRangePicker's onBlur handler resets its local text state to `rangeText(value)` (the last successfully committed range) the moment the field loses focus, exactly like DatePicker. A half-typed or malformed range silently reverts on blur with no explanation given to the user."
+    ],
+    "notes": [
+      "The two-month calendar (numberOfMonths=2) only auto-closes once a genuine multi-day range is picked (from ≠ to) — a single click leaves the popover open so the user can still choose the end date; this is intentional, not stuck focus.",
+      "Because `parseTypedRange` splits on the literal string `' - '` (RANGE_SEPARATOR), a screen reader user relying on the masked input's typing shortcuts has to reproduce that exact separator (including the surrounding spaces) between the two dates for the second half to parse at all — the input mask (`99/99/9999 - 99/99/9999`) enforces this visually/positionally for sighted mouse-and-keyboard users, but nothing narrates the required separator format to a screen reader user beyond the static placeholder text.",
+      "captionLayout=\"dropdown\" applies to BOTH months in the two-month view, so there are four native (invisibly-overlaid) month/year `<select>` elements in the popover at once — two per month — all sharing the calendar's general keyboard/focus-management notes from date-picker.a11y.ts. Tabbing through the open popover crosses all four before ever reaching a day cell."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "datetime-picker",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "1.3.1",
+        "name": "Info and Relationships",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "label-covers-the-date-part-only",
+        "description": "The outer field's FieldLabel/htmlFor (wired via id) points only at the date input's underlying text field — the Hour/Minute/AM-or-PM selects carry their own fixed aria-label (\"Hour\"/\"Minute\"/\"AM or PM\") from TimePicker itself, not the field's own label text. A screen reader announces the field's label, then separately \"Hour\", \"Minute\", \"AM or PM\", rather than one connected name.",
+        "severity": "required"
+      },
+      {
+        "id": "invalid-and-describedby-forward-to-both-parts",
+        "description": "invalid and aria-describedby passed to DateTimePicker are forwarded to both the DatePicker and TimePicker sub-controls, so a validation error or description is reachable from either part — but it is the same message/id repeated on both, not two independent ones.",
+        "severity": "required"
+      },
+      {
+        "id": "time-picker-half-gets-no-id-at-all",
+        "description": "DateTimePicker forwards its own `id` prop only to the nested `<DatePicker id={id} .../>` — the nested `<TimePicker .../>` receives no `id` prop whatsoever (datetime-picker.tsx literally omits it). That means TimePicker's Hour SelectTrigger — the only one of the three time selects that would otherwise take an `id` — renders with no id attribute in the DOM at all inside a DateTimePicker. It still has an accessible name (the hardcoded aria-label=\"Hour\"), so this isn't a naming bug, but any tooling or test that locates the control by id rather than role/name will only ever find the date half.",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Treating DateTimePicker as a single focusable control when checking tab order or label announcement — it is actually four separate focusable widgets (a masked date input, then three Select triggers) sharing one visual row; verify each is reachable and named on its own."
+    ],
+    "notes": [
+      "Composite of DatePicker + TimePicker (see each of their own sidecars) — the date and time parts only combine into one emitted value once both are set; a screen reader user hears them as adjacent widgets, not one field with sub-parts.",
+      "Every gap documented in date-picker.a11y.ts applies unmodified to the date half here — most notably that an unparseable typed date string gets no error feedback of any kind (invalid only reflects the schema-level `errors` DateTimeControl passes in, never a local parse failure) and silently reverts to the last committed value on blur.",
+      "datetime-control.tsx passes the SAME `invalid`/`aria-describedby` value to both DatePicker and TimePicker, but the two sub-controls apply it differently: DatePicker puts aria-invalid/aria-describedby on its single masked text input, while TimePicker (per its own sidecar) puts aria-invalid on all three Select triggers but aria-describedby on the Hour trigger only. Net effect for a screen reader user tabbing straight through: date input (hears description/error) → Hour (hears description/error) → Minute (hears invalid state only, no description/error) → AM/PM (same as Minute) — an inconsistent announcement pattern across four consecutive stops in the same composite field.",
+      "combineDateTime only emits a value once BOTH datePart and timePart are set — a citizen who fills in the date but not the time (or vice versa) has effectively entered nothing from the schema's point of view, with no partial-progress indicator; if the field is required, the schema-level \"required\" error is the only feedback that something is still missing, and it can't tell the user which of the two halves is the outstanding one."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "dialog",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "1.3.1",
+        "name": "Info and Relationships",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      },
+      {
+        "id": "2.4.3",
+        "name": "Focus Order",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Dialog (Modal)",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/"
+    },
+    "rules": [
+      {
+        "id": "no-manual-aria-labelledby",
+        "description": "DialogPopup automatically wires aria-labelledby/aria-describedby to DialogTitle's/DialogDescription's own ids — always render a DialogTitle (and a DialogDescription when there's explanatory text) inside DialogContent so the dialog gets that name/description for free; don't set aria-label manually unless you're deliberately omitting a visible title.",
+        "severity": "required"
+      },
+      {
+        "id": "focus-trap-and-scroll-lock-are-default",
+        "description": "modal defaults to true — focus is trapped inside the popup, background scroll is locked, and outside pointer interactions are disabled. Only pass modal={false} (or 'trap-focus') when the rest of the page genuinely needs to stay interactive.",
+        "severity": "required"
+      },
+      {
+        "id": "close-button-when-modal",
+        "description": "When modal is true or \"trap-focus\", render a Dialog.Close inside the popup — DialogContent's showCloseButton (on by default) already does this with an sr-only \"Close\" label. Touch screen-reader users otherwise have no way to dismiss a focus-trapped dialog.",
+        "severity": "required"
+      },
+      {
+        "id": "per-field-errors-need-a-persistent-describedby-not-just-role-alert",
+        "description": "method-dialog.tsx's own LabeledInput and PhoneField (used inside MethodDialog's MethodForm step, NOT the shared ControlWrapper) render a bare `<FieldError errors={REQUIRED_ERROR} />` with no `id`, and their Input/PhoneInput never receive an `aria-describedby` at all. FieldError does render with role=\"alert\" (field.tsx), so the \"Required\" text IS announced automatically the moment it first appears (e.g. right after clicking Save with that field empty) — but that's a one-shot interruption, not a persistent link: if the user later tabs back to that same still-invalid field, aria-invalid fires again but the reason (\"Required\") is never re-announced, since nothing connects the input to the alert text via aria-describedby. Compare to ControlWrapper's own FieldError (control-wrapper.tsx), which gets BOTH the role=\"alert\" live announcement AND an explicit id wired into aria-describedby — this ad-hoc dialog form only got the first half of that fix.",
+        "severity": "required"
+      },
+      {
+        "id": "failed-save-fires-multiple-simultaneous-alerts-with-no-context",
+        "description": "MethodForm's handleSave flips `submitted = true` on click when ANY required key is missing, which can make several fields invalid at once (e.g. Label AND Value both empty) — each renders its own `role=\"alert\"` \"Required\" FieldError simultaneously. Multiple assertive live regions firing at once typically queue or clip each other depending on the screen reader, and none of them says WHICH field is required since the message text is the same literal string (REQUIRED_ERROR) everywhere — a user could hear \"Required... Required\" with no way to tell, from the announcement alone, which fields need attention.",
+        "severity": "recommended"
+      },
+      {
+        "id": "no-focus-management-on-failed-save",
+        "description": "handleSave does not move focus to the first invalid field (or anywhere) when validation fails — a keyboard user's focus stays on the Save button they just clicked. Discovering which field(s) need fixing requires manually tabbing through the whole form and noticing the red borders/alert text one at a time, rather than being dropped directly onto the first problem.",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Passing showCloseButton={false} on DialogContent without providing any other Dialog.Close inside — leaves keyboard and touch screen-reader users with only Escape (or an outside click, when pointer dismissal isn't disabled) to close a modal dialog.",
+      "Omitting DialogTitle to keep a dialog visually minimal — since aria-labelledby is wired automatically to the title's id, skipping it silently leaves the dialog with no accessible name at all, not just no visible heading.",
+      "Driving a Dialog's `open` state entirely from external logic (as MethodDialog does — no DialogTrigger is ever rendered; the Add/Edit buttons in contact-methods-control.tsx set `dialog.open = true` directly) without separately verifying focus returns to the button that opened it once the dialog closes. base-ui's automatic return-focus-to-trigger behavior is normally tied to an actual Trigger component being part of the open/close cycle; bypassing Trigger entirely means this needs a manual check rather than being assumed to just work."
+    ],
+    "notes": [
+      "MethodDialog is a two-step wizard rendered inside a SINGLE Dialog instance: step 1 (TypePicker, a grid of type buttons) swaps for step 2 (MethodForm, the field form) by changing `state.draft` from null to a value, without the Dialog itself closing/reopening. Nothing moves focus when that swap happens — the TypePicker button the user just clicked unmounts (it's replaced by MethodForm's fields), so focus most likely falls back to the dialog's popup element or the document body rather than landing on MethodForm's first field (Label). Worth a manual screen-reader/keyboard pass: a well-behaved multi-step dialog should move focus to the new step's first interactive element (or at minimum its heading) when the step changes.",
+      "DialogDescription's text changes between the two MethodDialog steps (\"Choose the kind of contact method to add.\" → \"Enter the details for this contact method.\") while DialogTitle stays fixed (\"Add contact method\" / \"Edit contact method\" — constant across both steps of a given add/edit flow). Since aria-describedby is wired once to the DialogDescription element's id, the accessible description DOES update correctly for a user who re-reads it, but nothing proactively announces that change to a screen reader user who already has focus elsewhere in the dialog when the step transitions.",
+      "DialogOverlay is a `fixed inset-0` backdrop with no explicit aria-hidden coordination with page content behind it — base-ui's modal Dialog handles hiding the rest of the document from assistive tech (via aria-modal / inert) automatically while open, so this is expected to work without extra wiring, but it depends entirely on `modal` staying true (or \"trap-focus\") for any dialog that's meant to be modal; explicitly verify background content is actually inaccessible to AT if a dialog in this system is ever given `modal={false}`."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "field",
+    "wcagCriteria": [
+      {
+        "id": "1.3.1",
+        "name": "Info and Relationships",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "4.1.3",
+        "name": "Status Messages",
+        "level": "AA",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html"
+      },
+      {
+        "id": "2.4.3",
+        "name": "Focus Order",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "wire-aria-describedby-manually",
+        "description": "ControlWrapper (packages/react/src/jsonforms-renderers/util/control-wrapper.tsx) assigns id={`${id}-description`} / id={`${id}-error`} to FieldDescription/FieldError (and id={`${id}-label`} to FieldLabel) — but it never touches its `children`. Every control is responsible for calling the exported describedByIds(id, { description, errors }) helper and putting the result on its OWN real focusable element's aria-describedby. Field/FieldDescription/FieldError render no aria-describedby link themselves.",
+        "severity": "required"
+      },
+      {
+        "id": "group-role-not-a-grouping-mechanism-for-single-inputs",
+        "description": "Field (field.tsx) hardcodes role=\"group\" on its root div unconditionally — for every orientation and every instance, including a single `<input>` field that already has its own label via htmlFor and needs no group semantics. Only build on that role='group' as meaningful grouping when there's genuinely no single focusable owner of the label (ControlWrapper's labelFor={false} path — radio-group/checkbox-group in choice-control.tsx). For an ordinary single-input field, treat the group role as unavoidable primitive overhead, not a feature.",
+        "severity": "recommended"
+      },
+      {
+        "id": "validate-on-blur-not-every-keystroke",
+        "description": "FieldError renders role=\"alert\" only while there's error content (returns null otherwise), so the alert div mounts/unmounts as validation flips. Controls read JSONForms' `errors` prop, which is recomputed against the live ajv schema on every `handleChange` call — and address-control.tsx reads `ctx.core?.validationMode ?? 'ValidateAndShow'` confirming the renderer defaults to showing validation immediately. Once a field is touched and invalid, an onChange fired per keystroke (e.g. text-control.tsx's `commit` on every `onChange`) recomputes `errors` and re-renders FieldError's text on every keystroke, which — if the DOM node is freshly mounted or its text content mutates while already present — makes an assertive role=\"alert\" announce on every character typed. That's a well-known anti-pattern (interrupts the user's own typing/screen-reader echo). Prefer validating/announcing on blur or debouncing rather than on every keystroke for assertive error alerts. Not exhaustively confirmed against every control's exact re-render path — but the mechanism (immediate ValidateAndShow + per-keystroke handleChange + unconditional role=\"alert\") is present and worth a real screen-reader spot check.",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Adding a new control under packages/react/src/jsonforms-renderers/controls/* that renders description/errors via FieldDescription/FieldError but never calls describedByIds(...) to wire aria-describedby onto its own input — the text renders visually but is silently unlinked from the control for assistive tech. Nothing in TypeScript or lint catches this; it only shows up as a missing association in a screen reader or an axe \"aria-describedby value must be an ID\" style check.",
+      "Reading Field's automatic role=\"group\" as evidence that a set of fields is meaningfully grouped — it wraps EVERY Field instance regardless of orientation or content, including a single labelled input, so a long form of simple text fields wraps each one in its own (usually unnamed) ARIA group. Some screen readers announce \"group... group... group...\" on entry/exit for each one, which is noise rather than useful grouping semantics — a real grouped set of related fields should use FieldSet + FieldLegend (or a group with an explicit aria-label/aria-labelledby) instead."
+    ],
+    "notes": [
+      "describedByIds(id, { description, errors }) (control-wrapper.tsx) builds `${id}-description` and/or `${id}-error` and joins them space-separated — exactly the ids ControlWrapper assigns as the literal `id` on FieldDescription/FieldError when they render. This is the deliberate wiring convention every control must replicate on its own focusable element(s); see the wire-aria-describedby-manually rule above.",
+      "aria-invalid on each control's underlying input is driven straight from `Boolean(errors)`, recomputed on every render — the same timing concern as the role=\"alert\" rule above, but distinct: here the visual+programmatic invalid state (not just the error text announcement) can flip on before the user has finished entering a valid value, e.g. typing an email address shows invalid on every character until \"@\" plus a domain are present.",
+      "FieldError's role=\"alert\" firing reliably depends on the assistive technology AND on whether React reconciliation actually inserts a fresh DOM node vs. reuses one with mutated text — role=\"alert\" is a live region that browsers/AT are expected to announce on insertion or content mutation, but this is not something to assume correct from the role alone; it should be spot-checked with a real screen reader against the field's actual re-render behavior.",
+      "Horizontal orientation DOM order was checked against both controlPosition values used in the renderers: boolean-control.tsx (checkbox) uses the default controlPosition=\"left\" — ControlWrapper renders {children}{content}, i.e. checkbox then label/description/error. boolean-toggle-control.tsx (switch) uses controlPosition=\"right\" — ControlWrapper renders {content}{children}, i.e. label/description/error then switch. In both cases fieldVariants' horizontal class (field.tsx) is a plain `flex-row` with no `order`/`flex-row-reverse` overrides, so DOM order and visual/reading order match for both configurations — no WCAG 1.3.2/2.4.3 mismatch found between visual and tab order for either controlPosition.",
+      "FieldSet and FieldLegend are exported from field.tsx but, as of this audit, are not imported anywhere in packages/react/src or any app under apps/*/src — confirmed via a repo-wide grep. They are currently unused scaffolding, not wired into any grouped-field pattern. Notably, address-control.tsx — the one composite control that genuinely needs fieldset/legend semantics — hand-rolls its own <fieldset><legend> rather than using FieldSet/FieldLegend, so adopting them there (or in any future grouped-field control) is an open opportunity, not a regression.",
+      "FieldContent (field.tsx) is only meaningful in the horizontal layout: ControlWrapper wraps the label + description + error in a FieldContent column so they stack (label, then description, then error) beside the control rather than running inline with it — `gap-1 leading-normal` on that wrapper is what makes the description/error text wrap onto its own line under the label. In the vertical (default) orientation ControlWrapper does not use FieldContent at all; label/children/description/error are direct children of Field instead."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "input",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "1.3.1",
+        "name": "Info and Relationships",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "needs-associated-label",
+        "description": "Input renders a bare native <input> with no label of its own — always pair it with a Field/FieldLabel (htmlFor matching the input id) or ControlWrapper; Input never generates an accessible name by itself.",
+        "severity": "required"
+      },
+      {
+        "id": "aria-invalid-drives-both",
+        "description": "The destructive border/ring styling (aria-invalid:border-destructive aria-invalid:ring-2) is driven entirely by the aria-invalid attribute — set it whenever the field fails validation, so screen reader users get the same signal sighted users get from the red border, not just a visual change.",
+        "severity": "required"
+      },
+      {
+        "id": "wire-aria-describedby",
+        "description": "Wire aria-describedby to the field's description/error text ids (control-wrapper's describedByIds helper: `${id}-description` / `${id}-error`) so assistive tech announces hint and error text together with the label, not just whatever is visually nearby.",
+        "severity": "recommended"
+      },
+      {
+        "id": "clear-button-not-a-tiny-generic-target",
+        "description": "ClearableInput's clear button (used by TextControl and NumberControl for a plain single-line input) always announces as the bare word \"Clear\" — if you build a custom variant, keep that pattern consistent (an aria-label, not an icon with no text) rather than shipping an icon-only button with no name at all.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Using placeholder text as a substitute for a visible label — it disappears once the user starts typing and isn't reliably announced as a label by every screen reader."
+    ],
+    "notes": [
+      "The form runner drives JSONForms with validationMode='ValidateAndShow' (see form-runner.tsx) with no touched/blur gating — text-control.tsx computes `aria-invalid={Boolean(errors)}` fresh on every render, so a required-but-empty text field can already read as invalid on its very first render (before the user has typed anything), and the invalid state can flip mid-keystroke (e.g. a minLength or pattern check going from failing to passing) rather than only settling once on blur. Number-control.tsx layers a second, purely client-side check on top (its own `decimals` over-precision message merged into the same `errors` string) that updates on the same every-keystroke cadence, so a number field can show a decimals error the instant a value goes one digit too precise, before the user has finished typing.",
+      "TextControl and NumberControl both wrap Input in ClearableInput (util/clearable-input.tsx), whose trailing \"×\" button only mounts once the field has a value and un-mounts the instant it is clicked (clearing the value flips `hasValue` to false, which removes the very button that was just activated) — no focus is explicitly redirected afterward, so a keyboard user clicking or Enter-activating \"Clear\" likely loses their focus position (falls back to the document body in most browsers) instead of landing back on the now-empty input. Worth a manual check with a screen reader before relying on it.",
+      "Every ClearableInput clear button — across every single-line Input, NumberControl, and every free-text address sub-field (address-control.tsx's PlainBody) — carries the identical generic aria-label=\"Clear\" with no field-specific text. A screen reader user browsing a form's buttons list (e.g. NVDA's Elements List, or VoiceOver's Rotor) on a page with several clearable fields sees an undifferentiated wall of \"Clear\" buttons and has no way to tell which one belongs to which field without also reading surrounding context.",
+      "@repo/ui's Field primitive (field.tsx) wraps every control — including a bare Input — in a `role=\"group\"` div. On most screen readers this is inert for a single simple control (no accessible name is set on the group, so nothing extra is announced), but it is worth knowing it is there if you ever see an unexpected \"group\" boundary announced while arrowing through a dense form in browse mode."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "phone-input",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "4.1.3",
+        "name": "Status Messages",
+        "level": "AA",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "country-button-has-a-label",
+        "description": "The country-select trigger already carries aria-label=\"Select country\" — necessary since it displays only a flag icon and a chevron, no text.",
+        "severity": "required"
+      },
+      {
+        "id": "invalid-and-describedby-reach-the-number-input-only",
+        "description": "aria-invalid and aria-describedby passed to PhoneInput are forwarded (via numberInputProps) onto the underlying number <input> only — the country-select button has no wiring to that same description/error text, so make sure the announced message reads correctly when heard right after the number field, without depending on the country button.",
+        "severity": "required"
+      },
+      {
+        "id": "country-search-input-has-no-accessible-name",
+        "description": "PhoneInput's country picker (CountrySelect) opens a Popover containing a cmdk-based Command, not the design system's own base-ui Combobox — a second, independent combobox implementation with its own ARIA wiring. cmdk's Command root always renders a visually-hidden <label> whose text is `label` or `aria-label` on the Command element, and its CommandInput's `aria-labelledby` points at that label's id UNCONDITIONALLY (this takes precedence over any placeholder). phone-input.tsx's `<Command>` usage passes neither `label` nor `aria-label`, so that hidden label renders empty — meaning the \"Search country...\" input's computed accessible name is empty, not \"Search country...\" (aria-labelledby wins over placeholder in name computation). This looks like a real bug: pass `label=\"Search country\"` (or `aria-label`) to the `<Command>` element in phone-input.tsx.",
+        "severity": "required"
+      },
+      {
+        "id": "empty-country-search-result-is-not-announced",
+        "description": "cmdk's CommandEmpty renders with `role=\"presentation\"` (verified in node_modules/cmdk — explicitly the opposite of a live region), unlike this design system's own Combobox, whose ComboboxEmpty explicitly sets role=\"status\". Typing a search that matches no country in PhoneInput's country picker will NOT be automatically announced to a screen reader user the way the design system's other search-to-filter widgets (Combobox, used e.g. for address country/province) are — the \"No country found.\" text just silently appears in the DOM.",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Assuming PhoneInput has a single accessible name — it is actually two adjacent controls (a country-select button and a number text input); a field-level FieldLabel wired through ControlWrapper labels the number input only, since PhoneInput's id prop is forwarded to that input, not the country button.",
+      "Assuming the country picker behaves like the rest of the form system's Combobox (base-ui, role=\"status\" empty state, aria-invalid styling hooks) just because it looks similar — it's a completely separate library (cmdk) wrapped by the shared `Command` primitive, with its own ARIA implementation and its own gaps; don't extrapolate combobox.a11y.ts's guarantees onto it."
+    ],
+    "notes": [
+      "cmdk's CommandInput independently sets its own `role=\"combobox\"`, `aria-expanded=\"true\"`, `aria-controls`, and `aria-autocomplete=\"list\"` — structurally similar to base-ui's Combobox pattern, but a different implementation with different edge-case behavior (e.g. the accessible-name and empty-state gaps noted above). Don't assume fixes or guarantees made in the base-ui Combobox wrapper (packages/ui/src/components/ui/combobox.tsx) apply here.",
+      "The country list button toggles a Popover (non-modal, base-ui) containing the Command search — same non-modal-popover focus/Escape behavior documented for DatePicker's calendar applies here: Escape and outside clicks close it, but focus is not trapped inside while open.",
+      "formatPhone() (used for read-only display elsewhere in the app) falls back to the raw E.164 string when RPNInput.formatPhoneNumber() returns falsy — so a screen reader reading a malformed/unparseable stored phone number in a read-only view hears the raw \"+1XXXXXXXXXX\" digit string with no formatting pauses, rather than a natural \"national format\" reading. Not this component's editable path, but worth knowing if auditing the read-only counterpart."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "radio-group",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "1.3.1",
+        "name": "Info and Relationships",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Radio Group",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/radio/"
+    },
+    "rules": [
+      {
+        "id": "no-manual-aria",
+        "description": "base-ui wires role=\"radiogroup\" on RadioGroup and role=\"radio\" + aria-checked on each RadioGroupItem automatically, plus arrow-key navigation between items — no manual aria props needed.",
+        "severity": "forbidden"
+      },
+      {
+        "id": "group-needs-a-name",
+        "description": "RadioGroup has no accessible name of its own. The forms renderer (enum-radio-control.tsx) wires aria-labelledby={`${id}-label`} pointing at the field's FieldLabel, plus aria-describedby via describedByIds, onto the group — callers outside that renderer must replicate this (aria-labelledby or aria-label) or the group announces as an unnamed \"radio group\".",
+        "severity": "required"
+      },
+      {
+        "id": "items-need-external-labels",
+        "description": "Each RadioGroupItem needs its own id plus a FieldLabel with a matching htmlFor — RadioGroupItem itself renders no visible text.",
+        "severity": "required"
+      },
+      {
+        "id": "group-level-invalid-styling-never-shows",
+        "description": "Both enum-radio-control.tsx and choice-control.tsx's radio branch set `aria-invalid` on the RadioGroup root, not on the individual RadioGroupItems. But radio-group.tsx's RadioGroup component has no `aria-invalid:` styling in its className at all — only RadioGroupItem does. The result: a required, unanswered radio group can be programmatically marked invalid (the attribute is genuinely present in the DOM) yet NO radio button in the group ever shows the destructive border/ring, because that styling is keyed off aria-invalid being present on the item itself, which it never is. The only visible signal a sighted user gets is the FieldError text below the group.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Labelling only a visual heading above the radio group without wiring aria-labelledby or aria-label to the group itself — sighted users see the heading, but a screen reader user tabbing directly to the group hears an unnamed \"radio group\"."
+    ],
+    "notes": [
+      "enum-radio-control.tsx only sets aria-labelledby when a label is actually present (label ? `${id}-label` : undefined) — a radio group rendered without a label still needs its own aria-label if used outside that renderer.",
+      "A native/ARIA radiogroup normally uses roving tabindex: only one radio item (the checked one, or the first if none is checked) is a tab stop, and arrow keys move both focus AND selection between items — the group container itself is never focused directly. Because of that, it is worth explicitly verifying with a real screen reader whether the group-level aria-invalid (see the rule above) is ever actually announced at all: since focus lands on an *item*, not the *group*, some screen reader/browser combinations will only speak the group's role/name/invalid-state once, on first entry, and never again as the user arrows between the individual radios within it.",
+      "enum-radio-control.tsx and choice-control.tsx's radio branch are two independent implementations of the same idea (one dispatched by `options.format: 'radio'` on a plain enum schema, the other by the unified `format: 'choice'` + `display: 'radio'` uischema) — they duplicate the same aria-invalid/aria-labelledby/aria-describedby wiring rather than sharing it, so a future fix to one (e.g. the group-level-invalid-styling gap above) has to be applied to both or they'll silently diverge again.",
+      "This design system's form runner (validationMode='ValidateAndShow', form-runner.tsx) shows validation errors from the very first render with no touched/blur gating — a required radio group with nothing selected reads as invalid (per the DOM attribute, even though it's not visibly styled) the instant the page loads, before the user has looked at it."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "rich-text-input",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "contenteditable-needs-aria-label",
+        "description": "The editable region is a contenteditable div with role=\"textbox\" (Lexical's ContentEditable) — a native <label for> can never target it, so the aria-label prop is the field's ONLY possible accessible name. Callers must always pass the field's label text as aria-label; ControlWrapper's FieldLabel alone can't supply it, since a <label for> pointing at this element has no effect.",
+        "severity": "required"
+      },
+      {
+        "id": "toolbar-role-and-label",
+        "description": "The formatting toolbar wraps its buttons in a role=\"toolbar\" container with aria-label=\"Formatting\" — every button inside (Bold, Italic, Heading 1, etc.) is icon-only and already carries its own aria-label.",
+        "severity": "required"
+      },
+      {
+        "id": "link-prompt-fallback",
+        "description": "The Link toolbar button opens a native window.prompt() for the URL — that's keyboard- and screen-reader-accessible (it's native browser UI), but is a stopgap; any future popover-based URL editor needs to preserve at least this level of accessibility.",
+        "severity": "recommended"
+      },
+      {
+        "id": "suppressed-label-leaves-the-editor-fully-unnamed",
+        "description": "rich-text-control.tsx only forwards aria-label when `typeof label === 'string' && label` is truthy — if a form builder suppresses the visible label (uischema `label: false`) or a schema/uischema authors an empty label string, the ContentEditable gets NO aria-label at all. Because a rich-text field can never fall back to a native `<label for>` (see the rule above), this specific control has no other path to an accessible name — a label-suppressed rich-text field is completely unnamed to assistive tech, which is a worse outcome than suppressing the label on any of the other 14 primitives here (they at least retain the possibility of an htmlFor-based label elsewhere).",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Rendering RichTextInput through ControlWrapper without also passing the label text as aria-label — ControlWrapper's FieldLabel has htmlFor={id}, but a contenteditable div can't be targeted by a native label's for attribute, so the visible label and the editor's accessible name silently disconnect unless aria-label is passed too.",
+      "Suppressing the field's label at the uischema level (a legitimate, supported JSONForms pattern elsewhere, e.g. when a heading already visually introduces the field) — for RichTextInput specifically this doesn't just remove a visual label, it removes the field's only possible accessible name (see the rule above). Treat a rich-text field's label as non-optional even when the design calls for hiding it visually (use an sr-only label text passed as aria-label instead of suppressing it outright)."
+    ],
+    "notes": [
+      "The toolbar sets role=\"toolbar\" and a group aria-label, but each button remains its own tab stop rather than the single-tab-stop, arrow-key-navigated model the ARIA-APG Toolbar pattern describes — keyboard users tab through every button individually instead of arrowing between them.",
+      "None of the toolbar buttons (Bold, Italic, Underline, Heading 1/2/3, Bullet list, Numbered list, Link) expose whether their format is currently active for the selection — no aria-pressed, and richTextTheme (packages/ui/src/inputs/rich-text/shared.ts) only styles rendered CONTENT (paragraph/heading/list/text/link classes), not the toolbar buttons themselves. A screen reader user with their cursor inside bold text gets no signal from the Bold button that bold is already on; a sighted user gets no visual highlight either, since nothing in the toolbar's own styling reflects selection state — clicking Bold while already inside bold text presumably toggles it off, but there's no way to know that in advance from the UI.",
+      "The two `aria-invalid` attributes — one on the outer wrapping div, one on the inner ContentEditable — serve different purposes and both are needed: the outer div's is a pure CSS hook (its className defines the `aria-invalid:border-destructive` styling, and only elements the attribute is actually set on respond to that Tailwind variant), while the ContentEditable's is the one that actually carries ARIA semantics to assistive tech (it's the element with role=\"textbox\"). Removing either one independently would silently break only half of the invalid-state behavior — the border styling (if removed from the div) or the AT announcement (if removed from the ContentEditable) — without the other half visibly failing.",
+      "RichTextInput's `initialConfig` only seeds Lexical's `editorState` when `value.root` exists, deliberately treating an empty `{}` (a schema default with no real editor state) as a blank editor rather than crashing — worth knowing if you're debugging why a default-seeded rich-text field sometimes starts blank instead of at its authored default: the default has to be a REAL SerializedEditorState (with a root node), not just `{}` or a plain string."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "select",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Combobox (Select-Only)",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/"
+    },
+    "rules": [
+      {
+        "id": "no-manual-aria",
+        "description": "base-ui wires the full select-only combobox pattern automatically: SelectTrigger gets role=\"combobox\" + aria-haspopup=\"listbox\" + aria-expanded + aria-controls, the popup's list gets role=\"listbox\", and SelectItem gets role=\"option\" — no manual aria props needed on any of these.",
+        "severity": "forbidden"
+      },
+      {
+        "id": "trigger-needs-a-name",
+        "description": "SelectTrigger has no text of its own beyond SelectValue's placeholder/selected label — pair it with a FieldLabel (htmlFor matching the trigger id) or an aria-label when there's no visible field label (e.g. TimePicker's inline Hour/Minute/AM-or-PM triggers).",
+        "severity": "required"
+      },
+      {
+        "id": "placeholder-not-a-label",
+        "description": "SelectValue's placeholder text disappears once a value is chosen — don't rely on it as the field's only accessible name.",
+        "severity": "recommended"
+      },
+      {
+        "id": "multi-select-needs-a-trigger-id-too",
+        "description": "choice-control.tsx's `display: 'select', multiple: true` branch renders a multi-select Select. It gets aria-invalid and aria-describedby wired on the SelectTrigger exactly like the single-select case, so nothing extra is needed there — but confirm base-ui's multi-select mode sets aria-multiselectable on the listbox popup (SelectContent) since that's what tells assistive tech to expect more than one selected option rather than treating extra selections as replacing the prior one.",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Reaching for Select when users need to filter or search a long option list by typing — Select implements the select-only combobox pattern (no typeahead beyond native first-letter jump); use Combobox instead for searchable lists."
+    ],
+    "notes": [
+      "Every enum-family renderer (enum-control.tsx, oneof-enum-control.tsx, and choice-control.tsx's select branch) computes `aria-invalid={Boolean(errors)}` fresh on every render under the form runner's validationMode='ValidateAndShow' — a required-but-unselected Select can read as invalid on its first render, before the user has opened it once.",
+      "choice-control.tsx's multi-select branch renders the joined selected labels (`list.map(labelForValue).join(', ')`) inside SelectValue, but SelectTrigger's CSS clamps that text to one line (`*:data-[slot=select-value]:line-clamp-1`). This clamp is purely visual — the full joined string stays in the DOM and therefore in the accessible name — so a sighted user sees \"Option A, Option B, …\" truncated with an ellipsis while a screen reader announces every selected option in full. Worth knowing when comparing what a sighted QA pass sees against what an AT user actually hears; they're not the same information.",
+      "TimePicker (time-picker.tsx) composes three of these Select triggers in a row (Hour/Minute/AM-or-PM). Only the Hour trigger receives the `id` prop passed into TimePicker — the Minute and AM/PM triggers get no `id` at all (not even a generated one), only their fixed aria-label. That's enough for an accessible name, but it means anything that looks a Select up by DOM id (rather than accessible name) will only ever find the Hour trigger.",
+      "TimePicker's Minute select has 60 zero-padded options ('00'..'59') and Hour has 12 ('1'..'12') — both rely on base-ui's built-in typeahead (type digits to jump to a matching option) rather than any custom keyboard handling; a keyboard user who knows to type rather than arrow through 59 options gets a much faster path, but nothing in the UI surfaces that shortcut, so it's effectively undiscoverable without prior familiarity with native/ARIA select typeahead conventions."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "slider",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "2.4.7",
+        "name": "Focus Visible",
+        "level": "AA",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Slider",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/slider/"
+    },
+    "rules": [
+      {
+        "id": "no-manual-aria-value",
+        "description": "base-ui's Slider wires role=\"slider\" plus aria-valuemin/aria-valuemax/aria-valuenow on each Thumb automatically from min/max/value — no manual aria props needed.",
+        "severity": "forbidden"
+      },
+      {
+        "id": "each-thumb-needs-a-name",
+        "description": "When rendering more than one thumb (a range slider), give each Thumb its own aria-label (e.g. \"Minimum price\", \"Maximum price\") — otherwise screen readers announce every thumb identically and users can't tell them apart.",
+        "severity": "required"
+      },
+      {
+        "id": "aria-valuetext-for-units",
+        "description": "Add aria-valuetext when the raw number isn't self-explanatory on its own (e.g. \"$50\", \"3 days\") so assistive tech announces the unit, not just a bare number.",
+        "severity": "recommended"
+      },
+      {
+        "id": "wire-invalid-state-yourself",
+        "description": "Neither slider-control.tsx nor the Slider primitive itself ever sets aria-invalid — slider-control.tsx passes id, value, min/max/step, disabled and aria-describedby to Slider, but never `aria-invalid={Boolean(errors)}` the way every other renderer in this system does, and Slider's own className (unlike Input/Checkbox/Select/Switch/RadioGroupItem) has no `aria-invalid:` Tailwind variant at all — so even if a caller added the prop by hand there is no destructive-border/ring styling defined to respond to it. If a numeric range field needs a min/max validation error surfaced (e.g. a schema minimum/maximum on a slider-backed number), the Thumb itself gives a screen reader user no \"invalid\" signal whatsoever; only the ControlWrapper's FieldError text (a role=\"alert\" div) below the slider announces it, and only at the moment it first appears, not when focus later returns to the Thumb.",
+        "severity": "required"
+      }
+    ],
+    "commonMisuses": [
+      "Relying on the indicator's fill color alone to distinguish the selected range from the rest of the track — the value/aria-valuetext already carries that information for non-visual users, so make sure it's actually set.",
+      "Authoring a schema minimum/maximum on a uischema.options.slider field and assuming the Slider will visually/programmatically flag an out-of-range value the way a number Input does — it currently can't (see the wire-invalid-state-yourself rule above), so an invalid slider value is effectively silent at the widget level."
+    ],
+    "notes": [
+      "If neither value nor defaultValue is passed, Slider renders two thumbs spanning [min, max] rather than one — pass an explicit single-element value/defaultValue for a plain single-thumb slider.",
+      "slider-control.tsx renders the live numeric value as a plain `<span>{value}</span>` beside the track, with no aria-live region — a sighted user watching the number tick up while dragging gets instant visual feedback, but a screen reader user's only announcement of the current value comes from the Thumb's own role=\"slider\" aria-valuenow (spoken as focus moves the thumb via keyboard, NOT while dragging with a pointer, and not from the adjacent span at all, since it carries no live-region semantics).",
+      "slider-control.tsx always renders exactly one Thumb (`value={typeof data === 'number' ? data : min}`, and `onValueChange` unwraps an array to its first element) — the multi-thumb range-slider case documented in the rules above (each-thumb-needs-a-name) doesn't currently arise through this JSONForms control; it only matters for other direct uses of the bare Slider component.",
+      "schema.multipleOf becomes the Slider's `step`; when it is omitted, the Slider has no explicit step and defaults to whatever base-ui's Slider treats as its default step. Keyboard arrow-key increments will match whatever that default is, which may not line up with the granularity a form builder actually intends (e.g. a 0–100 slider without multipleOf lets keyboard users land on every integer, while a builder who only tested with the pointer might not notice)."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "switch",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "ariaPattern": {
+      "name": "Switch",
+      "url": "https://www.w3.org/WAI/ARIA/apg/patterns/switch/"
+    },
+    "rules": [
+      {
+        "id": "no-manual-aria-checked",
+        "description": "base-ui's Switch wires role=\"switch\" and aria-checked automatically from its own checked state — never set aria-checked manually.",
+        "severity": "forbidden"
+      },
+      {
+        "id": "needs-external-label",
+        "description": "Switch renders no visible text of its own — always pair it with a FieldLabel whose htmlFor matches the switch id.",
+        "severity": "required"
+      },
+      {
+        "id": "sm-size-shrinks-the-hit-target",
+        "description": "The `size=\"sm\"` variant renders a 14×24px control (`data-[size=sm]:h-[14px] data-[size=sm]:w-[24px]`) versus the default 20×40px — well under common target-size guidance (24×24 CSS px minimum). boolean-toggle-control.tsx always uses the default size (it never passes `size`), so this only matters if a caller reaches for `size=\"sm\"` directly outside the JSONForms renderer; avoid it for anything a citizen has to tap on a touch device.",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Using Switch for a value that only takes effect on form submit — the switch role signals an immediate on/off effect to screen reader users (the same expectation as a native OS toggle), so a form field's boolean choice that isn't applied until submit is more accurately a Checkbox."
+    ],
+    "notes": [
+      "boolean-toggle-control.tsx computes `aria-invalid={Boolean(errors)}` fresh on every render under the form runner's validationMode='ValidateAndShow' (no touched/blur gating) — same live-error timing as every other control in this system. Unlike Slider, Switch's own className DOES define `aria-invalid:border-destructive aria-invalid:ring-2`, so the wiring here is complete: a required-but-unset toggle both announces and visually reads as invalid immediately, including before the user has touched it.",
+      "orientation=\"horizontal\" controlPosition=\"right\" (what boolean-toggle-control.tsx always passes) means the FieldLabel/description/error column renders BEFORE the Switch in DOM order, with the switch pushed to the far edge — so tab order and reading order both go label → description → error → switch, not switch-first the way Checkbox's horizontal-left layout does. Worth knowing if you're auditing tab order against a visual mock, since the two boolean controls in this system intentionally order their DOM differently."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "textarea",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "1.3.1",
+        "name": "Info and Relationships",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "needs-associated-label",
+        "description": "Textarea renders a bare native <textarea> with no label of its own — always pair it with a Field/FieldLabel (htmlFor matching the textarea id) or ControlWrapper; Textarea never generates an accessible name by itself.",
+        "severity": "required"
+      },
+      {
+        "id": "aria-invalid-drives-both",
+        "description": "The destructive border/ring styling (aria-invalid:border-destructive aria-invalid:ring-2) is driven entirely by the aria-invalid attribute — set it whenever the field fails validation.",
+        "severity": "required"
+      },
+      {
+        "id": "wire-aria-describedby",
+        "description": "Wire aria-describedby to the field's description/error text ids (control-wrapper's describedByIds helper: `${id}-description` / `${id}-error`) so assistive tech announces hint and error text together with the label.",
+        "severity": "recommended"
+      },
+      {
+        "id": "maxlength-counter-is-visual-only",
+        "description": "When a schema sets maxLength, text-control.tsx renders a `{value.length}/{maxLength}` counter as a plain div below the Textarea — it is not wired to aria-describedby and has no aria-live region, so it is purely a sighted-user affordance. Don't rely on it as the field's only signal that the user is approaching the limit; the native maxLength attribute itself (also set on the textarea) still stops further typing, so the character budget is enforced either way, just not narrated.",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Using placeholder text as a substitute for a visible label — it disappears once the user starts typing and isn't reliably announced as a label by every screen reader."
+    ],
+    "notes": [
+      "Textarea always sets resize-none and relies on field-sizing-content to grow with the content instead — some low-vision users rely on manually resizing a native textarea to see more of what they typed, so confirm the auto-grow behavior actually keeps pace with real content in practice.",
+      "text-control.tsx's multiline branch (options.multi: true) reuses the exact same `shared` props object as the single-line Input branch — id, aria-invalid, aria-describedby, maxLength — so everything documented for Input's validation timing applies identically here: aria-invalid is computed fresh every render under the form runner's validationMode='ValidateAndShow', meaning a required-but-empty Textarea can read as invalid on its first render, and the invalid state can flip on every keystroke rather than settling once on blur.",
+      "Unlike the single-line Input branch, the multiline branch does NOT go through ClearableInput — there is no clear (\"×\") affordance on a Textarea at all, mask input is never applied (masks are explicitly a single-line-only feature per text-control.tsx's comment), and the maxLength counter is the only extra piece of UI multiline gets. A long-text field (e.g. \"additional comments\") that a form builder marks required will show the same premature-invalid behavior noted for Input, but with no way to preview the counter until content is typed since field-sizing-content only reserves ~5 rows (min-h-[7.5rem]) before growing."
+    ],
+    "knownExceptions": []
+  },
+  {
+    "component": "time-picker",
+    "wcagCriteria": [
+      {
+        "id": "4.1.2",
+        "name": "Name, Role, Value",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html"
+      },
+      {
+        "id": "2.1.1",
+        "name": "Keyboard",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+      },
+      {
+        "id": "3.3.2",
+        "name": "Labels or Instructions",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html"
+      },
+      {
+        "id": "3.3.1",
+        "name": "Error Identification",
+        "level": "A",
+        "url": "https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html"
+      }
+    ],
+    "rules": [
+      {
+        "id": "hardcoded-labels-are-the-only-name",
+        "description": "The Hour/Minute/AM-or-PM Select triggers already carry aria-label (\"Hour\" / \"Minute\" / \"AM or PM\") — this is the ONLY accessible name each select ever gets, since there is no visible text label in the row (just \"hh\"/\"mm\" placeholders inside SelectValue). Do not remove these aria-labels when composing TimePicker into a larger field, or the selects go unnamed.",
+        "severity": "required"
+      },
+      {
+        "id": "separator-colon-hidden",
+        "description": "The literal \":\" between the hour and minute selects is decorative — it is already aria-hidden.",
+        "severity": "required"
+      },
+      {
+        "id": "period-defaults-to-am-without-user-action",
+        "description": "TimePicker's local `period` state initializes to `'AM'` (`useState<Period>(parts.period ?? 'AM')`) rather than starting unset — so `compose24Hour` can succeed, and `onChange` fires, as soon as the user has touched ONLY Hour and Minute, silently carrying the never-explicitly-chosen 'AM' along with it. A user (sighted or not) who tabs Hour → Minute → moves on without ever opening the AM/PM select can submit a time that's 12 hours off from what they intended, with no validation error possible (the value is fully well-formed). This is worth flagging as a functional/UX issue with an accessibility angle: a screen reader user has no way to distinguish \"AM/PM defaulted, not yet reviewed\" from \"AM/PM deliberately confirmed\" — both announce identically as \"AM/PM, AM\".",
+        "severity": "recommended"
+      }
+    ],
+    "commonMisuses": [
+      "Treating TimePicker as one control for tab-order or testing purposes — it is three independent Select triggers; keyboard users tab through Hour → Minute → AM/PM separately, each announced by its own aria-label, not a single combined \"time\" field."
+    ],
+    "notes": [
+      "Only the Hour trigger receives the id, aria-invalid, and aria-describedby passed into TimePicker — the Minute and AM/PM triggers receive aria-invalid but not aria-describedby, so a description or error message linked via aria-describedby is announced when focus lands on Hour but not necessarily when it lands on Minute or AM/PM.",
+      "Hour's options ('1'..'12') never have a leading zero, but Minute's ('00'..'59') always do — so base-ui's built-in typeahead behaves asymmetrically between the two adjacent selects: typing \"1\" in Hour cycles 1/10/11/12, while typing \"1\" in Minute cycles 01/10-19 style matches starting from '01'. A keyboard user relying on typeahead across both fields in quick succession has to remember two different digit conventions for what looks like one continuous \"HH:MM\" control.",
+      "All three selects independently call `onValueChange` → `commit`, and `commit` recomputes the FULL composed value from current local state each time — so selecting Hour, then Minute, then AM/PM fires `onChange` on the TimePicker THREE times as the value progressively completes (the first two calls emit `undefined` until all three parts are set, per `compose24Hour`'s early return). Nothing about that is wrong, but it means TimePicker's onChange is not a single \"final answer\" callback — any code consuming it needs to tolerate repeated undefined-then-defined transitions rather than assuming one call equals one committed choice."
+    ],
     "knownExceptions": []
   }
 ]

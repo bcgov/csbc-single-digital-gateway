@@ -1,7 +1,8 @@
 import { Button } from '@repo/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@repo/ui/empty';
 import { Separator } from '@repo/ui/separator';
-import { SettingsIcon } from 'lucide-react';
+import { mdiCog } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 import { relativeTime } from './relative-time';
 import type { NotificationItem } from './types';
@@ -55,7 +56,7 @@ export function NotificationPanel({
               aria-label="Notification settings"
               onClick={onOpenPreferences}
             >
-              <SettingsIcon aria-hidden="true" className="size-4" />
+              <Icon path={mdiCog} aria-hidden="true" size="16px" />
             </Button>
           ) : null}
         </div>

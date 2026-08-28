@@ -2,7 +2,7 @@ import { isBooleanControl, rankWith } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Checkbox } from '@repo/ui/checkbox';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 export const booleanControlTester: RankedTester = rankWith(2, isBooleanControl);
 
@@ -35,6 +35,7 @@ function BooleanControlComponent({
         checked={Boolean(data)}
         disabled={enabled === false}
         aria-invalid={Boolean(errors)}
+        aria-describedby={describedByIds(id, { description, errors })}
         onCheckedChange={(checked) => handleChange(path, checked)}
       />
     </ControlWrapper>

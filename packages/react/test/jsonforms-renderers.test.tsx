@@ -158,7 +158,7 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
     ).toBeTruthy();
   });
 
-  it('renders every field label a step heavier (font-semibold) — text, checkbox and toggle', () => {
+  it('renders every field label at the shared @repo/ui weight (font-medium), not bolded — text, checkbox and toggle', () => {
     const boolSchema = {
       type: 'object' as const,
       properties: { agree: { type: 'boolean' as const, title: 'Agree' } },
@@ -171,10 +171,10 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
           schema={{ type: 'object', properties: { name: { type: 'string', title: 'Full name' } } }}
         />,
       ),
-    ).toContain('font-semibold');
+    ).toContain('font-medium');
 
     // Checkbox (horizontal, control-left).
-    expect(fieldLabelClassName(<Form schema={boolSchema} />)).toContain('font-semibold');
+    expect(fieldLabelClassName(<Form schema={boolSchema} />)).toContain('font-medium');
 
     // Toggle (horizontal, control-right).
     expect(
@@ -190,7 +190,7 @@ describe('@repo/react/jsonforms-renderers — control renderers', () => {
           }
         />,
       ),
-    ).toContain('font-semibold');
+    ).toContain('font-medium');
   });
 
   it('renders no label when the uischema label is false — never the scope/key (feature 159)', () => {

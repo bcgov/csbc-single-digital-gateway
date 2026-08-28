@@ -201,7 +201,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       // Check for spinner class or SVG
       await waitFor(
         () => {
-          expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+          expect(container.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
         },
         { timeout: 32000 },
       );
@@ -535,7 +535,7 @@ describe('MemberProfilePage Component Test Suite', () => {
 
       // Should render the spinner since member cannot be loaded without workspace ID
       await waitFor(() => {
-        expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+        expect(container.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
       });
     });
 
@@ -575,14 +575,14 @@ describe('MemberProfilePage Component Test Suite', () => {
 
       // Save should now be pending, showing a spinner
       await waitFor(() => {
-        expect(saveBtn.querySelector('.animate-spin')).toBeInTheDocument();
+        expect(saveBtn.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
       });
 
       // Resolve the promise
       resolveSavePromise(json({ ...membersList[1], role: 'admin' }));
 
       await waitFor(() => {
-        expect(saveBtn.querySelector('.animate-spin')).not.toBeInTheDocument();
+        expect(saveBtn.querySelector('[data-slot="spinner"]')).not.toBeInTheDocument();
       });
     });
 
@@ -621,14 +621,14 @@ describe('MemberProfilePage Component Test Suite', () => {
 
       // Transfer should be pending, showing a spinner
       await waitFor(() => {
-        expect(confirmBtn.querySelector('.animate-spin')).toBeInTheDocument();
+        expect(confirmBtn.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
       });
 
       // Resolve transfer
       resolveTransferPromise(json({ ...mockWorkspaceAdmin, ownerId: 'u2' }));
 
       await waitFor(() => {
-        expect(confirmBtn.querySelector('.animate-spin')).not.toBeInTheDocument();
+        expect(confirmBtn.querySelector('[data-slot="spinner"]')).not.toBeInTheDocument();
       });
     });
   });

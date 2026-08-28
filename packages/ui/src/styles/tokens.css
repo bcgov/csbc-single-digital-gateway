@@ -42,6 +42,7 @@
   /* ------------------------------------------------------------------------ */
 
   --app-border: var(--bcds-surface-color-border-default);
+  --app-border-medium: var(--bcds-surface-color-border-medium);
   --app-border-dark: var(--bcds-surface-color-border-dark);
   --app-input: var(--bcds-surface-color-border-default);
   --app-ring: var(--bcds-surface-color-border-active);

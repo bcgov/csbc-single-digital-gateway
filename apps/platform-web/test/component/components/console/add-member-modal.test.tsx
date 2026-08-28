@@ -268,12 +268,12 @@ describe('Add Member Modal Component Test Suite', () => {
     await user.click(addButton);
 
     const dialog = await screen.findByRole('dialog');
-    expect(dialog.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(dialog.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
 
     resolveStaff!(json({ items: staff }));
 
     await waitFor(() => {
-      expect(dialog.querySelector('.animate-spin')).not.toBeInTheDocument();
+      expect(dialog.querySelector('[data-slot="spinner"]')).not.toBeInTheDocument();
     });
   });
 
@@ -317,7 +317,7 @@ describe('Add Member Modal Component Test Suite', () => {
 
     expect(cancelBtn).toBeDisabled();
     expect(addBtn).toBeDisabled();
-    expect(addBtn.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(addBtn.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
 
     resolveAdd!(
       json(

@@ -2,7 +2,7 @@ import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { DateRangePicker, type DateRange } from '@repo/ui/date-range-picker';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 import { parseISODate, toISODate } from './date-util';
 
 // Dispatched by `options.format: 'daterange'`; the data is an object `{ start, end }` of ISO dates.
@@ -49,6 +49,7 @@ function DateRangeControlComponent({
         value={value}
         disabled={enabled === false}
         invalid={Boolean(errors)}
+        aria-describedby={describedByIds(id, { description, errors })}
         onChange={(next) => {
           if (!next || (!next.from && !next.to)) {
             handleChange(path, undefined);

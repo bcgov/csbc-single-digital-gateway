@@ -2,7 +2,7 @@ import { and, optionIs, rankWith, uiTypeIs } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { PhoneInput } from '@repo/ui/phone-input';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // A phone-number control: any Control whose uischema sets `options.format = 'phone'` renders the
 // react-phone-number-input widget (country selector, CA default). The stored value is E.164.
@@ -39,6 +39,7 @@ function PhoneControlComponent({
         value={typeof data === 'string' ? data : undefined}
         disabled={enabled === false}
         aria-invalid={Boolean(errors)}
+        aria-describedby={describedByIds(id, { description, errors })}
         onChange={(value) => handleChange(path, value)}
       />
     </ControlWrapper>

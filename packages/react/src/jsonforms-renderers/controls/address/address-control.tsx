@@ -13,6 +13,12 @@ import { Field, FieldLabel } from '@repo/ui/field';
 import { type ReactNode, useEffect, useId, useRef } from 'react';
 
 import { ClearableInput } from '../../util/clearable-input';
+import { describedByIds } from '../../util/control-wrapper';
+
+/** Same `${id}-error` id convention as `describedByIds`, scoped to one address sub-field. */
+function subFieldDescribedBy(id: string, error: string | undefined): string | undefined {
+  return describedByIds(id, { errors: error });
+}
 import { AddressSearchField } from './address-search';
 import { addressLabelsForIso2 } from './labels';
 import { type AddressValue, isAddressEmpty, normalizeAddress } from './model';
@@ -64,7 +70,11 @@ function SubField({ id, label, required, error, children }: SubFieldProps) {
         {required ? ' *' : ''}
       </FieldLabel>
       {children}
-      {error !== undefined ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error !== undefined ? (
+        <p id={`${id}-error`} className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
     </Field>
   );
 }
@@ -97,6 +107,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
           value={value.country}
           disabled={disabled}
           aria-invalid={meta('country').error !== undefined}
+          aria-describedby={subFieldDescribedBy(`${baseId}-country`, meta('country').error)}
           onChange={(event) => onField('country', event.target.value)}
           onClear={() => onField('country', '')}
         />
@@ -122,6 +133,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
             value={value.province}
             disabled={disabled}
             aria-invalid={meta('province').error !== undefined}
+            aria-describedby={subFieldDescribedBy(`${baseId}-province`, meta('province').error)}
             onChange={(event) => onField('province', event.target.value)}
             onClear={() => onField('province', '')}
           />
@@ -133,6 +145,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
           value={value.postal_code}
           disabled={disabled}
           aria-invalid={meta('postal_code').error !== undefined}
+          aria-describedby={subFieldDescribedBy(`${baseId}-postal_code`, meta('postal_code').error)}
           onChange={(event) => onField('postal_code', event.target.value)}
           onClear={() => onField('postal_code', '')}
         />
@@ -153,6 +166,7 @@ function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
           value={value.address_one}
           disabled={disabled}
           aria-invalid={meta('address_one').error !== undefined}
+          aria-describedby={subFieldDescribedBy(`${baseId}-address_one`, meta('address_one').error)}
           onChange={(event) => onField('address_one', event.target.value)}
           onClear={() => onField('address_one', '')}
         />
@@ -162,6 +176,8 @@ function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
           id={`${baseId}-address_two`}
           value={value.address_two}
           disabled={disabled}
+          aria-invalid={meta('address_two').error !== undefined}
+          aria-describedby={subFieldDescribedBy(`${baseId}-address_two`, meta('address_two').error)}
           onChange={(event) => onField('address_two', event.target.value)}
           onClear={() => onField('address_two', '')}
         />
@@ -179,6 +195,7 @@ function CityField({ baseId, value, disabled, onField, meta }: LineProps) {
         value={value.city}
         disabled={disabled}
         aria-invalid={meta('city').error !== undefined}
+        aria-describedby={subFieldDescribedBy(`${baseId}-city`, meta('city').error)}
         onChange={(event) => onField('city', event.target.value)}
         onClear={() => onField('city', '')}
       />
@@ -228,6 +245,7 @@ function GeoBody({
             className="w-full"
             placeholder="Select a country"
             aria-invalid={meta('country').error !== undefined}
+            aria-describedby={subFieldDescribedBy(`${baseId}-country`, meta('country').error)}
           />
           <ComboboxContent>
             <ComboboxEmpty>No country found.</ComboboxEmpty>
@@ -279,6 +297,7 @@ function GeoBody({
                 className="w-full"
                 placeholder={`Select a ${labels.stateLabel}`}
                 aria-invalid={meta('province').error !== undefined}
+                aria-describedby={subFieldDescribedBy(`${baseId}-province`, meta('province').error)}
               />
               <ComboboxContent>
                 <ComboboxEmpty>No {labels.stateLabel} found.</ComboboxEmpty>
@@ -297,6 +316,7 @@ function GeoBody({
               value={value.province}
               disabled={disabled}
               aria-invalid={meta('province').error !== undefined}
+              aria-describedby={subFieldDescribedBy(`${baseId}-province`, meta('province').error)}
               onChange={(event) => onField('province', event.target.value)}
               onClear={() => onField('province', '')}
             />
@@ -310,6 +330,10 @@ function GeoBody({
             value={value.postal_code}
             disabled={disabled}
             aria-invalid={meta('postal_code').error !== undefined}
+            aria-describedby={subFieldDescribedBy(
+              `${baseId}-postal_code`,
+              meta('postal_code').error,
+            )}
             onChange={(event) => onField('postal_code', event.target.value)}
             onClear={() => onField('postal_code', '')}
           />
@@ -399,7 +423,10 @@ function AddressControlComponent({
   const body: BodyProps = { baseId, value, disabled, onField, onCountry, onFill, meta };
 
   return (
-    <fieldset className="space-y-3">
+    <fieldset
+      className="space-y-3"
+      aria-describedby={describedByIds(baseId, { description, errors })}
+    >
       {label ? (
         // Match the single-field label style (ControlWrapper renders `text-xs font-semibold`); this
         // composite control renders its own fieldset/legend, so it has to mirror that style by hand.
@@ -408,11 +435,19 @@ function AddressControlComponent({
           {required ? ' *' : ''}
         </legend>
       ) : null}
-      {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+      {description ? (
+        <p id={`${baseId}-description`} className="text-xs text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-3">
         {geo ? <GeoBody {...body} geo={geo} /> : <PlainBody {...body} />}
       </div>
-      {errors ? <p className="text-xs text-destructive">{errors}</p> : null}
+      {errors ? (
+        <p id={`${baseId}-error`} className="text-xs text-destructive">
+          {errors}
+        </p>
+      ) : null}
     </fieldset>
   );
 }

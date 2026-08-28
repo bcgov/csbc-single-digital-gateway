@@ -6,7 +6,7 @@ import { Input } from '@repo/ui/input';
 import { Textarea } from '@repo/ui/textarea';
 import { useMaskInput } from 'use-mask-input';
 import { ClearableInput } from '../util/clearable-input';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // The lowest-ranked string renderer — wins for any plain string with no more specific tester (enum,
 // date, richtext, choice, etc.). Feature 158: this ONE control serves both single-line (`<Input>`) and
@@ -61,6 +61,7 @@ function TextControlComponent({
     value,
     disabled,
     'aria-invalid': invalid,
+    'aria-describedby': describedByIds(id, { description, errors }),
     ...(options.placeholder ? { placeholder: options.placeholder } : {}),
     ...(maxLength !== undefined ? { maxLength } : {}),
   };

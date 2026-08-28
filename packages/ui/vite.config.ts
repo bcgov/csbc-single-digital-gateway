@@ -29,9 +29,10 @@ const entry = Object.fromEntries(
     .filter((f) => f.endsWith('.ts'))
     .map((f) => [f.replace(/\.ts$/, ''), resolve(srcDir, f)]),
 );
-// a11y-types.ts lives in src/a11y/ (not src/ root), so it isn't picked up by the glob above —
-// add it manually so it still builds to a flat dist/a11y-types.{js,cjs,d.ts}.
+// a11y-types.ts and wcag-criteria.ts live in src/a11y/ (not src/ root), so they aren't picked up
+// by the glob above — add them manually so they still build to flat dist/*.{js,cjs,d.ts} files.
 entry['a11y-types'] = resolve(srcDir, 'a11y/a11y-types.ts');
+entry['wcag-criteria'] = resolve(srcDir, 'a11y/wcag-criteria.ts');
 
 // Ship the theme-token stylesheet (consumers run Tailwind v4 against it) and the raw brand
 // assets (src/brand/*.svg → dist/*.svg, exported as URLs for favicon/<img>) verbatim.

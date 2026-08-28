@@ -385,7 +385,7 @@ describe('Application Method Modal Component Test Suite', () => {
     await user.click(basicFormBtn);
 
     // Verify spinner is rendered
-    expect(basicFormBtn.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(basicFormBtn.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
 
     // Try to dismiss by pressing Escape
     await user.keyboard('{Escape}');

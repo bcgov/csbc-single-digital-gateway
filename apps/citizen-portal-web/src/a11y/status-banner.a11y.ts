@@ -1,11 +1,9 @@
 import type { ComponentA11yMetadata } from '@repo/ui/a11y-types';
+import { WCAG } from '@repo/ui/wcag-criteria';
 
 export default {
   component: 'status-banner',
-  wcagCriteria: [
-    { id: '1.4.1', name: 'Use of Color', level: 'A' },
-    { id: '1.1.1', name: 'Non-text Content', level: 'A' },
-  ],
+  wcagCriteria: [WCAG.useOfColor, WCAG.nonTextContent],
   rules: [
     {
       id: 'status-icon-hidden',

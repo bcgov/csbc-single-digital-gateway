@@ -3,7 +3,7 @@ import type { ControlProps, OwnPropsOfEnum, RankedTester } from '@jsonforms/core
 import { withJsonFormsEnumProps } from '@jsonforms/react';
 import { Field, FieldLabel } from '@repo/ui/field';
 import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // Opt in with `uischema.options.format = 'radio'`; outranks the select renderer.
 export const enumRadioControlTester: RankedTester = rankWith(
@@ -40,6 +40,8 @@ function EnumRadioControlComponent({
         value={data ?? null}
         disabled={enabled === false}
         aria-invalid={Boolean(errors)}
+        aria-labelledby={label ? `${id}-label` : undefined}
+        aria-describedby={describedByIds(id, { description, errors })}
         onValueChange={(value: unknown) => handleChange(path, value ?? undefined)}
       >
         {options?.map((option) => {

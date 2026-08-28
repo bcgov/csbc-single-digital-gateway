@@ -1,11 +1,9 @@
 import type { ComponentA11yMetadata } from './a11y-types';
+import { WCAG } from './wcag-criteria';
 
 export default {
   component: 'accordion',
-  wcagCriteria: [
-    { id: '4.1.2', name: 'Name, Role, Value', level: 'A' },
-    { id: '2.1.1', name: 'Keyboard', level: 'A' },
-  ],
+  wcagCriteria: [WCAG.nameRoleValue, WCAG.keyboard],
   ariaPattern: {
     name: 'Accordion',
     url: 'https://www.w3.org/WAI/ARIA/apg/patterns/accordion/',

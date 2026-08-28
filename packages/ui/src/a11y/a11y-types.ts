@@ -4,6 +4,8 @@ export type WcagCriterion = {
   id: string;
   name: string;
   level: WcagLevel;
+  /** The criterion's official W3C "Understanding" documentation page. */
+  url: string;
 };
 
 export type AriaPattern = {

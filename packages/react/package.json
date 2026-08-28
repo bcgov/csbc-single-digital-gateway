@@ -56,8 +56,9 @@
   "dependencies": {
     "@jsonforms/core": "^3.8.0",
     "@jsonforms/react": "^3.8.0",
-    "@repo/ui": "*",
-    "lucide-react": "^1.21.0"
+    "@mdi/js": "^7.4.47",
+    "@mdi/react": "^1.6.1",
+    "@repo/ui": "*"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.9.1",

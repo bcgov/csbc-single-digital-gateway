@@ -1,3 +1,4 @@
+import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
 import {
   Dialog,
@@ -59,9 +60,10 @@ function LabeledInput({
         type={type}
         value={value ?? ''}
         aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? `${id}-error` : undefined}
         onChange={(event) => onChange(event.target.value)}
       />
-      {invalid ? <FieldError errors={REQUIRED_ERROR} /> : null}
+      {invalid ? <FieldError id={`${id}-error`} errors={REQUIRED_ERROR} /> : null}
     </Field>
   );
 }
@@ -91,9 +93,10 @@ function PhoneField({
         id={id}
         value={value}
         aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? `${id}-error` : undefined}
         onChange={(next) => onChange(next ?? '')}
       />
-      {invalid ? <FieldError errors={REQUIRED_ERROR} /> : null}
+      {invalid ? <FieldError id={`${id}-error`} errors={REQUIRED_ERROR} /> : null}
     </Field>
   );
 }
@@ -104,7 +107,6 @@ function TypePicker({ onPick }: { onPick: (type: ContactMethodType) => void }) {
     <div className="grid gap-2.5 sm:grid-cols-2">
       {CONTACT_METHOD_TYPES.map((type) => {
         const meta = CONTACT_METHOD_META[type];
-        const Icon = meta.icon;
         return (
           <Button
             key={type}
@@ -114,7 +116,7 @@ function TypePicker({ onPick }: { onPick: (type: ContactMethodType) => void }) {
             onClick={() => onPick(type)}
           >
             <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover/button:bg-primary group-hover/button:text-primary-foreground">
-              <Icon className="size-4" aria-hidden />
+              <Icon path={meta.icon} size="16px" aria-hidden />
             </span>
             <span className="font-medium">{meta.label}</span>
           </Button>
