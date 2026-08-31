@@ -34,6 +34,12 @@ export interface FormRunnerProps {
   onSubmit?: ((data: Record<string, unknown>) => void) | undefined;
   submitting?: boolean;
   submitLabel?: string;
+  /**
+   * Fill the host's height instead of growing with content, so a renderer that wants its own
+   * internal scroll region (the Categorization flow layout) gets a definite height box to divide.
+   * Opt-in: the default keeps the content-height flow every other caller relies on.
+   */
+  fill?: boolean;
 }
 
 const VALIDATION = 'ValidateAndShow' as const;
@@ -65,14 +71,14 @@ function Page({
 
 /** Single-page basic form. Renders a validated Submit only when `onSubmit` is provided. */
 function BasicRunner(props: FormRunnerProps) {
-  const { definition, data, onChange, onSubmit, submitting, submitLabel } = props;
+  const { definition, data, onChange, onSubmit, submitting, submitLabel, fill } = props;
   const [errorCount, setErrorCount] = useState(0);
   const page: FormRunnerPage = {
     schema: (definition['schema'] as Record<string, unknown>) ?? {},
     uischema: (definition['uischema'] as Record<string, unknown>) ?? {},
   };
   return (
-    <div className="space-y-6">
+    <div className={fill === true ? 'flex h-full min-h-0 flex-col' : 'space-y-6'}>
       <Page
         page={page}
         data={data}

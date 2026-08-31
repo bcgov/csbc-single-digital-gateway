@@ -105,6 +105,8 @@ export type ServiceResponse = z.infer<typeof serviceSchema>;
 export const serviceVersionSchema = z.object({
   id: z.string(),
   documentId: z.string(),
+  /** The document type version this version is pinned to — selects its render template (feature 174). */
+  typeVersionId: z.string(),
   version: z.number().int(),
   status: z.enum(['draft', 'published', 'archived']),
   data: z.record(z.string(), z.unknown()),
@@ -153,7 +155,18 @@ export type DefinitionResponse = z.infer<typeof definitionSchema>;
 export const serviceDetailSchema = z.object({
   service: serviceSchema,
   versions: z.array(serviceVersionSchema),
+  /**
+   * The template for the CURRENT version (latest published, else latest) — kept for the editor and
+   * every existing consumer.
+   */
   definition: definitionSchema,
+  /**
+   * Every template the service's versions span, keyed by `typeVersionId` (feature 174). A version
+   * authored before a Service type reshape must render against its OWN template, so read surfaces
+   * look up `definitions[version.typeVersionId]` rather than using `definition` for all versions.
+   * Usually a single entry.
+   */
+  definitions: z.record(z.string(), definitionSchema),
   /** Whether any of the service's application forms has submissions — gates delete vs archive. */
   hasSubmissions: z.boolean(),
 });
@@ -182,6 +195,7 @@ export function toServiceVersionDto(row: DocumentVersion): ServiceVersionRespons
   return {
     id: row.id,
     documentId: row.documentId,
+    typeVersionId: row.typeVersionId,
     version: row.version,
     status: row.status,
     data: row.data,

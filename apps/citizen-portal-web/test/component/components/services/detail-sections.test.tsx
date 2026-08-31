@@ -12,6 +12,7 @@ import {
   YourActivity,
   HelpAndInformation,
   ServiceSections,
+  readContactMethods,
 } from '@/components/services/detail-sections';
 import { ContactSection } from '@/components/services/contact-section';
 
@@ -305,5 +306,45 @@ describe('ServiceSections Component', () => {
     const content = screen.getByTestId('service-content');
     expect(content).toBeInTheDocument();
     expect(content.textContent).toContain(JSON.stringify(mockSchema));
+  });
+});
+
+/**
+ * Feature 174 ripple. The reshaped Service type nests contact methods at
+ * `data.service_description.contact_methods`; services authored against the OLD type version keep
+ * them flat at `data.contact_methods`. The Contact section must read either.
+ */
+describe('readContactMethods — contact methods path tolerance (feature 174)', () => {
+  const methods = [{ type: 'email', value: 'help@riverton.gov' }];
+
+  it('should read contact methods from the flat legacy path', () => {
+    expect(readContactMethods({ contact_methods: methods })).toEqual(methods);
+  });
+
+  it('should read contact methods from the nested service_description path', () => {
+    expect(readContactMethods({ service_description: { contact_methods: methods } })).toEqual(
+      methods,
+    );
+  });
+
+  it('should prefer the nested path when both are present', () => {
+    const nested = [{ type: 'phone', value: '250-555-0100' }];
+    expect(
+      readContactMethods({
+        contact_methods: methods,
+        service_description: { contact_methods: nested },
+      }),
+    ).toEqual(nested);
+  });
+
+  it('should fall back to the flat path when the group exists without the key', () => {
+    expect(readContactMethods({ contact_methods: methods, service_description: {} })).toEqual(
+      methods,
+    );
+  });
+
+  it('should return undefined when neither path has a value', () => {
+    expect(readContactMethods({})).toBeUndefined();
+    expect(readContactMethods({ service_description: null })).toBeUndefined();
   });
 });

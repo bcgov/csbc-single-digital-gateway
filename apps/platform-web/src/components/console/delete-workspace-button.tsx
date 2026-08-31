@@ -27,8 +27,8 @@ export function DeleteWorkspaceButton({
   const mutation = useMutation({
     mutationFn: () => deleteWorkspace(workspaceId),
     onSuccess: async () => {
-      // Drop all workspace caches (incl. the deleted one and the gate's "newest") so /app refetches
-      // fresh and redirects to a remaining workspace — only showing the create modal if none remain.
+      // Drop all workspace caches (incl. the deleted one) so the /app selection page refetches fresh
+      // (feature 161) — it lists the remaining workspaces, or an empty state if none remain.
       queryClient.removeQueries({ queryKey: ['workspaces'] });
       await navigate({ to: '/app' });
     },

@@ -45,6 +45,10 @@
   --app-border-medium: var(--bcds-surface-color-border-medium);
   --app-border-dark: var(--bcds-surface-color-border-dark);
   --app-input: var(--bcds-surface-color-border-default);
+  /* The input FILL, deliberately separate from `--app-input` (the input BORDER). One token cannot
+     serve both: a border-strength grey diluted into a fill is what made every input look washed
+     out, and it made the two impossible to set independently. See MDD doc 173. */
+  --app-input-background: var(--bcds-surface-color-background-white);
   --app-ring: var(--bcds-surface-color-border-active);
 
   /* ------------------------------------------------------------------------ */

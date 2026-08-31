@@ -11,7 +11,10 @@ import {
   Hash,
   Heading,
   Layers,
+  LayoutGrid,
   ListChecks,
+  ListCollapse,
+  RectangleHorizontal,
   MapPin,
   Pilcrow,
   SlidersHorizontal,
@@ -26,6 +29,7 @@ import {
  * data (they emit a `Label` uischema element with no `schema.properties` entry — see feature 81).
  */
 export type FieldTypeId =
+  | 'accordiongroup'
   | 'text'
   | 'number'
   | 'boolean'
@@ -43,7 +47,9 @@ export type FieldTypeId =
   | 'paragraph'
   | 'richtextdisplay'
   | 'group'
-  | 'horizontal';
+  | 'horizontal'
+  | 'grid'
+  | 'section';
 
 export type FieldGroup =
   | 'Core'
@@ -166,6 +172,15 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     keywords: ['location', 'street', 'postal', 'zip', 'country', 'state', 'province'],
   },
   {
+    id: 'accordiongroup',
+    label: 'Accordion group',
+    description: 'A repeatable list of collapsible titled sections.',
+    group: 'Advanced',
+    kind: 'control',
+    icon: ListCollapse,
+    keywords: ['accordion', 'faq', 'collapsible', 'expandable', 'repeatable', 'list'],
+  },
+  {
     id: 'richtext',
     label: 'Rich text',
     description: 'Formatted text with styling.',
@@ -218,6 +233,24 @@ export const FIELD_TYPES: FieldTypeDef[] = [
     icon: Columns2,
   },
   {
+    id: 'section',
+    label: 'Section',
+    description: 'Band related fields on a shaded panel.',
+    group: 'Layout',
+    kind: 'container',
+    icon: RectangleHorizontal,
+    keywords: ['fieldset', 'panel', 'band', 'legend', 'box'],
+  },
+  {
+    id: 'grid',
+    label: 'Grid',
+    description: 'Lay fields out in a fixed-column grid.',
+    group: 'Layout',
+    kind: 'container',
+    icon: LayoutGrid,
+    keywords: ['columns', 'rows', 'grid'],
+  },
+  {
     id: 'slider',
     label: 'Slider',
     description: 'Choose a number on a range.',
@@ -233,7 +266,7 @@ export const FIELD_TYPE_BY_ID: Record<FieldTypeId, FieldTypeDef> = Object.fromEn
 
 /**
  * Choice fields (feature 156, Step 2): every one carries an authored `{ label, value }[]` the inspector
- * edits (with reordering) and serializes to `uischema.options.choices` for the unified choice renderer.
- * `select` also carries a single/multi switch; `radio` is single, `checkboxes` multi.
+ * edits (with reordering) and serializes to schema-native `oneOf`/`const`/`title` (feature 167) for the
+ * unified choice renderer. `select` also carries a single/multi switch; `radio` is single, `checkboxes` multi.
  */
 export const CHOICE_FIELD_TYPES = new Set<FieldTypeId>(['select', 'radio', 'checkboxes']);

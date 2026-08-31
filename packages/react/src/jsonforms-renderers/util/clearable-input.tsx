@@ -15,14 +15,21 @@ import { Icon } from '@mdi/react';
 export function ClearableInput({
   onClear,
   disabled,
+  readOnly,
   className,
   ...props
 }: Omit<ComponentProps<'input'>, 'ref'> & { onClear: () => void }) {
   const hasValue = props.value !== undefined && props.value !== null && props.value !== '';
   return (
     <InputGroup {...(className ? { className } : {})}>
-      <InputGroupInput disabled={disabled} {...props} />
-      {hasValue && disabled !== true ? (
+      <InputGroupInput
+        disabled={disabled}
+        readOnly={readOnly}
+        className={readOnly === true ? 'bg-muted text-muted-foreground cursor-default' : undefined}
+        {...props}
+      />
+      {/* A read-only field must not offer a clear affordance either — clearing is an edit. */}
+      {hasValue && disabled !== true && readOnly !== true ? (
         <InputGroupAddon align="inline-end">
           <InputGroupButton type="button" aria-label="Clear" onClick={onClear}>
             <Icon path={mdiClose} size="14px" aria-hidden />

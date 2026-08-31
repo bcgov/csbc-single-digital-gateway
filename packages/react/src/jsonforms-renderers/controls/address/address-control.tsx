@@ -21,7 +21,13 @@ function subFieldDescribedBy(id: string, error: string | undefined): string | un
 }
 import { AddressSearchField } from './address-search';
 import { addressLabelsForIso2 } from './labels';
-import { type AddressValue, isAddressEmpty, normalizeAddress } from './model';
+import {
+  type AddressFieldsOptions,
+  type AddressValue,
+  isAddressEmpty,
+  normalizeAddress,
+  readAddressFieldsOptions,
+} from './model';
 import { type GeoCountryOption, type GeoData, useGeo } from './geo-context';
 
 /** Dispatched purely by the uischema option `format: 'address'`, ranked above generic controls. */
@@ -36,6 +42,22 @@ export const addressControlTester: RankedTester = rankWith(
  */
 export function withCountry(prev: AddressValue, country: string): AddressValue {
   return { ...prev, country, province: '' };
+}
+
+/**
+ * Merge a multi-field patch (the geocoder address search fills line 1 + city + region at once) while
+ * REFUSING to touch any sub-field the author locked read-only (feature 170) — otherwise choosing a
+ * suggested address would silently overwrite a read-only country or province.
+ */
+export function withFill(
+  prev: AddressValue,
+  patch: Partial<AddressValue>,
+  locks: AddressFieldsOptions,
+): AddressValue {
+  const allowed = Object.fromEntries(
+    Object.entries(patch).filter(([key]) => !locks[key as keyof AddressValue].readOnly),
+  );
+  return { ...prev, ...allowed };
 }
 
 /** Resolve the selected country's record by its stored display name. */
@@ -87,7 +109,17 @@ function Row({ children }: { children: ReactNode }) {
 interface BodyProps {
   baseId: string;
   value: AddressValue;
+  /** The WHOLE control is disabled (JSONForms `enabled === false`). */
   disabled: boolean;
+  /**
+   * Whether one sub-field is locked READ-ONLY by the author (feature 170). Deliberately not
+   * `disabled`: the locked value still applies and is still submitted — the citizen just cannot change
+   * it — so the input must stay focusable and be announced to assistive tech with its value. A
+   * disabled input drops out of the tab order, which would hide the very value the lock exists to
+   * communicate. One lookup, honoured identically by both bodies, so a lock can never be enforced in
+   * one render path and silently missed in the other.
+   */
+  readOnlyFor: (key: keyof AddressValue) => boolean;
   onField: (key: keyof AddressValue, next: string) => void;
   onCountry: (next: string) => void;
   /** Merge several fields at once — used by the geocoder address search to fill line 1 + city. */
@@ -97,7 +129,7 @@ interface BodyProps {
 }
 
 /** The free-text address body — country + province are plain inputs (no geo data available). */
-function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
+function PlainBody({ baseId, value, disabled, readOnlyFor, onField, meta }: BodyProps) {
   const labels = addressLabelsForIso2(undefined);
   return (
     <>
@@ -106,6 +138,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
           id={`${baseId}-country`}
           value={value.country}
           disabled={disabled}
+          readOnly={readOnlyFor('country')}
           aria-invalid={meta('country').error !== undefined}
           aria-describedby={subFieldDescribedBy(`${baseId}-country`, meta('country').error)}
           onChange={(event) => onField('country', event.target.value)}
@@ -116,6 +149,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
         baseId={baseId}
         value={value}
         disabled={disabled}
+        readOnlyFor={readOnlyFor}
         onField={onField}
         meta={meta}
       />
@@ -124,6 +158,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
           baseId={baseId}
           value={value}
           disabled={disabled}
+          readOnlyFor={readOnlyFor}
           onField={onField}
           meta={meta}
         />
@@ -132,6 +167,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
             id={`${baseId}-province`}
             value={value.province}
             disabled={disabled}
+            readOnly={readOnlyFor('province')}
             aria-invalid={meta('province').error !== undefined}
             aria-describedby={subFieldDescribedBy(`${baseId}-province`, meta('province').error)}
             onChange={(event) => onField('province', event.target.value)}
@@ -144,6 +180,7 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
           id={`${baseId}-postal_code`}
           value={value.postal_code}
           disabled={disabled}
+          readOnly={readOnlyFor('postal_code')}
           aria-invalid={meta('postal_code').error !== undefined}
           aria-describedby={subFieldDescribedBy(`${baseId}-postal_code`, meta('postal_code').error)}
           onChange={(event) => onField('postal_code', event.target.value)}
@@ -154,10 +191,13 @@ function PlainBody({ baseId, value, disabled, onField, meta }: BodyProps) {
   );
 }
 
-type LineProps = Pick<BodyProps, 'baseId' | 'value' | 'disabled' | 'onField' | 'meta'>;
+type LineProps = Pick<
+  BodyProps,
+  'baseId' | 'value' | 'disabled' | 'readOnlyFor' | 'onField' | 'meta'
+>;
 
 /** Address line 1 + line 2 — each on its own row, identical across the plain and geo bodies. */
-function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
+function AddressLines({ baseId, value, disabled, readOnlyFor, onField, meta }: LineProps) {
   return (
     <>
       <SubField id={`${baseId}-address_one`} label="Address line 1" {...meta('address_one')}>
@@ -165,6 +205,7 @@ function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
           id={`${baseId}-address_one`}
           value={value.address_one}
           disabled={disabled}
+          readOnly={readOnlyFor('address_one')}
           aria-invalid={meta('address_one').error !== undefined}
           aria-describedby={subFieldDescribedBy(`${baseId}-address_one`, meta('address_one').error)}
           onChange={(event) => onField('address_one', event.target.value)}
@@ -176,6 +217,7 @@ function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
           id={`${baseId}-address_two`}
           value={value.address_two}
           disabled={disabled}
+          readOnly={readOnlyFor('address_two')}
           aria-invalid={meta('address_two').error !== undefined}
           aria-describedby={subFieldDescribedBy(`${baseId}-address_two`, meta('address_two').error)}
           onChange={(event) => onField('address_two', event.target.value)}
@@ -187,13 +229,14 @@ function AddressLines({ baseId, value, disabled, onField, meta }: LineProps) {
 }
 
 /** The City sub-field — shared, so both bodies can pair it with their State/Province field in a Row. */
-function CityField({ baseId, value, disabled, onField, meta }: LineProps) {
+function CityField({ baseId, value, disabled, readOnlyFor, onField, meta }: LineProps) {
   return (
     <SubField id={`${baseId}-city`} label="City" {...meta('city')}>
       <ClearableInput
         id={`${baseId}-city`}
         value={value.city}
         disabled={disabled}
+        readOnly={readOnlyFor('city')}
         aria-invalid={meta('city').error !== undefined}
         aria-describedby={subFieldDescribedBy(`${baseId}-city`, meta('city').error)}
         onChange={(event) => onField('city', event.target.value)}
@@ -208,6 +251,7 @@ function GeoBody({
   baseId,
   value,
   disabled,
+  readOnlyFor,
   onField,
   onCountry,
   onFill,
@@ -239,6 +283,7 @@ function GeoBody({
           value={value.country}
           onValueChange={(next) => onCountry(typeof next === 'string' ? next : '')}
           disabled={disabled}
+          readOnly={readOnlyFor('country')}
         >
           <ComboboxInput
             id={`${baseId}-country`}
@@ -246,6 +291,12 @@ function GeoBody({
             placeholder="Select a country"
             aria-invalid={meta('country').error !== undefined}
             aria-describedby={subFieldDescribedBy(`${baseId}-country`, meta('country').error)}
+            // Base UI's Combobox ROOT prop only feeds its store — the NATIVE input attribute has to be
+            // set here as well, or the field stays typeable (verified: the root alone leaves it
+            // editable). Drop the trigger too: nothing can be chosen, so the affordance would lie.
+            disabled={disabled}
+            readOnly={readOnlyFor('country')}
+            showTrigger={!readOnlyFor('country')}
           />
           <ComboboxContent>
             <ComboboxEmpty>No country found.</ComboboxEmpty>
@@ -273,6 +324,7 @@ function GeoBody({
         baseId={baseId}
         value={value}
         disabled={disabled}
+        readOnlyFor={readOnlyFor}
         onField={onField}
         meta={meta}
       />
@@ -281,6 +333,7 @@ function GeoBody({
           baseId={baseId}
           value={value}
           disabled={disabled}
+          readOnlyFor={readOnlyFor}
           onField={onField}
           meta={meta}
         />
@@ -291,6 +344,7 @@ function GeoBody({
               value={value.province}
               onValueChange={(next) => onField('province', typeof next === 'string' ? next : '')}
               disabled={disabled}
+              readOnly={readOnlyFor('province')}
             >
               <ComboboxInput
                 id={`${baseId}-province`}
@@ -298,6 +352,10 @@ function GeoBody({
                 placeholder={`Select a ${labels.stateLabel}`}
                 aria-invalid={meta('province').error !== undefined}
                 aria-describedby={subFieldDescribedBy(`${baseId}-province`, meta('province').error)}
+                // See the country combobox above: the root prop alone does not inert the input.
+                disabled={disabled}
+                readOnly={readOnlyFor('province')}
+                showTrigger={!readOnlyFor('province')}
               />
               <ComboboxContent>
                 <ComboboxEmpty>No {labels.stateLabel} found.</ComboboxEmpty>
@@ -315,6 +373,7 @@ function GeoBody({
               id={`${baseId}-province`}
               value={value.province}
               disabled={disabled}
+              readOnly={readOnlyFor('province')}
               aria-invalid={meta('province').error !== undefined}
               aria-describedby={subFieldDescribedBy(`${baseId}-province`, meta('province').error)}
               onChange={(event) => onField('province', event.target.value)}
@@ -329,6 +388,7 @@ function GeoBody({
             id={`${baseId}-postal_code`}
             value={value.postal_code}
             disabled={disabled}
+            readOnly={readOnlyFor('postal_code')}
             aria-invalid={meta('postal_code').error !== undefined}
             aria-describedby={subFieldDescribedBy(
               `${baseId}-postal_code`,
@@ -355,6 +415,7 @@ function AddressControlComponent({
   required,
   enabled,
   visible,
+  uischema,
 }: ControlProps) {
   const geo = useGeo();
   const ctx = useJsonForms();
@@ -394,6 +455,10 @@ function AddressControlComponent({
   }
   const value = normalizeAddress(data);
   const disabled = enabled === false;
+  // Author-set per-sub-field locks (feature 170). Normalized, so a hand-edited definition can never
+  // throw here; an absent bag simply yields `readOnly: false` for every sub-field.
+  const locks = readAddressFieldsOptions(uischema.options);
+  const readOnlyFor = (key: keyof AddressValue) => locks[key].readOnly;
   const baseId = id || generatedId;
 
   // Required-address validation (feature 153 bug fix): the object schema lists which sub-fields are
@@ -418,9 +483,19 @@ function AddressControlComponent({
   const onField = (key: keyof AddressValue, next: string) =>
     handleChange(path, { ...value, [key]: next });
   const onCountry = (next: string) => handleChange(path, withCountry(value, next));
-  const onFill = (patch: Partial<AddressValue>) => handleChange(path, { ...value, ...patch });
+  const onFill = (patch: Partial<AddressValue>) =>
+    handleChange(path, withFill(value, patch, locks));
 
-  const body: BodyProps = { baseId, value, disabled, onField, onCountry, onFill, meta };
+  const body: BodyProps = {
+    baseId,
+    value,
+    disabled,
+    readOnlyFor,
+    onField,
+    onCountry,
+    onFill,
+    meta,
+  };
 
   return (
     <fieldset

@@ -74,26 +74,29 @@ export function ServiceDetail({
     if (older) {
       if (nextTab === 'methods') {
         navigate({
-          to: '/app/$slug/services/$id/versions/$versionId/application-methods',
+          to: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods',
           params: { slug, id, versionId: vId },
         });
       } else if (nextTab === 'agreements') {
         navigate({
-          to: '/app/$slug/services/$id/versions/$versionId/service-agreements',
+          to: '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements',
           params: { slug, id, versionId: vId },
         });
       } else {
         navigate({
-          to: '/app/$slug/services/$id/versions/$versionId',
+          to: '/app/$slug/services/$id/old/edit/versions/$versionId',
           params: { slug, id, versionId: vId },
         });
       }
     } else if (nextTab === 'methods') {
-      navigate({ to: '/app/$slug/services/$id/application-methods', params: { slug, id } });
+      navigate({
+        to: '/app/$slug/services/$id/old/edit/application-methods',
+        params: { slug, id },
+      });
     } else if (nextTab === 'agreements') {
-      navigate({ to: '/app/$slug/services/$id/service-agreements', params: { slug, id } });
+      navigate({ to: '/app/$slug/services/$id/old/edit/service-agreements', params: { slug, id } });
     } else {
-      navigate({ to: '/app/$slug/services/$id', params: { slug, id } });
+      navigate({ to: '/app/$slug/services/$id/old/edit', params: { slug, id } });
     }
   };
   const goToCurrent = () => navTab(tab);

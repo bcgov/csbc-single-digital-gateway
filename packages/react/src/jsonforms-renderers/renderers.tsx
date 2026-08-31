@@ -1,4 +1,8 @@
 import type { JsonFormsRendererRegistryEntry } from '@jsonforms/core';
+import {
+  AccordionGroupControl,
+  accordionGroupControlTester,
+} from './controls/accordion-group/accordion-group-control';
 import { AddressControl, addressControlTester } from './controls/address/address-control';
 import { BooleanControl, booleanControlTester } from './controls/boolean-control';
 import {
@@ -27,9 +31,15 @@ import {
   CategorizationLayoutRenderer,
   categorizationTester,
 } from './layouts/categorization-layout';
+import {
+  CategorizationFlowLayoutRenderer,
+  categorizationFlowTester,
+} from './layouts/flow/categorization-flow-layout';
+import { GridLayoutRenderer, gridLayoutTester } from './layouts/grid-layout';
 import { GroupLayoutRenderer, groupLayoutTester } from './layouts/group-layout';
 import { HorizontalLayoutRenderer, horizontalLayoutTester } from './layouts/horizontal-layout';
 import { LabelRenderer, labelRendererTester } from './layouts/label-renderer';
+import { SectionLayoutRenderer, sectionLayoutTester } from './layouts/section-layout';
 import { VerticalLayoutRenderer, verticalLayoutTester } from './layouts/vertical-layout';
 
 /**
@@ -59,10 +69,18 @@ export const renderers: JsonFormsRendererRegistryEntry[] = [
   { tester: phoneControlTester, renderer: PhoneControl },
   { tester: contactMethodsControlTester, renderer: ContactMethodsControl },
   { tester: addressControlTester, renderer: AddressControl },
+  // Feature 171: repeatable accordion items (title + rich-text description).
+  { tester: accordionGroupControlTester, renderer: AccordionGroupControl },
   // Layouts
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
+  { tester: gridLayoutTester, renderer: GridLayoutRenderer },
   { tester: groupLayoutTester, renderer: GroupLayoutRenderer },
+  // Feature 172: a fieldset+legend band of related fields.
+  { tester: sectionLayoutTester, renderer: SectionLayoutRenderer },
   { tester: categorizationTester, renderer: CategorizationLayoutRenderer },
+  // Feature 176: the flow variant outranks the tabs renderer above, so an absent or unrecognised
+  // `options.variant` still falls through to tabs — which is every Categorization authored to date.
+  { tester: categorizationFlowTester, renderer: CategorizationFlowLayoutRenderer },
   { tester: labelRendererTester, renderer: LabelRenderer },
 ];

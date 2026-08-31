@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import {
   Select,
+  SelectClear,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -78,5 +79,36 @@ describe('Select', () => {
     await user.click(screen.getByRole('option', { name: 'Apple' }));
 
     expect(onValueChange).toHaveBeenCalledWith('apple', expect.anything());
+  });
+
+  it('SelectClear renders as a labeled sibling button that fires onClick', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <Select value="apple">
+        <div className="group relative">
+          <SelectTrigger aria-label="Fruit">
+            <SelectValue placeholder="Pick a fruit" />
+          </SelectTrigger>
+          <SelectClear aria-label="Clear" onClick={onClick} />
+        </div>
+        <SelectContent>
+          <SelectItem value="apple">Apple</SelectItem>
+        </SelectContent>
+      </Select>,
+    );
+    const clearButton = screen.getByRole('button', { name: 'Clear' });
+    expect(clearButton.tagName).toBe('BUTTON');
+    // Sibling of the trigger, not nested inside it — nesting a button in a button is invalid HTML.
+    const trigger = screen.getByRole('combobox', { name: 'Fruit' });
+    expect(trigger).not.toContainElement(clearButton);
+    // The chevron's `group-has-data-[slot=select-clear]:hidden` class is what makes it disappear
+    // whenever a SelectClear sibling exists in the group — jsdom doesn't compile Tailwind's actual
+    // CSS, so this asserts the styling hook is wired, not the resulting computed visibility.
+    expect(trigger.querySelector('svg')?.getAttribute('class')).toContain(
+      'group-has-data-[slot=select-clear]:hidden',
+    );
+    await user.click(clearButton);
+    expect(onClick).toHaveBeenCalledOnce();
   });
 });

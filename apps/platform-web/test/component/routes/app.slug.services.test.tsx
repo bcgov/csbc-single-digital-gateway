@@ -64,8 +64,6 @@ describe('App Slug Services Layout Route', () => {
     renderApp('/app/riverton/services/');
 
     // Verify services index page content renders through the Outlet
-    expect(
-      await screen.findByText(/Service documents/i, {}, { timeout: 32000 }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/No services yet/i, {}, { timeout: 32000 })).toBeInTheDocument();
   });
 });

@@ -227,15 +227,32 @@ export class ServicesService {
     return { items, total: totals[0]?.count ?? 0, limit: query.limit, offset: query.offset };
   }
 
-  /** A service + its versions + the Service form definition to render. */
+  /**
+   * A service + its versions + the Service form definition(s) to render.
+   *
+   * Feature 174: the definition is resolved **per version** via `document_versions.type_version_id`,
+   * NOT via `serviceType.resolve()` (the currently-published type version). A service authored
+   * before a Service type reshape stays pinned to the old type version and must keep rendering
+   * against the old template — resolving by "currently published" would render every one of its
+   * fields empty. `definitions` maps every type version the service's versions span (usually one);
+   * `definition` is the current version's template, kept for existing consumers.
+   */
   async get(userId: string, id: string): Promise<ServiceDetail> {
     const doc = await this.requireDocument(userId, id);
-    const type = await this.serviceType.resolve();
     const versions = await this.versionsOf(id);
+    const definitions = await this.serviceType.definitionsForVersions(
+      versions.map((version) => version.typeVersionId),
+    );
+    // The "current" version drives the top-level `definition`: the published one if there is one,
+    // else the newest. `versionsOf` returns them oldest-first.
+    const current = versions.findLast((version) => version.publishedAt != null) ?? versions.at(-1);
+    const currentDefinition =
+      current === undefined ? undefined : definitions[current.typeVersionId];
     return {
       service: toServiceDto(doc),
       versions: versions.map(toServiceVersionDto),
-      definition: { schema: type.schema, uischema: type.uischema },
+      definition: currentDefinition ?? { schema: {}, uischema: {} },
+      definitions,
       hasSubmissions: await this.hasSubmissions(id),
     };
   }

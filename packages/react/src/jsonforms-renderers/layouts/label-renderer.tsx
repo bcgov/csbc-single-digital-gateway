@@ -36,8 +36,23 @@ function LabelRendererComponent({ uischema, visible }: LayoutProps) {
   const format = element.options?.format;
 
   if (format === 'heading') {
-    const Tag = element.options?.level === 3 ? 'h3' : 'h2';
-    const size = Tag === 'h3' ? 'text-lg' : 'text-xl';
+    const level = element.options?.level || 2;
+
+    // Explicitly cast the string to the allowed heading types
+    const Tag = `h${Math.min(Math.max(level, 1), 6)}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+
+    // Explicit type mapping for the object keys
+    const sizeMap: Record<'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6', string> = {
+      h1: 'text-3xl',
+      h2: 'text-2xl',
+      h3: 'text-xl',
+      h4: 'text-lg',
+      h5: 'text-base',
+      h6: 'text-sm',
+    };
+
+    const size = sizeMap[Tag];
+
     return <Tag className={`${size} font-semibold text-foreground`}>{text}</Tag>;
   }
   if (format === 'paragraph') {

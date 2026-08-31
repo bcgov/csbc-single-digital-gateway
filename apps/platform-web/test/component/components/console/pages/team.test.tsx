@@ -96,11 +96,9 @@ describe('TeamPage Component Test Suite', () => {
     mockTeamApi();
     renderApp('/app/riverton/team');
 
-    // Toolbar header
+    // Settings/Team sub-nav confirms the section shell rendered.
     expect(
-      await screen.findByText(/People with access to this workspace/, undefined, {
-        timeout: 32000,
-      }),
+      await screen.findByRole('link', { name: 'Team' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Admin action button

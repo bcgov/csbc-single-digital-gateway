@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useQuery } from '@tanstack/react-query';
 import {
   workspacesQueryOptions,
-  newestWorkspaceQueryOptions,
   useWorkspaces,
   workspaceBySlugQueryOptions,
   workspaceMembersQueryOptions,
@@ -82,53 +81,6 @@ describe('Workspaces Unit Test Suite', () => {
       await expect((opts.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
         'GET /v1/workspaces failed: 500',
       );
-    });
-  });
-
-  describe('newestWorkspaceQueryOptions', () => {
-    it('should return newest workspace query options and return the first item', async () => {
-      const opts = newestWorkspaceQueryOptions();
-      expect(opts.queryKey).toEqual(['workspaces', 'newest']);
-      expect(opts.staleTime).toBe(60 * 1000);
-
-      const mockWorkspace = {
-        id: 'w-1',
-        name: 'Workspace 1',
-        slug: 'w1',
-        role: 'admin',
-        ownerId: 'u-1',
-        createdAt: '2026',
-      };
-      const mockData = {
-        items: [mockWorkspace],
-        total: 1,
-        limit: 1,
-        offset: 0,
-      };
-      mockFetch.mockResolvedValueOnce(mockResponse(200, mockData));
-
-      const res = await (opts.queryFn as any)();
-      expect(res).toEqual(mockWorkspace);
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://bff-test/v1/workspaces?sort=createdAt&order=desc&limit=1',
-        {
-          credentials: 'include',
-        },
-      );
-    });
-
-    it('should return null if there is no newest workspace', async () => {
-      const opts = newestWorkspaceQueryOptions();
-      const mockData = {
-        items: [],
-        total: 0,
-        limit: 1,
-        offset: 0,
-      };
-      mockFetch.mockResolvedValueOnce(mockResponse(200, mockData));
-
-      const res = await (opts.queryFn as any)();
-      expect(res).toBeNull();
     });
   });
 

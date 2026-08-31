@@ -4,8 +4,9 @@ import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 
 import { cn } from '@ui/lib/utils';
-import { mdiChevronDown, mdiCheck, mdiChevronUp } from '@mdi/js';
+import { mdiChevronDown, mdiCheck, mdiChevronUp, mdiClose } from '@mdi/js';
 import { Icon } from '@mdi/react';
+import { Button } from '@ui/components/ui/button';
 
 const Select = SelectPrimitive.Root;
 
@@ -42,7 +43,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-md border border-input bg-background px-2 py-2 text-base whitespace-nowrap transition-colors outline-none not-disabled:hover:border-border-dark focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=sm]:h-6 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "flex w-fit items-center justify-between gap-1.5 rounded-md border border-input bg-input-background px-2 py-2 text-base whitespace-nowrap transition-colors outline-none not-disabled:hover:border-border-dark focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=sm]:h-6 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}
@@ -50,10 +51,12 @@ function SelectTrigger({
       {children}
       <SelectPrimitive.Icon
         render={
+          // Hidden when a `SelectClear` sibling is present (requires a `group` ancestor around both,
+          // e.g. `<div className="group relative">`) — the clear icon then occupies the same slot.
           <Icon
             path={mdiChevronDown}
             size="20px"
-            className="pointer-events-none text-muted-foreground"
+            className="pointer-events-none text-muted-foreground group-has-data-[slot=select-clear]:hidden"
           />
         }
       />
@@ -68,7 +71,7 @@ function SelectContent({
   sideOffset = 4,
   align = 'center',
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -137,6 +140,31 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
   );
 }
 
+/**
+ * An external clear affordance for `Select` — Base UI's Select has no built-in `Clear` part (unlike
+ * `Combobox`); its own docs recommend either a `null` item in the list or an external reset button.
+ * Render this as a SIBLING of `SelectTrigger` (not a descendant — the trigger is itself a `<button>`,
+ * and nesting an interactive element inside it is invalid HTML) inside a `group relative` wrapper, e.g.
+ * `<div className="group relative"><SelectTrigger>...</SelectTrigger><SelectClear .../></div>`. It's
+ * positioned in the same slot the chevron occupies — `SelectTrigger`'s chevron hides itself (via a
+ * `group-has-data-[slot=select-clear]` selector) whenever this is present, so the clear icon replaces
+ * the chevron rather than sitting beside it.
+ */
+function SelectClear({ className, ...props }: React.ComponentProps<typeof Button>) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      data-slot="select-clear"
+      className={cn('absolute top-1/2 right-1.5 -translate-y-1/2', className)}
+      {...props}
+    >
+      <Icon path={mdiClose} size="16px" className="pointer-events-none" />
+    </Button>
+  );
+}
+
 function SelectSeparator({ className, ...props }: SelectPrimitive.Separator.Props) {
   return (
     <SelectPrimitive.Separator
@@ -185,6 +213,7 @@ function SelectScrollDownButton({
 
 export {
   Select,
+  SelectClear,
   SelectContent,
   SelectGroup,
   SelectItem,

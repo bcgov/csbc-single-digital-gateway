@@ -155,46 +155,44 @@ describe('Console Services Integration Test Suite', () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services/');
     expect(
-      await screen.findByRole('link', { name: 'Permit application' }, { timeout: 32000 }),
+      await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
   });
 
-  it('drives the list API from the search + sort controls', async () => {
+  it('requests the paged list with the default sort', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services');
-    await screen.findByRole('link', { name: 'Permit application' });
-    const user = userEvent.setup();
+    await screen.findByRole('link', { name: /permit application/i }, { timeout: 32000 });
 
-    // Default list request carries the paging window + default sort.
+    // Default list request carries the paging window + default sort (no search/sort UI anymore).
     const listCall = (predicate: (url: string) => boolean) =>
       fetchMock.mock.calls.some(([input]) => {
         const url = String(input);
         return url.includes('/v1/services?') && predicate(url);
       });
     expect(listCall((url) => url.includes('sort=updated') && url.includes('limit=20'))).toBe(true);
-
-    // Typing a term refetches with an ILIKE `q` (debounced).
-    await user.type(screen.getByRole('searchbox'), 'perm');
-    await waitFor(() => expect(listCall((url) => url.includes('q=perm'))).toBe(true));
-
-    // Clicking a sortable header refetches sorted by that column.
-    await user.click(screen.getByRole('button', { name: /sort by title/i }));
-    await waitFor(() => expect(listCall((url) => url.includes('sort=title'))).toBe(true));
   });
 
-  it('opens the New service modal (title + description) at /services/new', async () => {
+  it('opens the New service modal (title + description) from the services list New button', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/new');
+    renderApp('/app/riverton/services');
+    const user = userEvent.setup();
+
+    const newButton = await screen.findByRole('button', { name: /^new$/i }, { timeout: 32000 });
+    await waitFor(() => expect(newButton).toBeEnabled());
+    await user.click(newButton);
+
+    // The modal + its JSONForms bundle are lazy-loaded on click — allow for the first compile.
     const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 32000 });
-    expect(within(modal).getByLabelText(/title/i)).toBeInTheDocument();
-    expect(within(modal).getByLabelText(/description/i)).toBeInTheDocument();
+    expect(within(modal).getByLabelText(/name of the service/i)).toBeInTheDocument();
+    expect(within(modal).getByLabelText('Short description')).toBeInTheDocument();
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 
   it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
     const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/s1');
+    renderApp('/app/riverton/services/s1/old/edit');
     const user = userEvent.setup();
 
     // Service details tab (default): the JSONForms title control.

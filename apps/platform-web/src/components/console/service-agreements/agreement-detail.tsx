@@ -195,7 +195,8 @@ function AgreementBody({
           ) : null}
         </div>
       </div>
-      {scope.kind === 'admin' ? <h1 className="text-xl font-semibold">{agreement.title}</h1> : null}
+      {/* The page owns its title heading now that the console shell no longer renders one. */}
+      <h1 className="text-xl font-semibold">{agreement.title}</h1>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error.message}

@@ -41,9 +41,13 @@ export interface RichTextInputProps {
   onChange?: (value: SerializedEditorState) => void;
   disabled?: boolean;
   'aria-invalid'?: boolean;
-  /** Accessible name for the editable region — it's a contenteditable div (role="textbox"),
-   *  so a native <label for> can't provide one; callers must pass the field's label text. */
+  /**
+   * The editor is a Lexical `ContentEditable` — a `div`, which `<label for>` cannot name. Pass
+   * `aria-label` or `aria-labelledby` (preferred when a visible caption exists) so the editor has
+   * an accessible name, and `aria-describedby` to link supporting description/error text.
+   */
   'aria-label'?: string;
+  'aria-labelledby'?: string;
   'aria-describedby'?: string | undefined;
   className?: string;
 }
@@ -175,7 +179,9 @@ export function RichTextInput({
   ...props
 }: RichTextInputProps) {
   const ariaInvalid = props['aria-invalid'];
+  // The ContentEditable is a `div`, so `<label for>` cannot name it — forward the aria hooks instead.
   const ariaLabel = props['aria-label'];
+  const ariaLabelledBy = props['aria-labelledby'];
   const ariaDescribedBy = props['aria-describedby'];
   const initialConfig = {
     namespace: 'rich-text-input',
@@ -194,7 +200,7 @@ export function RichTextInput({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-md border border-input bg-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
+        'overflow-hidden rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
         className,
       )}
       aria-invalid={ariaInvalid}
@@ -207,8 +213,9 @@ export function RichTextInput({
               <ContentEditable
                 id={id}
                 aria-invalid={ariaInvalid}
-                aria-label={ariaLabel}
-                aria-describedby={ariaDescribedBy}
+                {...(ariaLabel === undefined ? {} : { 'aria-label': ariaLabel })}
+                {...(ariaLabelledBy === undefined ? {} : { 'aria-labelledby': ariaLabelledBy })}
+                {...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy })}
                 className="min-h-28 px-3 py-2 outline-none [&_a]:cursor-pointer"
               />
             }

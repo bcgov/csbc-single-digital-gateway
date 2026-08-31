@@ -10,6 +10,20 @@ import { ContactSection } from '@/components/services/contact-section';
 import { ServiceContent } from '@/components/services/service-content';
 import { myApplicationsQueryOptions } from '@/lib/catalog';
 
+/**
+ * Read the service's contact methods from `data`, tolerating BOTH shapes (feature 174): services
+ * authored against the reshaped Service type nest them under the `service_description` group, while
+ * services still pinned to the older type version keep them flat at the root. Prefer the nested
+ * path — a service on the new template is the current shape.
+ */
+export function readContactMethods(data: Record<string, unknown>): unknown {
+  const group = data.service_description;
+  if (group !== null && typeof group === 'object' && 'contact_methods' in group) {
+    return (group as { contact_methods: unknown }).contact_methods;
+  }
+  return data.contact_methods;
+}
+
 /** The anchor targets shown in the left "On this page" nav and used as section ids. */
 export const DETAIL_SECTIONS = [
   { id: 'overview', label: 'Overview' },
@@ -289,6 +303,7 @@ export function ServiceSections({
             schema={schema}
             uischema={uischema}
             data={data}
+            // `omitControls` recurses, so this drops `contact_methods` at either path (feature 174).
             omit={['title', 'description', 'contact_methods']}
           />
         </Section>
@@ -305,7 +320,7 @@ export function ServiceSections({
           <HelpAndInformation />
         </Section>
         <Section id="contact" title="Contact information">
-          <ContactSection value={data.contact_methods} />
+          <ContactSection value={readContactMethods(data)} />
         </Section>
       </div>
     </div>

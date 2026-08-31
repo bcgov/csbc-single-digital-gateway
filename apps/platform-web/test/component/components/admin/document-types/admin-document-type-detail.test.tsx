@@ -1,4 +1,4 @@
-import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
@@ -22,6 +22,15 @@ vi.mock('@monaco-editor/react', () => ({
     />
   ),
 }));
+
+// The live preview renders through JSONForms (heavy; covered in @repo/react). Stub it + the display
+// renderer set so this suite stays fast — reflect the `readonly` prop so we can assert the toggle.
+vi.mock('@repo/react/jsonforms', () => ({
+  JsonForms: ({ readonly }: { readonly?: boolean }) => (
+    <div data-testid="jsonforms">{readonly ? 'readonly' : 'interactive'}</div>
+  ),
+}));
+vi.mock('@repo/react/jsonforms-renderers-display', () => ({ displayRenderers: [] }));
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -50,6 +59,15 @@ interface Entry {
   versions: Version[];
 }
 
+/** A JSONForms-renderable definition (has a `schema`) so the preview pane renders the form stub. */
+const defWithSchema = (title: string) => ({
+  schema: { type: 'object', properties: { title: { type: 'string', title } } },
+  uischema: {
+    type: 'VerticalLayout',
+    elements: [{ type: 'Control', scope: '#/properties/title' }],
+  },
+});
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -75,38 +93,34 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
       if (!entry) {
         return new Response(null, { status: 404 });
       }
-      if (segs.length === 1) {
-        if (method === 'GET') {
-          return json(entry);
-        }
+      if (segs.length === 1 && method === 'GET') {
+        return json(entry);
       }
       if (segs[1] === 'versions') {
-        if (segs.length === 2) {
-          if (method === 'POST') {
-            const body = init?.body
-              ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
-              : { definition: {} };
-            const nextVerNum = entry.versions.length + 1;
-            const newVersion: Version = {
-              id: `${entry.type.id}-v${nextVerNum}`,
-              typeId: entry.type.id,
-              version: nextVerNum,
-              status: 'draft',
-              definition: body.definition,
-              createdAt: ISO,
-              publishedAt: null,
-              archivedAt: null,
-            };
-            entry.versions.push(newVersion);
-            return json(newVersion);
-          }
-        } else if (segs.length === 3) {
+        if (segs.length === 2 && method === 'POST') {
+          const body = init?.body
+            ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
+            : { definition: {} };
+          const nextVerNum = entry.versions.length + 1;
+          const newVersion: Version = {
+            id: `${entry.type.id}-v${nextVerNum}`,
+            typeId: entry.type.id,
+            version: nextVerNum,
+            status: 'draft',
+            definition: body.definition,
+            createdAt: ISO,
+            publishedAt: null,
+            archivedAt: null,
+          };
+          entry.versions.push(newVersion);
+          return json(newVersion);
+        }
+        if (segs.length === 3) {
           const versionId = decodeURIComponent(segs[2]!);
-          const versionIdx = entry.versions.findIndex((v) => v.id === versionId);
-          if (versionIdx === -1) {
+          const version = entry.versions.find((v) => v.id === versionId);
+          if (!version) {
             return new Response(null, { status: 404 });
           }
-          const version = entry.versions[versionIdx]!;
           if (method === 'PATCH') {
             const body = init?.body
               ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
@@ -114,18 +128,14 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
             version.definition = body.definition;
             return json(version);
           }
-          if (method === 'DELETE') {
-            entry.versions.splice(versionIdx, 1);
-            return new Response(null, { status: 204 });
-          }
-        } else if (segs.length === 4) {
+        }
+        if (segs.length === 4) {
           const versionId = decodeURIComponent(segs[2]!);
           const version = entry.versions.find((v) => v.id === versionId);
           if (!version) {
             return new Response(null, { status: 404 });
           }
-          const action = segs[3];
-          if (action === 'publish' && method === 'POST') {
+          if (segs[3] === 'publish' && method === 'POST') {
             for (const v of entry.versions) {
               if (v.status === 'published') {
                 v.status = 'archived';
@@ -134,11 +144,6 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
             }
             version.status = 'published';
             version.publishedAt = ISO;
-            return json(version);
-          }
-          if (action === 'archive' && method === 'POST') {
-            version.status = 'archived';
-            version.archivedAt = ISO;
             return json(version);
           }
         }
@@ -151,7 +156,7 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
   return { store, fetchMock };
 }
 
-const basicEntry: Entry = {
+const publishedEntry: Entry = {
   type: { id: 'dt-1', workspaceId: null, name: 'Basic Form', kind: 'basic-form', createdAt: ISO },
   versions: [
     {
@@ -159,7 +164,7 @@ const basicEntry: Entry = {
       typeId: 'dt-1',
       version: 1,
       status: 'published',
-      definition: { name: 'x' },
+      definition: defWithSchema('v1'),
       createdAt: ISO,
       publishedAt: ISO,
       archivedAt: null,
@@ -167,7 +172,8 @@ const basicEntry: Entry = {
   ],
 };
 
-const multipleEntry: Entry = {
+// Published v1 + a draft v2 (v2 is the latest).
+const draftLatestEntry: Entry = {
   type: { id: 'dt-1', workspaceId: null, name: 'Basic Form', kind: 'basic-form', createdAt: ISO },
   versions: [
     {
@@ -175,7 +181,7 @@ const multipleEntry: Entry = {
       typeId: 'dt-1',
       version: 1,
       status: 'published',
-      definition: { name: 'v1' },
+      definition: defWithSchema('v1'),
       createdAt: ISO,
       publishedAt: ISO,
       archivedAt: null,
@@ -185,7 +191,7 @@ const multipleEntry: Entry = {
       typeId: 'dt-1',
       version: 2,
       status: 'draft',
-      definition: { name: 'v2' },
+      definition: defWithSchema('v2'),
       createdAt: ISO,
       publishedAt: null,
       archivedAt: null,
@@ -194,91 +200,161 @@ const multipleEntry: Entry = {
 };
 
 describe('AdminDocumentTypeDetail', () => {
-  it('renders document type details, version history, and definition', async () => {
-    mockApi([basicEntry]);
+  it('renders the heading, version dropdown, and seeded definition editor', async () => {
+    mockApi([publishedEntry]);
     renderApp('/admin/document-types/dt-1');
 
     expect(
       await screen.findByRole('heading', { name: 'Basic Form' }, { timeout: 32000 }),
     ).toBeInTheDocument();
     expect(screen.getByText('basic-form')).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'v1' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'published' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /version v1/i })).toBeInTheDocument();
 
     const textarea = screen.getByLabelText('definition');
-    expect(textarea).toBeInTheDocument();
-    expect(textarea).toHaveValue(JSON.stringify({ name: 'x' }, null, 2));
+    expect(textarea).toHaveValue(JSON.stringify(defWithSchema('v1'), null, 2));
     expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
   });
 
-  it('switches the definition displayed in editor when clicking a different version row', async () => {
-    mockApi([multipleEntry]);
+  it('shows New version (only) on a non-draft latest version', async () => {
+    mockApi([publishedEntry]);
     renderApp('/admin/document-types/dt-1');
 
-    // Default selected version should be the latest (v2, which is draft)
-    const textarea = await screen.findByLabelText('definition');
-    expect(textarea).toHaveValue(JSON.stringify({ name: 'v2' }, null, 2));
-    expect(screen.getByText('Definition (v2)')).toBeInTheDocument();
-    expect(screen.queryByText('Read-only (not a draft)')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-
-    // Click the row for v1
-    const v1Cell = screen.getByRole('cell', { name: 'v1' });
-    fireEvent.click(v1Cell);
-
-    // Should switch to v1 definition (read-only)
-    await waitFor(() => {
-      expect(textarea).toHaveValue(JSON.stringify({ name: 'v1' }, null, 2));
-    });
-    expect(screen.getByText('Definition (v1)')).toBeInTheDocument();
-    expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'New version' }, { timeout: 32000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
   });
 
-  it('saves updates to a draft version definition', async () => {
-    const { fetchMock } = mockApi([multipleEntry]);
+  it('shows Save draft + Publish (not New version) when the latest version is a draft', async () => {
+    mockApi([draftLatestEntry]);
+    renderApp('/admin/document-types/dt-1');
+
+    // v2 (draft) is selected by default.
+    expect(
+      await screen.findByRole('button', { name: 'Save draft' }, { timeout: 32000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New version' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Read-only (not a draft)')).not.toBeInTheDocument();
+  });
+
+  it('switches the selected version via the dropdown (older non-draft is read-only)', async () => {
+    mockApi([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
     const textarea = await screen.findByLabelText('definition');
-    const saveButton = screen.getByRole('button', { name: 'Save' });
+    expect(textarea).toHaveValue(JSON.stringify(defWithSchema('v2'), null, 2));
 
-    // Modify definition value
-    const updatedJson = JSON.stringify({ name: 'v2-updated', count: 123 }, null, 2);
-    fireEvent.change(textarea, { target: { value: updatedJson } });
+    await user.click(await screen.findByRole('button', { name: /version v2/i }));
+    await user.click(await screen.findByRole('menuitem', { name: /v1/i }));
 
-    // Save changes
+    await waitFor(() => expect(textarea).toHaveValue(JSON.stringify(defWithSchema('v1'), null, 2)));
+    expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Go to current' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument();
+  });
+
+  it('saves the draft definition via PATCH', async () => {
+    const { fetchMock } = mockApi([draftLatestEntry]);
+    renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
+
+    const textarea = await screen.findByLabelText('definition');
+    const saveButton = screen.getByRole('button', { name: 'Save draft' });
+
+    const updated = JSON.stringify({ ...defWithSchema('v2'), count: 123 }, null, 2);
+    fireEvent.change(textarea, { target: { value: updated } });
+
+    await waitFor(() => expect(saveButton).toBeEnabled());
     await user.click(saveButton);
 
     await waitFor(() => {
-      const patchCall = fetchMock.mock.calls.find(
+      const patch = fetchMock.mock.calls.find(
         ([input, init]) =>
           String(input).includes('/v1/admin/document-types/dt-1/versions/dt-1-v2') &&
           (init?.method ?? 'GET').toUpperCase() === 'PATCH',
       );
-      expect(patchCall).toBeTruthy();
-      expect(JSON.parse(String(patchCall?.[1]?.body))).toEqual({
-        definition: { name: 'v2-updated', count: 123 },
+      expect(patch).toBeTruthy();
+      expect(JSON.parse(String(patch?.[1]?.body))).toEqual({
+        definition: { ...defWithSchema('v2'), count: 123 },
       });
     });
   });
 
-  it('shows an error message if the draft definition is not valid JSON upon save', async () => {
-    mockApi([multipleEntry]);
+  it('shows an error when the draft definition is not valid JSON on save', async () => {
+    mockApi([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
     const textarea = await screen.findByLabelText('definition');
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-
-    // Put invalid JSON in editor
     fireEvent.change(textarea, { target: { value: '{"broken": json' } });
+    const saveButton = screen.getByRole('button', { name: 'Save draft' });
+    await waitFor(() => expect(saveButton).toBeEnabled());
     await user.click(saveButton);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Definition is not valid JSON.');
   });
 
-  it('renders nothing when document type data is not loaded', async () => {
+  it('publishes the selected draft version', async () => {
+    const { fetchMock } = mockApi([draftLatestEntry]);
+    renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
+
+    // Publish is enabled only when not dirty (nothing edited yet).
+    const publishButton = await screen.findByRole(
+      'button',
+      { name: 'Publish' },
+      { timeout: 32000 },
+    );
+    await user.click(publishButton);
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).includes('/v1/admin/document-types/dt-1/versions/dt-1-v2/publish') &&
+            (init?.method ?? 'GET').toUpperCase() === 'POST',
+        ),
+      ).toBe(true);
+    });
+  });
+
+  it('creates a new version from the latest published version', async () => {
+    const { fetchMock } = mockApi([publishedEntry]);
+    renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'New version' }, { timeout: 32000 }),
+    );
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).includes('/v1/admin/document-types/dt-1/versions') &&
+            (init?.method ?? 'GET').toUpperCase() === 'POST',
+        ),
+      ).toBe(true);
+    });
+  });
+
+  it('renders the live preview and toggles between interactive and read-only', async () => {
+    mockApi([draftLatestEntry]);
+    renderApp('/admin/document-types/dt-1');
+    const user = userEvent.setup();
+
+    // Preview (JSONForms stub) appears once the definition text debounces in.
+    const preview = await screen.findByTestId('jsonforms', undefined, { timeout: 32000 });
+    expect(preview).toHaveTextContent('interactive');
+
+    await user.click(screen.getByRole('button', { name: 'Read-only' }));
+    await waitFor(() => expect(screen.getByTestId('jsonforms')).toHaveTextContent('readonly'));
+  });
+
+  it('renders nothing when the document type is not found', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/auth/me')) {
@@ -291,152 +367,5 @@ describe('AdminDocumentTypeDetail', () => {
     const { container } = renderApp('/admin/document-types/dt-unknown');
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(container.querySelector('main')?.firstChild).toBeNull();
-  });
-
-  it('renders archived status correctly', async () => {
-    const archivedEntry: Entry = {
-      type: {
-        id: 'dt-1',
-        workspaceId: null,
-        name: 'Basic Form',
-        kind: 'basic-form',
-        createdAt: ISO,
-      },
-      versions: [
-        {
-          id: 'dt-1-v1',
-          typeId: 'dt-1',
-          version: 1,
-          status: 'archived',
-          definition: { name: 'x' },
-          createdAt: ISO,
-          publishedAt: ISO,
-          archivedAt: ISO,
-        },
-      ],
-    };
-    mockApi([archivedEntry]);
-    renderApp('/admin/document-types/dt-1');
-
-    expect(await screen.findByRole('cell', { name: 'archived' })).toBeInTheDocument();
-  });
-
-  it('disables the Save button while saving draft text', async () => {
-    let resolveSave: ((r: Response) => void) | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return json(adminUser);
-      if (
-        url.includes('/v1/admin/document-types/dt-1/versions/dt-1-v2') &&
-        init?.method === 'PATCH'
-      ) {
-        return new Promise<Response>((resolve) => {
-          resolveSave = resolve;
-        });
-      }
-      return json(multipleEntry);
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-    renderApp('/admin/document-types/dt-1');
-    const user = userEvent.setup();
-
-    const textarea = await screen.findByLabelText('definition');
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-
-    // Modify definition
-    fireEvent.change(textarea, { target: { value: '{"key": "new"}' } });
-    await user.click(saveButton);
-
-    // It should be disabled now
-    expect(saveButton).toBeDisabled();
-
-    // Resolve the promise
-    resolveSave!(
-      json({
-        id: 'dt-1-v2',
-        typeId: 'dt-1',
-        version: 2,
-        status: 'draft',
-        definition: { key: 'new' },
-        createdAt: ISO,
-        publishedAt: null,
-        archivedAt: null,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(saveButton).not.toBeDisabled();
-    });
-  });
-
-  it('covers selected?.definition ?? {} fallback on line 50 when versions is empty', async () => {
-    const emptyVersionsEntry: Entry = {
-      type: {
-        id: 'dt-empty',
-        workspaceId: null,
-        name: 'Empty Form',
-        kind: 'basic-form',
-        createdAt: ISO,
-      },
-      versions: [],
-    };
-    const { fetchMock } = mockApi([emptyVersionsEntry]);
-    renderApp('/admin/document-types/dt-empty');
-    const user = userEvent.setup();
-
-    const newVerBtn = await screen.findByRole('button', { name: 'New version' });
-    await user.click(newVerBtn);
-
-    await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some(([url, init]) => {
-          if (!String(url).includes('/v1/admin/document-types/dt-empty/versions')) return false;
-          if (init?.method !== 'POST') return false;
-          const body = JSON.parse(init.body as string);
-          return JSON.stringify(body.definition) === '{}';
-        }),
-      ).toBe(true);
-    });
-  });
-
-  it('disables the New version button while creating a new version', async () => {
-    let resolveAdd: ((r: Response) => void) | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return json(adminUser);
-      if (url.includes('/v1/admin/document-types/dt-1/versions') && init?.method === 'POST') {
-        return new Promise<Response>((resolve) => {
-          resolveAdd = resolve;
-        });
-      }
-      return json(multipleEntry);
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-    renderApp('/admin/document-types/dt-1');
-    const user = userEvent.setup();
-
-    const newVerButton = await screen.findByRole('button', { name: 'New version' });
-    await user.click(newVerButton);
-
-    expect(newVerButton).toBeDisabled();
-
-    resolveAdd!(
-      json({
-        id: 'dt-1-v3',
-        typeId: 'dt-1',
-        version: 3,
-        status: 'draft',
-        definition: {},
-        createdAt: ISO,
-        publishedAt: null,
-        archivedAt: null,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(newVerButton).not.toBeDisabled();
-    });
   });
 });

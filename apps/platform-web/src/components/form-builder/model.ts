@@ -35,6 +35,11 @@ export interface ControlNode {
   /** Select field only (feature 156, Step 2): single (string enum) vs multi (array). Default false. */
   multiple?: boolean;
   /**
+   * Select field only (feature 168): render a filterable Combobox (chips for multi) instead of the
+   * plain dropdown → `uischema.options.combobox = true`. Opt-in, default false.
+   */
+  combobox?: boolean;
+  /**
    * Boolean field only (feature 156): on-screen affordance. `'toggle'` serializes
    * `uischema.options.toggle = true` (→ the `@repo/react` Switch renderer); `'checkbox'` (default)
    * emits no flag (→ the Checkbox renderer). Same boolean data either way — presentation only.
@@ -57,6 +62,53 @@ export interface ControlNode {
   defaultCountry?: string;
   /** Address field only: the author-set default state/province name. Cleared when the country changes. */
   defaultProvince?: string;
+  /**
+   * Address field only (feature 170): lock the country sub-field so citizens see the default but
+   * cannot change it. Optional on the shared `ControlNode` (it is meaningless for other field types),
+   * but ALWAYS populated for an address node — the factory and the parser both set it — so the
+   * inspector Switch is always a controlled input. Absent reads as `false`.
+   */
+  readOnlyCountry?: boolean;
+  /** Address field only (feature 170): the same lock for the state/province sub-field. */
+  readOnlyProvince?: boolean;
+  /**
+   * Accordion group only (feature 171): the author's noun for one entry ("question"), used for the
+   * "Add <noun>" row, the empty state and every row's accessible name → `uischema.options.itemLabel`.
+   * Always populated for an accordion node (factory + parser both set it) so the inspector input
+   * stays controlled.
+   */
+  itemLabel?: string;
+  /**
+   * Accordion group only (feature 171): which sections the READ-ONLY view opens on first render →
+   * `uischema.options.defaultOpen`. Always populated for an accordion node, same reason as above.
+   */
+  defaultOpen?: AccordionDefaultOpen;
+  /**
+   * Accordion group only (feature 171, revision 3): the author-set bounds on HOW MANY items →
+   * `schema.minItems` / `schema.maxItems`. Distinct from per-item completeness (which governs what
+   * an item contains). Absent = unbounded; a `minItems` of 1 or more IMPLIES the field is required
+   * (see `applyItemBounds`), so the two can never contradict each other.
+   */
+  minItems?: number | undefined;
+  maxItems?: number | undefined;
+}
+
+/** Accordion group (feature 171): the authored initial open state of the read-only accordion. */
+export type AccordionDefaultOpen = 'none' | 'first' | 'all';
+
+/** The three authorable open states, in inspector order. "Specific item" is deliberately absent —
+ *  the author configures the field but never sees the items, so an index-based choice misfires. */
+export const ACCORDION_DEFAULT_OPEN_OPTIONS: readonly {
+  value: AccordionDefaultOpen;
+  label: string;
+}[] = [
+  { value: 'none', label: 'None' },
+  { value: 'first', label: 'First' },
+  { value: 'all', label: 'All' },
+];
+
+export function isAccordionDefaultOpen(value: unknown): value is AccordionDefaultOpen {
+  return value === 'none' || value === 'first' || value === 'all';
 }
 
 export type HeadingLevel = 2 | 3;
@@ -84,8 +136,16 @@ export interface DisplayNode {
 
 export interface ContainerNode {
   kind: 'container';
-  layout: 'group' | 'horizontal';
+  layout: 'group' | 'horizontal' | 'grid' | 'section';
   label?: string;
+  /**
+   * Section only (feature 172): sub-heading copy rendered under the `<legend>` inside the fieldset
+   * → `uischema.options.description`. Group's renderer reads the same option, but only a section
+   * SERIALIZES it — wiring Group is separate in-flight work (doc 172, rule 10).
+   */
+  description?: string;
+  /** Grid only (feature 169): fixed column count, 2–6, default 2. Children wrap once it fills up. */
+  columns?: number;
   children: (ControlNode | DisplayNode)[];
 }
 
@@ -169,7 +229,10 @@ export function uniqueKey(base: string, existing: string[]): string {
 // ── Field factory ───────────────────────────────────────────────────────────────────────────────
 
 type DisplayFieldTypeId = 'heading' | 'paragraph' | 'richtextdisplay';
-type ControlFieldTypeId = Exclude<FieldTypeId, 'group' | 'horizontal' | DisplayFieldTypeId>;
+type ControlFieldTypeId = Exclude<
+  FieldTypeId,
+  'group' | 'horizontal' | 'grid' | 'section' | DisplayFieldTypeId
+>;
 
 /** Generate a stable, unique id for a display node (persisted in the uischema for dnd identity). */
 function newDisplayId(): string {
@@ -191,11 +254,15 @@ function createDisplayField(fieldType: DisplayFieldTypeId): DisplayNode {
 /** A fresh node for a palette field type, with sensible defaults that round-trip. */
 export function createField(fieldType: ControlFieldTypeId): ControlNode;
 export function createField(fieldType: DisplayFieldTypeId): DisplayNode;
-export function createField(fieldType: 'group' | 'horizontal'): ContainerNode;
+export function createField(fieldType: 'group' | 'horizontal' | 'grid' | 'section'): ContainerNode;
 export function createField(fieldType: FieldTypeId): FieldNode;
 export function createField(fieldType: FieldTypeId): FieldNode {
-  if (fieldType === 'group' || fieldType === 'horizontal') {
+  if (fieldType === 'group' || fieldType === 'horizontal' || fieldType === 'section') {
     return { kind: 'container', layout: fieldType, children: [] };
+  }
+  if (fieldType === 'grid') {
+    // Feature 169: a fresh grid always starts at the 2-column default.
+    return { kind: 'container', layout: 'grid', children: [], columns: 2 };
   }
   if (fieldType === 'heading' || fieldType === 'paragraph' || fieldType === 'richtextdisplay') {
     return createDisplayField(fieldType);
@@ -231,11 +298,20 @@ export function createField(fieldType: FieldTypeId): FieldNode {
     node.max = 100;
     node.step = 1;
   }
+  if (fieldType === 'accordiongroup') {
+    // Feature 171: both set explicitly (never left undefined) so the inspector inputs are controlled.
+    node.itemLabel = 'item';
+    node.defaultOpen = 'none';
+  }
   if (fieldType === 'address') {
     // BC-Gov default: a new address field pre-fills Canada / British Columbia (authors can change or
     // clear it in the inspector). Names must match the geo dataset (feature 153).
     node.defaultCountry = 'Canada';
     node.defaultProvince = 'British Columbia';
+    // Feature 170: locks start OFF — a default is pre-filled but stays editable until the author says
+    // otherwise. Set explicitly (not left undefined) so the inspector Switches are controlled.
+    node.readOnlyCountry = false;
+    node.readOnlyProvince = false;
   }
   return node;
 }

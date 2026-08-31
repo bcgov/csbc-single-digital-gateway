@@ -7,7 +7,7 @@ import '@/routes/app.$slug.index';
 import '@/routes/app.$slug.services';
 import '@/routes/app.$slug.submissions';
 import '@/routes/app.$slug.team';
-import '@/routes/app.$slug.reports';
+import '@/routes/app.$slug.shared-resources';
 import '@/routes/app.$slug.settings';
 import '@/routes/app.account';
 
@@ -33,15 +33,12 @@ describe('Console Routes Integration Test Suite', () => {
   it('renders the Overview placeholder at /app/:slug', async () => {
     renderScoped('/app/riverton');
     expect(
-      await screen.findByText(/Overview is being set up/i, undefined, { timeout: 32000 }),
+      await screen.findByText(/Create new service/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 
   it('renders the Services empty state at /app/:slug/services', async () => {
     renderScoped('/app/riverton/services');
-    expect(
-      await screen.findByRole('heading', { name: 'Services', level: 1 }, { timeout: 32000 }),
-    ).toBeInTheDocument();
     expect(
       await screen.findByText(/No services yet/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
@@ -62,11 +59,15 @@ describe('Console Routes Integration Test Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the Reports empty state at /app/:slug/reports', async () => {
-    renderScoped('/app/riverton/reports');
+  it('renders the Shared Resources hub at /app/:slug/shared-resources', async () => {
+    renderScoped('/app/riverton/shared-resources');
     expect(
-      await screen.findByText(/No saved reports yet/i, undefined, { timeout: 32000 }),
+      await screen.findByRole('heading', { name: /shared resources/i }, { timeout: 32000 }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /service agreements/i })).toHaveAttribute(
+      'href',
+      '/app/riverton/service-agreements',
+    );
   });
 
   it('renders the Settings page with a danger zone at /app/:slug/settings', async () => {

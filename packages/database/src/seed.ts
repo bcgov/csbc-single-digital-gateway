@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 import { createDatabase } from './client';
 import { resolvePgSsl } from './ssl';
 import { documentTypes, documentTypeVersions } from './schema';
+import { serviceDefinition } from './seed-data/service-definition';
 
 // Load this package's own .env (see .env.example) so `npm run db:seed -w @repo/database`
 // picks up DATABASE_URL regardless of the cwd it is invoked from.
@@ -22,53 +23,9 @@ const emptyForm = {
   uischema: { type: 'VerticalLayout', elements: [] },
 };
 
-// `about` is a rich-text field — stored as a Lexical SerializedEditorState object (schema type "object"),
-// driven by the `richtext` JSONForms renderer (uischema option `format: 'richtext'`).
-// `contact_methods` (feature 130) is a loose array driven by the bespoke `contact-methods` renderer
-// (uischema option `format: 'contact-methods'`); the control owns the per-type entry shape.
-const serviceDefinition = {
-  schema: {
-    type: 'object',
-    required: ['title'],
-    properties: {
-      title: { type: 'string', title: 'Title' },
-      description: { type: 'string', title: 'Description' },
-      about: { type: 'object', title: 'About' },
-      contact_methods: {
-        type: 'array',
-        title: 'Contact methods',
-        items: {
-          type: 'object',
-          required: ['type'],
-          properties: {
-            type: { type: 'string', enum: ['phone', 'email', 'address', 'fax', 'links'] },
-            label: { type: 'string' },
-            value: { type: 'string' },
-            address_one: { type: 'string' },
-            address_two: { type: 'string' },
-            city: { type: 'string' },
-            province: { type: 'string' },
-            country: { type: 'string' },
-            postal_code: { type: 'string' },
-          },
-        },
-      },
-    },
-  },
-  uischema: {
-    type: 'VerticalLayout',
-    elements: [
-      { type: 'Control', scope: '#/properties/title' },
-      { type: 'Control', scope: '#/properties/description', options: { multi: true } },
-      { type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } },
-      {
-        type: 'Control',
-        scope: '#/properties/contact_methods',
-        options: { format: 'contact-methods' },
-      },
-    ],
-  },
-};
+// The Service type definition is large (it carries the authored section Groups) and lives in its
+// own module so this file stays under the 300-line gate — see the notes there on how the console
+// derives page sections from its top-level `Group` elements.
 
 // A service agreement (consent document) is authored as a fixed set of fields. `content` is a
 // rich-text field (Lexical `object`, `richtext` renderer) like the service `about`. `approveLabel`/

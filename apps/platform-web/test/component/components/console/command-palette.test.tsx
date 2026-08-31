@@ -37,8 +37,8 @@ describe('CommandPalette Component Test Suite', () => {
     await user.click(await screen.findByRole('button', { name: /search/i }, { timeout: 32000 }));
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Submissions')).toBeInTheDocument();
-    expect(within(dialog).getByText('Reports')).toBeInTheDocument();
+    expect(within(dialog).getByText('Service Requests')).toBeInTheDocument();
+    expect(within(dialog).getByText('Shared Resources')).toBeInTheDocument();
     expect(within(dialog).getByText('Account')).toBeInTheDocument();
   });
 
@@ -59,9 +59,9 @@ describe('CommandPalette Component Test Suite', () => {
     expect(screen.getByText('Go to')).toBeInTheDocument();
     expect(screen.getByText('Overview')).toBeInTheDocument();
     expect(screen.getByText('Services')).toBeInTheDocument();
-    expect(screen.getByText('Submissions')).toBeInTheDocument();
+    expect(screen.getByText('Service Requests')).toBeInTheDocument();
+    expect(screen.getByText('Shared Resources')).toBeInTheDocument();
     expect(screen.getByText('Team')).toBeInTheDocument();
-    expect(screen.getByText('Reports')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Account')).toBeInTheDocument();
   });

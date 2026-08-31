@@ -36,6 +36,10 @@ export const envSchema = z.object({
   AUTH_POST_LOGOUT_REDIRECT: z.url().optional(),
   // Refresh the access token this many seconds before it expires (lazy-refresh skew window).
   AUTH_TOKEN_REFRESH_SKEW_SECONDS: z.coerce.number().int().nonnegative().default(30),
+  // Clock drift tolerated on JWT timestamp claims. Deliberately NO default: openid-client already
+  // tolerates 30s, so leaving this unset keeps its built-in behaviour. Set it only to go HIGHER,
+  // when a deployment has real drift beyond 30s between the IdP and this BFF.
+  AUTH_CLOCK_TOLERANCE_SECONDS: z.coerce.number().int().positive().optional(),
   // CSRF Origin allowlist (comma-separated) for mutating requests. Defaults to the local SPA dev
   // origin; set to the real app origin(s) in production. Empty value => CSRF guard inert.
   AUTH_ALLOWED_ORIGINS: z

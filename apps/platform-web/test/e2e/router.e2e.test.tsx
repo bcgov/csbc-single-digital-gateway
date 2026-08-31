@@ -12,9 +12,7 @@ describe('Platform Web Router Integration Test Suite', () => {
   it('resolves the landing route at / for anonymous visitors', async () => {
     mockAuth(null);
     renderApp('/');
-    expect(
-      await screen.findByRole('heading', { name: 'Single Digital Gateway Platform' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Operations Portal/i })).toBeInTheDocument();
   });
 
   it('redirects a signed-in visitor from / to the console', async () => {
@@ -24,8 +22,6 @@ describe('Platform Web Router Integration Test Suite', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/app');
     });
-    expect(
-      screen.queryByRole('heading', { name: 'Single Digital Gateway Platform' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Operations Portal/i })).not.toBeInTheDocument();
   });
 });

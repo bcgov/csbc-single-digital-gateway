@@ -65,12 +65,17 @@ export function ControlWrapper({
         .filter(Boolean)
         .map((message) => ({ message }))
     : [];
+
   const htmlFor = labelFor === false ? undefined : (labelFor ?? id);
   const renderLabel = (extra?: string) => {
+    // Layout only — stays at the shared @repo/ui label weight (font-medium), not bolded.
+    const className = extra
+      ? `${extra} flex flex-row space-between`
+      : 'flex flex-row space-between';
     return label === false || label === undefined || label === '' ? null : (
-      <FieldLabel id={`${id}-label`} htmlFor={htmlFor} {...(extra ? { className: extra } : {})}>
-        {label}
-        {required ? ' *' : ''}
+      <FieldLabel id={`${id}-label`} htmlFor={htmlFor} {...(className ? { className } : {})}>
+        <span className="flex grow">{label}</span>
+        <span className="flex font-normal">{required ? ' required' : ''}</span>
       </FieldLabel>
     );
   };
@@ -79,7 +84,12 @@ export function ControlWrapper({
   const descriptionNode = description ? (
     <FieldDescription id={`${id}-description`}>{description}</FieldDescription>
   ) : null;
-  const errorNode = <FieldError id={`${id}-error`} errors={errorList} />;
+  const errorNode = (
+    <FieldError
+      id={`${id}-error`}
+      errors={errorList.filter((error) => error.message !== 'is a required property')}
+    />
+  );
   const invalid = errorList.length > 0 ? true : undefined;
 
   // Horizontal controls stack the label + help text in a FieldContent column (flex-1) so the description

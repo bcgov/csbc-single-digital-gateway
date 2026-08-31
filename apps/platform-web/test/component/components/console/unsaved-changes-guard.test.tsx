@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBlocker } from '@tanstack/react-router';
@@ -150,5 +150,148 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
 
     const proceedBtn = screen.getByRole('button', { name: 'Discard changes' });
     await expect(user.click(proceedBtn)).resolves.not.toThrow();
+  });
+});
+
+/**
+ * Feature 177 — the save path. Additive: `when` still accepts a boolean and, without `onSave`, the
+ * dialog is exactly the two-action one its three existing call sites rely on.
+ */
+/** A stable predicate, so re-rendering the guard with it must not re-register the blocker. */
+const alwaysDirty = () => true;
+
+describe('UnsavedChangesGuard — save action (feature 177)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockBlockerStatus = 'blocked';
+    mockHasReset = true;
+    mockHasProceed = true;
+    capturedOnOpenChange = null;
+  });
+
+  it('renders no Save action when onSave is omitted', () => {
+    render(<UnsavedChangesGuard when={true} />);
+
+    expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument();
+  });
+
+  it('offers Discard changes and Save changes, with Keep editing as the dismissal', () => {
+    render(<UnsavedChangesGuard when={true} onSave={vi.fn().mockResolvedValue(undefined)} />);
+
+    // Only two footer buttons — three overflow the dialog's max-width. Cancelling is the close
+    // control, which carries the same accessible name it always did.
+    expect(screen.getByRole('button', { name: 'Discard changes' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Keep editing' })).toBeInTheDocument();
+  });
+
+  it('keeps the two-button shape (Keep editing + Discard) when there is no save to offer', () => {
+    render(<UnsavedChangesGuard when={true} />);
+
+    // The three pages that render this shape must not change: a solid destructive Discard beside
+    // an explicit Keep editing, and no close control competing with it for the same name.
+    expect(screen.getByRole('button', { name: 'Discard changes' })).toHaveClass('bg-destructive');
+    expect(screen.getAllByRole('button', { name: 'Keep editing' })).toHaveLength(1);
+  });
+
+  it('awaits onSave then proceeds with the blocked navigation', async () => {
+    const user = userEvent.setup();
+    const order: string[] = [];
+    const onSave = vi.fn(async () => {
+      order.push('save');
+    });
+    mockProceed.mockImplementation(() => order.push('proceed'));
+    render(<UnsavedChangesGuard when={true} onSave={onSave} />);
+
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockProceed).toHaveBeenCalledTimes(1));
+    // Order matters: proceeding first would navigate away mid-save.
+    expect(order).toEqual(['save', 'proceed']);
+  });
+
+  it('keeps the dialog open and shows the error when onSave rejects', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockRejectedValue(new Error('Version is no longer a draft'));
+    render(<UnsavedChangesGuard when={true} onSave={onSave} />);
+
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Version is no longer a draft');
+    expect(mockProceed).not.toHaveBeenCalled();
+    // Still blocked, still offering every way out.
+    expect(screen.getByRole('button', { name: 'Discard changes' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  });
+
+  it('disables Save and shows the reason when saveDisabled is true', () => {
+    render(
+      <UnsavedChangesGuard
+        when={true}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        saveDisabled={true}
+        saveDisabledReason="This step has a validation error."
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(screen.getByText('This step has a validation error.')).toBeInTheDocument();
+  });
+
+  it('still discards while Save is disabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <UnsavedChangesGuard
+        when={true}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        saveDisabled={true}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Discard changes' }));
+
+    expect(mockProceed).toHaveBeenCalledTimes(1);
+  });
+
+  it('still cancels while Save is disabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <UnsavedChangesGuard
+        when={true}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        saveDisabled={true}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Keep editing' }));
+
+    expect(mockReset).toHaveBeenCalled();
+    expect(mockProceed).not.toHaveBeenCalled();
+  });
+
+  it('reads a function `when` at block time rather than capturing it at render time', () => {
+    // The race this exists for: a save clears the flag in an async continuation, and the navigation
+    // that follows must see the CURRENT value, not the one captured when the guard last rendered.
+    let dirty = true;
+    render(<UnsavedChangesGuard when={() => dirty} />);
+
+    const callArgs = vi.mocked(useBlocker).mock.calls[0]?.[0] as any;
+    expect(callArgs?.shouldBlockFn()).toBe(true);
+
+    dirty = false;
+    expect(callArgs?.shouldBlockFn()).toBe(false);
+    expect(callArgs?.enableBeforeUnload()).toBe(false);
+  });
+
+  it('registers the blocker once for a function `when`, not per keystroke', () => {
+    const { rerender } = render(<UnsavedChangesGuard when={alwaysDirty} />);
+    const first = (vi.mocked(useBlocker).mock.calls[0]?.[0] as any)?.shouldBlockFn;
+
+    rerender(<UnsavedChangesGuard when={alwaysDirty} />);
+
+    const calls = vi.mocked(useBlocker).mock.calls;
+    // Same memoized predicate every render — a stable `when` never re-registers the blocker.
+    expect((calls.at(-1)?.[0] as any)?.shouldBlockFn).toBe(first);
   });
 });

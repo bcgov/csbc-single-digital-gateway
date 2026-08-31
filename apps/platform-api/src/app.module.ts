@@ -83,6 +83,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
       useFactory: (config: ConfigService<Env, true>): AuthModuleOptions => {
         const nodeEnv = config.get('NODE_ENV', { infer: true });
         const postLogoutRedirect = config.get('AUTH_POST_LOGOUT_REDIRECT', { infer: true });
+        const clockToleranceSeconds = config.get('AUTH_CLOCK_TOLERANCE_SECONDS', { infer: true });
         const options: AuthModuleOptions = {
           issuer: config.get('OIDC_ISSUER', { infer: true }),
           clientId: config.get('OIDC_CLIENT_ID', { infer: true }),
@@ -99,6 +100,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
           allowedOrigins: config.get('AUTH_ALLOWED_ORIGINS', { infer: true }),
           // Refresh the access token this many seconds before expiry (lazy, on-request).
           tokenRefreshSkewSeconds: config.get('AUTH_TOKEN_REFRESH_SKEW_SECONDS', { infer: true }),
+          ...(clockToleranceSeconds !== undefined && { clockToleranceSeconds }),
         };
         if (nodeEnv === 'test') {
           return { ...options, config: {} as unknown as NonNullable<AuthModuleOptions['config']> };

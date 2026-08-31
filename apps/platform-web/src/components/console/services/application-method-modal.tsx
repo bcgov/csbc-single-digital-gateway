@@ -42,7 +42,7 @@ const METHODS: Method[] = [
   },
 ];
 
-const FROM = '/app/$slug/services/$id/versions/$versionId/application-methods/new';
+const FROM = '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new';
 
 /** "New application method" modal (service detail). Picking a method CREATES a barebones form +
  * reference on the server, then navigates to that method's edit page (feature 45). External: no link. */
@@ -54,7 +54,7 @@ export function ApplicationMethodModal() {
   // 'choose' shows the method picker; 'external' shows the External-link label + url form.
   const [step, setStep] = useState<'choose' | 'external'>('choose');
 
-  const close = () => navigate({ to: '/app/$slug/services/$id', params: { slug, id } });
+  const close = () => navigate({ to: '/app/$slug/services/$id/old/edit', params: { slug, id } });
   const create = useMutation({
     mutationFn: (method: Method) => {
       const type = formTypes.find((t) => t.kind === method.id);
@@ -70,7 +70,7 @@ export function ApplicationMethodModal() {
     onSuccess: async (reference) => {
       await queryClient.invalidateQueries({ queryKey: ['services'] });
       await navigate({
-        to: '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId',
+        to: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId',
         params: { slug, id, versionId, applicationMethodId: reference.targetDocumentId },
       });
     },

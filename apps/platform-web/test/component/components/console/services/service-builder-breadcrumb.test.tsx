@@ -37,7 +37,7 @@ describe('ServiceBuilderBreadcrumb Component Test Suite', () => {
     // 2. Active service link
     const serviceTitleLink = screen.getByRole('link', { name: 'Pet Licensing' });
     expect(serviceTitleLink).toBeInTheDocument();
-    expect(serviceTitleLink.getAttribute('href')).toBe('/app/victoria/services/srv-456');
+    expect(serviceTitleLink.getAttribute('href')).toBe('/app/victoria/services/srv-456/old/edit');
 
     // 3. Current label page
     const pageLabel = screen.getByText('Form Design');

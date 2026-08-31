@@ -88,6 +88,16 @@ describe('Form Builder Model Component Test Suite', () => {
       });
     });
 
+    it('creates a grid container layout defaulting to 2 columns (feature 169)', () => {
+      const node = createField('grid');
+      expect(node).toEqual({
+        kind: 'container',
+        layout: 'grid',
+        children: [],
+        columns: 2,
+      });
+    });
+
     it('creates display node with format default value', () => {
       const node = createField('heading');
       expect(node.kind).toBe('display');

@@ -6,6 +6,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { UserPlus } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
+import { SettingsSubNav } from '@/components/console/settings-sub-nav';
 import { ListPagination } from '@/components/console/list/list-pagination';
 import { ListSearchInput } from '@/components/console/list/list-search-input';
 import { SortableHeader } from '@/components/console/list/sortable-header';
@@ -47,6 +48,7 @@ export function TeamPage() {
   return (
     <>
       <div className="flex flex-col gap-4">
+        <SettingsSubNav slug={slug} />
         <div className="flex flex-col items-end gap-3">
           {isAdmin ? (
             <Button size="sm" type="button" onClick={() => setAddOpen(true)}>

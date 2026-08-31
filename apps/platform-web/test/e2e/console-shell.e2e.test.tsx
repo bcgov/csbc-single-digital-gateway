@@ -22,27 +22,36 @@ describe('Console Shell Integration Test Suite', () => {
   });
 });
 
-describe('console shell — profile card on real /auth/me data', () => {
-  it('renders the signed-in user name, role and initials in the sidebar', async () => {
+describe('console shell — account menu on real /auth/me data', () => {
+  it('shows initials on the top-bar avatar, with name + role inside the menu', async () => {
     mockAuth(authedUser);
     renderApp('/app');
 
-    const profile = await screen.findByRole('button', { name: /Maya Reyes/ }, { timeout: 32000 });
-    expect(within(profile).getByText('Staff')).toBeInTheDocument();
-    expect(within(profile).getByText('MR')).toBeInTheDocument();
+    const trigger = await screen.findByRole(
+      'button',
+      { name: /account menu/i },
+      { timeout: 32000 },
+    );
+    // Initials render on the avatar trigger itself.
+    expect(within(trigger).getByText('MR')).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(trigger);
+    expect(await screen.findByText('Maya Reyes')).toBeInTheDocument();
+    expect(screen.getByText('Staff')).toBeInTheDocument();
     expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/auth/me'),
       expect.objectContaining({ credentials: 'include' }),
     );
   });
 
-  it('logs out via the profile menu and returns to home', async () => {
+  it('logs out via the account menu and returns to home', async () => {
     mockAuth(authedUser);
     const location = stubLocationAssign();
     renderApp('/app');
 
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /Maya Reyes/ }));
+    await user.click(await screen.findByRole('button', { name: /account menu/i }));
     await user.click(await screen.findByRole('menuitem', { name: /log out/i }));
 
     await waitFor(() => {
@@ -57,7 +66,7 @@ describe('console shell — profile card on real /auth/me data', () => {
 });
 
 describe('console shell — navigation uses real router links', () => {
-  it('renders sidebar destinations as anchors scoped to the active workspace', async () => {
+  it('renders the top-bar destinations as anchors scoped to the active workspace', async () => {
     mockAuth(authedUser, {
       workspaces: [
         {
@@ -71,13 +80,12 @@ describe('console shell — navigation uses real router links', () => {
     });
     renderApp('/app/riverton');
 
-    await screen.findByRole('button', { name: /Maya Reyes/ });
+    await screen.findByRole('button', { name: /account menu/i });
     const cases: Array<[string, string]> = [
       ['Overview', '/app/riverton'],
       ['Services', '/app/riverton/services'],
-      ['Submissions', '/app/riverton/submissions'],
-      ['Team', '/app/riverton/team'],
-      ['Reports', '/app/riverton/reports'],
+      ['Service Requests', '/app/riverton/submissions'],
+      ['Shared Resources', '/app/riverton/shared-resources'],
       ['Settings', '/app/riverton/settings'],
     ];
     for (const [label, href] of cases) {

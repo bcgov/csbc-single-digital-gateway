@@ -16,7 +16,7 @@ import {
   buildLoginUrl,
   buildLogoutUrl,
   completeLogin,
-  OidcCallbackError,
+  isRecoverableCallbackError,
   resolvePostLoginTarget,
   sanitizeReturnTo,
 } from './auth.flow';
@@ -28,6 +28,13 @@ import type { AuthModuleOptions, AuthUser, AuthUserSync } from './auth.types';
  * BFF OIDC endpoints at the unversioned root. Tokens stay server-side; only an httpOnly
  * session cookie reaches the browser. (These become `@Public` once the guard lands in Wave 2.)
  */
+/**
+ * How many times the callback may auto-restart login for one session before giving up. One retry
+ * clears the transient causes (stale/duplicate callback, an id_token that expired while the
+ * authorization page sat open); anything that survives it is a real misconfiguration.
+ */
+const MAX_LOGIN_RESTARTS = 1;
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -69,23 +76,37 @@ export class AuthController {
     try {
       completed = await completeLogin(this.config, currentUrl, req.session);
     } catch (error) {
-      // A stale, duplicate, or concurrently-clobbered callback (no matching OIDC transaction) is not
-      // a server fault — restart the flow instead of 500ing. The browser lands on a fresh
-      // `/auth/login`, which re-initiates PKCE/state and completes cleanly; any `session.returnTo`
-      // survives, so the user still ends up where they started. This is common against a shared IdP
-      // with an active SSO session, which bounces the callback back near-instantly. Genuine exchange
-      // failures are not OidcCallbackError and rethrow (surfaced, never silently retried).
-      if (error instanceof OidcCallbackError) {
-        // Derive the login URL from the *configured* redirectUri (proxy-safe, never the Host header):
-        // its path ends in `.../auth/callback`, so swap the final segment for `login`.
-        const loginUrl = new URL(this.options.redirectUri);
-        loginUrl.pathname = loginUrl.pathname.replace(/\/callback$/, '/login');
-        res.redirect(loginUrl.href);
-        return;
+      // A recoverable callback failure is not a server fault — restart the flow instead of 500ing.
+      // The browser lands on a fresh `/auth/login`, which re-initiates PKCE/state and completes
+      // cleanly; any `session.returnTo` survives, so the user still ends up where they started.
+      // Covers a stale/duplicate/concurrently-clobbered callback (common against a shared IdP with
+      // an active SSO session, which bounces the callback back near-instantly) and an id_token whose
+      // `exp` had already passed. Genuine exchange failures (invalid_grant, bad claims) are not
+      // recoverable and rethrow — surfaced, never silently retried.
+      if (!isRecoverableCallbackError(error)) {
+        throw error;
       }
-      throw error;
+      // Bounded: a cause a retry cannot fix (a badly skewed clock keeps minting id_tokens that look
+      // expired on arrival) would otherwise bounce the browser between /login and /callback forever.
+      // One restart, then a clean 401 the user can act on rather than an infinite redirect.
+      const attempts = req.session.loginRetry ?? 0;
+      if (attempts >= MAX_LOGIN_RESTARTS) {
+        delete req.session.loginRetry;
+        throw new UnauthorizedException(
+          'Sign-in could not be completed. Please try again; if this persists, the server clock may be out of sync with the identity provider.',
+        );
+      }
+      req.session.loginRetry = attempts + 1;
+      // Derive the login URL from the *configured* redirectUri (proxy-safe, never the Host header):
+      // its path ends in `.../auth/callback`, so swap the final segment for `login`.
+      const loginUrl = new URL(this.options.redirectUri);
+      loginUrl.pathname = loginUrl.pathname.replace(/\/callback$/, '/login');
+      res.redirect(loginUrl.href);
+      return;
     }
     const { claims, idToken, tokens } = completed;
+    // A completed login clears the restart budget, so a later stale callback gets its own retry.
+    delete req.session.loginRetry;
     const user = await this.userSync.onSignIn(claims);
     req.session.authUser = user;
     // Keep the id_token solely as the `id_token_hint` for RP-initiated logout.

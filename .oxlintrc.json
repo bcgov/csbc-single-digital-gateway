@@ -19,7 +19,7 @@
   ],
   "rules": {
     "no-extraneous-class": ["warn", { "allowWithDecorator": true }],
-    "no-underscore-dangle": ["warn", { "allow": ["__APP_CONFIG__"] }]
+    "no-underscore-dangle": ["warn", { "allow": ["__APP_CONFIG__", "__UI_SRC__"] }]
   },
   "overrides": [
     {
