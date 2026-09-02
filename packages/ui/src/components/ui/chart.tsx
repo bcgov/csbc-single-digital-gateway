@@ -4,8 +4,8 @@ import type { TooltipValueType } from 'recharts';
 
 import { cn } from '@ui/lib/utils';
 
-// Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: '', dark: '.dark' } as const;
+// Format: { THEME_NAME: CSS_SELECTOR }. This site has no dark mode, so only light exists.
+const THEMES = { light: '' } as const;
 
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const;
 type TooltipNameType = number | string;

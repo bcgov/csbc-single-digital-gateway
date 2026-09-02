@@ -149,7 +149,7 @@ describe('Application Method Modal Component Test Suite', () => {
   it('renders the modal with basic, multi-stage options and coming-soon external link', async () => {
     mockApi();
 
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
     // Dialog title and description should be present
     expect(
@@ -185,7 +185,7 @@ describe('Application Method Modal Component Test Suite', () => {
 
     const user = userEvent.setup();
     const { router } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/new',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new',
     );
 
     const navigateSpy = vi.spyOn(router, 'navigate');
@@ -208,7 +208,7 @@ describe('Application Method Modal Component Test Suite', () => {
     await waitFor(() => {
       expect(navigateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          to: '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId',
+          to: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId',
           params: {
             slug: 'riverton',
             id: 'srv-123',
@@ -230,7 +230,7 @@ describe('Application Method Modal Component Test Suite', () => {
 
     const user = userEvent.setup();
     const { router } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/new',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new',
     );
 
     const navigateSpy = vi.spyOn(router, 'navigate');
@@ -253,7 +253,7 @@ describe('Application Method Modal Component Test Suite', () => {
     await waitFor(() => {
       expect(navigateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          to: '/app/$slug/services/$id/versions/$versionId/application-methods/$applicationMethodId',
+          to: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/$applicationMethodId',
           params: {
             slug: 'riverton',
             id: 'srv-123',
@@ -270,7 +270,7 @@ describe('Application Method Modal Component Test Suite', () => {
 
     const user = userEvent.setup();
     const { router } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/new',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new',
     );
 
     const navigateSpy = vi.spyOn(router, 'navigate');
@@ -287,7 +287,7 @@ describe('Application Method Modal Component Test Suite', () => {
     await waitFor(() => {
       expect(navigateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          to: '/app/$slug/services/$id',
+          to: '/app/$slug/services/$id/old/edit',
           params: {
             slug: 'riverton',
             id: 'srv-123',
@@ -317,7 +317,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
     const basicFormBtn = await screen.findByRole('button', { name: /Basic form/i });
     await user.click(basicFormBtn);
@@ -342,7 +342,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
     const basicFormBtn = await screen.findByRole('button', { name: /Basic form/i });
     await user.click(basicFormBtn);
@@ -375,7 +375,7 @@ describe('Application Method Modal Component Test Suite', () => {
 
     const user = userEvent.setup();
     const { router } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/new',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new',
     );
 
     const navigateSpy = vi.spyOn(router, 'navigate');
@@ -385,7 +385,7 @@ describe('Application Method Modal Component Test Suite', () => {
     await user.click(basicFormBtn);
 
     // Verify spinner is rendered
-    expect(basicFormBtn.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(basicFormBtn.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
 
     // Try to dismiss by pressing Escape
     await user.keyboard('{Escape}');
@@ -410,7 +410,7 @@ describe('Application Method Modal Component Test Suite', () => {
 
     const user = userEvent.setup();
     const { router } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/new',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new',
     );
 
     const navigateSpy = vi.spyOn(router, 'navigate');
@@ -445,7 +445,7 @@ describe('Application Method Modal Component Test Suite', () => {
     await waitFor(() => {
       expect(navigateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          to: '/app/$slug/services/$id',
+          to: '/app/$slug/services/$id/old/edit',
           params: {
             slug: 'riverton',
             id: 'srv-123',
@@ -459,7 +459,7 @@ describe('Application Method Modal Component Test Suite', () => {
     mockApi();
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
     // Click "External link" button to go to step 'external'
     const externalLinkBtn = await screen.findByRole('button', { name: /External link/i });
@@ -497,7 +497,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
     const externalLinkBtn = await screen.findByRole('button', { name: /External link/i });
     await user.click(externalLinkBtn);
@@ -540,7 +540,7 @@ describe('Application Method Modal Component Test Suite', () => {
     });
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/new');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
     // Click "External link" button to go to step 'external'
     const externalLinkBtn = await screen.findByRole('button', { name: /External link/i });

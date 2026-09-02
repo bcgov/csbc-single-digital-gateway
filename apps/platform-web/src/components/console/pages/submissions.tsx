@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useParams, useSearch } from '@tanstack/react-router';
+import { PageBody, PageHeader } from '@/components/console/page-header';
 import { ListPagination } from '@/components/console/list/list-pagination';
 import { ListSearchInput } from '@/components/console/list/list-search-input';
 import { SortableHeader } from '@/components/console/list/sortable-header';
@@ -53,99 +54,110 @@ export function SubmissionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <Tabs
-          value={tab}
-          onValueChange={(value) =>
-            setFilter({ status: STATUS_TABS.find((t) => t.value === value)?.status })
-          }
-        >
-          <TabsList>
-            {STATUS_TABS.map((t) => (
-              <TabsTrigger key={t.value} value={t.value}>
-                {t.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        <ListSearchInput value={q} onChange={setQ} placeholder="Search applicant, service, ref…" />
-      </div>
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
-        {loading ? (
-          <Skeleton className="m-4 h-40" />
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Applicant</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Application</TableHead>
-                  <SortableHeader
-                    column="status"
-                    label="Status"
-                    active={sort}
-                    order={order}
-                    onSort={setSort}
-                  />
-                  <SortableHeader
-                    column="submitted"
-                    label="Submitted"
-                    active={sort}
-                    order={order}
-                    onSort={setSort}
-                  />
-                  <SortableHeader
-                    column="updated"
-                    label="Updated"
-                    active={sort}
-                    order={order}
-                    onSort={setSort}
-                  />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.length === 0 ? (
+      <PageHeader title="Service Requests" size="lg" />
+      <PageBody className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <Tabs
+            value={tab}
+            onValueChange={(value) =>
+              setFilter({ status: STATUS_TABS.find((t) => t.value === value)?.status })
+            }
+          >
+            <TabsList className="gap-2">
+              {STATUS_TABS.map((t) => (
+                <TabsTrigger
+                  key={t.value}
+                  value={t.value}
+                  className="bg-gray-20 rounded-full data-active:bg-bcgov-blue data-active:text-background hover:data-active:text-background"
+                >
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <ListSearchInput
+            value={q}
+            onChange={setQ}
+            placeholder="Search applicant, service, ref…"
+          />
+        </div>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          {loading ? (
+            <Skeleton className="m-4 h-40" />
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                      {q === ''
-                        ? 'No submissions yet — they appear here once applicants submit.'
-                        : `No submissions match “${q}”.`}
-                    </TableCell>
+                    <TableHead>Applicant</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Application</TableHead>
+                    <SortableHeader
+                      column="status"
+                      label="Status"
+                      active={sort}
+                      order={order}
+                      onSort={setSort}
+                    />
+                    <SortableHeader
+                      column="submitted"
+                      label="Submitted"
+                      active={sort}
+                      order={order}
+                      onSort={setSort}
+                    />
+                    <SortableHeader
+                      column="updated"
+                      label="Updated"
+                      active={sort}
+                      order={order}
+                      onSort={setSort}
+                    />
                   </TableRow>
-                ) : (
-                  items.map((s) => (
-                    <TableRow key={s.id} data-pending={submissions.isFetching ? '' : undefined}>
-                      <TableCell>
-                        <Link
-                          to="/app/$slug/submissions/$id"
-                          params={{ slug, id: s.id }}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {s.applicantName}
-                        </Link>
-                        <div className="text-xs text-muted-foreground">{s.reference}</div>
-                      </TableCell>
-                      <TableCell>{s.serviceTitle}</TableCell>
-                      <TableCell>{s.formTitle}</TableCell>
-                      <TableCell>
-                        <Badge color="yellow">{s.statusLabel}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {fmtDate(s.submittedAt)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {fmtDate(s.updatedAt)}
+                </TableHeader>
+                <TableBody>
+                  {items.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        {q === ''
+                          ? 'No submissions yet — they appear here once applicants submit.'
+                          : `No submissions match “${q}”.`}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
-          </>
-        )}
-      </div>
+                  ) : (
+                    items.map((s) => (
+                      <TableRow key={s.id} data-pending={submissions.isFetching ? '' : undefined}>
+                        <TableCell>
+                          <Link
+                            to="/app/$slug/submissions/$id"
+                            params={{ slug, id: s.id }}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {s.applicantName}
+                          </Link>
+                          <div className="text-xs text-muted-foreground">{s.reference}</div>
+                        </TableCell>
+                        <TableCell>{s.serviceTitle}</TableCell>
+                        <TableCell>{s.formTitle}</TableCell>
+                        <TableCell>
+                          <Badge color="yellow">{s.statusLabel}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {fmtDate(s.submittedAt)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {fmtDate(s.updatedAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+              <ListPagination total={total} limit={limit} offset={offset} onPageChange={setPage} />
+            </>
+          )}
+        </div>
+      </PageBody>
     </div>
   );
 }

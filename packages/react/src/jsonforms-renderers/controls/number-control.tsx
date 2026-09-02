@@ -2,7 +2,7 @@ import { isIntegerControl, isNumberControl, or, rankWith } from '@jsonforms/core
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { ClearableInput } from '../util/clearable-input';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // Slider variants (options.slider) are handled by the higher-ranked slider renderer.
 export const numberControlTester: RankedTester = rankWith(1, or(isNumberControl, isIntegerControl));
@@ -82,6 +82,7 @@ function NumberControlComponent({
         value={typeof data === 'number' ? String(data) : ''}
         disabled={enabled === false}
         aria-invalid={Boolean(combinedErrors)}
+        aria-describedby={describedByIds(id, { description, errors: combinedErrors })}
         onChange={(event) => handleChange(path, parse(event.target.value))}
         onClear={() => handleChange(path, undefined)}
       />

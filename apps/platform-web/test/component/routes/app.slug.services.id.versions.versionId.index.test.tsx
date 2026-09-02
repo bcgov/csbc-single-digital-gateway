@@ -100,7 +100,7 @@ function withServices(base: ReturnType<typeof mockAuth>) {
 describe('App Slug Services ID Versions VersionID Index Route', () => {
   it('renders the service detail page selected on the service details tab for specific version', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/s1/versions/sv1/');
+    renderApp('/app/riverton/services/s1/old/edit/versions/sv1/');
 
     // Breadcrumb page title
     expect(

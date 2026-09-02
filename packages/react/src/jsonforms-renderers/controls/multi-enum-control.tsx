@@ -9,7 +9,7 @@ import type {
 import { withJsonFormsMultiEnumProps } from '@jsonforms/react';
 import { Checkbox } from '@repo/ui/checkbox';
 import { Field, FieldLabel } from '@repo/ui/field';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // An array whose items are a single enum/oneOf schema → a multi-select checkbox group.
 const isEnumArray = (schema: JsonSchema): boolean => {
@@ -57,7 +57,14 @@ function MultiEnumControlComponent({
       errors={errors}
       labelFor={false}
     >
-      <div data-slot="checkbox-group" className="grid gap-3">
+      <div
+        data-slot="checkbox-group"
+        role="group"
+        aria-invalid={Boolean(errors)}
+        aria-labelledby={label ? `${id}-label` : undefined}
+        aria-describedby={describedByIds(id, { description, errors })}
+        className="grid gap-3"
+      >
         {options?.map((option) => {
           const itemId = `${id}-${String(option.value)}`;
           const checked = selected.includes(option.value);

@@ -265,6 +265,12 @@
       "import": "./dist/navigation-menu.js",
       "require": "./dist/navigation-menu.cjs"
     },
+    "./page-header": {
+      "types": "./dist/page-header.d.ts",
+      "development": "./src/page-header.ts",
+      "import": "./dist/page-header.js",
+      "require": "./dist/page-header.cjs"
+    },
     "./pagination": {
       "types": "./dist/pagination.d.ts",
       "development": "./src/pagination.ts",
@@ -439,6 +445,12 @@
       "import": "./dist/a11y-types.js",
       "require": "./dist/a11y-types.cjs"
     },
+    "./wcag-criteria": {
+      "types": "./dist/a11y/wcag-criteria.d.ts",
+      "development": "./src/a11y/wcag-criteria.ts",
+      "import": "./dist/wcag-criteria.js",
+      "require": "./dist/wcag-criteria.cjs"
+    },
     "./a11y-catalog.json": {
       "development": "./src/a11y/a11y-catalog.json",
       "default": "./dist/a11y-catalog.json"
@@ -450,7 +462,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "gen:a11y-catalog": "node scripts/gen-a11y-catalog.mjs",
+    "gen:a11y-catalog": "tsx scripts/gen-a11y-catalog.mjs",
     "gen:entries": "node scripts/gen-entries.mjs",
     "lint": "oxlint",
     "test": "vitest run",
@@ -477,8 +489,6 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lexical": "^0.45.0",
-    "lucide-react": "^1.21.0",
-    "next-themes": "^0.4.6",
     "react-day-picker": "^10.0.1",
     "react-phone-number-input": "^3.4.17",
     "react-resizable-panels": "^4.11.2",
@@ -506,6 +516,7 @@
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "tailwindcss": "^4.3.1",
+    "tsx": "^4.22.4",
     "vite": "8.0.16",
     "vite-plugin-dts": "5.0.2"
   },

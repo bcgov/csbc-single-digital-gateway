@@ -26,11 +26,10 @@ describe('App Layout Route', () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app');
 
-    // Wait for console header (banner) and sidebar navigation to render
+    // Wait for the console top bar (banner) to render. /app is the minimal shell (feature 161):
+    // no primary nav, but the account (avatar) menu is present.
     expect(await screen.findByRole('banner')).toBeInTheDocument();
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
-
-    // Verify user display name is visible on screen
-    expect(screen.getAllByText('Maya Reyes').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 });

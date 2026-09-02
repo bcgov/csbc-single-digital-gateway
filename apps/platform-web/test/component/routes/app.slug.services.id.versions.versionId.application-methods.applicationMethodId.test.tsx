@@ -118,7 +118,7 @@ function withFormEditor(base: ReturnType<typeof mockAuth>) {
 describe('App Slug Services ID Versions VersionID Application Methods ApplicationMethodID Route', () => {
   it('renders the application method editing page correctly', async () => {
     withFormEditor(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/s1/versions/sv1/application-methods/f1');
+    renderApp('/app/riverton/services/s1/old/edit/versions/sv1/application-methods/f1');
 
     // Should display the sidebar with layout regions: canvas, palette, inspector
     expect(

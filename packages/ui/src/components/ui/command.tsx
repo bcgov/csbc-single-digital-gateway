@@ -12,7 +12,8 @@ import {
   DialogTitle,
 } from '@ui/components/ui/dialog';
 import { InputGroup, InputGroupAddon } from '@ui/components/ui/input-group';
-import { SearchIcon, CheckIcon } from 'lucide-react';
+import { mdiMagnify, mdiCheck } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -63,7 +64,7 @@ function CommandInput({
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
     <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! bg-input/20 dark:bg-input/30">
+      <InputGroup className="h-8! bg-input-background">
         <CommandPrimitive.Input
           data-slot="command-input"
           className={cn(
@@ -73,7 +74,7 @@ function CommandInput({
           {...props}
         />
         <InputGroupAddon>
-          <SearchIcon className="size-3.5 shrink-0 opacity-50" />
+          <Icon path={mdiMagnify} size="14px" className="shrink-0 opacity-50" />
         </InputGroupAddon>
       </InputGroup>
     </div>
@@ -150,7 +151,11 @@ function CommandItem({
       {...props}
     >
       {children}
-      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+      <Icon
+        path={mdiCheck}
+        size="14px"
+        className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100"
+      />
     </CommandPrimitive.Item>
   );
 }

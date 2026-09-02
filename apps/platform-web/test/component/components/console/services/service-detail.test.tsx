@@ -409,7 +409,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(goToCurrentBtn);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id',
+      to: '/app/$slug/services/$id/old/edit',
       params: { slug: 'riverton', id: 'srv-123' },
     });
   });
@@ -511,7 +511,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(methodsTab);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id/application-methods',
+      to: '/app/$slug/services/$id/old/edit/application-methods',
       params: { slug: 'riverton', id: 'srv-123' },
     });
   });
@@ -591,7 +591,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(v1Item);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id/versions/$versionId',
+      to: '/app/$slug/services/$id/old/edit/versions/$versionId',
       params: { slug: 'riverton', id: 'srv-123', versionId: 'v1' },
     });
 
@@ -604,7 +604,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(methodsTab);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id/versions/$versionId/application-methods',
+      to: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods',
       params: { slug: 'riverton', id: 'srv-123', versionId: 'v1' },
     });
   });
@@ -617,7 +617,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(goToCurrentBtn);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id',
+      to: '/app/$slug/services/$id/old/edit',
       params: { slug: 'riverton', id: 'srv-123' },
     });
   });
@@ -630,7 +630,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(detailsTab);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id',
+      to: '/app/$slug/services/$id/old/edit',
       params: { slug: 'riverton', id: 'srv-123' },
     });
   });
@@ -670,7 +670,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await waitFor(() => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['services'] });
       expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/app/$slug/services/$id',
+        to: '/app/$slug/services/$id/old/edit',
         params: { slug: 'riverton', id: 'srv-123' },
       });
     });
@@ -811,7 +811,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(agreementsTab);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id/service-agreements',
+      to: '/app/$slug/services/$id/old/edit/service-agreements',
       params: { slug: 'riverton', id: 'srv-123' },
     });
   });
@@ -824,7 +824,7 @@ describe('ServiceDetail Component Test Suite', () => {
     await user.click(agreementsTab);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id/versions/$versionId/service-agreements',
+      to: '/app/$slug/services/$id/old/edit/versions/$versionId/service-agreements',
       params: { slug: 'riverton', id: 'srv-123', versionId: 'v1' },
     });
   });

@@ -4,6 +4,7 @@
  * source of truth (see model.ts). Split from model.ts to keep each file under the size gate.
  */
 import { CHOICE_FIELD_TYPES, type FieldTypeId } from './field-types';
+import { isAccordionDefaultOpen } from './model';
 import type {
   ContainerNode,
   ControlNode,
@@ -19,8 +20,13 @@ type JsonObject = Record<string, unknown>;
 
 // ── Serialize: model → { schema, uischema } ──────────────────────────────────────────────────────
 
+/** Feature 167: an authored `{ value, label }[]` → schema-native `oneOf` (`{ const, title }[]`). */
+function oneOfFromEnumOptions(options: EnumOption[] | undefined): JsonObject[] {
+  return (options ?? []).map((o) => ({ const: o.value, title: o.label }));
+}
+
 function propertySchema(node: ControlNode): JsonObject {
-  const values = (node.enumOptions ?? []).map((o) => o.value);
+  const oneOf = oneOfFromEnumOptions(node.enumOptions);
   const base: JsonObject = {};
   switch (node.fieldType) {
     case 'number':
@@ -76,29 +82,64 @@ function propertySchema(node: ControlNode): JsonObject {
       break;
     }
     case 'radio':
-      // Feature 156 (Step 2): single choice → a string enum (values only; labels live in options.choices).
-      Object.assign(base, { type: 'string', enum: values });
+      // Feature 167: single choice → a string with a schema-native oneOf (values AND labels; Ajv
+      // validates the `const`, the citizen sees the `title`).
+      Object.assign(base, { type: 'string', oneOf });
       break;
     case 'select':
-      // Single → string enum; multi → array of enum (uniqueItems). Labels are carried in options.choices.
+      // Single → string oneOf; multi → array of oneOf items (uniqueItems). Multiplicity is the schema
+      // shape itself now — no separate `options.multiple` flag.
       if (node.multiple === true) {
         Object.assign(base, {
           type: 'array',
           uniqueItems: true,
-          items: { type: 'string', enum: values },
+          items: { type: 'string', oneOf },
         });
         if (node.required) {
           base.minItems = 1;
         }
       } else {
-        Object.assign(base, { type: 'string', enum: values });
+        Object.assign(base, { type: 'string', oneOf });
+      }
+      break;
+    case 'accordiongroup':
+      // Feature 171: a repeatable list of { id, title, rich-text description }. `description` is an
+      // object because a Lexical editor state is one (same convention as the richtext control).
+      Object.assign(base, {
+        type: 'array',
+        items: {
+          type: 'object',
+          // Feature 171 (revision 2): an item that EXISTS must be complete, independent of whether
+          // the field itself is required. `required` alone only checks key presence, so the title
+          // also carries `pattern: '\\S'` — at least one non-whitespace character, which subsumes
+          // `minLength: 1` and rejects a space-only title. `description` is a Lexical editor state;
+          // `type: 'object'` rejects the `null` a fresh item carries. Drafts are never validated,
+          // so half-typed items still SAVE — this only gates submit.
+          required: ['title', 'description'],
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string', pattern: '\\S' },
+            description: { type: 'object' },
+          },
+        },
+      });
+      // Feature 171 (revision 3): an author-set minimum wins; otherwise `required` still pins
+      // non-emptiness at 1, since Ajv treats `[]` as PRESENT and object-level `required` alone
+      // would let an empty group submit.
+      if (node.minItems !== undefined && node.minItems >= 1) {
+        base.minItems = node.minItems;
+      } else if (node.required) {
+        base.minItems = 1;
+      }
+      if (node.maxItems !== undefined) {
+        base.maxItems = node.maxItems;
       }
       break;
     case 'checkboxes':
       Object.assign(base, {
         type: 'array',
         uniqueItems: true,
-        items: { type: 'string', enum: values },
+        items: { type: 'string', oneOf },
       });
       if (node.required) {
         // A required checkbox group must have ≥1 box ticked — object-level `required` only checks the
@@ -181,24 +222,50 @@ function controlOptions(node: ControlNode): JsonObject {
     options.toggle = true;
   }
   if (CHOICE_FIELD_TYPES.has(node.fieldType)) {
-    // Feature 156 (Step 2): the unified choice control reads its presentation + labelled options here.
-    options.format = 'choice';
+    // Feature 167: values + labels now live in schema.oneOf/schema.items.oneOf. Only presentation
+    // (`display`) stays in uischema.options — it's the sole signal that disambiguates `select` from
+    // `radio` (both `string`+`oneOf`) and multi-`select` from `checkboxes` (both `array` of the same
+    // item schema); `multiple` is no longer authored here — it's inferred from the schema shape.
     options.display =
       node.fieldType === 'radio'
         ? 'radio'
         : node.fieldType === 'checkboxes'
           ? 'checkboxes'
           : 'select';
-    if (node.fieldType === 'select') {
-      options.multiple = node.multiple === true;
+    if (node.fieldType === 'select' && node.combobox === true) {
+      // Feature 168: opt-in per field; only emitted when true (unset/false stays the plain dropdown).
+      options.combobox = true;
     }
-    options.choices = (node.enumOptions ?? []).map((o) => ({ value: o.value, label: o.label }));
   }
   if (node.fieldType === 'richtext') {
     options.format = 'richtext';
   }
   if (node.fieldType === 'address') {
     options.format = 'address';
+    // Feature 170: per-sub-field locks nest under ONE `fields` key, parallel to the address value
+    // shape. Only `true` is emitted — a sub-field at its defaults contributes no bag, and `fields`
+    // itself is omitted when empty, so an unlocked address serializes exactly as it did before.
+    const fields: JsonObject = {};
+    if (node.readOnlyCountry === true) {
+      fields.country = { readOnly: true };
+    }
+    if (node.readOnlyProvince === true) {
+      fields.province = { readOnly: true };
+    }
+    if (Object.keys(fields).length > 0) {
+      options.fields = fields;
+    }
+  }
+  if (node.fieldType === 'accordiongroup') {
+    options.format = 'accordion-group';
+    // Both are emitted only when they differ from the renderer's own defaults ("item" / 'none'), so
+    // a field left at its defaults serializes to just the format flag.
+    if (node.itemLabel !== undefined && node.itemLabel !== '' && node.itemLabel !== 'item') {
+      options.itemLabel = node.itemLabel;
+    }
+    if (node.defaultOpen !== undefined && node.defaultOpen !== 'none') {
+      options.defaultOpen = node.defaultOpen;
+    }
   }
   if (node.fieldType === 'daterange') {
     options.format = 'daterange';
@@ -283,13 +350,37 @@ export function serializeModel(model: FormModel): FormDefinition {
 
   for (const field of model.fields) {
     if (field.kind === 'container') {
-      const layoutType = field.layout === 'group' ? 'Group' : 'HorizontalLayout';
+      const layoutType =
+        field.layout === 'group'
+          ? 'Group'
+          : field.layout === 'grid'
+            ? 'GridLayout'
+            : field.layout === 'section'
+              ? 'Section'
+              : 'HorizontalLayout';
       const child = {
         type: layoutType,
         elements: field.children.map(serializeChild),
       } as JsonObject;
-      if (field.layout === 'group' && field.label !== undefined && field.label !== '') {
+      if (
+        (field.layout === 'group' || field.layout === 'section') &&
+        field.label !== undefined &&
+        field.label !== ''
+      ) {
         child.label = field.label;
+      }
+      if (
+        field.layout === 'section' &&
+        field.description !== undefined &&
+        field.description !== ''
+      ) {
+        // Feature 172: the sub-heading under the <legend>. Emitted for a SECTION ONLY — Group's
+        // renderer reads the same option but its serialization stays byte-identical (rule 10).
+        child.options = { description: field.description };
+      }
+      if (field.layout === 'grid') {
+        // Feature 169: no Section title for grid (matches Horizontal's title-less behavior).
+        child.options = { columns: field.columns ?? 2 };
       }
       elements.push(child);
     } else {
@@ -316,6 +407,10 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (options.format === 'richtext') {
     return 'richtext';
   }
+  if (options.format === 'accordion-group') {
+    // Feature 171: an array schema — must be checked early, or it falls through isChoiceProp to text.
+    return 'accordiongroup';
+  }
   if (options.format === 'daterange') {
     // Feature 157: also an object schema — must be checked before the generic object→address branch.
     return 'daterange';
@@ -330,8 +425,9 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   if (options.format === 'address' || prop.type === 'object') {
     return 'address';
   }
-  if (options.format === 'choice') {
-    // Feature 156 (Step 2): the choice family is discriminated by `options.display`.
+  if (isChoiceProp(prop)) {
+    // Feature 167: a choice field is recognised by schema shape (a `oneOf`, single or array-of-item);
+    // `options.display` still discriminates select/radio/checkboxes, defaulting to `select`.
     if (options.display === 'radio') {
       return 'radio';
     }
@@ -356,17 +452,30 @@ function inferFieldType(prop: JsonObject, options: JsonObject): FieldTypeId {
   return 'text';
 }
 
-/** Feature 156 (Step 2): recover the authored `{ value, label }[]` from `uischema.options.choices`. */
-function choicesFromOptions(rawOptions: JsonObject): EnumOption[] {
-  const raw = rawOptions.choices;
-  if (!Array.isArray(raw)) {
+/** The schema that would carry `oneOf` for a property — itself for single-value, `items` for array. */
+function oneOfHostSchema(prop: JsonObject): JsonObject {
+  return prop.type === 'array' ? ((prop.items as JsonObject | undefined) ?? {}) : prop;
+}
+
+/**
+ * Feature 167: true when a property schema is choice-shaped — a `oneOf` (single or array-of-item),
+ * even an empty one (a choice field with every option removed is still a choice field).
+ */
+function isChoiceProp(prop: JsonObject): boolean {
+  return Array.isArray(oneOfHostSchema(prop).oneOf);
+}
+
+/** Feature 167: recover the authored `{ value, label }[]` from a property's schema-native `oneOf`. */
+function choicesFromSchema(prop: JsonObject): EnumOption[] {
+  const oneOf = oneOfHostSchema(prop).oneOf;
+  if (!Array.isArray(oneOf)) {
     return [];
   }
-  return raw
+  return oneOf
     .filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === 'object')
     .map((entry) => {
-      const value = String(entry.value ?? '');
-      const label = entry.label === undefined || entry.label === '' ? value : String(entry.label);
+      const value = String(entry.const ?? '');
+      const label = entry.title === undefined || entry.title === '' ? value : String(entry.title);
       return { value, label };
     });
 }
@@ -397,9 +506,13 @@ function parseControl(
     display: _d,
     multiple: _mult,
     choices: _c,
+    combobox: _cb,
     placeholder: _ph,
     rows: _r,
     mask: _mk,
+    fields: _fld,
+    itemLabel: _il,
+    defaultOpen: _do,
     step,
     decimals,
     ...userOptions
@@ -411,9 +524,13 @@ function parseControl(
   void _d;
   void _mult;
   void _c;
+  void _cb;
   void _ph;
   void _r;
   void _mk;
+  void _fld;
+  void _il;
+  void _do;
 
   const label =
     typeof element.label === 'string' ? element.label : ((prop.title as string | undefined) ?? '');
@@ -444,9 +561,12 @@ function parseControl(
     }
   }
   if (CHOICE_FIELD_TYPES.has(fieldType)) {
-    node.enumOptions = choicesFromOptions(rawOptions);
+    // Feature 167: values + labels come from the schema's `oneOf`; multiplicity from its shape.
+    node.enumOptions = choicesFromSchema(prop);
     if (fieldType === 'select') {
-      node.multiple = rawOptions.multiple === true;
+      node.multiple = prop.type === 'array';
+      // Feature 168: opt-in per field, defaults false when the flag is absent (e.g. legacy data).
+      node.combobox = rawOptions.combobox === true;
     }
   }
   if (fieldType === 'boolean') {
@@ -473,6 +593,26 @@ function parseControl(
     node.max = (prop.maximum as number | undefined) ?? 100;
     node.step = typeof step === 'number' ? step : 1;
   }
+  if (fieldType === 'accordiongroup') {
+    // Feature 171 (revision 3): recover the authored bounds. A `minItems` of exactly 1 on a required
+    // field is indistinguishable from the one `required` emits on its own — reading it back either
+    // way round-trips identically, because a minimum of 1 implies required.
+    if (typeof prop.minItems === 'number') {
+      node.minItems = prop.minItems;
+    }
+    if (typeof prop.maxItems === 'number') {
+      node.maxItems = prop.maxItems;
+    }
+    // Feature 171: both always definite so the inspector inputs stay controlled. `minItems` is NOT
+    // read back — it is derived from `required`, which the node already carries.
+    node.itemLabel =
+      typeof rawOptions.itemLabel === 'string' && rawOptions.itemLabel !== ''
+        ? rawOptions.itemLabel
+        : 'item';
+    node.defaultOpen = isAccordionDefaultOpen(rawOptions.defaultOpen)
+      ? rawOptions.defaultOpen
+      : 'none';
+  }
   if (fieldType === 'address') {
     const addressDefault = prop.default as JsonObject | undefined;
     if (typeof addressDefault?.country === 'string' && addressDefault.country !== '') {
@@ -481,6 +621,15 @@ function parseControl(
     if (typeof addressDefault?.province === 'string' && addressDefault.province !== '') {
       node.defaultProvince = addressDefault.province;
     }
+    // Feature 170: an absent bag, an absent key, or a non-boolean all read back as `false`, so an
+    // address node always carries definite booleans and the inspector Switches stay controlled.
+    const addressFields = rawOptions.fields as JsonObject | undefined;
+    const lockOf = (subField: string): boolean => {
+      const bag = addressFields?.[subField] as JsonObject | undefined;
+      return bag?.readOnly === true;
+    };
+    node.readOnlyCountry = lockOf('country');
+    node.readOnlyProvince = lockOf('province');
   }
   return node;
 }
@@ -541,17 +690,43 @@ export function parseModel(definition: FormDefinition): FormModel {
       if (display !== null) {
         fields.push(display);
       }
-    } else if (element.type === 'Group' || element.type === 'HorizontalLayout') {
+    } else if (
+      element.type === 'Group' ||
+      element.type === 'HorizontalLayout' ||
+      element.type === 'GridLayout' ||
+      element.type === 'Section'
+    ) {
       const children = ((element.elements as JsonObject[] | undefined) ?? [])
         .map((child) => parseChild(child, schema, required))
         .filter((c): c is ControlNode | DisplayNode => c !== null);
       const node: ContainerNode = {
         kind: 'container',
-        layout: element.type === 'Group' ? 'group' : 'horizontal',
+        layout:
+          element.type === 'Group'
+            ? 'group'
+            : element.type === 'GridLayout'
+              ? 'grid'
+              : element.type === 'Section'
+                ? 'section'
+                : 'horizontal',
         children,
       };
       if (typeof element.label === 'string') {
         node.label = element.label;
+      }
+      if (element.type === 'Section') {
+        // Feature 172: recover the authored sub-heading; anything non-string reads as absent.
+        const description = (element.options as JsonObject | undefined)?.description;
+        if (typeof description === 'string' && description !== '') {
+          node.description = description;
+        }
+      }
+      if (element.type === 'GridLayout') {
+        // Feature 169: clamp defensively — never produce a 0-column or absurd-column grid from
+        // malformed/legacy uischema.
+        const rawColumns = (element.options as JsonObject | undefined)?.columns;
+        const columns = typeof rawColumns === 'number' ? rawColumns : 2;
+        node.columns = Math.min(6, Math.max(2, columns));
       }
       fields.push(node);
     }

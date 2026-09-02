@@ -1,7 +1,8 @@
 import * as React from 'react';
 
 import type { AccordionValue } from '@base-ui/react/accordion';
-import { ChevronsDown, ChevronsUp } from 'lucide-react';
+import { mdiChevronDoubleDown, mdiChevronDoubleUp } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 import { cn } from '@ui/lib/utils';
 import { Accordion } from './accordion';
@@ -49,7 +50,11 @@ function AccordionGroup({
               aria-label={`${allExpanded ? 'Collapse' : 'Expand'} all sections in ${title}`}
               className="shrink-0 cursor-pointer hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center items-center"
             >
-              {allExpanded ? <ChevronsUp size={20} /> : <ChevronsDown size={20} />}
+              {allExpanded ? (
+                <Icon path={mdiChevronDoubleUp} size="20px" />
+              ) : (
+                <Icon path={mdiChevronDoubleDown} size="20px" />
+              )}
               {allExpanded ? 'Collapse all' : 'Expand all'}
             </button>
           )}

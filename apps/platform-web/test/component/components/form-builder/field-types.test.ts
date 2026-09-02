@@ -46,3 +46,38 @@ describe('Field Types Component Test Suite', () => {
     });
   });
 });
+
+describe('Accordion group palette entry (feature 171)', () => {
+  it('registers accordiongroup as a control in the Advanced group', () => {
+    const def = FIELD_TYPE_BY_ID.accordiongroup;
+    expect(def).toBeDefined();
+    expect(def?.kind).toBe('control');
+    expect(def?.group).toBe('Advanced');
+    expect(def?.label).toBe('Accordion group');
+    expect(def?.keywords).toContain('faq');
+  });
+
+  it('is not a choice field type', () => {
+    expect(CHOICE_FIELD_TYPES.has('accordiongroup')).toBe(false);
+  });
+});
+
+describe('Section palette entry (feature 172)', () => {
+  it('registers section as a container in the Layout group', () => {
+    const def = FIELD_TYPE_BY_ID.section;
+    expect(def).toBeDefined();
+    expect(def?.kind).toBe('container');
+    expect(def?.group).toBe('Layout');
+    expect(def?.label).toBe('Section');
+    expect(def?.keywords).toContain('fieldset');
+  });
+
+  it('sits alongside the other layout containers', () => {
+    const layoutContainers = FIELD_TYPES.filter(
+      (t) => t.group === 'Layout' && t.kind === 'container',
+    ).map((t) => t.id);
+    expect(layoutContainers).toEqual(
+      expect.arrayContaining(['group', 'horizontal', 'grid', 'section']),
+    );
+  });
+});

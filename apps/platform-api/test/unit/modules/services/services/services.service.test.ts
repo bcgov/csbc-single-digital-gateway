@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ServicesService } from '../../../../../src/modules/services/services/services.service';
@@ -63,6 +64,9 @@ describe('ServicesService', () => {
 
     serviceTypeResolverMock = {
       resolve: vi.fn(),
+      definitionForVersion: vi.fn(),
+      // Feature 174: the READ path resolves templates per version, never via resolve().
+      definitionsForVersions: vi.fn().mockResolvedValue({}),
     };
 
     service = new ServicesService(dbMock, serviceTypeResolverMock);
@@ -473,6 +477,7 @@ describe('ServicesService', () => {
             {
               id: 'version-1',
               documentId: 'service-1',
+              typeVersionId: 'type-version-1',
               version: 1,
               status: 'draft',
               data: { test: true },
@@ -486,9 +491,8 @@ describe('ServicesService', () => {
         // 3. hasSubmissions select
         .mockReturnValueOnce(mockQuery([{ n: 0 }]));
 
-      serviceTypeResolverMock.resolve.mockResolvedValue({
-        schema: { type: 'object' },
-        uischema: {},
+      serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
+        'type-version-1': { schema: { type: 'object' }, uischema: {} },
       });
 
       const result = await service.get('user-1', 'service-1');
@@ -602,5 +606,154 @@ describe('ServicesService', () => {
 
       expect(vi.mocked(reactivateServiceTx)).toHaveBeenCalledWith(txMock, 'service-1');
     });
+  });
+});
+
+/**
+ * Feature 174. getServiceDetail() must resolve `definition` per the version being read
+ * (definitionsForVersions, keyed by document_versions.type_version_id), not via resolve()
+ * (currently-published). Without this, publishing a reshaped Service type version renders every
+ * existing service's details page as empty em-dashes.
+ */
+const versionRow = (over: Record<string, unknown>) => ({
+  id: 'version-1',
+  documentId: 'service-1',
+  typeVersionId: 'type-version-1',
+  version: 1,
+  status: 'draft',
+  data: {},
+  createdAt: new Date('2026-07-12T00:00:00.000Z'),
+  updatedAt: new Date('2026-07-12T00:00:00.000Z'),
+  publishedAt: null,
+  archivedAt: null,
+  ...over,
+});
+
+describe('ServicesService.get — per-version definition (feature 174)', () => {
+  let service: ServicesService;
+  let dbMock: any;
+  let serviceTypeResolverMock: any;
+
+  const doc = {
+    id: 'service-1',
+    workspaceId: 'ws-1',
+    title: 'Service Title',
+    description: 'Service Desc',
+    createdAt: new Date('2026-07-12T00:00:00.000Z'),
+    updatedAt: new Date('2026-07-12T00:00:00.000Z'),
+  };
+
+  const arrange = (versions: unknown[]) => {
+    dbMock.select = vi
+      .fn()
+      .mockReturnValueOnce(mockQuery([{ doc }])) // requireDocument
+      .mockReturnValueOnce(mockQuery(versions)) // versionsOf (ascending)
+      .mockReturnValueOnce(mockQuery([{ n: 0 }])); // hasSubmissions
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    dbMock = Object.assign(Promise.resolve([]), {
+      select: vi.fn().mockImplementation(() => mockQuery([])),
+    });
+    serviceTypeResolverMock = {
+      resolve: vi.fn(),
+      definitionForVersion: vi.fn(),
+      definitionsForVersions: vi.fn().mockResolvedValue({}),
+    };
+    service = new ServicesService(dbMock, serviceTypeResolverMock);
+  });
+
+  it('should resolve the definition from the selected version type_version_id', async () => {
+    arrange([versionRow({ typeVersionId: 'tv-new', publishedAt: new Date() })]);
+    serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
+      'tv-new': { schema: { marker: 'new' }, uischema: {} },
+    });
+
+    const result = await service.get('user-1', 'service-1');
+
+    expect(serviceTypeResolverMock.definitionsForVersions).toHaveBeenCalledWith(['tv-new']);
+    expect(result.definition.schema).toEqual({ marker: 'new' });
+    expect(result.definitions['tv-new']).toEqual({ schema: { marker: 'new' }, uischema: {} });
+  });
+
+  it('should return the OLD template for a version pinned to an older type version', async () => {
+    // v1 (published) is pinned to the OLD type version; v2 (draft) to the new one. The service is
+    // rendered from its published version, so it must get the OLD template — this is exactly the
+    // case that rendered as all em-dashes before the fix.
+    arrange([
+      versionRow({ id: 'v1', version: 1, typeVersionId: 'tv-old', publishedAt: new Date() }),
+      versionRow({ id: 'v2', version: 2, typeVersionId: 'tv-new' }),
+    ]);
+    serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
+      'tv-old': { schema: { marker: 'old' }, uischema: {} },
+      'tv-new': { schema: { marker: 'new' }, uischema: {} },
+    });
+
+    const result = await service.get('user-1', 'service-1');
+
+    expect(serviceTypeResolverMock.definitionsForVersions).toHaveBeenCalledWith([
+      'tv-old',
+      'tv-new',
+    ]);
+    expect(result.definition.schema).toEqual({ marker: 'old' });
+    // Both templates are available so the version picker can render either faithfully.
+    expect(result.definitions['tv-old']?.schema).toEqual({ marker: 'old' });
+    expect(result.definitions['tv-new']?.schema).toEqual({ marker: 'new' });
+  });
+
+  it('should not call resolve() (currently-published) on the read path', async () => {
+    arrange([versionRow({})]);
+    serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
+      'type-version-1': { schema: {}, uischema: {} },
+    });
+
+    await service.get('user-1', 'service-1');
+
+    expect(serviceTypeResolverMock.resolve).not.toHaveBeenCalled();
+  });
+
+  it('should fall back to the newest version when none is published', async () => {
+    arrange([
+      versionRow({ id: 'v1', version: 1, typeVersionId: 'tv-old' }),
+      versionRow({ id: 'v2', version: 2, typeVersionId: 'tv-new' }),
+    ]);
+    serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
+      'tv-old': { schema: { marker: 'old' }, uischema: {} },
+      'tv-new': { schema: { marker: 'new' }, uischema: {} },
+    });
+
+    const result = await service.get('user-1', 'service-1');
+
+    expect(result.definition.schema).toEqual({ marker: 'new' });
+  });
+
+  it('should return an empty definition for a service with no versions', async () => {
+    arrange([]);
+
+    const result = await service.get('user-1', 'service-1');
+
+    expect(result.definition).toEqual({ schema: {}, uischema: {} });
+    expect(result.definitions).toEqual({});
+  });
+
+  it('should return an empty definition when the pinned type version is missing', async () => {
+    arrange([versionRow({ typeVersionId: 'tv-gone', publishedAt: new Date() })]);
+    serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({});
+
+    const result = await service.get('user-1', 'service-1');
+
+    expect(result.definition).toEqual({ schema: {}, uischema: {} });
+  });
+
+  it('should still use resolve() on the create path (a new service binds to the published type)', async () => {
+    // Guard against an over-eager fix: CREATE must keep binding to the currently-published type
+    // version, or new services would be authored against a stale template.
+    const source = readFileSync(
+      new URL('../../../../../src/modules/services/services/services.service.ts', import.meta.url),
+      'utf8',
+    );
+    const createBody = source.slice(source.indexOf('async create('), source.indexOf('async get('));
+    expect(createBody).toContain('this.serviceType.resolve()');
   });
 });

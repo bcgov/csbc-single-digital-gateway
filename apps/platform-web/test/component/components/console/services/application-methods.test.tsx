@@ -236,7 +236,7 @@ describe('Application Methods Component Test Suite', () => {
     const activeLink = screen.getByRole('link', { name: 'Parking Application Form' });
     expect(activeLink).toBeInTheDocument();
     expect(activeLink.getAttribute('href')).toBe(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/doc-basic-789',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/doc-basic-789',
     );
 
     // Archived Form should not be a link
@@ -255,7 +255,7 @@ describe('Application Methods Component Test Suite', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.objectContaining({
-        to: '/app/$slug/services/$id/versions/$versionId/application-methods/new',
+        to: '/app/$slug/services/$id/old/edit/versions/$versionId/application-methods/new',
         params: {
           slug: 'riverton',
           id: 'srv-123',

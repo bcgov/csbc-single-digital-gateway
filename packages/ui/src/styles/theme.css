@@ -34,8 +34,10 @@
   --color-destructive-foreground: var(--app-destructive-foreground);
 
   --color-border: var(--app-border);
+  --color-border-medium: var(--app-border-medium);
   --color-border-dark: var(--app-border-dark);
   --color-input: var(--app-input);
+  --color-input-background: var(--app-input-background);
   --color-ring: var(--app-ring);
 
   /* ------------------------------------------------------------------------ */

@@ -205,3 +205,89 @@ describe('ServiceContent Component', () => {
     }
   });
 });
+
+/**
+ * Feature 174. The Service type nests its fields inside top-level `Group`s, so an omitted control
+ * is no longer necessarily a top-level element — `omitControls` recurses. A top-level-only filter
+ * silently stopped omitting `contact_methods` and rendered it twice (once here, once in the
+ * dedicated Contact section).
+ */
+const passedUiSchema = () =>
+  JSON.parse(screen.getByTestId('json-forms').getAttribute('data-uischema') || '{}');
+
+describe('ServiceContent — omit reaches nested controls (feature 174)', () => {
+  const groupedUiSchema = {
+    type: 'VerticalLayout',
+    elements: [
+      { type: 'Control', scope: '#/properties/title' },
+      {
+        type: 'Group',
+        label: 'Service description',
+        elements: [
+          { type: 'Control', scope: '#/properties/service_description/properties/about' },
+          {
+            type: 'Control',
+            scope: '#/properties/service_description/properties/contact_methods',
+          },
+        ],
+      },
+    ],
+  };
+
+  it('omits a contact_methods control nested inside a Group', () => {
+    render(
+      <ServiceContent
+        schema={{ type: 'object' }}
+        uischema={groupedUiSchema}
+        data={{}}
+        omit={['title', 'description', 'contact_methods']}
+      />,
+    );
+
+    const ui = passedUiSchema();
+    // The top-level title control is gone, the Group survives.
+    expect(ui.elements).toHaveLength(1);
+    expect(ui.elements[0].type).toBe('Group');
+    // Inside the Group, only `about` remains.
+    expect(ui.elements[0].elements).toHaveLength(1);
+    expect(ui.elements[0].elements[0].scope).toBe(
+      '#/properties/service_description/properties/about',
+    );
+  });
+
+  it('still omits the same field at the flat legacy path', () => {
+    render(
+      <ServiceContent
+        schema={{ type: 'object' }}
+        uischema={{
+          type: 'VerticalLayout',
+          elements: [
+            { type: 'Control', scope: '#/properties/contact_methods' },
+            { type: 'Control', scope: '#/properties/about' },
+          ],
+        }}
+        data={{}}
+        omit={['contact_methods']}
+      />,
+    );
+
+    const ui = passedUiSchema();
+    expect(ui.elements).toHaveLength(1);
+    expect(ui.elements[0].scope).toBe('#/properties/about');
+  });
+
+  it('leaves a Group untouched when nothing inside it is omitted', () => {
+    render(
+      <ServiceContent
+        schema={{ type: 'object' }}
+        uischema={groupedUiSchema}
+        data={{}}
+        omit={['nothing-matches']}
+      />,
+    );
+
+    const ui = passedUiSchema();
+    expect(ui.elements).toHaveLength(2);
+    expect(ui.elements[1].elements).toHaveLength(2);
+  });
+});

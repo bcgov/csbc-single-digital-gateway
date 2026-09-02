@@ -79,3 +79,45 @@ export function addressDisplayLines(value: AddressValue): string[] {
     (line): line is string => Boolean(line),
   );
 }
+
+// ── Per-sub-field options (feature 170) ──────────────────────────────────────────────────────────
+//
+// The address is a composite of six sub-fields, so per-sub-field presentation config is nested to
+// parallel the value shape, namespaced under a single `fields` key in the uischema:
+//
+//   options: { format: 'address', fields: { country: { readOnly: true } } }
+//
+// The `fields` key is namespaced (rather than the six sub-field names sitting directly under
+// `options`) because the form-builder codec's option drop-list runs for EVERY field type — bare
+// `country` / `city` / `province` keys there would be stripped from any field's custom options.
+
+/** Presentation options for a single address sub-field. */
+export interface AddressFieldOptions {
+  /**
+   * Lock the sub-field: it renders showing its value but cannot be edited. Only meaningful where the
+   * author also set a default to lock to. Defaults to `false`.
+   */
+  readOnly: boolean;
+}
+
+/** Options for every address sub-field — always fully populated, so callers never branch on absence. */
+export type AddressFieldsOptions = Record<AddressFieldKey, AddressFieldOptions>;
+
+/**
+ * Coerce a uischema `options` blob into a complete {@link AddressFieldsOptions} (per CLAUDE.md
+ * "normalize before use"). A hand-edited or partial definition must never throw a render path, so
+ * anything unrecognised — a missing `fields` key, a non-object bag, a non-boolean `readOnly`, or a
+ * key that is not an address sub-field — reads back as the default `readOnly: false`.
+ */
+export function readAddressFieldsOptions(options: unknown): AddressFieldsOptions {
+  const bag = options && typeof options === 'object' ? (options as Record<string, unknown>) : {};
+  const fields =
+    bag.fields && typeof bag.fields === 'object' ? (bag.fields as Record<string, unknown>) : {};
+  const result = {} as AddressFieldsOptions;
+  for (const key of ADDRESS_FIELD_KEYS) {
+    const entry = fields[key];
+    const rec = entry && typeof entry === 'object' ? (entry as Record<string, unknown>) : {};
+    result[key] = { readOnly: rec.readOnly === true };
+  }
+  return result;
+}

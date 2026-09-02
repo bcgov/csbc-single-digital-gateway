@@ -2,7 +2,7 @@ import { isRangeControl, rankWith } from '@jsonforms/core';
 import type { ControlProps, RankedTester } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Slider } from '@repo/ui/slider';
-import { ControlWrapper } from '../util/control-wrapper';
+import { ControlWrapper, describedByIds } from '../util/control-wrapper';
 
 // `isRangeControl` = numeric control with `uischema.options.slider = true`.
 export const sliderControlTester: RankedTester = rankWith(4, isRangeControl);
@@ -44,6 +44,8 @@ function SliderControlComponent({
           max={max}
           {...(step ? { step } : {})}
           disabled={enabled === false}
+          aria-invalid={Boolean(errors)}
+          aria-describedby={describedByIds(id, { description, errors })}
           onValueChange={(next) => handleChange(path, Array.isArray(next) ? next[0] : next)}
         />
         <span className="text-xs tabular-nums text-muted-foreground">{value}</span>

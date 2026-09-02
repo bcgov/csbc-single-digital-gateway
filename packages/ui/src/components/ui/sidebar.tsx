@@ -19,7 +19,8 @@ import {
 } from '@ui/components/ui/sheet';
 import { Skeleton } from '@ui/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ui/components/ui/tooltip';
-import { PanelLeftIcon } from 'lucide-react';
+import { mdiPageLayoutSidebarLeft } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -260,7 +261,7 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <Icon path={mdiPageLayoutSidebarLeft} size="16px" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
@@ -309,7 +310,7 @@ function SidebarInput({ className, ...props }: React.ComponentProps<typeof Input
     <Input
       data-slot="sidebar-input"
       data-sidebar="input"
-      className={cn('h-8 w-full border-input bg-muted/20 dark:bg-muted/30', className)}
+      className={cn('h-8 w-full border-input bg-muted/20', className)}
       {...props}
     />
   );

@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { CreateWorkspaceModal } from '@/components/console/create-workspace-modal';
 import { useWorkspaces } from '@/lib/workspaces';
 
-/** Workspace switcher at the top of the rail — lists the caller's workspaces and creates new ones. */
+/** Workspace switcher in the top bar — lists the caller's workspaces and creates new ones. */
 export function WorkspaceSwitcher() {
   const { data: workspaces = [] } = useWorkspaces();
   const params = useParams({ strict: false });
@@ -24,20 +24,12 @@ export function WorkspaceSwitcher() {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-lg border border-sidebar-border p-1.5 text-left hover:bg-sidebar-accent group-data-[collapsed=true]/rail:justify-center group-data-[collapsed=true]/rail:border-transparent">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Building2 className="size-4" aria-hidden />
+        <DropdownMenuTrigger className="flex max-w-[220px] items-center gap-2 rounded-md border border-border px-2 py-1.5 text-left hover:bg-accent">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded bg-primary text-primary-foreground">
+            <Building2 className="size-3.5" aria-hidden />
           </span>
-          <span className="min-w-0 flex-1 leading-tight group-data-[collapsed=true]/rail:hidden">
-            <span className="block truncate text-[13px] font-semibold text-sidebar-foreground">
-              {label}
-            </span>
-            <span className="block text-[11px] text-muted-foreground">Workspace</span>
-          </span>
-          <ChevronsUpDown
-            className="size-3.5 shrink-0 text-muted-foreground group-data-[collapsed=true]/rail:hidden"
-            aria-hidden
-          />
+          <span className="min-w-0 truncate text-[13px] font-medium text-foreground">{label}</span>
+          <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-64">

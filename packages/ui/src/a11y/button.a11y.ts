@@ -1,12 +1,9 @@
 import type { ComponentA11yMetadata } from './a11y-types';
+import { WCAG } from './wcag-criteria';
 
 export default {
   component: 'button',
-  wcagCriteria: [
-    { id: '4.1.2', name: 'Name, Role, Value', level: 'A' },
-    { id: '2.1.1', name: 'Keyboard', level: 'A' },
-    { id: '1.3.1', name: 'Info and Relationships', level: 'A' },
-  ],
+  wcagCriteria: [WCAG.nameRoleValue, WCAG.keyboard, WCAG.infoAndRelationships],
   rules: [
     {
       id: 'icon-only-needs-aria-label',

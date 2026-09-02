@@ -39,17 +39,13 @@ describe('App Slug Index Route', () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     const { container } = renderApp('/app/riverton/');
 
-    // Verify placeholder text is shown
+    // Verify the redesigned overview content is shown (Create-new-service CTA is unique to this page)
     expect(
-      await screen.findByText(
-        'Overview is being set up — placeholder layout shown until you choose what to track.',
-        {},
-        { timeout: 32000 },
-      ),
+      await screen.findByText('Create new service', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
 
-    // Verify skeleton nodes are successfully rendered
+    // Verify placeholder skeleton nodes are successfully rendered
     const skeletons = container.querySelectorAll('.animate-pulse');
-    expect(skeletons.length).toBeGreaterThan(30);
+    expect(skeletons.length).toBeGreaterThan(15);
   });
 });

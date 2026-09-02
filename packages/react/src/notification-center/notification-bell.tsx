@@ -1,5 +1,6 @@
 import { Button } from '@repo/ui/button';
-import { BellIcon } from 'lucide-react';
+import { mdiBell } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import type { ComponentPropsWithoutRef } from 'react';
 
 export interface NotificationBellProps extends ComponentPropsWithoutRef<typeof Button> {
@@ -22,7 +23,7 @@ export function NotificationBell({ count, ...buttonProps }: NotificationBellProp
       {...buttonProps}
       className={`relative ${buttonProps.className ?? ''}`}
     >
-      <BellIcon aria-hidden="true" className="size-5" />
+      <Icon path={mdiBell} aria-hidden="true" size="20px" />
       {count > 0 ? (
         <span
           aria-hidden="true"

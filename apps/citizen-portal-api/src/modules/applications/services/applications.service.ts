@@ -31,8 +31,10 @@ import type { Env } from '../../../config/env.schema';
 import { enqueueNotification } from '../../../notifications/enqueue';
 import { staffSubmissionContent, submissionReceivedContent } from '../util/notification-content';
 import {
+  collectAddressLocks,
   collectAddressPostals,
   collectDecimalConstraints,
+  validateAddressLocks,
   validateAddressPostals,
   validateDecimals,
   validateSubmission,
@@ -324,6 +326,16 @@ export class ApplicationsService {
       throw new UnprocessableEntityException({
         message: 'The application has validation errors',
         errors: postalErrors,
+      });
+    }
+    // Address locks (feature 170): a sub-field the author marked read-only must equal the default it
+    // was pinned to. The rendered field is read-only, but that is UX only — this is the enforcement
+    // point for a request crafted outside the UI.
+    const lockErrors = validateAddressLocks(collectAddressLocks(form.kind, form.structure), data);
+    if (lockErrors.length > 0) {
+      throw new UnprocessableEntityException({
+        message: 'The application has validation errors',
+        errors: lockErrors,
       });
     }
     // Consent gate: every required service agreement must be approved (against its current version).

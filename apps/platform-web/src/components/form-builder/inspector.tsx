@@ -3,11 +3,13 @@ import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { Switch } from '@repo/ui/switch';
 import { Textarea } from '@repo/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { AddressDefaultsEditor } from './address-defaults-editor';
+import { AccordionGroupSettings } from './accordion-group-settings';
+import { applyRequiredToggle } from './item-bounds';
 import { ClearableInput } from './clearable-input';
+import { Row, SegmentedToggle } from './inspector-controls';
 import { DisplayInspector } from './display-inspector';
 import { CHOICE_FIELD_TYPES } from './field-types';
 import type {
@@ -18,66 +20,6 @@ import type {
   FieldNode,
   FormModel,
 } from './model';
-
-function Row({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-/**
- * A single-select segmented toggle group (`spacing={0}`) with a clear primary selection. Base UI's
- * ToggleGroup value is an array, so we bind `[value]` and pick the newly-pressed item (never allowing
- * an empty selection). Used by the Boolean "Display as" and Number "Number type" settings.
- */
-function SegmentedToggle<T extends string>({
-  options,
-  value,
-  onValueChange,
-  fullWidth = false,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onValueChange: (value: T) => void;
-  /** Stretch the group to its container's width, with items sharing it equally. */
-  fullWidth?: boolean;
-}) {
-  // The default "on" style is bg-muted (same as hover) — too subtle. Use a clear primary fill.
-  const pressed =
-    'aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-pressed:hover:text-primary-foreground';
-  return (
-    <ToggleGroup
-      variant="outline"
-      spacing={0}
-      {...(fullWidth ? { className: 'w-full' } : {})}
-      value={[value]}
-      onValueChange={(values: string[]) =>
-        onValueChange((values.find((v) => v !== value) ?? value) as T)
-      }
-    >
-      {options.map((option) => (
-        <ToggleGroupItem
-          key={option.value}
-          value={option.value}
-          className={fullWidth ? `flex-1 ${pressed}` : pressed}
-        >
-          {option.label}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  );
-}
 
 /** The field's auto-generated id (feature 159), muted — click to copy it to the clipboard. */
 function FieldIdBadge({ id }: { id: string }) {
@@ -103,7 +45,8 @@ function FieldIdBadge({ id }: { id: string }) {
 /**
  * Choice-field options editor (feature 156, Step 2). Every choice field (select / radio / checkbox
  * group) authors independent `{ value, label }` pairs — the value is stored/validated, the label is
- * shown — and the list is reorderable (its order is the citizen-facing order via options.choices).
+ * shown — and the list is reorderable (its order is the citizen-facing order, serialized to
+ * schema-native `oneOf`/`const`/`title` — feature 167).
  */
 function ChoiceOptionsEditor({
   node,
@@ -421,27 +364,47 @@ function ControlInspector({
           id="insp-required"
           aria-label="Required"
           checked={node.required}
-          onCheckedChange={(checked) => onChange({ required: checked })}
+          onCheckedChange={(checked) =>
+            onChange(
+              node.fieldType === 'accordiongroup'
+                ? applyRequiredToggle(checked)
+                : { required: checked },
+            )
+          }
         />
       </div>
       {node.fieldType === 'text' ? <TextSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'boolean' ? <BooleanSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'select' ? (
-        <div className="flex items-center justify-between">
-          <Label htmlFor="insp-multiple">Allow multiple</Label>
-          <Switch
-            id="insp-multiple"
-            aria-label="Allow multiple"
-            checked={node.multiple === true}
-            onCheckedChange={(checked) => onChange({ multiple: checked })}
-          />
-        </div>
+        <>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="insp-multiple">Allow multiple</Label>
+            <Switch
+              id="insp-multiple"
+              aria-label="Allow multiple"
+              checked={node.multiple === true}
+              onCheckedChange={(checked) => onChange({ multiple: checked })}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="insp-combobox">Combobox</Label>
+            <Switch
+              id="insp-combobox"
+              aria-label="Combobox"
+              checked={node.combobox === true}
+              onCheckedChange={(checked) => onChange({ combobox: checked })}
+            />
+          </div>
+        </>
       ) : null}
       {CHOICE_FIELD_TYPES.has(node.fieldType) ? (
         <ChoiceOptionsEditor node={node} onChange={onChange} />
       ) : null}
       {node.fieldType === 'address' ? (
         <AddressDefaultsEditor node={node} onChange={onChange} />
+      ) : null}
+      {node.fieldType === 'accordiongroup' ? (
+        <AccordionGroupSettings node={node} onChange={onChange} />
       ) : null}
       {node.fieldType === 'number' ? <NumberSettings node={node} onChange={onChange} /> : null}
       {node.fieldType === 'slider' ? (
@@ -522,15 +485,48 @@ export function Inspector({
       );
     }
     if (node.kind === 'container') {
+      if (node.layout === 'grid') {
+        // Feature 169: Grid authors a fixed column count, not a Section title (matches Horizontal's
+        // title-less behavior).
+        return (
+          <Row label="Columns" htmlFor="insp-container-columns">
+            <Input
+              id="insp-container-columns"
+              type="number"
+              min={2}
+              max={6}
+              value={node.columns ?? 2}
+              onChange={(e) => {
+                const next = Math.min(6, Math.max(2, Number(e.target.value) || 2));
+                onChangeContainer({ columns: next });
+              }}
+            />
+          </Row>
+        );
+      }
       return (
-        <Row label="Section title" htmlFor="insp-container-label">
-          <ClearableInput
-            id="insp-container-label"
-            value={node.label ?? ''}
-            onChange={(e) => onChangeContainer({ label: e.target.value })}
-            onClear={() => onChangeContainer({ label: '' })}
-          />
-        </Row>
+        <div className="flex flex-col gap-4">
+          <Row label="Section title" htmlFor="insp-container-label">
+            <ClearableInput
+              id="insp-container-label"
+              value={node.label ?? ''}
+              onChange={(e) => onChangeContainer({ label: e.target.value })}
+              onClear={() => onChangeContainer({ label: '' })}
+            />
+          </Row>
+          {node.layout === 'section' ? (
+            // Feature 172: only a Section serializes options.description (its <legend> sub-heading).
+            <Row label="Description" htmlFor="insp-container-description">
+              <Textarea
+                id="insp-container-description"
+                rows={2}
+                value={node.description ?? ''}
+                onChange={(e) => onChangeContainer({ description: e.target.value })}
+                placeholder="Optional copy shown under the section title"
+              />
+            </Row>
+          ) : null}
+        </div>
       );
     }
     if (node.kind === 'display') {

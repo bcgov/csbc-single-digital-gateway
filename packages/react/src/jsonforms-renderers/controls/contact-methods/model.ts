@@ -1,5 +1,5 @@
 import { formatPhone } from '@repo/ui/phone-input';
-import { Link, Mail, MapPin, Phone, Printer, type LucideIcon } from 'lucide-react';
+import { mdiEmail, mdiLink, mdiMapMarker, mdiPhone, mdiPrinter } from '@mdi/js';
 
 /**
  * Shared model for the Service "contact methods" field (feature 130, revision 2). One source of truth
@@ -65,7 +65,7 @@ export interface ContactMethodMeta {
   type: ContactMethodType;
   /** Human label for the method type (type picker, table cell, card sub-label). */
   label: string;
-  icon: LucideIcon;
+  icon: string;
   field: FieldConfig;
 }
 
@@ -81,31 +81,31 @@ export const CONTACT_METHOD_META: Record<ContactMethodType, ContactMethodMeta> =
   phone: {
     type: 'phone',
     label: 'Phone',
-    icon: Phone,
+    icon: mdiPhone,
     field: { kind: 'value', valueLabel: 'Number', inputType: 'tel' },
   },
   email: {
     type: 'email',
     label: 'Email',
-    icon: Mail,
+    icon: mdiEmail,
     field: { kind: 'value', valueLabel: 'Email address', inputType: 'email' },
   },
   address: {
     type: 'address',
     label: 'Address',
-    icon: MapPin,
+    icon: mdiMapMarker,
     field: { kind: 'address' },
   },
   fax: {
     type: 'fax',
     label: 'Fax',
-    icon: Printer,
+    icon: mdiPrinter,
     field: { kind: 'value', valueLabel: 'Fax number', inputType: 'tel' },
   },
   links: {
     type: 'links',
     label: 'Links',
-    icon: Link,
+    icon: mdiLink,
     field: { kind: 'value', valueLabel: 'URL', inputType: 'url' },
   },
 };

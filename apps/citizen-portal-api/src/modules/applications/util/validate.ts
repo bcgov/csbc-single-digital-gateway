@@ -228,3 +228,116 @@ export function validateDecimals(constraints: DecimalConstraint[], data: unknown
   }
   return errors;
 }
+
+// ── Address read-only lock enforcement (feature 170) ─────────────────────────────────────────────
+//
+// An author can lock an address sub-field (`uischema.options.fields.<sub>.readOnly`) to its default
+// (`schema.properties.<key>.default.<sub>`). The rendered field is read-only, but that is a UX
+// affordance only — a crafted request can send anything, so the lock is enforced here at submit.
+// Pure and synchronous: unlike the postal-code pass, the expected value comes from the form
+// definition already in hand, so there is no geo lookup.
+
+/** One locked address sub-field and the value the author pinned it to. */
+export interface AddressLockConstraint {
+  /** The address field's property key. */
+  key: string;
+  /** The locked sub-field, e.g. `country`. */
+  field: string;
+  /** The author's default — the only value the citizen may submit for it. */
+  expected: string;
+}
+
+/** The (schema, uischema) pairs of a form — one for a basic form, one per page for multi-stage. */
+function schemaUischemaPairs(
+  kind: string,
+  structure: Record<string, unknown>,
+): Array<{ schema: Record<string, unknown>; uischema: Record<string, unknown> | undefined }> {
+  if (kind === 'multi-stage-form') {
+    return ((structure['stages'] as MultiStageStage[] | undefined) ?? []).flatMap((stage) =>
+      (stage.pages ?? []).map((page) => ({
+        schema: page.schema ?? {},
+        uischema: page.uischema,
+      })),
+    );
+  }
+  return [
+    {
+      schema: (structure['schema'] as Record<string, unknown> | undefined) ?? {},
+      uischema: structure['uischema'] as Record<string, unknown> | undefined,
+    },
+  ];
+}
+
+/** Recursively collect every address control's key + its per-sub-field option bag. */
+function addressLockNodes(
+  uischema: Record<string, unknown> | undefined,
+): Array<{ key: string; fields: Record<string, unknown> }> {
+  if (!uischema) {
+    return [];
+  }
+  const found: Array<{ key: string; fields: Record<string, unknown> }> = [];
+  const options = asRecord(uischema.options);
+  if (uischema.type === 'Control' && options?.format === 'address') {
+    const key = ADDRESS_SCOPE.exec(asText(uischema.scope))?.[1];
+    const fields = asRecord(options.fields);
+    if (key !== undefined && fields !== undefined) {
+      found.push({ key, fields });
+    }
+  }
+  const elements = Array.isArray(uischema.elements) ? uischema.elements : [];
+  for (const child of elements) {
+    found.push(...addressLockNodes(asRecord(child)));
+  }
+  return found;
+}
+
+/**
+ * Every locked address sub-field in the form, paired with the default it is pinned to. A lock whose
+ * schema carries no matching default yields NO constraint (fail-open, by design: the alternative is
+ * a form no submission can ever satisfy).
+ */
+export function collectAddressLocks(
+  kind: string,
+  structure: Record<string, unknown>,
+): AddressLockConstraint[] {
+  const constraints: AddressLockConstraint[] = [];
+  for (const { schema, uischema } of schemaUischemaPairs(kind, structure)) {
+    const properties = asRecord(schema.properties) ?? {};
+    for (const { key, fields } of addressLockNodes(uischema)) {
+      const defaults = asRecord(asRecord(properties[key])?.default) ?? {};
+      for (const [field, bag] of Object.entries(fields)) {
+        if (asRecord(bag)?.readOnly !== true) {
+          continue;
+        }
+        const expected = asText(defaults[field]);
+        if (expected !== '') {
+          constraints.push({ key, field, expected });
+        }
+      }
+    }
+  }
+  return constraints;
+}
+
+/**
+ * Reject any submitted address sub-field that is locked and disagrees with its default. An address
+ * the citizen never touched at all (key absent from the data) imposes no constraint; once the object
+ * is present, a locked sub-field must match exactly — including when it was blanked out.
+ */
+export function validateAddressLocks(
+  constraints: AddressLockConstraint[],
+  data: unknown,
+): string[] {
+  const record = asRecord(data) ?? {};
+  const errors: string[] = [];
+  for (const { key, field, expected } of constraints) {
+    const address = asRecord(record[key]);
+    if (!address) {
+      continue;
+    }
+    if (asText(address[field]) !== expected) {
+      errors.push(`${key}.${field}: must be "${expected}"`);
+    }
+  }
+  return errors;
+}

@@ -16,9 +16,7 @@ describe('HomePage Component Test Suite', () => {
     expect(logo).toBeInTheDocument();
 
     // Heading presence
-    expect(
-      screen.getByRole('heading', { name: 'Single Digital Gateway Platform' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Operations Portal/i })).toBeInTheDocument();
 
     // Login button with OIDC redirection path
     const loginButton = screen.getByRole('link', { name: 'Log in with IDIR' });
@@ -38,9 +36,7 @@ describe('HomePage Component Test Suite', () => {
 
   it('shows the application name', () => {
     render(<HomePage />);
-    expect(
-      screen.getByRole('heading', { name: 'Single Digital Gateway Platform' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Operations Portal/i })).toBeInTheDocument();
   });
 
   it('centers the greeting on the full viewport', () => {

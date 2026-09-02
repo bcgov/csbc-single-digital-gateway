@@ -66,6 +66,36 @@ export class OidcCallbackError extends Error {
   }
 }
 
+/**
+ * oauth4webapi's error code for a failed JWT timestamp claim (`exp`/`iat`/`nbf`/`auth_time`).
+ * It is a plain string constant on the thrown `OperationProcessingError`, not an exported class we
+ * can `instanceof` from here (oauth4webapi is a transitive ESM dependency of openid-client).
+ */
+const JWT_TIMESTAMP_CHECK_FAILED = 'OAUTH_JWT_TIMESTAMP_CHECK_FAILED';
+
+/**
+ * Is this callback failure worth restarting the login flow for, rather than surfacing as a 500?
+ *
+ * Two cases, both of which mean "the browser is holding something stale, ask the IdP again":
+ *  - {@link OidcCallbackError} — no pending transaction / state mismatch (stale or duplicate callback).
+ *  - A JWT timestamp check failure — the id_token's `exp` had already passed by the time it was
+ *    validated. Typically the authorization page sat open past the token lifespan, or the IdP and
+ *    the BFF clocks disagree by more than the tolerance. A fresh authorization mints a fresh token,
+ *    so one retry genuinely fixes the first cause; the retry cap stops the second from looping.
+ *
+ * Everything else (invalid_grant, network, bad claims) is NOT recoverable and must surface.
+ */
+export function isRecoverableCallbackError(error: unknown): boolean {
+  if (error instanceof OidcCallbackError) {
+    return true;
+  }
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === JWT_TIMESTAMP_CHECK_FAILED
+  );
+}
+
 const DEFAULT_SCOPES = ['openid', 'profile', 'email'];
 
 /**

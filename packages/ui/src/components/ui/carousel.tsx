@@ -5,7 +5,8 @@ import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-reac
 
 import { cn } from '@ui/lib/utils';
 import { Button } from '@ui/components/ui/button';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 type CarouselApi = UseEmblaCarouselType[1];
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
@@ -184,7 +185,7 @@ function CarouselPrevious({
       onClick={scrollPrev}
       {...props}
     >
-      <ChevronLeftIcon />
+      <Icon path={mdiChevronLeft} size="16px" />
       <span className="sr-only">Previous slide</span>
     </Button>
   );
@@ -214,7 +215,7 @@ function CarouselNext({
       onClick={scrollNext}
       {...props}
     >
-      <ChevronRightIcon />
+      <Icon path={mdiChevronRight} size="16px" />
       <span className="sr-only">Next slide</span>
     </Button>
   );

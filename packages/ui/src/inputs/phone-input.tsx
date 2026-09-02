@@ -1,7 +1,8 @@
 import * as React from 'react';
 import * as RPNInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
-import { CheckIcon, ChevronsUpDown } from 'lucide-react';
+import { mdiCheck, mdiUnfoldMoreVertical } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 import { Button } from '@ui/components/ui/button';
 import {
@@ -28,6 +29,7 @@ export interface PhoneInputProps {
   onChange?: ((value: string | undefined) => void) | undefined;
   disabled?: boolean | undefined;
   'aria-invalid'?: boolean | undefined;
+  'aria-describedby'?: string | undefined;
   className?: string | undefined;
 }
 
@@ -67,7 +69,10 @@ export function PhoneInput({ id, value, onChange, disabled, className, ...rest }
       disabled={disabled}
       value={(value || undefined) as RPNInput.Value | undefined}
       onChange={(next) => onChange?.((next as string | undefined) || undefined)}
-      numberInputProps={{ 'aria-invalid': rest['aria-invalid'] }}
+      numberInputProps={{
+        'aria-invalid': rest['aria-invalid'],
+        'aria-describedby': rest['aria-describedby'],
+      }}
     />
   );
 }
@@ -111,19 +116,24 @@ function CountrySelect({
             type="button"
             variant="outline"
             aria-label="Select country"
-            className="flex h-7 gap-1 rounded-e-none rounded-s-md border-r-0 !border-input px-2 text-sm focus:z-10"
+            className="flex h-auto gap-1 rounded-e-none rounded-s-md border-r-0 !border-input px-2 text-sm focus:z-10"
             disabled={disabled}
           />
         }
       >
         <FlagComponent country={selectedCountry} countryName={selectedCountry} />
-        <ChevronsUpDown
-          className={cn('-mr-2 size-4 opacity-50', disabled ? 'hidden' : 'opacity-100')}
+        <Icon
+          path={mdiUnfoldMoreVertical}
+          size="16px"
+          className={cn('-mr-2 opacity-50', disabled ? 'hidden' : 'opacity-100')}
           aria-hidden
         />
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
-        <Command>
+        {/* cmdk's `label` prop (not aria-label) is what actually names the input — it renders a
+            visually-hidden <label> that CommandInput's aria-labelledby points at; a placeholder
+            alone leaves the input with no accessible name. */}
+        <Command label="Search countries">
           <CommandInput placeholder="Search country..." />
           <CommandList>
             <ScrollArea className="h-72">
@@ -174,8 +184,10 @@ function CountrySelectOption({
       <FlagComponent country={country} countryName={countryName} />
       <span className="flex-1 text-sm">{countryName}</span>
       <span className="text-sm text-foreground/50">{`+${RPNInput.getCountryCallingCode(country)}`}</span>
-      <CheckIcon
-        className={cn('ml-auto size-4', country === selectedCountry ? 'opacity-100' : 'opacity-0')}
+      <Icon
+        path={mdiCheck}
+        size="14px"
+        className={cn('ml-auto', country === selectedCountry ? 'opacity-100' : 'opacity-0')}
       />
     </CommandItem>
   );

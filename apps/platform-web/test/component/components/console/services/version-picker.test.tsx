@@ -7,6 +7,7 @@ import type { ServiceVersion } from '@/lib/services';
 const mockVersions: ServiceVersion[] = [
   {
     id: 'v-1',
+    typeVersionId: 'type-version-1',
     documentId: 'doc-1',
     version: 1,
     status: 'published',
@@ -17,6 +18,7 @@ const mockVersions: ServiceVersion[] = [
   },
   {
     id: 'v-2',
+    typeVersionId: 'type-version-1',
     documentId: 'doc-1',
     version: 2,
     status: 'draft',

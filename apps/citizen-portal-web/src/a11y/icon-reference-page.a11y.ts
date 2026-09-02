@@ -1,9 +1,10 @@
 import type { ComponentA11yMetadata } from '@repo/ui/a11y-types';
+import { WCAG } from '@repo/ui/wcag-criteria';
 
 // Pattern page, not a single owning component — covers @mdi/react icon usage conventions.
 export default {
   component: 'icons',
-  wcagCriteria: [{ id: '1.1.1', name: 'Non-text Content', level: 'A' }],
+  wcagCriteria: [WCAG.nonTextContent],
   rules: [
     {
       id: 'decorative-icons-hidden',

@@ -31,6 +31,23 @@ export interface ControlWrapperProps {
  * consistently. Validation flows one-way: the `errors` string drives both `FieldError`
  * and the control's `aria-invalid`.
  */
+/**
+ * Deterministic id convention for a control's description/error text, so controls can wire their
+ * real input's `aria-describedby` to the same ids `ControlWrapper` assigns below — screen readers
+ * only reliably announce a description/error when it's linked via `aria-describedby` on the
+ * focusable element itself, not merely rendered as a visual sibling.
+ */
+export function describedByIds(
+  id: string,
+  opts: { description?: string | undefined; errors?: string | undefined },
+): string | undefined {
+  const ids = [
+    opts.description ? `${id}-description` : null,
+    opts.errors ? `${id}-error` : null,
+  ].filter((value): value is string => value !== null);
+  return ids.length ? ids.join(' ') : undefined;
+}
+
 export function ControlWrapper({
   id,
   label,
@@ -48,22 +65,31 @@ export function ControlWrapper({
         .filter(Boolean)
         .map((message) => ({ message }))
     : [];
+
   const htmlFor = labelFor === false ? undefined : (labelFor ?? id);
   const renderLabel = (extra?: string) => {
-    // Every field label sits one step heavier than the @repo/ui default (`font-medium`) so it reads as
-    // the primary line of each field — this includes the boolean checkbox and toggle.
-    const className = extra ? `${extra} font-semibold` : 'font-semibold';
+    // Layout only — stays at the shared @repo/ui label weight (font-medium), not bolded.
+    const className = extra
+      ? `${extra} flex flex-row space-between`
+      : 'flex flex-row space-between';
     return label === false || label === undefined || label === '' ? null : (
-      <FieldLabel htmlFor={htmlFor} {...(className ? { className } : {})}>
-        {label}
-        {required ? ' *' : ''}
+      <FieldLabel id={`${id}-label`} htmlFor={htmlFor} {...(className ? { className } : {})}>
+        <span className="flex grow">{label}</span>
+        <span className="flex font-normal">{required ? ' required' : ''}</span>
       </FieldLabel>
     );
   };
   const labelNode = renderLabel();
 
-  const descriptionNode = description ? <FieldDescription>{description}</FieldDescription> : null;
-  const errorNode = <FieldError errors={errorList} />;
+  const descriptionNode = description ? (
+    <FieldDescription id={`${id}-description`}>{description}</FieldDescription>
+  ) : null;
+  const errorNode = (
+    <FieldError
+      id={`${id}-error`}
+      errors={errorList.filter((error) => error.message !== 'is a required property')}
+    />
+  );
   const invalid = errorList.length > 0 ? true : undefined;
 
   // Horizontal controls stack the label + help text in a FieldContent column (flex-1) so the description
@@ -99,8 +125,8 @@ export function ControlWrapper({
   return (
     <Field orientation={orientation} data-invalid={invalid}>
       {labelNode}
-      {descriptionNode}
       {children}
+      {descriptionNode}
       {errorNode}
     </Field>
   );

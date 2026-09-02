@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { format as formatDate, isValid, parse } from 'date-fns';
-import { CalendarIcon, X } from 'lucide-react';
+import { mdiCalendar, mdiClose } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { useMaskInput } from 'use-mask-input';
 
 import { Calendar } from '@ui/components/ui/calendar';
@@ -40,6 +41,7 @@ export interface DatePickerProps {
   invalid?: boolean | undefined;
   placeholder?: string | undefined;
   className?: string | undefined;
+  'aria-describedby'?: string | undefined;
 }
 
 /**
@@ -55,6 +57,7 @@ export function DatePicker({
   invalid,
   placeholder = 'mm/dd/yyyy',
   className,
+  'aria-describedby': ariaDescribedBy,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [text, setText] = React.useState(() => displayValue(value));
@@ -93,6 +96,7 @@ export function DatePicker({
           disabled={disabled}
           placeholder={placeholder}
           aria-invalid={invalid || undefined}
+          aria-describedby={ariaDescribedBy}
           onFocus={() => {
             focused.current = true;
           }}
@@ -112,13 +116,13 @@ export function DatePicker({
                 setText('');
               }}
             >
-              <X className="size-3.5" aria-hidden />
+              <Icon path={mdiClose} size="14px" aria-hidden />
             </InputGroupButton>
           ) : null}
           <PopoverTrigger
             render={<InputGroupButton aria-label="Open calendar" disabled={disabled} />}
           >
-            <CalendarIcon className="size-3.5" aria-hidden />
+            <Icon path={mdiCalendar} size="14px" aria-hidden />
           </PopoverTrigger>
         </InputGroupAddon>
       </InputGroup>

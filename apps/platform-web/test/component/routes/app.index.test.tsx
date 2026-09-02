@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
 
@@ -46,40 +46,26 @@ const riverton: WorkspaceLike = {
   createdAt: '2026-06-01T00:00:00.000Z',
 };
 
-describe('App Index Route (Workspace Gate)', () => {
-  it('redirects to the newest workspace if at least one exists', async () => {
+describe('App Index Route (Workspace Selection)', () => {
+  it('lists the workspaces without redirecting when at least one exists', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     const { router } = renderApp('/app/');
 
-    // Verify router redirects to the workspace path /app/riverton
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/app/riverton');
-    });
-
-    // Check that child overview placeholder renders
-    expect(
-      await screen.findByText(
-        'Overview is being set up — placeholder layout shown until you choose what to track.',
-        {},
-        { timeout: 32000 },
-      ),
-    ).toBeInTheDocument();
+    const link = await screen.findByRole('link', { name: /riverton/i }, { timeout: 32000 });
+    expect(link).toHaveAttribute('href', '/app/riverton');
+    // No auto-redirect — the user stays on /app to choose.
+    expect(router.state.location.pathname).toMatch(/^\/app\/?$/);
   });
 
-  it('renders the workspace onboarding gate if no workspaces exist', async () => {
+  it('shows an empty state with a Create workspace action when no workspaces exist', async () => {
     mockAuth(authedUser, { workspaces: [] });
     renderApp('/app/');
 
-    // Verify "Create workspace" dialog is rendered
     expect(
-      await screen.findByRole('heading', { name: 'Create workspace' }, { timeout: 32000 }),
+      await screen.findByText(/no workspaces yet/i, undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
-
-    // Check the label and create button
-    expect(screen.getByLabelText('Workspace name')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create workspace' })).toBeInTheDocument();
-
-    // Cancel button should NOT be present since dismissable is false
+    expect(screen.getByRole('button', { name: /create workspace/i })).toBeInTheDocument();
+    // No forced modal / no Cancel gate anymore.
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
   });
 });

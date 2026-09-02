@@ -5,6 +5,7 @@ import {
   CategorizationLayoutRenderer,
   categorizationTester,
 } from '../jsonforms-renderers/layouts/categorization-layout';
+import { GridLayoutRenderer, gridLayoutTester } from '../jsonforms-renderers/layouts/grid-layout';
 import {
   GroupLayoutRenderer,
   groupLayoutTester,
@@ -14,6 +15,10 @@ import {
   horizontalLayoutTester,
 } from '../jsonforms-renderers/layouts/horizontal-layout';
 import { LabelRenderer, labelRendererTester } from '../jsonforms-renderers/layouts/label-renderer';
+import {
+  SectionLayoutRenderer,
+  sectionLayoutTester,
+} from '../jsonforms-renderers/layouts/section-layout';
 import {
   VerticalLayoutRenderer,
   verticalLayoutTester,
@@ -44,6 +49,10 @@ import {
   sliderDisplayTester,
   textDisplayTester,
 } from './controls/primitive-displays';
+import {
+  AccordionGroupDisplay,
+  accordionGroupDisplayTester,
+} from './controls/accordion-group-display';
 import { AddressDisplay, addressDisplayTester } from './controls/address-display';
 import { ChoiceDisplay, choiceDisplayTester } from './controls/choice-view';
 import { DateRangeDisplay, dateRangeDisplayTester } from './controls/date-range-display';
@@ -84,10 +93,15 @@ export const displayRenderers: JsonFormsRendererRegistryEntry[] = [
   { tester: phoneDisplayTester, renderer: PhoneDisplay },
   { tester: contactMethodsDisplayTester, renderer: ContactMethodsDisplay },
   { tester: addressDisplayTester, renderer: AddressDisplay },
+  // Feature 171: the read-only accordion group.
+  { tester: accordionGroupDisplayTester, renderer: AccordionGroupDisplay },
   // Layouts (reused from the form renderer set)
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
+  { tester: gridLayoutTester, renderer: GridLayoutRenderer },
   { tester: groupLayoutTester, renderer: GroupLayoutRenderer },
+  // Feature 172: a fieldset+legend band of related fields.
+  { tester: sectionLayoutTester, renderer: SectionLayoutRenderer },
   { tester: categorizationTester, renderer: CategorizationLayoutRenderer },
   { tester: labelRendererTester, renderer: LabelRenderer },
 ];

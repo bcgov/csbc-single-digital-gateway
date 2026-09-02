@@ -1,11 +1,9 @@
 import type { ComponentA11yMetadata } from './a11y-types';
+import { WCAG } from './wcag-criteria';
 
 export default {
   component: 'badge',
-  wcagCriteria: [
-    { id: '1.4.1', name: 'Use of Color', level: 'A' },
-    { id: '1.1.1', name: 'Non-text Content', level: 'A' },
-  ],
+  wcagCriteria: [WCAG.useOfColor, WCAG.nonTextContent],
   rules: [
     {
       id: 'always-render-text',

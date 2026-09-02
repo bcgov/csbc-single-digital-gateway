@@ -40,6 +40,7 @@ export * from './logo';
 export * from './menubar';
 export * from './native-select';
 export * from './navigation-menu';
+export * from './page-header';
 export * from './pagination';
 export * from './phone-input';
 export * from './popover';

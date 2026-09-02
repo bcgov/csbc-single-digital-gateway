@@ -76,9 +76,9 @@ describe('App Slug Team Index Route', () => {
     withMembers(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/team/');
 
-    // Wait for the team header text to render
+    // Wait for the Team section to render (Settings/Team sub-nav tab).
     expect(
-      await screen.findByText(/People with access to this workspace/i, {}, { timeout: 32000 }),
+      await screen.findByRole('link', { name: 'Team' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Verify Add member button is visible for admin workspace role

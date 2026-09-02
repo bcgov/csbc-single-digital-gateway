@@ -66,7 +66,7 @@ describe('ApplicationShell Component Test Suite', () => {
 
     const serviceTitleLink = screen.getByRole('link', { name: 'Municipal Parking' });
     expect(serviceTitleLink).toBeInTheDocument();
-    expect(serviceTitleLink.getAttribute('href')).toBe('/app/riverton/services/srv-123');
+    expect(serviceTitleLink.getAttribute('href')).toBe('/app/riverton/services/srv-123/old/edit');
 
     expect(screen.getByText('Parking Form')).toBeInTheDocument();
   });
@@ -136,7 +136,7 @@ describe('ApplicationShell Component Test Suite', () => {
     await user.click(backButton);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/app/$slug/services/$id',
+      to: '/app/$slug/services/$id/old/edit',
       params: {
         slug: 'riverton',
         id: 'srv-123',

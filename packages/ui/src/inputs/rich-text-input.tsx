@@ -18,16 +18,17 @@ import {
   type SerializedEditorState,
 } from 'lexical';
 import {
-  Bold,
-  Heading1,
-  Heading2,
-  Heading3,
-  Italic,
-  Link,
-  List,
-  ListOrdered,
-  Underline,
-} from 'lucide-react';
+  mdiFormatBold,
+  mdiFormatHeader1,
+  mdiFormatHeader2,
+  mdiFormatHeader3,
+  mdiFormatItalic,
+  mdiLink,
+  mdiFormatListBulleted,
+  mdiFormatListNumbered,
+  mdiFormatUnderline,
+} from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@ui/components/ui/button';
 import { cn } from '@ui/lib/utils';
@@ -40,6 +41,14 @@ export interface RichTextInputProps {
   onChange?: (value: SerializedEditorState) => void;
   disabled?: boolean;
   'aria-invalid'?: boolean;
+  /**
+   * The editor is a Lexical `ContentEditable` — a `div`, which `<label for>` cannot name. Pass
+   * `aria-label` or `aria-labelledby` (preferred when a visible caption exists) so the editor has
+   * an accessible name, and `aria-describedby` to link supporting description/error text.
+   */
+  'aria-label'?: string;
+  'aria-labelledby'?: string;
+  'aria-describedby'?: string | undefined;
   className?: string;
 }
 
@@ -95,40 +104,40 @@ function Toolbar() {
       aria-label="Formatting"
     >
       <ToolbarButton label="Bold" onClick={() => formatText('bold')}>
-        <Bold className="size-4" aria-hidden />
+        <Icon path={mdiFormatBold} size="16px" aria-hidden />
       </ToolbarButton>
       <ToolbarButton label="Italic" onClick={() => formatText('italic')}>
-        <Italic className="size-4" aria-hidden />
+        <Icon path={mdiFormatItalic} size="16px" aria-hidden />
       </ToolbarButton>
       <ToolbarButton label="Underline" onClick={() => formatText('underline')}>
-        <Underline className="size-4" aria-hidden />
+        <Icon path={mdiFormatUnderline} size="16px" aria-hidden />
       </ToolbarButton>
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <ToolbarButton label="Heading 1" onClick={() => formatHeading('h1')}>
-        <Heading1 className="size-4" aria-hidden />
+        <Icon path={mdiFormatHeader1} size="16px" aria-hidden />
       </ToolbarButton>
       <ToolbarButton label="Heading 2" onClick={() => formatHeading('h2')}>
-        <Heading2 className="size-4" aria-hidden />
+        <Icon path={mdiFormatHeader2} size="16px" aria-hidden />
       </ToolbarButton>
       <ToolbarButton label="Heading 3" onClick={() => formatHeading('h3')}>
-        <Heading3 className="size-4" aria-hidden />
+        <Icon path={mdiFormatHeader3} size="16px" aria-hidden />
       </ToolbarButton>
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <ToolbarButton
         label="Bullet list"
         onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
       >
-        <List className="size-4" aria-hidden />
+        <Icon path={mdiFormatListBulleted} size="16px" aria-hidden />
       </ToolbarButton>
       <ToolbarButton
         label="Numbered list"
         onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}
       >
-        <ListOrdered className="size-4" aria-hidden />
+        <Icon path={mdiFormatListNumbered} size="16px" aria-hidden />
       </ToolbarButton>
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <ToolbarButton label="Link" onClick={insertLink}>
-        <Link className="size-4" aria-hidden />
+        <Icon path={mdiLink} size="16px" aria-hidden />
       </ToolbarButton>
     </div>
   );
@@ -170,6 +179,10 @@ export function RichTextInput({
   ...props
 }: RichTextInputProps) {
   const ariaInvalid = props['aria-invalid'];
+  // The ContentEditable is a `div`, so `<label for>` cannot name it — forward the aria hooks instead.
+  const ariaLabel = props['aria-label'];
+  const ariaLabelledBy = props['aria-labelledby'];
+  const ariaDescribedBy = props['aria-describedby'];
   const initialConfig = {
     namespace: 'rich-text-input',
     nodes: richTextNodes,
@@ -187,7 +200,7 @@ export function RichTextInput({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-md border border-input bg-input/20 text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:bg-input/30',
+        'overflow-hidden rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
         className,
       )}
       aria-invalid={ariaInvalid}
@@ -200,6 +213,9 @@ export function RichTextInput({
               <ContentEditable
                 id={id}
                 aria-invalid={ariaInvalid}
+                {...(ariaLabel === undefined ? {} : { 'aria-label': ariaLabel })}
+                {...(ariaLabelledBy === undefined ? {} : { 'aria-labelledby': ariaLabelledBy })}
+                {...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy })}
                 className="min-h-28 px-3 py-2 outline-none [&_a]:cursor-pointer"
               />
             }

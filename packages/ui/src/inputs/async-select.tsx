@@ -164,7 +164,7 @@ export function AsyncSelect({
         classNames={{
           control: ({ isFocused, isDisabled: disabled }) =>
             cn(
-              'dark:bg-input/30 border-input !h-9 rounded-md border bg-transparent px-2.5 text-base shadow-xs transition-[color,box-shadow] md:text-sm',
+              'border-input !h-9 rounded-md border bg-transparent px-2.5 text-base shadow-xs transition-[color,box-shadow] md:text-sm',
               isFocused && 'border-ring ring-ring/50 ring-[3px]',
               disabled && 'pointer-events-none cursor-not-allowed opacity-50',
             ),

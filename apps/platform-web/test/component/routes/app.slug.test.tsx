@@ -63,11 +63,7 @@ describe('App Slug Layout Route', () => {
 
     // Verify child overview page content renders through the Outlet
     expect(
-      await screen.findByText(
-        'Overview is being set up — placeholder layout shown until you choose what to track.',
-        {},
-        { timeout: 32000 },
-      ),
+      await screen.findByText('Create new service', {}, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 

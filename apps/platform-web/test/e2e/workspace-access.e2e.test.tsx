@@ -32,9 +32,10 @@ describe('accessing a workspace by slug', () => {
     // Section nav is disabled (not navigable links) and the search action is disabled…
     expect(screen.queryByRole('link', { name: 'Services' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /search/i })).toBeDisabled();
-    // …while the workspace switcher and profile card stay live.
-    expect(screen.getByText('Workspace')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Maya Reyes/ })).toBeInTheDocument();
+    // …while the workspace switcher and account menu stay live. The switcher label depends on
+    // whether the workspace list has resolved yet (No workspace → Select workspace).
+    expect(await screen.findByText(/select workspace|no workspace/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
   });
 });
 
@@ -76,7 +77,7 @@ describe('Workspace Settings Integration Test Suite', () => {
 });
 
 describe('deleting a workspace from settings', () => {
-  it('confirms, deletes, and redirects to a remaining workspace', async () => {
+  it('confirms, deletes, and returns to the selection page listing the remaining workspace', async () => {
     const fetchMock = mockAuth(authedUser, { workspaces: [riverton, townsville] });
     const { router } = renderApp('/app/riverton/settings');
 
@@ -88,11 +89,14 @@ describe('deleting a workspace from settings', () => {
         expect.objectContaining({ method: 'DELETE', credentials: 'include' }),
       );
     });
-    // Riverton is gone; the gate redirects to the remaining workspace rather than forcing creation.
-    await waitFor(() => expect(router.state.location.pathname).toBe('/app/townsville'));
+    // No auto-redirect into a workspace — the user lands on /app to choose the remaining one.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/app'));
+    expect(
+      await screen.findByRole('link', { name: /townsville/i }, { timeout: 8000 }),
+    ).toHaveAttribute('href', '/app/townsville');
   });
 
-  it('forces workspace creation only when the last workspace is deleted', async () => {
+  it('shows the empty state when the last workspace is deleted', async () => {
     mockAuth(authedUser, { workspaces: [riverton] });
     const { router } = renderApp('/app/riverton/settings');
 
@@ -100,7 +104,7 @@ describe('deleting a workspace from settings', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/app'));
     expect(
-      await screen.findByRole('dialog', { name: /create workspace/i }, { timeout: 8000 }),
+      await screen.findByText(/no workspaces yet/i, undefined, { timeout: 8000 }),
     ).toBeInTheDocument();
   });
 });

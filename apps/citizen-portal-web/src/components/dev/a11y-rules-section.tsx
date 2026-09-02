@@ -2,9 +2,9 @@ import type { A11yRuleSeverity, ComponentA11yMetadata } from '@repo/ui/a11y-type
 import { Badge } from '@repo/ui/badge';
 import { ExternalLink } from '@/components/dev/external-link';
 
-const SEVERITY_COLOR: Record<A11yRuleSeverity, 'blue' | 'grey' | 'red'> = {
-  required: 'blue',
-  recommended: 'grey',
+const SEVERITY_COLOR: Record<A11yRuleSeverity, 'green' | 'yellow' | 'red'> = {
+  required: 'green',
+  recommended: 'yellow',
   forbidden: 'red',
 };
 
@@ -17,9 +17,11 @@ export function A11yRulesSection({ metadata }: { metadata: ComponentA11yMetadata
       {(metadata.wcagCriteria.length > 0 || metadata.ariaPattern) && (
         <div className="flex flex-wrap items-center gap-2">
           {metadata.wcagCriteria.map((criterion) => (
-            <Badge key={criterion.id} color="bc-blue">
-              WCAG {criterion.id} {criterion.name} ({criterion.level})
-            </Badge>
+            <ExternalLink key={criterion.id} href={criterion.url}>
+              <Badge color="bc-blue">
+                WCAG {criterion.id} {criterion.name} ({criterion.level})
+              </Badge>
+            </ExternalLink>
           ))}
           {metadata.ariaPattern && (
             <ExternalLink href={metadata.ariaPattern.url} className="text-sm">

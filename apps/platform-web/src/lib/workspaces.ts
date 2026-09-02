@@ -1,7 +1,7 @@
 /**
  * Workspaces data (feature 32) — reads the platform-api `/v1/workspaces` endpoints via the BFF origin
- * with the session cookie. The console is workspace-scoped; the `/app` gate uses the newest workspace
- * to choose a redirect target.
+ * with the session cookie. The console is workspace-scoped; `/app` is an explicit selection page
+ * (feature 161) that lists these workspaces.
  */
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
@@ -39,18 +39,6 @@ export function workspacesQueryOptions() {
   return queryOptions({
     queryKey: ['workspaces', 'list'] as const,
     queryFn: () => fetchWorkspaces('?sort=name&order=asc&limit=100'),
-    staleTime: 60 * 1000,
-  });
-}
-
-/** The most recently created workspace, or `null` — the `/app` gate's redirect target. */
-export function newestWorkspaceQueryOptions() {
-  return queryOptions({
-    queryKey: ['workspaces', 'newest'] as const,
-    queryFn: async (): Promise<Workspace | null> => {
-      const envelope = await fetchWorkspaces('?sort=createdAt&order=desc&limit=1');
-      return envelope.items[0] ?? null;
-    },
     staleTime: 60 * 1000,
   });
 }

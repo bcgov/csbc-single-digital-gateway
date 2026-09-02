@@ -64,7 +64,8 @@ describe('ProfileMenu Component Test Suite', () => {
     expect(screen.queryByText('Test User')).not.toBeInTheDocument();
   });
 
-  it('renders user details when authentication succeeds', async () => {
+  it('shows the user initials on the avatar trigger, with name/role inside the menu', async () => {
+    const user = userEvent.setup();
     const mockUser = {
       id: 'u-123',
       roles: ['admin'],
@@ -79,13 +80,17 @@ describe('ProfileMenu Component Test Suite', () => {
 
     renderProfileMenu(queryClient);
 
-    // Verify displayName, role initials, and avatar text render correctly
+    // Avatar-only trigger shows initials; name is not shown inline (it moved into the menu).
+    expect(await screen.findByText('TU')).toBeInTheDocument();
+    expect(screen.queryByText('Test User')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /account menu/i }));
     expect(await screen.findByText('Test User')).toBeInTheDocument();
-    expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('TU')).toBeInTheDocument();
+    // "Admin" appears as the role caption and (for admins) the Admin menu item.
+    expect(screen.getAllByText('Admin').length).toBeGreaterThan(0);
   });
 
-  it('opens profile dropdown menu with correct items when clicked', async () => {
+  it('opens the account menu with the correct items when clicked', async () => {
     const user = userEvent.setup();
     const mockUser = {
       id: 'u-123',
@@ -107,8 +112,25 @@ describe('ProfileMenu Component Test Suite', () => {
     // Verify Dropdown items and user details within it
     expect(await screen.findByText('test@example.com')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Account settings/i })).toBeInTheDocument();
+    // Admins get the Admin link (moved here from the sidebar in feature 160).
+    expect(screen.getByRole('menuitem', { name: /^Admin$/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Help & support/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Log out/i })).toBeInTheDocument();
+  });
+
+  it('hides the Admin link for non-admin users', async () => {
+    const user = userEvent.setup();
+    queryClient.setQueryData(['auth', 'me'], {
+      id: 'u-9',
+      roles: ['staff'],
+      claims: { sub: 'sub-9', name: 'Staffer', preferred_username: 'staffer' },
+    });
+
+    renderProfileMenu(queryClient);
+
+    await user.click(await screen.findByRole('button'));
+    expect(await screen.findByRole('menuitem', { name: /Account settings/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^Admin$/i })).not.toBeInTheDocument();
   });
 
   it('triggers logout endpoint and redirects to landing page on Log out click', async () => {

@@ -264,13 +264,13 @@ describe('Application Method Edit Page Component Test Suite', () => {
     };
 
     const { container } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/am-789',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789',
     );
 
     // The container should render the spinner
     await waitFor(
       () => {
-        expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+        expect(container.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
       },
       { timeout: 32000 },
     );
@@ -287,7 +287,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
 
     const user = userEvent.setup();
     const { router } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/am-789',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789',
     );
 
     // Should display the sidebar with active slug context, as well as builder regions
@@ -324,7 +324,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
 
     expect(navigateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        to: '/app/$slug/services/$id',
+        to: '/app/$slug/services/$id/old/edit',
         params: { slug: 'riverton', id: 'srv-123' },
       }),
     );
@@ -333,7 +333,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
   it('renders published basic-form layout as read-only preview', async () => {
     mockApi({ form: mockBasicFormPublished });
 
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     // Should display status badge
     expect(await screen.findByText('published', undefined, { timeout: 32000 })).toBeInTheDocument();
@@ -358,7 +358,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
 
     const user = userEvent.setup();
     const { router } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/am-789',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789',
     );
 
     // Should render StageBuilder elements
@@ -389,7 +389,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
 
     expect(navigateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        to: '/app/$slug/services/$id',
+        to: '/app/$slug/services/$id/old/edit',
         params: { slug: 'riverton', id: 'srv-123' },
       }),
     );
@@ -398,7 +398,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
   it('renders published multi-stage-form layout as read-only stage outline', async () => {
     mockApi({ form: mockMultiStageFormPublished });
 
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     // Should display the header and stage outline
     expect(
@@ -452,7 +452,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
       },
     };
     mockApi({ form: mockBasicFormNoTitleDraft });
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     const canvas = await screen.findByRole('region', { name: /canvas/i }, { timeout: 32000 });
     const titleInput = within(canvas).getByRole('textbox', { name: /title/i });
@@ -489,7 +489,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
       },
     };
     mockApi({ form: mockBasicFormNoTitlePublished });
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     expect(
       await screen.findByRole(
@@ -537,7 +537,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
       },
     };
     mockApi({ form: mockMultiStageFormNoTitleDraft });
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     const nameInput = await screen.findByLabelText(/form name/i, undefined, { timeout: 32000 });
     expect(nameInput).toHaveValue('');
@@ -581,7 +581,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
       },
     };
     mockApi({ form: mockMultiStageFormNoTitlePublished });
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     expect(
       await screen.findByRole(
@@ -611,7 +611,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     });
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     await screen.findByRole('region', { name: /canvas/i }, { timeout: 32000 });
 
@@ -644,7 +644,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     });
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     await screen.findByRole('region', { name: /canvas/i }, { timeout: 32000 });
 
@@ -652,7 +652,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     await user.click(saveBtn);
 
     const saveButton = screen.getByRole('button', { name: /save form/i });
-    expect(saveButton.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(saveButton.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
 
     resolveSave!(
       json({
@@ -666,7 +666,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     );
 
     await waitFor(() => {
-      expect(saveButton.querySelector('.animate-spin')).not.toBeInTheDocument();
+      expect(saveButton.querySelector('[data-slot="spinner"]')).not.toBeInTheDocument();
     });
   });
 
@@ -703,7 +703,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     };
     mockApi({ form: mockBasicFormPublishedWithDesc });
 
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     expect(
       await screen.findByText('This is a description of the basic form', undefined, {
@@ -722,7 +722,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     });
 
     const user = userEvent.setup();
-    renderApp('/app/riverton/services/srv-123/versions/v-456/application-methods/am-789');
+    renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     const nameInput = await screen.findByLabelText(/form name/i, undefined, { timeout: 32000 });
     await user.clear(nameInput);
@@ -769,7 +769,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     };
     mockApi({ form: mockBasicFormEmptyTitlePublished });
     const { container } = renderApp(
-      '/app/riverton/services/srv-123/versions/v-456/application-methods/am-789',
+      '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789',
     );
 
     // Wait for the heading to render with empty text

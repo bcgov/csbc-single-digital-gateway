@@ -1,28 +1,20 @@
 'use client';
 
-import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
-import {
-  CircleCheckIcon,
-  InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
-  Loader2Icon,
-} from 'lucide-react';
+import { mdiCheckCircle, mdiInformation, mdiAlert, mdiCloseOctagon, mdiLoading } from '@mdi/js';
+import { Icon } from '@mdi/react';
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = 'system' } = useTheme();
-
   return (
     <Sonner
-      theme={theme as NonNullable<ToasterProps['theme']>}
+      theme="light"
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <Icon path={mdiCheckCircle} size="16px" />,
+        info: <Icon path={mdiInformation} size="16px" />,
+        warning: <Icon path={mdiAlert} size="16px" />,
+        error: <Icon path={mdiCloseOctagon} size="16px" />,
+        loading: <Icon path={mdiLoading} size="16px" spin />,
       }}
       style={
         {

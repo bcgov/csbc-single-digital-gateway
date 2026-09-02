@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { serializeModel, parseModel } from '@/components/form-builder/model-codec';
-import type { FormModel } from '@/components/form-builder/model';
+import type {
+  ContainerNode,
+  ControlNode,
+  FormDefinition,
+  FormModel,
+} from '@/components/form-builder/model';
 
 describe('Model Codec Component Test Suite', () => {
   it('successfully round-trips form title, description and basic control nodes', () => {
@@ -161,6 +166,69 @@ describe('Model Codec Component Test Suite', () => {
     expect(parsed).toEqual(original);
   });
 
+  it('round-trips a grid container with its column count (feature 169)', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'container',
+          layout: 'grid',
+          columns: 4,
+          children: [
+            {
+              kind: 'control',
+              fieldType: 'text',
+              key: 'a',
+              label: 'A',
+              required: false,
+              options: {},
+            },
+          ],
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const els = (definition.uischema as any).elements;
+    expect(els[0].type).toBe('GridLayout');
+    expect(els[0].options).toEqual({ columns: 4 });
+    // No Section title for grid — matches Horizontal's title-less behavior.
+    expect(els[0].label).toBeUndefined();
+
+    const parsed = parseModel(definition);
+    expect(parsed).toEqual(original);
+  });
+
+  it('clamps an out-of-range or missing GridLayout columns to 2–6 on parse (feature 169)', () => {
+    const tooMany = parseModel({
+      schema: { type: 'object', properties: {} },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'GridLayout', options: { columns: 99 }, elements: [] }],
+      },
+    } as any);
+    expect((tooMany.fields[0] as any).columns).toBe(6);
+
+    const tooFew = parseModel({
+      schema: { type: 'object', properties: {} },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'GridLayout', options: { columns: 0 }, elements: [] }],
+      },
+    } as any);
+    expect((tooFew.fields[0] as any).columns).toBe(2);
+
+    const missing = parseModel({
+      schema: { type: 'object', properties: {} },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [{ type: 'GridLayout', elements: [] }],
+      },
+    } as any);
+    expect((missing.fields[0] as any).columns).toBe(2);
+  });
+
   it('round-trips the choice family (select single/multi, radio, checkbox group) — feature 156 Step 2', () => {
     const original: FormModel = {
       title: 'Selection Form',
@@ -174,6 +242,7 @@ describe('Model Codec Component Test Suite', () => {
           required: false,
           options: {},
           multiple: false,
+          combobox: false,
           enumOptions: [
             { value: 'opt1', label: 'Option 1' },
             { value: 'opt2', label: 'Option 2' },
@@ -187,6 +256,7 @@ describe('Model Codec Component Test Suite', () => {
           required: true,
           options: {},
           multiple: true,
+          combobox: false,
           enumOptions: [{ value: 'a', label: 'A' }],
         },
         {
@@ -212,32 +282,68 @@ describe('Model Codec Component Test Suite', () => {
 
     const definition = serializeModel(original);
 
-    // Values live in the schema (for Ajv); labels + presentation live in the uischema options.
+    // Values AND labels now live in the schema (feature 167: oneOf/const/title) — the uischema
+    // options carry only presentation (`display`); no `format`, `choices`, or `multiple` flag.
     const props = definition.schema.properties as any;
-    expect(props.sel_field.enum).toEqual(['opt1', 'opt2']);
+    expect(props.sel_field.oneOf).toEqual([
+      { const: 'opt1', title: 'Option 1' },
+      { const: 'opt2', title: 'Option 2' },
+    ]);
     expect(props.multi_sel.type).toBe('array');
-    expect(props.multi_sel.items.enum).toEqual(['a']);
+    expect(props.multi_sel.items.oneOf).toEqual([{ const: 'a', title: 'A' }]);
     expect(props.multi_sel.minItems).toBe(1); // required multi → ≥1
-    expect(props.rad_field.enum).toEqual(['yes']);
+    expect(props.rad_field.oneOf).toEqual([{ const: 'yes', title: 'Yes' }]);
     expect(props.multi_field.type).toBe('array');
-    expect(props.multi_field.items.enum).toEqual(['m1']);
+    expect(props.multi_field.items.oneOf).toEqual([{ const: 'm1', title: 'M1' }]);
 
     const els = (definition.uischema as any).elements;
-    expect(els[0].options).toMatchObject({
-      format: 'choice',
-      display: 'select',
-      multiple: false,
-      choices: [
-        { value: 'opt1', label: 'Option 1' },
-        { value: 'opt2', label: 'Option 2' },
-      ],
-    });
-    expect(els[1].options).toMatchObject({ display: 'select', multiple: true });
-    expect(els[2].options).toMatchObject({ format: 'choice', display: 'radio' });
-    expect(els[3].options).toMatchObject({ format: 'choice', display: 'checkboxes' });
+    expect(els[0].options).toEqual({ display: 'select' });
+    expect(els[1].options).toEqual({ display: 'select' });
+    expect(els[2].options).toEqual({ display: 'radio' });
+    expect(els[3].options).toEqual({ display: 'checkboxes' });
 
     const parsed = parseModel(definition);
     expect(parsed).toEqual(original);
+  });
+
+  it("round-trips the Select field's opt-in combobox flag (feature 168)", () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'select',
+          key: 'combo_field',
+          label: 'Combo Field',
+          required: false,
+          options: {},
+          multiple: false,
+          combobox: true,
+          enumOptions: [{ value: 'a', label: 'A' }],
+        },
+        {
+          kind: 'control',
+          fieldType: 'select',
+          key: 'plain_field',
+          label: 'Plain Field',
+          required: false,
+          options: {},
+          multiple: false,
+          enumOptions: [{ value: 'a', label: 'A' }],
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const els = (definition.uischema as any).elements;
+    // combobox: true is emitted explicitly; unset/false is omitted, not serialized as `combobox: false`.
+    expect(els[0].options).toEqual({ display: 'select', combobox: true });
+    expect(els[1].options).toEqual({ display: 'select' });
+
+    const parsed = parseModel(definition);
+    expect((parsed.fields[0] as any).combobox).toBe(true);
+    expect((parsed.fields[1] as any).combobox).toBe(false);
   });
 
   it('round-trips slider control fields with ranges', () => {
@@ -760,7 +866,7 @@ describe('Model Codec Component Test Suite', () => {
           {
             type: 'Control',
             scope: '#/properties/choice_field',
-            options: { format: 'choice', display: 'radio', choices: [{ value: 'a', label: 'A' }] },
+            options: { display: 'radio' },
           },
           {
             type: 'HorizontalLayout',
@@ -785,7 +891,7 @@ describe('Model Codec Component Test Suite', () => {
         properties: {
           int_field: { type: 'integer' },
           bool_field: { type: 'boolean' },
-          choice_field: { type: 'string', enum: ['a'] },
+          choice_field: { type: 'string', oneOf: [{ const: 'a', title: 'A' }] },
         },
       },
     };
@@ -813,8 +919,8 @@ describe('Model Codec Component Test Suite', () => {
             type: 'string',
             description: 'Helpful field description',
           },
-          empty_checkboxes: { type: 'array', items: { type: 'string', enum: [] } },
-          empty_select: { type: 'string', enum: [] },
+          empty_checkboxes: { type: 'array', items: { type: 'string', oneOf: [] } },
+          empty_select: { type: 'string', oneOf: [] },
         },
       },
       uischema: {
@@ -827,12 +933,12 @@ describe('Model Codec Component Test Suite', () => {
           {
             type: 'Control',
             scope: '#/properties/empty_checkboxes',
-            options: { format: 'choice', display: 'checkboxes' },
+            options: { display: 'checkboxes' },
           },
           {
             type: 'Control',
             scope: '#/properties/empty_select',
-            options: { format: 'choice', display: 'select' },
+            options: { display: 'select' },
           },
           {
             type: 'Group',
@@ -845,7 +951,7 @@ describe('Model Codec Component Test Suite', () => {
     const parsed = parseModel(customDef as any);
 
     expect((parsed.fields[0] as any).description).toBe('Helpful field description');
-    // Choice fields with no `options.choices` recover an empty list (never throw).
+    // Choice fields with an empty schema.oneOf recover an empty list (never throw).
     expect((parsed.fields[1] as any).fieldType).toBe('checkboxes');
     expect((parsed.fields[1] as any).enumOptions).toEqual([]);
     expect((parsed.fields[2] as any).fieldType).toBe('select');
@@ -930,9 +1036,10 @@ describe('Model Codec Component Test Suite', () => {
     const serialized = serializeModel(modelWithNulls);
     expect((serialized.schema.properties as any).slider_null_bounds.minimum).toBe(0);
     expect((serialized.schema.properties as any).slider_null_bounds.maximum).toBe(100);
-    // A choice field with no authored options serializes an empty enum + empty options.choices.
-    expect((serialized.schema.properties as any).select_no_enum.enum).toEqual([]);
-    expect((serialized.uischema as any).elements[1].options.choices).toEqual([]);
+    // A choice field with no authored options serializes an empty schema.oneOf; uischema options
+    // carry only presentation (`display`) — no `choices`/`format`/`multiple`.
+    expect((serialized.schema.properties as any).select_no_enum.oneOf).toEqual([]);
+    expect((serialized.uischema as any).elements[1].options).toEqual({ display: 'select' });
 
     const defWithMissingProps = {
       schema: {
@@ -962,7 +1069,10 @@ describe('Model Codec Component Test Suite', () => {
       schema: {
         type: 'object',
         properties: {
-          choice_bad: { type: 'string', enum: ['x'] },
+          choice_bad: {
+            type: 'string',
+            oneOf: [null, 'str', { const: 'x' }, { const: 'y', title: '' }],
+          },
         },
       },
       uischema: {
@@ -971,11 +1081,7 @@ describe('Model Codec Component Test Suite', () => {
           {
             type: 'Control',
             scope: '#/properties/choice_bad',
-            options: {
-              format: 'choice',
-              display: 'select',
-              choices: [null, 'str', { value: 'x' }, { value: 'y', label: '' }],
-            },
+            options: { display: 'select' },
           },
         ],
       },
@@ -987,7 +1093,7 @@ describe('Model Codec Component Test Suite', () => {
     expect((parsedProps.fields[1] as any).children).toEqual([]);
     expect((parsedProps.fields[2] as any).key).toBe('missing_props_key');
 
-    // choicesFromOptions drops non-objects and falls back label→value (missing or empty label).
+    // choicesFromSchema drops non-objects and falls back label→value (missing or empty title).
     const parsedBad = parseModel(defWithMalformedChoices as any);
     expect((parsedBad.fields[0] as any).enumOptions).toEqual([
       { value: 'x', label: 'x' },
@@ -1217,5 +1323,318 @@ describe('Model Codec Component Test Suite', () => {
     const node = parseModel(def as any).fields[0] as any;
     expect(node.numberType).toBe('decimal');
     expect(node.decimalPlaces).toBeUndefined();
+  });
+});
+
+// ── Feature 171: accordion group field ──────────────────────────────────────────────────────────
+
+const accordionNode = (overrides: Partial<ControlNode> = {}): ControlNode => ({
+  kind: 'control',
+  fieldType: 'accordiongroup',
+  key: 'faq',
+  label: 'Frequently asked questions',
+  required: false,
+  options: {},
+  itemLabel: 'item',
+  defaultOpen: 'none',
+  ...overrides,
+});
+
+const modelWith = (node: ControlNode): FormModel => ({
+  title: '',
+  description: '',
+  fields: [node],
+});
+
+const propOf = (definition: FormDefinition): Record<string, unknown> =>
+  (definition.schema.properties as Record<string, Record<string, unknown>>).faq as Record<
+    string,
+    unknown
+  >;
+
+const elementOf = (definition: FormDefinition): Record<string, unknown> =>
+  (definition.uischema.elements as Record<string, unknown>[])[0] as Record<string, unknown>;
+
+const optionsOf = (definition: FormDefinition): Record<string, unknown> =>
+  (elementOf(definition).options ?? {}) as Record<string, unknown>;
+
+describe('Accordion group codec (feature 171)', () => {
+  it('serializes an array property whose items carry id, title and an object description', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode())));
+    expect(prop.type).toBe('array');
+    expect(prop.items).toEqual({
+      type: 'object',
+      required: ['title', 'description'],
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string', pattern: '\\S' },
+        description: { type: 'object' },
+      },
+    });
+  });
+
+  it('emits per-item completeness even when the field itself is optional', () => {
+    // Rule 13: "required" on the FIELD governs how many items; items.required governs what an item
+    // must contain. An optional group may be empty, but any item in it must be filled in.
+    const optional = propOf(serializeModel(modelWith(accordionNode({ required: false }))));
+    const required = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+    for (const prop of [optional, required]) {
+      expect((prop.items as Record<string, unknown>).required).toEqual(['title', 'description']);
+    }
+    expect(optional.minItems).toBeUndefined();
+    expect(required.minItems).toBe(1);
+  });
+
+  it('requires a non-whitespace character in the item title', () => {
+    // `required` alone passes on the '' the control writes on add; minLength: 1 would pass ' '.
+    const items = propOf(serializeModel(modelWith(accordionNode()))).items as Record<
+      string,
+      unknown
+    >;
+    const properties = items.properties as Record<string, Record<string, unknown> | undefined>;
+    expect(properties.title?.pattern).toBe('\\S');
+  });
+
+  it('emits options.format = "accordion-group" on the uischema element', () => {
+    expect(optionsOf(serializeModel(modelWith(accordionNode()))).format).toBe('accordion-group');
+  });
+
+  it('emits options.itemLabel only when the author set a noun', () => {
+    expect(optionsOf(serializeModel(modelWith(accordionNode()))).itemLabel).toBeUndefined();
+    expect(
+      optionsOf(serializeModel(modelWith(accordionNode({ itemLabel: 'question' })))).itemLabel,
+    ).toBe('question');
+  });
+
+  it('emits options.defaultOpen only when it is not "none"', () => {
+    expect(optionsOf(serializeModel(modelWith(accordionNode()))).defaultOpen).toBeUndefined();
+    expect(
+      optionsOf(serializeModel(modelWith(accordionNode({ defaultOpen: 'first' })))).defaultOpen,
+    ).toBe('first');
+  });
+
+  it('emits minItems: 1 when the field is required', () => {
+    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+    expect(propOf(definition).minItems).toBe(1);
+    expect(definition.schema.required).toContain('faq');
+  });
+
+  it('omits minItems when the field is not required', () => {
+    expect(propOf(serializeModel(modelWith(accordionNode()))).minItems).toBeUndefined();
+  });
+
+  it('does not read minItems back into the model on parse (it is derived from required)', () => {
+    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.required).toBe(true);
+    expect(node.options).toEqual({});
+    expect(node.options).not.toHaveProperty('minItems');
+  });
+
+  it('infers the accordiongroup field type from options.format, not the schema shape', () => {
+    // The branch must sit EARLY (beside richtext/daterange) — an array otherwise falls through
+    // isChoiceProp and lands on `text`.
+    const definition = {
+      schema: { type: 'object', properties: { faq: { type: 'array' } }, required: [] },
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [
+          {
+            type: 'Control',
+            scope: '#/properties/faq',
+            options: { format: 'accordion-group' },
+          },
+        ],
+      },
+    } as unknown as FormDefinition;
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.fieldType).toBe('accordiongroup');
+  });
+
+  it('drops itemLabel and defaultOpen from the parsed node.options', () => {
+    // parseControl's drop-list runs for ALL field types (memory `address-readonly-locks`) —
+    // a synthesized option left in leaks into node.options and breaks the round-trip.
+    const definition = serializeModel(
+      modelWith(accordionNode({ itemLabel: 'question', defaultOpen: 'all' })),
+    );
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.options).toEqual({});
+    expect(node.itemLabel).toBe('question');
+    expect(node.defaultOpen).toBe('all');
+  });
+
+  it('defaults itemLabel and defaultOpen to definite values when the options are absent', () => {
+    const definition = serializeModel(modelWith(accordionNode()));
+    const node = parseModel(definition).fields[0] as ControlNode;
+    expect(node.itemLabel).toBe('item');
+    expect(node.defaultOpen).toBe('none');
+  });
+
+  it('emits an author-set minimum in place of the required default', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true, minItems: 3 }))));
+    expect(prop.minItems).toBe(3);
+  });
+
+  it('emits an author-set maximum', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode({ maxItems: 4 }))));
+    expect(prop.maxItems).toBe(4);
+  });
+
+  it('falls back to minItems 1 for a required field with no authored minimum', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+    expect(prop.minItems).toBe(1);
+  });
+
+  it('emits neither bound when the field is optional and unbounded', () => {
+    const prop = propOf(serializeModel(modelWith(accordionNode())));
+    expect(prop.minItems).toBeUndefined();
+    expect(prop.maxItems).toBeUndefined();
+  });
+
+  it('round-trips the authored bounds', () => {
+    const original = accordionNode({ required: true, minItems: 2, maxItems: 5 });
+    const parsed = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
+    expect(parsed.minItems).toBe(2);
+    expect(parsed.maxItems).toBe(5);
+    expect(parsed.required).toBe(true);
+  });
+
+  it('round-trips an accordion group node, normalising required to an explicit minimum', () => {
+    // A required field emits minItems: 1, which reads back as an explicit minimum. No information
+    // is lost or invented: a minimum of 1 and "required" mean the same thing (invariant 1), so the
+    // parsed node is equivalent, and a second round trip is a fixed point.
+    const original = accordionNode({
+      required: true,
+      itemLabel: 'question',
+      defaultOpen: 'first',
+      description: 'Add one per question',
+    });
+    const node = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
+    expect(node).toEqual({ ...original, minItems: 1 });
+
+    const again = parseModel(serializeModel(modelWith(node))).fields[0] as ControlNode;
+    expect(again).toEqual(node);
+  });
+
+  it('round-trips an optional, unbounded node exactly', () => {
+    const original = accordionNode({ itemLabel: 'question', defaultOpen: 'first' });
+    const node = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
+    expect(node).toEqual(original);
+  });
+});
+
+// ── Feature 172: Section layout container ───────────────────────────────────────────────────────
+
+const sectionNode = (overrides: Partial<ContainerNode> = {}): ContainerNode => ({
+  kind: 'container',
+  layout: 'section',
+  children: [],
+  ...overrides,
+});
+
+const withFields = (fields: FormModel['fields']): FormModel => ({
+  title: '',
+  description: '',
+  fields,
+});
+
+const firstElement = (definition: FormDefinition): Record<string, unknown> =>
+  (definition.uischema.elements as Record<string, unknown>[])[0] as Record<string, unknown>;
+
+describe('Section layout codec (feature 172)', () => {
+  it('serializes a section container to a "Section" uischema element', () => {
+    const definition = serializeModel(withFields([sectionNode()]));
+    expect(firstElement(definition).type).toBe('Section');
+  });
+
+  it('emits the label on the element (the future <legend>)', () => {
+    const definition = serializeModel(withFields([sectionNode({ label: 'Applicant details' })]));
+    expect(firstElement(definition).label).toBe('Applicant details');
+  });
+
+  it('omits the label when it is blank', () => {
+    const definition = serializeModel(withFields([sectionNode({ label: '' })]));
+    expect(firstElement(definition)).not.toHaveProperty('label');
+  });
+
+  it('emits options.description when the author set one', () => {
+    const definition = serializeModel(
+      withFields([sectionNode({ label: 'A', description: 'Tell us who you are.' })]),
+    );
+    expect(firstElement(definition).options).toEqual({ description: 'Tell us who you are.' });
+  });
+
+  it('omits options entirely when there is no description', () => {
+    const definition = serializeModel(withFields([sectionNode({ label: 'A' })]));
+    expect(firstElement(definition)).not.toHaveProperty('options');
+  });
+
+  it('does NOT emit options.description for a group container', () => {
+    // Group's renderer reads options.description, but wiring its serialization is separate
+    // in-flight work — Group's output must stay byte-identical (doc 172, rule 10).
+    const definition = serializeModel(
+      withFields([
+        { kind: 'container', layout: 'group', label: 'G', description: 'ignored', children: [] },
+      ]),
+    );
+    expect(firstElement(definition)).not.toHaveProperty('options');
+    expect(firstElement(definition).label).toBe('G');
+  });
+
+  it('parses a "Section" element back into a section container', () => {
+    const model = parseModel(serializeModel(withFields([sectionNode({ label: 'A' })])));
+    const node = model.fields[0] as ContainerNode;
+    expect(node.kind).toBe('container');
+    expect(node.layout).toBe('section');
+    expect(node.label).toBe('A');
+  });
+
+  it('recovers the description from options on parse', () => {
+    const definition = serializeModel(
+      withFields([sectionNode({ label: 'A', description: 'Sub-heading' })]),
+    );
+    const node = parseModel(definition).fields[0] as ContainerNode;
+    expect(node.description).toBe('Sub-heading');
+  });
+
+  it('round-trips a section container with children unchanged', () => {
+    const original = sectionNode({
+      label: 'Applicant details',
+      description: 'Tell us who you are.',
+      children: [
+        {
+          kind: 'control',
+          fieldType: 'text',
+          key: 'first_name',
+          label: 'First name',
+          required: false,
+          options: {},
+        },
+      ],
+    });
+    const node = parseModel(serializeModel(withFields([original]))).fields[0] as ContainerNode;
+    expect(node).toEqual(original);
+  });
+
+  it('serializes controls nested in a section into schema.properties', () => {
+    // A container contributes no schema of its own, but its children still must.
+    const definition = serializeModel(
+      withFields([
+        sectionNode({
+          children: [
+            {
+              kind: 'control',
+              fieldType: 'text',
+              key: 'first_name',
+              label: 'First name',
+              required: true,
+              options: {},
+            },
+          ],
+        }),
+      ]),
+    );
+    expect(definition.schema.properties).toHaveProperty('first_name');
+    expect(definition.schema.required).toContain('first_name');
   });
 });
