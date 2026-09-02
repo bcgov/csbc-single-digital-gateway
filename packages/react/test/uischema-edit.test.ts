@@ -256,4 +256,10 @@ describe('slugify', () => {
     expect(slugify('  Service description  ')).toBe('service-description');
     expect(slugify('!!!')).toBe('');
   });
+
+  it('trims runs of leading and trailing separators', () => {
+    expect(slugify('--- Step 1: Apply ---')).toBe('step-1-apply');
+    expect(slugify('   ')).toBe('');
+    expect(slugify(`${'-'.repeat(1000)}a${'-'.repeat(1000)}`)).toBe('a');
+  });
 });

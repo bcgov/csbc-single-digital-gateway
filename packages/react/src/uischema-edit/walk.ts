@@ -6,10 +6,15 @@ import type { EditOption, EditableSection, UiElement } from './types';
  * section's edit id and its `#hash` anchor agree.
  */
 export function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      // The collapse above leaves at most one dash in a row, so a single-character trim is
+      // enough here. `/^-+|-+$/` would be equivalent but backtracks quadratically on long
+      // dash runs (CodeQL js/polynomial-redos).
+      .replace(/^-|-$/g, '')
+  );
 }
 
 const asRecord = (value: unknown): Record<string, unknown> =>
