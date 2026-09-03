@@ -66,11 +66,23 @@ jobs:
           echo "images=$(images_json "$affected")" >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
+  # validate-lockfile — fail fast if package-lock.json is missing cross-platform
+  # native dependency entries (e.g. @tailwindcss/oxide-linux-x64-musl). Without
+  # them the Alpine Docker builds silently skip native binaries. See npm#4828.
+  # ---------------------------------------------------------------------------
+  validate-lockfile:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/check-lockfile-platforms.mjs
+
+  # ---------------------------------------------------------------------------
   # images — for each of the 7: BUILD if changed (push :sha + :dev), else RETAG :dev → :sha
   # (a manifest copy, no build) so every commit has a complete :sha image set.
   # ---------------------------------------------------------------------------
   images:
-    needs: changes
+    needs: [changes, validate-lockfile]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
