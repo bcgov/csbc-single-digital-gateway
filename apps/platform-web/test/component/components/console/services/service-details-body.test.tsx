@@ -25,7 +25,8 @@ vi.mock('@repo/react/jsonforms', () => ({
   ),
 }));
 vi.mock('@repo/react/jsonforms-renderers-display', () => ({ displayRenderers: [] }));
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   // Renders `children` so the affordance's own wording is assertable.
   Link: ({
     to,

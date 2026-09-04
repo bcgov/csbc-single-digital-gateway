@@ -49,7 +49,8 @@ vi.mock('@tanstack/react-query', () => ({
 
 // The page reads params LOOSELY (`strict: false`) because two routes with different param shapes
 // render it — `versionId` is simply absent on the canonical one.
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useParams: () => paramsRef.current,
   useNavigate: () => navigateMock,
   // The editor mounts the unsaved-changes guard (feature 177), which registers a blocker.

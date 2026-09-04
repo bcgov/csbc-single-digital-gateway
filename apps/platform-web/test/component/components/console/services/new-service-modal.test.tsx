@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useEffect } from 'react';
@@ -43,7 +43,8 @@ const mockNavigate = vi.fn();
 const mockParams = { slug: 'riverton' };
 const mockOnOpenChange = vi.fn();
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
   useParams: () => mockParams,
 }));
@@ -120,9 +121,9 @@ describe('New Service Modal Component Test Suite', () => {
 
     renderNewServiceModal(true);
 
-    await user.type(await screen.findByLabelText(/name of the service/i), 'Business License');
-    await flushDebounce();
-    await user.type(descInput(), 'Apply for business license');
+    const titleInput = await screen.findByLabelText(/name of the service/i);
+    fireEvent.change(titleInput, { target: { value: 'Business License' } });
+    fireEvent.change(descInput(), { target: { value: 'Apply for business license' } });
     await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 

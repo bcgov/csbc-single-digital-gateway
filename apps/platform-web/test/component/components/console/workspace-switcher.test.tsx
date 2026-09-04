@@ -7,7 +7,8 @@ import { useWorkspaces } from '@/lib/workspaces';
 
 let mockParamsSlug: string | undefined = 'riverton';
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   Link: ({ to, params, children, ...props }: any) => {
     const href = to.replace('$slug', params?.slug ?? '');
     return (

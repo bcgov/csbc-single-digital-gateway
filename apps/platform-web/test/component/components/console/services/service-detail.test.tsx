@@ -58,7 +58,8 @@ import {
 
 const mockNavigate = vi.fn();
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
   useBlocker: () => ({
     state: 'unblocked',

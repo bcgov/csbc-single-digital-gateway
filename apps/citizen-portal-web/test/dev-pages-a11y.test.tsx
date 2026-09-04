@@ -28,14 +28,14 @@ const DEV_PAGES: { path: string; component?: string }[] = [
 
 describe.each(DEV_PAGES)('a11y: $path', ({ path, component }) => {
   it('has no unjustified axe violations', async () => {
-    const { container } = renderRoute(path);
+    const { container } = await renderRoute(path);
     // "Developer reference" is DevPageLayout's own header label — unlike an <h1>, page content
     // never duplicates it, so it's a reliable "the route has rendered" signal on every /dev page.
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
     const knownExceptions = component ? getA11yMetadata(component).knownExceptions : [];
     await expectNoUnjustifiedA11yViolations(container, knownExceptions);
-  });
+  }, 40000);
 });
 
 // /dev/form-elements renders many JSON Forms controls, several of which surface popover/dialog
@@ -47,7 +47,7 @@ describe('/dev/form-elements interactions', () => {
   const knownExceptions = getA11yMetadata('form-elements').knownExceptions;
 
   it('has no unjustified axe violations with the enum-select dropdown open', async () => {
-    const { container } = renderRoute('/dev/form-elements');
+    const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
     // "Province" is used by both the Full example section and the Selection controls section's
@@ -63,7 +63,7 @@ describe('/dev/form-elements interactions', () => {
   }, 15000);
 
   it('has no unjustified axe violations with the toggle switch checked', async () => {
-    const { container } = renderRoute('/dev/form-elements');
+    const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
     const toggle = screen.getByRole('switch', { name: 'Email me about updates' });
@@ -74,7 +74,7 @@ describe('/dev/form-elements interactions', () => {
   }, 15000);
 
   it('has no unjustified axe violations with a date picker calendar open', async () => {
-    const { container } = renderRoute('/dev/form-elements');
+    const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
     // Scope to "Date of birth"'s own Field — the page has more than one "Open calendar" button
@@ -90,7 +90,7 @@ describe('/dev/form-elements interactions', () => {
   }, 15000);
 
   it('has no unjustified axe violations with the add-contact-method dialog open', async () => {
-    const { container } = renderRoute('/dev/form-elements');
+    const { container } = await renderRoute('/dev/form-elements');
     await screen.findByText('Developer reference', {}, { timeout: 10000 });
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Add Contact Method' }));

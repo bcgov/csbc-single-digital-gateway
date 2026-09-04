@@ -6,7 +6,8 @@ import { CreateWorkspaceModal } from '@/components/console/create-workspace-moda
 import { createWorkspace, type Workspace } from '@/lib/workspaces';
 
 const mockNavigate = vi.fn();
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
 }));
 

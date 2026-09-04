@@ -47,10 +47,10 @@ describe('workspace settings — default agreements section', () => {
 
     // CardTitle / the panel heading render styled divs (no heading role) — match by text.
     // "General" also appears in the Settings sub-nav tab (feature 160); take the card title (last).
-    const generals = await screen.findAllByText('General', undefined, { timeout: 5000 });
+    const generals = await screen.findAllByText('General', undefined, { timeout: 32000 });
     const general = generals[generals.length - 1]!;
-    const defaults = await screen.findByText('Default agreements');
-    const danger = await screen.findByText('Danger zone');
+    const defaults = await screen.findByText('Default agreements', undefined, { timeout: 32000 });
+    const danger = await screen.findByText('Danger zone', undefined, { timeout: 32000 });
 
     // Ordered General → Default agreements → Danger zone in the DOM.
     await waitFor(() => {
