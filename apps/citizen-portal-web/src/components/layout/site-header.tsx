@@ -109,7 +109,7 @@ function MobileMenu({
             for an X close control in the same top-right position. Title kept for a11y, hidden. */}
         <DialogTitle className="sr-only">Menu</DialogTitle>
         <div className="border-b bg-background">
-          <div className="mx-auto px-4 md:px-8 w-full max-w-280 flex items-center gap-4">
+          <div className="mx-auto px-4 md:px-3 w-full max-w-285 flex items-center gap-4">
             <BrandLockup />
             <div className="ml-auto flex items-center gap-2 lg:gap-6">
               <DialogClose aria-label="Close menu" render={<Button variant="ghost" size="icon" />}>
@@ -204,7 +204,7 @@ export function SiteHeader({ variant, user, onLogout, activeNav }: SiteHeaderPro
   const loginUrl = useLoginUrl();
   return (
     <header className="border-b bg-background">
-      <div className="mx-auto px-4 md:px-8 w-full max-w-280 flex items-center gap-4">
+      <div className="mx-auto px-4 md:px-3 w-full max-w-285 flex items-center gap-4">
         <BrandLockup />
         <div className="ml-auto flex items-center gap-2 lg:gap-6">
           <PrimaryNav active={activeNav} />

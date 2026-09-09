@@ -21,7 +21,7 @@ export function ServiceDetailPage() {
   if (isPending) {
     return (
       <CitizenShell activeNav="services">
-        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-8 w-72" />
           <Skeleton className="h-4 w-full max-w-lg" />
@@ -33,7 +33,7 @@ export function ServiceDetailPage() {
   if (isError || !service) {
     return (
       <CitizenShell activeNav="services">
-        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
           {/* <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10"> */}
           <h1 className="font-heading text-lg font-semibold">Service not available</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -76,7 +76,7 @@ export function ServiceDetailPage() {
           </header>
         </PageHeaderBanner>
 
-        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
+        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
           <ServiceSections
             serviceId={service.id}
             schema={service.schema}

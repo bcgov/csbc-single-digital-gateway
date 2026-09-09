@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { useQuery } from '@tanstack/react-query';
 import {
   DETAIL_SECTIONS,
-  OnThisPage,
   Section,
   InAGlance,
   EligibilityCriteria,
@@ -15,6 +14,7 @@ import {
   readContactMethods,
 } from '@/components/services/detail-sections';
 import { ContactSection } from '@/components/services/contact-section';
+import { OnThisPageLayout } from '@/components/layout/on-this-page';
 
 // Mock UI elements from @repo
 vi.mock('@repo/react/jsonforms-renderers-display', () => ({
@@ -101,9 +101,13 @@ vi.mock('@/lib/catalog', () => ({
   myApplicationsQueryOptions: vi.fn(() => ({ queryKey: ['myApplications'] })),
 }));
 
-describe('OnThisPage Component', () => {
+describe('OnThisPageLayout', () => {
   it('renders a navigation element with the correct links', () => {
-    render(<OnThisPage />);
+    render(
+      <OnThisPageLayout items={DETAIL_SECTIONS}>
+        <div>content</div>
+      </OnThisPageLayout>,
+    );
     const nav = screen.getByRole('navigation', { name: /on this page/i });
     expect(nav).toBeInTheDocument();
 
@@ -111,6 +115,18 @@ describe('OnThisPage Component', () => {
       const link = screen.getByRole('link', { name: section.label });
       expect(link).toHaveAttribute('href', `#${section.id}`);
     });
+
+    expect(screen.getByText('content')).toBeInTheDocument();
+  });
+
+  it('renders only children, with no nav, when there are no items', () => {
+    render(
+      <OnThisPageLayout items={[]}>
+        <div>content</div>
+      </OnThisPageLayout>,
+    );
+    expect(screen.queryByRole('navigation', { name: /on this page/i })).not.toBeInTheDocument();
+    expect(screen.getByText('content')).toBeInTheDocument();
   });
 });
 

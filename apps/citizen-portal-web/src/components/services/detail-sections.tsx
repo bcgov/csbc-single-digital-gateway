@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import { ApplicationRow } from '@/components/services/application-row';
 import { ContactSection } from '@/components/services/contact-section';
 import { ServiceContent } from '@/components/services/service-content';
+import { OnThisPageLayout } from '@/components/layout/on-this-page';
 import { myApplicationsQueryOptions } from '@/lib/catalog';
 
 /**
@@ -33,29 +34,6 @@ export const DETAIL_SECTIONS = [
   { id: 'help', label: 'Help and information' },
   { id: 'contact', label: 'Contact information' },
 ] as const;
-
-/** Sticky left-rail anchor nav, mirroring the inspiration's "On this page". */
-export function OnThisPage() {
-  return (
-    <nav aria-label="On this page" className="sticky top-6 hidden w-48 shrink-0 lg:block">
-      <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-        On this page
-      </p>
-      <ul className="flex flex-col gap-1.5 border-l">
-        {DETAIL_SECTIONS.map((section) => (
-          <li key={section.id}>
-            <a
-              href={`#${section.id}`}
-              className="-ml-px block border-l border-transparent pl-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground"
-            >
-              {section.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
 
 /** A titled content section with an anchor id for the side nav. */
 export function Section({
@@ -294,8 +272,7 @@ export function ServiceSections({
   applications: readonly ApplicationMethod[];
 }) {
   return (
-    <div className="flex gap-10">
-      <OnThisPage />
+    <OnThisPageLayout items={DETAIL_SECTIONS}>
       <div className="flex min-w-0 flex-1 flex-col gap-10">
         <Section id="overview" title="Overview">
           <InAGlance />
@@ -323,6 +300,6 @@ export function ServiceSections({
           <ContactSection value={readContactMethods(data)} />
         </Section>
       </div>
-    </div>
+    </OnThisPageLayout>
   );
 }
