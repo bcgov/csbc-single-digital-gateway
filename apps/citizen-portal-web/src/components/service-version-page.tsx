@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { History } from 'lucide-react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageContent } from '@/components/layout/page-content';
 import { type ApplicationMethod, ServiceSections } from '@/components/services/detail-sections';
 import { Breadcrumb } from '@/components/services/service-content';
 import {
@@ -100,7 +101,7 @@ export function ServiceVersionPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+      <PageContent>
         {version.isPending || service.isPending ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-8 w-64" />
@@ -127,7 +128,7 @@ export function ServiceVersionPage() {
             applications={service.data?.applications ?? []}
           />
         )}
-      </div>
+      </PageContent>
     </CitizenShell>
   );
 }

@@ -112,6 +112,20 @@ exportsMap['./a11y-catalog.json'] = {
   development: './src/a11y/a11y-catalog.json',
   default: './dist/a11y-catalog.json',
 };
+// AI-page-building component/template catalog (src/catalog/ — see src/catalog/catalog-types.ts and
+// scripts/gen-component-catalog.mjs). Independent of the accessibility metadata above, but the same
+// manual-entry reasoning: catalog-types.ts isn't at src/ root, and component-catalog.json is
+// generated data copied verbatim like a11y-catalog.json.
+exportsMap['./catalog-types'] = {
+  types: './dist/catalog/catalog-types.d.ts',
+  development: './src/catalog/catalog-types.ts',
+  import: './dist/catalog-types.js',
+  require: './dist/catalog-types.cjs',
+};
+exportsMap['./component-catalog.json'] = {
+  development: './src/catalog/component-catalog.json',
+  default: './dist/component-catalog.json',
+};
 pkg.exports = exportsMap;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 

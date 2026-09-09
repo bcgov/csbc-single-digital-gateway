@@ -5,6 +5,7 @@ import { Hero } from '@/components/landing/hero';
 import { LoginCta } from '@/components/landing/login-cta';
 import { TrackApplications } from '@/components/landing/track-applications';
 import { WhatYouCanDo } from '@/components/landing/what-you-can-do';
+import { PageContent } from '@/components/layout/page-content';
 import { PageShell } from '@/components/layout/page-shell';
 import { firstName, useAuth } from '@/lib/auth';
 import { displayName, logout } from '@/lib/bff';
@@ -47,14 +48,14 @@ export function HomePage() {
       }}
     >
       {isPending ? (
-        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+        <PageContent>
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-40 w-full rounded-xl" />
-        </div>
+        </PageContent>
       ) : user ? (
         <div className="flex flex-col">
           <Greeting name={displayName(user)} />
-          <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+          <PageContent>
             <TrackApplications
               applications={applications.data ?? []}
               loading={applications.isPending}
@@ -64,19 +65,19 @@ export function HomePage() {
               loading={services.isPending}
             />
             <WhatYouCanDo />
-          </div>
+          </PageContent>
         </div>
       ) : (
         <div className="flex flex-col">
           <Hero />
-          <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+          <PageContent>
             <WhatYouCanDo />
             <AvailableServices
               services={(services.data ?? []).slice(0, 3)}
               loading={services.isPending}
             />
             <LoginCta />
-          </div>
+          </PageContent>
         </div>
       )}
     </PageShell>

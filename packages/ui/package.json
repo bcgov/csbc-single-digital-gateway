@@ -454,6 +454,16 @@
     "./a11y-catalog.json": {
       "development": "./src/a11y/a11y-catalog.json",
       "default": "./dist/a11y-catalog.json"
+    },
+    "./catalog-types": {
+      "types": "./dist/catalog/catalog-types.d.ts",
+      "development": "./src/catalog/catalog-types.ts",
+      "import": "./dist/catalog-types.js",
+      "require": "./dist/catalog-types.cjs"
+    },
+    "./component-catalog.json": {
+      "development": "./src/catalog/component-catalog.json",
+      "default": "./dist/component-catalog.json"
     }
   },
   "files": [
@@ -463,6 +473,7 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "gen:a11y-catalog": "tsx scripts/gen-a11y-catalog.mjs",
+    "gen:component-catalog": "tsx scripts/gen-component-catalog.mjs",
     "gen:entries": "node scripts/gen-entries.mjs",
     "lint": "oxlint",
     "test": "vitest run",

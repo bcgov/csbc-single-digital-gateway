@@ -35,7 +35,7 @@ queryable data, and it's enforced by a test.
 | Catalog generator    | `packages/ui/scripts/gen-a11y-catalog.mjs`                                               | Aggregates the 4 shared sidecars into the committed `packages/ui/src/a11y/a11y-catalog.json`.                                                                                                                                                                                                                                          |
 | Catalog lookup       | `src/a11y/a11y-catalog.ts`                                                               | Merges the `@repo/ui` catalog with the 3 app-local sidecars; exports `getA11yMetadata(name)` (throws on a miss — for `/dev` pages, where the name is always known ahead of time) and `findA11yMetadata(name)` (returns `undefined` on a miss — for aggregating exceptions across whatever components a _real_ page happens to render). |
 | Rendered section     | `src/components/dev/a11y-rules-section.tsx`                                              | Turns metadata into the badges/rules/exceptions UI on each reference page.                                                                                                                                                                                                                                                             |
-| Checker              | `test/dev-pages-a11y.test.tsx` + `test/support/a11y.ts`                                  | Renders all 9 `/dev` routes and runs `jest-axe` against each. (Real app routes have their own, separate checker — see `test/A11Y-TESTING.md`.)                                                                                                                                                                                         |
+| Checker              | `test/dev-pages-a11y.test.tsx` + `test/support/a11y.ts`                                  | Renders all 10 `/dev` routes and runs `jest-axe` against each. (Real app routes have their own, separate checker — see `test/A11Y-TESTING.md`.)                                                                                                                                                                                        |
 
 All accessibility metadata lives in a dedicated `src/a11y/` directory in each package/app — not
 co-located with the component it describes — matching this repo's existing convention of keeping
@@ -95,4 +95,8 @@ violation not explicitly listed as a known exception.
 - Metadata covers the 7 currently-documented components, not all ~60 primitives in `packages/ui`.
   Extending coverage is just adding another sidecar — no structural changes needed.
 - No MCP server and no LLM-based judgment-call review pass yet. `a11y-catalog.json` is the exact
-  artifact either would consume later, so building them won't require reworking this system.
+  artifact either would consume later, so building them won't require reworking this system. A
+  first version of that judgment-call layer now exists as a genuinely separate system — see
+  `CLAUDE.md`'s "Building pages" section, `packages/ui/src/catalog/` (a structural clone of this
+  a11y pipeline, but its own schema/generator/catalog), and `.claude/skills/build-page/SKILL.md` —
+  built independently so it can be removed without touching anything here.

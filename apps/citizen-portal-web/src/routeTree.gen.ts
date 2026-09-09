@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as DevIndexRouteImport } from './routes/dev/index'
 import { Route as DevStatusBannerRouteImport } from './routes/dev/status-banner'
+import { Route as DevPageContentRouteImport } from './routes/dev/page-content'
 import { Route as DevIconsRouteImport } from './routes/dev/icons'
 import { Route as DevFormElementsRouteImport } from './routes/dev/form-elements'
 import { Route as DevDropdownMenuRouteImport } from './routes/dev/dropdown-menu'
@@ -62,6 +63,11 @@ const DevIndexRoute = DevIndexRouteImport.update({
 const DevStatusBannerRoute = DevStatusBannerRouteImport.update({
   id: '/status-banner',
   path: '/status-banner',
+  getParentRoute: () => DevRouteRoute,
+} as any)
+const DevPageContentRoute = DevPageContentRouteImport.update({
+  id: '/page-content',
+  path: '/page-content',
   getParentRoute: () => DevRouteRoute,
 } as any)
 const DevIconsRoute = DevIconsRouteImport.update({
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/page-content': typeof DevPageContentRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/page-content': typeof DevPageContentRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev': typeof DevIndexRoute
   '/services': typeof ServicesIndexRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/dev/dropdown-menu': typeof DevDropdownMenuRoute
   '/dev/form-elements': typeof DevFormElementsRoute
   '/dev/icons': typeof DevIconsRoute
+  '/dev/page-content': typeof DevPageContentRoute
   '/dev/status-banner': typeof DevStatusBannerRoute
   '/dev/': typeof DevIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/page-content'
     | '/dev/status-banner'
     | '/dev/'
     | '/services/'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/page-content'
     | '/dev/status-banner'
     | '/dev'
     | '/services'
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | '/dev/dropdown-menu'
     | '/dev/form-elements'
     | '/dev/icons'
+    | '/dev/page-content'
     | '/dev/status-banner'
     | '/dev/'
     | '/services/'
@@ -373,6 +385,13 @@ declare module '@tanstack/react-router' {
       path: '/status-banner'
       fullPath: '/dev/status-banner'
       preLoaderRoute: typeof DevStatusBannerRouteImport
+      parentRoute: typeof DevRouteRoute
+    }
+    '/dev/page-content': {
+      id: '/dev/page-content'
+      path: '/page-content'
+      fullPath: '/dev/page-content'
+      preLoaderRoute: typeof DevPageContentRouteImport
       parentRoute: typeof DevRouteRoute
     }
     '/dev/icons': {
@@ -516,6 +535,7 @@ interface DevRouteRouteChildren {
   DevDropdownMenuRoute: typeof DevDropdownMenuRoute
   DevFormElementsRoute: typeof DevFormElementsRoute
   DevIconsRoute: typeof DevIconsRoute
+  DevPageContentRoute: typeof DevPageContentRoute
   DevStatusBannerRoute: typeof DevStatusBannerRoute
   DevIndexRoute: typeof DevIndexRoute
 }
@@ -532,6 +552,7 @@ const DevRouteRouteChildren: DevRouteRouteChildren = {
   DevDropdownMenuRoute: DevDropdownMenuRoute,
   DevFormElementsRoute: DevFormElementsRoute,
   DevIconsRoute: DevIconsRoute,
+  DevPageContentRoute: DevPageContentRoute,
   DevStatusBannerRoute: DevStatusBannerRoute,
   DevIndexRoute: DevIndexRoute,
 }

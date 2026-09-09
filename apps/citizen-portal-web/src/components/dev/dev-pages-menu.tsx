@@ -24,6 +24,7 @@ const DEV_PAGES = [
   { to: '/dev/dropdown-menu', label: 'Dropdown menu' },
   { to: '/dev/form-elements', label: 'Form elements' },
   { to: '/dev/icons', label: 'Icons' },
+  { to: '/dev/page-content', label: 'Page content' },
   { to: '/dev/status-banner', label: 'Status banner' },
 ] as const;
 

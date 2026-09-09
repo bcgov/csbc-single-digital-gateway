@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { SectionHeading } from '@/components/landing/section-heading';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageContent } from '@/components/layout/page-content';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
 import { ServiceCard } from '@/components/services/service-card';
 import { servicesQueryOptions } from '@/lib/catalog';
@@ -68,7 +69,7 @@ export function ServicesPage() {
           </div>
         </PageHeaderBanner>
 
-        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
+        <PageContent>
           <section className="flex flex-col gap-4">
             <SectionHeading title="All services" />
 
@@ -90,7 +91,7 @@ export function ServicesPage() {
               </div>
             )}
           </section>
-        </div>
+        </PageContent>
       </div>
     </CitizenShell>
   );

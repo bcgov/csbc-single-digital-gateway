@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { PAGE_COLUMN_CLASS } from '@/components/layout/page-content';
 
 /**
  * The shared citizen page-header banner: a **full-width `bcgov-gold` bottom divider** whose content
@@ -21,10 +22,12 @@ export function PageHeaderBanner({
     <div>
       {breadcrumb && (
         <div className="border-b bg-background">
-          <div className="mx-auto px-4 md:px-3 py-2 w-full max-w-285 flex">{breadcrumb}</div>
+          <div className={`${PAGE_COLUMN_CLASS} py-2 flex`}>{breadcrumb}</div>
         </div>
       )}
-      <div className="mx-auto flex w-full max-w-285 flex-col gap-3 px-4 pt-10 pb-4 md:px-3 border-b-2 border-bcgov-gold">
+      <div
+        className={`${PAGE_COLUMN_CLASS} flex flex-col gap-3 pt-10 pb-4 border-b-2 border-bcgov-gold`}
+      >
         {children}
       </div>
     </div>

@@ -24,6 +24,7 @@ const DEV_PAGES: { path: string; component?: string }[] = [
   { path: '/dev/status-banner', component: 'status-banner' },
   { path: '/dev/form-elements', component: 'form-elements' },
   { path: '/dev/draggable' },
+  { path: '/dev/page-content' },
 ];
 
 describe.each(DEV_PAGES)('a11y: $path', ({ path, component }) => {

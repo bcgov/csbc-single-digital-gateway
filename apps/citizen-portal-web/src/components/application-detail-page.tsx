@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { ReviseForm } from '@/components/application/revise-form';
 import { StatusBanner } from '@/components/application/status-banner';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageContent } from '@/components/layout/page-content';
 import { Breadcrumb } from '@/components/services/service-content';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
@@ -102,7 +103,7 @@ export function ApplicationDetailPage() {
   return (
     <CitizenShell activeNav="services">
       {!authPending && !user ? (
-        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+        <PageContent>
           <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view this application.
@@ -112,24 +113,24 @@ export function ApplicationDetailPage() {
               Log in
             </a>
           </div>
-        </div>
+        </PageContent>
       ) : isPending ? (
-        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+        <PageContent>
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-32 w-full" />
-        </div>
+        </PageContent>
       ) : isError || !application ? (
-        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+        <PageContent>
           <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <h1 className="font-heading text-lg font-semibold">Application not found</h1>
             <Button variant="outline" className="mt-4" render={<Link to="/" />}>
               Your applications
             </Button>
           </div>
-        </div>
+        </PageContent>
       ) : (
         <>
-          <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+          <PageContent>
             <Breadcrumb
               trail={[
                 { label: 'Services', href: '/services' },
@@ -180,7 +181,7 @@ export function ApplicationDetailPage() {
                 </>
               )}
             </div>
-          </div>
+          </PageContent>
         </>
       )}
     </CitizenShell>

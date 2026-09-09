@@ -6,6 +6,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageContent } from '@/components/layout/page-content';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { useAuth, useLoginUrl } from '@/lib/auth';
@@ -149,10 +150,10 @@ export function ServiceAgreementsPage() {
   if (authPending) {
     return (
       <CitizenShell>
-        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-3 px-4 md:px-3">
+        <PageContent gap={3}>
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-32 w-full" />
-        </div>
+        </PageContent>
       </CitizenShell>
     );
   }
@@ -160,7 +161,7 @@ export function ServiceAgreementsPage() {
   if (!user) {
     return (
       <CitizenShell>
-        <div className="mx-auto my-6 flex w-full max-w-285 flex-col px-4 md:px-3">
+        <PageContent gap={0}>
           <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view your service agreements.
@@ -170,7 +171,7 @@ export function ServiceAgreementsPage() {
               Log in
             </a>
           </div>
-        </div>
+        </PageContent>
       </CitizenShell>
     );
   }
@@ -191,7 +192,7 @@ export function ServiceAgreementsPage() {
             />
           }
         />
-        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
+        <PageContent>
           {agreements.isSuccess ? (
             agreements.data.length === 0 ? (
               <div className="flex flex-col items-center gap-2 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
@@ -209,7 +210,7 @@ export function ServiceAgreementsPage() {
           ) : (
             <Skeleton className="h-56 w-full" />
           )}
-        </div>
+        </PageContent>
       </div>
     </CitizenShell>
   );

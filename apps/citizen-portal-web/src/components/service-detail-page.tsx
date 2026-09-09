@@ -3,6 +3,7 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageContent } from '@/components/layout/page-content';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
 import { ServiceSections } from '@/components/services/detail-sections';
 import { Breadcrumb } from '@/components/services/service-content';
@@ -21,11 +22,11 @@ export function ServiceDetailPage() {
   if (isPending) {
     return (
       <CitizenShell activeNav="services">
-        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+        <PageContent>
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-8 w-72" />
           <Skeleton className="h-4 w-full max-w-lg" />
-        </div>
+        </PageContent>
       </CitizenShell>
     );
   }
@@ -33,7 +34,7 @@ export function ServiceDetailPage() {
   if (isError || !service) {
     return (
       <CitizenShell activeNav="services">
-        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+        <PageContent>
           {/* <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10"> */}
           <h1 className="font-heading text-lg font-semibold">Service not available</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -42,7 +43,7 @@ export function ServiceDetailPage() {
           <Button variant="outline" className="mt-4" render={<Link to="/services" />}>
             Back to services
           </Button>
-        </div>
+        </PageContent>
       </CitizenShell>
     );
   }
@@ -76,7 +77,7 @@ export function ServiceDetailPage() {
           </header>
         </PageHeaderBanner>
 
-        <div className="mx-auto mb-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
+        <PageContent>
           <ServiceSections
             serviceId={service.id}
             schema={service.schema}
@@ -84,7 +85,7 @@ export function ServiceDetailPage() {
             data={service.data}
             applications={service.applications}
           />
-        </div>
+        </PageContent>
       </div>
     </CitizenShell>
   );

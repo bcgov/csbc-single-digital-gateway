@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { Breadcrumb } from '@/components/breadcrumb';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageContent } from '@/components/layout/page-content';
 import { SettingsPageHeader } from '@/components/layout/settings-page-header';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
@@ -154,7 +155,7 @@ export function ServiceAgreementDetailPage() {
             />
           }
         />
-        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-6 px-4 md:px-3">{body}</div>
+        <PageContent gap={6}>{body}</PageContent>
       </div>
     </CitizenShell>
   );

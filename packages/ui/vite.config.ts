@@ -33,6 +33,9 @@ const entry = Object.fromEntries(
 // by the glob above — add them manually so they still build to flat dist/*.{js,cjs,d.ts} files.
 entry['a11y-types'] = resolve(srcDir, 'a11y/a11y-types.ts');
 entry['wcag-criteria'] = resolve(srcDir, 'a11y/wcag-criteria.ts');
+// catalog-types.ts (the independent AI-page-building catalog schema — see src/catalog/) lives in
+// src/catalog/, not src/ root, for the same reason.
+entry['catalog-types'] = resolve(srcDir, 'catalog/catalog-types.ts');
 
 // Ship the theme-token stylesheet (consumers run Tailwind v4 against it) and the raw brand
 // assets (src/brand/*.svg → dist/*.svg, exported as URLs for favicon/<img>) verbatim.
@@ -59,6 +62,10 @@ const copyAssets = (): Plugin => ({
     copyFileSync(
       resolve(import.meta.dirname, 'src/a11y/a11y-catalog.json'),
       resolve(dist, 'a11y-catalog.json'),
+    );
+    copyFileSync(
+      resolve(import.meta.dirname, 'src/catalog/component-catalog.json'),
+      resolve(dist, 'component-catalog.json'),
     );
   },
 });

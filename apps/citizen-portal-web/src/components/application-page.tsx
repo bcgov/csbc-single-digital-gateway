@@ -7,6 +7,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ConsentGate, consentPending } from '@/components/application/consent-gate';
 import { CitizenShell } from '@/components/layout/citizen-shell';
+import { PageContent } from '@/components/layout/page-content';
 import { Breadcrumb } from '@/components/services/service-content';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
@@ -148,7 +149,7 @@ export function ApplicationPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
+      <PageContent>
         <Breadcrumb
           trail={[
             { label: 'Services', href: '/services' },
@@ -191,7 +192,7 @@ export function ApplicationPage() {
             />
           </>
         )}
-      </div>
+      </PageContent>
     </CitizenShell>
   );
 }
