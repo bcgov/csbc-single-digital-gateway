@@ -66,14 +66,36 @@ describe('FormStudio', () => {
     expect(heading.closest('.grid-stack-item')).not.toBeNull();
   });
 
-  it('renders the sample Heading inside a studio frame inside a framed Grid', async () => {
+  // Doc 180 rules 16-17b — grid children are framed by their grid item, the root Grid by its frame.
+  it('renders the sample Heading in a studio grid item inside the framed Grid', async () => {
     const { content } = renderStudio();
     const heading = await screen.findByRole('heading', { level: 1, name: GREETING });
-    const headingFrame = heading.closest('[data-element-type="Heading"]');
-    const gridFrame = headingFrame?.parentElement?.closest('[data-element-type="Grid"]');
-    expect(headingFrame).toHaveAttribute('data-slot', 'studio-element');
+    const item = heading.closest('[data-element-type="Heading"]');
+    const gridFrame = item?.parentElement?.closest('[data-element-type="Grid"]');
+    expect(item).toHaveAttribute('data-slot', 'studio-grid-item');
+    expect(item?.closest('.grid-stack-item-content')).not.toBeNull();
     expect(gridFrame).toHaveAttribute('data-slot', 'studio-element');
     expect(content).toContainElement(gridFrame as HTMLElement);
+  });
+
+  // Doc 180 rule 17c — sample fields render disabled and inert in the studio.
+  it('renders the sample fields disabled inside inert, pointer-events-none content', async () => {
+    const { content } = renderStudio();
+    await screen.findByRole('textbox', { name: 'Name' });
+    // Base UI's NumberField also renders an aria-hidden <input type="number"> for native form
+    // submission; only the four visible fields count.
+    const inputs = Array.from(
+      content?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+        '[data-slot="studio-grid-item"] input:not([aria-hidden="true"]), [data-slot="studio-grid-item"] textarea',
+      ) ?? [],
+    );
+    expect(inputs).toHaveLength(4);
+    for (const input of inputs) {
+      expect(input).toBeDisabled();
+      const wrapper = input.closest('[data-slot="studio-content"]');
+      expect(wrapper).toHaveAttribute('inert');
+      expect(wrapper).toHaveClass('pointer-events-none');
+    }
   });
 
   it('renders the sample Grid as draggable/resizable (not grid-stack-static)', async () => {
@@ -82,6 +104,26 @@ describe('FormStudio', () => {
     const grid = content?.querySelector('.grid-stack');
     expect(grid).not.toBeNull();
     expect(grid).not.toHaveClass('grid-stack-static');
+  });
+
+  // Doc 182 rule 24 — the sample also shows the Input, Textarea and NumberInput controls.
+  it('renders the sample name Input, about Textarea and quantity/budget NumberInputs in framed Controls', async () => {
+    const { content } = renderStudio();
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    const about = screen.getByRole('textbox', { name: 'About' });
+    const quantity = screen.getByRole('textbox', { name: 'Quantity' });
+    const budget = screen.getByRole('textbox', { name: 'Budget' });
+
+    expect(name).toHaveAttribute('data-slot', 'input');
+    expect(about.tagName).toBe('TEXTAREA');
+    expect(quantity).toHaveAttribute('data-slot', 'number-input-input');
+    expect(budget).toHaveAttribute('data-slot', 'number-input-input');
+    for (const control of [name, about, quantity, budget]) {
+      expect(content).toContainElement(control);
+      expect(control.closest('[data-element-type="Control"]')).not.toBeNull();
+    }
+    // The Heading stays first in the sample.
+    expect(screen.getByRole('heading', { level: 1, name: GREETING })).toBeInTheDocument();
   });
 
   it('renders with no props supplied', () => {

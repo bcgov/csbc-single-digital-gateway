@@ -1,5 +1,5 @@
 /**
- * Public types for `@repo/forms` (docs 178, 180).
+ * Public types for `@repo/forms` (docs 178, 180, 182).
  *
  * This module is the package root entry (`@repo/forms`) and is deliberately types-only —
  * components are reached through their own submodule subpath (`@repo/forms/studio`,
@@ -14,6 +14,9 @@ export type {
   GridRenderersOptions,
   GridStackLayoutOptions,
   HeadingElement,
+  InputControlElement,
+  NumberInputControlElement,
+  TextareaControlElement,
 } from './elements';
 
 /**

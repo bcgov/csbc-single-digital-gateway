@@ -17,12 +17,13 @@ export const GRID_ELEMENT_COMPONENT = 'jsonforms-element';
  * height = column width) rounded a 70px Heading up to 157px; `1rem` rows keep the overshoot under one
  * row while `h` stays meaningful (`h: 5` ≈ 80px) and drags snap to a 16px rhythm. 1px rows were
  * rejected: huge meaningless `h` values, 1px snapping, and saved layouts that break if the unit
- * changes. `margin: 0` lets the box hug the component; spacing between items comes from the elements.
+ * changes. `margin: '0.5rem'` insets every item's content on all four sides, so neighbours sit 1rem
+ * apart (and 0.5rem in from the grid's edges); gridstack counts the margins when sizing to content.
  */
 export const DEFAULT_GRID_OPTIONS: Readonly<GridStackLayoutOptions> = Object.freeze({
   column: 12,
   cellHeight: '1rem',
-  margin: 0,
+  margin: '0.5rem',
   staticGrid: true,
   sizeToContent: true,
 });

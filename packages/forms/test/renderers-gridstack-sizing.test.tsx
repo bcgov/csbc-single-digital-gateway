@@ -4,8 +4,18 @@ import { render, screen } from '@testing-library/react';
 import { GridStack, type GridHTMLElement } from 'gridstack';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RendererSet } from '../src/index';
-import { createGridRenderers } from '../src/renderers-gridstack';
+import {
+  createGridRenderers,
+  GRID_ELEMENT_COMPONENT,
+  GridElementDispatch,
+} from '../src/renderers-gridstack';
 import * as ui from '../src/renderers-ui';
+import { contentRows, minHeightUpdate } from '../src/renderers/gridstack/grid-size-to-content';
+
+/** A consumer item that keeps its content as a minimum height (doc 180 rule 10d). */
+function MinSizedItem(props: Record<string, unknown>) {
+  return <GridElementDispatch {...props} sizing="min" />;
+}
 
 // Doc 180 rule 10c — grid items are re-sized to their React-rendered content.
 // jsdom does no layout, so these assert that gridstack is ASKED to size the right item; the real
@@ -63,11 +73,70 @@ describe('Grid item sizing', () => {
     expect(root?.querySelector('.grid-stack-item')).not.toHaveClass('size-to-content');
   });
 
+  // Doc 180 rule 10d — 'min' sizing keeps the content as a floor instead of fitting exactly.
+  it("keeps the content as a minimum height, not an exact fit, when sizing is 'min'", async () => {
+    const resizeToContent = vi.spyOn(GridStack.prototype, 'resizeToContent');
+    const update = vi.spyOn(GridStack.prototype, 'update');
+    // jsdom does no layout: a 70px child in 16px rows, with no margin/border chrome.
+    vi.spyOn(GridStack.prototype, 'getCellHeight').mockReturnValue(16);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(16);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      height: 70,
+    } as DOMRect);
+
+    renderGrid(createGridRenderers({ components: { [GRID_ELEMENT_COMPONENT]: MinSizedItem } }));
+    const heading = await screen.findByRole('heading', { name: 'Sized' });
+    const itemEl = heading.closest('.grid-stack-item');
+
+    expect(update).toHaveBeenCalledWith(itemEl, { minH: 5, h: 5 });
+    expect(resizeToContent).not.toHaveBeenCalledWith(itemEl);
+  });
+
   it('leaves item height alone when sizeToContent is turned off', async () => {
     renderGrid(createGridRenderers({ gridOptions: { sizeToContent: false } }));
     const resizeToContent = vi.spyOn(GridStack.prototype, 'resizeToContent');
     const heading = await screen.findByRole('heading', { name: 'Sized' });
     expect(heading.closest('.grid-stack-item')).not.toBeNull();
     expect(resizeToContent).not.toHaveBeenCalled();
+  });
+});
+
+describe('contentRows (doc 180 rule 10d)', () => {
+  it('rounds the content plus the item chrome up to whole rows', () => {
+    // 96px item, 80px content area → 16px of margin; (16 + 70) / 16 = 5.375 → 6 rows.
+    expect(
+      contentRows({ itemHeight: 96, contentAreaHeight: 80, childHeight: 70, cellHeight: 16 }),
+    ).toBe(6);
+    expect(
+      contentRows({ itemHeight: 80, contentAreaHeight: 80, childHeight: 80, cellHeight: 16 }),
+    ).toBe(5);
+  });
+
+  it('returns 0 when nothing is measurable (hidden item, jsdom, no cell height)', () => {
+    expect(
+      contentRows({ itemHeight: 0, contentAreaHeight: 0, childHeight: 0, cellHeight: 16 }),
+    ).toBe(0);
+    expect(
+      contentRows({ itemHeight: 96, contentAreaHeight: 80, childHeight: 70, cellHeight: 0 }),
+    ).toBe(0);
+  });
+});
+
+describe('minHeightUpdate (doc 180 rule 10d)', () => {
+  it('raises the floor and grows an item shorter than its content', () => {
+    expect(minHeightUpdate({ h: 1 }, 6)).toStrictEqual({ minH: 6, h: 6 });
+    expect(minHeightUpdate({ h: 10, minH: 6 }, 12)).toStrictEqual({ minH: 12, h: 12 });
+  });
+
+  it('keeps an item that was made taller by hand', () => {
+    expect(minHeightUpdate({ h: 10, minH: 6 }, 6)).toBeNull();
+  });
+
+  it('lowers the floor without shrinking when the content gets shorter', () => {
+    expect(minHeightUpdate({ h: 10, minH: 8 }, 6)).toStrictEqual({ minH: 6 });
+  });
+
+  it('does nothing when nothing was measured', () => {
+    expect(minHeightUpdate({ h: 4, minH: 4 }, 0)).toBeNull();
   });
 });

@@ -1,11 +1,21 @@
 import { JsonFormsDispatch } from '@jsonforms/react';
 import { useContext, useRef } from 'react';
 import { GridContext } from './grid-context';
-import { useSizeToContent } from './grid-size-to-content';
+import { useSizeToContent, type ItemSizing } from './grid-size-to-content';
 
 export interface GridElementDispatchProps {
   /** Position of the element in the Grid's `elements`, carried in the widget's `props`. */
   index?: unknown;
+  /**
+   * `false` disables the dispatched element, e.g. a management view's item (doc 180 rule 17b).
+   * AND-ed with the Grid's own `enabled`, so it can only ever disable.
+   */
+  enabled?: boolean;
+  /**
+   * `'fit'` (default) sizes the item to exactly its content; `'min'` keeps the content as its minimum
+   * height, for items a person may resize vertically (doc 180 rule 10d).
+   */
+  sizing?: ItemSizing;
 }
 
 /**
@@ -17,10 +27,10 @@ export interface GridElementDispatchProps {
  * dispatched renderer may return text or nothing — and `useSizeToContent` re-measures the item once
  * this content exists (rule 10c).
  */
-export function GridElementDispatch({ index }: GridElementDispatchProps) {
+export function GridElementDispatch({ index, enabled, sizing = 'fit' }: GridElementDispatchProps) {
   const grid = useContext(GridContext);
   const contentRef = useRef<HTMLDivElement>(null);
-  useSizeToContent(contentRef, grid?.sizeToContent === true);
+  useSizeToContent(contentRef, grid?.sizeToContent === true, sizing);
 
   const element = typeof index === 'number' ? grid?.elements[index] : undefined;
   if (!grid || !element) return null;
@@ -31,7 +41,7 @@ export function GridElementDispatch({ index }: GridElementDispatchProps) {
         uischema={element}
         schema={grid.schema}
         path={grid.path}
-        enabled={grid.enabled}
+        enabled={grid.enabled && enabled !== false}
         {...(grid.renderers ? { renderers: grid.renderers } : {})}
         {...(grid.cells ? { cells: grid.cells } : {})}
       />

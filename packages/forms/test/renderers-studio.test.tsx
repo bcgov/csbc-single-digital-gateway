@@ -1,7 +1,8 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { act, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { GridStack, type GridHTMLElement } from 'gridstack';
+import { describe, expect, it, vi } from 'vitest';
 import { createGridRenderers } from '../src/renderers-gridstack';
 import * as studio from '../src/renderers-studio';
 import * as ui from '../src/renderers-ui';
@@ -44,6 +45,29 @@ function renderStudio(uischema: object, data: Record<string, unknown> = {}) {
 
 const frames = (container: HTMLElement) =>
   Array.from(container.querySelectorAll<HTMLElement>('[data-slot="studio-element"]'));
+
+const gridRoot = (container: HTMLElement) =>
+  container.querySelector<GridHTMLElement>('.grid-stack');
+
+const nameControl = (options?: object) => ({
+  type: 'Control',
+  scope: '#/properties/name',
+  ...(options ? { options } : {}),
+});
+
+const gridOf = (...elements: object[]) => ({ type: 'Grid', elements });
+
+/** The `.grid-stack-item` holding the first studio grid item of `type`. */
+const itemOf = (container: HTMLElement, type: string) =>
+  container
+    .querySelector(`[data-slot="studio-grid-item"][data-element-type="${type}"]`)
+    ?.closest<HTMLElement>('.grid-stack-item');
+
+/** The resize handle sides gridstack rendered directly on an item, e.g. `ui-resizable-se`. */
+const handleSides = (item: HTMLElement | null | undefined) =>
+  Array.from(item?.querySelectorAll(':scope > .ui-resizable-handle') ?? []).map((handle) =>
+    [...handle.classList].find((c) => /^ui-resizable-(n|e|s|w|ne|nw|se|sw)$/.test(c)),
+  );
 
 describe('renderers/studio composition', () => {
   it("holds ui's entries followed by the draggable grid factory's entries, 1:1 per category", () => {
@@ -109,6 +133,7 @@ describe('studio frame', () => {
     );
   });
 
+  // Doc 180 rules 16-17b — the Grid keeps its frame; its children are framed by their grid item.
   it('frames the Grid itself and each element inside it', async () => {
     const { container } = renderStudio({
       type: 'Grid',
@@ -121,14 +146,14 @@ describe('studio frame', () => {
     expect(screen.getByRole('heading', { name: 'Two' })).toBeInTheDocument();
 
     const all = frames(container);
-    expect(all.map((frame) => frame.dataset['elementType'])).toEqual([
-      'Grid',
-      'Heading',
-      'Heading',
-    ]);
+    expect(all.map((frame) => frame.dataset['elementType'])).toEqual(['Grid']);
     const [gridFrame] = all;
     expect(gridFrame?.querySelector('.grid-stack')).not.toBeNull();
-    expect(one.closest('[data-element-type="Heading"]')).not.toBeNull();
+    const items = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-slot="studio-grid-item"]'),
+    );
+    expect(items.map((item) => item.dataset['elementType'])).toEqual(['Heading', 'Heading']);
+    expect(one.closest('[data-slot="studio-grid-item"]')).not.toBeNull();
     expect(gridFrame).toContainElement(one);
   });
 
@@ -168,5 +193,170 @@ describe('studio Grid mode', () => {
     const root = container.querySelector('.grid-stack');
     expect(root).not.toBeNull();
     expect(root).not.toHaveClass('grid-stack-static');
+  });
+});
+
+describe('studio canvas (doc 180 rules 15-17c)', () => {
+  const canvasSchema: JsonSchema = {
+    type: 'object',
+    properties: { name: { type: 'string' }, hidden: { type: 'boolean' } },
+  };
+
+  function renderCanvas(uischema: object) {
+    return render(
+      <JsonForms
+        schema={canvasSchema}
+        uischema={uischema as UISchemaElement}
+        data={{}}
+        renderers={studioRenderers()}
+        cells={studio.cells}
+      />,
+    );
+  }
+
+  it('marks the grid root and gives every direct item content a dashed border', async () => {
+    const { container } = renderCanvas(gridOf({ type: 'Heading', text: 'One' }));
+    await screen.findByRole('heading', { name: 'One' });
+    expect(gridRoot(container)).toHaveClass(
+      'form-studio-grid',
+      '[&>.grid-stack-item>.grid-stack-item-content]:rounded-sm',
+      '[&>.grid-stack-item>.grid-stack-item-content]:border',
+      '[&>.grid-stack-item>.grid-stack-item-content]:border-dashed',
+      '[&>.grid-stack-item>.grid-stack-item-content]:border-border',
+    );
+  });
+
+  it('frames a grid child by its item: caption inside the measured child, no inner frame', async () => {
+    renderCanvas(gridOf({ type: 'Heading', text: 'One' }));
+    const heading = await screen.findByRole('heading', { name: 'One' });
+    const item = heading.closest<HTMLElement>('[data-slot="studio-grid-item"]');
+
+    expect(item).toHaveAttribute('data-element-type', 'Heading');
+    // The measured child: gridstack sizes the item from .grid-stack-item-content's first child.
+    expect(item?.parentElement).toHaveClass('grid-stack-item-content');
+    expect(item?.parentElement?.firstElementChild).toBe(item);
+    expect(item).toHaveClass('p-2', 'pt-6');
+    expect(item?.querySelector('[data-slot="studio-element-caption"]')).toHaveTextContent(
+      'Heading',
+    );
+    expect(item?.querySelector('[data-slot="studio-element"]')).toBeNull();
+  });
+
+  it('renders grid children disabled inside inert, pointer-events-none content', async () => {
+    renderCanvas(gridOf(nameControl()));
+    const input = await screen.findByRole('textbox', { name: 'Name' });
+    const content = input.closest('[data-slot="studio-content"]');
+
+    expect(input).toBeDisabled();
+    expect(content).toHaveAttribute('inert');
+    expect(content).toHaveClass('pointer-events-none');
+  });
+
+  it('keeps a control inert even when options.readonly: false keeps JSONForms from disabling it', async () => {
+    renderCanvas(gridOf(nameControl({ readonly: false })));
+    const input = await screen.findByRole('textbox', { name: 'Name' });
+
+    // isInherentlyEnabled lets options.readonly override ownProps.enabled…
+    expect(input).toBeEnabled();
+    // …so inert is what actually keeps the field out of reach.
+    expect(input.closest('[data-slot="studio-content"]')).toHaveAttribute('inert');
+  });
+
+  it('never makes a nested Grid inert, so its own items stay draggable', async () => {
+    const { container } = renderCanvas(gridOf(gridOf({ type: 'Heading', text: 'Inner' })));
+    const inner = await screen.findByRole('heading', { name: 'Inner' });
+
+    const gridItem = container.querySelector(
+      '[data-slot="studio-grid-item"][data-element-type="Grid"]',
+    );
+    const gridContent = gridItem?.querySelector('[data-slot="studio-content"]');
+    expect(gridContent).not.toBeNull();
+    expect(gridContent).not.toHaveAttribute('inert');
+    expect(gridContent).not.toHaveClass('pointer-events-none');
+    expect(inner.closest('[data-slot="studio-content"]')).toHaveAttribute('inert');
+  });
+
+  it('frames root-level elements outside a grid, disabled and inert', () => {
+    const { container } = renderCanvas(nameControl());
+    const input = screen.getByRole('textbox', { name: 'Name' });
+    const [frame] = frames(container);
+
+    expect(frame).toHaveAttribute('data-element-type', 'Control');
+    expect(input).toBeDisabled();
+    expect(input.closest('[data-slot="studio-content"]')).toHaveAttribute('inert');
+    expect(frame).toContainElement(input);
+  });
+
+  it('keeps the root Grid frame content interactive', async () => {
+    const { container } = renderCanvas(gridOf({ type: 'Heading', text: 'One' }));
+    const heading = await screen.findByRole('heading', { name: 'One' });
+    expect(gridRoot(container)?.closest('[inert]')).toBeNull();
+    // Control case: the Heading inside the grid IS inert, so the check above is not vacuous.
+    expect(heading.closest('[inert]')).not.toBeNull();
+  });
+
+  it('defaults the grid to left/right handles, with animation off and a 0.5rem margin', async () => {
+    const { container } = renderCanvas(gridOf({ type: 'Heading', text: 'One' }));
+    await screen.findByRole('heading', { name: 'One' });
+    await act(async () => {});
+    const root = gridRoot(container);
+
+    expect(root?.gridstack?.opts.resizable?.handles).toBe('e, w');
+    expect(root?.gridstack?.opts.animate).toBe(false);
+    expect(root).not.toHaveClass('grid-stack-animate');
+    expect(root?.style.getPropertyValue('--gs-item-margin-left')).toBe('0.5rem');
+    expect(root?.style.getPropertyValue('--gs-item-margin-top')).toBe('0.5rem');
+  });
+
+  // Doc 180 rule 17d — handles and sizing mode follow the element type.
+  describe('per-element resizing (rule 17d)', () => {
+    async function renderMixed() {
+      const view = renderCanvas(
+        gridOf(
+          { type: 'Heading', text: 'One' },
+          nameControl(),
+          gridOf({ type: 'Heading', text: 'Inner' }),
+        ),
+      );
+      await screen.findByRole('heading', { name: 'Inner' });
+      await act(async () => {});
+      return view;
+    }
+
+    it('gives a Control left/right handles only', async () => {
+      const { container } = await renderMixed();
+      const control = itemOf(container, 'Control');
+
+      expect(control).toHaveAttribute('gs-resize-handles', 'e, w');
+      expect(handleSides(control).toSorted()).toEqual(['ui-resizable-e', 'ui-resizable-w']);
+    });
+
+    it('gives a display element (Heading) bottom and side handles', async () => {
+      const { container } = await renderMixed();
+      const heading = itemOf(container, 'Heading');
+
+      expect(heading).toHaveAttribute('gs-resize-handles', 'e, se, s, sw, w');
+      expect(handleSides(heading).toSorted()).toEqual([
+        'ui-resizable-e',
+        'ui-resizable-s',
+        'ui-resizable-se',
+        'ui-resizable-sw',
+        'ui-resizable-w',
+      ]);
+    });
+
+    it('gives a nested Grid bottom and side handles too', async () => {
+      const { container } = await renderMixed();
+      expect(itemOf(container, 'Grid')).toHaveAttribute('gs-resize-handles', 'e, se, s, sw, w');
+    });
+
+    it('fits a Control to its content but not a Heading', async () => {
+      const resizeToContent = vi.spyOn(GridStack.prototype, 'resizeToContent');
+      const { container } = await renderMixed();
+
+      expect(resizeToContent).toHaveBeenCalledWith(itemOf(container, 'Control'));
+      expect(resizeToContent).not.toHaveBeenCalledWith(itemOf(container, 'Heading'));
+      resizeToContent.mockRestore();
+    });
   });
 });

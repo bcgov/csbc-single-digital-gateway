@@ -17,14 +17,15 @@ export function buildComponentMap(components: ComponentMap | undefined): Compone
  * Builds a `RendererSet` holding one `Grid` layout renderer (doc 180 rules 6-13).
  *
  * A factory because the grid is configured per consumer: `default` calls it with the static
- * defaults, `studio` with `gridOptions: { staticGrid: false }`. The same `{ type: 'Grid' }` uischema
- * then renders static or draggable depending on which registry the `<JsonForms>` instance was given
- * — the tester is identical. This module imports no other renderer set, so any components a
- * consumer needs arrive through `components`.
+ * defaults, `studio` with a draggable grid, its own item component and item styling. The same
+ * `{ type: 'Grid' }` uischema then renders static or draggable depending on which registry the
+ * `<JsonForms>` instance was given — the tester is identical. This module imports no other renderer
+ * set, so any components a consumer needs arrive through `components`.
  */
 export function createGridRenderers({
   components,
   gridOptions,
+  className,
 }: GridRenderersOptions = {}): RendererSet {
   return {
     cells: [],
@@ -33,7 +34,7 @@ export function createGridRenderers({
     layoutRenderers: [
       {
         tester: gridTester,
-        renderer: createGridLayoutRenderer(buildComponentMap(components), gridOptions),
+        renderer: createGridLayoutRenderer(buildComponentMap(components), gridOptions, className),
       },
     ],
   };

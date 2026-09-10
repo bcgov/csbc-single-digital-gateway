@@ -45,6 +45,11 @@ function StudioItem(props: Record<string, unknown>) {
   );
 }
 
+/** A consumer grid item that disables whatever it dispatches (doc 180 rule 17b). */
+function DisabledItem(props: Record<string, unknown>) {
+  return <GridElementDispatch {...props} enabled={false} />;
+}
+
 function renderGrid(uischema: object, set: RendererSet = createGridRenderers(), data = {}) {
   return render(
     <JsonForms
@@ -82,16 +87,53 @@ describe('createGridRenderers', () => {
     expect(tester?.({ type: 'GridLayout' }, schema, testerContext)).toBe(NOT_APPLICABLE);
     expect(tester?.({ type: 'Heading' }, schema, testerContext)).toBe(NOT_APPLICABLE);
   });
+
+  // Doc 180 rule 7 — factory className lands on the .grid-stack root.
+  it('adds the factory className to the .grid-stack root', async () => {
+    const { container } = renderGrid(
+      { type: 'Grid', elements: [heading('Styled')] },
+      createGridRenderers({ className: 'custom-grid' }),
+    );
+    await screen.findByRole('heading', { name: 'Styled' });
+    expect(container.querySelector('.grid-stack')).toHaveClass('grid-stack', 'custom-grid');
+  });
+
+  // Doc 180 rule 17b — GridElementDispatch's enabled prop is AND-ed with the Grid context.
+  it('disables the dispatched child when a consumer item passes enabled={false}', async () => {
+    const controlSchema: JsonSchema = { type: 'object', properties: { name: { type: 'string' } } };
+    const uischema = {
+      type: 'Grid',
+      elements: [{ type: 'Control', scope: '#/properties/name' }],
+    } as UISchemaElement;
+    const renderWith = (set: RendererSet) =>
+      render(
+        <JsonForms
+          schema={controlSchema}
+          uischema={uischema}
+          data={{}}
+          renderers={[...ui.controlRenderers, ...set.layoutRenderers]}
+          cells={[]}
+        />,
+      );
+
+    const { unmount } = renderWith(createGridRenderers());
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toBeEnabled();
+    unmount();
+
+    renderWith(createGridRenderers({ components: { [GRID_ELEMENT_COMPONENT]: DisabledItem } }));
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toBeDisabled();
+  });
 });
 
 describe('GridStack options mapping', () => {
   it('applies the defaults column 12 and staticGrid true, never forwarding sizeToContent to GridStack', () => {
     // sizeToContent defaults to true but the renderer owns sizing (rules 8, 10c), so GridStack gets false.
-    // 1rem rows + no margin so an item's box stays within one row of its component (doc 180 rule 8).
+    // 1rem rows keep an item's box within one row of its component; a 0.5rem margin spaces
+    // neighbours 1rem apart (doc 180 rule 8).
     expect(build()).toEqual({
       column: 12,
       cellHeight: '1rem',
-      margin: 0,
+      margin: '0.5rem',
       staticGrid: true,
       sizeToContent: false,
       children: [],

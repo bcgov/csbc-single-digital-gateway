@@ -35,6 +35,7 @@ function unlinkFromParentGrid(handle: GridStackHandle | null) {
 export function createGridLayoutRenderer(
   components: ComponentMap,
   gridOptions: GridStackLayoutOptions | undefined,
+  className: string | undefined,
 ) {
   // Resolved once per factory call; GridStack itself always gets sizeToContent: false (rule 8).
   const sizeToContent = resolveSizeToContent(gridOptions);
@@ -79,7 +80,12 @@ export function createGridLayoutRenderer(
 
     return (
       <GridContext.Provider value={context}>
-        <GridStack ref={gridHandle} options={options} components={components} />
+        <GridStack
+          ref={gridHandle}
+          options={options}
+          components={components}
+          {...(className ? { className } : {})}
+        />
       </GridContext.Provider>
     );
   }
