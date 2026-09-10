@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AppSlugRouteImport } from './routes/app.$slug'
+import { Route as AdminStudioRouteImport } from './routes/admin.studio'
 import { Route as AdminServiceAgreementsRouteImport } from './routes/admin.service-agreements'
 import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
 import { Route as AppSlugIndexRouteImport } from './routes/app.$slug.index'
@@ -92,6 +93,11 @@ const AppSlugRoute = AppSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminStudioRoute = AdminStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminServiceAgreementsRoute = AdminServiceAgreementsRouteImport.update({
   id: '/service-agreements',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
+  '/admin/studio': typeof AdminStudioRoute
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
@@ -384,6 +391,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/studio': typeof AdminStudioRoute
   '/app/account': typeof AppAccountRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
@@ -427,6 +435,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/admin/document-types': typeof AdminDocumentTypesRouteWithChildren
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
+  '/admin/studio': typeof AdminStudioRoute
   '/app/$slug': typeof AppSlugRouteWithChildren
   '/app/account': typeof AppAccountRoute
   '/admin/': typeof AdminIndexRoute
@@ -479,6 +488,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/admin/document-types'
     | '/admin/service-agreements'
+    | '/admin/studio'
     | '/app/$slug'
     | '/app/account'
     | '/admin/'
@@ -524,6 +534,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/studio'
     | '/app/account'
     | '/admin'
     | '/app'
@@ -566,6 +577,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/admin/document-types'
     | '/admin/service-agreements'
+    | '/admin/studio'
     | '/app/$slug'
     | '/app/account'
     | '/admin/'
@@ -667,6 +679,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/$slug'
       preLoaderRoute: typeof AppSlugRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/studio': {
+      id: '/admin/studio'
+      path: '/studio'
+      fullPath: '/admin/studio'
+      preLoaderRoute: typeof AdminStudioRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/service-agreements': {
       id: '/admin/service-agreements'
@@ -992,12 +1011,14 @@ const AdminServiceAgreementsRouteWithChildren =
 interface AdminRouteChildren {
   AdminDocumentTypesRoute: typeof AdminDocumentTypesRouteWithChildren
   AdminServiceAgreementsRoute: typeof AdminServiceAgreementsRouteWithChildren
+  AdminStudioRoute: typeof AdminStudioRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDocumentTypesRoute: AdminDocumentTypesRouteWithChildren,
   AdminServiceAgreementsRoute: AdminServiceAgreementsRouteWithChildren,
+  AdminStudioRoute: AdminStudioRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
