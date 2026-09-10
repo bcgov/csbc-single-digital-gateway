@@ -2,7 +2,9 @@
   "name": "@repo/forms",
   "version": "0.0.0",
   "private": true,
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -11,11 +13,39 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./renderers/default": {
+      "types": "./dist/renderers-default.d.ts",
+      "development": "./src/renderers-default.ts",
+      "import": "./dist/renderers-default.js",
+      "require": "./dist/renderers-default.cjs"
+    },
+    "./renderers/gridstack": {
+      "types": "./dist/renderers-gridstack.d.ts",
+      "development": "./src/renderers-gridstack.ts",
+      "import": "./dist/renderers-gridstack.js",
+      "require": "./dist/renderers-gridstack.cjs"
+    },
+    "./renderers/studio": {
+      "types": "./dist/renderers-studio.d.ts",
+      "development": "./src/renderers-studio.ts",
+      "import": "./dist/renderers-studio.js",
+      "require": "./dist/renderers-studio.cjs"
+    },
+    "./renderers/ui": {
+      "types": "./dist/renderers-ui.d.ts",
+      "development": "./src/renderers-ui.ts",
+      "import": "./dist/renderers-ui.js",
+      "require": "./dist/renderers-ui.cjs"
+    },
     "./studio": {
       "types": "./dist/studio.d.ts",
       "development": "./src/studio.ts",
       "import": "./dist/studio.js",
       "require": "./dist/studio.cjs"
+    },
+    "./styles.css": {
+      "development": "./src/styles.css",
+      "default": "./dist/styles.css"
     }
   },
   "files": [
@@ -28,6 +58,12 @@
     "lint": "oxlint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jsonforms/core": "3.8.0",
+    "@jsonforms/react": "3.8.0",
+    "@repo/ui": "*",
+    "gridstack": "13.2.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.9.1",

@@ -1,0 +1,6 @@
+/*
+ * @repo/forms stylesheet (doc 180) — import once from the consuming app's CSS entry:
+ *   @import '@repo/forms/styles.css';
+ * Without it, gridstack grids render with no positioning CSS, silently.
+ */
+@import 'gridstack/dist/gridstack.css';

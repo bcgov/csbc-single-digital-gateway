@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import dts from 'vite-plugin-dts';
 
 const srcDir = resolve(import.meta.dirname, 'src');
@@ -23,10 +23,23 @@ const entry = Object.fromEntries(
     .map((file) => [file.replace(/\.ts$/, ''), resolve(srcDir, file)]),
 );
 
+// The `./styles.css` export is a file, not a module entry, so the lib build never emits it — copy it
+// to dist verbatim (as @repo/ui does). Its `@import 'gridstack/…'` resolves in the consumer's CSS build.
+const copyAssets = (): Plugin => ({
+  name: 'copy-assets',
+  closeBundle() {
+    const styles = resolve(srcDir, 'styles.css');
+    if (existsSync(styles)) {
+      copyFileSync(styles, resolve(import.meta.dirname, 'dist/styles.css'));
+    }
+  },
+});
+
 export default defineConfig({
   plugins: [
     react(),
     dts({ include: ['src'], tsconfigPath: './tsconfig.build.json', entryRoot: srcDir }),
+    copyAssets(),
   ],
   build: {
     sourcemap: true,

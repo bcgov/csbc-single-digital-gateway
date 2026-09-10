@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 
+const GREETING = 'Hello, FormStudio!';
+
 /** The layout is expressed in Tailwind utilities, so the classes ARE the contract here. */
 function renderStudio() {
   const { container } = render(<FormStudio />);
@@ -13,9 +15,10 @@ function renderStudio() {
 }
 
 describe('FormStudio', () => {
-  it('renders the greeting Hello, FormStudio!', () => {
+  it('renders the greeting Hello, FormStudio!', async () => {
     render(<FormStudio />);
-    expect(screen.getByText('Hello, FormStudio!')).toBeInTheDocument();
+    // The greeting is a grid item now, rendered once gridstack has initialised — hence findBy.
+    expect(await screen.findByText(GREETING)).toBeInTheDocument();
   });
 
   it('stacks header, content and footer top-down filling the container height', () => {
@@ -44,10 +47,39 @@ describe('FormStudio', () => {
     expect(content).toHaveClass('flex-1', 'min-h-0');
   });
 
-  it('centres the content vertically and horizontally', () => {
+  // Doc 180 rule 19 supersedes doc 178 rule 5 (centred greeting).
+  it('lets the content area scroll and pad instead of centring a string', () => {
     const { content } = renderStudio();
-    expect(content).toHaveClass('flex', 'items-center', 'justify-center');
-    expect(content).toHaveTextContent('Hello, FormStudio!');
+    expect(content).toHaveClass('overflow-auto', 'p-4');
+    expect(content).not.toHaveClass('items-center');
+    expect(content).not.toHaveClass('justify-center');
+  });
+
+  // Doc 180 rule 18 — FormStudio renders a built-in sample through renderers/studio.
+  it("renders the sample Heading 'Hello, FormStudio!' as an <h1> through JSONForms", async () => {
+    const { content } = renderStudio();
+    const heading = await screen.findByRole('heading', { level: 1, name: GREETING });
+    expect(heading.tagName).toBe('H1');
+    expect(content).toContainElement(heading);
+    expect(heading.closest('.grid-stack-item')).not.toBeNull();
+  });
+
+  it('renders the sample Heading inside a studio frame inside a framed Grid', async () => {
+    const { content } = renderStudio();
+    const heading = await screen.findByRole('heading', { level: 1, name: GREETING });
+    const headingFrame = heading.closest('[data-element-type="Heading"]');
+    const gridFrame = headingFrame?.parentElement?.closest('[data-element-type="Grid"]');
+    expect(headingFrame).toHaveAttribute('data-slot', 'studio-element');
+    expect(gridFrame).toHaveAttribute('data-slot', 'studio-element');
+    expect(content).toContainElement(gridFrame as HTMLElement);
+  });
+
+  it('renders the sample Grid as draggable/resizable (not grid-stack-static)', async () => {
+    const { content } = renderStudio();
+    await screen.findByRole('heading', { level: 1, name: GREETING });
+    const grid = content?.querySelector('.grid-stack');
+    expect(grid).not.toBeNull();
+    expect(grid).not.toHaveClass('grid-stack-static');
   });
 
   it('renders with no props supplied', () => {
