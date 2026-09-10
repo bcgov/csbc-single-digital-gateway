@@ -41,6 +41,15 @@ describe('Admin Studio Route', () => {
     ).toBeInTheDocument();
   });
 
+  // Doc 181 rule 18 — a visible edge between the studio and the admin page around it.
+  it('wraps FormStudio in a bordered, full-height frame', () => {
+    const { container } = render(<FormStudioPage />);
+    const frame = container.querySelector('[data-slot="form-studio-frame"]');
+    expect(frame).toHaveClass('h-full', 'border', 'bg-background');
+    expect(frame?.firstElementChild).toHaveAttribute('data-slot', 'form-studio');
+    expect(container.firstElementChild).toBe(frame);
+  });
+
   it('renders the page component directly without crashing', () => {
     const { container } = render(<FormStudioPage />);
     expect(container.querySelector('[data-slot="form-studio"]')).toBeInTheDocument();

@@ -62,8 +62,11 @@
   "dependencies": {
     "@jsonforms/core": "3.8.0",
     "@jsonforms/react": "3.8.0",
+    "@mdi/js": "7.4.47",
+    "@mdi/react": "1.6.1",
     "@repo/ui": "*",
-    "gridstack": "13.2.0"
+    "gridstack": "13.2.0",
+    "react-resizable-panels": "4.12.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.9.1",

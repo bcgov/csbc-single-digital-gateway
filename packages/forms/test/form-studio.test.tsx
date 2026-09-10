@@ -47,10 +47,12 @@ describe('FormStudio', () => {
     expect(content).toHaveClass('flex-1', 'min-h-0');
   });
 
-  // Doc 180 rule 19 supersedes doc 178 rule 5 (centred greeting).
-  it('lets the content area scroll and pad instead of centring a string', () => {
+  // Doc 181 rule 3 supersedes doc 180 rule 19: scrolling and padding move to the centre panel.
+  it('hosts the resizable workspace instead of scrolling or centring itself', () => {
     const { content } = renderStudio();
-    expect(content).toHaveClass('overflow-auto', 'p-4');
+    expect(content?.firstElementChild).toHaveAttribute('data-slot', 'resizable-panel-group');
+    expect(content).not.toHaveClass('overflow-auto');
+    expect(content).not.toHaveClass('p-4');
     expect(content).not.toHaveClass('items-center');
     expect(content).not.toHaveClass('justify-center');
   });
