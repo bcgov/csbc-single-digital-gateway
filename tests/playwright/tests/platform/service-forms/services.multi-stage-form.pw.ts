@@ -1,4 +1,4 @@
-import { test, expect } from '../setup/db.fixture';
+import { test, expect } from '../../setup/db.fixture';
 import {
   removeElements,
   expectPreview,
@@ -13,7 +13,7 @@ import {
   addAdvancedElement,
   addLayoutElement,
   addElementsToLayoutElement,
-} from '../setup/platform.services.utils';
+} from '../../setup/platform.services.utils';
 
 test.describe('Platform Services Multi-Stage Form E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {

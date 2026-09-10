@@ -1,4 +1,4 @@
-import { test, expect } from '../setup/db.fixture';
+import { test, expect } from '../../setup/db.fixture';
 import {
   removeElements,
   selectForm,
@@ -7,7 +7,7 @@ import {
   addChoiceElement,
   expectPreview,
   deleteTestService,
-} from '../setup/platform.services.utils';
+} from '../../setup/platform.services.utils';
 
 test.describe('Platform Services Basic Form Choice Elements E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {

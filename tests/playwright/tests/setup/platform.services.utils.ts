@@ -11,29 +11,27 @@ export const platformLogin = async (page: Page) => {
   await page.getByRole('textbox', { name: 'Username' }).fill('testuser');
   await page.getByRole('textbox', { name: 'Password' }).fill('password');
   await page.getByRole('button', { name: 'Sign in' }).click();
-
-  const navSection = page.locator('nav');
-  await expect(navSection.getByRole('link', { name: 'Overview' })).toBeVisible();
+  await expect(page.getByText('Hello, Test')).toBeVisible();
 
   // Save cookies and localStorage to the JSON file
   await page.context().storageState({ path: 'tests/playwright/tests/setup/files/platform.json' });
 };
 
 export const selectTestService = async (page: Page) => {
-  const mainSection = page.locator('main');
-  const testService = mainSection.locator('td').getByText('Test service');
+  const main = page.locator('main');
+  const testService = main.locator('td').getByText('Test service');
   await expect(testService).toBeVisible();
   await testService.click();
-  const applicationMethodButton = mainSection.locator('button').getByText('Application Methods');
+  const applicationMethodButton = main.locator('button').getByText('Application Methods');
   await expect(applicationMethodButton).toBeVisible();
   await applicationMethodButton.click();
-  return mainSection;
+  return main;
 };
 
 export const selectForm = async (page: Page, titleName: string) => {
-  const mainSection = await selectTestService(page);
-  await mainSection.getByRole('link', { name: titleName }).click();
-  return mainSection;
+  const main = await selectTestService(page);
+  await main.getByRole('link', { name: titleName }).click();
+  return main;
 };
 
 export const dragAndDropElement = async (
@@ -249,8 +247,8 @@ export const expectPreview = async (
   componentNames: string[],
   hasHelpText?: boolean,
 ) => {
-  const mainSection = page.locator('main');
-  const previewButton = mainSection.getByRole('tab', { name: 'Preview' });
+  const main = page.locator('main');
+  const previewButton = main.getByRole('tab', { name: 'Preview' });
   await expect(previewButton).toBeVisible();
   await previewButton.click();
   const expectPromises = [];
@@ -259,12 +257,10 @@ export const expectPreview = async (
     const testText = hasHelpText
       ? `Test ${lowerCaseComponentName} input`
       : `Test ${lowerCaseComponentName}`;
-    expectPromises.push(expect(mainSection.getByText(testText, { exact: true })).toBeVisible());
+    expectPromises.push(expect(main.getByText(testText, { exact: true })).toBeVisible());
     if (hasHelpText) {
       expectPromises.push(
-        expect(
-          mainSection.getByText(`Test ${lowerCaseComponentName} input description`),
-        ).toBeVisible(),
+        expect(main.getByText(`Test ${lowerCaseComponentName} input description`)).toBeVisible(),
       );
     }
   }
@@ -284,97 +280,73 @@ export const removeServices = async (db: Pool) => {
 
 export const removeServiceAgreements = async (db: Pool) => {
   // Remove any existing test service agreement in the database
-  const testAgreements = await db.query('SELECT id FROM documents WHERE title = $1', [
-    'Test service agreement',
-  ]);
-  await db.query('DELETE from document_references WHERE target_document_id = ANY($1)', [
-    testAgreements.rows.map((row) => row.id),
-  ]);
-  await db.query('DELETE FROM document_versions WHERE document_id = ANY($1) AND status = $2', [
-    testAgreements.rows.map((row) => row.id),
-    'published',
-  ]);
-  await db.query('DELETE FROM documents WHERE title = $1', ['Test service agreement']);
+  await db.query('DELETE FROM document_references');
+  await db.query('DELETE from document_versions');
+  await db.query('DELETE FROM workspace_default_agreements');
+  await db.query('DELETE FROM documents WHERE title LIKE $1', ['Test service agreement%']);
 };
 
 export const addServiceAgreement = async (page: Page, db: Pool) => {
   // Remove any existing test service agreement in the database
   await removeServiceAgreements(db);
   // Create a test service agreement
-  await page.locator('nav').getByRole('link', { name: 'Service Agreements' }).click();
-  const mainSection = page.locator('main');
-  await mainSection.locator('button').getByText('New agreement').click();
-  const form = page.locator('form');
-  const titleInput = form.getByRole('textbox', { name: 'Title' });
-  const descriptionInput = form.getByRole('textbox', { name: 'Description' });
-  const createAgreementButton = form.getByRole('button', {
-    name: 'Create agreement',
-  });
-  await titleInput.fill('Test service agreement');
-  await descriptionInput.fill('Test service agreement description');
-  await createAgreementButton.click();
-  const contentInput = mainSection.locator('[id="#/properties/content2"]');
-  const approvalLabelInput = mainSection.getByRole('textbox', {
-    name: 'Approve label',
-  });
-  const rejectLabelInput = mainSection.getByRole('textbox', {
-    name: 'Reject label',
-  });
-  await contentInput.fill('Test service agreement content');
-  await approvalLabelInput.fill('Approve');
-  await rejectLabelInput.fill('Reject');
-  const saveButton = mainSection.getByRole('button', {
-    name: 'Save',
-  });
-  await saveButton.click();
-  const publishButton = mainSection.getByRole('button', {
-    name: 'Publish',
-  });
-  await publishButton.click();
-  return mainSection;
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Sample1 Admin' }).click();
+  await page.getByRole('link', { name: 'Shared Resources' }).click();
+  await page.getByRole('link', { name: 'Service Agreements' }).click();
+  await page.getByRole('button', { name: 'New agreement' }).click();
+  const modal = page.locator('[data-slot="dialog-content"]');
+  await modal.getByRole('textbox', { name: 'Title' }).fill('Test service agreement title');
+  await modal
+    .getByRole('textbox', { name: 'Description' })
+    .fill('Test service agreement description');
+  await modal.getByRole('button', { name: 'Create agreement' }).click();
+  // Fill service agreement form
+  await page.getByRole('textbox', { name: 'Content' }).fill('Test service agreement content');
+  await page.getByRole('textbox', { name: 'Approve label' }).fill('Approved');
+  await page.getByRole('textbox', { name: 'Reject label' }).fill('Rejected');
+  await page.getByRole('checkbox', { name: 'Optional' }).click();
+  // Save and publish the form
+  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Publish' }).click();
 };
 
 export const createTestService = async (page: Page) => {
   await page.goto('http://localhost:3001/');
-  await page.locator('nav').getByRole('link', { name: 'Services' }).click();
-  const mainSection = page.locator('main');
-  await mainSection.locator('button').getByText('New service').click();
-  await expect(page.getByRole('dialog').getByText('New service')).toBeVisible();
-  const form = page.getByRole('dialog').locator('form');
-  const titleInput = form.getByRole('textbox', { name: 'Title' });
-  const descriptionInput = form.getByRole('textbox', { name: 'Description' });
-  const createServiceButton = form.getByRole('button', {
-    name: 'Create service',
-  });
-  await titleInput.fill('Test service');
-  await descriptionInput.fill('Test service description');
-  await createServiceButton.click();
-  const contentInput = mainSection.locator('[id="#/properties/about2"]');
+  await page.getByRole('link', { name: 'Sample1 Admin' }).click();
+  await page.getByRole('link', { name: 'Services' }).click();
+  const main = page.locator('main');
+  await main.locator('button').getByText('New').click();
+  const modal = page.locator('[data-slot="dialog-content"]');
+  await modal.getByRole('textbox', { name: 'Name of the service' }).fill('Test service');
+  await modal.getByRole('textbox', { name: 'Short description' }).fill('Test service description');
+  await modal.getByRole('button', { name: 'Create service' }).click();
+  const contentInput = main.locator('[id="#/properties/about2"]');
   await contentInput.fill('Test');
   await contentInput.fill('Test service content');
-  const draftButton = mainSection.getByRole('button', { name: 'Save draft' });
+  const draftButton = main.getByRole('button', { name: 'Save draft' });
   await draftButton.click();
 };
 
 export const createBasicForm = async (page: Page) => {
   await page.goto('http://localhost:3001/');
   await page.locator('nav').getByRole('link', { name: 'Services' }).click();
-  const mainSection = await selectTestService(page);
-  await mainSection.locator('button').getByText('Application Methods').click();
-  await mainSection
+  const main = await selectTestService(page);
+  await main.locator('button').getByText('Application Methods').click();
+  await main
     .getByRole('button', {
       name: 'Add application method',
     })
     .click();
   const formsModal = page.getByRole('dialog');
   await formsModal.getByRole('button', { name: 'Basic Form' }).click();
-  await expect(mainSection.getByText('Build')).toBeVisible();
-  await expect(mainSection.getByText('Preview')).toBeVisible();
-  await expect(mainSection.getByRole('button', { name: 'Cancel' })).toBeVisible();
-  const saveButton = mainSection.getByRole('button', { name: 'Save Form' });
+  await expect(main.getByText('Build')).toBeVisible();
+  await expect(main.getByText('Preview')).toBeVisible();
+  await expect(main.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  const saveButton = main.getByRole('button', { name: 'Save Form' });
   await expect(saveButton).toBeVisible();
-  const titleInput = mainSection.locator('#canvas-form-title');
-  const descriptionInput = mainSection.locator('#canvas-form-description');
+  const titleInput = main.locator('#canvas-form-title');
+  const descriptionInput = main.locator('#canvas-form-description');
   await expect(titleInput).toBeVisible();
   await expect(descriptionInput).toBeVisible();
   await titleInput.fill('Test title');

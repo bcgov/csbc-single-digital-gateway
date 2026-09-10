@@ -4,26 +4,30 @@ import { addServiceAgreement, removeServiceAgreements } from '../setup/platform.
 test.describe('Platform Settings E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await page.getByRole('link', { name: 'Sample1 Admin' }).click();
     await page.getByRole('link', { name: 'Settings' }).click();
   });
 
-  test('Should display settings header texts', async ({ page }) => {
-    const headerSection = page.locator('header');
-    await expect(headerSection.locator('h1').getByText('Settings')).toBeVisible();
-    await expect(headerSection.locator('p').getByText('Workspace configuration.')).toBeVisible();
+  test('Should display settings title text', async ({ page }) => {
+    await expect(page.locator('h1').getByText('Settings')).toBeVisible();
+    await expect(page.getByText('Workspace configuration.')).toBeVisible();
   });
 
-  test('Should display general content', async ({ page }) => {
-    const mainSection = page.locator('main');
-    await expect(mainSection.getByText('General')).toBeVisible();
-    await expect(mainSection.getByText('Basic workspace information.')).toBeVisible();
-    await expect(mainSection.getByLabel('Workspace name')).toBeVisible();
-    const workspaceInput = mainSection.getByRole('textbox', {
+  test('Should display correct tab content', async ({ page }) => {
+    await expect(page.getByRole('link', { name: 'General' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Team' })).toBeVisible();
+  });
+
+  test('Should display correct general content', async ({ page }) => {
+    await expect(page.locator('[data-slot="card-title"]').getByText('General')).toBeVisible();
+    await expect(page.getByText('Basic workspace information.')).toBeVisible();
+    await expect(page.getByLabel('Workspace name')).toBeVisible();
+    const workspaceInput = page.getByRole('textbox', {
       name: 'Workspace name',
     });
     await expect(workspaceInput).toHaveValue('Sample1');
-    const cancelButton = mainSection.getByRole('button', { name: 'Cancel' });
-    const saveButton = mainSection.getByRole('button', {
+    const cancelButton = page.getByRole('button', { name: 'Cancel' });
+    const saveButton = page.getByRole('button', {
       name: 'Save Changes',
     });
     await expect(cancelButton).toBeDisabled();
@@ -40,23 +44,33 @@ test.describe('Platform Settings E2E Test Suite', () => {
   });
 
   test('Should display default agreement content', async ({ page }) => {
-    const mainSection = page.locator('main');
-    await expect(mainSection.getByText('Default agreements', { exact: true })).toBeVisible();
+    const main = page.locator('main');
+    await expect(main.getByText('Default agreements', { exact: true })).toBeVisible();
     await expect(
-      mainSection.getByText(
+      main.getByText(
         "Applied to every service in this workspace, in addition to a service's own agreements.",
       ),
     ).toBeVisible();
-    await expect(mainSection.getByText('No default agreements for this workspace.')).toBeVisible();
-    await expect(mainSection.getByRole('button', { name: 'Add default' })).toBeVisible();
+    await expect(main.getByText('No default agreements for this workspace.')).toBeVisible();
+    const addDefaultButton = main.getByRole('button', {
+      name: 'Add default',
+    });
+    await expect(addDefaultButton).toBeVisible();
+    await addDefaultButton.click();
+    await expect(page.getByText('Add a default agreement')).toBeVisible();
+    await expect(
+      page.getByText('Choose a published agreement to apply workspace-wide.'),
+    ).toBeVisible();
+    await expect(page.getByText('No published agreements available to add.')).toBeVisible();
   });
 
   test('Should add default agreement in settings', async ({ page, db }) => {
     // Add a service agreement
-    const mainSection = await addServiceAgreement(page, db);
+    await addServiceAgreement(page, db);
     await page.goto('/');
+    await page.getByRole('link', { name: 'Sample1 Admin' }).click();
     await page.getByRole('link', { name: 'Settings' }).click();
-    const addDefaultButton = mainSection.getByRole('button', {
+    const addDefaultButton = page.getByRole('button', {
       name: 'Add default',
     });
     await addDefaultButton.click();
@@ -65,30 +79,27 @@ test.describe('Platform Settings E2E Test Suite', () => {
       page.getByText('Choose a published agreement to apply workspace-wide.'),
     ).toBeVisible();
     const serviceAgreementButton = page.getByRole('button', {
-      name: 'Test service agreement',
+      name: 'Test service agreement title',
     });
     await expect(serviceAgreementButton).toBeVisible();
     await serviceAgreementButton.click();
     // Expect service agreement attached
-    await expect(
-      mainSection.getByText('No default agreements for this workspace.'),
-    ).not.toBeVisible();
-    await expect(mainSection.getByText('Test service agreement')).toBeVisible();
-    await expect(mainSection.getByText('Required')).toBeVisible();
-    const removeButton = mainSection.getByRole('button', { name: 'Remove' });
+    await expect(page.getByText('Test service agreement title')).toBeVisible();
+    await expect(page.getByText('Optional')).toBeVisible();
+    // Remove the default agreement
+    const removeButton = page.getByRole('button', { name: 'Remove' });
     await expect(removeButton).toBeVisible();
-    // Revert the change
     await removeButton.click();
   });
 
-  test('Should display danger zone content', async ({ page }) => {
-    const mainSection = page.locator('main');
-    await expect(mainSection.getByText('Danger zone', { exact: true })).toBeVisible();
-    await expect(mainSection.getByText('Irreversible actions for this workspace.')).toBeVisible();
+  test('Should display correct danger zone content', async ({ page }) => {
+    const main = page.locator('main');
+    await expect(main.getByText('Danger zone', { exact: true })).toBeVisible();
+    await expect(main.getByText('Irreversible actions for this workspace.')).toBeVisible();
     await expect(
-      mainSection.getByText('Deleting a workspace removes all of its data and members.'),
+      main.getByText('Deleting a workspace removes all of its data and members.'),
     ).toBeVisible();
-    const deleteButton = mainSection.getByRole('button', {
+    const deleteButton = main.getByRole('button', {
       name: 'Delete workspace',
     });
     await expect(deleteButton).toBeVisible();

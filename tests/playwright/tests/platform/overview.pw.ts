@@ -1,112 +1,102 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../setup/db.fixture';
+import {
+  removeServiceAgreements,
+  removeServices,
+  removeSubmissions,
+} from '../setup/platform.services.utils';
 
 test.describe('Platform Overview E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/app');
+    await page.getByRole('link', { name: 'Sample1 Admin' }).click();
   });
 
-  test('Should display workspace button and menu items', async ({ page }) => {
-    const workspaceButton = page.locator('button').getByText('Sample1');
-    await expect(workspaceButton).toBeVisible();
-    await workspaceButton.click();
-    const menuItem1 = page.locator('div').getByRole('menuitem', {
-      name: 'Sample1',
-    });
-    await expect(menuItem1).toBeVisible();
-    const menuItem2 = page.locator('div').getByRole('menuitem', {
-      name: 'Create workspace',
-    });
-    await expect(menuItem2).toBeVisible();
+  test('Should display correct heading content', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+    await expect(page.getByText('A snapshot of activity across your workspace.')).toBeVisible();
   });
 
-  test('Should display navigation links after successful login', async ({ page }) => {
-    const navSection = page.locator('nav');
-    await expect(navSection.getByRole('link', { name: 'Overview' })).toBeVisible();
-    await expect(navSection.getByRole('link', { name: 'Services' })).toBeVisible();
-    await expect(navSection.getByRole('link', { name: 'Service Agreements' })).toBeVisible();
-    await expect(navSection.getByRole('link', { name: 'Submissions' })).toBeVisible();
-    await expect(navSection.getByRole('link', { name: 'Team' })).toBeVisible();
-    await expect(navSection.getByRole('link', { name: 'Reports' })).toBeVisible();
-  });
-
-  test('Should display header text and buttons', async ({ page }) => {
-    const headerSection = page.locator('header');
-    await expect(headerSection.locator('button')).toHaveCount(4);
-    const headerButtons = headerSection.locator('button');
-    await expect(headerButtons).toHaveCount(4);
-    await expect(headerSection.locator('h1').getByText('Overview')).toBeVisible();
+  test('Should display correct create new service button and modal', async ({ page }) => {
+    const main = page.locator('main');
+    const createServiceButton = main.getByRole('button', { name: 'Create new service' });
+    await expect(createServiceButton).toBeVisible();
+    await createServiceButton.click();
+    const createServiceModal = page.locator('[data-slot="dialog-content"]');
     await expect(
-      headerSection.locator('p').getByText('A snapshot of activity across your workspace.'),
+      createServiceModal.getByRole('heading', { name: 'Create New Service' }),
     ).toBeVisible();
-  });
-
-  test('Should verify collapse button behaviors', async ({ page }) => {
-    const headerSection = page.locator('header');
-    const headerButtons = headerSection.locator('button');
-    const collapseButton = headerButtons.first();
-    await expect(collapseButton).toBeVisible();
-    await collapseButton.click();
-    const workspaceButton = page.locator('button').getByText('Sample1');
-    await expect(workspaceButton).not.toBeVisible();
-    await collapseButton.click();
-    await expect(workspaceButton).toBeVisible();
-  });
-
-  test('Should verify search button behaviors', async ({ page }) => {
-    const headerSection = page.locator('header');
-    const headerButtons = headerSection.locator('button');
-    const searchButton = headerButtons.nth(1);
-    await expect(searchButton).toBeVisible();
-    await searchButton.click();
-    await expect(page.getByText('Go to')).toBeVisible();
-    const searchGroup = page.getByRole('group');
-    await expect(searchGroup.locator('[data-slot="command-item"]')).toHaveCount(8);
-    const searchList = [
-      'Overview',
-      'Services',
-      'Service Agreements',
-      'Submissions',
-      'Team',
-      'Reports',
-      'Settings',
-      'Account',
-    ];
-    for (const searchItem of searchList) {
-      // eslint-disable-next-line no-await-in-loop
-      await expect(
-        searchGroup.locator('[data-slot="command-item"]', {
-          hasText: searchItem,
-        }),
-      ).toBeVisible();
-    }
-    await searchGroup.locator('[data-slot="command-item"]').first().click();
-  });
-
-  test('Should verify notification button behaviors', async ({ page }) => {
-    const headerSection = page.locator('header');
-    const headerButtons = headerSection.locator('button');
-    const notificationButton = headerButtons.nth(2);
-    await expect(notificationButton).toBeVisible();
-    await notificationButton.click();
-    await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible();
-    await expect(page.getByText('No notifications')).toBeVisible();
-  });
-
-  test('Should verify create new button behaviors', async ({ page }) => {
-    const headerSection = page.locator('header');
-    const headerButtons = headerSection.locator('button');
-    const createNewButton = headerButtons.nth(3);
-    await expect(createNewButton).toBeVisible();
-    await createNewButton.click();
-    const createNewDialog = page.getByRole('dialog');
-    await expect(createNewDialog.getByText('Create new')).toBeVisible();
+    await expect(createServiceModal.getByText('Name & description')).toBeVisible();
+    await expect(createServiceModal.getByLabel('Name of the service')).toBeVisible();
+    await expect(createServiceModal.getByLabel('Short description')).toBeVisible();
     await expect(
-      createNewDialog.getByText('What would you like to add to this workspace?'),
+      createServiceModal.getByRole('textbox', { name: 'Name of the service' }),
     ).toBeVisible();
     await expect(
-      createNewDialog.getByRole('link', { name: 'Service A service-type' }).getByText('Service'),
-    ).toHaveCount(2);
-    await createNewDialog.getByRole('button', { name: 'Close' }).click();
-    await expect(createNewDialog).not.toBeVisible();
+      createServiceModal.getByRole('textbox', { name: 'Short description' }),
+    ).toBeVisible();
+    await expect(createServiceModal.getByRole('button', { name: 'Cancel' })).toBeVisible();
+    await expect(createServiceModal.getByRole('button', { name: 'Create service' })).toBeVisible();
+  });
+
+  test('Should display correct content for the analytics section', async ({ page }) => {
+    const main = page.locator('main');
+    await expect(main.getByText('Analytics')).toBeVisible();
+    await expect(main.getByText('Page Views')).toBeVisible();
+  });
+
+  test('Should display correct content for the recently updated section', async ({ page }) => {
+    const main = page.locator('main');
+    await expect(main.getByText('Services')).toBeVisible();
+    await expect(main.getByText('No services yet — create one to get started.')).toBeVisible();
+  });
+
+  test('Should display correct content for the resources section', async ({ page }) => {
+    const main = page.locator('main');
+    const learnMoreAccordion = main.locator('[data-slot="accordion"]').first();
+    await expect(learnMoreAccordion).toBeVisible();
+    // Expect Learn More row to be visible
+    await expect(learnMoreAccordion.locator('button').first()).toHaveText('Learn More');
+    await expect(
+      learnMoreAccordion.getByRole('link', { name: 'Service Catalogue Documentation' }),
+    ).toBeVisible();
+    await expect(
+      learnMoreAccordion.getByRole('link', { name: 'Service Catalogue Playground' }),
+    ).toBeVisible();
+    // Expect Legal row to be visible
+    const legalAccordion = main.locator('[data-slot="accordion"]').last();
+    await legalAccordion.click();
+    await expect(legalAccordion.locator('button').first()).toHaveText('Legal');
+    await expect(legalAccordion.getByRole('link', { name: 'Disclaimer' })).toBeVisible();
+    await expect(legalAccordion.getByRole('link', { name: 'Privacy' })).toBeVisible();
+    await expect(legalAccordion.getByRole('link', { name: 'Terms of Use' })).toBeVisible();
+    await expect(legalAccordion.getByRole('link', { name: 'Accessibility' })).toBeVisible();
+    await expect(legalAccordion.getByRole('link', { name: 'Copyright' })).toBeVisible();
+  });
+
+  test('Should create new service from the overview page', async ({ page }) => {
+    const main = page.locator('main');
+    await main.getByRole('button', { name: 'Create new service' }).click();
+    const createServiceModal = page.locator('[data-slot="dialog-content"]');
+    await createServiceModal
+      .getByRole('textbox', { name: 'Name of the service' })
+      .fill('Test service');
+    await createServiceModal
+      .getByRole('textbox', { name: 'Short description' })
+      .fill('Test service description');
+    await createServiceModal.getByRole('button', { name: 'Create service' }).click();
+    // Expect test service is created and displayed on the overview page
+    await page.locator('header').getByRole('link', { name: 'Overview' }).click();
+    await expect(main.getByRole('link', { name: 'Test service' })).toBeVisible();
+    await expect(main.getByText('draft')).toBeVisible();
+    await expect(main.getByText('Last updated')).toBeVisible();
+  });
+
+  test('Remove test services and submissions', async ({ db, page }) => {
+    await removeSubmissions(db);
+    await removeServiceAgreements(db);
+    await removeServices(db);
+    // Expect no services
+    await page.goto('http://localhost:3000/services');
+    await expect(page.getByText('No services found')).toBeVisible();
   });
 });

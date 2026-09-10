@@ -1,4 +1,4 @@
-import { test } from '../setup/db.fixture';
+import { test } from '../../setup/db.fixture';
 import {
   removeElements,
   selectForm,
@@ -8,7 +8,7 @@ import {
   addLayoutElement,
   deleteTestService,
   addElementsToLayoutElement,
-} from '../setup/platform.services.utils';
+} from '../../setup/platform.services.utils';
 
 test.describe('Platform Services Basic Form Layout Elements E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {

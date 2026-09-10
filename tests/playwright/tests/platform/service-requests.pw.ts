@@ -1,30 +1,27 @@
 import { test, expect } from '../setup/db.fixture';
 
-test.describe('Platform Submissions E2E Test Suite', () => {
+test.describe('Platform Service Requests E2E Test Suite', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.locator('nav').getByRole('link', { name: 'Submission' }).click();
+    await page.getByRole('link', { name: 'Sample1 Admin' }).click();
+    await page.getByRole('link', { name: 'Service Requests' }).click();
   });
 
-  test('Should display submissions header texts', async ({ page }) => {
-    const headerSection = page.locator('header');
-    await expect(headerSection.locator('h1').getByText('Submissions')).toBeVisible();
-    await expect(
-      headerSection.locator('p').getByText('Applications submitted for review.'),
-    ).toBeVisible();
+  test('Should display service requests title text', async ({ page }) => {
+    await expect(page.locator('h1').getByText('Service Requests')).toBeVisible();
   });
 
   test('Should display status tabs content', async ({ page }) => {
-    const mainSection = page.locator('main');
+    const main = page.locator('main');
     // Header content
-    await expect(mainSection.getByRole('tab', { name: 'All' })).toBeVisible();
-    await expect(mainSection.getByRole('tab', { name: 'Pending' })).toBeVisible();
-    await expect(mainSection.getByRole('tab', { name: 'In review' })).toBeVisible();
-    await expect(mainSection.getByRole('tab', { name: 'Needs changes' })).toBeVisible();
-    await expect(mainSection.getByRole('tab', { name: 'Approved' })).toBeVisible();
+    await expect(main.getByRole('tab', { name: 'All' })).toBeVisible();
+    await expect(main.getByRole('tab', { name: 'Pending' })).toBeVisible();
+    await expect(main.getByRole('tab', { name: 'In review' })).toBeVisible();
+    await expect(main.getByRole('tab', { name: 'Needs changes' })).toBeVisible();
+    await expect(main.getByRole('tab', { name: 'Approved' })).toBeVisible();
   });
 
-  test('Should display submissions table content', async ({ page }) => {
+  test('Should display table content', async ({ page }) => {
     const mainSection = page.locator('main');
     await expect(mainSection.locator('th').getByText('Applicant')).toBeVisible();
     await expect(mainSection.locator('th').getByText('Service')).toBeVisible();

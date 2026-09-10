@@ -1,0 +1,45 @@
+{
+  "cookies": [
+    {
+      "name": "AUTH_SESSION_ID",
+      "value": "84a2ec84-a944-43ec-84eb-42fa5c5dbe81",
+      "domain": "localhost",
+      "path": "/realms/sdg/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "KEYCLOAK_IDENTITY",
+      "value": "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIxODg5ZGMyMi1iYmI4LTRmYmItODA5OC0zM2RjYTAyZDY5NTUifQ.eyJleHAiOjE3ODkwOTgwNzIsImlhdCI6MTc4OTA2MjA3MiwianRpIjoiZjFiMGM0YjEtZWI4NC00NzgwLWFiMzYtODg5YzI1OWYxYmFhIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9zZGciLCJzdWIiOiIxN2E0MzBhMi00YzNhLTRjYTAtOTIwZi05MzIyZTE1MjlkNWMiLCJ0eXAiOiJTZXJpYWxpemVkLUlEIiwic2lkIjoiODRhMmVjODQtYTk0NC00M2VjLTg0ZWItNDJmYTVjNWRiZTgxIiwic3RhdGVfY2hlY2tlciI6IkNDcm96VGZ1NnJVbzljV2ZRYVcxZXFsZ0l0M2RfaGw0NHBSdFYxY1puQ2sifQ.wRUl6yrzDX4hpW66RQBxXIkQeZlOGh_voWYwnPvptOeT72a7khE6RrCA3LQdJ3iG6ogmlGP9zrB81n0VXfE8Iw",
+      "domain": "localhost",
+      "path": "/realms/sdg/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "KEYCLOAK_SESSION",
+      "value": "\"sdg/17a430a2-4c3a-4ca0-920f-9322e1529d5c/84a2ec84-a944-43ec-84eb-42fa5c5dbe81\"",
+      "domain": "localhost",
+      "path": "/realms/sdg/",
+      "expires": 1789098072.513733,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "sdg.sid",
+      "value": "s%3ABnvBjPG5kCZL5g26a1J6s_vf6hXqqfjZ.1MsTqNJl8ba7T3mEuMFrFjDSJNfWiYFraxOFFNT71Mc",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
