@@ -4,3 +4,121 @@
  * Without it, gridstack grids render with no positioning CSS, silently.
  */
 @import 'gridstack/dist/gridstack.css';
+
+/*
+ * Form Studio resize handle indicators (doc 180 rule 16c), scoped to `.form-studio-grid` — the studio
+ * grid root class from STUDIO_GRID_CLASS — so fillable forms never show any of it.
+ *
+ * gridstack draws a resize-arrow icon on its corner handles only; its edge handles are invisible
+ * strips. Here every handle shows itself instead, drawn on gridstack's own handle element in the
+ * focus-ring colour: edge handles as a bar, corner handles as an L-bracket. An item with any corner
+ * handle shows only its corner brackets (anything but a Control: all eight handles, four brackets);
+ * an item with edge handles only shows its edge bars (a Control: `e` and `w`).
+ *
+ * When they show stays gridstack's: only on the hovered item (one item at a time, so a nested grid's
+ * item does not also reveal the Grid around it), and not while an item is being moved.
+ *
+ * `--app-*` tokens, not `--color-*`: @repo/ui declares its colours in `@theme inline`, which Tailwind
+ * does not emit as CSS custom properties.
+ */
+.form-studio-grid {
+  /* Length of each corner bracket arm. Short: items are often only a few rows tall. */
+  --studio-corner-arm: 1rem;
+  /* Length of an edge bar, clamped to the handle strip it sits on. */
+  --studio-edge-bar: 50px;
+}
+
+.form-studio-grid > .grid-stack-item > .ui-resizable-handle {
+  background-image: none;
+  background-repeat: no-repeat;
+}
+
+/* Edge handles: a bar centred on the edge. */
+.form-studio-grid > .grid-stack-item > .ui-resizable-n {
+  background-image: linear-gradient(var(--app-ring) 0 0);
+  background-size: min(var(--studio-edge-bar), 100%) 2px;
+  background-position: center top;
+}
+
+.form-studio-grid > .grid-stack-item > .ui-resizable-s {
+  background-image: linear-gradient(var(--app-ring) 0 0);
+  background-size: min(var(--studio-edge-bar), 100%) 2px;
+  background-position: center bottom;
+}
+
+.form-studio-grid > .grid-stack-item > .ui-resizable-e {
+  background-image: linear-gradient(var(--app-ring) 0 0);
+  background-size: 2px min(var(--studio-edge-bar), 100%);
+  background-position: right center;
+}
+
+.form-studio-grid > .grid-stack-item > .ui-resizable-w {
+  background-image: linear-gradient(var(--app-ring) 0 0);
+  background-size: 2px min(var(--studio-edge-bar), 100%);
+  background-position: left center;
+}
+
+/*
+ * Corner handles: an L-bracket in the corner of gridstack's 20px corner box. gridstack rotates corner
+ * handles ±45° to angle its arrow icon, so the rotation is undone, and the corner is rounded to follow
+ * the item border.
+ */
+.form-studio-grid > .grid-stack-item > .ui-resizable-nw {
+  background-image: linear-gradient(var(--app-ring) 0 0), linear-gradient(var(--app-ring) 0 0);
+  background-size:
+    var(--studio-corner-arm) 2px,
+    2px var(--studio-corner-arm);
+  background-position:
+    left top,
+    left top;
+  border-top-left-radius: var(--app-radius-sm);
+  transform: none;
+}
+
+.form-studio-grid > .grid-stack-item > .ui-resizable-ne {
+  background-image: linear-gradient(var(--app-ring) 0 0), linear-gradient(var(--app-ring) 0 0);
+  background-size:
+    var(--studio-corner-arm) 2px,
+    2px var(--studio-corner-arm);
+  background-position:
+    right top,
+    right top;
+  border-top-right-radius: var(--app-radius-sm);
+  transform: none;
+}
+
+.form-studio-grid > .grid-stack-item > .ui-resizable-se {
+  background-image: linear-gradient(var(--app-ring) 0 0), linear-gradient(var(--app-ring) 0 0);
+  background-size:
+    var(--studio-corner-arm) 2px,
+    2px var(--studio-corner-arm);
+  background-position:
+    right bottom,
+    right bottom;
+  border-bottom-right-radius: var(--app-radius-sm);
+  transform: none;
+}
+
+.form-studio-grid > .grid-stack-item > .ui-resizable-sw {
+  background-image: linear-gradient(var(--app-ring) 0 0), linear-gradient(var(--app-ring) 0 0);
+  background-size:
+    var(--studio-corner-arm) 2px,
+    2px var(--studio-corner-arm);
+  background-position:
+    left bottom,
+    left bottom;
+  border-bottom-left-radius: var(--app-radius-sm);
+  transform: none;
+}
+
+/*
+ * Corners win: an item with any corner handle shows only its corner brackets. Its edge handles still
+ * resize — only their bars are dropped — so an edge-only item (a Control's `e, w`) keeps its bars.
+ */
+.form-studio-grid
+  > .grid-stack-item:has(
+    > :is(.ui-resizable-ne, .ui-resizable-nw, .ui-resizable-se, .ui-resizable-sw)
+  )
+  > :is(.ui-resizable-n, .ui-resizable-e, .ui-resizable-s, .ui-resizable-w) {
+  background-image: none;
+}

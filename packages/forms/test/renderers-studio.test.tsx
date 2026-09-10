@@ -114,23 +114,21 @@ describe('renderers/studio composition', () => {
 });
 
 describe('studio frame', () => {
-  it("wraps a rendered Heading in data-slot='studio-element' with data-element-type and a 'Heading' caption", () => {
+  // Doc 180 rule 16b — the element type is carried as data, never shown as a caption.
+  it("wraps a rendered Heading in data-slot='studio-element' with data-element-type and no type caption", () => {
     const { container } = renderStudio({ type: 'Heading', text: 'Title' });
     const [frame] = frames(container);
     expect(frame).toHaveAttribute('data-element-type', 'Heading');
-    expect(frame?.querySelector('[data-slot="studio-element-caption"]')).toHaveTextContent(
-      'Heading',
-    );
+    expect(frame?.querySelector('[data-slot="studio-element-caption"]')).toBeNull();
+    expect(frame).toHaveTextContent(/^Title$/);
     expect(frame).toContainElement(screen.getByRole('heading', { name: 'Title' }));
   });
 
-  it('draws a dashed border-border outline and a text-muted-foreground caption', () => {
+  it('draws a dashed border-border outline with even p-2 padding', () => {
     const { container } = renderStudio({ type: 'Heading', text: 'Title' });
     const [frame] = frames(container);
-    expect(frame).toHaveClass('border', 'border-dashed', 'border-border');
-    expect(frame?.querySelector('[data-slot="studio-element-caption"]')).toHaveClass(
-      'text-muted-foreground',
-    );
+    expect(frame).toHaveClass('border', 'border-dashed', 'border-border', 'p-2');
+    expect(frame).not.toHaveClass('pt-6');
   });
 
   // Doc 180 rules 16-17b — the Grid keeps its frame; its children are framed by their grid item.
@@ -226,7 +224,7 @@ describe('studio canvas (doc 180 rules 15-17c)', () => {
     );
   });
 
-  it('frames a grid child by its item: caption inside the measured child, no inner frame', async () => {
+  it('frames a grid child by its item: padding inside the measured child, no caption, no inner frame', async () => {
     renderCanvas(gridOf({ type: 'Heading', text: 'One' }));
     const heading = await screen.findByRole('heading', { name: 'One' });
     const item = heading.closest<HTMLElement>('[data-slot="studio-grid-item"]');
@@ -235,10 +233,10 @@ describe('studio canvas (doc 180 rules 15-17c)', () => {
     // The measured child: gridstack sizes the item from .grid-stack-item-content's first child.
     expect(item?.parentElement).toHaveClass('grid-stack-item-content');
     expect(item?.parentElement?.firstElementChild).toBe(item);
-    expect(item).toHaveClass('p-2', 'pt-6');
-    expect(item?.querySelector('[data-slot="studio-element-caption"]')).toHaveTextContent(
-      'Heading',
-    );
+    expect(item).toHaveClass('p-2');
+    expect(item).not.toHaveClass('pt-6');
+    expect(item?.querySelector('[data-slot="studio-element-caption"]')).toBeNull();
+    expect(item).toHaveTextContent(/^One$/);
     expect(item?.querySelector('[data-slot="studio-element"]')).toBeNull();
   });
 
@@ -331,13 +329,16 @@ describe('studio canvas (doc 180 rules 15-17c)', () => {
       expect(handleSides(control).toSorted()).toEqual(['ui-resizable-e', 'ui-resizable-w']);
     });
 
-    it('gives a display element (Heading) bottom and side handles', async () => {
+    it('gives a display element (Heading) all eight handles', async () => {
       const { container } = await renderMixed();
       const heading = itemOf(container, 'Heading');
 
-      expect(heading).toHaveAttribute('gs-resize-handles', 'e, se, s, sw, w');
+      expect(heading).toHaveAttribute('gs-resize-handles', 'n, ne, e, se, s, sw, w, nw');
       expect(handleSides(heading).toSorted()).toEqual([
         'ui-resizable-e',
+        'ui-resizable-n',
+        'ui-resizable-ne',
+        'ui-resizable-nw',
         'ui-resizable-s',
         'ui-resizable-se',
         'ui-resizable-sw',
@@ -345,9 +346,12 @@ describe('studio canvas (doc 180 rules 15-17c)', () => {
       ]);
     });
 
-    it('gives a nested Grid bottom and side handles too', async () => {
+    it('gives a nested Grid all eight handles too', async () => {
       const { container } = await renderMixed();
-      expect(itemOf(container, 'Grid')).toHaveAttribute('gs-resize-handles', 'e, se, s, sw, w');
+      expect(itemOf(container, 'Grid')).toHaveAttribute(
+        'gs-resize-handles',
+        'n, ne, e, se, s, sw, w, nw',
+      );
     });
 
     it('fits a Control to its content but not a Heading', async () => {

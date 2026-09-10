@@ -11,10 +11,10 @@ export interface StudioItemResizing {
 
 // A Control's height is always exactly its content, so only its width can be dragged.
 const CONTROL_RESIZING: StudioItemResizing = Object.freeze({ handles: 'e, w', sizing: 'fit' });
-// Everything else may also be made taller; its content stays the floor. No top handles — gridstack
-// warns that resizing from the top has odd side effects.
+// Everything else resizes from every edge and corner; its content stays the floor, so it can be made
+// taller but never shorter than its content — from the top too, which moves the item's row.
 const FREE_RESIZING: StudioItemResizing = Object.freeze({
-  handles: 'e, se, s, sw, w',
+  handles: 'n, ne, e, se, s, sw, w, nw',
   sizing: 'min',
 });
 

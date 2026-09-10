@@ -9,8 +9,10 @@ import { resizingFor, useResizeHandles } from './studio-item-resize';
  * The studio's grid item (doc 180 rules 17b, 17d), registered under `GRID_ELEMENT_COMPONENT`.
  *
  * Its root is the item content's single child — the element gridstack measures for size-to-content —
- * so the caption and padding count towards the item's height instead of being clipped. The border
- * itself is drawn on the item box by `STUDIO_GRID_CLASS`. The child is dispatched disabled and held
+ * so its padding counts towards the item's height instead of being clipped. The element type is
+ * carried as `data-element-type` only, never shown (rule 16b). The border itself is drawn on the item
+ * box by `STUDIO_GRID_CLASS`, and the resize highlight by the stylesheet (rule 16c). The child is
+ * dispatched disabled and held
  * inert (`StudioContent`), and `StudioItemContext` stops the framed renderer drawing a second frame.
  * The element type picks the item's resize handles and sizing: a Control only resizes sideways and
  * fits its content; anything else may also be made taller, with its content as the minimum.
@@ -23,18 +25,7 @@ export function StudioGridElement({ index }: GridElementDispatchProps) {
   useResizeHandles(rootRef, handles);
 
   return (
-    <div
-      ref={rootRef}
-      data-slot="studio-grid-item"
-      data-element-type={type}
-      className="relative p-2 pt-6"
-    >
-      <span
-        data-slot="studio-element-caption"
-        className="absolute top-1 left-2 text-xs text-muted-foreground"
-      >
-        {type}
-      </span>
+    <div ref={rootRef} data-slot="studio-grid-item" data-element-type={type} className="p-2">
       <StudioItemContext.Provider value>
         <StudioContent type={type}>
           <GridElementDispatch index={index} enabled={false} sizing={sizing} />

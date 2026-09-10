@@ -89,7 +89,8 @@ describe('FormStudio', () => {
         '[data-slot="studio-grid-item"] input:not([aria-hidden="true"]), [data-slot="studio-grid-item"] textarea',
       ) ?? [],
     );
-    expect(inputs).toHaveLength(4);
+    // name, about, quantity, budget + city and postal code in the nested Delivery grid.
+    expect(inputs).toHaveLength(6);
     for (const input of inputs) {
       expect(input).toBeDisabled();
       const wrapper = input.closest('[data-slot="studio-content"]');

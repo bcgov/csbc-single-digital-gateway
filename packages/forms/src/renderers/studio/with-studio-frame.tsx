@@ -14,12 +14,12 @@ interface FramedProps {
 
 /**
  * Wraps a renderer or cell in the studio's management frame (doc 180 rules 16b-17c): a dashed
- * outline with a caption naming the element type, then the original component rendered disabled and
- * held inert. The frame renders even when the element is hidden — the wrapped renderer still applies
- * its own visibility — so the studio shows every slot.
+ * outline, then the original component rendered disabled and held inert. The element type is carried
+ * as `data-element-type` only — no caption. The frame renders even when the element is hidden — the
+ * wrapped renderer still applies its own visibility — so the studio shows every slot.
  *
- * Inside a studio grid item the item already draws the outline and caption and disables its content,
- * so the renderer is returned bare.
+ * Inside a studio grid item the item already draws the outline and disables its content, so the
+ * renderer is returned bare.
  */
 export function withStudioFrame<P extends FramedProps>(
   Renderer: ComponentType<P>,
@@ -36,14 +36,8 @@ export function withStudioFrame<P extends FramedProps>(
       <div
         data-slot="studio-element"
         data-element-type={type}
-        className="relative rounded-sm border border-dashed border-border p-2 pt-6"
+        className="rounded-sm border border-dashed border-border p-2"
       >
-        <span
-          data-slot="studio-element-caption"
-          className="absolute top-1 left-2 text-xs text-muted-foreground"
-        >
-          {type}
-        </span>
         <StudioContent type={type}>
           <Renderer {...disabled} />
         </StudioContent>
