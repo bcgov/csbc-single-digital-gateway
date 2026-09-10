@@ -271,6 +271,12 @@
       "import": "./dist/navigation-menu.js",
       "require": "./dist/navigation-menu.cjs"
     },
+    "./number-input": {
+      "types": "./dist/number-input.d.ts",
+      "development": "./src/number-input.ts",
+      "import": "./dist/number-input.js",
+      "require": "./dist/number-input.cjs"
+    },
     "./page-header": {
       "types": "./dist/page-header.d.ts",
       "development": "./src/page-header.ts",
