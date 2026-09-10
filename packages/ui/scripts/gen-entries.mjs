@@ -1,6 +1,7 @@
 // Regenerates the per-component public API from the component sources:
 //   - src/components/ui/*.tsx (shadcn primitives), src/brand/*.tsx (brand marks),
-//     src/inputs/*.tsx (non-shadcn inputs) and src/layout/*.tsx (layout primitives)
+//     src/inputs/*.tsx (non-shadcn inputs), src/layout/*.tsx (layout primitives) and
+//     src/typography/*.tsx (typography primitives)
 //   - a flat re-export file  src/<name>.ts          (one Vite/dts entry per component)
 //   - the barrel             src/index.ts
 //   - the package.json "exports" map               (one subpath per component, plus a raw
@@ -20,6 +21,10 @@ const inputsDir = resolve(root, 'src/inputs');
 // carries the vendored-shadcn lint exceptions (no-shadow, no-underscore-dangle), which must not
 // extend to code we author. Same top-level-*.tsx-only rule as src/inputs.
 const layoutDir = resolve(root, 'src/layout');
+// Typography primitives (e.g. Heading) live here for the same reason as src/layout — authored
+// code must stay out of src/components/ui, whose lint override relaxes the vendored-shadcn rules.
+// Same top-level-*.tsx-only rule as src/inputs and src/layout.
+const typographyDir = resolve(root, 'src/typography');
 
 const tsxNames = (dir) =>
   existsSync(dir)
@@ -33,13 +38,21 @@ const uiNames = tsxNames(uiDir);
 const brandNames = tsxNames(brandDir);
 const inputNames = tsxNames(inputsDir);
 const layoutNames = tsxNames(layoutDir);
+const typographyNames = tsxNames(typographyDir);
 const sourceDir = new Map([
   ...uiNames.map((n) => [n, 'components/ui']),
   ...brandNames.map((n) => [n, 'brand']),
   ...inputNames.map((n) => [n, 'inputs']),
   ...layoutNames.map((n) => [n, 'layout']),
+  ...typographyNames.map((n) => [n, 'typography']),
 ]);
-const names = [...uiNames, ...brandNames, ...inputNames, ...layoutNames].toSorted();
+const names = [
+  ...uiNames,
+  ...brandNames,
+  ...inputNames,
+  ...layoutNames,
+  ...typographyNames,
+].toSorted();
 
 // Raw brand assets shipped verbatim (icon.svg, logo.svg) — exported as URLs.
 const brandSvgs = existsSync(brandDir)
@@ -107,6 +120,16 @@ exportsMap['./a11y-types'] = {
   development: './src/a11y/a11y-types.ts',
   import: './dist/a11y-types.js',
   require: './dist/a11y-types.cjs',
+};
+// wcag-criteria.ts is a real module in src/a11y/ too (referenced by app-side *.a11y.ts sidecars),
+// with the same manual vite.config.ts entry and the same dist/a11y/ .d.ts path as a11y-types.
+// It must be generated here: it was previously hand-added to package.json, so every gen:entries
+// run silently dropped it and broke `@repo/ui/wcag-criteria` for consumers.
+exportsMap['./wcag-criteria'] = {
+  types: './dist/a11y/wcag-criteria.d.ts',
+  development: './src/a11y/wcag-criteria.ts',
+  import: './dist/wcag-criteria.js',
+  require: './dist/wcag-criteria.cjs',
 };
 exportsMap['./a11y-catalog.json'] = {
   development: './src/a11y/a11y-catalog.json',

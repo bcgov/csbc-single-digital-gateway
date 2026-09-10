@@ -187,6 +187,12 @@
       "import": "./dist/field.js",
       "require": "./dist/field.cjs"
     },
+    "./heading": {
+      "types": "./dist/heading.d.ts",
+      "development": "./src/heading.ts",
+      "import": "./dist/heading.js",
+      "require": "./dist/heading.cjs"
+    },
     "./hover-card": {
       "types": "./dist/hover-card.d.ts",
       "development": "./src/hover-card.ts",
