@@ -4,8 +4,12 @@ import { GridContext } from './grid-context';
 import { useSizeToContent, type ItemSizing } from './grid-size-to-content';
 
 export interface GridElementDispatchProps {
-  /** Position of the element in the Grid's `elements`, carried in the widget's `props`. */
-  index?: unknown;
+  /**
+   * The element's id in its Grid (the widget id), carried in the widget's `props` (doc 183 rule 7). An
+   * id, not an index: gridstack freezes widget props at add time, and indices change when elements are
+   * sorted or moved.
+   */
+  elementId?: unknown;
   /**
    * `false` disables the dispatched element, e.g. a management view's item (doc 180 rule 17b).
    * AND-ed with the Grid's own `enabled`, so it can only ever disable.
@@ -19,7 +23,7 @@ export interface GridElementDispatchProps {
 }
 
 /**
- * The built-in grid item: dispatches `elements[index]` through JSONForms, so the renderers in play
+ * The built-in grid item: dispatches the element with `elementId` through JSONForms, so the renderers in play
  * (plain for `default`, framed for `studio`) decide what the child looks like. A consumer that
  * overrides `GRID_ELEMENT_COMPONENT` can wrap this to add item-level chrome.
  *
@@ -27,12 +31,16 @@ export interface GridElementDispatchProps {
  * dispatched renderer may return text or nothing — and `useSizeToContent` re-measures the item once
  * this content exists (rule 10c).
  */
-export function GridElementDispatch({ index, enabled, sizing = 'fit' }: GridElementDispatchProps) {
+export function GridElementDispatch({
+  elementId,
+  enabled,
+  sizing = 'fit',
+}: GridElementDispatchProps) {
   const grid = useContext(GridContext);
   const contentRef = useRef<HTMLDivElement>(null);
   useSizeToContent(contentRef, grid?.sizeToContent === true, sizing);
 
-  const element = typeof index === 'number' ? grid?.elements[index] : undefined;
+  const element = typeof elementId === 'string' ? grid?.elementsById.get(elementId) : undefined;
   if (!grid || !element) return null;
 
   return (

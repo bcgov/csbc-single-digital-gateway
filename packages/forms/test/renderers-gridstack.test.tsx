@@ -188,7 +188,8 @@ describe('GridStack options mapping', () => {
     expect(options).not.toHaveProperty('subGridOpts');
   });
 
-  it("maps each element to a widget { component: 'jsonforms-element', props: { index } } with allow-listed gridItem placement", () => {
+  // Doc 183 rule 7 — items are resolved by elementId (the widget id), never by index.
+  it("maps each element to a widget { component: 'jsonforms-element', props: { elementId } } with allow-listed gridItem placement", () => {
     const element = heading('A', {
       gridItem: {
         x: 1,
@@ -206,7 +207,7 @@ describe('GridStack options mapping', () => {
       {
         id: 'g-0',
         component: 'jsonforms-element',
-        props: { index: 0 },
+        props: { elementId: 'g-0' },
         x: 1,
         y: 2,
         w: 3,
@@ -222,9 +223,18 @@ describe('GridStack options mapping', () => {
       [heading('A', { gridItem: { w: 6 } }), heading('B')] as UISchemaElement[],
       'g',
     );
-    expect(sized).toEqual({ id: 'g-0', component: 'jsonforms-element', props: { index: 0 }, w: 6 });
+    expect(sized).toEqual({
+      id: 'g-0',
+      component: 'jsonforms-element',
+      props: { elementId: 'g-0' },
+      w: 6,
+    });
     expect(sized).not.toHaveProperty('x');
-    expect(bare).toEqual({ id: 'g-1', component: 'jsonforms-element', props: { index: 1 } });
+    expect(bare).toEqual({
+      id: 'g-1',
+      component: 'jsonforms-element',
+      props: { elementId: 'g-1' },
+    });
   });
 
   it('gives every widget an id unique to its grid prefix and index', () => {
@@ -233,6 +243,30 @@ describe('GridStack options mapping', () => {
     expect(ids).toEqual(['a-0', 'a-1', 'a-2']);
     expect(new Set(ids).size).toBe(3);
     expect(toGridWidgets(elements, 'b').map((w) => w.id)).not.toEqual(ids);
+  });
+
+  // Doc 183 rule 16b — gridstack's load() gives an h-less widget 1 row, collapsing every item.
+  it('gives a widget without an authored h its current engine height, and lets an authored h win', () => {
+    const elements = [
+      heading('A', { gridItem: { w: 6 } }),
+      heading('B', { gridItem: { h: 3 } }),
+      heading('C'),
+    ] as UISchemaElement[];
+    const currentHeights = new Map([
+      ['g-0', 5],
+      ['g-1', 9],
+    ]);
+
+    const [first, second, third] = toGridWidgets(elements, 'g', undefined, currentHeights);
+
+    expect(first).toMatchObject({ id: 'g-0', w: 6, h: 5 });
+    expect(second).toMatchObject({ id: 'g-1', h: 3 });
+    expect(third).not.toHaveProperty('h');
+    expect(build({ elements, currentHeights }).children?.map((w) => w.h)).toEqual([
+      5,
+      3,
+      undefined,
+    ]);
   });
 });
 

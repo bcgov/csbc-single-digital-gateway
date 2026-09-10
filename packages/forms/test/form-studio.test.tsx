@@ -1,8 +1,16 @@
+import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 
 const GREETING = 'Hello, FormStudio!';
+
+/** A one-Heading Grid uischema — a distinct object on every call. */
+const gridWith = (text: string) =>
+  ({
+    type: 'Grid',
+    elements: [{ type: 'Heading', text, options: { level: 1 } }],
+  }) as UISchemaElement;
 
 /** The layout is expressed in Tailwind utilities, so the classes ARE the contract here. */
 function renderStudio() {
@@ -125,6 +133,31 @@ describe('FormStudio', () => {
     }
     // The Heading stays first in the sample.
     expect(screen.getByRole('heading', { level: 1, name: GREETING })).toBeInTheDocument();
+  });
+
+  // Doc 183 rules 1-2 — optional seed props; a new object resets the studio.
+  it('renders a schema and uischema passed as props instead of the sample', async () => {
+    const schema: JsonSchema = { type: 'object', properties: {} };
+    const uischema = {
+      type: 'Grid',
+      elements: [{ type: 'Heading', text: 'Custom form', options: { level: 1 } }],
+    } as UISchemaElement;
+    render(<FormStudio schema={schema} uischema={uischema} />);
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Custom form' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(GREETING)).toBeNull();
+  });
+
+  it('resets to a new uischema object passed after mount', async () => {
+    const { rerender } = render(<FormStudio uischema={gridWith('First')} />);
+    await screen.findByRole('heading', { name: 'First' });
+
+    rerender(<FormStudio uischema={gridWith('Second')} />);
+
+    expect(await screen.findByRole('heading', { name: 'Second' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'First' })).toBeNull();
   });
 
   it('renders with no props supplied', () => {

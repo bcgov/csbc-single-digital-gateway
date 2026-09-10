@@ -1,5 +1,6 @@
 import { JsonForms } from '@jsonforms/react';
 import type { FC } from 'react';
+import { GridEditorProvider } from '../renderers/gridstack/grid-editor';
 import {
   cells,
   controlRenderers,
@@ -9,8 +10,9 @@ import {
 import type { FormStudioProps } from '../types/index';
 import { useDockPanel } from './dock-panels';
 import { DockToggles } from './dock-toggles';
-import { STUDIO_SAMPLE_DATA, STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
+import { STUDIO_SAMPLE_DATA } from './sample';
 import { StudioWorkspace } from './studio-workspace';
+import { useStudioDocument } from './use-studio-document';
 
 // Built once at module load — a new array per render would make JSONForms re-dispatch everything.
 const renderers = [...controlRenderers, ...displayRenderers, ...layoutRenderers];
@@ -25,15 +27,16 @@ const renderers = [...controlRenderers, ...displayRenderers, ...layoutRenderers]
  * child's default `min-height: auto` would otherwise break the layout.
  *
  * The content area is a resizable workspace (doc 181): collapsible left, right and bottom dock
- * panels around a centre canvas, opened and closed from toggles in the header. The centre renders a
- * built-in sample form through `@repo/forms/renderers/studio` (doc 180), so every element appears in
- * its studio frame and the Grid is draggable.
+ * panels around a centre canvas, opened and closed from toggles in the header. The centre renders the
+ * studio's document through `@repo/forms/renderers/studio` (doc 180), so every element appears in its
+ * studio frame and the Grids are draggable.
  *
- * Typed as `FC<FormStudioProps>` rather than taking a props parameter: the props type is empty
- * for now, and binding it here keeps the public type wired to the component without declaring an
- * unused parameter.
+ * The studio owns that document (doc 183): `schema`/`uischema` props seed it (else the built-in
+ * sample), a different object resets it, and every finished drag, resize or cross-grid move is written
+ * back to the uischema through the Grid editor port.
  */
-export const FormStudio: FC<FormStudioProps> = () => {
+export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
+  const studio = useStudioDocument({ schema, uischema });
   const panels = {
     left: useDockPanel('left'),
     right: useDockPanel('right'),
@@ -50,13 +53,15 @@ export const FormStudio: FC<FormStudioProps> = () => {
       </header>
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
         <StudioWorkspace panels={panels}>
-          <JsonForms
-            schema={STUDIO_SAMPLE_SCHEMA}
-            uischema={STUDIO_SAMPLE_UISCHEMA}
-            data={STUDIO_SAMPLE_DATA}
-            renderers={renderers}
-            cells={cells}
-          />
+          <GridEditorProvider value={studio.editor}>
+            <JsonForms
+              schema={studio.schema}
+              uischema={studio.uischema}
+              data={STUDIO_SAMPLE_DATA}
+              renderers={renderers}
+              cells={cells}
+            />
+          </GridEditorProvider>
         </StudioWorkspace>
       </div>
       <footer data-slot="form-studio-footer" className="h-9 shrink-0 grow-0 border-t" />

@@ -61,21 +61,49 @@ function pickDefined(source: unknown, keys: readonly string[]): Record<string, u
   );
 }
 
+type ElementIdOf = (element: UISchemaElement) => string;
+
+/** The widget id for `element` (doc 183 rule 7): the editor's id when there is one, else `<prefix>-<index>`. */
+export function gridElementId(
+  element: UISchemaElement,
+  index: number,
+  idPrefix: string,
+  idOf?: ElementIdOf,
+): string {
+  return idOf ? idOf(element) : `${idPrefix}-${index}`;
+}
+
 /**
  * One GridStack widget per element. The element itself is NOT put in `props` — GridStack clones
- * widget JSON — only its index, which `GridElementDispatch` resolves against the Grid context.
- * Missing `x`/`y` are left out so gridstack auto-positions the item.
+ * widget JSON — only its id, which `GridElementDispatch` resolves against the Grid context. An id,
+ * never an index: gridstack freezes props at add time, and indices change when elements are sorted or
+ * moved (doc 183 rule 7). Missing `x`/`y` are left out so gridstack auto-positions the item.
+ *
+ * `currentHeights` (a mounted grid's engine heights by id) fills `h` for widgets whose `gridItem` has
+ * none: gridstack's `load` would otherwise give each of them 1 row and collapse the grid on every reload
+ * (doc 183 rule 16b). An authored `h` always wins.
  */
 export function toGridWidgets(
   elements: readonly UISchemaElement[],
   idPrefix: string,
+  idOf?: ElementIdOf,
+  currentHeights?: ReadonlyMap<string, number>,
 ): GridStackWidget[] {
-  return elements.map((element, index) => ({
-    ...(pickDefined(element.options?.['gridItem'], GRID_ITEM_KEYS) as GridItemPlacement),
-    id: `${idPrefix}-${index}`,
-    component: GRID_ELEMENT_COMPONENT,
-    props: { index },
-  }));
+  return elements.map((element, index) => {
+    const id = gridElementId(element, index, idPrefix, idOf);
+    const placement = pickDefined(
+      element.options?.['gridItem'],
+      GRID_ITEM_KEYS,
+    ) as GridItemPlacement;
+    const currentH = placement.h === undefined ? currentHeights?.get(id) : undefined;
+    return {
+      ...placement,
+      ...(currentH === undefined ? {} : { h: currentH }),
+      id,
+      component: GRID_ELEMENT_COMPONENT,
+      props: { elementId: id },
+    };
+  });
 }
 
 interface GridStackOptionsInput {
@@ -85,6 +113,12 @@ interface GridStackOptionsInput {
   /** The consumer's factory `gridOptions`. */
   gridOptions: GridStackLayoutOptions | undefined;
   idPrefix: string;
+  /** Editor-supplied element ids (doc 183); absent → index-derived ids. */
+  idOf?: ElementIdOf;
+  /** Editor-only drop filter (doc 183 rule 14); absent → the grid accepts no foreign items. */
+  acceptWidgets?: (element: Element) => boolean;
+  /** The mounted grid's current heights by widget id (doc 183 rule 16b). */
+  currentHeights?: ReadonlyMap<string, number>;
 }
 
 /** Whether items size to their content: factory `gridOptions.sizeToContent`, else the default. */
@@ -106,12 +140,16 @@ export function buildGridStackOptions({
   elementOptions,
   gridOptions,
   idPrefix,
+  idOf,
+  acceptWidgets,
+  currentHeights,
 }: GridStackOptionsInput): GridStackOptions {
   return {
     ...DEFAULT_GRID_OPTIONS,
     ...gridOptions,
     ...(pickDefined(elementOptions, GRID_ELEMENT_OPTION_KEYS) as GridElementOptions),
+    ...(acceptWidgets ? { acceptWidgets } : {}),
     sizeToContent: false,
-    children: toGridWidgets(elements, idPrefix),
+    children: toGridWidgets(elements, idPrefix, idOf, currentHeights),
   };
 }

@@ -6,6 +6,8 @@
  * `@repo/forms/renderers/ui`, …).
  */
 
+import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+
 export type { RendererSet } from './renderer-set';
 export type {
   GridElement,
@@ -20,11 +22,11 @@ export type {
 } from './elements';
 
 /**
- * Props accepted by `FormStudio`.
- *
- * The studio takes no configuration yet; this is a real, exported marker type whose shape grows
- * as the studio gains capability. `Record<string, never>` rather than `{}` — the latter means
- * "any non-nullish value" to TypeScript and trips oxlint's empty-object-type rule, whereas this
- * genuinely admits only the empty object.
+ * Props accepted by `FormStudio` (doc 183 rules 1-3): the form to open. Both are optional — the studio
+ * falls back to its built-in sample — and seed the studio's own state; passing a different object
+ * resets the studio to it. There is no change callback: the studio owns the document.
  */
-export type FormStudioProps = Record<string, never>;
+export type FormStudioProps = {
+  schema?: JsonSchema | undefined;
+  uischema?: UISchemaElement | undefined;
+};

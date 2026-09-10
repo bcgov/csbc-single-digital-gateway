@@ -6,9 +6,10 @@ import type {
 } from '@jsonforms/core';
 import { createContext } from 'react';
 
-/** What a Grid hands its child widgets — everything `JsonFormsDispatch` needs except the index. */
+/** What a Grid hands its child widgets — everything `JsonFormsDispatch` needs except the element id. */
 export interface GridContextValue {
-  elements: UISchemaElement[];
+  /** The Grid's elements by widget/element id (doc 183 rule 7). */
+  elementsById: ReadonlyMap<string, UISchemaElement>;
   schema: JsonSchema;
   path: string;
   enabled: boolean;
