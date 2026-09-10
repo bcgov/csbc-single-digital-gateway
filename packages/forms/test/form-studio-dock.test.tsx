@@ -182,6 +182,18 @@ describe('FormStudio dock panels (doc 181)', () => {
       expect(childSlots(vertical)).toEqual(['other', 'bottom']);
     });
 
+    it('offsets each separator 1px over its dock panel so it takes no layout space', () => {
+      const { vertical, horizontal } = renderStudio();
+      fireEvent.click(trigger('Right panel'));
+      fireEvent.click(trigger('Bottom panel'));
+      const rowHandles = horizontal?.querySelectorAll(':scope > [data-slot="resizable-handle"]');
+      const bottomHandle = vertical?.querySelector(':scope > [data-slot="resizable-handle"]');
+      expect(rowHandles).toHaveLength(2);
+      expect(rowHandles?.[0]).toHaveClass('-ml-px');
+      expect(rowHandles?.[1]).toHaveClass('-mr-px');
+      expect(bottomHandle).toHaveClass('-mb-px');
+    });
+
     it('never renders a grip inside a separator', () => {
       const { container } = renderStudio();
       const handles = container.querySelectorAll('[data-slot="resizable-handle"]');

@@ -37,6 +37,11 @@ export interface StudioWorkspaceProps {
  *
  * A dock panel's separator is rendered only while that panel is open, and never with a grip — a closed
  * panel has no drag target, so it can be reopened only from its toggle.
+ *
+ * Each separator carries a 1px negative margin toward its dock panel, so it overlays that panel's edge
+ * and takes no layout space: unmounting it on release shifts nothing, and while a drag holds the panel
+ * at 0 the line sits just outside the group, which clips it (react-resizable-panels sets
+ * `overflow: hidden`).
  */
 export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ panels, children }) => {
   const { left, right, bottom } = panels;
@@ -50,17 +55,17 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ panels, children }) 
       <ResizablePanel minSize="20%">
         <ResizablePanelGroup orientation="horizontal" onLayoutChanged={syncRow}>
           <DockPanelView dock={left} />
-          {left.open && <ResizableHandle />}
+          {left.open && <ResizableHandle className="-ml-px" />}
           <ResizablePanel minSize="20%">
             <div data-slot="form-studio-center-panel" className="h-full overflow-auto p-4">
               {children}
             </div>
           </ResizablePanel>
-          {right.open && <ResizableHandle />}
+          {right.open && <ResizableHandle className="-mr-px" />}
           <DockPanelView dock={right} />
         </ResizablePanelGroup>
       </ResizablePanel>
-      {bottom.open && <ResizableHandle />}
+      {bottom.open && <ResizableHandle className="-mb-px" />}
       <DockPanelView dock={bottom} />
     </ResizablePanelGroup>
   );
