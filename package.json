@@ -18,6 +18,7 @@
     "lint:fix": "oxlint --fix",
     "prepare": "lefthook install",
     "test": "vitest run",
+    "test:e2e": "npx playwright test",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && turbo run typecheck"
   },

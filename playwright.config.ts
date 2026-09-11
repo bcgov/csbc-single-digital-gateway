@@ -48,7 +48,7 @@ export default defineConfig({
       testMatch: 'client.setup.ts',
       testDir: './tests/playwright/tests/setup',
       use: {
-        baseURL: process.env.clientURL || 'http://localhost:3000',
+        baseURL: process.env.CLIENT_URL || 'http://localhost:3000',
       },
     },
     {
@@ -57,7 +57,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chrome',
-        baseURL: process.env.clientURL || 'http://localhost:3000',
+        baseURL: process.env.CLIENT_URL || 'http://localhost:3000',
         storageState: './tests/playwright/tests/setup/files/client.json',
       },
       dependencies: ['client-setup'],
@@ -67,7 +67,7 @@ export default defineConfig({
       testMatch: 'platform.setup.ts',
       testDir: './tests/playwright/tests/setup',
       use: {
-        baseURL: process.env.platformURL || 'http://localhost:3001',
+        baseURL: process.env.PLATFORM_URL || 'http://localhost:3001',
       },
     },
     {
@@ -76,7 +76,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chrome',
-        baseURL: process.env.platformURL || 'http://localhost:3001',
+        baseURL: process.env.PLATFORM_URL || 'http://localhost:3001',
         storageState: './tests/playwright/tests/setup/files/platform.json',
       },
       dependencies: ['platform-setup'],
@@ -87,7 +87,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chrome',
-        baseURL: process.env.clientURL || 'http://localhost:3000',
+        baseURL: process.env.CLIENT_URL || 'http://localhost:3000',
       },
     },
     {
@@ -96,7 +96,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chrome',
-        baseURL: process.env.platformURL || 'http://localhost:3001',
+        baseURL: process.env.PLATFORM_URL || 'http://localhost:3001',
       },
     },
   ],

@@ -51,3 +51,4 @@ CLAUDE*.md
 **/blob-report/
 **/playwright/.cache/
 **/playwright/.auth/
+**/playwright/tests/setup/files/*.json
