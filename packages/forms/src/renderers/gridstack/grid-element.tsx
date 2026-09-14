@@ -17,8 +17,9 @@ export interface GridElementDispatchProps {
    */
   enabled?: boolean;
   /**
-   * `'fit'` (default) sizes the item to exactly its content; `'min'` keeps the content as its minimum
-   * height, for items a person may resize vertically (doc 180 rule 10d).
+   * `'fit'` sizes the item to exactly its content; `'min'` keeps the content as its minimum height, for
+   * items a person may resize vertically (doc 180 rule 10d). Absent → `'min'` when the element has a
+   * hand-set height, else `'fit'`, so a static grid keeps the height the studio wrote (bug B2).
    */
   sizing?: ItemSizing;
 }
@@ -40,15 +41,13 @@ function authoredHeightOf(element: UISchemaElement | undefined): number | undefi
  * dispatched renderer may return text or nothing — and `useSizeToContent` re-measures the item once
  * this content exists (rule 10c).
  */
-export function GridElementDispatch({
-  elementId,
-  enabled,
-  sizing = 'fit',
-}: GridElementDispatchProps) {
+export function GridElementDispatch({ elementId, enabled, sizing }: GridElementDispatchProps) {
   const grid = useContext(GridContext);
   const contentRef = useRef<HTMLDivElement>(null);
   const element = typeof elementId === 'string' ? grid?.elementsById.get(elementId) : undefined;
-  useSizeToContent(contentRef, grid?.sizeToContent === true, sizing, authoredHeightOf(element));
+  const authoredH = authoredHeightOf(element);
+  const resolvedSizing = sizing ?? (authoredH === undefined ? 'fit' : 'min');
+  useSizeToContent(contentRef, grid?.sizeToContent === true, resolvedSizing, authoredH);
 
   if (!grid || !element) return null;
 

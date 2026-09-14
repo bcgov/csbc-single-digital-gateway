@@ -101,6 +101,25 @@ describe('Grid item sizing', () => {
     expect(resizeToContent).not.toHaveBeenCalledWith(itemEl);
   });
 
+  // Bug B2 — a fillable (static) grid keeps the height the studio wrote, e.g. in Form Studio preview.
+  it('keeps a hand-set height on a static grid instead of fitting the item to its content', async () => {
+    const resizeToContent = vi.spyOn(GridStack.prototype, 'resizeToContent');
+    const update = vi.spyOn(GridStack.prototype, 'update');
+    mockFiveRowContent();
+
+    renderGrid(createGridRenderers(), {
+      type: 'Grid',
+      elements: [{ type: 'Heading', text: 'Sized', options: { gridItem: { h: 10 } } }],
+    } as UISchemaElement);
+    const heading = await screen.findByRole('heading', { name: 'Sized' });
+    const itemEl = heading.closest('.grid-stack-item') as GridItemHTMLElement;
+
+    expect(itemEl.gridstackNode?.grid?.opts.staticGrid).toBe(true);
+    expect(resizeToContent).not.toHaveBeenCalledWith(itemEl);
+    expect(update).toHaveBeenCalledWith(itemEl, { minH: 5 });
+    expect(itemEl.gridstackNode?.h).toBe(10);
+  });
+
   it('leaves item height alone when sizeToContent is turned off', async () => {
     renderGrid(createGridRenderers({ gridOptions: { sizeToContent: false } }));
     const resizeToContent = vi.spyOn(GridStack.prototype, 'resizeToContent');
