@@ -5,6 +5,7 @@ import type { RendererSet } from '../../types/renderer-set';
 import { GridElementDispatch } from './grid-element';
 import { GRID_ELEMENT_COMPONENT } from './grid-options';
 import { createGridLayoutRenderer } from './grid-renderer';
+import { installGridUpdateGuard } from './grid-update-guard';
 
 export const gridTester: RankedTester = rankWith(1, uiTypeIs('Grid'));
 
@@ -27,6 +28,8 @@ export function createGridRenderers({
   gridOptions,
   className,
 }: GridRenderersOptions = {}): RendererSet {
+  // Doc 183 rule 15b: every grid's items may be updated with a live, cyclic mid-drag node.
+  installGridUpdateGuard();
   return {
     cells: [],
     controlRenderers: [],
