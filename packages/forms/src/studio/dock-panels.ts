@@ -37,6 +37,12 @@ export interface DockPanelProps {
   readonly collapsedSize: string;
   readonly minSize: string;
   readonly defaultSize: string;
+  /**
+   * `true` while the panel is closed (doc 184 rule 13b). react-resizable-panels resizes at panel
+   * boundaries even without a Separator, so an enabled 0% panel could be dragged open; a disabled panel
+   * gets no hit region. The handle's imperative `resize()`/`collapse()` still apply.
+   */
+  readonly disabled: boolean;
 }
 
 export interface DockPanel {
@@ -50,6 +56,10 @@ export interface DockPanel {
   readonly panelRef: RefObject<PanelImperativeHandle | null>;
   readonly panelProps: DockPanelProps;
   toggle: () => void;
+  /** Opens a closed panel at its remembered size; no-op when already open (doc 184 rule 13). */
+  show: () => void;
+  /** Collapses an open panel, keeping its remembered size; no-op when already closed (doc 184 rule 13). */
+  hide: () => void;
   /** Pass the owning group's `onLayoutChanged` layout through (doc 181 rules 12-13). */
   syncLayout: (layout: Layout) => void;
 }
@@ -73,16 +83,19 @@ export function useDockPanel(id: DockPanelId): DockPanel {
   const [open, setOpen] = useState(config.defaultOpen);
   const lastOpenSize = useRef(config.defaultSize);
 
-  const toggle = useCallback(() => {
-    const panel = panelRef.current;
-    if (open) {
-      setOpen(false);
-      panel?.collapse();
-    } else {
-      setOpen(true);
-      panel?.resize(percent(lastOpenSize.current));
-    }
+  const show = useCallback(() => {
+    if (open) return;
+    setOpen(true);
+    panelRef.current?.resize(percent(lastOpenSize.current));
   }, [open, panelRef]);
+
+  const hide = useCallback(() => {
+    if (!open) return;
+    setOpen(false);
+    panelRef.current?.collapse();
+  }, [open, panelRef]);
+
+  const toggle = useCallback(() => (open ? hide() : show()), [open, hide, show]);
 
   // A layout committed at 0 (a drag released below minSize) closes the panel but leaves the
   // pre-drag size remembered for the next reopen.
@@ -105,9 +118,22 @@ export function useDockPanel(id: DockPanelId): DockPanel {
       minSize: percent(config.minSize),
       // Only read at mount; afterwards the panel handle owns the size.
       defaultSize: percent(config.defaultOpen ? config.defaultSize : 0),
+      disabled: !open,
     }),
-    [config, panelId, panelRef],
+    [config, open, panelId, panelRef],
   );
 
-  return { id, config, open, panelId, contentId, panelRef, panelProps, toggle, syncLayout };
+  return {
+    id,
+    config,
+    open,
+    panelId,
+    contentId,
+    panelRef,
+    panelProps,
+    toggle,
+    show,
+    hide,
+    syncLayout,
+  };
 }

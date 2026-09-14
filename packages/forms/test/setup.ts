@@ -9,3 +9,11 @@ if (globalThis.ResizeObserver === undefined) {
     disconnect(): void {}
   };
 }
+
+// jsdom has no pointer capture, and gridstack's pointer handlers (dd-touch) call
+// `releasePointerCapture` on every pointerdown over a grid item (doc 185). Same stub as @repo/ui's setup.
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {};
+}

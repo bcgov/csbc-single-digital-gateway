@@ -19,11 +19,14 @@ export const GRID_ELEMENT_COMPONENT = 'jsonforms-element';
  * rejected: huge meaningless `h` values, 1px snapping, and saved layouts that break if the unit
  * changes. `margin: '0.5rem'` insets every item's content on all four sides, so neighbours sit 1rem
  * apart (and 0.5rem in from the grid's edges); gridstack counts the margins when sizing to content.
+ * `animate: false`: every item mounts one row tall and then grows to its content, so with gridstack's
+ * default 0.3s animation the whole form visibly slides into place on load (doc 184).
  */
 export const DEFAULT_GRID_OPTIONS: Readonly<GridStackLayoutOptions> = Object.freeze({
   column: 12,
   cellHeight: '1rem',
   margin: '0.5rem',
+  animate: false,
   staticGrid: true,
   sizeToContent: true,
 });

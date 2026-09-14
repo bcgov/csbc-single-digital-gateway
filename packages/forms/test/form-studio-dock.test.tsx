@@ -44,6 +44,9 @@ function childSlots(group: HTMLElement | null | undefined): string[] {
 
 const trigger = (name: string) => screen.getByRole('button', { name });
 
+/** The react-resizable-panels `[data-panel]` element around a studio panel's content wrapper. */
+const panelElement = (content: HTMLElement | null) => content?.closest('[data-panel]');
+
 describe('FormStudio dock panels (doc 181)', () => {
   describe('shell borders (rules 1-2)', () => {
     it('gives the header a bottom border and right-aligns its contents', () => {
@@ -68,9 +71,11 @@ describe('FormStudio dock panels (doc 181)', () => {
   });
 
   describe('toggles (rules 15-17)', () => {
-    it('renders a joined horizontal toggle group as the last child of the header', () => {
+    // Doc 184 rule 4 supersedes rule 15's "last child": the Preview toggle now follows the group.
+    it('renders a joined horizontal toggle group directly before the Preview toggle', () => {
       const { header } = renderStudio();
-      const group = header?.lastElementChild;
+      const group = header?.lastElementChild?.previousElementSibling;
+      expect(header?.lastElementChild).toHaveAttribute('aria-label', 'Preview');
       expect(group).toHaveAttribute('data-slot', 'toggle-group');
       expect(group).toHaveAttribute('role', 'group');
       expect(group).toHaveAttribute('aria-label', 'Panels');
@@ -81,8 +86,9 @@ describe('FormStudio dock panels (doc 181)', () => {
     });
 
     it('orders the triggers Left, Bottom, Right', () => {
-      const { header } = renderStudio();
-      const buttons = within(header as HTMLElement).getAllByRole('button');
+      renderStudio();
+      const group = screen.getByRole('group', { name: 'Panels' });
+      const buttons = within(group).getAllByRole('button');
       expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
         'Left panel',
         'Bottom panel',
@@ -207,6 +213,23 @@ describe('FormStudio dock panels (doc 181)', () => {
       expect(panels.center).not.toHaveAttribute('inert');
       expect(panels.right).toHaveAttribute('inert');
       expect(panels.bottom).toHaveAttribute('inert');
+    });
+
+    // Doc 184 rule 13b — rrp builds drag hit regions from panel boundaries, skipping only panels that
+    // carry data-disabled, so a closed panel must be disabled or its edge drags it open.
+    it('marks closed dock panels data-disabled so their edges cannot be dragged open', () => {
+      const { panels } = renderStudio();
+
+      expect(panelElement(panels.left)).not.toHaveAttribute('data-disabled');
+      expect(panelElement(panels.center)).not.toHaveAttribute('data-disabled');
+      expect(panelElement(panels.right)).toHaveAttribute('data-disabled');
+      expect(panelElement(panels.bottom)).toHaveAttribute('data-disabled');
+
+      fireEvent.click(trigger('Left panel'));
+      fireEvent.click(trigger('Right panel'));
+
+      expect(panelElement(panels.left)).toHaveAttribute('data-disabled');
+      expect(panelElement(panels.right)).not.toHaveAttribute('data-disabled');
     });
   });
 

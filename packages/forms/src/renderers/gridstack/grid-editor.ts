@@ -38,6 +38,11 @@ export interface GridEditor {
   /** A stable id for `element` (also used for the Grid element itself). */
   idOf(element: UISchemaElement): string;
   onGesture(gesture: GridGesture): void;
+  /**
+   * `true` when a drag or resize starts on an editable Grid, `false` when it stops or its item is dropped
+   * into another grid (doc 185 rule 10). Optional: a consumer that only needs finished gestures omits it.
+   */
+  onGestureActive?(active: boolean): void;
 }
 
 // Kept in a module with no components, like grid-context.ts, so components using it stay Fast Refresh-able.

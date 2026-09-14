@@ -130,10 +130,13 @@ describe('GridStack options mapping', () => {
     // sizeToContent defaults to true but the renderer owns sizing (rules 8, 10c), so GridStack gets false.
     // 1rem rows keep an item's box within one row of its component; a 0.5rem margin spaces
     // neighbours 1rem apart (doc 180 rule 8).
+    // animate: false — items mount one row tall and grow to their content; animated, every item
+    // below slides into place (doc 184, user decision: all fillable forms).
     expect(build()).toEqual({
       column: 12,
       cellHeight: '1rem',
       margin: '0.5rem',
+      animate: false,
       staticGrid: true,
       sizeToContent: false,
       children: [],
@@ -160,7 +163,7 @@ describe('GridStack options mapping', () => {
         float: true,
         minRow: 1,
         maxRow: 10,
-        animate: false,
+        animate: true,
       },
     });
     expect(options).toMatchObject({
@@ -171,7 +174,8 @@ describe('GridStack options mapping', () => {
       minRow: 1,
       maxRow: 10,
     });
-    expect(options).not.toHaveProperty('animate');
+    // `animate` is not allow-listed: the authored `true` is ignored and the built-in default stays.
+    expect(options.animate).toBe(false);
   });
 
   it('ignores staticGrid, children and subGridOpts supplied through element options', () => {

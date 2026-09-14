@@ -2,11 +2,12 @@ import type { UISchemaElement } from '@jsonforms/core';
 import type { LayoutNode } from '../../renderers/gridstack/grid-editor';
 import { resizingFor } from '../../renderers/studio/studio-item-resize';
 import type { ElementIds } from './element-ids';
+import { findById, updateById, withElements, type TreeElement } from './element-tree';
 
 // Pure uischema updates for finished grid gestures (doc 183 rules 6, 11-14). Nothing is mutated:
 // every replaced element is a new object that carries its id, and untouched subtrees keep identity.
 
-type Element = UISchemaElement & { elements?: UISchemaElement[] };
+type Element = TreeElement;
 
 /** A cross-grid move, as reported by the Grid editor port. */
 export interface LayoutMove {
@@ -54,16 +55,6 @@ const position = (element: UISchemaElement, key: 'x' | 'y') => {
   return typeof value === 'number' ? value : Number.MAX_SAFE_INTEGER;
 };
 
-/** A Grid with `elements`, carrying its id, or the same Grid when the elements are identical. */
-function withElements(grid: Element, elements: UISchemaElement[], ids: ElementIds): Element {
-  const current = grid.elements ?? [];
-  if (current.length === elements.length && current.every((el, i) => el === elements[i]))
-    return grid;
-  const next = { ...grid, elements };
-  ids.carry(grid, next);
-  return next;
-}
-
 /** Rules 11 + 13: place every element that has a node, then sort by y, then x. */
 function layoutGrid(grid: Element, nodes: readonly LayoutNode[], ids: ElementIds): Element {
   const byId = new Map(nodes.map((node) => [node.id, node]));
@@ -75,32 +66,6 @@ function layoutGrid(grid: Element, nodes: readonly LayoutNode[], ids: ElementIds
     (a, b) => position(a, 'y') - position(b, 'y') || position(a, 'x') - position(b, 'x'),
   );
   return withElements(grid, sorted, ids);
-}
-
-/** The element with `id` at or below `root`, depth-first. */
-function findById(root: Element, id: string, ids: ElementIds): Element | undefined {
-  if (ids.idOf(root) === id) return root;
-  for (const child of root.elements ?? []) {
-    const found = findById(child, id, ids);
-    if (found) return found;
-  }
-  return undefined;
-}
-
-/** `update` applied to the element with `id`, rebuilding only its ancestors. */
-function updateById(
-  root: Element,
-  id: string,
-  update: (element: Element) => Element,
-  ids: ElementIds,
-): Element {
-  if (ids.idOf(root) === id) return update(root);
-  if (!root.elements) return root;
-  return withElements(
-    root,
-    root.elements.map((child) => updateById(child, id, update, ids)),
-    ids,
-  );
 }
 
 /** Rule 11 + 13 for the Grid with `gridId`; unknown grid → the same uischema. */

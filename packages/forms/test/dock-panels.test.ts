@@ -132,6 +132,77 @@ describe('useDockPanel', () => {
     });
   });
 
+  // Doc 184 rule 13 — idempotent show()/hide(), used to enter and leave preview. Not open()/close():
+  // `open` is already the panel's boolean state.
+  describe('show / hide', () => {
+    it('closes an open panel once and does nothing when it is already closed', () => {
+      const { result, handle } = renderDock('left');
+      act(() => result.current.hide());
+      expect(result.current.open).toBe(false);
+      act(() => result.current.hide());
+      expect(result.current.open).toBe(false);
+      expect(handle.collapse).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens a closed panel at its remembered size once and does nothing when it is already open', () => {
+      const { result, handle } = renderDock('right');
+      act(() => result.current.show());
+      expect(result.current.open).toBe(true);
+      act(() => result.current.show());
+      expect(result.current.open).toBe(true);
+      expect(handle.resize).toHaveBeenCalledTimes(1);
+      expect(handle.resize).toHaveBeenCalledWith('20%');
+      expect(handle.expand).not.toHaveBeenCalled();
+    });
+
+    it('reopens a closed panel at the size it had before it was closed', () => {
+      const { result, handle } = renderDock('left');
+      act(() => result.current.syncLayout({ [result.current.panelId]: 28 }));
+      act(() => result.current.hide());
+      act(() => result.current.syncLayout({ [result.current.panelId]: 0 }));
+      act(() => result.current.show());
+      expect(handle.resize).toHaveBeenCalledWith('28%');
+    });
+
+    it('works before the panel handle exists', () => {
+      const { result } = renderHook(() => useDockPanel('left'));
+      act(() => result.current.hide());
+      expect(result.current.open).toBe(false);
+      act(() => result.current.show());
+      expect(result.current.open).toBe(true);
+    });
+  });
+
+  // Doc 184 rule 13b — react-resizable-panels resizes at panel boundaries even without a Separator, so
+  // a closed dock panel is disabled or its edge can be dragged open. The panel handle's imperative
+  // resize()/collapse() ignore `disabled`, so show() still reopens it.
+  describe('disabled while closed', () => {
+    it('disables a closed-by-default panel and enables an open-by-default one', () => {
+      expect(renderDock('right').result.current.panelProps.disabled).toBe(true);
+      expect(renderDock('bottom').result.current.panelProps.disabled).toBe(true);
+      expect(renderDock('left').result.current.panelProps.disabled).toBe(false);
+    });
+
+    it('disables a panel when it is hidden and enables it again when it is shown', () => {
+      const { result, handle } = renderDock('left');
+
+      act(() => result.current.hide());
+      expect(result.current.panelProps.disabled).toBe(true);
+
+      act(() => result.current.show());
+      expect(result.current.panelProps.disabled).toBe(false);
+      expect(handle.resize).toHaveBeenCalledWith('20%');
+    });
+
+    it('follows open when a committed layout closes or opens the panel', () => {
+      const { result } = renderDock('right');
+      act(() => result.current.syncLayout({ [result.current.panelId]: 18 }));
+      expect(result.current.panelProps.disabled).toBe(false);
+      act(() => result.current.syncLayout({ [result.current.panelId]: 0 }));
+      expect(result.current.panelProps.disabled).toBe(true);
+    });
+  });
+
   describe('syncLayout — committed group layouts (rules 12-13)', () => {
     it('reopens at the size last committed by the group layout', () => {
       const { result, handle } = renderDock('left');
