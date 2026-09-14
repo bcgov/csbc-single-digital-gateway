@@ -17,15 +17,19 @@ export const textareaTester: RankedTester = rankWith(
   and(isStringControl, optionIs('component', 'textarea')),
 );
 
-/** Renders a string `Control` with `@repo/ui`'s `Textarea`; clearing writes `undefined` (rule 15). */
+/**
+ * Renders a string `Control` with `@repo/ui`'s `Textarea`; clearing writes `undefined` (rule 15). A
+ * `maxLength` also shows the `<n>/<max>` counter under the textarea (rule 18b).
+ */
 function TextareaControl(props: ControlProps) {
   const { data, path, schema, uischema, handleChange } = props;
+  const inputProps = stringInputProps(schema, uischema.options);
   return (
-    <ControlField control={props}>
+    <ControlField control={props} maxLength={inputProps.maxLength}>
       {(input) => (
         <Textarea
           {...input}
-          {...stringInputProps(schema, uischema.options)}
+          {...inputProps}
           value={typeof data === 'string' ? data : ''}
           onChange={(event) => handleChange(path, event.target.value || undefined)}
         />

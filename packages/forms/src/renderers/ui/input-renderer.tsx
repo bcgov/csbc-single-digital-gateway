@@ -9,16 +9,18 @@ export const inputTester: RankedTester = rankWith(1, isStringControl);
 
 /**
  * Renders a string `Control` with `@repo/ui`'s `Input`. Clearing the field writes `undefined`, not
- * `''`, so the property is removed and a `required` constraint still fails (doc 182 rule 15).
+ * `''`, so the property is removed and a `required` constraint still fails (doc 182 rule 15). A
+ * `maxLength` also shows the `<n>/<max>` counter under the input (rule 18b).
  */
 function InputControl(props: ControlProps) {
   const { data, path, schema, uischema, handleChange } = props;
+  const inputProps = stringInputProps(schema, uischema.options);
   return (
-    <ControlField control={props}>
+    <ControlField control={props} maxLength={inputProps.maxLength}>
       {(input) => (
         <Input
           {...input}
-          {...stringInputProps(schema, uischema.options)}
+          {...inputProps}
           value={typeof data === 'string' ? data : ''}
           onChange={(event) => handleChange(path, event.target.value || undefined)}
         />
