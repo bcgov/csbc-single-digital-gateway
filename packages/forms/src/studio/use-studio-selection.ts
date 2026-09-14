@@ -74,17 +74,24 @@ interface PointerSelectionOptions {
   readonly parentOf: (elementId: string) => string | null;
   readonly setHovered: IdSetter;
   readonly setSelected: IdSetter;
+  readonly setPressing: (pressing: boolean) => void;
 }
+
+/** Whether a key event came from inside the inspector, where Escape belongs to its fields (doc 187 rule 29). */
+const insideInspector = (target: EventTarget | null) =>
+  target instanceof Element && target.closest('[data-studio-inspector]') !== null;
 
 /**
  * Document listeners turning pointer and key events into hover and selection (doc 185 rules 2, 5, 7; doc
  * 186 rules 3-4, 7, 15). The press listener captures, so gridstack's drag handling on the item cannot
- * swallow it. Escape walks the selection up to the parent, and is left to the delete confirmation while it
- * is open. Events in the breadcrumbs change nothing here — the breadcrumbs set hover and selection themselves.
+ * swallow it; it also marks a press held from any studio target but the rest of the page until a pointerup
+ * or pointercancel anywhere (doc 187 rule 27). Escape walks the selection up to the parent, and is left to
+ * the delete confirmation while it is open and to the inspector's fields. Events in the breadcrumbs change
+ * nothing here — the breadcrumbs set hover and selection themselves.
  */
 function usePointerSelection(
   rootRef: RefObject<HTMLElement | null>,
-  { active, confirming, parentOf, setHovered, setSelected }: PointerSelectionOptions,
+  { active, confirming, parentOf, setHovered, setSelected, setPressing }: PointerSelectionOptions,
 ) {
   useEffect(() => {
     const root = rootRef.current;
@@ -101,25 +108,31 @@ function usePointerSelection(
     const onDown = (event: Event) => {
       if (event instanceof MouseEvent && event.button > 0) return;
       const target = pointerTargetOf(event.target, root);
+      if (target.kind !== 'outside') setPressing(true);
       if (target.kind === 'item') setSelected(target.id);
       else if (target.kind === 'canvas') setSelected(null);
     };
+    const onUp = () => setPressing(false);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || confirming) return;
+      if (event.key !== 'Escape' || confirming || insideInspector(event.target)) return;
       setSelected((current) => (current === null ? null : parentOf(current)));
     };
 
     document.addEventListener('pointerover', onOver);
     document.addEventListener('pointerout', onOut);
     document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('pointerup', onUp, true);
+    document.addEventListener('pointercancel', onUp, true);
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('pointerover', onOver);
       document.removeEventListener('pointerout', onOut);
       document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onUp, true);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [rootRef, active, confirming, parentOf, setHovered, setSelected]);
+  }, [rootRef, active, confirming, parentOf, setHovered, setSelected, setPressing]);
 }
 
 /** Rules 21-23: the pending delete, and the studio-lifetime "Don't ask me again" flag. */
@@ -150,7 +163,8 @@ function useDeleteConfirmation({ remove, elementTypes }: SelectableDocument) {
  * in preview, which clears everything; a new seed document does too, because its element ids restart. Ids
  * no longer in the document (a deleted element) read as nothing; the root's id is a valid one. Returns the
  * selection port for the studio renderers, the Grid editor extended with gesture tracking, the delete
- * confirmation, and `hover` / `select` for the footer breadcrumbs (`hover` does nothing mid-gesture).
+ * confirmation, `hover` / `select` for the footer breadcrumbs (`hover` does nothing mid-gesture), and
+ * `pressing` — a primary press that started in the studio is held (doc 187 rule 27).
  */
 export function useStudioSelection(
   rootRef: RefObject<HTMLElement | null>,
@@ -160,6 +174,7 @@ export function useStudioSelection(
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [gesturing, setGesturing] = useState(false);
+  const [pressing, setPressing] = useState(false);
   const [seed, setSeed] = useState(studio.seed);
   const confirmation = useDeleteConfirmation(studio);
 
@@ -171,7 +186,14 @@ export function useStudioSelection(
   }
   const { copy, editor: documentEditor, elementTypes, rootId, parentOf } = studio;
   const confirming = confirmation.pending !== null;
-  usePointerSelection(rootRef, { active, confirming, parentOf, setHovered, setSelected });
+  usePointerSelection(rootRef, {
+    active,
+    confirming,
+    parentOf,
+    setHovered,
+    setSelected,
+    setPressing,
+  });
 
   const known = (id: string | null) => id !== null && (id === rootId || elementTypes.has(id));
   const hoveredId = known(hovered) ? hovered : null;
@@ -210,5 +232,5 @@ export function useStudioSelection(
     [gesturing],
   );
 
-  return { port, editor, confirmation, hover, select: setSelected };
+  return { port, editor, confirmation, hover, select: setSelected, pressing };
 }

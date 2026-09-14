@@ -1,0 +1,235 @@
+import type { JsonSchema } from '@jsonforms/core';
+import type { TreeElement } from '../layout/element-tree';
+import type { InspectorContext } from './inspector-context';
+import {
+  finite,
+  isRecord,
+  optionsOf,
+  orCleared,
+  setElement,
+  setProperty,
+  setRequired,
+  text,
+  withElementKey,
+  withOption,
+  withWidth,
+  type InspectorEdit,
+} from './inspector-edits';
+
+// The inspector's settings (doc 187 rules 9-19): where each applies, its field schema, and how it reads and
+// writes the studio document. Declared in section order, so filtering keeps the rendered order.
+
+export type { InspectorEdit } from './inspector-edits';
+
+/** The inspector form's data — a flat view model keyed by field. */
+export type InspectorValues = Record<string, unknown>;
+
+export type SectionId = 'general' | 'validation' | 'appearance' | 'layout';
+
+export const INSPECTOR_SECTIONS: readonly { readonly id: SectionId; readonly label: string }[] =
+  Object.freeze([
+    Object.freeze({ id: 'general', label: 'General' }),
+    Object.freeze({ id: 'validation', label: 'Validation' }),
+    Object.freeze({ id: 'appearance', label: 'Appearance' }),
+    Object.freeze({ id: 'layout', label: 'Layout' }),
+  ]);
+
+export interface InspectorField {
+  readonly key: string;
+  readonly section: SectionId;
+  readonly label: string;
+  applies(ctx: InspectorContext): boolean;
+  schema(ctx: InspectorContext): JsonSchema;
+  /** The field Control's uischema `options`, if any. */
+  options?(ctx: InspectorContext): Record<string, unknown> | undefined;
+  /** The document's current value, or `undefined` when absent or of the wrong JSON type (rule 14). */
+  read(ctx: InspectorContext): unknown;
+  write(ctx: InspectorContext, edit: InspectorEdit, value: unknown): InspectorEdit;
+}
+
+const LAYOUT_LABEL_HINT = 'Names the layout in the element path.';
+
+const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
+const isHeading = (ctx: InspectorContext) => ctx.element.type === 'Heading';
+const hasProperty = (ctx: InspectorContext) => ctx.propertyKey !== undefined;
+const isString = (ctx: InspectorContext) => ctx.valueType === 'string';
+const isNumber = (ctx: InspectorContext) => ctx.valueType === 'number';
+
+const STRING: JsonSchema = Object.freeze({ type: 'string' });
+const BOOLEAN: JsonSchema = Object.freeze({ type: 'boolean' });
+const NUMBER: JsonSchema = Object.freeze({ type: 'number' });
+const HEADING_SCALE = { minimum: 1, maximum: 6 };
+const integer = (bounds: { minimum?: number; maximum?: number }): JsonSchema => ({
+  type: 'number',
+  ...bounds,
+  multipleOf: 1,
+});
+
+type Applies = (ctx: InspectorContext) => boolean;
+type Read = (value: unknown) => unknown;
+
+/** A setting stored in the bound property under its key, e.g. `maxLength`. */
+function propertyField(
+  key: string,
+  section: SectionId,
+  label: string,
+  applies: Applies,
+  schema: JsonSchema,
+  read: Read,
+): InspectorField {
+  return {
+    key,
+    section,
+    label,
+    applies,
+    schema: () => schema,
+    read: (ctx) => read(ctx.property?.[key as keyof JsonSchema]),
+    write: (ctx, edit, value) => setProperty(ctx, edit, key, orCleared(value)),
+  };
+}
+
+/** A setting stored in the element's `options` under its key. */
+function optionField(
+  key: string,
+  section: SectionId,
+  label: string,
+  applies: Applies,
+  schema: JsonSchema,
+  read: Read,
+): InspectorField {
+  return {
+    key,
+    section,
+    label,
+    applies,
+    schema: () => schema,
+    read: (ctx) => read(optionsOf(ctx.element)[key]),
+    write: (_ctx, edit, value) => setElement(edit, withOption(edit.element, key, orCleared(value))),
+  };
+}
+
+const hasValueType: Applies = (ctx) => ctx.valueType !== undefined;
+/** Grid stores its column count as `column`, HorizontalLayout as `columns`. */
+const columnsOption = (ctx: InspectorContext) => (ctx.layoutKind === 'grid' ? 'column' : 'columns');
+
+export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
+  {
+    key: 'label',
+    section: 'general',
+    label: 'Label',
+    applies: (ctx) => isControl(ctx) || ctx.layoutKind !== undefined,
+    schema: (ctx) => (ctx.layoutKind ? { type: 'string', description: LAYOUT_LABEL_HINT } : STRING),
+    options: (ctx) => {
+      const title = text(ctx.property?.title)?.trim();
+      return title ? { placeholder: title } : undefined;
+    },
+    read: (ctx) => text(ctx.element['label' as keyof TreeElement]),
+    write: (_ctx, edit, value) =>
+      setElement(edit, withElementKey(edit.element, 'label', orCleared(value))),
+  },
+  {
+    key: 'text',
+    section: 'general',
+    label: 'Text',
+    applies: isHeading,
+    schema: () => STRING,
+    read: (ctx) => text(ctx.element['text' as keyof TreeElement]),
+    // A Heading's `text` is required, so clearing writes '' (rule 17).
+    write: (_ctx, edit, value) =>
+      setElement(
+        edit,
+        withElementKey(edit.element, 'text', typeof value === 'string' ? value : ''),
+      ),
+  },
+  {
+    ...propertyField('description', 'general', 'Description', hasProperty, STRING, text),
+    options: () => ({ component: 'textarea' }),
+  },
+  optionField('placeholder', 'general', 'Placeholder', hasValueType, STRING, text),
+  {
+    key: 'required',
+    section: 'validation',
+    label: 'Required',
+    applies: hasProperty,
+    schema: () => BOOLEAN,
+    read: (ctx) =>
+      Array.isArray(ctx.schema.required) && ctx.propertyKey !== undefined
+        ? ctx.schema.required.includes(ctx.propertyKey)
+        : false,
+    write: (ctx, edit, value) => setRequired(ctx, edit, value === true),
+  },
+  propertyField('maxLength', 'validation', 'Max length', isString, integer({ minimum: 0 }), finite),
+  propertyField('minimum', 'validation', 'Minimum', isNumber, NUMBER, finite),
+  propertyField('maximum', 'validation', 'Maximum', isNumber, NUMBER, finite),
+  optionField(
+    'step',
+    'validation',
+    'Step',
+    isNumber,
+    { type: 'number', exclusiveMinimum: 0 },
+    finite,
+  ),
+  {
+    key: 'multiline',
+    section: 'appearance',
+    label: 'Multiline',
+    applies: isString,
+    schema: () => BOOLEAN,
+    read: (ctx) => optionsOf(ctx.element)['component'] === 'textarea',
+    write: (_ctx, edit, value) =>
+      setElement(
+        edit,
+        withOption(edit.element, 'component', value === true ? 'textarea' : undefined),
+      ),
+  },
+  optionField('level', 'appearance', 'Heading level', isHeading, integer(HEADING_SCALE), finite),
+  optionField('size', 'appearance', 'Heading size', isHeading, integer(HEADING_SCALE), finite),
+  {
+    key: 'columns',
+    section: 'layout',
+    label: 'Columns',
+    applies: (ctx) => ctx.layoutKind === 'grid' || ctx.layoutKind === 'horizontal',
+    schema: (ctx) =>
+      ctx.layoutKind === 'grid'
+        ? integer({ minimum: 1, maximum: 12 })
+        : integer({ minimum: 2, maximum: 6 }),
+    read: (ctx) => finite(optionsOf(ctx.element)[columnsOption(ctx)]),
+    write: (ctx, edit, value) =>
+      setElement(edit, withOption(edit.element, columnsOption(ctx), value)),
+  },
+  {
+    key: 'width',
+    section: 'layout',
+    label: 'Width',
+    applies: (ctx) => ctx.maxWidth !== undefined,
+    schema: (ctx) => integer({ minimum: 1, maximum: ctx.maxWidth ?? 1 }),
+    read: (ctx) => {
+      const gridItem = optionsOf(ctx.element)['gridItem'];
+      return finite(isRecord(gridItem) ? gridItem['w'] : undefined);
+    },
+    write: (_ctx, edit, value) => setElement(edit, withWidth(edit.element, value)),
+  },
+] satisfies InspectorField[]);
+
+/** The fields that apply to the element, in rendered order (rules 9-10). */
+export function fieldsFor(ctx: InspectorContext): InspectorField[] {
+  return INSPECTOR_FIELDS.filter((field) => field.applies(ctx));
+}
+
+/**
+ * Whether `value` satisfies a field schema (rule 16): its JSON type and, for numbers, `minimum`, `maximum`,
+ * `exclusiveMinimum` and `multipleOf`. Clearing (`undefined`) is always accepted.
+ */
+export function fieldAccepts(schema: JsonSchema, value: unknown): boolean {
+  if (value === undefined) return true;
+  if (schema.type === 'string') return typeof value === 'string';
+  if (schema.type === 'boolean') return typeof value === 'boolean';
+  if (schema.type !== 'number' || typeof value !== 'number' || !Number.isFinite(value))
+    return false;
+
+  const { minimum, maximum, exclusiveMinimum, multipleOf } = schema;
+  if (typeof minimum === 'number' && value < minimum) return false;
+  if (typeof maximum === 'number' && value > maximum) return false;
+  if (typeof exclusiveMinimum === 'number' && value <= exclusiveMinimum) return false;
+  return typeof multipleOf !== 'number' || Number.isInteger(value / multipleOf);
+}

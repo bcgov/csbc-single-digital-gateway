@@ -1,5 +1,5 @@
 import { computeLabel, type ControlProps } from '@jsonforms/core';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@repo/ui/field';
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@repo/ui/field';
 import type { ReactNode } from 'react';
 
 /** What `ControlField` hands its input: the id the label points at, plus state and aria wiring. */
@@ -23,9 +23,13 @@ interface ControlFieldProps {
  * `aria-describedby` / `aria-invalid` that point at whichever description and error actually
  * rendered. Hidden controls render nothing; an empty label (uischema `label: false`) renders no
  * `<label>`.
+ *
+ * `options.orientation: 'horizontal'` (rule 13b) lays the field out label-left, input-right instead: the
+ * label, description and errors stack in a `FieldContent` beside a narrow input box. The Form Studio
+ * inspector uses it for number fields (doc 187 rule 9b).
  */
 export function ControlField({ control, children }: ControlFieldProps) {
-  const { id, label, required, description, errors, enabled, visible, config } = control;
+  const { id, label, required, description, errors, enabled, visible, config, uischema } = control;
   if (!visible) return null;
 
   const inputId = `${id}-input`;
@@ -40,17 +44,37 @@ export function ControlField({ control, children }: ControlFieldProps) {
     ...(describedBy ? { 'aria-describedby': describedBy } : {}),
     ...(errorId ? { 'aria-invalid': true } : {}),
   };
+  const fieldLabel = label.trim() ? (
+    <FieldLabel htmlFor={inputId}>
+      {computeLabel(label, required === true, hideRequiredAsterisk)}
+    </FieldLabel>
+  ) : null;
+  const fieldDescription = descriptionId ? (
+    <FieldDescription id={descriptionId}>{description}</FieldDescription>
+  ) : null;
+  const fieldError = errorId ? <FieldError id={errorId}>{errors}</FieldError> : null;
+
+  if (uischema.options?.['orientation'] === 'horizontal') {
+    return (
+      <Field orientation="horizontal" data-disabled={enabled ? undefined : true}>
+        <FieldContent>
+          {fieldLabel}
+          {fieldDescription}
+          {fieldError}
+        </FieldContent>
+        <div data-slot="control-field-input" className="w-24 shrink-0">
+          {children(input)}
+        </div>
+      </Field>
+    );
+  }
 
   return (
     <Field data-disabled={enabled ? undefined : true}>
-      {label.trim() ? (
-        <FieldLabel htmlFor={inputId}>
-          {computeLabel(label, required === true, hideRequiredAsterisk)}
-        </FieldLabel>
-      ) : null}
+      {fieldLabel}
       {children(input)}
-      {descriptionId ? <FieldDescription id={descriptionId}>{description}</FieldDescription> : null}
-      {errorId ? <FieldError id={errorId}>{errors}</FieldError> : null}
+      {fieldDescription}
+      {fieldError}
     </Field>
   );
 }

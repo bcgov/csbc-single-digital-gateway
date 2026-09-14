@@ -29,6 +29,8 @@ export interface StudioWorkspaceProps {
   readonly panels: Readonly<Record<DockPanelId, DockPanel>>;
   /** Centre canvas content. */
   readonly children?: ReactNode;
+  /** Right dock panel content — the inspector (doc 187). */
+  readonly right?: ReactNode;
 }
 
 /**
@@ -43,7 +45,11 @@ export interface StudioWorkspaceProps {
  * at 0 the line sits just outside the group, which clips it (react-resizable-panels sets
  * `overflow: hidden`).
  */
-export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ panels, children }) => {
+export const StudioWorkspace: FC<StudioWorkspaceProps> = ({
+  panels,
+  right: rightContent,
+  children,
+}) => {
   const { left, right, bottom } = panels;
   const syncRow = (layout: Layout) => {
     left.syncLayout(layout);
@@ -62,7 +68,7 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ panels, children }) 
             </div>
           </ResizablePanel>
           {right.open && <ResizableHandle className="-mr-px" />}
-          <DockPanelView dock={right} />
+          <DockPanelView dock={right}>{rightContent}</DockPanelView>
         </ResizablePanelGroup>
       </ResizablePanel>
       {bottom.open && <ResizableHandle className="-mb-px" />}

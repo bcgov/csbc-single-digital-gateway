@@ -11,7 +11,9 @@ import { DockToggles } from './dock-toggles';
 import { PreviewToggle } from './preview-toggle';
 import { STUDIO_SAMPLE_DATA } from './sample';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
+import { StudioInspector } from './studio-inspector';
 import { StudioWorkspace } from './studio-workspace';
+import { useInspectorPanel } from './use-inspector-panel';
 import { usePreviewMode } from './use-preview-mode';
 import { useStudioDocument } from './use-studio-document';
 import { useStudioSelection } from './use-studio-selection';
@@ -52,6 +54,12 @@ const PREVIEW_RENDERERS = [
  * footer's breadcrumbs name the path to the selection — the root alone when nothing is selected — and
  * hover or select any element on it (doc 186).
  *
+ * The right dock panel holds the inspector (doc 187): the selected element's settings as a form that writes
+ * every valid change straight back to the document. The panel opens whenever the selection changes to an
+ * element — once any press is released — and never closes on its own. The canvas renders without
+ * validation, so authoring a constraint such as Required never paints data errors on the inert design
+ * surface; preview still validates (doc 187 rule 25b).
+ *
  * The play toggle switches to preview (doc 184): the panel toggles go, open panels close, and the same
  * document renders through the fillable `renderers/default` without the Grid editor or selection — in
  * its own `JsonForms`, so anything typed is discarded when preview ends.
@@ -65,11 +73,14 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
     bottom: useDockPanel('bottom'),
   };
   const { previewing, setPreviewing } = usePreviewMode(panels);
-  const { port, editor, confirmation, hover, select } = useStudioSelection(
+  const { port, editor, confirmation, hover, select, pressing } = useStudioSelection(
     rootRef,
     !previewing,
     studio,
   );
+  const { selectedId } = port;
+  const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right);
+  const segments = studio.pathOf(selectedId);
 
   return (
     <div ref={rootRef} data-slot="form-studio" className="flex h-full flex-col">
@@ -81,7 +92,19 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
         <PreviewToggle pressed={previewing} onPressedChange={setPreviewing} />
       </header>
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
-        <StudioWorkspace panels={panels}>
+        <StudioWorkspace
+          panels={panels}
+          right={
+            previewing ? null : (
+              <StudioInspector
+                elementId={selectedId}
+                label={segments.at(-1)?.label ?? ''}
+                form={inspector}
+                onChange={studio.updateElement}
+              />
+            )
+          }
+        >
           {previewing ? (
             <JsonForms
               key="preview"
@@ -101,6 +124,7 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
                   data={STUDIO_SAMPLE_DATA}
                   renderers={STUDIO_RENDERERS}
                   cells={studioSet.cells}
+                  validationMode="NoValidation"
                 />
               </GridEditorProvider>
             </StudioSelectionProvider>
@@ -113,8 +137,8 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
       >
         {previewing ? null : (
           <StudioBreadcrumbs
-            segments={studio.pathOf(port.selectedId)}
-            currentId={port.selectedId}
+            segments={segments}
+            currentId={selectedId}
             onHover={hover}
             onSelect={select}
           />

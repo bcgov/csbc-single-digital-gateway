@@ -2,6 +2,9 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { useCallback, useMemo, useState } from 'react';
 import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
+import { applyInspector } from './inspector/apply-inspector';
+import type { InspectorValues } from './inspector/inspector-fields';
+import { inspectorForm, type InspectorForm } from './inspector/inspector-form';
 import { applyLayout, applyMove } from './layout/apply-layout';
 import { copyElement } from './layout/copy-element';
 import { createElementIds, type ElementIds } from './layout/element-ids';
@@ -127,6 +130,28 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [ids],
   );
 
+  /** The inspector form for `elementId`, or `undefined` when it is not in the document (doc 187). */
+  const inspectorFor = useCallback(
+    (elementId: string): InspectorForm | undefined =>
+      inspectorForm({ schema: currentSchema, uischema: currentUischema }, elementId, ids),
+    [currentSchema, currentUischema, ids],
+  );
+
+  /**
+   * Writes inspector values back (doc 187 rules 15-22). An unchanged document keeps the same state object,
+   * so JSONForms' mount emit re-renders nothing.
+   */
+  const updateElement = useCallback(
+    (elementId: string, values: InspectorValues) => {
+      setState((previous) => {
+        const document = { schema: previous.schema, uischema: previous.uischema };
+        const next = applyInspector(document, elementId, values, ids);
+        return next === document ? previous : { ...previous, ...next };
+      });
+    },
+    [ids],
+  );
+
   return {
     schema: currentSchema,
     uischema: currentUischema,
@@ -136,6 +161,8 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     rootId,
     parentOf,
     pathOf,
+    inspectorFor,
+    updateElement,
     copy,
     remove,
   };

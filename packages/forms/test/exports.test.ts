@@ -76,8 +76,9 @@ describe('@repo/forms exports map', () => {
 
 // Doc 180 — nested renderer submodules, the static stylesheet export, and packaging.
 describe('@repo/forms renderer submodules', () => {
-  it('exposes ./renderers/ui, ./renderers/gridstack, ./renderers/default and ./renderers/studio via flat renderers-* entries', () => {
-    for (const name of ['ui', 'gridstack', 'default', 'studio']) {
+  // Doc 187 rule 1 adds ./renderers/studio-inspector.
+  it('exposes ./renderers/ui, ./renderers/gridstack, ./renderers/default, ./renderers/studio and ./renderers/studio-inspector via flat renderers-* entries', () => {
+    for (const name of ['ui', 'gridstack', 'default', 'studio', 'studio-inspector']) {
       expect(exportsMap[`./renderers/${name}`], name).toEqual({
         types: `./dist/renderers-${name}.d.ts`,
         development: `./src/renderers-${name}.ts`,

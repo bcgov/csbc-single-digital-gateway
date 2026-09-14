@@ -43,6 +43,12 @@ const deliveryGrid = () =>
     itemOf(screen.getByRole('heading', { name: 'Delivery address' })).parentElement as HTMLElement,
   );
 
+/** Textboxes on the canvas only — selecting an element fills the inspector (doc 187) with its own fields. */
+const canvasFields = () =>
+  within(
+    document.querySelector('[data-slot="form-studio-center-panel"]') as HTMLElement,
+  ).getAllByRole('textbox');
+
 describe('copy (rules 15-19)', () => {
   it('duplicates a field with its own "(copy)" property and selects the copy', async () => {
     await renderStudio();
@@ -70,13 +76,13 @@ describe('copy (rules 15-19)', () => {
 
   it('copies a Heading without adding fields', async () => {
     await renderStudio();
-    const fields = screen.getAllByRole('textbox').length;
+    const fields = canvasFields().length;
     await selectAnd(screen.getByRole('heading', { level: 1, name: GREETING }), 'Copy');
 
     await waitFor(() =>
       expect(screen.getAllByRole('heading', { level: 1, name: GREETING })).toHaveLength(2),
     );
-    expect(screen.getAllByRole('textbox')).toHaveLength(fields);
+    expect(canvasFields()).toHaveLength(fields);
   });
 });
 
