@@ -34,26 +34,33 @@ export function contentRows({
 }
 
 /**
- * The `grid.update` that keeps `rows` as an item's floor, or `null` when nothing changes: `minH`
- * always follows the content, and `h` is raised only when it is below it — an item never shrinks by
- * itself, so a height set by hand survives.
+ * The `grid.update` that keeps `rows` as an item's floor, or `null` when nothing changes (doc 180 rule
+ * 10d, bug B1): `minH` always follows the content, and `h` follows it too — growing and shrinking —
+ * except that a hand-set height (`authoredH`, the element's written `gridItem.h`) is kept while the
+ * content fits in it: the target height is `max(rows, authoredH)`.
  */
 export function minHeightUpdate(
   node: Pick<GridStackNode, 'h' | 'minH'>,
   rows: number,
+  authoredH?: number,
 ): { minH: number; h?: number } | null {
   if (rows < 1) return null;
-  if ((node.h ?? 0) < rows) return { minH: rows, h: rows };
+  const h = Math.max(rows, authoredH ?? rows);
+  if (node.h !== h) return { minH: rows, h };
   return node.minH === rows ? null : { minH: rows };
 }
 
-/** Rule 10d: raise the item's floor (and height, if needed) to what its content currently needs. */
-function keepContentAsMinimum(itemEl: GridItemHTMLElement) {
-  const node = itemEl.gridstackNode;
+/**
+ * Rule 10d: fit the item's floor and height to what its content currently needs. Skipped mid-resize, so
+ * a reflow from a width change never fights the person dragging a handle.
+ */
+function keepContentAsMinimum(itemEl: GridItemHTMLElement, authoredH: number | undefined) {
+  const node = itemEl.gridstackNode as (GridStackNode & { _resizing?: boolean }) | undefined;
   const grid = node?.grid;
   const contentArea = itemEl.querySelector<HTMLElement>('.grid-stack-item-content');
   const child = contentArea?.firstElementChild;
-  if (!node || !grid || !contentArea || !child) return;
+  // eslint-disable-next-line no-underscore-dangle -- gridstack's own in-progress resize flag; no public API
+  if (!node || !grid || !contentArea || !child || node._resizing) return;
 
   const rows = contentRows({
     itemHeight: itemEl.clientHeight,
@@ -61,7 +68,7 @@ function keepContentAsMinimum(itemEl: GridItemHTMLElement) {
     childHeight: child.getBoundingClientRect().height,
     cellHeight: grid.getCellHeight(true),
   });
-  const update = minHeightUpdate(node, rows);
+  const update = minHeightUpdate(node, rows, authoredH);
   if (update) grid.update(itemEl, update);
 }
 
@@ -72,13 +79,15 @@ function keepContentAsMinimum(itemEl: GridItemHTMLElement) {
  * own `sizeToContent` pass would measure an empty item (console error "firstElementChild is null …
  * Skipping sizing") and leave it one row tall, clipping the content. The Grid therefore hands
  * GridStack `sizeToContent: false` and this hook does the sizing: once the content has committed,
- * then whenever its size changes — fonts loading, rules showing/hiding children, text changes, or a
- * width change reflowing it. `sizing` picks an exact fit or a content floor.
+ * then whenever its size changes — fonts loading, rules showing/hiding children, text changes, a
+ * child leaving a nested Grid, or a width change reflowing it. `sizing` picks an exact fit or a
+ * content floor; `authoredH` is the element's hand-set height, kept by the floor mode.
  */
 export function useSizeToContent(
   contentRef: RefObject<HTMLElement | null>,
   enabled: boolean,
   sizing: ItemSizing = 'fit',
+  authoredH?: number,
 ) {
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -88,11 +97,11 @@ export function useSizeToContent(
     const resize =
       sizing === 'fit'
         ? () => itemEl.gridstackNode?.grid?.resizeToContent(itemEl)
-        : () => keepContentAsMinimum(itemEl);
+        : () => keepContentAsMinimum(itemEl, authoredH);
 
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(content);
     return () => observer.disconnect();
-  }, [contentRef, enabled, sizing]);
+  }, [contentRef, enabled, sizing, authoredH]);
 }

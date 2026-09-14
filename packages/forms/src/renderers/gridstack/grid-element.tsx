@@ -1,3 +1,4 @@
+import type { UISchemaElement } from '@jsonforms/core';
 import { JsonFormsDispatch } from '@jsonforms/react';
 import { useContext, useRef } from 'react';
 import { GridContext } from './grid-context';
@@ -22,6 +23,14 @@ export interface GridElementDispatchProps {
   sizing?: ItemSizing;
 }
 
+/** The element's hand-set height — a positive authored `options.gridItem.h` (doc 180 rule 10d, bug B1). */
+function authoredHeightOf(element: UISchemaElement | undefined): number | undefined {
+  const gridItem = element?.options?.['gridItem'];
+  const h =
+    typeof gridItem === 'object' && gridItem !== null ? (gridItem as { h?: unknown }).h : undefined;
+  return typeof h === 'number' && h > 0 ? h : undefined;
+}
+
 /**
  * The built-in grid item: dispatches the element with `elementId` through JSONForms, so the renderers in play
  * (plain for `default`, framed for `studio`) decide what the child looks like. A consumer that
@@ -38,9 +47,9 @@ export function GridElementDispatch({
 }: GridElementDispatchProps) {
   const grid = useContext(GridContext);
   const contentRef = useRef<HTMLDivElement>(null);
-  useSizeToContent(contentRef, grid?.sizeToContent === true, sizing);
-
   const element = typeof elementId === 'string' ? grid?.elementsById.get(elementId) : undefined;
+  useSizeToContent(contentRef, grid?.sizeToContent === true, sizing, authoredHeightOf(element));
+
   if (!grid || !element) return null;
 
   return (
