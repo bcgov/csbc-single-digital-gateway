@@ -69,6 +69,29 @@ export interface GridElement extends Layout {
   options?: GridElementOptions & { [key: string]: unknown };
 }
 
+/**
+ * `{ type: 'VerticalLayout' }` — one gridstack column; children stack in `elements` order and every
+ * authored `gridItem` key is ignored (doc 180 rules 23-26).
+ */
+export interface VerticalLayoutElement extends Layout {
+  type: 'VerticalLayout';
+}
+
+/** The options a `HorizontalLayout` reads — everything else is ignored (doc 180 rule 27). */
+export interface HorizontalLayoutOptions {
+  /** Columns in the row, 2-6. Anything else falls back to the child count, clamped to 2-6. */
+  columns?: 2 | 3 | 4 | 5 | 6;
+}
+
+/**
+ * `{ type: 'HorizontalLayout' }` — one gridstack row; children run left to right in `elements` order,
+ * each `options.gridItem.w` columns wide (default 1). No other `gridItem` key is read (doc 180 rule 28).
+ */
+export interface HorizontalLayoutElement extends Layout {
+  type: 'HorizontalLayout';
+  options?: HorizontalLayoutOptions & { [key: string]: unknown };
+}
+
 /** GridStack options a consumer may pass to the factory — the widgets always come from `elements`. */
 export type GridStackLayoutOptions = Omit<GridStackOptions, 'children' | 'subGridOpts'>;
 

@@ -65,6 +65,9 @@ describe('sample data properties (rule 28)', () => {
       'About',
       'Quantity',
       'Budget',
+      'Email',
+      'Phone',
+      'Best time to call',
       'City',
       'Postal Code',
     ]);
@@ -79,7 +82,7 @@ describe('sample data properties (rule 28)', () => {
     };
     walk(STUDIO_SAMPLE_UISCHEMA);
 
-    expect(scopes).toHaveLength(6);
+    expect(scopes).toHaveLength(9);
     for (const scope of scopes) {
       const key = scope.replace('#/properties/', '');
       expect(key).toMatch(/^[\w-]{8}$/);
@@ -116,23 +119,7 @@ describe('hover (rules 1-4)', () => {
     expect(marked('data-hovered')).toEqual([]);
   });
 
-  it('never hovers or selects the root Grid: pointing at its frame clears both', async () => {
-    const { container, name } = await renderStudio();
-    hoverOver(name);
-    press(name);
-    expect(marked('data-selected')).toEqual([name]);
-
-    const rootFrame = container.querySelector(
-      '[data-slot="studio-element"][data-element-type="Grid"]',
-    ) as HTMLElement;
-    hoverOver(rootFrame);
-    press(rootFrame);
-    expect(rootFrame).not.toHaveAttribute('data-hovered');
-    expect(rootFrame).not.toHaveAttribute('data-selected');
-    expect(marked('data-hovered')).toEqual([]);
-    expect(marked('data-selected')).toEqual([]);
-    await waitFor(() => expect(actionMenus()).toHaveLength(0));
-  });
+  // The root element's hover and selection (amending rule 1) are covered by studio-root-selection.test.tsx.
 
   it('keeps an element hovered while the pointer is over its actions popover', async () => {
     const { name } = await renderStudio();
@@ -185,12 +172,16 @@ describe('selection (rules 5-8)', () => {
     expect(marked('data-selected')).toEqual([]);
   });
 
-  it('deselects on Escape', async () => {
-    const { name } = await renderStudio();
+  // Doc 186 rule 7 amends rule 7: Escape selects the parent — here the root.
+  it('moves the selection from a root child to the root on Escape', async () => {
+    const { container, name } = await renderStudio();
     press(name);
     expect(marked('data-selected')).toEqual([name]);
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(marked('data-selected')).toEqual([]);
+    expect(
+      container.querySelector('[data-slot="studio-element"][data-element-type="VerticalLayout"]'),
+    ).toHaveAttribute('data-selected');
   });
 
   it('keeps the selection when its actions popover or something outside the canvas is pressed', async () => {

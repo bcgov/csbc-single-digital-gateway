@@ -16,9 +16,12 @@ export type {
   GridRenderersOptions,
   GridStackLayoutOptions,
   HeadingElement,
+  HorizontalLayoutElement,
+  HorizontalLayoutOptions,
   InputControlElement,
   NumberInputControlElement,
   TextareaControlElement,
+  VerticalLayoutElement,
 } from './elements';
 
 /**

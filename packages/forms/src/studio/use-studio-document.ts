@@ -5,7 +5,8 @@ import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
 import { applyLayout, applyMove } from './layout/apply-layout';
 import { copyElement } from './layout/copy-element';
 import { createElementIds, type ElementIds } from './layout/element-ids';
-import type { TreeElement } from './layout/element-tree';
+import { pathSegments, type PathSegment } from './layout/element-path';
+import { findParentById, type TreeElement } from './layout/element-tree';
 import { removeElement } from './layout/remove-element';
 import { newPropertyKey } from './layout/schema-properties';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
@@ -85,6 +86,24 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
 
   const { schema: currentSchema, uischema: currentUischema } = current;
   const elementTypes = useMemo(() => typesById(currentUischema, ids), [currentUischema, ids]);
+  // The root's id follows immutable updates because ids are carried (doc 186 rule 6).
+  const rootId = ids.idOf(currentUischema);
+
+  /** The id of the element holding `elementId`; `null` for the root or an unknown id (doc 186 rule 7). */
+  const parentOf = useCallback(
+    (elementId: string): string | null => {
+      const parent = findParentById(currentUischema, elementId, ids);
+      return parent ? ids.idOf(parent) : null;
+    },
+    [currentUischema, ids],
+  );
+
+  /** The breadcrumbs to `elementId`, or the root's alone (doc 186 rules 9, 20). */
+  const pathOf = useCallback(
+    (elementId: string | null): PathSegment[] =>
+      pathSegments(currentUischema, elementId, currentSchema, ids),
+    [currentUischema, currentSchema, ids],
+  );
 
   // Copies from the rendered document so the copy's id can be returned — and selected — at once.
   const copy = useCallback(
@@ -114,6 +133,9 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     seed: current.seed,
     editor,
     elementTypes,
+    rootId,
+    parentOf,
+    pathOf,
     copy,
     remove,
   };

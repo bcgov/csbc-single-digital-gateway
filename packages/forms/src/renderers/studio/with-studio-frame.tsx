@@ -4,8 +4,10 @@ import type {
   UISchemaElement,
 } from '@jsonforms/core';
 import { useContext, type ComponentType } from 'react';
+import { useGridEditor } from '../gridstack/grid-editor';
 import { StudioContent } from './studio-content';
 import { StudioItemContext } from './studio-item-context';
+import { useSelectionPort } from './studio-selection';
 
 interface FramedProps {
   uischema?: UISchemaElement;
@@ -20,6 +22,10 @@ interface FramedProps {
  *
  * Inside a studio grid item the item already draws the outline and disables its content, so the
  * renderer is returned bare.
+ *
+ * Under the Form Studio's selection port and Grid editor (doc 186 rules 1-2, 5) a frame — in practice the
+ * root element's — carries `data-element-id` plus `data-hovered` / `data-selected`, which recolour its
+ * outline like a grid item's. It never shows an actions popover: the root cannot be copied or deleted.
  */
 export function withStudioFrame<P extends FramedProps>(
   Renderer: ComponentType<P>,
@@ -27,16 +33,26 @@ export function withStudioFrame<P extends FramedProps>(
   // eslint-disable-next-line unicorn/consistent-function-scoping -- captures Renderer, referenced only as JSX, which the rule does not see
   function StudioFrame(props: P) {
     const insideGridItem = useContext(StudioItemContext);
+    const selection = useSelectionPort();
+    const editor = useGridEditor();
     if (insideGridItem) return <Renderer {...props} />;
 
     const type = props.uischema?.type ?? 'Element';
+    const id = selection && editor && props.uischema ? editor.idOf(props.uischema) : undefined;
+    const hovered = id !== undefined && selection?.hoveredId === id;
+    const selected = id !== undefined && selection?.selectedId === id;
     // Generic props can't take a JSX `enabled={false}` override, hence the spread-and-cast.
     const disabled = { ...props, enabled: false } as P;
     return (
       <div
         data-slot="studio-element"
         data-element-type={type}
-        className="rounded-sm border border-dashed border-border p-2"
+        data-element-id={id}
+        data-hovered={hovered ? '' : undefined}
+        data-selected={selected ? '' : undefined}
+        // Arbitrary `data-[…]` variants, not `data-selected:`: the imported shadcn stylesheet redefines
+        // `data-selected` as a custom variant for `[data-selected="true"]`, which a presence flag never matches.
+        className="rounded-sm border border-dashed border-border p-2 data-[hovered]:border-ring data-[selected]:border-ring data-[selected]:border-solid"
       >
         <StudioContent type={type}>
           <Renderer {...disabled} />

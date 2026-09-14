@@ -44,7 +44,8 @@ describe('renderers/default', () => {
   it('holds exactly one entry matching Grid and exactly one matching Heading', () => {
     expect(matching('Grid')).toHaveLength(1);
     expect(matching('Heading')).toHaveLength(1);
-    expect(defaults.layoutRenderers).toHaveLength(1);
+    // Grid, VerticalLayout and HorizontalLayout (rule 23).
+    expect(defaults.layoutRenderers).toHaveLength(3);
   });
 
   it('renders its Grid as static (grid-stack-static)', async () => {

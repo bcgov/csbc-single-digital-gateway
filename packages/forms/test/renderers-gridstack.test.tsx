@@ -63,12 +63,13 @@ function renderGrid(uischema: object, set: RendererSet = createGridRenderers(), 
 }
 
 describe('createGridRenderers', () => {
-  it('returns a RendererSet with one Grid entry in layoutRenderers and empty cells, controlRenderers, displayRenderers', () => {
+  // Rule 6, amended by rule 23: Grid, VerticalLayout and HorizontalLayout entries.
+  it('returns a RendererSet with three layout entries and empty cells, controlRenderers, displayRenderers', () => {
     const set = createGridRenderers();
     expect(set.cells).toEqual([]);
     expect(set.controlRenderers).toEqual([]);
     expect(set.displayRenderers).toEqual([]);
-    expect(set.layoutRenderers).toHaveLength(1);
+    expect(set.layoutRenderers).toHaveLength(3);
     expect(set.layoutRenderers[0]?.renderer).toBeDefined();
   });
 

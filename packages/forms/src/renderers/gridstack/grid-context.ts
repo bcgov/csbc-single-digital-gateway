@@ -5,9 +5,12 @@ import type {
   UISchemaElement,
 } from '@jsonforms/core';
 import { createContext } from 'react';
+import type { GridLayoutKind } from './grid-layouts';
 
 /** What a Grid hands its child widgets — everything `JsonFormsDispatch` needs except the element id. */
 export interface GridContextValue {
+  /** Which layout renders the items (doc 180 rule 24) — items in a vertical or horizontal one always fit. */
+  layout: GridLayoutKind;
   /** The Grid's elements by widget/element id (doc 183 rule 7). */
   elementsById: ReadonlyMap<string, UISchemaElement>;
   schema: JsonSchema;

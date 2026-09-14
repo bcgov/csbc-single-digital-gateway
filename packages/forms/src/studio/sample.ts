@@ -2,9 +2,11 @@ import type { JsonSchema } from '@jsonforms/core';
 import type {
   GridElement,
   HeadingElement,
+  HorizontalLayoutElement,
   InputControlElement,
   NumberInputControlElement,
   TextareaControlElement,
+  VerticalLayoutElement,
 } from '../types/elements';
 
 // The built-in form FormStudio renders until the studio can load real forms (doc 180 rule 18,
@@ -16,31 +18,34 @@ const NAME = 'Vd3kQ9xL';
 const ABOUT = 'pR7nW2cM';
 const QUANTITY = 'h4TzB8yE';
 const BUDGET = 'Kq6sJ1uA';
+const EMAIL = 'Tn5wQ2rK';
+const PHONE = 'c8LpV4hZ';
+const BEST_TIME = 'Ye3mD7sG';
 const CITY = 'mX9fL3oD';
 const POSTAL_CODE = 'Zb2gN7wS';
 
 const greeting: HeadingElement = {
   type: 'Heading',
   text: 'Hello, FormStudio!',
-  options: { level: 1, gridItem: { w: 12 } },
+  options: { level: 1 },
 };
 
 const name: InputControlElement = {
   type: 'Control',
   scope: `#/properties/${NAME}`,
-  options: { placeholder: 'Jane Doe', gridItem: { w: 12 } },
+  options: { placeholder: 'Jane Doe' },
 };
 
 const about: TextareaControlElement = {
   type: 'Control',
   scope: `#/properties/${ABOUT}`,
-  options: { component: 'textarea', placeholder: 'A sentence or two', gridItem: { w: 12 } },
+  options: { component: 'textarea', placeholder: 'A sentence or two' },
 };
 
 const quantity: NumberInputControlElement = {
   type: 'Control',
   scope: `#/properties/${QUANTITY}`,
-  options: { component: 'number', step: 5, gridItem: { w: 6 } },
+  options: { component: 'number', step: 5 },
 };
 
 const budget: NumberInputControlElement = {
@@ -49,8 +54,44 @@ const budget: NumberInputControlElement = {
   options: {
     format: { style: 'currency', currency: 'CAD' },
     locale: 'en-CA',
-    gridItem: { w: 6 },
   },
+};
+
+const contactHeading: HeadingElement = {
+  type: 'Heading',
+  text: 'Contact',
+  options: { level: 2, size: 4 },
+};
+
+const email: InputControlElement = {
+  type: 'Control',
+  scope: `#/properties/${EMAIL}`,
+  options: { placeholder: 'jane@example.com', gridItem: { w: 2 } },
+};
+
+const phone: InputControlElement = {
+  type: 'Control',
+  scope: `#/properties/${PHONE}`,
+  options: { placeholder: '250 555 0100' },
+};
+
+// A HorizontalLayout (doc 180 rules 27-28) with one free column, so a field can be widened or copied.
+const contactRow: HorizontalLayoutElement = {
+  type: 'HorizontalLayout',
+  options: { columns: 4 },
+  elements: [email, phone],
+};
+
+const bestTime: InputControlElement = {
+  type: 'Control',
+  scope: `#/properties/${BEST_TIME}`,
+  options: { placeholder: 'Weekday mornings' },
+};
+
+// A VerticalLayout nested in the root one (doc 180 rules 25-26): its children stack in order, the row among them.
+const contact: VerticalLayoutElement = {
+  type: 'VerticalLayout',
+  elements: [contactHeading, contactRow, bestTime],
 };
 
 const deliveryHeading: HeadingElement = {
@@ -71,18 +112,19 @@ const postalCode: InputControlElement = {
   options: { placeholder: 'V8W 1A1', gridItem: { w: 4 } },
 };
 
-// A Grid inside a Grid item: its own heading and side-by-side fields, laid out on its own 12 columns.
+// A Grid inside the root VerticalLayout: its own heading and side-by-side fields, laid out on its own 12 columns.
 // Elements are named consts, not inline literals — inline, `elements: UISchemaElement[]` rejects
 // element-specific keys like `text` as excess properties.
 const delivery: GridElement = {
   type: 'Grid',
-  options: { gridItem: { w: 12 } },
   elements: [deliveryHeading, city, postalCode],
 };
 
-export const STUDIO_SAMPLE_UISCHEMA: GridElement = {
-  type: 'Grid',
-  elements: [greeting, name, about, quantity, budget, delivery],
+// The root is a VerticalLayout (user request, doc 182 rule 24c): its children stack in order, so none
+// carries a `gridItem` — only the Delivery Grid's children are placed.
+export const STUDIO_SAMPLE_UISCHEMA: VerticalLayoutElement = {
+  type: 'VerticalLayout',
+  elements: [greeting, name, about, quantity, budget, contact, delivery],
 };
 
 export const STUDIO_SAMPLE_SCHEMA: JsonSchema = {
@@ -97,6 +139,9 @@ export const STUDIO_SAMPLE_SCHEMA: JsonSchema = {
     },
     [QUANTITY]: { type: 'number', title: 'Quantity', minimum: 0, maximum: 100 },
     [BUDGET]: { type: 'number', title: 'Budget', minimum: 0 },
+    [EMAIL]: { type: 'string', title: 'Email', maxLength: 120 },
+    [PHONE]: { type: 'string', title: 'Phone', maxLength: 20 },
+    [BEST_TIME]: { type: 'string', title: 'Best time to call', maxLength: 60 },
     [CITY]: { type: 'string', title: 'City', maxLength: 60 },
     [POSTAL_CODE]: { type: 'string', title: 'Postal Code', maxLength: 7 },
   },

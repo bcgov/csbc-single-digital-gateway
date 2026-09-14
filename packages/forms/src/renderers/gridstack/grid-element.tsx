@@ -19,7 +19,8 @@ export interface GridElementDispatchProps {
   /**
    * `'fit'` sizes the item to exactly its content; `'min'` keeps the content as its minimum height, for
    * items a person may resize vertically (doc 180 rule 10d). Absent → `'min'` when the element has a
-   * hand-set height, else `'fit'`, so a static grid keeps the height the studio wrote (bug B2).
+   * hand-set height, else `'fit'`, so a static grid keeps the height the studio wrote (bug B2). Inside a
+   * VerticalLayout or HorizontalLayout the item always fits and a hand-set height is ignored (rule 29).
    */
   sizing?: ItemSizing;
 }
@@ -45,8 +46,11 @@ export function GridElementDispatch({ elementId, enabled, sizing }: GridElementD
   const grid = useContext(GridContext);
   const contentRef = useRef<HTMLDivElement>(null);
   const element = typeof elementId === 'string' ? grid?.elementsById.get(elementId) : undefined;
-  const authoredH = authoredHeightOf(element);
-  const resolvedSizing = sizing ?? (authoredH === undefined ? 'fit' : 'min');
+  const inAxisLayout = grid !== null && grid.layout !== 'grid';
+  const authoredH = inAxisLayout ? undefined : authoredHeightOf(element);
+  const resolvedSizing = inAxisLayout
+    ? 'fit'
+    : (sizing ?? (authoredH === undefined ? 'fit' : 'min'));
   useSizeToContent(contentRef, grid?.sizeToContent === true, resolvedSizing, authoredH);
 
   if (!grid || !element) return null;

@@ -1,4 +1,5 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import { layoutKindOf, rowHasRoom } from '../../renderers/gridstack/grid-layouts';
 import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
 import { propertyKeyOf, propertyScope, type StudioDocument } from './schema-properties';
@@ -34,6 +35,34 @@ function placedBelow(element: UISchemaElement, placement: ItemPlacement): UISche
       },
     },
   };
+}
+
+/** Rule 15b: the original's `gridItem` with width 1 — a new item in a HorizontalLayout. */
+function widthOne(element: UISchemaElement): UISchemaElement {
+  const gridItem = element.options?.['gridItem'];
+  return {
+    ...element,
+    options: { ...element.options, gridItem: { ...(isRecord(gridItem) ? gridItem : {}), w: 1 } },
+  };
+}
+
+/** Rule 15b: a HorizontalLayout takes a copy only while its children's widths leave a free column. */
+function hasRoomForCopy(parent: TreeElement): boolean {
+  return (
+    layoutKindOf(parent.type) !== 'horizontal' || rowHasRoom(parent.options, parent.elements ?? [])
+  );
+}
+
+/** Rules 15 + 15b: below the original in a Grid; by order in a VerticalLayout or HorizontalLayout. */
+function placeCopy(
+  parent: TreeElement,
+  clone: UISchemaElement,
+  placement: ItemPlacement,
+): UISchemaElement {
+  const kind = layoutKindOf(parent.type);
+  if (kind === 'vertical') return clone;
+  if (kind === 'horizontal') return widthOne(clone);
+  return placedBelow(clone, placement);
 }
 
 /**
@@ -85,8 +114,9 @@ function withCopiedProperties(schema: JsonSchema, keyMap: ReadonlyMap<string, st
 }
 
 /**
- * Rules 15-20: a deep copy of the element with `elementId`, inserted directly after it and placed below
- * it, with new data properties for its Controls. The root or an unknown id returns the same document.
+ * Rules 15-20 + 15b: a deep copy of the element with `elementId`, inserted directly after it (placed
+ * below it in a Grid), with new data properties for its Controls. The root, an unknown id, or a full
+ * HorizontalLayout returns the same document.
  */
 export function copyElement(
   document: StudioDocument,
@@ -100,7 +130,7 @@ export function copyElement(
   const elements = parent?.elements ?? [];
   const index = elements.findIndex((element) => ids.idOf(element) === elementId);
   const original = elements[index];
-  if (!parent || !original) return { ...document, copy: undefined };
+  if (!parent || !original || !hasRoomForCopy(parent)) return { ...document, copy: undefined };
 
   const taken = new Set(Object.keys(document.schema.properties ?? {}));
   const nextKey = () => {
@@ -112,7 +142,7 @@ export function copyElement(
   const keyMap = new Map<string, string>();
   const clone = structuredClone(original) as TreeElement;
   rekeyControls(clone, document.schema, keyMap, nextKey);
-  const copy = placedBelow(clone, placement);
+  const copy = placeCopy(parent, clone, placement);
 
   const uischema = updateById(
     root,

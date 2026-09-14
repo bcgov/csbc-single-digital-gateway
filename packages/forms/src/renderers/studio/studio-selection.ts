@@ -10,8 +10,9 @@ export interface StudioItemPlacement {
 
 /**
  * The port through which a consumer — the Form Studio — gives studio grid items hover, selection and
- * element actions (doc 185). Ids are the Grid editor's element ids (doc 183). Without a provider, studio
- * grid items render exactly as before: no hover or selection state and no actions popover.
+ * element actions (doc 185), and the root element's frame hover and selection (doc 186). Ids are the Grid
+ * editor's element ids (doc 183). Without a provider, studio grid items and frames render exactly as
+ * before: no hover or selection state and no actions popover.
  */
 export interface StudioSelection {
   readonly hoveredId: string | null;

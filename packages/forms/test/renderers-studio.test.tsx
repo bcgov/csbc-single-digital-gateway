@@ -74,13 +74,14 @@ describe('renderers/studio composition', () => {
     for (const category of CATEGORIES) {
       expect(studio[category], category).toHaveLength(ui[category].length + grid[category].length);
     }
-    const last = studio.layoutRenderers.at(-1);
-    expect(last?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);
+    // The grid set's entries come last: Grid, VerticalLayout, HorizontalLayout (rule 23).
+    const firstGridEntry = studio.layoutRenderers.at(-3);
+    expect(firstGridEntry?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);
   });
 
   it("does not spread default's entries (no second, tied Grid entry)", () => {
     // default = ui + grid, so spreading it as well would double the grid entries.
-    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 1);
+    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 3);
     expect(matching('Grid')).toHaveLength(1);
   });
 

@@ -10,6 +10,7 @@ import { useDockPanel } from './dock-panels';
 import { DockToggles } from './dock-toggles';
 import { PreviewToggle } from './preview-toggle';
 import { STUDIO_SAMPLE_DATA } from './sample';
+import { StudioBreadcrumbs } from './studio-breadcrumbs';
 import { StudioWorkspace } from './studio-workspace';
 import { usePreviewMode } from './use-preview-mode';
 import { useStudioDocument } from './use-studio-document';
@@ -46,7 +47,10 @@ const PREVIEW_RENDERERS = [
  * back to the uischema through the Grid editor port.
  *
  * Grid items can be hovered and selected, and copied or deleted from their actions popover (doc 185)
- * through the studio selection port; deletes are confirmed unless the author opted out.
+ * through the studio selection port; deletes are confirmed unless the author opted out. The root element
+ * can be hovered and selected too, without actions, and Escape walks the selection up to the parent. The
+ * footer's breadcrumbs name the path to the selection — the root alone when nothing is selected — and
+ * hover or select any element on it (doc 186).
  *
  * The play toggle switches to preview (doc 184): the panel toggles go, open panels close, and the same
  * document renders through the fillable `renderers/default` without the Grid editor or selection — in
@@ -61,7 +65,11 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
     bottom: useDockPanel('bottom'),
   };
   const { previewing, setPreviewing } = usePreviewMode(panels);
-  const { port, editor, confirmation } = useStudioSelection(rootRef, !previewing, studio);
+  const { port, editor, confirmation, hover, select } = useStudioSelection(
+    rootRef,
+    !previewing,
+    studio,
+  );
 
   return (
     <div ref={rootRef} data-slot="form-studio" className="flex h-full flex-col">
@@ -99,7 +107,19 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
           )}
         </StudioWorkspace>
       </div>
-      <footer data-slot="form-studio-footer" className="h-9 shrink-0 grow-0 border-t" />
+      <footer
+        data-slot="form-studio-footer"
+        className="flex h-9 shrink-0 grow-0 items-center border-t px-2"
+      >
+        {previewing ? null : (
+          <StudioBreadcrumbs
+            segments={studio.pathOf(port.selectedId)}
+            currentId={port.selectedId}
+            onHover={hover}
+            onSelect={select}
+          />
+        )}
+      </footer>
       <DeleteConfirmation
         pending={confirmation.pending}
         onConfirm={confirmation.confirm}

@@ -1,3 +1,4 @@
+import type { UISchemaElement } from '@jsonforms/core';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
@@ -104,6 +105,26 @@ describe('delete (rules 21-26)', () => {
       within(dialog).getByText('This grid and everything inside it will be removed from the form.'),
     ).toBeInTheDocument();
   });
+
+  it.each(['VerticalLayout', 'HorizontalLayout'])(
+    'describes deleting a %s as removing the layout and everything inside it',
+    async (type) => {
+      const uischema = {
+        type: 'Grid',
+        elements: [{ type, elements: [{ type: 'Heading', text: 'Inside' }] }],
+      } as UISchemaElement;
+      render(<FormStudio uischema={uischema} />);
+      const inside = await screen.findByRole('heading', { name: 'Inside' });
+      await selectAnd(itemOf(itemOf(inside).parentElement as HTMLElement), 'Delete');
+
+      const dialog = await confirmation();
+      expect(
+        within(dialog).getByText(
+          'This layout and everything inside it will be removed from the form.',
+        ),
+      ).toBeInTheDocument();
+    },
+  );
 
   it('removes the element on Delete and clears its selection and popover', async () => {
     await renderStudio();

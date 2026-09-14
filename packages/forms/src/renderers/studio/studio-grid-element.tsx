@@ -16,8 +16,9 @@ import { useSelectionPort } from './studio-selection';
  * box by `STUDIO_GRID_CLASS`, and the resize handle indicators by the stylesheet (rule 16c). The child is
  * dispatched disabled and held
  * inert (`StudioContent`), and `StudioItemContext` stops the framed renderer drawing a second frame.
- * The element type picks the item's resize handles and sizing: a Control only resizes sideways and
- * fits its content; anything else may also be made taller, with its content as the minimum. The element
+ * The element type picks the item's resize handles and sizing in a Grid: a Control only resizes sideways
+ * and fits its content; anything else may also be made taller, with its content as the minimum. In a
+ * HorizontalLayout every item resizes sideways only, in a VerticalLayout none do (rule 30). The element
  * is found by `elementId`, never by index (doc 183 rule 7).
  *
  * Under the Form Studio's selection port (doc 185) the root carries `data-element-id` plus
@@ -31,7 +32,7 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
   const id = typeof elementId === 'string' ? elementId : undefined;
   const element = id === undefined ? undefined : grid?.elementsById.get(id);
   const type = element?.type ?? 'Element';
-  const { handles, sizing } = resizingFor(type);
+  const { handles, sizing } = resizingFor(type, grid?.layout ?? 'grid');
   useResizeHandles(rootRef, handles);
 
   const hovered = id !== undefined && selection?.hoveredId === id;

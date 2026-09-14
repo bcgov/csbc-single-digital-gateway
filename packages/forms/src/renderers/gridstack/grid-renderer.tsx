@@ -6,6 +6,7 @@ import type { GridStackLayoutOptions } from '../../types/elements';
 import { GridContext, type GridContextValue } from './grid-context';
 import { useGridEditor } from './grid-editor';
 import { useGridGestures } from './grid-gestures';
+import { rowHasRoom, type GridLayoutKind } from './grid-layouts';
 import { buildGridStackOptions, gridElementId, resolveSizeToContent } from './grid-options';
 
 /**
@@ -37,11 +38,15 @@ function unlinkFromParentGrid(handle: GridStackHandle | null) {
  *
  * Under a `GridEditorProvider` (doc 183) the Grid is editable: items are keyed by the editor's element
  * ids, foreign grid items may be dropped in, and finished gestures are reported to the editor.
+ *
+ * `layout` picks what the renderer draws (doc 180 rules 23-28): a free `Grid`, or a `VerticalLayout` /
+ * `HorizontalLayout` whose items are placed by element order on a fixed axis. Everything else is shared.
  */
 export function createGridLayoutRenderer(
   components: ComponentMap,
   gridOptions: GridStackLayoutOptions | undefined,
   className: string | undefined,
+  layout: GridLayoutKind,
 ) {
   // Resolved once per factory call; GridStack itself always gets sizeToContent: false (rule 8).
   const sizeToContent = resolveSizeToContent(gridOptions);
@@ -61,10 +66,17 @@ export function createGridLayoutRenderer(
     const elements = 'elements' in uischema ? uischema.elements : [];
     const gridHandle = useRef<GridStackHandle>(null);
 
+    // Doc 180 rule 30 (bug B3): a full HorizontalLayout refuses drops. Read through a ref so the
+    // callback keeps its identity — a new one would change the options and reload the grid.
+    const hasRoom = useRef(true);
+    hasRoom.current = layout !== 'horizontal' || rowHasRoom(uischema.options, elements);
+
     // Doc 183 rule 14: only grid items, and never one that contains this grid (a Grid into itself).
     const acceptWidgets = useCallback(
       (el: Element) =>
-        el.matches('.grid-stack-item') && !el.contains(gridHandle.current?.getGrid()?.el ?? null),
+        hasRoom.current &&
+        el.matches('.grid-stack-item') &&
+        !el.contains(gridHandle.current?.getGrid()?.el ?? null),
       [],
     );
     const idOf = useMemo(
@@ -86,12 +98,14 @@ export function createGridLayoutRenderer(
         gridOptions,
         idPrefix,
         currentHeights,
+        layout,
         ...(idOf ? { idOf, acceptWidgets } : {}),
       });
     }, [elements, uischema.options, idPrefix, idOf, acceptWidgets]);
 
     const context = useMemo<GridContextValue>(
       () => ({
+        layout,
         elementsById: new Map(
           elements.map((element, index) => [
             gridElementId(element, index, idPrefix, idOf),

@@ -1,13 +1,19 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import type { LayoutNode } from '../../renderers/gridstack/grid-editor';
+import {
+  horizontalColumns,
+  horizontalWidth,
+  layoutKindOf,
+} from '../../renderers/gridstack/grid-layouts';
 import { resizingFor } from '../../renderers/studio/studio-item-resize';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, withElements, type TreeElement } from './element-tree';
 
-// Pure uischema updates for finished grid gestures (doc 183 rules 6, 11-14). Nothing is mutated:
+// Pure uischema updates for finished grid gestures (doc 183 rules 6, 11-14, 12b). Nothing is mutated:
 // every replaced element is a new object that carries its id, and untouched subtrees keep identity.
 
 type Element = TreeElement;
+type NodesById = ReadonlyMap<string, LayoutNode>;
 
 /** A cross-grid move, as reported by the Grid editor port. */
 export interface LayoutMove {
@@ -30,19 +36,19 @@ const gridItemOf = (element: UISchemaElement): Record<string, unknown> => {
 function placedGridItem(element: UISchemaElement, node: LayoutNode): Record<string, unknown> {
   const { h, ...rest } = gridItemOf(element);
   const placed = { ...rest, x: node.x, y: node.y, w: node.w };
-  if (resizingFor(element.type).sizing === 'fit')
+  if (resizingFor(element.type, 'grid').sizing === 'fit')
     return h === undefined ? placed : { ...placed, h };
   const byHand = node.h !== undefined && node.minH !== undefined && node.h > node.minH;
   return byHand ? { ...placed, h: node.h } : placed;
 }
 
-function placeElement(
+/** `element` with its `gridItem` replaced by `next`, carrying its id — or `element` when no key changed. */
+function withGridItem(
   element: UISchemaElement,
-  node: LayoutNode,
+  next: Record<string, unknown>,
   ids: ElementIds,
 ): UISchemaElement {
   const current = gridItemOf(element);
-  const next = placedGridItem(element, node);
   const keys = new Set([...Object.keys(current), ...Object.keys(next)]);
   if ([...keys].every((key) => current[key] === next[key])) return element;
   const placed = { ...element, options: { ...element.options, gridItem: next } };
@@ -55,12 +61,15 @@ const position = (element: UISchemaElement, key: 'x' | 'y') => {
   return typeof value === 'number' ? value : Number.MAX_SAFE_INTEGER;
 };
 
-/** Rules 11 + 13: place every element that has a node, then sort by y, then x. */
-function layoutGrid(grid: Element, nodes: readonly LayoutNode[], ids: ElementIds): Element {
-  const byId = new Map(nodes.map((node) => [node.id, node]));
+/** A stable sort key from each element's node; elements without a node go last, in their order. */
+const nodeKey = (byId: NodesById, ids: ElementIds, key: 'x' | 'y') => (element: UISchemaElement) =>
+  byId.get(ids.idOf(element))?.[key] ?? Number.MAX_SAFE_INTEGER;
+
+/** Rules 11 + 13 (Grid): place every element that has a node, then sort by y, then x. */
+function layoutFree(grid: Element, byId: NodesById, ids: ElementIds): Element {
   const placed = (grid.elements ?? []).map((element) => {
     const node = byId.get(ids.idOf(element));
-    return node ? placeElement(element, node, ids) : element;
+    return node ? withGridItem(element, placedGridItem(element, node), ids) : element;
   });
   const sorted = placed.toSorted(
     (a, b) => position(a, 'y') - position(b, 'y') || position(a, 'x') - position(b, 'x'),
@@ -68,7 +77,53 @@ function layoutGrid(grid: Element, nodes: readonly LayoutNode[], ids: ElementIds
   return withElements(grid, sorted, ids);
 }
 
-/** Rule 11 + 13 for the Grid with `gridId`; unknown grid → the same uischema. */
+/** Rule 12b (VerticalLayout): order by node y; no gridItem is written. */
+function layoutStack(grid: Element, byId: NodesById, ids: ElementIds): Element {
+  const y = nodeKey(byId, ids, 'y');
+  return withElements(
+    grid,
+    (grid.elements ?? []).toSorted((a, b) => y(a) - y(b)),
+    ids,
+  );
+}
+
+/** Rule 12b (HorizontalLayout): order by node x; only `w` is written, and `arrived` gets width 1. */
+function layoutRow(
+  grid: Element,
+  byId: NodesById,
+  ids: ElementIds,
+  arrived: UISchemaElement | undefined,
+): Element {
+  const elements = grid.elements ?? [];
+  const columns = horizontalColumns(grid.options, elements.length);
+  const sized = elements.map((element) => {
+    const w = element === arrived ? 1 : byId.get(ids.idOf(element))?.w;
+    if (w === undefined || w === horizontalWidth(element, columns)) return element;
+    return withGridItem(element, { ...gridItemOf(element), w }, ids);
+  });
+  const x = nodeKey(byId, ids, 'x');
+  return withElements(
+    grid,
+    sized.toSorted((a, b) => x(a) - x(b)),
+    ids,
+  );
+}
+
+/** Lays out `grid` by its layout type (rules 11-13, 12b); `arrived` is an element just moved into it. */
+function layoutGrid(
+  grid: Element,
+  nodes: readonly LayoutNode[],
+  ids: ElementIds,
+  arrived?: UISchemaElement,
+): Element {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const kind = layoutKindOf(grid.type);
+  if (kind === 'vertical') return layoutStack(grid, byId, ids);
+  if (kind === 'horizontal') return layoutRow(grid, byId, ids, arrived);
+  return layoutFree(grid, byId, ids);
+}
+
+/** Rules 11-13 + 12b for the grid element with `gridId`; unknown grid → the same uischema. */
 export function applyLayout(
   uischema: UISchemaElement,
   gridId: string,
@@ -79,9 +134,9 @@ export function applyLayout(
 }
 
 /**
- * Rules 12-14: move an element from one Grid's `elements` to another's, then lay out both. Refused —
- * the same uischema returned — when either grid is unknown, the element is not directly in the source
- * grid, or the target is the element itself or inside it.
+ * Rules 12-14 + 12b: move an element from one grid element's `elements` to another's, then lay out
+ * both. Refused — the same uischema returned — when either grid is unknown, the element is not directly
+ * in the source grid, or the target is the element itself or inside it.
  */
 export function applyMove(
   uischema: UISchemaElement,
@@ -113,7 +168,12 @@ export function applyMove(
     removed,
     move.toGridId,
     (grid) =>
-      layoutGrid(withElements(grid, [...(grid.elements ?? []), moved], ids), move.toNodes, ids),
+      layoutGrid(
+        withElements(grid, [...(grid.elements ?? []), moved], ids),
+        move.toNodes,
+        ids,
+        moved,
+      ),
     ids,
   );
 }

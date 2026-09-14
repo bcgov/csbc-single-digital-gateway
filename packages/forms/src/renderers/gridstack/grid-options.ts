@@ -5,6 +5,8 @@ import type {
   GridItemPlacement,
   GridStackLayoutOptions,
 } from '../../types/elements';
+import { horizontalColumns, horizontalWidth, type GridLayoutKind } from './grid-layouts';
+import { GridRowEngine } from './grid-row-engine';
 
 /** The components-map key every Grid child widget renders through (doc 180 rule 10). */
 export const GRID_ELEMENT_COMPONENT = 'jsonforms-element';
@@ -65,6 +67,15 @@ function pickDefined(source: unknown, keys: readonly string[]): Record<string, u
 }
 
 type ElementIdOf = (element: UISchemaElement) => string;
+type Heights = ReadonlyMap<string, number> | undefined;
+
+/** How widgets are placed: authored in a Grid, derived from element order in the other layouts. */
+export type WidgetLayout =
+  | { kind: 'grid' }
+  | { kind: 'vertical' }
+  | { kind: 'horizontal'; columns: number };
+
+const GRID_WIDGET_LAYOUT: WidgetLayout = Object.freeze({ kind: 'grid' });
 
 /** The widget id for `element` (doc 183 rule 7): the editor's id when there is one, else `<prefix>-<index>`. */
 export function gridElementId(
@@ -76,37 +87,82 @@ export function gridElementId(
   return idOf ? idOf(element) : `${idPrefix}-${index}`;
 }
 
+const withHeight = (h: number | undefined) => (h === undefined ? {} : { h });
+
+/** Doc 180 rule 9 + doc 183 rule 16b: the allow-listed `gridItem`, with the current `h` when none is authored. */
+function authoredPlacement(
+  element: UISchemaElement,
+  id: string,
+  heights: Heights,
+): GridItemPlacement {
+  const placement = pickDefined(element.options?.['gridItem'], GRID_ITEM_KEYS) as GridItemPlacement;
+  return placement.h === undefined ? { ...placement, ...withHeight(heights?.get(id)) } : placement;
+}
+
+/** Rule 26: one column, each item below the ones before it (current heights, else one row each). */
+function stackedPlacements(ids: readonly string[], heights: Heights): GridItemPlacement[] {
+  let y = 0;
+  return ids.map((id) => {
+    const h = heights?.get(id);
+    const placement = { x: 0, y, w: 1, ...withHeight(h) };
+    y += h ?? 1;
+    return placement;
+  });
+}
+
+/** Rule 28: one row, left to right; a child that would end past the last column gets no x/y. */
+function rowPlacements(
+  elements: readonly UISchemaElement[],
+  ids: readonly string[],
+  columns: number,
+  heights: Heights,
+): GridItemPlacement[] {
+  let x = 0;
+  return elements.map((element, index) => {
+    const w = horizontalWidth(element, columns);
+    const sized = { w, ...withHeight(heights?.get(ids[index] ?? '')) };
+    if (x + w > columns) return sized;
+    const placement = { x, y: 0, ...sized };
+    x += w;
+    return placement;
+  });
+}
+
 /**
  * One GridStack widget per element. The element itself is NOT put in `props` — GridStack clones
  * widget JSON — only its id, which `GridElementDispatch` resolves against the Grid context. An id,
  * never an index: gridstack freezes props at add time, and indices change when elements are sorted or
- * moved (doc 183 rule 7). Missing `x`/`y` are left out so gridstack auto-positions the item.
+ * moved (doc 183 rule 7).
  *
- * `currentHeights` (a mounted grid's engine heights by id) fills `h` for widgets whose `gridItem` has
- * none: gridstack's `load` would otherwise give each of them 1 row and collapse the grid on every reload
- * (doc 183 rule 16b). An authored `h` always wins.
+ * In a Grid, missing `x`/`y` are left out so gridstack auto-positions the item, and `currentHeights`
+ * (a mounted grid's engine heights by id) fills `h` for widgets whose `gridItem` has none: gridstack's
+ * `load` would otherwise give each of them 1 row and collapse the grid on every reload (doc 183 rule
+ * 16b). In a VerticalLayout or HorizontalLayout the placement comes from element order (rules 26, 28).
  */
 export function toGridWidgets(
   elements: readonly UISchemaElement[],
   idPrefix: string,
   idOf?: ElementIdOf,
   currentHeights?: ReadonlyMap<string, number>,
+  layout: WidgetLayout = GRID_WIDGET_LAYOUT,
 ): GridStackWidget[] {
-  return elements.map((element, index) => {
-    const id = gridElementId(element, index, idPrefix, idOf);
-    const placement = pickDefined(
-      element.options?.['gridItem'],
-      GRID_ITEM_KEYS,
-    ) as GridItemPlacement;
-    const currentH = placement.h === undefined ? currentHeights?.get(id) : undefined;
-    return {
-      ...placement,
-      ...(currentH === undefined ? {} : { h: currentH }),
+  const ids = elements.map((element, index) => gridElementId(element, index, idPrefix, idOf));
+  const placements =
+    layout.kind === 'vertical'
+      ? stackedPlacements(ids, currentHeights)
+      : layout.kind === 'horizontal'
+        ? rowPlacements(elements, ids, layout.columns, currentHeights)
+        : elements.map((element, index) =>
+            authoredPlacement(element, ids[index] ?? '', currentHeights),
+          );
+  // Every placement is a fresh object, so it becomes its widget in place.
+  return ids.map((id, index) =>
+    Object.assign(placements[index] ?? {}, {
       id,
       component: GRID_ELEMENT_COMPONENT,
       props: { elementId: id },
-    };
-  });
+    }),
+  );
 }
 
 interface GridStackOptionsInput {
@@ -122,6 +178,8 @@ interface GridStackOptionsInput {
   acceptWidgets?: (element: Element) => boolean;
   /** The mounted grid's current heights by widget id (doc 183 rule 16b). */
   currentHeights?: ReadonlyMap<string, number>;
+  /** Which layout the element is (doc 180 rules 23-28); absent → `'grid'`. */
+  layout?: GridLayoutKind;
 }
 
 /** Whether items size to their content: factory `gridOptions.sizeToContent`, else the default. */
@@ -130,9 +188,41 @@ export function resolveSizeToContent(gridOptions: GridStackLayoutOptions | undef
 }
 
 /**
- * GridStack options, lowest precedence first: built-in defaults → factory `gridOptions` → the
- * element's allow-listed options. `children` is always derived from `elements`, last, so neither
- * layer can inject widgets, and authored uischema can never reach `staticGrid`.
+ * The options a layout forces over the factory's, and how its widgets are placed. A Grid forces only
+ * its allow-listed authored options (rule 8); the other layouts read no authored gridstack option and
+ * force their axis (rules 25, 27). Neither caps its rows: gridstack's `maxRow` counts `cellHeight` rows
+ * and clamps every item's height to it (bug B3). `maxRow: 0` is always emitted for them, because
+ * `updateOptions` ignores an absent one and would keep a stale cap.
+ */
+function layoutOptions(
+  layout: GridLayoutKind,
+  elements: readonly UISchemaElement[],
+  elementOptions: unknown,
+): { forced: GridStackOptions; widgetLayout: WidgetLayout } {
+  if (layout === 'vertical') {
+    return {
+      forced: { column: 1, disableResize: true, maxRow: 0 },
+      widgetLayout: { kind: 'vertical' },
+    };
+  }
+  if (layout === 'horizontal') {
+    const columns = horizontalColumns(elementOptions, elements.length);
+    return {
+      forced: { column: columns, maxRow: 0, engineClass: GridRowEngine },
+      widgetLayout: { kind: 'horizontal', columns },
+    };
+  }
+  return {
+    forced: pickDefined(elementOptions, GRID_ELEMENT_OPTION_KEYS) as GridElementOptions,
+    widgetLayout: GRID_WIDGET_LAYOUT,
+  };
+}
+
+/**
+ * GridStack options, lowest precedence first: built-in defaults → factory `gridOptions` → what the
+ * layout forces (a Grid's allow-listed authored options, or another layout's axis). `children` is
+ * always derived from `elements`, last, so no layer can inject widgets, and authored uischema can
+ * never reach `staticGrid`.
  *
  * `sizeToContent` is always handed to GridStack as `false`: gridstack would otherwise measure each
  * item before React has portalled its content in. The resolved flag (`resolveSizeToContent`) drives
@@ -146,13 +236,15 @@ export function buildGridStackOptions({
   idOf,
   acceptWidgets,
   currentHeights,
+  layout = 'grid',
 }: GridStackOptionsInput): GridStackOptions {
+  const { forced, widgetLayout } = layoutOptions(layout, elements, elementOptions);
   return {
     ...DEFAULT_GRID_OPTIONS,
     ...gridOptions,
-    ...(pickDefined(elementOptions, GRID_ELEMENT_OPTION_KEYS) as GridElementOptions),
+    ...forced,
     ...(acceptWidgets ? { acceptWidgets } : {}),
     sizeToContent: false,
-    children: toGridWidgets(elements, idPrefix, idOf, currentHeights),
+    children: toGridWidgets(elements, idPrefix, idOf, currentHeights, widgetLayout),
   };
 }

@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -16,6 +17,10 @@ export interface SelectableDocument {
   readonly seed: object;
   /** Every element below the root by studio id, with its uischema type. */
   readonly elementTypes: ReadonlyMap<string, string>;
+  /** The root element's studio id (doc 186 rule 6). */
+  readonly rootId: string;
+  /** The id of the element holding `elementId`; `null` for the root or an unknown id. */
+  parentOf(elementId: string): string | null;
   copy(elementId: string, placement: StudioItemPlacement): string | undefined;
   remove(elementId: string): void;
 }
@@ -28,18 +33,24 @@ export interface PendingDelete {
 
 type PointerTarget =
   | { readonly kind: 'item' | 'actions'; readonly id: string }
-  | { readonly kind: 'canvas' | 'outside' };
+  | { readonly kind: 'canvas' | 'outside' | 'breadcrumbs' };
 
 const OUTSIDE: PointerTarget = Object.freeze({ kind: 'outside' });
 const CANVAS: PointerTarget = Object.freeze({ kind: 'canvas' });
+const BREADCRUMBS: PointerTarget = Object.freeze({ kind: 'breadcrumbs' });
+
+// The nearest of either is the innermost element: a grid item, or a framed element outside one (the root).
+const ELEMENT_BOX = '.grid-stack-item, [data-slot="studio-element"][data-element-id]';
+const GRID_ITEM_ROOT = ':scope > .grid-stack-item-content > [data-slot="studio-grid-item"]';
 
 type IdSetter = Dispatch<SetStateAction<string | null>>;
 
 /**
- * What a pointer event at `target` points at (doc 185 rules 1-2, 4-5, 7): an element's actions popover
- * (portalled out of the studio, so found by its marker), the innermost studio grid item whose box —
- * content, margin or resize handles — holds the target, the canvas (centre panel) around the items, or
- * anything else. The root element is not a grid item, so it counts as canvas.
+ * What a pointer event at `target` points at (doc 185 rules 1-2, 4-5, 7; doc 186 rules 3-4, 15): an
+ * element's actions popover (portalled out of the studio, so found by its marker), the footer breadcrumbs
+ * or their menu (likewise), the innermost element whose box holds the target — a studio grid item
+ * (content, margin or resize handles) or the root's frame — the canvas (centre panel) around the root, or
+ * anything else.
  */
 export function pointerTargetOf(target: EventTarget | null, root: HTMLElement): PointerTarget {
   if (!(target instanceof Element)) return OUTSIDE;
@@ -47,27 +58,33 @@ export function pointerTargetOf(target: EventTarget | null, root: HTMLElement): 
     .closest('[data-studio-actions-for]')
     ?.getAttribute('data-studio-actions-for');
   if (actionsFor) return { kind: 'actions', id: actionsFor };
+  if (target.closest('[data-studio-breadcrumbs]')) return BREADCRUMBS;
   if (!root.contains(target)) return OUTSIDE;
 
-  const id = target
-    .closest('.grid-stack-item')
-    ?.querySelector(':scope > .grid-stack-item-content > [data-slot="studio-grid-item"]')
-    ?.getAttribute('data-element-id');
+  const box = target.closest(ELEMENT_BOX);
+  const element = box?.matches('.grid-stack-item') ? box.querySelector(GRID_ITEM_ROOT) : box;
+  const id = element?.getAttribute('data-element-id');
   if (id) return { kind: 'item', id };
   return target.closest('[data-slot="form-studio-center-panel"]') ? CANVAS : OUTSIDE;
 }
 
+interface PointerSelectionOptions {
+  readonly active: boolean;
+  readonly confirming: boolean;
+  readonly parentOf: (elementId: string) => string | null;
+  readonly setHovered: IdSetter;
+  readonly setSelected: IdSetter;
+}
+
 /**
- * Document listeners turning pointer and key events into hover and selection (rules 2, 5, 7). The press
- * listener captures, so gridstack's drag handling on the item cannot swallow it. Escape is left to the
- * delete confirmation while it is open.
+ * Document listeners turning pointer and key events into hover and selection (doc 185 rules 2, 5, 7; doc
+ * 186 rules 3-4, 7, 15). The press listener captures, so gridstack's drag handling on the item cannot
+ * swallow it. Escape walks the selection up to the parent, and is left to the delete confirmation while it
+ * is open. Events in the breadcrumbs change nothing here — the breadcrumbs set hover and selection themselves.
  */
 function usePointerSelection(
   rootRef: RefObject<HTMLElement | null>,
-  active: boolean,
-  confirming: boolean,
-  setHovered: IdSetter,
-  setSelected: IdSetter,
+  { active, confirming, parentOf, setHovered, setSelected }: PointerSelectionOptions,
 ) {
   useEffect(() => {
     const root = rootRef.current;
@@ -75,6 +92,7 @@ function usePointerSelection(
 
     const onOver = (event: Event) => {
       const target = pointerTargetOf(event.target, root);
+      if (target.kind === 'breadcrumbs') return;
       setHovered(target.kind === 'item' || target.kind === 'actions' ? target.id : null);
     };
     const onOut = (event: PointerEvent) => {
@@ -87,7 +105,8 @@ function usePointerSelection(
       else if (target.kind === 'canvas') setSelected(null);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !confirming) setSelected(null);
+      if (event.key !== 'Escape' || confirming) return;
+      setSelected((current) => (current === null ? null : parentOf(current)));
     };
 
     document.addEventListener('pointerover', onOver);
@@ -100,7 +119,7 @@ function usePointerSelection(
       document.removeEventListener('pointerdown', onDown, true);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [rootRef, active, confirming, setHovered, setSelected]);
+  }, [rootRef, active, confirming, parentOf, setHovered, setSelected]);
 }
 
 /** Rules 21-23: the pending delete, and the studio-lifetime "Don't ask me again" flag. */
@@ -127,10 +146,11 @@ function useDeleteConfirmation({ remove, elementTypes }: SelectableDocument) {
 }
 
 /**
- * Hover, selection and element actions for the Form Studio (doc 185 rule 30). `active` is `false` in
- * preview, which clears everything; a new seed document does too, because its element ids restart. Ids
- * no longer in the document (a deleted element) read as nothing. Returns the selection port for the
- * studio grid items, the Grid editor extended with gesture tracking, and the delete confirmation.
+ * Hover, selection and element actions for the Form Studio (doc 185 rule 30, doc 186). `active` is `false`
+ * in preview, which clears everything; a new seed document does too, because its element ids restart. Ids
+ * no longer in the document (a deleted element) read as nothing; the root's id is a valid one. Returns the
+ * selection port for the studio renderers, the Grid editor extended with gesture tracking, the delete
+ * confirmation, and `hover` / `select` for the footer breadcrumbs (`hover` does nothing mid-gesture).
  */
 export function useStudioSelection(
   rootRef: RefObject<HTMLElement | null>,
@@ -149,11 +169,13 @@ export function useStudioSelection(
     setSelected(null);
     setGesturing(false);
   }
-  usePointerSelection(rootRef, active, confirmation.pending !== null, setHovered, setSelected);
+  const { copy, editor: documentEditor, elementTypes, rootId, parentOf } = studio;
+  const confirming = confirmation.pending !== null;
+  usePointerSelection(rootRef, { active, confirming, parentOf, setHovered, setSelected });
 
-  const { copy, editor: documentEditor, elementTypes } = studio;
-  const hoveredId = hovered !== null && elementTypes.has(hovered) ? hovered : null;
-  const selectedId = selected !== null && elementTypes.has(selected) ? selected : null;
+  const known = (id: string | null) => id !== null && (id === rootId || elementTypes.has(id));
+  const hoveredId = known(hovered) ? hovered : null;
+  const selectedId = known(selected) ? selected : null;
 
   const port = useMemo<StudioSelection>(
     () => ({
@@ -181,5 +203,12 @@ export function useStudioSelection(
     [documentEditor],
   );
 
-  return { port, editor, confirmation };
+  const hover = useCallback(
+    (elementId: string | null) => {
+      if (!gesturing) setHovered(elementId);
+    },
+    [gesturing],
+  );
+
+  return { port, editor, confirmation, hover, select: setSelected };
 }

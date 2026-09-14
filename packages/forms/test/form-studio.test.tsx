@@ -74,12 +74,13 @@ describe('FormStudio', () => {
     expect(heading.closest('.grid-stack-item')).not.toBeNull();
   });
 
-  // Doc 180 rules 16-17b — grid children are framed by their grid item, the root Grid by its frame.
-  it('renders the sample Heading in a studio grid item inside the framed Grid', async () => {
+  // Doc 180 rules 16-17b — grid children are framed by their grid item, the root layout by its frame.
+  // Doc 182 rule 24c — the sample's root is a VerticalLayout.
+  it('renders the sample Heading in a studio grid item inside the framed root VerticalLayout', async () => {
     const { content } = renderStudio();
     const heading = await screen.findByRole('heading', { level: 1, name: GREETING });
     const item = heading.closest('[data-element-type="Heading"]');
-    const gridFrame = item?.parentElement?.closest('[data-element-type="Grid"]');
+    const gridFrame = item?.parentElement?.closest('[data-element-type="VerticalLayout"]');
     expect(item).toHaveAttribute('data-slot', 'studio-grid-item');
     expect(item?.closest('.grid-stack-item-content')).not.toBeNull();
     expect(gridFrame).toHaveAttribute('data-slot', 'studio-element');
@@ -97,8 +98,9 @@ describe('FormStudio', () => {
         '[data-slot="studio-grid-item"] input:not([aria-hidden="true"]), [data-slot="studio-grid-item"] textarea',
       ) ?? [],
     );
-    // name, about, quantity, budget + city and postal code in the nested Delivery grid.
-    expect(inputs).toHaveLength(6);
+    // name, about, quantity, budget + email, phone and best time in the Contact layouts + city and
+    // postal code in the nested Delivery grid.
+    expect(inputs).toHaveLength(9);
     for (const input of inputs) {
       expect(input).toBeDisabled();
       const wrapper = input.closest('[data-slot="studio-content"]');
@@ -107,11 +109,12 @@ describe('FormStudio', () => {
     }
   });
 
-  it('renders the sample Grid as draggable/resizable (not grid-stack-static)', async () => {
+  it('renders the sample root VerticalLayout as a draggable one-column grid (not grid-stack-static)', async () => {
     const { content } = renderStudio();
     await screen.findByRole('heading', { level: 1, name: GREETING });
     const grid = content?.querySelector('.grid-stack');
     expect(grid).not.toBeNull();
+    expect(grid).toHaveClass('gs-1');
     expect(grid).not.toHaveClass('grid-stack-static');
   });
 

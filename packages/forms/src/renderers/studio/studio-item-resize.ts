@@ -1,5 +1,6 @@
 import type { GridItemHTMLElement } from 'gridstack';
 import { useLayoutEffect, type RefObject } from 'react';
+import type { GridLayoutKind } from '../gridstack/grid-layouts';
 import type { ItemSizing } from '../gridstack/grid-size-to-content';
 
 /** How a studio grid item may be resized, and how its height follows its content. */
@@ -18,8 +19,17 @@ const FREE_RESIZING: StudioItemResizing = Object.freeze({
   sizing: 'min',
 });
 
-/** Resizing for a studio grid item holding an element of `type` (doc 180 rule 17d). */
-export function resizingFor(type: string): StudioItemResizing {
+// A VerticalLayout's items only drag: no handles (its grid also disables resizing), height fits.
+const NO_RESIZING: StudioItemResizing = Object.freeze({ handles: '', sizing: 'fit' });
+
+/**
+ * Resizing for a studio item holding an element of `type`, inside a `layout` (doc 180 rules 17d, 30):
+ * a Grid decides by element type; every item of a HorizontalLayout resizes sideways only, like a
+ * Control; a VerticalLayout's items do not resize.
+ */
+export function resizingFor(type: string, layout: GridLayoutKind): StudioItemResizing {
+  if (layout === 'vertical') return NO_RESIZING;
+  if (layout === 'horizontal') return CONTROL_RESIZING;
   return type === 'Control' ? CONTROL_RESIZING : FREE_RESIZING;
 }
 
@@ -30,12 +40,14 @@ export function resizingFor(type: string): StudioItemResizing {
  * which happens before React portals the item's content in — so the attribute is set here, after
  * mount, and that item's drag/resize is rebuilt with a forced `prepareDragDrop`. A forced re-init
  * wires gridstack's own resize callbacks back up, unlike updating the handles option in place.
+ * No `handles` (`''`, an item that does not resize) → nothing to set.
  */
 export function useResizeHandles(contentRef: RefObject<HTMLElement | null>, handles: string) {
   useLayoutEffect(() => {
     const itemEl = contentRef.current?.closest<GridItemHTMLElement>('.grid-stack-item');
     const grid = itemEl?.gridstackNode?.grid;
-    if (!itemEl || !grid || itemEl.getAttribute('gs-resize-handles') === handles) return;
+    if (!handles || !itemEl || !grid || itemEl.getAttribute('gs-resize-handles') === handles)
+      return;
 
     itemEl.setAttribute('gs-resize-handles', handles);
     grid.prepareDragDrop(itemEl, true);
