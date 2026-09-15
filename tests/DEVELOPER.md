@@ -17,6 +17,8 @@ Playwright end-to-end test files with file name suffix `**/*.pw.ts` should be pl
 
 Playwright is available to use with low-to-zero configurations. Refer to file [`playwright.config.ts`](/playwright.config.ts) for configuration. Use the following environment variables in the `.env` file in the root directory.
 
+In case the required browser or browser component is not found, install it by running `npx playwright install` on the root directory.
+
 ```
 CLIENT_URL=http://localhost:3000
 PLATFORM_URL=http://localhost:3001

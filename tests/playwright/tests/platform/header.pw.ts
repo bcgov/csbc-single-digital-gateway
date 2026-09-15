@@ -48,11 +48,13 @@ test.describe('Platform Header E2E Test Suite', () => {
     await expect(page.getByRole('link', { name: 'Test workspace Admin' })).not.toBeVisible();
   });
 
-  test('Should display correct texts and buttons for create new workspace modal', async ({
+  test('Should display correct texts and buttons for create new workspace modal from the header dropdown', async ({
     page,
   }) => {
-    const createNewWorkspaceButton = page.getByRole('button', { name: 'New Workspace' });
-    await createNewWorkspaceButton.click();
+    const header = page.locator('header');
+    await expect(header.getByRole('button', { name: 'Sample1' })).toBeVisible();
+    await header.getByRole('button', { name: 'Sample1' }).click();
+    await page.getByRole('menuitem', { name: 'Create Workspace' }).click();
     // Create new workspace modal
     const createNewWorkspaceModal = page.locator('[data-slot="dialog-content"]');
     await expect(createNewWorkspaceModal).toBeVisible();
@@ -75,9 +77,10 @@ test.describe('Platform Header E2E Test Suite', () => {
     await expect(createNewWorkspaceModal).toBeHidden();
   });
 
-  test('Should create new workspace', async ({ page }) => {
-    const createNewWorkspaceButton = page.getByRole('button', { name: 'New Workspace' });
-    await createNewWorkspaceButton.click();
+  test('Should create new workspace from the header dropdown', async ({ page }) => {
+    const header = page.locator('header');
+    await header.getByRole('button', { name: 'Sample1' }).click();
+    await page.getByRole('menuitem', { name: 'Create Workspace' }).click();
     const createNewWorkspaceModal = page.locator('[data-slot="dialog-content"]');
     const workspaceInput = createNewWorkspaceModal.getByRole('textbox', { name: 'Workspace name' });
     await workspaceInput.fill('Test workspace');
@@ -91,15 +94,16 @@ test.describe('Platform Header E2E Test Suite', () => {
     await expect(page.getByRole('link', { name: 'Test workspace Admin' })).toBeVisible();
   });
 
-  test('Should delete the new workspace', async ({ page }) => {
-    const newWorkspace = page.getByRole('link', { name: 'Test workspace Admin' });
-    await newWorkspace.click();
+  test('Should delete the new workspace from the header dropdown', async ({ page }) => {
+    const header = page.locator('header');
+    await header.getByRole('button', { name: 'Sample1' }).click();
+    await page.getByRole('menuitem', { name: 'Test workspace' }).click();
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.getByRole('button', { name: 'Delete workspace' }).click();
     await page.getByRole('button', { name: 'Delete workspace' }).click();
     // Expect new workspace to be deleted
     await page.goto('app');
-    await expect(page.getByRole('link', { name: 'Test workspace Admin' })).toBeHidden();
+    await expect(page.getByRole('link', { name: 'Test workspace Admin' })).not.toBeVisible();
   });
 
   test('Should display navigation menu items', async ({ page }) => {
