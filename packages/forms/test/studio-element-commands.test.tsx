@@ -116,7 +116,7 @@ describe('delete (rules 21-26)', () => {
     'describes deleting a %s as removing the layout and everything inside it',
     async (type) => {
       const uischema = {
-        type: 'Grid',
+        type: 'Form',
         elements: [{ type, elements: [{ type: 'Heading', text: 'Inside' }] }],
       } as UISchemaElement;
       render(<FormStudio uischema={uischema} />);

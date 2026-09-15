@@ -1,9 +1,14 @@
+import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { useMemo, useRef, useState, type FC } from 'react';
 import * as defaultSet from '../renderers/default/index';
-import { GridEditorProvider } from '../renderers/gridstack/grid-editor';
+import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid-editor';
+import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
 import * as studioSet from '../renderers/studio/index';
-import { StudioSelectionProvider } from '../renderers/studio/studio-selection';
+import {
+  StudioSelectionProvider,
+  type StudioSelection,
+} from '../renderers/studio/studio-selection';
 import type { FormStudioProps } from '../types/index';
 import { StudioCodePanel } from './code/studio-code-panel';
 import { DeleteConfirmation } from './delete-confirmation';
@@ -32,6 +37,57 @@ const PREVIEW_RENDERERS = [
   ...defaultSet.layoutRenderers,
 ];
 
+const ROOT_FORM_MESSAGE = 'The root element must be a Form.';
+
+interface StudioCanvasProps {
+  readonly schema: JsonSchema;
+  readonly uischema: UISchemaElement;
+  readonly previewing: boolean;
+  readonly selection: StudioSelection;
+  readonly editor: GridEditor;
+}
+
+/**
+ * The centre panel's content: the document through the studio renderers, or through the fillable default renderers
+ * in preview (doc 184) — or, when the root is not a Form, the root error in its place in both (doc 192 rule 7).
+ */
+function StudioCanvas({ schema, uischema, previewing, selection, editor }: StudioCanvasProps) {
+  if (uischema.type !== FORM_TYPE) {
+    return (
+      <p role="alert" data-slot="form-studio-root-error" className="text-sm text-destructive">
+        {ROOT_FORM_MESSAGE}
+      </p>
+    );
+  }
+  if (previewing) {
+    return (
+      <JsonForms
+        key="preview"
+        schema={schema}
+        uischema={uischema}
+        data={STUDIO_SAMPLE_DATA}
+        renderers={PREVIEW_RENDERERS}
+        cells={defaultSet.cells}
+      />
+    );
+  }
+  return (
+    <StudioSelectionProvider value={selection}>
+      <GridEditorProvider value={editor}>
+        <JsonForms
+          key="studio"
+          schema={schema}
+          uischema={uischema}
+          data={STUDIO_SAMPLE_DATA}
+          renderers={STUDIO_RENDERERS}
+          cells={studioSet.cells}
+          validationMode="NoValidation"
+        />
+      </GridEditorProvider>
+    </StudioSelectionProvider>
+  );
+}
+
 /**
  * The Form Studio shell: a fixed 36px header, a content area that flexes to fill whatever is
  * left, and a fixed 36px footer, stacked top-down over the full height of its container.
@@ -48,7 +104,8 @@ const PREVIEW_RENDERERS = [
  *
  * The studio owns that document (doc 183): `schema`/`uischema` props seed it (else the built-in
  * sample), a different object resets it, and every finished drag, resize or cross-grid move is written
- * back to the uischema through the Grid editor port.
+ * back to the uischema through the Grid editor port. Its root must be a Form (doc 192): any other root
+ * shows an error in the canvas and preview instead, and the code editor only applies Form roots.
  *
  * Grid items can be hovered and selected, and copied or deleted from their actions popover (doc 185)
  * through the studio selection port; deletes are confirmed unless the author opted out. The root element
@@ -130,30 +187,13 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
             )
           }
         >
-          {previewing ? (
-            <JsonForms
-              key="preview"
-              schema={studio.schema}
-              uischema={studio.uischema}
-              data={STUDIO_SAMPLE_DATA}
-              renderers={PREVIEW_RENDERERS}
-              cells={defaultSet.cells}
-            />
-          ) : (
-            <StudioSelectionProvider value={port}>
-              <GridEditorProvider value={editor}>
-                <JsonForms
-                  key="studio"
-                  schema={studio.schema}
-                  uischema={studio.uischema}
-                  data={STUDIO_SAMPLE_DATA}
-                  renderers={STUDIO_RENDERERS}
-                  cells={studioSet.cells}
-                  validationMode="NoValidation"
-                />
-              </GridEditorProvider>
-            </StudioSelectionProvider>
-          )}
+          <StudioCanvas
+            schema={studio.schema}
+            uischema={studio.uischema}
+            previewing={previewing}
+            selection={port}
+            editor={editor}
+          />
         </StudioWorkspace>
       </div>
       <footer

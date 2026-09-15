@@ -14,9 +14,8 @@ describe('Form Studio document text (doc 191)', () => {
       const text = documentText({ type: 'object', required: ['a'] });
       expect(text).toBe('{\n  "type": "object",\n  "required": [\n    "a"\n  ]\n}');
       expect(JSON.parse(text)).toEqual({ type: 'object', required: ['a'] });
-      expect(documentText(STUDIO_SAMPLE_UISCHEMA).startsWith('{\n  "type": "VerticalLayout"')).toBe(
-        true,
-      );
+      // The sample's root is a Form (doc 192 rule 8).
+      expect(documentText(STUDIO_SAMPLE_UISCHEMA).startsWith('{\n  "type": "Form"')).toBe(true);
     });
   });
 

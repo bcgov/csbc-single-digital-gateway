@@ -2,6 +2,7 @@ import type { JsonSchema } from '@jsonforms/core';
 import type {
   CheckboxControlElement,
   ComboboxControlElement,
+  FormElement,
   GridElement,
   HeadingElement,
   HorizontalLayoutElement,
@@ -110,7 +111,7 @@ const contactMethod: RadioGroupControlElement = {
   options: { component: 'radio-group' },
 };
 
-// A VerticalLayout nested in the root one (doc 180 rules 25-26): its children stack in order, the row among them.
+// A VerticalLayout nested in the root Form (doc 180 rules 25-26): its children stack in order, the row among them.
 const contact: VerticalLayoutElement = {
   type: 'VerticalLayout',
   elements: [contactHeading, contactRow, bestTime, contactMethod],
@@ -140,7 +141,7 @@ const province: ComboboxControlElement = {
   options: { component: 'combobox', placeholder: 'Choose a province', gridItem: { w: 6 } },
 };
 
-// A Grid inside the root VerticalLayout: its own heading and side-by-side fields, laid out on its own 12 columns.
+// A Grid inside the root Form: its own heading and side-by-side fields, laid out on its own 12 columns.
 // Elements are named consts, not inline literals — inline, `elements: UISchemaElement[]` rejects
 // element-specific keys like `text` as excess properties.
 const delivery: GridElement = {
@@ -159,10 +160,10 @@ const deliveryTexts: SwitchControlElement = {
   options: { component: 'switch' },
 };
 
-// The root is a VerticalLayout (user request, doc 182 rule 24c): its children stack in order, so none
-// carries a `gridItem` — only the Delivery Grid's children are placed.
-export const STUDIO_SAMPLE_UISCHEMA: VerticalLayoutElement = {
-  type: 'VerticalLayout',
+// The root is a Form (doc 192 rule 8, amending doc 182 rule 24c): it renders like a VerticalLayout, so its
+// children stack in order and none carries a `gridItem` — only the Delivery Grid's children are placed.
+export const STUDIO_SAMPLE_UISCHEMA: FormElement = {
+  type: 'Form',
   elements: [
     greeting,
     name,

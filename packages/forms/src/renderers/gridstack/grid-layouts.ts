@@ -3,26 +3,30 @@ import type { UISchemaElement } from '@jsonforms/core';
 /** Which gridstack layout a renderer draws (doc 180 rules 23-24). */
 export type GridLayoutKind = 'grid' | 'vertical' | 'horizontal';
 
-/** The uischema `type` each layout kind renders. */
+/** The uischema `type` each layout kind renders — one type per kind, the axis testers' types. */
 export const GRID_LAYOUT_TYPES: Readonly<Record<GridLayoutKind, string>> = Object.freeze({
   grid: 'Grid',
   vertical: 'VerticalLayout',
   horizontal: 'HorizontalLayout',
 });
 
-const KIND_BY_TYPE: ReadonlyMap<string, GridLayoutKind> = new Map(
-  (Object.keys(GRID_LAYOUT_TYPES) as GridLayoutKind[]).map((kind) => [
-    GRID_LAYOUT_TYPES[kind],
-    kind,
-  ]),
-);
+/** The root-only Form element (doc 192): a `vertical` layout identified by its own type. */
+export const FORM_TYPE = 'Form';
+
+const KIND_BY_TYPE: ReadonlyMap<string, GridLayoutKind> = new Map([
+  ...(Object.keys(GRID_LAYOUT_TYPES) as GridLayoutKind[]).map(
+    (kind) => [GRID_LAYOUT_TYPES[kind], kind] as const,
+  ),
+  // Doc 192 rule 3: every kind-keyed decision treats a Form exactly like a VerticalLayout.
+  [FORM_TYPE, 'vertical'] as const,
+]);
 
 /** The layout kind rendering `type`, or `undefined` for anything that is not a gridstack layout. */
 export function layoutKindOf(type: string): GridLayoutKind | undefined {
   return KIND_BY_TYPE.get(type);
 }
 
-/** Whether `type` is rendered by gridstack — `Grid`, `VerticalLayout` or `HorizontalLayout`. */
+/** Whether `type` is rendered by gridstack — `Grid`, `VerticalLayout`, `HorizontalLayout` or `Form`. */
 export function isGridLayoutType(type: string): boolean {
   return KIND_BY_TYPE.has(type);
 }

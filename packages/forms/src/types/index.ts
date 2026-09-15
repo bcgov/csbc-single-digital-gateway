@@ -12,6 +12,7 @@ export type { RendererSet } from './renderer-set';
 export type {
   CheckboxControlElement,
   ComboboxControlElement,
+  FormElement,
   GridElement,
   GridElementOptions,
   GridItemPlacement,

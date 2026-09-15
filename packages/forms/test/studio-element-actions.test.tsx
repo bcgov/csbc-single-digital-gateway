@@ -186,7 +186,7 @@ describe('selection (rules 5-8)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(marked('data-selected')).toEqual([]);
     expect(
-      container.querySelector('[data-slot="studio-element"][data-element-type="VerticalLayout"]'),
+      container.querySelector('[data-slot="studio-element"][data-element-type="Form"]'),
     ).toHaveAttribute('data-selected');
   });
 

@@ -25,9 +25,9 @@ async function renderStudio() {
   const view = render(<FormStudio />);
   const name = itemOf(await screen.findByRole('textbox', { name: 'Name' }));
   const email = itemOf(await screen.findByRole('textbox', { name: 'Email' }));
-  // The sample's root is a VerticalLayout (doc 182 rule 24c); only the root is framed outside a grid item.
+  // The sample's root is a Form (doc 192 rule 8); only the root is framed outside a grid item.
   const rootFrame = view.container.querySelector<HTMLElement>(
-    '[data-slot="studio-element"][data-element-type="VerticalLayout"]',
+    '[data-slot="studio-element"][data-element-type="Form"]',
   );
   const centre = view.container.querySelector<HTMLElement>(
     '[data-slot="form-studio-center-panel"]',

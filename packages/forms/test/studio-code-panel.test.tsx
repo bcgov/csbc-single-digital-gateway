@@ -75,7 +75,7 @@ async function openCode() {
 
 const uischemaWith = (text: string) =>
   JSON.stringify({
-    type: 'VerticalLayout',
+    type: 'Form',
     elements: [{ type: 'Heading', text, options: { level: 1 } }],
   });
 
@@ -228,8 +228,7 @@ describe('Form Studio code panel (doc 191)', () => {
     it('does not apply invalid text, keeps it, and reads "Not applied — n problems"', async () => {
       render(<FormStudio />);
       const { uischema } = await openCode();
-      const unknownType =
-        '{ "type": "VerticalLayout", "elements": [{ "type": "Group", "elements": [] }] }';
+      const unknownType = '{ "type": "Form", "elements": [{ "type": "Group", "elements": [] }] }';
       edit(uischema, unknownType);
       await waitFor(() =>
         expect(statusOf(uischema)).toHaveTextContent(/^Not applied — \d+ problems?$/),

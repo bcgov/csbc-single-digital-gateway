@@ -6,9 +6,10 @@ import { FormStudio } from '../src/studio';
 const GREETING = 'Hello, FormStudio!';
 
 /** A one-Heading Grid uischema — a distinct object on every call. */
+// A studio document's root must be a Form (doc 192 rule 6).
 const gridWith = (text: string) =>
   ({
-    type: 'Grid',
+    type: 'Form',
     elements: [{ type: 'Heading', text, options: { level: 1 } }],
   }) as UISchemaElement;
 
@@ -75,12 +76,12 @@ describe('FormStudio', () => {
   });
 
   // Doc 180 rules 16-17b — grid children are framed by their grid item, the root layout by its frame.
-  // Doc 182 rule 24c — the sample's root is a VerticalLayout.
-  it('renders the sample Heading in a studio grid item inside the framed root VerticalLayout', async () => {
+  // Doc 182 rule 24c, amended by doc 192 rule 8 — the sample's root is a Form.
+  it('renders the sample Heading in a studio grid item inside the framed root Form', async () => {
     const { content } = renderStudio();
     const heading = await screen.findByRole('heading', { level: 1, name: GREETING });
     const item = heading.closest('[data-element-type="Heading"]');
-    const gridFrame = item?.parentElement?.closest('[data-element-type="VerticalLayout"]');
+    const gridFrame = item?.parentElement?.closest('[data-element-type="Form"]');
     expect(item).toHaveAttribute('data-slot', 'studio-grid-item');
     expect(item?.closest('.grid-stack-item-content')).not.toBeNull();
     expect(gridFrame).toHaveAttribute('data-slot', 'studio-element');
@@ -134,7 +135,7 @@ describe('FormStudio', () => {
     );
   });
 
-  it('renders the sample root VerticalLayout as a draggable one-column grid (not grid-stack-static)', async () => {
+  it('renders the sample root Form as a draggable one-column grid (not grid-stack-static)', async () => {
     const { content } = renderStudio();
     await screen.findByRole('heading', { level: 1, name: GREETING });
     const grid = content?.querySelector('.grid-stack');
@@ -167,7 +168,7 @@ describe('FormStudio', () => {
   it('renders a schema and uischema passed as props instead of the sample', async () => {
     const schema: JsonSchema = { type: 'object', properties: {} };
     const uischema = {
-      type: 'Grid',
+      type: 'Form',
       elements: [{ type: 'Heading', text: 'Custom form', options: { level: 1 } }],
     } as UISchemaElement;
     render(<FormStudio schema={schema} uischema={uischema} />);

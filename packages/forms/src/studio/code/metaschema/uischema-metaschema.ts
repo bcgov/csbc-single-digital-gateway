@@ -155,8 +155,22 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
   $schema: 'http://json-schema.org/draft-07/schema#',
   title: 'Form Studio uischema',
   description: 'The layout of a Form Studio form.',
-  allOf: [{ $ref: '#/definitions/element' }],
+  allOf: [{ $ref: '#/definitions/form' }],
   definitions: {
+    // Doc 192 rule 11: the root is always a Form, and `element` never lists one, so a nested Form is a problem.
+    form: {
+      description:
+        'The root of a studio form. It renders like a VerticalLayout and is allowed only here.',
+      type: 'object',
+      required: ['type', 'elements'],
+      properties: {
+        type: { description: 'Always "Form" — the root element of a studio form.', const: 'Form' },
+        elements: ELEMENTS,
+        label: { description: 'A name for the form, shown in the element path.', type: 'string' },
+        rule: { $ref: '#/definitions/rule' },
+        options: { description: 'Form options. A Form reads none of its own.', type: 'object' },
+      },
+    },
     element: {
       description: 'A uischema element.',
       type: 'object',

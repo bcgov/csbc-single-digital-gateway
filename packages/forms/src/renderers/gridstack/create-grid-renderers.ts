@@ -2,8 +2,9 @@ import { rankWith, uiTypeIs, type RankedTester } from '@jsonforms/core';
 import type { ComponentMap } from 'gridstack/dist/react';
 import type { GridRenderersOptions } from '../../types/elements';
 import type { RendererSet } from '../../types/renderer-set';
+import { createFormRenderer } from './form-renderer';
 import { GridElementDispatch } from './grid-element';
-import { GRID_LAYOUT_TYPES, type GridLayoutKind } from './grid-layouts';
+import { FORM_TYPE, GRID_LAYOUT_TYPES, type GridLayoutKind } from './grid-layouts';
 import { GRID_ELEMENT_COMPONENT } from './grid-options';
 import { createGridLayoutRenderer } from './grid-renderer';
 import { installGridUpdateGuard } from './grid-update-guard';
@@ -14,8 +15,10 @@ export const horizontalLayoutTester: RankedTester = rankWith(
   1,
   uiTypeIs(GRID_LAYOUT_TYPES.horizontal),
 );
+/** Doc 192 rule 2: the root-only Form, rendered by the vertical layout. */
+export const formTester: RankedTester = rankWith(1, uiTypeIs(FORM_TYPE));
 
-// Registry order (doc 180 rule 23). The types differ, so no two testers ever tie on one element.
+// Registry order (doc 180 rule 23, doc 192 rule 2). The types differ, so no two testers ever tie on one element.
 const LAYOUT_TESTERS: readonly (readonly [GridLayoutKind, RankedTester])[] = [
   ['grid', gridTester],
   ['vertical', verticalLayoutTester],
@@ -28,8 +31,8 @@ export function buildComponentMap(components: ComponentMap | undefined): Compone
 }
 
 /**
- * Builds a `RendererSet` holding the gridstack layout renderers — `Grid`, `VerticalLayout` and
- * `HorizontalLayout` (doc 180 rules 6-13, 23-30).
+ * Builds a `RendererSet` holding the gridstack layout renderers — `Grid`, `VerticalLayout`,
+ * `HorizontalLayout` and the root `Form` (doc 180 rules 6-13, 23-30; doc 192).
  *
  * A factory because the grid is configured per consumer: `default` calls it with the static
  * defaults, `studio` with a draggable grid, its own item component and item styling. The same
@@ -45,13 +48,15 @@ export function createGridRenderers({
   // Doc 183 rule 15b: every grid's items may be updated with a live, cyclic mid-drag node.
   installGridUpdateGuard();
   const componentMap = buildComponentMap(components);
+  const rendererFor = (layout: GridLayoutKind) =>
+    createGridLayoutRenderer(componentMap, gridOptions, className, layout);
   return {
     cells: [],
     controlRenderers: [],
     displayRenderers: [],
-    layoutRenderers: LAYOUT_TESTERS.map(([layout, tester]) => ({
-      tester,
-      renderer: createGridLayoutRenderer(componentMap, gridOptions, className, layout),
-    })),
+    layoutRenderers: [
+      ...LAYOUT_TESTERS.map(([layout, tester]) => ({ tester, renderer: rendererFor(layout) })),
+      { tester: formTester, renderer: createFormRenderer(rendererFor('vertical')) },
+    ],
   };
 }

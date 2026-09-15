@@ -101,6 +101,15 @@ export interface VerticalLayoutElement extends Layout {
   type: 'VerticalLayout';
 }
 
+/**
+ * `{ type: 'Form' }` — the root-only wrapper of a studio form (doc 192). It renders exactly like a `VerticalLayout` and
+ * reads the same options (none); anywhere but the root it renders an error instead of its elements.
+ */
+export interface FormElement extends Layout {
+  type: 'Form';
+  options?: { [key: string]: unknown };
+}
+
 /** The options a `HorizontalLayout` reads — everything else is ignored (doc 180 rule 27). */
 export interface HorizontalLayoutOptions {
   /** Columns in the row, 2-6. Anything else falls back to the child count, clamped to 2-6. */

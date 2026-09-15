@@ -104,7 +104,7 @@ describe('entering preview (rules 5-8)', () => {
   it("previews the studio's current document", async () => {
     const user = userEvent.setup();
     renderStudio({
-      type: 'Grid',
+      type: 'Form',
       elements: [{ type: 'Heading', text: 'Custom form', options: { level: 1 } }],
     } as UISchemaElement);
 

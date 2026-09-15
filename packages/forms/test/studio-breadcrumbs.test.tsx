@@ -5,7 +5,7 @@ import type { GridHTMLElement } from 'gridstack';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 
-// Doc 186 rules 8-18 — the footer breadcrumb trail.
+// Doc 186 rules 8-18 — the footer breadcrumb trail. The root is a Form (doc 192 rules 4, 8).
 
 type GestureHandler = (event: Event, el: HTMLElement) => void;
 
@@ -51,7 +51,7 @@ async function renderStudio() {
   const delivery = itemOf(city.parentElement as HTMLElement);
   const greeting = itemOf(screen.getByRole('heading', { name: 'Hello, FormStudio!' }));
   const rootFrame = view.container.querySelector<HTMLElement>(
-    '[data-slot="studio-element"][data-element-type="VerticalLayout"]',
+    '[data-slot="studio-element"][data-element-type="Form"]',
   );
   if (!rootFrame) throw new Error('no root frame');
   return { ...view, name, email, city, delivery, greeting, rootFrame };
@@ -88,14 +88,14 @@ describe('placement (rule 8)', () => {
 describe('path (rules 9-11)', () => {
   it('shows only the root, as a button and not current, when nothing is selected', async () => {
     await renderStudio();
-    expect(crumbNames()).toEqual(['VerticalLayout']);
+    expect(crumbNames()).toEqual(['Form']);
     expect(current()).toBeNull();
   });
 
   it('shows root › ancestors › the selected element, which is current and not a button', async () => {
     const { email } = await renderStudio();
     press(email);
-    expect(crumbNames()).toEqual(['VerticalLayout', 'VerticalLayout', 'HorizontalLayout']);
+    expect(crumbNames()).toEqual(['Form', 'VerticalLayout', 'HorizontalLayout']);
     expect(current()).toHaveTextContent('Email');
     expect(current()?.tagName).not.toBe('BUTTON');
     expect(trail().querySelectorAll('[data-slot="breadcrumb-separator"]')).toHaveLength(3);
@@ -105,9 +105,9 @@ describe('path (rules 9-11)', () => {
 
   it('shows the root as a document icon named and titled by its label (rule 10b)', async () => {
     await renderStudio();
-    const root = crumb('VerticalLayout');
-    expect(root).toHaveAttribute('aria-label', 'VerticalLayout');
-    expect(root).toHaveAttribute('title', 'VerticalLayout');
+    const root = crumb('Form');
+    expect(root).toHaveAttribute('aria-label', 'Form');
+    expect(root).toHaveAttribute('title', 'Form');
     expect(root.querySelector('svg path')).toHaveAttribute('d', mdiFileDocumentOutline);
     expect(root).toHaveTextContent('');
   });
@@ -127,7 +127,7 @@ describe('path (rules 9-11)', () => {
     const { rootFrame } = await renderStudio();
     press(rootFrame);
     expect(crumbNames()).toEqual([]);
-    expect(current()).toHaveAttribute('aria-label', 'VerticalLayout');
+    expect(current()).toHaveAttribute('aria-label', 'Form');
     expect(current()?.querySelector('svg path')).toHaveAttribute('d', mdiFileDocumentOutline);
   });
 
@@ -146,7 +146,7 @@ describe('path (rules 9-11)', () => {
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete element?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => expect(crumbNames()).toEqual(['VerticalLayout']));
+    await waitFor(() => expect(crumbNames()).toEqual(['Form']));
     expect(current()).toBeNull();
   });
 });
@@ -174,7 +174,7 @@ describe('hover (rules 12-13, 15)', () => {
 
   it('hovers the root frame from the root segment, with no actions popover', async () => {
     const { rootFrame } = await renderStudio();
-    enter(crumb('VerticalLayout'));
+    enter(crumb('Form'));
     expect(rootFrame).toHaveAttribute('data-hovered');
     expect(actionsFor(rootFrame)).toBeNull();
   });
@@ -209,7 +209,7 @@ describe('click (rule 14)', () => {
     fireEvent.click(crumb('Grid'));
     expect(delivery).toHaveAttribute('data-selected');
     expect(city).not.toHaveAttribute('data-selected');
-    expect(crumbNames()).toEqual(['VerticalLayout']);
+    expect(crumbNames()).toEqual(['Form']);
     expect(current()).toHaveTextContent('Grid');
   });
 });
@@ -220,7 +220,7 @@ describe('collapse (rule 16)', () => {
     properties: { deepKey01: { type: 'string', title: 'Deep' } },
   };
   const uischema = {
-    type: 'VerticalLayout',
+    type: 'Form',
     elements: [
       {
         type: 'Grid',
@@ -252,7 +252,7 @@ describe('collapse (rule 16)', () => {
 
   it('renders root › ⋯ › parent › current for a path of more than 4 segments', async () => {
     await renderDeep();
-    expect(crumbNames()).toEqual(['VerticalLayout', 'Show hidden path', 'Row']);
+    expect(crumbNames()).toEqual(['Form', 'Show hidden path', 'Row']);
     expect(current()).toHaveTextContent('Deep');
     expect(
       within(crumb('Show hidden path')).getByText('More', { exact: true }),
@@ -279,7 +279,7 @@ describe('collapse (rule 16)', () => {
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Middle' }));
     expect(itemOfType('VerticalLayout')).toHaveAttribute('data-selected');
-    expect(crumbNames()).toEqual(['VerticalLayout', 'Outer']);
+    expect(crumbNames()).toEqual(['Form', 'Outer']);
     expect(current()).toHaveTextContent('Middle');
   });
 });
@@ -293,6 +293,6 @@ describe('preview (rule 17)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
     await screen.findByRole('textbox', { name: 'Name' });
-    expect(crumbNames()).toEqual(['VerticalLayout']);
+    expect(crumbNames()).toEqual(['Form']);
   });
 });

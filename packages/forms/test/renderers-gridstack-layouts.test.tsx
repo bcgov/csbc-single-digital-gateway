@@ -96,9 +96,10 @@ describe('layout kinds (rules 23-24)', () => {
 
   it('returns Grid, VerticalLayout and HorizontalLayout entries, each ranking 1 for its own type only', () => {
     const entries = createGridRenderers().layoutRenderers;
-    expect(entries).toHaveLength(3);
+    // Plus the root Form entry last (doc 192 rule 2, tested in renderers-gridstack-form.test.tsx).
+    expect(entries).toHaveLength(4);
     LAYOUT_TYPES.forEach((type, index) => {
-      for (const other of [...LAYOUT_TYPES, 'Heading']) {
+      for (const other of [...LAYOUT_TYPES, 'Form', 'Heading']) {
         const rank = entries[index]?.tester({ type: other }, schema, testerContext);
         expect(rank, `${type} tester on ${other}`).toBe(other === type ? 1 : NOT_APPLICABLE);
       }

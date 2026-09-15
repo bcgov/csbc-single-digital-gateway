@@ -2,6 +2,7 @@ import { createAjv, type JsonSchema, type UISchemaElement } from '@jsonforms/cor
 import { describe, it, expect } from 'vitest';
 import { SCHEMA_METASCHEMA } from '../src/studio/code/metaschema/schema-metaschema';
 import { UISCHEMA_METASCHEMA } from '../src/studio/code/metaschema/uischema-metaschema';
+import { validateUischemaDocument } from '../src/studio/code/validate-document';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import { addTargetId, insertElement } from '../src/studio/layout/insert-element';
 import { newPropertyKey } from '../src/studio/layout/schema-properties';
@@ -16,7 +17,8 @@ const uischemaOk = (value: unknown) => ajv.validate(UISCHEMA_METASCHEMA, value) 
 
 const withProperty = (property: object) => ({ type: 'object', properties: { a: property } });
 const control = (extra: object = {}) => ({ type: 'Control', scope: '#/properties/a', ...extra });
-const root = (...elements: object[]) => ({ type: 'VerticalLayout', elements });
+// Doc 192 rule 11: every studio uischema's root is a Form.
+const root = (...elements: object[]) => ({ type: 'Form', elements });
 
 /** Paths of named subschemas (in `properties` / `definitions`) that have neither a description nor a `$ref`. */
 function undescribed(schema: unknown, path = '#'): string[] {
@@ -38,6 +40,74 @@ function undescribed(schema: unknown, path = '#'): string[] {
   }
   return found;
 }
+
+/** Every `if` condition anywhere in `schema`. */
+function ifConditions(schema: unknown): Record<string, unknown>[] {
+  if (schema === null || typeof schema !== 'object') return [];
+  const node = schema as Record<string, unknown>;
+  const own =
+    typeof node.if === 'object' && node.if !== null ? [node.if as Record<string, unknown>] : [];
+  return [...own, ...Object.values(node).flatMap(ifConditions)];
+}
+
+describe('UISCHEMA_METASCHEMA Form root (doc 192 rule 11)', () => {
+  it('accepts a Form root with elements, label, rule and options', () => {
+    expect(uischemaOk(root())).toBe(true);
+    expect(
+      uischemaOk({
+        type: 'Form',
+        label: 'Signup',
+        options: { anything: 1 },
+        rule: { effect: 'SHOW', condition: { scope: '#/properties/a', schema: { const: true } } },
+        elements: [
+          { type: 'Heading', text: 'H' },
+          { type: 'VerticalLayout', elements: [] },
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it('requires the root to be a Form with elements', () => {
+    expect(uischemaOk({ type: 'Form' })).toBe(false);
+    expect(uischemaOk({ type: 'VerticalLayout', elements: [] })).toBe(false);
+    expect(uischemaOk({ type: 'Grid', elements: [] })).toBe(false);
+    expect(uischemaOk({ elements: [] })).toBe(false);
+    expect(uischemaOk({ type: 'Form', elements: [], label: false })).toBe(false);
+  });
+
+  it('rejects a Form nested at any depth, reporting its path', () => {
+    const direct = validateUischemaDocument(root({ type: 'Form', elements: [] }));
+    expect(direct.valid).toBe(false);
+    if (!direct.valid) {
+      expect(direct.problems).toContainEqual(expect.objectContaining({ path: '/elements/0/type' }));
+    }
+
+    const deep = validateUischemaDocument(
+      root({
+        type: 'VerticalLayout',
+        elements: [{ type: 'Grid', elements: [{ type: 'Form', elements: [] }] }],
+      }),
+    );
+    expect(deep.valid).toBe(false);
+    if (!deep.valid) {
+      expect(deep.problems).toContainEqual(
+        expect.objectContaining({ path: '/elements/0/elements/0/elements/0/type' }),
+      );
+    }
+  });
+
+  it('gives the root type a description and no if-condition descriptions', () => {
+    expect(UISCHEMA_METASCHEMA.allOf).toEqual([{ $ref: '#/definitions/form' }]);
+    expect(UISCHEMA_METASCHEMA.definitions.form.properties.type).toMatchObject({
+      const: 'Form',
+      description: expect.any(String),
+    });
+    expect(UISCHEMA_METASCHEMA.definitions.element.properties.type.enum).not.toContain('Form');
+    const conditions = ifConditions(UISCHEMA_METASCHEMA);
+    expect(conditions.length).toBeGreaterThan(0);
+    expect(JSON.stringify(conditions)).not.toContain('description');
+  });
+});
 
 describe('Form Studio code metaschemas (doc 191)', () => {
   describe('shared shape (rule 11)', () => {
@@ -149,24 +219,24 @@ describe('Form Studio code metaschemas (doc 191)', () => {
 
     it('requires Heading text, layout elements and Control scope', () => {
       expect(uischemaOk(root({ type: 'Heading' }))).toBe(false);
-      expect(uischemaOk({ type: 'Grid' })).toBe(false);
-      expect(uischemaOk({ type: 'HorizontalLayout' })).toBe(false);
-      expect(uischemaOk({ type: 'VerticalLayout' })).toBe(false);
+      expect(uischemaOk(root({ type: 'Grid' }))).toBe(false);
+      expect(uischemaOk(root({ type: 'HorizontalLayout' }))).toBe(false);
+      expect(uischemaOk(root({ type: 'VerticalLayout' }))).toBe(false);
       expect(uischemaOk(root({ type: 'Control' }))).toBe(false);
     });
 
     it('rejects an unknown element type', () => {
       expect(uischemaOk(root({ type: 'Group', elements: [] }))).toBe(false);
-      expect(uischemaOk({ elements: [] })).toBe(false);
+      expect(uischemaOk(root({ elements: [] }))).toBe(false);
     });
 
     it('rejects out-of-range Heading level, Grid column and HorizontalLayout columns', () => {
       expect(uischemaOk(root({ type: 'Heading', text: 'H', options: { level: 7 } }))).toBe(false);
       expect(uischemaOk(root({ type: 'Heading', text: 'H', options: { size: 1.5 } }))).toBe(false);
-      expect(uischemaOk({ type: 'Grid', options: { column: 13 }, elements: [] })).toBe(false);
-      expect(uischemaOk({ type: 'HorizontalLayout', options: { columns: 1 }, elements: [] })).toBe(
-        false,
-      );
+      expect(uischemaOk(root({ type: 'Grid', options: { column: 13 }, elements: [] }))).toBe(false);
+      expect(
+        uischemaOk(root({ type: 'HorizontalLayout', options: { columns: 1 }, elements: [] })),
+      ).toBe(false);
     });
 
     it('rejects a nested or non-#/properties Control scope and an unknown options.component', () => {
