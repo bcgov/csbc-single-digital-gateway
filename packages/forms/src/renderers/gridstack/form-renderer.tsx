@@ -2,8 +2,11 @@ import type { OwnPropsOfRenderer } from '@jsonforms/core';
 import { useContext, type ComponentType } from 'react';
 import { LayoutNestingContext } from './layout-nesting';
 
-/** Doc 192 rule 5: what a Form shows in place of its elements anywhere but the root. */
-export const NESTED_FORM_MESSAGE = 'A Form can only be the root element.';
+/**
+ * Doc 192 rule 5, doc 195 rule 16: what a Form shows in place of its elements inside a layout. A Form in a Stage is
+ * listed on the Stage's card, never rendered inside a layout, so it never sees this.
+ */
+export const NESTED_FORM_MESSAGE = 'A Form can only be the root element or sit in a Stage.';
 
 /**
  * The `Form` renderer (doc 192 rules 4-5): a generic, identifiable wrapper around a vertical layout renderer — the

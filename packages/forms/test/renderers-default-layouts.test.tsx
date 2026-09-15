@@ -49,7 +49,8 @@ const textsOf = (layout: HTMLElement | null) => itemsOf(layout).map((item) => it
 describe('fillable CSS layouts (doc 193)', () => {
   describe('set (rule 3)', () => {
     it('holds exactly one layout entry each for Grid, VerticalLayout, HorizontalLayout and Form, and no gridstack', () => {
-      expect(defaults.layoutRenderers).toHaveLength(4);
+      // Plus Flow and Stage, shown as not yet fillable (doc 195 rule 19).
+      expect(defaults.layoutRenderers).toHaveLength(6);
       for (const type of LAYOUT_TYPES) {
         const matching = renderers().filter(
           (entry) => entry.tester({ type }, schema, testerContext) > 0,

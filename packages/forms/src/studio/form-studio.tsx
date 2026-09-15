@@ -5,6 +5,7 @@ import * as defaultSet from '../renderers/default/index';
 import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid-editor';
 import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
 import * as studioSet from '../renderers/studio/index';
+import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import {
   StudioSelectionProvider,
   type StudioSelection,
@@ -37,7 +38,9 @@ const PREVIEW_RENDERERS = [
   ...defaultSet.layoutRenderers,
 ];
 
-const ROOT_FORM_MESSAGE = 'The root element must be a Form.';
+const ROOT_MESSAGE = 'The root element must be a Form or a Flow.';
+/** Doc 192 rule 7, doc 195 rule 21: the uischema types a studio document's root may have. */
+const ROOT_TYPES: ReadonlySet<string> = new Set([FORM_TYPE, FLOW_TYPE]);
 
 interface StudioCanvasProps {
   readonly schema: JsonSchema;
@@ -49,13 +52,14 @@ interface StudioCanvasProps {
 
 /**
  * The centre panel's content: the document through the studio renderers, or through the fillable default renderers
- * in preview (doc 184) — or, when the root is not a Form, the root error in its place in both (doc 192 rule 7).
+ * in preview (doc 184) — or, when the root is neither a Form nor a Flow, the root error in its place in both (doc 192
+ * rule 7, doc 195 rule 21).
  */
 function StudioCanvas({ schema, uischema, previewing, selection, editor }: StudioCanvasProps) {
-  if (uischema.type !== FORM_TYPE) {
+  if (!ROOT_TYPES.has(uischema.type)) {
     return (
       <p role="alert" data-slot="form-studio-root-error" className="text-sm text-destructive">
-        {ROOT_FORM_MESSAGE}
+        {ROOT_MESSAGE}
       </p>
     );
   }
@@ -104,8 +108,9 @@ function StudioCanvas({ schema, uischema, previewing, selection, editor }: Studi
  *
  * The studio owns that document (doc 183): `schema`/`uischema` props seed it (else the built-in
  * sample), a different object resets it, and every finished drag, resize or cross-grid move is written
- * back to the uischema through the Grid editor port. Its root must be a Form (doc 192): any other root
- * shows an error in the canvas and preview instead, and the code editor only applies Form roots.
+ * back to the uischema through the Grid editor port. Its root must be a Form (doc 192) or a Flow (doc 195): any other
+ * root shows an error in the canvas and preview instead, and the code editor only applies Form or Flow roots. A Flow
+ * draws as a view-only canvas of its Stages; preview shows it as not yet fillable.
  *
  * Grid items can be hovered and selected, and copied or deleted from their actions popover (doc 185)
  * through the studio selection port; deletes are confirmed unless the author opted out. The root element

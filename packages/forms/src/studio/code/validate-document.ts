@@ -1,4 +1,6 @@
 import { createAjv, type JsonSchema, type UISchemaElement } from '@jsonforms/core';
+import { FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
+import { flowProblems } from '../../renderers/xyflow/flow-graph';
 import type { DocumentProblem } from './document-text';
 import { SCHEMA_METASCHEMA } from './metaschema/schema-metaschema';
 import { UISCHEMA_METASCHEMA } from './metaschema/uischema-metaschema';
@@ -49,6 +51,13 @@ export function validateSchemaDocument(value: unknown): DocumentCheck<JsonSchema
   }
 }
 
-/** A uischema built from the studio's element types. */
-export const validateUischemaDocument = (value: unknown): DocumentCheck<UISchemaElement> =>
-  check<UISchemaElement>(UISCHEMA_METASCHEMA, value);
+/**
+ * A uischema built from the studio's element types. A Flow must also pass the checks a metaschema can't express (doc 195
+ * rule 18): unique Stage ids, edge ends that name a Stage, and no self-loops, repeated edges or cycles.
+ */
+export function validateUischemaDocument(value: unknown): DocumentCheck<UISchemaElement> {
+  const result = check<UISchemaElement>(UISCHEMA_METASCHEMA, value);
+  if (!result.valid || result.value.type !== FLOW_TYPE) return result;
+  const problems = flowProblems(result.value);
+  return problems.length === 0 ? result : { valid: false, problems };
+}

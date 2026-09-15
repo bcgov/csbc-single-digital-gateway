@@ -5,6 +5,7 @@ import type {
 } from '@jsonforms/core';
 import { useContext, type ComponentType } from 'react';
 import { useGridEditor } from '../gridstack/grid-editor';
+import { FLOW_TYPE } from '../xyflow/flow-elements';
 import { StudioContent } from './studio-content';
 import { StudioItemContext } from './studio-item-context';
 import { useSelectionPort } from './studio-selection';
@@ -43,6 +44,8 @@ export function withStudioFrame<P extends FramedProps>(
     const selected = id !== undefined && selection?.selectedId === id;
     // Generic props can't take a JSX `enabled={false}` override, hence the spread-and-cast.
     const disabled = { ...props, enabled: false } as P;
+    // Doc 195 rule 23: a Flow's canvas fills the centre panel, so its frame does.
+    const fill = type === FLOW_TYPE ? 'h-full ' : '';
     return (
       <div
         data-slot="studio-element"
@@ -52,7 +55,7 @@ export function withStudioFrame<P extends FramedProps>(
         data-selected={selected ? '' : undefined}
         // Arbitrary `data-[…]` variants, not `data-selected:`: the imported shadcn stylesheet redefines
         // `data-selected` as a custom variant for `[data-selected="true"]`, which a presence flag never matches.
-        className="rounded-sm border border-dashed border-border p-2 data-[hovered]:border-ring data-[selected]:border-ring data-[selected]:border-solid"
+        className={`${fill}rounded-sm border border-dashed border-border p-2 data-[hovered]:border-ring data-[selected]:border-ring data-[selected]:border-solid`}
       >
         <StudioContent type={type}>
           <Renderer {...disabled} />

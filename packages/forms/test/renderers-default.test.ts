@@ -55,8 +55,8 @@ describe('renderers/default', () => {
   it('holds exactly one entry matching Grid and exactly one matching Heading', () => {
     expect(matching('Grid')).toHaveLength(1);
     expect(matching('Heading')).toHaveLength(1);
-    // Grid, VerticalLayout, HorizontalLayout and Form (doc 193 rule 3).
-    expect(defaults.layoutRenderers).toHaveLength(4);
+    // Grid, VerticalLayout, HorizontalLayout and Form (doc 193 rule 3), then Flow and Stage (doc 195 rule 19).
+    expect(defaults.layoutRenderers).toHaveLength(6);
   });
 
   it('renders its Grid with plain CSS, not gridstack', async () => {
@@ -73,7 +73,7 @@ describe('renderers/default', () => {
 
   it('does not re-export createGridRenderers or import any gridstack renderer', () => {
     expect(defaults).not.toHaveProperty('createGridRenderers');
-    for (const file of ['index.ts', 'fill-layouts.tsx', 'fill-placement.ts']) {
+    for (const file of ['index.ts', 'fill-layouts.tsx', 'fill-placement.ts', 'fill-flow.tsx']) {
       const source = readFileSync(
         resolve(import.meta.dirname, '../src/renderers/default', file),
         'utf8',

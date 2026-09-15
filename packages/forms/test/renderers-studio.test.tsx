@@ -6,8 +6,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { createGridRenderers } from '../src/renderers-gridstack';
 import * as studio from '../src/renderers-studio';
 import * as ui from '../src/renderers-ui';
+import * as xyflow from '../src/renderers-xyflow';
 
-// Doc 180 rules 15-17 + 15b — @repo/forms/renderers/studio (ui + draggable Grid, every entry framed).
+// Doc 180 rules 15-17 + 15b — @repo/forms/renderers/studio (ui + draggable Grid + xyflow, every entry framed).
 
 const schema: JsonSchema = { type: 'object', properties: { hidden: { type: 'boolean' } } };
 const testerContext = { rootSchema: schema, config: {} };
@@ -70,19 +71,24 @@ const handleSides = (item: HTMLElement | null | undefined) =>
   );
 
 describe('renderers/studio composition', () => {
-  it("holds ui's entries followed by the draggable grid factory's entries, 1:1 per category", () => {
+  it("holds ui's entries, then the draggable grid factory's, then xyflow's, 1:1 per category", () => {
     for (const category of CATEGORIES) {
-      expect(studio[category], category).toHaveLength(ui[category].length + grid[category].length);
+      expect(studio[category], category).toHaveLength(
+        ui[category].length + grid[category].length + xyflow[category].length,
+      );
     }
-    // The grid set's entries come last: Grid, VerticalLayout, HorizontalLayout (rule 23), Form (doc 192 rule 2).
-    const firstGridEntry = studio.layoutRenderers.at(-4);
+    // Grid, VerticalLayout, HorizontalLayout (rule 23), Form (doc 192 rule 2), then Flow and Stage (doc 195 rule 20).
+    const firstGridEntry = studio.layoutRenderers.at(-6);
     expect(firstGridEntry?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);
+    expect(studio.layoutRenderers.at(-2)?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
+    expect(studio.layoutRenderers.at(-1)?.tester).toBe(xyflow.layoutRenderers[1]?.tester);
   });
 
-  it("does not spread default's entries (no second, tied Grid entry)", () => {
-    // default = ui + grid, so spreading it as well would double the grid entries.
-    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 4);
+  it("does not spread default's entries (no second, tied Grid or Flow entry)", () => {
+    // default = ui + CSS layouts + an unsupported Flow, so spreading it as well would tie every layout entry.
+    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 6);
     expect(matching('Grid')).toHaveLength(1);
+    expect(matching('Flow')).toHaveLength(1);
   });
 
   it('preserves every tester reference', () => {

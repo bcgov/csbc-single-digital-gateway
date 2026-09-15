@@ -49,6 +49,12 @@
       "import": "./dist/renderers-ui.js",
       "require": "./dist/renderers-ui.cjs"
     },
+    "./renderers/xyflow": {
+      "types": "./dist/renderers-xyflow.d.ts",
+      "development": "./src/renderers-xyflow.ts",
+      "import": "./dist/renderers-xyflow.js",
+      "require": "./dist/renderers-xyflow.cjs"
+    },
     "./studio": {
       "types": "./dist/studio.d.ts",
       "development": "./src/studio.ts",
@@ -77,6 +83,7 @@
     "@mdi/js": "7.4.47",
     "@mdi/react": "1.6.1",
     "@repo/ui": "*",
+    "@xyflow/react": "12.11.3",
     "gridstack": "13.2.0",
     "monaco-editor": "0.56.0",
     "nanoid": "^3.3.17",

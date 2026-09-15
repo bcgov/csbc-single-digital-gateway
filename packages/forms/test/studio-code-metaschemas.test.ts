@@ -97,7 +97,15 @@ describe('UISCHEMA_METASCHEMA Form root (doc 192 rule 11)', () => {
   });
 
   it('gives the root type a description and no if-condition descriptions', () => {
-    expect(UISCHEMA_METASCHEMA.allOf).toEqual([{ $ref: '#/definitions/form' }]);
+    // Doc 195 rule 17: a Flow root is checked as a flow, every other root as a Form.
+    expect(UISCHEMA_METASCHEMA.allOf).toEqual([
+      {
+        if: { properties: { type: { const: 'Flow' } }, required: ['type'] },
+        // eslint-disable-next-line unicorn/no-thenable -- the JSON Schema draft-07 `then` keyword; never awaited
+        then: { $ref: '#/definitions/flow' },
+        else: { $ref: '#/definitions/form' },
+      },
+    ]);
     expect(UISCHEMA_METASCHEMA.definitions.form.properties.type).toMatchObject({
       const: 'Form',
       description: expect.any(String),

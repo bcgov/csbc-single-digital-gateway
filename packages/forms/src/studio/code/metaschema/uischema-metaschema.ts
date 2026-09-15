@@ -1,5 +1,6 @@
 import { LAYOUT_GAPS } from '../../../renderers/gridstack/layout-gap';
 import { deepFreeze } from './deep-freeze';
+import { FLOW_DEFINITIONS } from './flow-metaschema';
 
 // The Form Studio uischema metaschema (doc 191 rule 13). Per-type keys live in `if`/`then` branches on `type`, so
 // completion offers `text` only inside a Heading, `scope` only inside a Control, and so on.
@@ -182,22 +183,32 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
   $schema: 'http://json-schema.org/draft-07/schema#',
   title: 'Form Studio uischema',
   description: 'The layout of a Form Studio form.',
-  allOf: [{ $ref: '#/definitions/form' }],
+  // Doc 195 rule 17: the root is a Flow or a Form. No description on the `if` (doc 191 rule 11).
+  allOf: [
+    {
+      if: { properties: { type: { const: 'Flow' } }, required: ['type'] },
+      // eslint-disable-next-line unicorn/no-thenable -- the JSON Schema draft-07 `then` keyword; never awaited
+      then: { $ref: '#/definitions/flow' },
+      else: { $ref: '#/definitions/form' },
+    },
+  ],
   definitions: {
-    // Doc 192 rule 11: the root is always a Form, and `element` never lists one, so a nested Form is a problem.
+    // Doc 192 rule 11, doc 195 rule 17: a Form is the root or in a Stage, and `element` never lists one, so a Form in
+    // any other layout is a problem.
     form: {
       description:
-        'The root of a studio form. It renders like a VerticalLayout and is allowed only here.',
+        'A studio form: the root, or one of the forms in a Stage. It renders like a VerticalLayout.',
       type: 'object',
       required: ['type', 'elements'],
       properties: {
-        type: { description: 'Always "Form" — the root element of a studio form.', const: 'Form' },
+        type: { description: 'Always "Form" — a studio form.', const: 'Form' },
         elements: ELEMENTS,
         label: { description: 'A name for the form, shown in the element path.', type: 'string' },
         rule: { $ref: '#/definitions/rule' },
         options: { description: 'Form options.', type: 'object', properties: { gap: GAP } },
       },
     },
+    ...FLOW_DEFINITIONS,
     element: {
       description: 'A uischema element.',
       type: 'object',

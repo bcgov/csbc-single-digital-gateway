@@ -119,12 +119,49 @@ export interface VerticalLayoutElement extends Layout {
 }
 
 /**
- * `{ type: 'Form' }` — the root-only wrapper of a studio form (doc 192). It renders exactly like a `VerticalLayout` and
- * reads the same options (none); anywhere but the root it renders an error instead of its elements.
+ * `{ type: 'Form' }` — the wrapper of a studio form (doc 192): the root, or a child of a `Stage` (doc 195). It renders
+ * exactly like a `VerticalLayout` and reads the same options (none); inside any other layout it renders an error instead
+ * of its elements.
  */
 export interface FormElement extends Layout {
   type: 'Form';
+  label?: string;
   options?: LayoutGapOptions & { [key: string]: unknown };
+}
+
+/** One connection between two Stages of a `Flow`, by their `options.id` (doc 195). */
+export interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+}
+
+/** Where a Stage sits on its Flow's canvas, in canvas pixels. */
+export interface StagePosition {
+  x: number;
+  y: number;
+}
+
+/**
+ * `{ type: 'Stage' }` — one position in a multi-stage form, drawn as a node of its `Flow` and holding that stage's
+ * `Form`s (doc 195). Only allowed in a Flow. A Stage without a valid `position` is placed automatically.
+ */
+export interface StageElement extends Layout {
+  type: 'Stage';
+  label?: string;
+  elements: FormElement[];
+  options: { id: string; position?: StagePosition; [key: string]: unknown };
+}
+
+/**
+ * `{ type: 'Flow' }` — a root-only multi-stage form drawn with `@xyflow/react` (doc 195): its `Stage`s are the nodes and
+ * `options.edges` connects them. Edges with an unknown end, self-loops and repeats are not drawn.
+ */
+export interface FlowElement extends Layout {
+  type: 'Flow';
+  label?: string;
+  elements: StageElement[];
+  options?: { edges?: FlowEdge[]; [key: string]: unknown };
 }
 
 /** The options a `HorizontalLayout` reads — everything else is ignored (doc 180 rule 27, doc 193). */

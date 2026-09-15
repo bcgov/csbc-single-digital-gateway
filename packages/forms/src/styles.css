@@ -1,9 +1,10 @@
 /*
  * @repo/forms stylesheet (doc 180) — import once from the consuming app's CSS entry:
  *   @import '@repo/forms/styles.css';
- * Without it, gridstack grids render with no positioning CSS, silently.
+ * Without it, gridstack grids render with no positioning CSS, and Flows (doc 195) with no canvas styles, silently.
  */
 @import 'gridstack/dist/gridstack.css';
+@import '@xyflow/react/dist/style.css';
 
 /*
  * HorizontalLayout dividers in gridstack rows (doc 194 rule 16), on any grid marked `data-dividers`. Item boxes abut

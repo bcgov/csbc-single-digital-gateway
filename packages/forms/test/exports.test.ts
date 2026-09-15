@@ -76,9 +76,9 @@ describe('@repo/forms exports map', () => {
 
 // Doc 180 — nested renderer submodules, the static stylesheet export, and packaging.
 describe('@repo/forms renderer submodules', () => {
-  // Doc 187 rule 1 adds ./renderers/studio-inspector.
-  it('exposes ./renderers/ui, ./renderers/gridstack, ./renderers/default, ./renderers/studio and ./renderers/studio-inspector via flat renderers-* entries', () => {
-    for (const name of ['ui', 'gridstack', 'default', 'studio', 'studio-inspector']) {
+  // Doc 187 rule 1 adds ./renderers/studio-inspector; doc 195 rule 2 adds ./renderers/xyflow.
+  it('exposes ./renderers/ui, ./renderers/gridstack, ./renderers/default, ./renderers/studio, ./renderers/studio-inspector and ./renderers/xyflow via flat renderers-* entries', () => {
+    for (const name of ['ui', 'gridstack', 'default', 'studio', 'studio-inspector', 'xyflow']) {
       expect(exportsMap[`./renderers/${name}`], name).toEqual({
         types: `./dist/renderers-${name}.d.ts`,
         development: `./src/renderers-${name}.ts`,
@@ -103,20 +103,24 @@ describe('@repo/forms renderer submodules', () => {
     expect(existsSync(resolve(root, 'src/styles.css'))).toBe(true);
   });
 
-  it('ships a src/styles.css that imports gridstack/dist/gridstack.css', () => {
+  it('ships a src/styles.css that imports gridstack/dist/gridstack.css and @xyflow/react/dist/style.css', () => {
     const css = readFileSync(resolve(root, 'src/styles.css'), 'utf8');
     expect(css).toMatch(/@import\s+['"]gridstack\/dist\/gridstack\.css['"]/);
-    // The import must resolve from the package — gridstack is hoisted to the root node_modules.
+    // Doc 195 rule 3: the Flow canvas styles ship with the same stylesheet.
+    expect(css).toMatch(/@import\s+['"]@xyflow\/react\/dist\/style\.css['"]/);
+    // The imports must resolve from the package — both are hoisted to the root node_modules.
     expect(existsSync(resolve(root, '../../node_modules/gridstack/dist/gridstack.css'))).toBe(true);
+    expect(existsSync(resolve(root, '../../node_modules/@xyflow/react/dist/style.css'))).toBe(true);
   });
 
-  it('declares sideEffects ["**/*.css"] and depends on @jsonforms/core, @jsonforms/react, @repo/ui and gridstack', () => {
+  it('declares sideEffects ["**/*.css"] and depends on @jsonforms/core, @jsonforms/react, @repo/ui, gridstack and @xyflow/react', () => {
     // sideEffects:false would let production bundlers tree-shake the stylesheet import away.
     expect(pkg.sideEffects).toEqual(['**/*.css']);
     expect(pkg.dependencies).toMatchObject({
       '@jsonforms/core': '3.8.0',
       '@jsonforms/react': '3.8.0',
       '@repo/ui': '*',
+      '@xyflow/react': '12.11.3',
       gridstack: '13.2.0',
     });
   });

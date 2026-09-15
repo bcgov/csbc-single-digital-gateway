@@ -1,6 +1,7 @@
 import type { RendererSet } from '../../types/renderer-set';
 import { createGridRenderers, GRID_ELEMENT_COMPONENT } from '../gridstack/index';
 import * as ui from '../ui/index';
+import * as xyflow from '../xyflow/index';
 import { STUDIO_GRID_CLASS } from './studio-grid-class';
 import { StudioGridElement } from './studio-grid-element';
 import { frameCells, frameRenderers } from './with-studio-frame';
@@ -19,19 +20,27 @@ const grid = createGridRenderers({
   className: STUDIO_GRID_CLASS,
 });
 
-export const cells: RendererSet['cells'] = frameCells([...ui.cells, ...grid.cells]);
+// Doc 195 rule 20: the Flow and Stage renderers follow, framed like every entry.
+export const cells: RendererSet['cells'] = frameCells([
+  ...ui.cells,
+  ...grid.cells,
+  ...xyflow.cells,
+]);
 
 export const controlRenderers: RendererSet['controlRenderers'] = frameRenderers([
   ...ui.controlRenderers,
   ...grid.controlRenderers,
+  ...xyflow.controlRenderers,
 ]);
 
 export const displayRenderers: RendererSet['displayRenderers'] = frameRenderers([
   ...ui.displayRenderers,
   ...grid.displayRenderers,
+  ...xyflow.displayRenderers,
 ]);
 
 export const layoutRenderers: RendererSet['layoutRenderers'] = frameRenderers([
   ...ui.layoutRenderers,
   ...grid.layoutRenderers,
+  ...xyflow.layoutRenderers,
 ]);

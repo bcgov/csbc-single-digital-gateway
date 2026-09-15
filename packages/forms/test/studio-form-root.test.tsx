@@ -14,7 +14,8 @@ import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/samp
 
 // Doc 192 rules 6-10, 12 — the Form as the Form Studio's required root.
 
-const ROOT_ERROR = 'The root element must be a Form.';
+// Doc 195 rule 21: a Flow is the other allowed root.
+const ROOT_ERROR = 'The root element must be a Form or a Flow.';
 const GREETING = 'Hello, FormStudio!';
 
 const el = (element: object) => element as UISchemaElement;
@@ -73,7 +74,7 @@ describe('Form Studio Form root (doc 192)', () => {
   });
 
   describe('root check (rules 6-7)', () => {
-    it('shows "The root element must be a Form." instead of the canvas for a non-Form uischema prop', () => {
+    it('shows "The root element must be a Form or a Flow." instead of the canvas for any other uischema prop', () => {
       render(<FormStudio uischema={custom('VerticalLayout')} />);
       const alert = within(centre()).getByRole('alert');
       expect(alert).toHaveTextContent(ROOT_ERROR);

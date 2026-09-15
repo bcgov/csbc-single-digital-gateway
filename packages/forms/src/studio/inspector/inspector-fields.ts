@@ -1,4 +1,5 @@
 import type { JsonSchema } from '@jsonforms/core';
+import { FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
 import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
 import type { ControlKind, InspectorContext } from './inspector-context';
@@ -50,8 +51,14 @@ export interface InspectorField {
 }
 
 const LAYOUT_LABEL_HINT = 'Names the layout in the element path.';
+const STAGE_LABEL_HINT = 'Names the stage on its card and in the element path.';
 
 const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
+/** Doc 195 rule 24: a Flow or Stage is named like a layout — neither has a layout kind. */
+const isFlowElement = (ctx: InspectorContext) =>
+  ctx.element.type === FLOW_TYPE || ctx.element.type === STAGE_TYPE;
+const labelHint = (ctx: InspectorContext) =>
+  ctx.element.type === STAGE_TYPE ? STAGE_LABEL_HINT : LAYOUT_LABEL_HINT;
 const isHeading = (ctx: InspectorContext) => ctx.element.type === 'Heading';
 const hasProperty = (ctx: InspectorContext) => ctx.propertyKey !== undefined;
 const isText = (ctx: InspectorContext) => ctx.controlKind === 'text';
@@ -142,8 +149,11 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'label',
     section: 'general',
     label: 'Label',
-    applies: (ctx) => isControl(ctx) || ctx.layoutKind !== undefined,
-    schema: (ctx) => (ctx.layoutKind ? { type: 'string', description: LAYOUT_LABEL_HINT } : STRING),
+    applies: (ctx) => isControl(ctx) || ctx.layoutKind !== undefined || isFlowElement(ctx),
+    schema: (ctx) =>
+      ctx.layoutKind || isFlowElement(ctx)
+        ? { type: 'string', description: labelHint(ctx) }
+        : STRING,
     options: (ctx) => {
       const title = text(ctx.property?.title)?.trim();
       return title ? { placeholder: title } : undefined;
