@@ -10,6 +10,19 @@ const ELEMENTS = {
   items: { $ref: '#/definitions/element' },
 } as const;
 
+// Doc 194 rule 12: a row's children are any element but a Separator, which would take one of its columns.
+const ROW_ELEMENTS = {
+  description:
+    'The child elements, in order. A Separator is not allowed in a row: set options.dividers instead.',
+  type: 'array',
+  items: {
+    allOf: [
+      { $ref: '#/definitions/element' },
+      { not: { properties: { type: { const: 'Separator' } }, required: ['type'] } },
+    ],
+  },
+} as const;
+
 const positiveNumber = (description: string) =>
   ({ description, type: 'number', exclusiveMinimum: 0 }) as const;
 
@@ -91,7 +104,7 @@ const VERTICAL_LAYOUT = whenType('VerticalLayout', {
 const HORIZONTAL_LAYOUT = whenType('HorizontalLayout', {
   required: ['elements'],
   properties: {
-    elements: ELEMENTS,
+    elements: ROW_ELEMENTS,
     options: {
       description: 'Row options. A child sets its width with options.gridItem.w.',
       type: 'object',
@@ -103,6 +116,11 @@ const HORIZONTAL_LAYOUT = whenType('HorizontalLayout', {
           maximum: 6,
         },
         gap: GAP,
+        dividers: {
+          description:
+            'Draw a vertical rule between the children (not on narrow screens, where they stack).',
+          type: 'boolean',
+        },
       },
     },
   },
@@ -187,7 +205,7 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
       properties: {
         type: {
           description: 'The element kind.',
-          enum: ['Grid', 'VerticalLayout', 'HorizontalLayout', 'Control', 'Heading'],
+          enum: ['Grid', 'VerticalLayout', 'HorizontalLayout', 'Control', 'Heading', 'Separator'],
         },
         label: {
           description:

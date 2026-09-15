@@ -4,6 +4,7 @@ import {
   mdiFormatHeaderPound,
   mdiFormDropdown,
   mdiFormTextbox,
+  mdiMinus,
   mdiNumeric,
   mdiRadioboxMarked,
   mdiTextLong,
@@ -76,6 +77,15 @@ const DEFINITIONS: readonly TemplateDefinition[] = Object.freeze(
         build: () => ({
           element: element({ type: 'Heading', text: 'Heading', options: { level: 2 } }),
         }),
+      },
+      {
+        // Doc 194 rule 13: refused in a HorizontalLayout by insertElement and drag acceptance, never disabled.
+        key: 'separator',
+        group: 'display',
+        label: 'Separator',
+        icon: mdiMinus,
+        keywords: ['divider', 'rule', 'line', 'hr'],
+        build: () => ({ element: element({ type: 'Separator' }) }),
       },
       {
         key: 'grid',

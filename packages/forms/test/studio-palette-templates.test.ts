@@ -26,6 +26,7 @@ describe('catalogue (rule 16)', () => {
       PALETTE_TEMPLATES.map((template) => [template.group, template.key, template.label]),
     ).toEqual([
       ['display', 'heading', 'Heading'],
+      ['display', 'separator', 'Separator'],
       ['layout', 'grid', 'Grid'],
       ['layout', 'vertical-layout', 'Vertical layout'],
       ['layout', 'horizontal-layout', 'Horizontal layout'],
@@ -55,6 +56,7 @@ describe('catalogue (rule 16)', () => {
 describe('building templates (rule 16)', () => {
   it.each([
     ['heading', { type: 'Heading', text: 'Heading', options: { level: 2 } }],
+    ['separator', { type: 'Separator' }],
     ['grid', { type: 'Grid', elements: [] }],
     ['vertical-layout', { type: 'VerticalLayout', elements: [] }],
     ['horizontal-layout', { type: 'HorizontalLayout', options: { columns: 2 }, elements: [] }],

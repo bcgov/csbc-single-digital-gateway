@@ -248,6 +248,8 @@ export function useStudioSelection(
         }
       },
       onGestureActive: setGesturing,
+      // Doc 194 rule 11: drag acceptance is the document's decision.
+      accepts: (layout, source) => documentEditor.accepts?.(layout, source) ?? true,
     }),
     [documentEditor],
   );

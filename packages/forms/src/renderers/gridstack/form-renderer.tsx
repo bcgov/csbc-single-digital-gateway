@@ -9,14 +9,14 @@ export const NESTED_FORM_MESSAGE = 'A Form can only be the root element.';
  * The `Form` renderer (doc 192 rules 4-5): a generic, identifiable wrapper around a vertical layout renderer — the
  * gridstack one in the studio, the CSS column in fillable forms (doc 193). At the root it renders a fragment around that
  * layout — no `<form>` and no DOM of its own — so it draws exactly like a VerticalLayout. Every layout renderer provides
- * `LayoutNestingContext` to its children, so finding it set means this Form is nested; testers cannot see an element's
+ * `LayoutNestingContext` to its children, so finding a layout kind there means this Form is nested; testers cannot see an element's
  * depth, so root-only is enforced here.
  */
 export function createFormRenderer<P extends OwnPropsOfRenderer>(
   VerticalLayout: ComponentType<P>,
 ): ComponentType<P> {
   function FormRenderer(props: P) {
-    const nested = useContext(LayoutNestingContext);
+    const nested = useContext(LayoutNestingContext) !== null;
     if (nested) {
       return (
         <p role="alert" data-slot="form-nested-error" className="text-sm text-destructive">

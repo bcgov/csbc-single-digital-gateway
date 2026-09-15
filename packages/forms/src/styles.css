@@ -6,6 +6,33 @@
 @import 'gridstack/dist/gridstack.css';
 
 /*
+ * HorizontalLayout dividers in gridstack rows (doc 194 rule 16), on any grid marked `data-dividers`. Item boxes abut
+ * and inset their content by the grid margin on both sides, so an item's left edge is the middle of the gap before it;
+ * the rule spans the content height and never takes pointer events.
+ */
+.grid-stack[data-dividers] > .grid-stack-item:not([gs-x='0'])::before {
+  content: '';
+  position: absolute;
+  top: var(--gs-item-margin-top);
+  bottom: var(--gs-item-margin-bottom);
+  left: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--app-border);
+  pointer-events: none;
+}
+
+/*
+ * A Separator is centred top-down in its grid item (doc 194 rule 4b). Flex centring leaves the item content's single
+ * child at its natural height — what size-to-content measures — so a hand-resized item can still shrink back.
+ */
+.grid-stack-item-content:has(> [data-element-type='Separator']) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/*
  * Form Studio resize handle indicators (doc 180 rule 16c), scoped to `.form-studio-grid` — the studio
  * grid root class from STUDIO_GRID_CLASS — so fillable forms never show any of it.
  *

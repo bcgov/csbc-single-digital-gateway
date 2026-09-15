@@ -16,6 +16,14 @@ export interface HeadingElement extends BaseUISchemaElement {
   };
 }
 
+/**
+ * `{ type: 'Separator' }` — a horizontal rule rendered by `@repo/ui`'s `Separator` (doc 194). It reads no keys, and is
+ * not allowed in a `HorizontalLayout` (use `options.dividers` there).
+ */
+export interface SeparatorElement extends BaseUISchemaElement {
+  type: 'Separator';
+}
+
 /** Options every `renderers/ui` control reads. Values of the wrong type are ignored (doc 182). */
 interface ControlOptions {
   /** Placeholder text; ignored unless a non-empty string. */
@@ -123,6 +131,8 @@ export interface FormElement extends Layout {
 export interface HorizontalLayoutOptions extends LayoutGapOptions {
   /** Columns in the row, 2-6. Anything else falls back to the child count, clamped to 2-6. */
   columns?: 2 | 3 | 4 | 5 | 6;
+  /** Draw a vertical rule between the children (doc 194). Only `true` turns it on. */
+  dividers?: boolean;
 }
 
 /**

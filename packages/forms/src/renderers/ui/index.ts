@@ -5,10 +5,11 @@ import { HeadingDisplayRenderer, headingTester } from './heading-renderer';
 import { InputControlRenderer, inputTester } from './input-renderer';
 import { NumberInputControlRenderer, numberInputTester } from './number-input-renderer';
 import { RadioGroupControlRenderer, radioGroupTester } from './radio-group-renderer';
+import { SeparatorDisplayRenderer, separatorTester } from './separator-renderer';
 import { SwitchControlRenderer, switchTester } from './switch-renderer';
 import { TextareaControlRenderer, textareaTester } from './textarea-renderer';
 
-// JSONForms renderers for @repo/ui components (docs 180, 182, 188). Every renderer module exports these four.
+// JSONForms renderers for @repo/ui components (docs 180, 182, 188, 194). Every renderer module exports these four.
 
 export const cells: RendererSet['cells'] = [];
 
@@ -27,6 +28,7 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
 
 export const displayRenderers: RendererSet['displayRenderers'] = [
   { tester: headingTester, renderer: HeadingDisplayRenderer },
+  { tester: separatorTester, renderer: SeparatorDisplayRenderer },
 ];
 
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];

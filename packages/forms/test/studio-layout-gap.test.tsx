@@ -113,8 +113,8 @@ describe('studio layout gap (doc 193)', () => {
       expect(layoutKeys(formFor(form, form).form)).toEqual(['gap']);
       expect(layoutKeys(formFor(stack, form).form)).toEqual(['gap']);
       expect(layoutKeys(formFor(grid, form).form)).toEqual(['columns', 'gap']);
-      // A row inside a Grid also gets Width, after Gap.
-      expect(layoutKeys(formFor(row, form).form)).toEqual(['columns', 'gap', 'width']);
+      // A row inside a Grid also gets Dividers (doc 194 rule 17), then Width.
+      expect(layoutKeys(formFor(row, form).form)).toEqual(['columns', 'gap', 'dividers', 'width']);
       for (const element of [name, heading]) {
         const keys = sections(formFor(element, form).form).flatMap(([, fields]) => fields);
         expect(keys).not.toContain('gap');

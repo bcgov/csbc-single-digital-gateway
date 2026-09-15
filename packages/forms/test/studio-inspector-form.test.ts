@@ -97,10 +97,10 @@ describe('fields per element (rules 8-10)', () => {
   });
 
   it('gives a HorizontalLayout label and columns, and a nested Grid label, columns and width', () => {
-    // Doc 193 rule 13: every layout also gets Gap, after Columns.
+    // Doc 193 rule 13: every layout also gets Gap, after Columns; doc 194 rule 17: a row then gets Dividers.
     expect(sections(formFor(row).form)).toEqual([
       ['General', ['label']],
-      ['Layout', ['columns', 'gap']],
+      ['Layout', ['columns', 'gap', 'dividers']],
     ]);
     const outer = el({
       type: 'VerticalLayout',

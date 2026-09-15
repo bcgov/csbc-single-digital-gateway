@@ -45,8 +45,14 @@ describe('reading the document (rule 14)', () => {
 
   it('reads a Heading, a HorizontalLayout, a Grid and a HorizontalLayout child', () => {
     expect(formFor(heading).form.data).toEqual({ text: 'Hello', level: 2, size: 4 });
-    // Doc 193 rule 14: a layout's Gap reads the effective gap, md when none is authored.
-    expect(formFor(row).form.data).toEqual({ label: 'Row', columns: 4, gap: 'md' });
+    // Doc 193 rule 14: a layout's Gap reads the effective gap, md when none is authored; doc 194 rule 17: a row's
+    // Dividers reads false when not authored.
+    expect(formFor(row).form.data).toEqual({
+      label: 'Row',
+      columns: 4,
+      gap: 'md',
+      dividers: false,
+    });
     const outer = el({ type: 'VerticalLayout', elements: [grid] });
     expect(formFor(grid, outer).form.data).toEqual({ columns: 12, gap: 'md' });
     expect(formFor(rowQty).form.data).toMatchObject({ width: 2 });

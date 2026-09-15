@@ -31,6 +31,26 @@ export function isGridLayoutType(type: string): boolean {
   return KIND_BY_TYPE.has(type);
 }
 
+/** The horizontal rule display element (doc 194). */
+export const SEPARATOR_TYPE = 'Separator';
+
+/**
+ * Whether an element of `type` may sit in a layout of `kind` (doc 194 rule 7): everything may, except a Separator in a
+ * HorizontalLayout, where it would take one of the row's columns (rows draw `options.dividers` instead).
+ */
+export function allowedInLayout(type: string, kind: GridLayoutKind): boolean {
+  return !(type === SEPARATOR_TYPE && kind === 'horizontal');
+}
+
+/** Whether a HorizontalLayout draws dividers between its children (doc 194 rule 14): only `dividers: true`. */
+export function dividersOf(elementOptions: unknown): boolean {
+  return (
+    typeof elementOptions === 'object' &&
+    elementOptions !== null &&
+    (elementOptions as { dividers?: unknown }).dividers === true
+  );
+}
+
 const MIN_COLUMNS = 2;
 const MAX_COLUMNS = 6;
 

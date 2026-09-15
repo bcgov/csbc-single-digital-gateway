@@ -2,6 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import type { LayoutNode } from '../../renderers/gridstack/grid-editor';
 import { fitDropIn } from '../../renderers/gridstack/grid-drop-fit';
 import {
+  allowedInLayout,
   layoutKindOf,
   rowHasRoom,
   type GridLayoutKind,
@@ -84,7 +85,8 @@ function freshKey(schema: JsonSchema, newKey: () => string): string {
 /**
  * Rules 20-23: the template `template` appended to the layout `target.gridId` — laid out from the drop when
  * `target.placement` is given, else placed as a click — with a new data property for a field. An unknown template,
- * an unknown or non-layout target, or a full HorizontalLayout returns the same document.
+ * an unknown or non-layout target, a full HorizontalLayout, or an element the target cannot hold (doc 194 rule 8)
+ * returns the same document.
  */
 export function insertElement(
   document: StudioDocument,
@@ -98,6 +100,8 @@ export function insertElement(
   const kind = layout ? layoutKindOf(layout.type) : undefined;
   const built = buildTemplate(template, document.schema);
   if (!layout || !kind || !built) return { ...document, inserted: undefined };
+  // Doc 194 rule 8: an element the layout's kind cannot hold (a Separator in a row) is refused.
+  if (!allowedInLayout(built.element.type, kind)) return { ...document, inserted: undefined };
   if (kind === 'horizontal' && !rowHasRoom(layout.options, layout.elements ?? []))
     return { ...document, inserted: undefined };
 

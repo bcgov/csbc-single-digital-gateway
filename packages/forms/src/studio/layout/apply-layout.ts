@@ -1,6 +1,7 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import type { LayoutNode } from '../../renderers/gridstack/grid-editor';
 import {
+  allowedInLayout,
   horizontalColumns,
   horizontalWidth,
   layoutKindOf,
@@ -139,7 +140,8 @@ export function applyLayout(
 /**
  * Rules 12-14 + 12b: move an element from one grid element's `elements` to another's, then lay out
  * both. Refused — the same uischema returned — when either grid is unknown, the element is not directly
- * in the source grid, or the target is the element itself or inside it.
+ * in the source grid, the target is the element itself or inside it, or the target's kind cannot hold the
+ * element (doc 194 rule 9).
  */
 export function applyMove(
   uischema: UISchemaElement,
@@ -151,6 +153,9 @@ export function applyMove(
   const moved = source?.elements?.find((element) => ids.idOf(element) === move.elementId);
   if (!source || !target || !moved || source === target) return uischema;
   if (findById(moved, move.toGridId, ids)) return uischema;
+  // Doc 194 rule 9: an element the target's kind cannot hold (a Separator into a row) stays where it is.
+  const targetKind = layoutKindOf(target.type);
+  if (targetKind && !allowedInLayout(moved.type, targetKind)) return uischema;
 
   const removed = updateById(
     uischema,

@@ -1,4 +1,5 @@
 import { GridStack, type GridItemHTMLElement, type GridStackWidget } from 'gridstack';
+import type { GridDropSource } from './grid-editor';
 
 // Dragging elements from outside every grid into an editable one (doc 189 rules 12-15). Studio-agnostic: a drag-in
 // source carries only a template key, which the grid reports in an `insert` gesture for its editor to interpret.
@@ -32,4 +33,18 @@ export function dragInTemplateOf(node: unknown): string | undefined {
   if (typeof node !== 'object' || node === null) return undefined;
   const template = (node as Record<string, unknown>)[TEMPLATE_KEY];
   return typeof template === 'string' && template.length > 0 ? template : undefined;
+}
+
+/**
+ * What an editable grid is asked to accept (doc 194 rule 10): a grid item by its element id, a drag-in source by its
+ * template — gridstack 13.2.0's `setupDragIn` keeps the widget on the source element as `gridstackNode`. `undefined`
+ * when neither is known.
+ */
+export function dropSourceOf(el: GridItemHTMLElement, isItem: boolean): GridDropSource | undefined {
+  if (isItem) {
+    const id = el.gridstackNode?.id;
+    return id === undefined ? undefined : { elementId: String(id) };
+  }
+  const template = dragInTemplateOf(el.gridstackNode);
+  return template === undefined ? undefined : { template };
 }

@@ -1,6 +1,7 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
-import { useCallback, useMemo, useState } from 'react';
-import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { GridDropSource, GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
+import { allowedInLayout, type GridLayoutKind } from '../renderers/gridstack/grid-layouts';
 import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
 import { sameJson } from './code/document-text';
 import { applyInspector } from './inspector/apply-inspector';
@@ -11,10 +12,11 @@ import { copyElement } from './layout/copy-element';
 import { addTargetId, insertElement, type InsertTarget } from './layout/insert-element';
 import { createElementIds, type ElementIds } from './layout/element-ids';
 import { pathSegments, type PathSegment } from './layout/element-path';
-import { findParentById, type TreeElement } from './layout/element-tree';
+import { findById, findParentById, type TreeElement } from './layout/element-tree';
 import { removeElement } from './layout/remove-element';
 import { carryIdsByPath } from './layout/carry-ids-by-path';
 import { newPropertyKey } from './layout/schema-properties';
+import { buildTemplate } from './palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
 
 interface StudioDocumentSource {
@@ -74,6 +76,9 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     current = fromSource(sourceSchema, sourceUischema);
     setState(current);
   }
+  // Doc 194 rule 11: `accepts` reads the latest document, so the editor keeps its identity across edits.
+  const latest = useRef(current);
+  latest.current = current;
 
   const onGesture = useCallback(
     (gesture: GridGesture) => {
@@ -90,9 +95,22 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [ids],
   );
 
+  /** Whether a dragged element or palette template may enter a layout of `layout`'s kind; unknown sources pass. */
+  const accepts = useCallback(
+    (layout: GridLayoutKind, source: GridDropSource) => {
+      const { schema: documentSchema, uischema: documentUischema } = latest.current;
+      const type =
+        'elementId' in source
+          ? findById(documentUischema as TreeElement, source.elementId, ids)?.type
+          : buildTemplate(source.template, documentSchema)?.element.type;
+      return type === undefined || allowedInLayout(type, layout);
+    },
+    [ids],
+  );
+
   const editor = useMemo<GridEditor>(
-    () => ({ idOf: (element) => ids.idOf(element), onGesture }),
-    [ids, onGesture],
+    () => ({ idOf: (element) => ids.idOf(element), onGesture, accepts }),
+    [ids, onGesture, accepts],
   );
 
   const { schema: currentSchema, uischema: currentUischema } = current;

@@ -28,6 +28,7 @@ export type {
   PaletteGroupElement,
   PaletteItemElement,
   RadioGroupControlElement,
+  SeparatorElement,
   SwitchControlElement,
   TextareaControlElement,
   VerticalLayoutElement,

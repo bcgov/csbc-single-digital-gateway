@@ -1,14 +1,16 @@
 import type { LayoutProps, UISchemaElement } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
+import type { GridItemHTMLElement } from 'gridstack';
 import { GridStack, type ComponentMap, type GridStackHandle } from 'gridstack/dist/react';
 import { useCallback, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import type { GridStackLayoutOptions } from '../../types/elements';
 import { GridContext, type GridContextValue } from './grid-context';
-import { DRAG_IN_ATTRIBUTE } from './grid-drag-in';
+import { DRAG_IN_ATTRIBUTE, dropSourceOf } from './grid-drag-in';
 import { retargetDropTarget } from './grid-drop-target';
 import { useGridEditor } from './grid-editor';
 import { useGridGestures } from './grid-gestures';
-import { rowHasRoom, type GridLayoutKind } from './grid-layouts';
+import { useGridDividers } from './grid-dividers';
+import { dividersOf, rowHasRoom, type GridLayoutKind } from './grid-layouts';
 import { LayoutNestingContext } from './layout-nesting';
 import { buildGridStackOptions, gridElementId, resolveSizeToContent } from './grid-options';
 
@@ -74,16 +76,23 @@ export function createGridLayoutRenderer(
     const hasRoom = useRef(true);
     hasRoom.current = layout !== 'horizontal' || rowHasRoom(uischema.options, elements);
 
+    // Doc 194 rule 10: the editor may refuse what this kind of layout cannot hold (a Separator in a row). Read through
+    // a ref for the same reason as `hasRoom`.
+    const editorRef = useRef(editor);
+    editorRef.current = editor;
+
     // Doc 183 rule 14: grid items, never one that contains this grid (a Grid into itself); doc 189 rule 13: and
     // drag-in sources.
-    const acceptWidgets = useCallback(
-      (el: Element) =>
-        hasRoom.current &&
-        (el.matches('.grid-stack-item')
-          ? !el.contains(gridHandle.current?.getGrid()?.el ?? null)
-          : el.hasAttribute(DRAG_IN_ATTRIBUTE)),
-      [],
-    );
+    const acceptWidgets = useCallback((el: Element) => {
+      if (!hasRoom.current) return false;
+      const isItem = el.matches('.grid-stack-item');
+      const candidate = isItem
+        ? !el.contains(gridHandle.current?.getGrid()?.el ?? null)
+        : el.hasAttribute(DRAG_IN_ATTRIBUTE);
+      if (!candidate) return false;
+      const source = dropSourceOf(el as GridItemHTMLElement, isItem);
+      return source === undefined || (editorRef.current?.accepts?.(layout, source) ?? true);
+    }, []);
     const idOf = useMemo(
       () => (editor ? (element: UISchemaElement) => editor.idOf(element) : undefined),
       [editor],
@@ -146,12 +155,13 @@ export function createGridLayoutRenderer(
       if (grid && elements.length === 0 && grid.engine.nodes.length > 0) grid.removeAll(true);
     }, [elements]);
     useGridGestures(gridHandle, editor, uischema, visible);
+    useGridDividers(gridHandle, layout === 'horizontal' && dividersOf(uischema.options), visible);
 
     if (!visible) return null;
 
-    // Doc 193 rule 10: everything below a layout is nested — a Form here shows its nested error.
+    // Doc 194 rule 6: children see this layout's kind — a Form shows its nested error, a Separator in a row hides.
     return (
-      <LayoutNestingContext.Provider value>
+      <LayoutNestingContext.Provider value={layout}>
         <GridContext.Provider value={context}>
           <GridStack
             ref={gridHandle}

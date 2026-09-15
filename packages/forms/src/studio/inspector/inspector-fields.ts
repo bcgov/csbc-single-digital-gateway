@@ -1,11 +1,6 @@
 import type { JsonSchema } from '@jsonforms/core';
-import {
-  DEFAULT_LAYOUT_GAP,
-  GAP_REM,
-  LAYOUT_GAPS,
-  layoutGapOf,
-} from '../../renderers/gridstack/layout-gap';
 import type { TreeElement } from '../layout/element-tree';
+import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
 import type { ControlKind, InspectorContext } from './inspector-context';
 import {
   finite,
@@ -21,6 +16,7 @@ import {
   withWidth,
   type InspectorEdit,
 } from './inspector-edits';
+import { LAYOUT_FIELDS } from './layout-fields';
 
 // The inspector's settings (doc 187 rules 9-19): where each applies, its field schema, and how it reads and
 // writes the studio document. Declared in section order, so filtering keeps the rendered order.
@@ -60,36 +56,6 @@ const isHeading = (ctx: InspectorContext) => ctx.element.type === 'Heading';
 const hasProperty = (ctx: InspectorContext) => ctx.propertyKey !== undefined;
 const isText = (ctx: InspectorContext) => ctx.controlKind === 'text';
 const isNumber = (ctx: InspectorContext) => ctx.controlKind === 'number';
-
-const STRING: JsonSchema = Object.freeze({ type: 'string' });
-const BOOLEAN: JsonSchema = Object.freeze({ type: 'boolean' });
-const NUMBER: JsonSchema = Object.freeze({ type: 'number' });
-const integer = (bounds: { minimum?: number; maximum?: number }): JsonSchema => ({
-  type: 'number',
-  ...bounds,
-  multipleOf: 1,
-});
-
-/**
- * Rule 11b: every whole number from `minimum` to `maximum` as a oneOf titled by the number, so renderers/ui renders
- * a Combobox rather than a NumberInput.
- */
-const wholeNumbers = (minimum: number, maximum: number): JsonSchema => ({
-  type: 'number',
-  oneOf: Array.from({ length: Math.max(0, maximum - minimum + 1) }, (_unused, index) => ({
-    const: minimum + index,
-    title: String(minimum + index),
-  })),
-});
-
-/** Doc 193 rule 13: the gap names as a string combobox, titled with their size. */
-const GAP_SCHEMA: JsonSchema = Object.freeze({
-  type: 'string',
-  oneOf: LAYOUT_GAPS.map((gap) => ({
-    const: gap,
-    title: gap === 'none' ? 'None' : `${gap.toUpperCase()} · ${GAP_REM[gap]}rem`,
-  })),
-});
 
 type Applies = (ctx: InspectorContext) => boolean;
 type Read = (value: unknown) => unknown;
@@ -170,8 +136,6 @@ const takesPlaceholder: Applies = (ctx) =>
   isText(ctx) ||
   isNumber(ctx) ||
   (ctx.controlKind === 'choice' && currentComponent(ctx) !== 'radio-group');
-/** Grid stores its column count as `column`, HorizontalLayout as `columns`. */
-const columnsOption = (ctx: InspectorContext) => (ctx.layoutKind === 'grid' ? 'column' : 'columns');
 
 export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   {
@@ -256,30 +220,8 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   },
   optionField('level', 'appearance', 'Heading level', isHeading, wholeNumbers(1, 6), finite),
   optionField('size', 'appearance', 'Heading size', isHeading, wholeNumbers(1, 6), finite),
-  {
-    key: 'columns',
-    section: 'layout',
-    label: 'Columns',
-    applies: (ctx) => ctx.layoutKind === 'grid' || ctx.layoutKind === 'horizontal',
-    schema: (ctx) => (ctx.layoutKind === 'grid' ? wholeNumbers(1, 12) : wholeNumbers(2, 6)),
-    read: (ctx) => finite(optionsOf(ctx.element)[columnsOption(ctx)]),
-    write: (ctx, edit, value) =>
-      setElement(edit, withOption(edit.element, columnsOption(ctx), value)),
-  },
-  {
-    // Doc 193 rules 13-14: every layout kind; shows the effective gap, and the default removes `options.gap`.
-    key: 'gap',
-    section: 'layout',
-    label: 'Gap',
-    applies: (ctx) => ctx.layoutKind !== undefined,
-    schema: () => GAP_SCHEMA,
-    read: (ctx) => layoutGapOf(optionsOf(ctx.element)),
-    write: (_ctx, edit, value) =>
-      setElement(
-        edit,
-        withOption(edit.element, 'gap', value === DEFAULT_LAYOUT_GAP ? undefined : value),
-      ),
-  },
+  // Columns, Gap and Dividers (doc 194 rule 18).
+  ...LAYOUT_FIELDS,
   {
     key: 'width',
     section: 'layout',
