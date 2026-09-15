@@ -52,10 +52,10 @@ const translate = ((key: string, defaultMessage: string | undefined) =>
   TRANSLATIONS[key] ?? defaultMessage) as Translator;
 
 describe('renderers/ui set shape', () => {
-  // Doc 182 rule 8 — the three control renderers are covered in renderers-ui-controls.test.tsx.
-  it('exports empty cells and layoutRenderers, three controlRenderers and one Heading entry in displayRenderers', () => {
+  // Doc 182 rule 8 and doc 188 rule 4 — the control renderers are covered in the renderers-ui-*controls tests.
+  it('exports empty cells and layoutRenderers, seven controlRenderers and one Heading entry in displayRenderers', () => {
     expect(ui.cells).toEqual([]);
-    expect(ui.controlRenderers).toHaveLength(3);
+    expect(ui.controlRenderers).toHaveLength(7);
     expect(ui.layoutRenderers).toEqual([]);
     expect(ui.displayRenderers).toHaveLength(1);
     expect(headingEntry()?.renderer).toBeDefined();

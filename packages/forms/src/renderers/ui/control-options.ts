@@ -55,6 +55,16 @@ export function stringInputProps(schema: JsonSchema, options: AuthoredOptions): 
   };
 }
 
+/** `placeholder` from options, for the Combobox (doc 188 rule 12). */
+export function choiceInputProps(options: AuthoredOptions): Pick<StringInputProps, 'placeholder'> {
+  return keep('placeholder', options?.['placeholder'], isNonEmptyString);
+}
+
+/** The Switch size: `'sm'` only when `options.size` is exactly `'sm'` (doc 188 rule 19). */
+export function switchSize(options: AuthoredOptions): 'sm' | 'default' {
+  return options?.['size'] === 'sm' ? 'sm' : 'default';
+}
+
 /**
  * `min`/`max` from the schema; `step` from `options.step`, else the schema's `multipleOf`; the rest
  * from options, with `format`/`locale` checked against `Intl` by `resolveNumberFormat`.

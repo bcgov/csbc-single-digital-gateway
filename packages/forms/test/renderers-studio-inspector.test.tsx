@@ -25,6 +25,14 @@ const schema: JsonSchema = {
     text: { type: 'string', title: 'Label' },
     count: { type: 'number', title: 'Count' },
     on: { type: 'boolean', title: 'Required', description: 'Authors must fill it in.' },
+    pick: {
+      type: 'string',
+      title: 'Pick',
+      oneOf: [
+        { const: 'a', title: 'A' },
+        { const: 'b', title: 'B' },
+      ],
+    },
   },
 };
 
@@ -44,7 +52,12 @@ function renderForm(uischema: UISchemaElement, data: Data = {}, readonly = false
   return { ...view, changes, last: () => changes.at(-1) };
 }
 
-const switchControl = el({ type: 'Control', scope: '#/properties/on' });
+// Doc 188 rule 22: inspector booleans ask renderers/ui for a small Switch.
+const switchControl = el({
+  type: 'Control',
+  scope: '#/properties/on',
+  options: { component: 'switch', size: 'sm' },
+});
 
 describe('renderer set (rules 1-3, 7)', () => {
   it('exports the four RendererSet arrays, with no cells or display renderers', () => {
@@ -52,12 +65,15 @@ describe('renderer set (rules 1-3, 7)', () => {
       expect(Array.isArray(inspector[category]), category).toBe(true);
     expect(inspector.cells).toEqual([]);
     expect(inspector.displayRenderers).toEqual([]);
-    expect(inspector.controlRenderers).toHaveLength(4);
+    expect(inspector.controlRenderers).toHaveLength(ui.controlRenderers.length);
     expect(inspector.layoutRenderers).toHaveLength(2);
   });
 
-  it('reuses the renderers/ui Input, Textarea and NumberInput entries by reference', () => {
-    for (const entry of ui.controlRenderers) expect(inspector.controlRenderers).toContain(entry);
+  it('reuses exactly the renderers/ui control entries, by reference and in order (doc 188 rule 21)', () => {
+    expect(ui.controlRenderers).toHaveLength(7);
+    ui.controlRenderers.forEach((entry, index) => {
+      expect(inspector.controlRenderers[index]).toBe(entry);
+    });
   });
 
   it.each([
@@ -67,7 +83,13 @@ describe('renderer set (rules 1-3, 7)', () => {
       el({ type: 'Control', scope: '#/properties/text', options: { component: 'textarea' } }),
     ],
     ['a number control', el({ type: 'Control', scope: '#/properties/count' })],
-    ['a boolean control', switchControl],
+    ['a switch control', switchControl],
+    ['a checkbox control', el({ type: 'Control', scope: '#/properties/on' })],
+    ['a combobox control', el({ type: 'Control', scope: '#/properties/pick' })],
+    [
+      'a radio-group control',
+      el({ type: 'Control', scope: '#/properties/pick', options: { component: 'radio-group' } }),
+    ],
     ['a Group', el({ type: 'Group', label: 'General', elements: [] })],
     ['a VerticalLayout', el({ type: 'VerticalLayout', elements: [] })],
   ])('dispatches %s to exactly one top-ranked entry', (_name, uischema) => {
@@ -89,7 +111,7 @@ describe('renderer set (rules 1-3, 7)', () => {
   });
 });
 
-describe('Switch (rule 4)', () => {
+describe('Switch through options.component "switch" (doc 188 rules 19, 22)', () => {
   it('renders a boolean control as a labelled switch beside its description', () => {
     renderForm(switchControl);
     const toggle = screen.getByRole('switch', { name: 'Required' });
@@ -207,6 +229,10 @@ describe('Section and Stack layouts (rules 5-6)', () => {
       '[&_[data-slot=number-input-input]]:text-xs',
       '[&_[data-slot=textarea]]:min-h-12',
       '[&_[data-slot=textarea]]:text-xs',
+      // Doc 188 rule 23.
+      '[&_[data-slot=radio-group]]:gap-2',
+      '[&_[data-slot=input-group]]:h-7',
+      '[&_[data-slot=input-group-control]]:text-xs',
     );
     const input = within(stack as HTMLElement).getByRole('textbox', { name: 'Label' });
     expect(input).toHaveAttribute('data-slot', 'input');

@@ -3,6 +3,9 @@ import { inspectorForm } from '../src/studio/inspector/inspector-form';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import {
   agree,
+  choiceControl,
+  choiceSchema,
+  docOf,
   el,
   fieldControl,
   fieldSchema,
@@ -22,12 +25,16 @@ import {
 // Doc 187 rules 8-12, 9b — which settings an element has, how they are laid out, and their field schemas.
 // Reading the document and cross-field errors are in studio-inspector-read.test.ts.
 
+/** The sections of `element`'s inspector form, alone in a root VerticalLayout over `choiceSchema`. */
+const choiceSections = (element: ReturnType<typeof el>) =>
+  sections(formFor(element, docOf(element), choiceSchema).form);
+
 describe('fields per element (rules 8-10)', () => {
   it('gives a string Control General, Validation, Appearance and Layout settings', () => {
     expect(sections(formFor(name).form)).toEqual([
       ['General', ['label', 'description', 'placeholder']],
       ['Validation', ['required', 'maxLength']],
-      ['Appearance', ['multiline']],
+      ['Appearance', ['component']],
       ['Layout', ['width']],
     ]);
   });
@@ -40,9 +47,35 @@ describe('fields per element (rules 8-10)', () => {
     ]);
   });
 
-  it('gives a Control of another value type only label, description and required', () => {
+  it('gives a boolean Control label, description, required and component (doc 188 rule 25)', () => {
     // `agree` is a boolean property, and the Control sits in the root VerticalLayout (no width).
     expect(sections(formFor(agree).form)).toEqual([
+      ['General', ['label', 'description']],
+      ['Validation', ['required']],
+      ['Appearance', ['component']],
+    ]);
+  });
+
+  it('gives a choice Control a placeholder unless it is a radio group, and no text or number settings', () => {
+    const withPlaceholder = [
+      ['General', ['label', 'description', 'placeholder']],
+      ['Validation', ['required']],
+      ['Appearance', ['component']],
+    ];
+    expect(choiceSections(choiceControl())).toEqual(withPlaceholder);
+    expect(choiceSections(el({ type: 'Control', scope: '#/properties/seats' }))).toEqual(
+      withPlaceholder,
+    );
+    expect(choiceSections(choiceControl({ component: 'radio-group' }))).toEqual([
+      ['General', ['label', 'description']],
+      ['Validation', ['required']],
+      ['Appearance', ['component']],
+    ]);
+  });
+
+  it('gives a Control of another value type only label, description and required', () => {
+    const count = el({ type: 'Control', scope: '#/properties/count' });
+    expect(sections(formFor(count, docOf(count), choiceSchema).form)).toEqual([
       ['General', ['label', 'description']],
       ['Validation', ['required']],
     ]);
@@ -117,7 +150,7 @@ describe('horizontal number fields (rule 9b)', () => {
 
   it('keeps string and boolean fields stacked, and never groups fields into rows', () => {
     const { form } = formFor(name);
-    for (const key of ['label', 'description', 'placeholder', 'required', 'multiline']) {
+    for (const key of ['label', 'description', 'placeholder', 'required', 'component']) {
       expect(orientationOf(form, key), key).toBeUndefined();
     }
     // Description keeps its textarea option, and the Label its placeholder hint, alongside no orientation.
@@ -135,7 +168,7 @@ describe('field schemas and hints (rules 11-12)', () => {
       'placeholder',
       'required',
       'maxLength',
-      'multiline',
+      'component',
       'width',
     ];
     expect(keys.map((key) => fieldControl(form, key)?.label)).toEqual([
@@ -144,7 +177,7 @@ describe('field schemas and hints (rules 11-12)', () => {
       'Placeholder',
       'Required',
       'Max length',
-      'Multiline',
+      'Component',
       'Width',
     ]);
     expect(fieldControl(formFor(heading).form, 'size')?.label).toBe('Heading size');
@@ -154,9 +187,39 @@ describe('field schemas and hints (rules 11-12)', () => {
     const { form } = formFor(name);
     expect(fieldSchema(form, 'label')).toMatchObject({ type: 'string' });
     expect(fieldSchema(form, 'required')).toEqual({ type: 'boolean' });
-    expect(fieldSchema(form, 'multiline')).toEqual({ type: 'boolean' });
     expect(fieldSchema(form, 'maxLength')).toEqual({ type: 'number', minimum: 0, multipleOf: 1 });
     expect(fieldControl(form, 'description')?.options).toMatchObject({ component: 'textarea' });
+    // Doc 188 rule 22: booleans ask renderers/ui for a small Switch.
+    expect(fieldControl(form, 'required')?.options).toEqual({ component: 'switch', size: 'sm' });
+  });
+
+  it('offers each control kind its own components, default first, in a Combobox (doc 188 rule 26)', () => {
+    const { form } = formFor(name);
+    expect(fieldSchema(form, 'component')).toEqual({
+      type: 'string',
+      oneOf: [
+        { const: 'input', title: 'Input' },
+        { const: 'textarea', title: 'Textarea' },
+      ],
+    });
+    // No options: the oneOf field schema dispatches to the default renderers/ui Combobox.
+    expect(fieldControl(form, 'component')?.options).toBeUndefined();
+
+    const plan = choiceControl();
+    expect(fieldSchema(formFor(plan, docOf(plan), choiceSchema).form, 'component')).toEqual({
+      type: 'string',
+      oneOf: [
+        { const: 'combobox', title: 'Combobox' },
+        { const: 'radio-group', title: 'Radio group' },
+      ],
+    });
+    expect(fieldSchema(formFor(agree).form, 'component')).toEqual({
+      type: 'string',
+      oneOf: [
+        { const: 'checkbox', title: 'Checkbox' },
+        { const: 'switch', title: 'Switch' },
+      ],
+    });
   });
 
   it('bounds number, heading and column settings', () => {

@@ -65,11 +65,16 @@ describe('sample data properties (rule 28)', () => {
       'About',
       'Quantity',
       'Budget',
+      'Team size',
       'Email',
       'Phone',
       'Best time to call',
+      'Preferred contact method',
       'City',
       'Postal Code',
+      'Province',
+      'Email me product news',
+      'Text me delivery updates',
     ]);
   });
 
@@ -82,7 +87,8 @@ describe('sample data properties (rule 28)', () => {
     };
     walk(STUDIO_SAMPLE_UISCHEMA);
 
-    expect(scopes).toHaveLength(9);
+    // Doc 188 rule 32 added Team size, Preferred contact method, Province and the two booleans.
+    expect(scopes).toHaveLength(14);
     for (const scope of scopes) {
       const key = scope.replace('#/properties/', '');
       expect(key).toMatch(/^[\w-]{8}$/);

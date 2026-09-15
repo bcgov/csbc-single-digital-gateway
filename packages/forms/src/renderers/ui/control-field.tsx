@@ -10,20 +10,29 @@ export interface ControlInputProps {
   'aria-invalid'?: true;
 }
 
+/** The label's id, for an input named by `aria-labelledby` rather than `htmlFor` (doc 188 rule 8). */
+export interface ControlLabelIds {
+  labelId: string | undefined;
+}
+
 interface ControlFieldProps {
   readonly control: ControlProps;
   /** A text control's sanitised `maxLength` (rule 18) — shows the `<n>/<max>` counter (rule 18b). */
   readonly maxLength?: number | undefined;
-  readonly children: (input: ControlInputProps) => ReactNode;
+  readonly children: (input: ControlInputProps, ids: ControlLabelIds) => ReactNode;
 }
 
 /**
- * The ids of whichever counter, description and error render, and the input props pointing at them. The
+ * The ids of whichever label, counter, description and error render, and the input props pointing at them. The
  * counter is described first, so the count is read on focus before the description and errors (rule 18b).
  */
-function controlWiring({ id, description, errors, enabled }: ControlProps, hasCounter: boolean) {
+export function controlWiring(
+  { id, label, description, errors, enabled }: ControlProps,
+  hasCounter: boolean,
+) {
   const inputId = `${id}-input`;
   const ids = {
+    label: label.trim() ? `${inputId}-label` : undefined,
     counter: hasCounter ? `${inputId}-counter` : undefined,
     description: description?.trim() ? `${inputId}-description` : undefined,
     error: errors ? `${inputId}-error` : undefined,
@@ -74,8 +83,9 @@ export function ControlField({ control, maxLength, children }: ControlFieldProps
   if (!visible) return null;
 
   const { ids, input } = controlWiring(control, maxLength !== undefined);
-  const fieldLabel = label.trim() ? (
-    <FieldLabel htmlFor={input.id}>
+  const labelIds: ControlLabelIds = { labelId: ids.label };
+  const fieldLabel = ids.label ? (
+    <FieldLabel id={ids.label} htmlFor={input.id}>
       {computeLabel(label, required === true, config?.hideRequiredAsterisk === true)}
     </FieldLabel>
   ) : null;
@@ -97,7 +107,7 @@ export function ControlField({ control, maxLength, children }: ControlFieldProps
           {fieldError}
         </FieldContent>
         <div data-slot="control-field-input" className="w-24 shrink-0">
-          {children(input)}
+          {children(input, labelIds)}
           {counter}
         </div>
       </Field>
@@ -107,7 +117,7 @@ export function ControlField({ control, maxLength, children }: ControlFieldProps
   return (
     <Field data-disabled={enabled ? undefined : true}>
       {fieldLabel}
-      {children(input)}
+      {children(input, labelIds)}
       {counter}
       {fieldDescription}
       {fieldError}

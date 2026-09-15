@@ -1,6 +1,6 @@
 import type { JsonSchema } from '@jsonforms/core';
 import type { TreeElement } from '../layout/element-tree';
-import type { InspectorContext } from './inspector-context';
+import type { ControlKind, InspectorContext } from './inspector-context';
 import {
   finite,
   isRecord,
@@ -52,8 +52,8 @@ const LAYOUT_LABEL_HINT = 'Names the layout in the element path.';
 const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
 const isHeading = (ctx: InspectorContext) => ctx.element.type === 'Heading';
 const hasProperty = (ctx: InspectorContext) => ctx.propertyKey !== undefined;
-const isString = (ctx: InspectorContext) => ctx.valueType === 'string';
-const isNumber = (ctx: InspectorContext) => ctx.valueType === 'number';
+const isText = (ctx: InspectorContext) => ctx.controlKind === 'text';
+const isNumber = (ctx: InspectorContext) => ctx.controlKind === 'number';
 
 const STRING: JsonSchema = Object.freeze({ type: 'string' });
 const BOOLEAN: JsonSchema = Object.freeze({ type: 'boolean' });
@@ -108,7 +108,42 @@ function optionField(
   };
 }
 
-const hasValueType: Applies = (ctx) => ctx.valueType !== undefined;
+interface Component {
+  readonly const: string;
+  readonly title: string;
+}
+
+/** Doc 188 rule 26: each kind's renderers/ui `options.component` values, default first. */
+const COMPONENTS: Readonly<Partial<Record<ControlKind, readonly Component[]>>> = {
+  text: [
+    { const: 'input', title: 'Input' },
+    { const: 'textarea', title: 'Textarea' },
+  ],
+  choice: [
+    { const: 'combobox', title: 'Combobox' },
+    { const: 'radio-group', title: 'Radio group' },
+  ],
+  boolean: [
+    { const: 'checkbox', title: 'Checkbox' },
+    { const: 'switch', title: 'Switch' },
+  ],
+};
+
+const componentsOf = (ctx: InspectorContext) =>
+  ctx.controlKind === undefined ? undefined : COMPONENTS[ctx.controlKind];
+
+/** Rule 27: the authored component when it is one of the kind's, else the default — what actually renders. */
+function currentComponent(ctx: InspectorContext): string | undefined {
+  const components = componentsOf(ctx) ?? [];
+  const authored = optionsOf(ctx.element)['component'];
+  return (components.find((component) => component.const === authored) ?? components[0])?.const;
+}
+
+/** Rule 25: text and number controls, and a choice unless it renders as a radio group. */
+const takesPlaceholder: Applies = (ctx) =>
+  isText(ctx) ||
+  isNumber(ctx) ||
+  (ctx.controlKind === 'choice' && currentComponent(ctx) !== 'radio-group');
 /** Grid stores its column count as `column`, HorizontalLayout as `columns`. */
 const columnsOption = (ctx: InspectorContext) => (ctx.layoutKind === 'grid' ? 'column' : 'columns');
 
@@ -145,20 +180,22 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     ...propertyField('description', 'general', 'Description', hasProperty, STRING, text),
     options: () => ({ component: 'textarea' }),
   },
-  optionField('placeholder', 'general', 'Placeholder', hasValueType, STRING, text),
+  optionField('placeholder', 'general', 'Placeholder', takesPlaceholder, STRING, text),
   {
     key: 'required',
     section: 'validation',
     label: 'Required',
     applies: hasProperty,
     schema: () => BOOLEAN,
+    // Doc 188 rule 22: the small renderers/ui Switch.
+    options: () => ({ component: 'switch', size: 'sm' }),
     read: (ctx) =>
       Array.isArray(ctx.schema.required) && ctx.propertyKey !== undefined
         ? ctx.schema.required.includes(ctx.propertyKey)
         : false,
     write: (ctx, edit, value) => setRequired(ctx, edit, value === true),
   },
-  propertyField('maxLength', 'validation', 'Max length', isString, integer({ minimum: 0 }), finite),
+  propertyField('maxLength', 'validation', 'Max length', isText, integer({ minimum: 0 }), finite),
   propertyField('minimum', 'validation', 'Minimum', isNumber, NUMBER, finite),
   propertyField('maximum', 'validation', 'Maximum', isNumber, NUMBER, finite),
   optionField(
@@ -170,16 +207,25 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     finite,
   ),
   {
-    key: 'multiline',
+    key: 'component',
     section: 'appearance',
-    label: 'Multiline',
-    applies: isString,
-    schema: () => BOOLEAN,
-    read: (ctx) => optionsOf(ctx.element)['component'] === 'textarea',
-    write: (_ctx, edit, value) =>
+    label: 'Component',
+    applies: (ctx) => componentsOf(ctx) !== undefined,
+    schema: (ctx) => ({
+      type: 'string',
+      oneOf: (componentsOf(ctx) ?? []).map(({ const: value, title }) => ({ const: value, title })),
+    }),
+    // No options: a oneOf field renders as the renderers/ui Combobox by default (user request).
+    read: currentComponent,
+    // Rule 28: the kind's default removes `options.component`.
+    write: (ctx, edit, value) =>
       setElement(
         edit,
-        withOption(edit.element, 'component', value === true ? 'textarea' : undefined),
+        withOption(
+          edit.element,
+          'component',
+          value === componentsOf(ctx)?.[0]?.const ? undefined : value,
+        ),
       ),
   },
   optionField('level', 'appearance', 'Heading level', isHeading, integer(HEADING_SCALE), finite),
@@ -217,11 +263,14 @@ export function fieldsFor(ctx: InspectorContext): InspectorField[] {
 }
 
 /**
- * Whether `value` satisfies a field schema (rule 16): its JSON type and, for numbers, `minimum`, `maximum`,
- * `exclusiveMinimum` and `multipleOf`. Clearing (`undefined`) is always accepted.
+ * Whether `value` satisfies a field schema (rule 16): one of its `oneOf` consts when it has any (doc 188 rule 29),
+ * its JSON type and, for numbers, `minimum`, `maximum`, `exclusiveMinimum` and `multipleOf`. Clearing
+ * (`undefined`) is always accepted.
  */
 export function fieldAccepts(schema: JsonSchema, value: unknown): boolean {
   if (value === undefined) return true;
+  if (Array.isArray(schema.oneOf) && !schema.oneOf.some((entry) => entry.const === value))
+    return false;
   if (schema.type === 'string') return typeof value === 'string';
   if (schema.type === 'boolean') return typeof value === 'boolean';
   if (schema.type !== 'number' || typeof value !== 'number' || !Number.isFinite(value))

@@ -51,6 +51,30 @@ export interface NumberInputControlElement extends ControlElement {
   };
 }
 
+/** A `oneOf` (const/title) control rendered by `@repo/ui`'s `Combobox` — the default for choices (doc 188). */
+export interface ComboboxControlElement extends ControlElement {
+  options?: ControlOptions & { component?: 'combobox' };
+}
+
+/** A `oneOf` (const/title) control rendered as a `@repo/ui` `RadioGroup` (doc 188). */
+export interface RadioGroupControlElement extends ControlElement {
+  options: ControlOptions & { component: 'radio-group' };
+}
+
+/** A `type: 'boolean'` control rendered by `@repo/ui`'s `Checkbox` — the default for booleans (doc 188). */
+export interface CheckboxControlElement extends ControlElement {
+  options?: ControlOptions & { component?: 'checkbox' };
+}
+
+/** A `type: 'boolean'` control rendered by `@repo/ui`'s `Switch` (doc 188). */
+export interface SwitchControlElement extends ControlElement {
+  options: ControlOptions & {
+    component: 'switch';
+    /** `'sm'` renders the small switch; anything else the default size. */
+    size?: 'sm' | 'default';
+  };
+}
+
 /** The GridStack options an authored `Grid` element may set — everything else is ignored. */
 export type GridElementOptions = Pick<
   GridStackOptions,

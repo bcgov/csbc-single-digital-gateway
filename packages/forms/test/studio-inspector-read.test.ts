@@ -1,9 +1,30 @@
 import type { JsonSchema } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import { inspectorErrors } from '../src/studio/inspector/inspector-form';
-import { el, formFor, grid, heading, name, qty, row, rowQty } from './inspector-fixtures';
+import {
+  agree,
+  choiceControl,
+  choiceSchema,
+  docOf,
+  el,
+  formFor,
+  grid,
+  heading,
+  name,
+  qty,
+  row,
+  rowQty,
+} from './inspector-fixtures';
 
 // Doc 187 rules 13-14 — reading the document into the inspector's view model, and cross-field errors.
+
+/** A Control bound to `name` with `options.component` set to `component`. */
+const nameAs = (component: string) =>
+  el({ type: 'Control', scope: '#/properties/name', options: { component } });
+
+/** The inspector's `component` value for `element`, alone in a root VerticalLayout. */
+const read = (element: ReturnType<typeof el>, docSchema?: typeof choiceSchema) =>
+  formFor(element, docOf(element), docSchema).form.data['component'];
 
 describe('reading the document (rule 14)', () => {
   it('reads a string Control from its uischema and bound property', () => {
@@ -13,7 +34,7 @@ describe('reading the document (rule 14)', () => {
       placeholder: 'Jane',
       required: true,
       maxLength: 80,
-      multiline: false,
+      component: 'input',
       width: 8,
     });
   });
@@ -30,14 +51,21 @@ describe('reading the document (rule 14)', () => {
     expect(formFor(rowQty).form.data).toMatchObject({ width: 2 });
   });
 
-  it('reads multiline from options.component', () => {
-    const about = el({
+  it('reads component from options.component, defaulting when absent or unrecognised (doc 188 rule 27)', () => {
+    expect(read(nameAs('textarea'))).toBe('textarea');
+    expect(read(nameAs('fancy'))).toBe('input');
+
+    expect(read(choiceControl({ component: 'radio-group' }), choiceSchema)).toBe('radio-group');
+    // A string-only component on a choice reads as what actually renders.
+    expect(read(choiceControl({ component: 'textarea' }), choiceSchema)).toBe('combobox');
+
+    expect(formFor(agree).form.data).toEqual({ required: false, component: 'checkbox' });
+    const agreeAs = el({
       type: 'Control',
-      scope: '#/properties/name',
-      options: { component: 'textarea' },
+      scope: '#/properties/agree',
+      options: { component: 'switch' },
     });
-    const doc = el({ type: 'VerticalLayout', elements: [about] });
-    expect(formFor(about, doc).form.data).toMatchObject({ multiline: true });
+    expect(read(agreeAs)).toBe('switch');
   });
 
   it('leaves out values of the wrong JSON type', () => {
@@ -53,7 +81,7 @@ describe('reading the document (rule 14)', () => {
       properties: { name: { type: 'string', description: 7, maxLength: '80' } },
     } as unknown as JsonSchema;
     const doc = el({ type: 'VerticalLayout', elements: [el({ type: 'Grid', elements: [odd] })] });
-    expect(formFor(odd, doc, oddSchema).form.data).toEqual({ required: false, multiline: false });
+    expect(formFor(odd, doc, oddSchema).form.data).toEqual({ required: false, component: 'input' });
   });
 });
 

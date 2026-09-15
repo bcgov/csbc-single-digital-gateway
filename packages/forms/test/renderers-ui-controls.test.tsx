@@ -88,8 +88,8 @@ describe('control dispatch', () => {
     return ranks.flatMap((rank, index) => (rank === max && rank > 0 ? [index] : []));
   };
 
-  it('registers exactly three control renderers: Input, Textarea, NumberInput', () => {
-    expect(ui.controlRenderers).toHaveLength(3);
+  it('registers Input, Textarea and NumberInput first, ahead of the doc 188 controls', () => {
+    expect(ui.controlRenderers).toHaveLength(7);
     expect(inputEntry?.tester(control('#/properties/text'), rootSchema, context)).toBe(1);
     expect(
       textareaEntry?.tester(
@@ -128,7 +128,7 @@ describe('control dispatch', () => {
 
   it('does not dispatch an integer control', () => {
     // Guard: with no control renderers registered the next assertion would pass vacuously.
-    expect(ui.controlRenderers).toHaveLength(3);
+    expect(ui.controlRenderers).toHaveLength(7);
     expect(topEntries(control('#/properties/count'))).toEqual([]);
   });
 });

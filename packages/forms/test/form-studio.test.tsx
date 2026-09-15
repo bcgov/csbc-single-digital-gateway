@@ -1,5 +1,5 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 
@@ -98,15 +98,40 @@ describe('FormStudio', () => {
         '[data-slot="studio-grid-item"] input:not([aria-hidden="true"]), [data-slot="studio-grid-item"] textarea',
       ) ?? [],
     );
-    // name, about, quantity, budget + email, phone and best time in the Contact layouts + city and
-    // postal code in the nested Delivery grid.
-    expect(inputs).toHaveLength(9);
+    // name, about, quantity, budget, team size + email, phone and best time in the Contact layouts +
+    // city, postal code and province in the nested Delivery grid. Base UI's radio, checkbox and switch
+    // hidden inputs are aria-hidden (doc 188 rule 33).
+    expect(inputs).toHaveLength(11);
     for (const input of inputs) {
       expect(input).toBeDisabled();
       const wrapper = input.closest('[data-slot="studio-content"]');
       expect(wrapper).toHaveAttribute('inert');
       expect(wrapper).toHaveClass('pointer-events-none');
     }
+  });
+
+  // Doc 188 rules 32-33 — the sample shows every choice and boolean control, disabled on the canvas.
+  it('renders the sample choice and boolean controls disabled', async () => {
+    renderStudio();
+    await screen.findByRole('textbox', { name: 'Name' });
+    expect(screen.getByRole('combobox', { name: 'Team size' })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: 'Province' })).toBeDisabled();
+
+    const contact = screen.getByRole('radiogroup', { name: 'Preferred contact method' });
+    const radios = within(contact).getAllByRole('radio');
+    expect(radios.map((radio) => radio.closest('[data-slot="field"]')?.textContent)).toEqual([
+      'Email',
+      'Phone',
+      'Mail',
+    ]);
+    for (const radio of radios) expect(radio).toHaveAttribute('data-disabled');
+
+    expect(screen.getByRole('checkbox', { name: 'Email me product news' })).toHaveAttribute(
+      'data-disabled',
+    );
+    expect(screen.getByRole('switch', { name: 'Text me delivery updates' })).toHaveAttribute(
+      'data-disabled',
+    );
   });
 
   it('renders the sample root VerticalLayout as a draggable one-column grid (not grid-stack-static)', async () => {

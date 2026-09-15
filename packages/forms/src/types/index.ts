@@ -10,6 +10,8 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 
 export type { RendererSet } from './renderer-set';
 export type {
+  CheckboxControlElement,
+  ComboboxControlElement,
   GridElement,
   GridElementOptions,
   GridItemPlacement,
@@ -20,6 +22,8 @@ export type {
   HorizontalLayoutOptions,
   InputControlElement,
   NumberInputControlElement,
+  RadioGroupControlElement,
+  SwitchControlElement,
   TextareaControlElement,
   VerticalLayoutElement,
 } from './elements';

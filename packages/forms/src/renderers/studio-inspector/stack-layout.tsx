@@ -30,6 +30,10 @@ const COMPACT_CLASS = [
   '[&_[data-slot=number-input-input]]:text-xs',
   '[&_[data-slot=textarea]]:min-h-12',
   '[&_[data-slot=textarea]]:text-xs',
+  // Doc 188 rule 23: the choice controls.
+  '[&_[data-slot=radio-group]]:gap-2',
+  '[&_[data-slot=input-group]]:h-7',
+  '[&_[data-slot=input-group-control]]:text-xs',
 ].join(' ');
 
 /**

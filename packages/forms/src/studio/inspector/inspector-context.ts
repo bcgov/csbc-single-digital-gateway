@@ -1,4 +1,5 @@
 import type { JsonSchema } from '@jsonforms/core';
+import { choiceOptions } from '../../renderers/ui/choice-control';
 import {
   horizontalColumns,
   horizontalWidth,
@@ -9,8 +10,8 @@ import type { ElementIds } from '../layout/element-ids';
 import { findById, findParentById, type TreeElement } from '../layout/element-tree';
 import { propertyKeyOf, type StudioDocument } from '../layout/schema-properties';
 
-/** The value type of a Control that decides its type-specific settings (doc 187 rule 8). */
-export type ValueType = 'string' | 'number';
+/** What a Control edits, deciding its type-specific settings (doc 187 rule 8, doc 188 rule 24). */
+export type ControlKind = 'text' | 'number' | 'choice' | 'boolean';
 
 // The studio's Grids run on the built-in 12 columns (DEFAULT_GRID_OPTIONS) unless authored otherwise.
 const GRID_COLUMNS = 12;
@@ -25,7 +26,7 @@ export interface InspectorContext {
   /** The OWN top-level property a Control binds to, if any. */
   readonly propertyKey: string | undefined;
   readonly property: JsonSchema | undefined;
-  readonly valueType: ValueType | undefined;
+  readonly controlKind: ControlKind | undefined;
   /** The element's own gridstack layout kind, if it is a Grid, VerticalLayout or HorizontalLayout. */
   readonly layoutKind: GridLayoutKind | undefined;
   /** The widest the element may be made, when its parent is a Grid or HorizontalLayout. */
@@ -34,6 +35,18 @@ export interface InspectorContext {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Doc 188 rule 24: `'choice'` for a oneOf (const/title) schema the renderers/ui choice controls render — checked
+ * first, with the same test they dispatch on — else the property's `type`: string, number or boolean.
+ */
+function controlKindOf(property: JsonSchema | undefined): ControlKind | undefined {
+  if (!property) return undefined;
+  if (choiceOptions(property)) return 'choice';
+  if (property.type === 'string') return 'text';
+  if (property.type === 'number' || property.type === 'boolean') return property.type;
+  return undefined;
+}
 
 /** A Grid's authored `options.column` when an integer 1-12, else 12. */
 function gridColumns(options: unknown): number {
@@ -76,7 +89,6 @@ export function inspectorContext(
   const propertyKey = propertyKeyOf(element, document.schema);
   const property =
     propertyKey === undefined ? undefined : document.schema.properties?.[propertyKey];
-  const type = property?.type;
   const parent = findParentById(root, elementId, ids);
 
   return {
@@ -85,7 +97,7 @@ export function inspectorContext(
     schema: document.schema,
     propertyKey,
     property,
-    valueType: type === 'string' || type === 'number' ? type : undefined,
+    controlKind: controlKindOf(property),
     layoutKind: layoutKindOf(element.type),
     maxWidth: maxWidthIn(parent, element),
   };

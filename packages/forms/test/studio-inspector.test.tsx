@@ -24,6 +24,16 @@ const inInspector = () => {
 };
 const field = (name: string) => inInspector().getByRole<HTMLInputElement>('textbox', { name });
 const toggle = (name: string) => inInspector().getByRole('switch', { name });
+const component = () =>
+  inInspector().getByRole<HTMLInputElement>('combobox', { name: 'Component' });
+
+/** Picks `name` from the inspector's Component combobox (doc 188 rule 26) — keyboard-opened, see the trap above. */
+async function pickComponent(name: string) {
+  const input = component();
+  input.focus();
+  fireEvent.keyDown(input, { key: 'ArrowDown' });
+  fireEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name }));
+}
 const rightToggle = () => screen.getByRole('button', { name: 'Right panel' });
 const canvasField = (name: string | RegExp) => screen.getByRole('textbox', { name });
 
@@ -131,7 +141,8 @@ describe('inspector content (rules 9, 14, 23-24)', () => {
     expect(field('Placeholder')).toHaveValue('Jane Doe');
     expect(field('Max length')).toHaveValue('80');
     expect(toggle('Required')).toHaveAttribute('aria-checked', 'false');
-    expect(toggle('Multiline')).toHaveAttribute('aria-checked', 'false');
+    // Doc 188 rule 27: an absent component reads as the default.
+    expect(component()).toHaveValue('Input');
   });
 
   it("shows the next element's settings when the selection moves", async () => {
@@ -163,11 +174,21 @@ describe('live editing (rules 15-21)', () => {
     expect(toggle('Required')).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('turns the canvas field into a textarea from the Multiline switch', async () => {
+  it('turns the canvas field into a textarea from the Component combobox', async () => {
     const { name } = await renderStudio();
     select(name);
-    fireEvent.click(toggle('Multiline'));
+    await pickComponent('Textarea');
     await waitFor(() => expect(canvasField('Name').tagName).toBe('TEXTAREA'));
+  });
+
+  it('turns the canvas Province combobox into a radio group (doc 188 rule 28)', async () => {
+    await renderStudio();
+    select(itemOf(screen.getByRole('combobox', { name: 'Province' })));
+    expect(component()).toHaveValue('Combobox');
+    await pickComponent('Radio group');
+    await waitFor(() =>
+      expect(screen.getByRole('radiogroup', { name: 'Province' })).toBeInTheDocument(),
+    );
   });
 
   it("changes the canvas heading's level", async () => {

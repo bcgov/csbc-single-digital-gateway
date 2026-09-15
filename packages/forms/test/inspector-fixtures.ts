@@ -50,6 +50,31 @@ export const grid = el({
 export const agree = el({ type: 'Control', scope: '#/properties/agree' });
 export const root = el({ type: 'VerticalLayout', elements: [grid, row, agree] });
 
+/** Doc 188: a document schema with a string choice, a number choice and an integer property. */
+export const choiceSchema: JsonSchema = {
+  type: 'object',
+  properties: {
+    plan: {
+      type: 'string',
+      title: 'Plan',
+      oneOf: [
+        { const: 'basic', title: 'Basic' },
+        { const: 'pro', title: 'Pro' },
+      ],
+    },
+    seats: { type: 'number', oneOf: [{ const: 1 }, { const: 5 }] },
+    count: { type: 'integer' },
+  },
+};
+
+/** A Control bound to `choiceSchema`'s `plan`. */
+export const choiceControl = (options?: object) =>
+  el({ type: 'Control', scope: '#/properties/plan', ...(options ? { options } : {}) });
+
+/** A root VerticalLayout holding only `element`. */
+export const docOf = (element: UISchemaElement) =>
+  el({ type: 'VerticalLayout', elements: [element] });
+
 export interface Built {
   ids: ElementIds;
   form: InspectorForm;

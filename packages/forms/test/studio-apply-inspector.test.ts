@@ -19,6 +19,15 @@ function fixture() {
     properties: {
       name: { type: 'string', title: 'Name', description: 'Your name', maxLength: 80 },
       qty: { type: 'number', title: 'Quantity', minimum: 0 },
+      agree: { type: 'boolean', title: 'Agree' },
+      plan: {
+        type: 'string',
+        title: 'Plan',
+        oneOf: [
+          { const: 'basic', title: 'Basic' },
+          { const: 'pro', title: 'Pro' },
+        ],
+      },
     },
     required: ['name'],
   };
@@ -47,11 +56,17 @@ function fixture() {
     options: { columns: 4 },
     elements: [rowQty, rowHeading],
   });
+  const agree = el({ type: 'Control', scope: '#/properties/agree' });
+  const plan = el({
+    type: 'Control',
+    scope: '#/properties/plan',
+    options: { placeholder: 'Choose' },
+  });
   const grid = el({ type: 'Grid', elements: [name, qty, heading] });
-  const uischema = el({ type: 'VerticalLayout', elements: [grid, row, about] });
+  const uischema = el({ type: 'VerticalLayout', elements: [grid, row, about, agree, plan] });
   const ids = createElementIds();
   const document: StudioDocument = { schema, uischema };
-  const elements = { name, about, qty, heading, rowQty, row, grid };
+  const elements = { name, about, qty, heading, rowQty, row, grid, agree, plan };
   return { document, ids, elements };
 }
 
@@ -127,12 +142,25 @@ describe('uischema fields (rules 15, 17, 19-21)', () => {
     expect(nodeOf(fx, cleared.next, cleared.id)?.options).toEqual({ gridItem: { w: 8, x: 0 } });
   });
 
-  it('sets and removes options.component for Multiline, dropping an emptied options', () => {
+  it('sets options.component for a non-default Component and removes it for the default (doc 188 rule 28)', () => {
     const fx = fixture();
-    const on = apply(fx, 'name', { multiline: true });
-    expect(nodeOf(fx, on.next, on.id)?.options).toMatchObject({ component: 'textarea' });
-    const off = apply(fx, 'about', { multiline: false });
-    expect(nodeOf(fx, off.next, off.id)).not.toHaveProperty('options');
+    const textarea = apply(fx, 'name', { component: 'textarea' });
+    expect(nodeOf(fx, textarea.next, textarea.id)?.options).toEqual({
+      placeholder: 'Jane',
+      gridItem: { w: 8, x: 0 },
+      component: 'textarea',
+    });
+    const input = apply(fx, 'about', { component: 'input' });
+    expect(nodeOf(fx, input.next, input.id)).not.toHaveProperty('options');
+
+    const radios = apply(fx, 'plan', { component: 'radio-group' });
+    expect(nodeOf(fx, radios.next, radios.id)?.options).toEqual({
+      placeholder: 'Choose',
+      component: 'radio-group',
+    });
+    const toggle = apply(fx, 'agree', { component: 'switch' });
+    expect(nodeOf(fx, toggle.next, toggle.id)?.options).toEqual({ component: 'switch' });
+    expect(toggle.next.schema).toBe(fx.document.schema);
   });
 
   it('writes Width into gridItem, keeping its other keys, and drops an emptied gridItem', () => {
@@ -218,6 +246,13 @@ describe('only valid values are written (rule 16)', () => {
     ['qty', { step: 0 }],
     ['qty', { minimum: 'ten' }],
     ['name', { required: 'yes' }],
+    // Doc 188 rules 25, 29: a component outside the kind's list, or on a kind without one.
+    ['name', { component: 'combobox' }],
+    ['name', { component: 5 }],
+    ['plan', { component: 'textarea' }],
+    ['agree', { component: 'radio-group' }],
+    ['qty', { component: 'textarea' }],
+    ['plan', { maxLength: 5 }],
   ] as [Key, Values][])('does not write %s %o', (key, changes) => {
     const fx = fixture();
     expect(apply(fx, key, changes).next).toBe(fx.document);
