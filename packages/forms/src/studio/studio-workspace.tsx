@@ -33,6 +33,8 @@ export interface StudioWorkspaceProps {
   readonly left?: ReactNode;
   /** Right dock panel content — the inspector (doc 187). */
   readonly right?: ReactNode;
+  /** Bottom dock panel content — the code editors (doc 191). */
+  readonly bottom?: ReactNode;
 }
 
 /**
@@ -51,6 +53,7 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({
   panels,
   left: leftContent,
   right: rightContent,
+  bottom: bottomContent,
   children,
 }) => {
   const { left, right, bottom } = panels;
@@ -75,7 +78,7 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({
         </ResizablePanelGroup>
       </ResizablePanel>
       {bottom.open && <ResizableHandle className="-mb-px" />}
-      <DockPanelView dock={bottom} />
+      <DockPanelView dock={bottom}>{bottomContent}</DockPanelView>
     </ResizablePanelGroup>
   );
 };

@@ -83,12 +83,12 @@ interface PointerSelectionOptions {
 }
 
 /**
- * Whether a key event came from inside the inspector or the palette, where Escape belongs to their fields (doc 187
- * rule 29, doc 189 rule 27).
+ * Whether a key event came from inside the inspector, the palette or the code editors, where Escape belongs to their
+ * fields — Monaco closes its suggest widget with it (doc 187 rule 29, doc 189 rule 27, doc 191 rule 25).
  */
 const insidePanelForm = (target: EventTarget | null) =>
   target instanceof Element &&
-  target.closest('[data-studio-inspector], [data-studio-palette]') !== null;
+  target.closest('[data-studio-inspector], [data-studio-palette], [data-studio-code]') !== null;
 
 /**
  * Document listeners turning pointer and key events into hover and selection (doc 185 rules 2, 5, 7; doc

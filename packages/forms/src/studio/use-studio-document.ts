@@ -2,6 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { useCallback, useMemo, useState } from 'react';
 import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
+import { sameJson } from './code/document-text';
 import { applyInspector } from './inspector/apply-inspector';
 import type { InspectorValues } from './inspector/inspector-fields';
 import { inspectorForm, type InspectorForm } from './inspector/inspector-form';
@@ -12,6 +13,7 @@ import { createElementIds, type ElementIds } from './layout/element-ids';
 import { pathSegments, type PathSegment } from './layout/element-path';
 import { findParentById, type TreeElement } from './layout/element-tree';
 import { removeElement } from './layout/remove-element';
+import { carryIdsByPath } from './layout/carry-ids-by-path';
 import { newPropertyKey } from './layout/schema-properties';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
 
@@ -19,6 +21,9 @@ interface StudioDocumentSource {
   schema?: JsonSchema | undefined;
   uischema?: UISchemaElement | undefined;
 }
+
+/** The halves `replaceDocument` replaces — an absent half is left as it is (doc 191 rule 22). */
+export type DocumentHalves = StudioDocumentSource;
 
 interface DocumentState {
   sourceSchema: JsonSchema;
@@ -182,6 +187,31 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [ids],
   );
 
+  /**
+   * Replaces whole halves of the document from the code editors (doc 191 rules 22-24). A half equal to the current one
+   * keeps the current object (the same state object when both do); a new uischema carries ids by tree path, and the
+   * seed never changes, so selection survives. Carrying inside the updater is safe to repeat (StrictMode).
+   */
+  const replaceDocument = useCallback(
+    (next: DocumentHalves) => {
+      setState((previous) => {
+        const nextSchema =
+          next.schema === undefined || sameJson(next.schema, previous.schema)
+            ? previous.schema
+            : next.schema;
+        let nextUischema = previous.uischema;
+        if (next.uischema !== undefined && !sameJson(next.uischema, previous.uischema)) {
+          carryIdsByPath(previous.uischema, next.uischema, ids);
+          nextUischema = next.uischema;
+        }
+        return nextSchema === previous.schema && nextUischema === previous.uischema
+          ? previous
+          : { ...previous, schema: nextSchema, uischema: nextUischema };
+      });
+    },
+    [ids],
+  );
+
   return {
     schema: currentSchema,
     uischema: currentUischema,
@@ -193,6 +223,7 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     pathOf,
     inspectorFor,
     updateElement,
+    replaceDocument,
     copy,
     insert,
     add,

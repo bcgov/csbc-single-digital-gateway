@@ -1,10 +1,11 @@
 import { JsonForms } from '@jsonforms/react';
-import { useMemo, useRef, type FC } from 'react';
+import { useMemo, useRef, useState, type FC } from 'react';
 import * as defaultSet from '../renderers/default/index';
 import { GridEditorProvider } from '../renderers/gridstack/grid-editor';
 import * as studioSet from '../renderers/studio/index';
 import { StudioSelectionProvider } from '../renderers/studio/studio-selection';
 import type { FormStudioProps } from '../types/index';
+import { StudioCodePanel } from './code/studio-code-panel';
 import { DeleteConfirmation } from './delete-confirmation';
 import { useDockPanel } from './dock-panels';
 import { DockToggles } from './dock-toggles';
@@ -65,6 +66,11 @@ const PREVIEW_RENDERERS = [
  * dragged onto a grid lands where it is dropped; one clicked or activated with the keyboard lands next to the
  * selection. Either way it arrives with a default configuration and is selected.
  *
+ * The bottom dock panel holds the code editors (doc 191): the schema and uischema as JSON, side by side, with
+ * completion from the studio's metaschemas. Monaco loads the first time the panel opens and the editors stay mounted
+ * after that; valid edits write their half of the document back, keeping element ids — and so the selection — by
+ * tree path.
+ *
  * The play toggle switches to preview (doc 184): the panel toggles go, open panels close, and the same
  * document renders through the fillable `renderers/default` without the Grid editor or selection — in
  * its own `JsonForms`, so anything typed is discarded when preview ends.
@@ -87,6 +93,9 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
   const { selectedId } = port;
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right);
   const segments = studio.pathOf(selectedId);
+  // Doc 191 rule 3: nothing of Monaco loads until the bottom panel first opens.
+  const [codeOpened, setCodeOpened] = useState(false);
+  if (panels.bottom.open && !codeOpened) setCodeOpened(true);
 
   return (
     <div ref={rootRef} data-slot="form-studio" className="flex h-full flex-col">
@@ -108,6 +117,15 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
                 label={segments.at(-1)?.label ?? ''}
                 form={inspector}
                 onChange={studio.updateElement}
+              />
+            )
+          }
+          bottom={
+            previewing || !codeOpened ? null : (
+              <StudioCodePanel
+                schema={studio.schema}
+                uischema={studio.uischema}
+                onReplace={studio.replaceDocument}
               />
             )
           }

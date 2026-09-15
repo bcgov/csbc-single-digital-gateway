@@ -78,6 +78,7 @@
     "@mdi/react": "1.6.1",
     "@repo/ui": "*",
     "gridstack": "13.2.0",
+    "monaco-editor": "0.56.0",
     "nanoid": "^3.3.17",
     "react-resizable-panels": "4.12.3"
   },

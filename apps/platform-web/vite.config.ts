@@ -40,6 +40,9 @@ export default defineConfig({
       // Date-picker input mask (feature 157) — same lazy-route-through-@repo/ui-source reason.
       'use-mask-input',
     ],
+    // The Form Studio code editors (feature 191) import monaco-editor lazily. Monaco 0.56 starts its workers with
+    // `new URL('…worker.js', import.meta.url)`; pre-bundling moves its modules, so those URLs would 404.
+    exclude: ['monaco-editor'],
   },
   server: { port: 3001 },
 });
