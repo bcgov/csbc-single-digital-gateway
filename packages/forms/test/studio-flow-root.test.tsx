@@ -124,8 +124,10 @@ describe('Form Studio Flow root (doc 195)', () => {
       const flowContent = contentOf(frameOf('Flow'));
       expect(flowContent).not.toHaveAttribute('inert');
       expect(flowContent).not.toHaveClass('pointer-events-none');
+      // Doc 196 rule 13: the studio edits Flows, so a Stage is locked by pointer events only — not inert, which its
+      // Form row buttons could not undo.
       const stageContent = contentOf(frameOf('Stage', 'Applicant'));
-      expect(stageContent).toHaveAttribute('inert');
+      expect(stageContent).not.toHaveAttribute('inert');
       expect(stageContent).toHaveClass('pointer-events-none');
     });
 
@@ -166,18 +168,19 @@ describe('Form Studio Flow root (doc 195)', () => {
       expect(within(inspector()).getByRole('textbox', { name: 'Label' })).toHaveValue('');
     });
 
-    it('refuses a clicked palette template while the root is a Flow — the document is unchanged', () => {
+    it('offers no form templates while the root is a Flow, and a Form click with no Stage selected changes nothing', () => {
       renderStudio();
-      const palette = required(
-        document.querySelector<HTMLElement>('[data-studio-palette]'),
-        'palette',
+      const palette = within(
+        required(document.querySelector<HTMLElement>('[data-studio-palette]'), 'palette'),
       );
-      fireEvent.click(within(palette).getByRole('button', { name: 'Heading' }));
-      fireEvent.click(within(palette).getByRole('button', { name: 'Text' }));
+      // Doc 196 rule 17: a Flow's view offers only Stage and Form.
+      expect(palette.queryByRole('button', { name: 'Heading' })).toBeNull();
+      expect(palette.queryByRole('button', { name: 'Text' })).toBeNull();
+      fireEvent.click(palette.getByRole('button', { name: 'Form' }));
       expect(currentCrumb()).toBeNull();
       expect(crumbNames()).toEqual(['Flow']);
       expect(centre().querySelectorAll('[data-slot="stage-card"]')).toHaveLength(2);
-      expect(within(centre()).queryByRole('heading')).toBeNull();
+      expect(centre().querySelectorAll('[data-slot="stage-form-row"]')).toHaveLength(2);
     });
   });
 });

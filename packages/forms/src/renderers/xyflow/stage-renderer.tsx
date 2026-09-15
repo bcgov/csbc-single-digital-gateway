@@ -1,10 +1,11 @@
 import type { LayoutProps, UISchemaElement } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
-import { mdiFileDocumentOutline } from '@mdi/js';
+import { mdiDeleteOutline, mdiFileDocumentOutline } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { useContext } from 'react';
+import { useContext, type KeyboardEvent } from 'react';
 import { FORM_TYPE } from '../gridstack/grid-layouts';
 import { FlowContext } from './flow-context';
+import { useFlowEditor, type FlowEditor } from './flow-editor';
 import { elementsOf, STAGE_CHILD_MESSAGE, STAGE_PLACEMENT_MESSAGE } from './flow-elements';
 
 /** An element's `label` when a non-empty string, else `fallback`. */
@@ -13,8 +14,49 @@ function labelOf(element: UISchemaElement, fallback: string): string {
   return typeof label === 'string' && label.trim() !== '' ? label.trim() : fallback;
 }
 
+// Doc 196 rule 13: under an editor the card is pointer-events-none (presses fall through to the studio frame, which
+// selects and drags the Stage), so the row controls opt back in, and `nodrag` stops xyflow starting a drag from them.
+const ROW_CONTROL_CLASS = 'nodrag pointer-events-auto';
+
+interface StageRowProps {
+  readonly element: UISchemaElement;
+  readonly editor: FlowEditor | null;
+}
+
+/** A Form row's name — under an editor, a button that opens the Form (doc 196 rule 13). */
+function FormRowName({ element, editor }: StageRowProps) {
+  const label = labelOf(element, 'Form');
+  const content = (
+    <>
+      <Icon path={mdiFileDocumentOutline} size="16px" className="shrink-0 text-muted-foreground" />
+      <span className="truncate">{label}</span>
+    </>
+  );
+  if (!editor) return <span className="flex min-w-0 flex-1 items-center gap-1.5">{content}</span>;
+
+  const open = () => editor.onGesture({ type: 'open', formId: editor.idOf(element) });
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    open();
+  };
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${label}`}
+      data-slot="stage-form-open"
+      className={`${ROW_CONTROL_CLASS} flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/30`}
+      onClick={open}
+      onKeyDown={onKeyDown}
+    >
+      {content}
+    </div>
+  );
+}
+
 /** One child of a Stage card: a Form by its label, anything else by its type, in red. */
-function StageRow({ element }: { readonly element: UISchemaElement }) {
+function StageRow({ element, editor }: StageRowProps) {
   if (element.type !== FORM_TYPE) {
     return (
       <li data-slot="stage-invalid-row" className="px-2 py-1 text-sm text-destructive">
@@ -27,8 +69,18 @@ function StageRow({ element }: { readonly element: UISchemaElement }) {
       data-slot="stage-form-row"
       className="flex items-center gap-1.5 rounded-md border bg-background px-2 py-1.5 text-sm"
     >
-      <Icon path={mdiFileDocumentOutline} size="16px" className="shrink-0 text-muted-foreground" />
-      <span className="truncate">{labelOf(element, 'Form')}</span>
+      <FormRowName element={element} editor={editor} />
+      {editor ? (
+        <button
+          type="button"
+          aria-label={`Delete ${labelOf(element, 'Form')}`}
+          data-slot="stage-form-delete"
+          className={`${ROW_CONTROL_CLASS} shrink-0 rounded-sm text-muted-foreground hover:text-destructive`}
+          onClick={() => editor.onGesture({ type: 'remove', elementId: editor.idOf(element) })}
+        >
+          <Icon path={mdiDeleteOutline} size="14px" />
+        </button>
+      ) : null}
     </li>
   );
 }
@@ -36,10 +88,12 @@ function StageRow({ element }: { readonly element: UISchemaElement }) {
 /**
  * The Stage layout renderer (doc 195 rules 13-14). Outside a Flow it renders a placement error. Inside one — dispatched
  * by the Flow's Stage node — a card: the Stage's label, then a row per child in order. The child Forms are listed, never
- * dispatched, so a Stage never renders a Form inside a layout.
+ * dispatched, so a Stage never renders a Form inside a layout. Under a Flow editor each Form row opens its Form and has a
+ * Delete button (doc 196 rules 10, 13).
  */
 function StageLayout({ uischema, visible }: LayoutProps) {
   const flow = useContext(FlowContext);
+  const editor = useFlowEditor();
   if (!flow) {
     return (
       <p role="alert" data-slot="stage-placement-error" className="text-sm text-destructive">
@@ -65,7 +119,7 @@ function StageLayout({ uischema, visible }: LayoutProps) {
       ) : (
         <ul className="flex flex-col gap-1.5 p-2">
           {children.map((child, index) => (
-            <StageRow key={index} element={child} />
+            <StageRow key={index} element={child} editor={editor} />
           ))}
         </ul>
       )}

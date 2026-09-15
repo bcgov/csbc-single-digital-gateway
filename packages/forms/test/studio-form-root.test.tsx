@@ -9,6 +9,8 @@ import { FormStudio } from '../src/studio';
 import { applyLayout } from '../src/studio/layout/apply-layout';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import type { TreeElement } from '../src/studio/layout/element-tree';
+import { insertElement } from '../src/studio/layout/insert-element';
+import { newPropertyKey } from '../src/studio/layout/schema-properties';
 import { buildTemplate, PALETTE_TEMPLATES } from '../src/studio/palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 
@@ -128,13 +130,16 @@ describe('Form Studio Form root (doc 192)', () => {
       expect(rootGridTexts().at(-1)).toBe('Heading');
     });
 
-    it('offers no Form palette template', () => {
-      const types = PALETTE_TEMPLATES.map(
-        ({ key }) => buildTemplate(key, STUDIO_SAMPLE_SCHEMA)?.element.type,
+    it('offers a Form palette template only in the Flow group (doc 196 rule 17)', () => {
+      const formTemplates = PALETTE_TEMPLATES.filter(
+        ({ key }) => buildTemplate(key, STUDIO_SAMPLE_SCHEMA)?.element.type === 'Form',
       );
-      expect(types).toHaveLength(PALETTE_TEMPLATES.length);
-      expect(types).not.toContain('Form');
-      expect(PALETTE_TEMPLATES.map(({ key }) => key)).not.toContain('form');
+      expect(formTemplates.map(({ key, group }) => [key, group])).toEqual([['form', 'flow']]);
+      // No layout accepts it (doc 195 rule 16), so a Form document can never gain a nested Form from the palette.
+      const ids = createElementIds();
+      const document = { schema: STUDIO_SAMPLE_SCHEMA, uischema: STUDIO_SAMPLE_UISCHEMA };
+      const target = { gridId: ids.idOf(STUDIO_SAMPLE_UISCHEMA) };
+      expect(insertElement(document, 'form', target, ids, newPropertyKey).inserted).toBeUndefined();
     });
 
     it('shows only the Label setting in the inspector for the selected Form root', async () => {

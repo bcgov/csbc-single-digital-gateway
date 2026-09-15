@@ -10,10 +10,16 @@ import {
 } from 'react';
 import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement, StudioSelection } from '../renderers/studio/studio-selection';
+import type { FlowEditor } from '../renderers/xyflow/flow-editor';
+import { useSelectionFlowEditor } from './use-flow-document';
 
 /** What selection needs from the studio document (`useStudioDocument`). */
 export interface SelectableDocument {
   readonly editor: GridEditor;
+  /** The Flow editor writing Flow gestures to the document (doc 196). */
+  readonly flowEditor: FlowEditor;
+  /** The Form the canvas shows for `selectedId`, or `null` (doc 196 rule 12). */
+  canvasRootOf(selectedId: string | null): string | null;
   /** Replaced when a new seed document resets the studio, and with it the element ids. */
   readonly seed: object;
   /** Every element below the root by studio id, with its uischema type. */
@@ -77,6 +83,7 @@ interface PointerSelectionOptions {
   readonly active: boolean;
   readonly confirming: boolean;
   readonly parentOf: (elementId: string) => string | null;
+  readonly canvasRootOf: (selectedId: string | null) => string | null;
   readonly setHovered: IdSetter;
   readonly setSelected: IdSetter;
   readonly setPressing: (pressing: boolean) => void;
@@ -100,7 +107,15 @@ const insidePanelForm = (target: EventTarget | null) =>
  */
 function usePointerSelection(
   rootRef: RefObject<HTMLElement | null>,
-  { active, confirming, parentOf, setHovered, setSelected, setPressing }: PointerSelectionOptions,
+  {
+    active,
+    confirming,
+    parentOf,
+    canvasRootOf,
+    setHovered,
+    setSelected,
+    setPressing,
+  }: PointerSelectionOptions,
 ) {
   useEffect(() => {
     const root = rootRef.current;
@@ -119,7 +134,8 @@ function usePointerSelection(
       const target = pointerTargetOf(event.target, root);
       if (target.kind !== 'outside') setPressing(true);
       if (target.kind === 'item') setSelected(target.id);
-      else if (target.kind === 'canvas') setSelected(null);
+      // Doc 196 rule 14: a press on empty canvas keeps a drilled-in Form, and clears anything else.
+      else if (target.kind === 'canvas') setSelected((current) => canvasRootOf(current));
     };
     const onUp = () => setPressing(false);
     const onKeyDown = (event: KeyboardEvent) => {
@@ -141,7 +157,7 @@ function usePointerSelection(
       document.removeEventListener('pointercancel', onUp, true);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [rootRef, active, confirming, parentOf, setHovered, setSelected, setPressing]);
+  }, [rootRef, active, confirming, parentOf, canvasRootOf, setHovered, setSelected, setPressing]);
 }
 
 /** Rules 21-23: the pending delete, and the studio-lifetime "Don't ask me again" flag. */
@@ -200,6 +216,7 @@ export function useStudioSelection(
     elementTypes,
     rootId,
     parentOf,
+    canvasRootOf,
   } = studio;
   // Insert gestures read the latest document through a ref, so the Grid editor keeps its identity and grids never
   // reload merely because the document changed (doc 189 rule 25).
@@ -212,9 +229,15 @@ export function useStudioSelection(
     active,
     confirming,
     parentOf,
+    canvasRootOf,
     setHovered,
     setSelected,
     setPressing,
+  });
+  const flowEditor = useSelectionFlowEditor(studio.flowEditor, {
+    select: setSelected,
+    requestDelete: confirmation.request,
+    setGesturing,
   });
 
   const known = (id: string | null) => id !== null && (id === rootId || elementTypes.has(id));
@@ -270,5 +293,5 @@ export function useStudioSelection(
     [addToDocument, selectedId],
   );
 
-  return { port, editor, confirmation, hover, select: setSelected, pressing, add };
+  return { port, editor, flowEditor, confirmation, hover, select: setSelected, pressing, add };
 }

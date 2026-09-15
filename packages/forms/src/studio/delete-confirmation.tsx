@@ -11,7 +11,8 @@ import {
 import { Checkbox } from '@repo/ui/checkbox';
 import { Label } from '@repo/ui/label';
 import { useId, useState } from 'react';
-import { isGridLayoutType } from '../renderers/gridstack/grid-layouts';
+import { FORM_TYPE, isGridLayoutType } from '../renderers/gridstack/grid-layouts';
+import { STAGE_TYPE } from '../renderers/xyflow/flow-elements';
 import type { PendingDelete } from './use-studio-selection';
 
 interface DeleteConfirmationProps {
@@ -23,9 +24,15 @@ interface DeleteConfirmationProps {
 const DESCRIPTION = 'This element will be removed from the form.';
 const GRID_DESCRIPTION = 'This grid and everything inside it will be removed from the form.';
 const LAYOUT_DESCRIPTION = 'This layout and everything inside it will be removed from the form.';
+const STAGE_DESCRIPTION =
+  'This stage, its forms and its connections will be removed from the flow.';
+const FORM_DESCRIPTION = 'This form and everything inside it will be removed from its stage.';
 
-/** Rule 21: a Grid and the other gridstack layouts say their children go too. */
+/** Rule 21: a Grid and the other gridstack layouts say their children go too; a Stage and a Form in one say theirs (doc 196). */
 function descriptionFor(elementType: string | undefined): string {
+  if (elementType === STAGE_TYPE) return STAGE_DESCRIPTION;
+  // Only a Form in a Stage can be deleted — a root Form has no delete action.
+  if (elementType === FORM_TYPE) return FORM_DESCRIPTION;
   if (elementType === 'Grid') return GRID_DESCRIPTION;
   return elementType !== undefined && isGridLayoutType(elementType)
     ? LAYOUT_DESCRIPTION

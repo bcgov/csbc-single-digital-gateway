@@ -23,11 +23,13 @@ function PaletteItemEntry({ item }: { readonly item: PaletteItemElement }) {
   const authoredIcon = item.options?.icon;
   const icon =
     typeof authoredIcon === 'string' && authoredIcon.length > 0 ? authoredIcon : mdiShapeOutline;
+  // Doc 196 rule 17: `options.dragIn: false` items (a Flow's Stage and Form) are activated only, never dragged in.
+  const dragIn = item.options?.['dragIn'] !== false;
 
   useEffect(() => {
     const element = ref.current;
-    return element ? setupGridDragIn(element, template) : undefined;
-  }, [template]);
+    return element && dragIn ? setupGridDragIn(element, template) : undefined;
+  }, [template, dragIn]);
 
   // Rule 9: Enter and Space activate like a button; Space would otherwise scroll the panel.
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

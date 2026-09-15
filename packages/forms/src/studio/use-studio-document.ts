@@ -8,6 +8,7 @@ import { applyInspector } from './inspector/apply-inspector';
 import type { InspectorValues } from './inspector/inspector-fields';
 import { inspectorForm, type InspectorForm } from './inspector/inspector-form';
 import { applyLayout, applyMove } from './layout/apply-layout';
+import { canvasFocusId } from './layout/canvas-focus';
 import { copyElement } from './layout/copy-element';
 import { addTargetId, insertElement, type InsertTarget } from './layout/insert-element';
 import { createElementIds, type ElementIds } from './layout/element-ids';
@@ -16,8 +17,9 @@ import { findById, findParentById, type TreeElement } from './layout/element-tre
 import { removeElement } from './layout/remove-element';
 import { carryIdsByPath } from './layout/carry-ids-by-path';
 import { newPropertyKey } from './layout/schema-properties';
-import { buildTemplate } from './palette/palette-templates';
+import { buildTemplate, isFlowTemplate } from './palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
+import { useFlowDocument, type UischemaUpdate } from './use-flow-document';
 
 interface StudioDocumentSource {
   schema?: JsonSchema | undefined;
@@ -115,6 +117,27 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
 
   const { schema: currentSchema, uischema: currentUischema } = current;
   const elementTypes = useMemo(() => typesById(currentUischema, ids), [currentUischema, ids]);
+
+  const updateUischema = useCallback<UischemaUpdate>((update) => {
+    setState((previous) => {
+      const next = update(previous.uischema);
+      return next === previous.uischema ? previous : { ...previous, uischema: next };
+    });
+  }, []);
+  // Doc 196: Flow gestures and Stage / Form inserts.
+  const { flowEditor, insertFlow } = useFlowDocument(ids, updateUischema, currentUischema);
+
+  /** The element with `elementId` in the document, or `undefined`. */
+  const elementOf = useCallback(
+    (elementId: string) => findById(currentUischema as TreeElement, elementId, ids),
+    [currentUischema, ids],
+  );
+
+  /** Doc 196 rule 12: the Form the canvas shows for `selectedId`, or `null` for the whole document. */
+  const canvasRootOf = useCallback(
+    (selectedId: string | null) => canvasFocusId(currentUischema, selectedId, ids),
+    [currentUischema, ids],
+  );
   // The root's id follows immutable updates because ids are carried (doc 186 rule 6).
   const rootId = ids.idOf(currentUischema);
 
@@ -166,11 +189,13 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [insertInto],
   );
 
-  /** A clicked palette template, placed next to `selectedId` (doc 189 rules 22, 24). */
+  /** A clicked palette template, placed next to `selectedId` (doc 189 rules 22, 24); Stage and Form go to the Flow (doc 196 rule 20). */
   const add = useCallback(
     (template: string, selectedId: string | null) =>
-      insertInto(template, { gridId: addTargetId(currentUischema, selectedId, ids) }),
-    [insertInto, currentUischema, ids],
+      isFlowTemplate(template)
+        ? insertFlow(template, selectedId)
+        : insertInto(template, { gridId: addTargetId(currentUischema, selectedId, ids) }),
+    [insertFlow, insertInto, currentUischema, ids],
   );
 
   const remove = useCallback(
@@ -235,10 +260,13 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     uischema: currentUischema,
     seed: current.seed,
     editor,
+    flowEditor,
     elementTypes,
     rootId,
     parentOf,
     pathOf,
+    elementOf,
+    canvasRootOf,
     inspectorFor,
     updateElement,
     replaceDocument,

@@ -3,12 +3,13 @@ import type {
   JsonFormsRendererRegistryEntry,
   UISchemaElement,
 } from '@jsonforms/core';
-import { useContext, type ComponentType } from 'react';
+import { useContext, useRef, type ComponentType } from 'react';
 import { useGridEditor } from '../gridstack/grid-editor';
-import { FLOW_TYPE } from '../xyflow/flow-elements';
+import { FLOW_TYPE, STAGE_TYPE } from '../xyflow/flow-elements';
 import { StudioContent } from './studio-content';
 import { StudioItemContext } from './studio-item-context';
 import { useSelectionPort } from './studio-selection';
+import { StudioStageActions } from './studio-stage-actions';
 
 interface FramedProps {
   uischema?: UISchemaElement;
@@ -26,7 +27,8 @@ interface FramedProps {
  *
  * Under the Form Studio's selection port and Grid editor (doc 186 rules 1-2, 5) a frame — in practice the
  * root element's — carries `data-element-id` plus `data-hovered` / `data-selected`, which recolour its
- * outline like a grid item's. It never shows an actions popover: the root cannot be copied or deleted.
+ * outline like a grid item's. The root never shows an actions popover: it cannot be copied or deleted. A Stage's frame
+ * shows its Delete-only popover (doc 196 rule 9).
  */
 export function withStudioFrame<P extends FramedProps>(
   Renderer: ComponentType<P>,
@@ -36,6 +38,7 @@ export function withStudioFrame<P extends FramedProps>(
     const insideGridItem = useContext(StudioItemContext);
     const selection = useSelectionPort();
     const editor = useGridEditor();
+    const frameRef = useRef<HTMLDivElement>(null);
     if (insideGridItem) return <Renderer {...props} />;
 
     const type = props.uischema?.type ?? 'Element';
@@ -48,6 +51,7 @@ export function withStudioFrame<P extends FramedProps>(
     const fill = type === FLOW_TYPE ? 'h-full ' : '';
     return (
       <div
+        ref={frameRef}
         data-slot="studio-element"
         data-element-type={type}
         data-element-id={id}
@@ -60,6 +64,14 @@ export function withStudioFrame<P extends FramedProps>(
         <StudioContent type={type}>
           <Renderer {...disabled} />
         </StudioContent>
+        {type === STAGE_TYPE && selection && id !== undefined ? (
+          <StudioStageActions
+            elementId={id}
+            open={(hovered || selected) && !selection.gesturing}
+            frameRef={frameRef}
+            selection={selection}
+          />
+        ) : null}
       </div>
     );
   }

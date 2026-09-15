@@ -12,7 +12,11 @@ export const STAGE_NODE_TYPE = 'stage';
 export type StageNodeData = { element: UISchemaElement };
 export type StageFlowNode = Node<StageNodeData, typeof STAGE_NODE_TYPE>;
 
-/** Rule 8: one node per Stage in `elements` order, at its rule 12 position, carrying its element. */
+/**
+ * Rule 8: one node per Stage in `elements` order, at its rule 12 position, carrying its element. Nodes are never
+ * selected or deleted by xyflow (doc 196 rules 4, 7): the studio selects Stages through its own port, and an editable
+ * Flow turns `elementsSelectable` on only so its edges can be selected and deleted.
+ */
 export function toFlowNodes(flow: UISchemaElement): StageFlowNode[] {
   const positions = stagePositions(flow);
   return drawnStages(flow).map(({ element, id }) => ({
@@ -20,6 +24,8 @@ export function toFlowNodes(flow: UISchemaElement): StageFlowNode[] {
     type: STAGE_NODE_TYPE,
     position: positions.get(id) ?? { x: 0, y: 0 },
     data: { element },
+    selectable: false,
+    deletable: false,
   }));
 }
 

@@ -1,96 +1,21 @@
-import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
-import { JsonForms } from '@jsonforms/react';
 import { useMemo, useRef, useState, type FC } from 'react';
-import * as defaultSet from '../renderers/default/index';
-import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid-editor';
-import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
-import * as studioSet from '../renderers/studio/index';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
-import {
-  StudioSelectionProvider,
-  type StudioSelection,
-} from '../renderers/studio/studio-selection';
 import type { FormStudioProps } from '../types/index';
 import { StudioCodePanel } from './code/studio-code-panel';
 import { DeleteConfirmation } from './delete-confirmation';
 import { useDockPanel } from './dock-panels';
 import { DockToggles } from './dock-toggles';
 import { PreviewToggle } from './preview-toggle';
-import { STUDIO_SAMPLE_DATA } from './sample';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
+import { StudioCanvas } from './studio-canvas';
 import { StudioInspector } from './studio-inspector';
 import { StudioPalette } from './studio-palette';
 import { StudioWorkspace } from './studio-workspace';
 import { useInspectorPanel } from './use-inspector-panel';
+import { usePreviewFocus } from './use-preview-focus';
 import { usePreviewMode } from './use-preview-mode';
 import { useStudioDocument } from './use-studio-document';
 import { useStudioSelection } from './use-studio-selection';
-
-// Built once at module load — a new array per render would make JSONForms re-dispatch everything.
-const STUDIO_RENDERERS = [
-  ...studioSet.controlRenderers,
-  ...studioSet.displayRenderers,
-  ...studioSet.layoutRenderers,
-];
-const PREVIEW_RENDERERS = [
-  ...defaultSet.controlRenderers,
-  ...defaultSet.displayRenderers,
-  ...defaultSet.layoutRenderers,
-];
-
-const ROOT_MESSAGE = 'The root element must be a Form or a Flow.';
-/** Doc 192 rule 7, doc 195 rule 21: the uischema types a studio document's root may have. */
-const ROOT_TYPES: ReadonlySet<string> = new Set([FORM_TYPE, FLOW_TYPE]);
-
-interface StudioCanvasProps {
-  readonly schema: JsonSchema;
-  readonly uischema: UISchemaElement;
-  readonly previewing: boolean;
-  readonly selection: StudioSelection;
-  readonly editor: GridEditor;
-}
-
-/**
- * The centre panel's content: the document through the studio renderers, or through the fillable default renderers
- * in preview (doc 184) — or, when the root is neither a Form nor a Flow, the root error in its place in both (doc 192
- * rule 7, doc 195 rule 21).
- */
-function StudioCanvas({ schema, uischema, previewing, selection, editor }: StudioCanvasProps) {
-  if (!ROOT_TYPES.has(uischema.type)) {
-    return (
-      <p role="alert" data-slot="form-studio-root-error" className="text-sm text-destructive">
-        {ROOT_MESSAGE}
-      </p>
-    );
-  }
-  if (previewing) {
-    return (
-      <JsonForms
-        key="preview"
-        schema={schema}
-        uischema={uischema}
-        data={STUDIO_SAMPLE_DATA}
-        renderers={PREVIEW_RENDERERS}
-        cells={defaultSet.cells}
-      />
-    );
-  }
-  return (
-    <StudioSelectionProvider value={selection}>
-      <GridEditorProvider value={editor}>
-        <JsonForms
-          key="studio"
-          schema={schema}
-          uischema={uischema}
-          data={STUDIO_SAMPLE_DATA}
-          renderers={STUDIO_RENDERERS}
-          cells={studioSet.cells}
-          validationMode="NoValidation"
-        />
-      </GridEditorProvider>
-    </StudioSelectionProvider>
-  );
-}
 
 /**
  * The Form Studio shell: a fixed 36px header, a content area that flexes to fill whatever is
@@ -109,8 +34,11 @@ function StudioCanvas({ schema, uischema, previewing, selection, editor }: Studi
  * The studio owns that document (doc 183): `schema`/`uischema` props seed it (else the built-in
  * sample), a different object resets it, and every finished drag, resize or cross-grid move is written
  * back to the uischema through the Grid editor port. Its root must be a Form (doc 192) or a Flow (doc 195): any other
- * root shows an error in the canvas and preview instead, and the code editor only applies Form or Flow roots. A Flow
- * draws as a view-only canvas of its Stages; preview shows it as not yet fillable.
+ * root shows an error in the canvas and preview instead, and the code editor only applies Form or Flow roots.
+ *
+ * A Flow is edited on its canvas through the Flow editor port (doc 196): Stages drag, handles connect, selected edges
+ * delete, and a Stage's popover or a Form row deletes. Selecting a Form in a Stage drills in — the canvas shows that
+ * Form — and selecting its Stage or Flow, or Escape, backs out. Preview of a drilled-in Form previews that Form alone.
  *
  * Grid items can be hovered and selected, and copied or deleted from their actions popover (doc 185)
  * through the studio selection port; deletes are confirmed unless the author opted out. The root element
@@ -124,9 +52,10 @@ function StudioCanvas({ schema, uischema, previewing, selection, editor }: Studi
  * validation, so authoring a constraint such as Required never paints data errors on the inert design
  * surface; preview still validates (doc 187 rule 25b).
  *
- * The left dock panel holds the palette (doc 189): every element the studio renders, searchable and grouped. An item
- * dragged onto a grid lands where it is dropped; one clicked or activated with the keyboard lands next to the
- * selection. Either way it arrives with a default configuration and is selected.
+ * The left dock panel holds the palette (doc 189): every element the studio renders, searchable and grouped — in a
+ * Flow's view, only Stage and Form (doc 196 rule 17). An item dragged onto a grid lands where it is dropped; one clicked
+ * or activated with the keyboard lands next to the selection. Either way it arrives with a default configuration and is
+ * selected.
  *
  * The bottom dock panel holds the code editors (doc 191): the schema and uischema as JSON, side by side, with
  * completion from the studio's metaschemas. Monaco loads the first time the panel opens and the editors stay mounted
@@ -145,19 +74,28 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
     right: useDockPanel('right'),
     bottom: useDockPanel('bottom'),
   };
-  const { previewing, setPreviewing } = usePreviewMode(panels);
-  const { port, editor, confirmation, hover, select, pressing, add } = useStudioSelection(
-    rootRef,
-    !previewing,
-    studio,
-  );
-  const paletteActions = useMemo(() => ({ add }), [add]);
+  const mode = usePreviewMode(panels);
+  const { port, editor, flowEditor, confirmation, hover, select, pressing, add } =
+    useStudioSelection(rootRef, !mode.previewing, studio);
   const { selectedId } = port;
+  const focusId = studio.canvasRootOf(selectedId);
+  const { previewing, previewFocusId, setPreviewing } = usePreviewFocus({
+    ...mode,
+    focusId,
+    select,
+    contains: (elementId) => studio.elementOf(elementId) !== undefined,
+  });
+  const paletteActions = useMemo(() => ({ add }), [add]);
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right);
   const segments = studio.pathOf(selectedId);
   // Doc 191 rule 3: nothing of Monaco loads until the bottom panel first opens.
   const [codeOpened, setCodeOpened] = useState(false);
   if (panels.bottom.open && !codeOpened) setCodeOpened(true);
+
+  // Doc 196 rules 12, 16-17: what the canvas and preview render, and which palette view applies.
+  const rootOf = (elementId: string | null) =>
+    (elementId === null ? undefined : studio.elementOf(elementId)) ?? studio.uischema;
+  const paletteView = studio.uischema.type === FLOW_TYPE && focusId === null ? 'flow' : 'form';
 
   return (
     <div ref={rootRef} data-slot="form-studio" className="flex h-full flex-col">
@@ -171,7 +109,7 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
         <StudioWorkspace
           panels={panels}
-          left={previewing ? null : <StudioPalette actions={paletteActions} />}
+          left={previewing ? null : <StudioPalette actions={paletteActions} view={paletteView} />}
           right={
             previewing ? null : (
               <StudioInspector
@@ -195,9 +133,13 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
           <StudioCanvas
             schema={studio.schema}
             uischema={studio.uischema}
+            canvasRoot={rootOf(focusId)}
+            previewRoot={rootOf(previewFocusId)}
+            rootKey={(previewing ? previewFocusId : focusId) ?? 'document'}
             previewing={previewing}
             selection={port}
             editor={editor}
+            flowEditor={flowEditor}
           />
         </StudioWorkspace>
       </div>
