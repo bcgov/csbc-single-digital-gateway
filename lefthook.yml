@@ -16,3 +16,5 @@ pre-push:
       run: npm run typecheck
     test:
       run: npm run test
+    lockfile-platforms:
+      run: node scripts/check-lockfile-platforms.mjs

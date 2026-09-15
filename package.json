@@ -12,6 +12,7 @@
     "build": "turbo run build",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
     "dev": "turbo run dev",
+    "fix:lockfile": "bash scripts/fix-lockfile-platforms.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "oxlint",
