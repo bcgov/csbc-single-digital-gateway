@@ -80,3 +80,60 @@ describe('GridFreeEngine — dragging (rule 21d)', () => {
     expect(own.w).toBe(6);
   });
 });
+
+/**
+ * A node entering from another grid, as gridstack hands it over on the first drag step: the clone keeps the source
+ * width, and its item holds the node it had in the source grid (`w` of `fromColumns`).
+ */
+const movedIn = (w: number, fromColumns: number, extra: Partial<DragNode> = {}): DragNode => ({
+  w,
+  h: 4,
+  _isExternal: true,
+  _temporaryRemoved: true,
+  el: {
+    _gridstackNodeOrig: { w, grid: { getColumn: () => fromColumns } },
+  } as unknown as NonNullable<DragNode['el']>,
+  ...extra,
+});
+
+describe('GridFreeEngine — moved in from another layout (doc 183 rule 12c)', () => {
+  it('converts a full-width VerticalLayout item (1 of 1 columns) to the whole grid (12 of 12)', () => {
+    const node = movedIn(1, 1);
+    new GridFreeEngine({ column: 12 }).nodeBoundFix(node);
+    expect(node.w).toBe(12);
+  });
+
+  it('converts by the target grid’s own column count (6 of 12 → 3 of a 6-column grid)', () => {
+    const node = movedIn(6, 12);
+    new GridFreeEngine({ column: 6 }).nodeBoundFix(node);
+    expect(node.w).toBe(3);
+  });
+
+  it('keeps the converted width on every later nodeBoundFix of the same drag (never compounds)', () => {
+    const engine = new GridFreeEngine({ column: 12 });
+    const node = movedIn(1, 3);
+
+    engine.nodeBoundFix(node);
+    expect(node.w).toBe(4);
+    engine.nodeBoundFix(node);
+    expect(node.w).toBe(4);
+  });
+
+  it('leaves a palette item to rule 21c even when it carries a source node', () => {
+    const node = movedIn(1, 1, { dragInTemplate: 'text' });
+    new GridFreeEngine({ column: 12 }).nodeBoundFix(node);
+    expect(node.w).toBe(6);
+  });
+
+  it('leaves an entering node alone when its item has no source node', () => {
+    const node: DragNode = {
+      w: 2,
+      h: 4,
+      _isExternal: true,
+      _temporaryRemoved: true,
+      el: {} as NonNullable<DragNode['el']>,
+    };
+    new GridFreeEngine({ column: 12 }).nodeBoundFix(node);
+    expect(node.w).toBe(2);
+  });
+});
