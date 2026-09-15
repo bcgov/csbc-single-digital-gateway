@@ -58,11 +58,22 @@ const isNumber = (ctx: InspectorContext) => ctx.controlKind === 'number';
 const STRING: JsonSchema = Object.freeze({ type: 'string' });
 const BOOLEAN: JsonSchema = Object.freeze({ type: 'boolean' });
 const NUMBER: JsonSchema = Object.freeze({ type: 'number' });
-const HEADING_SCALE = { minimum: 1, maximum: 6 };
 const integer = (bounds: { minimum?: number; maximum?: number }): JsonSchema => ({
   type: 'number',
   ...bounds,
   multipleOf: 1,
+});
+
+/**
+ * Rule 11b: every whole number from `minimum` to `maximum` as a oneOf titled by the number, so renderers/ui renders
+ * a Combobox rather than a NumberInput.
+ */
+const wholeNumbers = (minimum: number, maximum: number): JsonSchema => ({
+  type: 'number',
+  oneOf: Array.from({ length: Math.max(0, maximum - minimum + 1) }, (_unused, index) => ({
+    const: minimum + index,
+    title: String(minimum + index),
+  })),
 });
 
 type Applies = (ctx: InspectorContext) => boolean;
@@ -228,17 +239,14 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
         ),
       ),
   },
-  optionField('level', 'appearance', 'Heading level', isHeading, integer(HEADING_SCALE), finite),
-  optionField('size', 'appearance', 'Heading size', isHeading, integer(HEADING_SCALE), finite),
+  optionField('level', 'appearance', 'Heading level', isHeading, wholeNumbers(1, 6), finite),
+  optionField('size', 'appearance', 'Heading size', isHeading, wholeNumbers(1, 6), finite),
   {
     key: 'columns',
     section: 'layout',
     label: 'Columns',
     applies: (ctx) => ctx.layoutKind === 'grid' || ctx.layoutKind === 'horizontal',
-    schema: (ctx) =>
-      ctx.layoutKind === 'grid'
-        ? integer({ minimum: 1, maximum: 12 })
-        : integer({ minimum: 2, maximum: 6 }),
+    schema: (ctx) => (ctx.layoutKind === 'grid' ? wholeNumbers(1, 12) : wholeNumbers(2, 6)),
     read: (ctx) => finite(optionsOf(ctx.element)[columnsOption(ctx)]),
     write: (ctx, edit, value) =>
       setElement(edit, withOption(edit.element, columnsOption(ctx), value)),
@@ -248,7 +256,7 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     section: 'layout',
     label: 'Width',
     applies: (ctx) => ctx.maxWidth !== undefined,
-    schema: (ctx) => integer({ minimum: 1, maximum: ctx.maxWidth ?? 1 }),
+    schema: (ctx) => wholeNumbers(1, ctx.maxWidth ?? 1),
     read: (ctx) => {
       const gridItem = optionsOf(ctx.element)['gridItem'];
       return finite(isRecord(gridItem) ? gridItem['w'] : undefined);

@@ -24,15 +24,18 @@ const inInspector = () => {
 };
 const field = (name: string) => inInspector().getByRole<HTMLInputElement>('textbox', { name });
 const toggle = (name: string) => inInspector().getByRole('switch', { name });
-const component = () =>
-  inInspector().getByRole<HTMLInputElement>('combobox', { name: 'Component' });
+const combobox = (name: string) => inInspector().getByRole<HTMLInputElement>('combobox', { name });
+const component = () => combobox('Component');
 
-/** Picks `name` from the inspector's Component combobox (doc 188 rule 26) — keyboard-opened, see the trap above. */
-async function pickComponent(name: string) {
-  const input = component();
+/**
+ * Picks `option` from the inspector combobox named `name` (Component, doc 188 rule 26; whole-number settings, rule
+ * 11b) — keyboard-opened, see the trap above.
+ */
+async function pick(name: string, option: string) {
+  const input = combobox(name);
   input.focus();
   fireEvent.keyDown(input, { key: 'ArrowDown' });
-  fireEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name }));
+  fireEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name: option }));
 }
 const rightToggle = () => screen.getByRole('button', { name: 'Right panel' });
 const canvasField = (name: string | RegExp) => screen.getByRole('textbox', { name });
@@ -151,7 +154,7 @@ describe('inspector content (rules 9, 14, 23-24)', () => {
     expect(field('Label')).toHaveAttribute('placeholder', 'Name');
     select(city);
     await waitFor(() => expect(field('Label')).toHaveAttribute('placeholder', 'City'));
-    expect(field('Width')).toHaveValue('8');
+    expect(combobox('Width')).toHaveValue('8');
   });
 });
 
@@ -177,7 +180,7 @@ describe('live editing (rules 15-21)', () => {
   it('turns the canvas field into a textarea from the Component combobox', async () => {
     const { name } = await renderStudio();
     select(name);
-    await pickComponent('Textarea');
+    await pick('Component', 'Textarea');
     await waitFor(() => expect(canvasField('Name').tagName).toBe('TEXTAREA'));
   });
 
@@ -185,17 +188,17 @@ describe('live editing (rules 15-21)', () => {
     await renderStudio();
     select(itemOf(screen.getByRole('combobox', { name: 'Province' })));
     expect(component()).toHaveValue('Combobox');
-    await pickComponent('Radio group');
+    await pick('Component', 'Radio group');
     await waitFor(() =>
       expect(screen.getByRole('radiogroup', { name: 'Province' })).toBeInTheDocument(),
     );
   });
 
-  it("changes the canvas heading's level", async () => {
-    const user = userEvent.setup();
+  it("changes the canvas heading's level from its combobox (rule 11b)", async () => {
     const { greeting } = await renderStudio();
     select(greeting);
-    await typeNumber(user, field('Heading level'), '3');
+    expect(combobox('Heading level')).toHaveValue('1');
+    await pick('Heading level', '3');
     await waitFor(() =>
       expect(
         screen.getByRole('heading', { level: 3, name: 'Hello, FormStudio!' }),
@@ -203,11 +206,10 @@ describe('live editing (rules 15-21)', () => {
     );
   });
 
-  it("writes Width to a Grid child's placement", async () => {
-    const user = userEvent.setup();
+  it("writes Width to a Grid child's placement from its combobox (rule 11b)", async () => {
     const { city } = await renderStudio();
     select(city);
-    await typeNumber(user, field('Width'), '6');
+    await pick('Width', '6');
     await waitFor(() => expect(city.closest('.grid-stack-item')).toHaveAttribute('gs-w', '6'));
   });
 

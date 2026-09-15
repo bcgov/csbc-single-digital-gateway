@@ -135,6 +135,15 @@ describe('fields per element (rules 8-10)', () => {
 const orientationOf = (form: ReturnType<typeof formFor>['form'], key: string) =>
   fieldControl(form, key)?.options?.['orientation'];
 
+/** The expected field schema of a finite whole-number setting (rule 11b). */
+const wholeNumbers = (minimum: number, maximum: number) => ({
+  type: 'number',
+  oneOf: Array.from({ length: maximum - minimum + 1 }, (_unused, index) => ({
+    const: minimum + index,
+    title: String(minimum + index),
+  })),
+});
+
 describe('horizontal number fields (rule 9b)', () => {
   it('lays every number field out horizontally', () => {
     const number = formFor(qty).form;
@@ -228,63 +237,50 @@ describe('field schemas and hints (rules 11-12)', () => {
     expect(fieldSchema(number, 'maximum')).toEqual({ type: 'number' });
     expect(fieldSchema(number, 'step')).toEqual({ type: 'number', exclusiveMinimum: 0 });
 
+    // Rule 11b: finite whole-number settings are number oneOfs, which renderers/ui renders as a Combobox.
     const headingForm = formFor(heading).form;
     for (const key of ['level', 'size']) {
-      expect(fieldSchema(headingForm, key)).toEqual({
-        type: 'number',
-        minimum: 1,
-        maximum: 6,
-        multipleOf: 1,
-      });
+      expect(fieldSchema(headingForm, key)).toEqual(wholeNumbers(1, 6));
     }
-    expect(fieldSchema(formFor(row).form, 'columns')).toEqual({
-      type: 'number',
-      minimum: 2,
-      maximum: 6,
-      multipleOf: 1,
-    });
+    expect(fieldSchema(formFor(row).form, 'columns')).toEqual(wholeNumbers(2, 6));
     const outer = el({ type: 'VerticalLayout', elements: [grid] });
-    expect(fieldSchema(formFor(grid, outer).form, 'columns')).toEqual({
-      type: 'number',
-      minimum: 1,
-      maximum: 12,
-      multipleOf: 1,
-    });
+    expect(fieldSchema(formFor(grid, outer).form, 'columns')).toEqual(wholeNumbers(1, 12));
+  });
+
+  it('titles each whole-number option with its number, ascending (rule 11b)', () => {
+    expect(fieldSchema(formFor(heading).form, 'level')?.oneOf).toEqual([
+      { const: 1, title: '1' },
+      { const: 2, title: '2' },
+      { const: 3, title: '3' },
+      { const: 4, title: '4' },
+      { const: 5, title: '5' },
+      { const: 6, title: '6' },
+    ]);
   });
 
   it("bounds width by the parent Grid's columns, else 12", () => {
-    expect(fieldSchema(formFor(name).form, 'width')).toEqual({
-      type: 'number',
-      minimum: 1,
-      maximum: 12,
-      multipleOf: 1,
-    });
+    expect(fieldSchema(formFor(name).form, 'width')).toEqual(wholeNumbers(1, 12));
     const child = el({ type: 'Heading', text: 'x' });
     const inGrid = (options: object) =>
       el({ type: 'VerticalLayout', elements: [el({ type: 'Grid', options, elements: [child] })] });
-    expect(fieldSchema(formFor(child, inGrid({ column: 6 })).form, 'width')).toMatchObject({
-      maximum: 6,
-    });
-    expect(fieldSchema(formFor(child, inGrid({ column: 'x' })).form, 'width')).toMatchObject({
-      maximum: 12,
-    });
+    expect(fieldSchema(formFor(child, inGrid({ column: 6 })).form, 'width')).toEqual(
+      wholeNumbers(1, 6),
+    );
+    expect(fieldSchema(formFor(child, inGrid({ column: 'x' })).form, 'width')).toEqual(
+      wholeNumbers(1, 12),
+    );
   });
 
   it('bounds width in a HorizontalLayout by the columns the other children leave free', () => {
     // columns 4, the other child is 1 wide → 3.
-    expect(fieldSchema(formFor(rowQty).form, 'width')).toEqual({
-      type: 'number',
-      minimum: 1,
-      maximum: 3,
-      multipleOf: 1,
-    });
+    expect(fieldSchema(formFor(rowQty).form, 'width')).toEqual(wholeNumbers(1, 3));
     const full = el({
       type: 'HorizontalLayout',
       options: { columns: 2 },
       elements: [el({ type: 'Heading', text: 'a', options: { gridItem: { w: 2 } } }), rowQty],
     });
     const doc = el({ type: 'VerticalLayout', elements: [full] });
-    expect(fieldSchema(formFor(rowQty, doc).form, 'width')).toMatchObject({ maximum: 1 });
+    expect(fieldSchema(formFor(rowQty, doc).form, 'width')).toEqual(wholeNumbers(1, 1));
   });
 
   it("hints a Control's Label with its property title and describes a layout's Label", () => {
