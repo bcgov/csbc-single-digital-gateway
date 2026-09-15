@@ -8,11 +8,15 @@
  * Hover and selection (doc 185 rules 3, 6) are flags on the content box's single child, the studio grid
  * item root: hovered turns the outline the ring colour, still dashed; selected turns it ring and solid.
  *
+ * Every studio grid is at least 48px tall (doc 189 rule 28), so an empty layout is still a drop target for palette
+ * items; CSS `min-height` wins over the height gridstack writes inline.
+ *
  * Written out in full, not composed from a shared prefix: Tailwind only generates classes it finds
  * as literal strings in the source.
  */
 export const STUDIO_GRID_CLASS = [
   'form-studio-grid',
+  'min-h-12',
   '[&>.grid-stack-item>.grid-stack-item-content]:rounded-sm',
   '[&>.grid-stack-item>.grid-stack-item-content]:border',
   '[&>.grid-stack-item>.grid-stack-item-content]:border-dashed',

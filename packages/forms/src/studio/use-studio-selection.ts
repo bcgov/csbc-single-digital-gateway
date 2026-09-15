@@ -2,12 +2,13 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type RefObject,
   type SetStateAction,
 } from 'react';
-import type { GridEditor } from '../renderers/gridstack/grid-editor';
+import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement, StudioSelection } from '../renderers/studio/studio-selection';
 
 /** What selection needs from the studio document (`useStudioDocument`). */
@@ -22,6 +23,10 @@ export interface SelectableDocument {
   /** The id of the element holding `elementId`; `null` for the root or an unknown id. */
   parentOf(elementId: string): string | null;
   copy(elementId: string, placement: StudioItemPlacement): string | undefined;
+  /** Inserts a dropped palette template (doc 189 rule 25): the new element's id, or `undefined` when refused. */
+  insert(gesture: Extract<GridGesture, { type: 'insert' }>): string | undefined;
+  /** Inserts a clicked palette template next to `selectedId` (doc 189 rule 24). */
+  add(template: string, selectedId: string | null): string | undefined;
   remove(elementId: string): void;
 }
 
@@ -77,9 +82,13 @@ interface PointerSelectionOptions {
   readonly setPressing: (pressing: boolean) => void;
 }
 
-/** Whether a key event came from inside the inspector, where Escape belongs to its fields (doc 187 rule 29). */
-const insideInspector = (target: EventTarget | null) =>
-  target instanceof Element && target.closest('[data-studio-inspector]') !== null;
+/**
+ * Whether a key event came from inside the inspector or the palette, where Escape belongs to their fields (doc 187
+ * rule 29, doc 189 rule 27).
+ */
+const insidePanelForm = (target: EventTarget | null) =>
+  target instanceof Element &&
+  target.closest('[data-studio-inspector], [data-studio-palette]') !== null;
 
 /**
  * Document listeners turning pointer and key events into hover and selection (doc 185 rules 2, 5, 7; doc
@@ -114,7 +123,7 @@ function usePointerSelection(
     };
     const onUp = () => setPressing(false);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || confirming || insideInspector(event.target)) return;
+      if (event.key !== 'Escape' || confirming || insidePanelForm(event.target)) return;
       setSelected((current) => (current === null ? null : parentOf(current)));
     };
 
@@ -184,7 +193,20 @@ export function useStudioSelection(
     setSelected(null);
     setGesturing(false);
   }
-  const { copy, editor: documentEditor, elementTypes, rootId, parentOf } = studio;
+  const {
+    copy,
+    add: addToDocument,
+    editor: documentEditor,
+    elementTypes,
+    rootId,
+    parentOf,
+  } = studio;
+  // Insert gestures read the latest document through a ref, so the Grid editor keeps its identity and grids never
+  // reload merely because the document changed (doc 189 rule 25).
+  const latest = useRef(studio);
+  useEffect(() => {
+    latest.current = studio;
+  });
   const confirming = confirmation.pending !== null;
   usePointerSelection(rootRef, {
     active,
@@ -218,7 +240,12 @@ export function useStudioSelection(
       idOf: (element) => documentEditor.idOf(element),
       onGesture: (gesture) => {
         setGesturing(false);
-        documentEditor.onGesture(gesture);
+        if (gesture.type === 'insert') {
+          const insertedId = latest.current.insert(gesture);
+          if (insertedId !== undefined) setSelected(insertedId);
+        } else {
+          documentEditor.onGesture(gesture);
+        }
       },
       onGestureActive: setGesturing,
     }),
@@ -232,5 +259,14 @@ export function useStudioSelection(
     [gesturing],
   );
 
-  return { port, editor, confirmation, hover, select: setSelected, pressing };
+  /** Doc 189 rules 24-25: a clicked palette template lands next to the selection, and becomes the selection. */
+  const add = useCallback(
+    (template: string) => {
+      const insertedId = addToDocument(template, selectedId);
+      if (insertedId !== undefined) setSelected(insertedId);
+    },
+    [addToDocument, selectedId],
+  );
+
+  return { port, editor, confirmation, hover, select: setSelected, pressing, add };
 }

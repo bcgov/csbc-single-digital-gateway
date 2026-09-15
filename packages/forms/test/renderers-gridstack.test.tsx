@@ -10,6 +10,7 @@ import {
 } from '../src/renderers-gridstack';
 import * as ui from '../src/renderers-ui';
 import { buildComponentMap } from '../src/renderers/gridstack/create-grid-renderers';
+import { GridFreeEngine } from '../src/renderers/gridstack/grid-free-engine';
 import {
   buildGridStackOptions,
   resolveSizeToContent,
@@ -133,6 +134,7 @@ describe('GridStack options mapping', () => {
     // neighbours 1rem apart (doc 180 rule 8).
     // animate: false — items mount one row tall and grow to their content; animated, every item
     // below slides into place (doc 184, user decision: all fillable forms).
+    // engineClass — a free Grid widens palette items entering it (doc 189 rule 21c).
     expect(build()).toEqual({
       column: 12,
       cellHeight: '1rem',
@@ -140,6 +142,7 @@ describe('GridStack options mapping', () => {
       animate: false,
       staticGrid: true,
       sizeToContent: false,
+      engineClass: GridFreeEngine,
       children: [],
     });
     expect(resolveSizeToContent(undefined)).toBe(true);

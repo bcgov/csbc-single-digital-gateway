@@ -4,6 +4,7 @@ import { GridStack, type ComponentMap, type GridStackHandle } from 'gridstack/di
 import { useCallback, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import type { GridStackLayoutOptions } from '../../types/elements';
 import { GridContext, type GridContextValue } from './grid-context';
+import { DRAG_IN_ATTRIBUTE } from './grid-drag-in';
 import { useGridEditor } from './grid-editor';
 import { useGridGestures } from './grid-gestures';
 import { rowHasRoom, type GridLayoutKind } from './grid-layouts';
@@ -71,12 +72,14 @@ export function createGridLayoutRenderer(
     const hasRoom = useRef(true);
     hasRoom.current = layout !== 'horizontal' || rowHasRoom(uischema.options, elements);
 
-    // Doc 183 rule 14: only grid items, and never one that contains this grid (a Grid into itself).
+    // Doc 183 rule 14: grid items, never one that contains this grid (a Grid into itself); doc 189 rule 13: and
+    // drag-in sources.
     const acceptWidgets = useCallback(
       (el: Element) =>
         hasRoom.current &&
-        el.matches('.grid-stack-item') &&
-        !el.contains(gridHandle.current?.getGrid()?.el ?? null),
+        (el.matches('.grid-stack-item')
+          ? !el.contains(gridHandle.current?.getGrid()?.el ?? null)
+          : el.hasAttribute(DRAG_IN_ATTRIBUTE)),
       [],
     );
     const idOf = useMemo(
@@ -127,6 +130,13 @@ export function createGridLayoutRenderer(
     useLayoutEffect(() => {
       unlinkFromParentGrid(gridHandle.current);
     }, [visible]);
+    // Doc 183 rule 16c (doc 189 bug B4): gridstack 13.2.0's updateOptions reloads `children` only when non-empty, so a
+    // Grid whose last element was removed would keep that widget as an undeletable empty item. The wrapper's
+    // updateOptions (a child layout effect) has run by now; remove whatever gridstack still holds.
+    useLayoutEffect(() => {
+      const grid = gridHandle.current?.getGrid();
+      if (grid && elements.length === 0 && grid.engine.nodes.length > 0) grid.removeAll(true);
+    }, [elements]);
     useGridGestures(gridHandle, editor, uischema, visible);
 
     if (!visible) return null;

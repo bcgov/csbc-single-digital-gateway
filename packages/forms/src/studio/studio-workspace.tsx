@@ -29,6 +29,8 @@ export interface StudioWorkspaceProps {
   readonly panels: Readonly<Record<DockPanelId, DockPanel>>;
   /** Centre canvas content. */
   readonly children?: ReactNode;
+  /** Left dock panel content — the palette (doc 189). */
+  readonly left?: ReactNode;
   /** Right dock panel content — the inspector (doc 187). */
   readonly right?: ReactNode;
 }
@@ -47,6 +49,7 @@ export interface StudioWorkspaceProps {
  */
 export const StudioWorkspace: FC<StudioWorkspaceProps> = ({
   panels,
+  left: leftContent,
   right: rightContent,
   children,
 }) => {
@@ -60,7 +63,7 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({
     <ResizablePanelGroup orientation="vertical" onLayoutChanged={bottom.syncLayout}>
       <ResizablePanel minSize="20%">
         <ResizablePanelGroup orientation="horizontal" onLayoutChanged={syncRow}>
-          <DockPanelView dock={left} />
+          <DockPanelView dock={left}>{leftContent}</DockPanelView>
           {left.open && <ResizableHandle className="-ml-px" />}
           <ResizablePanel minSize="20%">
             <div data-slot="form-studio-center-panel" className="h-full overflow-auto p-4">

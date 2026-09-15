@@ -1,5 +1,5 @@
 import { JsonForms } from '@jsonforms/react';
-import { useRef, type FC } from 'react';
+import { useMemo, useRef, type FC } from 'react';
 import * as defaultSet from '../renderers/default/index';
 import { GridEditorProvider } from '../renderers/gridstack/grid-editor';
 import * as studioSet from '../renderers/studio/index';
@@ -12,6 +12,7 @@ import { PreviewToggle } from './preview-toggle';
 import { STUDIO_SAMPLE_DATA } from './sample';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
 import { StudioInspector } from './studio-inspector';
+import { StudioPalette } from './studio-palette';
 import { StudioWorkspace } from './studio-workspace';
 import { useInspectorPanel } from './use-inspector-panel';
 import { usePreviewMode } from './use-preview-mode';
@@ -60,6 +61,10 @@ const PREVIEW_RENDERERS = [
  * validation, so authoring a constraint such as Required never paints data errors on the inert design
  * surface; preview still validates (doc 187 rule 25b).
  *
+ * The left dock panel holds the palette (doc 189): every element the studio renders, searchable and grouped. An item
+ * dragged onto a grid lands where it is dropped; one clicked or activated with the keyboard lands next to the
+ * selection. Either way it arrives with a default configuration and is selected.
+ *
  * The play toggle switches to preview (doc 184): the panel toggles go, open panels close, and the same
  * document renders through the fillable `renderers/default` without the Grid editor or selection — in
  * its own `JsonForms`, so anything typed is discarded when preview ends.
@@ -73,11 +78,12 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
     bottom: useDockPanel('bottom'),
   };
   const { previewing, setPreviewing } = usePreviewMode(panels);
-  const { port, editor, confirmation, hover, select, pressing } = useStudioSelection(
+  const { port, editor, confirmation, hover, select, pressing, add } = useStudioSelection(
     rootRef,
     !previewing,
     studio,
   );
+  const paletteActions = useMemo(() => ({ add }), [add]);
   const { selectedId } = port;
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right);
   const segments = studio.pathOf(selectedId);
@@ -94,6 +100,7 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
         <StudioWorkspace
           panels={panels}
+          left={previewing ? null : <StudioPalette actions={paletteActions} />}
           right={
             previewing ? null : (
               <StudioInspector

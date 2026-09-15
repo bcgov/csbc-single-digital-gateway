@@ -1,6 +1,7 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import type { GridStackMoveOpts, GridStackNode } from 'gridstack';
 import { describe, expect, it } from 'vitest';
+import { GridFreeEngine } from '../src/renderers/gridstack/grid-free-engine';
 import { buildGridStackOptions } from '../src/renderers/gridstack/grid-options';
 import { GridRowEngine } from '../src/renderers/gridstack/grid-row-engine';
 
@@ -152,9 +153,9 @@ describe('row engine wiring (rules 27, 30b)', () => {
       layout,
     });
 
-  it('gives only a HorizontalLayout grid the row engine', () => {
+  it('gives a HorizontalLayout the row engine and a Grid the free engine (doc 189 rule 21c)', () => {
     expect(build('horizontal').engineClass).toBe(GridRowEngine);
-    expect(build('grid')).not.toHaveProperty('engineClass');
+    expect(build('grid').engineClass).toBe(GridFreeEngine);
     expect(build('vertical')).not.toHaveProperty('engineClass');
   });
 });

@@ -109,8 +109,11 @@ function layoutRow(
   );
 }
 
-/** Lays out `grid` by its layout type (rules 11-13, 12b); `arrived` is an element just moved into it. */
-function layoutGrid(
+/**
+ * Lays out `grid` by its layout type (rules 11-13, 12b); `arrived` is an element just moved — or, from the palette,
+ * inserted (doc 189 rule 21) — into it.
+ */
+export function layoutGrid(
   grid: Element,
   nodes: readonly LayoutNode[],
   ids: ElementIds,

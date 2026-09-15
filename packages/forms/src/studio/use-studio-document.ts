@@ -7,6 +7,7 @@ import type { InspectorValues } from './inspector/inspector-fields';
 import { inspectorForm, type InspectorForm } from './inspector/inspector-form';
 import { applyLayout, applyMove } from './layout/apply-layout';
 import { copyElement } from './layout/copy-element';
+import { addTargetId, insertElement, type InsertTarget } from './layout/insert-element';
 import { createElementIds, type ElementIds } from './layout/element-ids';
 import { pathSegments, type PathSegment } from './layout/element-path';
 import { findParentById, type TreeElement } from './layout/element-tree';
@@ -71,6 +72,8 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
 
   const onGesture = useCallback(
     (gesture: GridGesture) => {
+      // An insert creates an element selection must pick, so the selection editor routes it to `insert` (doc 189).
+      if (gesture.type === 'insert') return;
       setState((previous) => ({
         ...previous,
         uischema:
@@ -120,6 +123,33 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [currentSchema, currentUischema, ids],
   );
 
+  // Inserts into the rendered document, like `copy`, so the new element's id can be returned — and selected — at once
+  // (doc 189 rules 20-25).
+  const insertInto = useCallback(
+    (template: string, target: InsertTarget): string | undefined => {
+      const document = { schema: currentSchema, uischema: currentUischema };
+      const result = insertElement(document, template, target, ids, newPropertyKey);
+      if (!result.inserted) return undefined;
+      setState((previous) => ({ ...previous, schema: result.schema, uischema: result.uischema }));
+      return ids.idOf(result.inserted);
+    },
+    [currentSchema, currentUischema, ids],
+  );
+
+  /** A palette template dropped on a grid (doc 189 rule 21). */
+  const insert = useCallback(
+    ({ template, gridId, placement, nodes }: Extract<GridGesture, { type: 'insert' }>) =>
+      insertInto(template, { gridId, placement, nodes }),
+    [insertInto],
+  );
+
+  /** A clicked palette template, placed next to `selectedId` (doc 189 rules 22, 24). */
+  const add = useCallback(
+    (template: string, selectedId: string | null) =>
+      insertInto(template, { gridId: addTargetId(currentUischema, selectedId, ids) }),
+    [insertInto, currentUischema, ids],
+  );
+
   const remove = useCallback(
     (elementId: string) => {
       setState((previous) => ({
@@ -164,6 +194,8 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     inspectorFor,
     updateElement,
     copy,
+    insert,
+    add,
     remove,
   };
 }

@@ -37,6 +37,12 @@
       "import": "./dist/renderers-studio-inspector.js",
       "require": "./dist/renderers-studio-inspector.cjs"
     },
+    "./renderers/studio-palette": {
+      "types": "./dist/renderers-studio-palette.d.ts",
+      "development": "./src/renderers-studio-palette.ts",
+      "import": "./dist/renderers-studio-palette.js",
+      "require": "./dist/renderers-studio-palette.cjs"
+    },
     "./renderers/ui": {
       "types": "./dist/renderers-ui.d.ts",
       "development": "./src/renderers-ui.ts",

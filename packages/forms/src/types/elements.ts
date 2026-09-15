@@ -116,6 +116,34 @@ export interface HorizontalLayoutElement extends Layout {
   options?: HorizontalLayoutOptions & { [key: string]: unknown };
 }
 
+/** `{ type: 'PaletteItem' }` — one draggable, activatable Form Studio palette entry (doc 189). */
+export interface PaletteItemElement extends BaseUISchemaElement {
+  type: 'PaletteItem';
+  /** The catalogue key the item inserts. */
+  template: string;
+  label: string;
+  options?: {
+    /** An `@mdi/js` icon path; ignored unless a non-empty string. */
+    icon?: string;
+    /** Extra search terms; entries that are not strings are ignored. */
+    keywords?: string[];
+    [key: string]: unknown;
+  };
+}
+
+/** `{ type: 'PaletteGroup' }` — a labelled group of palette items (doc 189). */
+export interface PaletteGroupElement extends Layout {
+  type: 'PaletteGroup';
+  label: string;
+  elements: PaletteItemElement[];
+}
+
+/** `{ type: 'PaletteEmpty' }` — the palette's message when the search matches nothing (doc 189). */
+export interface PaletteEmptyElement extends BaseUISchemaElement {
+  type: 'PaletteEmpty';
+  text: string;
+}
+
 /** GridStack options a consumer may pass to the factory — the widgets always come from `elements`. */
 export type GridStackLayoutOptions = Omit<GridStackOptions, 'children' | 'subGridOpts'>;
 

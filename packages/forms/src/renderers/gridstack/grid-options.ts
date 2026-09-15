@@ -6,6 +6,7 @@ import type {
   GridStackLayoutOptions,
 } from '../../types/elements';
 import { horizontalColumns, horizontalWidth, type GridLayoutKind } from './grid-layouts';
+import { GridFreeEngine } from './grid-free-engine';
 import { GridRowEngine } from './grid-row-engine';
 
 /** The components-map key every Grid child widget renders through (doc 180 rule 10). */
@@ -213,7 +214,11 @@ function layoutOptions(
     };
   }
   return {
-    forced: pickDefined(elementOptions, GRID_ELEMENT_OPTION_KEYS) as GridElementOptions,
+    // Doc 189 rule 21c: the free-grid engine widens palette items as they enter, so the placeholder shows the drop.
+    forced: {
+      ...(pickDefined(elementOptions, GRID_ELEMENT_OPTION_KEYS) as GridElementOptions),
+      engineClass: GridFreeEngine,
+    },
     widgetLayout: GRID_WIDGET_LAYOUT,
   };
 }

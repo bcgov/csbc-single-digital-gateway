@@ -27,6 +27,14 @@ export type GridGesture =
       toGridId: string;
       fromNodes: LayoutNode[];
       toNodes: LayoutNode[];
+    }
+  | {
+      /** A drag-in source (doc 189 rules 12-14) dropped into a grid; `nodes` is every OTHER item of that grid. */
+      type: 'insert';
+      template: string;
+      gridId: string;
+      placement: { x: number; y: number; w: number };
+      nodes: LayoutNode[];
     };
 
 /**
