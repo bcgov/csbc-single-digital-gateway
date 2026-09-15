@@ -3,8 +3,12 @@ import { JsonForms } from '@jsonforms/react';
 import { act, render, screen } from '@testing-library/react';
 import type { GridHTMLElement, GridItemHTMLElement } from 'gridstack';
 import { describe, expect, it } from 'vitest';
-import * as defaults from '../src/renderers-default';
-import { GridEditorProvider, type GridEditor } from '../src/renderers-gridstack';
+import {
+  createGridRenderers,
+  GridEditorProvider,
+  type GridEditor,
+} from '../src/renderers-gridstack';
+import * as ui from '../src/renderers-ui';
 import { rowHasRoom } from '../src/renderers/gridstack/grid-layouts';
 import { createElementIds } from '../src/studio/layout/element-ids';
 
@@ -16,14 +20,17 @@ const schema: JsonSchema = { type: 'object', properties: {} };
 const heading = (text: string, gridItem?: object) =>
   ({ type: 'Heading', text, ...(gridItem ? { options: { gridItem } } : {}) }) as UISchemaElement;
 
+// Doc 193 rule 3: gridstack layouts live in the factory (and renderers/studio), no longer in renderers/default.
+const grid = createGridRenderers();
+
 function renderRow(uischema: object, editor?: GridEditor) {
   const form = (
     <JsonForms
       schema={schema}
       uischema={uischema as UISchemaElement}
       data={{}}
-      renderers={[...defaults.displayRenderers, ...defaults.layoutRenderers]}
-      cells={defaults.cells}
+      renderers={[...ui.displayRenderers, ...grid.layoutRenderers]}
+      cells={ui.cells}
     />
   );
   return render(editor ? <GridEditorProvider value={editor}>{form}</GridEditorProvider> : form);
@@ -46,14 +53,14 @@ describe('HorizontalLayout item height (bug B3)', () => {
     });
     await screen.findByRole('heading', { name: 'Right' });
     await act(async () => {});
-    const grid = rootOf(container)?.gridstack;
+    const gridstack = rootOf(container)?.gridstack;
     const item = screen
       .getByRole('heading', { name: 'Left' })
       .closest<GridItemHTMLElement>('.grid-stack-item');
 
-    expect(grid?.opts.maxRow).toBe(0);
+    expect(gridstack?.opts.maxRow).toBe(0);
     act(() => {
-      if (item) grid?.update(item, { h: 5 });
+      if (item) gridstack?.update(item, { h: 5 });
     });
     expect(item?.gridstackNode?.h).toBe(5);
     expect(item?.gridstackNode?.y).toBe(0);

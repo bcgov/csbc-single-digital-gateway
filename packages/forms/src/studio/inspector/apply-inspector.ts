@@ -1,13 +1,9 @@
 import type { ElementIds } from '../layout/element-ids';
 import { updateById, type TreeElement } from '../layout/element-tree';
 import type { StudioDocument } from '../layout/schema-properties';
+import { fieldAccepts } from './field-accepts';
 import { inspectorContext } from './inspector-context';
-import {
-  fieldAccepts,
-  fieldsFor,
-  type InspectorEdit,
-  type InspectorValues,
-} from './inspector-fields';
+import { fieldsFor, type InspectorEdit, type InspectorValues } from './inspector-fields';
 
 /**
  * Writes inspector values back into the document (doc 187 rules 15-22). Each applicable field whose value

@@ -1,4 +1,10 @@
 import type { JsonSchema } from '@jsonforms/core';
+import {
+  DEFAULT_LAYOUT_GAP,
+  GAP_REM,
+  LAYOUT_GAPS,
+  layoutGapOf,
+} from '../../renderers/gridstack/layout-gap';
 import type { TreeElement } from '../layout/element-tree';
 import type { ControlKind, InspectorContext } from './inspector-context';
 import {
@@ -73,6 +79,15 @@ const wholeNumbers = (minimum: number, maximum: number): JsonSchema => ({
   oneOf: Array.from({ length: Math.max(0, maximum - minimum + 1) }, (_unused, index) => ({
     const: minimum + index,
     title: String(minimum + index),
+  })),
+});
+
+/** Doc 193 rule 13: the gap names as a string combobox, titled with their size. */
+const GAP_SCHEMA: JsonSchema = Object.freeze({
+  type: 'string',
+  oneOf: LAYOUT_GAPS.map((gap) => ({
+    const: gap,
+    title: gap === 'none' ? 'None' : `${gap.toUpperCase()} · ${GAP_REM[gap]}rem`,
   })),
 });
 
@@ -252,6 +267,20 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
       setElement(edit, withOption(edit.element, columnsOption(ctx), value)),
   },
   {
+    // Doc 193 rules 13-14: every layout kind; shows the effective gap, and the default removes `options.gap`.
+    key: 'gap',
+    section: 'layout',
+    label: 'Gap',
+    applies: (ctx) => ctx.layoutKind !== undefined,
+    schema: () => GAP_SCHEMA,
+    read: (ctx) => layoutGapOf(optionsOf(ctx.element)),
+    write: (_ctx, edit, value) =>
+      setElement(
+        edit,
+        withOption(edit.element, 'gap', value === DEFAULT_LAYOUT_GAP ? undefined : value),
+      ),
+  },
+  {
     key: 'width',
     section: 'layout',
     label: 'Width',
@@ -268,25 +297,4 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
 /** The fields that apply to the element, in rendered order (rules 9-10). */
 export function fieldsFor(ctx: InspectorContext): InspectorField[] {
   return INSPECTOR_FIELDS.filter((field) => field.applies(ctx));
-}
-
-/**
- * Whether `value` satisfies a field schema (rule 16): one of its `oneOf` consts when it has any (doc 188 rule 29),
- * its JSON type and, for numbers, `minimum`, `maximum`, `exclusiveMinimum` and `multipleOf`. Clearing
- * (`undefined`) is always accepted.
- */
-export function fieldAccepts(schema: JsonSchema, value: unknown): boolean {
-  if (value === undefined) return true;
-  if (Array.isArray(schema.oneOf) && !schema.oneOf.some((entry) => entry.const === value))
-    return false;
-  if (schema.type === 'string') return typeof value === 'string';
-  if (schema.type === 'boolean') return typeof value === 'boolean';
-  if (schema.type !== 'number' || typeof value !== 'number' || !Number.isFinite(value))
-    return false;
-
-  const { minimum, maximum, exclusiveMinimum, multipleOf } = schema;
-  if (typeof minimum === 'number' && value < minimum) return false;
-  if (typeof maximum === 'number' && value > maximum) return false;
-  if (typeof exclusiveMinimum === 'number' && value <= exclusiveMinimum) return false;
-  return typeof multipleOf !== 'number' || Number.isInteger(value / multipleOf);
 }

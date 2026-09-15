@@ -1,3 +1,4 @@
+import { LAYOUT_GAPS } from '../../../renderers/gridstack/layout-gap';
 import { deepFreeze } from './deep-freeze';
 
 // The Form Studio uischema metaschema (doc 191 rule 13). Per-type keys live in `if`/`then` branches on `type`, so
@@ -11,6 +12,13 @@ const ELEMENTS = {
 
 const positiveNumber = (description: string) =>
   ({ description, type: 'number', exclusiveMinimum: 0 }) as const;
+
+// Doc 193 rule 16: the same gap scale the renderers and the inspector read.
+const GAP = {
+  description:
+    "Space between this layout's children: none 0, xs 0.25rem, sm 0.5rem, md 1rem (default), lg 1.5rem, xl 2rem.",
+  enum: LAYOUT_GAPS,
+} as const;
 
 const whenType = <T extends object>(type: string, then: T) =>
   ({
@@ -59,10 +67,7 @@ const GRID = whenType('Grid', {
           description: 'The height of one row, e.g. "1rem" or 16.',
           type: ['number', 'string'],
         },
-        margin: {
-          description: 'The gap around each item, e.g. "0.5rem" or 8.',
-          type: ['number', 'string'],
-        },
+        gap: GAP,
         float: { description: 'Let items float up into empty rows.', type: 'boolean' },
         minRow: { description: 'The fewest rows the grid shows.', type: 'integer', minimum: 0 },
         maxRow: {
@@ -77,7 +82,10 @@ const GRID = whenType('Grid', {
 
 const VERTICAL_LAYOUT = whenType('VerticalLayout', {
   required: ['elements'],
-  properties: { elements: ELEMENTS },
+  properties: {
+    elements: ELEMENTS,
+    options: { description: 'Column options.', type: 'object', properties: { gap: GAP } },
+  },
 });
 
 const HORIZONTAL_LAYOUT = whenType('HorizontalLayout', {
@@ -94,6 +102,7 @@ const HORIZONTAL_LAYOUT = whenType('HorizontalLayout', {
           minimum: 2,
           maximum: 6,
         },
+        gap: GAP,
       },
     },
   },
@@ -168,7 +177,7 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
         elements: ELEMENTS,
         label: { description: 'A name for the form, shown in the element path.', type: 'string' },
         rule: { $ref: '#/definitions/rule' },
-        options: { description: 'Form options. A Form reads none of its own.', type: 'object' },
+        options: { description: 'Form options.', type: 'object', properties: { gap: GAP } },
       },
     },
     element: {

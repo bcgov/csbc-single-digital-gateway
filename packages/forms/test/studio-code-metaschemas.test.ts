@@ -109,6 +109,41 @@ describe('UISCHEMA_METASCHEMA Form root (doc 192 rule 11)', () => {
   });
 });
 
+describe('UISCHEMA_METASCHEMA layout gap (doc 193 rule 16)', () => {
+  const GAPS = ['none', 'xs', 'sm', 'md', 'lg', 'xl'];
+  const LAYOUTS = ['Grid', 'VerticalLayout', 'HorizontalLayout'];
+
+  it('accepts every gap name on Form, Grid, VerticalLayout and HorizontalLayout', () => {
+    for (const gap of GAPS) {
+      const nested = LAYOUTS.map((type) => ({ type, options: { gap }, elements: [] }));
+      expect(uischemaOk({ type: 'Form', options: { gap }, elements: nested }), gap).toBe(true);
+    }
+  });
+
+  it('rejects an unknown gap name and a numeric gap', () => {
+    for (const type of LAYOUTS) {
+      expect(uischemaOk(root({ type, options: { gap: 'huge' }, elements: [] })), type).toBe(false);
+      expect(uischemaOk(root({ type, options: { gap: 8 }, elements: [] })), type).toBe(false);
+    }
+    expect(uischemaOk({ type: 'Form', options: { gap: 'huge' }, elements: [] })).toBe(false);
+  });
+
+  it('no longer describes Grid margin, but still accepts it as an unknown option', () => {
+    type Branch = {
+      if: { properties: { type: { const: string } } };
+      then: { properties: { options?: { properties: Record<string, unknown> } } };
+    };
+    const branches = UISCHEMA_METASCHEMA.definitions.element.allOf as unknown as Branch[];
+    const grid = branches.find((branch) => branch.if.properties.type.const === 'Grid');
+    const gridOptions = grid?.then.properties.options?.properties ?? {};
+    expect(Object.keys(gridOptions)).toContain('gap');
+    expect(Object.keys(gridOptions)).not.toContain('margin');
+    expect(uischemaOk(root({ type: 'Grid', options: { margin: '0.5rem' }, elements: [] }))).toBe(
+      true,
+    );
+  });
+});
+
 describe('Form Studio code metaschemas (doc 191)', () => {
   describe('shared shape (rule 11)', () => {
     it('declares draft-07, is frozen, and gives every property a description', () => {

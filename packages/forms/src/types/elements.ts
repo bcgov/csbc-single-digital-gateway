@@ -1,6 +1,7 @@
 import type { BaseUISchemaElement, ControlElement, Layout } from '@jsonforms/core';
 import type { HeadingLevel } from '@repo/ui/heading';
 import type { ComponentMap, GridStackOptions, GridStackWidget } from 'gridstack/dist/react';
+import type { LayoutGap } from '../renderers/gridstack/layout-gap';
 
 /** `{ type: 'Heading' }` — a display element rendered by `@repo/ui`'s `Heading` (doc 180). */
 export interface HeadingElement extends BaseUISchemaElement {
@@ -75,11 +76,18 @@ export interface SwitchControlElement extends ControlElement {
   };
 }
 
-/** The GridStack options an authored `Grid` element may set — everything else is ignored. */
+/** The space between a layout's children (doc 193): 0 / 0.25 / 0.5 / 1 / 1.5 / 2rem; absent or unknown reads `md`. */
+export type LayoutGapOptions = { gap?: LayoutGap };
+
+/**
+ * The options an authored `Grid` element may set — everything else is ignored. `margin` is no longer read: the
+ * layout's `gap` sets it (doc 193 rule 11).
+ */
 export type GridElementOptions = Pick<
   GridStackOptions,
-  'column' | 'cellHeight' | 'margin' | 'float' | 'minRow' | 'maxRow'
->;
+  'column' | 'cellHeight' | 'float' | 'minRow' | 'maxRow'
+> &
+  LayoutGapOptions;
 
 /** Placement of one child inside its `Grid`, read from `child.options.gridItem`. */
 export type GridItemPlacement = Pick<
@@ -99,6 +107,7 @@ export interface GridElement extends Layout {
  */
 export interface VerticalLayoutElement extends Layout {
   type: 'VerticalLayout';
+  options?: LayoutGapOptions & { [key: string]: unknown };
 }
 
 /**
@@ -107,11 +116,11 @@ export interface VerticalLayoutElement extends Layout {
  */
 export interface FormElement extends Layout {
   type: 'Form';
-  options?: { [key: string]: unknown };
+  options?: LayoutGapOptions & { [key: string]: unknown };
 }
 
-/** The options a `HorizontalLayout` reads — everything else is ignored (doc 180 rule 27). */
-export interface HorizontalLayoutOptions {
+/** The options a `HorizontalLayout` reads — everything else is ignored (doc 180 rule 27, doc 193). */
+export interface HorizontalLayoutOptions extends LayoutGapOptions {
   /** Columns in the row, 2-6. Anything else falls back to the child count, clamped to 2-6. */
   columns?: 2 | 3 | 4 | 5 | 6;
 }

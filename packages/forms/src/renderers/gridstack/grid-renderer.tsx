@@ -9,6 +9,7 @@ import { retargetDropTarget } from './grid-drop-target';
 import { useGridEditor } from './grid-editor';
 import { useGridGestures } from './grid-gestures';
 import { rowHasRoom, type GridLayoutKind } from './grid-layouts';
+import { LayoutNestingContext } from './layout-nesting';
 import { buildGridStackOptions, gridElementId, resolveSizeToContent } from './grid-options';
 
 /**
@@ -148,15 +149,18 @@ export function createGridLayoutRenderer(
 
     if (!visible) return null;
 
+    // Doc 193 rule 10: everything below a layout is nested — a Form here shows its nested error.
     return (
-      <GridContext.Provider value={context}>
-        <GridStack
-          ref={gridHandle}
-          options={options}
-          components={components}
-          {...(className ? { className } : {})}
-        />
-      </GridContext.Provider>
+      <LayoutNestingContext.Provider value>
+        <GridContext.Provider value={context}>
+          <GridStack
+            ref={gridHandle}
+            options={options}
+            components={components}
+            {...(className ? { className } : {})}
+          />
+        </GridContext.Provider>
+      </LayoutNestingContext.Provider>
     );
   }
 

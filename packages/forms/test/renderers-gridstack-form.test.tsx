@@ -1,7 +1,6 @@
 import { NOT_APPLICABLE, type JsonSchema, type UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { act, render, screen, within } from '@testing-library/react';
-import type { GridHTMLElement } from 'gridstack';
 import { describe, it, expect } from 'vitest';
 import * as defaults from '../src/renderers-default';
 import { createGridRenderers } from '../src/renderers-gridstack';
@@ -15,7 +14,7 @@ import {
   layoutKindOf,
 } from '../src/renderers/gridstack/grid-layouts';
 
-// Doc 192 rules 1-5 — the gridstack Form renderer and tester.
+// Doc 192 rules 1-5 — the Form renderer and tester. Fillable forms render it as a CSS column (doc 193 rules 3, 10).
 
 const schema: JsonSchema = { type: 'object', properties: { name: { type: 'string' } } };
 const testerContext = { rootSchema: schema, config: {} };
@@ -49,19 +48,13 @@ async function settle(text: string) {
   await act(async () => {});
 }
 
-const rootOf = (container: HTMLElement) => container.querySelector<GridHTMLElement>('.grid-stack');
+const FILL_LAYOUT = '[data-slot="fill-layout"]';
 
-/** The root grid's engine nodes in reading order. */
-const nodesOf = (container: HTMLElement) =>
-  (rootOf(container)?.gridstack?.engine.nodes ?? [])
-    .map((node) => ({ text: node.el?.textContent, x: node.x, y: node.y, w: node.w }))
-    .toSorted((a, b) => (a.y ?? 0) - (b.y ?? 0));
-
-/** Tag names from the container down to the root `.grid-stack`. */
-function pathToGrid(container: HTMLElement): string[] {
+/** Tag names from the container down to the first element matching `selector`. */
+function tagPath(container: HTMLElement, selector: string): string[] {
   const path: string[] = [];
   for (
-    let node = rootOf(container)?.parentElement;
+    let node = container.querySelector(selector);
     node && node !== container;
     node = node.parentElement
   ) {
@@ -116,25 +109,27 @@ describe('gridstack Form renderer (doc 192)', () => {
   });
 
   describe('root rendering (rules 1, 4)', () => {
-    it('renders a root Form in default as the same one-column static grid as a VerticalLayout, in element order', async () => {
+    it('renders a root Form in default as the same CSS column as a VerticalLayout, in element order', async () => {
       const { container } = renderWith(
         defaults,
         el({ type: 'Form', elements: [heading('First'), heading('Second')] }),
       );
       await settle('Second');
-      const grid = rootOf(container);
-      expect(grid).toHaveClass('grid-stack-static');
-      expect(grid?.gridstack?.opts.column).toBe(1);
-      const nodes = nodesOf(container);
-      expect(nodes.map((node) => node.text)).toEqual(['First', 'Second']);
-      expect(nodes.every((node) => node.x === 0 && node.w === 1)).toBe(true);
-      expect(nodes[1]?.y).toBeGreaterThan(nodes[0]?.y ?? 0);
+      const column = container.querySelector<HTMLElement>(FILL_LAYOUT);
+      expect(column).toHaveAttribute('data-layout-type', 'Form');
+      expect(column).toHaveClass('flex', 'flex-col', 'gap-4');
+      expect(Array.from(column?.children ?? []).map((item) => item.textContent)).toEqual([
+        'First',
+        'Second',
+      ]);
+      expect(container.querySelector('.grid-stack')).toBeNull();
     });
 
     it('adds no DOM element of its own and no <form>', async () => {
       const form = renderWith(defaults, el({ type: 'Form', elements: [heading('Inside form')] }));
       await settle('Inside form');
-      const formPath = pathToGrid(form.container);
+      const formPath = tagPath(form.container, FILL_LAYOUT);
+      expect(formPath.length).toBeGreaterThan(0);
       expect(form.container.querySelector('form')).toBeNull();
       form.unmount();
 
@@ -143,7 +138,7 @@ describe('gridstack Form renderer (doc 192)', () => {
         el({ type: 'VerticalLayout', elements: [heading('Inside form')] }),
       );
       await settle('Inside form');
-      expect(formPath).toEqual(pathToGrid(stack.container));
+      expect(formPath).toEqual(tagPath(stack.container, FILL_LAYOUT));
     });
 
     it('ignores authored options and child gridItem keys exactly like a VerticalLayout', async () => {
@@ -152,17 +147,16 @@ describe('gridstack Form renderer (doc 192)', () => {
         el({
           type: 'Form',
           options: { column: 4, maxRow: 2, float: true },
-          elements: [heading('Placed', { x: 3, y: 5, w: 6 }), heading('Next')],
+          elements: [heading('Placed', { x: 3, y: 5, w: 6, h: 4 }), heading('Next')],
         }),
       );
       await settle('Next');
-      const grid = rootOf(container)?.gridstack;
-      expect(grid?.opts.column).toBe(1);
-      expect(grid?.opts.maxRow).toBe(0);
-      expect(nodesOf(container).map(({ text, x, w }) => ({ text, x, w }))).toEqual([
-        { text: 'Placed', x: 0, w: 1 },
-        { text: 'Next', x: 0, w: 1 },
-      ]);
+      const column = container.querySelector<HTMLElement>(FILL_LAYOUT);
+      expect(column).toHaveClass('flex', 'flex-col');
+      expect(column).not.toHaveClass('grid');
+      const items = Array.from(column?.children ?? []);
+      expect(items.map((item) => item.textContent)).toEqual(['Placed', 'Next']);
+      for (const item of items) expect(item.getAttribute('style')).toBeNull();
     });
 
     it('renders a root Form in studio as a draggable grid inside a frame marked data-element-type="Form"', async () => {
@@ -192,7 +186,7 @@ describe('gridstack Form renderer (doc 192)', () => {
         { name: 'hide' },
       );
       await act(async () => {});
-      expect(rootOf(container)).toBeNull();
+      expect(container.querySelector(FILL_LAYOUT)).toBeNull();
       expect(screen.queryByText('Hidden')).toBeNull();
     });
   });

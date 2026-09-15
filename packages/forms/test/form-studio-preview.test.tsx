@@ -85,7 +85,7 @@ describe('entering preview (rules 5-8)', () => {
     expect(slot('form-studio-bottom-panel')).toHaveAttribute('inert');
   });
 
-  it('renders the form with the fillable default renderers: no studio frames, static grids, enabled fields', async () => {
+  it('renders the form with the fillable default renderers: no studio frames, plain CSS layouts, enabled fields', async () => {
     const user = userEvent.setup();
     const { container } = renderStudio();
     await screen.findByRole('textbox', { name: 'Name' });
@@ -98,7 +98,9 @@ describe('entering preview (rules 5-8)', () => {
     expect(name.closest('[inert]')).toBeNull();
     expect(container.querySelector('[data-slot="studio-grid-item"]')).toBeNull();
     expect(container.querySelector('[data-slot="studio-element"]')).toBeNull();
-    expect(container.querySelector('.grid-stack')).toHaveClass('grid-stack-static');
+    // Doc 193 rule 3: fillable forms lay out with plain CSS, no gridstack.
+    expect(container.querySelector('.grid-stack')).toBeNull();
+    expect(container.querySelector('[data-slot="fill-layout"]')).not.toBeNull();
   });
 
   it("previews the studio's current document", async () => {
@@ -169,5 +171,22 @@ describe('leaving preview (rules 9-12)', () => {
 
     expect(await screen.findByRole('textbox', { name: 'Name' })).toBeDisabled();
     expect(container.querySelector('[data-slot="studio-grid-item"]')).not.toBeNull();
+  });
+
+  // Doc 193 rule 3 (supersedes doc 184 rules 7b-7d) — preview lays out with plain CSS; the studio keeps gridstack.
+  it('renders preview layouts with plain CSS and studio layouts with gridstack', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    const canvas = () => slot('form-studio-center-panel');
+    const count = (selector: string) => canvas()?.querySelectorAll(selector).length ?? 0;
+    await screen.findByRole('textbox', { name: 'Name' });
+    expect(count('.grid-stack')).toBeGreaterThan(1);
+    expect(count('[data-slot="fill-layout"]')).toBe(0);
+
+    await user.click(previewToggle());
+    await screen.findByRole('textbox', { name: 'Name' });
+
+    expect(count('.grid-stack, .grid-stack-item')).toBe(0);
+    expect(count('[data-slot="fill-layout"]')).toBeGreaterThan(1);
   });
 });

@@ -196,7 +196,11 @@ describe('Form Studio Form root (doc 192)', () => {
         />,
       );
       expect(await screen.findByRole('heading', { level: 1, name: 'Custom' })).toBeInTheDocument();
-      expect(container.querySelector('.grid-stack')).toHaveClass('grid-stack-static');
+      // Doc 193 rule 3: fillable forms lay out with plain CSS.
+      expect(
+        container.querySelector('[data-slot="fill-layout"][data-layout-type="VerticalLayout"]'),
+      ).not.toBeNull();
+      expect(container.querySelector('.grid-stack')).toBeNull();
       expect(screen.queryByRole('alert')).toBeNull();
     });
   });

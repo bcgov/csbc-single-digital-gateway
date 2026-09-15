@@ -12,6 +12,8 @@ import { GridRowEngine } from './grid-row-engine';
 /** The components-map key every Grid child widget renders through (doc 180 rule 10). */
 export const GRID_ELEMENT_COMPONENT = 'jsonforms-element';
 
+import { gridMarginFor, layoutGapOf } from './layout-gap';
+
 /**
  * Built-in defaults — a fillable form's grid is static and sizes items to their content.
  *
@@ -38,7 +40,6 @@ export const DEFAULT_GRID_OPTIONS: Readonly<GridStackLayoutOptions> = Object.fre
 const GRID_ELEMENT_OPTION_KEYS = [
   'column',
   'cellHeight',
-  'margin',
   'float',
   'minRow',
   'maxRow',
@@ -194,22 +195,26 @@ export function resolveSizeToContent(gridOptions: GridStackLayoutOptions | undef
  * force their axis (rules 25, 27). Neither caps its rows: gridstack's `maxRow` counts `cellHeight` rows
  * and clamps every item's height to it (bug B3). `maxRow: 0` is always emitted for them, because
  * `updateOptions` ignores an absent one and would keep a stale cap.
+ *
+ * Every layout forces `margin` from its `options.gap` (doc 193 rule 11), always emitted for the same reason, so a
+ * changed gap reaches a mounted grid; a Grid's authored `margin` is no longer read.
  */
 function layoutOptions(
   layout: GridLayoutKind,
   elements: readonly UISchemaElement[],
   elementOptions: unknown,
 ): { forced: GridStackOptions; widgetLayout: WidgetLayout } {
+  const margin = gridMarginFor(layoutGapOf(elementOptions));
   if (layout === 'vertical') {
     return {
-      forced: { column: 1, disableResize: true, maxRow: 0 },
+      forced: { column: 1, disableResize: true, maxRow: 0, margin },
       widgetLayout: { kind: 'vertical' },
     };
   }
   if (layout === 'horizontal') {
     const columns = horizontalColumns(elementOptions, elements.length);
     return {
-      forced: { column: columns, maxRow: 0, engineClass: GridRowEngine },
+      forced: { column: columns, maxRow: 0, margin, engineClass: GridRowEngine },
       widgetLayout: { kind: 'horizontal', columns },
     };
   }
@@ -217,6 +222,7 @@ function layoutOptions(
     // Doc 189 rule 21c: the free-grid engine widens palette items as they enter, so the placeholder shows the drop.
     forced: {
       ...(pickDefined(elementOptions, GRID_ELEMENT_OPTION_KEYS) as GridElementOptions),
+      margin,
       engineClass: GridFreeEngine,
     },
     widgetLayout: GRID_WIDGET_LAYOUT,

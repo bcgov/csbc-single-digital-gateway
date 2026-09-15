@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import * as defaults from '../src/renderers-default';
 import * as ui from '../src/renderers-ui';
 
-// Doc 180 rules 14 + 15b — @repo/forms/renderers/default (ui + static Grid).
+// Doc 180 rules 14 + 15b, doc 193 rule 3 — @repo/forms/renderers/default (ui + plain CSS layouts).
 
 const schema: JsonSchema = { type: 'object', properties: {} };
 const testerContext = { rootSchema: schema, config: {} };
@@ -22,6 +22,17 @@ const allRenderers = () => [
 
 const matching = (type: string) =>
   allRenderers().filter((entry) => entry.tester({ type }, schema, testerContext) > 0);
+
+const renderDefault = (uischema: object) =>
+  render(
+    createElement(JsonForms, {
+      schema,
+      uischema: uischema as UISchemaElement,
+      data: {},
+      renderers: allRenderers(),
+      cells: defaults.cells,
+    }),
+  );
 
 describe('renderers/default', () => {
   it('exports cells, controlRenderers, displayRenderers and layoutRenderers arrays', () => {
@@ -44,34 +55,35 @@ describe('renderers/default', () => {
   it('holds exactly one entry matching Grid and exactly one matching Heading', () => {
     expect(matching('Grid')).toHaveLength(1);
     expect(matching('Heading')).toHaveLength(1);
-    // Grid, VerticalLayout, HorizontalLayout (rule 23) and Form (doc 192 rule 2).
+    // Grid, VerticalLayout, HorizontalLayout and Form (doc 193 rule 3).
     expect(defaults.layoutRenderers).toHaveLength(4);
   });
 
-  it('renders its Grid as static (grid-stack-static)', async () => {
-    const { container } = render(
-      createElement(JsonForms, {
-        schema,
-        uischema: {
-          type: 'Grid',
-          elements: [{ type: 'Heading', text: 'Static' }],
-        } as UISchemaElement,
-        data: {},
-        renderers: allRenderers(),
-        cells: defaults.cells,
-      }),
-    );
-    expect(await screen.findByRole('heading', { name: 'Static' })).toBeInTheDocument();
-    expect(container.querySelector('.grid-stack')).toHaveClass('grid-stack-static');
+  it('renders its Grid with plain CSS, not gridstack', async () => {
+    const { container } = renderDefault({
+      type: 'Grid',
+      elements: [{ type: 'Heading', text: 'Plain' }],
+    });
+    expect(await screen.findByRole('heading', { name: 'Plain' })).toBeInTheDocument();
+    expect(container.querySelector('.grid-stack')).toBeNull();
+    expect(
+      container.querySelector('[data-slot="fill-layout"][data-layout-type="Grid"]'),
+    ).not.toBeNull();
   });
 
-  it('does not re-export createGridRenderers', () => {
+  it('does not re-export createGridRenderers or import any gridstack renderer', () => {
     expect(defaults).not.toHaveProperty('createGridRenderers');
-    const source = readFileSync(
-      resolve(import.meta.dirname, '../src/renderers/default/index.ts'),
-      'utf8',
-    );
-    // Anchored to real export statements — prose in comments may name the factory.
-    expect(source).not.toMatch(/^export\b[^;]*\bcreateGridRenderers\b/m);
+    for (const file of ['index.ts', 'fill-layouts.tsx', 'fill-placement.ts']) {
+      const source = readFileSync(
+        resolve(import.meta.dirname, '../src/renderers/default', file),
+        'utf8',
+      );
+      // Anchored to real export statements — prose in comments may name the factory.
+      expect(source, file).not.toMatch(/^export\b[^;]*\bcreateGridRenderers\b/m);
+      // Only the pure helpers of renderers/gridstack may be imported — never gridstack itself.
+      expect(source, file).not.toMatch(
+        /from ['"](gridstack|[^'"]*(create-grid-renderers|grid-renderer|grid-element|gridstack\/index))/,
+      );
+    }
   });
 });

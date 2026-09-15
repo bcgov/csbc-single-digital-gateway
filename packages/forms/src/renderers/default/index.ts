@@ -1,25 +1,19 @@
 import type { RendererSet } from '../../types/renderer-set';
-import { createGridRenderers } from '../gridstack/index';
 import * as ui from '../ui/index';
+import { fillLayoutRenderers } from './fill-layouts';
 
-// Renderers for user-fillable forms (doc 180 rule 14): @repo/ui renderers plus a STATIC Grid.
-// `createGridRenderers` is deliberately not re-exported — its one public home is
-// @repo/forms/renderers/gridstack. A new source set is spread here AND in renderers/studio.
-const grid = createGridRenderers();
+// Renderers for user-fillable forms (doc 180 rule 14, doc 193 rule 3): @repo/ui renderers plus plain CSS layouts — no
+// gridstack, so items are not inset by grid margins and heights fit their content. The gridstack factory's one
+// public home is @repo/forms/renderers/gridstack; it is not re-exported here. A new source set is spread here AND in
+// renderers/studio.
 
-export const cells: RendererSet['cells'] = [...ui.cells, ...grid.cells];
+export const cells: RendererSet['cells'] = [...ui.cells];
 
-export const controlRenderers: RendererSet['controlRenderers'] = [
-  ...ui.controlRenderers,
-  ...grid.controlRenderers,
-];
+export const controlRenderers: RendererSet['controlRenderers'] = [...ui.controlRenderers];
 
-export const displayRenderers: RendererSet['displayRenderers'] = [
-  ...ui.displayRenderers,
-  ...grid.displayRenderers,
-];
+export const displayRenderers: RendererSet['displayRenderers'] = [...ui.displayRenderers];
 
 export const layoutRenderers: RendererSet['layoutRenderers'] = [
   ...ui.layoutRenderers,
-  ...grid.layoutRenderers,
+  ...fillLayoutRenderers,
 ];

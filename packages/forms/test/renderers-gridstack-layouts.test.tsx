@@ -249,9 +249,17 @@ describe('HorizontalLayout options and placement (rules 27-28)', () => {
   });
 });
 
-describe('rendering in default (rules 24-29)', () => {
+// Doc 193 rule 3: renderers/default no longer uses gridstack, so rules 24-29 run through a static factory set.
+const staticGridSet: Set = {
+  cells: defaults.cells,
+  controlRenderers: defaults.controlRenderers,
+  displayRenderers: defaults.displayRenderers,
+  layoutRenderers: createGridRenderers().layoutRenderers,
+};
+
+describe('rendering in a static gridstack set (rules 24-29)', () => {
   it('renders a VerticalLayout as a static one-column grid stacked in element order', async () => {
-    const { container } = renderWith(defaults, {
+    const { container } = renderWith(staticGridSet, {
       type: 'VerticalLayout',
       elements: [heading('First', { x: 4, w: 6 }), heading('Second')],
     });
@@ -266,7 +274,7 @@ describe('rendering in default (rules 24-29)', () => {
   });
 
   it('renders a HorizontalLayout as one row of its authored columns in element order', async () => {
-    const { container } = renderWith(defaults, {
+    const { container } = renderWith(staticGridSet, {
       type: 'HorizontalLayout',
       options: { columns: 4 },
       elements: [heading('Left', { w: 3 }), heading('Right')],
@@ -284,7 +292,7 @@ describe('rendering in default (rules 24-29)', () => {
 
   it('fits an item with a hand-set height to its content inside a layout, but not inside a Grid (rule 29)', async () => {
     const resizeToContent = vi.spyOn(GridStack.prototype, 'resizeToContent');
-    renderWith(defaults, {
+    renderWith(staticGridSet, {
       type: 'Grid',
       elements: [
         heading('In grid', { h: 6 }),

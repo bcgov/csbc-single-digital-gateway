@@ -90,3 +90,9 @@ describe('studio resize handle indicators (doc 180 rule 16c)', () => {
     expect(css).not.toContain('--color-');
   });
 });
+
+describe('fillable forms (doc 193 rule 3)', () => {
+  it('ships no gridstack overrides for fillable forms — they no longer use gridstack', () => {
+    expect(css).not.toContain('form-fill-grid');
+  });
+});

@@ -9,6 +9,7 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 
 export type { RendererSet } from './renderer-set';
+export type { LayoutGap } from '../renderers/gridstack/layout-gap';
 export type {
   CheckboxControlElement,
   ComboboxControlElement,

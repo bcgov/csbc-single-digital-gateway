@@ -173,13 +173,15 @@ describe('GridStack options mapping', () => {
     expect(options).toMatchObject({
       column: 4,
       cellHeight: 80,
-      margin: 2,
       float: true,
       minRow: 1,
       maxRow: 10,
     });
     // `animate` is not allow-listed: the authored `true` is ignored and the built-in default stays.
     expect(options.animate).toBe(false);
+    // Doc 193 rule 11: margin always comes from the layout's gap (md → 0.5rem) — neither the authored nor the
+    // factory margin is read.
+    expect(options.margin).toBe('0.5rem');
   });
 
   it('ignores staticGrid, children and subGridOpts supplied through element options', () => {
