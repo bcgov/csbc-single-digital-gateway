@@ -4,11 +4,15 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
+import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 
 // Doc 184 — Form Studio preview mode.
 
 function renderStudio(uischema?: UISchemaElement) {
-  const view = render(uischema ? <FormStudio uischema={uischema} /> : <FormStudio />);
+  // Doc 200 rule 23: a bare studio now opens the New form dialog, so preview's fixture seeds explicitly.
+  const view = render(
+    <FormStudio schema={STUDIO_SAMPLE_SCHEMA} uischema={uischema ?? STUDIO_SAMPLE_UISCHEMA} />,
+  );
   const slot = (name: string) => view.container.querySelector<HTMLElement>(`[data-slot="${name}"]`);
   return { ...view, slot };
 }

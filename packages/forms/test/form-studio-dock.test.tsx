@@ -1,12 +1,12 @@
 import { mdiDockBottom, mdiDockLeft, mdiDockRight } from '@mdi/js';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 
 const PANEL_SLOTS = ['left', 'center', 'right', 'bottom'] as const;
 
 function renderStudio() {
-  const { container } = render(<FormStudio />);
+  const { container } = renderSeededStudio();
   const q = (slot: string) => container.querySelector<HTMLElement>(`[data-slot="${slot}"]`);
   const content = q('form-studio-content');
   const vertical = content?.querySelector<HTMLElement>(

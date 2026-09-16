@@ -3,7 +3,7 @@ import { JsonForms } from '@jsonforms/react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import * as studioSet from '../src/renderers-studio';
-import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 
 // Doc 186 rules 1-7 — the root element's hover and selection, and Escape walking up to the parent.
 
@@ -22,7 +22,7 @@ const press = (element: Element) => fireEvent.pointerDown(element);
 const escape = () => fireEvent.keyDown(document, { key: 'Escape' });
 
 async function renderStudio() {
-  const view = render(<FormStudio />);
+  const view = renderSeededStudio();
   const name = itemOf(await screen.findByRole('textbox', { name: 'Name' }));
   const email = itemOf(await screen.findByRole('textbox', { name: 'Email' }));
   // The sample's root is a Form (doc 192 rule 8); only the root is framed outside a grid item.

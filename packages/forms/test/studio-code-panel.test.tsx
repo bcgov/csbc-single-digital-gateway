@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 import { documentText } from '../src/studio/code/document-text';
 import { APPLY_DELAY_MS } from '../src/studio/code/use-code-document';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
@@ -82,7 +82,7 @@ const uischemaWith = (text: string) =>
 describe('Form Studio code panel (doc 191)', () => {
   describe('lazy loading (rules 3-4)', () => {
     it('shows "Loading editor…" while the module loads', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       expect(fake.loads).toBe(0);
       fireEvent.click(bottomToggle());
       expect(screen.getAllByText('Loading editor…')).toHaveLength(2);
@@ -93,7 +93,7 @@ describe('Form Studio code panel (doc 191)', () => {
 
     it('does not load the editor module until the bottom panel first opens', async () => {
       const loads = fake.loads;
-      render(<FormStudio />);
+      renderSeededStudio();
       expect(slot('form-studio-bottom-panel').childElementCount).toBe(0);
       expect(document.querySelector('[data-studio-code]')).toBeNull();
       expect(fake.loads).toBe(loads);
@@ -102,7 +102,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('keeps the editors mounted when the bottom panel closes again', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { schema } = await openCode();
       edit(schema, '{ "draft": ');
       fireEvent.click(bottomToggle());
@@ -115,7 +115,7 @@ describe('Form Studio code panel (doc 191)', () => {
     it('shows "The code editor could not be loaded." and logs the cause when the chunk fails', async () => {
       fake.fail = true;
       const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-      render(<FormStudio />);
+      renderSeededStudio();
       fireEvent.click(bottomToggle());
       expect(await screen.findAllByText('The code editor could not be loaded.')).toHaveLength(2);
       expect(
@@ -131,7 +131,7 @@ describe('Form Studio code panel (doc 191)', () => {
 
   describe('panel (rules 1-2)', () => {
     it('renders Schema and UI schema panes side by side in the bottom panel once opened', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { schema, uischema } = await openCode();
       const code = required(
         slot('form-studio-bottom-panel').querySelector<HTMLElement>('[data-studio-code]'),
@@ -157,7 +157,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('keeps the bottom panel closed by default', () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       expect(bottomToggle()).toHaveAttribute('aria-pressed', 'false');
       expect(slot('form-studio-bottom-panel')).toHaveAttribute('inert');
       expect(document.querySelector('[data-studio-code]')).toBeNull();
@@ -166,7 +166,7 @@ describe('Form Studio code panel (doc 191)', () => {
 
   describe('preview (rule 5)', () => {
     it('unmounts the code panel while previewing and remounts it from the current document after', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { uischema } = await openCode();
       edit(uischema, uischemaWith('Edited heading'));
       await waitFor(() =>
@@ -185,7 +185,7 @@ describe('Form Studio code panel (doc 191)', () => {
 
   describe('text sync (rules 15-18)', () => {
     it('shows each half of the document as formatted JSON', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { schema, uischema } = await openCode();
       expect(schema).toHaveValue(documentText(STUDIO_SAMPLE_SCHEMA));
       expect(uischema).toHaveValue(documentText(STUDIO_SAMPLE_UISCHEMA));
@@ -194,7 +194,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('applies valid uischema text to the canvas 300ms after typing stops', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { uischema } = await openCode();
       const text = uischemaWith('Edited heading');
       edit(uischema, text);
@@ -213,7 +213,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('applies valid schema text so the canvas shows the new property title', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { schema } = await openCode();
       const next = structuredClone(STUDIO_SAMPLE_SCHEMA) as {
         properties: Record<string, { title?: string }>;
@@ -226,7 +226,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('does not apply invalid text, keeps it, and reads "Not applied — n problems"', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { uischema } = await openCode();
       const unknownType = '{ "type": "Form", "elements": [{ "type": "Group", "elements": [] }] }';
       edit(uischema, unknownType);
@@ -244,7 +244,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('does not apply a schema Ajv cannot compile', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { schema } = await openCode();
       const next = structuredClone(STUDIO_SAMPLE_SCHEMA) as { properties: Record<string, object> };
       next.properties[NAME_KEY] = { type: 'string', title: 'Broken', minLength: -1 };
@@ -257,7 +257,7 @@ describe('Form Studio code panel (doc 191)', () => {
 
   describe('external changes win (rules 19-21)', () => {
     it('replaces the uischema text after a canvas change', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { uischema } = await openCode();
       fireEvent.click(paletteItem('Heading'));
       const document = JSON.parse(uischema.value) as { elements: unknown[] };
@@ -267,7 +267,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('discards pending or invalid text and cancels its debounce when that half changes externally', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { uischema } = await openCode();
       edit(uischema, uischemaWith('Stale'));
       fireEvent.click(paletteItem('Heading'));
@@ -286,7 +286,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('leaves a pane untouched when only the other half changed', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { schema, uischema } = await openCode();
       const draft = '{ "type": "object", "properties": {';
       edit(schema, draft);
@@ -298,7 +298,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('renders without throwing when the uischema references a property the schema no longer has', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { schema } = await openCode();
       edit(schema, JSON.stringify({ type: 'object', properties: {} }));
       await waitFor(() => expect(statusOf(schema)).toHaveAttribute('data-status', 'applied'));
@@ -310,7 +310,7 @@ describe('Form Studio code panel (doc 191)', () => {
 
   describe('keyboard and pointer (rules 25-26)', () => {
     it('does not walk the selection to the parent on Escape inside the code panel', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { uischema } = await openCode();
       fireEvent.click(paletteItem('Heading'));
       expect(currentCrumb()).toBe('Heading');
@@ -323,7 +323,7 @@ describe('Form Studio code panel (doc 191)', () => {
     });
 
     it('does not change the selection on a press inside the code panel', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       const { uischema } = await openCode();
       fireEvent.click(paletteItem('Heading'));
       expect(currentCrumb()).toBe('Heading');

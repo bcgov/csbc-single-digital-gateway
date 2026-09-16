@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 
 // Doc 187 rules 15-29 — the inspector in the Form Studio's right panel, end to end.
 //
@@ -60,7 +60,7 @@ async function typeNumber(
 }
 
 async function renderStudio() {
-  const view = render(<FormStudio />);
+  const view = renderSeededStudio();
   const name = itemOf(await screen.findByRole('textbox', { name: 'Name' }));
   const city = itemOf(screen.getByRole('textbox', { name: 'City' }));
   const greeting = itemOf(screen.getByRole('heading', { name: 'Hello, FormStudio!' }));

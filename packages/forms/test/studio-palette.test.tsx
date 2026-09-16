@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 
 // Doc 189 rules 19, 24-27 — the palette in the Form Studio's left panel, end to end. Drags are verified by hand
 // (CLAUDE.md); click-to-add exercises the same insert path.
@@ -25,7 +25,7 @@ const select = (element: Element) => {
 };
 
 async function renderStudio() {
-  const view = render(<FormStudio />);
+  const view = renderSeededStudio();
   const name = itemOf(await screen.findByRole('textbox', { name: 'Name' }));
   const city = itemOf(screen.getByRole('textbox', { name: 'City' }));
   return { ...view, name, city };

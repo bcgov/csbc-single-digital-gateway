@@ -1,8 +1,12 @@
+import { Button } from '@repo/ui/button';
 import { useEffect, useMemo, useRef, useState, type FC } from 'react';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import type { FormStudioProps } from '../types/index';
 import { StudioCodePanel } from './code/studio-code-panel';
 import { DeleteConfirmation } from './delete-confirmation';
+import { NewFormDialog } from './document/new-form-dialog';
+import { useDocumentSession } from './document/use-document-session';
+import { useEmptyPanels } from './document/use-empty-panels';
 import { useDockPanel, type DockPanelId } from './dock-panels';
 import { DockToggles } from './dock-toggles';
 import { useFocusAddress } from './use-focus-address';
@@ -75,16 +79,28 @@ const FLOW_PANEL_IDS: readonly DockPanelId[] = Object.freeze(['bottom', 'right']
 export const FormStudio: FC<FormStudioProps> = ({
   schema,
   uischema,
+  loadDocument,
+  onSaveDocument,
   focusedForm,
   onFocusedFormChange,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
-  const studio = useStudioDocument({ schema, uischema });
+  // Doc 200 rules 1-2: which document to open, and what to show while getting there. A seeded document is `ready` at
+  // once, so a host passing `schema`/`uischema` behaves exactly as it did before this feature.
+  const session = useDocumentSession({ schema, uischema, loadDocument });
+  const ready = session.status === 'ready';
+  // Doc 200 rule 7: open while choosing, and reopened by the empty state's call to action.
+  const [dialogOpen, setDialogOpen] = useState(true);
+  // Until there is a document the studio still holds one (the sample) so the hooks below stay unconditional — the
+  // canvas never draws it, because rule 15 returns the empty state before the document is rendered.
+  const studio = useStudioDocument(session.document ?? {});
   const panels = {
     left: useDockPanel('left'),
     right: useDockPanel('right'),
     bottom: useDockPanel('bottom'),
   };
+  // Doc 200 rules 18-20. Declared AFTER `ready`, which it reads — see the TDZ trap in the hook's own comment.
+  useEmptyPanels(panels, ready);
   const mode = usePreviewMode(panels);
   const { port, editor, flowEditor, confirmation, hover, select, pressing, add } =
     useStudioSelection(rootRef, !mode.previewing, studio);
@@ -146,19 +162,39 @@ export const FormStudio: FC<FormStudioProps> = ({
         className="flex h-9 shrink-0 grow-0 items-center justify-end gap-1 border-b px-1"
       >
         {/* Doc 197 rules 14-15, 17: only while drilled in, and never over the preview's chrome-free header. */}
-        {previewing || focusId === null ? null : <StudioBackButton onClick={() => select(null)} />}
+        {previewing || !ready || focusId === null ? null : (
+          <StudioBackButton onClick={() => select(null)} />
+        )}
+        {/* Doc 200 rule 22: the save channel exists and is called; nothing is wired to an API yet. */}
+        {ready && !previewing && onSaveDocument !== undefined ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              void onSaveDocument({ schema: studio.schema, uischema: studio.uischema })
+            }
+          >
+            Save
+          </Button>
+        ) : null}
         {/* `exactOptionalPropertyTypes`: an absent `ids` must be an ABSENT KEY, never an explicit `undefined`. */}
-        {previewing ? null : (
+        {/* Doc 200 rule 18: no document means no panels at all — the toggles go with them. */}
+        {previewing || !ready ? null : (
           <DockToggles panels={panels} {...(onFlowCanvas ? { ids: FLOW_PANEL_IDS } : {})} />
         )}
-        <PreviewToggle pressed={previewing} onPressedChange={setPreviewing} />
+        {ready ? <PreviewToggle pressed={previewing} onPressedChange={setPreviewing} /> : null}
       </header>
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
         <StudioWorkspace
           panels={panels}
-          left={previewing || onFlowCanvas ? null : <StudioPalette actions={paletteActions} />}
+          left={
+            // Doc 200 rule 18: with no document there are no panels, so their content is not mounted
+            // either — the same treatment preview already gives them, rather than leaving an inert
+            // palette mounted behind the dialog.
+            previewing || !ready || onFlowCanvas ? null : <StudioPalette actions={paletteActions} />
+          }
           right={
-            previewing ? null : (
+            previewing || !ready ? null : (
               <StudioInspector
                 elementId={selectedId}
                 label={segments.at(-1)?.label ?? ''}
@@ -168,7 +204,7 @@ export const FormStudio: FC<FormStudioProps> = ({
             )
           }
           bottom={
-            previewing || !codeOpened ? null : (
+            previewing || !ready || !codeOpened ? null : (
               <StudioCodePanel
                 schema={studio.schema}
                 uischema={studio.uischema}
@@ -187,6 +223,10 @@ export const FormStudio: FC<FormStudioProps> = ({
             selection={port}
             editor={editor}
             flowEditor={flowEditor}
+            status={session.status}
+            reason={session.reason}
+            onNewForm={() => setDialogOpen(true)}
+            onRetry={session.retry}
           />
         </StudioWorkspace>
       </div>
@@ -194,7 +234,7 @@ export const FormStudio: FC<FormStudioProps> = ({
         data-slot="form-studio-footer"
         className="flex h-9 shrink-0 grow-0 items-center border-t px-2"
       >
-        {previewing ? null : (
+        {previewing || !ready ? null : (
           <StudioBreadcrumbs
             segments={segments}
             currentId={selectedId}
@@ -203,6 +243,10 @@ export const FormStudio: FC<FormStudioProps> = ({
           />
         )}
       </footer>
+      {/* Doc 200 rules 7, 11: only while choosing. Dismissing reports nothing, so the session stays `choosing`. */}
+      {session.status === 'choosing' ? (
+        <NewFormDialog open={dialogOpen} onOpenChange={setDialogOpen} onChoose={session.choose} />
+      ) : null}
       <DeleteConfirmation
         pending={confirmation.pending}
         onConfirm={confirmation.confirm}

@@ -1,10 +1,10 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { mdiContentCopy, mdiDeleteOutline } from '@mdi/js';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { GridHTMLElement } from 'gridstack';
 import { describe, expect, it } from 'vitest';
 import { STUDIO_GRID_CLASS } from '../src/renderers/studio/studio-grid-class';
-import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 
 // Doc 185 rules 1-14, 28 — hover, selection and the actions popover. Copy and delete are in
@@ -33,7 +33,7 @@ const hoverOver = (element: Element) => fireEvent.pointerOver(element);
 const press = (element: Element) => fireEvent.pointerDown(element);
 
 async function renderStudio() {
-  const view = render(<FormStudio />);
+  const view = renderSeededStudio();
   const name = itemOf(await screen.findByRole('textbox', { name: 'Name' }));
   const city = itemOf(await screen.findByRole('textbox', { name: 'City' }));
   const deliveryHeading = itemOf(screen.getByRole('heading', { name: 'Delivery address' }));

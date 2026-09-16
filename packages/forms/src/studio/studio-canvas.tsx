@@ -10,6 +10,8 @@ import {
 } from '../renderers/studio/studio-selection';
 import { FlowEditorProvider, type FlowEditor } from '../renderers/xyflow/flow-editor';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
+import { StudioEmptyState } from './document/studio-empty-state';
+import type { DocumentSessionStatus } from './document/use-document-session';
 import { STUDIO_SAMPLE_DATA } from './sample';
 
 // Built once at module load — a new array per render would make JSONForms re-dispatch everything.
@@ -42,6 +44,12 @@ export interface StudioCanvasProps {
   readonly selection: StudioSelection;
   readonly editor: GridEditor;
   readonly flowEditor: FlowEditor;
+  /** Whether there is a document to draw at all (doc 200 rule 15). */
+  readonly status: DocumentSessionStatus;
+  /** Why the load failed, when it did (doc 200 rule 5). */
+  readonly reason: string | null;
+  onNewForm(): void;
+  onRetry(): void;
 }
 
 /**
@@ -60,7 +68,18 @@ export function StudioCanvas({
   selection,
   editor,
   flowEditor,
+  status,
+  reason,
+  onNewForm,
+  onRetry,
 }: StudioCanvasProps) {
+  // Doc 200 rule 15: no document yet — the empty, loading and failed states sit in the same early-return position as
+  // the root check, so this component stays the ONE place that decides what occupies the centre.
+  if (status !== 'ready') {
+    return (
+      <StudioEmptyState status={status} reason={reason} onNewForm={onNewForm} onRetry={onRetry} />
+    );
+  }
   if (!ROOT_TYPES.has(uischema.type)) {
     return (
       <p role="alert" data-slot="form-studio-root-error" className="text-sm text-destructive">

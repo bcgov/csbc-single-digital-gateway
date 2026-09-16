@@ -2,6 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 
 const GREETING = 'Hello, FormStudio!';
 
@@ -15,7 +16,7 @@ const gridWith = (text: string) =>
 
 /** The layout is expressed in Tailwind utilities, so the classes ARE the contract here. */
 function renderStudio() {
-  const { container } = render(<FormStudio />);
+  const { container } = renderSeededStudio();
   const root = container.querySelector('[data-slot="form-studio"]');
   const header = container.querySelector('[data-slot="form-studio-header"]');
   const content = container.querySelector('[data-slot="form-studio-content"]');
@@ -25,7 +26,7 @@ function renderStudio() {
 
 describe('FormStudio', () => {
   it('renders the greeting Hello, FormStudio!', async () => {
-    render(<FormStudio />);
+    renderSeededStudio();
     // The greeting is a grid item now, rendered once gridstack has initialised — hence findBy.
     expect(await screen.findByText(GREETING)).toBeInTheDocument();
   });

@@ -2,6 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FormStudio } from '../src/studio';
+import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
 // Doc 197 rules 7-13 — the optional host interface: `focusedForm` in, `onFocusedFormChange` out.
@@ -171,7 +172,15 @@ describe('self-healing (rule 11)', () => {
 
   it('reports null with replace true when an address arrives and the root is a Form', async () => {
     const onChange = vi.fn();
-    render(<FormStudio focusedForm="f1" onFocusedFormChange={onChange} />);
+    // Doc 200 rule 23: a bare studio opens the New form dialog, so the Form root is seeded explicitly.
+    render(
+      <FormStudio
+        schema={STUDIO_SAMPLE_SCHEMA}
+        uischema={STUDIO_SAMPLE_UISCHEMA}
+        focusedForm="f1"
+        onFocusedFormChange={onChange}
+      />,
+    );
 
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(lastCall(onChange)).toEqual([null, { replace: true }]);

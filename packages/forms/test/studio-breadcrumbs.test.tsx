@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import type { GridHTMLElement } from 'gridstack';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 
 // Doc 186 rules 8-18 — the footer breadcrumb trail. The root is a Form (doc 192 rules 4, 8).
 
@@ -44,7 +45,7 @@ const leave = (element: Element) =>
   });
 
 async function renderStudio() {
-  const view = render(<FormStudio />);
+  const view = renderSeededStudio();
   const name = itemOf(await screen.findByRole('textbox', { name: 'Name' }));
   const email = itemOf(screen.getByRole('textbox', { name: 'Email' }));
   const city = itemOf(screen.getByRole('textbox', { name: 'City' }));

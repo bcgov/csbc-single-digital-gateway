@@ -36,8 +36,10 @@ describe('Admin Studio Route', () => {
     mockAuth(adminUser);
     renderApp('/admin/studio');
 
+    // Doc 200 rules 23, 25: the studio no longer seeds the built-in sample — with no document to
+    // open it asks what to create, so the New form dialog is what proves it mounted.
     expect(
-      await screen.findByText('Hello, FormStudio!', undefined, { timeout: 32000 }),
+      await screen.findByRole('dialog', { name: 'New form' }, { timeout: 32000 }),
     ).toBeInTheDocument();
   });
 

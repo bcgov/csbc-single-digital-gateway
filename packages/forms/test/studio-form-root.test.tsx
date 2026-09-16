@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import * as defaults from '../src/renderers-default';
 import type { LayoutNode } from '../src/renderers/gridstack/grid-editor';
 import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 import { applyLayout } from '../src/studio/layout/apply-layout';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import type { TreeElement } from '../src/studio/layout/element-tree';
@@ -60,13 +61,13 @@ describe('Form Studio Form root (doc 192)', () => {
       expect(STUDIO_SAMPLE_UISCHEMA.elements).toHaveLength(10);
       expect(STUDIO_SAMPLE_UISCHEMA.elements[0]).toMatchObject({ type: 'Heading', text: GREETING });
 
-      render(<FormStudio />);
+      renderSeededStudio();
       expect(await screen.findByRole('heading', { level: 1, name: GREETING })).toBeInTheDocument();
       expect(within(centre()).queryByRole('alert')).toBeNull();
     });
 
     it('frames the root as data-element-type="Form" and names it "Form" in the breadcrumbs', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       await screen.findByRole('heading', { level: 1, name: GREETING });
       const frame = required(rootFrame(), 'root frame');
       expect(frame).toHaveAttribute('data-element-id', expect.stringMatching(/^el-\d+$/));
@@ -118,7 +119,7 @@ describe('Form Studio Form root (doc 192)', () => {
 
   describe('editing parity (rules 3, 9-10)', () => {
     it('adds a clicked palette template to the Form root, last and unplaced', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       await screen.findByRole('heading', { level: 1, name: GREETING });
       const before = rootGridTexts().length;
 
@@ -144,7 +145,7 @@ describe('Form Studio Form root (doc 192)', () => {
     });
 
     it('shows only the Label setting in the inspector for the selected Form root', async () => {
-      render(<FormStudio />);
+      renderSeededStudio();
       await screen.findByRole('heading', { level: 1, name: GREETING });
       const frame = required(rootFrame(), 'root frame');
       fireEvent.pointerDown(frame);

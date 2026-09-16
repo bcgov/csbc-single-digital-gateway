@@ -2,6 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
+import { renderSeededStudio } from './render-studio';
 
 // Doc 185 rules 15-23 — Copy and Delete from the actions popover, end to end in the studio. The pure
 // document updates are covered by studio-copy-element.test.ts and studio-remove-element.test.ts.
@@ -22,7 +23,7 @@ const noConfirmation = () =>
 const confirmation = () => screen.findByRole('alertdialog', { name: 'Delete element?' });
 
 async function renderStudio() {
-  render(<FormStudio />);
+  renderSeededStudio();
   await screen.findByRole('textbox', { name: 'Name' });
   await screen.findByRole('textbox', { name: 'City' });
 }
