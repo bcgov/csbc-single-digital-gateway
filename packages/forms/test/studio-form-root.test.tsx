@@ -66,13 +66,14 @@ describe('Form Studio Form root (doc 192)', () => {
       expect(within(centre()).queryByRole('alert')).toBeNull();
     });
 
-    it('frames the root as data-element-type="Form" and names it "Form" in the breadcrumbs', async () => {
+    it('frames the root as data-element-type="Form" and names it by its title in the breadcrumbs', async () => {
       renderSeededStudio();
       await screen.findByRole('heading', { level: 1, name: GREETING });
       const frame = required(rootFrame(), 'root frame');
       expect(frame).toHaveAttribute('data-element-id', expect.stringMatching(/^el-\d+$/));
       expect(frame.querySelector('.grid-stack')).not.toHaveClass('grid-stack-static');
-      expect(crumbNames()).toEqual(['Form']);
+      // Doc 201 rules 17, 19: the sample root is titled, so the crumb reads the title, not the type fallback.
+      expect(crumbNames()).toEqual(['Untitled form']);
     });
   });
 
@@ -126,7 +127,7 @@ describe('Form Studio Form root (doc 192)', () => {
       fireEvent.click(paletteItem('Heading'));
 
       expect(currentCrumb()).toBe('Heading');
-      expect(crumbNames()).toEqual(['Form']);
+      expect(crumbNames()).toEqual(['Untitled form']);
       await waitFor(() => expect(rootGridTexts()).toHaveLength(before + 1));
       expect(rootGridTexts().at(-1)).toBe('Heading');
     });
@@ -144,7 +145,7 @@ describe('Form Studio Form root (doc 192)', () => {
       expect(insertElement(document, 'form', target, ids, newPropertyKey).inserted).toBeUndefined();
     });
 
-    it('shows only the Label setting in the inspector for the selected Form root', async () => {
+    it('shows only the Title setting in the inspector for the selected Form root', async () => {
       renderSeededStudio();
       await screen.findByRole('heading', { level: 1, name: GREETING });
       const frame = required(rootFrame(), 'root frame');
@@ -155,9 +156,15 @@ describe('Form Studio Form root (doc 192)', () => {
         document.querySelector<HTMLElement>('[data-studio-inspector]'),
         'inspector',
       );
-      const label = await within(inspector).findByRole('textbox', { name: 'Label' });
-      expect(label).toHaveValue('');
-      expect(within(inspector).getByRole('heading', { level: 2 })).toHaveTextContent('Form');
+      // Doc 201 rule 13: a Form's Label field is titled "Title"; rule 17 seeds the sample with one.
+      const title = await within(inspector).findByRole('textbox', { name: /Title/ });
+      expect(title).toHaveValue('Untitled form');
+      // Doc 187 rule 24: the header is the element's LABEL, which doc 201 rule 19 now always supplies for a Form;
+      // its type still sits beside it.
+      expect(within(inspector).getByRole('heading', { level: 2 })).toHaveTextContent(
+        'Untitled form',
+      );
+      expect(inspector).toHaveTextContent('Form');
       expect(within(inspector).queryByRole('combobox', { name: 'Width' })).toBeNull();
       expect(within(inspector).queryByRole('combobox', { name: 'Columns' })).toBeNull();
       expect(within(inspector).getAllByRole('textbox')).toHaveLength(1);

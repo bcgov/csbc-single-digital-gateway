@@ -24,6 +24,8 @@ import { useStudioDocument } from '../src/studio/use-studio-document';
 
 const schema: JsonSchema = { type: 'object', properties: {} };
 const el = (element: object) => element as UISchemaElement;
+// Doc 201 rule 15: a Form's title is required, so every Form fixture carries one.
+const formOf = (...elements: object[]) => ({ type: 'Form', label: 'Untitled form', elements });
 const noKey = () => 'unused';
 const itemsOf = (grid: GridHTMLElement | undefined) =>
   Array.from(grid?.querySelectorAll<GridItemHTMLElement>(':scope > .grid-stack-item') ?? []);
@@ -211,19 +213,12 @@ describe('Separator placement (doc 194)', () => {
     const ajv = createAjv();
     const ok = (value: unknown) => ajv.validate(UISCHEMA_METASCHEMA, value) === true;
     const sep = { type: 'Separator' };
-    expect(ok({ type: 'Form', elements: [sep] })).toBe(true);
-    expect(ok({ type: 'Form', elements: [{ type: 'VerticalLayout', elements: [sep] }] })).toBe(
-      true,
-    );
-    expect(ok({ type: 'Form', elements: [{ type: 'Grid', elements: [sep] }] })).toBe(true);
-    expect(ok({ type: 'Form', elements: [{ type: 'HorizontalLayout', elements: [sep] }] })).toBe(
-      false,
-    );
+    expect(ok(formOf(sep))).toBe(true);
+    expect(ok(formOf({ type: 'VerticalLayout', elements: [sep] }))).toBe(true);
+    expect(ok(formOf({ type: 'Grid', elements: [sep] }))).toBe(true);
+    expect(ok(formOf({ type: 'HorizontalLayout', elements: [sep] }))).toBe(false);
     expect(
-      ok({
-        type: 'Form',
-        elements: [{ type: 'Grid', elements: [{ type: 'HorizontalLayout', elements: [sep] }] }],
-      }),
+      ok(formOf({ type: 'Grid', elements: [{ type: 'HorizontalLayout', elements: [sep] }] })),
     ).toBe(false);
   });
 });

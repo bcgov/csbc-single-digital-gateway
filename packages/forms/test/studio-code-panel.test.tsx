@@ -73,9 +73,11 @@ async function openCode() {
   return { schema, uischema };
 }
 
+// Doc 201 rule 15: an untitled Form is a metaschema problem, so applied text must carry a title.
 const uischemaWith = (text: string) =>
   JSON.stringify({
     type: 'Form',
+    label: 'Untitled form',
     elements: [{ type: 'Heading', text, options: { level: 1 } }],
   });
 

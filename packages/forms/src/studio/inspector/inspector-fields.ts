@@ -1,4 +1,5 @@
 import type { JsonSchema } from '@jsonforms/core';
+import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
 import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
@@ -42,6 +43,17 @@ export interface InspectorField {
   readonly section: SectionId;
   readonly label: string;
   applies(ctx: InspectorContext): boolean;
+  /**
+   * Doc 201 rule 13: the displayed label when it depends on the element (a Form's Label is "Title").
+   * `label` stays the static fallback, so every caller reading `field.label` keeps working.
+   */
+  labelFor?(ctx: InspectorContext): string;
+  /**
+   * Doc 201 rule 12: whether the field is required for this element. `inspectorForm` collects the
+   * applicable fields answering true into the form schema's `required`, which is what makes
+   * `ControlField` draw the asterisk. Absent (every other field) means never required.
+   */
+  required?(ctx: InspectorContext): boolean;
   schema(ctx: InspectorContext): JsonSchema;
   /** The field Control's uischema `options`, if any. */
   options?(ctx: InspectorContext): Record<string, unknown> | undefined;
@@ -53,8 +65,24 @@ export interface InspectorField {
 const LAYOUT_LABEL_HINT = 'Names the layout in the element path.';
 const STAGE_LABEL_HINT = 'Names the stage on its card and in the element path.';
 const CONDITION_LABEL_HINT = 'Names the condition on its card and in the element path.';
+/** Doc 201 rule 13: a Form's label is its Title, and it is shown to the citizen, not just in the path. */
+const FORM_TITLE_HINT = 'Shown at the top of the form.';
+const FORM_TITLE_LABEL = 'Title';
 
 const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
+/**
+ * Doc 201 rule 13. A Form's layout kind is `'vertical'` (doc 192 rule 3), so it already satisfies the
+ * generic layout branches — test it FIRST wherever a Form differs from a plain layout.
+ */
+const isForm = (ctx: InspectorContext) => ctx.element.type === FORM_TYPE;
+/**
+ * Rule 14: a Form's required Title clears to '' so the field stays present and visibly invalid, the way a
+ * Heading's `text` does (doc 187 rule 17); every other element's emptied Label is removed as before.
+ */
+const writtenLabel = (ctx: InspectorContext, value: unknown) => {
+  if (!isForm(ctx)) return orCleared(value);
+  return typeof value === 'string' ? value : '';
+};
 /**
  * Doc 195 rule 24, widened by doc 199 rule 32: a Flow, Stage or Condition is named like a layout — none has a
  * layout kind. A Condition's criteria are authored on its card, never here, so Label is all it gets.
@@ -64,6 +92,7 @@ const isFlowElement = (ctx: InspectorContext) =>
   ctx.element.type === STAGE_TYPE ||
   ctx.element.type === CONDITION_TYPE;
 const labelHint = (ctx: InspectorContext) => {
+  if (isForm(ctx)) return FORM_TITLE_HINT;
   if (ctx.element.type === STAGE_TYPE) return STAGE_LABEL_HINT;
   return ctx.element.type === CONDITION_TYPE ? CONDITION_LABEL_HINT : LAYOUT_LABEL_HINT;
 };
@@ -157,7 +186,10 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'label',
     section: 'general',
     label: 'Label',
+    labelFor: (ctx) => (isForm(ctx) ? FORM_TITLE_LABEL : 'Label'),
     applies: (ctx) => isControl(ctx) || ctx.layoutKind !== undefined || isFlowElement(ctx),
+    // Rule 14: a Form's Title is required; no other element's Label is.
+    required: isForm,
     schema: (ctx) =>
       ctx.layoutKind || isFlowElement(ctx)
         ? { type: 'string', description: labelHint(ctx) }
@@ -167,8 +199,9 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
       return title ? { placeholder: title } : undefined;
     },
     read: (ctx) => text(ctx.element['label' as keyof TreeElement]),
-    write: (_ctx, edit, value) =>
-      setElement(edit, withElementKey(edit.element, 'label', orCleared(value))),
+    // Rule 14: a Form keeps the key (cleared to ''), every other element drops an emptied Label.
+    write: (ctx, edit, value) =>
+      setElement(edit, withElementKey(edit.element, 'label', writtenLabel(ctx, value))),
   },
   {
     key: 'text',

@@ -18,10 +18,17 @@ const uischemaOk = (value: unknown) => ajv.validate(UISCHEMA_METASCHEMA, value) 
 const withProperty = (property: object) => ({ type: 'object', properties: { a: property } });
 const control = (extra: object = {}) => ({ type: 'Control', scope: '#/properties/a', ...extra });
 // Doc 192 rule 11: every studio uischema's root is a Form.
-const root = (...elements: object[]) => ({ type: 'Form', elements });
+// Doc 201 rule 15: a Form's title is required, so every Form fixture carries one.
+const FORM_TITLE = 'Untitled form';
+const root = (...elements: object[]) => ({ type: 'Form', label: FORM_TITLE, elements });
+const form = (extra: object = {}) => ({ type: 'Form', label: FORM_TITLE, elements: [], ...extra });
 // Doc 197 rule 6: a Stage holding one Form, and the Flow around it.
-const stage = (form: object, id = 's1') => ({ type: 'Stage', elements: [form], options: { id } });
-const flowOf = (form: object) => ({ type: 'Flow', elements: [stage(form)] });
+const stage = (formEl: object, id = 's1') => ({
+  type: 'Stage',
+  elements: [formEl],
+  options: { id },
+});
+const flowOf = (formEl: object) => ({ type: 'Flow', elements: [stage(formEl)] });
 
 /** Paths of named subschemas (in `properties` / `definitions`) that have neither a description nor a `$ref`. */
 function undescribed(schema: unknown, path = '#'): string[] {
@@ -56,38 +63,34 @@ function ifConditions(schema: unknown): Record<string, unknown>[] {
 // Doc 197 rule 6 — a Form may carry the authored `options.id` that addresses it in a URL.
 describe('UISCHEMA_METASCHEMA Form options.id (doc 197 rule 6)', () => {
   it('accepts a Form whose options carry a non-empty string id', () => {
-    expect(uischemaOk({ type: 'Form', elements: [], options: { id: 'abcd1234' } })).toBe(true);
-    expect(uischemaOk(flowOf({ type: 'Form', elements: [], options: { id: 'abcd1234' } }))).toBe(
-      true,
-    );
-    expect(uischemaOk({ type: 'Form', elements: [], options: { id: 'abcd1234', gap: 'lg' } })).toBe(
-      true,
-    );
+    expect(uischemaOk(form({ options: { id: 'abcd1234' } }))).toBe(true);
+    expect(uischemaOk(flowOf(form({ options: { id: 'abcd1234' } })))).toBe(true);
+    expect(uischemaOk(form({ options: { id: 'abcd1234', gap: 'lg' } }))).toBe(true);
   });
 
   it('rejects an empty or non-string Form options.id', () => {
-    expect(uischemaOk({ type: 'Form', elements: [], options: { id: '' } })).toBe(false);
-    expect(uischemaOk({ type: 'Form', elements: [], options: { id: 7 } })).toBe(false);
-    expect(uischemaOk({ type: 'Form', elements: [], options: { id: null } })).toBe(false);
-    expect(uischemaOk(flowOf({ type: 'Form', elements: [], options: { id: '' } }))).toBe(false);
+    expect(uischemaOk(form({ options: { id: '' } }))).toBe(false);
+    expect(uischemaOk(form({ options: { id: 7 } }))).toBe(false);
+    expect(uischemaOk(form({ options: { id: null } }))).toBe(false);
+    expect(uischemaOk(flowOf(form({ options: { id: '' } })))).toBe(false);
   });
 
   it('does not require options.id on a Form, so documents predating it still apply', () => {
     expect(uischemaOk(root())).toBe(true);
-    expect(uischemaOk({ type: 'Form', elements: [], options: { gap: 'md' } })).toBe(true);
-    expect(uischemaOk(flowOf({ type: 'Form', elements: [] }))).toBe(true);
+    expect(uischemaOk(form({ options: { gap: 'md' } }))).toBe(true);
+    expect(uischemaOk(flowOf(form()))).toBe(true);
     expect(uischemaOk(STUDIO_SAMPLE_UISCHEMA)).toBe(true);
   });
 
   it("still requires a Stage's options.id", () => {
-    const form = { type: 'Form', elements: [], options: { id: 'abcd1234' } };
-    expect(uischemaOk({ type: 'Flow', elements: [{ type: 'Stage', elements: [form] }] })).toBe(
+    const withId = form({ options: { id: 'abcd1234' } });
+    expect(uischemaOk({ type: 'Flow', elements: [{ type: 'Stage', elements: [withId] }] })).toBe(
       false,
     );
     expect(
-      uischemaOk({ type: 'Flow', elements: [{ type: 'Stage', elements: [form], options: {} }] }),
+      uischemaOk({ type: 'Flow', elements: [{ type: 'Stage', elements: [withId], options: {} }] }),
     ).toBe(false);
-    expect(uischemaOk(flowOf(form))).toBe(true);
+    expect(uischemaOk(flowOf(withId))).toBe(true);
   });
 
   it('describes the Form id, so completion documents it', () => {
@@ -172,7 +175,7 @@ describe('UISCHEMA_METASCHEMA layout gap (doc 193 rule 16)', () => {
   it('accepts every gap name on Form, Grid, VerticalLayout and HorizontalLayout', () => {
     for (const gap of GAPS) {
       const nested = LAYOUTS.map((type) => ({ type, options: { gap }, elements: [] }));
-      expect(uischemaOk({ type: 'Form', options: { gap }, elements: nested }), gap).toBe(true);
+      expect(uischemaOk(form({ options: { gap }, elements: nested })), gap).toBe(true);
     }
   });
 
@@ -181,7 +184,7 @@ describe('UISCHEMA_METASCHEMA layout gap (doc 193 rule 16)', () => {
       expect(uischemaOk(root({ type, options: { gap: 'huge' }, elements: [] })), type).toBe(false);
       expect(uischemaOk(root({ type, options: { gap: 8 }, elements: [] })), type).toBe(false);
     }
-    expect(uischemaOk({ type: 'Form', options: { gap: 'huge' }, elements: [] })).toBe(false);
+    expect(uischemaOk(form({ options: { gap: 'huge' } }))).toBe(false);
   });
 
   it('no longer describes Grid margin, but still accepts it as an unknown option', () => {

@@ -20,7 +20,8 @@ const row = (options?: object) => ({
   ...(options ? { options } : {}),
   elements: [heading('A'), heading('B'), heading('C')],
 });
-const form = (...elements: object[]) => ({ type: 'Form', elements });
+// Doc 201 rule 15: a Form's title is required, so every Form fixture carries one.
+const form = (...elements: object[]) => ({ type: 'Form', label: 'Untitled form', elements });
 
 function renderWith(set: typeof defaults, uischema: object) {
   return render(

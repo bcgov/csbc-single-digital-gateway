@@ -2,7 +2,7 @@ import { rankWith, uiTypeIs, type RankedTester } from '@jsonforms/core';
 import type { ComponentMap } from 'gridstack/dist/react';
 import type { GridRenderersOptions } from '../../types/elements';
 import type { RendererSet } from '../../types/renderer-set';
-import { createFormRenderer } from './form-renderer';
+import { createFormRenderer, StudioFormTitle } from './form-renderer';
 import { GridElementDispatch } from './grid-element';
 import { FORM_TYPE, GRID_LAYOUT_TYPES, type GridLayoutKind } from './grid-layouts';
 import { GRID_ELEMENT_COMPONENT } from './grid-options';
@@ -56,7 +56,11 @@ export function createGridRenderers({
     displayRenderers: [],
     layoutRenderers: [
       ...LAYOUT_TESTERS.map(([layout, tester]) => ({ tester, renderer: rendererFor(layout) })),
-      { tester: formTester, renderer: createFormRenderer(rendererFor('vertical')) },
+      // Doc 201 rule 7: on the canvas the title is the heading alone, with a placeholder when it is empty.
+      {
+        tester: formTester,
+        renderer: createFormRenderer(rendererFor('vertical'), StudioFormTitle),
+      },
     ],
   };
 }

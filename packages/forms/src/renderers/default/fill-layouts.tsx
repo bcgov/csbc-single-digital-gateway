@@ -8,7 +8,7 @@ import {
 } from '@jsonforms/core';
 import { JsonFormsDispatch, withJsonFormsLayoutProps } from '@jsonforms/react';
 import type { CSSProperties } from 'react';
-import { createFormRenderer } from '../gridstack/form-renderer';
+import { createFormRenderer, FillFormTitle } from '../gridstack/form-renderer';
 import { dividersOf, FORM_TYPE, GRID_LAYOUT_TYPES } from '../gridstack/grid-layouts';
 import { GAP_CLASS, GAP_REM, layoutGapOf } from '../gridstack/layout-gap';
 import { LayoutNestingContext } from '../gridstack/layout-nesting';
@@ -132,5 +132,9 @@ export const fillLayoutRenderers: readonly JsonFormsRendererRegistryEntry[] = Ob
     tester: rankWith(1, uiTypeIs(GRID_LAYOUT_TYPES.horizontal)),
     renderer: withJsonFormsLayoutProps(createColumnsLayout(rowPlacement, 'horizontal')),
   },
-  { tester: rankWith(1, uiTypeIs(FORM_TYPE)), renderer: createFormRenderer(FillStackRenderer) },
+  // Doc 201 rule 8: a fillable Form's title is gold-ruled; rule 10: an empty one renders nothing.
+  {
+    tester: rankWith(1, uiTypeIs(FORM_TYPE)),
+    renderer: createFormRenderer(FillStackRenderer, FillFormTitle),
+  },
 ]);

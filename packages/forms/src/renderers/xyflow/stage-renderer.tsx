@@ -3,16 +3,11 @@ import { withJsonFormsLayoutProps } from '@jsonforms/react';
 import { mdiDeleteOutline, mdiFileDocumentOutline, mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { useContext, type KeyboardEvent } from 'react';
+import { labelOf } from '../gridstack/element-label';
 import { FORM_TYPE } from '../gridstack/grid-layouts';
 import { FlowContext } from './flow-context';
 import { useFlowEditor, type FlowEditor } from './flow-editor';
 import { elementsOf, STAGE_CHILD_MESSAGE, STAGE_PLACEMENT_MESSAGE } from './flow-elements';
-
-/** An element's `label` when a non-empty string, else `fallback`. */
-function labelOf(element: UISchemaElement, fallback: string): string {
-  const label = (element as { label?: unknown }).label;
-  return typeof label === 'string' && label.trim() !== '' ? label.trim() : fallback;
-}
 
 // Doc 196 rule 13: under an editor the card is pointer-events-none (presses fall through to the studio frame, which
 // selects and drags the Stage), so the row controls opt back in, and `nodrag` stops xyflow starting a drag from them.

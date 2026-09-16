@@ -15,7 +15,14 @@ export const FORM_CHOICES: readonly FormChoice[] = Object.freeze([
 /** A blank document's schema: an object with no properties yet. */
 const emptySchema = (): JsonSchema => ({ type: 'object', properties: {} });
 
-const emptyForm = (): FormElement => ({ type: 'Form', elements: [] });
+/** The title every document the studio creates starts with (doc 201 rule 17). */
+export const UNTITLED_FORM = 'Untitled form';
+
+const emptyForm = (): FormElement => ({
+  type: 'Form',
+  label: UNTITLED_FORM,
+  elements: [],
+});
 
 const emptyFlow = (): FlowElement => ({ type: 'Flow', elements: [], options: { edges: [] } });
 

@@ -162,8 +162,11 @@ const deliveryTexts: SwitchControlElement = {
 
 // The root is a Form (doc 192 rule 8, amending doc 182 rule 24c): it renders like a VerticalLayout, so its
 // children stack in order and none carries a `gridItem` — only the Delivery Grid's children are placed.
+// Doc 201 rule 17: every document the studio seeds arrives titled, so the sample satisfies the metaschema's
+// required `label` (rule 15).
 export const STUDIO_SAMPLE_UISCHEMA: FormElement = {
   type: 'Form',
+  label: 'Untitled form',
   elements: [
     greeting,
     name,

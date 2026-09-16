@@ -23,6 +23,8 @@ const crumbButtons = () => within(trail()).queryAllByRole('button');
 const crumbNames = () =>
   crumbButtons().map((button) => button.getAttribute('aria-label') ?? button.textContent);
 const crumb = (label: string) => within(trail()).getByRole('button', { name: label });
+/** Doc 201 rules 17, 19: the sample root is titled, so its crumb reads the title, not the type fallback. */
+const ROOT_CRUMB = 'Untitled form';
 const current = () => trail().querySelector<HTMLElement>('[aria-current="page"]');
 const actionsFor = (item: HTMLElement) =>
   document.querySelector(`[data-studio-actions-for="${item.getAttribute('data-element-id')}"]`);
@@ -89,14 +91,14 @@ describe('placement (rule 8)', () => {
 describe('path (rules 9-11)', () => {
   it('shows only the root, as a button and not current, when nothing is selected', async () => {
     await renderStudio();
-    expect(crumbNames()).toEqual(['Form']);
+    expect(crumbNames()).toEqual([ROOT_CRUMB]);
     expect(current()).toBeNull();
   });
 
   it('shows root › ancestors › the selected element, which is current and not a button', async () => {
     const { email } = await renderStudio();
     press(email);
-    expect(crumbNames()).toEqual(['Form', 'VerticalLayout', 'HorizontalLayout']);
+    expect(crumbNames()).toEqual([ROOT_CRUMB, 'VerticalLayout', 'HorizontalLayout']);
     expect(current()).toHaveTextContent('Email');
     expect(current()?.tagName).not.toBe('BUTTON');
     expect(trail().querySelectorAll('[data-slot="breadcrumb-separator"]')).toHaveLength(3);
@@ -106,9 +108,9 @@ describe('path (rules 9-11)', () => {
 
   it('shows the root as a document icon named and titled by its label (rule 10b)', async () => {
     await renderStudio();
-    const root = crumb('Form');
-    expect(root).toHaveAttribute('aria-label', 'Form');
-    expect(root).toHaveAttribute('title', 'Form');
+    const root = crumb(ROOT_CRUMB);
+    expect(root).toHaveAttribute('aria-label', ROOT_CRUMB);
+    expect(root).toHaveAttribute('title', ROOT_CRUMB);
     expect(root.querySelector('svg path')).toHaveAttribute('d', mdiFileDocumentOutline);
     expect(root).toHaveTextContent('');
   });
@@ -128,7 +130,7 @@ describe('path (rules 9-11)', () => {
     const { rootFrame } = await renderStudio();
     press(rootFrame);
     expect(crumbNames()).toEqual([]);
-    expect(current()).toHaveAttribute('aria-label', 'Form');
+    expect(current()).toHaveAttribute('aria-label', ROOT_CRUMB);
     expect(current()?.querySelector('svg path')).toHaveAttribute('d', mdiFileDocumentOutline);
   });
 
@@ -147,7 +149,7 @@ describe('path (rules 9-11)', () => {
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete element?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => expect(crumbNames()).toEqual(['Form']));
+    await waitFor(() => expect(crumbNames()).toEqual([ROOT_CRUMB]));
     expect(current()).toBeNull();
   });
 });
@@ -175,7 +177,7 @@ describe('hover (rules 12-13, 15)', () => {
 
   it('hovers the root frame from the root segment, with no actions popover', async () => {
     const { rootFrame } = await renderStudio();
-    enter(crumb('Form'));
+    enter(crumb(ROOT_CRUMB));
     expect(rootFrame).toHaveAttribute('data-hovered');
     expect(actionsFor(rootFrame)).toBeNull();
   });
@@ -210,7 +212,7 @@ describe('click (rule 14)', () => {
     fireEvent.click(crumb('Grid'));
     expect(delivery).toHaveAttribute('data-selected');
     expect(city).not.toHaveAttribute('data-selected');
-    expect(crumbNames()).toEqual(['Form']);
+    expect(crumbNames()).toEqual([ROOT_CRUMB]);
     expect(current()).toHaveTextContent('Grid');
   });
 });
@@ -294,6 +296,6 @@ describe('preview (rule 17)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
     await screen.findByRole('textbox', { name: 'Name' });
-    expect(crumbNames()).toEqual(['Form']);
+    expect(crumbNames()).toEqual([ROOT_CRUMB]);
   });
 });

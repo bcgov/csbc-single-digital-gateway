@@ -41,7 +41,8 @@ function fieldControl(field: InspectorField, ctx: InspectorContext): UISchemaEle
   return {
     type: 'Control',
     scope: `#/properties/${field.key}`,
-    label: field.label,
+    // Doc 201 rule 13: the element-dependent label when the field has one, else its static label.
+    label: field.labelFor?.(ctx) ?? field.label,
     ...(Object.keys(options).length > 0 ? { options } : {}),
   } as UISchemaElement;
 }
@@ -74,11 +75,15 @@ export function inspectorForm(
       .map((field) => fieldControl(field, ctx)),
   })).filter((section) => section.elements.length > 0);
 
+  // Doc 201 rule 12: the applicable required fields, omitted entirely when there are none.
+  const required = fields.filter((field) => field.required?.(ctx) === true).map((f) => f.key);
+
   return {
     elementType: ctx.element.type,
     schema: {
       type: 'object',
       properties: Object.fromEntries(fields.map((field) => [field.key, field.schema(ctx)])),
+      ...(required.length > 0 ? { required } : {}),
     } as JsonSchema,
     uischema: { type: 'VerticalLayout', elements: sections } as UISchemaElement,
     data,

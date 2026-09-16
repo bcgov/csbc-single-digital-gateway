@@ -13,7 +13,13 @@ import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/samp
 const ajv = createAjv();
 const ok = (value: unknown) => ajv.validate(UISCHEMA_METASCHEMA, value) === true;
 
-const form = (extra: object = {}) => ({ type: 'Form', elements: [], ...extra });
+// Doc 201 rule 15: a Form's title is required, so every Form fixture carries one unless `extra` overrides it.
+const form = (extra: object = {}) => ({
+  type: 'Form',
+  label: 'Untitled form',
+  elements: [],
+  ...extra,
+});
 const stage = (id: string, elements: object[] = [form()], options: object = {}) => ({
   type: 'Stage',
   elements,
