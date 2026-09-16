@@ -1,6 +1,7 @@
 import { JsonFormsDispatch } from '@jsonforms/react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
+import { ConditionOutputsProvider } from './condition-outputs';
 import { FlowContext } from './flow-context';
 import { useFlowEditor } from './flow-editor';
 import { criteriaOf, DEFAULT_HANDLE } from './flow-elements';
@@ -22,6 +23,8 @@ const VIEW_HANDLE_CLASS = 'opacity-0';
 export function ConditionNode({ data }: NodeProps<ConditionFlowNode>) {
   const flow = useContext(FlowContext);
   const editing = useFlowEditor() !== null;
+  // Doc 199 rule 20: the card shows a + beside every output this set does NOT hold.
+  const connected = useMemo(() => new Set(data.connectedOutputs), [data.connectedOutputs]);
   if (!flow) return null;
   const { schema, path, enabled, renderers, cells } = flow;
   const handleClass = editing ? EDIT_HANDLE_CLASS : VIEW_HANDLE_CLASS;
@@ -40,14 +43,16 @@ export function ConditionNode({ data }: NodeProps<ConditionFlowNode>) {
       {/* Doc 195 rule 15b: xyflow sets pointer-events: none on a node that is neither selectable nor
           draggable, and every child inherits it — so the card opts back in or presses fall through. */}
       <div data-slot="condition-node" className="pointer-events-auto">
-        <JsonFormsDispatch
-          uischema={data.element}
-          schema={schema}
-          path={path}
-          enabled={enabled}
-          {...(renderers ? { renderers } : {})}
-          {...(cells ? { cells } : {})}
-        />
+        <ConditionOutputsProvider value={connected}>
+          <JsonFormsDispatch
+            uischema={data.element}
+            schema={schema}
+            path={path}
+            enabled={enabled}
+            {...(renderers ? { renderers } : {})}
+            {...(cells ? { cells } : {})}
+          />
+        </ConditionOutputsProvider>
       </div>
       {outputs.map((handleId, index) => (
         <Handle

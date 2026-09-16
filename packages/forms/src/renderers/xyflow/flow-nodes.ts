@@ -22,8 +22,13 @@ export type ActionFlowEdge = Edge<ActionEdgeData, typeof ACTION_EDGE_TYPE>;
 export type StageNodeData = { element: UISchemaElement; isLeaf: boolean };
 export type StageFlowNode = Node<StageNodeData, typeof STAGE_NODE_TYPE>;
 
-/** A Condition draws its outputs from its own criteria, so it needs nothing but its element. */
-export type ConditionNodeData = { element: UISchemaElement };
+/**
+ * A Condition draws its outputs from its own criteria. Doc 199 rule 20: which of them are already WIRED is a
+ * question about the Flow's edges, which neither the node nor the dispatched card can see — so it is derived
+ * here, exactly as a Stage's `isLeaf` is, and handed down to the card through `ConditionOutputsContext`.
+ * The default output is named by `DEFAULT_HANDLE`, the same id its handle carries.
+ */
+export type ConditionNodeData = { element: UISchemaElement; connectedOutputs: string[] };
 export type ConditionFlowNode = Node<ConditionNodeData, typeof CONDITION_NODE_TYPE>;
 
 export type FlowNode = StageFlowNode | ConditionFlowNode;
@@ -39,6 +44,7 @@ export type FlowNode = StageFlowNode | ConditionFlowNode;
 export function toFlowNodes(flow: UISchemaElement): FlowNode[] {
   const positions = stagePositions(flow);
   const leaves = new Set(leafStageIds(flow));
+  const edges = flowEdges(flow);
   return drawnNodes(flow).map(({ element, id, kind }) => {
     const shared = {
       id,
@@ -49,7 +55,16 @@ export function toFlowNodes(flow: UISchemaElement): FlowNode[] {
     // No `as const` here: these are already literal-typed by their declarations, and the assertion is only
     // legal on a literal itself, not on a reference to one.
     return kind === 'condition'
-      ? { ...shared, type: CONDITION_NODE_TYPE, data: { element } }
+      ? {
+          ...shared,
+          type: CONDITION_NODE_TYPE,
+          data: {
+            element,
+            connectedOutputs: edges.flatMap((edge) =>
+              edge.source === id ? [edge.sourceHandle ?? DEFAULT_HANDLE] : [],
+            ),
+          },
+        }
       : { ...shared, type: STAGE_NODE_TYPE, data: { element, isLeaf: leaves.has(id) } };
   });
 }

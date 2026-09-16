@@ -1,5 +1,5 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
-import { AddActionButton } from './add-affordance';
+import { AddNodeMenu } from './add-affordance';
 import { useFlowEditor } from './flow-editor';
 import type { ActionFlowEdge } from './flow-nodes';
 
@@ -53,9 +53,13 @@ export function ActionEdge({
             className="pointer-events-none absolute"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
-            <AddActionButton
-              label="Insert a stage"
-              onAdd={() => editor.onGesture({ type: 'insert-between', flowId, edgeId: id })}
+            {/* Doc 199 rule 24: the edge + splits the edge with either kind of node. */}
+            <AddNodeMenu
+              variant="action"
+              label="Insert a node"
+              onAdd={(kind) =>
+                editor.onGesture({ type: 'insert-between', flowId, edgeId: id, kind })
+              }
             />
           </div>
         </EdgeLabelRenderer>

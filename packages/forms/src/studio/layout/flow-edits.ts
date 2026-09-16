@@ -2,9 +2,11 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import {
   authoredStageId,
-  drawnStages,
+  CONDITION_TYPE,
+  drawnNodes,
   FLOW_TYPE,
   STAGE_TYPE,
+  type FlowNodeKind,
 } from '../../renderers/xyflow/flow-elements';
 import { canConnect } from '../../renderers/xyflow/flow-gestures';
 import { flowEdges } from '../../renderers/xyflow/flow-graph';
@@ -122,7 +124,8 @@ export function nextElementLabel(root: UISchemaElement, type: string, label: str
  * `elements` (doc 198 rules 1-2).
  */
 function newStageElement(root: TreeElement, newId: () => string): TreeElement {
-  const taken = new Set(drawnStages(root).map(({ element }) => authoredStageId(element)));
+  // Doc 199 rule 15: Stages and Conditions share ONE id-space, so a new id must avoid both.
+  const taken = new Set(drawnNodes(root).map(({ element }) => authoredStageId(element)));
   return {
     type: STAGE_TYPE,
     label: nextElementLabel(root, STAGE_TYPE, 'Stage'),
@@ -140,36 +143,68 @@ function newStageElement(root: TreeElement, newId: () => string): TreeElement {
 }
 
 /**
- * Rules 18, 20: a Flow root gains `"Stage <n>"` holding one `"Form <m>"`, with a fresh id. When the selected Stage has
- * an authored id the new Stage is connected from it. Any other root is refused.
+ * Doc 199 rule 24: a fresh `"Condition <n>"`, with an id unused by any node (rule 15). It holds NO children —
+ * a Condition is not a Layout — and starts with no criteria, which is a legal pass-through (rule 13); its
+ * criteria are authored on the card afterwards, each born complete (rule 26).
  */
-export function insertStage(
+function newConditionElement(root: TreeElement, newId: () => string): TreeElement {
+  const taken = new Set(drawnNodes(root).map(({ element }) => authoredStageId(element)));
+  return {
+    type: CONDITION_TYPE,
+    label: nextElementLabel(root, CONDITION_TYPE, 'Condition'),
+    options: { id: freshId(taken, newId), criteria: [] },
+  } as TreeElement;
+}
+
+/** The new node of `kind`, so an appended and an inserted node are identical but for their edges. */
+const newNodeElement = (root: TreeElement, kind: FlowNodeKind, newId: () => string): TreeElement =>
+  kind === 'condition' ? newConditionElement(root, newId) : newStageElement(root, newId);
+
+/**
+ * Rules 18, 20, widened by doc 199 rules 20, 24: a Flow root gains a new node of `kind`, with a fresh id. When the
+ * selected NODE has an authored id the new node is connected from it — from `sourceHandle` when one is given, which
+ * is how a Condition's criterion output wires its branch (rule 20). Any other root is refused.
+ *
+ * The source is looked up in `drawnNodes`, not `drawnStages`: an append now starts at a Condition's output just as
+ * readily as at a leaf Stage.
+ */
+export function insertNode(
   uischema: UISchemaElement,
   selectedId: string | null,
+  kind: FlowNodeKind,
+  sourceHandle: string | undefined,
   ids: ElementIds,
   newId: () => string,
 ): FlowInsertResult {
   const root = uischema as TreeElement;
   if (root.type !== FLOW_TYPE) return { uischema, inserted: undefined };
-  const stages = drawnStages(root);
   const selected = selectedId === null ? undefined : findById(root, selectedId, ids);
-  const drawn = stages.find((stage) => stage.element === selected);
+  const drawn = drawnNodes(root).find((node) => node.element === selected);
 
-  const stage = newStageElement(root, newId);
-  const id = authoredStageId(stage) as string;
+  const node = newNodeElement(root, kind, newId);
+  const id = authoredStageId(node) as string;
 
-  let next = withElements(root, [...(root.elements ?? []), stage], ids);
+  let next = withElements(root, [...(root.elements ?? []), node], ids);
   if (drawn?.authored) {
     const edges = rawEdges(next);
     const edgeId = freshId(new Set(edges.map(edgeIdOf)), newId);
-    next = withOptions(
-      next,
-      { edges: [...edges, { id: edgeId, source: drawn.id, target: id }] },
-      ids,
-    );
+    // `exactOptionalPropertyTypes`, and rule 18: a default-path edge keeps NO handle key at all.
+    const edge =
+      sourceHandle === undefined
+        ? { id: edgeId, source: drawn.id, target: id }
+        : { id: edgeId, source: drawn.id, target: id, sourceHandle };
+    next = withOptions(next, { edges: [...edges, edge] }, ids);
   }
-  return { uischema: next, inserted: stage };
+  return { uischema: next, inserted: node };
 }
+
+/** `insertNode` for a Stage with no handle — the doc 198 shape, kept for its callers. */
+export const insertStage = (
+  uischema: UISchemaElement,
+  selectedId: string | null,
+  ids: ElementIds,
+  newId: () => string,
+): FlowInsertResult => insertNode(uischema, selectedId, 'stage', undefined, ids, newId);
 
 /**
  * Doc 198 rule 10: the edge `edgeId` split in two by a new Stage. The existing edge KEEPS ITS ID and is retargeted at
@@ -181,6 +216,7 @@ export function insertStageBetween(
   uischema: UISchemaElement,
   flowId: string,
   edgeId: string,
+  kind: FlowNodeKind,
   ids: ElementIds,
   newId: () => string,
 ): FlowInsertResult {
@@ -190,7 +226,7 @@ export function insertStageBetween(
   const split = flowEdges(root).find((edge) => edge.id === edgeId);
   if (!split) return { uischema, inserted: undefined };
 
-  const stage = newStageElement(root, newId);
+  const stage = newNodeElement(root, kind, newId);
   const stageId = authoredStageId(stage) as string;
   let next = withElements(root, [...(root.elements ?? []), stage], ids);
 

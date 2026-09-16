@@ -42,6 +42,24 @@ export function operatorsFor(kind: ControlKind | undefined): readonly Operator[]
   return kind === undefined ? [] : (OPERATORS_BY_KIND[kind] ?? []);
 }
 
+/**
+ * Doc 199 rule 19: an operator in words, for the pickers that author one. The stored vocabulary stays the
+ * `Operator` union — this is display only, so a row summary keeps reading as the authored operator.
+ */
+export const OPERATOR_LABELS: Readonly<Record<Operator, string>> = Object.freeze({
+  equals: 'equals',
+  notEquals: 'does not equal',
+  contains: 'contains',
+  gt: 'is greater than',
+  gte: 'is at least',
+  lt: 'is less than',
+  lte: 'is at most',
+  isEmpty: 'is empty',
+  isNotEmpty: 'is not empty',
+  isTrue: 'is true',
+  isFalse: 'is false',
+});
+
 const VALUELESS: ReadonlySet<Operator> = new Set<Operator>([
   'isEmpty',
   'isNotEmpty',

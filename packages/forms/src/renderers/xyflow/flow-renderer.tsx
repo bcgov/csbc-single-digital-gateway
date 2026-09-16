@@ -200,9 +200,11 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
               className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
             >
               <p>{FLOW_EMPTY_MESSAGE}</p>
+              {/* Doc 199 rule 24: the origin + stays Stage-only — a Condition with nothing upstream to test
+                  could hold no valid criterion (rule 26). */}
               <AddAffordance
                 label="Add a stage"
-                onAdd={() => editor.onGesture({ type: 'append', stageId: null })}
+                onAdd={() => editor.onGesture({ type: 'append', stageId: null, kind: 'stage' })}
               />
             </div>
           ) : null}

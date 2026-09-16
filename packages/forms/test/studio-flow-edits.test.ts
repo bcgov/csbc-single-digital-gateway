@@ -6,6 +6,7 @@ import {
   connectStages,
   disconnectEdges,
   insertForm,
+  insertNode,
   insertStage,
   insertStageBetween,
   nextElementLabel,
@@ -226,6 +227,96 @@ describe('insertStage (rules 18, 20)', () => {
   });
 });
 
+describe('insertNode appends a Condition (doc 199 rules 20, 24)', () => {
+  const conditionAt = (id: string, criteria: object[] = []) =>
+    tree({ type: 'Condition', label: 'C', options: { id, criteria } });
+
+  it("appends 'Condition <n>' holding no children, with an empty criteria list", () => {
+    const ids = createElementIds();
+    const root = flow([stage('a', 'Stage 1')]);
+    const { uischema, inserted } = insertNode(
+      root,
+      null,
+      'condition',
+      undefined,
+      ids,
+      sequence('c1'),
+    );
+    // A Condition is not a Layout: it has no `elements`, and starts as a legal pass-through (rule 13).
+    expect(inserted).toEqual({
+      type: 'Condition',
+      label: 'Condition 1',
+      options: { id: 'c1', criteria: [] },
+    });
+    expect(child(uischema, 1)).toBe(inserted);
+  });
+
+  it('takes an id unused by any node, Stage or Condition (rule 15)', () => {
+    const ids = createElementIds();
+    const root = flow([stage('a', 'A'), conditionAt('b')]);
+    // Both ids are taken — the two kinds share ONE id-space — so it regenerates past both.
+    const { inserted } = insertNode(
+      root,
+      null,
+      'condition',
+      undefined,
+      ids,
+      sequence('a', 'b', 'c3'),
+    );
+    expect(inserted?.options).toEqual({ id: 'c3', criteria: [] });
+  });
+
+  it("carries the criterion as the new edge's sourceHandle (rule 20)", () => {
+    const ids = createElementIds();
+    const root = flow([conditionAt('c1', [{ id: 'x', field: 'k', operator: 'isEmpty' }])]);
+    const { uischema } = insertNode(
+      root,
+      ids.idOf(child(root, 0)),
+      'stage',
+      'x',
+      ids,
+      sequence('s1', 'f1', 'e1'),
+    );
+    expect(edgesOf(uischema)).toEqual([
+      { id: 'e1', source: 'c1', target: 's1', sourceHandle: 'x' },
+    ]);
+  });
+
+  it('writes NO sourceHandle key for a default-path edge (rule 18)', () => {
+    const ids = createElementIds();
+    const root = flow([conditionAt('c1')]);
+    const { uischema } = insertNode(
+      root,
+      ids.idOf(child(root, 0)),
+      'stage',
+      undefined,
+      ids,
+      sequence('s1', 'f1', 'e1'),
+    );
+    // ABSENT, never an explicit undefined: absent is precisely what marks the default path.
+    expect(edgesOf(uischema)).toEqual([edge('e1', 'c1', 's1')]);
+    expect(Object.hasOwn(required(edgesOf(uischema)[0], 'edge') as object, 'sourceHandle')).toBe(
+      false,
+    );
+  });
+
+  it('splits an edge with a Condition, whose downstream half becomes its default path', () => {
+    const ids = createElementIds();
+    const root = flow([stage('a', 'A'), stage('b', 'B')], [edge('e1', 'a', 'b')]);
+    const { uischema, inserted } = insertStageBetween(
+      root,
+      ids.idOf(root),
+      'e1',
+      'condition',
+      ids,
+      sequence('c1', 'e2'),
+    );
+    expect(inserted?.type).toBe('Condition');
+    // The appended half carries no handle, so the Condition is born WITH a default path — no flow problem.
+    expect(edgesOf(uischema)).toEqual([edge('e1', 'a', 'c1'), edge('e2', 'c1', 'b')]);
+  });
+});
+
 describe('insertStageBetween (doc 198 rule 10)', () => {
   const chain = () => flow([stage('a', 'Stage 1'), stage('b', 'Stage 2')], [edge('e1', 'a', 'b')]);
 
@@ -236,6 +327,7 @@ describe('insertStageBetween (doc 198 rule 10)', () => {
       root,
       ids.idOf(root),
       'e1',
+      'stage',
       ids,
       sequence('s3', 'f3', 'e2'),
     );
@@ -256,6 +348,7 @@ describe('insertStageBetween (doc 198 rule 10)', () => {
       root,
       ids.idOf(root),
       'e2',
+      'stage',
       ids,
       sequence('s', 'f', 'e3'),
     );
@@ -273,6 +366,7 @@ describe('insertStageBetween (doc 198 rule 10)', () => {
       root,
       ids.idOf(root),
       'e1',
+      'stage',
       ids,
       sequence('s', 'f', 'e1', 'e9'),
     );
@@ -283,18 +377,22 @@ describe('insertStageBetween (doc 198 rule 10)', () => {
     const ids = createElementIds();
     const root = chain();
     const same = { uischema: root, inserted: undefined };
-    expect(insertStageBetween(root, ids.idOf(root), 'nope', ids, sequence('s'))).toEqual(same);
-    // The flowId must name the Flow itself: a Stage's id is refused.
-    expect(insertStageBetween(root, ids.idOf(child(root, 0)), 'e1', ids, sequence('s'))).toEqual(
+    expect(insertStageBetween(root, ids.idOf(root), 'nope', 'stage', ids, sequence('s'))).toEqual(
       same,
     );
+    // The flowId must name the Flow itself: a Stage's id is refused.
+    expect(
+      insertStageBetween(root, ids.idOf(child(root, 0)), 'e1', 'stage', ids, sequence('s')),
+    ).toEqual(same);
     // A self-loop never survives flowEdges, so it cannot be split.
     const looped = flow([stage('a', 'A')], [edge('e1', 'a', 'a')]);
     expect(
-      insertStageBetween(looped, ids.idOf(looped), 'e1', ids, sequence('s')).inserted,
+      insertStageBetween(looped, ids.idOf(looped), 'e1', 'stage', ids, sequence('s')).inserted,
     ).toBeUndefined();
     const formRoot = tree(form('Root'));
-    expect(insertStageBetween(formRoot, ids.idOf(formRoot), 'e1', ids, sequence('s'))).toEqual({
+    expect(
+      insertStageBetween(formRoot, ids.idOf(formRoot), 'e1', 'stage', ids, sequence('s')),
+    ).toEqual({
       uischema: formRoot,
       inserted: undefined,
     });

@@ -1,7 +1,7 @@
 import { JsonFormsDispatch } from '@jsonforms/react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useContext } from 'react';
-import { AddAffordance } from './add-affordance';
+import { AddNodeMenu } from './add-affordance';
 import { FlowContext } from './flow-context';
 import { useFlowEditor } from './flow-editor';
 import type { StageFlowNode } from './flow-nodes';
@@ -62,9 +62,12 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
           className="pointer-events-none absolute top-full left-1/2 flex -translate-x-1/2 flex-col items-center pt-1"
         >
           <span aria-hidden="true" className="h-3 w-px bg-border" />
-          <AddAffordance
-            label="Add a stage"
-            onAdd={() => editor.onGesture({ type: 'append', stageId: editor.idOf(data.element) })}
+          {/* Doc 199 rule 24: the leaf + now offers a Stage or a Condition. */}
+          <AddNodeMenu
+            label="Add a node"
+            onAdd={(kind) =>
+              editor.onGesture({ type: 'append', stageId: editor.idOf(data.element), kind })
+            }
           />
         </div>
       ) : null}

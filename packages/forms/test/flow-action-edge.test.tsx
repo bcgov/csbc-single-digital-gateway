@@ -54,6 +54,15 @@ const currentCrumb = () => trail().querySelector('[aria-current="page"]')?.textC
 const renderStudio = (uischema: UISchemaElement = CHAIN) =>
   render(<FormStudio schema={schema} uischema={uischema} />);
 
+/**
+ * Doc 199 rule 24: the edge + no longer splits outright — it opens a Stage|Condition menu. Base UI portals
+ * that menu OUT of the canvas, so its items are found on the whole document.
+ */
+const chooseNode = async (trigger: HTMLElement, item: 'Stage' | 'Condition') => {
+  fireEvent.click(trigger);
+  fireEvent.click(await screen.findByRole('menuitem', { name: item }));
+};
+
 describe('ActionEdge rendering (rule 9)', () => {
   it('gives every sanitised edge the ActionEdge type, keeping the arrow at its target', () => {
     const edges = toFlowEdges(CHAIN);
@@ -120,7 +129,7 @@ describe('insert-between splits the edge (rules 10, 16)', () => {
   it('inserts a Stage between the two the edge joins, preserving the upstream edge id', async () => {
     renderStudio();
     await waitFor(() => expect(edgeIds()).toEqual(['rf__edge-e1']));
-    fireEvent.click(required(edgeAdds()[0], 'edge +'));
+    await chooseNode(required(edgeAdds()[0], 'edge +'), 'Stage');
 
     await waitFor(() => expect(stageCount()).toBe(3));
     await waitFor(() => expect(edgeIds()).toHaveLength(2));
@@ -131,7 +140,7 @@ describe('insert-between splits the edge (rules 10, 16)', () => {
   it('never orphans the downstream Stage — it keeps exactly one leaf', async () => {
     renderStudio();
     await waitFor(() => expect(edgeIds()).toEqual(['rf__edge-e1']));
-    fireEvent.click(required(edgeAdds()[0], 'edge +'));
+    await chooseNode(required(edgeAdds()[0], 'edge +'), 'Stage');
 
     await waitFor(() => expect(stageCount()).toBe(3));
     // B is still downstream of the new Stage, so it is the only leaf.
@@ -144,7 +153,7 @@ describe('insert-between splits the edge (rules 10, 16)', () => {
   it('re-ranks the chain so the new Stage sits between the two', async () => {
     renderStudio();
     await waitFor(() => expect(edgeIds()).toEqual(['rf__edge-e1']));
-    fireEvent.click(required(edgeAdds()[0], 'edge +'));
+    await chooseNode(required(edgeAdds()[0], 'edge +'), 'Stage');
     await waitFor(() => expect(stageCount()).toBe(3));
 
     // a = rank 0, the inserted Stage = rank 1, b = rank 2 (rules 1-2): b is pushed down a rank.
@@ -155,7 +164,7 @@ describe('insert-between splits the edge (rules 10, 16)', () => {
   it('selects the inserted Stage (rule 16)', async () => {
     renderStudio();
     await waitFor(() => expect(edgeIds()).toEqual(['rf__edge-e1']));
-    fireEvent.click(required(edgeAdds()[0], 'edge +'));
+    await chooseNode(required(edgeAdds()[0], 'edge +'), 'Stage');
 
     await waitFor(() => expect(currentCrumb()).toBe('Stage 1'));
   });
@@ -163,7 +172,7 @@ describe('insert-between splits the edge (rules 10, 16)', () => {
   it('shows no Flow problem after a split — it cannot create a cycle', async () => {
     renderStudio();
     await waitFor(() => expect(edgeIds()).toEqual(['rf__edge-e1']));
-    fireEvent.click(required(edgeAdds()[0], 'edge +'));
+    await chooseNode(required(edgeAdds()[0], 'edge +'), 'Stage');
 
     await waitFor(() => expect(stageCount()).toBe(3));
     expect(centre().querySelector('[data-slot="flow-element-error"]')).toBeNull();

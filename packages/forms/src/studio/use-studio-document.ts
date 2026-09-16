@@ -125,7 +125,13 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     });
   }, []);
   // Doc 196: Flow gestures. Doc 198 rule 16: Stage and Form inserts from the on-canvas + affordances.
-  const { flowEditor, insertFlowGesture } = useFlowDocument(ids, updateUischema, currentUischema);
+  // Doc 199 rule 25: criterion edits and the card's field picker need the SCHEMA too, so the Flow half is
+  // given the whole document rather than the uischema alone.
+  const flowDocument = useMemo(
+    () => ({ schema: currentSchema, uischema: currentUischema }),
+    [currentSchema, currentUischema],
+  );
+  const { flowEditor, insertFlowGesture } = useFlowDocument(ids, updateUischema, flowDocument);
 
   /** The element with `elementId` in the document, or `undefined`. */
   const elementOf = useCallback(

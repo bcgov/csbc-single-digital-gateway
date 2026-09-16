@@ -55,6 +55,14 @@ const nodeOf = (id: string) =>
  */
 const buttonIn = (stageId: string, name: string) =>
   within(nodeOf(stageId)).findByRole('button', { name });
+/**
+ * Doc 199 rule 24: a leaf or edge + no longer appends outright — it opens a Stage|Condition menu. Base UI
+ * portals that menu OUT of the canvas, so its items are found on the whole document, never within the node.
+ */
+const chooseNode = async (trigger: HTMLElement, item: 'Stage' | 'Condition') => {
+  fireEvent.click(trigger);
+  fireEvent.click(await screen.findByRole('menuitem', { name: item }));
+};
 const leafAdds = () => [...centre().querySelectorAll('[data-slot="flow-leaf-add"]')];
 const stageCount = () => centre().querySelectorAll('[data-slot="stage-card"]').length;
 const edgeCount = () => document.querySelectorAll('[data-testid^="rf__edge-"]').length;
@@ -91,7 +99,7 @@ describe('leaf add affordance (rules 6-8)', () => {
   it('appends "Stage <n>" holding one "Form <m>" and an edge from the leaf, then selects it', async () => {
     renderStudio();
     await waitFor(() => expect(edgeCount()).toBe(1));
-    fireEvent.click(await buttonIn('s2', 'Add a stage'));
+    await chooseNode(await buttonIn('s2', 'Add a node'), 'Stage');
 
     await waitFor(() => expect(stageCount()).toBe(3));
     await waitFor(() => expect(edgeCount()).toBe(2));
@@ -106,7 +114,7 @@ describe('leaf add affordance (rules 6-8)', () => {
 
   it('places the appended Stage one rank below the leaf, with no authored position', async () => {
     renderStudio();
-    fireEvent.click(await buttonIn('s2', 'Add a stage'));
+    await chooseNode(await buttonIn('s2', 'Add a node'), 'Stage');
     await waitFor(() => expect(stageCount()).toBe(3));
 
     // Ranks are derived (rules 1-2): s1 = 0, s2 = 1, the new Stage = 2 → y = 2 × 240, x = 0.
@@ -119,7 +127,7 @@ describe('leaf add affordance (rules 6-8)', () => {
 
   it('moves the + to the new leaf, leaving the old leaf without one', async () => {
     renderStudio();
-    fireEvent.click(await buttonIn('s2', 'Add a stage'));
+    await chooseNode(await buttonIn('s2', 'Add a node'), 'Stage');
     await waitFor(() => expect(stageCount()).toBe(3));
     await waitFor(() => expect(leafAdds()).toHaveLength(1));
     expect(nodeOf('s2').querySelector('[data-slot="flow-leaf-add"]')).toBeNull();
@@ -177,7 +185,7 @@ describe('Stage card "+ Add form" row (rule 13)', () => {
 describe('view-only and gesture safety (rules 14-15)', () => {
   it('gives the canvas + affordances the nodrag and nopan classes', async () => {
     renderStudio();
-    expect(await buttonIn('s2', 'Add a stage')).toHaveClass(
+    expect(await buttonIn('s2', 'Add a node')).toHaveClass(
       'nodrag',
       'nopan',
       'pointer-events-auto',
