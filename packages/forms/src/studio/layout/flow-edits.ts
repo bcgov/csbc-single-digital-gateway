@@ -11,6 +11,7 @@ import { STAGE_COLUMN_WIDTH, stagePositions } from '../../renderers/xyflow/flow-
 import type { StagePosition } from '../../types/elements';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, withElements, type TreeElement } from './element-tree';
+import { formIdsUsed } from './form-address';
 
 // Flow edits in the studio document (doc 196 rules 4, 6-7, 9, 18-20). Pure: every changed element is a new object
 // carrying its studio id, and untouched subtrees keep identity. Refused edits return the same uischema.
@@ -160,7 +161,15 @@ export function insertStage(
     type: STAGE_TYPE,
     label: nextElementLabel(root, STAGE_TYPE, 'Stage'),
     options: { id, position: newStagePosition(root, drawn?.id) },
-    elements: [{ type: FORM_TYPE, label: nextElementLabel(root, FORM_TYPE, 'Form'), elements: [] }],
+    // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists.
+    elements: [
+      {
+        type: FORM_TYPE,
+        label: nextElementLabel(root, FORM_TYPE, 'Form'),
+        options: { id: freshId(formIdsUsed(root), newId) },
+        elements: [],
+      },
+    ],
   } as TreeElement;
 
   let next = withElements(root, [...(root.elements ?? []), stage], ids);
@@ -176,11 +185,15 @@ export function insertStage(
   return { uischema: next, inserted: stage };
 }
 
-/** Rules 19-20: the selected Stage gains `"Form <n>"`; refused unless a Stage is selected. */
+/**
+ * Rules 19-20: the selected Stage gains `"Form <n>"`, with a fresh address (doc 197 rule 4); refused unless a Stage is
+ * selected.
+ */
 export function insertForm(
   uischema: UISchemaElement,
   selectedId: string | null,
   ids: ElementIds,
+  newId: () => string,
 ): FlowInsertResult {
   const root = uischema as TreeElement;
   const stage = selectedId === null ? undefined : findById(root, selectedId, ids);
@@ -188,6 +201,7 @@ export function insertForm(
   const form = {
     type: FORM_TYPE,
     label: nextElementLabel(root, FORM_TYPE, 'Form'),
+    options: { id: freshId(formIdsUsed(root), newId) },
     elements: [],
   } as TreeElement;
   const next = updateById(

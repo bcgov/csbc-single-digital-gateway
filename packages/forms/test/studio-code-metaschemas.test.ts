@@ -19,6 +19,9 @@ const withProperty = (property: object) => ({ type: 'object', properties: { a: p
 const control = (extra: object = {}) => ({ type: 'Control', scope: '#/properties/a', ...extra });
 // Doc 192 rule 11: every studio uischema's root is a Form.
 const root = (...elements: object[]) => ({ type: 'Form', elements });
+// Doc 197 rule 6: a Stage holding one Form, and the Flow around it.
+const stage = (form: object, id = 's1') => ({ type: 'Stage', elements: [form], options: { id } });
+const flowOf = (form: object) => ({ type: 'Flow', elements: [stage(form)] });
 
 /** Paths of named subschemas (in `properties` / `definitions`) that have neither a description nor a `$ref`. */
 function undescribed(schema: unknown, path = '#'): string[] {
@@ -49,6 +52,51 @@ function ifConditions(schema: unknown): Record<string, unknown>[] {
     typeof node.if === 'object' && node.if !== null ? [node.if as Record<string, unknown>] : [];
   return [...own, ...Object.values(node).flatMap(ifConditions)];
 }
+
+// Doc 197 rule 6 — a Form may carry the authored `options.id` that addresses it in a URL.
+describe('UISCHEMA_METASCHEMA Form options.id (doc 197 rule 6)', () => {
+  it('accepts a Form whose options carry a non-empty string id', () => {
+    expect(uischemaOk({ type: 'Form', elements: [], options: { id: 'abcd1234' } })).toBe(true);
+    expect(uischemaOk(flowOf({ type: 'Form', elements: [], options: { id: 'abcd1234' } }))).toBe(
+      true,
+    );
+    expect(uischemaOk({ type: 'Form', elements: [], options: { id: 'abcd1234', gap: 'lg' } })).toBe(
+      true,
+    );
+  });
+
+  it('rejects an empty or non-string Form options.id', () => {
+    expect(uischemaOk({ type: 'Form', elements: [], options: { id: '' } })).toBe(false);
+    expect(uischemaOk({ type: 'Form', elements: [], options: { id: 7 } })).toBe(false);
+    expect(uischemaOk({ type: 'Form', elements: [], options: { id: null } })).toBe(false);
+    expect(uischemaOk(flowOf({ type: 'Form', elements: [], options: { id: '' } }))).toBe(false);
+  });
+
+  it('does not require options.id on a Form, so documents predating it still apply', () => {
+    expect(uischemaOk(root())).toBe(true);
+    expect(uischemaOk({ type: 'Form', elements: [], options: { gap: 'md' } })).toBe(true);
+    expect(uischemaOk(flowOf({ type: 'Form', elements: [] }))).toBe(true);
+    expect(uischemaOk(STUDIO_SAMPLE_UISCHEMA)).toBe(true);
+  });
+
+  it("still requires a Stage's options.id", () => {
+    const form = { type: 'Form', elements: [], options: { id: 'abcd1234' } };
+    expect(uischemaOk({ type: 'Flow', elements: [{ type: 'Stage', elements: [form] }] })).toBe(
+      false,
+    );
+    expect(
+      uischemaOk({ type: 'Flow', elements: [{ type: 'Stage', elements: [form], options: {} }] }),
+    ).toBe(false);
+    expect(uischemaOk(flowOf(form))).toBe(true);
+  });
+
+  it('describes the Form id, so completion documents it', () => {
+    expect(JSON.stringify(UISCHEMA_METASCHEMA)).toContain('addresses this form in a link');
+    expect(undescribed(UISCHEMA_METASCHEMA)).not.toContain(
+      '#/definitions/form/properties/options/properties/id',
+    );
+  });
+});
 
 describe('UISCHEMA_METASCHEMA Form root (doc 192 rule 11)', () => {
   it('accepts a Form root with elements, label, rule and options', () => {

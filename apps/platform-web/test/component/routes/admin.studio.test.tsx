@@ -50,6 +50,9 @@ describe('Admin Studio Route', () => {
     expect(container.firstElementChild).toBe(frame);
   });
 
+  // Doc 197 rules 21-23 — the router adapter lives in admin.studio.search.test.tsx, which mocks FormStudio to
+  // capture its props; this file asserts the real studio renders, so the two cannot share a module mock.
+
   it('renders the page component directly without crashing', () => {
     const { container } = render(<FormStudioPage />);
     expect(container.querySelector('[data-slot="form-studio"]')).toBeInTheDocument();

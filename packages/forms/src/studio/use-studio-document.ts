@@ -259,6 +259,8 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     schema: currentSchema,
     uischema: currentUischema,
     seed: current.seed,
+    // Doc 197: the focus address hook resolves authored Form ids to studio ids, so it needs the id registry.
+    ids,
     editor,
     flowEditor,
     elementTypes,

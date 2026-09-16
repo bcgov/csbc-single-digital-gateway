@@ -191,12 +191,13 @@ describe('insertStage (rules 18, 20)', () => {
   it("appends 'Stage <n>' holding one 'Form <m>', with a nanoid(8) id unused by any Stage", () => {
     const ids = createElementIds();
     const root = flow([]);
-    const { uischema, inserted } = insertStage(root, null, ids, sequence('s1'));
+    const { uischema, inserted } = insertStage(root, null, ids, sequence('s1', 'f1'));
+    // Doc 197 rule 4: the Stage's Form is addressable from the start, so it takes the next id.
     expect(inserted).toEqual({
       type: 'Stage',
       label: 'Stage 1',
       options: { id: 's1', position: { x: 0, y: 0 } },
-      elements: [{ type: 'Form', label: 'Form 1', elements: [] }],
+      elements: [{ type: 'Form', label: 'Form 1', options: { id: 'f1' }, elements: [] }],
     });
     expect(child(uischema, 0)).toBe(inserted);
     expect(ids.idOf(uischema)).toBe(ids.idOf(root));
@@ -218,7 +219,8 @@ describe('insertStage (rules 18, 20)', () => {
       root,
       ids.idOf(child(root, 0)),
       ids,
-      sequence('a', 's3', 'e1'),
+      // 'a' is taken, so the Stage regenerates to 's3'; then the Stage's Form takes 'f3' and the edge 'e1'.
+      sequence('a', 's3', 'f3', 'e1'),
     );
     expect(inserted?.options).toEqual({ id: 's3', position: { x: 360, y: 100 } });
     expect(labelOf(inserted)).toBe('Stage 3');
@@ -276,8 +278,14 @@ describe('insertForm (rules 19-20)', () => {
       stage('b', 'B', {}, [form('Form 3')]),
     ]);
     const b = child(root, 1);
-    const { uischema, inserted } = insertForm(root, ids.idOf(b), ids);
-    expect(inserted).toEqual({ type: 'Form', label: 'Form 4', elements: [] });
+    const { uischema, inserted } = insertForm(root, ids.idOf(b), ids, sequence('f4'));
+    // Doc 197 rule 4: an inserted Form is addressable from the start.
+    expect(inserted).toEqual({
+      type: 'Form',
+      label: 'Form 4',
+      options: { id: 'f4' },
+      elements: [],
+    });
     expect(child(child(uischema, 1), 1)).toBe(inserted);
     expect(ids.idOf(child(uischema, 1))).toBe(ids.idOf(b));
     expect(child(uischema, 0)).toBe(child(root, 0));
@@ -287,7 +295,10 @@ describe('insertForm (rules 19-20)', () => {
     const ids = createElementIds();
     const root = flow([stage('a', 'A')]);
     for (const selected of [null, ids.idOf(root), ids.idOf(child(child(root, 0), 0)), 'el-999']) {
-      expect(insertForm(root, selected, ids)).toEqual({ uischema: root, inserted: undefined });
+      expect(insertForm(root, selected, ids, sequence('f1'))).toEqual({
+        uischema: root,
+        inserted: undefined,
+      });
     }
   });
 });

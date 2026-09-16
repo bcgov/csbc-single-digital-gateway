@@ -126,7 +126,14 @@ export interface VerticalLayoutElement extends Layout {
 export interface FormElement extends Layout {
   type: 'Form';
   label?: string;
-  options?: LayoutGapOptions & { [key: string]: unknown };
+  options?: LayoutGapOptions & {
+    /**
+     * The Form's address (doc 197): stamped on insert as a `nanoid(8)`, unique among the document's Forms, and what a
+     * host puts in a URL to open this Form. Optional — a Form without one drills in normally but cannot be linked.
+     */
+    id?: string;
+    [key: string]: unknown;
+  };
 }
 
 /** One connection between two Stages of a `Flow`, by their `options.id` (doc 195). */

@@ -2,6 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { layoutKindOf, rowHasRoom } from '../../renderers/gridstack/grid-layouts';
 import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
+import { authoredFormId, authoredIdsUsed } from './form-address';
 import { propertyKeyOf, propertyScope, type StudioDocument } from './schema-properties';
 
 /** A grid item's current engine placement, read when Copy is clicked (doc 185 rule 15). */
@@ -84,6 +85,20 @@ function rekeyControls(
   for (const child of clone.elements ?? []) rekeyControls(child, schema, keyMap, nextKey);
 }
 
+/**
+ * Doc 197 rules 19-20: every authored Stage / Form `options.id` in `clone` (a fresh deep copy, so mutated in place)
+ * replaced by one no element in the document uses. A duplicated id would make an edge target and a Form address
+ * ambiguous. An element authored without an id keeps none — nothing is stamped on copy.
+ */
+function refreshAuthoredIds(clone: TreeElement, taken: Set<string>, nextId: () => string): void {
+  if (authoredFormId(clone) !== undefined) {
+    const id = nextId();
+    (clone as { options?: Record<string, unknown> }).options = { ...clone.options, id };
+    taken.add(id);
+  }
+  for (const child of clone.elements ?? []) refreshAuthoredIds(child as TreeElement, taken, nextId);
+}
+
 const titleOf = (property: JsonSchema, key: string) =>
   typeof property.title === 'string' ? property.title : key;
 
@@ -142,6 +157,15 @@ export function copyElement(
   const keyMap = new Map<string, string>();
   const clone = structuredClone(original) as TreeElement;
   rekeyControls(clone, document.schema, keyMap, nextKey);
+
+  // Rules 19-20: ids are their own namespace, so they regenerate against the document's ids, not the property keys.
+  const takenIds = authoredIdsUsed(document.uischema);
+  const nextId = () => {
+    let id = newKey();
+    while (takenIds.has(id)) id = newKey();
+    return id;
+  };
+  refreshAuthoredIds(clone, takenIds, nextId);
   const copy = placeCopy(parent, clone, placement);
 
   const uischema = updateById(

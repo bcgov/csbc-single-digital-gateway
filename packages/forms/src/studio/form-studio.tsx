@@ -5,7 +5,9 @@ import { StudioCodePanel } from './code/studio-code-panel';
 import { DeleteConfirmation } from './delete-confirmation';
 import { useDockPanel } from './dock-panels';
 import { DockToggles } from './dock-toggles';
+import { useFocusAddress } from './use-focus-address';
 import { PreviewToggle } from './preview-toggle';
+import { StudioBackButton } from './studio-back-button';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
 import { StudioCanvas } from './studio-canvas';
 import { StudioInspector } from './studio-inspector';
@@ -66,7 +68,12 @@ import { useStudioSelection } from './use-studio-selection';
  * document renders through the fillable `renderers/default` without the Grid editor or selection — in
  * its own `JsonForms`, so anything typed is discarded when preview ends.
  */
-export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
+export const FormStudio: FC<FormStudioProps> = ({
+  schema,
+  uischema,
+  focusedForm,
+  onFocusedFormChange,
+}) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const studio = useStudioDocument({ schema, uischema });
   const panels = {
@@ -79,6 +86,16 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
     useStudioSelection(rootRef, !mode.previewing, studio);
   const { selectedId } = port;
   const focusId = studio.canvasRootOf(selectedId);
+  // Doc 197 rules 8-13: optional, two-way URL wiring for the drilled-in Form. No props, no effect.
+  useFocusAddress({
+    uischema: studio.uischema,
+    ids: studio.ids,
+    focusId,
+    focusedForm,
+    onFocusedFormChange,
+    select,
+    seed: studio.seed,
+  });
   const { previewing, previewFocusId, setPreviewing } = usePreviewFocus({
     ...mode,
     focusId,
@@ -103,6 +120,8 @@ export const FormStudio: FC<FormStudioProps> = ({ schema, uischema }) => {
         data-slot="form-studio-header"
         className="flex h-9 shrink-0 grow-0 items-center justify-end gap-1 border-b px-1"
       >
+        {/* Doc 197 rules 14-15, 17: only while drilled in, and never over the preview's chrome-free header. */}
+        {previewing || focusId === null ? null : <StudioBackButton onClick={() => select(null)} />}
         {previewing ? null : <DockToggles panels={panels} />}
         <PreviewToggle pressed={previewing} onPressedChange={setPreviewing} />
       </header>

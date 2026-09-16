@@ -281,3 +281,110 @@ describe('copyElement — schema (rules 17-18)', () => {
     expect(Object.keys(result.schema.properties ?? {})).toEqual(['aaaaaaaa', 'cccccccc']);
   });
 });
+
+// Doc 197 rules 19-20 — a copied subtree must not duplicate an authored Stage/Form id: an ambiguous
+// address breaks edge targeting and deep linking. Defensive today, since no UI path copies either.
+describe('copyElement — authored ids (doc 197 rules 19-20)', () => {
+  const EMPTY_SCHEMA = { type: 'object', properties: {} } as JsonSchema;
+
+  /** Flow [ Applicant 's1' [ contact 'f1', plain (no id) ] ] with one edge out of s1. */
+  function flowFixture() {
+    const contact = { type: 'Form', label: 'Contact', options: { id: 'f1' }, elements: [] };
+    const plain = { type: 'Form', label: 'Plain', elements: [] };
+    const stage = {
+      type: 'Stage',
+      label: 'Applicant',
+      options: { id: 's1' },
+      elements: [contact, plain],
+    };
+    const flow = {
+      type: 'Flow',
+      options: { edges: [{ id: 'e1', source: 's1', target: 's2' }] },
+      elements: [stage],
+    } as Element;
+    return { flow, stage, contact, plain };
+  }
+
+  const optionsOf = (element: UISchemaElement | undefined) =>
+    (element as Element | undefined)?.options ?? {};
+
+  it('gives a copied Form a fresh authored id, leaving the original alone', () => {
+    const { flow, contact } = flowFixture();
+    const ids = createElementIds();
+    const result = copyElement(
+      { schema: EMPTY_SCHEMA, uischema: flow },
+      ids.idOf(contact as UISchemaElement),
+      PLACEMENT,
+      ids,
+      keys('cccccccc'),
+    );
+
+    expect(optionsOf(result.copy)['id']).toBe('cccccccc');
+    expect(contact.options.id).toBe('f1');
+  });
+
+  it('gives a copied Stage a fresh id, and fresh ids to every Form inside it', () => {
+    const { flow, stage } = flowFixture();
+    const ids = createElementIds();
+    const result = copyElement(
+      { schema: EMPTY_SCHEMA, uischema: flow },
+      ids.idOf(stage as UISchemaElement),
+      PLACEMENT,
+      ids,
+      keys('cccccccc', 'dddddddd'),
+    );
+
+    expect(optionsOf(result.copy)['id']).toBe('cccccccc');
+    const copiedForms = elementsOf(result.copy);
+    expect(optionsOf(copiedForms[0])['id']).toBe('dddddddd');
+    expect(stage.options.id).toBe('s1');
+  });
+
+  it('regenerates an id that collides with one already in the document', () => {
+    const { flow, contact } = flowFixture();
+    const ids = createElementIds();
+    const newKey = keys('f1', 's1', 'cccccccc');
+    const result = copyElement(
+      { schema: EMPTY_SCHEMA, uischema: flow },
+      ids.idOf(contact as UISchemaElement),
+      PLACEMENT,
+      ids,
+      newKey,
+    );
+
+    expect(optionsOf(result.copy)['id']).toBe('cccccccc');
+    expect(newKey).toHaveBeenCalledTimes(3);
+  });
+
+  it('leaves an element with no authored id without one', () => {
+    const { flow, plain } = flowFixture();
+    const ids = createElementIds();
+    const newKey = keys('cccccccc');
+    const result = copyElement(
+      { schema: EMPTY_SCHEMA, uischema: flow },
+      ids.idOf(plain as UISchemaElement),
+      PLACEMENT,
+      ids,
+      newKey,
+    );
+
+    expect(optionsOf(result.copy)['id']).toBeUndefined();
+    expect(newKey).not.toHaveBeenCalled();
+  });
+
+  it('copies no edges, so a copied Stage arrives unconnected', () => {
+    const { flow, stage } = flowFixture();
+    const ids = createElementIds();
+    const result = copyElement(
+      { schema: EMPTY_SCHEMA, uischema: flow },
+      ids.idOf(stage as UISchemaElement),
+      PLACEMENT,
+      ids,
+      keys('cccccccc', 'dddddddd'),
+    );
+
+    const edges = (result.uischema as Element).options?.['edges'];
+    expect(edges).toEqual([{ id: 'e1', source: 's1', target: 's2' }]);
+    expect(optionsOf(result.copy)['id']).not.toBe('s1');
+  });
+});

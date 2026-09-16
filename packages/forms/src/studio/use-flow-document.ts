@@ -65,7 +65,7 @@ export function useFlowDocument(
       const result =
         template === 'stage'
           ? insertStage(uischema, selectedId, ids, newPropertyKey)
-          : insertForm(uischema, selectedId, ids);
+          : insertForm(uischema, selectedId, ids, newPropertyKey);
       if (!result.inserted) return undefined;
       updateUischema(() => result.uischema);
       return ids.idOf(result.inserted);
