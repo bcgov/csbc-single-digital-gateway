@@ -5,7 +5,7 @@ import type {
 } from '@jsonforms/core';
 import { useContext, useRef, type ComponentType } from 'react';
 import { useGridEditor } from '../gridstack/grid-editor';
-import { FLOW_TYPE, STAGE_TYPE } from '../xyflow/flow-elements';
+import { FLOW_TYPE, isFlowNodeType } from '../xyflow/flow-elements';
 import { StudioContent } from './studio-content';
 import { StudioItemContext } from './studio-item-context';
 import { useSelectionPort } from './studio-selection';
@@ -27,8 +27,8 @@ interface FramedProps {
  *
  * Under the Form Studio's selection port and Grid editor (doc 186 rules 1-2, 5) a frame — in practice the
  * root element's — carries `data-element-id` plus `data-hovered` / `data-selected`, which recolour its
- * outline like a grid item's. The root never shows an actions popover: it cannot be copied or deleted. A Stage's frame
- * shows its Delete-only popover (doc 196 rule 9).
+ * outline like a grid item's. The root never shows an actions popover: it cannot be copied or deleted. A Stage's and a
+ * Condition's frame show their Delete-only popover (doc 196 rule 9, doc 199 rule 31).
  */
 export function withStudioFrame<P extends FramedProps>(
   Renderer: ComponentType<P>,
@@ -64,9 +64,11 @@ export function withStudioFrame<P extends FramedProps>(
         <StudioContent type={type}>
           <Renderer {...disabled} />
         </StudioContent>
-        {type === STAGE_TYPE && selection && id !== undefined ? (
+        {/* Doc 199 rule 31: a Condition gets the same Delete-only popover a Stage has. */}
+        {isFlowNodeType(type) && selection && id !== undefined ? (
           <StudioStageActions
             elementId={id}
+            label={`${type} actions`}
             open={(hovered || selected) && !selection.gesturing}
             frameRef={frameRef}
             selection={selection}

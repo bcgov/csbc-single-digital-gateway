@@ -1,5 +1,5 @@
 import type { UISchemaElement } from '@jsonforms/core';
-import { FLOW_TYPE, STAGE_TYPE } from '../xyflow/flow-elements';
+import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../xyflow/flow-elements';
 
 /** Which gridstack layout a renderer draws (doc 180 rules 23-24). */
 export type GridLayoutKind = 'grid' | 'vertical' | 'horizontal';
@@ -35,8 +35,16 @@ export function isGridLayoutType(type: string): boolean {
 /** The horizontal rule display element (doc 194). */
 export const SEPARATOR_TYPE = 'Separator';
 
-/** Doc 195 rule 16: a Flow is only the root, a Stage only in a Flow, a Form only the root or in a Stage. */
-const NEVER_IN_LAYOUT: ReadonlySet<string> = new Set([FORM_TYPE, FLOW_TYPE, STAGE_TYPE]);
+/**
+ * Doc 195 rule 16: a Flow is only the root, a Stage only in a Flow, a Form only the root or in a Stage.
+ * Doc 199 rule 21: a Condition is a Flow node too, so no layout accepts one either.
+ */
+const NEVER_IN_LAYOUT: ReadonlySet<string> = new Set([
+  FORM_TYPE,
+  FLOW_TYPE,
+  STAGE_TYPE,
+  CONDITION_TYPE,
+]);
 
 /**
  * Whether an element of `type` may sit in a layout of `kind` (doc 194 rule 7, doc 195 rule 16): everything may, except a

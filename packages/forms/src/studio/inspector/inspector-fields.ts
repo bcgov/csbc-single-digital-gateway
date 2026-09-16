@@ -1,5 +1,5 @@
 import type { JsonSchema } from '@jsonforms/core';
-import { FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
+import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
 import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
 import type { ControlKind, InspectorContext } from './inspector-context';
@@ -52,13 +52,21 @@ export interface InspectorField {
 
 const LAYOUT_LABEL_HINT = 'Names the layout in the element path.';
 const STAGE_LABEL_HINT = 'Names the stage on its card and in the element path.';
+const CONDITION_LABEL_HINT = 'Names the condition on its card and in the element path.';
 
 const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
-/** Doc 195 rule 24: a Flow or Stage is named like a layout — neither has a layout kind. */
+/**
+ * Doc 195 rule 24, widened by doc 199 rule 32: a Flow, Stage or Condition is named like a layout — none has a
+ * layout kind. A Condition's criteria are authored on its card, never here, so Label is all it gets.
+ */
 const isFlowElement = (ctx: InspectorContext) =>
-  ctx.element.type === FLOW_TYPE || ctx.element.type === STAGE_TYPE;
-const labelHint = (ctx: InspectorContext) =>
-  ctx.element.type === STAGE_TYPE ? STAGE_LABEL_HINT : LAYOUT_LABEL_HINT;
+  ctx.element.type === FLOW_TYPE ||
+  ctx.element.type === STAGE_TYPE ||
+  ctx.element.type === CONDITION_TYPE;
+const labelHint = (ctx: InspectorContext) => {
+  if (ctx.element.type === STAGE_TYPE) return STAGE_LABEL_HINT;
+  return ctx.element.type === CONDITION_TYPE ? CONDITION_LABEL_HINT : LAYOUT_LABEL_HINT;
+};
 const isHeading = (ctx: InspectorContext) => ctx.element.type === 'Heading';
 const hasProperty = (ctx: InspectorContext) => ctx.propertyKey !== undefined;
 const isText = (ctx: InspectorContext) => ctx.controlKind === 'text';

@@ -67,6 +67,13 @@ export function flowNodeKind(element: UISchemaElement): FlowNodeKind | undefined
   return isCondition(element) ? 'condition' : undefined;
 }
 
+/**
+ * Doc 199 rule 31: whether `type` is a node of a Flow. The studio's frame and content decide by TYPE, not by
+ * element, and both must treat a Condition exactly as they treat a Stage — one rule, so the two can never drift.
+ */
+export const isFlowNodeType = (type: string): boolean =>
+  type === STAGE_TYPE || type === CONDITION_TYPE;
+
 /** A node's `options.id` when a non-empty string, else `undefined`. Stages and Conditions share one id-space. */
 export function authoredStageId(stage: UISchemaElement): string | undefined {
   const id = stage.options?.['id'];

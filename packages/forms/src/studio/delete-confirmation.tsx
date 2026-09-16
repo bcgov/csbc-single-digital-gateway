@@ -12,7 +12,7 @@ import { Checkbox } from '@repo/ui/checkbox';
 import { Label } from '@repo/ui/label';
 import { useId, useState } from 'react';
 import { FORM_TYPE, isGridLayoutType } from '../renderers/gridstack/grid-layouts';
-import { STAGE_TYPE } from '../renderers/xyflow/flow-elements';
+import { CONDITION_TYPE, STAGE_TYPE } from '../renderers/xyflow/flow-elements';
 import type { PendingDelete } from './use-studio-selection';
 
 interface DeleteConfirmationProps {
@@ -27,10 +27,14 @@ const LAYOUT_DESCRIPTION = 'This layout and everything inside it will be removed
 const STAGE_DESCRIPTION =
   'This stage, its forms and its connections will be removed from the flow.';
 const FORM_DESCRIPTION = 'This form and everything inside it will be removed from its stage.';
+/** Doc 199 rule 30: a Condition holds no children, so what goes with it is its criteria and its branches. */
+const CONDITION_DESCRIPTION =
+  'This condition, its criteria and its connections will be removed from the flow.';
 
 /** Rule 21: a Grid and the other gridstack layouts say their children go too; a Stage and a Form in one say theirs (doc 196). */
 function descriptionFor(elementType: string | undefined): string {
   if (elementType === STAGE_TYPE) return STAGE_DESCRIPTION;
+  if (elementType === CONDITION_TYPE) return CONDITION_DESCRIPTION;
   // Only a Form in a Stage can be deleted — a root Form has no delete action.
   if (elementType === FORM_TYPE) return FORM_DESCRIPTION;
   if (elementType === 'Grid') return GRID_DESCRIPTION;

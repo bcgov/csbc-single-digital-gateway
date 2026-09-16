@@ -3,6 +3,9 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { describe, expect, it } from 'vitest';
 import { NO_UPSTREAM_FIELDS_HINT } from '../src/renderers/xyflow/condition-renderer';
 import { FormStudio } from '../src/studio';
+import { inspectorForm } from '../src/studio/inspector/inspector-form';
+import { createElementIds } from '../src/studio/layout/element-ids';
+import { sections } from './inspector-fixtures';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
 // Doc 199 rules 24, 25, 29-32 — authoring a Condition in the Form Studio: inserting one from a +,
@@ -133,6 +136,24 @@ const renderStudio = (uischema: UISchemaElement) =>
 
 /** Waits for the Condition card's controls to be measured into the accessibility tree. */
 const addCriterionButton = () => buttonIn('c1', 'Add criterion');
+
+/** The Condition's studio frame — what the selection port hovers, selects and hangs its actions off. */
+const conditionFrame = () =>
+  required(
+    document.querySelector<HTMLElement>(
+      '[data-slot="studio-element"][data-element-type="Condition"]',
+    ),
+    'condition frame',
+  );
+const press = (element: HTMLElement) => {
+  fireEvent.pointerDown(element);
+  fireEvent.pointerUp(element);
+};
+const confirmDelete = async (description: string) => {
+  const dialog = await screen.findByRole('alertdialog');
+  expect(dialog).toHaveTextContent(description);
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+};
 
 describe('inserting a Condition (rule 24)', () => {
   it('offers Stage and Condition from a leaf +', async () => {
@@ -355,19 +376,63 @@ describe('wiring an output (rules 20, 29)', () => {
 });
 
 describe('studio integration (rules 30-32)', () => {
-  it('names criteria and connections in the delete confirmation', () => {
-    expect.fail('Not implemented — MDD skeleton');
+  it('names criteria and connections in the delete confirmation', async () => {
+    renderStudio(branched([criterion('x')]));
+    press(conditionFrame());
+    const menu = await screen.findByRole('dialog', { name: 'Condition actions' });
+    fireEvent.click(within(menu).getByRole('button', { name: 'Delete' }));
+
+    // Rule 30: a Condition holds no children, so the wording names what actually goes with it.
+    await confirmDelete(
+      'This condition, its criteria and its connections will be removed from the flow.',
+    );
+    await waitFor(() => expect(conditionCards()).toHaveLength(0));
+    // Its edges go with it (rule 27), leaving nothing joining the two Stages.
+    await waitFor(() => expect(edgeCount()).toBe(0));
   });
 
-  it('gives a Condition the Delete-only actions popover, like a Stage', () => {
-    expect.fail('Not implemented — MDD skeleton');
+  it('gives a Condition the Delete-only actions popover, like a Stage', async () => {
+    renderStudio(branched());
+    press(conditionFrame());
+
+    const menu = await screen.findByRole('dialog', { name: 'Condition actions' });
+    // Rule 31: Delete only — a Condition is not copied, exactly as a Stage is not.
+    expect(
+      within(menu)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual(['Delete']);
   });
 
-  it('keeps Condition content non-inert but pointer-events-none', () => {
-    expect.fail('Not implemented — MDD skeleton');
+  it('keeps Condition content non-inert but pointer-events-none', async () => {
+    renderStudio(branched([criterion('x')]));
+    const content = required(
+      conditionFrame().querySelector<HTMLElement>(':scope > [data-slot="studio-content"]'),
+      'condition content',
+    );
+    // Rule 31: `inert` on the frame could not be undone below it, and the card's pickers must stay reachable.
+    expect(content).not.toHaveAttribute('inert');
+    expect(content).toHaveClass('pointer-events-none');
+
+    expect(await addCriterionButton()).toHaveClass('nodrag', 'pointer-events-auto');
+    const row = required(rows()[0], 'criterion row');
+    // The row controls opt back in. NativeSelect puts its className on the WRAPPER, not the <select>.
+    expect(pickerIn(row, 'Field').closest('[data-slot="native-select-wrapper"]')).toHaveClass(
+      'nodrag',
+      'pointer-events-auto',
+    );
   });
 
   it('shows only the Label setting in the inspector for a selected Condition', () => {
-    expect.fail('Not implemented — MDD skeleton');
+    const ids = createElementIds();
+    const uischema = branched([criterion('x')]);
+    const conditionElement = required(
+      (uischema as { elements?: UISchemaElement[] }).elements?.[1],
+      'condition element',
+    );
+    const form = inspectorForm({ schema, uischema }, ids.idOf(conditionElement), ids);
+
+    // Rule 32: criteria are authored on the card — the inspector cannot express a repeatable row.
+    expect(sections(required(form, 'inspector form'))).toEqual([['General', ['label']]]);
   });
 });

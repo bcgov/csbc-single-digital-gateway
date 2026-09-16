@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { isGridLayoutType } from '../gridstack/grid-layouts';
 import { useFlowEditor } from '../xyflow/flow-editor';
-import { FLOW_TYPE, STAGE_TYPE } from '../xyflow/flow-elements';
+import { FLOW_TYPE, isFlowNodeType } from '../xyflow/flow-elements';
 
 interface StudioContentProps {
   /**
@@ -26,14 +26,17 @@ function contentClass(locked: boolean, flow: boolean): string | undefined {
  * `pointer-events-none` lets a press fall through to the grid item, whose content element is
  * gridstack's drag handle. A gridstack layout (`Grid`, `VerticalLayout`, `HorizontalLayout`) is exempt:
  * making it inert would freeze its own items. So is a Flow (doc 195 rule 23), whose canvas must pan and zoom; its
- * Stages stay locked. Under a Flow editor a Stage is locked but NOT inert (doc 196 rule 13): `inert` on an ancestor
- * cannot be undone below it, and the card's Form row buttons opt back in to pointer events.
+ * nodes stay locked. Under a Flow editor a Stage or Condition is locked but NOT inert (doc 196 rule 13, doc 199
+ * rule 31): `inert` on an ancestor cannot be undone below it, and the cards' row controls opt back in to pointer
+ * events.
  */
 export function StudioContent({ type, children }: StudioContentProps) {
   const flowEditing = useFlowEditor() !== null;
   const flow = type === FLOW_TYPE;
   const locked = !flow && !isGridLayoutType(type);
-  const inert = locked && !(flowEditing && type === STAGE_TYPE);
+  // Doc 199 rule 31: a Condition is locked-but-not-inert for the same reason a Stage is — its card's pickers
+  // and row buttons must stay reachable, and `inert` on an ancestor cannot be undone below it.
+  const inert = locked && !(flowEditing && isFlowNodeType(type));
   return (
     <div data-slot="studio-content" inert={inert} className={contentClass(locked, flow)}>
       {children}

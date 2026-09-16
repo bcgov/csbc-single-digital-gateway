@@ -8,9 +8,11 @@ import type { StudioSelection } from './studio-selection';
 interface StudioStageActionsProps {
   readonly elementId: string;
   readonly open: boolean;
-  /** The Stage's studio frame. */
+  /** The node's studio frame. */
   readonly frameRef: RefObject<HTMLElement | null>;
   readonly selection: StudioSelection;
+  /** Doc 199 rule 31: names the popover after the node it acts on — "Stage actions", "Condition actions". */
+  readonly label?: string;
 }
 
 /**
@@ -24,6 +26,7 @@ export function StudioStageActions({
   open,
   frameRef,
   selection,
+  label = 'Stage actions',
 }: StudioStageActionsProps) {
   const anchor = useCallback(() => frameRef.current, [frameRef]);
 
@@ -36,7 +39,7 @@ export function StudioStageActions({
         sideOffset={4}
         initialFocus={false}
         finalFocus={false}
-        aria-label="Stage actions"
+        aria-label={label}
         data-studio-actions-for={elementId}
         className="w-auto gap-0 p-0.5"
       >
