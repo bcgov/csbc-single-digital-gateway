@@ -58,6 +58,33 @@ export type FormChoice =
   | 'template-basic';
 
 /**
+ * Props accepted by `FormRunner` (doc 202 rules 1-4) — the fill side's one entry point, mounted by a host:
+ * the citizen portal, where it is the guided application, and platform-web, where it is the studio's preview.
+ *
+ * `data` is CONTROLLED (rule 3): the host holds the answers and drives its own persistence, which is how the
+ * citizen portal already works (an 800ms debounce, then a PATCH). The runner never debounces, and it copies
+ * neither the answers nor the graph — it owns only the position and the stages visited.
+ *
+ * `onSaveDraft` and `onSubmit` are optional and INDEPENDENT (rule 4). An absent handler changes what its button
+ * does, never whether the runner works: with no `onSaveDraft` the Save draft button renders disabled (rule 37),
+ * and with no `onSubmit` Submit opens a dialog showing the payload that would have been sent (rule 38). With
+ * neither, the runner is still fully navigable — which is exactly the studio's preview (rule 39).
+ */
+export type FormRunnerProps = {
+  schema: JsonSchema;
+  /** The document to fill in: a `Form` (one form) or a `Flow` (stages). Any other root is refused (rule 6). */
+  uischema: UISchemaElement;
+  /** The answers. Controlled — the runner renders these and never holds its own copy. */
+  data: Record<string, unknown>;
+  /** Called with the next answers on every edit. */
+  onChange: (data: Record<string, unknown>) => void;
+  /** Saves the answers so far. Awaited; a rejection leaves the citizen where they are (rule 36). */
+  onSaveDraft?: ((data: Record<string, unknown>) => void | Promise<void>) | undefined;
+  /** Submits the answers. Awaited, and gated on the whole document validating (rules 27, 35). */
+  onSubmit?: ((data: Record<string, unknown>) => void | Promise<void>) | undefined;
+};
+
+/**
  * Props accepted by `FormStudio` (doc 183 rules 1-3, doc 197 rules 7-8, doc 200 rules 1-3): the form to open, where
  * focus is, and how a document arrives and leaves.
  *

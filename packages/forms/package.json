@@ -55,6 +55,12 @@
       "import": "./dist/renderers-xyflow.js",
       "require": "./dist/renderers-xyflow.cjs"
     },
+    "./runner": {
+      "types": "./dist/runner.d.ts",
+      "development": "./src/runner.ts",
+      "import": "./dist/runner.js",
+      "require": "./dist/runner.cjs"
+    },
     "./studio": {
       "types": "./dist/studio.d.ts",
       "development": "./src/studio.ts",

@@ -111,12 +111,18 @@ describe('Form Studio Flow root (doc 195)', () => {
   });
 
   describe('preview (rule 22)', () => {
-    it('shows "Flows can\'t be filled in yet." when previewing a Flow root', () => {
+    it('renders a fillable flow when previewing a Flow root (doc 202 rules 40, 46)', () => {
       renderStudio();
       fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
-      expect(within(centre()).getByRole('status')).toHaveTextContent(
-        "Flows can't be filled in yet.",
-      );
+      // Doc 202 rule 46: the "Flows can't be filled in yet." status is gone.
+      expect(within(centre()).queryByRole('status')).toBeNull();
+      // Doc 202 rule 40b: a Flow is previewed through <FormRunner>, so the author gets the citizen's real
+      // experience — the stage sidebar AND the action bar. Hand-verification found that without the runner
+      // preview showed a flow it could not walk through, which is why rule 40b exists.
+      expect(centre().querySelector('[data-slot="fill-flow"]')).not.toBeNull();
+      expect(centre().querySelector('[data-slot="runner-sidebar"]')).not.toBeNull();
+      expect(centre().querySelector('[data-slot="runner-actions"]')).not.toBeNull();
+      expect(within(centre()).getByRole('button', { name: 'Next' })).toBeInTheDocument();
       expect(centre().querySelector('.react-flow')).toBeNull();
       expect(within(centre()).queryByRole('alert')).toBeNull();
     });

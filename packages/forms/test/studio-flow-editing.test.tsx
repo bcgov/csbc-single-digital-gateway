@@ -115,7 +115,9 @@ describe('editor port (rules 1-2)', () => {
     expect(centre().querySelectorAll('[data-slot="stage-form-open"]')).toHaveLength(2);
 
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
-    expect(within(centre()).getByRole('status')).toHaveTextContent("Flows can't be filled in yet.");
+    // Doc 202 rules 40, 46: preview runs the flow instead of refusing it, and still never draws the canvas.
+    expect(within(centre()).queryByRole('status')).toBeNull();
+    expect(centre().querySelector('[data-slot="fill-flow"]')).not.toBeNull();
     expect(centre().querySelector('.react-flow')).toBeNull();
   });
 

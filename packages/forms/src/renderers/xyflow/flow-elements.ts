@@ -32,8 +32,8 @@ export const STAGE_PLACEMENT_MESSAGE = 'A Stage can only be placed in a Flow.';
 export const CONDITION_PLACEMENT_MESSAGE = 'A Condition can only be placed in a Flow.';
 /** Rule 14: shown on a Stage card holding anything but Forms. */
 export const STAGE_CHILD_MESSAGE = 'Only Forms can be placed in a Stage.';
-/** Rule 19: what fillable forms show for a Flow. */
-export const FLOW_UNSUPPORTED_MESSAGE = "Flows can't be filled in yet.";
+// Doc 202 rule 46: `FLOW_UNSUPPORTED_MESSAGE` is DELETED. Doc 195 rule 19 said a Flow "can't be filled in yet";
+// it now is — `renderers/default`'s Flow entry renders the runner's stage sidebar and content pane instead.
 
 /** The prefix of a node's id when it has no usable `options.id`; never addressable by an edge. */
 const PLACEHOLDER_PREFIX = '__stage-';

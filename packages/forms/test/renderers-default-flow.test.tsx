@@ -6,7 +6,8 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import * as defaults from '../src/renderers-default';
 
-// Doc 195 rule 19 — Flow and Stage in fillable forms (renderers/default).
+// Doc 195 rule 19 as AMENDED by doc 202 rules 40-43, 46 — Flow and Stage in fillable forms (renderers/default).
+// A Flow is no longer "can't be filled in yet": the entry renders the runner's stage sidebar and content pane.
 
 const schema: JsonSchema = { type: 'object', properties: {} };
 const testerContext = { rootSchema: schema, config: {} };
@@ -46,15 +47,19 @@ const FLOW = {
   ],
 };
 
-describe('renderers/default Flow and Stage (rule 19)', () => {
-  it('renders a Flow root as role="status" "Flows can\'t be filled in yet." with no ReactFlow', () => {
+describe('renderers/default Flow and Stage (rule 19, amended by doc 202)', () => {
+  it('renders a fillable Flow — sidebar and one Form — with no ReactFlow (doc 202 rules 40, 46)', () => {
     const { container } = renderDefault(FLOW);
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent("Flows can't be filled in yet.");
-    expect(status).toHaveAttribute('data-slot', 'flow-unsupported');
-    expect(status).toHaveClass('text-sm', 'text-muted-foreground');
+    // The old "Flows can't be filled in yet." status is gone entirely (rule 46).
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(container.querySelector('[data-slot="flow-unsupported"]')).toBeNull();
+    // Rule 40: with no port it still renders a navigable flow, holding its own position.
+    expect(container.querySelector('[data-slot="fill-flow"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="runner-sidebar"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="runner-flow-content"]')).not.toBeNull();
+    // The stages are listed by name, and it is still plain CSS — never the canvas.
+    expect(screen.getByText('One')).toBeInTheDocument();
     expect(container.querySelector('.react-flow')).toBeNull();
-    expect(screen.queryByText('One')).toBeNull();
   });
 
   it('renders a Stage as "A Stage can only be placed in a Flow."', () => {

@@ -1,5 +1,7 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
+import { useState } from 'react';
+import { FormRunner } from '../runner/form-runner';
 import * as defaultSet from '../renderers/default/index';
 import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid-editor';
 import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
@@ -73,6 +75,29 @@ export function StudioCanvas({
   onNewForm,
   onRetry,
 }: StudioCanvasProps) {
+  // Doc 202 rule 40b: previewing a Flow mounts the RUNNER, which takes controlled answers (rule 3) — so preview
+  // needs somewhere to put them. Declared ABOVE every early return: a hook may not sit behind a condition (the
+  // temporal-dead-zone trap doc 198 rule 20 records for this same shell).
+  //
+  // Seeded from the sample data and reset by `rootKey`, so switching documents — or drilling into another Form —
+  // never carries one preview's answers into the next.
+  // Seeded by SPREAD, never by identity: `STUDIO_SAMPLE_DATA` is a shared module constant the studio canvas below
+  // also renders, so handing the same object to a controlled `data` would let any future mutation leak one preview's
+  // answers into the canvas and into the next document — the failure doc 200 records for `documentFor()`.
+  const [previewData, setPreviewData] = useState<Record<string, unknown>>(() => ({
+    ...STUDIO_SAMPLE_DATA,
+  }));
+
+  // Doc 184 rules 9-12: answers are kept WHILE previewing and discarded on LEAVING, so the next preview starts empty.
+  // The reset therefore keys off the preview session, not `rootKey` — `rootKey` changes only when the document or the
+  // focused Form does, so seeding on it alone would carry one preview's answers into the next. (Re-entering preview
+  // is the only route back in, so this subsumes a per-document reset.)
+  const [previewedAs, setPreviewedAs] = useState(previewing);
+  if (previewedAs !== previewing) {
+    setPreviewedAs(previewing);
+    if (previewing) setPreviewData({ ...STUDIO_SAMPLE_DATA });
+  }
+
   // Doc 200 rule 15: no document yet — the empty, loading and failed states sit in the same early-return position as
   // the root check, so this component stays the ONE place that decides what occupies the centre.
   if (status !== 'ready') {
@@ -88,12 +113,30 @@ export function StudioCanvas({
     );
   }
   if (previewing) {
+    // Doc 202 rule 40b: a FLOW is previewed through the runner, so the author gets the citizen's real experience —
+    // Back/Next, per-form gating, live branching, and a Submit that opens the payload dialog (rule 38) because no
+    // handler is passed. The renderer entry alone could never offer those: the action bar is the runner's chrome and
+    // sits outside the single `<JsonForms>` the entry is dispatched inside.
+    //
+    // A FORM root keeps its plain `<JsonForms>`: the studio previews a focused Form as a form, not a one-step flow.
+    if (previewRoot.type === FLOW_TYPE) {
+      return (
+        <FormRunner
+          key={`preview-${rootKey}`}
+          schema={schema}
+          uischema={previewRoot}
+          data={previewData}
+          onChange={setPreviewData}
+        />
+      );
+    }
     return (
       <JsonForms
         key={`preview-${rootKey}`}
         schema={schema}
         uischema={previewRoot}
-        data={STUDIO_SAMPLE_DATA}
+        data={previewData}
+        onChange={({ data }) => setPreviewData(data as Record<string, unknown>)}
         renderers={PREVIEW_RENDERERS}
         cells={defaultSet.cells}
       />

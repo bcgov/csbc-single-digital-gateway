@@ -184,11 +184,13 @@ describe('preview of a focused Form (rule 16)', () => {
     expect(rootFrameType()).toBe('Form');
   });
 
-  it('shows the Flow message in preview when no Form is focused, and selects nothing after', async () => {
+  it('previews the whole flow when no Form is focused, and selects nothing after', async () => {
     render(<FormStudio schema={schema} uischema={FLOW} />);
     press(stageFrame('Review'));
     togglePreview();
-    expect(within(centre()).getByRole('status')).toHaveTextContent("Flows can't be filled in yet.");
+    // Doc 202 rules 40, 46: previewing a Flow with no focused Form now runs it, rather than saying it cannot.
+    expect(within(centre()).queryByRole('status')).toBeNull();
+    expect(centre().querySelector('[data-slot="fill-flow"]')).not.toBeNull();
     togglePreview();
     await waitFor(() => expect(flowCanvas()).not.toBeNull());
     expect(currentCrumb()).toBeNull();
