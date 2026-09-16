@@ -1,8 +1,15 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import type { FlowEdge } from '../../types/elements';
-import { authoredStageId, drawnStages, elementsOf, isStage } from './flow-elements';
+import {
+  authoredStageId,
+  criteriaOf,
+  DEFAULT_HANDLE,
+  drawnNodes,
+  elementsOf,
+  flowNodeKind,
+} from './flow-elements';
 
-// A Flow's edges (doc 195 rules 10, 18). Pure — no React, no @xyflow/react.
+// A Flow's edges (doc 195 rules 10, 18; doc 199 rules 10-15). Pure — no React, no @xyflow/react.
 
 /** A problem found in a Flow, shaped like the code editor's document problems. */
 export interface FlowProblem {
@@ -13,8 +20,12 @@ export interface FlowProblem {
 export const SELF_LOOP_MESSAGE = 'An edge cannot connect a Stage to itself.';
 export const DUPLICATE_EDGE_MESSAGE = 'This edge is already defined.';
 export const CYCLE_MESSAGE = 'This edge would create a cycle.';
+export const MISSING_DEFAULT_MESSAGE =
+  'This condition has no default path, so an answer matching no criterion would have nowhere to go.';
 export const duplicateStageIdMessage = (id: string) => `Stage id "${id}" is already used.`;
 export const unknownStageMessage = (id: string) => `No Stage has id "${id}".`;
+export const unknownHandleMessage = (handle: string) =>
+  `No criterion with id "${handle}" leaves this condition.`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -25,19 +36,39 @@ const authoredEdges = (flow: UISchemaElement): readonly unknown[] => {
   return Array.isArray(edges) ? edges : [];
 };
 
-/** An entry as an edge when its `id`, `source` and `target` are all strings. */
+/**
+ * An entry as an edge when its `id`, `source` and `target` are all strings.
+ *
+ * Doc 199 rule 10: `sourceHandle` is CARRIED. This function rebuilds every edge, so a key it does not copy is
+ * silently dropped before any renderer, node builder or problem reporter sees it — which is how a branch would
+ * quietly behave as the default path. An absent handle stays an ABSENT KEY (`exactOptionalPropertyTypes`),
+ * because absent is precisely what marks the default path.
+ *
+ * `DEFAULT_HANDLE` normalises to ABSENT. The canvas needs a handle id to address the default output, so xyflow
+ * reports `sourceHandle: '__default'` when the author drags from it — but the stored form of a default edge is
+ * no handle at all (rule 10), which is what keeps every pre-199 document valid. Normalising here means the two
+ * forms can never disagree: without it such an edge names no criterion and would be dropped outright.
+ */
 function asEdge(entry: unknown): FlowEdge | undefined {
   if (!isRecord(entry)) return undefined;
-  const { id, source, target } = entry;
+  const { id, source, target, sourceHandle } = entry;
   if (typeof id !== 'string' || typeof source !== 'string' || typeof target !== 'string')
     return undefined;
-  return { id, source, target };
+  return typeof sourceHandle === 'string' && sourceHandle !== '' && sourceHandle !== DEFAULT_HANDLE
+    ? { id, source, target, sourceHandle }
+    : { id, source, target };
 }
 
-const pairKey = ({ source, target }: FlowEdge) => JSON.stringify([source, target]);
+/**
+ * Doc 199 rule 11: an edge's identity includes the handle it leaves by. Two criteria of one Condition may
+ * legitimately lead to the SAME target — without the handle they would read as a duplicate and the second
+ * would be dropped. A Stage edge has no handle, so its behaviour is unchanged.
+ */
+const pairKey = ({ source, target, sourceHandle }: FlowEdge) =>
+  JSON.stringify([source, sourceHandle ?? null, target]);
 
-/** Whether `from` reaches `to` along `edges` (a Stage reaches itself). */
-function reaches(edges: readonly FlowEdge[], from: string, to: string): boolean {
+/** Doc 199 rule 7: whether `from` reaches `to` along `edges` (a node reaches itself). */
+export function reachesNode(edges: readonly FlowEdge[], from: string, to: string): boolean {
   const seen = new Set<string>();
   const pending = [from];
   while (pending.length > 0) {
@@ -52,22 +83,38 @@ function reaches(edges: readonly FlowEdge[], from: string, to: string): boolean 
 
 /** Whether adding `source → target` to `edges` would close a cycle, a self-loop included. */
 export const createsCycle = (edges: readonly FlowEdge[], source: string, target: string): boolean =>
-  reaches(edges, target, source);
+  reachesNode(edges, target, source);
+
+/** The criterion ids of every Condition, by node id (doc 199 rule 12). */
+function handlesByNode(flow: UISchemaElement): Map<string, Set<string>> {
+  const handles = new Map<string, Set<string>>();
+  for (const { element, id, authored, kind } of drawnNodes(flow)) {
+    if (!authored || kind !== 'condition') continue;
+    handles.set(id, new Set(criteriaOf(element).map((criterion) => criterion.id)));
+  }
+  return handles;
+}
 
 /**
- * Rule 10: the edges a Flow draws, in order — dropping entries that are not `{ id, source, target }` strings, edges
- * with an end that is not a drawn Stage's own id, self-loops, a repeated id and a repeated `(source, target)` pair (the
- * first wins). Cycles are kept.
+ * Rule 10: the edges a Flow draws, in order — dropping entries that are not `{ id, source, target }` strings,
+ * edges with an end that is not a drawn node's own id, self-loops, a repeated id and a repeated
+ * `(source, sourceHandle, target)` (the first wins). Cycles are kept.
+ *
+ * Doc 199 rule 12: an edge whose `sourceHandle` names no criterion of its source Condition is dropped too — a
+ * branch that leaves by nothing is not a connection.
  */
 export function flowEdges(flow: UISchemaElement): FlowEdge[] {
-  const stageIds = new Set(drawnStages(flow).flatMap(({ id, authored }) => (authored ? [id] : [])));
+  const nodeIds = new Set(drawnNodes(flow).flatMap(({ id, authored }) => (authored ? [id] : [])));
+  const handles = handlesByNode(flow);
   const ids = new Set<string>();
   const pairs = new Set<string>();
   const edges: FlowEdge[] = [];
   for (const entry of authoredEdges(flow)) {
     const edge = asEdge(entry);
-    if (!edge || !stageIds.has(edge.source) || !stageIds.has(edge.target)) continue;
+    if (!edge || !nodeIds.has(edge.source) || !nodeIds.has(edge.target)) continue;
     if (edge.source === edge.target || ids.has(edge.id) || pairs.has(pairKey(edge))) continue;
+    if (edge.sourceHandle !== undefined && !handles.get(edge.source)?.has(edge.sourceHandle))
+      continue;
     ids.add(edge.id);
     pairs.add(pairKey(edge));
     edges.push(edge);
@@ -76,24 +123,25 @@ export function flowEdges(flow: UISchemaElement): FlowEdge[] {
 }
 
 /**
- * Doc 198 rule 6: the Stages with no outgoing sanitised edge, in `elements` order — the end of every chain, which is
- * what the dangling + affordance hangs off (rule 7). Read from `flowEdges`, so an edge that is dropped as invalid (a
- * self-loop, an unknown end) leaves its source a leaf. A Stage with no authored id is never a leaf: no edge can leave
- * it, so the + would have nothing to connect from.
+ * Doc 198 rule 6: the STAGES with no outgoing sanitised edge, in `elements` order — the end of every chain,
+ * which is what the dangling + affordance hangs off (rule 7).
+ *
+ * Doc 199 rule 14: a Condition is never a leaf. It owns its outputs, and each unconnected one carries its own
+ * affordance on the card instead.
  */
 export function leafStageIds(flow: UISchemaElement): string[] {
   const sources = new Set(flowEdges(flow).map(({ source }) => source));
-  return drawnStages(flow).flatMap(({ id, authored }) =>
-    authored && !sources.has(id) ? [id] : [],
+  return drawnNodes(flow).flatMap(({ id, authored, kind }) =>
+    authored && kind === 'stage' && !sources.has(id) ? [id] : [],
   );
 }
 
-/** Rule 18: duplicate Stage ids, by instance path. */
-function stageIdProblems(flow: UISchemaElement): { ids: Set<string>; problems: FlowProblem[] } {
+/** Rule 18, widened by doc 199 rule 15: ids duplicated across Stages AND Conditions, by instance path. */
+function nodeIdProblems(flow: UISchemaElement): { ids: Set<string>; problems: FlowProblem[] } {
   const ids = new Set<string>();
   const problems: FlowProblem[] = [];
   elementsOf(flow).forEach((element, index) => {
-    const id = isStage(element) ? authoredStageId(element) : undefined;
+    const id = flowNodeKind(element) === undefined ? undefined : authoredStageId(element);
     if (id === undefined) return;
     if (ids.has(id))
       problems.push({
@@ -106,11 +154,32 @@ function stageIdProblems(flow: UISchemaElement): { ids: Set<string>; problems: F
 }
 
 /**
- * Rule 18: every problem that should stop a Flow uischema being applied — duplicate Stage ids, edge ends naming no
- * Stage, self-loops, repeated edges, and each edge that closes a cycle with the edges accepted before it.
+ * Doc 199 rule 13 (graph half): every Condition needs a default path — an outgoing edge with no `sourceHandle` —
+ * or an answer matching no criterion would have nowhere to go.
+ *
+ * The other half of rule 13 (is each criterion valid, and is its field upstream?) cannot live here: it needs the
+ * document's SCHEMA, which `flowProblems` is not given, and the helpers that resolve a field are in the studio,
+ * which `renderers/xyflow` may not import. The studio checks those alongside this.
+ */
+function defaultPathProblems(flow: UISchemaElement, edges: readonly FlowEdge[]): FlowProblem[] {
+  const withDefault = new Set(
+    edges.flatMap((edge) => (edge.sourceHandle === undefined ? [edge.source] : [])),
+  );
+  return drawnNodes(flow).flatMap(({ index, id, authored, kind }) =>
+    kind === 'condition' && authored && !withDefault.has(id)
+      ? [{ path: `/elements/${index}`, message: MISSING_DEFAULT_MESSAGE }]
+      : [],
+  );
+}
+
+/**
+ * Rule 18: every problem that should stop a Flow uischema being applied — duplicate node ids, edge ends naming no
+ * node, self-loops, repeated edges, each edge that closes a cycle with the edges accepted before it, an edge
+ * leaving by a criterion that does not exist, and a Condition with no default path.
  */
 export function flowProblems(flow: UISchemaElement): FlowProblem[] {
-  const { ids: stageIds, problems } = stageIdProblems(flow);
+  const { ids: nodeIds, problems } = nodeIdProblems(flow);
+  const handles = handlesByNode(flow);
   const accepted: FlowEdge[] = [];
   const edgeIds = new Set<string>();
   const pairs = new Set<string>();
@@ -118,12 +187,20 @@ export function flowProblems(flow: UISchemaElement): FlowProblem[] {
     const edge = asEdge(entry);
     if (!edge) return;
     const path = `/options/edges/${index}`;
-    const unknown = (['source', 'target'] as const).filter((end) => !stageIds.has(edge[end]));
+    const unknown = (['source', 'target'] as const).filter((end) => !nodeIds.has(edge[end]));
     for (const end of unknown)
       problems.push({ path: `${path}/${end}`, message: unknownStageMessage(edge[end]) });
     if (unknown.length > 0) return;
     if (edge.source === edge.target) {
       problems.push({ path, message: SELF_LOOP_MESSAGE });
+    } else if (
+      edge.sourceHandle !== undefined &&
+      !handles.get(edge.source)?.has(edge.sourceHandle)
+    ) {
+      problems.push({
+        path: `${path}/sourceHandle`,
+        message: unknownHandleMessage(edge.sourceHandle),
+      });
     } else if (edgeIds.has(edge.id) || pairs.has(pairKey(edge))) {
       problems.push({ path, message: DUPLICATE_EDGE_MESSAGE });
     } else if (createsCycle(accepted, edge.source, edge.target)) {
@@ -134,5 +211,5 @@ export function flowProblems(flow: UISchemaElement): FlowProblem[] {
       pairs.add(pairKey(edge));
     }
   });
-  return problems;
+  return [...problems, ...defaultPathProblems(flow, accepted)];
 }

@@ -18,28 +18,33 @@ import { AddAffordance } from './add-affordance';
 import { FlowContext, type FlowContextValue } from './flow-context';
 import { FLOW_EMPTY_MESSAGE, useFlowEditor, type FlowEditor } from './flow-editor';
 import {
-  drawnStages,
+  drawnNodes,
   elementsOf,
+  flowNodeKind,
   FLOW_CHILD_MESSAGE,
   FLOW_NESTED_MESSAGE,
-  isStage,
 } from './flow-elements';
 import { connectGesture, disconnectGesture } from './flow-gestures';
+import { ConditionNode } from './condition-node';
 import {
   ACTION_EDGE_TYPE,
+  CONDITION_NODE_TYPE,
   STAGE_NODE_TYPE,
   toFlowEdges,
   toFlowNodes,
-  type StageFlowNode,
+  type FlowNode,
 } from './flow-nodes';
 import { StageNode } from './stage-node';
 
 // Stable identity — xyflow warns and re-creates every node when nodeTypes changes between renders. The same applies to
 // edgeTypes (doc 198 rule 9), so both are module-level constants.
-const NODE_TYPES: NodeTypes = { [STAGE_NODE_TYPE]: StageNode };
+const NODE_TYPES: NodeTypes = {
+  [STAGE_NODE_TYPE]: StageNode,
+  [CONDITION_NODE_TYPE]: ConditionNode,
+};
 const EDGE_TYPES: EdgeTypes = { [ACTION_EDGE_TYPE]: ActionEdge };
 
-type FlowProps = ReactFlowProps<StageFlowNode>;
+type FlowProps = ReactFlowProps<FlowNode>;
 
 /** Doc 195 rule 11: nothing on a view-only canvas can be moved, connected, selected or deleted. */
 const VIEW_ONLY_PROPS: FlowProps = {
@@ -150,8 +155,12 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
     );
   }
   if (!visible) return null;
-  const strays = elementsOf(uischema).some((element) => !isStage(element));
-  const empty = editor !== null && drawnStages(uischema).length === 0;
+  // Doc 199 rule 22: a Flow legitimately holds two kinds of node, so a stray is something that is NEITHER.
+  // Reading `isStage` alone flagged every Condition as an illegal child while still drawing its node.
+  const strays = elementsOf(uischema).some((element) => flowNodeKind(element) === undefined);
+  // Doc 199 rule 16: a Flow holding only a Condition is not empty — reading Stages alone would draw that node
+  // and overlay the "add a stage" hint on top of it.
+  const empty = editor !== null && drawnNodes(uischema).length === 0;
 
   return (
     <FlowContext.Provider value={context}>

@@ -136,11 +136,47 @@ export interface FormElement extends Layout {
   };
 }
 
-/** One connection between two Stages of a `Flow`, by their `options.id` (doc 195). */
+/**
+ * What a `Criterion` tests (doc 199 rule 1). Which operators a field may use is decided by its `ControlKind`
+ * in `renderers/xyflow/criteria.ts` — this union is only the vocabulary.
+ */
+export type Operator =
+  | 'equals'
+  | 'notEquals'
+  | 'contains'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'isEmpty'
+  | 'isNotEmpty'
+  | 'isTrue'
+  | 'isFalse';
+
+/**
+ * One branch of a `Condition` (doc 199). `field` is a top-level schema property KEY, not a `#/properties/…`
+ * scope: keys are unique and stable, so a criterion pointing at a deleted field is detectably dangling rather
+ * than silently wrong. `id` is also the `sourceHandle` of the edge that leaves this branch.
+ */
+export interface Criterion {
+  id: string;
+  field: string;
+  operator: Operator;
+  /** Absent for the operators `needsValue` reports false for. */
+  value?: string | number | boolean;
+}
+
+/**
+ * One connection between two nodes of a `Flow`, by their `options.id` (doc 195).
+ *
+ * Doc 199 rule 10: `sourceHandle` names the `Criterion` the edge leaves by. An edge with NO `sourceHandle` is
+ * the DEFAULT path — so it must stay an absent key, never an explicit `undefined`.
+ */
 export interface FlowEdge {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string;
 }
 
 /** Where a Stage sits on its Flow's canvas, in canvas pixels. */
@@ -161,13 +197,32 @@ export interface StageElement extends Layout {
 }
 
 /**
- * `{ type: 'Flow' }` — a root-only multi-stage form drawn with `@xyflow/react` (doc 195): its `Stage`s are the nodes and
- * `options.edges` connects them. Edges with an unknown end, self-loops and repeats are not drawn.
+ * `{ type: 'Condition' }` — a branching node of a `Flow` (doc 199). Each `Criterion` owns one output, whose id is
+ * the `sourceHandle` of the edge leaving it; an edge from this node with no `sourceHandle` is the default path.
+ *
+ * It extends `BaseUISchemaElement`, NOT `Layout`: a Condition holds no children. `options` is required, as a
+ * `Stage`'s is, because its `id` is what edges address.
+ */
+export interface ConditionElement extends BaseUISchemaElement {
+  type: 'Condition';
+  label?: string;
+  options: {
+    id: string;
+    criteria: Criterion[];
+    position?: StagePosition;
+    [key: string]: unknown;
+  };
+}
+
+/**
+ * `{ type: 'Flow' }` — a root-only multi-stage form drawn with `@xyflow/react` (doc 195): its `Stage`s and
+ * `Condition`s are the nodes and `options.edges` connects them. Edges with an unknown end, self-loops and repeats
+ * are not drawn.
  */
 export interface FlowElement extends Layout {
   type: 'Flow';
   label?: string;
-  elements: StageElement[];
+  elements: (StageElement | ConditionElement)[];
   options?: { edges?: FlowEdge[]; [key: string]: unknown };
 }
 

@@ -1,6 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import type { FlowGesture } from './flow-editor';
-import { drawnStages } from './flow-elements';
+import { drawnNodes } from './flow-elements';
 import { createsCycle, flowEdges } from './flow-graph';
 
 // xyflow callbacks as Flow gestures (doc 196 rules 3-7). Pure — no React, no @xyflow/react at runtime — so the rules are
@@ -13,8 +13,11 @@ export interface FlowConnection {
 }
 
 /**
- * Rule 5: whether `source → target` may be added — both ends are drawn Stages with their own authored id, they differ,
+ * Rule 5: whether `source → target` may be added — both ends are drawn NODES with their own authored id, they differ,
  * the pair is not already an edge, and the edge closes no cycle. Branches are allowed.
+ *
+ * Doc 199 rule 16: the ends are read from `drawnNodes`, not `drawnStages` — a Condition is an edge endpoint like any
+ * other node, and reading Stages alone would make every connection to or from one impossible.
  */
 export function canConnect(
   flow: UISchemaElement,
@@ -22,7 +25,7 @@ export function canConnect(
   target: string | null | undefined,
 ): boolean {
   if (!source || !target || source === target) return false;
-  const authored = new Set(drawnStages(flow).flatMap(({ id, authored: own }) => (own ? [id] : [])));
+  const authored = new Set(drawnNodes(flow).flatMap(({ id, authored: own }) => (own ? [id] : [])));
   if (!authored.has(source) || !authored.has(target)) return false;
   const edges = flowEdges(flow);
   if (edges.some((edge) => edge.source === source && edge.target === target)) return false;

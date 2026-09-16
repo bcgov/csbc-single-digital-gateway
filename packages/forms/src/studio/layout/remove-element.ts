@@ -1,5 +1,5 @@
 import type { JsonSchema } from '@jsonforms/core';
-import { authoredStageId, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
+import { authoredStageId, flowNodeKind, FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
 import { removeStageEdges } from './flow-edits';
@@ -23,9 +23,11 @@ function withoutProperties(schema: JsonSchema, keys: readonly string[]): JsonSch
 
 /**
  * Rules 24-26: the document without the element with `elementId` (and its subtree), and without every
- * data property the removed Controls used that no remaining Control uses. A removed Stage also takes every edge
- * touching its authored id out of its Flow, without reconnecting neighbours (doc 196 rule 9). The root or an unknown
- * id returns the same document.
+ * data property the removed Controls used that no remaining Control uses. A removed Flow NODE — a Stage or, since
+ * doc 199 rule 27, a Condition — also takes every edge touching its authored id out of its Flow, without
+ * reconnecting neighbours (doc 196 rule 9). A Condition's branch edges are covered without further work:
+ * `removeStageEdges` drops edges by `source` and `target` id, whatever handle they leave by. The root or an
+ * unknown id returns the same document.
  */
 export function removeElement(
   document: StudioDocument,
@@ -37,7 +39,9 @@ export function removeElement(
   const removed = parent?.elements?.find((element) => ids.idOf(element) === elementId);
   if (!parent || !removed) return document;
   const stageId =
-    removed.type === STAGE_TYPE && parent.type === FLOW_TYPE ? authoredStageId(removed) : undefined;
+    flowNodeKind(removed) !== undefined && parent.type === FLOW_TYPE
+      ? authoredStageId(removed)
+      : undefined;
 
   const uischema = updateById(
     root,

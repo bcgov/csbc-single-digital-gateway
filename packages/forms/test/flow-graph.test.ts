@@ -3,14 +3,18 @@ import { resolve } from 'node:path';
 import type { UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import { drawnStages } from '../src/renderers/xyflow/flow-elements';
+import { DEFAULT_HANDLE } from '../src/renderers/xyflow/flow-elements';
 import {
   createsCycle,
   CYCLE_MESSAGE,
+  duplicateStageIdMessage,
   DUPLICATE_EDGE_MESSAGE,
   flowEdges,
   flowProblems,
   leafStageIds,
+  MISSING_DEFAULT_MESSAGE,
   SELF_LOOP_MESSAGE,
+  unknownHandleMessage,
 } from '../src/renderers/xyflow/flow-graph';
 
 // Doc 195 rules 5, 8, 10, 18 — the pure Flow graph helpers (renderers/xyflow/flow-elements + flow-graph).
@@ -33,6 +37,21 @@ const flow = (elements: readonly UISchemaElement[], edges?: unknown) =>
 const edge = (id: string, source: string, target: string) => ({ id, source, target });
 
 const abc = [stage('a'), stage('b'), stage('c')];
+
+// Doc 199 fixtures. A criterion's id is the sourceHandle of the edge leaving it.
+const criterion = (id: string) => ({ id, field: 'k1', operator: 'equals', value: 'x' });
+const condition = (id: string, criteria: string[] = []) =>
+  ({
+    type: 'Condition',
+    options: { id, criteria: criteria.map(criterion) },
+  }) as UISchemaElement;
+const branch = (id: string, source: string, target: string, sourceHandle: string) => ({
+  id,
+  source,
+  target,
+  sourceHandle,
+});
+const hasHandle = (value: object) => Object.hasOwn(value, 'sourceHandle');
 
 describe('drawnStages — stage node ids (rule 8)', () => {
   it("uses a Stage's non-empty string options.id, in elements order, with its index", () => {
@@ -217,6 +236,116 @@ describe('flowProblems (rule 18)', () => {
     expect(flowProblems(flow(abc, edges))).toEqual([
       { path: '/options/edges/2', message: CYCLE_MESSAGE },
     ]);
+  });
+});
+
+// Doc 199 rules 10-15 — the graph learns about Conditions and branch handles. Rules 10 and 11 fix
+// two PRE-EXISTING sanitiser bugs: asEdge dropped unknown keys, and pairKey made two criteria
+// leading to the same Stage look like duplicates.
+describe('sourceHandle survives the sanitiser (doc 199 rule 10)', () => {
+  const branched = (edges: unknown[]) => flow([condition('c', ['x', 'y']), stage('b')], edges);
+
+  it('carries a non-empty string sourceHandle through flowEdges', () => {
+    expect(flowEdges(branched([branch('e1', 'c', 'b', 'x')]))).toEqual([
+      { id: 'e1', source: 'c', target: 'b', sourceHandle: 'x' },
+    ]);
+  });
+
+  it('leaves sourceHandle absent — never undefined — when it is missing or not a string', () => {
+    const [plain] = flowEdges(flow(abc, [edge('e1', 'a', 'b')]));
+    expect(plain).toEqual(edge('e1', 'a', 'b'));
+    expect(hasHandle(plain ?? {})).toBe(false);
+
+    for (const bad of [7, '', null, {}]) {
+      const [only] = flowEdges(
+        branched([{ id: 'e1', source: 'c', target: 'b', sourceHandle: bad }]),
+      );
+      expect(hasHandle(only ?? {}), String(bad)).toBe(false);
+    }
+  });
+
+  it('normalises the reserved __default handle to an absent key', () => {
+    // xyflow reports '__default' when the author drags from the default handle; the stored form of a
+    // default edge is no handle at all, so the two can never disagree.
+    const [only] = flowEdges(branched([branch('e1', 'c', 'b', DEFAULT_HANDLE)]));
+    expect(only).toEqual(edge('e1', 'c', 'b'));
+    expect(hasHandle(only ?? {})).toBe(false);
+  });
+
+  it('drops an edge whose sourceHandle names no criterion of its source', () => {
+    expect(flowEdges(branched([branch('e1', 'c', 'b', 'nope')]))).toEqual([]);
+  });
+});
+
+describe('duplicate identity includes the handle (doc 199 rule 11)', () => {
+  const branched = (edges: unknown[]) => flow([condition('c', ['x', 'y']), stage('b')], edges);
+
+  it('keeps two edges from one Condition to the SAME target under different handles', () => {
+    // Two criteria leading to one Stage is ordinary authoring - without the handle in the key the
+    // second would read as a duplicate and be dropped.
+    expect(
+      flowEdges(branched([branch('e1', 'c', 'b', 'x'), branch('e2', 'c', 'b', 'y')])).map(
+        ({ id }) => id,
+      ),
+    ).toEqual(['e1', 'e2']);
+  });
+
+  it('still drops a genuinely repeated (source, sourceHandle, target)', () => {
+    expect(
+      flowEdges(branched([branch('e1', 'c', 'b', 'x'), branch('e2', 'c', 'b', 'x')])).map(
+        ({ id }) => id,
+      ),
+    ).toEqual(['e1']);
+  });
+
+  it('is unchanged for Stage edges, which carry no handle', () => {
+    expect(flowEdges(flow(abc, [edge('e1', 'a', 'b'), edge('e2', 'a', 'b')]))).toEqual([
+      edge('e1', 'a', 'b'),
+    ]);
+  });
+});
+
+// Rule 13's other half - is each criterion valid, and is its field upstream? - needs the document's
+// SCHEMA, which flowProblems is never given, so it lives in the studio-side check instead.
+describe('Condition problems (doc 199 rules 12-15)', () => {
+  it('reports an edge whose sourceHandle names no criterion of its source', () => {
+    const root = flow([condition('c', ['x']), stage('b')], [branch('e1', 'c', 'b', 'nope')]);
+    expect(flowProblems(root)).toContainEqual({
+      path: '/options/edges/0/sourceHandle',
+      message: unknownHandleMessage('nope'),
+    });
+  });
+
+  it('reports a Condition with no default path, at the node', () => {
+    const root = flow([condition('c', ['x']), stage('b')], [branch('e1', 'c', 'b', 'x')]);
+    expect(flowProblems(root)).toEqual([{ path: '/elements/0', message: MISSING_DEFAULT_MESSAGE }]);
+  });
+
+  it('accepts a Condition with a default and no criteria at all', () => {
+    // A pass-through: legal, just not yet branching.
+    expect(flowProblems(flow([condition('c'), stage('b')], [edge('e1', 'c', 'b')]))).toEqual([]);
+  });
+
+  it('accepts a Condition with both a criterion edge and a default', () => {
+    const root = flow(
+      [condition('c', ['x']), stage('b'), stage('d')],
+      [branch('e1', 'c', 'b', 'x'), edge('e2', 'c', 'd')],
+    );
+    expect(flowProblems(root)).toEqual([]);
+  });
+
+  it('reports an id duplicated between a Stage and a Condition (rule 15)', () => {
+    expect(flowProblems(flow([stage('a'), condition('a')]))).toContainEqual({
+      path: '/elements/1/options/id',
+      message: duplicateStageIdMessage('a'),
+    });
+  });
+
+  it('never reports a Condition as a leaf (rule 14)', () => {
+    // 'c' has no outgoing edge, but a Condition owns its outputs on its card instead.
+    const root = flow([stage('a'), condition('c')], [edge('e1', 'a', 'c')]);
+    expect(leafStageIds(root)).toEqual([]);
+    expect(leafStageIds(flow([stage('a'), condition('c')]))).toEqual(['a']);
   });
 });
 

@@ -1,5 +1,5 @@
 import type { JsonSchema } from '@jsonforms/core';
-import { choiceOptions } from '../../renderers/ui/choice-control';
+import { controlKindOf, type ControlKind } from '../../renderers/ui/control-kind';
 import {
   horizontalColumns,
   horizontalWidth,
@@ -10,8 +10,9 @@ import type { ElementIds } from '../layout/element-ids';
 import { findById, findParentById, type TreeElement } from '../layout/element-tree';
 import { propertyKeyOf, type StudioDocument } from '../layout/schema-properties';
 
-/** What a Control edits, deciding its type-specific settings (doc 187 rule 8, doc 188 rule 24). */
-export type ControlKind = 'text' | 'number' | 'choice' | 'boolean';
+// Doc 199 rule 1: the classifier moved to `renderers/ui/control-kind` so `renderers/xyflow/criteria.ts` can
+// share it without importing the studio. Re-exported here so existing importers are unaffected.
+export type { ControlKind };
 
 // The studio's Grids run on the built-in 12 columns (DEFAULT_GRID_OPTIONS) unless authored otherwise.
 const GRID_COLUMNS = 12;
@@ -35,18 +36,6 @@ export interface InspectorContext {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
-
-/**
- * Doc 188 rule 24: `'choice'` for a oneOf (const/title) schema the renderers/ui choice controls render — checked
- * first, with the same test they dispatch on — else the property's `type`: string, number or boolean.
- */
-function controlKindOf(property: JsonSchema | undefined): ControlKind | undefined {
-  if (!property) return undefined;
-  if (choiceOptions(property)) return 'choice';
-  if (property.type === 'string') return 'text';
-  if (property.type === 'number' || property.type === 'boolean') return property.type;
-  return undefined;
-}
 
 /** A Grid's authored `options.column` when an integer 1-12, else 12. */
 function gridColumns(options: unknown): number {

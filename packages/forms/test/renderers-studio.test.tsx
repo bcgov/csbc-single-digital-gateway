@@ -77,16 +77,18 @@ describe('renderers/studio composition', () => {
         ui[category].length + grid[category].length + xyflow[category].length,
       );
     }
-    // Grid, VerticalLayout, HorizontalLayout (rule 23), Form (doc 192 rule 2), then Flow and Stage (doc 195 rule 20).
-    const firstGridEntry = studio.layoutRenderers.at(-6);
+    // Grid, VerticalLayout, HorizontalLayout (rule 23), Form (doc 192 rule 2), then Flow, Stage and — since
+    // doc 199 rule 17 — Condition (doc 195 rule 20).
+    const firstGridEntry = studio.layoutRenderers.at(-7);
     expect(firstGridEntry?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);
-    expect(studio.layoutRenderers.at(-2)?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
-    expect(studio.layoutRenderers.at(-1)?.tester).toBe(xyflow.layoutRenderers[1]?.tester);
+    expect(studio.layoutRenderers.at(-3)?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
+    expect(studio.layoutRenderers.at(-2)?.tester).toBe(xyflow.layoutRenderers[1]?.tester);
+    expect(studio.layoutRenderers.at(-1)?.tester).toBe(xyflow.layoutRenderers[2]?.tester);
   });
 
   it("does not spread default's entries (no second, tied Grid or Flow entry)", () => {
     // default = ui + CSS layouts + an unsupported Flow, so spreading it as well would tie every layout entry.
-    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 6);
+    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 7);
     expect(matching('Grid')).toHaveLength(1);
     expect(matching('Flow')).toHaveLength(1);
   });

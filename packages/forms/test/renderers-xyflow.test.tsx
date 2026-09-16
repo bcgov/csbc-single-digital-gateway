@@ -78,18 +78,20 @@ const nodeOf = (container: HTMLElement, id: string) => {
 };
 
 describe('renderers/xyflow set (rules 1-4)', () => {
-  it('exports exactly cells, controlRenderers, displayRenderers ([]) and layoutRenderers [Flow, Stage]', () => {
+  it('exports exactly cells, controlRenderers, displayRenderers ([]) and layoutRenderers [Flow, Stage, Condition]', () => {
     expect(Object.keys(xyflow).toSorted()).toEqual([...CATEGORIES]);
     expect(xyflow.cells).toEqual([]);
     expect(xyflow.controlRenderers).toEqual([]);
     expect(xyflow.displayRenderers).toEqual([]);
-    expect(xyflow.layoutRenderers).toHaveLength(2);
+    // Doc 199 rule 17: the Condition joins Flow and Stage as a third layout entry.
+    expect(xyflow.layoutRenderers).toHaveLength(3);
     expect(xyflow.layoutRenderers[0]?.tester({ type: 'Flow' }, schema, testerContext)).toBe(1);
     expect(xyflow.layoutRenderers[1]?.tester({ type: 'Stage' }, schema, testerContext)).toBe(1);
+    expect(xyflow.layoutRenderers[2]?.tester({ type: 'Condition' }, schema, testerContext)).toBe(1);
   });
 
-  it('ranks Flow and Stage at 1 by uischema type and matches nothing else', () => {
-    const [flowEntry, stageEntry] = xyflow.layoutRenderers;
+  it('ranks Flow, Stage and Condition at 1 by uischema type and matches nothing else', () => {
+    const [flowEntry, stageEntry, conditionEntry] = xyflow.layoutRenderers;
     for (const type of [
       'Form',
       'Grid',
@@ -100,9 +102,15 @@ describe('renderers/xyflow set (rules 1-4)', () => {
     ]) {
       expect(flowEntry?.tester({ type }, schema, testerContext), type).toBe(NOT_APPLICABLE);
       expect(stageEntry?.tester({ type }, schema, testerContext), type).toBe(NOT_APPLICABLE);
+      expect(conditionEntry?.tester({ type }, schema, testerContext), type).toBe(NOT_APPLICABLE);
     }
+    // No two of them ever match the same element, so none can tie at the top rank.
     expect(flowEntry?.tester({ type: 'Stage' }, schema, testerContext)).toBe(NOT_APPLICABLE);
+    expect(flowEntry?.tester({ type: 'Condition' }, schema, testerContext)).toBe(NOT_APPLICABLE);
     expect(stageEntry?.tester({ type: 'Flow' }, schema, testerContext)).toBe(NOT_APPLICABLE);
+    expect(stageEntry?.tester({ type: 'Condition' }, schema, testerContext)).toBe(NOT_APPLICABLE);
+    expect(conditionEntry?.tester({ type: 'Flow' }, schema, testerContext)).toBe(NOT_APPLICABLE);
+    expect(conditionEntry?.tester({ type: 'Stage' }, schema, testerContext)).toBe(NOT_APPLICABLE);
   });
 
   it('is exposed as ./renderers/xyflow through a generated src/renderers-xyflow.ts', () => {
@@ -166,10 +174,11 @@ describe('Flow renderer (rules 6-11)', () => {
     );
   });
 
-  it('shows "Only Stages can be placed in a Flow." and skips non-Stage children', () => {
+  // Doc 199 rule 22: a Flow holds two kinds of node now, so the stray-child message names both.
+  it('shows "Only Stages and Conditions can be placed in a Flow." and skips other children', () => {
     const { container } = renderFlow(flow([stage('a'), { type: 'Heading', text: 'Stray' }]));
     const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent('Only Stages can be placed in a Flow.');
+    expect(alert).toHaveTextContent('Only Stages and Conditions can be placed in a Flow.');
     expect(alert).toHaveAttribute('data-slot', 'flow-element-error');
     expect(nodeIds(container)).toEqual(['a']);
     expect(screen.queryByText('Stray')).toBeNull();

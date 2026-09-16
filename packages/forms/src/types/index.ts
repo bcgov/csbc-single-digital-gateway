@@ -13,6 +13,8 @@ export type { LayoutGap } from '../renderers/gridstack/layout-gap';
 export type {
   CheckboxControlElement,
   ComboboxControlElement,
+  ConditionElement,
+  Criterion,
   FlowEdge,
   FlowElement,
   FormElement,
@@ -26,6 +28,7 @@ export type {
   HorizontalLayoutOptions,
   InputControlElement,
   NumberInputControlElement,
+  Operator,
   PaletteEmptyElement,
   PaletteGroupElement,
   PaletteItemElement,

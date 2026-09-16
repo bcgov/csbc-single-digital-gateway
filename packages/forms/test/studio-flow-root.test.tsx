@@ -74,17 +74,21 @@ const renderStudio = (uischema: UISchemaElement = FLOW) =>
 
 describe('Form Studio Flow root (doc 195)', () => {
   describe('renderer set (rule 20)', () => {
-    it('renders/studio spreads the xyflow layout renderers, framed: ui + 6 layout entries', () => {
-      expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 6);
-      const [flowEntry, stageEntry] = studio.layoutRenderers.slice(-2);
+    // Doc 199 rule 17: the Condition is a third xyflow entry, so the set grows to ui + 7.
+    it('renders/studio spreads the xyflow layout renderers, framed: ui + 7 layout entries', () => {
+      expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 7);
+      const [flowEntry, stageEntry, conditionEntry] = studio.layoutRenderers.slice(-3);
       expect(flowEntry?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
       expect(stageEntry?.tester).toBe(xyflow.layoutRenderers[1]?.tester);
+      expect(conditionEntry?.tester).toBe(xyflow.layoutRenderers[2]?.tester);
       // Framed: the tester is kept, the renderer is wrapped.
       expect(flowEntry?.renderer).not.toBe(xyflow.layoutRenderers[0]?.renderer);
+      expect(conditionEntry?.renderer).not.toBe(xyflow.layoutRenderers[2]?.renderer);
       const matching = (type: string) =>
         studio.layoutRenderers.filter((entry) => entry.tester({ type }, schema, testerContext) > 0);
       expect(matching('Flow')).toHaveLength(1);
       expect(matching('Stage')).toHaveLength(1);
+      expect(matching('Condition')).toHaveLength(1);
     });
   });
 

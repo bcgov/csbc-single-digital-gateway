@@ -1,6 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import type { StagePosition } from '../../types/elements';
-import { drawnStages } from './flow-elements';
+import { drawnNodes } from './flow-elements';
 import { flowEdges } from './flow-graph';
 
 // Where a Flow's Stages sit (doc 198 rules 1-2). Pure — no React, no @xyflow/react.
@@ -42,7 +42,7 @@ function ranks(stageIds: readonly string[], flow: UISchemaElement): Map<string, 
  * order among the Stages sharing its rank, in `elements` order.
  */
 export function stagePositions(flow: UISchemaElement): Map<string, StagePosition> {
-  const stages = drawnStages(flow);
+  const stages = drawnNodes(flow);
   const rankOf = ranks(
     stages.map(({ id }) => id),
     flow,
