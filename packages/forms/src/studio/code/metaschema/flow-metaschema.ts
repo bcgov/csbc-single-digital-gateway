@@ -33,6 +33,9 @@ export const FLOW_DEFINITIONS = {
             type: 'array',
             items: { $ref: '#/definitions/edge' },
           },
+          startId: nonEmptyString(
+            'The id of the Stage the flow starts at. The first stage is used when it is absent.',
+          ),
         },
       },
     },

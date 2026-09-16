@@ -129,3 +129,23 @@ export function drawnNodes(flow: UISchemaElement): DrawnNode[] {
 /** The Stages alone, with the same ids `drawnNodes` assigns (doc 199 rule 16). */
 export const drawnStages = (flow: UISchemaElement): DrawnNode[] =>
   drawnNodes(flow).filter((node) => node.kind === 'stage');
+
+/**
+ * Doc 203 rules 1-3: where a Flow begins. The ONE resolver, read by the canvas marker AND by the runner
+ * (doc 202 rule 18), so the drawn start and the filled-in start can never disagree.
+ *
+ * The authored `options.startId` when it names a drawn Stage with its own authored id; else the FIRST such Stage
+ * in `elements` order; else `undefined`, when the Flow has no addressable Stage.
+ *
+ * Only a Stage may start a Flow (rule 3): a Condition branches on answers given before it, so it can never be
+ * first, and an id naming one resolves as if absent — as does a placeholder id, which no edge can address either.
+ *
+ * Forgiving on purpose: `flowProblems` REPORTS a dangling start (rule 12), exactly as it reports the bad edges
+ * `flowEdges` drops silently, so a live canvas never dead-ends while hand-edited text is still caught.
+ */
+export function startStageId(flow: UISchemaElement): string | undefined {
+  const stages = drawnNodes(flow).filter(({ kind, authored }) => kind === 'stage' && authored);
+  const authored = flow.options?.['startId'];
+  if (typeof authored === 'string' && stages.some(({ id }) => id === authored)) return authored;
+  return stages[0]?.id;
+}

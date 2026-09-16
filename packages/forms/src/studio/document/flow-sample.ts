@@ -71,6 +71,9 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
   type: 'Flow',
   label: 'Multi-stage form',
   options: {
+    // Doc 203 rule 21: the template names its start explicitly, demonstrating the field — it happens to be the
+    // first Stage, which is where an absent `startId` would land anyway.
+    startId: APPLICANT_STAGE,
     edges: [
       { id: 'e1', source: APPLICANT_STAGE, target: TYPE_CONDITION },
       // The criterion branch: `sourceHandle` names the criterion this edge leaves by.

@@ -7,6 +7,7 @@ import {
   drawnNodes,
   elementsOf,
   flowNodeKind,
+  startStageId,
 } from './flow-elements';
 
 // A Flow's edges (doc 195 rules 10, 18; doc 199 rules 10-15). Pure — no React, no @xyflow/react.
@@ -26,6 +27,9 @@ export const duplicateStageIdMessage = (id: string) => `Stage id "${id}" is alre
 export const unknownStageMessage = (id: string) => `No Stage has id "${id}".`;
 export const unknownHandleMessage = (handle: string) =>
   `No criterion with id "${handle}" leaves this condition.`;
+/** Doc 203 rules 12-13: the message names the fallback, so the author knows the flow still runs. */
+export const unknownStartMessage = (id: string) =>
+  `No Stage has id "${id}", so this flow starts at its first stage instead.`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -136,6 +140,38 @@ export function leafStageIds(flow: UISchemaElement): string[] {
   );
 }
 
+/**
+ * Doc 203 rules 4-6: every drawn Stage with no path from the Flow's start along the SANITISED edges (doc 199
+ * rule 7 — never raw `options.edges`), in `elements` order.
+ *
+ * `reachesNode` includes the node itself, so the start is never listed (rule 5); with no start at all, nothing is
+ * reachable and every Stage is. A Stage whose id is a placeholder IS listed: no edge can address it, so it is
+ * unreachable in the most literal sense, and that is worth showing the author.
+ *
+ * Conditions are never listed (rule 6) — they are traversed, never visited, and an unreachable Condition is only
+ * ever a symptom of the unreachable Stage behind it.
+ */
+export function unreachableStageIds(flow: UISchemaElement): string[] {
+  const start = startStageId(flow);
+  const edges = flowEdges(flow);
+  return drawnNodes(flow).flatMap(({ id, kind }) =>
+    kind === 'stage' && (start === undefined || !reachesNode(edges, start, id)) ? [id] : [],
+  );
+}
+
+/**
+ * Doc 203 rules 12-13: an authored `startId` naming no drawn Stage — one deleted, a Condition, or a placeholder id.
+ * Reported, never repaired; `startStageId` falls back so the canvas and the runner keep working.
+ */
+function startProblems(flow: UISchemaElement): FlowProblem[] {
+  const authored = flow.options?.['startId'];
+  if (typeof authored !== 'string' || authored === '') return [];
+  const named = drawnNodes(flow).some(
+    ({ id, authored: own, kind }) => own && kind === 'stage' && id === authored,
+  );
+  return named ? [] : [{ path: '/options/startId', message: unknownStartMessage(authored) }];
+}
+
 /** Rule 18, widened by doc 199 rule 15: ids duplicated across Stages AND Conditions, by instance path. */
 function nodeIdProblems(flow: UISchemaElement): { ids: Set<string>; problems: FlowProblem[] } {
   const ids = new Set<string>();
@@ -211,5 +247,5 @@ export function flowProblems(flow: UISchemaElement): FlowProblem[] {
       pairs.add(pairKey(edge));
     }
   });
-  return [...problems, ...defaultPathProblems(flow, accepted)];
+  return [...problems, ...defaultPathProblems(flow, accepted), ...startProblems(flow)];
 }

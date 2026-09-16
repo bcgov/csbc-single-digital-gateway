@@ -2,7 +2,7 @@ import type { JsonSchema } from '@jsonforms/core';
 import { authoredStageId, flowNodeKind, FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
-import { removeStageEdges } from './flow-edits';
+import { clearFlowStart, removeStageEdges } from './flow-edits';
 import { propertyKeysUsed, type StudioDocument } from './schema-properties';
 
 /** Rule 25: the schema without `keys` in `properties` or `required`; an emptied `required` is dropped. */
@@ -26,8 +26,9 @@ function withoutProperties(schema: JsonSchema, keys: readonly string[]): JsonSch
  * data property the removed Controls used that no remaining Control uses. A removed Flow NODE — a Stage or, since
  * doc 199 rule 27, a Condition — also takes every edge touching its authored id out of its Flow, without
  * reconnecting neighbours (doc 196 rule 9). A Condition's branch edges are covered without further work:
- * `removeStageEdges` drops edges by `source` and `target` id, whatever handle they leave by. The root or an
- * unknown id returns the same document.
+ * `removeStageEdges` drops edges by `source` and `target` id, whatever handle they leave by. Doc 203 rule 20: a
+ * removed node also takes the Flow's `options.startId` with it when it was the start — no other Stage is promoted,
+ * the resolver simply falls back to the first one. The root or an unknown id returns the same document.
  */
 export function removeElement(
   document: StudioDocument,
@@ -52,7 +53,8 @@ export function removeElement(
         (grid.elements ?? []).filter((element) => element !== removed),
         ids,
       );
-      return stageId === undefined ? kept : removeStageEdges(kept, stageId, ids);
+      if (stageId === undefined) return kept;
+      return clearFlowStart(removeStageEdges(kept, stageId, ids), stageId, ids);
     },
     ids,
   );

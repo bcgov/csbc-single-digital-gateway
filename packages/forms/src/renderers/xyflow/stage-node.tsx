@@ -33,13 +33,41 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
   const handleClass = editing ? EDIT_HANDLE_CLASS : VIEW_HANDLE_CLASS;
   return (
     <>
+      {/*
+        Doc 203 rule 8: the Flow's start Stage wears a marker above its target handle — the mirror of the leaf +
+        below the source handle, with its connector line running DOWN toward the card. Purely presentational: it
+        is not a Handle, never connectable, and `nodrag nopan` because xyflow pans from any press on the pane
+        (doc 198 rule 20). Unlike the leaf +, it draws with or without an editor: a view-only Flow should still
+        say where it begins.
+      */}
+      {data.isStart ? (
+        <div
+          data-slot="flow-start-marker"
+          className="nodrag nopan pointer-events-none absolute bottom-full left-1/2 flex -translate-x-1/2 flex-col items-center pb-1"
+        >
+          <span className="rounded-full border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            Start
+          </span>
+          <span aria-hidden="true" className="h-3 w-px bg-border" />
+        </div>
+      ) : null}
       <Handle
         type="target"
         position={Position.Top}
         isConnectable={editing}
         className={handleClass}
       />
-      <div data-slot="stage-node" className="pointer-events-auto">
+      <div
+        data-slot="stage-node"
+        // Doc 203 rule 9: a Stage no path from the start reaches is muted and outlined dashed. The outline sits
+        // OUTSIDE the card's own border, so the two never fight.
+        className={
+          data.isUnreachable
+            ? 'pointer-events-auto rounded-xl opacity-60 outline-2 outline-offset-2 outline-dashed outline-border'
+            : 'pointer-events-auto'
+        }
+        {...(data.isUnreachable ? { 'data-unreachable': '' } : {})}
+      >
         <JsonFormsDispatch
           uischema={data.element}
           schema={schema}
@@ -49,6 +77,18 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
           {...(cells ? { cells } : {})}
         />
       </div>
+      {/*
+        The unreachable badge hangs off the TOP-RIGHT corner, clear of the centred Start marker. (The start is
+        never unreachable, so they cannot both appear on one node — but keeping them apart costs nothing.)
+      */}
+      {data.isUnreachable ? (
+        <span
+          data-slot="flow-unreachable-badge"
+          className="nodrag nopan pointer-events-none absolute right-0 bottom-full mb-1 rounded-full border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+        >
+          Not reachable
+        </span>
+      ) : null}
       <Handle
         type="source"
         position={Position.Bottom}

@@ -2,7 +2,7 @@ import type { JsonSchema } from '@jsonforms/core';
 import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
-import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
+import { BOOLEAN, integer, NUMBER, startStage, STRING, wholeNumbers } from './field-schemas';
 import type { ControlKind, InspectorContext } from './inspector-context';
 import {
   finite,
@@ -100,6 +100,7 @@ const isHeading = (ctx: InspectorContext) => ctx.element.type === 'Heading';
 const hasProperty = (ctx: InspectorContext) => ctx.propertyKey !== undefined;
 const isText = (ctx: InspectorContext) => ctx.controlKind === 'text';
 const isNumber = (ctx: InspectorContext) => ctx.controlKind === 'number';
+const STEP: JsonSchema = { type: 'number', exclusiveMinimum: 0 };
 
 type Applies = (ctx: InspectorContext) => boolean;
 type Read = (value: unknown) => unknown;
@@ -204,6 +205,18 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
       setElement(edit, withElementKey(edit.element, 'label', writtenLabel(ctx, value))),
   },
   {
+    key: 'startId',
+    section: 'general',
+    label: 'Start stage',
+    applies: (ctx) => ctx.element.type === FLOW_TYPE,
+    schema: (ctx) => startStage(ctx.element).schema,
+    // Doc 203 rule 16: a dangling startId reads as undefined — the picker shows empty rather than a
+    // value `fieldAccepts` would refuse to write back. Clearing restores the Flow's fallback start.
+    read: (ctx) => startStage(ctx.element).value,
+    write: (_ctx, edit, value) =>
+      setElement(edit, withOption(edit.element, 'startId', orCleared(value))),
+  },
+  {
     key: 'text',
     section: 'general',
     label: 'Text',
@@ -239,14 +252,7 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   propertyField('maxLength', 'validation', 'Max length', isText, integer({ minimum: 0 }), finite),
   propertyField('minimum', 'validation', 'Minimum', isNumber, NUMBER, finite),
   propertyField('maximum', 'validation', 'Maximum', isNumber, NUMBER, finite),
-  optionField(
-    'step',
-    'validation',
-    'Step',
-    isNumber,
-    { type: 'number', exclusiveMinimum: 0 },
-    finite,
-  ),
+  optionField('step', 'validation', 'Step', isNumber, STEP, finite),
   {
     key: 'component',
     section: 'appearance',

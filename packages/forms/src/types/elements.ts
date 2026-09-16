@@ -223,7 +223,15 @@ export interface FlowElement extends Layout {
   type: 'Flow';
   label?: string;
   elements: (StageElement | ConditionElement)[];
-  options?: { edges?: FlowEdge[]; [key: string]: unknown };
+  options?: {
+    edges?: FlowEdge[];
+    /**
+     * Doc 203 rules 1-3: the `options.id` of the Stage the flow starts at. When it is absent — or names
+     * no drawn Stage — the flow starts at its first Stage in `elements` order.
+     */
+    startId?: string;
+    [key: string]: unknown;
+  };
 }
 
 /** The options a `HorizontalLayout` reads — everything else is ignored (doc 180 rule 27, doc 193). */

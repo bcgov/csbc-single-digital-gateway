@@ -6,6 +6,7 @@ import {
   drawnNodes,
   FLOW_TYPE,
   STAGE_TYPE,
+  startStageId,
   type FlowNodeKind,
 } from '../../renderers/xyflow/flow-elements';
 import { canConnect } from '../../renderers/xyflow/flow-gestures';
@@ -100,6 +101,19 @@ export function removeStageEdges(flow: TreeElement, stageId: string, ids: Elemen
   return kept.length === edges.length ? flow : withOptions(flow, { edges: kept }, ids);
 }
 
+/** Doc 203 rule 20: `flow` without its `options.startId` when that names `stageId`, carrying its id; the same Flow otherwise. */
+export function clearFlowStart(flow: TreeElement, stageId: string, ids: ElementIds): TreeElement {
+  if (flow.options?.['startId'] !== stageId) return flow;
+  // The key is REMOVED, never set to `undefined`: `startStageId` falls back to the first Stage only on an absent
+  // key, and `withOptions` merges, so it cannot drop one.
+  const options = Object.fromEntries(
+    Object.entries(flow.options ?? {}).filter(([key]) => key !== 'startId'),
+  );
+  const next = { ...flow, options };
+  ids.carry(flow, next);
+  return next;
+}
+
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Rule 20: `"<label> <n>"`, `n` one more than the highest among `type` elements labelled exactly `"<label> <digits>"`. */
@@ -181,6 +195,9 @@ export function insertNode(
   const selected = selectedId === null ? undefined : findById(root, selectedId, ids);
   const drawn = drawnNodes(root).find((node) => node.element === selected);
 
+  // Doc 203 rule 19: whether the Flow had a start at all is read BEFORE the insert.
+  const startless = startStageId(root) === undefined;
+
   const node = newNodeElement(root, kind, newId);
   const id = authoredStageId(node) as string;
 
@@ -195,6 +212,9 @@ export function insertNode(
         : { id: edgeId, source: drawn.id, target: id, sourceHandle };
     next = withOptions(next, { edges: [...edges, edge] }, ids);
   }
+  // Doc 203 rule 19: the FIRST Stage of a Flow is stamped as its start, so a flow built from the empty-Flow
+  // origin `+` is never startless. Later Stages — and every Condition — leave it alone.
+  if (kind === 'stage' && startless) next = withOptions(next, { startId: id }, ids);
   return { uischema: next, inserted: node };
 }
 

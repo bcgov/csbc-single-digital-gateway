@@ -171,7 +171,9 @@ describe('insertStage (rules 18, 20)', () => {
     });
     expect(child(uischema, 0)).toBe(inserted);
     expect(ids.idOf(uischema)).toBe(ids.idOf(root));
-    expect(uischema.options).toBeUndefined();
+    // Doc 203 rule 19: the FIRST Stage of a Flow is stamped as its start, so a flow built from the
+    // empty-Flow origin + is never startless. No edge is written here, so startId is all it gains.
+    expect(uischema.options).toEqual({ startId: 's1' });
     const formRoot = tree(form('Root'));
     expect(insertStage(formRoot, null, ids, sequence('x'))).toEqual({
       uischema: formRoot,

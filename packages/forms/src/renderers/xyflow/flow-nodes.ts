@@ -1,7 +1,7 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import { DEFAULT_HANDLE, drawnNodes } from './flow-elements';
-import { flowEdges, leafStageIds } from './flow-graph';
+import { DEFAULT_HANDLE, drawnNodes, startStageId } from './flow-elements';
+import { flowEdges, leafStageIds, unreachableStageIds } from './flow-graph';
 import { stagePositions } from './flow-positions';
 
 // A Flow element as xyflow nodes and edges (doc 195 rules 8, 10, 12; doc 199 rules 16-18), derived from the
@@ -18,8 +18,19 @@ export const ACTION_EDGE_TYPE = 'action';
 export type ActionEdgeData = { flowId: string };
 export type ActionFlowEdge = Edge<ActionEdgeData, typeof ACTION_EDGE_TYPE>;
 
-/** Doc 198 rule 7: `isLeaf` is what the dangling + affordance hangs off. */
-export type StageNodeData = { element: UISchemaElement; isLeaf: boolean };
+/**
+ * Doc 198 rule 7: `isLeaf` is what the dangling + affordance hangs off.
+ *
+ * Doc 203 rule 7: `isStart` and `isUnreachable` are whole-Flow questions — which Stage the Flow begins at, and
+ * which Stages no path from it reaches — that neither the node nor the dispatched card can see, so they are
+ * derived here alongside `isLeaf` and handed down as data.
+ */
+export type StageNodeData = {
+  element: UISchemaElement;
+  isLeaf: boolean;
+  isStart: boolean;
+  isUnreachable: boolean;
+};
 export type StageFlowNode = Node<StageNodeData, typeof STAGE_NODE_TYPE>;
 
 /**
@@ -45,6 +56,9 @@ export function toFlowNodes(flow: UISchemaElement): FlowNode[] {
   const positions = stagePositions(flow);
   const leaves = new Set(leafStageIds(flow));
   const edges = flowEdges(flow);
+  // Doc 203 rule 7: whole-Flow questions, asked ONCE here rather than per node.
+  const start = startStageId(flow);
+  const unreachable = new Set(unreachableStageIds(flow));
   return drawnNodes(flow).map(({ element, id, kind }) => {
     const shared = {
       id,
@@ -65,7 +79,16 @@ export function toFlowNodes(flow: UISchemaElement): FlowNode[] {
             ),
           },
         }
-      : { ...shared, type: STAGE_NODE_TYPE, data: { element, isLeaf: leaves.has(id) } };
+      : {
+          ...shared,
+          type: STAGE_NODE_TYPE,
+          data: {
+            element,
+            isLeaf: leaves.has(id),
+            isStart: start !== undefined && start === id,
+            isUnreachable: unreachable.has(id),
+          },
+        };
   });
 }
 
