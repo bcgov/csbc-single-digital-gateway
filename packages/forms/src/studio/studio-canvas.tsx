@@ -79,8 +79,6 @@ export function StudioCanvas({
   // needs somewhere to put them. Declared ABOVE every early return: a hook may not sit behind a condition (the
   // temporal-dead-zone trap doc 198 rule 20 records for this same shell).
   //
-  // Seeded from the sample data and reset by `rootKey`, so switching documents — or drilling into another Form —
-  // never carries one preview's answers into the next.
   // Seeded by SPREAD, never by identity: `STUDIO_SAMPLE_DATA` is a shared module constant the studio canvas below
   // also renders, so handing the same object to a controlled `data` would let any future mutation leak one preview's
   // answers into the canvas and into the next document — the failure doc 200 records for `documentFor()`.
@@ -118,8 +116,13 @@ export function StudioCanvas({
     // handler is passed. The renderer entry alone could never offer those: the action bar is the runner's chrome and
     // sits outside the single `<JsonForms>` the entry is dispatched inside.
     //
-    // A FORM root keeps its plain `<JsonForms>`: the studio previews a focused Form as a form, not a one-step flow.
-    if (previewRoot.type === FLOW_TYPE) {
+    // Doc 202 rule 40c: a whole Form DOCUMENT gets the runner too — it is the entire form a citizen fills, so
+    // previewing it must show the action bar, or previewing a basic form would tell the author LESS than previewing
+    // a multi-stage one. The one case that falls through is a Form FOCUSED inside a Flow (doc 196 rule 16): that is
+    // one step of a longer journey, and offering Submit there would misrepresent how a citizen reaches it.
+    //
+    // The document root is what separates them — a focused Form has a `Form` preview root under a `Flow` document.
+    if (previewRoot.type === FLOW_TYPE || uischema.type === FORM_TYPE) {
       return (
         <FormRunner
           key={`preview-${rootKey}`}

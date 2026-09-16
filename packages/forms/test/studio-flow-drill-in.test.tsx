@@ -172,6 +172,12 @@ describe('preview of a focused Form (rule 16)', () => {
     ).not.toBeNull();
     expect(within(centre()).queryByRole('status')).toBeNull();
     expect(centre().querySelector('.react-flow, .grid-stack')).toBeNull();
+
+    // Doc 202 rule 40c: a FOCUSED Form is one step of a longer journey, so it gets NO action bar —
+    // offering Submit here would misrepresent how a citizen reaches it. Asserted explicitly because the
+    // `fill-layout` check above passes either way: the runner renders that same element inside itself.
+    expect(centre().querySelector('[data-slot="runner-actions"]')).toBeNull();
+    expect(within(centre()).queryByRole('button', { name: 'Submit' })).toBeNull();
   });
 
   it('drills back into the remembered Form when preview ends', async () => {

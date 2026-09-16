@@ -131,6 +131,23 @@ describe('entering preview (rules 5-8)', () => {
 
     expect(name).toHaveValue('Ada');
   });
+
+  it('previews a whole Form document through the runner, with its action bar (doc 202 rule 40c)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await screen.findByRole('textbox', { name: 'Name' });
+
+    // A basic form is the ENTIRE form a citizen fills, so preview shows the actions: Save draft disabled
+    // because no handler is passed (rule 37), and Submit present to open the payload dialog (rule 38).
+    expect(slot('runner-actions')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+
+    // Rule 7: a Form root has no stages, so no sidebar and no Next.
+    expect(slot('runner-sidebar')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+  });
 });
 
 describe('leaving preview (rules 9-12)', () => {
