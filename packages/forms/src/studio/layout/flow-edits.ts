@@ -7,8 +7,7 @@ import {
   STAGE_TYPE,
 } from '../../renderers/xyflow/flow-elements';
 import { canConnect } from '../../renderers/xyflow/flow-gestures';
-import { STAGE_COLUMN_WIDTH, stagePositions } from '../../renderers/xyflow/flow-positions';
-import type { StagePosition } from '../../types/elements';
+import { flowEdges } from '../../renderers/xyflow/flow-graph';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, withElements, type TreeElement } from './element-tree';
 import { formIdsUsed } from './form-address';
@@ -49,19 +48,6 @@ function freshId(taken: ReadonlySet<unknown>, newId: () => string): string {
   let id = newId();
   while (taken.has(id)) id = newId();
   return id;
-}
-
-/** Rule 4: the Stage with `stageId` at `position` (rounded) — an auto-placed Stage becomes authored. */
-export function moveStage(
-  uischema: UISchemaElement,
-  stageId: string,
-  position: StagePosition,
-  ids: ElementIds,
-): UISchemaElement {
-  const root = uischema as TreeElement;
-  if (findById(root, stageId, ids)?.type !== STAGE_TYPE) return uischema;
-  const rounded = { x: Math.round(position.x), y: Math.round(position.y) };
-  return updateById(root, stageId, (stage) => withOptions(stage, { position: rounded }, ids), ids);
 }
 
 /** Rule 6: `source → target` appended to the Flow's edges with a fresh `nanoid(8)` id, when `canConnect` allows it. */
@@ -128,21 +114,34 @@ export function nextElementLabel(root: UISchemaElement, type: string, label: str
   return `${label} ${highest + 1}`;
 }
 
-/** Rule 18: where a new Stage goes — right of the selected Stage, else right of the right-most Stage, else the origin. */
-function newStagePosition(
-  flow: UISchemaElement,
-  selectedStageId: string | undefined,
-): StagePosition {
-  const positions = stagePositions(flow);
-  const selected = selectedStageId === undefined ? undefined : positions.get(selectedStageId);
-  if (selected) return { x: selected.x + STAGE_COLUMN_WIDTH, y: selected.y };
-  const xs = [...positions.values()].map(({ x }) => x);
-  return xs.length > 0 ? { x: Math.max(...xs) + STAGE_COLUMN_WIDTH, y: 0 } : { x: 0, y: 0 };
+/**
+ * Rules 18, 20: a fresh `"Stage <n>"` holding one `"Form <m>"`, both with ids unused anywhere in `root`. Shared by
+ * `insertStage` and `insertStageBetween` so an appended and an inserted Stage are identical but for their edges.
+ *
+ * Doc 198 rule 11: no `options.position` is written — where the Stage lands follows from its rank and its place in
+ * `elements` (doc 198 rules 1-2).
+ */
+function newStageElement(root: TreeElement, newId: () => string): TreeElement {
+  const taken = new Set(drawnStages(root).map(({ element }) => authoredStageId(element)));
+  return {
+    type: STAGE_TYPE,
+    label: nextElementLabel(root, STAGE_TYPE, 'Stage'),
+    options: { id: freshId(taken, newId) },
+    // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists.
+    elements: [
+      {
+        type: FORM_TYPE,
+        label: nextElementLabel(root, FORM_TYPE, 'Form'),
+        options: { id: freshId(formIdsUsed(root), newId) },
+        elements: [],
+      },
+    ],
+  } as TreeElement;
 }
 
 /**
- * Rules 18, 20: a Flow root gains `"Stage <n>"` holding one `"Form <m>"`, with a fresh id. With a Stage selected it sits
- * right of it and — when the selected Stage has an authored id — is connected from it. Any other root is refused.
+ * Rules 18, 20: a Flow root gains `"Stage <n>"` holding one `"Form <m>"`, with a fresh id. When the selected Stage has
+ * an authored id the new Stage is connected from it. Any other root is refused.
  */
 export function insertStage(
   uischema: UISchemaElement,
@@ -156,21 +155,8 @@ export function insertStage(
   const selected = selectedId === null ? undefined : findById(root, selectedId, ids);
   const drawn = stages.find((stage) => stage.element === selected);
 
-  const id = freshId(new Set(stages.map(({ element }) => authoredStageId(element))), newId);
-  const stage = {
-    type: STAGE_TYPE,
-    label: nextElementLabel(root, STAGE_TYPE, 'Stage'),
-    options: { id, position: newStagePosition(root, drawn?.id) },
-    // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists.
-    elements: [
-      {
-        type: FORM_TYPE,
-        label: nextElementLabel(root, FORM_TYPE, 'Form'),
-        options: { id: freshId(formIdsUsed(root), newId) },
-        elements: [],
-      },
-    ],
-  } as TreeElement;
+  const stage = newStageElement(root, newId);
+  const id = authoredStageId(stage) as string;
 
   let next = withElements(root, [...(root.elements ?? []), stage], ids);
   if (drawn?.authored) {
@@ -182,6 +168,42 @@ export function insertStage(
       ids,
     );
   }
+  return { uischema: next, inserted: stage };
+}
+
+/**
+ * Doc 198 rule 10: the edge `edgeId` split in two by a new Stage. The existing edge KEEPS ITS ID and is retargeted at
+ * the new Stage, then one edge `new → oldTarget` is appended, so the downstream Stage is never orphaned. Refused when
+ * `flowId` is not the Flow root or `edgeId` is not one of its sanitised edges. A split can never close a cycle, so
+ * `flowProblems` cannot be tripped by it.
+ */
+export function insertStageBetween(
+  uischema: UISchemaElement,
+  flowId: string,
+  edgeId: string,
+  ids: ElementIds,
+  newId: () => string,
+): FlowInsertResult {
+  const root = uischema as TreeElement;
+  const flow = findById(root, flowId, ids);
+  if (flow !== root || root.type !== FLOW_TYPE) return { uischema, inserted: undefined };
+  const split = flowEdges(root).find((edge) => edge.id === edgeId);
+  if (!split) return { uischema, inserted: undefined };
+
+  const stage = newStageElement(root, newId);
+  const stageId = authoredStageId(stage) as string;
+  let next = withElements(root, [...(root.elements ?? []), stage], ids);
+
+  const edges = rawEdges(next);
+  const appended = freshId(new Set(edges.map(edgeIdOf)), newId);
+  const retargeted = edges.map((entry) =>
+    isRecord(entry) && entry['id'] === edgeId ? { ...entry, target: stageId } : entry,
+  );
+  next = withOptions(
+    next,
+    { edges: [...retargeted, { id: appended, source: stageId, target: split.target }] },
+    ids,
+  );
   return { uischema: next, inserted: stage };
 }
 

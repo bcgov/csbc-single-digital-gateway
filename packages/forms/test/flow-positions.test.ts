@@ -1,12 +1,13 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import {
-  STAGE_COLUMN_WIDTH,
-  STAGE_ROW_HEIGHT,
+  STAGE_RANK_HEIGHT,
+  STAGE_SIBLING_WIDTH,
   stagePositions,
 } from '../src/renderers/xyflow/flow-positions';
 
-// Doc 195 rule 12 — stagePositions: authored position, else layered auto layout.
+// Doc 198 rules 1-2 — stagePositions: derived only, vertical. Supersedes doc 195 rule 12, whose
+// authored-position precedence is deliberately gone (see doc 198 rule 1 and its Known Issues).
 
 const stage = (id: string, position?: unknown) =>
   ({
@@ -25,38 +26,27 @@ const flow = (
     options: { edges: pairs.map(([source, target], i) => ({ id: `e${i}`, source, target })) },
   }) as UISchemaElement;
 
-const at = (column: number, row: number) => ({
-  x: column * STAGE_COLUMN_WIDTH,
-  y: row * STAGE_ROW_HEIGHT,
+/** Rank runs down the canvas (y), siblings across it (x). */
+const at = (rank: number, sibling: number) => ({
+  x: sibling * STAGE_SIBLING_WIDTH,
+  y: rank * STAGE_RANK_HEIGHT,
 });
 
-describe('stagePositions (rule 12)', () => {
-  it('spaces columns 320px and rows 240px apart', () => {
-    expect(STAGE_COLUMN_WIDTH).toBe(320);
-    expect(STAGE_ROW_HEIGHT).toBe(240);
+describe('stagePositions (rules 1-2)', () => {
+  it('spaces ranks 240px down and siblings 320px across', () => {
+    expect(STAGE_RANK_HEIGHT).toBe(240);
+    expect(STAGE_SIBLING_WIDTH).toBe(320);
   });
 
-  it('uses an authored options.position whose x and y are finite numbers as is', () => {
+  it('ignores an authored options.position entirely (rule 1)', () => {
     const positions = stagePositions(
-      flow([stage('a', { x: -40, y: 12.5 }), stage('b', { x: 0, y: 0 })]),
+      flow([stage('a', { x: -40, y: 12.5 }), stage('b', { x: 999, y: 999 })]),
     );
-    expect(positions.get('a')).toEqual({ x: -40, y: 12.5 });
-    expect(positions.get('b')).toEqual({ x: 0, y: 0 });
+    expect(positions.get('a')).toEqual(at(0, 0));
+    expect(positions.get('b')).toEqual(at(0, 1));
   });
 
-  it('auto-places a Stage whose position is absent, partial or non-finite', () => {
-    const positions = stagePositions(
-      flow([
-        stage('a'),
-        stage('b', { x: 10 }),
-        stage('c', { x: Number.NaN, y: 1 }),
-        stage('d', '1,2'),
-      ]),
-    );
-    expect([...positions.values()]).toEqual([at(0, 0), at(0, 1), at(0, 2), at(0, 3)]);
-  });
-
-  it('places a linear chain one column apart: x = column × 320, y = 0', () => {
+  it('places a linear chain one rank apart: y = rank × 240, x = 0', () => {
     const positions = stagePositions(
       flow(
         [stage('c'), stage('a'), stage('b')],
@@ -71,7 +61,7 @@ describe('stagePositions (rule 12)', () => {
     expect(positions.get('c')).toEqual(at(2, 0));
   });
 
-  it('uses the LONGEST path from a root for the column when branches rejoin', () => {
+  it('uses the LONGEST path from a root for the rank when branches rejoin', () => {
     const positions = stagePositions(
       flow(
         [stage('a'), stage('b'), stage('c'), stage('d')],
@@ -86,10 +76,10 @@ describe('stagePositions (rule 12)', () => {
     expect(positions.get('d')).toEqual(at(3, 0));
   });
 
-  it('stacks auto-placed Stages in one column by elements order, skipping authored ones', () => {
+  it('lays siblings of one rank out across the canvas by elements order', () => {
     const positions = stagePositions(
       flow(
-        [stage('a'), stage('b'), stage('x', { x: 5, y: 5 }), stage('c')],
+        [stage('a'), stage('b'), stage('x'), stage('c')],
         [
           ['a', 'b'],
           ['a', 'x'],
@@ -98,17 +88,17 @@ describe('stagePositions (rule 12)', () => {
       ),
     );
     expect(positions.get('b')).toEqual(at(1, 0));
-    expect(positions.get('x')).toEqual({ x: 5, y: 5 });
-    expect(positions.get('c')).toEqual(at(1, 1));
+    expect(positions.get('x')).toEqual(at(1, 1));
+    expect(positions.get('c')).toEqual(at(1, 2));
   });
 
-  it('puts unconnected Stages in column 0', () => {
+  it('puts unconnected Stages in rank 0', () => {
     const positions = stagePositions(flow([stage('a'), stage('b'), stage('lone')], [['a', 'b']]));
     expect(positions.get('a')).toEqual(at(0, 0));
     expect(positions.get('lone')).toEqual(at(0, 1));
   });
 
-  it('terminates on a cycle, giving Stages on a rootless cycle column 0', () => {
+  it('terminates on a cycle, giving Stages on a rootless cycle rank 0', () => {
     const positions = stagePositions(
       flow(
         [stage('a'), stage('b')],
@@ -122,7 +112,7 @@ describe('stagePositions (rule 12)', () => {
     expect(positions.get('b')).toEqual(at(0, 1));
   });
 
-  it('ignores sanitised-away edges (unknown ends, self-loops) when computing columns', () => {
+  it('ignores sanitised-away edges (unknown ends, self-loops) when computing ranks', () => {
     const positions = stagePositions(
       flow(
         [stage('a'), stage('b')],

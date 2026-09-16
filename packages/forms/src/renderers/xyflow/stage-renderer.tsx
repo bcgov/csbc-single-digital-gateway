@@ -1,6 +1,6 @@
 import type { LayoutProps, UISchemaElement } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
-import { mdiDeleteOutline, mdiFileDocumentOutline } from '@mdi/js';
+import { mdiDeleteOutline, mdiFileDocumentOutline, mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { useContext, type KeyboardEvent } from 'react';
 import { FORM_TYPE } from '../gridstack/grid-layouts';
@@ -116,13 +116,31 @@ function StageLayout({ uischema, visible }: LayoutProps) {
         <div data-slot="stage-empty" className="p-3 text-sm text-muted-foreground">
           No forms
         </div>
-      ) : (
+      ) : null}
+      {children.length > 0 || editor ? (
         <ul className="flex flex-col gap-1.5 p-2">
           {children.map((child, index) => (
             <StageRow key={index} element={child} editor={editor} />
           ))}
+          {/* Doc 198 rule 13: the palette no longer reaches a Flow, so a Stage adds its own Forms. */}
+          {editor ? (
+            <li>
+              <button
+                type="button"
+                aria-label="Add form"
+                data-slot="stage-add-form"
+                className={`${ROW_CONTROL_CLASS} flex w-full items-center gap-1.5 rounded-md border border-dashed px-2 py-1.5 text-sm text-muted-foreground hover:border-ring hover:text-foreground`}
+                onClick={() =>
+                  editor.onGesture({ type: 'add-form', stageId: editor.idOf(uischema) })
+                }
+              >
+                <Icon path={mdiPlus} size="14px" className="shrink-0" />
+                <span>Add form</span>
+              </button>
+            </li>
+          ) : null}
         </ul>
-      )}
+      ) : null}
       {invalid ? (
         <div role="alert" className="px-3 pb-2 text-xs text-destructive">
           {STAGE_CHILD_MESSAGE}

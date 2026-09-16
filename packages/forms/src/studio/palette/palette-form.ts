@@ -12,27 +12,19 @@ import {
   type PaletteTemplate,
 } from './palette-templates';
 
-// The palette's own JSONForms forms (doc 189 rule 19, doc 196 rule 17), built once from the catalogue at module load:
-// one for a Form (the form groups) and one for a Flow's view (the Flow group alone).
+// The palette's own JSONForms form (doc 189 rule 19), built once from the catalogue at module load.
+// Doc 198 rule 19: the Flow view is gone — a Flow is authored entirely on its canvas, so there is one catalogue again.
 
 export const PALETTE_SCHEMA: JsonSchema = {
   type: 'object',
   properties: { [PALETTE_SEARCH_KEY]: { type: 'string' } },
 };
 
-/** Which palette a studio view shows. */
-export type PaletteView = 'form' | 'flow';
-
 const itemFor = (template: PaletteTemplate): PaletteItemElement => ({
   type: 'PaletteItem',
   template: template.key,
   label: template.label,
-  options: {
-    icon: template.icon,
-    keywords: [...template.keywords],
-    // Doc 196 rule 17: Stage and Form are added by click or keyboard only — a Flow has no grid to drop on.
-    ...(template.group === 'flow' ? { dragIn: false } : {}),
-  },
+  options: { icon: template.icon, keywords: [...template.keywords] },
 });
 
 const empty: PaletteEmptyElement = { type: 'PaletteEmpty', text: 'No elements match your search.' };
@@ -57,11 +49,3 @@ function paletteUischema(groupIds: readonly PaletteGroupId[]): UISchemaElement {
 
 /** The palette for a Form root or a focused Form: Display, Layout and Fields. */
 export const PALETTE_UISCHEMA = paletteUischema(['display', 'layout', 'fields']);
-
-/** The palette for a Flow's view: the Flow group alone. */
-export const FLOW_PALETTE_UISCHEMA = paletteUischema(['flow']);
-
-export const PALETTE_UISCHEMAS: Readonly<Record<PaletteView, UISchemaElement>> = Object.freeze({
-  form: PALETTE_UISCHEMA,
-  flow: FLOW_PALETTE_UISCHEMA,
-});

@@ -4,10 +4,10 @@ import {
   canConnect,
   connectGesture,
   disconnectGesture,
-  moveGesture,
 } from '../src/renderers/xyflow/flow-gestures';
 
-// Doc 196 rules 1, 3-7 — pure xyflow callback → FlowGesture translation (renderers/xyflow/flow-gestures).
+// Doc 196 rules 1, 5-7 — pure xyflow callback → FlowGesture translation (renderers/xyflow/flow-gestures).
+// The move gesture is retired by doc 198 rules 4-5: positions are derived, so a drag cannot persist.
 
 const el = (element: object) => element as UISchemaElement;
 const stage = (id?: string) =>
@@ -52,18 +52,6 @@ describe('canConnect (rule 5)', () => {
     );
     expect(canConnect(path, 'c', 'a')).toBe(false);
     expect(canConnect(path, 'b', 'a')).toBe(false);
-  });
-});
-
-describe('moveGesture (rule 4)', () => {
-  it("builds { type: 'move', stageId, position } from a dragged node, using idOf(node.data.element) and rounding", () => {
-    const element = stage('a');
-    const idOf = (candidate: UISchemaElement) => (candidate === element ? 'el-7' : 'wrong');
-    expect(moveGesture({ position: { x: 10.6, y: -12.2 }, data: { element } }, idOf)).toEqual({
-      type: 'move',
-      stageId: 'el-7',
-      position: { x: 11, y: -12 },
-    });
   });
 });
 

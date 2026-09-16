@@ -385,8 +385,8 @@ describe('Form Studio code metaschemas (doc 191)', () => {
       };
       const delivery = STUDIO_SAMPLE_UISCHEMA.elements.find((element) => element.type === 'Grid');
       expect(delivery).toBeDefined();
-      // Doc 196 rule 20: the Flow group's Stage and Form go into a Flow through flow-edits, never into a layout.
-      for (const { key } of PALETTE_TEMPLATES.filter((template) => template.group !== 'flow')) {
+      // Doc 198 rule 19: the Flow group is gone, so every remaining template is a layout one.
+      for (const { key } of PALETTE_TEMPLATES) {
         for (const gridId of [
           addTargetId(document.uischema, null, ids),
           ids.idOf(delivery ?? {}),

@@ -130,12 +130,13 @@ describe('Form Studio Form root (doc 192)', () => {
       expect(rootGridTexts().at(-1)).toBe('Heading');
     });
 
-    it('offers a Form palette template only in the Flow group (doc 196 rule 17)', () => {
+    it('offers no Form palette template at all (doc 198 rule 19)', () => {
       const formTemplates = PALETTE_TEMPLATES.filter(
         ({ key }) => buildTemplate(key, STUDIO_SAMPLE_SCHEMA)?.element.type === 'Form',
       );
-      expect(formTemplates.map(({ key, group }) => [key, group])).toEqual([['form', 'flow']]);
-      // No layout accepts it (doc 195 rule 16), so a Form document can never gain a nested Form from the palette.
+      // The Flow group is gone: a Form is added by a Stage's "+ Add form" row, never from the palette.
+      expect(formTemplates).toEqual([]);
+      // No layout accepts one either (doc 195 rule 16), so a Form document can never gain a nested Form.
       const ids = createElementIds();
       const document = { schema: STUDIO_SAMPLE_SCHEMA, uischema: STUDIO_SAMPLE_UISCHEMA };
       const target = { gridId: ids.idOf(STUDIO_SAMPLE_UISCHEMA) };

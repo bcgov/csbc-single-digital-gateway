@@ -17,7 +17,7 @@ import { findById, findParentById, type TreeElement } from './layout/element-tre
 import { removeElement } from './layout/remove-element';
 import { carryIdsByPath } from './layout/carry-ids-by-path';
 import { newPropertyKey } from './layout/schema-properties';
-import { buildTemplate, isFlowTemplate } from './palette/palette-templates';
+import { buildTemplate } from './palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
 import { useFlowDocument, type UischemaUpdate } from './use-flow-document';
 
@@ -124,8 +124,8 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
       return next === previous.uischema ? previous : { ...previous, uischema: next };
     });
   }, []);
-  // Doc 196: Flow gestures and Stage / Form inserts.
-  const { flowEditor, insertFlow } = useFlowDocument(ids, updateUischema, currentUischema);
+  // Doc 196: Flow gestures. Doc 198 rule 16: Stage and Form inserts from the on-canvas + affordances.
+  const { flowEditor, insertFlowGesture } = useFlowDocument(ids, updateUischema, currentUischema);
 
   /** The element with `elementId` in the document, or `undefined`. */
   const elementOf = useCallback(
@@ -189,13 +189,14 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [insertInto],
   );
 
-  /** A clicked palette template, placed next to `selectedId` (doc 189 rules 22, 24); Stage and Form go to the Flow (doc 196 rule 20). */
+  /**
+   * A clicked palette template, placed next to `selectedId` (doc 189 rules 22, 24). Doc 198 rule 19: the palette no
+   * longer carries Stage or Form — a Flow is authored by the canvas + affordances — so every template is a layout one.
+   */
   const add = useCallback(
     (template: string, selectedId: string | null) =>
-      isFlowTemplate(template)
-        ? insertFlow(template, selectedId)
-        : insertInto(template, { gridId: addTargetId(currentUischema, selectedId, ids) }),
-    [insertFlow, insertInto, currentUischema, ids],
+      insertInto(template, { gridId: addTargetId(currentUischema, selectedId, ids) }),
+    [insertInto, currentUischema, ids],
   );
 
   const remove = useCallback(
@@ -263,6 +264,7 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     ids,
     editor,
     flowEditor,
+    insertFlowGesture,
     elementTypes,
     rootId,
     parentOf,

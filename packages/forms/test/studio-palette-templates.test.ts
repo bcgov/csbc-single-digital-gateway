@@ -16,12 +16,12 @@ const OPTIONS = [
 ];
 
 describe('catalogue (rule 16)', () => {
-  it('groups Display, Layout and Fields, then Flow (doc 196 rule 17), in that order', () => {
+  // Doc 198 rule 19: the Flow group is gone — Stages and Forms are added by the canvas + affordances.
+  it('groups Display, Layout and Fields, in that order', () => {
     expect(PALETTE_GROUPS.map((group) => [group.id, group.label])).toEqual([
       ['display', 'Display'],
       ['layout', 'Layout'],
       ['fields', 'Fields'],
-      ['flow', 'Flow'],
     ]);
     expect(
       PALETTE_TEMPLATES.map((template) => [template.group, template.key, template.label]),
@@ -38,8 +38,6 @@ describe('catalogue (rule 16)', () => {
       ['fields', 'radio-group', 'Radio group'],
       ['fields', 'checkbox', 'Checkbox'],
       ['fields', 'switch', 'Switch'],
-      ['flow', 'stage', 'Stage'],
-      ['flow', 'form', 'Form'],
     ]);
   });
 

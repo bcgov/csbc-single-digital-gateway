@@ -8,23 +8,49 @@ import {
   disconnectEdges,
   insertForm,
   insertStage,
-  moveStage,
+  insertStageBetween,
+  type FlowInsertResult,
 } from './layout/flow-edits';
 import { newPropertyKey } from './layout/schema-properties';
-import type { FlowTemplateKey } from './palette/palette-templates';
 
 /** Replaces the studio uischema with `update(current)`; an unchanged result keeps the state object. */
 export type UischemaUpdate = (update: (uischema: UISchemaElement) => UISchemaElement) => void;
 
-/** Doc 196 rules 4, 6-7: a document gesture applied to `uischema`; `open` and `remove` belong to selection. */
+/** Doc 198 rule 16: the gestures that create an element, which selection routes so the new element becomes selected. */
+export type FlowInsertGesture = Extract<
+  FlowGesture,
+  { type: 'append' | 'insert-between' | 'add-form' }
+>;
+
+export const isFlowInsert = (gesture: FlowGesture): gesture is FlowInsertGesture =>
+  gesture.type === 'append' || gesture.type === 'insert-between' || gesture.type === 'add-form';
+
+/** Doc 198 rule 16: an inserting gesture as a pure edit of `uischema`. */
+function applyFlowInsert(
+  uischema: UISchemaElement,
+  gesture: FlowInsertGesture,
+  ids: ElementIds,
+): FlowInsertResult {
+  switch (gesture.type) {
+    case 'append':
+      return insertStage(uischema, gesture.stageId, ids, newPropertyKey);
+    case 'insert-between':
+      return insertStageBetween(uischema, gesture.flowId, gesture.edgeId, ids, newPropertyKey);
+    default:
+      return insertForm(uischema, gesture.stageId, ids, newPropertyKey);
+  }
+}
+
+/**
+ * Doc 196 rules 6-7: a document gesture applied to `uischema`; `open` and `remove` belong to selection, and so do the
+ * inserting gestures (doc 198 rule 16).
+ */
 export function applyFlowGesture(
   uischema: UISchemaElement,
   gesture: FlowGesture,
   ids: ElementIds,
 ): UISchemaElement {
   switch (gesture.type) {
-    case 'move':
-      return moveStage(uischema, gesture.stageId, gesture.position, ids);
     case 'connect':
       return connectStages(
         uischema,
@@ -59,13 +85,12 @@ export function useFlowDocument(
     [ids, updateUischema],
   );
 
-  // Inserts into the rendered document, like `copy`, so the new element's id can be returned — and selected — at once.
-  const insertFlow = useCallback(
-    (template: FlowTemplateKey, selectedId: string | null): string | undefined => {
-      const result =
-        template === 'stage'
-          ? insertStage(uischema, selectedId, ids, newPropertyKey)
-          : insertForm(uischema, selectedId, ids, newPropertyKey);
+  // Doc 198 rule 16: the on-canvas + affordances, applied to the rendered document like `copy`, so the new element's id
+  // can be returned — and selected — at once. Doc 196's palette-driven `insertFlow` is retired with the Flow palette
+  // (rule 19); `insertStage` and `insertForm` are now reached only through gestures.
+  const insertFlowGesture = useCallback(
+    (gesture: FlowInsertGesture): string | undefined => {
+      const result = applyFlowInsert(uischema, gesture, ids);
       if (!result.inserted) return undefined;
       updateUischema(() => result.uischema);
       return ids.idOf(result.inserted);
@@ -73,7 +98,7 @@ export function useFlowDocument(
     [ids, uischema, updateUischema],
   );
 
-  return { flowEditor, insertFlow };
+  return { flowEditor, insertFlowGesture };
 }
 
 /** What the selection-side Flow editor needs from the studio selection. */
@@ -81,6 +106,8 @@ export interface SelectionFlowActions {
   select(elementId: string): void;
   requestDelete(elementId: string): void;
   setGesturing(active: boolean): void;
+  /** Doc 198 rule 16: applies an inserting gesture, returning the new element's id. */
+  insert(gesture: FlowInsertGesture): string | undefined;
 }
 
 /**
@@ -104,7 +131,11 @@ export function useSelectionFlowEditor(
       onGesture: (gesture) => {
         if (gesture.type === 'open') latest.current.select(gesture.formId);
         else if (gesture.type === 'remove') latest.current.requestDelete(gesture.elementId);
-        else documentEditor.onGesture(gesture);
+        else if (isFlowInsert(gesture)) {
+          // Doc 198 rule 16: an inserting gesture becomes the selection, like a dropped palette template.
+          const insertedId = latest.current.insert(gesture);
+          if (insertedId !== undefined) latest.current.select(insertedId);
+        } else documentEditor.onGesture(gesture);
       },
     }),
     [documentEditor],

@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState, type FC } from 'react';
+import { useEffect, useMemo, useRef, useState, type FC } from 'react';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import type { FormStudioProps } from '../types/index';
 import { StudioCodePanel } from './code/studio-code-panel';
 import { DeleteConfirmation } from './delete-confirmation';
-import { useDockPanel } from './dock-panels';
+import { useDockPanel, type DockPanelId } from './dock-panels';
 import { DockToggles } from './dock-toggles';
 import { useFocusAddress } from './use-focus-address';
 import { PreviewToggle } from './preview-toggle';
@@ -54,10 +54,11 @@ import { useStudioSelection } from './use-studio-selection';
  * validation, so authoring a constraint such as Required never paints data errors on the inert design
  * surface; preview still validates (doc 187 rule 25b).
  *
- * The left dock panel holds the palette (doc 189): every element the studio renders, searchable and grouped — in a
- * Flow's view, only Stage and Form (doc 196 rule 17). An item dragged onto a grid lands where it is dropped; one clicked
- * or activated with the keyboard lands next to the selection. Either way it arrives with a default configuration and is
- * selected.
+ * The left dock panel holds the palette (doc 189): every element the studio renders, searchable and grouped. An item
+ * dragged onto a grid lands where it is dropped; one clicked or activated with the keyboard lands next to the selection.
+ * Either way it arrives with a default configuration and is selected. Doc 198 rules 17-19: a Flow is authored entirely
+ * on its canvas, so while the canvas shows one the palette is closed and its toggle is gone, returning when the author
+ * drills into a Form.
  *
  * The bottom dock panel holds the code editors (doc 191): the schema and uischema as JSON, side by side, with
  * completion from the studio's metaschemas. Monaco loads the first time the panel opens and the editors stay mounted
@@ -68,6 +69,9 @@ import { useStudioSelection } from './use-studio-selection';
  * document renders through the fillable `renderers/default` without the Grid editor or selection — in
  * its own `JsonForms`, so anything typed is discarded when preview ends.
  */
+/** Doc 198 rule 17: the toggles shown while the Flow canvas is up — the left panel is unreachable there. */
+const FLOW_PANEL_IDS: readonly DockPanelId[] = Object.freeze(['bottom', 'right']);
+
 export const FormStudio: FC<FormStudioProps> = ({
   schema,
   uischema,
@@ -109,10 +113,31 @@ export const FormStudio: FC<FormStudioProps> = ({
   const [codeOpened, setCodeOpened] = useState(false);
   if (panels.bottom.open && !codeOpened) setCodeOpened(true);
 
-  // Doc 196 rules 12, 16-17: what the canvas and preview render, and which palette view applies.
+  // Doc 196 rule 12: what the canvas and preview render.
   const rootOf = (elementId: string | null) =>
     (elementId === null ? undefined : studio.elementOf(elementId)) ?? studio.uischema;
-  const paletteView = studio.uischema.type === FLOW_TYPE && focusId === null ? 'flow' : 'form';
+  // Doc 198 rule 17: the Flow canvas is showing when the root is a Flow and nothing is drilled into.
+  const onFlowCanvas = studio.uischema.type === FLOW_TYPE && focusId === null;
+
+  /**
+   * Doc 198 rule 18: hiding only the toggle would strand an open panel with no way to shut it, so the panel closes with
+   * it — and reopens, at its remembered size, when the author drills into a Form. `hide`/`show` are both idempotent
+   * (doc 184 rule 13), and the restore flag means a panel the author had already closed stays closed.
+   *
+   * Declared AFTER `onFlowCanvas`: a hook reading it any earlier is a temporal dead zone, and the whole shell throws.
+   */
+  const restoreLeft = useRef(false);
+  const { open: leftOpen, show: showLeft, hide: hideLeft } = panels.left;
+  useEffect(() => {
+    if (onFlowCanvas) {
+      if (!leftOpen) return;
+      restoreLeft.current = true;
+      hideLeft();
+    } else if (restoreLeft.current) {
+      restoreLeft.current = false;
+      showLeft();
+    }
+  }, [onFlowCanvas, leftOpen, hideLeft, showLeft]);
 
   return (
     <div ref={rootRef} data-slot="form-studio" className="flex h-full flex-col">
@@ -122,13 +147,16 @@ export const FormStudio: FC<FormStudioProps> = ({
       >
         {/* Doc 197 rules 14-15, 17: only while drilled in, and never over the preview's chrome-free header. */}
         {previewing || focusId === null ? null : <StudioBackButton onClick={() => select(null)} />}
-        {previewing ? null : <DockToggles panels={panels} />}
+        {/* `exactOptionalPropertyTypes`: an absent `ids` must be an ABSENT KEY, never an explicit `undefined`. */}
+        {previewing ? null : (
+          <DockToggles panels={panels} {...(onFlowCanvas ? { ids: FLOW_PANEL_IDS } : {})} />
+        )}
         <PreviewToggle pressed={previewing} onPressedChange={setPreviewing} />
       </header>
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
         <StudioWorkspace
           panels={panels}
-          left={previewing ? null : <StudioPalette actions={paletteActions} view={paletteView} />}
+          left={previewing || onFlowCanvas ? null : <StudioPalette actions={paletteActions} />}
           right={
             previewing ? null : (
               <StudioInspector

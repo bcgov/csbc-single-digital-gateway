@@ -9,8 +9,9 @@ import { FormStudio } from '../src/studio';
 import { StudioCodePanel } from '../src/studio/code/studio-code-panel';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
-// Doc 196 rules 1-2, 4-5, 7-11, 13 — editing a Flow in the Form Studio. Node drags and handle connections can't be
-// driven in jsdom (rule 23): their gestures are unit-tested in studio-flow-gestures and verified by hand.
+// Doc 196 rules 1-2, 5, 7-11, 13 — editing a Flow in the Form Studio. Handle connections can't be driven in jsdom
+// (rule 23): their gestures are unit-tested in studio-flow-gestures and verified by hand.
+// Doc 198 rule 4: Stage nodes are no longer draggable — positions are derived, so a drag could not persist.
 
 vi.mock('../src/studio/code/code-editor', async () => {
   const { createElement } = await import('react');
@@ -110,7 +111,7 @@ describe('editor port (rules 1-2)', () => {
 
   it('provides the Flow editor in the studio canvas and not in preview', () => {
     renderStudio();
-    expect(nodeOf('s1')).toHaveClass('draggable');
+    // The editor is present but does NOT make nodes draggable (doc 198 rule 4); its Form rows are the tell.
     expect(centre().querySelectorAll('[data-slot="stage-form-open"]')).toHaveLength(2);
 
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
@@ -129,10 +130,11 @@ describe('editor port (rules 1-2)', () => {
 });
 
 describe('canvas under an editor (rules 4-5, 7)', () => {
-  it('draws nodes draggable but not selectable, with visible connectable handles', () => {
+  it('draws nodes neither draggable nor selectable, with visible connectable handles', () => {
     renderStudio();
     const node = nodeOf('s1');
-    expect(node).toHaveClass('draggable');
+    // Doc 198 rule 4: derived positions mean a drag could not persist, so dragging is off even under an editor.
+    expect(node).not.toHaveClass('draggable');
     expect(node).not.toHaveClass('selectable');
     const handles = [...node.querySelectorAll('.react-flow__handle')];
     expect(handles).toHaveLength(2);
@@ -203,12 +205,13 @@ describe('deleting Stages and Forms (rules 9-10)', () => {
   });
 });
 
-describe('empty Flow (rule 11)', () => {
-  it('shows "Add a stage from the palette." for a Flow with no Stages', () => {
+describe('empty Flow (rule 11, doc 198 rule 12)', () => {
+  it('shows "Add a stage to get started." and an origin + for a Flow with no Stages', () => {
     renderStudio(el({ type: 'Flow', elements: [] }));
     expect(centre().querySelector('[data-slot="flow-empty"]')).toHaveTextContent(
-      'Add a stage from the palette.',
+      'Add a stage to get started.',
     );
+    expect(within(centre()).getByRole('button', { name: 'Add a stage' })).toBeInTheDocument();
   });
 });
 

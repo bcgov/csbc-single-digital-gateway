@@ -168,15 +168,12 @@ describe('Form Studio Flow root (doc 195)', () => {
       expect(within(inspector()).getByRole('textbox', { name: 'Label' })).toHaveValue('');
     });
 
-    it('offers no form templates while the root is a Flow, and a Form click with no Stage selected changes nothing', () => {
+    it('puts the palette out of reach entirely while the root is a Flow (doc 198 rules 17-19)', () => {
       renderStudio();
-      const palette = within(
-        required(document.querySelector<HTMLElement>('[data-studio-palette]'), 'palette'),
-      );
-      // Doc 196 rule 17: a Flow's view offers only Stage and Form.
-      expect(palette.queryByRole('button', { name: 'Heading' })).toBeNull();
-      expect(palette.queryByRole('button', { name: 'Text' })).toBeNull();
-      fireEvent.click(palette.getByRole('button', { name: 'Form' }));
+      // Doc 196 rule 17's Flow palette view is superseded: a Flow is authored on its canvas, so the whole left panel
+      // and its toggle are gone. No palette template can reach a Flow document at all.
+      expect(document.querySelector('[data-studio-palette]')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Left panel' })).toBeNull();
       expect(currentCrumb()).toBeNull();
       expect(crumbNames()).toEqual(['Flow']);
       expect(centre().querySelectorAll('[data-slot="stage-card"]')).toHaveLength(2);

@@ -11,13 +11,15 @@ import {
 import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement, StudioSelection } from '../renderers/studio/studio-selection';
 import type { FlowEditor } from '../renderers/xyflow/flow-editor';
-import { useSelectionFlowEditor } from './use-flow-document';
+import { useSelectionFlowEditor, type FlowInsertGesture } from './use-flow-document';
 
 /** What selection needs from the studio document (`useStudioDocument`). */
 export interface SelectableDocument {
   readonly editor: GridEditor;
   /** The Flow editor writing Flow gestures to the document (doc 196). */
   readonly flowEditor: FlowEditor;
+  /** Doc 198 rule 16: applies an on-canvas + gesture, returning the new element's id. */
+  insertFlowGesture(gesture: FlowInsertGesture): string | undefined;
   /** The Form the canvas shows for `selectedId`, or `null` (doc 196 rule 12). */
   canvasRootOf(selectedId: string | null): string | null;
   /** Replaced when a new seed document resets the studio, and with it the element ids. */
@@ -238,6 +240,8 @@ export function useStudioSelection(
     select: setSelected,
     requestDelete: confirmation.request,
     setGesturing,
+    // Reads the latest document, like the Grid editor's insert, so the editor keeps its identity across edits.
+    insert: (gesture) => latest.current.insertFlowGesture(gesture),
   });
 
   const known = (id: string | null) => id !== null && (id === rootId || elementTypes.has(id));

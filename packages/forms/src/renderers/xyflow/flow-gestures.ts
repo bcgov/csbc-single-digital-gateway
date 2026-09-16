@@ -6,12 +6,6 @@ import { createsCycle, flowEdges } from './flow-graph';
 // xyflow callbacks as Flow gestures (doc 196 rules 3-7). Pure — no React, no @xyflow/react at runtime — so the rules are
 // unit-tested without driving xyflow, whose drags and connections jsdom cannot perform.
 
-/** The parts of a dragged xyflow node a move reads. */
-export interface DraggedStageNode {
-  readonly position: { readonly x: number; readonly y: number };
-  readonly data: { readonly element: UISchemaElement };
-}
-
 /** The parts of an xyflow connection a connect reads. */
 export interface FlowConnection {
   readonly source: string | null | undefined;
@@ -33,18 +27,6 @@ export function canConnect(
   const edges = flowEdges(flow);
   if (edges.some((edge) => edge.source === source && edge.target === target)) return false;
   return !createsCycle(edges, source, target);
-}
-
-/** Rule 4: a dropped Stage node as a move to its rounded position, addressed by its element's id. */
-export function moveGesture(
-  node: DraggedStageNode,
-  idOf: (element: UISchemaElement) => string,
-): FlowGesture {
-  return {
-    type: 'move',
-    stageId: idOf(node.data.element),
-    position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
-  };
 }
 
 /** Rule 6: an accepted connection as a connect, or `undefined` when an end is missing. */

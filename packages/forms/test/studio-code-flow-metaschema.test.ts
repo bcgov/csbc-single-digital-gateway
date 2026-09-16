@@ -56,8 +56,8 @@ describe('uischema metaschema — Flow root (rule 17)', () => {
     expect(ok(STUDIO_SAMPLE_UISCHEMA)).toBe(true);
     const ids = createElementIds();
     const document = { schema: STUDIO_SAMPLE_SCHEMA, uischema: STUDIO_SAMPLE_UISCHEMA };
-    // Doc 196 rule 20: the Flow group's Stage and Form go into a Flow through flow-edits, never into a layout.
-    for (const { key } of PALETTE_TEMPLATES.filter((template) => template.group !== 'flow')) {
+    // Doc 198 rule 19: the Flow group is gone, so every remaining template is a layout one.
+    for (const { key } of PALETTE_TEMPLATES) {
       const target = { gridId: addTargetId(STUDIO_SAMPLE_UISCHEMA, null, ids) };
       const result = insertElement(document, key, target, ids, newPropertyKey);
       expect(result.inserted, key).toBeDefined();

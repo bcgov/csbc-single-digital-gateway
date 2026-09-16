@@ -75,6 +75,19 @@ export function flowEdges(flow: UISchemaElement): FlowEdge[] {
   return edges;
 }
 
+/**
+ * Doc 198 rule 6: the Stages with no outgoing sanitised edge, in `elements` order — the end of every chain, which is
+ * what the dangling + affordance hangs off (rule 7). Read from `flowEdges`, so an edge that is dropped as invalid (a
+ * self-loop, an unknown end) leaves its source a leaf. A Stage with no authored id is never a leaf: no edge can leave
+ * it, so the + would have nothing to connect from.
+ */
+export function leafStageIds(flow: UISchemaElement): string[] {
+  const sources = new Set(flowEdges(flow).map(({ source }) => source));
+  return drawnStages(flow).flatMap(({ id, authored }) =>
+    authored && !sources.has(id) ? [id] : [],
+  );
+}
+
 /** Rule 18: duplicate Stage ids, by instance path. */
 function stageIdProblems(flow: UISchemaElement): { ids: Set<string>; problems: FlowProblem[] } {
   const ids = new Set<string>();

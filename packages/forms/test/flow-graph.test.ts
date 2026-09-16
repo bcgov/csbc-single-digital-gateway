@@ -9,6 +9,7 @@ import {
   DUPLICATE_EDGE_MESSAGE,
   flowEdges,
   flowProblems,
+  leafStageIds,
   SELF_LOOP_MESSAGE,
 } from '../src/renderers/xyflow/flow-graph';
 
@@ -127,6 +128,46 @@ describe('createsCycle', () => {
     expect(createsCycle(chain, 'c', 'a')).toBe(true);
     expect(createsCycle(chain, 'b', 'a')).toBe(true);
     expect(createsCycle(chain, 'b', 'b')).toBe(true);
+  });
+});
+
+// Doc 198 rule 6 — a leaf is a drawn, authored Stage with no outgoing sanitised edge. It is what the
+// dangling + affordance (rule 7) hangs off.
+describe('leafStageIds (doc 198 rule 6)', () => {
+  it('returns every authored Stage when the Flow has no edges', () => {
+    expect(leafStageIds(flow(abc))).toEqual(['a', 'b', 'c']);
+  });
+
+  it('excludes a Stage with an outgoing edge, keeping the end of a chain', () => {
+    expect(leafStageIds(flow(abc, [edge('e1', 'a', 'b'), edge('e2', 'b', 'c')]))).toEqual(['c']);
+  });
+
+  it('returns every leaf when the Flow branches', () => {
+    expect(leafStageIds(flow(abc, [edge('e1', 'a', 'b'), edge('e2', 'a', 'c')]))).toEqual([
+      'b',
+      'c',
+    ]);
+  });
+
+  it('ignores sanitised-away edges — a self-loop or unknown target leaves a Stage a leaf', () => {
+    expect(leafStageIds(flow(abc, [edge('e1', 'b', 'b'), edge('e2', 'c', 'ghost')]))).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+  });
+
+  it('excludes a Stage with no authored id — no edge can leave it', () => {
+    expect(leafStageIds(flow([stage('a'), stage()]))).toEqual(['a']);
+  });
+
+  it('returns [] for a Flow with no Stages', () => {
+    expect(leafStageIds(flow([]))).toEqual([]);
+  });
+
+  it('returns leaves in elements order', () => {
+    const stages = [stage('c'), stage('a'), stage('b')];
+    expect(leafStageIds(flow(stages, [edge('e1', 'a', 'b')]))).toEqual(['c', 'b']);
   });
 });
 

@@ -17,15 +17,20 @@ const TOGGLE_CLASSES =
 
 export interface DockTogglesProps {
   readonly panels: Readonly<Record<DockPanelId, DockPanel>>;
+  /**
+   * Which toggles to show, in order. Defaults to all three; doc 198 rule 17 drops `left` while the Flow canvas is
+   * showing, because its panel is unreachable there.
+   */
+  readonly ids?: readonly DockPanelId[];
 }
 
-/** The header's Left / Bottom / Right panel toggles (doc 181 rules 15-17). */
-export const DockToggles: FC<DockTogglesProps> = ({ panels }) => {
-  const value = DOCK_PANEL_ORDER.filter((id) => panels[id].open);
+/** The header's Left / Bottom / Right panel toggles (doc 181 rules 15-17, doc 198 rule 17). */
+export const DockToggles: FC<DockTogglesProps> = ({ panels, ids = DOCK_PANEL_ORDER }) => {
+  const value = ids.filter((id) => panels[id].open);
 
   // The group reports the full set of pressed ids; toggle each panel whose membership changed.
   const onValueChange = (next: string[]) => {
-    for (const id of DOCK_PANEL_ORDER) {
+    for (const id of ids) {
       if (next.includes(id) !== panels[id].open) panels[id].toggle();
     }
   };
@@ -40,7 +45,7 @@ export const DockToggles: FC<DockTogglesProps> = ({ panels }) => {
       value={value}
       onValueChange={onValueChange}
     >
-      {DOCK_PANEL_ORDER.map((id) => (
+      {ids.map((id) => (
         <ToggleGroupItem
           key={id}
           value={id}

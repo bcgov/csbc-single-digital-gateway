@@ -18,6 +18,7 @@ import { useXyflowJsdom } from './xyflow-jsdom';
 
 // Doc 195 rules 1-4, 6-11, 13-15b — @repo/forms/renderers/xyflow (Flow + Stage). Placement (rule 16) is in
 // flow-placement.test.ts.
+// Doc 198 rule 3: the canvas runs top-down, so the handles sit on the Top and Bottom faces.
 
 useXyflowJsdom();
 
@@ -257,15 +258,24 @@ describe('Stage renderer (rules 13-15)', () => {
     expect(card.querySelector('[role="alert"]')).toBeNull();
   });
 
-  it('renders non-connectable target (left) and source (right) handles', () => {
+  it('renders non-connectable target (top) and source (bottom) handles (doc 198 rule 3)', () => {
     const { container } = renderFlow(flow([stage('a')]));
     const node = nodeOf(container, 'a');
     const target = node.querySelector('.react-flow__handle.target');
     const source = node.querySelector('.react-flow__handle.source');
-    expect(target).toHaveClass('react-flow__handle-left', 'opacity-0');
-    expect(source).toHaveClass('react-flow__handle-right', 'opacity-0');
+    expect(target).toHaveClass('react-flow__handle-top', 'opacity-0');
+    expect(source).toHaveClass('react-flow__handle-bottom', 'opacity-0');
     expect(target).not.toHaveClass('connectable');
     expect(source).not.toHaveClass('connectable');
+  });
+
+  it('renders no + affordance without an editor (doc 198 rule 14)', () => {
+    const { container } = renderFlow(
+      flow([stage('a'), stage('b')], [{ id: 'e1', source: 'a', target: 'b' }]),
+    );
+    expect(container.querySelector('[data-slot="flow-leaf-add"]')).toBeNull();
+    expect(container.querySelector('[data-slot="flow-edge-add"]')).toBeNull();
+    expect(container.querySelector('[data-slot="stage-add-form"]')).toBeNull();
   });
 
   it('wraps the dispatched Stage, and not its handles, in a pointer-events-auto element (rule 15b)', () => {

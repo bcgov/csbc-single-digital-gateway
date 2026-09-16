@@ -1,14 +1,12 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import {
   mdiCheckboxMarkedOutline,
-  mdiFileDocumentOutline,
   mdiFormatHeaderPound,
   mdiFormDropdown,
   mdiFormTextbox,
   mdiMinus,
   mdiNumeric,
   mdiRadioboxMarked,
-  mdiSourceBranch,
   mdiTextLong,
   mdiToggleSwitchOutline,
   mdiViewColumnOutline,
@@ -19,27 +17,19 @@ import {
 // The palette's catalogue (doc 189 rules 16-17): every element the studio renders, grouped, with the default
 // configuration it lands with. Pure — `insertElement` turns a built template into document changes.
 
-export type PaletteGroupId = 'display' | 'layout' | 'fields' | 'flow';
+export type PaletteGroupId = 'display' | 'layout' | 'fields';
 
 export interface PaletteGroup {
   readonly id: PaletteGroupId;
   readonly label: string;
 }
 
+// Doc 198 rule 19: the Flow group is gone — Stages and Forms are added by the canvas + affordances, not the palette.
 export const PALETTE_GROUPS: readonly PaletteGroup[] = Object.freeze([
   Object.freeze({ id: 'display', label: 'Display' }),
   Object.freeze({ id: 'layout', label: 'Layout' }),
   Object.freeze({ id: 'fields', label: 'Fields' }),
-  // Doc 196 rule 17: shown alone in a Flow's view, never beside the form groups.
-  Object.freeze({ id: 'flow', label: 'Flow' }),
 ]);
-
-/** Doc 196 rule 20: the templates inserted into a Flow by flow-edits rather than into a layout by insertElement. */
-export const FLOW_TEMPLATE_KEYS = Object.freeze(['stage', 'form'] as const);
-export type FlowTemplateKey = (typeof FLOW_TEMPLATE_KEYS)[number];
-
-export const isFlowTemplate = (key: string): key is FlowTemplateKey =>
-  (FLOW_TEMPLATE_KEYS as readonly string[]).includes(key);
 
 /** A built template: its element, and for a field the data property it binds to (the scope is set on insert). */
 export interface BuiltTemplate {
@@ -179,24 +169,6 @@ const DEFINITIONS: readonly TemplateDefinition[] = Object.freeze(
         icon: mdiToggleSwitchOutline,
         keywords: ['boolean', 'toggle'],
         build: field('switch', (title) => ({ type: 'boolean', title })),
-      },
-      // Doc 196 rules 17-20: flow-edits builds the real elements (numbered labels, ids, placement). These builds only
-      // name the element type, so drag acceptance and insertElement refuse them in every layout (doc 195 rule 16).
-      {
-        key: 'stage',
-        group: 'flow',
-        label: 'Stage',
-        icon: mdiSourceBranch,
-        keywords: ['step', 'node'],
-        build: () => ({ element: element({ type: 'Stage', elements: [] }) }),
-      },
-      {
-        key: 'form',
-        group: 'flow',
-        label: 'Form',
-        icon: mdiFileDocumentOutline,
-        keywords: ['page'],
-        build: () => ({ element: element({ type: 'Form', elements: [] }) }),
       },
     ] satisfies TemplateDefinition[]
   ).map((definition) => Object.freeze(definition)),

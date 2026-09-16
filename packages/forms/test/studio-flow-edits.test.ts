@@ -7,12 +7,13 @@ import {
   disconnectEdges,
   insertForm,
   insertStage,
-  moveStage,
+  insertStageBetween,
   nextElementLabel,
 } from '../src/studio/layout/flow-edits';
 import { removeElement } from '../src/studio/layout/remove-element';
 
-// Doc 196 rules 4, 6-7, 9, 18-20 — pure Flow document edits (studio/layout/flow-edits + remove-element).
+// Doc 196 rules 6-7, 9, 18-20 — pure Flow document edits (studio/layout/flow-edits + remove-element).
+// moveStage is retired and no insert writes options.position any more (doc 198 rules 5, 11).
 
 const tree = (element: object) => element as TreeElement;
 const form = (label: string, elements: object[] = []) => ({ type: 'Form', label, elements });
@@ -48,38 +49,6 @@ function required<T>(value: T | undefined, what: string): T {
   if (value === undefined) throw new Error(`missing ${what}`);
   return value;
 }
-
-describe('moveStage (rule 4)', () => {
-  it("writes the rounded position to the Stage's options.position, carrying ids", () => {
-    const ids = createElementIds();
-    const root = flow([stage('a', 'A'), stage('b', 'B')]);
-    const a = child(root, 0);
-
-    const next = moveStage(root, ids.idOf(a), { x: 10.4, y: -3.6 }, ids);
-
-    expect(child(next, 0).options).toEqual({ id: 'a', position: { x: 10, y: -4 } });
-    expect(ids.idOf(child(next, 0))).toBe(ids.idOf(a));
-    expect(ids.idOf(next)).toBe(ids.idOf(root));
-    expect(child(next, 1)).toBe(child(root, 1));
-    expect(a.options).toEqual({ id: 'a' });
-  });
-
-  it('makes an auto-placed Stage authored, and moves a Stage with a placeholder id', () => {
-    const ids = createElementIds();
-    const root = flow([stage('a', 'A', { position: { x: 0, y: 0 } }), stage(undefined, 'No id')]);
-    const next = moveStage(root, ids.idOf(child(root, 1)), { x: 640, y: 80 }, ids);
-    expect(child(next, 1).options).toEqual({ position: { x: 640, y: 80 } });
-    expect(child(next, 0)).toBe(child(root, 0));
-  });
-
-  it('returns the same document for an unknown Stage id', () => {
-    const ids = createElementIds();
-    const root = flow([stage('a', 'A')]);
-    expect(moveStage(root, 'el-999', { x: 1, y: 1 }, ids)).toBe(root);
-    const formId = ids.idOf(child(child(root, 0), 0));
-    expect(moveStage(root, formId, { x: 1, y: 1 }, ids)).toBe(root);
-  });
-});
 
 describe('connectStages (rule 6)', () => {
   it('appends { id: nanoid(8), source, target } to options.edges, creating the array when absent', () => {
@@ -196,7 +165,7 @@ describe('insertStage (rules 18, 20)', () => {
     expect(inserted).toEqual({
       type: 'Stage',
       label: 'Stage 1',
-      options: { id: 's1', position: { x: 0, y: 0 } },
+      options: { id: 's1' },
       elements: [{ type: 'Form', label: 'Form 1', options: { id: 'f1' }, elements: [] }],
     });
     expect(child(uischema, 0)).toBe(inserted);
@@ -209,12 +178,9 @@ describe('insertStage (rules 18, 20)', () => {
     });
   });
 
-  it("places it 320px right of the selected Stage's current position and connects selected → new", () => {
+  it('connects selected → new, writing no position (doc 198 rule 11)', () => {
     const ids = createElementIds();
-    const root = flow([
-      stage('a', 'Stage 1', { position: { x: 40, y: 100 } }),
-      stage('b', 'Stage 2'),
-    ]);
+    const root = flow([stage('a', 'Stage 1'), stage('b', 'Stage 2')]);
     const { uischema, inserted } = insertStage(
       root,
       ids.idOf(child(root, 0)),
@@ -222,37 +188,27 @@ describe('insertStage (rules 18, 20)', () => {
       // 'a' is taken, so the Stage regenerates to 's3'; then the Stage's Form takes 'f3' and the edge 'e1'.
       sequence('a', 's3', 'f3', 'e1'),
     );
-    expect(inserted?.options).toEqual({ id: 's3', position: { x: 360, y: 100 } });
+    expect(inserted?.options).toEqual({ id: 's3' });
     expect(labelOf(inserted)).toBe('Stage 3');
     expect(edgesOf(uischema)).toEqual([edge('e1', 'a', 's3')]);
   });
 
   it('does not connect from a selected Stage without an authored id', () => {
     const ids = createElementIds();
-    const root = flow([stage('a', 'A', { position: { x: 0, y: 0 } }), stage(undefined, 'No id')]);
+    const root = flow([stage('a', 'A'), stage(undefined, 'No id')]);
     const { uischema, inserted } = insertStage(root, ids.idOf(child(root, 1)), ids, sequence('s'));
-    // Doc 195 rule 12: rows count only auto-placed Stages, so the placeholder Stage is column 0, row 0: (0, 0).
-    expect(inserted?.options).toEqual({ id: 's', position: { x: 320, y: 0 } });
+    expect(inserted?.options).toEqual({ id: 's' });
     expect(uischema.options).toBeUndefined();
   });
 
-  it('places it 320px right of the right-most Stage at y 0 when no Stage is selected, or at {0, 0} in an empty Flow', () => {
+  it('never writes options.position, whatever is selected (doc 198 rule 11)', () => {
     const ids = createElementIds();
-    const root = flow([
-      stage('a', 'A', { position: { x: 500, y: 90 } }),
-      stage('b', 'B', { position: { x: 0, y: 300 } }),
-    ]);
+    const root = flow([stage('a', 'A'), stage('b', 'B')]);
     const selectedForm = ids.idOf(child(child(root, 0), 0));
-    expect(insertStage(root, null, ids, sequence('n')).inserted?.options).toEqual({
-      id: 'n',
-      position: { x: 820, y: 0 },
-    });
+    expect(insertStage(root, null, ids, sequence('n')).inserted?.options).toEqual({ id: 'n' });
     // A selected Form is not a selected Stage.
     expect(insertStage(root, selectedForm, ids, sequence('m')).uischema.options).toBeUndefined();
-    expect(insertStage(flow([]), null, ids, sequence('o')).inserted?.options).toEqual({
-      id: 'o',
-      position: { x: 0, y: 0 },
-    });
+    expect(insertStage(flow([]), null, ids, sequence('o')).inserted?.options).toEqual({ id: 'o' });
   });
 
   it('numbers by the highest "Stage <digits>" / "Form <digits>" label + 1, ignoring other labels', () => {
@@ -267,6 +223,81 @@ describe('insertStage (rules 18, 20)', () => {
     const { inserted } = insertStage(root, null, createElementIds(), sequence('s'));
     expect(labelOf(inserted)).toBe('Stage 11');
     expect(child(required(inserted, 'stage'), 0)).toMatchObject({ label: 'Form 8' });
+  });
+});
+
+describe('insertStageBetween (doc 198 rule 10)', () => {
+  const chain = () => flow([stage('a', 'Stage 1'), stage('b', 'Stage 2')], [edge('e1', 'a', 'b')]);
+
+  it('retargets the split edge at the new Stage and appends new → oldTarget', () => {
+    const ids = createElementIds();
+    const root = chain();
+    const { uischema, inserted } = insertStageBetween(
+      root,
+      ids.idOf(root),
+      'e1',
+      ids,
+      sequence('s3', 'f3', 'e2'),
+    );
+    expect(inserted?.options).toEqual({ id: 's3' });
+    expect(labelOf(inserted)).toBe('Stage 3');
+    // The upstream edge KEEPS its id across the split; the downstream Stage is never orphaned.
+    expect(edgesOf(uischema)).toEqual([edge('e1', 'a', 's3'), edge('e2', 's3', 'b')]);
+    expect(ids.idOf(uischema)).toBe(ids.idOf(root));
+  });
+
+  it('leaves every other edge untouched', () => {
+    const ids = createElementIds();
+    const root = flow(
+      [stage('a', 'A'), stage('b', 'B'), stage('c', 'C')],
+      [edge('e1', 'a', 'b'), edge('e2', 'a', 'c')],
+    );
+    const { uischema } = insertStageBetween(
+      root,
+      ids.idOf(root),
+      'e2',
+      ids,
+      sequence('s', 'f', 'e3'),
+    );
+    expect(edgesOf(uischema)).toEqual([
+      edge('e1', 'a', 'b'),
+      edge('e2', 'a', 's'),
+      edge('e3', 's', 'c'),
+    ]);
+  });
+
+  it('regenerates the appended edge id while an existing edge has it', () => {
+    const ids = createElementIds();
+    const root = chain();
+    const { uischema } = insertStageBetween(
+      root,
+      ids.idOf(root),
+      'e1',
+      ids,
+      sequence('s', 'f', 'e1', 'e9'),
+    );
+    expect(edgesOf(uischema)).toEqual([edge('e1', 'a', 's'), edge('e9', 's', 'b')]);
+  });
+
+  it('refuses an unknown edge id, a sanitised-away edge, a non-Flow root and a wrong flowId', () => {
+    const ids = createElementIds();
+    const root = chain();
+    const same = { uischema: root, inserted: undefined };
+    expect(insertStageBetween(root, ids.idOf(root), 'nope', ids, sequence('s'))).toEqual(same);
+    // The flowId must name the Flow itself: a Stage's id is refused.
+    expect(insertStageBetween(root, ids.idOf(child(root, 0)), 'e1', ids, sequence('s'))).toEqual(
+      same,
+    );
+    // A self-loop never survives flowEdges, so it cannot be split.
+    const looped = flow([stage('a', 'A')], [edge('e1', 'a', 'a')]);
+    expect(
+      insertStageBetween(looped, ids.idOf(looped), 'e1', ids, sequence('s')).inserted,
+    ).toBeUndefined();
+    const formRoot = tree(form('Root'));
+    expect(insertStageBetween(formRoot, ids.idOf(formRoot), 'e1', ids, sequence('s'))).toEqual({
+      uischema: formRoot,
+      inserted: undefined,
+    });
   });
 });
 

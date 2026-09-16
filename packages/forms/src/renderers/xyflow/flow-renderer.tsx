@@ -7,11 +7,14 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  type EdgeTypes,
   type NodeTypes,
   type ReactFlowProps,
 } from '@xyflow/react';
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { LayoutNestingContext } from '../gridstack/layout-nesting';
+import { ActionEdge } from './action-edge';
+import { AddAffordance } from './add-affordance';
 import { FlowContext, type FlowContextValue } from './flow-context';
 import { FLOW_EMPTY_MESSAGE, useFlowEditor, type FlowEditor } from './flow-editor';
 import {
@@ -21,12 +24,20 @@ import {
   FLOW_NESTED_MESSAGE,
   isStage,
 } from './flow-elements';
-import { connectGesture, disconnectGesture, moveGesture } from './flow-gestures';
-import { STAGE_NODE_TYPE, toFlowEdges, toFlowNodes, type StageFlowNode } from './flow-nodes';
+import { connectGesture, disconnectGesture } from './flow-gestures';
+import {
+  ACTION_EDGE_TYPE,
+  STAGE_NODE_TYPE,
+  toFlowEdges,
+  toFlowNodes,
+  type StageFlowNode,
+} from './flow-nodes';
 import { StageNode } from './stage-node';
 
-// Stable identity — xyflow warns and re-creates every node when nodeTypes changes between renders.
+// Stable identity — xyflow warns and re-creates every node when nodeTypes changes between renders. The same applies to
+// edgeTypes (doc 198 rule 9), so both are module-level constants.
 const NODE_TYPES: NodeTypes = { [STAGE_NODE_TYPE]: StageNode };
+const EDGE_TYPES: EdgeTypes = { [ACTION_EDGE_TYPE]: ActionEdge };
 
 type FlowProps = ReactFlowProps<StageFlowNode>;
 
@@ -39,9 +50,11 @@ const VIEW_ONLY_PROPS: FlowProps = {
 };
 
 /**
- * Doc 196 rules 4-7: an editable canvas drags one Stage at a time, connects handles that `canConnect` allows, and turns
- * Delete / Backspace on selected edges into a disconnect. xyflow never changes anything itself — `onBeforeDelete`
- * resolves `false` — so the uischema stays the only source of truth.
+ * Doc 196 rules 5-7: an editable canvas connects handles that `canConnect` allows and turns Delete / Backspace on
+ * selected edges into a disconnect. xyflow never changes anything itself — `onBeforeDelete` resolves `false` — so the
+ * uischema stays the only source of truth.
+ *
+ * Doc 198 rule 4: Stages are NOT draggable even here. Positions are derived (rules 1-2), so a drag could not persist.
  */
 function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
   const flowId = editor.idOf(flow);
@@ -49,17 +62,12 @@ function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
     if (gesture) editor.onGesture(gesture);
   };
   return {
-    nodesDraggable: true,
+    nodesDraggable: false,
     nodesConnectable: true,
     elementsSelectable: true,
     selectionOnDrag: false,
     multiSelectionKeyCode: null,
     deleteKeyCode: ['Delete', 'Backspace'],
-    onNodeDragStart: () => editor.onGestureActive?.(true),
-    onNodeDragStop: (_event, node) => {
-      editor.onGestureActive?.(false);
-      editor.onGesture(moveGesture(node, (element) => editor.idOf(element)));
-    },
     isValidConnection: ({ source, target }) => editor.canConnect(flow, source, target),
     onConnect: (connection) => emit(connectGesture(flowId, connection)),
     onBeforeDelete: ({ edges }) => {
@@ -110,7 +118,14 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
     [schema, path, enabled, renderers, cells],
   );
   const derivedNodes = useMemo(() => toFlowNodes(uischema), [uischema]);
-  const derivedEdges = useMemo(() => toFlowEdges(uischema), [uischema]);
+  // Doc 198 rule 9: an edge component is given only its own id, so the Flow's element id — which the + needs for its
+  // `insert-between` gesture — rides along in `data`. A view-only edge carries none, and draws no +.
+  const derivedEdges = useMemo(() => {
+    const edges = toFlowEdges(uischema);
+    if (!editor) return edges;
+    const flowId = editor.idOf(uischema);
+    return edges.map((edge) => ({ ...edge, data: { flowId } }));
+  }, [uischema, editor]);
   const flowProps = useMemo(
     () => (editor ? editingProps(editor, uischema) : VIEW_ONLY_PROPS),
     [editor, uischema],
@@ -154,6 +169,7 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
             fitView
             onMoveStart={(event) => {
               // Only a pan or zoom by hand has an event; fitView and the Controls buttons do not.
@@ -168,13 +184,18 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
             <Controls showInteractive={false} />
             <FitOnResize target={canvasRef} userMoved={userMoved} />
           </ReactFlow>
-          {empty ? (
-            <p
+          {empty && editor ? (
+            // Doc 198 rule 12: with no palette to reach, an empty Flow needs its own way out of the empty state.
+            <div
               data-slot="flow-empty"
-              className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
+              className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
             >
-              {FLOW_EMPTY_MESSAGE}
-            </p>
+              <p>{FLOW_EMPTY_MESSAGE}</p>
+              <AddAffordance
+                label="Add a stage"
+                onAdd={() => editor.onGesture({ type: 'append', stageId: null })}
+              />
+            </div>
           ) : null}
         </div>
       </div>
