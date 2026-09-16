@@ -4,6 +4,14 @@ import { Card, CardContent } from '@repo/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Clock, ExternalLink, Send, Wallet } from 'lucide-react';
+import {
+  mdiCardAccountDetailsOutline,
+  mdiClipboardCheckOutline,
+  mdiFileDocumentOutline,
+  mdiHelpCircleOutline,
+  mdiPulse,
+  mdiSend,
+} from '@mdi/js';
 import type { ReactNode } from 'react';
 import { ApplicationRow } from '@/components/services/application-row';
 import { ContactSection } from '@/components/services/contact-section';
@@ -27,12 +35,12 @@ export function readContactMethods(data: Record<string, unknown>): unknown {
 
 /** The anchor targets shown in the left "On this page" nav and used as section ids. */
 export const DETAIL_SECTIONS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'eligibility', label: 'Eligibility criteria' },
-  { id: 'how-to-apply', label: 'How to apply' },
-  { id: 'your-activity', label: 'Your activity' },
-  { id: 'help', label: 'Help and information' },
-  { id: 'contact', label: 'Contact information' },
+  { id: 'overview', label: 'Overview', icon: mdiFileDocumentOutline },
+  { id: 'eligibility', label: 'Eligibility criteria', icon: mdiClipboardCheckOutline },
+  { id: 'how-to-apply', label: 'How to apply', icon: mdiSend },
+  { id: 'your-activity', label: 'Your activity', icon: mdiPulse },
+  { id: 'help', label: 'Help and information', icon: mdiHelpCircleOutline },
+  { id: 'contact', label: 'Contact information', icon: mdiCardAccountDetailsOutline },
 ] as const;
 
 /** A titled content section with an anchor id for the side nav. */

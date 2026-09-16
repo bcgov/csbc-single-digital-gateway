@@ -76,7 +76,7 @@ export function ServiceDetailPage() {
           </header>
         </PageHeaderBanner>
 
-        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
+        <div className="mx-auto mb-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
           <ServiceSections
             serviceId={service.id}
             schema={service.schema}

@@ -19,8 +19,6 @@ import {
 } from '@ui/components/ui/sheet';
 import { Skeleton } from '@ui/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ui/components/ui/tooltip';
-import { mdiPageLayoutSidebarLeft } from '@mdi/js';
-import { Icon } from '@mdi/react';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -245,6 +243,23 @@ function Sidebar({
   );
 }
 
+function SidebarTriggerIcon(props: React.ComponentProps<'svg'>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" role="presentation" {...props}>
+      <path
+        d="M16.207 10.707L14.9141 12L16.207 13.293L14.793 14.707L12.0859 12L14.793 9.29297L16.207 10.707Z"
+        fill="currentColor"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M22 4V20H2V4H22ZM4 15.3301V18H6.5V15.3301H4ZM8.5 6V18H20V6H8.5ZM4 10.6602V13.3301H6.5V10.6602H4ZM4 6V8.66992H6.5V6H4Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
 
@@ -253,7 +268,8 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       variant="ghost"
-      size="icon-sm"
+      aria-label="Toggle sidebar"
+      size="icon"
       className={cn(className)}
       onClick={(event) => {
         onClick?.(event);
@@ -261,7 +277,7 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       }}
       {...props}
     >
-      <Icon path={mdiPageLayoutSidebarLeft} size="16px" />
+      <SidebarTriggerIcon className="size-5" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
@@ -321,7 +337,7 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="sidebar-header"
       data-sidebar="header"
-      className={cn('flex gap-2 justify-between', className)}
+      className={cn('flex gap-2 justify-between mb-6', className)}
       {...props}
     />
   );
@@ -456,7 +472,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  'group/menu-button peer/menu-button flex gap-2 p-2 w-full items-center no-underline outline-hidden overflow-hidden text-left text-secondary-foreground border-l-4 border-transparent ring-sidebar-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:opacity-50 disabled:pointer-events-none group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:size-8! group-has-data-[sidebar=menu-action]/menu-item:pr-8 hover:bg-sidebar-accent hover:border-link hover:text-sidebar-accent-foreground aria-disabled:opacity-50 aria-disabled:pointer-events-none transition-[width,height,padding] data-active:bg-sidebar-accent data-active:border-link data-active:font-bold data-active:text-sidebar-accent-foreground data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground [&_svg]:shrink-0 [&_svg]:size-4 [&>span:last-child]:truncate',
+  'group/menu-button peer/menu-button flex gap-2 p-2 w-full items-center no-underline outline-hidden overflow-hidden text-left text-secondary-foreground border-l-4 border-transparent ring-sidebar-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:opacity-50 disabled:pointer-events-none group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:size-(--sidebar-width-icon)! group-has-data-[sidebar=menu-action]/menu-item:pr-8 hover:bg-sidebar-accent hover:border-link hover:text-sidebar-accent-foreground aria-disabled:opacity-50 aria-disabled:pointer-events-none transition-[width,height,padding] data-active:bg-sidebar-accent data-active:border-link data-active:font-bold data-active:text-sidebar-accent-foreground data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground [&_svg]:shrink-0 [&_svg]:size-4 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {

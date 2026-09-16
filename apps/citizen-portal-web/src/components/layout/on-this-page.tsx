@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { Icon } from '@mdi/react';
 import {
   Sidebar,
   SidebarContent,
@@ -8,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   SidebarProvider,
   SidebarTrigger,
 } from '@repo/ui/sidebar';
@@ -15,6 +17,8 @@ import {
 export interface OnThisPageItem {
   id: string;
   label: string;
+  /** An `@mdi/js` path constant, e.g. `mdiFileDocumentOutline`. */
+  icon: string;
 }
 
 /** Highlights whichever `id` is currently scrolled into view, same technique as the /dev section's
@@ -86,12 +90,20 @@ export function OnThisPageLayout({
   return (
     <SidebarProvider className="min-h-0">
       <div className="sticky top-6 contain-paint">
-        {/* No per-item icons here (unlike /dev's level-2 items), so `collapsible="icon"` would just
-            show empty pills — "offcanvas" still gives a working SidebarTrigger toggle. */}
-        <Sidebar collapsible="offcanvas">
+        {/* `collapsible="icon"` (not "offcanvas"): every item now has an icon, so collapsed still shows
+            a meaningful icon-only rail — with a border that carries on unbroken from the header down to
+            the last item — rather than sliding the whole panel (icons included) out of view. Only the
+            text labels hide on collapse (`group-data-[collapsible=icon]:hidden`); the icons, the header's
+            trigger, and the panel itself stay visible so it can always be reopened.
+            `pt-6` here (not a margin on some ancestor wrapping both columns) is deliberate: it pads the
+            *inside* of this bordered box, so the border stays flush with whatever sits above this layout
+            while the header/nav content still gets breathing room from the top. */}
+        <Sidebar collapsible="icon" className="pt-6">
           <SidebarHeader>
-            <span className="font-bold uppercase">On this page</span>
-            <SidebarTrigger className="mb-4 self-start" />
+            <span className="font-bold uppercase pt-3 group-data-[collapsible=icon]:hidden">
+              On this page
+            </span>
+            <SidebarTrigger />
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -108,10 +120,14 @@ export function OnThisPageLayout({
                               <a
                                 href={`#${item.id}`}
                                 aria-current={isActive ? 'location' : undefined}
+                                aria-label={item.label}
                               />
                             }
                           >
-                            {item.label}
+                            <Icon path={item.icon} size="20px" aria-hidden />
+                            <span className="group-data-[collapsible=icon]:hidden">
+                              {item.label}
+                            </span>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       );
@@ -121,14 +137,10 @@ export function OnThisPageLayout({
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
+          <SidebarRail />
         </Sidebar>
       </div>
-      <div className="relative flex w-full min-w-0 flex-1 flex-col md:pl-6">
-        {/* Lives outside <Sidebar> deliberately: on mobile the sidebar renders as a closed Sheet by
-            default, so a trigger placed *inside* it (e.g. in its own SidebarHeader) would never be
-            reachable — nothing to click to open it in the first place. */}
-        {children}
-      </div>
+      <div className="relative flex w-full min-w-0 flex-1 flex-col pt-6 md:pl-6">{children}</div>
     </SidebarProvider>
   );
 }
