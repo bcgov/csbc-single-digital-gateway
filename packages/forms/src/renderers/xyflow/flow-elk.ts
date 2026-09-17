@@ -1,7 +1,7 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import type { ElkExtendedEdge, ElkNode } from 'elkjs/lib/elk-api';
 import type { StagePosition } from '../../types/elements';
-import { criteriaOf, drawnNodes, elementsOf } from './flow-elements';
+import { drawnNodes, elementsOf, rowsOf } from './flow-elements';
 import { flowEdges } from './flow-graph';
 
 // The Flow canvas's layout, as ELK sees it (doc 198 rules 30-33). PURE — no React, no @xyflow/react, and no call to
@@ -12,7 +12,7 @@ import { flowEdges } from './flow-graph';
 export const NODE_WIDTH = 306;
 /**
  * A node's height. ELK needs a size per node and the cards are not measured at this point — these match what the
- * browser reports: a Stage with one Form is 147px and a Condition with one criterion 219px.
+ * browser reports: a Stage with one Form is 147px and a Condition with one row 219px.
  */
 const STAGE_BASE = 120;
 const STAGE_FORM_ROW = 30;
@@ -22,7 +22,7 @@ const CONDITION_CRITERION_ROW = 70;
 /** Rule 30: a node's height, from what it holds. A taller card would otherwise overlap the one after it. */
 export function heightOf(element: UISchemaElement, kind: string): number {
   return kind === 'condition'
-    ? CONDITION_BASE + criteriaOf(element).length * CONDITION_CRITERION_ROW
+    ? CONDITION_BASE + rowsOf(element).length * CONDITION_CRITERION_ROW
     : STAGE_BASE + elementsOf(element).length * STAGE_FORM_ROW;
 }
 
@@ -35,24 +35,20 @@ export type LayoutDirection = 'vertical' | 'horizontal';
  */
 export const DEFAULT_DIRECTION: LayoutDirection = 'horizontal';
 
-/** Doc 198 rule 31: the ELK algorithms offered on the canvas, in the order the picker lists them. */
-export const LAYOUT_ALGORITHMS = Object.freeze([
-  { id: 'layered', label: 'Layered' },
-  { id: 'mrtree', label: 'Tree' },
-  { id: 'force', label: 'Force' },
-  { id: 'stress', label: 'Stress' },
-  { id: 'radial', label: 'Radial' },
-] as const);
-
-export type LayoutAlgorithm = (typeof LAYOUT_ALGORITHMS)[number]['id'];
-export const DEFAULT_ALGORITHM: LayoutAlgorithm = 'layered';
-
-/** Whether `value` is one of the offered algorithms — a stored or hand-typed choice is not trusted. */
-export const isLayoutAlgorithm = (value: unknown): value is LayoutAlgorithm =>
-  LAYOUT_ALGORITHMS.some(({ id }) => id === value);
+/**
+ * Doc 198 rule 31, SUPERSEDED 2026-09-17 (user: "get rid of the xyflow panel for layout type, direction. Layered
+ * and horizontal works"). The canvas offered five ELK algorithms and both directions through an on-canvas picker;
+ * `layered` + horizontal is the one that draws a branching form well, and the other four were a way of finding
+ * that out, not a setting an author has any reason to change. The picker and the algorithm vocabulary are gone.
+ *
+ * `LayoutDirection` STAYS parameterised even though only `horizontal` is now produced: it is threaded through
+ * `FlowContext` into the handle faces (`flow-handles.ts`) and everything that hangs off a card, all of which read
+ * it rather than assuming an axis — which is exactly what made this switch a one-line change rather than a rewrite.
+ * Fixing the axis into those would undo that for no gain.
+ */
+const ALGORITHM = 'layered';
 
 export interface LayoutOptions {
-  readonly algorithm: LayoutAlgorithm;
   readonly direction: LayoutDirection;
 }
 
@@ -70,15 +66,15 @@ const EDGE_EDGE_SPACING = 24;
  * Rule 30: the graph ELK is asked to lay out — every drawn node with its size, and every sanitised edge.
  *
  * `elk.direction` is what turns the flow: `DOWN` stacks the layers top to bottom, `RIGHT` runs them across. The
- * spacing options are named per-algorithm in ELK, so both the layered ones and the generic ones are set; an algorithm
- * ignores the ones it does not use.
+ * spacing options are named per-algorithm in ELK, so both the layered ones and the generic ones are set — the
+ * generic ones are kept now that only `layered` runs, because ELK reads both names for some of them.
  */
-export function elkGraph(flow: UISchemaElement, { algorithm, direction }: LayoutOptions): ElkNode {
+export function elkGraph(flow: UISchemaElement, { direction }: LayoutOptions): ElkNode {
   const nodes = drawnNodes(flow);
   return {
     id: 'flow',
     layoutOptions: {
-      'elk.algorithm': algorithm,
+      'elk.algorithm': ALGORITHM,
       'elk.direction': direction === 'vertical' ? 'DOWN' : 'RIGHT',
       'elk.spacing.nodeNode': String(NODE_SPACING),
       'elk.layered.spacing.nodeNodeBetweenLayers': String(LAYER_SPACING),

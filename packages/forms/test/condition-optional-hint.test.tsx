@@ -7,7 +7,7 @@ import {
   type CriterionField,
 } from '../src/renderers/xyflow/criteria';
 import { FormStudio } from '../src/studio';
-import type { Criterion } from '../src/types/elements';
+import type { Clause } from '../src/types/elements';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
 // Doc 199 rule 34 — a Condition card hints when a field it decides on may be left blank, which silently follows
@@ -20,8 +20,8 @@ const fields: CriterionField[] = [
   { key: 'notes', label: 'Notes', kind: 'text' },
   { key: 'inspect', label: 'Needs inspection', kind: 'boolean' },
 ];
-const criterion = (field: string, operator: Criterion['operator'], id = `c-${field}-${operator}`) =>
-  ({ id, field, operator, value: 'x' }) as Criterion;
+const criterion = (field: string, operator: Clause['operator'], id = `c-${field}-${operator}`) =>
+  ({ id, field, operator, value: 'x' }) as Clause;
 
 describe('optionalDecisionFields', () => {
   it('lists an optional field once, however many criteria name it', () => {
@@ -102,7 +102,14 @@ const flow = (schemaRequired: string[]) => {
         label: 'Type',
         options: {
           id: 'c1',
-          criteria: [{ id: 'k1', field: 'kind', operator: 'equals', value: 'biz' }],
+          rows: [
+            {
+              id: 'k1',
+              label: 'Condition 1',
+              match: 'all',
+              clauses: [{ id: 'k1-clause', field: 'kind', operator: 'equals', value: 'biz' }],
+            },
+          ],
         },
       },
       {

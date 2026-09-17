@@ -3,7 +3,6 @@ import { withJsonFormsLayoutProps } from '@jsonforms/react';
 import {
   Background,
   Controls,
-  Panel,
   ReactFlow,
   useEdgesState,
   useNodesState,
@@ -13,17 +12,14 @@ import {
   type ReactFlowProps,
 } from '@xyflow/react';
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { ConditionHoverProvider, type ConditionHover } from './condition-hover';
 import { LayoutNestingContext } from '../gridstack/layout-nesting';
 import { ActionEdge } from './action-edge';
 import {
-  DEFAULT_ALGORITHM,
   DEFAULT_DIRECTION,
   // Aliased: the canvas component in this file is itself called `FlowLayout`.
   type FlowLayout as ElkLayout,
-  type LayoutAlgorithm,
-  type LayoutDirection,
 } from './flow-elk';
-import { FlowLayoutControls } from './flow-layout-controls';
 import { useFlowLayout } from './use-flow-layout';
 import { AddAffordance } from './add-affordance';
 import { FlowContext, type FlowContextValue } from './flow-context';
@@ -136,9 +132,24 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
   const canvasRef = useRef<HTMLDivElement>(null);
   const userMoved = useRef(false);
   // Doc 198 rules 30-32: the arrangement is a VIEW of the document, so it lives here rather than in the uischema.
-  const [algorithm, setAlgorithm] = useState<LayoutAlgorithm>(DEFAULT_ALGORITHM);
-  const [direction, setDirection] = useState<LayoutDirection>(DEFAULT_DIRECTION);
-  const layout = useFlowLayout(uischema, { algorithm, direction });
+  // Doc 199 rule 50: which Condition row the pointer is over. CANVAS state — a hover must never reach the
+  // document, or moving the mouse would dirty it and push an undo entry.
+  const [hovered, setHovered] = useState<{ nodeId: string | null; handle: string | null }>({
+    nodeId: null,
+    handle: null,
+  });
+  const hover = useMemo<ConditionHover>(
+    () => ({
+      nodeId: hovered.nodeId,
+      handle: hovered.handle,
+      setHovered: (nodeId, handle) => setHovered({ nodeId, handle }),
+    }),
+    [hovered],
+  );
+  // Doc 198 rule 31 is SUPERSEDED: there is no layout picker, so the direction is the module constant rather
+  // than state, and `useFlowLayout` re-runs on the document alone.
+  const direction = DEFAULT_DIRECTION;
+  const layout = useFlowLayout(uischema, { direction });
   const context = useMemo<FlowContextValue>(
     () => ({ schema, path, enabled, renderers, cells, direction }),
     [schema, path, enabled, renderers, cells, direction],
@@ -206,61 +217,54 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
 
   return (
     <FlowContext.Provider value={context}>
-      <div data-slot="flow" className="flex h-full min-h-96 w-full flex-col gap-2">
-        {strays ? (
-          <p role="alert" data-slot="flow-element-error" className="text-sm text-destructive">
-            {FLOW_CHILD_MESSAGE}
-          </p>
-        ) : null}
-        <div ref={canvasRef} data-slot="flow-canvas" className="relative min-h-0 flex-1">
-          <ReactFlow
-            {...flowProps}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            nodeTypes={NODE_TYPES}
-            edgeTypes={EDGE_TYPES}
-            fitView
-            onMoveStart={(event) => {
-              // Only a pan or zoom by hand has an event; fitView and the Controls buttons do not.
-              if (event) userMoved.current = true;
-              if (event) editor?.onGestureActive?.(true);
-            }}
-            onMoveEnd={(event) => {
-              if (event) editor?.onGestureActive?.(false);
-            }}
-          >
-            <Background />
-            <Controls showInteractive={false} />
-            {/* Rule 31: the layout controls sit on the canvas, opposite its zoom controls. */}
-            <Panel position="top-right">
-              <FlowLayoutControls
-                algorithm={algorithm}
-                direction={direction}
-                onAlgorithmChange={setAlgorithm}
-                onDirectionChange={setDirection}
-              />
-            </Panel>
-            <FitOnResize target={canvasRef} userMoved={userMoved} layout={layout} />
-          </ReactFlow>
-          {empty && editor ? (
-            // Doc 198 rule 12: with no palette to reach, an empty Flow needs its own way out of the empty state.
-            <div
-              data-slot="flow-empty"
-              className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
-            >
-              <p>{FLOW_EMPTY_MESSAGE}</p>
-              {/* Doc 199 rule 24: the origin + stays Stage-only — a Condition with nothing upstream to test
-                  could hold no valid criterion (rule 26). */}
-              <AddAffordance
-                label="Add a stage"
-                onAdd={() => editor.onGesture({ type: 'append', stageId: null, kind: 'stage' })}
-              />
-            </div>
+      <ConditionHoverProvider value={hover}>
+        <div data-slot="flow" className="flex h-full min-h-96 w-full flex-col gap-2">
+          {strays ? (
+            <p role="alert" data-slot="flow-element-error" className="text-sm text-destructive">
+              {FLOW_CHILD_MESSAGE}
+            </p>
           ) : null}
+          <div ref={canvasRef} data-slot="flow-canvas" className="relative min-h-0 flex-1">
+            <ReactFlow
+              {...flowProps}
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={NODE_TYPES}
+              edgeTypes={EDGE_TYPES}
+              fitView
+              onMoveStart={(event) => {
+                // Only a pan or zoom by hand has an event; fitView and the Controls buttons do not.
+                if (event) userMoved.current = true;
+                if (event) editor?.onGestureActive?.(true);
+              }}
+              onMoveEnd={(event) => {
+                if (event) editor?.onGestureActive?.(false);
+              }}
+            >
+              <Background />
+              <Controls showInteractive={false} />
+              <FitOnResize target={canvasRef} userMoved={userMoved} layout={layout} />
+            </ReactFlow>
+            {empty && editor ? (
+              // Doc 198 rule 12: with no palette to reach, an empty Flow needs its own way out of the empty state.
+              <div
+                data-slot="flow-empty"
+                className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
+              >
+                <p>{FLOW_EMPTY_MESSAGE}</p>
+                {/* Doc 199 rule 24: the origin + stays Stage-only — a Condition with nothing upstream to test
+                  could hold no valid criterion (rule 26). */}
+                <AddAffordance
+                  label="Add a stage"
+                  onAdd={() => editor.onGesture({ type: 'append', stageId: null, kind: 'stage' })}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </ConditionHoverProvider>
     </FlowContext.Provider>
   );
 }

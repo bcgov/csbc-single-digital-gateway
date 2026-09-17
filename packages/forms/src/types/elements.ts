@@ -139,13 +139,20 @@ export interface FormElement extends Layout {
 }
 
 /**
- * What a `Criterion` tests (doc 199 rule 1). Which operators a field may use is decided by its `ControlKind`
+ * What a `Clause` tests (doc 199 rules 1, 36). Which operators a field may use is decided by its `ControlKind`
  * in `renderers/xyflow/criteria.ts` — this union is only the vocabulary.
+ *
+ * `in` / `notIn` are the only operators taking a LIST value, and the only ones a `choice` field offers beyond
+ * equality. There are no date operators: `ControlKind` has no date kind for them to attach to (rule 36).
  */
 export type Operator =
   | 'equals'
   | 'notEquals'
   | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'in'
+  | 'notIn'
   | 'gt'
   | 'gte'
   | 'lt'
@@ -156,23 +163,38 @@ export type Operator =
   | 'isFalse';
 
 /**
- * One branch of a `Condition` (doc 199). `field` is a top-level schema property KEY, not a `#/properties/…`
- * scope: keys are unique and stable, so a criterion pointing at a deleted field is detectably dangling rather
- * than silently wrong. `id` is also the `sourceHandle` of the edge that leaves this branch.
+ * One test inside a `ConditionRow` (doc 199 rule 35). `field` is a top-level schema property KEY, not a
+ * `#/properties/…` scope: keys are unique and stable, so a clause pointing at a deleted field is detectably
+ * dangling rather than silently wrong.
+ *
+ * This was `Criterion` before the rows redesign, when one test WAS one branch. The branch is now the row.
  */
-export interface Criterion {
+export interface Clause {
   id: string;
   field: string;
   operator: Operator;
-  /** Absent for the operators `needsValue` reports false for. */
-  value?: string | number | boolean;
+  /** Absent for the operators `needsValue` reports false for. A LIST only for `in` / `notIn` (rule 36). */
+  value?: string | number | boolean | string[];
+}
+
+/**
+ * One branch of a `Condition` (doc 199 rules 35, 38-39): a labelled output holding one or more `Clause`s
+ * joined by `match`. `id` is the `sourceHandle` of the edge that leaves this branch, and authored ROW order is
+ * evaluation order — the first row whose clauses are satisfied wins.
+ */
+export interface ConditionRow {
+  id: string;
+  /** Authored, never derived — `Condition 1`, `Condition 2`, … as `addRow` names them (rule 46). */
+  label: string;
+  match: 'all' | 'any';
+  clauses: Clause[];
 }
 
 /**
  * One connection between two nodes of a `Flow`, by their `options.id` (doc 195).
  *
- * Doc 199 rule 10: `sourceHandle` names the `Criterion` the edge leaves by. An edge with NO `sourceHandle` is
- * the DEFAULT path — so it must stay an absent key, never an explicit `undefined`.
+ * Doc 199 rules 10, 37: `sourceHandle` names the `ConditionRow` the edge leaves by. An edge with NO
+ * `sourceHandle` is the DEFAULT (Else) path — so it must stay an absent key, never an explicit `undefined`.
  */
 export interface FlowEdge {
   id: string;
@@ -199,18 +221,23 @@ export interface StageElement extends Layout {
 }
 
 /**
- * `{ type: 'Condition' }` — a branching node of a `Flow` (doc 199). Each `Criterion` owns one output, whose id is
- * the `sourceHandle` of the edge leaving it; an edge from this node with no `sourceHandle` is the default path.
+ * `{ type: 'Condition' }` — a branching node of a `Flow` (doc 199). Each `ConditionRow` owns one output, whose
+ * id is the `sourceHandle` of the edge leaving it; an edge from this node with no `sourceHandle` is the Else
+ * path, which every Condition must have.
  *
  * It extends `BaseUISchemaElement`, NOT `Layout`: a Condition holds no children. `options` is required, as a
  * `Stage`'s is, because its `id` is what edges address.
+ *
+ * Doc 199 rule 35: `rows` REPLACES the pre-2026-09-17 `criteria`, and nothing reads `criteria` any more — a
+ * document still authoring it draws a Condition with no branches rather than having a row label and a `match`
+ * invented for it.
  */
 export interface ConditionElement extends BaseUISchemaElement {
   type: 'Condition';
   label?: string;
   options: {
     id: string;
-    criteria: Criterion[];
+    rows: ConditionRow[];
     position?: StagePosition;
     [key: string]: unknown;
   };

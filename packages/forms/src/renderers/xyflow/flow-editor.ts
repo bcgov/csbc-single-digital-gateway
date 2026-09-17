@@ -1,6 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { createContext, useContext } from 'react';
-import type { Criterion } from '../../types/elements';
+import type { Clause, ConditionRow } from '../../types/elements';
 import type { CriterionField } from './criteria';
 import type { FlowNodeKind } from './flow-elements';
 
@@ -25,21 +25,40 @@ export type FlowGesture =
   | { type: 'open'; formId: string }
   | { type: 'remove'; elementId: string }
   /**
-   * Doc 199 rule 24: a + appends either kind of node. `sourceHandle` is the criterion the new edge leaves by
+   * Doc 199 rule 24: a + appends either kind of node. `sourceHandle` is the ROW the new edge leaves by
    * (rule 20) — absent for a Stage source and for a Condition's default output, which is what the stored form
    * of a default edge is (rule 18).
    */
   | { type: 'append'; stageId: string | null; kind: FlowNodeKind; sourceHandle?: string }
   | { type: 'insert-between'; flowId: string; edgeId: string; kind: FlowNodeKind }
   | { type: 'add-form'; stageId: string }
-  /** Doc 199 rule 25. `conditionId` is the Condition's ELEMENT id, like `add-form`'s `stageId`. */
-  | { type: 'add-criterion'; conditionId: string }
-  | { type: 'remove-criterion'; conditionId: string; criterionId: string }
+  /**
+   * Doc 199 rules 25, 48: the six row and clause edits. `conditionId` is the Condition's ELEMENT id, like
+   * `add-form`'s `stageId`; `rowId` and `clauseId` are the authored ids inside it, and a row's id is also the
+   * `sourceHandle` of the edge leaving that branch (rule 37).
+   *
+   * `add-row` and `add-clause` are INSERTING gestures routed through selection; the rest are document gestures.
+   */
+  | { type: 'add-row'; conditionId: string }
+  | { type: 'remove-row'; conditionId: string; rowId: string }
   | {
-      type: 'set-criterion';
+      type: 'set-row';
       conditionId: string;
-      criterionId: string;
-      patch: Partial<Omit<Criterion, 'id'>>;
+      rowId: string;
+      patch: Partial<Pick<ConditionRow, 'label' | 'match'>>;
+    }
+  /** Rule 49: `toIndex` is the position among the rows AFTER the move, so 0 is first. */
+  | { type: 'move-row'; conditionId: string; rowId: string; toIndex: number }
+  /** Rule 51: the header's mode toggle. Nothing about the rows changes — only how they are shown. */
+  | { type: 'set-mode'; conditionId: string; mode: 'rules' | 'switch' }
+  | { type: 'add-clause'; conditionId: string; rowId: string }
+  | { type: 'remove-clause'; conditionId: string; rowId: string; clauseId: string }
+  | {
+      type: 'set-clause';
+      conditionId: string;
+      rowId: string;
+      clauseId: string;
+      patch: Partial<Omit<Clause, 'id'>>;
     };
 
 /**
@@ -57,7 +76,7 @@ export interface FlowEditor {
   canConnect(flow: UISchemaElement, source: string, target: string): boolean;
   /**
    * Doc 199 rule 25 (amendment): the fields the Condition with `conditionId` may test — those answerable
-   * before it (rule 6). The card's field picker has no other route to them: `FlowContext` carries only
+   * before it (rule 6). The popover's field picker has no other route to them: `FlowContext` carries only
    * JSONForms dispatch props, and `upstreamFieldsOf` lives in the studio, which `renderers/xyflow` may never
    * import. Like `canConnect`, it delegates a whole-document question to the consumer.
    */

@@ -136,7 +136,7 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       const withCondition = flow(
         [
           stage('s1', 'Applicant', [form('Contact', ['name'])]),
-          el({ type: 'Condition', label: 'Branch', options: { id: 'x', criteria: [] } }),
+          el({ type: 'Condition', label: 'Branch', options: { id: 'x', rows: [] } }),
           stage('s2', 'Review'),
         ],
         { edges: [edge('e1', 's1', 'x'), edge('e2', 'x', 's2')] },
@@ -250,7 +250,14 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
           label: 'Which plan',
           options: {
             id: 'x',
-            criteria: [{ id: 'c1', field: 'plan', operator: 'equals', value: 'pro' }],
+            rows: [
+              {
+                id: 'c1',
+                label: 'Pro',
+                match: 'all',
+                clauses: [{ id: 'cl1', field: 'plan', operator: 'equals', value: 'pro' }],
+              },
+            ],
           },
         }),
         stage('s2', 'Pro', [form('Pro form')]),
@@ -284,8 +291,8 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       expect(within(sidebar()).queryByText('Basic')).toBeNull();
     });
 
-    it('lists the default branch when the answer matches no criterion — a decision, not a guess', async () => {
-      // `plan` IS answered, so "no criterion matched" is itself a real answer and the default path is settled.
+    it('lists the default branch when the answer matches no row — a decision, not a guess', async () => {
+      // `plan` IS answered, so "no row matched" is itself a real answer and the default path is settled.
       // This is the case that separates rule 10c from simply following `conditionEdge` unconditionally.
       renderFlow({ uischema: branchingFlow, initial: { plan: 'basic' } });
       await settle();
@@ -304,7 +311,14 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
           label: 'Which plan',
           options: {
             id: 'x',
-            criteria: [{ id: 'c1', field: 'note', operator: 'equals', value: 'pro' }],
+            rows: [
+              {
+                id: 'c1',
+                label: 'Pro',
+                match: 'all',
+                clauses: [{ id: 'cl1', field: 'note', operator: 'equals', value: 'pro' }],
+              },
+            ],
           },
         }),
         stage('s2', 'Pro', [form('Pro form')]),
@@ -497,7 +511,14 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
           label: 'Which plan',
           options: {
             id: 'x',
-            criteria: [{ id: 'c1', field: 'plan', operator: 'equals', value: 'pro' }],
+            rows: [
+              {
+                id: 'c1',
+                label: 'Pro',
+                match: 'all',
+                clauses: [{ id: 'cl1', field: 'plan', operator: 'equals', value: 'pro' }],
+              },
+            ],
           },
         }),
         stage('s2', 'Pro', [form('Pro form')]),
@@ -523,7 +544,7 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       await settle();
       await waitFor(() => expect(nextButton()).toBeEnabled());
       fireEvent.click(nextButton());
-      // No criterion matches, so the default path is taken.
+      // No row matches, so the default path is taken.
       await waitFor(() =>
         expect(
           sidebar().querySelector('[data-slot="runner-stage"][data-current]'),

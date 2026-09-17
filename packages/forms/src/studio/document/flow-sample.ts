@@ -25,11 +25,11 @@ import type { FlowElement } from '../../types/elements';
  * Positions are NOT authored: doc 198 derives every node's `y` from its longest path from a root and its
  * `x` from sibling order, which is exactly what makes the fork and merge above draw themselves.
  *
- * Each `Condition` is authored COMPLETE, as the UI would author it (doc 199 rule 26): every criterion names a
+ * Each `Condition` is authored COMPLETE, as the UI would author it (doc 199 rules 46, 52): every clause names a
  * field that is genuinely UPSTREAM of the node, uses an operator that field's `controlKind` allows
- * (`choice` → equals; `boolean` → isTrue, which takes no value, so `value` stays an ABSENT key), and every
- * Condition has a DEFAULT path — an edge with no `sourceHandle` — without which `flowProblems` reports an error.
- * A criterion's `id` IS the `sourceHandle` of the edge leaving that branch.
+ * (`choice` → equals; `boolean` → isTrue, which takes no value, so `value` stays an ABSENT key), every row holds
+ * at least one clause, and every Condition has an ELSE path — an edge with no `sourceHandle` — without which
+ * `flowProblems` reports an error. A ROW's `id` IS the `sourceHandle` of the edge leaving that branch.
  *
  * Ids are fixed `nanoid(8)`-shaped literals rather than generated ones, exactly as `../sample.ts` does it: the
  * template must be deterministic. Every Stage carries its required `options.id` (edges address it) and every Form
@@ -45,9 +45,17 @@ const REVIEW_STAGE = 'Lp9kM4xC';
 const TYPE_CONDITION = 'Bn6vT1sA';
 const INSPECTION_CONDITION = 'Gh2wE5uI';
 
-/** A criterion's id is the `sourceHandle` of the edge that leaves its branch (doc 199 rule 10). */
+/**
+ * A ROW's id is the `sourceHandle` of the edge that leaves its branch (doc 199 rules 10, 37). These are the ids
+ * the pre-rows sample gave its criteria (rule 52): a migrated row REUSES them, so every authored edge below
+ * still names a real branch and the diagram draws identically.
+ */
 const IS_BUSINESS = 'Yr8tU3oP';
 const NEEDS_INSPECTION = 'Vm4zX7bN';
+
+/** A clause's id is unique inside its row alone — no edge addresses one. */
+const IS_BUSINESS_CLAUSE = 'Hs5nQ2wE';
+const NEEDS_INSPECTION_CLAUSE = 'Rb8dK3mZ';
 
 const DETAILS_FORM = 'Pm3wF6tY';
 const BUSINESS_FORM = 'Nv9kG4bH';
@@ -78,7 +86,7 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
       { id: 'e1', source: APPLICANT_STAGE, target: TYPE_CONDITION },
       // The criterion branch: `sourceHandle` names the criterion this edge leaves by.
       { id: 'e2', source: TYPE_CONDITION, target: BUSINESS_STAGE, sourceHandle: IS_BUSINESS },
-      // No `sourceHandle` — the default path every Condition must have.
+      // No `sourceHandle` — the Else path every Condition must have.
       { id: 'e3', source: TYPE_CONDITION, target: INDIVIDUAL_STAGE },
       { id: 'e4', source: BUSINESS_STAGE, target: SUPPORTING_STAGE },
       { id: 'e5', source: INDIVIDUAL_STAGE, target: SUPPORTING_STAGE },
@@ -116,8 +124,20 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
       label: 'Applicant type',
       options: {
         id: TYPE_CONDITION,
-        criteria: [
-          { id: IS_BUSINESS, field: APPLICANT_TYPE, operator: 'equals', value: 'business' },
+        rows: [
+          {
+            id: IS_BUSINESS,
+            label: 'Business',
+            match: 'all',
+            clauses: [
+              {
+                id: IS_BUSINESS_CLAUSE,
+                field: APPLICANT_TYPE,
+                operator: 'equals',
+                value: 'business',
+              },
+            ],
+          },
         ],
       },
     },
@@ -175,8 +195,17 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
       label: 'Inspection needed',
       options: {
         id: INSPECTION_CONDITION,
-        // `isTrue` takes no value, so `value` must stay an ABSENT key (exactOptionalPropertyTypes).
-        criteria: [{ id: NEEDS_INSPECTION, field: INSPECTION_NEEDED, operator: 'isTrue' }],
+        rows: [
+          {
+            id: NEEDS_INSPECTION,
+            label: 'Inspection needed',
+            match: 'all',
+            // `isTrue` takes no value, so `value` must stay an ABSENT key (exactOptionalPropertyTypes).
+            clauses: [
+              { id: NEEDS_INSPECTION_CLAUSE, field: INSPECTION_NEEDED, operator: 'isTrue' },
+            ],
+          },
+        ],
       },
     },
     {

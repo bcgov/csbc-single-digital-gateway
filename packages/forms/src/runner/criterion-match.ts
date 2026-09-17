@@ -1,18 +1,23 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
-import type { Criterion, FlowEdge } from '../types/elements';
+import type { Clause, ConditionRow, FlowEdge } from '../types/elements';
 import { choiceOptions } from '../renderers/ui/choice-control';
 import { controlKindOf, type ControlKind } from '../renderers/ui/control-kind';
-import { needsValue, operatorsFor, type CriterionField } from '../renderers/xyflow/criteria';
-import { criteriaOf } from '../renderers/xyflow/flow-elements';
+import {
+  needsValue,
+  operatorsFor,
+  takesList,
+  type CriterionField,
+} from '../renderers/xyflow/criteria';
+import { clausesIn, rowsOf } from '../renderers/xyflow/flow-elements';
 
-// Evaluating a Condition's criteria against the answers (doc 202 rules 19-23). PURE — no React, no
+// Evaluating a Condition's rows of clauses against the answers (doc 202 rules 19-23, doc 199 rules 38-40). PURE — no React, no
 // @xyflow/react — because `renderers/default`'s Flow entry imports this and a test pins that boundary
 // (doc 202 rule 42). It may not import the studio either (rule 45), which is why the field resolver below is
 // local rather than `studio/layout/upstream-fields.ts`.
 //
-// This is the fill-time half of doc 199's authoring-time `criterionProblems`, and it deliberately shares
-// `operatorsFor` / `needsValue` with it (rule 19): "may this criterion be authored?" and "does it match?" can
-// then never disagree about which operators a field kind offers, or about which operators take a value.
+// This is the fill-time half of doc 199's authoring-time `clauseProblems`, and it deliberately shares
+// `operatorsFor` / `needsValue` / `takesList` with it (rule 19): "may this clause be authored?" and "does it
+// match?" can then never disagree about which operators a field kind offers, or about which take a value.
 
 /** The answers the runner evaluates against — the host's controlled `data` object (rule 3). */
 export type RunnerData = Record<string, unknown>;
@@ -25,7 +30,7 @@ const answerOf = (data: RunnerData | undefined, key: string): unknown =>
   isRecord(data) ? data[key] : undefined;
 
 /**
- * The field a criterion names, resolved from the document's SCHEMA alone: `criterion.field` is a top-level
+ * The field a clause names, resolved from the document's SCHEMA alone: `clause.field` is a top-level
  * property key (doc 199 rule 1), so `schema.properties[key]` is the whole lookup. An inherited name such as
  * `toString` is never a property, exactly as in `propertyKeyOf`.
  *
@@ -51,10 +56,10 @@ export function criterionFieldOf(key: string, schema: JsonSchema): CriterionFiel
 }
 
 /**
- * The value a `kind` accepts when the operator takes one — the same test `criterionProblems` applies.
+ * The value a `kind` accepts when the operator takes a SCALAR one — the same test `clauseProblems` applies.
  *
  * It is duplicated rather than imported because it is private there, and because the two must NOT be the same
- * check: `criterionProblems` additionally refuses a `choice` value that is not one of the field's options, which
+ * check: `clauseProblems` additionally refuses a `choice` value that is not one of the field's options, which
  * is right for authoring but wrong here. A `notEquals` against an option the author has since deleted is still a
  * perfectly evaluable comparison, and rule 22 lists only a dangling field, an unoffered operator and a
  * wrong-TYPED value as unevaluable.
@@ -64,6 +69,12 @@ function valueMatchesKind(kind: ControlKind, value: unknown): boolean {
   if (kind === 'boolean') return typeof value === 'boolean';
   return typeof value === 'string';
 }
+
+/** The strings of a list value, or `undefined` when it is not one (doc 199 rule 36). */
+const listOf = (value: unknown): string[] | undefined =>
+  Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+    ? (value as string[])
+    : undefined;
 
 /** Rule 20: `undefined`, `null` and `''` are empty. Anything else — `0`, `false` — is an answer. */
 const isEmptyAnswer = (answer: unknown): boolean =>
@@ -77,46 +88,62 @@ function comparableNumbers(answer: unknown, value: unknown): [number, number] | 
 }
 
 /**
- * Rules 20-22: whether `criterion` matches the answers, given the field it names (`undefined` when the field is
- * dangling). Pure, total and independently testable — it NEVER throws, because the document it reads is
- * author-supplied and reaches the runner without passing the studio's apply gate.
+ * Rules 20-22, doc 199 rule 36: whether `clause` matches the answers, given the field it names (`undefined`
+ * when the field is dangling). Pure, total and independently testable — it NEVER throws, because the document
+ * it reads is author-supplied and reaches the runner without passing the studio's apply gate.
  *
- * Rule 22 — a criterion that cannot be evaluated never matches:
+ * Rule 22 — a clause that cannot be evaluated never matches:
  * - the field is dangling (doc 199 reports that, and never repairs it),
  * - the operator is not one `operatorsFor(field.kind)` offers,
- * - a value-taking operator (`needsValue`) has no `value`, or one of the wrong type for the kind.
+ * - a value-taking operator (`needsValue`) has no `value`, one of the wrong type for the kind, or — for the
+ *   list operators `in` / `notIn` — anything that is not a list of strings.
  *
- * `false` is the safe answer in every one of those cases: the user goes down the Condition's default path
- * (rule 21) rather than into an error.
+ * `false` is the safe answer in every one of those cases: the user goes down the Condition's Else path
+ * (rule 21) rather than into an error. Under a row's `all` that fails the row; under `any` it simply does not
+ * carry it (doc 199 rule 38).
  */
-export function matchesCriterion(
-  criterion: Criterion,
+export function matchesClause(
+  clause: Clause,
   field: CriterionField | undefined,
   data: RunnerData | undefined,
 ): boolean {
   // A field resolved for a different key would silently compare the wrong answer, so the pairing is checked
   // rather than trusted — this is a public function a host or a test may call directly.
-  if (field === undefined || field.key !== criterion.field) return false;
-  if (!operatorsFor(field.kind).includes(criterion.operator)) return false;
+  if (field === undefined || field.key !== clause.field) return false;
+  if (!operatorsFor(field.kind).includes(clause.operator)) return false;
 
-  const { operator, value } = criterion;
-  if (needsValue(operator) && (value === undefined || !valueMatchesKind(field.kind, value)))
-    return false;
+  const { operator, value } = clause;
+  if (needsValue(operator)) {
+    if (value === undefined) return false;
+    const typed = takesList(operator)
+      ? listOf(value) !== undefined
+      : valueMatchesKind(field.kind, value);
+    if (!typed) return false;
+  }
 
-  const answer = answerOf(data, criterion.field);
+  const answer = answerOf(data, clause.field);
   switch (operator) {
     case 'equals':
       return answer === value;
     case 'notEquals':
       return answer !== value;
     case 'contains':
-      // Only a string answer can contain anything; `value` is a string already, since `contains` is offered
+    case 'startsWith':
+    case 'endsWith': {
+      // Only a string answer can contain anything; `value` is a string already, since all three are offered
       // for `text` alone and a wrong-typed value was refused above.
-      return (
-        typeof answer === 'string' &&
-        typeof value === 'string' &&
-        answer.toLowerCase().includes(value.toLowerCase())
-      );
+      if (typeof answer !== 'string' || typeof value !== 'string') return false;
+      const [left, right] = [answer.toLowerCase(), value.toLowerCase()];
+      if (operator === 'contains') return left.includes(right);
+      return operator === 'startsWith' ? left.startsWith(right) : left.endsWith(right);
+    }
+    case 'in':
+    case 'notIn': {
+      // The value is a list of strings (checked above); `notIn` is the negation, so a blank answer is "not in"
+      // — which is right: the citizen has not picked any of the listed options.
+      const listed = listOf(value)?.includes(answer as string) ?? false;
+      return operator === 'in' ? listed : !listed;
+    }
     case 'gt':
     case 'gte':
     case 'lt':
@@ -140,20 +167,37 @@ export function matchesCriterion(
 }
 
 /**
- * Rules 21, 23: the first criterion of `condition` that matches the answers, or `undefined` when none does —
- * which includes a Condition with no criteria at all, a pass-through that takes its default path.
+ * Doc 199 rule 38: whether `row` matches the answers — EVERY clause under `match: 'all'`, at least ONE under
+ * `'any'`.
  *
- * Authored order decides (`criteriaOf` preserves it), and the FIRST match wins: later criteria are never
+ * A row with no clauses NEVER matches, rather than matching vacuously the way `Array.every` would: an empty row
+ * is an output the author has not said anything about, and letting it swallow every answer would make it
+ * indistinguishable from the Else path while sitting above it.
+ */
+export function matchesRow(
+  row: ConditionRow,
+  schema: JsonSchema,
+  data: RunnerData | undefined,
+): boolean {
+  if (row.clauses.length === 0) return false;
+  const matches = (clause: Clause) =>
+    matchesClause(clause, criterionFieldOf(clause.field, schema), data);
+  return row.match === 'any' ? row.clauses.some(matches) : row.clauses.every(matches);
+}
+
+/**
+ * Rules 21, 23, doc 199 rule 39: the first ROW of `condition` that matches the answers, or `undefined` when
+ * none does — which includes a Condition with no rows at all, a pass-through that takes its Else path.
+ *
+ * Authored row order decides (`rowsOf` preserves it), and the FIRST match wins: later rows are never
  * evaluated, so overlapping branches behave like an if/else-if chain rather than ambiguously.
  */
-export function firstMatchingCriterion(
+export function firstMatchingRow(
   condition: UISchemaElement,
   schema: JsonSchema,
   data: RunnerData | undefined,
-): Criterion | undefined {
-  return criteriaOf(condition).find((criterion) =>
-    matchesCriterion(criterion, criterionFieldOf(criterion.field, schema), data),
-  );
+): ConditionRow | undefined {
+  return rowsOf(condition).find((row) => matchesRow(row, schema, data));
 }
 
 /**
@@ -164,25 +208,27 @@ export function firstMatchingCriterion(
  * and matched nothing, but it is a guess for one who has not answered yet — and listing the stages of a guessed
  * branch is exactly what rule 10c forbids ("Business" must not appear before "Applying as" is chosen).
  *
- * Decided when a criterion matches, when the Condition has no criteria at all (rule 23's pass-through, which always
- * goes the same way), or when every criterion's field is either ANSWERED or OPTIONAL (rule 10f). An answer that
- * matches nothing is a real answer, so the default path is a decision. So is a blank OPTIONAL field: the citizen may
- * leave it blank, blank matches no criterion (an `isEmpty` one would already have matched above), and so the default
+ * Decided when a row matches, when the Condition has no rows at all (rule 23's pass-through, which always goes the
+ * same way), or when every field named by ANY row's clause is either ANSWERED or OPTIONAL (rule 10f). An answer that
+ * matches nothing is a real answer, so the Else path is a decision. So is a blank OPTIONAL field: the citizen may
+ * leave it blank, blank matches no clause (an `isEmpty` one would already have matched above), and so the Else
  * path is where they go whether they answer or not. Only a blank REQUIRED field leaves the branch open, because the
  * citizen must answer it and that answer may pick any branch.
+ *
+ * Doc 199 rule 40: the walk is over EVERY clause of every row, never a row's first — a branch is only settled once
+ * every question it could turn on has been asked.
  */
 export function conditionDecided(
   condition: UISchemaElement,
   schema: JsonSchema,
   data: RunnerData | undefined,
 ): boolean {
-  const criteria = criteriaOf(condition);
-  if (criteria.length === 0) return true;
-  if (firstMatchingCriterion(condition, schema, data) !== undefined) return true;
+  const clauses = clausesIn(condition);
+  if (clauses.length === 0) return true;
+  if (firstMatchingRow(condition, schema, data) !== undefined) return true;
   const required = requiredKeysOf(schema);
-  return criteria.every(
-    (criterion) =>
-      !isEmptyAnswer(answerOf(data, criterion.field)) || !required.has(criterion.field),
+  return clauses.every(
+    (clause) => !isEmptyAnswer(answerOf(data, clause.field)) || !required.has(clause.field),
   );
 }
 
@@ -204,22 +250,22 @@ export interface ConditionRoute {
 }
 
 /**
- * Rule 21: the edge a Condition sends these answers down — the outgoing edge whose `sourceHandle` is the first
- * matching criterion's id, else the outgoing edge with NO `sourceHandle` (the default path).
+ * Rule 21, doc 199 rule 39: the edge a Condition sends these answers down — the outgoing edge whose
+ * `sourceHandle` is the first matching ROW's id, else the outgoing edge with NO `sourceHandle` (the Else path).
  *
  * `flowProblems` guarantees every Condition has a default, but this returns `undefined` rather than throwing
  * when it does not: a hand-edited document reaches the runner without passing the apply gate (rule 17), and the
  * traversal reads a missing edge as the end of the flow (rule 16), which is a dead end the author can see.
  *
- * A matching criterion whose output is CONNECTED TO NOTHING falls back to the default too, rather than trying
- * the criteria after it — first match wins means the later ones were never in play. `flowEdges` has already
- * dropped any edge leaving by a criterion id that does not exist (doc 199 rule 12), so an edge found here
- * always names a real branch.
+ * A matching row whose output is CONNECTED TO NOTHING falls back to the Else path too, rather than trying the
+ * rows after it — first match wins means the later ones were never in play. `flowEdges` has already dropped any
+ * edge leaving by a row id that does not exist (doc 199 rule 12), so an edge found here always names a real
+ * branch.
  */
 export function conditionEdge(route: ConditionRoute): FlowEdge | undefined {
   const { condition, nodeId, edges, schema, data } = route;
   const outgoing = edges.filter((edge) => edge.source === nodeId);
-  const matched = firstMatchingCriterion(condition, schema, data);
+  const matched = firstMatchingRow(condition, schema, data);
   const branch =
     matched === undefined ? undefined : outgoing.find((edge) => edge.sourceHandle === matched.id);
   return branch ?? outgoing.find((edge) => edge.sourceHandle === undefined);

@@ -1,12 +1,12 @@
 import type { ChoiceOption } from '../ui/choice-control';
 import type { ControlKind } from '../ui/control-kind';
-import type { Criterion, Operator } from '../../types/elements';
+import type { Clause, Operator } from '../../types/elements';
 
-// The criterion model of a Condition node (doc 199 rules 1-5). Pure — no React, no @xyflow/react — so the
-// operator vocabulary, what needs a value and what makes a criterion invalid are one source of truth shared by
-// the card that authors a criterion and the gate that validates one.
+// The clause model of a Condition node (doc 199 rules 1-5, 36). Pure — no React, no @xyflow/react — so the
+// operator vocabulary, what needs a value and what makes a clause invalid are one source of truth shared by
+// the popover that authors a clause, the gate that validates one and the RUNNER that evaluates one (doc 202).
 
-/** A field a criterion may name: resolved from the document by `upstreamFieldsOf` (rule 6). */
+/** A field a clause may name: resolved from the document by `upstreamFieldsOf` (rule 6). */
 export interface CriterionField {
   /** The top-level schema property key — what a criterion stores. */
   readonly key: string;
@@ -22,7 +22,15 @@ export interface CriterionField {
  * offered an operator the validator rejects, or the reverse, is exactly what this prevents.
  */
 export const OPERATORS_BY_KIND: Readonly<Record<ControlKind, readonly Operator[]>> = Object.freeze({
-  text: Object.freeze(['equals', 'notEquals', 'contains', 'isEmpty', 'isNotEmpty'] as const),
+  text: Object.freeze([
+    'equals',
+    'notEquals',
+    'contains',
+    'startsWith',
+    'endsWith',
+    'isEmpty',
+    'isNotEmpty',
+  ] as const),
   number: Object.freeze([
     'equals',
     'notEquals',
@@ -33,7 +41,7 @@ export const OPERATORS_BY_KIND: Readonly<Record<ControlKind, readonly Operator[]
     'isEmpty',
     'isNotEmpty',
   ] as const),
-  choice: Object.freeze(['equals', 'notEquals', 'isEmpty', 'isNotEmpty'] as const),
+  choice: Object.freeze(['equals', 'notEquals', 'in', 'notIn', 'isEmpty', 'isNotEmpty'] as const),
   boolean: Object.freeze(['isTrue', 'isFalse'] as const),
 });
 
@@ -50,6 +58,10 @@ export const OPERATOR_LABELS: Readonly<Record<Operator, string>> = Object.freeze
   equals: 'equals',
   notEquals: 'does not equal',
   contains: 'contains',
+  startsWith: 'starts with',
+  endsWith: 'ends with',
+  in: 'is one of',
+  notIn: 'is not one of',
   gt: 'is greater than',
   gte: 'is at least',
   lt: 'is less than',
@@ -78,41 +90,65 @@ export const wrongTypeMessage = (label: string) => `The value does not match the
 export const unknownChoiceMessage = (label: string) =>
   `The value is not one of ${label}'s options.`;
 
-/** The value a `kind` accepts, when the operator needs one. */
+/** Rule 36: the operators whose `value` is a LIST of choice values rather than a scalar. */
+const LIST_VALUED: ReadonlySet<Operator> = new Set<Operator>(['in', 'notIn']);
+
+/** Whether `operator` takes a list value (rule 36). Read by the popover's value control and by the runner. */
+export const takesList = (operator: Operator): boolean => LIST_VALUED.has(operator);
+
+export const emptyListMessage = (operator: string) => `"${operator}" needs at least one value.`;
+
+/** The value a `kind` accepts, when the operator needs a SCALAR one. */
 function valueMatchesKind(kind: ControlKind, value: unknown): boolean {
   if (kind === 'number') return typeof value === 'number' && Number.isFinite(value);
   if (kind === 'boolean') return typeof value === 'boolean';
   return typeof value === 'string';
 }
 
+/** The strings of a list value, or `undefined` when it is not a list of strings (rule 36). */
+const listOf = (value: unknown): string[] | undefined =>
+  Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+    ? (value as string[])
+    : undefined;
+
+/** Rule 4: the option values `field` offers, as a set — empty for a field that is not a choice. */
+const optionValuesOf = (field: CriterionField): ReadonlySet<ChoiceOption['value']> =>
+  new Set((field.options ?? []).map((option) => option.value));
+
 /**
- * Rules 4-5: why `criterion` is not usable against `fields`, or `[]` when it is. A criterion is only ever
- * authored complete (rule 26), so anything here means the document was hand-edited or the flow changed
+ * Rules 4-5, 36: why `clause` is not usable against `fields`, or `[]` when it is. A clause is only ever
+ * authored complete (rule 46), so anything here means the document was hand-edited or the flow changed
  * underneath it — `flowProblems` reports these, and nothing repairs them automatically (rule 9).
  */
-export function criterionProblems(
-  criterion: Criterion,
-  fields: readonly CriterionField[],
-): string[] {
-  const field = fields.find((candidate) => candidate.key === criterion.field);
-  if (!field) return [unknownFieldMessage(criterion.field)];
+export function clauseProblems(clause: Clause, fields: readonly CriterionField[]): string[] {
+  const field = fields.find((candidate) => candidate.key === clause.field);
+  if (!field) return [unknownFieldMessage(clause.field)];
 
   const problems: string[] = [];
-  if (!operatorsFor(field.kind).includes(criterion.operator)) {
-    problems.push(unknownOperatorMessage(criterion.operator, field.label));
+  if (!operatorsFor(field.kind).includes(clause.operator)) {
+    problems.push(unknownOperatorMessage(clause.operator, field.label));
     // Without a valid operator there is no rule for the value, so stop here.
     return problems;
   }
 
-  if (!needsValue(criterion.operator)) return problems;
-  if (criterion.value === undefined) {
-    problems.push(missingValueMessage(criterion.operator));
-  } else if (!valueMatchesKind(field.kind, criterion.value)) {
+  if (!needsValue(clause.operator)) return problems;
+  if (clause.value === undefined) return [missingValueMessage(clause.operator)];
+
+  // A list operator refuses a scalar and a scalar operator refuses a list: the two shapes are never
+  // interchangeable, so each reads as the wrong TYPE rather than as a value out of range.
+  if (takesList(clause.operator)) {
+    const list = listOf(clause.value);
+    if (list === undefined) return [wrongTypeMessage(field.label)];
+    if (list.length === 0) return [emptyListMessage(clause.operator)];
+    const offered = optionValuesOf(field);
+    if (!list.every((entry) => offered.has(entry)))
+      problems.push(unknownChoiceMessage(field.label));
+    return problems;
+  }
+
+  if (listOf(clause.value) !== undefined || !valueMatchesKind(field.kind, clause.value)) {
     problems.push(wrongTypeMessage(field.label));
-  } else if (
-    field.kind === 'choice' &&
-    !(field.options ?? []).some((option) => option.value === criterion.value)
-  ) {
+  } else if (field.kind === 'choice' && !optionValuesOf(field).has(clause.value as string)) {
     problems.push(unknownChoiceMessage(field.label));
   }
   return problems;
@@ -127,23 +163,26 @@ const BLANK_AWARE: ReadonlySet<Operator> = new Set<Operator>(['isEmpty', 'isNotE
 
 /**
  * Doc 199 rule 34: the fields this Condition decides on that a citizen may leave BLANK without the author having said
- * what blank means — in criterion order, each once. Blank matches no criterion, so it silently follows the default.
+ * what blank means — in clause order, each once. Blank matches no clause, so it silently follows the Else path.
  *
- * A field is listed when it is NOT in the schema's `required`, and none of its criteria test for blank
+ * A field is listed when it is NOT in the schema's `required`, and none of the clauses on it test for blank
  * (`isEmpty` / `isNotEmpty`). Booleans are never listed: an unticked box IS the "no" answer, and requiring one would
- * force it ticked. Fields the Condition cannot resolve are left to `criterionProblems`.
+ * force it ticked. Fields the Condition cannot resolve are left to `clauseProblems`.
+ *
+ * It takes the Condition's clauses FLATTENED across its rows (rule 40): a field decided on by any row's clause is
+ * one the citizen may leave blank, whichever branch happens to name it.
  */
 export function optionalDecisionFields(
-  criteria: readonly Criterion[],
+  clauses: readonly Clause[],
   fields: readonly CriterionField[],
   required: ReadonlySet<string>,
 ): CriterionField[] {
   const listed: CriterionField[] = [];
-  for (const criterion of criteria) {
-    if (listed.some((field) => field.key === criterion.field)) continue;
-    const field = fields.find((candidate) => candidate.key === criterion.field);
+  for (const clause of clauses) {
+    if (listed.some((field) => field.key === clause.field)) continue;
+    const field = fields.find((candidate) => candidate.key === clause.field);
     if (field === undefined || field.kind === 'boolean' || required.has(field.key)) continue;
-    const blankAware = criteria.some(
+    const blankAware = clauses.some(
       (other) => other.field === field.key && BLANK_AWARE.has(other.operator),
     );
     if (!blankAware) listed.push(field);

@@ -77,7 +77,7 @@ export const FLOW_DEFINITIONS = {
   },
   condition: {
     description:
-      'A branching node of a Flow (doc 199): each criterion owns one output, and an answer matching none takes the default path. Allowed only in a Flow, and it holds no elements.',
+      'A branching node of a Flow (doc 199): each row owns one output, and an answer matching none takes the Else path. Allowed only in a Flow, and it holds no elements.',
     type: 'object',
     required: ['type', 'options'],
     properties: {
@@ -90,45 +90,72 @@ export const FLOW_DEFINITIONS = {
       options: {
         description: 'Condition options.',
         type: 'object',
-        required: ['id', 'criteria'],
+        required: ['id', 'rows'],
         properties: {
           id: nonEmptyString('The id edges use to connect this condition. Unique in the Flow.'),
-          criteria: {
+          rows: {
             description:
-              'The branches, in order. Each owns one output, addressed by an edge sourceHandle.',
+              'The branches, in evaluation order: the first row whose clauses are satisfied wins. Each owns one output, addressed by an edge sourceHandle.',
             type: 'array',
             items: {
-              description: 'One branch: a field, an operator and the value to compare it with.',
+              description:
+                'One branch: a label, how its clauses are joined, and the clauses themselves.',
               type: 'object',
-              required: ['id', 'field', 'operator'],
+              required: ['id', 'label', 'match', 'clauses'],
               properties: {
                 id: nonEmptyString(
-                  'The criterion id, unique in this condition. An edge names it as its sourceHandle.',
+                  'The row id, unique in this condition. An edge names it as its sourceHandle.',
                 ),
-                field: nonEmptyString(
-                  'The schema property key this criterion tests. It must be answerable before this condition.',
-                ),
-                operator: {
+                label: nonEmptyString('The branch name, shown on the card and on its edge.'),
+                match: {
                   description:
-                    "What the criterion tests. Which operators a field may use follows its kind: text takes contains, numbers take the comparisons, and booleans take only isTrue and isFalse. The operators ending in 'Empty', isTrue and isFalse take no value.",
-                  enum: [
-                    'equals',
-                    'notEquals',
-                    'contains',
-                    'gt',
-                    'gte',
-                    'lt',
-                    'lte',
-                    'isEmpty',
-                    'isNotEmpty',
-                    'isTrue',
-                    'isFalse',
-                  ],
+                    'Whether every clause must hold (all) or any one of them (any). A row with no clauses is never taken.',
+                  enum: ['all', 'any'],
                 },
-                value: {
-                  description:
-                    'The value to compare with, of the field’s own type. Absent for an operator that needs none.',
-                  type: ['string', 'number', 'boolean'],
+                clauses: {
+                  description: 'The tests this branch makes, at least one.',
+                  type: 'array',
+                  minItems: 1,
+                  items: {
+                    description: 'One test: a field, an operator and the value to compare it with.',
+                    type: 'object',
+                    required: ['id', 'field', 'operator'],
+                    properties: {
+                      id: nonEmptyString('The clause id, unique in this row.'),
+                      field: nonEmptyString(
+                        'The schema property key this clause tests. It must be answerable before this condition.',
+                      ),
+                      operator: {
+                        description:
+                          "What the clause tests. Which operators a field may use follows its kind: text takes contains, startsWith and endsWith, numbers take the comparisons, choices take in and notIn, and booleans take only isTrue and isFalse. The operators ending in 'Empty', isTrue and isFalse take no value; in and notIn take a list.",
+                        enum: [
+                          'equals',
+                          'notEquals',
+                          'contains',
+                          'startsWith',
+                          'endsWith',
+                          'in',
+                          'notIn',
+                          'gt',
+                          'gte',
+                          'lt',
+                          'lte',
+                          'isEmpty',
+                          'isNotEmpty',
+                          'isTrue',
+                          'isFalse',
+                        ],
+                      },
+                      value: {
+                        description:
+                          'The value to compare with, of the field’s own type — a list of option values for in and notIn. Absent for an operator that needs none.',
+                        oneOf: [
+                          { type: ['string', 'number', 'boolean'] },
+                          { type: 'array', items: { type: 'string' } },
+                        ],
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -156,7 +183,7 @@ export const FLOW_DEFINITIONS = {
       source: nonEmptyString('The id of the node the edge leaves.'),
       target: nonEmptyString('The id of the node the edge enters.'),
       sourceHandle: nonEmptyString(
-        'The id of the criterion this edge leaves by, when it leaves a Condition. An edge with no sourceHandle is the default path.',
+        'The id of the row this edge leaves by, when it leaves a Condition. An edge with no sourceHandle is the Else path.',
       ),
     },
   },

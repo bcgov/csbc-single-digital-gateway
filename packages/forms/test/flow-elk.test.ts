@@ -2,11 +2,9 @@ import type { UISchemaElement } from '@jsonforms/core';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_ALGORITHM,
+  DEFAULT_DIRECTION,
   elkGraph,
   heightOf,
-  isLayoutAlgorithm,
-  LAYOUT_ALGORITHMS,
   NODE_WIDTH,
   readElkLayout,
   type LayoutOptions,
@@ -21,16 +19,17 @@ const stage = (id: string, forms = 0) =>
     options: { id },
     elements: Array.from({ length: forms }, () => ({ type: 'Form', elements: [] })),
   }) as UISchemaElement;
-const condition = (id: string, criteria = 0) =>
+const condition = (id: string, rows = 0) =>
   ({
     type: 'Condition',
     elements: [],
     options: {
       id,
-      criteria: Array.from({ length: criteria }, (_, index) => ({
-        id: `c${index}`,
-        field: 'f',
-        operator: 'isTrue',
+      rows: Array.from({ length: rows }, (_, index) => ({
+        id: `r${index}`,
+        label: `Condition ${index + 1}`,
+        match: 'all',
+        clauses: [{ id: `c${index}`, field: 'f', operator: 'isTrue' }],
       })),
     },
   }) as UISchemaElement;
@@ -41,13 +40,13 @@ const flow = (elements: UISchemaElement[], pairs: readonly (readonly [string, st
     options: { edges: pairs.map(([source, target], i) => ({ id: `e${i}`, source, target })) },
   }) as UISchemaElement;
 
-const VERTICAL: LayoutOptions = { algorithm: 'layered', direction: 'vertical' };
+const VERTICAL: LayoutOptions = { direction: 'vertical' };
 const layout = async (uischema: UISchemaElement, options: LayoutOptions = VERTICAL) =>
   readElkLayout(await new ELK().layout(elkGraph(uischema, options)));
 
 describe('the graph ELK is given (rule 30)', () => {
   it('sizes a node from what it holds, so a taller card is not overlapped', () => {
-    // A Stage grows by its Forms and a Condition by its criteria; the width is one card.
+    // A Stage grows by its Forms and a Condition by its rows (doc 199 rule 35); the width is one card.
     expect(heightOf(stage('a', 3), 'stage')).toBeGreaterThan(heightOf(stage('a', 1), 'stage'));
     expect(heightOf(condition('c', 2), 'condition')).toBeGreaterThan(
       heightOf(condition('c', 1), 'condition'),
@@ -56,7 +55,7 @@ describe('the graph ELK is given (rule 30)', () => {
     expect(graph.children?.[0]).toMatchObject({ id: 'a', width: NODE_WIDTH });
   });
 
-  it('turns the flow with elk.direction, and carries the chosen algorithm (rules 31-32)', () => {
+  it('turns the flow with elk.direction, always under the layered algorithm (rule 32)', () => {
     expect(elkGraph(flow([stage('a')]), VERTICAL).layoutOptions).toMatchObject({
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
@@ -65,15 +64,15 @@ describe('the graph ELK is given (rule 30)', () => {
       'elk.spacing.edgeNode': '40',
       'elk.layered.spacing.edgeNodeBetweenLayers': '40',
     });
-    expect(
-      elkGraph(flow([stage('a')]), { algorithm: 'mrtree', direction: 'horizontal' }).layoutOptions,
-    ).toMatchObject({ 'elk.algorithm': 'mrtree', 'elk.direction': 'RIGHT' });
+    // Doc 198 rule 31 is superseded: there is no algorithm to choose any more, only a direction to turn.
+    expect(elkGraph(flow([stage('a')]), { direction: 'horizontal' }).layoutOptions).toMatchObject({
+      'elk.algorithm': 'layered',
+      'elk.direction': 'RIGHT',
+    });
   });
 
-  it('offers only algorithms it will accept, with Layered the default (rule 31)', () => {
-    expect(LAYOUT_ALGORITHMS.map(({ id }) => id)).toContain(DEFAULT_ALGORITHM);
-    expect(isLayoutAlgorithm('layered')).toBe(true);
-    expect(isLayoutAlgorithm('nonsense')).toBe(false);
+  it('defaults the canvas to running left to right (rule 32b)', () => {
+    expect(DEFAULT_DIRECTION).toBe('horizontal');
   });
 
   it('gives ELK only the SANITISED edges', () => {
@@ -101,7 +100,7 @@ describe('what the canvas reads back (rules 30, 33)', () => {
     const down = await layout(chain);
     expect(down.positions.get('b')?.y).toBeGreaterThan(down.positions.get('a')?.y ?? 0);
 
-    const across = await layout(chain, { algorithm: 'layered', direction: 'horizontal' });
+    const across = await layout(chain, { direction: 'horizontal' });
     expect(across.positions.get('b')?.x).toBeGreaterThan(across.positions.get('a')?.x ?? 0);
     expect(across.positions.get('b')?.y).toBe(across.positions.get('a')?.y);
   });

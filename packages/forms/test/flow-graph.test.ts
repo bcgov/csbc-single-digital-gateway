@@ -38,12 +38,24 @@ const edge = (id: string, source: string, target: string) => ({ id, source, targ
 
 const abc = [stage('a'), stage('b'), stage('c')];
 
-// Doc 199 fixtures. A criterion's id is the sourceHandle of the edge leaving it.
-const criterion = (id: string) => ({ id, field: 'k1', operator: 'equals', value: 'x' });
-const condition = (id: string, criteria: string[] = []) =>
+// Doc 199 fixtures (rules 35, 37). A ROW's id is the sourceHandle of the edge leaving it; the clause inside it
+// is one test, addressed by nothing.
+const clause = (rowId: string) => ({
+  id: `${rowId}-clause`,
+  field: 'k1',
+  operator: 'equals',
+  value: 'x',
+});
+const row = (id: string, index: number) => ({
+  id,
+  label: `Condition ${index + 1}`,
+  match: 'all',
+  clauses: [clause(id)],
+});
+const condition = (id: string, rows: string[] = []) =>
   ({
     type: 'Condition',
-    options: { id, criteria: criteria.map(criterion) },
+    options: { id, rows: rows.map(row) },
   }) as UISchemaElement;
 const branch = (id: string, source: string, target: string, sourceHandle: string) => ({
   id,

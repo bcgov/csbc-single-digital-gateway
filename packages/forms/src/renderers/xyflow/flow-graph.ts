@@ -2,11 +2,11 @@ import type { UISchemaElement } from '@jsonforms/core';
 import type { FlowEdge } from '../../types/elements';
 import {
   authoredStageId,
-  criteriaOf,
   DEFAULT_HANDLE,
   drawnNodes,
   elementsOf,
   flowNodeKind,
+  rowsOf,
   startStageId,
 } from './flow-elements';
 
@@ -22,11 +22,11 @@ export const SELF_LOOP_MESSAGE = 'An edge cannot connect a Stage to itself.';
 export const DUPLICATE_EDGE_MESSAGE = 'This edge is already defined.';
 export const CYCLE_MESSAGE = 'This edge would create a cycle.';
 export const MISSING_DEFAULT_MESSAGE =
-  'This condition has no default path, so an answer matching no criterion would have nowhere to go.';
+  'This condition has no Else path, so an answer matching no condition would have nowhere to go.';
 export const duplicateStageIdMessage = (id: string) => `Stage id "${id}" is already used.`;
 export const unknownStageMessage = (id: string) => `No Stage has id "${id}".`;
 export const unknownHandleMessage = (handle: string) =>
-  `No criterion with id "${handle}" leaves this condition.`;
+  `No condition with id "${handle}" leaves this condition.`;
 /** Doc 203 rules 12-13: the message names the fallback, so the author knows the flow still runs. */
 export const unknownStartMessage = (id: string) =>
   `No Stage has id "${id}", so this flow starts at its first stage instead.`;
@@ -49,9 +49,9 @@ const authoredEdges = (flow: UISchemaElement): readonly unknown[] => {
  * because absent is precisely what marks the default path.
  *
  * `DEFAULT_HANDLE` normalises to ABSENT. The canvas needs a handle id to address the default output, so xyflow
- * reports `sourceHandle: '__default'` when the author drags from it — but the stored form of a default edge is
+ * reports `sourceHandle: 'else'` when the author drags from it — but the stored form of a default edge is
  * no handle at all (rule 10), which is what keeps every pre-199 document valid. Normalising here means the two
- * forms can never disagree: without it such an edge names no criterion and would be dropped outright.
+ * forms can never disagree: without it such an edge names no row and would be dropped outright.
  */
 function asEdge(entry: unknown): FlowEdge | undefined {
   if (!isRecord(entry)) return undefined;
@@ -89,12 +89,12 @@ export function reachesNode(edges: readonly FlowEdge[], from: string, to: string
 export const createsCycle = (edges: readonly FlowEdge[], source: string, target: string): boolean =>
   reachesNode(edges, target, source);
 
-/** The criterion ids of every Condition, by node id (doc 199 rule 12). */
+/** The ROW ids of every Condition, by node id (doc 199 rules 12, 37). */
 function handlesByNode(flow: UISchemaElement): Map<string, Set<string>> {
   const handles = new Map<string, Set<string>>();
   for (const { element, id, authored, kind } of drawnNodes(flow)) {
     if (!authored || kind !== 'condition') continue;
-    handles.set(id, new Set(criteriaOf(element).map((criterion) => criterion.id)));
+    handles.set(id, new Set(rowsOf(element).map((row) => row.id)));
   }
   return handles;
 }
@@ -104,7 +104,7 @@ function handlesByNode(flow: UISchemaElement): Map<string, Set<string>> {
  * edges with an end that is not a drawn node's own id, self-loops, a repeated id and a repeated
  * `(source, sourceHandle, target)` (the first wins). Cycles are kept.
  *
- * Doc 199 rule 12: an edge whose `sourceHandle` names no criterion of its source Condition is dropped too — a
+ * Doc 199 rule 12: an edge whose `sourceHandle` names no ROW of its source Condition is dropped too — a
  * branch that leaves by nothing is not a connection.
  */
 export function flowEdges(flow: UISchemaElement): FlowEdge[] {
@@ -190,10 +190,10 @@ function nodeIdProblems(flow: UISchemaElement): { ids: Set<string>; problems: Fl
 }
 
 /**
- * Doc 199 rule 13 (graph half): every Condition needs a default path — an outgoing edge with no `sourceHandle` —
- * or an answer matching no criterion would have nowhere to go.
+ * Doc 199 rule 13 (graph half): every Condition needs an Else path — an outgoing edge with no `sourceHandle` —
+ * or an answer matching no row would have nowhere to go.
  *
- * The other half of rule 13 (is each criterion valid, and is its field upstream?) cannot live here: it needs the
+ * The other half of rule 13 (is each row valid, and are its fields upstream?) cannot live here: it needs the
  * document's SCHEMA, which `flowProblems` is not given, and the helpers that resolve a field are in the studio,
  * which `renderers/xyflow` may not import. The studio checks those alongside this.
  */
@@ -211,7 +211,7 @@ function defaultPathProblems(flow: UISchemaElement, edges: readonly FlowEdge[]):
 /**
  * Rule 18: every problem that should stop a Flow uischema being applied — duplicate node ids, edge ends naming no
  * node, self-loops, repeated edges, each edge that closes a cycle with the edges accepted before it, an edge
- * leaving by a criterion that does not exist, and a Condition with no default path.
+ * leaving by a row that does not exist, and a Condition with no Else path.
  */
 export function flowProblems(flow: UISchemaElement): FlowProblem[] {
   const { ids: nodeIds, problems } = nodeIdProblems(flow);

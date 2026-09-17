@@ -19,8 +19,9 @@ export { SubmissionPreview, submissionPayload } from './submission-preview';
 export {
   conditionEdge,
   criterionFieldOf,
-  firstMatchingCriterion,
-  matchesCriterion,
+  firstMatchingRow,
+  matchesClause,
+  matchesRow,
   type ConditionRoute,
   type RunnerData,
 } from './criterion-match';

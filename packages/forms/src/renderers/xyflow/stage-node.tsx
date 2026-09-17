@@ -3,7 +3,13 @@ import { Handle, type NodeProps } from '@xyflow/react';
 import { useContext } from 'react';
 import { AddNodeMenu } from './add-affordance';
 import { FlowContext } from './flow-context';
-import { sourceSide, targetSide } from './flow-handles';
+import {
+  connectorClass,
+  leadingAnchor,
+  sourceSide,
+  targetSide,
+  trailingAnchor,
+} from './flow-handles';
 import { useFlowEditor } from './flow-editor';
 import type { StageFlowNode } from './flow-nodes';
 
@@ -18,8 +24,9 @@ const VIEW_HANDLE_CLASS = 'opacity-0';
  * handle on top and a source handle beneath. View-only, the handles only anchor edges: not connectable, and hidden.
  * Under a Flow editor (doc 196 rule 5) they are visible and connectable.
  *
- * Doc 198 rule 3: the handles sit on the Top and Bottom faces because the canvas runs top-down. Changing the layout
- * (doc 198 rules 1-2) without moving the handles draws every edge leaving the wrong face.
+ * Doc 198 rules 3, 32: the handles sit on the faces the canvas direction puts them on, and everything that hangs off
+ * the card — the leaf + and the Start marker — follows them. Changing the layout without moving them draws every edge,
+ * and every affordance, leaving the wrong face.
  *
  * Rule 15b: xyflow sets `pointer-events: none` on a node that is neither selectable nor draggable, which every child
  * inherits — so a press on the card would fall through to the pane (in the studio, selecting the Flow instead of the
@@ -35,21 +42,22 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
   return (
     <>
       {/*
-        Doc 203 rule 8: the Flow's start Stage wears a marker above its target handle — the mirror of the leaf +
-        below the source handle, with its connector line running DOWN toward the card. Purely presentational: it
-        is not a Handle, never connectable, and `nodrag nopan` because xyflow pans from any press on the pane
-        (doc 198 rule 20). Unlike the leaf +, it draws with or without an editor: a view-only Flow should still
-        say where it begins.
+        Doc 203 rule 8: the Flow's start Stage wears a marker beyond its target handle — the mirror of the leaf +
+        beyond the source handle, with its connector line running toward the card. Both follow the canvas
+        DIRECTION (doc 199 amendment 8): the leading face is the top of a vertical canvas and the left of a
+        horizontal one. Purely presentational: it is not a Handle, never connectable, and `nodrag nopan` because
+        xyflow pans from any press on the pane (doc 198 rule 20). Unlike the leaf +, it draws with or without an
+        editor: a view-only Flow should still say where it begins.
       */}
       {data.isStart ? (
         <div
           data-slot="flow-start-marker"
-          className="nodrag nopan pointer-events-none absolute bottom-full left-1/2 flex -translate-x-1/2 flex-col items-center pb-1"
+          className={`nodrag nopan pointer-events-none absolute flex items-center ${leadingAnchor(flow.direction)}`}
         >
-          <span className="rounded-full border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          <span className="rounded-full border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
             Start
           </span>
-          <span aria-hidden="true" className="h-3 w-px bg-border" />
+          <span aria-hidden="true" className={connectorClass(flow.direction)} />
         </div>
       ) : null}
       <Handle
@@ -96,13 +104,17 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
         isConnectable={editing}
         className={handleClass}
       />
-      {/* Doc 198 rules 6-7: the end of a chain grows a dangling + that appends the next Stage. */}
+      {/*
+        Doc 198 rules 6-7: the end of a chain grows a dangling + that appends the next Stage. It hangs off the
+        TRAILING face — the one the flow leaves by — so it continues the chain rather than reading as something
+        under the card (doc 199 amendment 8).
+      */}
       {editor && data.isLeaf ? (
         <div
           data-slot="flow-leaf-add"
-          className="pointer-events-none absolute top-full left-1/2 flex -translate-x-1/2 flex-col items-center pt-1"
+          className={`pointer-events-none absolute flex items-center ${trailingAnchor(flow.direction)}`}
         >
-          <span aria-hidden="true" className="h-3 w-px bg-border" />
+          <span aria-hidden="true" className={connectorClass(flow.direction)} />
           {/* Doc 199 rule 24: the leaf + now offers a Stage or a Condition. */}
           <AddNodeMenu
             label="Add a node"

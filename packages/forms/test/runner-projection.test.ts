@@ -25,11 +25,21 @@ const stage = (id: string, forms = 1) =>
       elements: [],
     })),
   });
-/** A Condition branching on `field === value` through criterion `c-<id>`, plus its default output. */
+/** A Condition branching on `field === value` through row `c-<id>`, plus its default output. */
 const condition = (id: string, field: string, value = 'yes') =>
   el({
     type: 'Condition',
-    options: { id, criteria: [{ id: `c-${id}`, field, operator: 'equals', value }] },
+    options: {
+      id,
+      rows: [
+        {
+          id: `c-${id}`,
+          label: `${field} is ${value}`,
+          match: 'all',
+          clauses: [{ id: `cl-${id}`, field, operator: 'equals', value }],
+        },
+      ],
+    },
   });
 const edge = (source: string, target: string, sourceHandle?: string) => ({
   id: `${source}-${target}`,

@@ -13,21 +13,21 @@ const elk = new ELK();
 const EMPTY: FlowLayout = { positions: new Map(), routes: new Map() };
 
 /**
- * Rule 30: the positions and edge routes ELK gives this document, recomputed when the document, the algorithm or the
+ * Rule 30: the positions and edge routes ELK gives this document, recomputed when the document or the
  * direction changes.
  *
  * `cancelled` is the usual async-effect guard: a layout that resolves after its inputs changed is dropped, so a quick
- * succession of edits cannot paint an older arrangement over a newer one. A layout that REJECTS (an algorithm ELK
+ * succession of edits cannot paint an older arrangement over a newer one. A layout that REJECTS (a graph ELK
  * refuses a graph for, say) leaves the canvas empty rather than throwing through React.
  */
 export function useFlowLayout(flow: UISchemaElement, options: LayoutOptions): FlowLayout {
   const [layout, setLayout] = useState<FlowLayout>(EMPTY);
-  const { algorithm, direction } = options;
+  const { direction } = options;
 
   useEffect(() => {
     let cancelled = false;
     void elk
-      .layout(elkGraph(flow, { algorithm, direction }))
+      .layout(elkGraph(flow, { direction }))
       .then((laidOut) => {
         if (!cancelled) setLayout(readElkLayout(laidOut));
       })
@@ -37,7 +37,7 @@ export function useFlowLayout(flow: UISchemaElement, options: LayoutOptions): Fl
     return () => {
       cancelled = true;
     };
-  }, [flow, algorithm, direction]);
+  }, [flow, direction]);
 
   return layout;
 }

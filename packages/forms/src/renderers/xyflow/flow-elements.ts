@@ -1,5 +1,5 @@
 import { rankWith, uiTypeIs, type RankedTester, type UISchemaElement } from '@jsonforms/core';
-import type { Criterion } from '../../types/elements';
+import type { Clause, ConditionRow } from '../../types/elements';
 
 // The Flow, Stage and Condition elements (doc 195 rules 4-5, 8; doc 199 rules 16-17). Pure — no React, no
 // @xyflow/react — so renderers/default and the studio's code editor can import it.
@@ -12,10 +12,10 @@ export const STAGE_TYPE = 'Stage';
 export const CONDITION_TYPE = 'Condition';
 
 /**
- * Doc 199 rule 18: the source handle of a Condition's DEFAULT output. Criteria use their own ids, so this is
- * reserved and can never collide with a `nanoid(8)`.
+ * Doc 199 rules 18, 37: the source handle of a Condition's DEFAULT (Else) output. Rows use their own ids, so
+ * this is reserved and can never collide with a `nanoid(8)`.
  */
-export const DEFAULT_HANDLE = '__default';
+export const DEFAULT_HANDLE = 'else';
 
 /** Rule 4: the testers every set rendering Flows, Stages or Conditions uses — no other entry matches them. */
 export const flowTester: RankedTester = rankWith(1, uiTypeIs(FLOW_TYPE));
@@ -81,24 +81,63 @@ export function authoredStageId(stage: UISchemaElement): string | undefined {
 }
 
 /**
- * Doc 199 rule 5: a Condition's authored criteria — the entries that are records with a non-empty string `id`,
- * in order, the first winning a repeated id. Anything else is not a criterion and is skipped; what makes a
- * criterion *invalid* (as opposed to absent) is `criterionProblems`.
+ * Doc 199 rules 35, 38: a Condition's authored ROWS — the entries that are records with a non-empty string `id`
+ * and at least one usable clause, in order, the first winning a repeated id. Anything else is not a row and is
+ * skipped; what makes a row *invalid* (as opposed to absent) is `rowProblems`.
+ *
+ * Rule 35 is a HARD CUT: `options.criteria` is not read. A row whose `match` is neither `all` nor `any` reads
+ * as `all` — the narrower reading, so a malformed row can never capture traffic the author did not mean it to —
+ * and a row with no `label` reads as an empty one, which the card renders by falling back to its summary.
  */
-export function criteriaOf(element: UISchemaElement): Criterion[] {
-  const authored = element.options?.['criteria'];
+export function rowsOf(element: UISchemaElement): ConditionRow[] {
+  const authored = element.options?.['rows'];
   if (!Array.isArray(authored)) return [];
   const seen = new Set<string>();
-  const criteria: Criterion[] = [];
+  const rows: ConditionRow[] = [];
+  for (const entry of authored) {
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue;
+    const record = entry as Record<string, unknown>;
+    const id = record['id'];
+    if (typeof id !== 'string' || id === '' || seen.has(id)) continue;
+    const clauses = clausesOf(record['clauses']);
+    if (clauses.length === 0) continue;
+    seen.add(id);
+    rows.push({
+      id,
+      label: typeof record['label'] === 'string' ? record['label'] : '',
+      match: record['match'] === 'any' ? 'any' : 'all',
+      clauses,
+    });
+  }
+  return rows;
+}
+
+/** A row's authored clauses: records with a non-empty string `id`, in order, the first winning a repeat. */
+function clausesOf(authored: unknown): Clause[] {
+  if (!Array.isArray(authored)) return [];
+  const seen = new Set<string>();
+  const clauses: Clause[] = [];
   for (const entry of authored) {
     if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue;
     const { id } = entry as Record<string, unknown>;
     if (typeof id !== 'string' || id === '' || seen.has(id)) continue;
     seen.add(id);
-    criteria.push(entry as Criterion);
+    clauses.push(entry as Clause);
   }
-  return criteria;
+  return clauses;
 }
+
+/**
+ * Doc 199 rule 51: how a Condition's rows are shown — `rules` (the default) or `switch`. Absent, or anything
+ * else, reads as `rules`: switch mode is a VIEW of the same rows, so an unreadable value can only ever mean the
+ * fuller of the two faces.
+ */
+export const conditionMode = (element: UISchemaElement): 'rules' | 'switch' =>
+  element.options?.['mode'] === 'switch' ? 'switch' : 'rules';
+
+/** Every clause of every row, in row then clause order — what rule 34's hint and rule 40's walk read. */
+export const clausesIn = (element: UISchemaElement): Clause[] =>
+  rowsOf(element).flatMap((row) => row.clauses);
 
 /**
  * Rule 8, widened by doc 199 rule 16: every Stage AND Condition of `flow` in `elements` order with its node id —

@@ -111,25 +111,31 @@ describe('documentFor', () => {
       }
     });
 
-    it('branches through Condition nodes whose criteria are complete', () => {
-      // Rule 12: every criterion is authored complete, exactly as the UI would author one (doc 199 rule 26).
+    it('branches through Condition nodes whose rows are complete', () => {
+      // Rule 12, restated over rows (doc 199 rules 35, 52): every row is authored complete, exactly as the UI
+      // would author one (doc 199 rules 26, 46) — a label, a `match`, and at least one complete clause.
       const flow = flowOf('template-multi-stage');
       const conditions = conditionsOf(flow);
       expect(conditions.length).toBeGreaterThanOrEqual(2);
 
       const fieldKeys = Object.keys(documentFor('template-multi-stage').schema.properties ?? {});
       for (const condition of conditions) {
-        expect(condition.options.criteria.length).toBeGreaterThan(0);
-        for (const criterion of condition.options.criteria) {
-          expect(fieldKeys).toContain(criterion.field);
-          // `isTrue`/`isFalse` take no value, and an absent value must be an ABSENT KEY.
-          const valueless = criterion.operator === 'isTrue' || criterion.operator === 'isFalse';
-          expect('value' in criterion).toBe(!valueless);
+        expect(condition.options.rows.length).toBeGreaterThan(0);
+        for (const row of condition.options.rows) {
+          expect(row.label).not.toBe('');
+          expect(['all', 'any']).toContain(row.match);
+          expect(row.clauses.length).toBeGreaterThan(0);
+          for (const clause of row.clauses) {
+            expect(fieldKeys).toContain(clause.field);
+            // `isTrue`/`isFalse` take no value, and an absent value must be an ABSENT KEY.
+            const valueless = clause.operator === 'isTrue' || clause.operator === 'isFalse';
+            expect('value' in clause).toBe(!valueless);
+          }
         }
       }
     });
 
-    it('gives every Condition a default path and one edge per criterion', () => {
+    it('gives every Condition a default path and one edge per row', () => {
       // Doc 199 rule 10: a Condition with no default path (an edge carrying no sourceHandle) is a flow problem.
       const flow = flowOf('template-multi-stage');
       for (const condition of conditionsOf(flow)) {
@@ -138,9 +144,8 @@ describe('documentFor', () => {
           edge.sourceHandle === undefined ? [] : [edge.sourceHandle],
         );
         expect(outgoing.filter((edge) => edge.sourceHandle === undefined)).toHaveLength(1);
-        expect(handles.toSorted()).toEqual(
-          condition.options.criteria.map((criterion) => criterion.id).toSorted(),
-        );
+        // Doc 199 rule 37: a ROW's id is the sourceHandle of the edge leaving that branch.
+        expect(handles.toSorted()).toEqual(condition.options.rows.map((row) => row.id).toSorted());
       }
     });
 

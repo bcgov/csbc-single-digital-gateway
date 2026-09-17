@@ -1,15 +1,16 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { NO_UPSTREAM_FIELDS_HINT } from '../src/renderers/xyflow/condition-renderer';
+import { ADD_ROW_LABEL, NO_UPSTREAM_FIELDS_HINT } from '../src/renderers/xyflow/condition-renderer';
+import { DELETE_ROW_LABEL } from '../src/renderers/xyflow/condition-row-popover';
 import { FormStudio } from '../src/studio';
 import { inspectorForm } from '../src/studio/inspector/inspector-form';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import { sections } from './inspector-fixtures';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
-// Doc 199 rules 24, 25, 29-32 — authoring a Condition in the Form Studio: inserting one from a +,
-// editing its criteria on the card, and how the studio treats it.
+// Doc 199 rules 24-32, 43-48 — authoring a Condition in the Form Studio: inserting one from a +, editing a
+// branch in its row popover, and how the studio treats it.
 
 useXyflowJsdom();
 
@@ -46,26 +47,26 @@ const stage = (id: string, label: string, controls: object[] = []) =>
     ],
   });
 
-const condition = (id: string, criteria: object[] = [], label = 'Route') =>
-  el({ type: 'Condition', label, options: { id, criteria } });
+const condition = (id: string, rows: object[] = [], label = 'Route') =>
+  el({ type: 'Condition', label, options: { id, rows } });
 
 const flowOf = (elements: object[], edges: object[] = []) =>
   el({ type: 'Flow', elements, options: { edges } });
 
+/** Doc 199 rule 35: a branch is a ROW of clauses, and the ROW id is what an edge's sourceHandle names. */
 const criterion = (id: string, patch: object = {}) => ({
   id,
-  field: 'province',
-  operator: 'equals',
-  value: 'bc',
-  ...patch,
+  label: `Condition ${id}`,
+  match: 'all',
+  clauses: [{ id: `cl-${id}`, field: 'province', operator: 'equals', value: 'bc', ...patch }],
 });
 
-/** s1 (Province, Age) → c1 → s2 (Notes). c1's only edge is its default path, so the Flow has no problem. */
-const branched = (criteria: object[] = [], extraEdges: object[] = []) =>
+/** s1 (Province, Age) → c1 → s2 (Notes). c1's only edge is its Else path, so the Flow has no problem. */
+const branched = (rows: object[] = [], extraEdges: object[] = []) =>
   flowOf(
     [
       stage('s1', 'Applicant', [control('province', 'Province'), control('age', 'Age')]),
-      condition('c1', criteria),
+      condition('c1', rows),
       stage('s2', 'Review', [control('notes', 'Notes')]),
     ],
     [
@@ -124,8 +125,9 @@ const openMenu = async (trigger: HTMLElement) => {
   return screen.getAllByRole('menuitem').map((item) => item.textContent);
 };
 
-/** The named picker of the `index`th criterion row. A native `<select>` takes the combobox role. */
-const pickerIn = (row: HTMLElement, name: string) => within(row).getByRole('combobox', { name });
+/** The named picker inside an open row popover. A native `<select>` takes the combobox role. */
+const pickerIn = (scope: HTMLElement, name: string) =>
+  within(scope).getByRole('combobox', { name });
 const optionsOf = (select: HTMLElement) =>
   within(select)
     .getAllByRole('option')
@@ -135,7 +137,19 @@ const renderStudio = (uischema: UISchemaElement) =>
   render(<FormStudio schema={schema} uischema={uischema} />);
 
 /** Waits for the Condition card's controls to be measured into the accessibility tree. */
-const addCriterionButton = () => buttonIn('c1', 'Add criterion');
+const addCriterionButton = () => buttonIn('c1', ADD_ROW_LABEL);
+
+/**
+ * Doc 199 rule 47: a clause is edited in a POPOVER anchored to its row, not inline on the card. Base UI portals
+ * that popover OUT of the canvas, so its controls are found on the whole document, never within the node.
+ */
+const openRow = async (index = 0) => {
+  const row = required((await waitFor(() => rows()))[index], `row ${index}`);
+  fireEvent.click(
+    required(row.querySelector<HTMLElement>('[data-slot="condition-row-open"]'), 'trigger'),
+  );
+  return (await screen.findByRole('dialog')) as HTMLElement;
+};
 
 /** The Condition's studio frame — what the selection port hovers, selects and hangs its actions off. */
 const conditionFrame = () =>
@@ -225,21 +239,22 @@ describe('inserting a Condition (rule 24)', () => {
   });
 });
 
-describe('editing criteria on the card (rules 25-26, 28)', () => {
-  it('adds a complete criterion from the Add criterion row', async () => {
+describe('editing a branch in its popover (rules 25-26, 28, 46-48)', () => {
+  it('adds a row born complete from the Add condition footer', async () => {
     renderStudio(branched());
     expect(rows()).toHaveLength(0);
     fireEvent.click(await addCriterionButton());
 
-    // Rule 26: born complete — the first upstream field, that kind's first operator, and a real value.
+    // Rule 46: born complete — label, match, and one clause on the first upstream field with a real value.
     await waitFor(() => expect(rows()).toHaveLength(1));
-    const row = required(rows()[0], 'criterion row');
-    expect(pickerIn(row, 'Field')).toHaveValue('province');
-    expect(pickerIn(row, 'Operator')).toHaveValue('equals');
-    expect(pickerIn(row, 'Value')).toHaveValue('bc');
+    const row = required(rows()[0], 'row');
+    expect(row.querySelector('[data-slot="condition-row-label"]')).toHaveTextContent('Condition 1');
+    expect(row.querySelector('[data-slot="condition-row-summary"]')).toHaveTextContent(
+      'Province equals bc',
+    );
   });
 
-  it('disables Add criterion with a hint when nothing is upstream', async () => {
+  it('disables Add condition with a hint when nothing is upstream', async () => {
     // The Condition is first in the flow: no Stage reaches it, so no answer exists to test.
     renderStudio(
       flowOf([condition('c1'), stage('s2', 'Review')], [{ id: 'e1', source: 'c1', target: 's2' }]),
@@ -255,64 +270,97 @@ describe('editing criteria on the card (rules 25-26, 28)', () => {
 
   it('offers only upstream fields in the field picker', async () => {
     renderStudio(branched([criterion('x')]));
-    const row = required((await waitFor(() => rows()))[0], 'criterion row');
+    const popover = await openRow();
 
     // Province and Age are answered in s1, which reaches the Condition; Notes is in s2, which does not.
-    expect(optionsOf(pickerIn(row, 'Field'))).toEqual(['Province', 'Age']);
+    expect(optionsOf(pickerIn(popover, 'Field'))).toEqual(['Province', 'Age']);
   });
 
   it("offers only the field kind's operators in the operator picker", async () => {
     renderStudio(branched([criterion('x')]));
-    const row = required((await waitFor(() => rows()))[0], 'criterion row');
+    const popover = await openRow();
 
-    // Province is a choice (rule 1): no contains, no comparisons.
-    expect(optionsOf(pickerIn(row, 'Operator'))).toEqual([
+    // Province is a choice (rules 1, 36): no contains, no comparisons, but the list operators.
+    expect(optionsOf(pickerIn(popover, 'Operator'))).toEqual([
       'equals',
       'does not equal',
+      'is one of',
+      'is not one of',
       'is empty',
       'is not empty',
     ]);
 
     // Age is a number, so switching the field switches the vocabulary with it (rule 28).
-    fireEvent.change(pickerIn(row, 'Field'), { target: { value: 'age' } });
+    fireEvent.change(pickerIn(popover, 'Field'), { target: { value: 'age' } });
     await waitFor(() =>
-      expect(optionsOf(pickerIn(required(rows()[0], 'row'), 'Operator'))).toContain(
-        'is greater than',
-      ),
+      expect(optionsOf(pickerIn(popover, 'Operator'))).toContain('is greater than'),
     );
   });
 
   it("offers the field's choice options as the value for a choice field", async () => {
     renderStudio(branched([criterion('x')]));
-    const row = required((await waitFor(() => rows()))[0], 'criterion row');
-    expect(optionsOf(pickerIn(row, 'Value'))).toEqual(['BC', 'Alberta']);
+    expect(optionsOf(pickerIn(await openRow(), 'Value'))).toEqual(['BC', 'Alberta']);
   });
 
   it('hides the value control for an operator that needs none', async () => {
     renderStudio(branched([criterion('x')]));
-    const row = required((await waitFor(() => rows()))[0], 'criterion row');
-    expect(within(row).queryByRole('combobox', { name: 'Value' })).not.toBeNull();
+    const popover = await openRow();
+    expect(within(popover).queryByRole('combobox', { name: 'Value' })).not.toBeNull();
 
-    fireEvent.change(pickerIn(row, 'Operator'), { target: { value: 'isEmpty' } });
+    fireEvent.change(pickerIn(popover, 'Operator'), { target: { value: 'isEmpty' } });
     await waitFor(() =>
-      expect(
-        within(required(rows()[0], 'row')).queryByRole('combobox', { name: 'Value' }),
-      ).toBeNull(),
+      expect(within(popover).queryByRole('combobox', { name: 'Value' })).toBeNull(),
     );
   });
 
-  it('removes a criterion and its edges from its row', async () => {
-    // The criterion owns a branch to s2, alongside the default path to the same Stage.
+  it('renames the branch from the popover, and the card follows (rule 47)', async () => {
+    renderStudio(branched([criterion('x')]));
+    const popover = await openRow();
+    fireEvent.change(within(popover).getByRole('textbox', { name: 'Condition label' }), {
+      target: { value: 'Business' },
+    });
+
+    await waitFor(() =>
+      expect(
+        required(rows()[0], 'row').querySelector('[data-slot="condition-row-label"]'),
+      ).toHaveTextContent('Business'),
+    );
+  });
+
+  it('adds a clause to the row, and the summary joins both (rule 48)', async () => {
+    renderStudio(branched([criterion('x')]));
+    const popover = await openRow();
+    expect(within(popover).getAllByRole('combobox', { name: 'Field' })).toHaveLength(1);
+
+    fireEvent.click(within(popover).getByRole('button', { name: 'Add clause' }));
+
+    await waitFor(() =>
+      expect(within(popover).getAllByRole('combobox', { name: 'Field' })).toHaveLength(2),
+    );
+    expect(
+      required(rows()[0], 'row').querySelector('[data-slot="condition-row-summary"]'),
+    ).toHaveTextContent('Province equals bc · Province equals bc');
+  });
+
+  it('REFUSES to remove a row’s last clause — a row with none could never be taken (rule 48)', async () => {
+    renderStudio(branched([criterion('x')]));
+    const popover = await openRow();
+    expect(within(popover).getByRole('button', { name: 'Remove clause' })).toBeDisabled();
+  });
+
+  it('removes a row and its edges from the popover’s Delete', async () => {
+    // The row owns a branch to s2, alongside the Else path to the same Stage.
     renderStudio(
       branched([criterion('x')], [{ id: 'e3', source: 'c1', target: 's2', sourceHandle: 'x' }]),
     );
     await waitFor(() => expect(edgeCount()).toBe(3));
     expect(rows()).toHaveLength(1);
 
-    fireEvent.click(await buttonIn('c1', 'Remove criterion'));
+    const popover = await openRow();
+    fireEvent.click(within(popover).getByRole('button', { name: DELETE_ROW_LABEL }));
 
     await waitFor(() => expect(rows()).toHaveLength(0));
-    // Rule 27: the branch's edge goes with it, leaving s1 → c1 and the default c1 → s2.
+    // Rule 27: the branch's edge goes with it, leaving s1 → c1 and the Else c1 → s2.
     await waitFor(() => expect(edgeCount()).toBe(2));
   });
 });
@@ -415,9 +463,18 @@ describe('studio integration (rules 30-32)', () => {
     expect(content).toHaveClass('pointer-events-none');
 
     expect(await addCriterionButton()).toHaveClass('nodrag', 'pointer-events-auto');
-    const row = required(rows()[0], 'criterion row');
-    // The row controls opt back in. NativeSelect puts its className on the WRAPPER, not the <select>.
-    expect(pickerIn(row, 'Field').closest('[data-slot="native-select-wrapper"]')).toHaveClass(
+    const row = required(rows()[0], 'row');
+    // The row's own trigger opts back in, or pressing it could never open the popover.
+    expect(row.querySelector('[data-slot="condition-row-open"]')).toHaveClass(
+      'nodrag',
+      'pointer-events-auto',
+    );
+
+    // Rule 47: the popover is portalled OUT of the canvas, so it carries its own nodrag/nopan/nowheel and its
+    // controls opt back in there. NativeSelect puts its className on the WRAPPER, not the <select>.
+    const popover = await openRow();
+    expect(popover).toHaveClass('nodrag', 'nopan', 'nowheel', 'pointer-events-auto');
+    expect(pickerIn(popover, 'Field').closest('[data-slot="native-select-wrapper"]')).toHaveClass(
       'nodrag',
       'pointer-events-auto',
     );

@@ -40,7 +40,14 @@ const BRANCHING = el({
       type: 'Condition',
       options: {
         id: 'x',
-        criteria: [{ id: 'c1', field: 'note', operator: 'equals', value: 'pro' }],
+        rows: [
+          {
+            id: 'c1',
+            label: 'Pro',
+            match: 'all',
+            clauses: [{ id: 'cl1', field: 'note', operator: 'equals', value: 'pro' }],
+          },
+        ],
       },
     }),
     stage('s2', 'Pro', [form('Pro form')]),

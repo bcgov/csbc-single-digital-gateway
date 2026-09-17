@@ -4,12 +4,13 @@ import { needsValue, operatorsFor } from '../src/renderers/xyflow/criteria';
 import {
   conditionEdge,
   criterionFieldOf,
-  firstMatchingCriterion,
-  matchesCriterion,
+  firstMatchingRow,
+  matchesClause,
 } from '../src/runner/criterion-match';
-import type { Criterion, FlowEdge, Operator } from '../src/types/elements';
+import type { Clause, ConditionRow, Operator } from '../src/types/elements';
 
-// Doc 202 rules 19-23 — the fill-time half of doc 199's criterion model: does this criterion MATCH the answers?
+// Doc 202 rules 19-23, doc 199 rules 38-40 — the fill-time half of the clause model: does this clause MATCH the
+// answers, and which ROW of a Condition wins?
 
 const schema: JsonSchema = {
   type: 'object',
@@ -28,27 +29,47 @@ const schema: JsonSchema = {
   },
 };
 
-const criterion = (field: string, operator: Operator, value?: unknown): Criterion =>
+const criterion = (field: string, operator: Operator, value?: unknown): Clause =>
   ({
     id: `c-${field}-${operator}`,
     field,
     operator,
     ...(value === undefined ? {} : { value }),
-  }) as Criterion;
+  }) as Clause;
 
 const fieldFor = (key: string) => criterionFieldOf(key, schema);
 
-/** `matchesCriterion` with the field resolved from the schema, which is how the traversal calls it. */
-const matches = (crit: Criterion, data: Record<string, unknown> | undefined) =>
-  matchesCriterion(crit, fieldFor(crit.field), data);
+/** `matchesClause` with the field resolved from the schema, which is how the traversal calls it. */
+const matches = (crit: Clause, data: Record<string, unknown> | undefined) =>
+  matchesClause(crit, fieldFor(crit.field), data);
 
-const condition = (id: string, criteria: Criterion[]) =>
-  ({ type: 'Condition', options: { id, criteria } }) as unknown as UISchemaElement;
+/**
+ * Doc 199 rule 35: one clause per row, so every pre-rows expectation about "the first matching criterion" reads
+ * unchanged as one about the first matching ROW — the row id is the old criterion id, which is what the edges
+ * address.
+ */
+const rowOf = (clause: Clause, match: ConditionRow['match'] = 'all'): ConditionRow => ({
+  id: clause.id,
+  label: clause.id,
+  match,
+  clauses: [clause],
+});
 
-const edge = (id: string, source: string, target: string, sourceHandle?: string): FlowEdge =>
-  ({ id, source, target, ...(sourceHandle === undefined ? {} : { sourceHandle }) }) as FlowEdge;
+/** A sanitised Flow edge, as `conditionEdge` is given them (never raw `options.edges`). */
+const edge = (id: string, source: string, target: string, sourceHandle?: string) => ({
+  id,
+  source,
+  target,
+  ...(sourceHandle === undefined ? {} : { sourceHandle }),
+});
 
-describe('matchesCriterion (doc 202 rules 19-23)', () => {
+const condition = (id: string, clauses: Clause[]) =>
+  ({
+    type: 'Condition',
+    options: { id, rows: clauses.map((clause) => rowOf(clause)) },
+  }) as unknown as UISchemaElement;
+
+describe('matchesClause (doc 202 rules 19-23)', () => {
   describe('one vocabulary with the authoring half (rule 19)', () => {
     it('shares needsValue and operatorsFor with criterionProblems, so the two cannot disagree', () => {
       // The evaluator refuses exactly the operators the authoring validator refuses, for the same kind.
@@ -133,15 +154,13 @@ describe('matchesCriterion (doc 202 rules 19-23)', () => {
     const business = criterion('plan', 'equals', 'pro');
     const named = criterion('name', 'equals', 'Ada');
 
-    it('evaluates criteria in authored order and takes the first match', () => {
+    it('evaluates rows in authored order and takes the first match', () => {
       const node = condition('x', [business, named]);
       // Both match; the FIRST authored one wins, like an if/else-if chain.
-      expect(firstMatchingCriterion(node, schema, { plan: 'pro', name: 'Ada' })?.id).toBe(
-        business.id,
-      );
+      expect(firstMatchingRow(node, schema, { plan: 'pro', name: 'Ada' })?.id).toBe(business.id);
       // Reversing the authored order reverses the winner.
       expect(
-        firstMatchingCriterion(condition('x', [named, business]), schema, {
+        firstMatchingRow(condition('x', [named, business]), schema, {
           plan: 'pro',
           name: 'Ada',
         })?.id,
@@ -172,7 +191,7 @@ describe('matchesCriterion (doc 202 rules 19-23)', () => {
     });
 
     it('falls back to the default when a matching criterion is connected to nothing', () => {
-      // First match wins, so the criteria after it were never in play — the default is the answer.
+      // First match wins, so the rows after it were never in play — the Else path is the answer.
       const node = condition('x', [business, named]);
       const edges = [edge('e2', 'x', 's2', named.id), edge('e3', 'x', 's3')];
       expect(
@@ -200,9 +219,9 @@ describe('matchesCriterion (doc 202 rules 19-23)', () => {
       ).toBeUndefined();
     });
 
-    it('takes the default path for a Condition with no criteria (rule 23)', () => {
+    it('takes the Else path for a Condition with no rows (rule 23)', () => {
       const node = condition('x', []);
-      expect(firstMatchingCriterion(node, schema, {})).toBeUndefined();
+      expect(firstMatchingRow(node, schema, {})).toBeUndefined();
       expect(
         conditionEdge({
           condition: node,
@@ -243,7 +262,7 @@ describe('matchesCriterion (doc 202 rules 19-23)', () => {
 
     it('refuses a field resolved for a different key, rather than comparing the wrong answer', () => {
       expect(
-        matchesCriterion(criterion('name', 'equals', 'Ada'), fieldFor('age'), { name: 'Ada' }),
+        matchesClause(criterion('name', 'equals', 'Ada'), fieldFor('age'), { name: 'Ada' }),
       ).toBe(false);
     });
 

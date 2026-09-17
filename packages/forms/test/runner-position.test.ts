@@ -11,7 +11,7 @@ import {
   visitedWith,
   type RunnerFlow,
 } from '../src/runner/runner-position';
-import type { Criterion, Operator } from '../src/types/elements';
+import type { ConditionRow, Operator } from '../src/types/elements';
 
 // Doc 202 rules 13-18, 25 — where the runner is, and where it goes next.
 
@@ -25,10 +25,16 @@ const form = (id?: string) =>
   el({ type: 'Form', elements: [], ...(id === undefined ? {} : { options: { id } }) });
 const stage = (id: string, forms: object[] = [form(`${id}-f1`)]) =>
   el({ type: 'Stage', elements: forms, options: { id } });
-const criterion = (id: string, field: string, operator: Operator, value?: unknown): Criterion =>
-  ({ id, field, operator, ...(value === undefined ? {} : { value }) }) as Criterion;
-const condition = (id: string, criteria: Criterion[] = []) =>
-  el({ type: 'Condition', options: { id, criteria } });
+/** One row holding one clause — `id` is the row id, so it is what an edge's `sourceHandle` names. */
+const row = (id: string, field: string, operator: Operator, value?: unknown): ConditionRow =>
+  ({
+    id,
+    label: `Condition ${id}`,
+    match: 'all',
+    clauses: [{ id: `${id}-1`, field, operator, ...(value === undefined ? {} : { value }) }],
+  }) as ConditionRow;
+const condition = (id: string, rows: ConditionRow[] = []) =>
+  el({ type: 'Condition', options: { id, rows } });
 const flow = (elements: object[], options?: object) =>
   el({ type: 'Flow', elements, ...(options === undefined ? {} : { options }) });
 const edge = (id: string, source: string, target: string, sourceHandle?: string) => ({
@@ -135,7 +141,7 @@ describe('runner position and traversal (doc 202 rules 13-18)', () => {
     });
 
     it('evaluates a Condition target and follows the chosen edge', () => {
-      const pro = criterion('c1', 'plan', 'equals', 'pro');
+      const pro = row('c1', 'plan', 'equals', 'pro');
       const root = flow([stage('a'), condition('x', [pro]), stage('b'), stage('c')], {
         edges: [edge('e1', 'a', 'x'), edge('e2', 'x', 'b', 'c1'), edge('e3', 'x', 'c')],
       });

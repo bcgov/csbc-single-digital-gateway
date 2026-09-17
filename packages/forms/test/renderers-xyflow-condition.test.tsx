@@ -19,32 +19,30 @@ import { elkGraph, readElkLayout } from '../src/renderers/xyflow/flow-elk';
 
 /** Doc 198 rule 30: ELK is asynchronous, so a position assertion awaits it. */
 const layoutWithElk = async (flowElement: UISchemaElement) =>
-  readElkLayout(
-    await new ELK().layout(elkGraph(flowElement, { algorithm: 'layered', direction: 'vertical' })),
-  );
+  readElkLayout(await new ELK().layout(elkGraph(flowElement, { direction: 'vertical' })));
 
-// Doc 199 rules 16-23 — drawing a Condition: a second node type, one source handle per output, and
-// the card that lists the criteria.
+// Doc 199 rules 16-23, 37, 42-45 — drawing a Condition: a second node type, one source handle per ROW plus
+// the Else output, and the card that lists the branches.
 
 useXyflowJsdom();
 
 const schema: JsonSchema = { type: 'object', properties: {} };
 const el = (element: object) => element as UISchemaElement;
 
+/** Doc 199 rule 35: one branch is a ROW of clauses, and the ROW id is what an edge's sourceHandle names. */
 const criterion = (id: string, patch: object = {}) => ({
   id,
-  field: 'k1',
-  operator: 'equals',
-  value: 'x',
-  ...patch,
+  label: `Condition ${id}`,
+  match: 'all',
+  clauses: [{ id: `cl-${id}`, field: 'k1', operator: 'equals', value: 'x', ...patch }],
 });
 const stage = (id: string, label = id.toUpperCase()) =>
   el({ type: 'Stage', label, options: { id }, elements: [] });
-const condition = (id: string, criteria: object[] = [], label?: string) =>
+const condition = (id: string, rows: object[] = [], label?: string) =>
   el({
     type: 'Condition',
     ...(label === undefined ? {} : { label }),
-    options: { id, criteria },
+    options: { id, rows },
   });
 const flow = (elements: object[], edges: object[] = []) =>
   el({ type: 'Flow', elements, options: { edges } });
@@ -159,10 +157,10 @@ describe('the Condition node (rules 17-18)', () => {
     const outputs = handlesOf(node).filter((handle) => handle.classList.contains('source'));
     expect(outputs.at(-1)).toHaveAttribute('data-handleid', DEFAULT_HANDLE);
     expect(outputs.at(-1)).toHaveAttribute('data-output', 'default');
-    expect(outputs[0]).toHaveAttribute('data-output', 'criterion');
+    expect(outputs[0]).toHaveAttribute('data-output', 'row');
   });
 
-  it('gives a Condition with no criteria just the default output', () => {
+  it('gives a Condition with no rows just the Else output', () => {
     const { container } = renderFlow(flow([condition('c')]));
     const sources = handlesOf(nodeOf(container, 'c')).filter((handle) =>
       handle.classList.contains('source'),
@@ -194,7 +192,7 @@ describe('the Condition node (rules 17-18)', () => {
 });
 
 describe('the Condition card (rule 19)', () => {
-  it('shows the label, a row per criterion and the default row', () => {
+  it('shows the label, a row per branch and the pinned Else row', () => {
     const { container } = renderFlow(
       flow([condition('c', [criterion('x'), criterion('y')], 'Route by province')]),
     );
@@ -203,49 +201,93 @@ describe('the Condition card (rule 19)', () => {
       'Route by province',
     );
     expect(card.querySelectorAll('[data-slot="condition-criterion-row"]')).toHaveLength(2);
-    expect(card.querySelector('[data-slot="condition-default-row"]')).toHaveTextContent(
-      'Otherwise',
-    );
+    // Rule 45: the Else row is pinned last, with its "no match" hint.
+    expect(card.querySelector('[data-slot="condition-default-row"]')).toHaveTextContent('Else');
+    expect(card.querySelector('[data-slot="condition-default-row"]')).toHaveTextContent('no match');
   });
 
   it('falls back to "Condition" when the node has no label', () => {
     const { container } = renderFlow(flow([condition('c')]));
-    expect(nodeOf(container, 'c').querySelector('[data-slot="condition-label"]')).toHaveTextContent(
+    // Scoped to the title: the header also carries the mode hint beside it (rule 42).
+    expect(nodeOf(container, 'c').querySelector('[data-slot="condition-title"]')).toHaveTextContent(
       /^Condition$/,
     );
   });
 
-  it('reads each row as <field> <operator> <value>', () => {
+  it('shows the row label and, under it, a summary of its clauses (rules 38, 43)', () => {
     const { container } = renderFlow(
       flow([condition('c', [criterion('x', { field: 'k9', operator: 'gt', value: 3 })])]),
     );
-    expect(
-      nodeOf(container, 'c').querySelector('[data-slot="condition-criterion-row"]'),
-    ).toHaveTextContent('k9 gt 3');
+    const row = nodeOf(container, 'c').querySelector('[data-slot="condition-criterion-row"]');
+    expect(row?.querySelector('[data-slot="condition-row-label"]')).toHaveTextContent(
+      'Condition x',
+    );
+    // A view-only card cannot resolve a field to its label, so the summary names the raw key (rule 38).
+    expect(row?.querySelector('[data-slot="condition-row-summary"]')).toHaveTextContent(
+      'k9 is greater than 3',
+    );
   });
 
-  it('omits the value from a row whose operator needs none', () => {
+  it('omits the value from a summary whose operator needs none', () => {
     const { container } = renderFlow(
-      flow([condition('c', [{ id: 'x', field: 'k1', operator: 'isEmpty' }])]),
+      flow([
+        condition('c', [
+          {
+            id: 'x',
+            label: 'Blank',
+            match: 'all',
+            clauses: [{ id: 'cl', field: 'k1', operator: 'isEmpty' }],
+          },
+        ]),
+      ]),
     );
     expect(
-      nodeOf(container, 'c').querySelector('[data-slot="condition-criterion-row"]'),
-    ).toHaveTextContent(/^k1 isEmpty$/);
+      nodeOf(container, 'c').querySelector('[data-slot="condition-row-summary"]'),
+    ).toHaveTextContent(/^k1 is empty$/);
   });
 
-  it('shows the default row even with no criteria at all', () => {
+  it('counts the clauses past the first two rather than listing them (rule 38)', () => {
+    const { container } = renderFlow(
+      flow([
+        condition('c', [
+          {
+            id: 'x',
+            label: 'Many',
+            match: 'all',
+            clauses: [
+              { id: 'c1', field: 'k1', operator: 'isEmpty' },
+              { id: 'c2', field: 'k2', operator: 'isEmpty' },
+              { id: 'c3', field: 'k3', operator: 'isEmpty' },
+            ],
+          },
+        ]),
+      ]),
+    );
+    expect(
+      nodeOf(container, 'c').querySelector('[data-slot="condition-row-summary"]'),
+    ).toHaveTextContent('k1 is empty · k2 is empty · +1 more');
+  });
+
+  it('names the mode in the header: rows are tried in order and the first match wins (rule 42)', () => {
+    const { container } = renderFlow(flow([condition('c', [criterion('x')])]));
+    expect(nodeOf(container, 'c').querySelector('[data-slot="condition-mode"]')).toHaveTextContent(
+      'first match',
+    );
+  });
+
+  it('shows the Else row even with no rows at all', () => {
     const { container } = renderFlow(flow([condition('c')]));
     const card = nodeOf(container, 'c');
     expect(card.querySelectorAll('[data-slot="condition-criterion-row"]')).toHaveLength(0);
     expect(card.querySelector('[data-slot="condition-default-row"]')).not.toBeNull();
   });
 
-  it('skips an entry that is not a criterion rather than drawing a broken row', () => {
-    // `null` is deliberately in this list - criteriaOf must tolerate it - so the array is widened
+  it('skips an entry that is not a row rather than drawing a broken one', () => {
+    // `null` is deliberately in this list - rowsOf must tolerate it - so the array is widened
     // rather than typed as object[].
-    const entries: unknown[] = [criterion('x'), { field: 'k1' }, null, criterion('x')];
+    const entries: unknown[] = [criterion('x'), { label: 'no id' }, null, criterion('x')];
     const { container } = renderFlow(flow([condition('c', entries as object[])]));
-    // No id, not a record, and a repeated id are all skipped by criteriaOf.
+    // No id, not a record, and a repeated id are all skipped by rowsOf.
     expect(
       nodeOf(container, 'c').querySelectorAll('[data-slot="condition-criterion-row"]'),
     ).toHaveLength(1);

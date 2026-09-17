@@ -4,7 +4,8 @@ import type { CriterionField } from '../renderers/xyflow/criteria';
 import { authoredStageId } from '../renderers/xyflow/flow-elements';
 import type { FlowEditor, FlowGesture } from '../renderers/xyflow/flow-editor';
 import { canConnect } from '../renderers/xyflow/flow-gestures';
-import { addCriterion, removeCriterion, setCriterion } from './layout/condition-edits';
+import { addClause, removeClause, setClause } from './layout/clause-edits';
+import { addRow, moveRow, removeRow, setMode, setRow } from './layout/condition-edits';
 import type { ElementIds } from './layout/element-ids';
 import { findById, type TreeElement } from './layout/element-tree';
 import {
@@ -24,19 +25,21 @@ export type UischemaUpdate = (update: (uischema: UISchemaElement) => UISchemaEle
 /**
  * Doc 198 rule 16: the gestures that create an element, which selection routes so the new element becomes selected.
  *
- * Doc 199 rule 25: `add-criterion` is one of them. A criterion is not an element and so has no studio id of its own —
- * what becomes the selection is its CONDITION, which is also what keeps the card on screen to go on authoring it.
+ * Doc 199 rules 46, 48: `add-row` and `add-clause` are two of them. Neither a row nor a clause is an element, so
+ * neither has a studio id of its own — what becomes the selection is their CONDITION, which is also what keeps the
+ * card on screen to go on authoring it.
  */
 export type FlowInsertGesture = Extract<
   FlowGesture,
-  { type: 'append' | 'insert-between' | 'add-form' | 'add-criterion' }
+  { type: 'append' | 'insert-between' | 'add-form' | 'add-row' | 'add-clause' }
 >;
 
 export const isFlowInsert = (gesture: FlowGesture): gesture is FlowInsertGesture =>
   gesture.type === 'append' ||
   gesture.type === 'insert-between' ||
   gesture.type === 'add-form' ||
-  gesture.type === 'add-criterion';
+  gesture.type === 'add-row' ||
+  gesture.type === 'add-clause';
 
 /** Doc 199 rule 25 (amendment): the upstream fields of the Condition with `conditionId`, or `[]`. */
 function fieldsOf(
@@ -76,9 +79,16 @@ function applyFlowInsert(
         ids,
         newPropertyKey,
       );
-    case 'add-criterion': {
-      const next = addCriterion(document, gesture.conditionId, ids, newPropertyKey);
-      // Rule 26: refused when nothing is upstream, and a refused edit returns the SAME document.
+    case 'add-row':
+    case 'add-clause': {
+      // Doc 199 rules 46, 48: both are INSERTING gestures, and both select the CONDITION — a row and a clause
+      // are not elements and have no studio id, so its id is the only one there is, and it is also what keeps
+      // the card on screen to go on authoring.
+      const next =
+        gesture.type === 'add-row'
+          ? addRow(document, gesture.conditionId, ids, newPropertyKey)
+          : addClause(document, gesture.conditionId, gesture.rowId, ids, newPropertyKey);
+      // Rule 46: refused when nothing is upstream, and a refused edit returns the SAME document.
       if (next.uischema === uischema) return { uischema, inserted: undefined };
       return {
         uischema: next.uischema,
@@ -94,8 +104,8 @@ function applyFlowInsert(
  * Doc 196 rules 6-7: a document gesture applied to `document`; `open` and `remove` belong to selection, and so do the
  * inserting gestures (doc 198 rule 16).
  *
- * Doc 199 rule 25: the criterion edits take the whole document, not just the uischema — deciding what a COMPLETE
- * criterion is needs the schema (rule 26). Neither ever changes the schema, so the uischema alone comes back.
+ * Doc 199 rule 25: the row and clause edits take the whole document, not just the uischema — deciding what a
+ * COMPLETE clause is needs the schema (rule 46). None ever changes the schema, so the uischema alone comes back.
  */
 export function applyFlowGesture(
   document: StudioDocument,
@@ -115,11 +125,26 @@ export function applyFlowGesture(
       );
     case 'disconnect':
       return disconnectEdges(uischema, gesture.flowId, gesture.edgeIds, ids);
-    case 'remove-criterion':
-      return removeCriterion(document, gesture.conditionId, gesture.criterionId, ids).uischema;
-    case 'set-criterion':
-      return setCriterion(document, gesture.conditionId, gesture.criterionId, gesture.patch, ids)
+    case 'remove-row':
+      return removeRow(document, gesture.conditionId, gesture.rowId, ids).uischema;
+    case 'set-row':
+      return setRow(document, gesture.conditionId, gesture.rowId, gesture.patch, ids).uischema;
+    case 'set-mode':
+      return setMode(document, gesture.conditionId, gesture.mode, ids).uischema;
+    case 'move-row':
+      return moveRow(document, gesture.conditionId, gesture.rowId, gesture.toIndex, ids).uischema;
+    case 'remove-clause':
+      return removeClause(document, gesture.conditionId, gesture.rowId, gesture.clauseId, ids)
         .uischema;
+    case 'set-clause':
+      return setClause(
+        document,
+        gesture.conditionId,
+        gesture.rowId,
+        gesture.clauseId,
+        gesture.patch,
+        ids,
+      ).uischema;
     default:
       return uischema;
   }

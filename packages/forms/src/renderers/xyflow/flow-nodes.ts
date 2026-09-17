@@ -1,6 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import { DEFAULT_HANDLE, drawnNodes, startStageId } from './flow-elements';
+import { DEFAULT_HANDLE, drawnNodes, rowsOf, startStageId } from './flow-elements';
 import { isRouted } from './flow-edge-path';
 import { flowEdges, leafStageIds, unreachableStageIds } from './flow-graph';
 import type { RoutePoint } from './flow-elk';
@@ -29,6 +29,13 @@ export type ActionEdgeData = {
   flowId?: string;
   /** Doc 198 rule 30b: the lane dagre gave this edge, when it spans more than one rank. */
   points?: RoutePoint[];
+  /**
+   * Doc 199 rule 50: the label of the ROW this edge leaves by, drawn as a chip near the target. Absent for a
+   * Stage edge and for a Condition's Else edge, which is styled rather than named.
+   */
+  branchLabel?: string;
+  /** Rule 45: whether this edge leaves a Condition's Else output, which draws dashed in the warning colour. */
+  isElse?: boolean;
 };
 export type ActionFlowEdge = Edge<ActionEdgeData, typeof ACTION_EDGE_TYPE>;
 
@@ -120,19 +127,33 @@ export function toFlowNodes(
  * handle on a Stage edge silently removes every pre-199 connection from the canvas, with no error anywhere.
  */
 export function toFlowEdges(flow: UISchemaElement, routes: RoutesById = NO_ROUTES): Edge[] {
+  const labels = new Map<string, Map<string, string>>();
   const conditions = new Set(
-    drawnNodes(flow).flatMap(({ id, kind }) => (kind === 'condition' ? [id] : [])),
+    drawnNodes(flow).flatMap(({ element, id, kind }) => {
+      if (kind !== 'condition') return [];
+      labels.set(id, new Map(rowsOf(element).map((row) => [row.id, row.label])));
+      return [id];
+    }),
   );
   return flowEdges(flow).map(({ id, source, target, sourceHandle }) => {
-    const handle = sourceHandle ?? (conditions.has(source) ? DEFAULT_HANDLE : undefined);
+    const isCondition = conditions.has(source);
+    const handle = sourceHandle ?? (isCondition ? DEFAULT_HANDLE : undefined);
     const points = routes.get(id) ?? [];
+    // Doc 199 rule 50: the chip names the branch, so a Stage edge and an Else edge carry no label.
+    const branchLabel =
+      sourceHandle === undefined ? undefined : labels.get(source)?.get(sourceHandle);
+    const data = {
+      ...(isRouted(points) ? { points } : {}),
+      ...(branchLabel === undefined || branchLabel === '' ? {} : { branchLabel }),
+      ...(isCondition && sourceHandle === undefined ? { isElse: true } : {}),
+    };
     return {
       id,
       source,
       target,
       // `exactOptionalPropertyTypes`: a Stage edge keeps an ABSENT key, never an explicit undefined.
       ...(handle === undefined ? {} : { sourceHandle: handle }),
-      ...(isRouted(points) ? { data: { points } } : {}),
+      ...(Object.keys(data).length > 0 ? { data } : {}),
       type: ACTION_EDGE_TYPE,
       markerEnd: { type: MarkerType.ArrowClosed },
     };
