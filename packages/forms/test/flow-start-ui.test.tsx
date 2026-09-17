@@ -48,6 +48,7 @@ const nodeOf = (container: HTMLElement, id: string) => {
 };
 
 const MARKER = '[data-slot="flow-start-marker"]';
+const BADGE_SLOT = '[data-slot="flow-stage-badge"]';
 const BADGE = '[data-slot="flow-unreachable-badge"]';
 const WRAPPER = '[data-slot="stage-node"]';
 
@@ -144,12 +145,43 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       expect(wrapper).not.toHaveClass('ring-danger-border');
     });
 
+    it('captions the start and the end above the card, so the ring is not colour alone', () => {
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
+      );
+      expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveTextContent('Start');
+      expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toHaveTextContent('End');
+    });
+
+    it('captions a middle Stage with nothing at all', () => {
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b'), stage('c')], {
+          startId: 'a',
+          edges: [edge('e1', 'a', 'b'), edge('e2', 'b', 'c')],
+        }),
+      );
+      expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toBeNull();
+    });
+
+    it('captions a Stage that is both "Start", matching its ring', () => {
+      const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
+      expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveTextContent('Start');
+    });
+
+    it('keeps the caption presentational: no handle, and out of the pane gestures', () => {
+      const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
+      const badge = nodeOf(container, 'a').querySelector(BADGE_SLOT);
+      expect(badge).toHaveClass('nodrag', 'nopan', 'pointer-events-none');
+      expect(badge?.querySelector('.react-flow__handle')).toBeNull();
+    });
+
     it('rings view-only too, with no editor present', () => {
       // No FlowEditorProvider here, so the leaf + is absent (doc 198 rule 14) — but where the flow begins and
       // ends is structure, not authoring, so it is drawn either way.
       const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
       expect(container.querySelector('[data-slot="flow-leaf-add"]')).toBeNull();
       expect(nodeOf(container, 'a').querySelector(WRAPPER)).toHaveAttribute('data-start');
+      expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveTextContent('Start');
     });
   });
 

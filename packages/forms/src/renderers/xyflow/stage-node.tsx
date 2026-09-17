@@ -38,6 +38,40 @@ function stageTreatment(data: StageFlowNode['data']): string {
   return `${base}${unreachable}`;
 }
 
+/** Doc 203 rule 8 (amended): what the ring on a start or end Stage says in words. */
+export const START_LABEL = 'Start';
+export const END_LABEL = 'End';
+
+/**
+ * Doc 203 rule 8, amended 2026-09-17 (user: "the start, end nodes should have a label above the node"): the ring
+ * is a colour, and a colour alone names nothing — so the Stage it rings also says which it is.
+ *
+ * ABOVE the card in both directions, not on the leading or trailing face: the label is a caption on the node,
+ * not an affordance continuing the flow, and a caption beside a card on the horizontal canvas would sit where
+ * an edge arrives. LEFT-ALIGNED with the card's edge (user 2026-09-17), which also keeps it clear of the
+ * right-aligned "Not reachable" badge — a Stage can be an end AND unreachable, so the two share that strip.
+ * It matches the ring's colour family and is purely presentational — `pointer-events-none`, `nodrag nopan`
+ * like every other canvas affordance (doc 198 rule 20), and never a Handle.
+ *
+ * It is drawn with or without an editor: where a flow begins and ends is structure, not authoring.
+ */
+function StageBadge({ data }: { readonly data: StageFlowNode['data'] }) {
+  // Start wins when a Stage is both, exactly as the ring does — a one-Stage flow says where it begins.
+  const label = data.isStart ? START_LABEL : data.isLeaf ? END_LABEL : null;
+  if (label === null) return null;
+  const tone = data.isStart
+    ? 'border-success-border text-success-text'
+    : 'border-danger-border text-danger-surface-text';
+  return (
+    <span
+      data-slot="flow-stage-badge"
+      className={`nodrag nopan pointer-events-none absolute bottom-full left-0 mb-2 rounded-full border bg-background px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 /**
  * The xyflow node every Stage is drawn with (doc 195 rules 7, 15): the Stage element dispatched back through JSONForms
  * with the Flow's registry — so the registry, never a tester, decides whether it gets a studio frame — between a target
@@ -72,6 +106,7 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
         make an authored edge into the start VANISH with no error anywhere. Kept, such an edge still draws, and
         its source still earns the "Not reachable" badge — which is the honest reading of that document.
       */}
+      <StageBadge data={data} />
       <Handle
         type="target"
         position={targetSide(flow.direction)}
