@@ -5,13 +5,15 @@ import { Button } from '@repo/ui/button';
 import { useState } from 'react';
 import { labelOf } from '../renderers/gridstack/element-label';
 import { drawnNodes } from '../renderers/xyflow/flow-elements';
-import {
-  firstPositionIn,
-  projectedStageIds,
-  stageFormsOf,
-  type RunnerFlow,
-  type RunnerPosition,
-} from './runner-position';
+import { listedStageIds, upcomingStepRange } from './runner-projection';
+import { firstPositionIn, type RunnerFlow, type RunnerPosition } from './runner-position';
+import { GhostStep } from './runner-ghost-step';
+import { lockOf, StageRow, type SidebarStage } from './runner-step-rows';
+
+export type { SidebarStage } from './runner-step-rows';
+
+const NO_ERRORS: ReadonlySet<string> = new Set<string>();
+const ALWAYS = () => true;
 
 // The runner's step rail (doc 202 rules 9-13, 25, and rules 10c / 9b-9e). It derives every row from the Flow plus the
 // answers and owns exactly ONE piece of state — whether it is expanded — which is presentation, not navigation.
@@ -20,24 +22,10 @@ import {
 // `document.cookie`, registers a global Cmd/Ctrl+B listener and swaps to a `Sheet` on mobile — none of which belongs
 // in a component embedded in both a citizen portal page and the studio's preview pane. Plain markup and `Button`.
 
-/** Rule 13 / rule 25: why a listed stage may not be opened, or `null` when it may. */
-type StageLock = 'placeholder' | 'unvisited' | null;
-
-/** A Stage as the rail draws it — everything derived once, so the nav and the compact line agree. */
-export interface SidebarStage {
-  readonly element: UISchemaElement;
-  /** The node id `drawnNodes` assigned (doc 195 rule 8). */
-  readonly id: string;
-  /** Rule 10: `labelOf(stage, 'Stage')` — doc 201 rule 1, the ONE way a name is read off an element. */
-  readonly label: string;
-  /** Rule 13: a placeholder id is listed but never navigable, since no edge can address it. */
-  readonly authored: boolean;
-}
-
 /**
  * Rule 10c: the Stages the rail lists — the **projected path**, not the document's Stage order.
  *
- * `projectedStageIds` walks the graph from the start through the answers given so far and stops at the first
+ * `projectPath` walks the graph from the start through the answers given so far and stops at the first
  * Condition it cannot yet decide, so the list holds only stages the citizen is actually required to enter. A branch
  * nobody has chosen contributes nothing: "Business" appears once "Applying as" selects it, and not before.
  *
@@ -49,9 +37,13 @@ export interface SidebarStage {
  * answers led them to, so it is normally already present. It is added if absent purely so the rail can never
  * contradict what is on screen — a list that omits the page you are looking at is the worse failure.
  */
-export function sidebarStages(context: RunnerFlow, currentStageId?: string): SidebarStage[] {
-  const ids = projectedStageIds(context);
-  if (currentStageId !== undefined && !ids.includes(currentStageId)) ids.push(currentStageId);
+export function sidebarStages(
+  context: RunnerFlow,
+  currentStageId?: string,
+  visited?: ReadonlySet<string>,
+): SidebarStage[] {
+  // Rule 10e: `visited` lets the walk follow a route the citizen has already taken without answering.
+  const ids = listedStageIds(context, currentStageId, visited);
 
   const byId = new Map(drawnNodes(context.flow).map((node) => [node.id, node] as const));
   return ids.flatMap((id) => {
@@ -69,42 +61,6 @@ export function sidebarStages(context: RunnerFlow, currentStageId?: string): Sid
   });
 }
 
-/** Why a stage cannot be opened, or `null`. Rule 13 outranks rule 25: a placeholder is never navigable at all. */
-const lockOf = (stage: SidebarStage, visited: ReadonlySet<string>): StageLock => {
-  if (!stage.authored) return 'placeholder';
-  return visited.has(stage.id) ? null : 'unvisited';
-};
-
-/**
- * A visually-hidden reason per lock, so the list NEVER communicates state by colour (or by a greyed button) alone.
- * The current stage needs none — it already carries `aria-current="step"`.
- */
-const LOCK_HINT: Record<'placeholder' | 'unvisited', string> = {
-  placeholder: 'not available',
-  unvisited: 'not yet reached',
-};
-
-/**
- * Rule 9c: the rule running down the left of the list is the rows' own left borders, stacked with NO gap between
- * them — which is why the list sets no `gap` and every row is `border-l-2`. A gap would break the line into dashes.
- *
- * Only the current row is tinted. Two reasons it is a lookup rather than an interpolation: Tailwind only generates
- * class strings it can see whole in the source, and — as `@repo/react`'s `FlowNav` documents — the base row class
- * must not set a border colour of its own, or two utilities for one property would resolve by CSS source order
- * rather than by append order.
- */
-const STAGE_BORDER: Record<'current' | 'rest', string> = {
-  current: 'border-primary',
-  rest: 'border-border',
-};
-
-/** Rule 9d: taller rows than the old rail — the step caption sits above the name, so each row is two lines. */
-const STAGE_ROW =
-  'h-auto w-full justify-start gap-3 rounded-none border-l-2 px-3 py-4 text-left font-normal';
-
-const STEP_BADGE =
-  'flex size-7 shrink-0 items-center justify-center rounded-full border border-border text-sm tabular-nums';
-
 export interface RunnerSidebarProps {
   /** The `Flow` root. Every row is derived from it — the rail keeps no copy of the graph. */
   readonly flow: UISchemaElement;
@@ -114,8 +70,12 @@ export interface RunnerSidebarProps {
   readonly data: RunnerFlow['data'];
   /** Where the runner is, or `null` before a position resolves. */
   readonly position: RunnerPosition | null;
-  /** Rule 25: the stages reached so far. A stage outside this set renders disabled. */
+  /** Rule 25: the stages reached so far. */
   readonly visited: ReadonlySet<string>;
+  /** Rule 27d: `formKey`s of the Forms to flag as having errors. Absent where nothing validates (no runner). */
+  readonly errorForms?: ReadonlySet<string>;
+  /** Rule 24b: whether the rail may open a page from where the citizen is. Absent where nothing validates. */
+  readonly canOpen?: (target: RunnerPosition) => boolean;
   /** Rule 25: opening a visited stage. The runner validates and records the visit; this only asks. */
   onGoTo(position: RunnerPosition): void;
 }
@@ -134,11 +94,16 @@ export function RunnerSidebar({
   data,
   position,
   visited,
+  errorForms = NO_ERRORS,
+  canOpen = ALWAYS,
   onGoTo,
 }: RunnerSidebarProps) {
   // Rule 9e: the ONLY state this component owns, and it is presentational. Navigation state stays the runner's.
   const [open, setOpen] = useState(true);
-  const stages = sidebarStages({ flow, schema, data }, position?.stageId);
+  const stages = sidebarStages({ flow, schema, data }, position?.stageId, visited);
+  // Rule 10d: what an unmade choice may still add, or `undefined` when the path is fully decided.
+  const upcoming = upcomingStepRange({ flow, schema, data }, visited);
+  const openable = (target: RunnerPosition | undefined) => target === undefined || canOpen(target);
 
   return (
     <nav
@@ -169,10 +134,15 @@ export function RunnerSidebar({
       </div>
 
       {/* Rule 9c: `relative` because the rows carry absolutely-positioned `sr-only` text, which would otherwise
-          escape this scroller and add layout overflow to a distant ancestor. No `gap`: see `STAGE_BORDER`. */}
+          escape this scroller and add layout overflow to a distant ancestor. No `gap` (see `runner-step-rows`' `STAGE_BORDER`) and no padding: rule 9f puts the rows flush
+          against the list's border. */}
+      {/* Rule 9h: the box HUGS its rows (no `flex-1`), and `min-h-0` + `overflow-y-auto` let it shrink and scroll
+          once the rows outgrow the rail. Collapsed, the 64px rail keeps a smaller margin. */}
       <ol
         data-slot="runner-step-list"
-        className="relative m-3 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-md border border-border p-2"
+        className={`relative flex min-h-0 flex-col overflow-y-auto rounded-md border border-border ${
+          open ? 'm-3' : 'm-1'
+        }`}
       >
         {stages.map((stage, index) => (
           <StageRow
@@ -181,7 +151,13 @@ export function RunnerSidebar({
             index={index}
             open={open}
             current={position !== null && position.stageId === stage.id}
-            lock={lockOf(stage, visited)}
+            reached={visited.has(stage.id) || position?.stageId === stage.id}
+            lock={lockOf(
+              stage,
+              visited.has(stage.id) || position?.stageId === stage.id,
+              !openable(firstPositionIn(flow, stage.id)),
+            )}
+            errorForms={errorForms}
             {...(position !== null ? { position } : {})}
             onOpen={() => {
               // ONE definition of "opening a stage" (`firstPositionIn`), shared with the start and with each
@@ -190,104 +166,13 @@ export function RunnerSidebar({
               const opened = firstPositionIn(flow, stage.id);
               if (opened !== undefined) onGoTo(opened);
             }}
+            onGoToForm={onGoTo}
+            canOpen={canOpen}
           />
         ))}
+        {upcoming === undefined ? null : <GhostStep range={upcoming} open={open} />}
       </ol>
     </nav>
-  );
-}
-
-interface StageRowProps {
-  readonly stage: SidebarStage;
-  readonly index: number;
-  /** Rule 9e: collapsed, a row is its number alone — no caption, no name, no Forms. */
-  readonly open: boolean;
-  readonly current: boolean;
-  readonly lock: StageLock;
-  /** Only passed when there IS one — needed solely to mark the current Form (rule 11). */
-  readonly position?: RunnerPosition;
-  onOpen(): void;
-}
-
-/**
- * One step: the status line, the step numeral, "Step n" above the stage name — and, when it is the current stage,
- * its Forms (rule 11).
- *
- * A locked stage renders a genuinely `disabled` button, not a styled-down one: rule 25 refuses the skip ahead because
- * a branch is decided by upstream answers, and a stage never reached may be one those answers would never select.
- */
-function StageRow({ stage, index, open, current, lock, position, onOpen }: StageRowProps) {
-  const locked = lock !== null;
-  const border = current ? STAGE_BORDER.current : STAGE_BORDER.rest;
-
-  return (
-    <li
-      data-slot="runner-stage"
-      data-stage-id={stage.id}
-      {...(current ? { 'data-current': '' } : {})}
-    >
-      <Button
-        type="button"
-        variant="ghost"
-        disabled={locked}
-        // `disabled` already conveys it to assistive tech; `aria-disabled` makes the state explicit for tests and
-        // for any consumer inspecting the row without reading the DOM property.
-        {...(locked ? { 'aria-disabled': true } : {})}
-        {...(current ? { 'aria-current': 'step' as const } : {})}
-        // Collapsed, the name is not rendered, so the button needs an accessible name of its own.
-        {...(open ? {} : { 'aria-label': `Step ${index + 1}: ${stage.label}` })}
-        onClick={onOpen}
-        className={`${STAGE_ROW} ${border} ${current ? 'bg-accent font-semibold' : ''}`}
-      >
-        <span className={STEP_BADGE}>{index + 1}</span>
-        {open ? (
-          <span className="flex min-w-0 flex-1 flex-col items-start">
-            <span className="text-xs font-normal text-muted-foreground">Step {index + 1}</span>
-            <span data-slot="runner-stage-name" className="w-full truncate">
-              {stage.label}
-            </span>
-          </span>
-        ) : null}
-        {locked ? <span className="sr-only">{LOCK_HINT[lock]}</span> : null}
-      </Button>
-
-      {/* Rule 11: only the CURRENT stage expands, and only while the rail is open (rule 9e) — collapsed it is a
-          column of numerals, so every label is withheld, not just some. */}
-      {open && current && position !== undefined ? (
-        <StageForms stage={stage} position={position} />
-      ) : null}
-    </li>
-  );
-}
-
-/**
- * Rule 11: the current stage's Forms by title (`labelOf(form, 'Form')`), the one on screen marked `aria-current="page"`.
- *
- * The rows are NOT controls, deliberately. Rule 24 blocks Next on the current Form's own errors, so a clickable row
- * would be a way around the gate in the one direction the gate exists for; and rule 25's affordance is stage-level.
- * Moving within a stage is Back / Next, which validate (rule 24) and record history (rule 26).
- */
-function StageForms({ stage, position }: { stage: SidebarStage; position: RunnerPosition }) {
-  const forms = stageFormsOf(stage.element);
-
-  return (
-    <ol className="flex flex-col gap-0.5 pb-2 pl-13">
-      {forms.map((form) => {
-        const currentForm = form.id === position.formId;
-        return (
-          <li
-            key={form.id}
-            data-slot="runner-stage-form"
-            {...(currentForm ? { 'data-current': '', 'aria-current': 'page' as const } : {})}
-            className={`truncate text-sm ${
-              currentForm ? 'font-medium text-foreground' : 'text-muted-foreground'
-            }`}
-          >
-            {labelOf(form.element, 'Form')}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 
@@ -302,13 +187,16 @@ export function RunnerStageIndicator({
   schema,
   data,
   position,
+  visited,
 }: {
   readonly flow: UISchemaElement;
   readonly schema: JsonSchema;
   readonly data: RunnerFlow['data'];
   readonly position: RunnerPosition | null;
+  /** Rule 10e: the same visited set the rail reads, so the two count the same stages. */
+  readonly visited: ReadonlySet<string>;
 }) {
-  const stages = sidebarStages({ flow, schema, data }, position?.stageId);
+  const stages = sidebarStages({ flow, schema, data }, position?.stageId, visited);
   const index = position === null ? -1 : stages.findIndex((stage) => stage.id === position.stageId);
   const stage = index < 0 ? undefined : stages[index];
   // Before a position resolves — or on a stage the list omits — there is no honest "n of m" to show.

@@ -77,8 +77,14 @@ const stageRows = () => [...sidebar().querySelectorAll('[data-slot="runner-stage
 // positional query would return "Step 1Applicant" and compare unequal for the wrong reason.
 const stageNames = () =>
   stageRows().map((row) => row.querySelector('[data-slot="runner-stage-name"]')?.textContent);
-const stageButton = (name: string) =>
-  within(sidebar()).getByRole('button', { name: new RegExp(name) });
+// A STAGE's own button: Form rows are buttons too now (rule 11f), and "Review form" would also match /Review/.
+const stageButton = (name: string) => {
+  const found = within(sidebar())
+    .getAllByRole('button', { name: new RegExp(name) })
+    .find((button) => button.parentElement?.getAttribute('data-slot') === 'runner-stage');
+  if (found === undefined) throw new Error(`no stage button named ${name}`);
+  return found;
+};
 const nextButton = () => screen.getByRole('button', { name: 'Next' });
 const backButton = () => screen.getByRole('button', { name: 'Back' });
 
@@ -179,7 +185,7 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       renderFlow({ uischema: twoForms });
       await settle();
       const marked = sidebar().querySelectorAll(
-        '[data-slot="runner-stage-form"][aria-current="page"]',
+        '[data-slot="runner-stage-form-button"][aria-current="page"]',
       );
       expect(marked).toHaveLength(1);
       expect(marked[0]).toHaveTextContent('Contact');
@@ -253,12 +259,22 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       { edges: [edge('e1', 's1', 'x'), edge('e2', 'x', 's2', 'c1'), edge('e3', 'x', 's3')] },
     );
 
-    it('stops at an undecided Condition, so neither branch is listed before the answer', async () => {
+    it('stops at a Condition on an unanswered REQUIRED field, so neither branch is listed yet', async () => {
+      // With `plan` required and blank, the citizen must still answer it and the answer may pick either branch,
+      // so the runner promises neither (rule 10f).
+      renderFlow({
+        uischema: branchingFlow,
+        documentSchema: { ...schema, required: ['name', 'plan'] },
+      });
+      await settle();
+      expect(stageNames()).toEqual(['Applicant']);
+    });
+
+    it('lists the default branch for an unanswered OPTIONAL field — blank takes it anyway (rule 10f)', async () => {
       renderFlow({ uischema: branchingFlow });
       await settle();
-      // The user's own example: "Business" must not appear before "Applying as" is selected. With `plan`
-      // unanswered the runner does not know which branch they will take, so it promises neither.
-      expect(stageNames()).toEqual(['Applicant']);
+      expect(stageNames()).toEqual(['Applicant', 'Basic']);
+      expect(within(sidebar()).queryByText('Pro')).toBeNull();
     });
 
     it('lists the chosen branch once the answer decides it, and not the other', async () => {
@@ -300,8 +316,8 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
     it('re-projects as the answer is given and then changed', async () => {
       renderFlow({ uischema: typedBranching });
       await settle();
-      // Undecided: neither branch is promised.
-      expect(stageNames()).toEqual(['Applicant']);
+      // `note` is optional, so while blank the default branch is the route (rule 10f).
+      expect(stageNames()).toEqual(['Applicant', 'Basic']);
 
       const note = screen.getByRole('textbox', { name: /^Note/ });
       fireEvent.change(note, { target: { value: 'pro' } });
@@ -314,12 +330,17 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
   });
 
   describe('the rail chrome (rules 9b-9e)', () => {
-    it('heads the rail "Steps" and lists the steps in a bordered, padded list', async () => {
+    it('heads the rail "Steps" and lists the steps in a bordered, unpadded list', async () => {
       const { container } = renderFlow();
       await settle();
       expect(within(sidebar()).getByText('Steps')).toBeInTheDocument();
       const list = container.querySelector('[data-slot="runner-step-list"]');
-      expect(list).toHaveClass('rounded-md', 'border', 'p-2');
+      expect(list).toHaveClass('rounded-md', 'border');
+      // Rule 9h: it fits its rows rather than filling the rail, and scrolls when they outgrow it.
+      expect(list).not.toHaveClass('flex-1');
+      expect(list).toHaveClass('min-h-0', 'overflow-y-auto', 'm-3');
+      // Rule 9f: the rows sit flush against the border — no padding between them.
+      expect(list?.className).not.toMatch(/(^|\s)p[xy]?-/);
       // Rule 9c: the line down the left is the rows' own borders stacked, so the list must set NO gap —
       // a gap would break that line into dashes.
       expect(list?.className).not.toMatch(/(^|\s)gap-/);
@@ -350,6 +371,8 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       // The step is still reachable: the numeral keeps an accessible name of its own.
       expect(within(sidebar()).getByRole('button', { name: 'Step 1: Applicant' })).toBeEnabled();
 
+      // Rule 9h: the collapsed rail keeps a smaller margin around the list.
+      expect(container.querySelector('[data-slot="runner-step-list"]')).toHaveClass('m-1');
       fireEvent.click(screen.getByRole('button', { name: 'Expand steps' }));
       expect(within(sidebar()).getByText('Steps')).toBeInTheDocument();
       expect(sidebar().querySelector('[data-slot="runner-stage-name"]')).not.toBeNull();
@@ -397,14 +420,21 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       );
     });
 
-    it('disables a stage not yet reached, so a branch cannot be skipped past', async () => {
-      renderFlow();
+    it('locks an upcoming stage, saying it is upcoming, until Next reaches it (rule 25c)', async () => {
+      renderFlow({ initial: { name: 'Ada' } });
       await settle();
       const review = stageButton('Review');
       expect(review).toBeDisabled();
       expect(review).toHaveAttribute('aria-disabled', 'true');
       // Never by colour alone.
-      expect(review).toHaveTextContent('not yet reached');
+      expect(review).toHaveTextContent('upcoming');
+
+      await waitFor(() => expect(nextButton()).toBeEnabled());
+      fireEvent.click(nextButton());
+
+      await waitFor(() => expect(stageButton('Review')).toHaveAttribute('aria-current', 'step'));
+      expect(stageButton('Review')).toBeEnabled();
+      expect(stageButton('Review')).not.toHaveTextContent('upcoming');
     });
 
     it('always allows Back, and never validates on it (rule 26)', async () => {

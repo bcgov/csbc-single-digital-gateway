@@ -165,8 +165,11 @@ export function firstMatchingCriterion(
  * branch is exactly what rule 10c forbids ("Business" must not appear before "Applying as" is chosen).
  *
  * Decided when a criterion matches, when the Condition has no criteria at all (rule 23's pass-through, which always
- * goes the same way), or when every criterion's field HAS an answer — in that last case "none matched" is itself a
- * real answer, so the default path is a decision rather than a guess.
+ * goes the same way), or when every criterion's field is either ANSWERED or OPTIONAL (rule 10f). An answer that
+ * matches nothing is a real answer, so the default path is a decision. So is a blank OPTIONAL field: the citizen may
+ * leave it blank, blank matches no criterion (an `isEmpty` one would already have matched above), and so the default
+ * path is where they go whether they answer or not. Only a blank REQUIRED field leaves the branch open, because the
+ * citizen must answer it and that answer may pick any branch.
  */
 export function conditionDecided(
   condition: UISchemaElement,
@@ -176,7 +179,17 @@ export function conditionDecided(
   const criteria = criteriaOf(condition);
   if (criteria.length === 0) return true;
   if (firstMatchingCriterion(condition, schema, data) !== undefined) return true;
-  return criteria.every((criterion) => !isEmptyAnswer(answerOf(data, criterion.field)));
+  const required = requiredKeysOf(schema);
+  return criteria.every(
+    (criterion) =>
+      !isEmptyAnswer(answerOf(data, criterion.field)) || !required.has(criterion.field),
+  );
+}
+
+/** The schema's top-level `required` keys; anything that is not a list of strings counts as none. */
+function requiredKeysOf(schema: JsonSchema): ReadonlySet<string> {
+  const { required } = schema;
+  return new Set(Array.isArray(required) ? required.filter((key) => typeof key === 'string') : []);
 }
 
 /** What `conditionEdge` needs: the Condition, the node id edges address it by, and the answers to judge. */

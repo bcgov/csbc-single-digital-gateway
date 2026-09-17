@@ -8,8 +8,11 @@ import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import type { FormRunnerProps } from '../types/index';
 import type { RunnerData } from './criterion-match';
 import { documentHasError, formHasError, type FormValidationError } from './form-errors';
+import { formKey, mayOpen, pathErrors } from './path-errors';
 import { RunnerActions } from './runner-actions';
 import { RunnerProvider, type RunnerPort } from './runner-context';
+import { visitedAfterPathChange } from './path-reset';
+import { listedStageIds } from './runner-projection';
 import { RunnerSidebar } from './runner-sidebar';
 import {
   isFinalStep,
@@ -31,6 +34,7 @@ import { SubmissionPreview } from './submission-preview';
 export const ROOT_MESSAGE = 'The form must be a Form or a Flow.';
 
 const EMPTY_VISITED: ReadonlySet<string> = new Set<string>();
+const NO_STAGES: readonly string[] = [];
 
 /** The Form element the position names, for the error gate. `null` for a Form root, which is its own form. */
 function formAt(
@@ -67,6 +71,12 @@ export function FormRunner({
   const [errors, setErrors] = useState<readonly FormValidationError[]>([]);
   const [busy, setBusy] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  // Rule 27d: the Forms the citizen has had on screen, and whether Submit has been tried — together they decide which
+  // Forms the rail flags. Flagging every unfilled Form from the first page would paint the whole path red.
+  const [seenForms, setSeenForms] = useState<ReadonlySet<string>>(() =>
+    position === null ? new Set() : new Set([formKey(position)]),
+  );
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const context = useMemo(
     () => ({ flow: uischema, schema, data: data as RunnerData | undefined }),
@@ -91,7 +101,36 @@ export function FormRunner({
       return next;
     });
     setVisited((seen) => visitedWith(seen, next.stageId));
+    setSeenForms((seen) => (seen.has(formKey(next)) ? seen : new Set([...seen, formKey(next)])));
   }, []);
+
+  // The stages the rail lists — one list for error attribution (rule 27b) and the progress reset (rule 10g).
+  const listed = isFlow ? listedStageIds(context, position?.stageId, visited) : NO_STAGES;
+
+  // Rule 10g: when an answer changes the path, progress past the change resets to upcoming. Adjusted DURING render
+  // (React's "storing information from previous renders" pattern), not in an effect, so the rail never paints the
+  // stale progress for a frame. It converges: `visited` only ever shrinks here.
+  const [lastListed, setLastListed] = useState<readonly string[]>(listed);
+  if (lastListed.join('|') !== listed.join('|')) {
+    setLastListed(listed);
+    const kept = visitedAfterPathChange(lastListed, listed, visited, position?.stageId);
+    if (kept !== visited) {
+      setVisited(kept);
+      setSeenForms(
+        (seen) => new Set([...seen].filter((key) => kept.has(key.slice(0, key.indexOf('/'))))),
+      );
+    }
+  }
+
+  // Rules 27b-27d: errors attributed to the Forms on the path the rail lists.
+  const flowErrors = isFlow ? pathErrors(uischema, listed, schema, errors) : undefined;
+  // Before Submit is tried, only Forms the citizen has LEFT are flagged: the one on screen already shows its messages.
+  const onScreen = position === null ? undefined : formKey(position);
+  const flaggedForms: ReadonlySet<string> = new Set(
+    [...(flowErrors?.erroredForms ?? [])].filter(
+      (key) => submitAttempted || (seenForms.has(key) && key !== onScreen),
+    ),
+  );
 
   const port: RunnerPort = useMemo(
     () => ({
@@ -140,6 +179,16 @@ export function FormRunner({
   };
 
   const onSubmitClicked = () => {
+    // Rule 27c: a blocked Flow Submit is a way TO the problem, not a dead button — it opens the first Form on the path
+    // that has an error, whose messages then show, and from here on the rail flags every errored Form (rule 27d).
+    if (flowErrors?.submitBlocked) {
+      setSubmitAttempted(true);
+      const target = flowErrors.firstError;
+      if (target !== undefined && (position === null || formKey(position) !== formKey(target))) {
+        goTo({ stageId: target.stageId, formId: target.formId });
+      }
+      return;
+    }
     // Rule 38: with no handler, Submit shows the payload that WOULD be submitted instead of doing nothing.
     if (onSubmit === undefined) {
       setPreviewing(true);
@@ -166,6 +215,11 @@ export function FormRunner({
               data={data as RunnerData | undefined}
               position={position}
               visited={visited}
+              errorForms={flaggedForms}
+              // Rule 24b: forward moves wait for the pages in between; `flowErrors` always exists for a Flow.
+              {...(flowErrors === undefined
+                ? {}
+                : { canOpen: (target: RunnerPosition) => mayOpen(flowErrors, position, target) })}
               onGoTo={goTo}
             />
           ) : null}
@@ -191,7 +245,13 @@ export function FormRunner({
               canGoBack={history.length > 0}
               atEnd={atEnd}
               blocked={blocked}
-              submitBlocked={documentHasError(errors)}
+              // Rule 27c: a Flow's Submit stays pressable while there is an errored Form to take the citizen to; it is
+              // disabled only for errors no Form owns, which have nowhere to go (rule 32). A Form root keeps rule 27.
+              submitBlocked={
+                flowErrors === undefined
+                  ? documentHasError(errors)
+                  : flowErrors.submitBlocked && flowErrors.firstError === undefined
+              }
               busy={busy}
               canSaveDraft={onSaveDraft !== undefined}
               onBack={onBack}

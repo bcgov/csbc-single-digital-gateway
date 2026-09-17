@@ -129,6 +129,7 @@ function FillFlow(props: LayoutProps) {
               schema={schema}
               data={port.data}
               position={position}
+              visited={port.visited}
             />
             {position === null || form === undefined ? null : (
               // Rule 40: the Form is dispatched through JSONForms, so it renders as a ROOT (doc 196 rule 12) and its
