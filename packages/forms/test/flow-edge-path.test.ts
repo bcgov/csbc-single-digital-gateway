@@ -49,6 +49,34 @@ describe('routeMidpoint (rule 33b)', () => {
   });
 
   it('falls back to the source for a zero-length path rather than dividing by it', () => {
+    // Rule 33c clamps the synthesised corner to the source, so two coincident ends stay a zero-length path
+    // instead of hooking 120px backwards and finding a midpoint out there.
     expect(routeMidpoint({ x: 7, y: 9 }, { x: 7, y: 9 }, [])).toEqual({ x: 7, y: 9 });
+  });
+});
+
+describe('the approach corner (rule 33c)', () => {
+  it('turns every unrouted edge at the same distance before its target', () => {
+    // EDGE_APPROACH is 120: the corner sits in the strip ELK reserves clear of nodes.
+    const [path] = routedPath({ x: 0, y: 0 }, { x: 500, y: 100 }, []);
+    expect(path).toBe('M 0,0 L 0,0 L 380,0 L 380,100 L 500,100');
+  });
+
+  it('draws a straight line when the two ends share a row', () => {
+    // The synthesised turn is zero-length, so nothing changes for an edge that was already straight.
+    const [path] = routedPath({ x: 0, y: 50 }, { x: 500, y: 50 }, []);
+    expect(path).toBe('M 0,50 L 0,50 L 380,50 L 380,50 L 500,50');
+  });
+
+  it('clamps the corner to the source rather than hooking backwards', () => {
+    // Closer together than the gutter — which xyflow handle positions can be, even though ELK's node boxes
+    // are a whole layer apart.
+    const [path] = routedPath({ x: 0, y: 0 }, { x: 40, y: 100 }, []);
+    expect(path).toBe('M 0,0 L 0,0 L 0,0 L 0,100 L 40,100');
+  });
+
+  it('leaves an edge ELK actually routed alone', () => {
+    const [path] = routedPath({ x: 0, y: 0 }, { x: 500, y: 100 }, [{ x: 200, y: 60 }]);
+    expect(path).toBe('M 0,0 L 0,60 L 200,60 L 200,100 L 500,100');
   });
 });

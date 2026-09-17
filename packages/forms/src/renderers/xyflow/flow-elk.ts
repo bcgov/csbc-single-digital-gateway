@@ -63,6 +63,14 @@ const EDGE_NODE_SPACING = 40;
 const EDGE_EDGE_SPACING = 24;
 
 /**
+ * Doc 198 rule 33c: how far before its target an edge makes its last turn. ELK puts that corner one
+ * `EDGE_NODE_SPACING` clear of the SOURCE layer, which is `LAYER_SPACING - EDGE_NODE_SPACING` from the target —
+ * so it is derived from the two rather than written out, and the strip it turns in is space ELK has already
+ * reserved as clear of every node.
+ */
+export const EDGE_APPROACH = LAYER_SPACING - EDGE_NODE_SPACING;
+
+/**
  * Rule 30: the graph ELK is asked to lay out — every drawn node with its size, and every sanitised edge.
  *
  * `elk.direction` is what turns the flow: `DOWN` stacks the layers top to bottom, `RIGHT` runs them across. The

@@ -1,7 +1,7 @@
-import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from '@xyflow/react';
 import { AddNodeMenu } from './add-affordance';
 import { isHovered, useConditionHover } from './condition-hover';
-import { isRouted, routedPath } from './flow-edge-path';
+import { routedPath } from './flow-edge-path';
 import { useFlowEditor } from './flow-editor';
 import type { ActionFlowEdge } from './flow-nodes';
 
@@ -22,8 +22,6 @@ export function ActionEdge({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   markerEnd,
   style,
 }: EdgeProps<ActionFlowEdge>) {
@@ -32,12 +30,14 @@ export function ActionEdge({
   // down by the renderer, so the edge and the card agree without either knowing the other.
   const hover = useConditionHover();
   const highlighted = sourceHandleId !== null && isHovered(hover, source, sourceHandleId ?? '');
-  // Doc 198 rule 23: square corners. An edge spanning ranks follows the lane dagre reserved for it (rule 30b); one
-  // between adjacent ranks has nothing to avoid, so the step path is all it needs.
+  // Doc 198 rules 23, 33c: square corners, and EVERY edge approaches its target the same way — one that ELK
+  // gave no bends synthesises its corner at the same gutter rather than falling back to a midpoint step path.
   const points = data?.points ?? [];
-  const [path, labelX, labelY] = isRouted(points)
-    ? routedPath({ x: sourceX, y: sourceY }, { x: targetX, y: targetY }, points)
-    : getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+  const [path, labelX, labelY] = routedPath(
+    { x: sourceX, y: sourceY },
+    { x: targetX, y: targetY },
+    points,
+  );
   const flowId = data?.flowId;
   const branchLabel = data?.branchLabel;
 
