@@ -71,10 +71,12 @@ function Harness({
 const renderFlow = (props: Parameters<typeof Harness>[0] = {}) => render(<Harness {...props} />);
 const settle = () => act(async () => {});
 
-const sidebar = () => screen.getByRole('navigation', { name: 'Form stages' });
+const sidebar = () => screen.getByRole('navigation', { name: 'Steps' });
 const stageRows = () => [...sidebar().querySelectorAll('[data-slot="runner-stage"]')];
+// Read the NAME slot, not "the second span": each row now also carries a "Step n" caption (rule 9d), so a
+// positional query would return "Step 1Applicant" and compare unequal for the wrong reason.
 const stageNames = () =>
-  stageRows().map((row) => row.querySelector('span:nth-child(2)')?.textContent);
+  stageRows().map((row) => row.querySelector('[data-slot="runner-stage-name"]')?.textContent);
 const stageButton = (name: string) =>
   within(sidebar()).getByRole('button', { name: new RegExp(name) });
 const nextButton = () => screen.getByRole('button', { name: 'Next' });
@@ -98,10 +100,10 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       const indicator = container.querySelector('[data-slot="runner-stage-indicator"]');
       expect(indicator).toHaveTextContent('Stage 1 of 2 — Applicant');
       // The rail is hidden below `sm`, the line above it — the FlowNav posture.
-      expect(indicator).toHaveClass('sm:hidden');
+      expect(indicator).toHaveClass('@min-[40rem]/fill-page:hidden');
       expect(container.querySelector('[data-slot="runner-sidebar"]')).toHaveClass(
         'hidden',
-        'sm:flex',
+        '@min-[40rem]/fill-page:flex',
       );
     });
 
@@ -152,7 +154,9 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       await settle();
       // The traversal walks past it, so listing it would show a step that can never become current.
       expect(stageNames()).toEqual(['Applicant', 'Review']);
-      expect(sidebarStages(withEmpty).map(({ label }) => label)).toEqual(['Applicant', 'Review']);
+      expect(
+        sidebarStages({ flow: withEmpty, schema, data: {} }).map(({ label }) => label),
+      ).toEqual(['Applicant', 'Review']);
     });
 
     it('expands the current stage to list its Forms by title (rule 11)', async () => {
@@ -216,7 +220,7 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       expect(stageNames()).toEqual(['Applicant', 'Review']);
     });
 
-    it('lists a placeholder-id Stage but never lets it be navigated to (rule 13)', async () => {
+    it('omits a placeholder-id Stage entirely — no edge reaches it, so it is never projected (rule 10c)', async () => {
       const placeholder = flow([
         stage('s1', 'Applicant', [form('Contact', ['name'])]),
         // No options.id at all — drawnNodes gives it `__stage-1`, which no edge can address.
@@ -224,11 +228,131 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       ]);
       renderFlow({ uischema: placeholder });
       await settle();
-      // Rule 10b does not hide it — it HAS a Form; rule 13 is what locks it.
-      expect(stageNames()).toEqual(['Applicant', 'Orphan']);
-      const orphan = stageButton('Orphan');
-      expect(orphan).toBeDisabled();
-      expect(orphan).toHaveTextContent('not available');
+      // SUPERSEDES the old rule 13 behaviour, which listed it locked. Rule 10c lists only the stages the citizen
+      // is required to enter, and an unreachable Stage is not one of them — so it is absent rather than disabled.
+      expect(stageNames()).toEqual(['Applicant']);
+      expect(within(sidebar()).queryByText('Orphan')).toBeNull();
+    });
+  });
+
+  describe('the projected path (rule 10c)', () => {
+    const branchingFlow = flow(
+      [
+        stage('s1', 'Applicant', [form('Contact', ['plan'])]),
+        el({
+          type: 'Condition',
+          label: 'Which plan',
+          options: {
+            id: 'x',
+            criteria: [{ id: 'c1', field: 'plan', operator: 'equals', value: 'pro' }],
+          },
+        }),
+        stage('s2', 'Pro', [form('Pro form')]),
+        stage('s3', 'Basic', [form('Basic form')]),
+      ],
+      { edges: [edge('e1', 's1', 'x'), edge('e2', 'x', 's2', 'c1'), edge('e3', 'x', 's3')] },
+    );
+
+    it('stops at an undecided Condition, so neither branch is listed before the answer', async () => {
+      renderFlow({ uischema: branchingFlow });
+      await settle();
+      // The user's own example: "Business" must not appear before "Applying as" is selected. With `plan`
+      // unanswered the runner does not know which branch they will take, so it promises neither.
+      expect(stageNames()).toEqual(['Applicant']);
+    });
+
+    it('lists the chosen branch once the answer decides it, and not the other', async () => {
+      renderFlow({ uischema: branchingFlow, initial: { plan: 'pro' } });
+      await settle();
+      expect(stageNames()).toEqual(['Applicant', 'Pro']);
+      expect(within(sidebar()).queryByText('Basic')).toBeNull();
+    });
+
+    it('lists the default branch when the answer matches no criterion — a decision, not a guess', async () => {
+      // `plan` IS answered, so "no criterion matched" is itself a real answer and the default path is settled.
+      // This is the case that separates rule 10c from simply following `conditionEdge` unconditionally.
+      renderFlow({ uischema: branchingFlow, initial: { plan: 'basic' } });
+      await settle();
+      expect(stageNames()).toEqual(['Applicant', 'Basic']);
+      expect(within(sidebar()).queryByText('Pro')).toBeNull();
+    });
+
+    // Branches on `note`, a plain string, so the answer can be typed. The `plan` fixture above is a oneOf, which
+    // renders a Base UI Combobox — `fireEvent.change` does not move one (CLAUDE.md records the interaction it
+    // needs), so driving this through `plan` would assert nothing while appearing to pass.
+    const typedBranching = flow(
+      [
+        stage('s1', 'Applicant', [form('Contact', ['note'])]),
+        el({
+          type: 'Condition',
+          label: 'Which plan',
+          options: {
+            id: 'x',
+            criteria: [{ id: 'c1', field: 'note', operator: 'equals', value: 'pro' }],
+          },
+        }),
+        stage('s2', 'Pro', [form('Pro form')]),
+        stage('s3', 'Basic', [form('Basic form')]),
+      ],
+      { edges: [edge('e1', 's1', 'x'), edge('e2', 'x', 's2', 'c1'), edge('e3', 'x', 's3')] },
+    );
+
+    it('re-projects as the answer is given and then changed', async () => {
+      renderFlow({ uischema: typedBranching });
+      await settle();
+      // Undecided: neither branch is promised.
+      expect(stageNames()).toEqual(['Applicant']);
+
+      const note = screen.getByRole('textbox', { name: /^Note/ });
+      fireEvent.change(note, { target: { value: 'pro' } });
+      await waitFor(() => expect(stageNames()).toEqual(['Applicant', 'Pro']));
+
+      // Changing it drops the branch no longer taken — the user's "drop it immediately" decision.
+      fireEvent.change(note, { target: { value: 'something else' } });
+      await waitFor(() => expect(stageNames()).toEqual(['Applicant', 'Basic']));
+    });
+  });
+
+  describe('the rail chrome (rules 9b-9e)', () => {
+    it('heads the rail "Steps" and lists the steps in a bordered, padded list', async () => {
+      const { container } = renderFlow();
+      await settle();
+      expect(within(sidebar()).getByText('Steps')).toBeInTheDocument();
+      const list = container.querySelector('[data-slot="runner-step-list"]');
+      expect(list).toHaveClass('rounded-md', 'border', 'p-2');
+      // Rule 9c: the line down the left is the rows' own borders stacked, so the list must set NO gap —
+      // a gap would break that line into dashes.
+      expect(list?.className).not.toMatch(/(^|\s)gap-/);
+    });
+
+    it('numbers each step and captions it "Step n" above the stage name (rule 9d)', async () => {
+      renderFlow();
+      await settle();
+      const first = stageRows()[0];
+      expect(first).toHaveTextContent('Step 1');
+      expect(first?.querySelector('[data-slot="runner-stage-name"]')).toHaveTextContent(
+        'Applicant',
+      );
+    });
+
+    it('collapses to numerals only, hiding names and Forms, and expands again (rule 9e)', async () => {
+      const { container } = renderFlow();
+      await settle();
+      const rail = () => container.querySelector('[data-slot="runner-sidebar"]');
+      expect(rail).not.toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Collapse steps' }));
+
+      expect(within(sidebar()).queryByText('Steps')).toBeNull();
+      expect(sidebar().querySelector('[data-slot="runner-stage-name"]')).toBeNull();
+      // Rule 9e: the current stage's Forms are withheld too, so collapsed means EVERY label is hidden.
+      expect(sidebar().querySelector('[data-slot="runner-stage-form"]')).toBeNull();
+      // The step is still reachable: the numeral keeps an accessible name of its own.
+      expect(within(sidebar()).getByRole('button', { name: 'Step 1: Applicant' })).toBeEnabled();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Expand steps' }));
+      expect(within(sidebar()).getByText('Steps')).toBeInTheDocument();
+      expect(sidebar().querySelector('[data-slot="runner-stage-name"]')).not.toBeNull();
     });
   });
 

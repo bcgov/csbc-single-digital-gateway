@@ -12,6 +12,7 @@ import {
   type RunnerPosition,
 } from '../../runner/runner-position';
 import { flowTester, STAGE_PLACEMENT_MESSAGE, stageTester } from '../xyflow/flow-elements';
+import { FillPage } from './fill-page';
 
 // The Flow and Stage entries of `renderers/default` (doc 202 rules 40-43, 46; doc 195 rule 19 as amended).
 //
@@ -97,40 +98,55 @@ function FillFlow(props: LayoutProps) {
 
   return (
     <RunnerProvider value={port}>
-      <div
-        data-slot="fill-flow"
-        data-layout-type={uischema.type}
-        className="flex min-h-0 flex-col gap-4 sm:flex-row sm:gap-6"
-      >
-        {/*
-          Rule 9's stage rail, `hidden sm:flex` inside itself. It is PRESENTATIONAL and takes props rather than
-          reading the port, so it stays testable without a provider; everything it needs is already in scope here.
+      {/* Doc 184 rule 17b: the page container, unless the runner around this Flow already declared it. */}
+      <FillPage>
+        {/* Rule 9b: no gap — the rail's own right border is the only separation, so the content starts at its edge. */}
+        <div
+          data-slot="fill-flow"
+          data-layout-type={uischema.type}
+          className="flex min-h-0 flex-col @min-[40rem]/fill-page:flex-row"
+        >
+          {/*
+          Rule 40e: the rail is drawn here ONLY when there is no runner around us. Under a `<FormRunner>` the runner
+          renders it instead, as a full-height sibling of the content column (rule 9b) — this copy sits INSIDE the
+          single `<JsonForms>`, so a rail drawn here could never be taller than the content beside it, and the action
+          bar would have to span it. Drawing both would simply duplicate the list.
         */}
-        <RunnerSidebar
-          flow={uischema}
-          position={position}
-          visited={port.visited}
-          onGoTo={port.goTo}
-        />
-        <div data-slot="runner-flow-content" className="min-w-0 flex-1">
-          {/* Rule 9: below `sm` the rail is replaced by this line, which sits above the content rather than beside it. */}
-          <RunnerStageIndicator flow={uischema} position={position} />
-          {position === null || form === undefined ? null : (
-            // Rule 40: the Form is dispatched through JSONForms, so it renders as a ROOT (doc 196 rule 12) and its
-            // nested-Form check passes. The Stage element itself is never rendered — it is a graph node, not a layout.
-            // Keyed by the position so moving between Forms mounts a fresh subtree rather than reusing the last one's.
-            <JsonFormsDispatch
-              key={`${position.stageId}/${position.formId}`}
-              uischema={form}
+          {runner === null ? (
+            <RunnerSidebar
+              flow={uischema}
               schema={schema}
-              path={path}
-              enabled={enabled}
-              {...(renderers ? { renderers } : {})}
-              {...(cells ? { cells } : {})}
+              data={port.data}
+              position={position}
+              visited={port.visited}
+              onGoTo={port.goTo}
             />
-          )}
+          ) : null}
+          <div data-slot="runner-flow-content" className="min-w-0 flex-1">
+            {/* Rule 9: below `sm` the rail is replaced by this line, which sits above the content rather than beside it. */}
+            <RunnerStageIndicator
+              flow={uischema}
+              schema={schema}
+              data={port.data}
+              position={position}
+            />
+            {position === null || form === undefined ? null : (
+              // Rule 40: the Form is dispatched through JSONForms, so it renders as a ROOT (doc 196 rule 12) and its
+              // nested-Form check passes. The Stage element itself is never rendered — it is a graph node, not a layout.
+              // Keyed by the position so moving between Forms mounts a fresh subtree rather than reusing the last one's.
+              <JsonFormsDispatch
+                key={`${position.stageId}/${position.formId}`}
+                uischema={form}
+                schema={schema}
+                path={path}
+                enabled={enabled}
+                {...(renderers ? { renderers } : {})}
+                {...(cells ? { cells } : {})}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </FillPage>
     </RunnerProvider>
   );
 }

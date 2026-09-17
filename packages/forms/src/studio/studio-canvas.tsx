@@ -15,6 +15,7 @@ import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import { StudioEmptyState } from './document/studio-empty-state';
 import type { DocumentSessionStatus } from './document/use-document-session';
 import { STUDIO_SAMPLE_DATA } from './sample';
+import { VIEWPORT_WIDTH, type PreviewViewport } from './viewport-toggles';
 
 // Built once at module load — a new array per render would make JSONForms re-dispatch everything.
 const STUDIO_RENDERERS = [
@@ -43,6 +44,8 @@ export interface StudioCanvasProps {
   /** Changes when the canvas root does, so each root mounts its own JSONForms. */
   readonly rootKey: string;
   readonly previewing: boolean;
+  /** Doc 184 rule 17: the width preview's frame is capped to. */
+  readonly viewport: PreviewViewport;
   readonly selection: StudioSelection;
   readonly editor: GridEditor;
   readonly flowEditor: FlowEditor;
@@ -67,6 +70,7 @@ export function StudioCanvas({
   previewRoot,
   rootKey,
   previewing,
+  viewport,
   selection,
   editor,
   flowEditor,
@@ -122,8 +126,8 @@ export function StudioCanvas({
     // one step of a longer journey, and offering Submit there would misrepresent how a citizen reaches it.
     //
     // The document root is what separates them — a focused Form has a `Form` preview root under a `Flow` document.
-    if (previewRoot.type === FLOW_TYPE || uischema.type === FORM_TYPE) {
-      return (
+    const content =
+      previewRoot.type === FLOW_TYPE || uischema.type === FORM_TYPE ? (
         <FormRunner
           key={`preview-${rootKey}`}
           schema={schema}
@@ -131,18 +135,38 @@ export function StudioCanvas({
           data={previewData}
           onChange={setPreviewData}
         />
+      ) : (
+        <JsonForms
+          key={`preview-${rootKey}`}
+          schema={schema}
+          uischema={previewRoot}
+          data={previewData}
+          onChange={({ data }) => setPreviewData(data as Record<string, unknown>)}
+          renderers={PREVIEW_RENDERERS}
+          cells={defaultSet.cells}
+        />
       );
-    }
+
+    // Doc 202 rule 40d: ONE frame around whatever preview renders — the runner for a Flow or a whole Form document,
+    // the plain render for a focused Form. Framing only the runner would leave the third case looking unlike the
+    // other two, which is the asymmetry rule 40c exists to avoid.
+    //
+    // `h-full` + `overflow-hidden`, NOT a box that hugs its content: the runner is a flex column with the action bar
+    // pinned to its bottom edge, so a frame that shrank to the content would unpin the bar and float it under the
+    // fields. The centre panel owns the outer scroll (`overflow-auto p-4`); the form scrolls INSIDE this frame, which
+    // is how a citizen's page behaves.
+    //
+    // Doc 184 rule 17: Tablet and Mobile cap the frame's width and centre it; the height stays full either way.
     return (
-      <JsonForms
-        key={`preview-${rootKey}`}
-        schema={schema}
-        uischema={previewRoot}
-        data={previewData}
-        onChange={({ data }) => setPreviewData(data as Record<string, unknown>)}
-        renderers={PREVIEW_RENDERERS}
-        cells={defaultSet.cells}
-      />
+      <div data-slot="form-studio-preview-stage" className="flex h-full min-h-0 justify-center">
+        <div
+          data-slot="form-studio-preview-frame"
+          data-viewport={viewport}
+          className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card ${VIEWPORT_WIDTH[viewport]}`}
+        >
+          {content}
+        </div>
+      </div>
     );
   }
   return (

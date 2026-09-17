@@ -1,6 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { mdiPlay } from '@mdi/js';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
@@ -83,7 +83,8 @@ describe('entering preview (rules 5-8)', () => {
     await user.click(previewToggle());
 
     expect(screen.queryByRole('group', { name: 'Panels' })).toBeNull();
-    expect(slot('toggle-group')).toBeNull();
+    // Doc 184 rule 15: the one toggle group left in the header is the preview size picker.
+    expect(slot('toggle-group')).toHaveAttribute('aria-label', 'Preview size');
     expect(slot('form-studio-left-panel')).toHaveAttribute('inert');
     expect(slot('form-studio-right-panel')).toHaveAttribute('inert');
     expect(slot('form-studio-bottom-panel')).toHaveAttribute('inert');
@@ -147,6 +148,101 @@ describe('entering preview (rules 5-8)', () => {
     // Rule 7: a Form root has no stages, so no sidebar and no Next.
     expect(slot('runner-sidebar')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+  });
+
+  it('frames whatever preview renders, with the content inside it (doc 202 rule 40d)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await screen.findByRole('textbox', { name: 'Name' });
+
+    const frame = slot('form-studio-preview-frame');
+    expect(frame).not.toBeNull();
+    // Asserted as CONTAINMENT, not mere presence: a border rendered as a sibling would look right in a
+    // screenshot and still be structurally wrong.
+    expect(frame?.querySelector('[data-slot="form-runner"]')).not.toBeNull();
+    // Full height with no scroll of its own, so the runner's action bar stays pinned to the frame's bottom
+    // edge rather than floating under the fields.
+    expect(frame).toHaveClass('h-full', 'overflow-hidden');
+
+    await user.click(previewToggle());
+    expect(slot('form-studio-preview-frame')).toBeNull();
+  });
+});
+
+const sizeGroup = () => screen.queryByRole('group', { name: 'Preview size' });
+const size = (name: string) => within(sizeGroup() as HTMLElement).getByRole('button', { name });
+const frame = (slot: (name: string) => HTMLElement | null) => slot('form-studio-preview-frame');
+
+describe('preview size (rules 15-17)', () => {
+  it('is offered only while previewing, immediately left of the Preview toggle (rule 15)', async () => {
+    const user = userEvent.setup();
+    renderStudio();
+    expect(sizeGroup()).toBeNull();
+
+    await user.click(previewToggle());
+
+    expect(previewToggle().previousElementSibling).toBe(sizeGroup());
+    expect(
+      within(sizeGroup() as HTMLElement)
+        .getAllByRole('button')
+        .map((item) => item.getAttribute('aria-label')),
+    ).toEqual(['Desktop', 'Tablet', 'Mobile']);
+
+    await user.click(previewToggle());
+    expect(sizeGroup()).toBeNull();
+  });
+
+  it('starts at Desktop, filling the pane (rule 16)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+
+    expect(size('Desktop')).toHaveAttribute('aria-pressed', 'true');
+    expect(frame(slot)).toHaveAttribute('data-viewport', 'desktop');
+    expect(frame(slot)).toHaveClass('w-full');
+    expect(frame(slot)?.className).not.toMatch(/max-w-/);
+  });
+
+  it('caps and centres the frame for Tablet and Mobile (rule 17)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+
+    await user.click(size('Tablet'));
+    expect(frame(slot)).toHaveClass('max-w-[768px]');
+    await user.click(size('Mobile'));
+    expect(frame(slot)).toHaveAttribute('data-viewport', 'mobile');
+    expect(frame(slot)).toHaveClass('max-w-[400px]');
+    expect(size('Mobile')).toHaveAttribute('aria-pressed', 'true');
+    expect(size('Tablet')).toHaveAttribute('aria-pressed', 'false');
+    // Centred by its parent, so a capped frame sits mid-pane rather than against the left edge.
+    expect(frame(slot)?.parentElement).toHaveClass('flex', 'justify-center');
+  });
+
+  it('keeps a size when its own button is pressed again, so one is always chosen (rule 15)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await user.click(size('Mobile'));
+
+    await user.click(size('Mobile'));
+
+    expect(size('Mobile')).toHaveAttribute('aria-pressed', 'true');
+    expect(frame(slot)).toHaveAttribute('data-viewport', 'mobile');
+  });
+
+  it('remembers the chosen size into the next preview (rule 16)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await user.click(size('Tablet'));
+    await user.click(previewToggle());
+
+    await user.click(previewToggle());
+
+    expect(size('Tablet')).toHaveAttribute('aria-pressed', 'true');
+    expect(frame(slot)).toHaveAttribute('data-viewport', 'tablet');
   });
 });
 

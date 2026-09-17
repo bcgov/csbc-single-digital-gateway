@@ -2,7 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
 import { drawnNodes, elementsOf, startStageId } from '../renderers/xyflow/flow-elements';
 import { flowEdges } from '../renderers/xyflow/flow-graph';
-import { conditionEdge, type RunnerData } from './criterion-match';
+import { conditionDecided, conditionEdge, type RunnerData } from './criterion-match';
 
 // Where the runner is, and where it goes next (doc 202 rules 13-18, 25). PURE — no React, no @xyflow/react — so
 // `renderers/default`'s Flow entry may import it (rule 42), and no studio import (rule 45).
@@ -164,6 +164,55 @@ export function nextStageId(context: RunnerFlow, stageId: string): string | unde
     if (target.kind === 'stage' && stageFormsOf(target.element).length > 0) return edge.target;
     current = edge.target;
   }
+}
+
+/**
+ * Doc 202 rule 10c: the Stages the citizen is actually required to enter, in the order they will meet them, given
+ * the answers so far — the sidebar's list.
+ *
+ * It walks the same sanitised `flowEdges` as `nextStageId`, from the same start (rule 18), through the same
+ * `conditionEdge`. The ONE difference is where it stops: at a Condition that is not yet `conditionDecided`, the walk
+ * ends rather than following the default path. Everything downstream of an unmade choice is therefore absent from
+ * the list — including stages common to every branch, which is the honest reading of "only the stages the user is
+ * required to enter": until the branch resolves, the runner does not know the user will reach them.
+ *
+ * Stages with no Forms are skipped exactly as rule 10b requires, so the list and the traversal agree; the cycle
+ * guard is `nextStageId`'s, for the same reason (rule 17: a hand-edited document never passed the apply gate).
+ */
+export function projectedStageIds(context: RunnerFlow): string[] {
+  const { flow, schema, data } = context;
+  const edges = flowEdges(flow);
+  const nodes = new Map(
+    drawnNodes(flow).flatMap((node) => (node.authored ? [[node.id, node] as const] : [])),
+  );
+
+  const projected: string[] = [];
+  const seen = new Set<string>();
+  let current = startStageId(flow);
+  while (current !== undefined && !seen.has(current)) {
+    seen.add(current);
+    const node = nodes.get(current);
+    if (node === undefined) break;
+
+    if (node.kind === 'condition') {
+      // The stop that makes this different from `nextStageId`.
+      if (!conditionDecided(node.element, schema, data)) break;
+      current = conditionEdge({
+        condition: node.element,
+        nodeId: current,
+        edges,
+        schema,
+        data,
+      })?.target;
+      continue;
+    }
+
+    if (stageFormsOf(node.element).length > 0) projected.push(current);
+    // A Stage has one outgoing edge on the canvas; the first in edge order keeps a hand-edited fan-out
+    // deterministic, exactly as `nextStageId` does.
+    current = edges.find((candidate) => candidate.source === current)?.target;
+  }
+  return projected;
 }
 
 /**

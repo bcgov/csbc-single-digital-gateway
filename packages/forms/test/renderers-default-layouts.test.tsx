@@ -181,7 +181,7 @@ describe('fillable CSS layouts (doc 193)', () => {
       expect(row).toHaveClass(
         'grid',
         'grid-cols-1',
-        'sm:[grid-template-columns:repeat(var(--fill-columns),minmax(0,1fr))]',
+        '@min-[40rem]/fill-page:[grid-template-columns:repeat(var(--fill-columns),minmax(0,1fr))]',
       );
       expect(row?.style.getPropertyValue('--fill-columns')).toBe('4');
       const items = itemsOf(row);
@@ -189,7 +189,8 @@ describe('fillable CSS layouts (doc 193)', () => {
         'span 3',
         'span 1',
       ]);
-      for (const item of items) expect(item).toHaveClass('sm:[grid-column:var(--fill-column)]');
+      for (const item of items)
+        expect(item).toHaveClass('@min-[40rem]/fill-page:[grid-column:var(--fill-column)]');
     });
 
     it('renders a Grid in (y, x) order with start columns, spans and h min-heights from sm', async () => {

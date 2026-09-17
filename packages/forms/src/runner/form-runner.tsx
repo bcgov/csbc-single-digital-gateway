@@ -2,6 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { useCallback, useMemo, useState } from 'react';
 import * as defaults from '../renderers/default/index';
+import { FillPage } from '../renderers/default/fill-page';
 import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import type { FormRunnerProps } from '../types/index';
@@ -9,6 +10,7 @@ import type { RunnerData } from './criterion-match';
 import { documentHasError, formHasError, type FormValidationError } from './form-errors';
 import { RunnerActions } from './runner-actions';
 import { RunnerProvider, type RunnerPort } from './runner-context';
+import { RunnerSidebar } from './runner-sidebar';
 import {
   isFinalStep,
   navigableStage,
@@ -148,33 +150,58 @@ export function FormRunner({
 
   return (
     <RunnerProvider value={port}>
-      <div data-slot="form-runner" className="flex h-full min-h-0 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <JsonForms
-            schema={schema}
-            uischema={uischema}
-            data={data}
-            renderers={RENDERERS}
-            cells={defaults.cells}
-            onChange={({ data: next, errors: nextErrors }) => {
-              setErrors(nextErrors ?? []);
-              onChange(next as RunnerData);
-            }}
-          />
+      {/*
+        Rule 9b: a flex ROW. The rail is a sibling of the content column, not part of it, so it spans the runner's
+        full height while the action bar stays under the CONTENT alone. The rail cannot live where the Flow renderer
+        entry draws it (rule 40) and still do this — that copy is inside the single `<JsonForms>`, which the action
+        bar sits outside of (rule 40b) — so the runner renders its own and the entry stands down (rule 40e).
+      */}
+      {/* Doc 184 rule 17b: the runner is the outermost fillable root, so it declares the page container. */}
+      <FillPage className="h-full min-h-0">
+        <div data-slot="form-runner" className="flex h-full min-h-0">
+          {isFlow ? (
+            <RunnerSidebar
+              flow={uischema}
+              schema={schema}
+              data={data as RunnerData | undefined}
+              position={position}
+              visited={visited}
+              onGoTo={goTo}
+            />
+          ) : null}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <JsonForms
+                schema={schema}
+                uischema={uischema}
+                data={data}
+                renderers={RENDERERS}
+                cells={defaults.cells}
+                onChange={({ data: next, errors: nextErrors }) => {
+                  setErrors(nextErrors ?? []);
+                  onChange(next as RunnerData);
+                }}
+              />
+            </div>
+            <RunnerActions
+              // Rule 34b: a `Form` root has no Back at all. `history` only ever grows through `goTo`, which only Flow
+              // navigation calls, so for a Form the button could never become enabled by any prop — dead chrome rather
+              // than a temporarily unavailable action, which is what separates it from Save draft (rule 37).
+              hasBack={isFlow}
+              canGoBack={history.length > 0}
+              atEnd={atEnd}
+              blocked={blocked}
+              submitBlocked={documentHasError(errors)}
+              busy={busy}
+              canSaveDraft={onSaveDraft !== undefined}
+              onBack={onBack}
+              onNext={onNext}
+              onSaveDraft={() => run(onSaveDraft)}
+              onSubmit={onSubmitClicked}
+            />
+          </div>
         </div>
-        <RunnerActions
-          canGoBack={history.length > 0}
-          atEnd={atEnd}
-          blocked={blocked}
-          submitBlocked={documentHasError(errors)}
-          busy={busy}
-          canSaveDraft={onSaveDraft !== undefined}
-          onBack={onBack}
-          onNext={onNext}
-          onSaveDraft={() => run(onSaveDraft)}
-          onSubmit={onSubmitClicked}
-        />
-      </div>
+      </FillPage>
       <SubmissionPreview
         open={previewing}
         onOpenChange={setPreviewing}

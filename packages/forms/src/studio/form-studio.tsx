@@ -11,6 +11,7 @@ import { useDockPanel, type DockPanelId } from './dock-panels';
 import { DockToggles } from './dock-toggles';
 import { useFocusAddress } from './use-focus-address';
 import { PreviewToggle } from './preview-toggle';
+import { ViewportToggles, type PreviewViewport } from './viewport-toggles';
 import { StudioBackButton } from './studio-back-button';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
 import { StudioCanvas } from './studio-canvas';
@@ -122,6 +123,9 @@ export const FormStudio: FC<FormStudioProps> = ({
     select,
     contains: (elementId) => studio.elementOf(elementId) !== undefined,
   });
+  // Doc 184 rule 16: Desktop by default, and KEPT across preview sessions for this mount — unlike preview answers
+  // (rule 11), a chosen size is the author's working setup, not data to discard.
+  const [viewport, setViewport] = useState<PreviewViewport>('desktop');
   const paletteActions = useMemo(() => ({ add }), [add]);
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right);
   const segments = studio.pathOf(selectedId);
@@ -182,6 +186,10 @@ export const FormStudio: FC<FormStudioProps> = ({
         {previewing || !ready ? null : (
           <DockToggles panels={panels} {...(onFlowCanvas ? { ids: FLOW_PANEL_IDS } : {})} />
         )}
+        {/* Doc 184 rule 15: only while previewing, immediately left of the Preview toggle. */}
+        {ready && previewing ? (
+          <ViewportToggles value={viewport} onValueChange={setViewport} />
+        ) : null}
         {ready ? <PreviewToggle pressed={previewing} onPressedChange={setPreviewing} /> : null}
       </header>
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
@@ -220,6 +228,7 @@ export const FormStudio: FC<FormStudioProps> = ({
             previewRoot={rootOf(previewFocusId)}
             rootKey={(previewing ? previewFocusId : focusId) ?? 'document'}
             previewing={previewing}
+            viewport={viewport}
             selection={port}
             editor={editor}
             flowEditor={flowEditor}

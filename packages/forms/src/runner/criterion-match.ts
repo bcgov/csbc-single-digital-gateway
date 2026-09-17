@@ -156,6 +156,29 @@ export function firstMatchingCriterion(
   );
 }
 
+/**
+ * Doc 202 rule 10c: whether this Condition's branch is DECIDED by the answers so far — a different question from
+ * "which edge does it take?", which `conditionEdge` always answers (rule 21 guarantees a default path).
+ *
+ * The sidebar needs the distinction. Rule 21's default is the right route for a citizen who has genuinely answered
+ * and matched nothing, but it is a guess for one who has not answered yet — and listing the stages of a guessed
+ * branch is exactly what rule 10c forbids ("Business" must not appear before "Applying as" is chosen).
+ *
+ * Decided when a criterion matches, when the Condition has no criteria at all (rule 23's pass-through, which always
+ * goes the same way), or when every criterion's field HAS an answer — in that last case "none matched" is itself a
+ * real answer, so the default path is a decision rather than a guess.
+ */
+export function conditionDecided(
+  condition: UISchemaElement,
+  schema: JsonSchema,
+  data: RunnerData | undefined,
+): boolean {
+  const criteria = criteriaOf(condition);
+  if (criteria.length === 0) return true;
+  if (firstMatchingCriterion(condition, schema, data) !== undefined) return true;
+  return criteria.every((criterion) => !isEmptyAnswer(answerOf(data, criterion.field)));
+}
+
 /** What `conditionEdge` needs: the Condition, the node id edges address it by, and the answers to judge. */
 export interface ConditionRoute {
   readonly condition: UISchemaElement;

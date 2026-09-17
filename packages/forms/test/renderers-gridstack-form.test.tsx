@@ -125,12 +125,18 @@ describe('gridstack Form renderer (doc 192)', () => {
       expect(container.querySelector('.grid-stack')).toBeNull();
     });
 
-    it('adds no DOM element of its own and no <form>', async () => {
+    it('adds no DOM element of its own but the page container, and no <form>', async () => {
       const form = renderWith(defaults, el({ type: 'Form', elements: [heading('Inside form')] }));
       await settle('Inside form');
       const formPath = tagPath(form.container, FILL_LAYOUT);
       expect(formPath.length).toBeGreaterThan(0);
       expect(form.container.querySelector('form')).toBeNull();
+      // Doc 184 rule 17b: a root Form with no runner around it declares the `fill-page` container — the ONE element
+      // it adds over a VerticalLayout, so the path is the stack's with that wrapper in front.
+      expect(form.container.querySelector(FILL_LAYOUT)?.parentElement).toHaveAttribute(
+        'data-slot',
+        'fill-page',
+      );
       form.unmount();
 
       const stack = renderWith(
@@ -138,7 +144,7 @@ describe('gridstack Form renderer (doc 192)', () => {
         el({ type: 'VerticalLayout', elements: [heading('Inside form')] }),
       );
       await settle('Inside form');
-      expect(formPath).toEqual(tagPath(stack.container, FILL_LAYOUT));
+      expect(formPath).toEqual(['DIV', ...tagPath(stack.container, FILL_LAYOUT)]);
     });
 
     it('ignores authored options and child gridItem keys exactly like a VerticalLayout', async () => {

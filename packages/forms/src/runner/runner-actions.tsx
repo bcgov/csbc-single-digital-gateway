@@ -4,6 +4,11 @@ import { Button } from '@repo/ui/button';
 // owns no state — the runner decides what is gated and what each action means.
 
 export interface RunnerActionsProps {
+  /**
+   * Whether this document has a Back action AT ALL (rule 34b). False for a `Form` root, whose history can never grow —
+   * distinct from `canGoBack`, which is "not right now".
+   */
+  readonly hasBack: boolean;
   /** Back is offered only once there is somewhere to go back to; it never validates (rule 26). */
   readonly canGoBack: boolean;
   /** The last step shows Submit instead of Next (rule 16). */
@@ -30,6 +35,7 @@ export interface RunnerActionsProps {
  * disabled when there is nothing to save through, so an author previewing still sees where it sits.
  */
 export function RunnerActions({
+  hasBack,
   canGoBack,
   atEnd,
   blocked,
@@ -42,14 +48,18 @@ export function RunnerActions({
   onSubmit,
 }: RunnerActionsProps) {
   return (
+    // `ml-auto` on the forward group rather than `justify-between` on the bar: with Back absent (rule 34b) a
+    // `justify-between` row holding one child would pull Save draft and Submit to the LEFT edge.
     <div
       data-slot="runner-actions"
-      className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-background px-6 py-3"
+      className="flex shrink-0 items-center gap-3 border-t border-border bg-background px-6 py-3"
     >
-      <Button type="button" variant="outline" disabled={!canGoBack} onClick={onBack}>
-        Back
-      </Button>
-      <div className="flex items-center gap-2">
+      {hasBack ? (
+        <Button type="button" variant="outline" disabled={!canGoBack} onClick={onBack}>
+          Back
+        </Button>
+      ) : null}
+      <div className="ml-auto flex items-center gap-2">
         <Button
           type="button"
           variant="outline"

@@ -54,6 +54,7 @@ async function settle(text: string) {
 }
 
 const TITLE = '[data-slot="form-title"]';
+const TITLE_BAR = '[data-slot="form-title-bar"]';
 const PLACEHOLDER = '[data-slot="form-title-placeholder"]';
 const FILL_LAYOUT = '[data-slot="fill-layout"]';
 
@@ -199,11 +200,12 @@ describe('Form title (doc 201)', () => {
         form({ label: 'Titled', options: { gap: 'xl', column: 4, float: true } }),
       );
       await settle('Body');
-      const title = container.querySelector(TITLE);
+      const bar = container.querySelector(TITLE_BAR);
       const layout = container.querySelector(FILL_LAYOUT);
-      // The gap is the layout's, and the title is its sibling — outside that gap flow.
+      // The gap is the layout's, and the title bar is its sibling — outside that gap flow. Rule 8b wraps the
+      // heading, so the BAR is what sits beside the layout now; the heading itself is one level further in.
       expect(layout).toHaveClass('gap-8');
-      expect(title?.parentElement).toBe(layout?.parentElement);
+      expect(bar?.parentElement).toBe(layout?.parentElement);
       expect(layout).not.toHaveClass('grid');
     });
   });
@@ -230,16 +232,58 @@ describe('Form title (doc 201)', () => {
       await settle('Body');
       const title = container.querySelector(TITLE);
       expect(title).toHaveTextContent('Plain');
-      expect(title).not.toHaveClass('border-b-4');
+      expect(title).not.toHaveClass('border-b-2');
       expect(title).not.toHaveClass('border-bcgov-gold');
     });
 
     it('renders the fillable title with a full-width bcgov-gold lower border', async () => {
       const { container } = renderWith(defaults, form({ label: 'Ruled' }));
       await settle('Body');
+      const bar = container.querySelector(TITLE_BAR);
+      expect(bar).toHaveTextContent('Ruled');
+      expect(bar).toHaveClass('border-b-2', 'border-bcgov-gold');
+    });
+
+    it('insets the title TEXT but never the rule, so the border still spans the full width (rule 8b)', async () => {
+      const { container } = renderWith(defaults, form({ label: 'Ruled' }));
+      await settle('Body');
+      const bar = container.querySelector(TITLE_BAR);
       const title = container.querySelector(TITLE);
-      expect(title).toHaveTextContent('Ruled');
-      expect(title).toHaveClass('border-b-4', 'border-bcgov-gold');
+
+      // The padding is on the heading, so the title no longer sits at top 0 / left 0 / right 0 — and it is EQUAL
+      // on all four sides, so `p-6` rather than a per-side set.
+      expect(title).toHaveClass('p-6');
+      // No cast: this file imports a FIXTURE type named `Node`, so `title as Node` would shadow the DOM one.
+      expect(bar?.contains(title)).toBe(true);
+      // The point of the split: ANY horizontal padding on the ruled element would inset the gold rule with the
+      // text. Asserted as the absence of the specific classes that would do it, on the element carrying the border.
+      expect(bar).not.toHaveClass('p-6');
+      expect(bar).not.toHaveClass('px-6');
+      expect(bar?.className).not.toMatch(/(^|\s)(p|px|pl|pr)-/);
+    });
+
+    it("pads a Form's element container by twice the title's horizontal inset, and below it (rule 8c)", async () => {
+      const { container } = renderWith(defaults, form({ label: 'Ruled' }));
+      await settle('Body');
+      // px-6 on the title → px-12 on the container, with the same amount beneath.
+      expect(container.querySelector(FILL_LAYOUT)).toHaveClass('px-12', 'pb-12');
+    });
+
+    it('leaves a nested VerticalLayout unpadded, so the inset never compounds (rule 8c)', async () => {
+      const { container } = renderWith(
+        defaults,
+        el({
+          type: 'Form',
+          label: 'Outer',
+          elements: [{ type: 'VerticalLayout', elements: [heading('Body')] }],
+        }),
+      );
+      await settle('Body');
+      const stack = container.querySelector('[data-layout-type="VerticalLayout"]');
+      expect(stack).not.toHaveClass('px-12');
+      expect(stack).not.toHaveClass('pb-12');
+      // Guard: proves the query found the nested stack rather than silently matching nothing.
+      expect(stack).toHaveClass('flex', 'flex-col');
     });
   });
 

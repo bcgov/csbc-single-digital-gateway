@@ -127,6 +127,16 @@ describe('FormRunner (doc 202 rules 1-8)', () => {
       expect(submitButton()).toBeInTheDocument();
     });
 
+    it('renders no Back at all — not a disabled one (rule 34b)', async () => {
+      renderRunner();
+      await settle();
+      // A Form root's history can never grow (only Flow navigation pushes), so a disabled Back would be permanent
+      // dead chrome. This is where it differs from Save draft, which a host COULD enable by passing a handler.
+      expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+      // Guard: the bar itself is present, so this is Back's absence and not a missing action bar.
+      expect(saveDraftButton()).toBeInTheDocument();
+    });
+
     it('blocks Submit on any error in the document', async () => {
       renderRunner();
       await settle();

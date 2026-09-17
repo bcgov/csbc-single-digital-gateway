@@ -54,21 +54,29 @@ export function StudioFormTitle({ uischema }: FormTitleProps) {
 }
 
 /**
+ * Doc 201 rule 8b: what the fillable title's TEXT is inset by. It lives on the heading, never on the bar around it —
+ * that split is the whole point. The gold rule must span the form's full width (rule 8), so the element carrying
+ * `border-b-2` takes no padding at all; putting `p-*` or `px-*` there would inset the rule along with the text.
+ */
+const TITLE_TEXT_PADDING = 'p-6';
+
+/**
  * Doc 201 rule 8: the fillable title — the same heading under a full-width thick bcgov-gold rule. Rule 10: an empty
  * title renders nothing at all, since a citizen has no placeholder to fill in.
+ *
+ * Two elements, not one (rule 8b): the bar owns the rule and the space below it and stretches edge to edge, while the
+ * heading inside owns the inset, so the title no longer sits at top 0 / left 0 / right 0 and the rule still runs the
+ * full width.
  */
 export function FillFormTitle({ uischema }: FormTitleProps) {
   const title = labelOf(uischema, '');
   if (title === '') return null;
   return (
-    <Heading
-      level={1}
-      size={1}
-      data-slot="form-title"
-      className={`${TITLE_SPACING} border-b-4 border-bcgov-gold pb-3`}
-    >
-      {title}
-    </Heading>
+    <div data-slot="form-title-bar" className={`${TITLE_SPACING} border-b-2 border-bcgov-gold`}>
+      <Heading level={1} size={1} data-slot="form-title" className={TITLE_TEXT_PADDING}>
+        {title}
+      </Heading>
+    </div>
   );
 }
 
