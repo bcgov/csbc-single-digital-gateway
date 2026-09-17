@@ -167,7 +167,9 @@ describe('Form Studio Form root (doc 192)', () => {
       expect(inspector).toHaveTextContent('Form');
       expect(within(inspector).queryByRole('combobox', { name: 'Width' })).toBeNull();
       expect(within(inspector).queryByRole('combobox', { name: 'Columns' })).toBeNull();
-      expect(within(inspector).getAllByRole('textbox')).toHaveLength(1);
+      // Title, and the Form's Description (doc 201 rule 20).
+      expect(within(inspector).getAllByRole('textbox')).toHaveLength(2);
+      expect(within(inspector).getByRole('textbox', { name: /Description/ })).toBeInTheDocument();
     });
 
     it('writes a layout gesture in the Form root back in y order without gridItem keys', () => {

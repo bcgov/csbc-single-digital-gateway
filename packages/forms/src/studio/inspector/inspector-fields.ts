@@ -2,7 +2,7 @@ import type { JsonSchema } from '@jsonforms/core';
 import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
-import { BOOLEAN, integer, NUMBER, startStage, STRING, wholeNumbers } from './field-schemas';
+import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
 import type { ControlKind, InspectorContext } from './inspector-context';
 import {
   finite,
@@ -18,6 +18,7 @@ import {
   withWidth,
   type InspectorEdit,
 } from './inspector-edits';
+import { DOCUMENT_FIELDS } from './document-fields';
 import { LAYOUT_FIELDS } from './layout-fields';
 
 // The inspector's settings (doc 187 rules 9-19): where each applies, its field schema, and how it reads and
@@ -204,18 +205,7 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     write: (ctx, edit, value) =>
       setElement(edit, withElementKey(edit.element, 'label', writtenLabel(ctx, value))),
   },
-  {
-    key: 'startId',
-    section: 'general',
-    label: 'Start stage',
-    applies: (ctx) => ctx.element.type === FLOW_TYPE,
-    schema: (ctx) => startStage(ctx.element).schema,
-    // Doc 203 rule 16: a dangling startId reads as undefined — the picker shows empty rather than a
-    // value `fieldAccepts` would refuse to write back. Clearing restores the Flow's fallback start.
-    read: (ctx) => startStage(ctx.element).value,
-    write: (_ctx, edit, value) =>
-      setElement(edit, withOption(edit.element, 'startId', orCleared(value))),
-  },
+  ...DOCUMENT_FIELDS,
   {
     key: 'text',
     section: 'general',

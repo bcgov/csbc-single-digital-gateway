@@ -219,6 +219,10 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
           // Doc 197 rule 6: optional, unlike a Stage's id — documents authored before deep linking stay valid.
           properties: {
             gap: GAP,
+            description: {
+              description: 'A description shown under the form title.',
+              type: 'string',
+            },
             id: {
               description:
                 'The id that addresses this form in a link. Unique among the forms of this document.',

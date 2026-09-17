@@ -1,13 +1,13 @@
-import type { LayoutProps, UISchemaElement } from '@jsonforms/core';
+import type { JsonSchema, LayoutProps, UISchemaElement } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
-import { mdiCallSplit, mdiDeleteOutline, mdiPlus } from '@mdi/js';
+import { mdiAlertOutline, mdiCallSplit, mdiDeleteOutline, mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { Input } from '@repo/ui/input';
-import { NativeSelect, NativeSelectOption } from '@repo/ui/native-select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/tooltip';
 import { useContext } from 'react';
-import type { Criterion, Operator } from '../../types/elements';
+import type { Criterion } from '../../types/elements';
 import { useConditionOutputs } from './condition-outputs';
-import { needsValue, operatorsFor, OPERATOR_LABELS, type CriterionField } from './criteria';
+import { decisionFieldHint, optionalDecisionFields, type CriterionField } from './criteria';
+import { CriterionControls, ROW_CONTROL_CLASS } from './criterion-controls';
 import { AddAffordance } from './add-affordance';
 import { FlowContext } from './flow-context';
 import { useFlowEditor, type FlowEditor } from './flow-editor';
@@ -20,14 +20,41 @@ import { CONDITION_PLACEMENT_MESSAGE, criteriaOf, DEFAULT_HANDLE } from './flow-
 export const NO_UPSTREAM_FIELDS_HINT =
   'Connect this condition after a stage with fields to add a criterion.';
 
-// Doc 196 rule 13: under an editor the card is pointer-events-none (presses fall through to the studio frame),
-// so the row controls opt back in, and `nodrag` stops xyflow starting a drag from them.
-const ROW_CONTROL_CLASS = 'nodrag pointer-events-auto';
-
 /** An element's `label` when a non-empty string, else `fallback`. */
 function labelOf(element: UISchemaElement, fallback: string): string {
   const label = (element as { label?: unknown }).label;
   return typeof label === 'string' && label.trim() !== '' ? label.trim() : fallback;
+}
+
+/** The schema's top-level `required` keys, ignoring anything that is not a string list. */
+function requiredKeysOf(schema: JsonSchema): ReadonlySet<string> {
+  const required = (schema as { required?: unknown }).required;
+  return new Set(
+    Array.isArray(required) ? required.filter((key): key is string => typeof key === 'string') : [],
+  );
+}
+
+/**
+ * Doc 199 rule 34: a gold icon in the criterion row whose tooltip says the field may be left blank. An icon, not a
+ * line of text: the canvas spaces ranks a FIXED distance apart (doc 198), so a taller card collides with the stages
+ * below it. The icon's accessible name is the whole hint, so it never depends on the tooltip being seen.
+ */
+function OptionalFieldHint({ field }: { readonly field: CriterionField | undefined }) {
+  if (field === undefined) return null;
+  const hint = decisionFieldHint(field.label);
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        type="button"
+        aria-label={hint}
+        data-slot="condition-optional-field-hint"
+        className={`${ROW_CONTROL_CLASS} shrink-0 rounded-sm text-bcgov-gold`}
+      >
+        <Icon path={mdiAlertOutline} size="14px" />
+      </TooltipTrigger>
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 /**
@@ -37,138 +64,6 @@ function labelOf(element: UISchemaElement, fallback: string): string {
 export function criterionSummary(criterion: Criterion): string {
   const { field, operator, value } = criterion;
   return value === undefined ? `${field} ${operator}` : `${field} ${operator} ${String(value)}`;
-}
-
-interface RowProps {
-  readonly criterion: Criterion;
-  readonly fields: readonly CriterionField[];
-  readonly editor: FlowEditor;
-  readonly conditionId: string;
-}
-
-/** The value control for `field`'s kind (rule 26): a choice picks from the field's own options. */
-function ValueControl({ criterion, fields, editor, conditionId }: RowProps) {
-  const field = fields.find((candidate) => candidate.key === criterion.field);
-  // Never `Criterion['value']`: that is an OPTIONAL property type, so it admits `undefined`, which
-  // `exactOptionalPropertyTypes` then refuses inside the patch. A value control only ever sets a real value.
-  const set = (value: string | number | boolean) =>
-    editor.onGesture({
-      type: 'set-criterion',
-      conditionId,
-      criterionId: criterion.id,
-      patch: { value },
-    });
-
-  if (field?.kind === 'choice') {
-    return (
-      <NativeSelect
-        size="sm"
-        aria-label="Value"
-        className={ROW_CONTROL_CLASS}
-        value={typeof criterion.value === 'string' ? criterion.value : ''}
-        onChange={(event) => set(event.target.value)}
-      >
-        {(field.options ?? []).map((option) => (
-          <NativeSelectOption key={String(option.value)} value={String(option.value)}>
-            {option.label}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
-    );
-  }
-
-  if (field?.kind === 'number') {
-    return (
-      <Input
-        type="number"
-        aria-label="Value"
-        className={`${ROW_CONTROL_CLASS} h-7 w-16 text-xs`}
-        value={typeof criterion.value === 'number' ? String(criterion.value) : ''}
-        // A half-typed number ("-", "") parses to NaN, which `setCriterion` would refuse anyway: leave the
-        // document alone until the field holds a real one.
-        onChange={(event) => {
-          const next = event.target.valueAsNumber;
-          if (Number.isFinite(next)) set(next);
-        }}
-      />
-    );
-  }
-
-  return (
-    <Input
-      type="text"
-      aria-label="Value"
-      className={`${ROW_CONTROL_CLASS} h-7 w-20 text-xs`}
-      value={typeof criterion.value === 'string' ? criterion.value : ''}
-      onChange={(event) => set(event.target.value)}
-    />
-  );
-}
-
-/**
- * Rules 25-26, 28: one criterion as its three pickers. The field picker offers only UPSTREAM fields (rule 6)
- * and the operator picker only that field's kind's operators (rule 1), so the pair can never disagree with the
- * validator. A dangling field or operator (rule 9) is still listed, so the row shows what it actually names
- * rather than silently reading as something else.
- */
-function CriterionControls({ criterion, fields, editor, conditionId }: RowProps) {
-  const field = fields.find((candidate) => candidate.key === criterion.field);
-  const operators = operatorsFor(field?.kind);
-  const patch = (changes: Partial<Omit<Criterion, 'id'>>) =>
-    editor.onGesture({
-      type: 'set-criterion',
-      conditionId,
-      criterionId: criterion.id,
-      patch: changes,
-    });
-
-  return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-      <NativeSelect
-        size="sm"
-        aria-label="Field"
-        className={ROW_CONTROL_CLASS}
-        value={criterion.field}
-        onChange={(event) => patch({ field: event.target.value })}
-      >
-        {fields.map((candidate) => (
-          <NativeSelectOption key={candidate.key} value={candidate.key}>
-            {candidate.label}
-          </NativeSelectOption>
-        ))}
-        {field ? null : (
-          <NativeSelectOption value={criterion.field}>{criterion.field}</NativeSelectOption>
-        )}
-      </NativeSelect>
-      <NativeSelect
-        size="sm"
-        aria-label="Operator"
-        className={ROW_CONTROL_CLASS}
-        value={criterion.operator}
-        onChange={(event) => patch({ operator: event.target.value as Operator })}
-      >
-        {operators.map((operator) => (
-          <NativeSelectOption key={operator} value={operator}>
-            {OPERATOR_LABELS[operator]}
-          </NativeSelectOption>
-        ))}
-        {operators.includes(criterion.operator) ? null : (
-          <NativeSelectOption value={criterion.operator}>
-            {OPERATOR_LABELS[criterion.operator] ?? criterion.operator}
-          </NativeSelectOption>
-        )}
-      </NativeSelect>
-      {/* Rule 3: an operator that needs no value shows no value control at all. */}
-      {needsValue(criterion.operator) ? (
-        <ValueControl
-          criterion={criterion}
-          fields={fields}
-          editor={editor}
-          conditionId={conditionId}
-        />
-      ) : null}
-    </div>
-  );
 }
 
 /** Rule 20: the + that wires an unconnected output to a new Stage, carrying the output as the edge's handle. */
@@ -219,6 +114,15 @@ function ConditionLayout({ uischema, visible }: LayoutProps) {
   const conditionId = editor ? editor.idOf(uischema) : null;
   const fields = editor && conditionId !== null ? editor.fieldsFor(conditionId) : [];
   const wired = (handle: string) => connected?.has(handle) ?? true;
+  // Doc 199 rule 34: the FIRST criterion naming each optional field carries its hint, so a field is flagged once.
+  const optional = editor
+    ? optionalDecisionFields(criteria, fields, requiredKeysOf(flow.schema))
+    : [];
+  const hintFor = (criterion: Criterion) => {
+    const field = optional.find((candidate) => candidate.key === criterion.field);
+    const first = criteria.find((other) => other.field === criterion.field);
+    return field !== undefined && first?.id === criterion.id ? field : undefined;
+  };
 
   return (
     <div
@@ -247,6 +151,7 @@ function ConditionLayout({ uischema, visible }: LayoutProps) {
                   editor={editor}
                   conditionId={conditionId}
                 />
+                <OptionalFieldHint field={hintFor(criterion)} />
                 <button
                   type="button"
                   aria-label="Remove criterion"

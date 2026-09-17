@@ -311,6 +311,7 @@ describe('Form title (doc 201)', () => {
       await settle('Body');
       const placeholder = container.querySelector(PLACEHOLDER);
       expect(placeholder).toHaveTextContent(FORM_TITLE_PLACEHOLDER);
+      // Muted, inside the half-opacity title block (rule 7b), so it reads fainter than a written title.
       expect(placeholder).toHaveClass('text-muted-foreground');
       expect(container.querySelector(TITLE)).toBeNull();
     });

@@ -117,3 +117,36 @@ export function criterionProblems(
   }
   return problems;
 }
+
+/** Doc 199 rule 34: the hint shown under a Condition for a field a citizen may leave blank. */
+export const decisionFieldHint = (label: string) =>
+  `${label} is optional. Leaving it blank follows Otherwise.`;
+
+/** Operators under which a BLANK answer is itself the thing being tested, so blank is handled on purpose. */
+const BLANK_AWARE: ReadonlySet<Operator> = new Set<Operator>(['isEmpty', 'isNotEmpty']);
+
+/**
+ * Doc 199 rule 34: the fields this Condition decides on that a citizen may leave BLANK without the author having said
+ * what blank means — in criterion order, each once. Blank matches no criterion, so it silently follows the default.
+ *
+ * A field is listed when it is NOT in the schema's `required`, and none of its criteria test for blank
+ * (`isEmpty` / `isNotEmpty`). Booleans are never listed: an unticked box IS the "no" answer, and requiring one would
+ * force it ticked. Fields the Condition cannot resolve are left to `criterionProblems`.
+ */
+export function optionalDecisionFields(
+  criteria: readonly Criterion[],
+  fields: readonly CriterionField[],
+  required: ReadonlySet<string>,
+): CriterionField[] {
+  const listed: CriterionField[] = [];
+  for (const criterion of criteria) {
+    if (listed.some((field) => field.key === criterion.field)) continue;
+    const field = fields.find((candidate) => candidate.key === criterion.field);
+    if (field === undefined || field.kind === 'boolean' || required.has(field.key)) continue;
+    const blankAware = criteria.some(
+      (other) => other.field === field.key && BLANK_AWARE.has(other.operator),
+    );
+    if (!blankAware) listed.push(field);
+  }
+  return listed;
+}

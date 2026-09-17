@@ -6,7 +6,7 @@ import { useCallback, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import type { GridStackLayoutOptions } from '../../types/elements';
 import { GridContext, type GridContextValue } from './grid-context';
 import { DRAG_IN_ATTRIBUTE, dropSourceOf } from './grid-drag-in';
-import { retargetDropTarget } from './grid-drop-target';
+import { dropTargetFor, retargetDropTarget } from './grid-drop-target';
 import { useGridEditor } from './grid-editor';
 import { useGridGestures } from './grid-gestures';
 import { useGridDividers } from './grid-dividers';
@@ -144,9 +144,11 @@ export function createGridLayoutRenderer(
     // Doc 190 rules 1-2: gridstack listens for drops on the enclosing grid item, which leaves the outer grid no
     // pointer space between adjacent nested grids. Re-run after every options update (gridstack may have rebuilt
     // the droppable) and on `visible` (a fresh GridStack).
+    // Doc 201 rule 21: a root Form's grid listens on the drop zone around its title as well.
     useLayoutEffect(() => {
-      retargetDropTarget(gridHandle.current?.getGrid());
-    }, [options, visible]);
+      const grid = gridHandle.current?.getGrid();
+      retargetDropTarget(grid, dropTargetFor(grid?.el, uischema.type));
+    }, [options, visible, uischema.type]);
     // Doc 183 rule 16c (doc 189 bug B4): gridstack 13.2.0's updateOptions reloads `children` only when non-empty, so a
     // Grid whose last element was removed would keep that widget as an undeletable empty item. The wrapper's
     // updateOptions (a child layout effect) has run by now; remove whatever gridstack still holds.

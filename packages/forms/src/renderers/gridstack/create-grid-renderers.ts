@@ -59,7 +59,7 @@ export function createGridRenderers({
       // Doc 201 rule 7: on the canvas the title is the heading alone, with a placeholder when it is empty.
       {
         tester: formTester,
-        renderer: createFormRenderer(rendererFor('vertical'), StudioFormTitle),
+        renderer: createFormRenderer(rendererFor('vertical'), StudioFormTitle, true),
       },
     ],
   };

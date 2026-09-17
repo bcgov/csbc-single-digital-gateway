@@ -132,6 +132,8 @@ export interface FormElement extends Layout {
      * host puts in a URL to open this Form. Optional — a Form without one drills in normally but cannot be linked.
      */
     id?: string;
+    /** Doc 201 rule 20: shown under the title. */
+    description?: string;
     [key: string]: unknown;
   };
 }

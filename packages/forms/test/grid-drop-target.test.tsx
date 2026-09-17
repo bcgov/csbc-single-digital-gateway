@@ -6,13 +6,14 @@ import type { DDDraggable } from 'gridstack/dist/dd-draggable';
 import { DDDroppable } from 'gridstack/dist/dd-droppable';
 import { DDManager } from 'gridstack/dist/dd-manager';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { retargetDropTarget } from '../src/renderers/gridstack/grid-drop-target';
+import { dropTargetFor, retargetDropTarget } from '../src/renderers/gridstack/grid-drop-target';
 import {
   createGridRenderers,
   GridEditorProvider,
   type GridEditor,
 } from '../src/renderers-gridstack';
 import * as ui from '../src/renderers-ui';
+import { FORM_TITLE_PLACEHOLDER } from '../src/renderers/gridstack/form-renderer';
 
 // Doc 190 — nested grid drop gap: every grid's droppable listens on its own `.grid-stack`.
 
@@ -267,5 +268,89 @@ describe('Grid renderer drop targets (studio, editor port)', () => {
     const grids = roots(container);
     expect(grids).toHaveLength(4);
     for (const grid of grids) expect(dropTargetOf(grid)).toBeUndefined();
+  });
+});
+
+const zoneOf = (container: HTMLElement) =>
+  container.querySelector<HTMLElement>('[data-slot="form-drop-zone"]');
+
+describe("a root Form's drop zone (doc 201 rule 21)", () => {
+  it('claims the title and description as drop space for the Form’s own grid', async () => {
+    const { container } = render(
+      form(
+        {
+          key: 'root',
+          type: 'Form',
+          label: 'Permit',
+          options: { description: 'Tell us about the work.' },
+          elements: [heading('one')],
+        },
+        keyedEditor,
+      ),
+    );
+    await screen.findAllByRole('heading');
+    await settle();
+
+    const zone = zoneOf(container);
+    const grid = roots(container)[0];
+    // The zone holds the title, the description and the grid, and the grid listens on it.
+    expect(zone?.querySelector('[data-slot="form-title"]')).not.toBeNull();
+    expect(zone?.querySelector('[data-slot="form-description"]')).not.toBeNull();
+    expect(zone?.contains(grid as Node)).toBe(true);
+    expect(dropTargetOf(grid)?.eventEl).toBe(zone);
+
+    // A drag over the title is a drag over the grid, so gridstack keeps placing (at row 0, which it clamps to).
+    startDrag();
+    enter(zone as HTMLElement);
+    expect(DDManager.dropElement).toBe(dropTargetOf(grid));
+  });
+
+  it('leaves a grid NESTED in the Form listening on itself, so the zone is the root grid’s alone', async () => {
+    const { container } = render(
+      form(
+        {
+          key: 'root',
+          type: 'Form',
+          label: 'Permit',
+          elements: [innerGridOf([heading('deep')])],
+        },
+        keyedEditor,
+      ),
+    );
+    await screen.findAllByRole('heading');
+    await settle();
+
+    const [rootGrid, nested] = roots(container);
+    expect(dropTargetOf(rootGrid)?.eventEl).toBe(zoneOf(container));
+    expect(dropTargetOf(nested)?.eventEl).toBe(nested);
+  });
+
+  it('renders the zone around an untitled Form too, so its placeholder is drop space', async () => {
+    const { container } = render(
+      form({ key: 'root', type: 'Form', elements: [heading('one')] }, keyedEditor),
+    );
+    await screen.findAllByRole('heading');
+    await settle();
+
+    expect(zoneOf(container)).toHaveTextContent(FORM_TITLE_PLACEHOLDER);
+  });
+});
+
+describe('dropTargetFor', () => {
+  it('returns the zone for a Form grid and the grid itself for anything else', () => {
+    const zone = document.createElement('div');
+    zone.dataset['slot'] = 'form-drop-zone';
+    const grid = document.createElement('div');
+    zone.append(grid);
+
+    expect(dropTargetFor(grid, 'Form')).toBe(zone);
+    expect(dropTargetFor(grid, 'VerticalLayout')).toBe(grid);
+    expect(dropTargetFor(grid, 'Grid')).toBe(grid);
+  });
+
+  it('falls back to the grid when no zone is above it, and passes an absent grid through', () => {
+    const loose = document.createElement('div');
+    expect(dropTargetFor(loose, 'Form')).toBe(loose);
+    expect(dropTargetFor(undefined, 'Form')).toBeUndefined();
   });
 });
