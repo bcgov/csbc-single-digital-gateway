@@ -59,13 +59,14 @@ function StageBadge({ data }: { readonly data: StageFlowNode['data'] }) {
   // Start wins when a Stage is both, exactly as the ring does — a one-Stage flow says where it begins.
   const label = data.isStart ? START_LABEL : data.isLeaf ? END_LABEL : null;
   if (label === null) return null;
-  const tone = data.isStart
-    ? 'border-success-border text-success-text'
-    : 'border-danger-border text-danger-surface-text';
+  // A SOLID pill, white on the state colour. `*-border` is the family's only mid-tone — `*-surface` is a pale
+  // tint that white would disappear into — so it is used as a background here despite its name. Both land at
+  // about 4.7:1 against white (#42814a and #ce3e39), which clears AA for text this size.
+  const tone = data.isStart ? 'bg-success-border' : 'bg-danger-border';
   return (
     <span
       data-slot="flow-stage-badge"
-      className={`nodrag nopan pointer-events-none absolute bottom-full left-0 mb-2 rounded-full border bg-background px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+      className={`nodrag nopan pointer-events-none absolute bottom-full left-0 mb-2 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white ${tone}`}
     >
       {label}
     </span>

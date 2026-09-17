@@ -175,6 +175,23 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       expect(badge?.querySelector('.react-flow__handle')).toBeNull();
     });
 
+    it('fills the caption with the state colour and sets white text on it', () => {
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
+      );
+      // Solid, not outlined: `*-border` is the family's only mid-tone, and white on either lands at about
+      // 4.7:1, which clears AA for text this size.
+      expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveClass(
+        'bg-success-border',
+        'text-white',
+        'font-semibold',
+      );
+      expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toHaveClass(
+        'bg-danger-border',
+        'text-white',
+      );
+    });
+
     it('rings view-only too, with no editor present', () => {
       // No FlowEditorProvider here, so the leaf + is absent (doc 198 rule 14) — but where the flow begins and
       // ends is structure, not authoring, so it is drawn either way.
