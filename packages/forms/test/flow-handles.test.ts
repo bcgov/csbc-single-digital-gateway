@@ -3,14 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   connectorClass,
   leadingAnchor,
-  outputOffset,
   sourceSide,
   targetSide,
   trailingAnchor,
 } from '../src/renderers/xyflow/flow-handles';
 
-// Doc 198 rule 32, doc 199 rule 43 — which faces a card's handles sit on, and where a Condition's outputs sit
-// along the face they leave by. Pure, so the measurement fallback can be tested without a browser.
+// Doc 198 rule 32 — which faces a card's handles sit on, and which face the affordances that hang off it use.
+//
+// Doc 199 rule 43 no longer appears here: a Condition's outputs are not POSITIONED at all any more, they are
+// rendered inside their own rows, so there is no offset left to compute or to test.
 
 describe('handle faces (doc 198 rule 32)', () => {
   it('takes edges in and out along the flow direction', () => {
@@ -18,32 +19,6 @@ describe('handle faces (doc 198 rule 32)', () => {
     expect(sourceSide('vertical')).toBe(Position.Bottom);
     expect(targetSide('horizontal')).toBe(Position.Left);
     expect(sourceSide('horizontal')).toBe(Position.Right);
-  });
-});
-
-describe('outputOffset (doc 199 rule 43)', () => {
-  it('centres an output on its measured row, down the right edge', () => {
-    // The card reported this row's centre; the handle goes exactly there, so the edge leaves its own branch.
-    expect(outputOffset('horizontal', 0, 3, 48)).toEqual({ top: '48px' });
-    expect(outputOffset('horizontal', 2, 3, 136.5)).toEqual({ top: '136.5px' });
-  });
-
-  it('spreads the outputs evenly when the card has not been measured', () => {
-    // The first paint and jsdom both land here — and so does anything that stops the card reporting boxes.
-    expect(outputOffset('horizontal', 0, 3)).toEqual({ top: '25%' });
-    expect(outputOffset('horizontal', 1, 3)).toEqual({ top: '50%' });
-  });
-
-  it('spreads them evenly on a VERTICAL canvas even when measured', () => {
-    // The outputs leave the bottom edge there, where there is no row to line up with — a measured centre is a
-    // distance down the card, which along that face would mean nothing.
-    expect(outputOffset('vertical', 0, 3, 48)).toEqual({ left: '25%' });
-    expect(outputOffset('vertical', 2, 3, 136)).toEqual({ left: '75%' });
-  });
-
-  it('centres a lone output, exactly where a Stage’s single handle sits', () => {
-    expect(outputOffset('vertical', 0, 1)).toEqual({ left: '50%' });
-    expect(outputOffset('horizontal', 0, 1)).toEqual({ top: '50%' });
   });
 });
 

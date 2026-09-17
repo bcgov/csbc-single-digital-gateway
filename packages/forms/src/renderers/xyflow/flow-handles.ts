@@ -15,29 +15,6 @@ export const sourceSide = (direction: LayoutDirection): Position =>
   direction === 'vertical' ? Position.Bottom : Position.Right;
 
 /**
- * Doc 199 rule 43: where one of a Condition's outputs sits along the face it leaves by, as a CSS offset the node
- * applies to the right axis — `left` down the bottom edge, `top` down the right edge.
- *
- * On a HORIZONTAL canvas (the default) a handle is CENTRED ON ITS ROW, at the `measured` centre the card
- * reported (`useOutputOffsets`). Fixed header/row constants were tried first and rejected: they encode padding,
- * font size and line height from three other files, so they drift silently the moment any of those change.
- *
- * With no measurement — the first paint, jsdom, or a VERTICAL canvas, whose outputs leave the bottom edge and
- * have no row to line up with — the outputs spread evenly instead, which is where they sat before rule 43.
- */
-export function outputOffset(
-  direction: LayoutDirection,
-  index: number,
-  count: number,
-  measured?: number,
-): { left: string } | { top: string } {
-  if (direction === 'vertical') return { left: `${((index + 1) / (count + 1)) * 100}%` };
-  return {
-    top: measured === undefined ? `${((index + 1) / (count + 1)) * 100}%` : `${measured}px`,
-  };
-}
-
-/**
  * Doc 198 rule 32, amended 2026-09-17 (user: "the dangling add button should come from the trailing edge"):
  * where an affordance that HANGS OFF a card sits — the leaf + and the empty-Flow origin + on the trailing face,
  * the Start marker on the leading one.

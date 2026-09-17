@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/tooltip';
 import type { ConditionRow as Row } from '../../types/elements';
 import { AddAffordance } from './add-affordance';
 import { useConditionHover } from './condition-hover';
+import { ConditionOutputHandle } from './condition-output-handle';
 import { ConditionRowPopover } from './condition-row-popover';
 import { rowProblems, rowSummary, rowTitle } from './condition-rows';
 import { decisionFieldHint, type CriterionField } from './criteria';
@@ -142,7 +143,9 @@ export function ConditionRow({
       onDrop={drop}
       onPointerEnter={() => hover.setHovered(nodeId, row.id)}
       onPointerLeave={() => hover.setHovered(null, null)}
-      className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 ${
+      // `relative` is what pins the output handle to THIS row (doc 199 rule 43): xyflow positions a handle
+      // against its nearest positioned ancestor, so without it every row's handle would stack on the node.
+      className={`relative flex items-center gap-1.5 rounded-md px-2 py-1.5 ${
         open ? 'bg-accent shadow-[inset_2px_0_0_var(--color-primary)]' : 'hover:bg-accent'
       }`}
     >
@@ -166,6 +169,8 @@ export function ConditionRow({
         <span className="flex min-w-0 flex-1 items-center gap-1.5">{body}</span>
       )}
       <OptionalFieldHint field={hint} />
+      {/* Rule 43: the branch's output, pinned to its own row rather than offset down the card's edge. */}
+      <ConditionOutputHandle handleId={row.id} />
       {editor && conditionId !== null && !wired ? (
         <OutputAdd editor={editor} conditionId={conditionId} handle={row.id} />
       ) : null}

@@ -134,6 +134,27 @@ describe('the Condition node (rules 17-18)', () => {
     expect(targets[0]).toHaveClass('react-flow__handle-left');
   });
 
+  it('pins each output handle INSIDE the row it belongs to (rule 43)', () => {
+    const { container } = renderFlow(
+      flow([condition('c', [criterion('x'), criterion('y')], 'Route by province')]),
+    );
+    const node = nodeOf(container, 'c');
+    const rows = [...node.querySelectorAll('[data-slot="condition-criterion-row"]')];
+    // The row IS the attachment point: xyflow derives it from where the row actually rendered, so nothing is
+    // measured and nothing can drift out of step with the card. Two earlier builds positioned the handle NEXT
+    // to the row instead — evenly spread, then offset by a measured centre — and both read as misaligned.
+    expect(
+      rows.map((row) => row.querySelector('.react-flow__handle')?.getAttribute('data-handleid')),
+    ).toEqual(['x', 'y']);
+    // The Else handle sits in the Else row for the same reason.
+    expect(
+      node
+        .querySelector('[data-slot="condition-default-row"]')
+        ?.querySelector('.react-flow__handle')
+        ?.getAttribute('data-handleid'),
+    ).toBe(DEFAULT_HANDLE);
+  });
+
   it('renders one source handle per criterion on the leaving face, each with the criterion id', () => {
     const { container } = renderFlow(
       flow([condition('c', [criterion('x'), criterion('y', { field: 'k2' })])]),

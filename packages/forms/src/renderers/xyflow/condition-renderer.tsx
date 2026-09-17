@@ -5,6 +5,7 @@ import { Icon } from '@mdi/react';
 import { useContext, useState } from 'react';
 import type { ConditionRow } from '../../types/elements';
 import { useConditionHover } from './condition-hover';
+import { ConditionOutputHandle } from './condition-output-handle';
 import { useConditionOutputs } from './condition-outputs';
 import { ConditionRow as Row, OutputAdd } from './condition-row';
 import { optionalDecisionFields } from './criteria';
@@ -160,10 +161,11 @@ function ConditionLayout({ uischema, visible }: LayoutProps) {
           data-slot="condition-default-row"
           onPointerEnter={() => hover.setHovered(nodeId, DEFAULT_HANDLE)}
           onPointerLeave={() => hover.setHovered(null, null)}
-          className="mt-1 flex items-center gap-1.5 border-t border-dashed px-2 pt-2 text-xs"
+          className="relative mt-1 flex items-center gap-1.5 border-t border-dashed px-2 pt-2 text-xs"
         >
           <span className="min-w-0 flex-1 truncate italic text-warning-text">{ELSE_LABEL}</span>
           <span className="shrink-0 text-[11px] text-muted-foreground">{ELSE_HINT}</span>
+          <ConditionOutputHandle handleId={DEFAULT_HANDLE} />
           {editor && conditionId !== null && !wired(DEFAULT_HANDLE) ? (
             <OutputAdd editor={editor} conditionId={conditionId} handle={DEFAULT_HANDLE} />
           ) : null}
