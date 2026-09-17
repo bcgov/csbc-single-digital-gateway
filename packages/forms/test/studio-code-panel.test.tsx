@@ -5,6 +5,9 @@ import { documentText } from '../src/studio/code/document-text';
 import { APPLY_DELAY_MS } from '../src/studio/code/use-code-document';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 191 rules 1-5, 16-21, 25-26 — the bottom dock code panel inside FormStudio (editor module mocked).
 //
 // The mocked editor module is cached for the whole file once loaded, so the tests that observe the FIRST load
@@ -175,10 +178,10 @@ describe('Form Studio code panel (doc 191)', () => {
         expect(canvas().getByRole('heading', { name: 'Edited heading' })).toBeInTheDocument(),
       );
 
-      fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+      fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
       expect(document.querySelector('[data-studio-code]')).toBeNull();
 
-      fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+      fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
       const remounted = await screen.findByRole('textbox', { name: 'UI schema' });
       expect(remounted).not.toBe(uischema);
       expect(remounted).toHaveValue(documentText(JSON.parse(uischemaWith('Edited heading'))));

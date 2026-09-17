@@ -15,6 +15,9 @@ import { newPropertyKey } from '../src/studio/layout/schema-properties';
 import { buildTemplate, PALETTE_TEMPLATES } from '../src/studio/palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 192 rules 6-10, 12 — the Form as the Form Studio's required root.
 
 // Doc 195 rule 21: a Flow is the other allowed root.
@@ -90,11 +93,9 @@ describe('Form Studio Form root (doc 192)', () => {
 
     it('shows the root error in preview too', () => {
       render(<FormStudio uischema={custom('Grid')} />);
-      fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
-      expect(screen.getByRole('button', { name: 'Preview' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
+      fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
+      // Doc 184 rule 19: previewing is shown by the Exit preview button, not by a pressed state.
+      expect(screen.getByRole('button', { name: 'Exit preview' })).toBeInTheDocument();
       expect(within(centre()).getByRole('alert')).toHaveTextContent(ROOT_ERROR);
       expect(screen.queryByRole('heading', { name: 'Custom' })).toBeNull();
     });

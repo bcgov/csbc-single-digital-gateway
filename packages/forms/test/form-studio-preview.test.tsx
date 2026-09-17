@@ -1,18 +1,21 @@
 import type { UISchemaElement } from '@jsonforms/core';
-import { mdiPlay } from '@mdi/js';
-import { render, screen, within } from '@testing-library/react';
+import { mdiClose, mdiPlay } from '@mdi/js';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
+import { FLOW_TEMPLATE_SCHEMA, FLOW_TEMPLATE_UISCHEMA } from '../src/studio/document/flow-sample';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
+import { useXyflowJsdom } from './xyflow-jsdom';
 
 // Doc 184 — Form Studio preview mode.
 
-function renderStudio(uischema?: UISchemaElement) {
+// The per-Form menu tests render a Flow, whose canvas is xyflow.
+useXyflowJsdom();
+
+function renderStudio(uischema?: UISchemaElement, schema = STUDIO_SAMPLE_SCHEMA) {
   // Doc 200 rule 23: a bare studio now opens the New form dialog, so preview's fixture seeds explicitly.
-  const view = render(
-    <FormStudio schema={STUDIO_SAMPLE_SCHEMA} uischema={uischema ?? STUDIO_SAMPLE_UISCHEMA} />,
-  );
+  const view = render(<FormStudio schema={schema} uischema={uischema ?? STUDIO_SAMPLE_UISCHEMA} />);
   const slot = (name: string) => view.container.querySelector<HTMLElement>(`[data-slot="${name}"]`);
   return { ...view, slot };
 }
@@ -33,44 +36,117 @@ async function typeWithoutPointer(
   await user.type(field, text, { skipClick: true });
 }
 
-const previewToggle = () => screen.getByRole('button', { name: 'Preview' });
+const previewButton = () => screen.getByRole('button', { name: 'Preview' });
+const exitButton = () => screen.getByRole('button', { name: 'Exit preview' });
+/** Doc 184 rule 19: whichever of the two preview buttons is showing. */
+const previewToggle = () => screen.getByRole('button', { name: /^(Preview|Exit preview)$/ });
 const panelToggle = (name: string) => screen.getByRole('button', { name });
-const iconPath = (element: HTMLElement) => element.querySelector('svg path')?.getAttribute('d');
 
-describe('preview toggle (rules 1-4)', () => {
-  it("is the header's last child, right of the panel toggles, and starts unpressed", () => {
+describe('preview control (rules 1-4, 19)', () => {
+  it("is the header's last child, right of the panel toggles", () => {
     const { slot } = renderStudio();
-    const toggle = previewToggle();
     const header = slot('form-studio-header');
+    const control = slot('preview-control');
 
-    expect(header?.lastElementChild).toBe(toggle);
-    expect(toggle.previousElementSibling).toHaveAttribute('data-slot', 'toggle-group');
-    expect(toggle).toHaveAttribute('data-slot', 'toggle');
-    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(header?.lastElementChild).toBe(control);
+    expect(control?.previousElementSibling).toHaveAttribute('data-slot', 'toggle-group');
+    expect(control).toContainElement(previewButton());
     expect(header).toHaveClass('gap-1');
   });
 
-  it('looks like the dock toggles: a 24px outline square, grey off, black on', () => {
+  it('is a saturated green Preview button with a play icon, at the dock toggles’ height (rules 19b-19c)', () => {
     renderStudio();
-    expect(previewToggle()).toHaveClass(
-      'border',
-      'size-6',
-      'min-w-6',
-      'px-0',
-      'text-gray-70',
-      'aria-pressed:text-foreground',
-    );
+    const button = previewButton();
+    expect(button).toHaveAttribute('data-slot', 'preview-enter');
+    expect(button).toHaveClass('bg-icon-success', 'text-white', 'font-semibold', 'h-6', 'text-xs');
+    expect(iconPath(button)).toBe(mdiPlay);
+    expect(screen.queryByRole('button', { name: 'Exit preview' })).toBeNull();
   });
 
-  it('shows the play icon in both modes and only its pressed state changes', async () => {
+  it('flips to a saturated red Exit preview button with a close icon, and back (rule 19)', async () => {
     const user = userEvent.setup();
     renderStudio();
-    expect(iconPath(previewToggle())).toBe(mdiPlay);
 
-    await user.click(previewToggle());
+    await user.click(previewButton());
 
-    expect(previewToggle()).toHaveAttribute('aria-pressed', 'true');
-    expect(iconPath(previewToggle())).toBe(mdiPlay);
+    const exit = exitButton();
+    expect(exit).toHaveAttribute('data-slot', 'preview-exit');
+    expect(exit).toHaveClass('bg-destructive', 'text-white', 'font-semibold', 'h-6', 'text-xs');
+    expect(iconPath(exit)).toBe(mdiClose);
+    expect(screen.queryByRole('button', { name: 'Preview' })).toBeNull();
+
+    await user.click(exit);
+
+    expect(previewButton()).toBeInTheDocument();
+  });
+});
+
+const iconPath = (element: HTMLElement) => element.querySelector('svg path')?.getAttribute('d');
+
+const menuTrigger = () => screen.queryByRole('button', { name: 'More preview options' });
+
+/** The Multi-Stage Template, whose Stages hold the Forms the menu lists. */
+const renderFlowStudio = () =>
+  renderStudio(FLOW_TEMPLATE_UISCHEMA as unknown as UISchemaElement, FLOW_TEMPLATE_SCHEMA);
+
+describe('the per-Form preview menu (rules 20, 20b)', () => {
+  it('is absent for a Form document, whose Preview button previews the whole thing', () => {
+    renderStudio();
+    expect(menuTrigger()).toBeNull();
+    // With no menu the button is not a split control, so it keeps its right corners.
+    expect(previewButton()).not.toHaveClass('rounded-r-none');
+  });
+
+  it('groups the Forms by STAGE, headed with each stage name, attached to the button (rule 20c)', async () => {
+    renderFlowStudio();
+
+    expect(previewButton()).toHaveClass('rounded-r-none');
+    fireEvent.click(menuTrigger() as HTMLElement);
+
+    const menu = await screen.findByRole('menu');
+    // A header per Stage of the template, in stage order, each followed by that stage's Forms.
+    expect(
+      within(menu)
+        .getAllByRole('group')
+        .map((group) => group.textContent),
+    ).toEqual([
+      'ApplicantPreview Your details',
+      'BusinessPreview About the business',
+      'IndividualPreview About you',
+      'Supporting informationPreview Tell us more',
+      'InspectionPreview Book an inspection',
+      'ReviewPreview Confirm and submit',
+    ]);
+    // Rule 19b: compact items — small text on one line.
+    expect(within(menu).getAllByRole('menuitem')[0]).toHaveClass('text-xs', 'whitespace-nowrap');
+  });
+
+  it('is absent while a Form is drilled into — Preview already previews that Form (rule 20d)', async () => {
+    renderFlowStudio();
+
+    // `fireEvent`, not `user`: xyflow marks a view-only node `pointer-events: none`, which userEvent refuses.
+    fireEvent.click(await screen.findByRole('button', { name: 'Open About you' }));
+
+    await waitFor(() => expect(menuTrigger()).toBeNull());
+    expect(previewButton()).not.toHaveClass('rounded-r-none');
+  });
+
+  it('previews the chosen Form alone, and drills into it on leaving', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderFlowStudio();
+    fireEvent.click(menuTrigger() as HTMLElement);
+
+    await user.click(await screen.findByRole('menuitem', { name: 'Preview About you' }));
+
+    // The Form's own field, not the whole flow: a focused Form previews without the runner's rail (doc 202 rule 40c).
+    expect(await screen.findByRole('textbox', { name: 'Mailing address' })).toBeInTheDocument();
+    expect(slot('runner-sidebar')).toBeNull();
+
+    await user.click(exitButton());
+
+    // Doc 196 rule 16: leaving preview drills into the Form it previewed.
+    expect(await screen.findByRole('textbox', { name: 'Mailing address' })).toBeInTheDocument();
+    expect(screen.queryByText('Applicant type')).toBeNull();
   });
 });
 
@@ -270,7 +346,8 @@ describe('leaving preview (rules 9-12)', () => {
     await user.click(previewToggle());
     await user.click(previewToggle());
 
-    expect(previewToggle()).toHaveAttribute('aria-pressed', 'false');
+    // Doc 184 rule 19: back to the green Preview button, rather than an unpressed toggle.
+    expect(previewButton()).toBeInTheDocument();
     expect(panelToggle('Left panel')).toHaveAttribute('aria-pressed', 'true');
     expect(panelToggle('Right panel')).toHaveAttribute('aria-pressed', 'true');
     expect(panelToggle('Bottom panel')).toHaveAttribute('aria-pressed', 'false');

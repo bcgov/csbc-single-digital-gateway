@@ -9,6 +9,9 @@ import { FormStudio } from '../src/studio';
 import { StudioCodePanel } from '../src/studio/code/studio-code-panel';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 196 rules 1-2, 5, 7-11, 13 — editing a Flow in the Form Studio. Handle connections can't be driven in jsdom
 // (rule 23): their gestures are unit-tested in studio-flow-gestures and verified by hand.
 // Doc 198 rule 4: Stage nodes are no longer draggable — positions are derived, so a drag could not persist.
@@ -114,7 +117,7 @@ describe('editor port (rules 1-2)', () => {
     // The editor is present but does NOT make nodes draggable (doc 198 rule 4); its Form rows are the tell.
     expect(centre().querySelectorAll('[data-slot="stage-form-open"]')).toHaveLength(2);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     // Doc 202 rules 40, 46: preview runs the flow instead of refusing it, and still never draws the canvas.
     expect(within(centre()).queryByRole('status')).toBeNull();
     expect(centre().querySelector('[data-slot="fill-flow"]')).not.toBeNull();

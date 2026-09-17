@@ -10,7 +10,8 @@ import { useEmptyPanels } from './document/use-empty-panels';
 import { useDockPanel, type DockPanelId } from './dock-panels';
 import { DockToggles } from './dock-toggles';
 import { useFocusAddress } from './use-focus-address';
-import { PreviewToggle } from './preview-toggle';
+import { PreviewControl } from './preview-control';
+import { previewableStages } from './preview-forms';
 import { ViewportToggles, type PreviewViewport } from './viewport-toggles';
 import { StudioBackButton } from './studio-back-button';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
@@ -75,6 +76,8 @@ import { useStudioSelection } from './use-studio-selection';
  * its own `JsonForms`, so anything typed is discarded when preview ends.
  */
 /** Doc 198 rule 17: the toggles shown while the Flow canvas is up — the left panel is unreachable there. */
+const NO_STAGES: readonly never[] = [];
+
 const FLOW_PANEL_IDS: readonly DockPanelId[] = Object.freeze(['bottom', 'right']);
 
 export const FormStudio: FC<FormStudioProps> = ({
@@ -117,7 +120,7 @@ export const FormStudio: FC<FormStudioProps> = ({
     select,
     seed: studio.seed,
   });
-  const { previewing, previewFocusId, setPreviewing } = usePreviewFocus({
+  const { previewing, previewFocusId, setPreviewing, previewForm } = usePreviewFocus({
     ...mode,
     focusId,
     select,
@@ -190,7 +193,17 @@ export const FormStudio: FC<FormStudioProps> = ({
         {ready && previewing ? (
           <ViewportToggles value={viewport} onValueChange={setViewport} />
         ) : null}
-        {ready ? <PreviewToggle pressed={previewing} onPressedChange={setPreviewing} /> : null}
+        {ready ? (
+          <PreviewControl
+            previewing={previewing}
+            // Doc 184 rules 20, 20c: the per-Form menu belongs to a multi-stage document, grouped by Stage. Rule 20d:
+            // drilled into a Form, Preview previews THAT Form, so there is nothing for the menu to add.
+            stages={focusId === null ? previewableStages(studio.uischema, studio.ids) : NO_STAGES}
+            onPreview={() => setPreviewing(true)}
+            onExit={() => setPreviewing(false)}
+            onPreviewForm={previewForm}
+          />
+        ) : null}
       </header>
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
         <StudioWorkspace

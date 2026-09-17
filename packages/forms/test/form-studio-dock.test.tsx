@@ -72,10 +72,12 @@ describe('FormStudio dock panels (doc 181)', () => {
 
   describe('toggles (rules 15-17)', () => {
     // Doc 184 rule 4 supersedes rule 15's "last child": the Preview toggle now follows the group.
-    it('renders a joined horizontal toggle group directly before the Preview toggle', () => {
+    it('renders a joined horizontal toggle group directly before the preview control', () => {
       const { header } = renderStudio();
       const group = header?.lastElementChild?.previousElementSibling;
-      expect(header?.lastElementChild).toHaveAttribute('aria-label', 'Preview');
+      // Doc 184 rule 19: the preview control is the header's last child — a button, with its menu when the
+      // document is multi-stage (rule 20).
+      expect(header?.lastElementChild).toHaveAttribute('data-slot', 'preview-control');
       expect(group).toHaveAttribute('data-slot', 'toggle-group');
       expect(group).toHaveAttribute('role', 'group');
       expect(group).toHaveAttribute('aria-label', 'Panels');

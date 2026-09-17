@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 import { renderSeededStudio } from './render-studio';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 185 rules 15-23 — Copy and Delete from the actions popover, end to end in the studio. The pure
 // document updates are covered by studio-copy-element.test.ts and studio-remove-element.test.ts.
 
@@ -212,8 +215,8 @@ describe('delete (rules 21-26)', () => {
     await gone('Name');
     await noConfirmation();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await selectAnd(await screen.findByRole('textbox', { name: 'About' }), 'Delete');
     await gone('About');
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();

@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 196 rules 12-14, 16 — drilling into a Form in a Stage, backing out, and previewing the focused Form.
 
 useXyflowJsdom();
@@ -74,7 +77,7 @@ const press = (element: HTMLElement) => {
   fireEvent.pointerDown(element);
   fireEvent.pointerUp(element);
 };
-const togglePreview = () => fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+const togglePreview = () => fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
 
 async function openContact() {
   render(<FormStudio schema={schema} uischema={FLOW} />);

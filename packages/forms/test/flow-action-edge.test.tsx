@@ -7,6 +7,9 @@ import { ACTION_EDGE_TYPE, toFlowEdges } from '../src/renderers/xyflow/flow-node
 import { FormStudio } from '../src/studio';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 198 rules 9-10, 16 — ActionEdge: the square + at each edge midpoint that slides open to
 // "+ Add" and splits the edge in two.
 
@@ -119,7 +122,7 @@ describe('ActionEdge rendering (rule 9)', () => {
   it('renders no + while previewing', async () => {
     renderStudio();
     await waitFor(() => expect(edgeAdds()).toHaveLength(1));
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await waitFor(() => expect(centre().querySelector('.react-flow')).toBeNull());
     expect(edgeAdds()).toHaveLength(0);
   });

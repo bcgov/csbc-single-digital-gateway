@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 198 rules 6-8, 12-15 — the on-canvas add affordances: a dangling + under every leaf, an origin
 // + for an empty Flow, and a "+ Add form" row on every Stage card.
 
@@ -200,7 +203,7 @@ describe('view-only and gesture safety (rules 14-15)', () => {
 
   it('renders no + affordance while previewing', async () => {
     renderStudio();
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await waitFor(() => expect(centre().querySelector('.react-flow')).toBeNull());
     expect(centre().querySelector('[data-slot="flow-leaf-add"]')).toBeNull();
     expect(centre().querySelector('[data-slot="stage-add-form"]')).toBeNull();

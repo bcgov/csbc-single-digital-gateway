@@ -3,6 +3,10 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest';
 import { FormStudio } from '../src/studio';
 import { useXyflowJsdom } from './xyflow-jsdom';
+import { BACK_TO_STAGES_LABEL } from '../src/studio/studio-back-button';
+
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
 
 // Doc 197 rules 14-18 — the header's Back button: the obvious way out of a focused Form, alongside
 // Escape (to the Stage) and the breadcrumbs.
@@ -57,8 +61,8 @@ const currentCrumb = () => {
   const page = trail().querySelector('[aria-current="page"]');
   return page ? (page.getAttribute('aria-label') ?? page.textContent) : null;
 };
-const backButton = () => screen.queryByRole('button', { name: 'Back to stage editor' });
-const togglePreview = () => fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+const backButton = () => screen.queryByRole('button', { name: BACK_TO_STAGES_LABEL });
+const togglePreview = () => fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
 const escape = () => fireEvent.keyDown(document, { key: 'Escape' });
 
 /** Renders the studio and drills into the Contact Form. */
@@ -134,10 +138,16 @@ describe('pressing Back (rule 15)', () => {
 });
 
 describe('shape and placement (rule 16)', () => {
-  it('is named "Back to stage editor" and is the first child of the header', async () => {
+  it('reads "Back to Stages" in bcgov gold and blue, and is the first child of the header (rule 16b)', async () => {
     await drillIn();
 
-    expect(header().firstElementChild).toHaveAttribute('aria-label', 'Back to stage editor');
+    const back = header().firstElementChild;
+    expect(back).toHaveTextContent(BACK_TO_STAGES_LABEL);
+    // Rule 16b: only the ARROW is on gold; the words sit beside it on the header's own background.
+    const icon = back?.querySelector('[data-slot="studio-back-icon"]');
+    expect(icon).toHaveClass('bg-bcgov-gold', 'text-bcgov-blue');
+    expect(icon?.querySelector('svg')).not.toBeNull();
+    expect(back).not.toHaveClass('bg-bcgov-gold');
   });
 
   it('keeps the dock and preview toggles right-aligned whether or not it is present', async () => {

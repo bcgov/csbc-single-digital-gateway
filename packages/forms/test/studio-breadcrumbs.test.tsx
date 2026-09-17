@@ -6,6 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 import { renderSeededStudio } from './render-studio';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 186 rules 8-18 — the footer breadcrumb trail. The root is a Form (doc 192 rules 4, 8).
 
 type GestureHandler = (event: Event, el: HTMLElement) => void;
@@ -291,10 +294,10 @@ describe('preview (rule 17)', () => {
   it('renders no breadcrumbs while previewing', async () => {
     const { email } = await renderStudio();
     press(email);
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await waitFor(() => expect(queryTrail()).toBeNull());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await screen.findByRole('textbox', { name: 'Name' });
     expect(crumbNames()).toEqual([ROOT_CRUMB]);
   });

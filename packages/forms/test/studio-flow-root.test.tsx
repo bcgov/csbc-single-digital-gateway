@@ -7,6 +7,9 @@ import * as xyflow from '../src/renderers-xyflow';
 import { FormStudio } from '../src/studio';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 195 rules 20-24 — a Flow root in the Form Studio.
 
 useXyflowJsdom();
@@ -113,7 +116,7 @@ describe('Form Studio Flow root (doc 195)', () => {
   describe('preview (rule 22)', () => {
     it('renders a fillable flow when previewing a Flow root (doc 202 rules 40, 46)', () => {
       renderStudio();
-      fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+      fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
       // Doc 202 rule 46: the "Flows can't be filled in yet." status is gone.
       expect(within(centre()).queryByRole('status')).toBeNull();
       // Doc 202 rule 40b: a Flow is previewed through <FormRunner>, so the author gets the citizen's real

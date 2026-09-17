@@ -2,6 +2,9 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderSeededStudio } from './render-studio';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 189 rules 19, 24-27 — the palette in the Form Studio's left panel, end to end. Drags are verified by hand
 // (CLAUDE.md); click-to-add exercises the same insert path.
 
@@ -46,9 +49,9 @@ describe('the palette panel (rules 19, 26-27)', () => {
 
   it('is removed while previewing and returns afterwards', async () => {
     await renderStudio();
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await waitFor(() => expect(paletteNode()).toBeNull());
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await screen.findByRole('textbox', { name: 'Name' });
     expect(paletteNode()).not.toBeNull();
   });

@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderSeededStudio } from './render-studio';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 187 rules 15-29 — the inspector in the Form Studio's right panel, end to end.
 //
 // JSDOM TRAP (CLAUDE.md): react-resizable-panels prevents default on every pointerdown in jsdom, so a
@@ -242,7 +245,7 @@ describe('canvas validation (rule 25b)', () => {
     fireEvent.click(toggle('Required'));
     await waitFor(() => expect(canvasField(/^Name\s*\*$/)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     expect(await screen.findByText('is a required property')).toBeInTheDocument();
   });
 });
@@ -258,10 +261,10 @@ describe('keyboard and preview (rules 25, 29)', () => {
   it('renders no inspector while previewing', async () => {
     const { name } = await renderStudio();
     select(name);
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await waitFor(() => expect(inspector()).toBeNull());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await screen.findByRole('textbox', { name: 'Name' });
     expect(inspector()).toHaveTextContent(EMPTY);
   });

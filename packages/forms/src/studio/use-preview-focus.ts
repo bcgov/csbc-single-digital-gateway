@@ -35,9 +35,21 @@ export function usePreviewFocus({
     setPreviewing(next);
   };
 
+  /**
+   * Doc 184 rule 20: preview ONE Form of a multi-stage document, straight from the header. It is the same remembered
+   * focus the drilled-in case uses (rule 16), set explicitly instead of read from the canvas — so leaving preview
+   * drills into that Form, exactly as leaving a preview entered from it does.
+   */
+  const previewForm = (elementId: string) => {
+    if (previewing) return;
+    setRemembered(elementId);
+    setPreviewing(true);
+  };
+
   return {
     previewing,
     previewFocusId: previewing ? remembered : null,
     setPreviewing: setPreviewingWithFocus,
+    previewForm,
   };
 }

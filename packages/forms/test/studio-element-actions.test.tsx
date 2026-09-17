@@ -7,6 +7,9 @@ import { STUDIO_GRID_CLASS } from '../src/renderers/studio/studio-grid-class';
 import { renderSeededStudio } from './render-studio';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 
+/** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
+const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
+
 // Doc 185 rules 1-14, 28 — hover, selection and the actions popover. Copy and delete are in
 // studio-element-commands.test.tsx.
 
@@ -272,10 +275,10 @@ describe('actions popover (rules 9-14)', () => {
     press(name);
     await waitFor(() => expect(actionMenus()).toHaveLength(2));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await waitFor(() => expect(actionMenus()).toHaveLength(0));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
     await screen.findByRole('textbox', { name: 'Name' });
     expect(marked('data-hovered')).toEqual([]);
     expect(marked('data-selected')).toEqual([]);
