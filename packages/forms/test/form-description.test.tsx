@@ -3,6 +3,10 @@ import { JsonForms } from '@jsonforms/react';
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import * as studio from '../src/renderers-studio';
+import {
+  FORM_DESCRIPTION_PLACEHOLDER,
+  FORM_TITLE_PLACEHOLDER,
+} from '../src/renderers/gridstack/form-renderer';
 import { FormRunner } from '../src/runner/form-runner';
 import { UISCHEMA_METASCHEMA } from '../src/studio/code/metaschema/uischema-metaschema';
 import { inspectorContext } from '../src/studio/inspector/inspector-context';
@@ -96,11 +100,26 @@ describe('Form description (rule 20)', () => {
     expect(block?.firstElementChild).toHaveAttribute('data-slot', 'form-title');
   });
 
-  it('renders nothing for an absent or blank description', async () => {
+  it('shows a placeholder on the canvas for an absent or blank description (rule 22)', async () => {
     const { container } = await renderStudioSet(
       form({ label: 'Permit', options: { description: '   ' } }),
     );
     expect(container.querySelector('[data-slot="form-description"]')).toBeNull();
+    expect(container.querySelector('[data-slot="form-description-placeholder"]')).toHaveTextContent(
+      FORM_DESCRIPTION_PLACEHOLDER,
+    );
+  });
+
+  it('offers the same placeholders in the inspector, and never writes them (rule 22)', () => {
+    const root = form({ label: 'Permit' });
+    const ctx = contextFor(root);
+    expect(descriptionField?.options?.(ctx)).toMatchObject({
+      placeholder: FORM_DESCRIPTION_PLACEHOLDER,
+    });
+    const titleField = INSPECTOR_FIELDS.find((field) => field.key === 'label');
+    expect(titleField?.options?.(ctx)).toEqual({ placeholder: FORM_TITLE_PLACEHOLDER });
+    // A placeholder is never authored: the element has no options at all until something is typed.
+    expect(root.options).toBeUndefined();
   });
 
   it('is set from the inspector into options.description, and cleared by emptying it', () => {
@@ -159,6 +178,12 @@ describe('Form description in the runner (rule 20b)', () => {
     // The heading gives its bottom padding to the description, so the pair keeps the title's p-6 frame.
     expect(bar?.querySelector('[data-slot="form-title"]')).toHaveClass('px-6', 'pt-6', 'pb-2');
     expect(bar?.firstElementChild).toHaveAttribute('data-slot', 'form-title');
+  });
+
+  it('renders no description placeholder for a citizen — the runner shows only what is authored', async () => {
+    const { container } = renderRunner(form({ label: 'Permit' }));
+    await screen.findByText('Body');
+    expect(container.querySelector('[data-slot="form-description-placeholder"]')).toBeNull();
   });
 
   it('keeps the title at p-6 when there is no description', async () => {

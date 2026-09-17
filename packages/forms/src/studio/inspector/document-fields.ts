@@ -1,3 +1,4 @@
+import { FORM_DESCRIPTION_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
 import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
 import { startStage, STRING } from './field-schemas';
@@ -28,7 +29,8 @@ export const DOCUMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     label: 'Description',
     applies: (ctx) => ctx.element.type === FORM_TYPE,
     schema: () => ({ ...STRING, description: 'Shown under the title.' }),
-    options: () => ({ component: 'textarea' }),
+    // Doc 201 rule 22: the same placeholder the canvas shows for an unwritten description.
+    options: () => ({ component: 'textarea', placeholder: FORM_DESCRIPTION_PLACEHOLDER }),
     read: (ctx) => text(optionsOf(ctx.element)['description']),
     // An emptied description is removed, like every other optional option.
     write: (_ctx, edit, value) =>

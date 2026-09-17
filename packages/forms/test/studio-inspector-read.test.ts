@@ -66,7 +66,8 @@ describe('reading the document (rule 14)', () => {
     // A string-only component on a choice reads as what actually renders.
     expect(read(choiceControl({ component: 'textarea' }), choiceSchema)).toBe('combobox');
 
-    expect(formFor(agree).form.data).toEqual({ required: false, component: 'checkbox' });
+    // Doc 187 rule 29: a boolean has Must be checked in place of Required.
+    expect(formFor(agree).form.data).toEqual({ mustBeChecked: false, component: 'checkbox' });
     const agreeAs = el({
       type: 'Control',
       scope: '#/properties/agree',

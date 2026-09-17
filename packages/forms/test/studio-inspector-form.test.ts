@@ -49,9 +49,10 @@ describe('fields per element (rules 8-10)', () => {
 
   it('gives a boolean Control label, description, required and component (doc 188 rule 25)', () => {
     // `agree` is a boolean property, and the Control sits in the root VerticalLayout (no width).
+    // Doc 187 rule 29: a boolean shows "Must be checked" in place of Required.
     expect(sections(formFor(agree).form)).toEqual([
       ['General', ['label', 'description']],
-      ['Validation', ['required']],
+      ['Validation', ['mustBeChecked']],
       ['Appearance', ['component']],
     ]);
   });

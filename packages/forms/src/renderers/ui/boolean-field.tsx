@@ -3,6 +3,17 @@ import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@
 import type { MouseEvent, ReactNode } from 'react';
 import { controlWiring, type ControlInputProps } from './control-field';
 
+/**
+ * Doc 188 rule 23: a boolean field that must be TICKED is `const: true` on its property (doc 187 rule 29) — Ajv's own
+ * way to say it, so the gate, the rail's flags and the API's `validateSubmission` all enforce it with no new code. Its
+ * default message ("must be equal to constant") means nothing to a citizen, so the boolean controls say this instead.
+ */
+export const MUST_BE_CHECKED_MESSAGE = 'must be checked';
+
+/** Whether this control's property is the `const: true` kind. */
+export const mustBeChecked = (control: ControlProps): boolean =>
+  (control.schema as { const?: unknown }).const === true;
+
 // Clicks here already toggle: the control itself, its hidden input, or a label (which forwards to the input).
 const TOGGLES_NATIVELY = 'input, label, [role="checkbox"], [role="switch"]';
 
@@ -31,19 +42,22 @@ interface BooleanFieldProps {
 export function BooleanField({ control, placement, children }: BooleanFieldProps) {
   const { label, required, description, errors, enabled, visible, config } = control;
   if (!visible) return null;
+  // Rule 23: a must-be-checked field reads as required to a citizen — asterisk included — and says why in plain words.
+  const ticked = mustBeChecked(control);
+  const message = ticked && errors ? MUST_BE_CHECKED_MESSAGE : errors;
 
   const { ids, input } = controlWiring(control, false);
   const content = (
     <FieldContent>
       {ids.label ? (
         <FieldLabel id={ids.label} htmlFor={input.id}>
-          {computeLabel(label, required === true, config?.hideRequiredAsterisk === true)}
+          {computeLabel(label, required === true || ticked, config?.hideRequiredAsterisk === true)}
         </FieldLabel>
       ) : null}
       {ids.description ? (
         <FieldDescription id={ids.description}>{description}</FieldDescription>
       ) : null}
-      {ids.error ? <FieldError id={ids.error}>{errors}</FieldError> : null}
+      {ids.error ? <FieldError id={ids.error}>{message}</FieldError> : null}
     </FieldContent>
   );
   const box = children({ ...input, ...(ids.label ? { 'aria-labelledby': ids.label } : {}) });

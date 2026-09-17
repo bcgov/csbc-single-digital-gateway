@@ -16,6 +16,9 @@ export const NESTED_FORM_MESSAGE = 'A Form can only be the root element or sit i
 /** Doc 201 rule 11: what the studio canvas shows in place of an unwritten title. A placeholder only — never authored. */
 export const FORM_TITLE_PLACEHOLDER = 'Untitled form';
 
+/** Doc 201 rule 22: the same, for an unwritten description. Never authored, and never shown to a citizen. */
+export const FORM_DESCRIPTION_PLACEHOLDER = 'Add a description...';
+
 /**
  * Doc 201 rule 2: a title component is given the Form's element and reads `uischema.label` itself. JSONForms'
  * `withJsonFormsLayoutProps` supplies no translated label to a layout, so there is no `label` prop to read.
@@ -50,8 +53,8 @@ function studioInset(uischema: UISchemaElement): CSSProperties {
 /**
  * Doc 201 rule 7: the studio canvas title — the heading alone, no rule and no chrome. Rule 7b: styled like the
  * studio's disabled fields, and inset to line up with the elements. Rule 11: an empty title draws a muted placeholder
- * instead, so an untitled Form still shows the author where its title goes. Rule 20: the
- * description, when authored, sits under it with the same inset and grey.
+ * instead, so an untitled Form still shows the author where its title goes. Rule 20: the description sits under it
+ * with the same inset and grey; rule 22: unwritten, it shows a placeholder of its own.
  */
 export function StudioFormTitle({ uischema }: FormTitleProps) {
   const title = labelOf(uischema, '');
@@ -79,7 +82,13 @@ export function StudioFormTitle({ uischema }: FormTitleProps) {
           {title}
         </Heading>
       )}
-      {description === '' ? null : (
+      {/* Rule 22: an unwritten description shows its own placeholder, exactly as the title does (rule 11), so the
+          author can see where it goes. Fillable forms still render nothing (rule 20b). */}
+      {description === '' ? (
+        <p data-slot="form-description-placeholder" className="mt-2 text-muted-foreground">
+          {FORM_DESCRIPTION_PLACEHOLDER}
+        </p>
+      ) : (
         <p data-slot="form-description" className="mt-2 text-muted-foreground">
           {description}
         </p>

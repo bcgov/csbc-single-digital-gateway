@@ -1,4 +1,5 @@
 import type { JsonSchema } from '@jsonforms/core';
+import { FORM_TITLE_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
 import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
@@ -197,6 +198,8 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
         ? { type: 'string', description: labelHint(ctx) }
         : STRING,
     options: (ctx) => {
+      // Doc 201 rule 22: a Form's Title offers the canvas placeholder; a Control's offers the property's title.
+      if (isForm(ctx)) return { placeholder: FORM_TITLE_PLACEHOLDER };
       const title = text(ctx.property?.title)?.trim();
       return title ? { placeholder: title } : undefined;
     },
@@ -229,7 +232,9 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'required',
     section: 'validation',
     label: 'Required',
-    applies: hasProperty,
+    // Doc 187 rule 29: never for a boolean. Unticking writes `false`, not nothing, so `required` is always satisfied
+    // and the toggle would promise a gate that can never fire; "Must be checked" is what an author wants there.
+    applies: (ctx) => hasProperty(ctx) && ctx.controlKind !== 'boolean',
     schema: () => BOOLEAN,
     // Doc 188 rule 22: the small renderers/ui Switch.
     options: () => ({ component: 'switch', size: 'sm' }),
@@ -238,6 +243,23 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
         ? ctx.schema.required.includes(ctx.propertyKey)
         : false,
     write: (ctx, edit, value) => setRequired(ctx, edit, value === true),
+  },
+  {
+    key: 'mustBeChecked',
+    section: 'validation',
+    label: 'Must be checked',
+    // Doc 187 rule 29: a boolean's counterpart to Required — the box must be TICKED, not merely present.
+    applies: (ctx) => hasProperty(ctx) && ctx.controlKind === 'boolean',
+    schema: () => BOOLEAN,
+    options: () => ({ component: 'switch', size: 'sm' }),
+    // Stored as `const: true` on the property (doc 188 rule 23), so Ajv enforces it and so does the API — AND in
+    // `required`, because `const` is only evaluated for a property that is PRESENT: an untouched checkbox writes
+    // nothing at all, so `const` alone would let an unticked box through (user question 2026-09-17).
+    read: (ctx) => ctx.property?.const === true,
+    write: (ctx, edit, value) => {
+      const on = value === true;
+      return setRequired(ctx, setProperty(ctx, edit, 'const', on ? true : undefined), on);
+    },
   },
   propertyField('maxLength', 'validation', 'Max length', isText, integer({ minimum: 0 }), finite),
   propertyField('minimum', 'validation', 'Minimum', isNumber, NUMBER, finite),

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import * as ui from '../src/renderers-ui';
 import { CheckboxControlRenderer } from '../src/renderers/ui/checkbox-renderer';
 import { SwitchControlRenderer } from '../src/renderers/ui/switch-renderer';
+import { MUST_BE_CHECKED_MESSAGE } from '../src/renderers/ui/boolean-field';
 
 // Doc 188 rules 4, 6-7, 17-20 — the Checkbox and Switch control renderers in renderers/ui.
 
@@ -156,10 +157,40 @@ describe('Checkbox control (rules 17-18, 20)', () => {
 
   it('shows validation errors, sets aria-invalid and describes the checkbox with the error', () => {
     renderForm(schemaWith({ const: true }), control(), { agree: false });
-    const box = screen.getByRole('checkbox', { name: 'Agree' });
+    // Doc 188 rule 23: `const: true` is "must be checked", so the label carries the required asterisk.
+    const box = screen.getByRole('checkbox', { name: 'Agree*' });
     const alert = screen.getByRole('alert');
     expect(box).toHaveAttribute('aria-invalid', 'true');
     expect(box).toHaveAccessibleDescription(alert.textContent ?? '');
+  });
+
+  it('says "must be checked" rather than Ajv\'s "must be equal to constant" (rule 23)', () => {
+    renderForm(schemaWith({ const: true }), control(), { agree: false });
+    expect(screen.getByRole('alert')).toHaveTextContent(MUST_BE_CHECKED_MESSAGE);
+    expect(screen.getByRole('alert')).not.toHaveTextContent('constant');
+  });
+
+  it('says the same for an UNTOUCHED box, which writes nothing at all (rule 23)', () => {
+    // `const` is only evaluated for a property that is PRESENT, so Must be checked also marks it required
+    // (doc 187 rule 29) — without that, a citizen who never touched the box would pass validation.
+    renderForm(schemaWith({ const: true }, ['agree']), control(), {});
+    expect(screen.getByRole('alert')).toHaveTextContent(MUST_BE_CHECKED_MESSAGE);
+    expect(screen.getByRole('checkbox', { name: 'Agree*' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('is satisfied once the box is ticked', () => {
+    renderForm(schemaWith({ const: true }, ['agree']), control(), { agree: true });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it("keeps Ajv's own message for any OTHER boolean error, and adds no asterisk", () => {
+    // `const: false` is not the must-be-checked case, so nothing is rewritten.
+    renderForm(schemaWith({ const: false }), control(), { agree: true });
+    expect(screen.getByRole('checkbox', { name: 'Agree' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).not.toHaveTextContent(MUST_BE_CHECKED_MESSAGE);
   });
 
   it('is disabled when the form is read-only', () => {
