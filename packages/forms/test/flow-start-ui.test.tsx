@@ -56,10 +56,6 @@ const stageData = (uischema: UISchemaElement, id: string) => {
   return (node as StageFlowNode | undefined)?.data;
 };
 
-const DOCUMENT_POSITION_FOLLOWING = 4;
-const precedes = (first: Element, second: Element) =>
-  (first.compareDocumentPosition(second) & DOCUMENT_POSITION_FOLLOWING) !== 0;
-
 describe('Flow start stage — canvas and inspector (doc 203)', () => {
   describe('node data (rule 7)', () => {
     it('marks the start Stage isStart in toFlowNodes', () => {
@@ -98,35 +94,62 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
     });
   });
 
-  describe('the Start marker (rule 8)', () => {
-    it('renders above the top handle on the start Stage', () => {
+  describe('the start and end treatments (rule 8, amended)', () => {
+    it('rings the start Stage green, with no marker chrome hung off it', () => {
       const { container } = renderFlow(flow([stage('a'), stage('b')], { startId: 'a' }));
-      const node = nodeOf(container, 'a');
-      const marker = node.querySelector(MARKER);
-      expect(marker).toHaveTextContent('Start');
-      const target = node.querySelector('.react-flow__handle.target');
-      expect(precedes(marker as Element, target as Element)).toBe(true);
+      const wrapper = nodeOf(container, 'a').querySelector(WRAPPER);
+      expect(wrapper).toHaveAttribute('data-start');
+      expect(wrapper).toHaveClass('ring-4', 'ring-success-border');
+      // The "Start" badge and its connector line are gone: the card itself says it now.
+      expect(container.querySelector(MARKER)).toBeNull();
     });
 
-    it('renders on no other Stage', () => {
-      const { container } = renderFlow(flow([stage('a'), stage('b')], { startId: 'a' }));
-      expect(nodeOf(container, 'b').querySelector(MARKER)).toBeNull();
-      expect(container.querySelectorAll(MARKER)).toHaveLength(1);
+    it('rings on no other Stage', () => {
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
+      );
+      expect(nodeOf(container, 'b').querySelector(WRAPPER)).not.toHaveAttribute('data-start');
+      expect(container.querySelectorAll(`${WRAPPER}[data-start]`)).toHaveLength(1);
     });
 
-    it('is presentational: not a handle, not connectable, and carries nodrag nopan', () => {
+    it('takes the input slot off the start Stage, but still RENDERS the handle', () => {
+      const { container } = renderFlow(flow([stage('a'), stage('b')], { startId: 'a' }));
+      const target = nodeOf(container, 'a').querySelector('.react-flow__handle.target');
+      // Deleting it outright would make an authored edge INTO the start vanish silently (doc 199 rule 18's
+      // trap), so it stays in the DOM: hidden, and never connectable.
+      expect(target).not.toBeNull();
+      expect(target).toHaveClass('opacity-0');
+      expect(target?.classList.contains('connectable')).toBe(false);
+    });
+
+    it('rings an end Stage red — one no edge leaves', () => {
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
+      );
+      const end = nodeOf(container, 'b').querySelector(WRAPPER);
+      expect(end).toHaveAttribute('data-end');
+      expect(end).toHaveClass('ring-4', 'ring-danger-border');
+      // The Stage the flow leaves is not an end, so it keeps no ring of its own.
+      expect(nodeOf(container, 'a').querySelector(WRAPPER)).not.toHaveAttribute('data-end');
+    });
+
+    it('lets the start win when one Stage is both, and it is still an end', () => {
       const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
-      const marker = nodeOf(container, 'a').querySelector(MARKER);
-      expect(marker).toHaveClass('nodrag', 'nopan', 'pointer-events-none');
-      expect(marker?.querySelector('.react-flow__handle')).toBeNull();
-      expect(marker?.classList.contains('connectable')).toBe(false);
+      const wrapper = nodeOf(container, 'a').querySelector(WRAPPER);
+      // A one-Stage flow begins and ends on the same card. Where it BEGINS is the stronger thing to say, and
+      // only one ring can be worn — but the flag stays, so nothing downstream loses the fact.
+      expect(wrapper).toHaveAttribute('data-start');
+      expect(wrapper).toHaveAttribute('data-end');
+      expect(wrapper).toHaveClass('ring-success-border');
+      expect(wrapper).not.toHaveClass('ring-danger-border');
     });
 
-    it('renders view-only too, with no editor present', () => {
-      // No FlowEditorProvider here, so the leaf + is absent (doc 198 rule 14) — but the start still says so.
+    it('rings view-only too, with no editor present', () => {
+      // No FlowEditorProvider here, so the leaf + is absent (doc 198 rule 14) — but where the flow begins and
+      // ends is structure, not authoring, so it is drawn either way.
       const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
       expect(container.querySelector('[data-slot="flow-leaf-add"]')).toBeNull();
-      expect(container.querySelector(MARKER)).not.toBeNull();
+      expect(nodeOf(container, 'a').querySelector(WRAPPER)).toHaveAttribute('data-start');
     });
   });
 

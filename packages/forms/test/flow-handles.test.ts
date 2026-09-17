@@ -2,7 +2,6 @@ import { Position } from '@xyflow/react';
 import { describe, expect, it } from 'vitest';
 import {
   connectorClass,
-  leadingAnchor,
   sourceSide,
   targetSide,
   trailingAnchor,
@@ -30,28 +29,14 @@ describe('what hangs off a card (doc 199 amendment 8)', () => {
     expect(trailingAnchor('horizontal')).toContain('left-full');
   });
 
-  it('puts the leading affordance on the face the flow ARRIVES by', () => {
-    expect(leadingAnchor('vertical')).toContain('bottom-full');
-    expect(leadingAnchor('horizontal')).toContain('right-full');
-  });
-
   it('lays each out along the axis it hangs off', () => {
     // A column under the card, a row beside it — otherwise the connector line and its control stack the wrong way.
     expect(trailingAnchor('vertical')).toContain('flex-col');
     expect(trailingAnchor('horizontal')).toContain('flex-row');
-    expect(leadingAnchor('vertical')).toContain('flex-col');
-    expect(leadingAnchor('horizontal')).toContain('flex-row');
   });
 
   it('turns the connector line with them', () => {
     expect(connectorClass('vertical')).toContain('h-3');
     expect(connectorClass('horizontal')).toContain('w-3');
-  });
-
-  it('keeps the start marker and the leaf + on OPPOSITE faces (doc 203 rule 8)', () => {
-    // They are documented as mirrors: one of them flipping alone is the failure this pins.
-    for (const direction of ['vertical', 'horizontal'] as const) {
-      expect(trailingAnchor(direction)).not.toBe(leadingAnchor(direction));
-    }
   });
 });

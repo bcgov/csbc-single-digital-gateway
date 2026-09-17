@@ -143,10 +143,16 @@ describe('canvas under an editor (rules 4-5, 7)', () => {
     expect(node).not.toHaveClass('selectable');
     const handles = [...node.querySelectorAll('.react-flow__handle')];
     expect(handles).toHaveLength(2);
-    for (const handle of handles) {
-      expect(handle).toHaveClass('connectable', 'size-2.5!');
-      expect(handle).not.toHaveClass('opacity-0');
-    }
+
+    // Doc 203 rule 8 (amended): s1 is the flow's start, so its INPUT slot is hidden and unconnectable —
+    // nothing flows into the start. Its source handle is a normal connectable one.
+    const target = handles.find((handle) => handle.classList.contains('target'));
+    expect(target).toHaveClass('opacity-0');
+    expect(target?.classList.contains('connectable')).toBe(false);
+
+    const source = handles.find((handle) => handle.classList.contains('source'));
+    expect(source).toHaveClass('connectable', 'size-2.5!');
+    expect(source).not.toHaveClass('opacity-0');
   });
 
   it('draws edges selectable', async () => {

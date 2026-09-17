@@ -3,13 +3,7 @@ import { Handle, type NodeProps } from '@xyflow/react';
 import { useContext } from 'react';
 import { AddNodeMenu } from './add-affordance';
 import { FlowContext } from './flow-context';
-import {
-  connectorClass,
-  leadingAnchor,
-  sourceSide,
-  targetSide,
-  trailingAnchor,
-} from './flow-handles';
+import { connectorClass, sourceSide, targetSide, trailingAnchor } from './flow-handles';
 import { useFlowEditor } from './flow-editor';
 import type { StageFlowNode } from './flow-nodes';
 
@@ -19,13 +13,39 @@ const EDIT_HANDLE_CLASS = 'size-2.5! border-ring! bg-background!';
 const VIEW_HANDLE_CLASS = 'opacity-0';
 
 /**
+ * Doc 203 rules 8-9, amended 2026-09-17: where a Stage sits in the flow, said on the CARD rather than in chrome
+ * hung off it — a thick green glow on the one the flow starts at, a thick red one on any Stage no edge leaves.
+ *
+ * All three treatments RING the card rather than restyling it: the ring sits outside the card's own border, so
+ * a Stage can be the start, an end, or unreachable without any of them fighting over the same pixels. Start
+ * wins when a Stage is both (a one-Stage flow): where the flow BEGINS is the stronger thing to say, and such a
+ * Stage is trivially also its end.
+ *
+ * The colours are the design system's state families, never raw green and red — `success` and `danger` carry
+ * the accessible pairings, and the surface tone is what makes the ring read as a glow rather than a border.
+ */
+function stageTreatment(data: StageFlowNode['data']): string {
+  const base = 'pointer-events-auto rounded-xl';
+  // Doc 203 rule 9: a Stage no path from the start reaches is muted and outlined dashed. It can combine with
+  // either ring — the outline sits outside it — because being unreachable says something neither ring does.
+  const unreachable = data.isUnreachable
+    ? ' opacity-60 outline-2 outline-offset-2 outline-dashed outline-border'
+    : '';
+  if (data.isStart)
+    return `${base}${unreachable} ring-4 ring-success-border shadow-[0_0_0_6px_var(--color-success-surface)]`;
+  if (data.isLeaf)
+    return `${base}${unreachable} ring-4 ring-danger-border shadow-[0_0_0_6px_var(--color-danger-surface)]`;
+  return `${base}${unreachable}`;
+}
+
+/**
  * The xyflow node every Stage is drawn with (doc 195 rules 7, 15): the Stage element dispatched back through JSONForms
  * with the Flow's registry — so the registry, never a tester, decides whether it gets a studio frame — between a target
  * handle on top and a source handle beneath. View-only, the handles only anchor edges: not connectable, and hidden.
  * Under a Flow editor (doc 196 rule 5) they are visible and connectable.
  *
- * Doc 198 rules 3, 32: the handles sit on the faces the canvas direction puts them on, and everything that hangs off
- * the card — the leaf + and the Start marker — follows them. Changing the layout without moving them draws every edge,
+ * Doc 198 rules 3, 32: the handles sit on the faces the canvas direction puts them on, and the leaf + that hangs off
+ * the card follows them. Changing the layout without moving them draws every edge,
  * and every affordance, leaving the wrong face.
  *
  * Rule 15b: xyflow sets `pointer-events: none` on a node that is neither selectable nor draggable, which every child
@@ -42,39 +62,27 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
   return (
     <>
       {/*
-        Doc 203 rule 8: the Flow's start Stage wears a marker beyond its target handle — the mirror of the leaf +
-        beyond the source handle, with its connector line running toward the card. Both follow the canvas
-        DIRECTION (doc 199 amendment 8): the leading face is the top of a vertical canvas and the left of a
-        horizontal one. Purely presentational: it is not a Handle, never connectable, and `nodrag nopan` because
-        xyflow pans from any press on the pane (doc 198 rule 20). Unlike the leaf +, it draws with or without an
-        editor: a view-only Flow should still say where it begins.
+        Doc 203 rule 8, SUPERSEDED 2026-09-17 (user: "the start stage should have a thick green border/glow.
+        The input slot should be removed"). The start Stage wore a "Start" badge on a connector line above its
+        target handle; the card itself now says it, and the input slot is gone — nothing flows INTO the start,
+        so offering somewhere to connect one was inviting a shape the flow has no meaning for.
+
+        The handle is still RENDERED, hidden and unconnectable, rather than deleted: xyflow silently drops an
+        edge whose end names a handle the node does not have (doc 199 rule 18's trap), so deleting it would
+        make an authored edge into the start VANISH with no error anywhere. Kept, such an edge still draws, and
+        its source still earns the "Not reachable" badge — which is the honest reading of that document.
       */}
-      {data.isStart ? (
-        <div
-          data-slot="flow-start-marker"
-          className={`nodrag nopan pointer-events-none absolute flex items-center ${leadingAnchor(flow.direction)}`}
-        >
-          <span className="rounded-full border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-            Start
-          </span>
-          <span aria-hidden="true" className={connectorClass(flow.direction)} />
-        </div>
-      ) : null}
       <Handle
         type="target"
         position={targetSide(flow.direction)}
-        isConnectable={editing}
-        className={handleClass}
+        isConnectable={editing && !data.isStart}
+        className={data.isStart ? VIEW_HANDLE_CLASS : handleClass}
       />
       <div
         data-slot="stage-node"
-        // Doc 203 rule 9: a Stage no path from the start reaches is muted and outlined dashed. The outline sits
-        // OUTSIDE the card's own border, so the two never fight.
-        className={
-          data.isUnreachable
-            ? 'pointer-events-auto rounded-xl opacity-60 outline-2 outline-offset-2 outline-dashed outline-border'
-            : 'pointer-events-auto'
-        }
+        className={stageTreatment(data)}
+        {...(data.isStart ? { 'data-start': '' } : {})}
+        {...(data.isLeaf ? { 'data-end': '' } : {})}
         {...(data.isUnreachable ? { 'data-unreachable': '' } : {})}
       >
         <JsonFormsDispatch
