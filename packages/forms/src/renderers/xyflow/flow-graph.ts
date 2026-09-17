@@ -148,14 +148,16 @@ export function leafStageIds(flow: UISchemaElement): string[] {
  * reachable and every Stage is. A Stage whose id is a placeholder IS listed: no edge can address it, so it is
  * unreachable in the most literal sense, and that is worth showing the author.
  *
- * Conditions are never listed (rule 6) — they are traversed, never visited, and an unreachable Condition is only
- * ever a symptom of the unreachable Stage behind it.
+ * Rule 6 said Conditions are never listed — they are traversed, never visited, so an unreachable Condition
+ * read as a symptom of the unreachable Stage behind it. **SUPERSEDED 2026-09-17** (user: "condition nodes
+ * should be included in this"): a Condition off the start's path is just as stranded, and it is the node the
+ * author has to find to fix it. A Condition dangling with no Stage behind it at all had nothing to point at.
  */
-export function unreachableStageIds(flow: UISchemaElement): string[] {
+export function unreachableNodeIds(flow: UISchemaElement): string[] {
   const start = startStageId(flow);
   const edges = flowEdges(flow);
-  return drawnNodes(flow).flatMap(({ id, kind }) =>
-    kind === 'stage' && (start === undefined || !reachesNode(edges, start, id)) ? [id] : [],
+  return drawnNodes(flow).flatMap(({ id }) =>
+    start === undefined || !reachesNode(edges, start, id) ? [id] : [],
   );
 }
 

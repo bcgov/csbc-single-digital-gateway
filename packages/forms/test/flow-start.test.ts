@@ -6,7 +6,7 @@ import { startStageId } from '../src/renderers/xyflow/flow-elements';
 import {
   flowProblems,
   unknownStartMessage,
-  unreachableStageIds,
+  unreachableNodeIds,
 } from '../src/renderers/xyflow/flow-graph';
 import { UISCHEMA_METASCHEMA } from '../src/studio/code/metaschema/uischema-metaschema';
 import { documentFor } from '../src/studio/document/document-source';
@@ -107,40 +107,43 @@ describe('Flow start stage (doc 203)', () => {
     });
   });
 
-  describe('unreachableStageIds (rules 4-6)', () => {
+  describe('unreachableNodeIds (rules 4-6)', () => {
     it('lists Stages with no path from the start, in elements order', () => {
-      expect(unreachableStageIds(flow(abc, { edges: [edge('e1', 'a', 'b')] }))).toEqual(['c']);
-      expect(unreachableStageIds(flow(abc))).toEqual(['b', 'c']);
+      expect(unreachableNodeIds(flow(abc, { edges: [edge('e1', 'a', 'b')] }))).toEqual(['c']);
+      expect(unreachableNodeIds(flow(abc))).toEqual(['b', 'c']);
     });
 
     it('never lists the start itself', () => {
-      expect(unreachableStageIds(flow(abc))).not.toContain('a');
+      expect(unreachableNodeIds(flow(abc))).not.toContain('a');
       // Including when the start is authored rather than derived.
-      expect(unreachableStageIds(flow(abc, { startId: 'c' }))).toEqual(['a', 'b']);
+      expect(unreachableNodeIds(flow(abc, { startId: 'c' }))).toEqual(['a', 'b']);
     });
 
     it('lists every Stage when the Flow has no start', () => {
-      expect(unreachableStageIds(flow([stage(), stage()]))).toEqual(['__stage-0', '__stage-1']);
-      expect(unreachableStageIds(flow([]))).toEqual([]);
+      expect(unreachableNodeIds(flow([stage(), stage()]))).toEqual(['__stage-0', '__stage-1']);
+      expect(unreachableNodeIds(flow([]))).toEqual([]);
     });
 
     it('ignores edges the sanitiser drops, so a dropped edge never makes a Stage look reachable', () => {
       // An unknown target and a self-loop are both dropped by flowEdges.
       const edges = [edge('e1', 'a', 'ghost'), edge('e2', 'b', 'b')];
-      expect(unreachableStageIds(flow(abc, { edges }))).toEqual(['b', 'c']);
+      expect(unreachableNodeIds(flow(abc, { edges }))).toEqual(['b', 'c']);
     });
 
-    it('never lists Conditions', () => {
-      const root = flow([stage('a'), condition('x')], { edges: [edge('e1', 'a', 'x')] });
-      expect(unreachableStageIds(root)).toEqual([]);
-      expect(unreachableStageIds(flow([stage('a'), condition('x')]))).toEqual([]);
+    it('lists a stranded Condition too (rule 6, widened 2026-09-17)', () => {
+      // A Condition ON the path is reachable like any other node...
+      const wired = flow([stage('a'), condition('x')], { edges: [edge('e1', 'a', 'x')] });
+      expect(unreachableNodeIds(wired)).toEqual([]);
+      // ...and one with nothing leading to it is stranded, which is the node the author has to find. Read as a
+      // symptom of the Stage behind it, a Condition dangling with no Stage behind it had nothing to point at.
+      expect(unreachableNodeIds(flow([stage('a'), condition('x')]))).toEqual(['x']);
     });
 
     it('follows a path that runs through a Condition', () => {
       const root = flow([stage('a'), condition('x'), stage('b')], {
         edges: [edge('e1', 'a', 'x'), edge('e2', 'x', 'b')],
       });
-      expect(unreachableStageIds(root)).toEqual([]);
+      expect(unreachableNodeIds(root)).toEqual([]);
     });
   });
 
@@ -171,7 +174,7 @@ describe('Flow start stage (doc 203)', () => {
       // Every Stage but 'a' is unreachable here, and the document still applies: mid-wiring, every new
       // Stage is unreachable until it is connected.
       const root = flow(abc, { startId: 'a' });
-      expect(unreachableStageIds(root)).toEqual(['b', 'c']);
+      expect(unreachableNodeIds(root)).toEqual(['b', 'c']);
       expect(flowProblems(root)).toEqual([]);
     });
   });

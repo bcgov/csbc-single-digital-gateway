@@ -49,7 +49,6 @@ const nodeOf = (container: HTMLElement, id: string) => {
 
 const MARKER = '[data-slot="flow-start-marker"]';
 const BADGE_SLOT = '[data-slot="flow-stage-badge"]';
-const BADGE = '[data-slot="flow-unreachable-badge"]';
 const WRAPPER = '[data-slot="stage-node"]';
 
 const stageData = (uischema: UISchemaElement, id: string) => {
@@ -86,11 +85,13 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
         'isStart',
         'isUnreachable',
       ]);
-      // A Condition's data is untouched: it is traversed, never started at or visited.
+      // A Condition is never STARTED at and holds no Forms to lead anywhere, so it takes neither isStart nor
+      // isLeaf — but it can be stranded, so it carries isUnreachable (rule 9, widened 2026-09-17).
       const conditionNode = toFlowNodes(uischema).find((node) => node.id === 'x');
       expect(Object.keys(conditionNode?.data ?? {}).toSorted()).toEqual([
         'connectedOutputs',
         'element',
+        'isUnreachable',
       ]);
     });
   });
@@ -123,13 +124,16 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       expect(target?.classList.contains('connectable')).toBe(false);
     });
 
-    it('rings an end Stage red — one no edge leaves', () => {
+    it('rings an end Stage BLACK — one no edge leaves', () => {
       const { container } = renderFlow(
         flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
       );
       const end = nodeOf(container, 'b').querySelector(WRAPPER);
       expect(end).toHaveAttribute('data-end');
-      expect(end).toHaveClass('ring-4', 'ring-danger-border');
+      // Black, not red: an end is a perfectly good state, and red is reserved for a node that can never route
+      // an answer anywhere. A finished flow's last Stage would otherwise wear a warning forever.
+      expect(end).toHaveClass('ring-4', 'ring-foreground');
+      expect(end).not.toHaveClass('ring-danger-border');
       // The Stage the flow leaves is not an end, so it keeps no ring of its own.
       expect(nodeOf(container, 'a').querySelector(WRAPPER)).not.toHaveAttribute('data-end');
     });
@@ -187,7 +191,7 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
         'font-semibold',
       );
       expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toHaveClass(
-        'bg-danger-border',
+        'bg-foreground',
         'text-white',
       );
     });
@@ -207,23 +211,38 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       edges: [edge('e1', 'a', 'b')],
     });
 
-    it('marks an unreachable Stage visibly, with a "Not reachable" badge', () => {
+    it('rings an unreachable Stage RED, captioned "Not reachable"', () => {
       const { container } = renderFlow(unreachable);
       const node = nodeOf(container, 'c');
       expect(node.querySelector(WRAPPER)).toHaveAttribute('data-unreachable');
-      expect(node.querySelector(WRAPPER)).toHaveClass('opacity-60', 'outline-dashed');
-      expect(node.querySelector(BADGE)).toHaveTextContent('Not reachable');
-      // Presentational, like the marker.
-      expect(node.querySelector(BADGE)).toHaveClass('nodrag', 'nopan', 'pointer-events-none');
+      // Red (user 2026-09-17): being stranded is a fault in the document, which is what red now means.
+      expect(node.querySelector(WRAPPER)).toHaveClass('ring-4', 'ring-danger-border');
+      const badge = node.querySelector(BADGE_SLOT);
+      expect(badge).toHaveTextContent('Not reachable');
+      expect(badge).toHaveClass('bg-danger-border', 'nodrag', 'nopan', 'pointer-events-none');
     });
 
-    it('leaves a reachable Stage unmarked', () => {
+    it('outranks the end ring: a stranded Stage says it is stranded, not that the flow stops there', () => {
+      // 'c' is a leaf as well as unreachable. Being stranded is the more urgent of the two to be told.
       const { container } = renderFlow(unreachable);
-      for (const id of ['a', 'b']) {
-        const node = nodeOf(container, id);
-        expect(node.querySelector(WRAPPER), id).not.toHaveAttribute('data-unreachable');
-        expect(node.querySelector(BADGE), id).toBeNull();
-      }
+      const wrapper = nodeOf(container, 'c').querySelector(WRAPPER);
+      expect(wrapper).toHaveAttribute('data-end');
+      expect(wrapper).toHaveClass('ring-danger-border');
+      expect(wrapper).not.toHaveClass('ring-foreground');
+      expect(nodeOf(container, 'c').querySelector(BADGE_SLOT)).toHaveTextContent('Not reachable');
+    });
+
+    it('leaves a reachable, non-terminal Stage unmarked', () => {
+      const { container } = renderFlow(unreachable);
+      // 'a' is the start and 'b' an end, so neither is bare — reach for a middle Stage instead.
+      const middle = flow([stage('a'), stage('b'), stage('c')], {
+        edges: [edge('e1', 'a', 'b'), edge('e2', 'b', 'c')],
+      });
+      const { container: chain } = renderFlow(middle);
+      const node = nodeOf(chain, 'b');
+      expect(node.querySelector(WRAPPER)).not.toHaveAttribute('data-unreachable');
+      expect(node.querySelector(BADGE_SLOT)).toBeNull();
+      expect(container).toBeDefined();
     });
 
     it('does not stop the document applying in the code editor', () => {

@@ -345,3 +345,54 @@ describe('placement (rules 21-23)', () => {
     expect(matching).toEqual([]);
   });
 });
+
+describe('the fault ring (doc 199 rule 45b)', () => {
+  const BADGE = '[data-slot="flow-stage-badge"]';
+  const WRAPPER = '[data-slot="condition-node"]';
+  const badgeIn = (container: HTMLElement, id: string) =>
+    nodeOf(container, id).querySelector(BADGE);
+
+  /** s → c, with `c` wired to `targets` by the given handles. */
+  const wired = (handles: (string | undefined)[]) =>
+    flow(
+      [stage('s'), condition('c', [criterion('x')]), stage('t')],
+      [
+        { id: 'e0', source: 's', target: 'c' },
+        ...handles.map((handle, index) => ({
+          id: `e${index + 1}`,
+          source: 'c',
+          target: 't',
+          ...(handle === undefined ? {} : { sourceHandle: handle }),
+        })),
+      ],
+    );
+
+  it('rings a Condition with NO outgoing edge red, captioned "No outputs"', () => {
+    const { container } = renderFlow(wired([]));
+    expect(nodeOf(container, 'c').querySelector(WRAPPER)).toHaveClass(
+      'ring-4',
+      'ring-danger-border',
+    );
+    expect(badgeIn(container, 'c')).toHaveTextContent('No outputs');
+  });
+
+  it('rings one wired only by a row — with no Else path — red', () => {
+    const { container } = renderFlow(wired(['x']));
+    // Rule 13: an answer matching no row would have nowhere to go, which is the same fault `flowProblems`
+    // reports at the apply gate. The ring is what shows it on the canvas.
+    expect(nodeOf(container, 'c').querySelector(WRAPPER)).toHaveClass('ring-danger-border');
+    expect(badgeIn(container, 'c')).toHaveTextContent('No Else path');
+  });
+
+  it('leaves a fully wired Condition unringed', () => {
+    const { container } = renderFlow(wired(['x', undefined]));
+    expect(nodeOf(container, 'c').querySelector(WRAPPER)).not.toHaveClass('ring-danger-border');
+    expect(badgeIn(container, 'c')).toBeNull();
+  });
+
+  it('says "Not reachable" first when nothing leads to the Condition at all', () => {
+    // Unwired AND stranded: being stranded outranks, since nothing downstream of it can matter.
+    const { container } = renderFlow(flow([stage('s'), condition('c', [criterion('x')])]));
+    expect(badgeIn(container, 'c')).toHaveTextContent('Not reachable');
+  });
+});

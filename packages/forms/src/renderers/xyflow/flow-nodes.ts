@@ -2,7 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import { DEFAULT_HANDLE, drawnNodes, rowsOf, startStageId } from './flow-elements';
 import { isRouted } from './flow-edge-path';
-import { flowEdges, leafStageIds, unreachableStageIds } from './flow-graph';
+import { flowEdges, leafStageIds, unreachableNodeIds } from './flow-graph';
 import type { RoutePoint } from './flow-elk';
 
 // A Flow element as xyflow nodes and edges (doc 195 rules 8, 10, 12; doc 199 rules 16-18), derived from the
@@ -60,7 +60,15 @@ export type StageFlowNode = Node<StageNodeData, typeof STAGE_NODE_TYPE>;
  * here, exactly as a Stage's `isLeaf` is, and handed down to the card through `ConditionOutputsContext`.
  * The default output is named by `DEFAULT_HANDLE`, the same id its handle carries.
  */
-export type ConditionNodeData = { element: UISchemaElement; connectedOutputs: string[] };
+export type ConditionNodeData = {
+  element: UISchemaElement;
+  connectedOutputs: string[];
+  /**
+   * Doc 203 rule 9, widened 2026-09-17: a Condition no path from the start reaches. Derived here beside
+   * `connectedOutputs` for the same reason — a dispatched card cannot see the Flow's edges.
+   */
+  isUnreachable: boolean;
+};
 export type ConditionFlowNode = Node<ConditionNodeData, typeof CONDITION_NODE_TYPE>;
 
 export type FlowNode = StageFlowNode | ConditionFlowNode;
@@ -81,7 +89,7 @@ export function toFlowNodes(
   const edges = flowEdges(flow);
   // Doc 203 rule 7: whole-Flow questions, asked ONCE here rather than per node.
   const start = startStageId(flow);
-  const unreachable = new Set(unreachableStageIds(flow));
+  const unreachable = new Set(unreachableNodeIds(flow));
   return drawnNodes(flow).map(({ element, id, kind }) => {
     const shared = {
       id,
@@ -97,6 +105,7 @@ export function toFlowNodes(
           type: CONDITION_NODE_TYPE,
           data: {
             element,
+            isUnreachable: unreachable.has(id),
             connectedOutputs: edges.flatMap((edge) =>
               edge.source === id ? [edge.sourceHandle ?? DEFAULT_HANDLE] : [],
             ),
