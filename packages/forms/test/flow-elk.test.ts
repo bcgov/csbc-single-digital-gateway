@@ -158,3 +158,62 @@ describe('edges keep clear of the cards they pass (rule 34)', () => {
     for (const gap of gaps) expect(gap).toBeGreaterThanOrEqual(24);
   });
 });
+
+describe('branch order (doc 199 rule 44)', () => {
+  /**
+   * A Condition whose rows are authored r0, r1 but whose EDGES are authored in the opposite order, with the
+   * Else edge first of all. Nothing but the row order should decide where the three targets land.
+   */
+  const BRANCHED = {
+    type: 'Flow',
+    // Declared in the OPPOSITE order to the rows, so node model order cannot be what puts them right.
+    elements: [condition('c', 2), stage('bottom'), stage('middle'), stage('top')],
+    options: {
+      edges: [
+        { id: 'e-else', source: 'c', target: 'bottom' },
+        { id: 'e-second', source: 'c', target: 'middle', sourceHandle: 'r1' },
+        { id: 'e-first', source: 'c', target: 'top', sourceHandle: 'r0' },
+      ],
+    },
+  } as UISchemaElement;
+
+  it('hands ELK a Condition’s edges in ROW order, with the Else edge last', () => {
+    expect(elkGraph(BRANCHED, VERTICAL).edges?.map(({ id }) => id)).toEqual([
+      'e-first',
+      'e-second',
+      'e-else',
+    ]);
+  });
+
+  it('asks ELK to let the EDGES decide, never the elements order', () => {
+    const { layoutOptions } = elkGraph(BRANCHED, VERTICAL);
+    expect(layoutOptions).toMatchObject({
+      'elk.layered.considerModelOrder.strategy': 'PREFER_EDGES',
+    });
+    // NODES_AND_EDGES plus this lays a document out in `elements` order instead — the layout test below is
+    // what catches it, since the targets there are declared in reverse.
+    expect(layoutOptions).not.toHaveProperty(
+      'elk.layered.crossingMinimization.forceNodeModelOrder',
+    );
+  });
+
+  it('lays the targets out in row order: first row on top, Else at the bottom', async () => {
+    // The canvas runs left to right, so "top" is the smaller y — the axis the branches fan across.
+    const { positions } = await layout(BRANCHED, { direction: 'horizontal' });
+    const y = (id: string) => positions.get(id)?.y ?? 0;
+    expect(y('top')).toBeLessThan(y('middle'));
+    expect(y('middle')).toBeLessThan(y('bottom'));
+  });
+
+  it('keeps a non-Condition’s edges in the order they were authored', async () => {
+    // Only a Condition has rows to order by; everything else is left exactly as the document has it.
+    const chain = flow(
+      [stage('a'), stage('b'), stage('c')],
+      [
+        ['a', 'b'],
+        ['a', 'c'],
+      ],
+    );
+    expect(elkGraph(chain, VERTICAL).edges?.map(({ id }) => id)).toEqual(['e0', 'e1']);
+  });
+});
