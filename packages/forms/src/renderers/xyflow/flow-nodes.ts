@@ -1,6 +1,7 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import { DEFAULT_HANDLE, drawnNodes, rowsOf, startStageId } from './flow-elements';
+import { ELSE_LABEL } from './condition-rows';
 import { isRouted } from './flow-edge-path';
 import { flowEdges, leafStageIds, unreachableNodeIds } from './flow-graph';
 import type { RoutePoint } from './flow-elk';
@@ -148,9 +149,14 @@ export function toFlowEdges(flow: UISchemaElement, routes: RoutesById = NO_ROUTE
     const isCondition = conditions.has(source);
     const handle = sourceHandle ?? (isCondition ? DEFAULT_HANDLE : undefined);
     const points = routes.get(id) ?? [];
-    // Doc 199 rule 50: the chip names the branch, so a Stage edge and an Else edge carry no label.
-    const branchLabel =
-      sourceHandle === undefined ? undefined : labels.get(source)?.get(sourceHandle);
+    // Doc 199 rule 50: the chip names the branch a Condition's edge leaves by. The ELSE edge is named too
+    // (user 2026-09-17) — it is as much a branch as any row, and the only one that was left to be identified by
+    // its dash alone. A Stage's edge leaves by nothing and carries no label.
+    const branchLabel = !isCondition
+      ? undefined
+      : sourceHandle === undefined
+        ? ELSE_LABEL
+        : labels.get(source)?.get(sourceHandle);
     const data = {
       ...(isRouted(points) ? { points } : {}),
       ...(branchLabel === undefined || branchLabel === '' ? {} : { branchLabel }),

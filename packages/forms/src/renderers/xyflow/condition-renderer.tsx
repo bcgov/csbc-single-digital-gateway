@@ -9,7 +9,7 @@ import { ConditionOutputHandle } from './condition-output-handle';
 import { useConditionOutputs } from './condition-outputs';
 import { ConditionRow as Row, OutputAdd } from './condition-row';
 import { optionalDecisionFields } from './criteria';
-import { SWITCH_UNAVAILABLE_HINT, switchField } from './condition-rows';
+import { ELSE_LABEL, SWITCH_UNAVAILABLE_HINT, switchField } from './condition-rows';
 import { ROW_CONTROL_CLASS } from './criterion-controls';
 import { FlowContext } from './flow-context';
 import { useFlowEditor } from './flow-editor';
@@ -30,8 +30,7 @@ export const NO_UPSTREAM_FIELDS_HINT =
 
 /** Rule 42: the header's mode hint. Rows are evaluated top to bottom and the first match wins (rule 39). */
 export const MODE_HINT = 'first match';
-/** Rule 45: the pinned Else row's label and its right-side hint. */
-export const ELSE_LABEL = 'Else';
+/** Rule 45: the pinned Else row's right-side hint. Its LABEL is in `condition-rows.ts`, which is pure. */
 export const ELSE_HINT = 'no match';
 export const ADD_ROW_LABEL = 'Add condition';
 /** Rule 51: switch mode's rows are values of one field, so its footer says so. */

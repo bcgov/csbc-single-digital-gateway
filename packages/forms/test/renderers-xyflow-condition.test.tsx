@@ -396,3 +396,32 @@ describe('the fault ring (doc 199 rule 45b)', () => {
     expect(badgeIn(container, 'c')).toHaveTextContent('Not reachable');
   });
 });
+
+describe('edge labels (doc 199 rule 50)', () => {
+  const labelled = () =>
+    flow(
+      [stage('s'), condition('c', [criterion('x')]), stage('t')],
+      [
+        { id: 'e0', source: 's', target: 'c' },
+        { id: 'e1', source: 'c', target: 't', sourceHandle: 'x' },
+        { id: 'e2', source: 'c', target: 't' },
+      ],
+    );
+
+  it("names a row's edge with the row's label", () => {
+    const edge = toFlowEdges(labelled()).find(({ id }) => id === 'e1');
+    expect((edge?.data as { branchLabel?: string })?.branchLabel).toBe('Condition x');
+  });
+
+  it('names the ELSE edge too — it is as much a branch as any row', () => {
+    // It was the only branch identified by its dash alone (user 2026-09-17).
+    const edge = toFlowEdges(labelled()).find(({ id }) => id === 'e2');
+    expect((edge?.data as { branchLabel?: string })?.branchLabel).toBe('Else');
+    expect((edge?.data as { isElse?: boolean })?.isElse).toBe(true);
+  });
+
+  it('leaves a Stage-to-Stage edge unlabelled: it leaves by nothing', () => {
+    const edge = toFlowEdges(labelled()).find(({ id }) => id === 'e0');
+    expect((edge?.data as { branchLabel?: string })?.branchLabel).toBeUndefined();
+  });
+});

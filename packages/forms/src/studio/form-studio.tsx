@@ -208,6 +208,9 @@ export const FormStudio: FC<FormStudioProps> = ({
       <div data-slot="form-studio-content" className="min-h-0 flex-1">
         <StudioWorkspace
           panels={panels}
+          // Doc 198 rule 35: the Flow canvas reaches the panel edges; every other document keeps its gutter.
+          // Not while PREVIEWING — preview renders a page even for a Flow, and a page wants the breathing room.
+          flushCentre={onFlowCanvas && !previewing}
           left={
             // Doc 200 rule 18: with no document there are no panels, so their content is not mounted
             // either — the same treatment preview already gives them, rather than leaving an inert

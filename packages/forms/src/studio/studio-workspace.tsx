@@ -27,6 +27,13 @@ const DockPanelView: FC<DockPanelViewProps> = ({ dock, children }) => (
 
 export interface StudioWorkspaceProps {
   readonly panels: Readonly<Record<DockPanelId, DockPanel>>;
+  /**
+   * Doc 198 rule 35 (user 2026-09-17: "{ type: 'Flow' } should also not have padding around it"): the centre
+   * panel's gutter is dropped for the Flow canvas. Every other document is a PAGE, which wants breathing room
+   * from the panel edges; the canvas is a viewport that should reach them, and a gutter only shrinks the room
+   * the graph has and leaves a border of dead space the pane cannot be panned into.
+   */
+  readonly flushCentre?: boolean;
   /** Centre canvas content. */
   readonly children?: ReactNode;
   /** Left dock panel content — the palette (doc 189). */
@@ -51,6 +58,7 @@ export interface StudioWorkspaceProps {
  */
 export const StudioWorkspace: FC<StudioWorkspaceProps> = ({
   panels,
+  flushCentre = false,
   left: leftContent,
   right: rightContent,
   bottom: bottomContent,
@@ -69,7 +77,10 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({
           <DockPanelView dock={left}>{leftContent}</DockPanelView>
           {left.open && <ResizableHandle className="-ml-px" />}
           <ResizablePanel minSize="20%">
-            <div data-slot="form-studio-center-panel" className="h-full overflow-auto p-4">
+            <div
+              data-slot="form-studio-center-panel"
+              className={`h-full overflow-auto ${flushCentre ? '' : 'p-4'}`}
+            >
               {children}
             </div>
           </ResizablePanel>

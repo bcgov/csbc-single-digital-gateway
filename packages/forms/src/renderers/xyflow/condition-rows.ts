@@ -79,6 +79,13 @@ export function rowSummary(row: ConditionRow, fields: readonly CriterionField[])
 export const rowTitle = (row: ConditionRow, fields: readonly CriterionField[]): string =>
   row.label.trim() !== '' ? row.label.trim() : rowSummary(row, fields);
 
+/**
+ * Rule 45: what the pinned Else row is called. It lives here, in the PURE module, rather than beside the card
+ * that draws it: `flow-nodes.ts` names the Else EDGE with it too (rule 50), and a constant reached for by a
+ * React-free module must not sit in a component file.
+ */
+export const ELSE_LABEL = 'Else';
+
 /** The stem every generated row label starts with (rule 46). */
 export const ROW_LABEL_STEM = 'Condition';
 
