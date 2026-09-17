@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { FormStudio } from '../src/studio';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** A node's x on the canvas, from the transform xyflow positions it with (rule 32b: it runs left to right). */
+const nodeLeft = (node: HTMLElement) =>
+  Number(/translate\((?<x>[-\d.]+)px,/.exec(node.style.transform)?.groups?.['x'] ?? 0);
+
 /** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
 const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
 
@@ -120,12 +124,15 @@ describe('leaf add affordance (rules 6-8)', () => {
     await chooseNode(await buttonIn('s2', 'Add a node'), 'Stage');
     await waitFor(() => expect(stageCount()).toBe(3));
 
-    // Ranks are derived (rules 1-2): s1 = 0, s2 = 1, the new Stage = 2 → y = 2 × 240, x = 0.
-    const added = required(
-      [...document.querySelectorAll<HTMLElement>('.react-flow__node')].at(-1),
-      'added node',
-    );
-    expect(added.style.transform).toMatch(/^translate\(0px,\s?480px\)$/);
+    // Positions are ELK's and arrive asynchronously (doc 198 rule 30), so this waits for the layout and asserts the
+    // RANK: the new Stage sits after the leaf it was added to, which sits after the first Stage (rule 32b).
+    const leftOf = (id: string) => nodeLeft(nodeOf(id));
+    const addedLeft = () =>
+      nodeLeft(
+        required([...document.querySelectorAll<HTMLElement>('.react-flow__node')].at(-1), 'added'),
+      );
+    await waitFor(() => expect(leftOf('s2')).toBeGreaterThan(leftOf('s1')));
+    await waitFor(() => expect(addedLeft()).toBeGreaterThan(leftOf('s2')));
   });
 
   it('moves the + to the new leaf, leaving the old leaf without one', async () => {

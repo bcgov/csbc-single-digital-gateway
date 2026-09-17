@@ -1,8 +1,9 @@
 import { JsonFormsDispatch } from '@jsonforms/react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps } from '@xyflow/react';
 import { useContext, useMemo } from 'react';
 import { ConditionOutputsProvider } from './condition-outputs';
 import { FlowContext } from './flow-context';
+import { outputOffset, sourceSide, targetSide } from './flow-handles';
 import { useFlowEditor } from './flow-editor';
 import { criteriaOf, DEFAULT_HANDLE } from './flow-elements';
 import type { ConditionFlowNode } from './flow-nodes';
@@ -36,7 +37,7 @@ export function ConditionNode({ data }: NodeProps<ConditionFlowNode>) {
     <>
       <Handle
         type="target"
-        position={Position.Top}
+        position={targetSide(flow.direction)}
         isConnectable={editing}
         className={handleClass}
       />
@@ -59,10 +60,11 @@ export function ConditionNode({ data }: NodeProps<ConditionFlowNode>) {
           key={handleId}
           id={handleId}
           type="source"
-          position={Position.Bottom}
+          position={sourceSide(flow.direction)}
           isConnectable={editing}
           className={handleClass}
-          style={{ left: `${((index + 1) / (outputs.length + 1)) * 100}%` }}
+          // Doc 198 rule 32: spread along the face the edges leave by — the bottom edge, or the right one.
+          style={outputOffset(flow.direction, index, outputs.length)}
           data-output={handleId === DEFAULT_HANDLE ? 'default' : 'criterion'}
         />
       ))}

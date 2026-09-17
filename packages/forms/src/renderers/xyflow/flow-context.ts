@@ -4,6 +4,7 @@ import type {
   JsonSchema,
 } from '@jsonforms/core';
 import { createContext } from 'react';
+import type { LayoutDirection } from './flow-elk';
 
 /** What a Flow's Stage nodes dispatch their Stage element with — the Flow's own dispatch props (doc 195 rule 7). */
 export interface FlowContextValue {
@@ -12,6 +13,8 @@ export interface FlowContextValue {
   readonly enabled: boolean;
   readonly renderers: JsonFormsRendererRegistryEntry[] | undefined;
   readonly cells: JsonFormsCellRendererRegistryEntry[] | undefined;
+  /** Doc 198 rule 32: which way the canvas runs, so a node's handles sit on the faces the edges arrive at. */
+  readonly direction: LayoutDirection;
 }
 
 /**

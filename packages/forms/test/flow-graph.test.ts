@@ -350,8 +350,8 @@ describe('Condition problems (doc 199 rules 12-15)', () => {
 });
 
 describe('pure module boundary (rule 5)', () => {
-  it('flow-elements, flow-graph and flow-positions import neither @xyflow/react nor react', () => {
-    for (const file of ['flow-elements.ts', 'flow-graph.ts', 'flow-positions.ts']) {
+  it('flow-elements, flow-graph and flow-elk import neither @xyflow/react nor react', () => {
+    for (const file of ['flow-elements.ts', 'flow-graph.ts', 'flow-elk.ts']) {
       const source = readFileSync(
         resolve(import.meta.dirname, '../src/renderers/xyflow', file),
         'utf8',

@@ -7,6 +7,10 @@ import { ACTION_EDGE_TYPE, toFlowEdges } from '../src/renderers/xyflow/flow-node
 import { FormStudio } from '../src/studio';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** A node's x on the canvas, from the transform xyflow positions it with (rule 32b: it runs left to right). */
+const nodeLeft = (node: HTMLElement) =>
+  Number(/translate\((?<x>[-\d.]+)px,/.exec(node.style.transform)?.groups?.['x'] ?? 0);
+
 /** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
 const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
 
@@ -159,9 +163,19 @@ describe('insert-between splits the edge (rules 10, 16)', () => {
     await chooseNode(required(edgeAdds()[0], 'edge +'), 'Stage');
     await waitFor(() => expect(stageCount()).toBe(3));
 
-    // a = rank 0, the inserted Stage = rank 1, b = rank 2 (rules 1-2): b is pushed down a rank.
-    await waitFor(() => expect(nodeOf('b').style.transform).toMatch(/^translate\(0px,\s?480px\)$/));
-    expect(nodeOf('a').style.transform).toMatch(/^translate\(0px,\s?0px\)$/);
+    // Positions are ELK's and arrive asynchronously (doc 198 rule 30): a stays first, and b is pushed past the
+    // inserted Stage once the layout lands (rule 32b: the flow runs left to right).
+    const leftOf = (id: string) => nodeLeft(nodeOf(id));
+    const insertedLeft = () =>
+      nodeLeft(
+        required(
+          [...document.querySelectorAll<HTMLElement>('.react-flow__node')].at(-1),
+          'inserted',
+        ),
+      );
+    await waitFor(() => expect(leftOf('b')).toBeGreaterThan(leftOf('a')));
+    await waitFor(() => expect(insertedLeft()).toBeGreaterThan(leftOf('a')));
+    expect(leftOf('b')).toBeGreaterThan(insertedLeft());
   });
 
   it('selects the inserted Stage (rule 16)', async () => {

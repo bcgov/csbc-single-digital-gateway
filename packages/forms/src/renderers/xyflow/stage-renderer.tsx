@@ -102,7 +102,9 @@ function StageLayout({ uischema, visible }: LayoutProps) {
   return (
     <div
       data-slot="stage-card"
-      className="w-64 rounded-xl border bg-card text-card-foreground shadow-sm"
+      // Doc 198 rule 27: the SAME width as the Condition card (`w-72`). A handle sits at its card's centre, so a
+      // narrower Stage put the two centres 16px apart and every straight connection drew a needless elbow.
+      className="w-72 rounded-xl border bg-card text-card-foreground shadow-sm"
     >
       <div data-slot="stage-label" className="border-b px-3 py-2 text-sm font-semibold">
         {labelOf(uischema, 'Stage')}

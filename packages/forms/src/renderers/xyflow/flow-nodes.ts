@@ -1,8 +1,9 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import { DEFAULT_HANDLE, drawnNodes, startStageId } from './flow-elements';
+import { isRouted } from './flow-edge-path';
 import { flowEdges, leafStageIds, unreachableStageIds } from './flow-graph';
-import { stagePositions } from './flow-positions';
+import type { RoutePoint } from './flow-elk';
 
 // A Flow element as xyflow nodes and edges (doc 195 rules 8, 10, 12; doc 199 rules 16-18), derived from the
 // uischema alone.
@@ -14,8 +15,21 @@ export const CONDITION_NODE_TYPE = 'condition';
 /** Doc 198 rule 9: the xyflow edge type every connection is drawn with. */
 export const ACTION_EDGE_TYPE = 'action';
 
+/** Doc 198 rule 30: where ELK put each node, and the route it gave each edge — both handed in by the renderer. */
+export type PositionsById = ReadonlyMap<string, { x: number; y: number }>;
+export type RoutesById = ReadonlyMap<string, RoutePoint[]>;
+
+/** Before ELK has answered (rule 30) there are no positions or routes; a node then sits at the origin. */
+const NO_LAYOUT: PositionsById = new Map();
+const NO_ROUTES: RoutesById = new Map();
+
 /** Doc 198 rule 9: an edge carries the Flow's element id, which the + needs for its `insert-between` gesture. */
-export type ActionEdgeData = { flowId: string };
+export type ActionEdgeData = {
+  /** Doc 198 rule 9: the Flow's element id, set by the renderer under an editor. Absent on a view-only edge. */
+  flowId?: string;
+  /** Doc 198 rule 30b: the lane dagre gave this edge, when it spans more than one rank. */
+  points?: RoutePoint[];
+};
 export type ActionFlowEdge = Edge<ActionEdgeData, typeof ACTION_EDGE_TYPE>;
 
 /**
@@ -52,8 +66,10 @@ export type FlowNode = StageFlowNode | ConditionFlowNode;
  *
  * Only a Stage can be a leaf (doc 199 rule 14) — a Condition owns its outputs on its card instead.
  */
-export function toFlowNodes(flow: UISchemaElement): FlowNode[] {
-  const positions = stagePositions(flow);
+export function toFlowNodes(
+  flow: UISchemaElement,
+  positions: PositionsById = NO_LAYOUT,
+): FlowNode[] {
   const leaves = new Set(leafStageIds(flow));
   const edges = flowEdges(flow);
   // Doc 203 rule 7: whole-Flow questions, asked ONCE here rather than per node.
@@ -103,18 +119,20 @@ export function toFlowNodes(flow: UISchemaElement): FlowNode[] {
  * DROPS an edge whose `sourceHandle` names a handle the source node does not have — so stamping the default
  * handle on a Stage edge silently removes every pre-199 connection from the canvas, with no error anywhere.
  */
-export function toFlowEdges(flow: UISchemaElement): Edge[] {
+export function toFlowEdges(flow: UISchemaElement, routes: RoutesById = NO_ROUTES): Edge[] {
   const conditions = new Set(
     drawnNodes(flow).flatMap(({ id, kind }) => (kind === 'condition' ? [id] : [])),
   );
   return flowEdges(flow).map(({ id, source, target, sourceHandle }) => {
     const handle = sourceHandle ?? (conditions.has(source) ? DEFAULT_HANDLE : undefined);
+    const points = routes.get(id) ?? [];
     return {
       id,
       source,
       target,
       // `exactOptionalPropertyTypes`: a Stage edge keeps an ABSENT key, never an explicit undefined.
       ...(handle === undefined ? {} : { sourceHandle: handle }),
+      ...(isRouted(points) ? { data: { points } } : {}),
       type: ACTION_EDGE_TYPE,
       markerEnd: { type: MarkerType.ArrowClosed },
     };

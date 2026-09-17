@@ -3,6 +3,7 @@ import { withJsonFormsLayoutProps } from '@jsonforms/react';
 import {
   Background,
   Controls,
+  Panel,
   ReactFlow,
   useEdgesState,
   useNodesState,
@@ -14,6 +15,16 @@ import {
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { LayoutNestingContext } from '../gridstack/layout-nesting';
 import { ActionEdge } from './action-edge';
+import {
+  DEFAULT_ALGORITHM,
+  DEFAULT_DIRECTION,
+  // Aliased: the canvas component in this file is itself called `FlowLayout`.
+  type FlowLayout as ElkLayout,
+  type LayoutAlgorithm,
+  type LayoutDirection,
+} from './flow-elk';
+import { FlowLayoutControls } from './flow-layout-controls';
+import { useFlowLayout } from './use-flow-layout';
 import { AddAffordance } from './add-affordance';
 import { FlowContext, type FlowContextValue } from './flow-context';
 import { FLOW_EMPTY_MESSAGE, useFlowEditor, type FlowEditor } from './flow-editor';
@@ -85,14 +96,20 @@ function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
 interface FitOnResizeProps {
   readonly target: RefObject<HTMLElement | null>;
   readonly userMoved: RefObject<boolean>;
+  /** Doc 198 rule 31: refit when a new arrangement lands, so a changed algorithm or direction is in view. */
+  readonly layout: ElkLayout;
 }
 
 /**
  * Doc 196 rule 15: refits the view whenever the canvas container resizes (a dock panel opening or closing) until the
  * author pans or zooms by hand. The observer's first report is the mount, which the `fitView` prop already handles.
  */
-function FitOnResize({ target, userMoved }: FitOnResizeProps) {
+function FitOnResize({ target, userMoved, layout }: FitOnResizeProps) {
   const { fitView } = useReactFlow();
+  // Rule 31: a new layout moves every node at once; the canvas follows it rather than leaving the flow off-screen.
+  useEffect(() => {
+    if (layout.positions.size > 0) void fitView();
+  }, [fitView, layout]);
   useEffect(() => {
     const element = target.current;
     if (!element) return undefined;
@@ -118,19 +135,26 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
   const editor = useFlowEditor();
   const canvasRef = useRef<HTMLDivElement>(null);
   const userMoved = useRef(false);
+  // Doc 198 rules 30-32: the arrangement is a VIEW of the document, so it lives here rather than in the uischema.
+  const [algorithm, setAlgorithm] = useState<LayoutAlgorithm>(DEFAULT_ALGORITHM);
+  const [direction, setDirection] = useState<LayoutDirection>(DEFAULT_DIRECTION);
+  const layout = useFlowLayout(uischema, { algorithm, direction });
   const context = useMemo<FlowContextValue>(
-    () => ({ schema, path, enabled, renderers, cells }),
-    [schema, path, enabled, renderers, cells],
+    () => ({ schema, path, enabled, renderers, cells, direction }),
+    [schema, path, enabled, renderers, cells, direction],
   );
-  const derivedNodes = useMemo(() => toFlowNodes(uischema), [uischema]);
+  const derivedNodes = useMemo(
+    () => toFlowNodes(uischema, layout.positions),
+    [uischema, layout.positions],
+  );
   // Doc 198 rule 9: an edge component is given only its own id, so the Flow's element id — which the + needs for its
   // `insert-between` gesture — rides along in `data`. A view-only edge carries none, and draws no +.
   const derivedEdges = useMemo(() => {
-    const edges = toFlowEdges(uischema);
+    const edges = toFlowEdges(uischema, layout.routes);
     if (!editor) return edges;
     const flowId = editor.idOf(uischema);
-    return edges.map((edge) => ({ ...edge, data: { flowId } }));
-  }, [uischema, editor]);
+    return edges.map((edge) => ({ ...edge, data: { ...edge.data, flowId } }));
+  }, [uischema, layout.routes, editor]);
   const flowProps = useMemo(
     () => (editor ? editingProps(editor, uischema) : VIEW_ONLY_PROPS),
     [editor, uischema],
@@ -146,6 +170,24 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
     setNodes(derivedNodes);
     setEdges(derivedEdges);
   }
+
+  // Doc 198 rule 30b: ELK answers AFTER the render that asked it, so its positions and routes are applied to the
+  // nodes and edges already in state rather than re-seeding them — re-seeding would drop the edge selection that
+  // Delete works on (doc 196 rule 7) every time a layout resolved.
+  useEffect(() => {
+    setNodes((current) =>
+      current.map((node) => {
+        const position = layout.positions.get(node.id);
+        return position === undefined ? node : { ...node, position };
+      }),
+    );
+    setEdges((current) =>
+      current.map((edge) => ({
+        ...edge,
+        data: { ...edge.data, points: layout.routes.get(edge.id) ?? [] },
+      })),
+    );
+  }, [layout, setNodes, setEdges]);
 
   if (nested || inFlow) {
     return (
@@ -191,7 +233,16 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
           >
             <Background />
             <Controls showInteractive={false} />
-            <FitOnResize target={canvasRef} userMoved={userMoved} />
+            {/* Rule 31: the layout controls sit on the canvas, opposite its zoom controls. */}
+            <Panel position="top-right">
+              <FlowLayoutControls
+                algorithm={algorithm}
+                direction={direction}
+                onAlgorithmChange={setAlgorithm}
+                onDirectionChange={setDirection}
+              />
+            </Panel>
+            <FitOnResize target={canvasRef} userMoved={userMoved} layout={layout} />
           </ReactFlow>
           {empty && editor ? (
             // Doc 198 rule 12: with no palette to reach, an empty Flow needs its own way out of the empty state.

@@ -1,8 +1,9 @@
 import { JsonFormsDispatch } from '@jsonforms/react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps } from '@xyflow/react';
 import { useContext } from 'react';
 import { AddNodeMenu } from './add-affordance';
 import { FlowContext } from './flow-context';
+import { sourceSide, targetSide } from './flow-handles';
 import { useFlowEditor } from './flow-editor';
 import type { StageFlowNode } from './flow-nodes';
 
@@ -53,7 +54,7 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
       ) : null}
       <Handle
         type="target"
-        position={Position.Top}
+        position={targetSide(flow.direction)}
         isConnectable={editing}
         className={handleClass}
       />
@@ -91,7 +92,7 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
       ) : null}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={sourceSide(flow.direction)}
         isConnectable={editing}
         className={handleClass}
       />

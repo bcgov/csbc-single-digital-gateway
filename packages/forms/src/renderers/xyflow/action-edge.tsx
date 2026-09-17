@@ -1,5 +1,6 @@
-import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
 import { AddNodeMenu } from './add-affordance';
+import { isRouted, routedPath } from './flow-edge-path';
 import { useFlowEditor } from './flow-editor';
 import type { ActionFlowEdge } from './flow-nodes';
 
@@ -24,14 +25,12 @@ export function ActionEdge({
   style,
 }: EdgeProps<ActionFlowEdge>) {
   const editor = useFlowEditor();
-  const [path, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-  });
+  // Doc 198 rule 23: square corners. An edge spanning ranks follows the lane dagre reserved for it (rule 30b); one
+  // between adjacent ranks has nothing to avoid, so the step path is all it needs.
+  const points = data?.points ?? [];
+  const [path, labelX, labelY] = isRouted(points)
+    ? routedPath({ x: sourceX, y: sourceY }, { x: targetX, y: targetY }, points)
+    : getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
   const flowId = data?.flowId;
 
   return (

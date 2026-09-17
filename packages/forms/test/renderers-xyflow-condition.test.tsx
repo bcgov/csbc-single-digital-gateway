@@ -14,6 +14,14 @@ import {
   toFlowNodes,
 } from '../src/renderers/xyflow/flow-nodes';
 import { useXyflowJsdom } from './xyflow-jsdom';
+import ELK from 'elkjs/lib/elk.bundled.js';
+import { elkGraph, readElkLayout } from '../src/renderers/xyflow/flow-elk';
+
+/** Doc 198 rule 30: ELK is asynchronous, so a position assertion awaits it. */
+const layoutWithElk = async (flowElement: UISchemaElement) =>
+  readElkLayout(
+    await new ELK().layout(elkGraph(flowElement, { algorithm: 'layered', direction: 'vertical' })),
+  );
 
 // Doc 199 rules 16-23 — drawing a Condition: a second node type, one source handle per output, and
 // the card that lists the criteria.
@@ -87,7 +95,7 @@ describe('drawnNodes (rule 16)', () => {
     ]);
   });
 
-  it('ranks a Condition in the vertical layout exactly as a Stage (doc 198 rules 1-2)', () => {
+  it('lays a Condition out like a Stage — one node in the graph ELK is given (doc 198 rule 30)', async () => {
     const root = flow(
       [stage('a'), condition('c'), stage('b')],
       [
@@ -95,11 +103,11 @@ describe('drawnNodes (rule 16)', () => {
         { id: 'e2', source: 'c', target: 'b' },
       ],
     );
-    expect(toFlowNodes(root).map(({ id, position }) => [id, position.y])).toEqual([
-      ['a', 0],
-      ['c', 240],
-      ['b', 480],
-    ]);
+    // Positions are ELK's now, so this asks the layout itself rather than `toFlowNodes` (which is handed them).
+    const { positions } = await layoutWithElk(root);
+    const y = (id: string) => positions.get(id)?.y ?? 0;
+    expect(y('c')).toBeGreaterThan(y('a'));
+    expect(y('b')).toBeGreaterThan(y('c'));
   });
 
   it('never marks a Condition as a leaf (rule 14)', () => {
@@ -119,16 +127,16 @@ describe('the Condition node (rules 17-18)', () => {
     expect(source).toContain('[CONDITION_NODE_TYPE]: ConditionNode');
   });
 
-  it('renders one target handle on top', () => {
+  it('renders one target handle on the face edges arrive at (rule 32b)', () => {
     const { container } = renderFlow(flow([condition('c', [criterion('x')])]));
     const targets = handlesOf(nodeOf(container, 'c')).filter((handle) =>
       handle.classList.contains('target'),
     );
     expect(targets).toHaveLength(1);
-    expect(targets[0]).toHaveClass('react-flow__handle-top');
+    expect(targets[0]).toHaveClass('react-flow__handle-left');
   });
 
-  it('renders one bottom source handle per criterion, each with the criterion id', () => {
+  it('renders one source handle per criterion on the leaving face, each with the criterion id', () => {
     const { container } = renderFlow(
       flow([condition('c', [criterion('x'), criterion('y', { field: 'k2' })])]),
     );
@@ -137,7 +145,7 @@ describe('the Condition node (rules 17-18)', () => {
     );
     // Two criteria plus the default.
     expect(sources).toHaveLength(3);
-    for (const handle of sources) expect(handle).toHaveClass('react-flow__handle-bottom');
+    for (const handle of sources) expect(handle).toHaveClass('react-flow__handle-right');
     expect(sources.map((handle) => handle.getAttribute('data-handleid'))).toEqual([
       'x',
       'y',

@@ -267,13 +267,14 @@ describe('Stage renderer (rules 13-15)', () => {
     expect(card.querySelector('[role="alert"]')).toBeNull();
   });
 
-  it('renders non-connectable target (top) and source (bottom) handles (doc 198 rule 3)', () => {
+  it('renders non-connectable target (left) and source (right) handles (doc 198 rules 3, 32b)', () => {
     const { container } = renderFlow(flow([stage('a')]));
     const node = nodeOf(container, 'a');
     const target = node.querySelector('.react-flow__handle.target');
     const source = node.querySelector('.react-flow__handle.source');
-    expect(target).toHaveClass('react-flow__handle-top', 'opacity-0');
-    expect(source).toHaveClass('react-flow__handle-bottom', 'opacity-0');
+    // Rule 32b: the canvas runs left to right by default, so edges arrive on the left and leave on the right.
+    expect(target).toHaveClass('react-flow__handle-left', 'opacity-0');
+    expect(source).toHaveClass('react-flow__handle-right', 'opacity-0');
     expect(target).not.toHaveClass('connectable');
     expect(source).not.toHaveClass('connectable');
   });
