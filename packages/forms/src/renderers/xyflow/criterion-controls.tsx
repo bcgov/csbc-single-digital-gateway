@@ -31,7 +31,7 @@ function ValueControl({ clause, fields, editor, conditionId, rowId }: ClauseProp
   const field = fields.find((candidate) => candidate.key === clause.field);
   // Never `Clause['value']`: that is an OPTIONAL property type, so it admits `undefined`, which
   // `exactOptionalPropertyTypes` then refuses inside the patch. A value control only ever sets a real value.
-  const set = (value: string | number | boolean | string[]) =>
+  const set = (value: string | number | boolean | (string | number)[]) =>
     editor.onGesture({
       type: 'set-clause',
       conditionId,
@@ -49,8 +49,17 @@ function ValueControl({ clause, fields, editor, conditionId, rowId }: ClauseProp
         aria-label="Value"
         data-slot="clause-value-list"
         className={`${ROW_CONTROL_CLASS} h-16 w-full rounded-sm border bg-background px-1 py-0.5 text-xs`}
-        value={[...chosen]}
-        onChange={(event) => set([...event.target.selectedOptions].map((option) => option.value))}
+        value={[...chosen].map(String)}
+        onChange={(event) =>
+          // Same mapping as the scalar picker: an option's const may be a number (rule 39).
+          set(
+            [...event.target.selectedOptions].map(
+              (picked) =>
+                field?.options?.find((option) => String(option.value) === picked.value)?.value ??
+                picked.value,
+            ),
+          )
+        }
       >
         {(field?.options ?? []).map((option) => (
           <option key={String(option.value)} value={String(option.value)}>
@@ -64,7 +73,6 @@ function ValueControl({ clause, fields, editor, conditionId, rowId }: ClauseProp
   // Doc 205 rule 31: a multi-choice clause picks ONE option too — `includes` asks whether the chosen set
   // contains it — so it uses the same picker.
   if (field?.kind === 'choice' || field?.kind === 'multi-choice') {
-    const multi = field.kind === 'multi-choice';
     return (
       <NativeSelect
         size="sm"
@@ -72,14 +80,12 @@ function ValueControl({ clause, fields, editor, conditionId, rowId }: ClauseProp
         className={ROW_CONTROL_CLASS}
         value={clause.value === undefined ? '' : String(clause.value)}
         onChange={(event) =>
-          // A multi-choice option may be typed as a NUMBER, and the select's value is always a string — so map
-          // the pick back to the option's real const. A single `choice` keeps writing the raw string it always
-          // has: its numeric-const case is a pre-existing gap, and changing it here would be doc 188's call.
+          // Doc 206 rule 39: an option may be typed as a NUMBER and a select's value is always a string, so
+          // the pick is mapped back to the option's real const — for a SINGLE choice too. Writing the raw
+          // string there made a numeric-const field's value picker impossible to change at all.
           set(
-            multi
-              ? (field.options?.find((option) => String(option.value) === event.target.value)
-                  ?.value ?? event.target.value)
-              : event.target.value,
+            field.options?.find((option) => String(option.value) === event.target.value)?.value ??
+              event.target.value,
           )
         }
       >

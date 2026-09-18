@@ -73,8 +73,10 @@ export function startingValue(
   // A list operator starts with the field's FIRST option in a one-entry list: an empty list is a problem
   // (rule 38) and a clause is never born with one.
   if (takesList(operator)) {
+    // Doc 206 rule 39: an option's const may be a NUMBER. Returning `[]` for those made an empty list, which
+    // is itself a problem (rule 38) — so a numeric-const choice field could not take `in` / `notIn` at all.
     const first = field.options?.[0]?.value;
-    return typeof first === 'string' ? [first] : [];
+    return first === undefined ? [] : [first];
   }
   if (field.kind === 'number') return 0;
   if (field.kind === 'boolean') return true;

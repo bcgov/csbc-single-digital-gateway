@@ -107,17 +107,30 @@ export const emptyListMessage = (operator: string) => `"${operator}" needs at le
 function valueMatchesKind(kind: ControlKind, value: unknown): boolean {
   if (kind === 'number') return typeof value === 'number' && Number.isFinite(value);
   if (kind === 'boolean') return typeof value === 'boolean';
-  // Doc 205 rule 31: a multi-choice clause's VALUE is one option const — which the options may type as a
-  // number, unlike every other kind whose scalar value is a string.
-  if (kind === 'multi-choice')
+  // Doc 205 rule 31, WIDENED to single choice (doc 206 rule 39): a choice clause's VALUE is one option
+  // const, and a `oneOf` const may be typed as a NUMBER for either kind — `{ type: 'number', oneOf: [...] }`
+  // is a perfectly ordinary choice field, and the sample ships one.
+  //
+  // Accepting strings only made a numeric-const choice field UNEDITABLE: the real const failed here as the
+  // wrong type, the select's raw string failed the membership check below, and `setClause` refuses any edit
+  // that lands on a problem — so the value picker was frozen on whatever `startingValue` gave it.
+  if (kind === 'choice' || kind === 'multi-choice')
     return typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value));
   return typeof value === 'string';
 }
 
-/** The strings of a list value, or `undefined` when it is not a list of strings (rule 36). */
-const listOf = (value: unknown): string[] | undefined =>
-  Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-    ? (value as string[])
+/**
+ * The consts of a list value, or `undefined` when it is not a list of them (rule 36).
+ *
+ * Doc 206 rule 39: numbers are consts too, so `in` / `notIn` work on a numeric-const choice field — without
+ * this the SAME field that could not be edited scalar-wise could not use a list operator either.
+ */
+const listOf = (value: unknown): (string | number)[] | undefined =>
+  Array.isArray(value) &&
+  value.every(
+    (entry) => typeof entry === 'string' || (typeof entry === 'number' && Number.isFinite(entry)),
+  )
+    ? (value as (string | number)[])
     : undefined;
 
 /** Rule 4: the option values `field` offers, as a set — empty for a field that is not a choice. */
@@ -157,7 +170,10 @@ export function clauseProblems(clause: Clause, fields: readonly CriterionField[]
 
   if (listOf(clause.value) !== undefined || !valueMatchesKind(field.kind, clause.value)) {
     problems.push(wrongTypeMessage(field.label));
-  } else if (field.kind === 'choice' && !optionValuesOf(field).has(clause.value as string)) {
+  } else if (
+    field.kind === 'choice' &&
+    !optionValuesOf(field).has(clause.value as string | number)
+  ) {
     problems.push(unknownChoiceMessage(field.label));
   }
   return problems;

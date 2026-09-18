@@ -82,10 +82,13 @@ function valueMatchesKind(kind: ControlKind, value: unknown): boolean {
   return typeof value === 'string';
 }
 
-/** The strings of a list value, or `undefined` when it is not one (doc 199 rule 36). */
-const listOf = (value: unknown): string[] | undefined =>
-  Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-    ? (value as string[])
+/** The consts of a list value, or `undefined` when it is not one (doc 199 rule 36; numbers per doc 206 rule 39). */
+const listOf = (value: unknown): (string | number)[] | undefined =>
+  Array.isArray(value) &&
+  value.every(
+    (entry) => typeof entry === 'string' || (typeof entry === 'number' && Number.isFinite(entry)),
+  )
+    ? (value as (string | number)[])
     : undefined;
 
 /**
@@ -171,7 +174,7 @@ export function matchesClause(
     case 'notIn': {
       // The value is a list of strings (checked above); `notIn` is the negation, so a blank answer is "not in"
       // — which is right: the citizen has not picked any of the listed options.
-      const listed = listOf(value)?.includes(answer as string) ?? false;
+      const listed = listOf(value)?.includes(answer as string | number) ?? false;
       return operator === 'in' ? listed : !listed;
     }
     case 'gt':

@@ -131,7 +131,24 @@ function patchedClause(
         : undefined
       : (patch.value ?? current.value);
 
-  return value === undefined
-    ? { id: current.id, field: nextField, operator }
-    : { id: current.id, field: nextField, operator, value };
+  const build = (next: Clause['value'] | undefined): Clause =>
+    next === undefined
+      ? { id: current.id, field: nextField, operator }
+      : { id: current.id, field: nextField, operator, value: next };
+
+  /**
+   * Doc 206 rule 40: a value only survives a field change while the NEW field still accepts it.
+   *
+   * Keying the restart on the KIND alone was not enough — two CHOICE fields share a kind but not their
+   * option lists, so the old const was carried onto the new field, `clauseProblems` flagged it as an unknown
+   * choice, and `setClause` then refused the whole edit: the field picker snapped straight back and the
+   * clause could never be moved between choice fields at all.
+   */
+  const changedField = patch.field !== undefined && patch.field !== current.field;
+  if (changedField && patch.value === undefined && field) {
+    const candidate = build(value);
+    if (clauseProblems(candidate, fields).length > 0) return build(startingValue(field, operator));
+  }
+
+  return build(value);
 }

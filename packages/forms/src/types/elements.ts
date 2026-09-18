@@ -191,8 +191,13 @@ export interface Clause {
   id: string;
   field: string;
   operator: Operator;
-  /** Absent for the operators `needsValue` reports false for. A LIST only for `in` / `notIn` (rule 36). */
-  value?: string | number | boolean | string[];
+  /**
+   * Absent for the operators `needsValue` reports false for. A LIST only for `in` / `notIn` (rule 36).
+   *
+   * Doc 206 rule 39: a list entry may be a NUMBER, because a choice option's const may be — a
+   * `{ type: 'number', oneOf: [...] }` field is an ordinary choice field.
+   */
+  value?: string | number | boolean | (string | number)[];
 }
 
 /**
