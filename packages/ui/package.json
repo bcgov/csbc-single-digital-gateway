@@ -109,6 +109,12 @@
       "import": "./dist/checkbox.js",
       "require": "./dist/checkbox.cjs"
     },
+    "./checkbox-group": {
+      "types": "./dist/checkbox-group.d.ts",
+      "development": "./src/checkbox-group.ts",
+      "import": "./dist/checkbox-group.js",
+      "require": "./dist/checkbox-group.cjs"
+    },
     "./collapsible": {
       "types": "./dist/collapsible.d.ts",
       "development": "./src/collapsible.ts",

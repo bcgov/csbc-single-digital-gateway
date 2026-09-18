@@ -5,6 +5,7 @@ import {
   Combobox,
   ComboboxChip,
   ComboboxChips,
+  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxGroup,
@@ -97,6 +98,22 @@ describe('Combobox', () => {
       </Combobox>,
     );
     expect(screen.getByRole('button', { name: '' })).toBeInTheDocument();
+  });
+
+  it('gives the chips box the same unavailable fill the single-select gets (doc 205)', () => {
+    // The chips box IS the multi-select's input surface, so a disabled field must read as unavailable there
+    // too — it was white while the single-select went grey. CSS `:read-only` matches a DISABLED input as
+    // well as a readonly one, which is why one rule covers both, exactly as InputGroup does it.
+    render(
+      <Combobox items={items} multiple value={[]}>
+        <ComboboxChips>
+          <ComboboxChipsInput disabled />
+        </ComboboxChips>
+      </Combobox>,
+    );
+    const chips = document.querySelector('[data-slot="combobox-chips"]');
+    expect(chips).toHaveClass('has-[[data-slot=combobox-chip-input]:read-only]:bg-input/50');
+    expect(chips).toHaveClass('bg-input-background');
   });
 
   it('labels the input clear button via clearLabel and clears the selection when clicked', async () => {

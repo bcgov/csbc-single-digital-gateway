@@ -212,10 +212,13 @@ function ComboboxChips({
   ...props
 }: React.ComponentPropsWithRef<typeof ComboboxPrimitive.Chips> & ComboboxPrimitive.Chips.Props) {
   return (
+    // The chips box IS this control's input surface, so it carries the same states InputGroup gives the
+    // single-select combobox — including the muted fill when the field is unavailable. CSS `:read-only`
+    // matches a disabled input as well as a readonly one, so the one rule covers both.
     <ComboboxPrimitive.Chips
       data-slot="combobox-chips"
       className={cn(
-        'flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-input bg-input-background bg-clip-padding px-2 py-0.5 text-xs/relaxed transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 has-aria-invalid:border-destructive has-aria-invalid:ring-2 has-aria-invalid:ring-destructive/20 has-data-[slot=combobox-chip]:px-1 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40',
+        'flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-input bg-input-background bg-clip-padding px-2 py-0.5 text-xs/relaxed transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 has-[[data-slot=combobox-chip-input]:read-only]:cursor-default has-[[data-slot=combobox-chip-input]:read-only]:bg-input/50 has-aria-invalid:border-destructive has-aria-invalid:ring-2 has-aria-invalid:ring-destructive/20 has-data-[slot=combobox-chip]:px-1 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40',
         className,
       )}
       {...props}
