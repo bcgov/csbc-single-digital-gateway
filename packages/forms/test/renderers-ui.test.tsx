@@ -54,9 +54,9 @@ const translate = ((key: string, defaultMessage: string | undefined) =>
 describe('renderers/ui set shape', () => {
   // Doc 182 rule 8 and doc 188 rule 4 — the control renderers are covered in the renderers-ui-*controls tests.
   // Doc 194 rule 1 — the Separator entry is covered in renderers-ui-separator.test.tsx.
-  it('exports empty cells and layoutRenderers, seven controlRenderers and Heading + Separator displayRenderers', () => {
+  it('exports empty cells and layoutRenderers, nine controlRenderers and Heading + Separator displayRenderers', () => {
     expect(ui.cells).toEqual([]);
-    expect(ui.controlRenderers).toHaveLength(7);
+    expect(ui.controlRenderers).toHaveLength(9);
     expect(ui.layoutRenderers).toEqual([]);
     expect(ui.displayRenderers).toHaveLength(2);
     expect(headingEntry()?.renderer).toBeDefined();

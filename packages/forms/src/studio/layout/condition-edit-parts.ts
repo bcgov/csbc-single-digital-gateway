@@ -78,7 +78,9 @@ export function startingValue(
   }
   if (field.kind === 'number') return 0;
   if (field.kind === 'boolean') return true;
-  if (field.kind === 'choice') return field.options?.[0]?.value;
+  // Doc 205 rule 32: a multi-choice clause starts on its first option, exactly as a single choice does — the
+  // value is one const either way.
+  if (field.kind === 'choice' || field.kind === 'multi-choice') return field.options?.[0]?.value;
   return '';
 }
 

@@ -70,7 +70,7 @@ describe('renderer set (rules 1-3, 7)', () => {
   });
 
   it('reuses exactly the renderers/ui control entries, by reference and in order (doc 188 rule 21)', () => {
-    expect(ui.controlRenderers).toHaveLength(7);
+    expect(ui.controlRenderers).toHaveLength(9);
     ui.controlRenderers.forEach((entry, index) => {
       expect(inspector.controlRenderers[index]).toBe(entry);
     });

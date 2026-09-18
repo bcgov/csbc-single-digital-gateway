@@ -7,6 +7,7 @@ import type {
   HeadingElement,
   HorizontalLayoutElement,
   InputControlElement,
+  MultiComboboxControlElement,
   NumberInputControlElement,
   RadioGroupControlElement,
   SwitchControlElement,
@@ -28,6 +29,7 @@ const EMAIL = 'Tn5wQ2rK';
 const PHONE = 'c8LpV4hZ';
 const BEST_TIME = 'Ye3mD7sG';
 const CONTACT_METHOD = 'Gk2vR8tJ';
+const SUPPORTS = 'Jw8sE4nB';
 const CITY = 'mX9fL3oD';
 const POSTAL_CODE = 'Zb2gN7wS';
 const PROVINCE = 'uB6hY3eM';
@@ -111,10 +113,17 @@ const contactMethod: RadioGroupControlElement = {
   options: { component: 'radio-group' },
 };
 
+// Doc 205 rules 40-41: a multi-choice field, shown in its DEFAULT presentation — the chips combobox.
+const supports: MultiComboboxControlElement = {
+  type: 'Control',
+  scope: `#/properties/${SUPPORTS}`,
+  options: { placeholder: 'Choose any that apply' },
+};
+
 // A VerticalLayout nested in the root Form (doc 180 rules 25-26): its children stack in order, the row among them.
 const contact: VerticalLayoutElement = {
   type: 'VerticalLayout',
-  elements: [contactHeading, contactRow, bestTime, contactMethod],
+  elements: [contactHeading, contactRow, bestTime, contactMethod, supports],
 };
 
 const deliveryHeading: HeadingElement = {
@@ -230,6 +239,18 @@ export const STUDIO_SAMPLE_SCHEMA: JsonSchema = {
         { const: 'phone', title: 'Phone' },
         { const: 'mail', title: 'Mail' },
       ],
+    },
+    [SUPPORTS]: {
+      type: 'array',
+      title: 'Supports needed',
+      uniqueItems: true,
+      items: {
+        oneOf: [
+          { const: 'wheelchair', title: 'Wheelchair access', description: 'Step-free entry' },
+          { const: 'interpreter', title: 'Interpreter' },
+          { const: 'large-print', title: 'Large print' },
+        ],
+      },
     },
     [CITY]: { type: 'string', title: 'City', maxLength: 60 },
     [POSTAL_CODE]: { type: 'string', title: 'Postal Code', maxLength: 7 },

@@ -132,7 +132,7 @@ export const FLOW_DEFINITIONS = {
                       ),
                       operator: {
                         description:
-                          "What the clause tests. Which operators a field may use follows its kind: text takes contains, startsWith and endsWith, numbers take the comparisons, choices take in and notIn, and booleans take only isTrue and isFalse. The operators ending in 'Empty', isTrue and isFalse take no value; in and notIn take a list.",
+                          "What the clause tests. Which operators a field may use follows its kind: text takes contains, startsWith and endsWith, numbers take the comparisons, choices take in and notIn, multi-choice fields take includes and notIncludes, and booleans take only isTrue and isFalse. The operators ending in 'Empty', isTrue and isFalse take no value; in and notIn take a list, while includes and notIncludes take ONE option value and test the chosen set.",
                         enum: [
                           'equals',
                           'notEquals',
@@ -149,6 +149,8 @@ export const FLOW_DEFINITIONS = {
                           'isNotEmpty',
                           'isTrue',
                           'isFalse',
+                          'includes',
+                          'notIncludes',
                         ],
                       },
                       value: {

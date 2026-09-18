@@ -70,6 +70,19 @@ export interface RadioGroupControlElement extends ControlElement {
   options: ControlOptions & { component: 'radio-group' };
 }
 
+/**
+ * A MULTI-choice control — `{ type: 'array', items: { oneOf } }` — rendered by `@repo/ui`'s `Combobox` in
+ * `multiple` mode, one removable chip per selection. The default for a multi-choice schema (doc 205 rule 5).
+ */
+export interface MultiComboboxControlElement extends ControlElement {
+  options?: ControlOptions & { component?: 'combobox' };
+}
+
+/** A multi-choice control rendered as a `@repo/ui` `CheckboxGroup`, one box per option (doc 205 rule 6). */
+export interface CheckboxGroupControlElement extends ControlElement {
+  options: ControlOptions & { component: 'checkbox-group' };
+}
+
 /** A `type: 'boolean'` control rendered by `@repo/ui`'s `Checkbox` — the default for booleans (doc 188). */
 export interface CheckboxControlElement extends ControlElement {
   options?: ControlOptions & { component?: 'checkbox' };
@@ -160,7 +173,12 @@ export type Operator =
   | 'isEmpty'
   | 'isNotEmpty'
   | 'isTrue'
-  | 'isFalse';
+  | 'isFalse'
+  // Doc 205 rules 27-28: for a MULTI-choice answer. The value is ONE option const and the answer is the array,
+  // which is the reverse of `in`/`notIn` ("the scalar answer is one of these") — hence new operators rather
+  // than a second meaning for the old ones.
+  | 'includes'
+  | 'notIncludes';
 
 /**
  * One test inside a `ConditionRow` (doc 199 rule 35). `field` is a top-level schema property KEY, not a

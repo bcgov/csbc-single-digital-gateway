@@ -157,7 +157,9 @@ function optionField(
 const takesPlaceholder: Applies = (ctx) =>
   isText(ctx) ||
   isNumber(ctx) ||
-  (ctx.controlKind === 'choice' && currentComponent(ctx) !== 'radio-group');
+  (ctx.controlKind === 'choice' && currentComponent(ctx) !== 'radio-group') ||
+  // Doc 205 rule 34: the multi combobox takes one; the checkbox group ignores it, like a radio group.
+  (ctx.controlKind === 'multi-choice' && currentComponent(ctx) !== 'checkbox-group');
 
 export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   {

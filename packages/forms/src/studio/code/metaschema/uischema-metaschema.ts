@@ -142,8 +142,18 @@ const CONTROL = whenType('Control', {
         component: {
           description:
             'The control to render: "input" or "textarea" for strings, "number" for numbers, "combobox" or ' +
-            '"radio-group" for oneOf choices, "checkbox" or "switch" for booleans.',
-          enum: ['input', 'textarea', 'number', 'combobox', 'radio-group', 'checkbox', 'switch'],
+            '"radio-group" for oneOf choices, "checkbox" or "switch" for booleans, and "combobox" or ' +
+            '"checkbox-group" for an array of choices.',
+          enum: [
+            'input',
+            'textarea',
+            'number',
+            'combobox',
+            'radio-group',
+            'checkbox',
+            'switch',
+            'checkbox-group',
+          ],
         },
         placeholder: { description: 'Placeholder text.', type: 'string', minLength: 1 },
         // Doc 204 rule 25: the Text field's mask and the Number field's precision. This block is what drives

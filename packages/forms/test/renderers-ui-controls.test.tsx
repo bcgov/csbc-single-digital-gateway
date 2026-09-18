@@ -88,8 +88,8 @@ describe('control dispatch', () => {
     return ranks.flatMap((rank, index) => (rank === max && rank > 0 ? [index] : []));
   };
 
-  it('registers Input, Textarea and NumberInput first, ahead of the doc 188 controls', () => {
-    expect(ui.controlRenderers).toHaveLength(7);
+  it('registers Input, Textarea and NumberInput first, ahead of the doc 188 and 205 controls', () => {
+    expect(ui.controlRenderers).toHaveLength(9);
     expect(inputEntry?.tester(control('#/properties/text'), rootSchema, context)).toBe(1);
     expect(
       textareaEntry?.tester(
@@ -130,7 +130,7 @@ describe('control dispatch', () => {
     // Amends doc 182 rule 10: `type: 'integer'` is what "Allow decimals: off" writes, so it must render —
     // and as the SAME control, since multipleOf and options.decimals already decide step and fraction digits.
     // Guard: with no control renderers registered the next assertion would pass vacuously.
-    expect(ui.controlRenderers).toHaveLength(7);
+    expect(ui.controlRenderers).toHaveLength(9);
     // Index 2 is the NumberInput entry — the same one a `type: 'number'` control reaches.
     expect(topEntries(control('#/properties/count'))).toEqual([2]);
   });

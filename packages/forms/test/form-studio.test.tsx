@@ -103,7 +103,8 @@ describe('FormStudio', () => {
     // name, about, quantity, budget, team size + email, phone and best time in the Contact layouts +
     // city, postal code and province in the nested Delivery grid. Base UI's radio, checkbox and switch
     // hidden inputs are aria-hidden (doc 188 rule 33).
-    expect(inputs).toHaveLength(11);
+    // Doc 205 rule 41: the sample gained a multi-choice field, shown as the chips combobox.
+    expect(inputs).toHaveLength(12);
     for (const input of inputs) {
       expect(input).toBeDisabled();
       const wrapper = input.closest('[data-slot="studio-content"]');

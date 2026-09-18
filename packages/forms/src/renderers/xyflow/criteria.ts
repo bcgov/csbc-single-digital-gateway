@@ -43,6 +43,9 @@ export const OPERATORS_BY_KIND: Readonly<Record<ControlKind, readonly Operator[]
   ] as const),
   choice: Object.freeze(['equals', 'notEquals', 'in', 'notIn', 'isEmpty', 'isNotEmpty'] as const),
   boolean: Object.freeze(['isTrue', 'isFalse'] as const),
+  // Doc 205 rule 27: no `equals`/`notEquals` — `matchesClause` compares with `===`, which against an array is
+  // reference identity and never true. What an author means by "equals" here is `includes`.
+  'multi-choice': Object.freeze(['includes', 'notIncludes', 'isEmpty', 'isNotEmpty'] as const),
 });
 
 /** Rule 2: the operators `kind` offers, or `[]` for an unknown or absent kind — never a throw. */
@@ -70,6 +73,8 @@ export const OPERATOR_LABELS: Readonly<Record<Operator, string>> = Object.freeze
   isNotEmpty: 'is not empty',
   isTrue: 'is true',
   isFalse: 'is false',
+  includes: 'includes',
+  notIncludes: 'does not include',
 });
 
 const VALUELESS: ReadonlySet<Operator> = new Set<Operator>([
@@ -102,6 +107,10 @@ export const emptyListMessage = (operator: string) => `"${operator}" needs at le
 function valueMatchesKind(kind: ControlKind, value: unknown): boolean {
   if (kind === 'number') return typeof value === 'number' && Number.isFinite(value);
   if (kind === 'boolean') return typeof value === 'boolean';
+  // Doc 205 rule 31: a multi-choice clause's VALUE is one option const — which the options may type as a
+  // number, unlike every other kind whose scalar value is a string.
+  if (kind === 'multi-choice')
+    return typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value));
   return typeof value === 'string';
 }
 

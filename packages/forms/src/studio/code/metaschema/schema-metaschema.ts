@@ -39,8 +39,9 @@ export const SCHEMA_METASCHEMA = deepFreeze({
           description:
             'The kind of value. "string" renders a text input or textarea, "number" a number input, "integer" the ' +
             'same input restricted to whole numbers, "boolean" a checkbox or switch; a "oneOf" list renders a ' +
-            'combobox or radio group.',
-          enum: ['string', 'number', 'integer', 'boolean'],
+            'combobox or radio group, and an "array" whose "items" carry a "oneOf" renders a multi-select or a ' +
+            'checkbox group.',
+          enum: ['string', 'number', 'integer', 'boolean', 'array'],
         },
         title: { description: "The field's label.", type: 'string' },
         description: { description: 'Help text shown under the field.', type: 'string' },
@@ -65,6 +66,31 @@ export const SCHEMA_METASCHEMA = deepFreeze({
           minItems: 1,
           items: { $ref: '#/definitions/choice' },
         },
+        // Doc 205 rule 37: a MULTI-choice field's options live under `items`, and the field is an array of
+        // them. Without this the apply gate refuses every multi-select — the same trap `integer` hit.
+        items: {
+          description:
+            'For an "array" field, what each chosen value is: an object whose "oneOf" lists the options.',
+          type: 'object',
+          properties: {
+            type: {
+              description:
+                'The type of each chosen value. Must match the "const" types in "oneOf".',
+              enum: ['string', 'number', 'integer'],
+            },
+            oneOf: {
+              description: 'The choices, in order.',
+              type: 'array',
+              minItems: 1,
+              items: { $ref: '#/definitions/choice' },
+            },
+          },
+        },
+        uniqueItems: {
+          description:
+            'For an "array" field, whether the same option may be chosen twice. Use true.',
+          type: 'boolean',
+        },
       },
     },
     choice: {
@@ -77,6 +103,11 @@ export const SCHEMA_METASCHEMA = deepFreeze({
           type: ['string', 'number'],
         },
         title: { description: 'The text shown for this choice.', type: 'string' },
+        // Doc 205 rule 38: shown under the label in a checkbox group, and as a second line in a combobox list.
+        description: {
+          description: 'Help text shown with this choice.',
+          type: 'string',
+        },
       },
     },
   },

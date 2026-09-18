@@ -1,6 +1,8 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import {
   mdiCheckboxMarkedOutline,
+  mdiCheckboxMultipleMarkedOutline,
+  mdiFormatListChecks,
   mdiFormatHeaderPound,
   mdiFormDropdown,
   mdiFormTextbox,
@@ -153,6 +155,34 @@ const DEFINITIONS: readonly TemplateDefinition[] = Object.freeze(
         icon: mdiRadioboxMarked,
         keywords: ['choice', 'options'],
         build: field('radio-group', (title) => ({ type: 'string', title, oneOf: choices() })),
+      },
+      // Doc 205 rule 40: the same schema twice, differing only in `options.component` — the Combobox /
+      // Radio group pair exactly. "Multiple" is DERIVED from `type: 'array'`, never an authored flag.
+      {
+        key: 'multi-select',
+        group: 'fields',
+        label: 'Multi-select',
+        icon: mdiFormatListChecks,
+        keywords: ['multiple', 'choice', 'options', 'tags', 'chips'],
+        build: field(undefined, (title) => ({
+          type: 'array',
+          title,
+          uniqueItems: true,
+          items: { oneOf: choices() },
+        })),
+      },
+      {
+        key: 'checkbox-group',
+        group: 'fields',
+        label: 'Checkbox group',
+        icon: mdiCheckboxMultipleMarkedOutline,
+        keywords: ['multiple', 'choice', 'options', 'checkboxes'],
+        build: field('checkbox-group', (title) => ({
+          type: 'array',
+          title,
+          uniqueItems: true,
+          items: { oneOf: choices() },
+        })),
       },
       {
         key: 'checkbox',

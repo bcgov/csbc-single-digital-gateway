@@ -61,14 +61,27 @@ function ValueControl({ clause, fields, editor, conditionId, rowId }: ClauseProp
     );
   }
 
-  if (field?.kind === 'choice') {
+  // Doc 205 rule 31: a multi-choice clause picks ONE option too — `includes` asks whether the chosen set
+  // contains it — so it uses the same picker.
+  if (field?.kind === 'choice' || field?.kind === 'multi-choice') {
+    const multi = field.kind === 'multi-choice';
     return (
       <NativeSelect
         size="sm"
         aria-label="Value"
         className={ROW_CONTROL_CLASS}
-        value={typeof clause.value === 'string' ? clause.value : ''}
-        onChange={(event) => set(event.target.value)}
+        value={clause.value === undefined ? '' : String(clause.value)}
+        onChange={(event) =>
+          // A multi-choice option may be typed as a NUMBER, and the select's value is always a string — so map
+          // the pick back to the option's real const. A single `choice` keeps writing the raw string it always
+          // has: its numeric-const case is a pre-existing gap, and changing it here would be doc 188's call.
+          set(
+            multi
+              ? (field.options?.find((option) => String(option.value) === event.target.value)
+                  ?.value ?? event.target.value)
+              : event.target.value,
+          )
+        }
       >
         {(field.options ?? []).map((option) => (
           <NativeSelectOption key={String(option.value)} value={String(option.value)}>

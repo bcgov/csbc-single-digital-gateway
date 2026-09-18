@@ -26,6 +26,12 @@ const COMPONENTS: Readonly<Partial<Record<ControlKind, readonly Component[]>>> =
     { const: 'checkbox', title: 'Checkbox' },
     { const: 'switch', title: 'Switch' },
   ],
+  // Doc 205 rule 33: `combobox` is reused from the `choice` kind on purpose — this map is keyed BY KIND, so
+  // there is no collision, and "Multi combobox" would be jargon for the same widget.
+  'multi-choice': [
+    { const: 'combobox', title: 'Combobox' },
+    { const: 'checkbox-group', title: 'Checkbox group' },
+  ],
 };
 
 export const componentsOf = (ctx: InspectorContext): readonly Component[] | undefined =>

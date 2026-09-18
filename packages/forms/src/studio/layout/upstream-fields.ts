@@ -3,6 +3,7 @@ import type { CriterionField } from '../../renderers/xyflow/criteria';
 import { drawnNodes, elementsOf } from '../../renderers/xyflow/flow-elements';
 import { flowEdges, reachesNode } from '../../renderers/xyflow/flow-graph';
 import { choiceOptions } from '../../renderers/ui/choice-control';
+import { multiChoiceOptions } from '../../renderers/ui/multi-choice-control';
 import { controlKindOf } from '../../renderers/ui/control-kind';
 import { elementLabel } from './element-path';
 import { propertyKeyOf, type StudioDocument } from './schema-properties';
@@ -39,7 +40,14 @@ function fieldOf(control: UISchemaElement, schema: JsonSchema): CriterionField |
   // Rule 6 wants the authored name, so an unnamed field is named by its key instead.
   const labelled = elementLabel(control, schema);
   const label = labelled === control.type ? key : labelled;
-  const options = kind === 'choice' ? choiceOptions(property) : undefined;
+  // Doc 205 rule 31: a multi-choice field carries its options too — the picker offers the same list, and an
+  // `includes` clause's value is one of them.
+  const options =
+    kind === 'choice'
+      ? choiceOptions(property)
+      : kind === 'multi-choice'
+        ? multiChoiceOptions(property)
+        : undefined;
   return options === undefined ? { key, label, kind } : { key, label, kind, options };
 }
 

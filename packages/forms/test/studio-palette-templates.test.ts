@@ -36,6 +36,8 @@ describe('catalogue (rule 16)', () => {
       ['fields', 'number', 'Number'],
       ['fields', 'combobox', 'Combobox'],
       ['fields', 'radio-group', 'Radio group'],
+      ['fields', 'multi-select', 'Multi-select'],
+      ['fields', 'checkbox-group', 'Checkbox group'],
       ['fields', 'checkbox', 'Checkbox'],
       ['fields', 'switch', 'Switch'],
     ]);

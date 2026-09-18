@@ -1,6 +1,7 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import type { Clause, ConditionRow, FlowEdge } from '../types/elements';
 import { choiceOptions } from '../renderers/ui/choice-control';
+import { multiChoiceOptions } from '../renderers/ui/multi-choice-control';
 import { controlKindOf, type ControlKind } from '../renderers/ui/control-kind';
 import {
   needsValue,
@@ -51,7 +52,14 @@ export function criterionFieldOf(key: string, schema: JsonSchema): CriterionFiel
 
   const title = property?.title;
   const label = typeof title === 'string' && title.length > 0 ? title : key;
-  const options = kind === 'choice' ? choiceOptions(property) : undefined;
+  // Doc 205 rule 31: a multi-choice field carries its options too — the picker offers the same list, and an
+  // `includes` clause's value is one of them.
+  const options =
+    kind === 'choice'
+      ? choiceOptions(property)
+      : kind === 'multi-choice'
+        ? multiChoiceOptions(property)
+        : undefined;
   return options === undefined ? { key, label, kind } : { key, label, kind, options };
 }
 
@@ -67,6 +75,10 @@ export function criterionFieldOf(key: string, schema: JsonSchema): CriterionFiel
 function valueMatchesKind(kind: ControlKind, value: unknown): boolean {
   if (kind === 'number') return typeof value === 'number' && Number.isFinite(value);
   if (kind === 'boolean') return typeof value === 'boolean';
+  // Doc 205 rule 31: a multi-choice clause's VALUE is one option const — which the options may type as a
+  // number, unlike every other kind whose scalar value is a string.
+  if (kind === 'multi-choice')
+    return typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value));
   return typeof value === 'string';
 }
 
@@ -76,9 +88,19 @@ const listOf = (value: unknown): string[] | undefined =>
     ? (value as string[])
     : undefined;
 
-/** Rule 20: `undefined`, `null` and `''` are empty. Anything else — `0`, `false` — is an answer. */
+/**
+ * Rule 20: `undefined`, `null` and `''` are empty. Anything else — `0`, `false` — is an answer.
+ *
+ * Doc 205 rule 29: an EMPTY ARRAY is empty too. The controls write `undefined` rather than `[]` (rule 9), but a
+ * restored draft or a hand-edited document can still carry one — and without this an untouched multi-select
+ * reads as answered, `isNotEmpty` is true, and `conditionDecided` routes a Flow down a branch before the
+ * citizen has chosen anything.
+ */
 const isEmptyAnswer = (answer: unknown): boolean =>
-  answer === undefined || answer === null || answer === '';
+  answer === undefined ||
+  answer === null ||
+  answer === '' ||
+  (Array.isArray(answer) && answer.length === 0);
 
 /** Both sides of a numeric comparison as finite numbers, or `undefined` when either is not (rule 20). */
 function comparableNumbers(answer: unknown, value: unknown): [number, number] | undefined {
@@ -136,6 +158,14 @@ export function matchesClause(
       const [left, right] = [answer.toLowerCase(), value.toLowerCase()];
       if (operator === 'contains') return left.includes(right);
       return operator === 'startsWith' ? left.startsWith(right) : left.endsWith(right);
+    }
+    case 'includes':
+    case 'notIncludes': {
+      // Doc 205 rule 28: the mirror image of `in`/`notIn` — here the ANSWER is the list and the value is one
+      // option const. `notIncludes` is the negation, so an absent answer does not include anything, which is
+      // right: the citizen has chosen nothing.
+      const chosen = Array.isArray(answer) && answer.includes(value as never);
+      return operator === 'includes' ? chosen : !chosen;
     }
     case 'in':
     case 'notIn': {
