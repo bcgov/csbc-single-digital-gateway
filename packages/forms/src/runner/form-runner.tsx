@@ -23,6 +23,7 @@ import {
   visitedWith,
   type RunnerPosition,
 } from './runner-position';
+import { RunnerReview } from './runner-review';
 import { SubmissionPreview } from './submission-preview';
 
 // `<FormRunner>` (doc 202 rules 1-8, 24-28, 34-39) — the one stateful entry point of the package's fill side.
@@ -77,6 +78,10 @@ export function FormRunner({
     position === null ? new Set() : new Set([formKey(position)]),
   );
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  // Doc 202 rule 48: the review page is a STEP, so being on it is position-like state. It is held separately
+  // from `position` rather than folded into it: the citizen's place in the flow does not change when they open
+  // the review, which is what lets Back return there and the rail keep showing where they were.
+  const [reviewing, setReviewing] = useState(false);
 
   const context = useMemo(
     () => ({ flow: uischema, schema, data: data as RunnerData | undefined }),
@@ -91,7 +96,9 @@ export function FormRunner({
         ? documentHasError(errors)
         : false
       : formHasError(current, schema, errors);
-  const atEnd = position === null || !isFlow || isFinalStep(context, position);
+  // Rule 48: with review on, the last Form's Next opens the review and SUBMIT LIVES THERE — so the last Form is
+  // no longer the end, and the review page is.
+  const atEnd = reviewing || position === null || !isFlow || isFinalStep(context, position);
 
   // Every update is functional, so `goTo` captures nothing and keeps one identity for the life of the runner —
   // which matters because it goes into the port below, and a new identity there re-renders the whole flow.
@@ -153,12 +160,19 @@ export function FormRunner({
   }
 
   const onNext = () => {
-    if (position === null || blocked) return;
+    if (position === null || blocked || reviewing) return;
     const step = nextStep(context, position);
     if (step.kind === 'position') goTo(step.position);
+    // Rule 48: the review is opened WITHOUT moving the position, so Back returns to the Form still on the rail.
+    if (step.kind === 'review') setReviewing(true);
   };
 
   const onBack = () => {
+    // Rule 48: from the review page, Back is leaving it — the position never moved, so there is nothing to pop.
+    if (reviewing) {
+      setReviewing(false);
+      return;
+    }
     const previous = history.at(-1);
     if (previous === undefined) return;
     // Rule 26: Back never validates, and it pops rather than re-walking.
@@ -225,24 +239,35 @@ export function FormRunner({
           ) : null}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <JsonForms
-                schema={schema}
-                uischema={uischema}
-                data={data}
-                renderers={RENDERERS}
-                cells={defaults.cells}
-                onChange={({ data: next, errors: nextErrors }) => {
-                  setErrors(nextErrors ?? []);
-                  onChange(next as RunnerData);
-                }}
-              />
+              {reviewing ? (
+                // Rules 49-51: the review page replaces the form in the content column — the rail and the action
+                // bar are siblings of it, so both stay exactly as they are.
+                <RunnerReview
+                  flow={uischema}
+                  schema={schema}
+                  data={data as RunnerData | undefined}
+                  stageIds={listed}
+                />
+              ) : (
+                <JsonForms
+                  schema={schema}
+                  uischema={uischema}
+                  data={data}
+                  renderers={RENDERERS}
+                  cells={defaults.cells}
+                  onChange={({ data: next, errors: nextErrors }) => {
+                    setErrors(nextErrors ?? []);
+                    onChange(next as RunnerData);
+                  }}
+                />
+              )}
             </div>
             <RunnerActions
               // Rule 34b: a `Form` root has no Back at all. `history` only ever grows through `goTo`, which only Flow
               // navigation calls, so for a Form the button could never become enabled by any prop — dead chrome rather
               // than a temporarily unavailable action, which is what separates it from Save draft (rule 37).
               hasBack={isFlow}
-              canGoBack={history.length > 0}
+              canGoBack={reviewing || history.length > 0}
               atEnd={atEnd}
               blocked={blocked}
               // Rule 27c: a Flow's Submit stays pressable while there is an errored Form to take the citizen to; it is

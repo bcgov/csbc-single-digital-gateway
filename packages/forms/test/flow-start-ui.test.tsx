@@ -260,7 +260,8 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
 
     it('shows a Start stage field in General for a selected Flow, after Label', () => {
       const { form: built } = formFor(root, root, schema);
-      expect(sections(built)[0]).toEqual(['General', ['label', 'startId']]);
+      // Doc 202 rule 47 adds the review toggle beside it — both are Flow-level settings.
+      expect(sections(built)[0]).toEqual(['General', ['label', 'startId', 'review']]);
     });
 
     it('shows no Start stage field for a Stage or a Condition', () => {

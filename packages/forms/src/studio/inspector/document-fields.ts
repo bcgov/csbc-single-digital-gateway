@@ -23,6 +23,24 @@ export const DOCUMENT_FIELDS: readonly InspectorField[] = Object.freeze([
       setElement(edit, withOption(edit.element, 'startId', orCleared(value))),
   },
   {
+    // Doc 202 rule 47: the review page is a Flow-level setting, so it sits with the Flow's other one.
+    key: 'review',
+    section: 'general',
+    label: 'Show review before submission',
+    applies: (ctx) => ctx.element.type === FLOW_TYPE,
+    schema: () => ({
+      type: 'boolean',
+      description: 'Allow users to review details before submission.',
+    }),
+    // Doc 188: an inspector boolean asks for the compact switch rather than a checkbox.
+    options: () => ({ component: 'switch', size: 'sm' }),
+    // Absent reads as OFF (rule 47), so a document authored before the option existed is unchanged.
+    read: (ctx) => optionsOf(ctx.element)['review'] === true,
+    // Written only when ON: an option set to `false` is the same as no option, and the document stays minimal.
+    write: (_ctx, edit, value) =>
+      setElement(edit, withOption(edit.element, 'review', value === true ? true : undefined)),
+  },
+  {
     // NOT `description`: that key is the bound property's Description field, and a key names one inspector value.
     key: 'formDescription',
     section: 'general',

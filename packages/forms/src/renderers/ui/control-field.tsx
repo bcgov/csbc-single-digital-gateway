@@ -8,8 +8,8 @@ export interface ControlInputProps {
   disabled: boolean;
   /**
    * Doc 202 rule 50: READ-ONLY, which is not the same as disabled. A read-only field keeps full contrast and
-   * stays focusable and selectable — a citizen reviewing their answers can read and copy them — where a
-   * disabled one is greyed and skipped by the keyboard, which reads as "this form is locked".
+   * stays focusable, so a citizen reviewing their answers can read them and tab through them, where a disabled
+   * one is dimmed and skipped by the keyboard — which reads as "this form is locked".
    *
    * Only set for controls with a real HTML `readOnly`: a text input, a textarea, a number input. A checkbox,
    * radio group, switch or native select has no read-only mode in HTML, so `disabled` is the honest fallback
@@ -72,7 +72,11 @@ export function controlWiring(
   const readonly = isReadonly(config);
   const input: ControlInputProps = {
     id: inputId,
-    disabled: !enabled || (readonly && readonlyFallsBackToDisabled),
+    // TRAP: JSONForms itself reads `config.readonly` and reports `enabled: false` for it, so `!enabled` is
+    // ALWAYS true in a read-only subtree — taking it here would mark every field disabled as well as read-only,
+    // and the first build did exactly that (both attributes on one input). In a read-only subtree `disabled` is
+    // therefore decided ONLY by whether this control has an HTML read-only mode.
+    disabled: readonly ? readonlyFallsBackToDisabled : !enabled,
     ...(readonly && !readonlyFallsBackToDisabled ? { readOnly: true } : {}),
     ...(describedBy ? { 'aria-describedby': describedBy } : {}),
     ...(ids.error ? { 'aria-invalid': true } : {}),
@@ -114,8 +118,10 @@ export function ControlField({ control, maxLength, noReadOnly, children }: Contr
   const { data, label, required, description, errors, enabled, visible, config, uischema } =
     control;
   if (!visible) return null;
-  // Rule 50: `data-disabled` dims the whole Field. A read-only field must NOT take it — the point is that the
-  // answers stay legible.
+  // Rule 50: `data-disabled` dims the whole Field, and JSONForms reports `enabled: false` for a read-only
+  // subtree — so the flag is read through `dimmed`, which is false when the field is merely read-only. The
+  // point of read-only is that the answers stay legible.
+  const dimmed = !enabled && !isReadonly(config);
 
   const { ids, input } = controlWiring(control, maxLength !== undefined, noReadOnly === true);
   const labelIds: ControlLabelIds = { labelId: ids.label };
@@ -135,7 +141,7 @@ export function ControlField({ control, maxLength, noReadOnly, children }: Contr
 
   if (uischema.options?.['orientation'] === 'horizontal') {
     return (
-      <Field orientation="horizontal" data-disabled={enabled ? undefined : true}>
+      <Field orientation="horizontal" data-disabled={dimmed ? true : undefined}>
         <FieldContent>
           {fieldLabel}
           {fieldDescription}
@@ -150,7 +156,7 @@ export function ControlField({ control, maxLength, noReadOnly, children }: Contr
   }
 
   return (
-    <Field data-disabled={enabled ? undefined : true}>
+    <Field data-disabled={dimmed ? true : undefined}>
       {fieldLabel}
       {children(input, labelIds)}
       {counter}

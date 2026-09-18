@@ -626,3 +626,80 @@ function JsonFormsHarness({ uischema }: { uischema: UISchemaElement }) {
     />
   );
 }
+
+describe('the review page (doc 202 rules 47-53)', () => {
+  /** s1 (Name) → s2 (Note), with the review page turned on. */
+  const REVIEWED = flow(
+    [
+      stage('s1', 'Applicant', [form('Contact', ['name'])]),
+      stage('s2', 'Details', [form('More', ['note'])]),
+    ],
+    { edges: [edge('e1', 's1', 's2')], review: true },
+  );
+
+  const reviewPage = () => document.querySelector('[data-slot="runner-review"]');
+  const toEnd = async () => {
+    await settle();
+    fireEvent.click(nextButton());
+    await settle();
+  };
+
+  it('is OFF by default: the last Form shows Submit, as it always did (rule 16)', async () => {
+    renderFlow({ uischema: TWO_STAGE, initial: { name: 'Ada' } });
+    await toEnd();
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+    expect(reviewPage()).toBeNull();
+  });
+
+  it("opens from the last Form's Next, and that is where Submit lives (rule 48)", async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    // Still the last Form: with review on it is no longer the end, so it shows Next rather than Submit.
+    expect(nextButton()).toBeInTheDocument();
+
+    fireEvent.click(nextButton());
+    await settle();
+    expect(reviewPage()).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+  });
+
+  it('renders every Form of the path, under its stage name (rules 49, 51)', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    fireEvent.click(nextButton());
+    await settle();
+
+    const page = reviewPage();
+    expect(page).toHaveTextContent('Applicant');
+    expect(page).toHaveTextContent('Details');
+    // Both stages' fields at once — the whole path on one page, unlike every other step.
+    expect(within(page as HTMLElement).getByRole('textbox', { name: /^Name/ })).toHaveValue('Ada');
+    expect(within(page as HTMLElement).getByRole('textbox', { name: /^Note/ })).toHaveValue('hi');
+  });
+
+  it('renders the fields READ-ONLY, not disabled (rule 50)', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    fireEvent.click(nextButton());
+    await settle();
+
+    const field = within(reviewPage() as HTMLElement).getByRole('textbox', { name: /^Name/ });
+    // Read-only keeps full contrast and stays focusable and selectable — a citizen can read and copy their
+    // answers. Disabled would grey them out and skip them, which reads as "this form is locked".
+    expect(field).toHaveAttribute('readonly');
+    expect(field).not.toBeDisabled();
+  });
+
+  it('leaves by Back, returning to the Form the citizen was on (rule 48)', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    fireEvent.click(nextButton());
+    await settle();
+
+    fireEvent.click(backButton());
+    await settle();
+    expect(reviewPage()).toBeNull();
+    // The position never moved while reviewing, so Back lands on the last Form rather than unwinding history.
+    expect(screen.getByRole('textbox', { name: /^Note/ })).toBeInTheDocument();
+  });
+});

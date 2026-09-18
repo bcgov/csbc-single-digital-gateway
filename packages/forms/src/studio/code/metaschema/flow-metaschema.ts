@@ -36,6 +36,11 @@ export const FLOW_DEFINITIONS = {
           startId: nonEmptyString(
             'The id of the Stage the flow starts at. The first stage is used when it is absent.',
           ),
+          review: {
+            description:
+              'Show a read-only review of the answers before Submit. Absent or false goes straight to Submit.',
+            type: 'boolean',
+          },
         },
       },
     },
