@@ -34,7 +34,7 @@ describe('PageHeaderBanner', () => {
         <h1>Only content</h1>
       </PageHeaderBanner>,
     );
-    const container = document.querySelector('.border-bcgov-gold > div');
+    const container = document.querySelector('.border-bcgov-gold');
     // Only the single child (the heading) is present — no empty breadcrumb wrapper.
     expect(container?.children).toHaveLength(1);
     expect(screen.queryByRole('navigation')).toBeNull();

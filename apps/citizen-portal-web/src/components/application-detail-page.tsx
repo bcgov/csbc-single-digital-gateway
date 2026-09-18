@@ -102,7 +102,7 @@ export function ApplicationDetailPage() {
   return (
     <CitizenShell activeNav="services">
       {!authPending && !user ? (
-        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
           <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view this application.
@@ -114,12 +114,12 @@ export function ApplicationDetailPage() {
           </div>
         </div>
       ) : isPending ? (
-        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-32 w-full" />
         </div>
       ) : isError || !application ? (
-        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
           <div className="rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <h1 className="font-heading text-lg font-semibold">Application not found</h1>
             <Button variant="outline" className="mt-4" render={<Link to="/" />}>
@@ -129,7 +129,7 @@ export function ApplicationDetailPage() {
         </div>
       ) : (
         <>
-          <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+          <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
             <Breadcrumb
               trail={[
                 { label: 'Services', href: '/services' },

@@ -154,7 +154,7 @@ export function ServiceAgreementDetailPage() {
             />
           }
         />
-        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-6 px-4 md:px-8">{body}</div>
+        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-6 px-4 md:px-3">{body}</div>
       </div>
     </CitizenShell>
   );
