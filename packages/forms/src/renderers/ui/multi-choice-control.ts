@@ -17,7 +17,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  * numeric consts is contradictory, not merely untidy. Guessing which half the author meant would render a field
  * whose values its own schema rejects.
  */
-function itemsChoiceType(items: Record<string, unknown>): ChoiceType | undefined {
+export function itemsChoiceType(items: Record<string, unknown>): ChoiceType | undefined {
   const declared = items['type'];
   if (declared !== undefined) {
     return declared === 'string' || declared === 'number' || declared === 'integer'

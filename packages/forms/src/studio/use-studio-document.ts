@@ -15,8 +15,10 @@ import { createElementIds, type ElementIds } from './layout/element-ids';
 import { pathSegments, type PathSegment } from './layout/element-path';
 import { findById, findParentById, type TreeElement } from './layout/element-tree';
 import { removeElement } from './layout/remove-element';
+import { setChoices } from './layout/set-choices';
 import { carryIdsByPath } from './layout/carry-ids-by-path';
 import { newPropertyKey } from './layout/schema-properties';
+import type { SavedEntry } from './options/option-draft';
 import { buildTemplate } from './palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
 import { useFlowDocument, type UischemaUpdate } from './use-flow-document';
@@ -238,6 +240,28 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
   );
 
   /**
+   * Doc 206 rules 26-28: writes a choice field's option list, cascading any renamed const into the Flow
+   * Condition clauses that hold it — in ONE update, or `clause-edits.ts` would refuse the repair.
+   *
+   * Beside `updateElement` rather than through it: `applyInspector` reads a missing key as "cleared", and
+   * `fieldAccepts` refuses an array outright, so the option list can never ride the JSONForms data channel.
+   */
+  const updateOptions = useCallback(
+    (
+      elementId: string,
+      entries: readonly SavedEntry[],
+      renames: ReadonlyMap<string | number, string | number>,
+    ) => {
+      setState((previous) => {
+        const document = { schema: previous.schema, uischema: previous.uischema };
+        const next = setChoices(document, elementId, entries, renames, ids);
+        return next === document ? previous : { ...previous, ...next };
+      });
+    },
+    [ids],
+  );
+
+  /**
    * Replaces whole halves of the document from the code editors (doc 191 rules 22-24). A half equal to the current one
    * keeps the current object (the same state object when both do); a new uischema carries ids by tree path, and the
    * seed never changes, so selection survives. Carrying inside the updater is safe to repeat (StrictMode).
@@ -279,6 +303,7 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     canvasRootOf,
     inspectorFor,
     updateElement,
+    updateOptions,
     replaceDocument,
     copy,
     insert,

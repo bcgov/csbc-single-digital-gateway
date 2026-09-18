@@ -16,7 +16,10 @@ import { ViewportToggles, type PreviewViewport } from './viewport-toggles';
 import { StudioBackButton } from './studio-back-button';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
 import { StudioCanvas } from './studio-canvas';
+import { OptionsDialog } from './options/options-dialog';
+import { optionsTargetOf } from './options/options-target';
 import { StudioInspector } from './studio-inspector';
+import { useOptionsEditor } from './use-options-editor';
 import { StudioPalette } from './studio-palette';
 import { StudioWorkspace } from './studio-workspace';
 import { useInspectorPanel } from './use-inspector-panel';
@@ -106,8 +109,18 @@ export const FormStudio: FC<FormStudioProps> = ({
   // Doc 200 rules 18-20. Declared AFTER `ready`, which it reads — see the TDZ trap in the hook's own comment.
   useEmptyPanels(panels, ready);
   const mode = usePreviewMode(panels);
+  // Doc 206 rules 5-9. Declared BEFORE the selection hook, which takes its double-click and Escape gestures;
+  // it needs only the document, so there is no cycle between the two.
+  const optionsEditor = useOptionsEditor(studio);
+  const optionsGestures = useMemo(
+    () => ({
+      editingOptions: optionsEditor.target !== undefined,
+      openOptions: optionsEditor.open,
+    }),
+    [optionsEditor.target, optionsEditor.open],
+  );
   const { port, editor, flowEditor, confirmation, hover, select, pressing, add } =
-    useStudioSelection(rootRef, !mode.previewing, studio);
+    useStudioSelection(rootRef, !mode.previewing, studio, optionsGestures);
   const { selectedId } = port;
   const focusId = studio.canvasRootOf(selectedId);
   // Doc 197 rules 8-13: optional, two-way URL wiring for the drilled-in Form. No props, no effect.
@@ -131,6 +144,17 @@ export const FormStudio: FC<FormStudioProps> = ({
   const [viewport, setViewport] = useState<PreviewViewport>('desktop');
   const paletteActions = useMemo(() => ({ add }), [add]);
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right);
+  /**
+   * Doc 206 rules 1-3: resolved from the CURRENT document, so an option edit is reflected in the summary at
+   * once. `undefined` for every element that is not a choice field, which is what hides the section.
+   */
+  const optionsSection = useMemo(() => {
+    const target =
+      selectedId === null ? undefined : optionsTargetOf(studio, selectedId, studio.ids);
+    return target === undefined
+      ? undefined
+      : { target, onEdit: () => optionsEditor.open(target.elementId) };
+  }, [studio, selectedId, optionsEditor.open]);
   const segments = studio.pathOf(selectedId);
   // Doc 191 rule 3: nothing of Monaco loads until the bottom panel first opens.
   const [codeOpened, setCodeOpened] = useState(false);
@@ -223,6 +247,7 @@ export const FormStudio: FC<FormStudioProps> = ({
                 elementId={selectedId}
                 label={segments.at(-1)?.label ?? ''}
                 form={inspector}
+                options={optionsSection}
                 onChange={studio.updateElement}
               />
             )
@@ -272,6 +297,13 @@ export const FormStudio: FC<FormStudioProps> = ({
       {session.status === 'choosing' ? (
         <NewFormDialog open={dialogOpen} onOpenChange={setDialogOpen} onChoose={session.choose} />
       ) : null}
+      {/* Doc 206 rule 7: a sibling, like the delete confirmation — the dialog portals out of here anyway. */}
+      <OptionsDialog
+        target={optionsEditor.target}
+        uischema={studio.uischema}
+        onCancel={optionsEditor.close}
+        onSave={optionsEditor.save}
+      />
       <DeleteConfirmation
         pending={confirmation.pending}
         onConfirm={confirmation.confirm}

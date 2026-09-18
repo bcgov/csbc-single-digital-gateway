@@ -1,6 +1,8 @@
 import type { JsonFormsCore, Layout } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { useState } from 'react';
+import { InspectorOptions } from './options/inspector-options';
+import type { OptionsTarget } from './options/options-target';
 import * as inspectorSet from '../renderers/studio-inspector/index';
 import type { InspectorValues } from './inspector/inspector-fields';
 import {
@@ -19,11 +21,22 @@ const INSPECTOR_RENDERERS = [
 const EMPTY_MESSAGE = 'Select an element to configure it.';
 const NO_SETTINGS_MESSAGE = 'This element has no settings.';
 
+/** Doc 206 rules 1-3: the selected field's option list, when it has one. */
+export interface OptionsSection {
+  readonly target: OptionsTarget;
+  onEdit(): void;
+}
+
 export interface StudioInspectorProps {
   readonly elementId: string | null;
   /** The selected element's label (`elementLabel`, doc 186). */
   readonly label: string;
   readonly form: InspectorForm | undefined;
+  /**
+   * Doc 206 rule 2: absent means the selection is not a choice field, and nothing renders. It cannot be an
+   * inspector FIELD — `fieldAccepts` admits only a string, boolean or finite number, never an array.
+   */
+  readonly options?: OptionsSection | undefined;
   onChange(elementId: string, values: InspectorValues): void;
 }
 
@@ -36,7 +49,7 @@ interface InspectorBodyProps extends Omit<StudioInspectorProps, 'elementId' | 'f
 const sameErrors = (a: readonly InspectorError[], b: readonly InspectorError[]) =>
   a.length === b.length && a.every((error, index) => error.instancePath === b[index]?.instancePath);
 
-function InspectorBody({ elementId, label, form, onChange }: InspectorBodyProps) {
+function InspectorBody({ elementId, label, form, options, onChange }: InspectorBodyProps) {
   const [errors, setErrors] = useState(() => inspectorErrors(form.data));
   const hasSettings = ((form.uischema as Layout).elements ?? []).length > 0;
 
@@ -66,6 +79,10 @@ function InspectorBody({ elementId, label, form, onChange }: InspectorBodyProps)
       ) : (
         <p className="text-sm text-muted-foreground">{NO_SETTINGS_MESSAGE}</p>
       )}
+      {/* Rule 2: below the settings form, after a divider. */}
+      {options === undefined ? null : (
+        <InspectorOptions target={options.target} onEdit={options.onEdit} />
+      )}
     </>
   );
 }
@@ -76,7 +93,13 @@ function InspectorBody({ elementId, label, form, onChange }: InspectorBodyProps)
  * is keyed by element id, so selecting another element remounts it. `data-studio-inspector` also keeps
  * Escape typed here from walking the selection (rule 29).
  */
-export function StudioInspector({ elementId, label, form, onChange }: StudioInspectorProps) {
+export function StudioInspector({
+  elementId,
+  label,
+  form,
+  options,
+  onChange,
+}: StudioInspectorProps) {
   return (
     <div data-studio-inspector="" className="flex flex-col gap-3 p-2">
       {elementId === null || form === undefined ? (
@@ -87,6 +110,7 @@ export function StudioInspector({ elementId, label, form, onChange }: StudioInsp
           elementId={elementId}
           label={label}
           form={form}
+          options={options}
           onChange={onChange}
         />
       )}

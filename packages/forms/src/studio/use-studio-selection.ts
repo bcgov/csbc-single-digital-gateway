@@ -84,6 +84,10 @@ export function pointerTargetOf(target: EventTarget | null, root: HTMLElement): 
 interface PointerSelectionOptions {
   readonly active: boolean;
   readonly confirming: boolean;
+  /** Doc 206 rule 8: Escape belongs to the Edit Options dialog while it is open. */
+  readonly editingOptions: boolean;
+  /** Doc 206 rules 5-6: a double-click on an element offers to edit its options. */
+  openOptions(elementId: string): void;
   readonly parentOf: (elementId: string) => string | null;
   readonly canvasRootOf: (selectedId: string | null) => string | null;
   readonly setHovered: IdSetter;
@@ -112,6 +116,8 @@ function usePointerSelection(
   {
     active,
     confirming,
+    editingOptions,
+    openOptions,
     parentOf,
     canvasRootOf,
     setHovered,
@@ -140,8 +146,21 @@ function usePointerSelection(
       else if (target.kind === 'canvas') setSelected((current) => canvasRootOf(current));
     };
     const onUp = () => setPressing(false);
+    /**
+     * Doc 206 rules 5-6: the package's first double-click gesture. It runs AFTER the press has already
+     * selected the element, and `openOptions` itself ignores an element with no options — so a double-click
+     * anywhere else on the canvas costs nothing.
+     */
+    const onDoubleClick = (event: Event) => {
+      if (event instanceof MouseEvent && event.button > 0) return;
+      const target = pointerTargetOf(event.target, root);
+      if (target.kind === 'item') openOptions(target.id);
+    };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || confirming || insidePanelForm(event.target)) return;
+      // Rule 8: the dialog portals OUT of `[data-studio-inspector]`, so `insidePanelForm` does not cover it
+      // and Escape would both close the dialog AND walk the selection up.
+      if (event.key !== 'Escape' || confirming || editingOptions || insidePanelForm(event.target))
+        return;
       setSelected((current) => (current === null ? null : parentOf(current)));
     };
 
@@ -150,6 +169,7 @@ function usePointerSelection(
     document.addEventListener('pointerdown', onDown, true);
     document.addEventListener('pointerup', onUp, true);
     document.addEventListener('pointercancel', onUp, true);
+    document.addEventListener('dblclick', onDoubleClick);
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('pointerover', onOver);
@@ -159,7 +179,18 @@ function usePointerSelection(
       document.removeEventListener('pointercancel', onUp, true);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [rootRef, active, confirming, parentOf, canvasRootOf, setHovered, setSelected, setPressing]);
+  }, [
+    rootRef,
+    active,
+    confirming,
+    editingOptions,
+    openOptions,
+    parentOf,
+    canvasRootOf,
+    setHovered,
+    setSelected,
+    setPressing,
+  ]);
 }
 
 /**
@@ -213,10 +244,24 @@ function useDeleteConfirmation(
  * confirmation, `hover` / `select` for the footer breadcrumbs (`hover` does nothing mid-gesture), and
  * `pressing` — a primary press that started in the studio is held (doc 187 rule 27).
  */
+/** Doc 206 rules 5-8: the Edit Options dialog, which owns Escape while it is open. */
+export interface OptionsGestures {
+  readonly editingOptions: boolean;
+  openOptions(elementId: string): void;
+}
+
+/** No options editor: no double-click gesture, and Escape keeps walking the selection. A module const, not a
+ *  default object literal — a new identity each render would re-run the listener effect every time. */
+const NO_OPTIONS_EDITOR: OptionsGestures = Object.freeze({
+  editingOptions: false,
+  openOptions: () => {},
+});
+
 export function useStudioSelection(
   rootRef: RefObject<HTMLElement | null>,
   active: boolean,
   studio: SelectableDocument,
+  options: OptionsGestures = NO_OPTIONS_EDITOR,
 ) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -269,6 +314,8 @@ export function useStudioSelection(
   usePointerSelection(rootRef, {
     active,
     confirming,
+    editingOptions: options.editingOptions,
+    openOptions: options.openOptions,
     parentOf,
     canvasRootOf,
     setHovered,
