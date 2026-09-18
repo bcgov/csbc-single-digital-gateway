@@ -114,11 +114,18 @@ const TITLE_TEXT_PADDING = 'p-6';
  * full width.
  */
 export function FillFormTitle({ uischema }: FormTitleProps) {
+  // Doc 202 rule 51b: the review page draws ONE gold rule, under the whole document's title — so the Forms it
+  // stacks render their own titles without one. Read from JSONForms' `config`, the same channel `readonly`
+  // travels (rule 50), so nothing in the authored uischema can turn it on.
+  const plain = useJsonForms().config?.plainFormTitle === true;
   const title = labelOf(uischema, '');
   const description = formDescriptionOf(uischema);
   if (title === '' && description === '') return null;
   return (
-    <div data-slot="form-title-bar" className={`${TITLE_SPACING} border-b-2 border-bcgov-gold`}>
+    <div
+      data-slot="form-title-bar"
+      className={`${TITLE_SPACING}${plain ? '' : ' border-b-2 border-bcgov-gold'}`}
+    >
       {title === '' ? null : (
         <Heading
           level={1}

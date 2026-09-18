@@ -663,18 +663,52 @@ describe('the review page (doc 202 rules 47-53)', () => {
     expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
   });
 
-  it('renders every Form of the path, under its stage name (rules 49, 51)', async () => {
+  it('renders every Form of the path on one page (rule 49)', async () => {
     renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
     await toEnd();
     fireEvent.click(nextButton());
     await settle();
 
-    const page = reviewPage();
-    expect(page).toHaveTextContent('Applicant');
-    expect(page).toHaveTextContent('Details');
+    const page = reviewPage() as HTMLElement;
     // Both stages' fields at once — the whole path on one page, unlike every other step.
-    expect(within(page as HTMLElement).getByRole('textbox', { name: /^Name/ })).toHaveValue('Ada');
-    expect(within(page as HTMLElement).getByRole('textbox', { name: /^Note/ })).toHaveValue('hi');
+    expect(within(page).getByRole('textbox', { name: /^Name/ })).toHaveValue('Ada');
+    expect(within(page).getByRole('textbox', { name: /^Note/ })).toHaveValue('hi');
+    expect(page.querySelectorAll('[data-slot="runner-review-form"]')).toHaveLength(2);
+  });
+
+  it('does NOT name the stages (rule 51)', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    fireEvent.click(nextButton());
+    await settle();
+
+    // The rail already says which stage each page belonged to; here the citizen is checking their ANSWERS, not
+    // the shape of the flow that collected them.
+    expect(reviewPage()).not.toHaveTextContent('Applicant');
+    expect(reviewPage()).not.toHaveTextContent('Details');
+  });
+
+  it('draws ONE gold rule, under the title, and none inside the forms (rule 51b)', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    fireEvent.click(nextButton());
+    await settle();
+
+    const page = reviewPage() as HTMLElement;
+    // The rule sits BETWEEN the heading and the content, not around the page.
+    expect(page.querySelector('[data-slot="runner-review-title-bar"]')).toHaveClass(
+      'border-b-2',
+      'border-bcgov-gold',
+    );
+    expect(page).not.toHaveClass('border-bcgov-gold');
+    // Each stacked Form KEEPS its title but gives up its own rule — a pile of gold lines would read as a pile
+    // of separate documents. Asserting the count first, or the loop below would pass with no titles at all.
+    const bars = page.querySelectorAll('[data-slot="form-title-bar"]');
+    expect(bars).toHaveLength(2);
+    expect(page).toHaveTextContent('Contact');
+    for (const bar of bars) {
+      expect(bar).not.toHaveClass('border-bcgov-gold');
+    }
   });
 
   it('renders the fields READ-ONLY, not disabled (rule 50)', async () => {
@@ -739,6 +773,23 @@ describe('the review step in the rail (doc 202 rule 48b)', () => {
     // `waitFor` outlasts it; Next going disabled is the same signal reaching the action bar.
     await waitFor(() => expect(nextButton()).toBeDisabled());
     expect(within(reviewRow() as HTMLElement).getByRole('button')).toBeDisabled();
+  });
+
+  it('goes back to a previous step from the rail, leaving the review (rule 48c)', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await settle();
+    fireEvent.click(within(reviewRow() as HTMLElement).getByRole('button'));
+    await settle();
+    expect(document.querySelector('[data-slot="runner-review"]')).not.toBeNull();
+
+    fireEvent.click(stageButton('Applicant'));
+    await settle();
+
+    // The review page must GO, not just the position change underneath it — otherwise every rail row looks
+    // dead, and going back to change an answer is the one thing the review exists to make easy.
+    expect(document.querySelector('[data-slot="runner-review"]')).toBeNull();
+    expect(screen.getByRole('textbox', { name: /^Name/ })).toBeInTheDocument();
+    expect(reviewRow()).not.toHaveAttribute('data-current');
   });
 
   it('opens the review when pressed, and reads as the current step there', async () => {

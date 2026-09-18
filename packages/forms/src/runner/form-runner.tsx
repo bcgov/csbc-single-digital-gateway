@@ -103,6 +103,10 @@ export function FormRunner({
   // Every update is functional, so `goTo` captures nothing and keeps one identity for the life of the runner —
   // which matters because it goes into the port below, and a new identity there re-renders the whole flow.
   const goTo = useCallback((next: RunnerPosition) => {
+    // Doc 202 rule 48c: going to a POSITION leaves the review. Without this the rail moved the position while
+    // the review page stayed on screen, so every row looked dead — the one thing the review is meant to make
+    // easy (going back to change an answer) was the one thing it prevented.
+    setReviewing(false);
     setPosition((from) => {
       if (from !== null) setHistory((past) => [...past, from]);
       return next;
