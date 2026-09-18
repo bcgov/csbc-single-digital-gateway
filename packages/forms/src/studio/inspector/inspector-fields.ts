@@ -78,14 +78,6 @@ const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
  */
 const isForm = (ctx: InspectorContext) => ctx.element.type === FORM_TYPE;
 /**
- * Rule 14: a Form's required Title clears to '' so the field stays present and visibly invalid, the way a
- * Heading's `text` does (doc 187 rule 17); every other element's emptied Label is removed as before.
- */
-const writtenLabel = (ctx: InspectorContext, value: unknown) => {
-  if (!isForm(ctx)) return orCleared(value);
-  return typeof value === 'string' ? value : '';
-};
-/**
  * Doc 195 rule 24, widened by doc 199 rule 32: a Flow, Stage or Condition is named like a layout — none has a
  * layout kind. A Condition's criteria are authored on its card, never here, so Label is all it gets.
  */
@@ -191,8 +183,6 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     label: 'Label',
     labelFor: (ctx) => (isForm(ctx) ? FORM_TITLE_LABEL : 'Label'),
     applies: (ctx) => isControl(ctx) || ctx.layoutKind !== undefined || isFlowElement(ctx),
-    // Rule 14: a Form's Title is required; no other element's Label is.
-    required: isForm,
     schema: (ctx) =>
       ctx.layoutKind || isFlowElement(ctx)
         ? { type: 'string', description: labelHint(ctx) }
@@ -204,9 +194,10 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
       return title ? { placeholder: title } : undefined;
     },
     read: (ctx) => text(ctx.element['label' as keyof TreeElement]),
-    // Rule 14: a Form keeps the key (cleared to ''), every other element drops an emptied Label.
-    write: (ctx, edit, value) =>
-      setElement(edit, withElementKey(edit.element, 'label', writtenLabel(ctx, value))),
+    // Rule 14, RELAXED: a Form's Title is optional now (an untitled Form reads as "Untitled form"), so an emptied
+    // Title drops the key exactly like every other element's Label rather than being kept as an invalid ''.
+    write: (_ctx, edit, value) =>
+      setElement(edit, withElementKey(edit.element, 'label', orCleared(value))),
   },
   ...DOCUMENT_FIELDS,
   {

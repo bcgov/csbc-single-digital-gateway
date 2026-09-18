@@ -81,8 +81,9 @@ describe('the ghost step (rule 10d)', () => {
     await settle();
     const ghost = slot('runner-step-ghost');
     expect(ghost).toHaveTextContent('1–2 more stages');
-    // Last in the list, after the real steps, and not a control.
-    expect(ghost?.parentElement?.lastElementChild).toBe(ghost);
+    // After the real steps and before the review row (rule 48b), and not a control.
+    expect(ghost?.previousElementSibling).toHaveAttribute('data-slot', 'runner-stage');
+    expect(ghost?.nextElementSibling).toHaveAttribute('data-slot', 'runner-review-step');
     expect(within(ghost as HTMLElement).queryByRole('button')).toBeNull();
     expect(ghost).toHaveClass('border-dashed');
   });
@@ -100,7 +101,8 @@ describe('the ghost step (rule 10d)', () => {
     const listed = [...sidebar().querySelectorAll('[data-slot="runner-stage-name"]')].map(
       (name) => name.textContent,
     );
-    expect(listed).toEqual(['Applicant', 'Basic']);
+    // The review page is on by default (rule 47), so it closes the rail after the listed stages.
+    expect(listed).toEqual(['Applicant', 'Basic', 'Review']);
     expect(slot('runner-step-ghost')).toBeNull();
   });
 

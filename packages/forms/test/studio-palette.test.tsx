@@ -68,11 +68,12 @@ describe('click-to-add (rules 17, 24-25)', () => {
   it('adds a numbered Text field to the root and selects it when nothing is selected', async () => {
     await renderStudio();
     fireEvent.click(paletteItem('Text'));
-    const added = await screen.findByRole('textbox', { name: 'Text 1' });
+    // A new field is required by default, so its label carries JSONForms' asterisk.
+    const added = await screen.findByRole('textbox', { name: 'Text 1*' });
     expect(itemOf(added)).toHaveAttribute('data-selected');
 
     fireEvent.click(paletteItem('Text'));
-    expect(await screen.findByRole('textbox', { name: 'Text 2' })).toBeInTheDocument();
+    expect(await screen.findByRole('textbox', { name: 'Text 2*' })).toBeInTheDocument();
   });
 
   it('adds into the layout holding the selected element', async () => {

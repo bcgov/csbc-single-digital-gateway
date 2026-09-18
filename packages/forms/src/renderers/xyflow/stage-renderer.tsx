@@ -4,6 +4,7 @@ import { mdiDeleteOutline, mdiFileDocumentOutline, mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { useContext, type KeyboardEvent } from 'react';
 import { labelOf } from '../gridstack/element-label';
+import { FORM_TITLE_PLACEHOLDER } from '../gridstack/form-renderer';
 import { FORM_TYPE } from '../gridstack/grid-layouts';
 import { FlowContext } from './flow-context';
 import { useFlowEditor, type FlowEditor } from './flow-editor';
@@ -18,13 +19,25 @@ interface StageRowProps {
   readonly editor: FlowEditor | null;
 }
 
+/**
+ * A Form's name for the Stage card: its label, or the canvas placeholder when it has none. The SAME
+ * `FORM_TITLE_PLACEHOLDER` the canvas draws for an unwritten title (doc 201 rule 11), so a Form reads the same
+ * wherever the author meets it, and `untitled` is what greys the row.
+ */
+function rowName(element: UISchemaElement): { name: string; untitled: boolean } {
+  const label = labelOf(element, '');
+  return label === ''
+    ? { name: FORM_TITLE_PLACEHOLDER, untitled: true }
+    : { name: label, untitled: false };
+}
+
 /** A Form row's name — under an editor, a button that opens the Form (doc 196 rule 13). */
 function FormRowName({ element, editor }: StageRowProps) {
-  const label = labelOf(element, 'Form');
+  const { name: label, untitled } = rowName(element);
   const content = (
     <>
       <Icon path={mdiFileDocumentOutline} size="16px" className="shrink-0 text-muted-foreground" />
-      <span className="truncate">{label}</span>
+      <span className={`truncate${untitled ? ' text-muted-foreground' : ''}`}>{label}</span>
     </>
   );
   if (!editor) return <span className="flex min-w-0 flex-1 items-center gap-1.5">{content}</span>;
@@ -68,7 +81,7 @@ function StageRow({ element, editor }: StageRowProps) {
       {editor ? (
         <button
           type="button"
-          aria-label={`Delete ${labelOf(element, 'Form')}`}
+          aria-label={`Delete ${rowName(element).name}`}
           data-slot="stage-form-delete"
           className={`${ROW_CONTROL_CLASS} shrink-0 rounded-sm text-muted-foreground hover:text-destructive`}
           onClick={() => editor.onGesture({ type: 'remove', elementId: editor.idOf(element) })}

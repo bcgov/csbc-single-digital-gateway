@@ -83,6 +83,19 @@ function freshKey(schema: JsonSchema, newKey: () => string): string {
 }
 
 /**
+ * The schema with `key` added — and, for everything but a boolean, made required: a new field is required by
+ * default, which is what an author wants far more often than optional. A boolean is excluded because its Required
+ * toggle is "Must be checked" (doc 187 rule 29), which also writes `const: true`; listing an untouched checkbox in
+ * `required` alone would gate the form with no inspector toggle showing why.
+ */
+function withProperty(schema: JsonSchema, key: string, property: JsonSchema): JsonSchema {
+  const properties = { ...schema.properties, [key]: property };
+  if (property.type === 'boolean') return { ...schema, properties } as JsonSchema;
+  const current = Array.isArray(schema.required) ? schema.required : [];
+  return { ...schema, properties, required: [...current, key] } as JsonSchema;
+}
+
+/**
  * Rules 20-23: the template `template` appended to the layout `target.gridId` — laid out from the drop when
  * `target.placement` is given, else placed as a click — with a new data property for a field. An unknown template,
  * an unknown or non-layout target, a full HorizontalLayout, or an element the target cannot hold (doc 194 rule 8)
@@ -127,10 +140,7 @@ export function insertElement(
   const schema =
     key === undefined || !built.property
       ? document.schema
-      : ({
-          ...document.schema,
-          properties: { ...document.schema.properties, [key]: built.property },
-        } as JsonSchema);
+      : withProperty(document.schema, key, built.property);
   return { schema, uischema, inserted: findById(uischema as TreeElement, ids.idOf(placed), ids) };
 }
 

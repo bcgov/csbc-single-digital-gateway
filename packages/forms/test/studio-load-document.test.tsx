@@ -60,14 +60,16 @@ describe('FormStudio document lifecycle', () => {
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     });
 
-    it('renders an empty Flow canvas after choosing New Multi-Stage Form', async () => {
+    it('renders a Flow with its first Stage and Form after choosing New Multi-Stage Form', async () => {
       const user = userEvent.setup();
       render(<FormStudio />);
 
       await choose(user, 'New Multi-Stage Form');
 
-      // Doc 198: an empty Flow shows its own message and an origin affordance.
-      expect(await screen.findByText('Add a stage to get started.')).toBeInTheDocument();
+      // A new multi-stage form opens with one Stage holding one untitled Form, not an empty canvas.
+      expect(await screen.findByText('Stage 1')).toBeInTheDocument();
+      expect(await screen.findByText('Untitled form')).toBeInTheDocument();
+      expect(screen.queryByText('Add a stage to get started.')).toBeNull();
     });
 
     it('renders an empty Form canvas after choosing New Basic Form', async () => {

@@ -225,8 +225,12 @@ describe('fillable CSS layouts (doc 193)', () => {
       await screen.findByText('Root');
       const column = layoutOf(container, 'Form');
       expect(container.querySelector('form')).toBeNull();
-      // The column is the root form's only element: nothing wraps it.
-      expect(column?.parentElement?.querySelectorAll(':scope > *')).toHaveLength(1);
+      // Nothing WRAPS the column: its siblings are the title's own element (here the titleless top space) and
+      // nothing else — the Form adds no container of its own.
+      const siblings = [...(column?.parentElement?.querySelectorAll(':scope > *') ?? [])];
+      expect(siblings).toHaveLength(2);
+      expect(siblings[0]).toHaveAttribute('data-slot', 'form-title-space');
+      expect(siblings[1]).toBe(column);
       expect(textsOf(column)).toEqual(['Root']);
     });
 

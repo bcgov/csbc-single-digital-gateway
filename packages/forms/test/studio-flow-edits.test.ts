@@ -158,16 +158,17 @@ describe('removeElement of a Stage (rule 9)', () => {
 });
 
 describe('insertStage (rules 18, 20)', () => {
-  it("appends 'Stage <n>' holding one 'Form <m>', with a nanoid(8) id unused by any Stage", () => {
+  it("appends 'Stage <n>' holding one untitled Form, with a nanoid(8) id unused by any Stage", () => {
     const ids = createElementIds();
     const root = flow([]);
     const { uischema, inserted } = insertStage(root, null, ids, sequence('s1', 'f1'));
-    // Doc 197 rule 4: the Stage's Form is addressable from the start, so it takes the next id.
+    // Doc 197 rule 4: the Stage's Form is addressable from the start, so it takes the next id. It carries NO
+    // label — it reads as "Untitled form" until the author names it (user request 2026-09-18).
     expect(inserted).toEqual({
       type: 'Stage',
       label: 'Stage 1',
       options: { id: 's1' },
-      elements: [{ type: 'Form', label: 'Form 1', options: { id: 'f1' }, elements: [] }],
+      elements: [{ type: 'Form', options: { id: 'f1' }, elements: [] }],
     });
     expect(child(uischema, 0)).toBe(inserted);
     expect(ids.idOf(uischema)).toBe(ids.idOf(root));
@@ -214,7 +215,7 @@ describe('insertStage (rules 18, 20)', () => {
     expect(insertStage(flow([]), null, ids, sequence('o')).inserted?.options).toEqual({ id: 'o' });
   });
 
-  it('numbers by the highest "Stage <digits>" / "Form <digits>" label + 1, ignoring other labels', () => {
+  it('numbers a Stage by the highest "Stage <digits>" label + 1, ignoring other labels', () => {
     const root = flow([
       stage('a', 'Stage 2', {}, [form('Form 7'), form('Stage 50')]),
       stage('b', 'Stage 10', {}, [form('Form x')]),
@@ -222,10 +223,11 @@ describe('insertStage (rules 18, 20)', () => {
       stage('d', 'Other 99'),
     ]);
     expect(nextElementLabel(root, 'Stage', 'Stage')).toBe('Stage 11');
+    // `nextElementLabel` still numbers by type — nothing asks it for a Form label any more.
     expect(nextElementLabel(root, 'Form', 'Form')).toBe('Form 8');
     const { inserted } = insertStage(root, null, createElementIds(), sequence('s'));
     expect(labelOf(inserted)).toBe('Stage 11');
-    expect(child(required(inserted, 'stage'), 0)).toMatchObject({ label: 'Form 8' });
+    expect(child(required(inserted, 'stage'), 0)).not.toHaveProperty('label');
   });
 });
 
@@ -402,7 +404,7 @@ describe('insertStageBetween (doc 198 rule 10)', () => {
 });
 
 describe('insertForm (rules 19-20)', () => {
-  it("appends 'Form <n>' to the selected Stage and returns the inserted Form", () => {
+  it('appends an untitled Form to the selected Stage and returns the inserted Form', () => {
     const ids = createElementIds();
     const root = flow([
       stage('a', 'A', {}, [form('Form 1')]),
@@ -413,7 +415,6 @@ describe('insertForm (rules 19-20)', () => {
     // Doc 197 rule 4: an inserted Form is addressable from the start.
     expect(inserted).toEqual({
       type: 'Form',
-      label: 'Form 4',
       options: { id: 'f4' },
       elements: [],
     });

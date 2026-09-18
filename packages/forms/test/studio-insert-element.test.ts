@@ -134,7 +134,8 @@ describe('fields (rules 17-18)', () => {
     );
     expect(Object.keys(result.schema.properties ?? {})).toEqual(['name', 'Kq6sJ1uA']);
     expect(result.schema.properties?.['Kq6sJ1uA']).toEqual({ type: 'string', title: 'Text 2' });
-    expect(result.schema.required).toEqual(['name']);
+    // A new field is required by default, appended after the properties already required.
+    expect(result.schema.required).toEqual(['name', 'Kq6sJ1uA']);
     expect(result.inserted).toEqual({ type: 'Control', scope: '#/properties/Kq6sJ1uA' });
     expect((result.uischema as TreeElement).elements?.at(-1)).toBe(result.inserted);
   });
@@ -150,6 +151,19 @@ describe('fields (rules 17-18)', () => {
     );
     expect(result.schema.properties?.['fresh']).toEqual({ type: 'number', title: 'Number 1' });
     expect(result.schema.properties?.['name']).toEqual({ type: 'string', title: 'Text 1' });
+  });
+
+  it('makes a new field required, but never a boolean — its gate is Must be checked (doc 187 rule 29)', () => {
+    const fx = fixture();
+    const result = insertElement(
+      fx.document,
+      'checkbox',
+      { gridId: fx.ids.idOf(fx.root) },
+      fx.ids,
+      keys('tick'),
+    );
+    expect(result.schema.properties?.['tick']).toEqual({ type: 'boolean', title: 'Checkbox 1' });
+    expect(result.schema.required).toEqual(['name']);
   });
 });
 

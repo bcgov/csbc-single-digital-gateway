@@ -39,10 +39,15 @@ export const wholeNumbers = (minimum: number, maximum: number): JsonSchema => ({
  * `fieldAccepts` writes back only a value that is one of the schema's oneOf consts, so a DANGLING startId could
  * be displayed but never re-selected by the author. Showing the picker empty is the honest reading. The Flow's
  * implicit fallback start (the first such Stage, `startStageId`) is deliberately not displayed as a choice made.
+ *
+ * `choices` is how many Stages the picker can offer. A Flow with none — a new, empty one — must not show the
+ * field at all: an EMPTY `oneOf` is an invalid JSON Schema, and JSONForms' Ajv throws "schema is invalid" for the
+ * whole inspector form before any renderer runs (doc 182's test trap, hit for real here).
  */
 export function startStage(flow: UISchemaElement): {
   schema: JsonSchema;
   value: string | undefined;
+  choices: number;
 } {
   const stages = drawnStages(flow).filter(({ authored }) => authored);
   const schema: JsonSchema = {
@@ -51,5 +56,5 @@ export function startStage(flow: UISchemaElement): {
   };
   const startId = flow.options?.['startId'];
   const named = typeof startId === 'string' && stages.some(({ id }) => id === startId);
-  return { schema, value: named ? (startId as string) : undefined };
+  return { schema, value: named ? (startId as string) : undefined, choices: stages.length };
 }

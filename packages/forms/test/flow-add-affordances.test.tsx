@@ -116,7 +116,8 @@ describe('leaf add affordance (rules 6-8)', () => {
       'added card',
     );
     expect(added.querySelector('[data-slot="stage-label"]')).toHaveTextContent('Stage 1');
-    expect(added.querySelector('[data-slot="stage-form-row"]')).toHaveTextContent('Form 1');
+    // The Stage's Form is born untitled, so its row reads the placeholder rather than a number.
+    expect(added.querySelector('[data-slot="stage-form-row"]')).toHaveTextContent('Untitled form');
   });
 
   it('places the appended Stage one rank below the leaf, with no authored position', async () => {
@@ -182,11 +183,12 @@ describe('Stage card "+ Add form" row (rule 13)', () => {
     expect(card.querySelector('[data-slot="stage-add-form"]')).not.toBeNull();
   });
 
-  it('appends "Form <n>" to that Stage and drills into it', async () => {
+  it('appends an untitled Form to that Stage and drills into it', async () => {
     renderStudio();
     fireEvent.click(await buttonIn('s2', 'Add form'));
 
-    await waitFor(() => expect(currentCrumb()).toBe('Form 1'));
+    // Untitled, so the crumb falls back to the element type, as it does for any unlabelled element.
+    await waitFor(() => expect(currentCrumb()).toBe('Form'));
     // Drilled in: the canvas shows the Form, not the Flow.
     expect(centre().querySelector('.react-flow')).toBeNull();
   });

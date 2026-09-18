@@ -151,11 +151,12 @@ function newStageElement(root: TreeElement, newId: () => string): TreeElement {
     type: STAGE_TYPE,
     label: nextElementLabel(root, STAGE_TYPE, 'Stage'),
     options: { id: freshId(taken, newId) },
-    // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists.
+    // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists. It is UNTITLED — the Stage card
+    // and the canvas both draw "Untitled form" for a Form with no label, which says more to an author than a
+    // numbered "Form 3" they did not choose (user request 2026-09-18).
     elements: [
       {
         type: FORM_TYPE,
-        label: nextElementLabel(root, FORM_TYPE, 'Form'),
         options: { id: freshId(formIdsUsed(root), newId) },
         elements: [],
       },
@@ -271,8 +272,8 @@ export function insertStageBetween(
 }
 
 /**
- * Rules 19-20: the selected Stage gains `"Form <n>"`, with a fresh address (doc 197 rule 4); refused unless a Stage is
- * selected.
+ * Rules 19-20: the selected Stage gains an UNTITLED Form with a fresh address (doc 197 rule 4); refused unless a
+ * Stage is selected. Untitled, like the Form a new Stage is born with — it reads as "Untitled form" until named.
  */
 export function insertForm(
   uischema: UISchemaElement,
@@ -285,7 +286,6 @@ export function insertForm(
   if (selectedId === null || stage?.type !== STAGE_TYPE) return { uischema, inserted: undefined };
   const form = {
     type: FORM_TYPE,
-    label: nextElementLabel(root, FORM_TYPE, 'Form'),
     options: { id: freshId(formIdsUsed(root), newId) },
     elements: [],
   } as TreeElement;

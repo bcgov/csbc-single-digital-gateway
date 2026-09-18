@@ -47,11 +47,15 @@ const edge = (id: string, source: string, target: string, sourceHandle?: string)
 });
 const flow = (elements: object[], options: object = {}) => el({ type: 'Flow', elements, options });
 
-/** Two stages, the first holding a required field, so gating can be exercised. */
+/**
+ * Two stages, the first holding a required field, so gating can be exercised. `review: false` because the review
+ * page is ON by default (rule 47): these tests are about the last Form's own action bar, which the review moves.
+ */
 const TWO_STAGE = flow(
   [stage('s1', 'Applicant', [form('Contact', ['name'])]), stage('s2', 'Review')],
   {
     edges: [edge('e1', 's1', 's2')],
+    review: false,
   },
 );
 
@@ -644,7 +648,22 @@ describe('the review page (doc 202 rules 47-53)', () => {
     await settle();
   };
 
-  it('is OFF by default: the last Form shows Submit, as it always did (rule 16)', async () => {
+  it('is ON by default: a Flow that says nothing about review still opens one (rule 47)', async () => {
+    const unsaid = flow(
+      [
+        stage('s1', 'Applicant', [form('Contact', ['name'])]),
+        stage('s2', 'Details', [form('More', ['note'])]),
+      ],
+      { edges: [edge('e1', 's1', 's2')] },
+    );
+    renderFlow({ uischema: unsaid, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    fireEvent.click(nextButton());
+    await settle();
+    expect(reviewPage()).not.toBeNull();
+  });
+
+  it('is turned off by an explicit `review: false`: the last Form shows Submit (rule 16)', async () => {
     renderFlow({ uischema: TWO_STAGE, initial: { name: 'Ada' } });
     await toEnd();
     expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
@@ -759,7 +778,7 @@ describe('the review step in the rail (doc 202 rule 48b)', () => {
     expect(stageNames()).toEqual(['Applicant', 'Details']);
   });
 
-  it('is not listed at all when the Flow does not show a review', async () => {
+  it('is not listed at all when the Flow turns the review off', async () => {
     renderFlow({ uischema: TWO_STAGE, initial: { name: 'Ada' } });
     await settle();
     expect(reviewRow()).toBeNull();

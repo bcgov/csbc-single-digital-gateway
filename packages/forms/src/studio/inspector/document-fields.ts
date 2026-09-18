@@ -14,7 +14,9 @@ export const DOCUMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'startId',
     section: 'general',
     label: 'Start stage',
-    applies: (ctx) => ctx.element.type === FLOW_TYPE,
+    // Only once there is a Stage to pick: an empty `oneOf` is an invalid schema, and Ajv refuses the whole
+    // inspector form over it — a new, empty Flow showed "schema is invalid" instead of its General section.
+    applies: (ctx) => ctx.element.type === FLOW_TYPE && startStage(ctx.element).choices > 0,
     schema: (ctx) => startStage(ctx.element).schema,
     // Doc 203 rule 16: a dangling startId reads as undefined — the picker shows empty rather than a
     // value `fieldAccepts` would refuse to write back. Clearing restores the Flow's fallback start.
@@ -34,11 +36,11 @@ export const DOCUMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     }),
     // Doc 188: an inspector boolean asks for the compact switch rather than a checkbox.
     options: () => ({ component: 'switch', size: 'sm' }),
-    // Absent reads as OFF (rule 47), so a document authored before the option existed is unchanged.
-    read: (ctx) => optionsOf(ctx.element)['review'] === true,
-    // Written only when ON: an option set to `false` is the same as no option, and the document stays minimal.
+    // Absent reads as ON (rule 47): the review page is the default, so only an explicit `false` turns it off.
+    read: (ctx) => optionsOf(ctx.element)['review'] !== false,
+    // Written only when OFF: an option set to `true` is the same as no option, and the document stays minimal.
     write: (_ctx, edit, value) =>
-      setElement(edit, withOption(edit.element, 'review', value === true ? true : undefined)),
+      setElement(edit, withOption(edit.element, 'review', value === true ? undefined : false)),
   },
   {
     // NOT `description`: that key is the bound property's Description field, and a key names one inspector value.

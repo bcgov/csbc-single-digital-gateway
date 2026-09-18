@@ -157,7 +157,11 @@ describe('runner position and traversal (doc 202 rules 13-18)', () => {
     });
 
     it('reports the end of the flow when the current Stage has no outgoing edge (rule 16)', () => {
-      const root = flow([stage('a'), stage('b')], { edges: [edge('e1', 'b', 'a')] });
+      // `review: false` — with the review page on (its default), the last Form leads there, not to the end.
+      const root = flow([stage('a'), stage('b')], {
+        edges: [edge('e1', 'b', 'a')],
+        review: false,
+      });
       expect(nextStageId(context(root), 'a')).toBeUndefined();
       expect(nextStep(context(root), { stageId: 'a', formId: 'a-f1' })).toEqual({ kind: 'end' });
       expect(isFinalStep(context(root), { stageId: 'a', formId: 'a-f1' })).toBe(true);
@@ -199,6 +203,7 @@ describe('runner position and traversal (doc 202 rules 13-18)', () => {
     it('falls through to the stage walk rather than erroring', () => {
       const root = flow([stage('a', [form('f1')]), stage('b', [form('g1')])], {
         edges: [edge('e1', 'a', 'b')],
+        review: false,
       });
       // The Form id is stale, but the Stage still leads somewhere.
       expect(nextStep(context(root), { stageId: 'a', formId: 'gone' })).toEqual({

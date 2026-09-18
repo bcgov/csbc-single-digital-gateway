@@ -311,6 +311,18 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       expect(next.uischema.options?.['startId']).toBe('a');
     });
 
+    it('is not offered at all by a Flow with no Stage to pick (an empty oneOf is an invalid schema)', () => {
+      // JSONForms' Ajv compiles the whole inspector schema before any renderer runs, so an empty `oneOf` threw
+      // "schema is invalid: data/properties/startId/oneOf must NOT have fewer than 1 items" over the General
+      // section entirely — what a brand new multi-stage form showed.
+      for (const empty of [flow([]), flow([condition('x')]), flow([el({ type: 'Stage' })])]) {
+        const { form: built } = formFor(empty, empty, schema);
+        const keys = sections(built).flatMap(([, fields]) => fields);
+        expect(keys).not.toContain('startId');
+        expect(keys).toContain('label');
+      }
+    });
+
     it('removes the key when cleared, returning the Flow to the fallback', () => {
       const ids = createElementIds();
       const next = applyInspector(

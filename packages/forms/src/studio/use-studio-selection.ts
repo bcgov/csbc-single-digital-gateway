@@ -162,8 +162,28 @@ function usePointerSelection(
   }, [rootRef, active, confirming, parentOf, canvasRootOf, setHovered, setSelected, setPressing]);
 }
 
+/**
+ * Whether removing `removedId` takes `selectedId` with it — the same element, or one inside it. Walks up from the
+ * selection with `parentOf`, so it must be called while both are still in the document.
+ */
+function takenBy(
+  doc: Pick<SelectableDocument, 'parentOf'>,
+  removedId: string,
+  selectedId: string | null,
+): boolean {
+  let current = selectedId;
+  while (current !== null) {
+    if (current === removedId) return true;
+    current = doc.parentOf(current);
+  }
+  return false;
+}
+
 /** Rules 21-23: the pending delete, and the studio-lifetime "Don't ask me again" flag. */
-function useDeleteConfirmation({ remove, elementTypes }: SelectableDocument) {
+function useDeleteConfirmation(
+  remove: (elementId: string) => void,
+  elementTypes: ReadonlyMap<string, string>,
+) {
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [skip, setSkip] = useState(false);
 
@@ -203,7 +223,6 @@ export function useStudioSelection(
   const [gesturing, setGesturing] = useState(false);
   const [pressing, setPressing] = useState(false);
   const [seed, setSeed] = useState(studio.seed);
-  const confirmation = useDeleteConfirmation(studio);
 
   if (seed !== studio.seed || (!active && (hovered !== null || selected !== null || gesturing))) {
     setSeed(studio.seed);
@@ -226,6 +245,26 @@ export function useStudioSelection(
   useEffect(() => {
     latest.current = studio;
   });
+
+  /**
+   * Deleting settles the selection exactly as a press on empty canvas does (doc 196 rule 14): `canvasRootOf` keeps a
+   * drilled-in Form and clears anything else. Without it the selection would name an id the document no longer
+   * holds, which `known` reads as nothing — and a Flow's canvas is focused BY the selection (doc 197), so deleting
+   * a field dropped the author all the way back to the Flow. Read before the removal, while the ids still resolve;
+   * a selection the removal does not take with it is left alone, and so is a focus the removal takes (the Form
+   * itself, or the Stage around it).
+   */
+  const removeAndReselect = useCallback((elementId: string) => {
+    const doc = latest.current;
+    doc.remove(elementId);
+    setSelected((current) => {
+      if (!takenBy(doc, elementId, current)) return current;
+      const focusId = doc.canvasRootOf(current);
+      return focusId === null || takenBy(doc, elementId, focusId) ? null : focusId;
+    });
+  }, []);
+
+  const confirmation = useDeleteConfirmation(removeAndReselect, elementTypes);
   const confirming = confirmation.pending !== null;
   usePointerSelection(rootRef, {
     active,

@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { documentFor, FORM_CHOICES } from '../src/studio/document/document-source';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
 import { flowProblems } from '../src/renderers/xyflow/flow-graph';
-import type { ConditionElement, FlowElement, StageElement } from '../src/types/elements';
+import type {
+  ConditionElement,
+  FlowElement,
+  FormElement,
+  StageElement,
+} from '../src/types/elements';
 
 // Doc 200 rules 8-9, 12-14 — `documentFor(choice)`: the four documents the New form dialog offers,
 // built pure and fresh per call.
@@ -32,11 +37,41 @@ const edgesOf = (flow: FlowElement) => flow.options?.edges ?? [];
 
 describe('documentFor', () => {
   describe('new-multi-stage', () => {
-    it('returns a Flow root with no elements and no edges', () => {
+    it('returns a Flow root holding one Stage with one Form, and no edges', () => {
       const flow = flowOf('new-multi-stage');
       expect(flow.type).toBe('Flow');
-      expect(flow.elements).toEqual([]);
       expect(flow.options?.edges).toEqual([]);
+
+      const stages = stagesOf(flow);
+      expect(stages).toHaveLength(1);
+      const [stage] = stages as [StageElement];
+      expect(stage.label).toBe('Stage 1');
+      // The Stage is named as the start, so a brand new flow is never startless (doc 203 rule 19).
+      expect(flow.options?.startId).toBe(stage.options?.id);
+
+      expect(stage.elements).toHaveLength(1);
+      const [form] = stage.elements as [FormElement];
+      expect(form.type).toBe('Form');
+      // Untitled, like the Form the canvas `+` creates — it reads as "Untitled form" until named.
+      expect(form.label).toBeUndefined();
+      // Empty: the author fills it, and an empty Form is what "New" means.
+      expect(form.elements).toEqual([]);
+    });
+
+    it('gives the Stage and its Form authored ids, so both are addressable', () => {
+      const [stage] = stagesOf(flowOf('new-multi-stage')) as [StageElement];
+      const [form] = stage.elements as [FormElement];
+      expect(typeof stage.options?.id).toBe('string');
+      expect(typeof form.options?.id).toBe('string');
+      expect(form.options?.id).not.toBe(stage.options?.id);
+    });
+
+    it('hands back a document of its own each time, sharing nothing with the last', () => {
+      const first = flowOf('new-multi-stage');
+      const second = flowOf('new-multi-stage');
+      expect(second).toEqual(first);
+      expect(second).not.toBe(first);
+      expect(second.elements[0]).not.toBe(first.elements[0]);
     });
 
     it('carries the empty object schema', () => {

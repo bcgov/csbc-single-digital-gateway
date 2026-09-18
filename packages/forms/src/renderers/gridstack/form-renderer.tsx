@@ -105,9 +105,18 @@ export function StudioFormTitle({ uischema }: FormTitleProps) {
 const TITLE_TEXT_PADDING = 'p-6';
 
 /**
+ * The space a Form with NOTHING to show at the top keeps anyway. The title bar's own inset is what holds the first
+ * field off the top of the page; without a title or a description there is no bar, and the field sat flush against
+ * the runner's scroll edge (user request 2026-09-18). A Form is untitled by default now, so this is the common case,
+ * not the odd one.
+ */
+const TITLELESS_SPACING = 'pt-6';
+
+/**
  * Doc 201 rule 8: the fillable title — the same heading under a full-width thick bcgov-gold rule. Rule 10: an empty
- * title renders nothing at all, since a citizen has no placeholder to fill in. Rule 20b: the Form's description sits
- * under the heading, inside the bar and above the rule, in muted text.
+ * title renders no TEXT, since a citizen has no placeholder to fill in — but the element stays, holding the top
+ * space the bar would have given. Rule 20b: the Form's description sits under the heading, inside the bar and above
+ * the rule, in muted text.
  *
  * Two elements, not one (rule 8b): the bar owns the rule and the space below it and stretches edge to edge, while the
  * heading inside owns the inset, so the title no longer sits at top 0 / left 0 / right 0 and the rule still runs the
@@ -120,7 +129,9 @@ export function FillFormTitle({ uischema }: FormTitleProps) {
   const plain = useJsonForms().config?.plainFormTitle === true;
   const title = labelOf(uischema, '');
   const description = formDescriptionOf(uischema);
-  if (title === '' && description === '') return null;
+  // No rule and no margin: there is no bar to separate from anything, only the space above the first element.
+  if (title === '' && description === '')
+    return <div data-slot="form-title-space" className={TITLELESS_SPACING} />;
   return (
     <div
       data-slot="form-title-bar"

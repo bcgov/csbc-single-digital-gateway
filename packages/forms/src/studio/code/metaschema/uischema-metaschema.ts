@@ -199,17 +199,19 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
       description:
         'A studio form: the root, or one of the forms in a Stage. It renders like a VerticalLayout.',
       type: 'object',
-      // Doc 201 rule 15: a form's title is EXPECTED, so the apply gate refuses an untitled Form. The rule reaches a
-      // Stage's forms too — `#/definitions/form` is shared with the Flow metaschema.
-      required: ['type', 'elements', 'label'],
+      // Doc 201 rule 15, RELAXED (user request 2026-09-18): a Form's title is optional. A Stage's Forms are born
+      // untitled and read as "Untitled form" until named, so the apply gate cannot demand one without refusing
+      // documents the studio itself creates. A label that IS written must still say something (`minLength`).
+      required: ['type', 'elements'],
       properties: {
         type: { description: 'Always "Form" — a studio form.', const: 'Form' },
         elements: ELEMENTS,
         label: {
           description: "The form's title, shown at the top of the form and in the element path.",
           type: 'string',
-          // `required` alone only demands the key be present, and the inspector clears a title to '' (rule 14) —
-          // so an empty title must be refused here, or the required Title field would be advisory only.
+          // Absent is fine; present-but-blank is not. An emptied Title removes the key (rule 14), so nothing the
+          // inspector writes can trip this — it catches a hand-authored `"label": ""`, which would read as titled
+          // in the JSON and untitled everywhere else.
           minLength: 1,
         },
         rule: { $ref: '#/definitions/rule' },

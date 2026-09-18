@@ -31,6 +31,9 @@ const form = (id: string, label: string, keys: string[]) => ({
 const FLOW = el({
   type: 'Flow',
   options: {
+    // `review: false` (rule 47 turns the review page on by default): these tests are about Submit on the last
+    // Form of the path, which a review page would move to a page of its own.
+    review: false,
     edges: [
       { id: 'e1', source: 's1', target: 'x' },
       { id: 'e2', source: 'x', target: 's2', sourceHandle: 'c1' },

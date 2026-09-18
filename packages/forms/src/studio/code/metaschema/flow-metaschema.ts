@@ -38,7 +38,7 @@ export const FLOW_DEFINITIONS = {
           ),
           review: {
             description:
-              'Show a read-only review of the answers before Submit. Absent or false goes straight to Submit.',
+              'Show a read-only review of the answers before Submit. On unless set to false.',
             type: 'boolean',
           },
         },

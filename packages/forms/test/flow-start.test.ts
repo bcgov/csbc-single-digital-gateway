@@ -251,13 +251,15 @@ describe('Flow start stage (doc 203)', () => {
       expect(startStageId(next.uischema)).toBe('b');
     });
 
-    it('names a start in FLOW_TEMPLATE_UISCHEMA, and none in emptyFlow()', () => {
+    it('names a start in FLOW_TEMPLATE_UISCHEMA and in a new multi-stage document', () => {
       const authored = startIdOf(FLOW_TEMPLATE_UISCHEMA);
       expect(typeof authored).toBe('string');
       // The template's authored start is a real Stage of it, so the resolver returns exactly that.
       expect(startStageId(FLOW_TEMPLATE_UISCHEMA)).toBe(authored);
-      // A blank multi-stage document has no Stage yet, so there is nothing to name (rule 22).
-      expect(startIdOf(documentFor('new-multi-stage').uischema)).toBeUndefined();
+      // A new multi-stage document opens with one Stage, and that Stage is its start (rule 19).
+      const fresh = documentFor('new-multi-stage').uischema;
+      expect(startIdOf(fresh)).toBe(startStageId(fresh));
+      expect(typeof startIdOf(fresh)).toBe('string');
     });
   });
 });

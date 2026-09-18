@@ -236,13 +236,24 @@ describe('Stage renderer (rules 13-15)', () => {
     );
   });
 
-  it('lists one stage-form-row per Form child with its label (fallback "Form") and never dispatches the Form', () => {
+  it('lists one stage-form-row per Form child by its label and never dispatches the Form', () => {
     const inside = { type: 'Heading', text: 'Inside the form' };
     const { container } = renderFlow(flow([stage('a', [form('Contact', [inside]), form()])]));
     const rows = [...nodeOf(container, 'a').querySelectorAll('[data-slot="stage-form-row"]')];
-    expect(rows.map((row) => row.textContent)).toEqual(['Contact', 'Form']);
+    // A Form with no label reads the canvas placeholder, not the element type (user request 2026-09-18).
+    expect(rows.map((row) => row.textContent)).toEqual(['Contact', 'Untitled form']);
     expect(rows[0]?.querySelector('svg')).not.toBeNull();
     expect(screen.queryByText('Inside the form')).toBeNull();
+  });
+
+  it('greys the name of an untitled Form, and leaves a titled one in full text', () => {
+    const { container } = renderFlow(flow([stage('a', [form('Contact'), form()])]));
+    const names = [...nodeOf(container, 'a').querySelectorAll('[data-slot="stage-form-row"] span')];
+    const [titled, untitled] = [names.at(0), names.at(-1)];
+    expect(titled).toHaveTextContent('Contact');
+    expect(titled).not.toHaveClass('text-muted-foreground');
+    expect(untitled).toHaveTextContent('Untitled form');
+    expect(untitled).toHaveClass('text-muted-foreground');
   });
 
   it('shows a non-Form child as a destructive row with "Only Forms can be placed in a Stage."', () => {

@@ -24,7 +24,31 @@ const emptyForm = (): FormElement => ({
   elements: [],
 });
 
-const emptyFlow = (): FlowElement => ({ type: 'Flow', elements: [], options: { edges: [] } });
+// The seeded Stage and its Form, as fixed `nanoid(8)`-shaped literals — the same determinism `flow-sample.ts`
+// keeps, and safe to repeat because every call returns a document of its own.
+const FIRST_STAGE = 'Ea7tR3nQ';
+const FIRST_FORM = 'Uk4mD8zV';
+
+/**
+ * A new multi-stage form starts with ONE Stage holding ONE Form, labelled and stamped exactly as the canvas `+`
+ * would build them (`newStageElement`, doc 198 rule 18 / doc 199 rule 20), with the Stage named as the start
+ * (doc 203 rule 19). An author who picks "New Multi-Stage Form" wants a flow to fill in, not an empty canvas —
+ * and a Flow with no Stage at all has nothing to select and nothing to start from.
+ */
+const emptyFlow = (): FlowElement => ({
+  type: 'Flow',
+  options: { edges: [], startId: FIRST_STAGE },
+  elements: [
+    {
+      type: 'Stage',
+      label: 'Stage 1',
+      options: { id: FIRST_STAGE },
+      // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists.
+      // Untitled, exactly like the Form the canvas `+` creates: it reads as "Untitled form" until named.
+      elements: [{ type: 'Form', options: { id: FIRST_FORM }, elements: [] }],
+    },
+  ],
+});
 
 /**
  * The document behind one choice (doc 200 rules 8-9, 12-14).

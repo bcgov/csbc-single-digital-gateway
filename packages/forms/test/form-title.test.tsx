@@ -55,6 +55,7 @@ async function settle(text: string) {
 
 const TITLE = '[data-slot="form-title"]';
 const TITLE_BAR = '[data-slot="form-title-bar"]';
+const TITLE_SPACE = '[data-slot="form-title-space"]';
 const PLACEHOLDER = '[data-slot="form-title-placeholder"]';
 const FILL_LAYOUT = '[data-slot="fill-layout"]';
 
@@ -288,11 +289,29 @@ describe('Form title (doc 201)', () => {
   });
 
   describe('empty title (rules 10, 11)', () => {
-    it('renders nothing at all in the fillable set when the title is absent', async () => {
+    it('renders no title text in the fillable set when the title is absent', async () => {
       const { container } = renderWith(defaults, form());
       await settle('Body');
       expect(container.querySelector(TITLE)).toBeNull();
       expect(container.querySelector(PLACEHOLDER)).toBeNull();
+      // No bar and no gold rule — there is nothing to separate.
+      expect(container.querySelector(TITLE_BAR)).toBeNull();
+    });
+
+    it('keeps the top space when there is neither a title nor a description', async () => {
+      // Without it the first field sits flush against the runner's scroll edge (user request 2026-09-18).
+      const { container } = renderWith(defaults, form());
+      await settle('Body');
+      const space = container.querySelector(TITLE_SPACE);
+      expect(space).toHaveClass('pt-6');
+      expect(space).toBeEmptyDOMElement();
+    });
+
+    it('draws the bar, not the bare space, as soon as a description is written', async () => {
+      const { container } = renderWith(defaults, form({ options: { description: 'Read this' } }));
+      await settle('Body');
+      expect(container.querySelector(TITLE_SPACE)).toBeNull();
+      expect(container.querySelector(TITLE_BAR)).not.toBeNull();
     });
 
     it('renders nothing in the fillable set for an empty or whitespace-only title', async () => {
@@ -329,9 +348,11 @@ describe('Form title (doc 201)', () => {
     const layout = el({ type: 'VerticalLayout', label: 'Stack', elements: [heading('Body')] });
     const layoutRoot = el({ type: 'Form', label: 'Root', elements: [layout] });
 
-    it("lists a Form's label key in the inspector form schema's required array", () => {
+    it("leaves a Form's label out of the inspector form schema's required array", () => {
+      // Rule 14 RELAXED (2026-09-18): a Form's Title is optional — an untitled Form reads as "Untitled form"
+      // on the canvas and in its Stage's listing, so the inspector no longer flags a blank one.
       const { form: built } = formFor(formRoot, formRoot, schema);
-      expect(built.schema.required).toContain('label');
+      expect(built.schema.required).toBeUndefined();
     });
 
     it('omits required entirely for an element with no required field', () => {
@@ -342,7 +363,7 @@ describe('Form title (doc 201)', () => {
     it('labels the field "Title" with the form hint on a Form', () => {
       const ctx = contextFor(formRoot, formRoot);
       expect(labelField?.labelFor?.(ctx)).toBe('Title');
-      expect(labelField?.required?.(ctx)).toBe(true);
+      expect(labelField?.required?.(ctx) ?? false).toBe(false);
       const { form: built } = formFor(formRoot, formRoot, schema);
       expect(fieldSchema(built, 'label')).toMatchObject({
         description: 'Shown at the top of the form.',
@@ -359,10 +380,10 @@ describe('Form title (doc 201)', () => {
       });
     });
 
-    it("writes '' when a Form's title is cleared, keeping the key", () => {
+    it("removes the key when a Form's title is cleared, like every other element", () => {
       const ctx = contextFor(formRoot, formRoot);
       const edit = labelField?.write(ctx, { element: ctx.element, schema }, '');
-      expect(edit?.element).toHaveProperty('label', '');
+      expect(edit?.element).not.toHaveProperty('label');
     });
 
     it("removes the key when a non-Form element's label is cleared", () => {
@@ -373,23 +394,24 @@ describe('Form title (doc 201)', () => {
   });
 
   describe('code editor metaschema (rules 15, 16)', () => {
-    it('requires a non-empty label on the form definition', () => {
-      expect(UISCHEMA_METASCHEMA.definitions.form.required).toContain('label');
-      // `required` alone only demands the key be present, and rule 14 clears to '' — so the title needs a length too.
+    it('leaves the label optional on the form definition, but never blank', () => {
+      expect(UISCHEMA_METASCHEMA.definitions.form.required).not.toContain('label');
+      // Absent is fine; present-but-blank is not — that would read as titled in the JSON and untitled everywhere else.
       expect(UISCHEMA_METASCHEMA.definitions.form.properties.label).toMatchObject({ minLength: 1 });
       expect(JSON.stringify(UISCHEMA_METASCHEMA)).toContain(
         "The form's title, shown at the top of the form and in the element path.",
       );
     });
 
-    it('reports a problem for a Form with no label, at the root and inside a Stage', () => {
-      expect(uischemaOk({ type: 'Form', elements: [] })).toBe(false);
-      // An EMPTY title is refused too, so the inspector's cleared '' (rule 14) is visibly invalid.
+    it('accepts a Form with no label, at the root and inside a Stage, but refuses a blank one', () => {
+      // An untitled Form is what the studio itself creates now, so the apply gate must not refuse it.
+      expect(uischemaOk({ type: 'Form', elements: [] })).toBe(true);
+      expect(uischemaOk(stageOf({ type: 'Form', elements: [] }))).toBe(true);
+      // A present-but-empty title is still refused: nothing the inspector writes can produce one.
       expect(uischemaOk({ type: 'Form', label: '', elements: [] })).toBe(false);
       expect(uischemaOk(stageOf({ type: 'Form', label: '', elements: [] }))).toBe(false);
       expect(uischemaOk({ type: 'Form', label: 'Titled', elements: [] })).toBe(true);
       // `#/definitions/form` is shared with the Flow metaschema, so a Stage's Forms are covered too.
-      expect(uischemaOk(stageOf({ type: 'Form', elements: [] }))).toBe(false);
       expect(uischemaOk(stageOf({ type: 'Form', label: 'Titled', elements: [] }))).toBe(true);
     });
 
