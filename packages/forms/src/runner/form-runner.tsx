@@ -235,6 +235,8 @@ export function FormRunner({
                 ? {}
                 : { canOpen: (target: RunnerPosition) => mayOpen(flowErrors, position, target) })}
               onGoTo={goTo}
+              reviewing={reviewing}
+              onOpenReview={() => setReviewing(true)}
             />
           ) : null}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">

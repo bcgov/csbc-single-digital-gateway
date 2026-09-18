@@ -7,11 +7,11 @@ import type { RunnerData } from './criterion-match';
 
 // The review page (doc 202 rules 49-53): every Form on the citizen's path, read-only, on one page before Submit.
 
+export { REVIEW_STEP_LABEL } from './runner-review-row';
+
 export const REVIEW_TITLE = 'Review your answers';
 export const REVIEW_DESCRIPTION =
   'Check your details before submitting. Use the steps on the left to change anything.';
-/** Rule 48: what the step is called wherever it is listed. */
-export const REVIEW_STEP_LABEL = 'Review';
 
 /**
  * Rule 50: read-only for a whole subtree, through JSONForms' `config` — the channel `hideRequiredAsterisk`

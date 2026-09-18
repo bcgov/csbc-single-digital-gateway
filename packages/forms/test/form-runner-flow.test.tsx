@@ -703,3 +703,55 @@ describe('the review page (doc 202 rules 47-53)', () => {
     expect(screen.getByRole('textbox', { name: /^Note/ })).toBeInTheDocument();
   });
 });
+
+describe('the review step in the rail (doc 202 rule 48b)', () => {
+  const REVIEWED = flow(
+    [
+      stage('s1', 'Applicant', [form('Contact', ['name'])]),
+      stage('s2', 'Details', [form('More', ['note'])]),
+    ],
+    { edges: [edge('e1', 's1', 's2')], review: true },
+  );
+
+  const reviewRow = () => sidebar().querySelector('[data-slot="runner-review-step"]');
+
+  it('is listed last, after every stage, and numbered on from them', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada' } });
+    await settle();
+    const row = reviewRow();
+    expect(row).toHaveTextContent('Review');
+    // Two stages, so the review is Step 3 — the numbering continues rather than restarting.
+    expect(row).toHaveTextContent('Step 3');
+    expect(stageNames()).toEqual(['Applicant', 'Details']);
+  });
+
+  it('is not listed at all when the Flow does not show a review', async () => {
+    renderFlow({ uischema: TWO_STAGE, initial: { name: 'Ada' } });
+    await settle();
+    expect(reviewRow()).toBeNull();
+  });
+
+  it('is locked while the pages before it cannot be passed (rule 24b)', async () => {
+    // `name` is required and unanswered, so the citizen cannot reach the last Form — nor the review past it.
+    renderFlow({ uischema: REVIEWED });
+    // TEST TRAP (doc 202 rule 24b): JSONForms delivers errors through a 10ms debounce, so a bare `settle()`
+    // asserts against a runner that has not seen them yet — the row would read as open for the wrong reason.
+    // `waitFor` outlasts it; Next going disabled is the same signal reaching the action bar.
+    await waitFor(() => expect(nextButton()).toBeDisabled());
+    expect(within(reviewRow() as HTMLElement).getByRole('button')).toBeDisabled();
+  });
+
+  it('opens the review when pressed, and reads as the current step there', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await settle();
+    fireEvent.click(within(reviewRow() as HTMLElement).getByRole('button'));
+    await settle();
+
+    expect(document.querySelector('[data-slot="runner-review"]')).not.toBeNull();
+    expect(reviewRow()).toHaveAttribute('data-current');
+    expect(within(reviewRow() as HTMLElement).getByRole('button')).toHaveAttribute(
+      'aria-current',
+      'step',
+    );
+  });
+});

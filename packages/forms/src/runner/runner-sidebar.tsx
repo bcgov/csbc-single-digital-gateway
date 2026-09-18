@@ -6,7 +6,14 @@ import { useState } from 'react';
 import { labelOf } from '../renderers/gridstack/element-label';
 import { drawnNodes } from '../renderers/xyflow/flow-elements';
 import { listedStageIds, upcomingStepRange } from './runner-projection';
-import { firstPositionIn, type RunnerFlow, type RunnerPosition } from './runner-position';
+import {
+  firstPositionIn,
+  stageFormsOf,
+  type RunnerFlow,
+  type RunnerPosition,
+} from './runner-position';
+import { showsReview } from '../renderers/xyflow/flow-elements';
+import { REVIEW_STEP_LABEL, ReviewRow } from './runner-review-row';
 import { GhostStep } from './runner-ghost-step';
 import { lockOf, StageRow, type SidebarStage } from './runner-step-rows';
 
@@ -78,6 +85,10 @@ export interface RunnerSidebarProps {
   readonly canOpen?: (target: RunnerPosition) => boolean;
   /** Rule 25: opening a visited stage. The runner validates and records the visit; this only asks. */
   onGoTo(position: RunnerPosition): void;
+  /** Doc 202 rule 48b: whether the citizen is ON the review page, so its row reads as the current step. */
+  readonly reviewing?: boolean;
+  /** Rule 48b: opening the review from the rail. Absent where nothing can open it (no runner). */
+  onOpenReview?: () => void;
 }
 
 /**
@@ -97,6 +108,8 @@ export function RunnerSidebar({
   errorForms = NO_ERRORS,
   canOpen = ALWAYS,
   onGoTo,
+  reviewing = false,
+  onOpenReview,
 }: RunnerSidebarProps) {
   // Rule 9e: the ONLY state this component owns, and it is presentational. Navigation state stays the runner's.
   const [open, setOpen] = useState(true);
@@ -104,6 +117,16 @@ export function RunnerSidebar({
   // Rule 10d: what an unmade choice may still add, or `undefined` when the path is fully decided.
   const upcoming = upcomingStepRange({ flow, schema, data }, visited);
   const openable = (target: RunnerPosition | undefined) => target === undefined || canOpen(target);
+  // Rule 48b: the review is listed only when the Flow shows one, and only the runner can open it.
+  const lastStage = stages.at(-1);
+  const lastForm = lastStage === undefined ? undefined : stageFormsOf(lastStage.element).at(-1);
+  // It sits after the last Form, so it opens exactly when that Form does — the same rule 24b gate, asked of the
+  // page the citizen would have to pass through to reach it.
+  const reviewLocked =
+    !reviewing &&
+    (lastStage === undefined ||
+      lastForm === undefined ||
+      !canOpen({ stageId: lastStage.id, formId: lastForm.id }));
 
   return (
     <nav
@@ -171,6 +194,18 @@ export function RunnerSidebar({
           />
         ))}
         {upcoming === undefined ? null : <GhostStep range={upcoming} open={open} />}
+        {/* Rule 48b: last, AFTER the ghost — whatever an undecided branch may still add comes before the
+            review, because the review is always the final step whatever the path turns out to be. */}
+        {showsReview(flow) && onOpenReview !== undefined ? (
+          <ReviewRow
+            label={REVIEW_STEP_LABEL}
+            index={stages.length}
+            open={open}
+            current={reviewing}
+            locked={reviewLocked}
+            onOpen={onOpenReview}
+          />
+        ) : null}
       </ol>
     </nav>
   );

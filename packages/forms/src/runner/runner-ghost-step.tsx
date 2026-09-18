@@ -1,5 +1,5 @@
 import type { StepRange } from './runner-projection';
-import { STEP_NUMBER } from './runner-step-rows';
+import { STEP_NUMBER } from './runner-row-parts';
 
 // The ghost step (doc 202 rule 10d): what an unmade choice may still add, after the listed steps.
 
