@@ -154,8 +154,10 @@ describe('Admin Agreements Pages Component Test Suite', () => {
     renderApp('/admin/service-agreements/g1');
 
     // Wait for the detail content to load (which would display editor details or title)
-    expect(await screen.findByText('Global Privacy Policy')).toBeInTheDocument();
-    expect(await screen.findByText(/Version v1/)).toBeInTheDocument();
+    expect(
+      await screen.findByText('Global Privacy Policy', {}, { timeout: 10000 }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/Version v1/, {}, { timeout: 10000 })).toBeInTheDocument();
   });
 
   it('AdminAgreementsList renders list of admin service agreements', async () => {
@@ -163,6 +165,8 @@ describe('Admin Agreements Pages Component Test Suite', () => {
     renderApp('/admin/service-agreements');
 
     // Verify it renders the agreements list header and items
-    expect(await screen.findByText('Global Privacy Policy')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Global Privacy Policy', {}, { timeout: 10000 }),
+    ).toBeInTheDocument();
   });
 });

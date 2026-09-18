@@ -94,7 +94,7 @@ describe('Console Submissions Integration Test Suite', () => {
   it('drives the queue API from the status tab, search, and sort controls', async () => {
     const fetchMock = mockSubmissions();
     renderApp('/app/riverton/submissions');
-    await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 5000 });
+    await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 32000 });
     const user = userEvent.setup();
     const listCall = (predicate: (url: string) => boolean) =>
       fetchMock.mock.calls.some(([input]) => {

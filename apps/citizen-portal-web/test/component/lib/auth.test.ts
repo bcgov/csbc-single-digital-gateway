@@ -8,7 +8,8 @@ const mockLoginUrlFor = vi.fn(
   (path: string) => `http://mock-bff/login?returnTo=${encodeURIComponent(path)}`,
 );
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useLocation: () => mockUseLocation(),
 }));
 

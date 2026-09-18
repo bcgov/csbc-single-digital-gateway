@@ -122,6 +122,9 @@ export function mockAuth(
     if (url.includes('/members') || url.includes('/addable-staff')) {
       return jsonResponse({ items: [] });
     }
+    if (url.includes('/v1/admin/document-types') || url.includes('/v1/admin/service-agreements')) {
+      return jsonResponse({ items: [] });
+    }
     if (url.includes('/v1/workspaces')) {
       if (method === 'DELETE') {
         const id = decodeURIComponent(url.split('/v1/workspaces/')[1]?.split('?')[0] ?? '');

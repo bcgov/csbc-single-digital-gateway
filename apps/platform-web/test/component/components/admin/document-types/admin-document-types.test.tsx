@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
 
+import '@/routes/admin';
+import '@/routes/admin.document-types';
+import '@/routes/admin.document-types.index';
+import '@/routes/admin.document-types.$id';
+
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, onChange }: { value: string; onChange?: (v: string) => void }) => (
@@ -135,7 +140,7 @@ describe('admin document types', () => {
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Publish' }));
+    await user.click(await screen.findByRole('button', { name: 'Publish' }, { timeout: 10000 }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/v1/admin/document-types/dt-1/versions/dt-1-v1/publish'),

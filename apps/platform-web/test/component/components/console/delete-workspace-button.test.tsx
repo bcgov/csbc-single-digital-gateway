@@ -6,7 +6,8 @@ import { DeleteWorkspaceButton } from '@/components/console/delete-workspace-but
 import { deleteWorkspace } from '@/lib/workspaces';
 
 const mockNavigate = vi.fn();
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
 }));
 

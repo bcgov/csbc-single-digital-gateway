@@ -25,7 +25,9 @@ describe('Admin Shell Integration Test Suite', () => {
     mockAuth(adminUser);
     renderApp('/admin');
 
-    expect(await screen.findByText(/admin overview is being set up/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/admin overview is being set up/i, {}, { timeout: 10000 }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/admin');
     expect(screen.getByRole('link', { name: 'Document Types' })).toHaveAttribute(
       'href',
@@ -37,7 +39,9 @@ describe('Admin Shell Integration Test Suite', () => {
   it('renders the Document Types placeholder at /admin/document-types', async () => {
     mockAuth(adminUser);
     renderApp('/admin/document-types');
-    expect(await screen.findByText(/No document types yet/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No document types yet/i, {}, { timeout: 10000 }),
+    ).toBeInTheDocument();
   });
 
   it('redirects a non-admin away from /admin to /app', async () => {

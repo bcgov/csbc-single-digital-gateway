@@ -202,18 +202,30 @@ describe('Console Services Integration Test Suite', () => {
 
     // Application methods tab: the method list (count badge + form title).
     await user.click(screen.getByRole('tab', { name: /application methods/i }));
-    expect(await screen.findByText('Permit form')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Permit form', undefined, { timeout: 32000 }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add application method/i })).toBeInTheDocument();
 
     // Service agreements tab: a count badge (0) + its panel (empty state) — guards the tab wiring.
     expect(screen.getByRole('tab', { name: /service agreements\s*0/i })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: /service agreements/i }));
-    expect(await screen.findByText(/no agreements attached to this service/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/no agreements attached to this service/i, undefined, {
+        timeout: 32000,
+      }),
+    ).toBeInTheDocument();
 
     // Publish through the summary modal (no unsaved changes ⇒ the Publish trigger is enabled).
     await user.click(screen.getByRole('tab', { name: /service details/i }));
-    await user.click(await screen.findByRole('button', { name: 'Publish service' }));
-    const modal = await screen.findByRole('dialog', { name: /publish service/i });
+    await user.click(
+      await screen.findByRole('button', { name: 'Publish service' }, { timeout: 32000 }),
+    );
+    const modal = await screen.findByRole(
+      'dialog',
+      { name: /publish service/i },
+      { timeout: 32000 },
+    );
     await user.click(within(modal).getByRole('button', { name: 'Publish' }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

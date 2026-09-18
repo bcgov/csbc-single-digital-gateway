@@ -19,6 +19,7 @@
     "lint:fix": "oxlint --fix",
     "prepare": "lefthook install",
     "test": "vitest run",
+    "test:e2e": "npx playwright test",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && turbo run typecheck"
   },
@@ -26,6 +27,7 @@
     "multer": "^2.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "26.0.0",
     "lefthook": "2.1.9",
     "oxlint": "1.71.0",

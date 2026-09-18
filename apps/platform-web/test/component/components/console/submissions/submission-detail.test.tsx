@@ -8,7 +8,8 @@ import type { SubmissionDetail as SubmissionDetailData } from '@/lib/submissions
 
 const mockParams = { slug: 'riverton', id: 'sub-123' };
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useParams: () => mockParams,
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;

@@ -26,7 +26,8 @@ vi.mock('@tanstack/react-query', () => ({
   queryOptions: (options: unknown) => options,
 }));
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useParams: () => paramsRef.current,
   useNavigate: () => navigateMock,
   useLocation: (options?: { select?: (l: { hash: string }) => unknown }) => {
