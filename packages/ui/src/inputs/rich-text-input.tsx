@@ -29,10 +29,33 @@ import {
   mdiFormatUnderline,
 } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button } from '@ui/components/ui/button';
 import { cn } from '@ui/lib/utils';
 import { richTextNodes, richTextTheme } from './rich-text/shared';
+
+/**
+ * The toolbar features an author may ask for, in the order the toolbar draws them (doc 207 rule 11).
+ * `heading` is ONE feature covering H1-H3: they are one decision to an author, not three.
+ *
+ * Exported so `@repo/forms` can sanitise `uischema.options.toolbar` against the SAME list — a second copy
+ * would drift from the one the toolbar actually honours.
+ */
+export const RICH_TEXT_FEATURES = [
+  'bold',
+  'italic',
+  'underline',
+  'heading',
+  'bulletList',
+  'numberedList',
+  'link',
+] as const;
+
+export type RichTextFeature = (typeof RICH_TEXT_FEATURES)[number];
+
+/** The features that report an active state (rule 16). Block-level ones do not — see `Toolbar`. */
+const INLINE_FORMATS = ['bold', 'italic', 'underline'] as const;
+type InlineFormat = (typeof INLINE_FORMATS)[number];
 
 export interface RichTextInputProps {
   id?: string;
@@ -50,6 +73,15 @@ export interface RichTextInputProps {
   'aria-labelledby'?: string;
   'aria-describedby'?: string | undefined;
   className?: string;
+  /**
+   * Which toolbar features to offer. Absent means all of them; an EMPTY array means a toolbar-less
+   * editor, which is a different thing from "the default".
+   */
+  toolbar?: readonly RichTextFeature[];
+  /** Empty-state text. Defaults to "Write…". */
+  placeholder?: string;
+  /** Minimum height in lines. Absent keeps the built-in minimum. */
+  rows?: number;
 }
 
 const theme = richTextTheme;
@@ -57,10 +89,17 @@ const theme = richTextTheme;
 function ToolbarButton({
   label,
   onClick,
+  pressed,
   children,
 }: {
   label: string;
   onClick: () => void;
+  /**
+   * Rule 16: only the INLINE formats report an active state. A heading or list button cannot know its
+   * block type without more tracking, and a button reporting a STALE pressed state would be worse than
+   * one reporting none — so those pass `undefined` and expose no `aria-pressed` at all.
+   */
+  pressed?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -70,6 +109,7 @@ function ToolbarButton({
       size="icon"
       className="size-7"
       aria-label={label}
+      {...(pressed === undefined ? {} : { 'aria-pressed': pressed })}
       onClick={onClick}
     >
       {children}
@@ -77,11 +117,48 @@ function ToolbarButton({
   );
 }
 
-function Toolbar() {
-  const [editor] = useLexicalComposerContext();
+const ToolbarSeparator = () => (
+  <span data-slot="rich-text-toolbar-separator" className="mx-1 h-5 w-px bg-border" aria-hidden />
+);
 
-  const formatText = (format: 'bold' | 'italic' | 'underline') =>
-    editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
+/** Rule 16: which inline formats the current selection carries. */
+function useActiveFormats(): Record<InlineFormat, boolean> {
+  const [editor] = useLexicalComposerContext();
+  const [active, setActive] = useState<Record<InlineFormat, boolean>>({
+    bold: false,
+    italic: false,
+    underline: false,
+  });
+
+  useEffect(
+    () =>
+      editor.registerUpdateListener(({ editorState }) => {
+        editorState.read(() => {
+          const selection = $getSelection();
+          if (!$isRangeSelection(selection)) return;
+          const next = {
+            bold: selection.hasFormat('bold'),
+            italic: selection.hasFormat('italic'),
+            underline: selection.hasFormat('underline'),
+          };
+          // A new object every update would re-render on every keystroke — React bails out on Object.is only.
+          setActive((current) =>
+            INLINE_FORMATS.every((format) => current[format] === next[format]) ? current : next,
+          );
+        });
+      }),
+    [editor],
+  );
+
+  return active;
+}
+
+function Toolbar({ features }: { features: readonly RichTextFeature[] }) {
+  const [editor] = useLexicalComposerContext();
+  const active = useActiveFormats();
+  const offers = (feature: RichTextFeature) => features.includes(feature);
+
+  const formatText = (format: InlineFormat) => editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
 
   const formatHeading = (tag: HeadingTagType) =>
     editor.update(() => {
@@ -97,48 +174,89 @@ function Toolbar() {
     editor.dispatchCommand(TOGGLE_LINK_COMMAND, url && url.trim() !== '' ? url.trim() : null);
   };
 
+  const inlineIcons: Record<InlineFormat, string> = {
+    bold: mdiFormatBold,
+    italic: mdiFormatItalic,
+    underline: mdiFormatUnderline,
+  };
+  const inlineLabels: Record<InlineFormat, string> = {
+    bold: 'Bold',
+    italic: 'Italic',
+    underline: 'Underline',
+  };
+  const headings: [HeadingTagType, string, string][] = [
+    ['h1', 'Heading 1', mdiFormatHeader1],
+    ['h2', 'Heading 2', mdiFormatHeader2],
+    ['h3', 'Heading 3', mdiFormatHeader3],
+  ];
+
+  /**
+   * Rule 11: drawn in the TOOLBAR's order, not the author's — a toolbar whose buttons move about between
+   * fields would be harder to use, and the author is choosing WHICH features, not where they sit.
+   * Groups are assembled first so a separator is only drawn BETWEEN two groups that both have content.
+   */
+  const groups: ReactNode[][] = [
+    INLINE_FORMATS.filter(offers).map((format) => (
+      <ToolbarButton
+        key={format}
+        label={inlineLabels[format]}
+        pressed={active[format]}
+        onClick={() => formatText(format)}
+      >
+        <Icon path={inlineIcons[format]} size="16px" aria-hidden />
+      </ToolbarButton>
+    )),
+    offers('heading')
+      ? headings.map(([tag, label, icon]) => (
+          <ToolbarButton key={tag} label={label} onClick={() => formatHeading(tag)}>
+            <Icon path={icon} size="16px" aria-hidden />
+          </ToolbarButton>
+        ))
+      : [],
+    [
+      offers('bulletList') ? (
+        <ToolbarButton
+          key="bulletList"
+          label="Bullet list"
+          onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
+        >
+          <Icon path={mdiFormatListBulleted} size="16px" aria-hidden />
+        </ToolbarButton>
+      ) : null,
+      offers('numberedList') ? (
+        <ToolbarButton
+          key="numberedList"
+          label="Numbered list"
+          onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}
+        >
+          <Icon path={mdiFormatListNumbered} size="16px" aria-hidden />
+        </ToolbarButton>
+      ) : null,
+    ].filter(Boolean) as ReactNode[],
+    offers('link')
+      ? [
+          <ToolbarButton key="link" label="Link" onClick={insertLink}>
+            <Icon path={mdiLink} size="16px" aria-hidden />
+          </ToolbarButton>,
+        ]
+      : [],
+  ];
+
+  const filled = groups.filter((group) => group.length > 0);
+
   return (
     <div
       className="flex flex-wrap items-center gap-0.5 border-b border-input bg-muted/30 p-1"
       role="toolbar"
       aria-label="Formatting"
     >
-      <ToolbarButton label="Bold" onClick={() => formatText('bold')}>
-        <Icon path={mdiFormatBold} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Italic" onClick={() => formatText('italic')}>
-        <Icon path={mdiFormatItalic} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Underline" onClick={() => formatText('underline')}>
-        <Icon path={mdiFormatUnderline} size="16px" aria-hidden />
-      </ToolbarButton>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <ToolbarButton label="Heading 1" onClick={() => formatHeading('h1')}>
-        <Icon path={mdiFormatHeader1} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Heading 2" onClick={() => formatHeading('h2')}>
-        <Icon path={mdiFormatHeader2} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Heading 3" onClick={() => formatHeading('h3')}>
-        <Icon path={mdiFormatHeader3} size="16px" aria-hidden />
-      </ToolbarButton>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <ToolbarButton
-        label="Bullet list"
-        onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)}
-      >
-        <Icon path={mdiFormatListBulleted} size="16px" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Numbered list"
-        onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)}
-      >
-        <Icon path={mdiFormatListNumbered} size="16px" aria-hidden />
-      </ToolbarButton>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <ToolbarButton label="Link" onClick={insertLink}>
-        <Icon path={mdiLink} size="16px" aria-hidden />
-      </ToolbarButton>
+      {filled.map((group, index) => (
+        // eslint-disable-next-line react/no-array-index-key -- groups are a fixed, ordered set
+        <Fragment key={index}>
+          {index > 0 ? <ToolbarSeparator /> : null}
+          {group}
+        </Fragment>
+      ))}
     </div>
   );
 }
@@ -176,6 +294,9 @@ export function RichTextInput({
   onChange,
   disabled = false,
   className,
+  toolbar,
+  placeholder = 'Write…',
+  rows,
   ...props
 }: RichTextInputProps) {
   const ariaInvalid = props['aria-invalid'];
@@ -197,6 +318,8 @@ export function RichTextInput({
     ...(value && value.root ? { editorState: JSON.stringify(value) } : {}),
   };
 
+  const features = toolbar ?? RICH_TEXT_FEATURES;
+
   return (
     <div
       className={cn(
@@ -206,7 +329,8 @@ export function RichTextInput({
       aria-invalid={ariaInvalid}
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <Toolbar />
+        {/* Rule 11: an EMPTY list is a toolbar-less editor; ABSENT is all of them. */}
+        {features.length > 0 ? <Toolbar features={features} /> : null}
         <div className="relative">
           <RichTextPlugin
             contentEditable={
@@ -217,11 +341,12 @@ export function RichTextInput({
                 {...(ariaLabelledBy === undefined ? {} : { 'aria-labelledby': ariaLabelledBy })}
                 {...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy })}
                 className="min-h-28 px-3 py-2 outline-none [&_a]:cursor-pointer"
+                {...(rows === undefined ? {} : { style: { minHeight: `${rows}lh` } })}
               />
             }
             placeholder={
-              <div className="pointer-events-none absolute left-3 top-2 text-muted-foreground">
-                Write…
+              <div className="pointer-events-none absolute top-2 left-3 text-muted-foreground">
+                {placeholder}
               </div>
             }
             ErrorBoundary={LexicalErrorBoundary}

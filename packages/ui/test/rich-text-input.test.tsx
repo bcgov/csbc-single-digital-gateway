@@ -75,3 +75,118 @@ describe('RichTextInput', () => {
     expect(screen.getByRole('toolbar', { name: /formatting/i })).toBeInTheDocument();
   });
 });
+
+// Doc 207 rules 11-16 — the toolbar, placeholder and height become configurable, and the toolbar's
+// documented `aria-pressed` gap (rich-text-input.a11y.ts) is closed for the inline formats.
+
+const ALL_BUTTONS = [
+  'Bold',
+  'Italic',
+  'Underline',
+  'Heading 1',
+  'Heading 2',
+  'Heading 3',
+  'Bullet list',
+  'Numbered list',
+  'Link',
+];
+
+const buttonNames = () =>
+  screen.getAllByRole('button').map((button) => button.getAttribute('aria-label'));
+
+describe('RichTextInput toolbar configuration (rule 11)', () => {
+  it('shows every feature when no toolbar is given', () => {
+    render(<RichTextInput id="a" />);
+    for (const label of ALL_BUTTONS)
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+  });
+
+  it('shows only the named features, in the toolbar’s own order', () => {
+    render(<RichTextInput id="a" toolbar={['link', 'bold']} />);
+    expect(buttonNames()).toEqual(['Bold', 'Link']);
+  });
+
+  it('renders a toolbar-less editor for an empty list, keeping the editable surface', () => {
+    render(<RichTextInput id="a" toolbar={[]} />);
+    expect(screen.queryByRole('toolbar')).toBeNull();
+    expect(document.getElementById('a')).toBeInTheDocument();
+  });
+
+  it('groups the three headings under one feature name', () => {
+    render(<RichTextInput id="a" toolbar={['heading']} />);
+    expect(buttonNames()).toEqual(['Heading 1', 'Heading 2', 'Heading 3']);
+  });
+
+  it('draws no dangling separator when a whole group is hidden', () => {
+    const { container } = render(<RichTextInput id="a" toolbar={['bold']} />);
+    expect(container.querySelectorAll('[data-slot="rich-text-toolbar-separator"]')).toHaveLength(0);
+  });
+});
+
+describe('RichTextInput placeholder and height (rules 12-13)', () => {
+  it('shows the default placeholder when none is given', () => {
+    render(<RichTextInput id="a" />);
+    expect(screen.getByText('Write…')).toBeInTheDocument();
+  });
+
+  it('shows an authored placeholder instead', () => {
+    render(<RichTextInput id="a" placeholder="Describe the situation" />);
+    expect(screen.getByText('Describe the situation')).toBeInTheDocument();
+    expect(screen.queryByText('Write…')).toBeNull();
+  });
+
+  it('hides the placeholder once there is content', () => {
+    render(<RichTextInput id="a" value={hello} placeholder="Describe the situation" />);
+    expect(screen.queryByText('Describe the situation')).toBeNull();
+  });
+
+  it('sets a minimum height from rows', () => {
+    render(<RichTextInput id="a" rows={8} />);
+    expect(document.getElementById('a')).toHaveStyle({ minHeight: '8lh' });
+  });
+});
+
+describe('RichTextInput toolbar active state (rule 16)', () => {
+  it('exposes aria-pressed on the inline format buttons', () => {
+    render(<RichTextInput id="a" />);
+    for (const label of ['Bold', 'Italic', 'Underline'])
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('keeps the attribute on every inline button while the editor is used', async () => {
+    // VERIFY BY HAND: the pressed state TOGGLING cannot be driven here. `FORMAT_TEXT_COMMAND` needs a
+    // Lexical range selection, and focusing a contenteditable in jsdom does not create one — the same
+    // limitation as gridstack and xyflow drags. jsdom can only show that the attribute is wired and
+    // stable; that it flips with the selection is checked in the browser.
+    const user = userEvent.setup();
+    render(<RichTextInput id="a" value={hello} />);
+    await user.click(screen.getByRole('button', { name: 'Bold' }));
+    for (const label of ['Bold', 'Italic', 'Underline'])
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-pressed');
+  });
+
+  it('leaves the block buttons without aria-pressed, which they do not track', () => {
+    // Deliberate scope (rule 16): inline formats only. A heading/list button reporting a stale
+    // pressed state would be worse than reporting none.
+    render(<RichTextInput id="a" />);
+    expect(screen.getByRole('button', { name: 'Heading 1' })).not.toHaveAttribute('aria-pressed');
+  });
+});
+
+describe('RichTextInput guards (rule 4)', () => {
+  it('starts empty for an object with no root rather than crashing', () => {
+    expect(() => render(<RichTextInput id="a" value={{ nope: 1 } as never} />)).not.toThrow();
+    expect(screen.getByText('Write…')).toBeInTheDocument();
+  });
+
+  it('starts empty for null', () => {
+    expect(() => render(<RichTextInput id="a" value={null} />)).not.toThrow();
+  });
+});
+
+describe('RichTextInput read-only (rule 14)', () => {
+  it('renders no toolbar and a non-editable surface when disabled', () => {
+    render(<RichTextInput id="a" value={hello} disabled />);
+    expect(document.getElementById('a')).toHaveAttribute('contenteditable', 'false');
+  });
+});
