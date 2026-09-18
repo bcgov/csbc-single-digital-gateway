@@ -128,6 +128,12 @@ function clausesOf(authored: unknown): Clause[] {
 }
 
 /**
+ * Doc 202 rule 47: whether this Flow shows a review page before Submit. Absent, or anything that is not `true`,
+ * reads as OFF — so no document authored before the option existed changes behaviour.
+ */
+export const showsReview = (flow: UISchemaElement): boolean => flow.options?.['review'] === true;
+
+/**
  * Doc 199 rule 51: how a Condition's rows are shown — `rules` (the default) or `switch`. Absent, or anything
  * else, reads as `rules`: switch mode is a VIEW of the same rows, so an unreadable value can only ever mean the
  * fuller of the two faces.

@@ -1,6 +1,11 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
-import { drawnNodes, elementsOf, startStageId } from '../renderers/xyflow/flow-elements';
+import {
+  drawnNodes,
+  elementsOf,
+  showsReview,
+  startStageId,
+} from '../renderers/xyflow/flow-elements';
 import { flowEdges } from '../renderers/xyflow/flow-graph';
 import { conditionEdge, type RunnerData } from './criterion-match';
 
@@ -33,6 +38,12 @@ export interface RunnerFlow {
  */
 export type RunnerStep =
   | { readonly kind: 'position'; readonly position: RunnerPosition }
+  /**
+   * Doc 202 rule 48: the review page, between the last Form and the end. A THIRD kind rather than a flag on
+   * `'end'`, because it is somewhere the citizen actually IS — Back leaves it, the sidebar lists it, and it is
+   * where Submit lives once `options.review` is on.
+   */
+  | { readonly kind: 'review' }
   | { readonly kind: 'end' };
 
 /** One `Form` of a Stage, as the runner addresses it. */
@@ -187,10 +198,17 @@ export function nextStep(context: RunnerFlow, position: RunnerPosition): RunnerS
   const stageId = nextStageId(context, position.stageId);
   const opened = stageId === undefined ? undefined : firstPositionIn(flow, stageId);
   // `nextStageId` only returns a Stage that holds a Form, so `opened` is defined whenever `stageId` is.
-  return opened === undefined ? { kind: 'end' } : { kind: 'position', position: opened };
+  if (opened !== undefined) return { kind: 'position', position: opened };
+  // Rule 48: with review on, the flow's last Form leads to the review page rather than straight to the end.
+  return showsReview(flow) ? { kind: 'review' } : { kind: 'end' };
 }
 
-/** Whether the flow ends here, so the action bar shows Submit instead of Next (rule 16). */
+/**
+ * Whether the flow ends here, so the action bar shows Submit instead of Next (rule 16).
+ *
+ * Rule 48: with review on it is the REVIEW PAGE that is final, not the last Form — the last Form's Next opens
+ * the review, and Submit lives there. So a position is only final when nothing follows it at all.
+ */
 export const isFinalStep = (context: RunnerFlow, position: RunnerPosition): boolean =>
   nextStep(context, position).kind === 'end';
 

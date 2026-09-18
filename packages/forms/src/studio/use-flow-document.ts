@@ -122,6 +122,7 @@ export function applyFlowGesture(
         gesture.target,
         ids,
         newPropertyKey,
+        gesture.sourceHandle,
       );
     case 'disconnect':
       return disconnectEdges(uischema, gesture.flowId, gesture.edgeIds, ids);

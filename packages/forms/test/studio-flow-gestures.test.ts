@@ -85,3 +85,73 @@ describe('disconnectGesture (rule 7)', () => {
     expect(disconnectGesture('el-1', [])).toBeUndefined();
   });
 });
+
+describe('dragging from a Condition output (doc 199 rule 45c)', () => {
+  /** c has rows r1 and r2; only r1 is wired, to `t`. */
+  const branched = () =>
+    el({
+      type: 'Flow',
+      elements: [
+        el({
+          type: 'Condition',
+          options: {
+            id: 'c',
+            rows: ['r1', 'r2'].map((id) => ({
+              id,
+              label: id,
+              match: 'all',
+              clauses: [{ id: `cl-${id}`, field: 'f', operator: 'isTrue' }],
+            })),
+          },
+        }),
+        stage('t'),
+        stage('u'),
+      ],
+      options: { edges: [{ id: 'e1', source: 'c', target: 't', sourceHandle: 'r1' }] },
+    });
+
+  it('carries the row the drag started at, so the edge leaves by THAT branch', () => {
+    // Dropped, the edge became the Else path: the row stayed unwired and kept its +, which reads as the drag
+    // having done nothing.
+    expect(connectGesture('f1', { source: 'c', target: 'u', sourceHandle: 'r2' })).toEqual({
+      type: 'connect',
+      flowId: 'f1',
+      source: 'c',
+      target: 'u',
+      sourceHandle: 'r2',
+    });
+  });
+
+  it('stores the Else output and a Stage drag with NO handle at all (rule 18)', () => {
+    // The canvas addresses Else by a reserved id; the stored form of a default edge is a handle-less one.
+    expect(connectGesture('f1', { source: 'c', target: 'u', sourceHandle: 'else' })).toEqual({
+      type: 'connect',
+      flowId: 'f1',
+      source: 'c',
+      target: 'u',
+    });
+    expect(connectGesture('f1', { source: 'a', target: 'b', sourceHandle: null })).toEqual({
+      type: 'connect',
+      flowId: 'f1',
+      source: 'a',
+      target: 'b',
+    });
+  });
+
+  it('lets a SECOND row lead to a Stage another row already leads to (rule 11)', () => {
+    // Two branches meeting at one Stage is ordinary authoring. Comparing (source, target) alone refused it.
+    expect(canConnect(branched(), 'c', 't', 'r2')).toBe(true);
+  });
+
+  it('still refuses the same row leading to the same Stage twice', () => {
+    expect(canConnect(branched(), 'c', 't', 'r1')).toBe(false);
+  });
+
+  it('treats the Else output as its own branch for that test', () => {
+    const flowEl = branched();
+    // Else is unwired, so it may connect...
+    expect(canConnect(flowEl, 'c', 't', 'else')).toBe(true);
+    // ...and a row's edge does not stand in for it.
+    expect(canConnect(flowEl, 'c', 't')).toBe(true);
+  });
+});

@@ -20,7 +20,8 @@ export const FLOW_EMPTY_MESSAGE = 'Add a stage to get started.';
  * `append` with a `null` stageId is the empty-Flow origin + (rule 12).
  */
 export type FlowGesture =
-  | { type: 'connect'; flowId: string; source: string; target: string }
+  /** Doc 199 rule 45c: `sourceHandle` is the ROW the drag started at — absent for a Stage and for Else. */
+  | { type: 'connect'; flowId: string; source: string; target: string; sourceHandle?: string }
   | { type: 'disconnect'; flowId: string; edgeIds: string[] }
   | { type: 'open'; formId: string }
   | { type: 'remove'; elementId: string }
@@ -72,8 +73,16 @@ export interface FlowEditor {
   onGesture(gesture: FlowGesture): void;
   /** `true` when a pan or zoom starts, `false` when it stops (doc 196 rule 4). Optional. */
   onGestureActive?(active: boolean): void;
-  /** Whether an edge `source → target` may be added to `flow` (rule 5). */
-  canConnect(flow: UISchemaElement, source: string, target: string): boolean;
+  /**
+   * Whether an edge `source → target` may be added to `flow` (rule 5). `sourceHandle` is the output it would
+   * leave by, which decides whether it duplicates an existing edge (doc 199 rules 11, 45c).
+   */
+  canConnect(
+    flow: UISchemaElement,
+    source: string,
+    target: string,
+    sourceHandle?: string | null,
+  ): boolean;
   /**
    * Doc 199 rule 25 (amendment): the fields the Condition with `conditionId` may test — those answerable
    * before it (rule 6). The popover's field picker has no other route to them: `FlowContext` carries only

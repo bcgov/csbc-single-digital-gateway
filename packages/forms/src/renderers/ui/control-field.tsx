@@ -6,9 +6,29 @@ import type { ReactNode } from 'react';
 export interface ControlInputProps {
   id: string;
   disabled: boolean;
+  /**
+   * Doc 202 rule 50: READ-ONLY, which is not the same as disabled. A read-only field keeps full contrast and
+   * stays focusable and selectable — a citizen reviewing their answers can read and copy them — where a
+   * disabled one is greyed and skipped by the keyboard, which reads as "this form is locked".
+   *
+   * Only set for controls with a real HTML `readOnly`: a text input, a textarea, a number input. A checkbox,
+   * radio group, switch or native select has no read-only mode in HTML, so `disabled` is the honest fallback
+   * for those (`readonlyFallsBackToDisabled`).
+   */
+  readOnly?: true;
   'aria-describedby'?: string;
   'aria-invalid'?: true;
 }
+
+/**
+ * Doc 202 rule 50: whether this subtree is being shown read-only. It travels through JSONForms' `config` prop
+ * — the channel `hideRequiredAsterisk` already uses — so a whole page turns it on without any authored uischema
+ * saying so, and nothing an author wrote can accidentally set it.
+ */
+export const isReadonly = (config: unknown): boolean =>
+  typeof config === 'object' &&
+  config !== null &&
+  (config as { readonly?: unknown }).readonly === true;
 
 /** The label's id, for an input named by `aria-labelledby` rather than `htmlFor` (doc 188 rule 8). */
 export interface ControlLabelIds {
@@ -19,6 +39,12 @@ interface ControlFieldProps {
   readonly control: ControlProps;
   /** A text control's sanitised `maxLength` (rule 18) — shows the `<n>/<max>` counter (rule 18b). */
   readonly maxLength?: number | undefined;
+  /**
+   * Doc 202 rule 50: set by a control whose input has no HTML `readOnly` — a Combobox, a RadioGroup — so
+   * read-only falls back to `disabled`. Without it the flag would be spread onto a component that does not
+   * take it, and React would warn about an unknown attribute on whatever DOM node it reached.
+   */
+  readonly noReadOnly?: boolean;
   readonly children: (input: ControlInputProps, ids: ControlLabelIds) => ReactNode;
 }
 
@@ -27,8 +53,13 @@ interface ControlFieldProps {
  * counter is described first, so the count is read on focus before the description and errors (rule 18b).
  */
 export function controlWiring(
-  { id, label, description, errors, enabled }: ControlProps,
+  { id, label, description, errors, enabled, config }: ControlProps,
   hasCounter: boolean,
+  /**
+   * Doc 202 rule 50: `false` for a control with no HTML read-only mode — a checkbox, radio group, switch or
+   * native select — which falls back to `disabled` so it cannot be changed either way.
+   */
+  readonlyFallsBackToDisabled = false,
 ) {
   const inputId = `${id}-input`;
   const ids = {
@@ -38,9 +69,11 @@ export function controlWiring(
     error: errors ? `${inputId}-error` : undefined,
   };
   const describedBy = [ids.counter, ids.description, ids.error].filter(Boolean).join(' ');
+  const readonly = isReadonly(config);
   const input: ControlInputProps = {
     id: inputId,
-    disabled: !enabled,
+    disabled: !enabled || (readonly && readonlyFallsBackToDisabled),
+    ...(readonly && !readonlyFallsBackToDisabled ? { readOnly: true } : {}),
     ...(describedBy ? { 'aria-describedby': describedBy } : {}),
     ...(ids.error ? { 'aria-invalid': true } : {}),
   };
@@ -77,12 +110,14 @@ function CharacterCounter({ id, length, max }: { id: string; length: number; max
  * label, description and errors stack in a `FieldContent` beside a narrow input box, which also holds the
  * counter. The Form Studio inspector uses it for number fields (doc 187 rule 9b).
  */
-export function ControlField({ control, maxLength, children }: ControlFieldProps) {
+export function ControlField({ control, maxLength, noReadOnly, children }: ControlFieldProps) {
   const { data, label, required, description, errors, enabled, visible, config, uischema } =
     control;
   if (!visible) return null;
+  // Rule 50: `data-disabled` dims the whole Field. A read-only field must NOT take it — the point is that the
+  // answers stay legible.
 
-  const { ids, input } = controlWiring(control, maxLength !== undefined);
+  const { ids, input } = controlWiring(control, maxLength !== undefined, noReadOnly === true);
   const labelIds: ControlLabelIds = { labelId: ids.label };
   const fieldLabel = ids.label ? (
     <FieldLabel id={ids.label} htmlFor={input.id}>

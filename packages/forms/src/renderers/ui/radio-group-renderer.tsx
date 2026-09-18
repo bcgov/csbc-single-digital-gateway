@@ -24,7 +24,8 @@ function RadioGroupControl(props: ControlProps) {
   const checked = options.find((option) => option.value === data)?.value ?? null;
 
   return (
-    <ControlField control={props}>
+    // Doc 202 rule 50: a RadioGroup has no HTML read-only, so read-only falls back to disabled.
+    <ControlField control={props} noReadOnly>
       {({ id, disabled, ...described }, { labelId }) => (
         <RadioGroup
           id={id}

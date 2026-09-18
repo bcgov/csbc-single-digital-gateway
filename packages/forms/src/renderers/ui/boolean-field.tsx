@@ -46,7 +46,8 @@ export function BooleanField({ control, placement, children }: BooleanFieldProps
   const ticked = mustBeChecked(control);
   const message = ticked && errors ? MUST_BE_CHECKED_MESSAGE : errors;
 
-  const { ids, input } = controlWiring(control, false);
+  // Doc 202 rule 50: a checkbox and a switch have no HTML read-only, so read-only falls back to disabled.
+  const { ids, input } = controlWiring(control, false, true);
   const content = (
     <FieldContent>
       {ids.label ? (

@@ -61,16 +61,23 @@ export function connectStages(
   target: string,
   ids: ElementIds,
   newId: () => string,
+  /**
+   * Doc 199 rule 45c: the Condition ROW the drag left by, already normalised by `storedHandle` — so the Else
+   * output and a Stage both arrive here as `undefined` and are stored with no handle at all (rule 18).
+   */
+  sourceHandle?: string,
 ): UISchemaElement {
   const root = uischema as TreeElement;
   const flow = findById(root, flowId, ids);
-  if (flow?.type !== FLOW_TYPE || !canConnect(flow, source, target)) return uischema;
+  if (flow?.type !== FLOW_TYPE || !canConnect(flow, source, target, sourceHandle)) return uischema;
   const edges = rawEdges(flow);
   const id = freshId(new Set(edges.map(edgeIdOf)), newId);
+  const edge =
+    sourceHandle === undefined ? { id, source, target } : { id, source, target, sourceHandle };
   return updateById(
     root,
     flowId,
-    (element) => withOptions(element, { edges: [...edges, { id, source, target }] }, ids),
+    (element) => withOptions(element, { edges: [...edges, edge] }, ids),
     ids,
   );
 }

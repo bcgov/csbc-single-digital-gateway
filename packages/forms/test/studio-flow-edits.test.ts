@@ -433,3 +433,52 @@ describe('insertForm (rules 19-20)', () => {
     }
   });
 });
+
+describe('connecting from a Condition row (doc 199 rule 45c)', () => {
+  const ids = () => createElementIds();
+
+  it('writes the sourceHandle onto the new edge', () => {
+    const store = ids();
+    const root = tree({
+      type: 'Flow',
+      elements: [
+        {
+          type: 'Condition',
+          options: {
+            id: 'c',
+            rows: [
+              {
+                id: 'r1',
+                label: 'r1',
+                match: 'all',
+                clauses: [{ id: 'k', field: 'f', operator: 'isTrue' }],
+              },
+            ],
+          },
+        },
+        { type: 'Stage', options: { id: 't' }, elements: [] },
+      ],
+      options: { edges: [] },
+    });
+    const next = connectStages(root, store.idOf(root), 'c', 't', store, () => 'e9', 'r1');
+    expect((next as TreeElement).options?.['edges']).toEqual([
+      { id: 'e9', source: 'c', target: 't', sourceHandle: 'r1' },
+    ]);
+  });
+
+  it('leaves the key ABSENT for a handle-less drag, which is what marks the Else path', () => {
+    const store = ids();
+    const root = tree({
+      type: 'Flow',
+      elements: [
+        { type: 'Stage', options: { id: 'a' }, elements: [] },
+        { type: 'Stage', options: { id: 'b' }, elements: [] },
+      ],
+      options: { edges: [] },
+    });
+    const next = connectStages(root, store.idOf(root), 'a', 'b', store, () => 'e9');
+    expect((next as TreeElement).options?.['edges']).toEqual([
+      { id: 'e9', source: 'a', target: 'b' },
+    ]);
+  });
+});

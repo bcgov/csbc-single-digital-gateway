@@ -33,7 +33,8 @@ function ComboboxControl(props: ControlProps) {
   const selected = options.find((option) => option.value === data) ?? null;
 
   return (
-    <ControlField control={props}>
+    // Doc 202 rule 50: a Combobox has no HTML read-only, so read-only falls back to disabled.
+    <ControlField control={props} noReadOnly>
       {(input) => (
         <Combobox
           items={options}

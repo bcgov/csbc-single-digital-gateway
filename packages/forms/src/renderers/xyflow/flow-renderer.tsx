@@ -80,7 +80,9 @@ function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
     selectionOnDrag: false,
     multiSelectionKeyCode: null,
     deleteKeyCode: ['Delete', 'Backspace'],
-    isValidConnection: ({ source, target }) => editor.canConnect(flow, source, target),
+    // Doc 199 rule 45c: the handle decides whether this duplicates an edge, so it is part of the question.
+    isValidConnection: ({ source, target, sourceHandle }) =>
+      editor.canConnect(flow, source, target, sourceHandle),
     onConnect: (connection) => emit(connectGesture(flowId, connection)),
     onBeforeDelete: ({ edges }) => {
       emit(disconnectGesture(flowId, edges));
