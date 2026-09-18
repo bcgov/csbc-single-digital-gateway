@@ -5,7 +5,7 @@ import {
   type UISchemaElement,
 } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import * as ui from '../src/renderers-ui';
@@ -126,10 +126,13 @@ describe('control dispatch', () => {
     expect(topEntries(control('#/properties/text', { component: 'number' }))).toEqual([0]);
   });
 
-  it('does not dispatch an integer control', () => {
+  it('dispatches an integer control to the number input (doc 204 rule 17)', () => {
+    // Amends doc 182 rule 10: `type: 'integer'` is what "Allow decimals: off" writes, so it must render —
+    // and as the SAME control, since multipleOf and options.decimals already decide step and fraction digits.
     // Guard: with no control renderers registered the next assertion would pass vacuously.
     expect(ui.controlRenderers).toHaveLength(7);
-    expect(topEntries(control('#/properties/count'))).toEqual([]);
+    // Index 2 is the NumberInput entry — the same one a `type: 'number'` control reaches.
+    expect(topEntries(control('#/properties/count'))).toEqual([2]);
   });
 });
 
@@ -167,6 +170,80 @@ describe('Input control', () => {
   it('drops a non-string placeholder', () => {
     renderForm(textSchema(), control('#/properties/name', { placeholder: 42 }));
     expect(screen.getByRole('textbox', { name: 'Name' })).not.toHaveAttribute('placeholder');
+  });
+});
+
+describe('Input control — mask (doc 204 rules 6-10)', () => {
+  const PHONE = '(999) 999-9999';
+  const phone = (input: HTMLElement, digits: string) =>
+    fireEvent.input(input, { target: { value: digits } });
+
+  it('masks what the citizen types and stores it as shown by default', async () => {
+    const form = renderForm(textSchema(), control('#/properties/name', { mask: PHONE }));
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    phone(input, '2505550123');
+
+    expect(input).toHaveValue('(250) 555-0123');
+    await waitFor(() => expect(form.data()['name']).toBe('(250) 555-0123'));
+  });
+
+  it('stores the raw characters when maskUnmasked is authored', async () => {
+    const form = renderForm(
+      textSchema(),
+      control('#/properties/name', { mask: PHONE, maskUnmasked: true }),
+    );
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    phone(input, '2505550123');
+
+    // Shown masked either way — only what is STORED differs.
+    expect(input).toHaveValue('(250) 555-0123');
+    await waitFor(() => expect(form.data()['name']).toBe('2505550123'));
+  });
+
+  it('leaves an unmasked field exactly as it was', async () => {
+    const user = userEvent.setup();
+    const form = renderForm(textSchema(), control('#/properties/name'));
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    await user.type(input, '2505550123');
+
+    expect(input).toHaveValue('2505550123');
+    await waitFor(() => expect(form.data()['name']).toBe('2505550123'));
+  });
+
+  it('never masks a Textarea, even when a mask is authored (rule 8)', () => {
+    renderForm(textSchema(), control('#/properties/name', { component: 'textarea', mask: PHONE }));
+    const input = screen.getByRole('textbox', { name: 'Name' });
+    expect(input.tagName).toBe('TEXTAREA');
+
+    fireEvent.input(input, { target: { value: '2505550123' } });
+
+    expect(input).toHaveValue('2505550123');
+  });
+
+  it('ignores a non-string mask, leaving the field unmasked', () => {
+    renderForm(textSchema(), control('#/properties/name', { mask: 42 }));
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    fireEvent.input(input, { target: { value: '2505550123' } });
+
+    expect(input).toHaveValue('2505550123');
+  });
+
+  it('counts the STORED value in the counter, never a mask-stripped one (rule 10)', async () => {
+    // A hand-authored document can still carry both; the counter must agree with what Ajv measures.
+    const form = renderForm(
+      textSchema({ maxLength: 20 }),
+      control('#/properties/name', { mask: PHONE }),
+    );
+    const input = screen.getByRole('textbox', { name: 'Name' });
+
+    phone(input, '2505550123');
+
+    await waitFor(() => expect(form.data()['name']).toBe('(250) 555-0123'));
+    expect(screen.getByText('14/20')).toBeInTheDocument();
   });
 });
 

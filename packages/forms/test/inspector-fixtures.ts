@@ -64,6 +64,9 @@ export const choiceSchema: JsonSchema = {
     },
     seats: { type: 'number', oneOf: [{ const: 1 }, { const: 5 }] },
     count: { type: 'integer' },
+    // A type no control renders and no inspector section handles — `integer` stopped being one when doc 204
+    // rule 18 mapped it onto the number field.
+    tags: { type: 'array' },
   },
 };
 

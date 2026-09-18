@@ -254,12 +254,19 @@ describe('Form Studio code metaschemas (doc 191)', () => {
       );
     });
 
-    it('rejects a non-object root, an integer property type, a negative maxLength and multipleOf 0', () => {
+    it('rejects a non-object root, a negative maxLength and multipleOf 0', () => {
       expect(schemaOk({ type: 'array' })).toBe(false);
       expect(schemaOk([])).toBe(false);
-      expect(schemaOk(withProperty({ type: 'integer' }))).toBe(false);
       expect(schemaOk(withProperty({ type: 'string', maxLength: -1 }))).toBe(false);
       expect(schemaOk(withProperty({ type: 'number', multipleOf: 0 }))).toBe(false);
+    });
+
+    it('accepts an integer property type, which renders as the number field (doc 204 rule 20)', () => {
+      // Amends doc 191 rule 12: "Allow decimals: off" writes `type: 'integer'`, so the gate must pass it or
+      // the inspector would author documents the code panel refuses.
+      expect(schemaOk(withProperty({ type: 'integer' }))).toBe(true);
+      expect(schemaOk(withProperty({ type: 'integer', minimum: 0, multipleOf: 1 }))).toBe(true);
+      expect(schemaOk(withProperty({ type: 'decimal' }))).toBe(false);
     });
 
     it('rejects an empty oneOf and an entry without const', () => {

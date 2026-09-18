@@ -48,9 +48,10 @@ describe('Form Studio document text (doc 191)', () => {
     });
 
     it('reports metaschema problems with instancePath and message', () => {
+      // `integer` is a valid type now (doc 204 rule 20), so the invalid TYPE here is `decimal`.
       const result = validateSchemaDocument({
         type: 'object',
-        properties: { a: { type: 'integer', maxLength: -1 } },
+        properties: { a: { type: 'decimal', maxLength: -1 } },
       });
       expect(result.valid).toBe(false);
       if (result.valid) return;

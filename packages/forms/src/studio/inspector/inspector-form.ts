@@ -38,13 +38,17 @@ function fieldControl(field: InspectorField, ctx: InspectorContext): UISchemaEle
     ...field.options?.(ctx),
     ...(field.schema(ctx).type === 'number' ? { orientation: 'horizontal' } : {}),
   };
+  const rule = field.rule?.(ctx);
   return {
     type: 'Control',
     scope: `#/properties/${field.key}`,
     // Doc 201 rule 13: the element-dependent label when the field has one, else its static label.
     label: field.labelFor?.(ctx) ?? field.label,
     ...(Object.keys(options).length > 0 ? { options } : {}),
-  } as UISchemaElement;
+    // Doc 204 rule 9c: visibility that depends on ANOTHER field's value travels as a JSONForms rule, so the
+    // form's shape never changes while the author types and no control is remounted mid-keystroke.
+    ...(rule ? { rule } : {}),
+  } as unknown as UISchemaElement;
 }
 
 /**

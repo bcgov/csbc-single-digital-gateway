@@ -31,18 +31,23 @@ const choiceSections = (element: ReturnType<typeof el>) =>
 
 describe('fields per element (rules 8-10)', () => {
   it('gives a string Control General, Validation, Appearance and Layout settings', () => {
+    // Doc 204 rules 9, 9c: Max length, Mask and Store unmasked are ALWAYS all present — which of them is
+    // visible is carried by a JSONForms rule, so typing a mask never restructures the panel.
     expect(sections(formFor(name).form)).toEqual([
       ['General', ['label', 'description', 'placeholder']],
-      ['Validation', ['required', 'maxLength']],
+      ['Validation', ['required', 'maxLength', 'mask', 'maskUnmasked']],
       ['Appearance', ['component']],
       ['Layout', ['width']],
     ]);
   });
 
-  it('gives a number Control minimum, maximum and step but no Appearance section', () => {
+  it('gives a number Control bounds, decimals and a display style', () => {
+    // Doc 204 rules 13-16: Allow decimals then Decimal places after the bounds, and Style in Appearance —
+    // which a number Control had no section for until this feature.
     expect(sections(formFor(qty).form)).toEqual([
       ['General', ['label', 'description', 'placeholder']],
-      ['Validation', ['required', 'minimum', 'maximum', 'step']],
+      ['Validation', ['required', 'minimum', 'maximum', 'step', 'allowDecimals', 'decimals']],
+      ['Appearance', ['numberStyle']],
       ['Layout', ['width']],
     ]);
   });
@@ -75,10 +80,22 @@ describe('fields per element (rules 8-10)', () => {
   });
 
   it('gives a Control of another value type only label, description and required', () => {
-    const count = el({ type: 'Control', scope: '#/properties/count' });
-    expect(sections(formFor(count, docOf(count), choiceSchema).form)).toEqual([
+    const tags = el({ type: 'Control', scope: '#/properties/tags' });
+    expect(sections(formFor(tags, docOf(tags), choiceSchema).form)).toEqual([
       ['General', ['label', 'description']],
       ['Validation', ['required']],
+    ]);
+  });
+
+  it('gives an integer Control the number fields, like any other number (doc 204 rule 18)', () => {
+    // Before rule 18 an integer property had no ControlKind, so it fell into the "another value type" case
+    // above and lost Minimum, Maximum and Step entirely.
+    expect(choiceSections(el({ type: 'Control', scope: '#/properties/count' }))).toEqual([
+      ['General', ['label', 'description', 'placeholder']],
+      // Decimal places is present but HIDDEN by its rule — `count` is `type: 'integer'`, so the form's
+      // `allowDecimals` reads false (rules 14, 9c).
+      ['Validation', ['required', 'minimum', 'maximum', 'step', 'allowDecimals', 'decimals']],
+      ['Appearance', ['numberStyle']],
     ]);
   });
 

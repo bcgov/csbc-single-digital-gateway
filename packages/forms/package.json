@@ -94,7 +94,8 @@
     "gridstack": "13.2.0",
     "monaco-editor": "0.56.0",
     "nanoid": "^3.3.17",
-    "react-resizable-panels": "4.12.3"
+    "react-resizable-panels": "4.12.3",
+    "use-mask-input": "3.14.2"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.9.1",

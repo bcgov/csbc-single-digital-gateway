@@ -13,21 +13,31 @@ export interface ChoiceOption {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** Whether `value` is a const of the schema `type`: a string, or a finite number. */
-const isConstOf = (type: 'string' | 'number', value: unknown): value is string | number =>
-  type === 'string'
-    ? typeof value === 'string'
-    : typeof value === 'number' && Number.isFinite(value);
+/** Whether `value` is a const of the schema `type`: a string, a finite number, or a whole one for an integer. */
+const isConstOf = (type: ChoiceType, value: unknown): value is string | number => {
+  if (type === 'string') return typeof value === 'string';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return false;
+  return type === 'number' || Number.isInteger(value);
+};
 
 /**
- * The options of a choice schema — `type` `'string'` or `'number'` with a non-empty `oneOf` whose every entry is
+ * Doc 204 rule 18b: `integer` joins string and number. "Allow decimals: off" writes `type: 'integer'` and the
+ * metaschema now admits it (rule 20), so a hand-authored `{ type: 'integer', oneOf: [...] }` reaches the
+ * renderers — and without this it would draw a NUMBER INPUT that silently ignores its own choices, which is
+ * worse than the nothing it drew before. An integer choice's consts must be whole, or the list would offer a
+ * value its own schema rejects.
+ */
+type ChoiceType = 'string' | 'number' | 'integer';
+
+/**
+ * The options of a choice schema — `type` `'string'`, `'number'` or `'integer'` with a non-empty `oneOf` whose every entry is
  * an object with a `const` of that type — else `undefined`. A label falls back to its const when the `title` is
  * not a non-empty string; a repeated const keeps its first entry.
  */
 export function choiceOptions(schema: JsonSchema | undefined): ChoiceOption[] | undefined {
   const type = schema?.type;
   const entries: unknown = schema?.oneOf;
-  if (type !== 'string' && type !== 'number') return undefined;
+  if (type !== 'string' && type !== 'number' && type !== 'integer') return undefined;
   if (!Array.isArray(entries) || entries.length === 0) return undefined;
 
   const options: ChoiceOption[] = [];

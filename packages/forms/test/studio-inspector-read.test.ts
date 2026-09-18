@@ -34,13 +34,24 @@ describe('reading the document (rule 14)', () => {
       placeholder: 'Jane',
       required: true,
       maxLength: 80,
+      // Doc 204 rule 9c: always in the view model, its visibility carried by a rule.
+      maskUnmasked: false,
       component: 'input',
       width: 8,
     });
   });
 
   it('reads a number Control, leaving absent values out', () => {
-    expect(formFor(qty).form.data).toEqual({ required: false, minimum: 0, maximum: 100, step: 5 });
+    // Doc 204: `allowDecimals` and `numberStyle` always read a value — decimals are ON and the style is Plain
+    // until the author says otherwise, so neither is ever "absent" the way a bound or a step is.
+    expect(formFor(qty).form.data).toEqual({
+      required: false,
+      minimum: 0,
+      maximum: 100,
+      step: 5,
+      allowDecimals: true,
+      numberStyle: 'plain',
+    });
   });
 
   it('reads a Heading, a HorizontalLayout, a Grid and a HorizontalLayout child', () => {
@@ -89,7 +100,12 @@ describe('reading the document (rule 14)', () => {
       properties: { name: { type: 'string', description: 7, maxLength: '80' } },
     } as unknown as JsonSchema;
     const doc = el({ type: 'VerticalLayout', elements: [el({ type: 'Grid', elements: [odd] })] });
-    expect(formFor(odd, doc, oddSchema).form.data).toEqual({ required: false, component: 'input' });
+    // `maskUnmasked` reads a boolean either way (doc 204 rule 9c) — it is a switch, not an absent value.
+    expect(formFor(odd, doc, oddSchema).form.data).toEqual({
+      required: false,
+      component: 'input',
+      maskUnmasked: false,
+    });
   });
 });
 

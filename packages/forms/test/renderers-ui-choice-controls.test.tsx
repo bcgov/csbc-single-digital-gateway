@@ -117,7 +117,8 @@ describe('choice dispatch (rules 4-6)', () => {
       properties: { seats: { type: 'number', oneOf: [{ const: 1 }, { const: 'two' }] } },
     } as JsonSchema;
     expect(topRenderer(control('seats'), mixed)).toBe(NumberInputControlRenderer);
-    expect(topRenderer(control('count'))).toBeUndefined();
+    // `count` is `{ type: 'integer', oneOf: [{ const: 1 }] }` — a choice list now (doc 204 rule 18b).
+    expect(topRenderer(control('count'))).toBe(ComboboxControlRenderer);
   });
 });
 

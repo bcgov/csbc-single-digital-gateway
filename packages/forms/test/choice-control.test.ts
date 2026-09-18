@@ -62,9 +62,18 @@ describe('choiceOptions (rules 1-2)', () => {
     ]);
   });
 
+  it('reads an integer oneOf as a choice, with whole consts only (doc 204 rule 18b)', () => {
+    expect(
+      choiceOptions({ type: 'integer', oneOf: [{ const: 1, title: 'One' }] } as JsonSchema),
+    ).toEqual([{ value: 1, label: 'One' }]);
+    // A fractional const is one the field's own schema would reject, so the list is refused entirely.
+    expect(
+      choiceOptions({ type: 'integer', oneOf: [{ const: 1.5 }] } as JsonSchema),
+    ).toBeUndefined();
+  });
+
   it.each([
     ['no type', { oneOf: [{ const: 'a' }] }],
-    ['an integer type', { type: 'integer', oneOf: [{ const: 1 }] }],
     ['a boolean type', { type: 'boolean', oneOf: [{ const: true }] }],
     ['a type array', { type: ['string', 'null'], oneOf: [{ const: 'a' }] }],
     ['no oneOf', { type: 'string' }],

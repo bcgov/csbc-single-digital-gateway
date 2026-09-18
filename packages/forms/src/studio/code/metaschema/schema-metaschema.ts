@@ -37,9 +37,10 @@ export const SCHEMA_METASCHEMA = deepFreeze({
       properties: {
         type: {
           description:
-            'The kind of value. "string" renders a text input or textarea, "number" a number input, "boolean" a ' +
-            'checkbox or switch; a "oneOf" list renders a combobox or radio group. "integer" is not rendered.',
-          enum: ['string', 'number', 'boolean'],
+            'The kind of value. "string" renders a text input or textarea, "number" a number input, "integer" the ' +
+            'same input restricted to whole numbers, "boolean" a checkbox or switch; a "oneOf" list renders a ' +
+            'combobox or radio group.',
+          enum: ['string', 'number', 'integer', 'boolean'],
         },
         title: { description: "The field's label.", type: 'string' },
         description: { description: 'Help text shown under the field.', type: 'string' },

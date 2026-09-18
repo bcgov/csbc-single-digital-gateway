@@ -4,7 +4,7 @@ import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
 import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
-import type { ControlKind, InspectorContext } from './inspector-context';
+import type { InspectorContext } from './inspector-context';
 import {
   finite,
   isRecord,
@@ -21,6 +21,13 @@ import {
 } from './inspector-edits';
 import { DOCUMENT_FIELDS } from './document-fields';
 import { LAYOUT_FIELDS } from './layout-fields';
+import { componentsOf, currentComponent } from './control-components';
+import {
+  HIDE_WHEN_MASKED,
+  MASK_FIELDS,
+  NUMBER_STYLE_FIELDS,
+  NUMBER_VALUE_FIELDS,
+} from './mask-number-fields';
 
 // The inspector's settings (doc 187 rules 9-19): where each applies, its field schema, and how it reads and
 // writes the studio document. Declared in section order, so filtering keeps the rendered order.
@@ -57,6 +64,13 @@ export interface InspectorField {
    */
   required?(ctx: InspectorContext): boolean;
   schema(ctx: InspectorContext): JsonSchema;
+  /**
+   * Doc 204 rule 9c: a JSONForms `rule` hiding the field, for a setting whose RELEVANCE depends on another
+   * setting's value. It must NOT be expressed through `applies`: dropping a field rebuilds the inspector form's
+   * uischema, JSONForms re-dispatches the section's children, and the control being typed into is remounted —
+   * the author loses focus mid-keystroke. A rule keeps the structure identical and only flips `visible`.
+   */
+  rule?(ctx: InspectorContext): Record<string, unknown> | undefined;
   /** The field Control's uischema `options`, if any. */
   options?(ctx: InspectorContext): Record<string, unknown> | undefined;
   /** The document's current value, or `undefined` when absent or of the wrong JSON type (rule 14). */
@@ -137,37 +151,6 @@ function optionField(
     read: (ctx) => read(optionsOf(ctx.element)[key]),
     write: (_ctx, edit, value) => setElement(edit, withOption(edit.element, key, orCleared(value))),
   };
-}
-
-interface Component {
-  readonly const: string;
-  readonly title: string;
-}
-
-/** Doc 188 rule 26: each kind's renderers/ui `options.component` values, default first. */
-const COMPONENTS: Readonly<Partial<Record<ControlKind, readonly Component[]>>> = {
-  text: [
-    { const: 'input', title: 'Input' },
-    { const: 'textarea', title: 'Textarea' },
-  ],
-  choice: [
-    { const: 'combobox', title: 'Combobox' },
-    { const: 'radio-group', title: 'Radio group' },
-  ],
-  boolean: [
-    { const: 'checkbox', title: 'Checkbox' },
-    { const: 'switch', title: 'Switch' },
-  ],
-};
-
-const componentsOf = (ctx: InspectorContext) =>
-  ctx.controlKind === undefined ? undefined : COMPONENTS[ctx.controlKind];
-
-/** Rule 27: the authored component when it is one of the kind's, else the default — what actually renders. */
-function currentComponent(ctx: InspectorContext): string | undefined {
-  const components = componentsOf(ctx) ?? [];
-  const authored = optionsOf(ctx.element)['component'];
-  return (components.find((component) => component.const === authored) ?? components[0])?.const;
 }
 
 /** Rule 25: text and number controls, and a choice unless it renders as a radio group. */
@@ -252,10 +235,28 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
       return setRequired(ctx, setProperty(ctx, edit, 'const', on ? true : undefined), on);
     },
   },
-  propertyField('maxLength', 'validation', 'Max length', isText, integer({ minimum: 0 }), finite),
+  // Doc 204 rules 9, 9c: a mask IS the length rule, so Max length is HIDDEN BY A RULE while one is set (never
+  // dropped from the form — that would remount the Mask field being typed into), and the mask's own write
+  // clears the keyword, or Ajv would keep enforcing a length the author can no longer see.
+  {
+    ...propertyField(
+      'maxLength',
+      'validation',
+      'Max length',
+      isText,
+      integer({ minimum: 0 }),
+      finite,
+    ),
+    rule: () => HIDE_WHEN_MASKED,
+  },
+  // Doc 204 rules 6, 9: Mask, then Store unmasked value — a dependent setting always follows the one that
+  // reveals it (rule 23).
+  ...MASK_FIELDS,
   propertyField('minimum', 'validation', 'Minimum', isNumber, NUMBER, finite),
   propertyField('maximum', 'validation', 'Maximum', isNumber, NUMBER, finite),
   optionField('step', 'validation', 'Step', isNumber, STEP, finite),
+  // Doc 204 rules 13-14: Allow decimals, then Decimal places.
+  ...NUMBER_VALUE_FIELDS,
   {
     key: 'component',
     section: 'appearance',
@@ -278,6 +279,8 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
         ),
       ),
   },
+  // Doc 204 rule 16: Style sits in Appearance — it changes how the number reads, not what it accepts.
+  ...NUMBER_STYLE_FIELDS,
   optionField('level', 'appearance', 'Heading level', isHeading, wholeNumbers(1, 6), finite),
   optionField('size', 'appearance', 'Heading size', isHeading, wholeNumbers(1, 6), finite),
   // Columns, Gap and Dividers (doc 194 rule 18).

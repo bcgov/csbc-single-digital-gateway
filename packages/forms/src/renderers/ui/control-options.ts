@@ -13,6 +13,16 @@ export interface StringInputProps {
   maxLength?: number;
 }
 
+/**
+ * Doc 204 rules 5-6: the Text field's mask, kept apart from `StringInputProps` because it is NOT spread onto
+ * the input — `mask` becomes a ref and `unmasked` decides what `onChange` stores. The Textarea reads neither
+ * (rule 8), which is why this is a separate call rather than more keys on `stringInputProps`.
+ */
+export interface MaskConfig {
+  mask?: string;
+  unmasked?: boolean;
+}
+
 /** Props derived for `NumberInput`. */
 export interface NumberInputConfig {
   placeholder?: string;
@@ -55,6 +65,17 @@ export function stringInputProps(schema: JsonSchema, options: AuthoredOptions): 
   };
 }
 
+/**
+ * Doc 204 rules 5-6: the authored mask pattern, and whether the form stores the raw characters instead of what
+ * is shown. `unmasked` is read only when there IS a mask — a lone `maskUnmasked` means nothing and is dropped,
+ * so a field can never claim to store an unmasked value it never masked.
+ */
+export function maskConfig(options: AuthoredOptions): MaskConfig {
+  const mask = options?.['mask'];
+  if (!isNonEmptyString(mask)) return {};
+  return { mask, ...keep('unmasked', options?.['maskUnmasked'], isBoolean) };
+}
+
 /** `placeholder` from options, for the Combobox (doc 188 rule 12). */
 export function choiceInputProps(options: AuthoredOptions): Pick<StringInputProps, 'placeholder'> {
   return keep('placeholder', options?.['placeholder'], isNonEmptyString);
@@ -80,8 +101,31 @@ export function numberInputProps(schema: JsonSchema, options: AuthoredOptions): 
     ...keep('largeStep', options?.['largeStep'], isPositive),
     ...keep('allowWheelScrub', options?.['allowWheelScrub'], isBoolean),
     ...keep('snapOnStep', options?.['snapOnStep'], isBoolean),
-    ...resolveNumberFormat(options?.['format'], options?.['locale']),
+    ...resolveNumberFormat(
+      withDecimals(options?.['format'], options?.['decimals']),
+      options?.['locale'],
+    ),
   };
+}
+
+/** Doc 204 rule 14: fraction digits an author may set, and the most `Intl.NumberFormat` is asked for here. */
+const MAX_DECIMALS = 10;
+
+const isDecimals = (value: unknown): value is number =>
+  isNonNegativeInteger(value) && (value as number) <= MAX_DECIMALS;
+
+/**
+ * Doc 204 rule 15: `options.decimals` DERIVED into the format rather than stored inside it — one authored key,
+ * one source of truth, and the same key the citizen API's submit check already reads.
+ *
+ * It fixes the digits exactly (`min` = `max`), so `2` shows `1.50`, not `1.5`. An authored `format` keeps every
+ * other key it has; its own fraction digits lose to `decimals`, which is the setting the author can SEE in the
+ * inspector. A `decimals` that is not a 0-10 integer is ignored, leaving the authored format untouched.
+ */
+function withDecimals(format: unknown, decimals: unknown): unknown {
+  if (!isDecimals(decimals)) return format;
+  const authored = isPlainObject(format) ? format : {};
+  return { ...authored, minimumFractionDigits: decimals, maximumFractionDigits: decimals };
 }
 
 /**

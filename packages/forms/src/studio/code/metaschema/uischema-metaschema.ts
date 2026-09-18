@@ -146,6 +146,29 @@ const CONTROL = whenType('Control', {
           enum: ['input', 'textarea', 'number', 'combobox', 'radio-group', 'checkbox', 'switch'],
         },
         placeholder: { description: 'Placeholder text.', type: 'string', minLength: 1 },
+        // Doc 204 rule 25: the Text field's mask and the Number field's precision. This block is what drives
+        // Monaco's completion AND the apply gate, so an option missing here is an option with no hover text.
+        mask: {
+          description:
+            'Format a text field as it is typed: "9" a digit, "a" a letter, "*" either, and "{n,m}" a ' +
+            'repeat, e.g. "(999) 999-9999". Replaces maxLength — the pattern is the length rule.',
+          type: 'string',
+          minLength: 1,
+        },
+        maskUnmasked: {
+          description:
+            'Store the characters typed rather than the masked text, e.g. "2505550123" instead of ' +
+            '"(250) 555-0123". Only read when a mask is set.',
+          type: 'boolean',
+        },
+        decimals: {
+          description:
+            'How many digits follow the decimal point, shown and enforced on submit. Use a whole-number ' +
+            'field (schema type "integer") for no decimals at all.',
+          type: 'integer',
+          minimum: 0,
+          maximum: 10,
+        },
         orientation: {
           description: 'Put the label beside the input instead of above it.',
           const: 'horizontal',
