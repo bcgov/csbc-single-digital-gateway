@@ -56,9 +56,9 @@ describe('renderers/ui set shape', () => {
   // Doc 194 rule 1 — the Separator entry is covered in renderers-ui-separator.test.tsx.
   it('exports empty cells and layoutRenderers, nine controlRenderers and Heading + Separator displayRenderers', () => {
     expect(ui.cells).toEqual([]);
-    expect(ui.controlRenderers).toHaveLength(9);
+    expect(ui.controlRenderers).toHaveLength(10);
     expect(ui.layoutRenderers).toEqual([]);
-    expect(ui.displayRenderers).toHaveLength(2);
+    expect(ui.displayRenderers).toHaveLength(3);
     expect(headingEntry()?.renderer).toBeDefined();
   });
 

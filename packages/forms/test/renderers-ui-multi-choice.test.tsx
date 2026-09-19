@@ -88,7 +88,7 @@ const topEntries = (uischema: UISchemaElement, schema = schemaWith()) => {
 describe('dispatch (rules 5-7, 43)', () => {
   it('registers nine control renderers, the new two APPENDED (rule 43)', () => {
     // Appending keeps integer-control.test.tsx's positional ui.controlRenderers[2] valid.
-    expect(ui.controlRenderers).toHaveLength(9);
+    expect(ui.controlRenderers).toHaveLength(10);
     expect(ui.controlRenderers[7]?.renderer).toBe(MultiComboboxControlRenderer);
     expect(ui.controlRenderers[8]?.renderer).toBe(CheckboxGroupControlRenderer);
   });

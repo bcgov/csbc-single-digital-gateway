@@ -4,6 +4,7 @@ import { act, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { richText } from './rich-text-fixtures';
 import * as defaults from '../src/renderers-default';
 import * as studio from '../src/renderers-studio';
 import { labelOf } from '../src/renderers/gridstack/element-label';
@@ -308,7 +309,10 @@ describe('Form title (doc 201)', () => {
     });
 
     it('draws the bar, not the bare space, as soon as a description is written', async () => {
-      const { container } = renderWith(defaults, form({ options: { description: 'Read this' } }));
+      const { container } = renderWith(
+        defaults,
+        form({ options: { description: richText('Read this') } }),
+      );
       await settle('Body');
       expect(container.querySelector(TITLE_SPACE)).toBeNull();
       expect(container.querySelector(TITLE_BAR)).not.toBeNull();

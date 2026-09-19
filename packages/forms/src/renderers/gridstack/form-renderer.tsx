@@ -1,11 +1,13 @@
 import type { OwnPropsOfRenderer, UISchemaElement } from '@jsonforms/core';
 import { ctxToLayoutProps, useJsonForms } from '@jsonforms/react';
 import { Heading } from '@repo/ui/heading';
+import { RichTextView } from '@repo/ui/rich-text-view';
 import { useContext, type ComponentType, type CSSProperties } from 'react';
 import { labelOf } from './element-label';
 import { FORM_DROP_ZONE_SLOT } from './grid-drop-target';
 import { GAP_REM, layoutGapOf } from './layout-gap';
 import { LayoutNestingContext } from './layout-nesting';
+import { richTextValue, type RichTextState } from '../ui/rich-text-value';
 
 /**
  * Doc 192 rule 5, doc 195 rule 16: what a Form shows in place of its elements inside a layout. A Form in a Stage is
@@ -33,10 +35,16 @@ interface FormTitleProps {
  */
 const TITLE_SPACING = 'mb-6';
 
-/** Doc 201 rule 20: a Form's authored `options.description`, or `''` when absent or not a string. */
-export function formDescriptionOf(uischema: UISchemaElement): string {
-  const description = (uischema.options as { description?: unknown } | undefined)?.description;
-  return typeof description === 'string' ? description.trim() : '';
+/**
+ * Doc 207 rule 30 (superseding doc 201 rule 20): a Form's authored `options.description` as RICH content,
+ * or `undefined` when absent or malformed.
+ *
+ * A plain STRING now returns `undefined` and renders nothing — the user's decision, taken knowing it breaks
+ * descriptions in documents stored outside this repo. Every in-repo holder is converted (rule 33).
+ * `richTextValue` is also what keeps a hand-authored malformed state from crashing Lexical (rule 4).
+ */
+export function formDescriptionOf(uischema: UISchemaElement): RichTextState | undefined {
+  return richTextValue((uischema.options as { description?: unknown } | undefined)?.description);
 }
 
 /**
@@ -84,14 +92,14 @@ export function StudioFormTitle({ uischema }: FormTitleProps) {
       )}
       {/* Rule 22: an unwritten description shows its own placeholder, exactly as the title does (rule 11), so the
           author can see where it goes. Fillable forms still render nothing (rule 20b). */}
-      {description === '' ? (
+      {description === undefined ? (
         <p data-slot="form-description-placeholder" className="mt-2 text-muted-foreground">
           {FORM_DESCRIPTION_PLACEHOLDER}
         </p>
       ) : (
-        <p data-slot="form-description" className="mt-2 text-muted-foreground">
-          {description}
-        </p>
+        <div data-slot="form-description" className="mt-2 text-muted-foreground">
+          <RichTextView value={description} />
+        </div>
       )}
     </div>
   );
@@ -130,7 +138,7 @@ export function FillFormTitle({ uischema }: FormTitleProps) {
   const title = labelOf(uischema, '');
   const description = formDescriptionOf(uischema);
   // No rule and no margin: there is no bar to separate from anything, only the space above the first element.
-  if (title === '' && description === '')
+  if (title === '' && description === undefined)
     return <div data-slot="form-title-space" className={TITLELESS_SPACING} />;
   return (
     <div
@@ -144,18 +152,18 @@ export function FillFormTitle({ uischema }: FormTitleProps) {
           data-slot="form-title"
           // Doc 201 rule 20b: with a description below, the heading gives up its bottom padding to it, so the pair
           // keeps the same p-6 frame inside the bar that the title alone has.
-          className={description === '' ? TITLE_TEXT_PADDING : 'px-6 pt-6 pb-2'}
+          className={description === undefined ? TITLE_TEXT_PADDING : 'px-6 pt-6 pb-2'}
         >
           {title}
         </Heading>
       )}
-      {description === '' ? null : (
-        <p
+      {description === undefined ? null : (
+        <div
           data-slot="form-description"
           className={`px-6 pb-6 text-muted-foreground${title === '' ? ' pt-6' : ''}`}
         >
-          {description}
-        </p>
+          <RichTextView value={description} />
+        </div>
       )}
     </div>
   );

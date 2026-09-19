@@ -63,7 +63,10 @@ describe('Separator placement (doc 194)', () => {
 
   it('has a Separator palette template after Heading (rule 13)', () => {
     const keys = PALETTE_TEMPLATES.map((template) => template.key);
-    expect(keys.indexOf('separator')).toBe(keys.indexOf('heading') + 1);
+    // Doc 207 relaxes rule 13's strict ADJACENCY (user decision 2026-09-18): Rich content now sits
+    // between them, so the two content elements are together and the divider follows. The rule's intent —
+    // Separator is a Display element offered after Heading — is what is pinned here.
+    expect(keys.indexOf('separator')).toBeGreaterThan(keys.indexOf('heading'));
     const template = PALETTE_TEMPLATES.find((entry) => entry.key === 'separator');
     expect(template).toMatchObject({ group: 'display', label: 'Separator', icon: mdiMinus });
     expect(template?.keywords).toEqual(['divider', 'rule', 'line', 'hr']);

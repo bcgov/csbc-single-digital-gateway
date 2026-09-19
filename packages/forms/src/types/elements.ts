@@ -20,6 +20,17 @@ export interface HeadingElement extends BaseUISchemaElement {
  * `{ type: 'Separator' }` — a horizontal rule rendered by `@repo/ui`'s `Separator` (doc 194). It reads no keys, and is
  * not allowed in a `HorizontalLayout` (use `options.dividers` there).
  */
+/**
+ * Doc 207 rules 17-19: authored rich content that collects nothing — the rich counterpart of `Heading`.
+ * `content` is a Lexical `SerializedEditorState`, typed loosely here because `@repo/forms` depends on
+ * `@repo/ui`, not on Lexical.
+ */
+export interface RichContentElement {
+  type: 'RichContent';
+  /** The editor state. Absent or malformed content renders nothing. */
+  content?: Record<string, unknown>;
+}
+
 export interface SeparatorElement extends BaseUISchemaElement {
   type: 'Separator';
 }
@@ -145,8 +156,11 @@ export interface FormElement extends Layout {
      * host puts in a URL to open this Form. Optional — a Form without one drills in normally but cannot be linked.
      */
     id?: string;
-    /** Doc 201 rule 20: shown under the title. */
-    description?: string;
+    /**
+     * Doc 207 rule 30 (superseding doc 201 rule 20): shown under the title, as RICH content — a Lexical
+     * editor state, not a string. Typed loosely because `@repo/forms` depends on `@repo/ui`, not Lexical.
+     */
+    description?: Record<string, unknown>;
     [key: string]: unknown;
   };
 }

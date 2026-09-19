@@ -42,6 +42,9 @@ const field = (element: UISchemaElement, key: string): unknown =>
  */
 export function elementLabel(element: UISchemaElement, schema: JsonSchema): string {
   if (element.type === 'Heading') return text(field(element, 'text')) ?? element.type;
+  // Doc 207: rich content has no plain-text label to borrow, so the crumb is the type — an author
+  // recognises it by position, and flattening a node tree into a crumb would read as gibberish.
+  if (element.type === 'RichContent') return 'Rich content';
 
   const label = text(field(element, 'label'));
   if (label !== undefined || element.type !== 'Control') return label ?? element.type;

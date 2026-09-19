@@ -1,6 +1,8 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { Heading } from '@repo/ui/heading';
+import { RichTextView } from '@repo/ui/rich-text-view';
+import type { ReactNode } from 'react';
 import { labelOf } from '../renderers/gridstack/element-label';
 import { formDescriptionOf } from '../renderers/gridstack/form-renderer';
 import * as defaults from '../renderers/default';
@@ -15,10 +17,15 @@ export const REVIEW_TITLE = 'Review your answers';
 export const REVIEW_DESCRIPTION =
   'Check your details before submitting. Use the steps on the left to change anything.';
 
-/** The Flow's own description when it has one, else the standard line — the same fallback the title takes. */
-const reviewDescription = (flow: UISchemaElement): string => {
+/**
+ * The Flow's own description when it has one, else the standard line — the same fallback the title takes.
+ *
+ * Doc 207 rule 30: an authored description is now RICH content, so this returns a node rather than a string;
+ * the fallback stays plain text, which is ours and not the author's.
+ */
+const reviewDescription = (flow: UISchemaElement): ReactNode => {
   const authored = formDescriptionOf(flow);
-  return authored === '' ? REVIEW_DESCRIPTION : authored;
+  return authored === undefined ? REVIEW_DESCRIPTION : <RichTextView value={authored} />;
 };
 
 /**
@@ -88,7 +95,7 @@ export function RunnerReview({ flow, schema, data, stageIds }: RunnerReviewProps
           <Heading level={1} size={1} id="runner-review-title">
             {labelOf(flow, REVIEW_TITLE)}
           </Heading>
-          <p className="text-sm text-muted-foreground">{reviewDescription(flow)}</p>
+          <div className="text-sm text-muted-foreground">{reviewDescription(flow)}</div>
         </div>
       </div>
 

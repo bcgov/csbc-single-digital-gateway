@@ -1,8 +1,9 @@
 import { FORM_DESCRIPTION_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
+import { richTextIsEmpty, richTextValue } from '../../renderers/ui/rich-text-value';
 import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
-import { startStage, STRING } from './field-schemas';
-import { optionsOf, orCleared, setElement, text, withOption } from './inspector-edits';
+import { startStage } from './field-schemas';
+import { optionsOf, orCleared, setElement, withOption } from './inspector-edits';
 import type { InspectorField } from './inspector-fields';
 
 // The General-section settings that belong to a document's own roots — a Flow's start stage (doc 203) and a Form's
@@ -48,12 +49,28 @@ export const DOCUMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     section: 'general',
     label: 'Description',
     applies: (ctx) => ctx.element.type === FORM_TYPE,
-    schema: () => ({ ...STRING, description: 'Shown under the title.' }),
+    /**
+     * Doc 207 rules 30-31: RICH content now. The field schema is the rich text property shape, which is
+     * what makes the inspector's own JSONForms dispatch the rich text control — the inspector reuses the
+     * ui control set by reference, so no inspector-only renderer is involved.
+     */
+    schema: () => ({
+      type: 'object',
+      required: ['root'],
+      description: 'Shown under the title.',
+    }),
     // Doc 201 rule 22: the same placeholder the canvas shows for an unwritten description.
-    options: () => ({ component: 'textarea', placeholder: FORM_DESCRIPTION_PLACEHOLDER }),
-    read: (ctx) => text(optionsOf(ctx.element)['description']),
+    options: () => ({ placeholder: FORM_DESCRIPTION_PLACEHOLDER }),
+    read: (ctx) => richTextValue(optionsOf(ctx.element)['description']),
     // An emptied description is removed, like every other optional option.
     write: (_ctx, edit, value) =>
-      setElement(edit, withOption(edit.element, 'description', orCleared(value))),
+      setElement(
+        edit,
+        withOption(
+          edit.element,
+          'description',
+          richTextIsEmpty(richTextValue(value)) ? undefined : value,
+        ),
+      ),
   },
 ] satisfies InspectorField[]);

@@ -44,7 +44,7 @@ describe('the palette panel (rules 19, 26-27)', () => {
     expect(inPalette().getByRole('group', { name: 'Layout' })).toBeInTheDocument();
     expect(inPalette().getByRole('group', { name: 'Fields' })).toBeInTheDocument();
     // Doc 205 rule 40: Multi-select and Checkbox group join the field templates.
-    expect(inPalette().getAllByRole('button')).toHaveLength(14);
+    expect(inPalette().getAllByRole('button')).toHaveLength(16);
     expect(inPalette().getByRole('searchbox', { name: 'Search elements' })).toBeInTheDocument();
   });
 

@@ -4,6 +4,8 @@ import {
   mdiCheckboxMultipleMarkedOutline,
   mdiFormatListChecks,
   mdiFormatHeaderPound,
+  mdiTextBoxOutline,
+  mdiFormatText,
   mdiFormDropdown,
   mdiFormTextbox,
   mdiMinus,
@@ -82,6 +84,17 @@ const DEFINITIONS: readonly TemplateDefinition[] = Object.freeze(
         }),
       },
       {
+        // Doc 207 rules 17-20: authored rich content, between Heading and Separator — the two CONTENT
+        // elements sit together and the divider follows (user decision 2026-09-18, relaxing doc 194
+        // rule 13's adjacency). It binds to no data, so its template has no `property`.
+        key: 'rich-content',
+        group: 'display',
+        label: 'Rich content',
+        icon: mdiTextBoxOutline,
+        keywords: ['rich', 'text', 'paragraph', 'content', 'formatted'],
+        build: () => ({ element: element({ type: 'RichContent' }) }),
+      },
+      {
         // Doc 194 rule 13: refused in a HorizontalLayout by insertElement and drag acceptance, never disabled.
         key: 'separator',
         group: 'display',
@@ -131,6 +144,19 @@ const DEFINITIONS: readonly TemplateDefinition[] = Object.freeze(
         icon: mdiTextLong,
         keywords: ['multiline', 'paragraph'],
         build: field('textarea', (title) => ({ type: 'string', title })),
+      },
+      {
+        /**
+         * Doc 207 rules 1, 6: a rich text FIELD. Its property is `{ type: 'object', required: ['root'] }` —
+         * the structural signal — so Input and Textarea can never claim it and it gets no Component picker.
+         * Without this entry the control would only be reachable by hand-authoring the schema.
+         */
+        key: 'rich-text',
+        group: 'fields',
+        label: 'Rich text',
+        icon: mdiFormatText,
+        keywords: ['rich', 'formatted', 'wysiwyg', 'editor'],
+        build: field(undefined, (title) => ({ type: 'object', required: ['root'], title })),
       },
       {
         key: 'number',

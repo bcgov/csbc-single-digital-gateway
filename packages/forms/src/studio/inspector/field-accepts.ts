@@ -7,6 +7,16 @@ import type { JsonSchema } from '@jsonforms/core';
  */
 export function fieldAccepts(schema: JsonSchema, value: unknown): boolean {
   if (value === undefined) return true;
+  /**
+   * Doc 207 rule 24: an OBJECT-typed field carries an object — rich content is the first.
+   *
+   * This does NOT reopen doc 206 rule 2's refusal of arrays: that was an array of DOCUMENT CONTENT (an
+   * option list) which JSONForms was never carrying, and it still has no business on this channel. A rich
+   * text value is a single field value JSONForms carries natively, so an array is refused here too — in
+   * JavaScript an array IS an object, which is exactly the confusion this guard has to avoid.
+   */
+  if (schema.type === 'object')
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
   if (Array.isArray(schema.oneOf) && !schema.oneOf.some((entry) => entry.const === value))
     return false;
   if (schema.type === 'string') return typeof value === 'string';

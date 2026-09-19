@@ -43,6 +43,20 @@ const whenType = <T extends object>(type: string, then: T) =>
     then,
   }) as const;
 
+// Doc 207 rules 17-20. `content` is a Lexical editor state: an object with a `root`. Described loosely on
+// purpose — the node shapes are Lexical's to define, and pinning them here would refuse valid documents
+// whenever Lexical adds a node type.
+const RICH_CONTENT = whenType('RichContent', {
+  properties: {
+    content: {
+      description: 'The rich content, as a Lexical editor state. Absent content renders nothing.',
+      type: 'object',
+      required: ['root'],
+      properties: { root: { description: 'The editor state root node.', type: 'object' } },
+    },
+  },
+});
+
 const HEADING = whenType('Heading', {
   required: ['text'],
   properties: {
@@ -254,9 +268,17 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
           // Doc 197 rule 6: optional, unlike a Stage's id — documents authored before deep linking stay valid.
           properties: {
             gap: GAP,
+            /**
+             * Doc 207 rules 30-32 (superseding doc 201 rule 20): rich content, not a string. The gate
+             * refuses a plain string on purpose — accepting both would let an author save a description
+             * that renders nothing, which is the one outcome worse than refusing it.
+             */
             description: {
-              description: 'A description shown under the form title.',
-              type: 'string',
+              description:
+                'A description shown under the form title, as a Lexical editor state. Rich content, not plain text.',
+              type: 'object',
+              required: ['root'],
+              properties: { root: { description: 'The editor state root node.', type: 'object' } },
             },
             id: {
               description:
@@ -276,7 +298,15 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
       properties: {
         type: {
           description: 'The element kind.',
-          enum: ['Grid', 'VerticalLayout', 'HorizontalLayout', 'Control', 'Heading', 'Separator'],
+          enum: [
+            'Grid',
+            'VerticalLayout',
+            'HorizontalLayout',
+            'Control',
+            'Heading',
+            'Separator',
+            'RichContent',
+          ],
         },
         label: {
           description:
@@ -290,7 +320,7 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
           properties: { gridItem: { $ref: '#/definitions/gridItem' } },
         },
       },
-      allOf: [HEADING, GRID, VERTICAL_LAYOUT, HORIZONTAL_LAYOUT, CONTROL],
+      allOf: [HEADING, RICH_CONTENT, GRID, VERTICAL_LAYOUT, HORIZONTAL_LAYOUT, CONTROL],
     },
     gridItem: {
       description:

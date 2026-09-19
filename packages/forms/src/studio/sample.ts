@@ -173,9 +173,48 @@ const deliveryTexts: SwitchControlElement = {
 // children stack in order and none carries a `gridItem` — only the Delivery Grid's children are placed.
 // Doc 201 rule 17: every document the studio seeds arrives titled, so the sample satisfies the metaschema's
 // required `label` (rule 15).
+/**
+ * Doc 207 rules 30, 33: the Form description is RICH content — a Lexical editor state, not a string.
+ *
+ * Written out by hand rather than produced by the editor, because the sample must be a deterministic
+ * literal. NOTE: no in-repo document carried a Form description before this feature, so rule 33's
+ * "convert the existing holders" turned out to be no work at all; this one is ADDED, so the built-in
+ * template demonstrates the field rather than showing its placeholder forever.
+ */
+const SAMPLE_DESCRIPTION = {
+  root: {
+    children: [
+      {
+        children: [
+          {
+            detail: 0,
+            format: 0,
+            mode: 'normal',
+            style: '',
+            text: 'Tell us about yourself. Fields marked with an asterisk are required.',
+            type: 'text',
+            version: 1,
+          },
+        ],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        type: 'paragraph',
+        version: 1,
+      },
+    ],
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    type: 'root',
+    version: 1,
+  },
+};
+
 export const STUDIO_SAMPLE_UISCHEMA: FormElement = {
   type: 'Form',
   label: 'Untitled form',
+  options: { description: SAMPLE_DESCRIPTION },
   elements: [
     greeting,
     name,

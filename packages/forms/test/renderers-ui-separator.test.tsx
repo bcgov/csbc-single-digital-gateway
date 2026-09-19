@@ -50,7 +50,7 @@ const separatorEntry = () =>
 describe('Separator renderer (doc 194)', () => {
   describe('set (rule 1)', () => {
     it('adds one Separator entry to renderers/ui displayRenderers, ranked 1, matching nothing else', () => {
-      expect(ui.displayRenderers).toHaveLength(2);
+      expect(ui.displayRenderers).toHaveLength(3);
       const tester = separatorEntry()?.tester;
       expect(tester?.(separator() as UISchemaElement, schema, testerContext)).toBe(1);
       expect(tester?.(heading('x') as UISchemaElement, schema, testerContext)).toBe(NOT_APPLICABLE);

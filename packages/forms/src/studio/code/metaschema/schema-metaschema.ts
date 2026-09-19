@@ -41,7 +41,7 @@ export const SCHEMA_METASCHEMA = deepFreeze({
             'same input restricted to whole numbers, "boolean" a checkbox or switch; a "oneOf" list renders a ' +
             'combobox or radio group, and an "array" whose "items" carry a "oneOf" renders a multi-select or a ' +
             'checkbox group.',
-          enum: ['string', 'number', 'integer', 'boolean', 'array'],
+          enum: ['string', 'number', 'integer', 'boolean', 'array', 'object'],
         },
         title: { description: "The field's label.", type: 'string' },
         description: { description: 'Help text shown under the field.', type: 'string' },
@@ -85,6 +85,17 @@ export const SCHEMA_METASCHEMA = deepFreeze({
               items: { $ref: '#/definitions/choice' },
             },
           },
+        },
+        /**
+         * Doc 207 rule 1: a rich text field is `{ type: 'object', required: ['root'] }`. Both signals are
+         * needed, so the gate has to admit the property's own `required` — an "object" property without it
+         * is not a field at all and nothing renders it.
+         */
+        required: {
+          description:
+            'For an "object" field, the keys its value must carry. A rich text field uses ["root"].',
+          type: 'array',
+          items: { type: 'string' },
         },
         uniqueItems: {
           description:

@@ -43,6 +43,12 @@ export const OPERATORS_BY_KIND: Readonly<Record<ControlKind, readonly Operator[]
   ] as const),
   choice: Object.freeze(['equals', 'notEquals', 'in', 'notIn', 'isEmpty', 'isNotEmpty'] as const),
   boolean: Object.freeze(['isTrue', 'isFalse'] as const),
+  /**
+   * Doc 207 rule 29: nothing else is offerable. `equals` would compare node trees by REFERENCE, and
+   * `contains` would compare a string to an object and never match — the silent failure the kind exists to
+   * prevent. `isEmpty` asks whether the state holds text (rule 5), not whether the key is present.
+   */
+  'rich-text': Object.freeze(['isEmpty', 'isNotEmpty'] as const),
   // Doc 205 rule 27: no `equals`/`notEquals` — `matchesClause` compares with `===`, which against an array is
   // reference identity and never true. What an author means by "equals" here is `includes`.
   'multi-choice': Object.freeze(['includes', 'notIncludes', 'isEmpty', 'isNotEmpty'] as const),

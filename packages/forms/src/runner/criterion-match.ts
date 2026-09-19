@@ -3,6 +3,7 @@ import type { Clause, ConditionRow, FlowEdge } from '../types/elements';
 import { choiceOptions } from '../renderers/ui/choice-control';
 import { multiChoiceOptions } from '../renderers/ui/multi-choice-control';
 import { controlKindOf, type ControlKind } from '../renderers/ui/control-kind';
+import { richTextIsEmpty, richTextValue } from '../renderers/ui/rich-text-value';
 import {
   needsValue,
   operatorsFor,
@@ -73,6 +74,8 @@ export function criterionFieldOf(key: string, schema: JsonSchema): CriterionFiel
  * wrong-TYPED value as unevaluable.
  */
 function valueMatchesKind(kind: ControlKind, value: unknown): boolean {
+  // Doc 207 rule 29: a rich text clause never carries a value — both its operators need none.
+  if (kind === 'rich-text') return false;
   if (kind === 'number') return typeof value === 'number' && Number.isFinite(value);
   if (kind === 'boolean') return typeof value === 'boolean';
   // Doc 205 rule 31: a multi-choice clause's VALUE is one option const — which the options may type as a
@@ -99,11 +102,23 @@ const listOf = (value: unknown): (string | number)[] | undefined =>
  * reads as answered, `isNotEmpty` is true, and `conditionDecided` routes a Flow down a branch before the
  * citizen has chosen anything.
  */
-const isEmptyAnswer = (answer: unknown): boolean =>
-  answer === undefined ||
-  answer === null ||
-  answer === '' ||
-  (Array.isArray(answer) && answer.length === 0);
+const isEmptyAnswer = (answer: unknown): boolean => {
+  if (
+    answer === undefined ||
+    answer === null ||
+    answer === '' ||
+    (Array.isArray(answer) && answer.length === 0)
+  )
+    return true;
+  /**
+   * Doc 207 rule 5, at fill time. An EMPTY editor state is still an object, so without this a
+   * touched-then-emptied rich text field reads as ANSWERED and `conditionDecided` routes a Flow down a
+   * branch on content the citizen deleted — the same shape of bug doc 205 rule 29 fixed for `[]`.
+   * Recognised by SHAPE, so it needs no kind: only a Lexical state has a `root`.
+   */
+  const state = richTextValue(answer);
+  return state !== undefined && richTextIsEmpty(state);
+};
 
 /** Both sides of a numeric comparison as finite numbers, or `undefined` when either is not (rule 20). */
 function comparableNumbers(answer: unknown, value: unknown): [number, number] | undefined {

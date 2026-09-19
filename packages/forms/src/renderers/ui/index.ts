@@ -7,6 +7,8 @@ import { InputControlRenderer, inputTester } from './input-renderer';
 import { MultiComboboxControlRenderer, multiComboboxTester } from './multi-combobox-renderer';
 import { NumberInputControlRenderer, numberInputTester } from './number-input-renderer';
 import { RadioGroupControlRenderer, radioGroupTester } from './radio-group-renderer';
+import { RichContentDisplayRenderer, richContentTester } from './rich-content-renderer';
+import { RichTextControlRenderer, richTextTester } from './rich-text-renderer';
 import { SeparatorDisplayRenderer, separatorTester } from './separator-renderer';
 import { SwitchControlRenderer, switchTester } from './switch-renderer';
 import { TextareaControlRenderer, textareaTester } from './textarea-renderer';
@@ -32,11 +34,16 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   { tester: switchTester, renderer: SwitchControlRenderer },
   { tester: multiComboboxTester, renderer: MultiComboboxControlRenderer },
   { tester: checkboxGroupTester, renderer: CheckboxGroupControlRenderer },
+  // Doc 207 rule 6: appended for the same reason the multi-choice pair was. It ties with nothing —
+  // `isStringControl` cannot match an object property — so rank 7 is free of contention entirely.
+  { tester: richTextTester, renderer: RichTextControlRenderer },
 ];
 
 export const displayRenderers: RendererSet['displayRenderers'] = [
   { tester: headingTester, renderer: HeadingDisplayRenderer },
   { tester: separatorTester, renderer: SeparatorDisplayRenderer },
+  // Doc 207 rule 18: rank 1 like the others — display testers match distinct types, so none contend.
+  { tester: richContentTester, renderer: RichContentDisplayRenderer },
 ];
 
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];

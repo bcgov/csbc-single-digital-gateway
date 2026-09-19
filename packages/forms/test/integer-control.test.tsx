@@ -143,8 +143,15 @@ describe('the metaschema accepts an integer property (rule 20)', () => {
   const properties = SCHEMA_METASCHEMA.definitions?.['property']?.properties;
 
   it('lists integer in the property type enum', () => {
-    // Doc 205 rule 37 adds 'array' for multi-choice fields.
-    expect(properties?.['type']?.enum).toEqual(['string', 'number', 'integer', 'boolean', 'array']);
+    // Doc 205 rule 37 adds 'array' for multi-choice fields; doc 207 rule 1 adds 'object' for rich text.
+    expect(properties?.['type']?.enum).toEqual([
+      'string',
+      'number',
+      'integer',
+      'boolean',
+      'array',
+      'object',
+    ]);
   });
 
   it('no longer says integer is not rendered', () => {

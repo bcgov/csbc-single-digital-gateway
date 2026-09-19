@@ -2,6 +2,7 @@ import { createAjv, type JsonSchema, type UISchemaElement } from '@jsonforms/cor
 import { JsonForms } from '@jsonforms/react';
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { emptyRichText, richText } from './rich-text-fixtures';
 import * as studio from '../src/renderers-studio';
 import {
   FORM_DESCRIPTION_PLACEHOLDER,
@@ -16,6 +17,10 @@ import type { TreeElement } from '../src/studio/layout/element-tree';
 import { el } from './inspector-fixtures';
 
 // Doc 201 rules 7b and 20 — the studio canvas title's inset and grey, and a Form's `options.description`.
+//
+// Doc 207 rules 30-32 SUPERSEDE rule 20's type: the description is RICH content (a Lexical editor state),
+// not a string, and the apply gate now REFUSES a plain string rather than accepting one that renders
+// nothing. The assertions below are converted; what they check is unchanged.
 
 const schema: JsonSchema = { type: 'object', properties: { name: { type: 'string' } } };
 const form = (extra: object = {}) =>
@@ -88,7 +93,7 @@ describe('studio canvas title (rule 7b)', () => {
 describe('Form description (rule 20)', () => {
   it('renders under the title in the same inset block, greyed', async () => {
     const { container } = await renderStudioSet(
-      form({ label: 'Permit', options: { description: 'Tell us about the work.' } }),
+      form({ label: 'Permit', options: { description: richText('Tell us about the work.') } }),
     );
     const block = container.querySelector('[data-slot="form-title-block"]');
     const description = block?.querySelector('[data-slot="form-description"]');
@@ -102,6 +107,7 @@ describe('Form description (rule 20)', () => {
 
   it('shows a placeholder on the canvas for an absent or blank description (rule 22)', async () => {
     const { container } = await renderStudioSet(
+      // A plain STRING no longer renders (doc 207 rule 30), so it shows the placeholder too.
       form({ label: 'Permit', options: { description: '   ' } }),
     );
     expect(container.querySelector('[data-slot="form-description"]')).toBeNull();
@@ -127,17 +133,17 @@ describe('Form description (rule 20)', () => {
     const ctx = contextFor(root);
     expect(descriptionField?.applies(ctx)).toBe(true);
 
-    const written = descriptionField?.write(
-      ctx,
-      { element: root as TreeElement, schema },
-      'Tell us about the work.',
-    );
-    expect(written?.element.options).toEqual({ description: 'Tell us about the work.' });
+    // Doc 207 rule 30: the value is an editor state now, not a string.
+    const state = richText('Tell us about the work.');
+    const written = descriptionField?.write(ctx, { element: root as TreeElement, schema }, state);
+    expect(written?.element.options).toEqual({ description: state });
 
+    // Rule 5: an editor with no TEXT clears the key — the value is still an object, so a presence check
+    // would leave a description behind that renders nothing.
     const cleared = descriptionField?.write(
       contextFor(written?.element as UISchemaElement),
       { element: written?.element as TreeElement, schema },
-      '',
+      emptyRichText(),
     );
     expect(cleared?.element.options).toBeUndefined();
   });
@@ -150,15 +156,17 @@ describe('Form description (rule 20)', () => {
     expect(ctx && descriptionField?.applies(ctx)).toBe(false);
   });
 
-  it('is accepted by the uischema metaschema, and a non-string is refused', () => {
+  it('is accepted by the uischema metaschema as RICH content; a string and a number are refused', () => {
+    // Doc 207 rule 32: the gate refuses a plain string on purpose. Accepting both would let an author save
+    // a description that renders nothing, which is worse than refusing it outright.
     const ajv = createAjv();
     const ok = (value: object) => ajv.validate(UISCHEMA_METASCHEMA, value) === true;
-    expect(
-      ok({ type: 'Form', label: 'Permit', elements: [], options: { description: 'Hi' } }),
-    ).toBe(true);
-    expect(ok({ type: 'Form', label: 'Permit', elements: [], options: { description: 3 } })).toBe(
-      false,
-    );
+    const formWith = (description: unknown) =>
+      ({ type: 'Form', label: 'Permit', elements: [], options: { description } }) as object;
+    expect(ok(formWith(richText('Hi')))).toBe(true);
+    expect(ok(formWith('Hi'))).toBe(false);
+    expect(ok(formWith(3))).toBe(false);
+    expect(ok(formWith({ nope: 1 }))).toBe(false);
   });
 });
 
@@ -168,7 +176,7 @@ describe('Form description in the runner (rule 20b)', () => {
 
   it('shows under the title, inside the gold-ruled bar, for a Form document', async () => {
     const { container } = renderRunner(
-      form({ label: 'Permit', options: { description: 'Tell us about the work.' } }),
+      form({ label: 'Permit', options: { description: richText('Tell us about the work.') } }),
     );
     await screen.findByText('Body');
     const bar = container.querySelector('[data-slot="form-title-bar"]');
@@ -205,17 +213,16 @@ describe('Form description in the runner (rule 20b)', () => {
             {
               type: 'Form',
               label: 'Contact',
-              options: { id: 'f1', description: 'How we reach you.' },
+              options: { id: 'f1', description: richText('How we reach you.') },
               elements: [{ type: 'Heading', text: 'Body' }],
             },
           ],
         },
       ],
     });
-    renderRunner(flow);
-    expect(await screen.findByText('How we reach you.')).toHaveAttribute(
-      'data-slot',
-      'form-description',
-    );
+    const { container } = renderRunner(flow);
+    // Doc 207: the slot is now the WRAPPER; RichTextView renders the text in its own paragraph inside it.
+    const text = await screen.findByText('How we reach you.');
+    expect(container.querySelector('[data-slot="form-description"]')).toContainElement(text);
   });
 });

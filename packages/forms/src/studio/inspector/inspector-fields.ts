@@ -19,6 +19,7 @@ import {
   withWidth,
   type InspectorEdit,
 } from './inspector-edits';
+import { CONTENT_FIELDS } from './content-fields';
 import { DOCUMENT_FIELDS } from './document-fields';
 import { LAYOUT_FIELDS } from './layout-fields';
 import { componentsOf, currentComponent } from './control-components';
@@ -185,6 +186,7 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
       setElement(edit, withElementKey(edit.element, 'label', orCleared(value))),
   },
   ...DOCUMENT_FIELDS,
+  ...CONTENT_FIELDS,
   {
     key: 'text',
     section: 'general',

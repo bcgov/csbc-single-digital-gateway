@@ -12,6 +12,21 @@ import { fieldsFor, type InspectorEdit, type InspectorValues } from './inspector
  * replaced only when a property setting changed. When nothing changed — including an unknown id — the SAME
  * document object is returned, so JSONForms' mount emit re-renders nothing.
  */
+/**
+ * Doc 207 rule 25: whether the inspector's value is the one the document already holds.
+ *
+ * `Object.is` alone was enough while every inspector value was a string, boolean or number. An OBJECT value
+ * (rich content) is a REFERENCE comparison there, and JSONForms hands back a new object on every change —
+ * so an untouched editor would read as CHANGED on every pass, write, and re-render the canvas, which is
+ * doc 187 rule 15's exact failure. Objects are therefore compared by content.
+ */
+function unchanged(value: unknown, current: unknown): boolean {
+  if (Object.is(value, current)) return true;
+  const both =
+    typeof value === 'object' && value !== null && typeof current === 'object' && current !== null;
+  return both && JSON.stringify(value) === JSON.stringify(current);
+}
+
 export function applyInspector(
   document: StudioDocument,
   elementId: string,
@@ -24,7 +39,7 @@ export function applyInspector(
   let edit: InspectorEdit = { element: ctx.element, schema: document.schema };
   for (const field of fieldsFor(ctx)) {
     const value = values[field.key];
-    if (Object.is(value, field.read(ctx)) || !fieldAccepts(field.schema(ctx), value)) continue;
+    if (unchanged(value, field.read(ctx)) || !fieldAccepts(field.schema(ctx), value)) continue;
     edit = field.write(ctx, edit, value);
   }
 

@@ -6,6 +6,7 @@ import type { DDDraggable } from 'gridstack/dist/dd-draggable';
 import { DDDroppable } from 'gridstack/dist/dd-droppable';
 import { DDManager } from 'gridstack/dist/dd-manager';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { richText } from './rich-text-fixtures';
 import { dropTargetFor, retargetDropTarget } from '../src/renderers/gridstack/grid-drop-target';
 import {
   createGridRenderers,
@@ -282,7 +283,7 @@ describe("a root Form's drop zone (doc 201 rule 21)", () => {
           key: 'root',
           type: 'Form',
           label: 'Permit',
-          options: { description: 'Tell us about the work.' },
+          options: { description: richText('Tell us about the work.') },
           elements: [heading('one')],
         },
         keyedEditor,
