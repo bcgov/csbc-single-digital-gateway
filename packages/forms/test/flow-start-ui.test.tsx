@@ -105,7 +105,7 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       );
       const wrapper = nodeOf(container, 'a').querySelector(WRAPPER);
       expect(wrapper).toHaveAttribute('data-start');
-      expect(wrapper).toHaveClass('ring-4', 'ring-blue-60');
+      expect(wrapper).toHaveClass('ring-4', 'ring-ring');
       // The "Start" badge and its connector line are gone: the card itself says it now.
       expect(container.querySelector(MARKER)).toBeNull();
     });
@@ -136,7 +136,7 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       expect(end).toHaveAttribute('data-end');
       // Black, not red: an end is a perfectly good state, and red is reserved for a node that can never route
       // an answer anywhere. A finished flow's last Stage would otherwise wear a warning forever.
-      expect(end).toHaveClass('ring-4', 'ring-gray-60');
+      expect(end).toHaveClass('ring-4', 'ring-gray-80');
       expect(end).not.toHaveClass('ring-danger-border');
       // The Stage the flow leaves is not an end, so it keeps no ring of its own.
       expect(nodeOf(container, 'a').querySelector(WRAPPER)).not.toHaveAttribute('data-end');
@@ -159,8 +159,8 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       );
       for (const id of ['a', 'b'])
         expect(nodeOf(container, id).querySelector(WRAPPER)).not.toHaveAttribute('data-split');
-      expect(nodeOf(container, 'a').querySelector(WRAPPER)).toHaveClass('ring-blue-60');
-      expect(nodeOf(container, 'b').querySelector(WRAPPER)).toHaveClass('ring-gray-60');
+      expect(nodeOf(container, 'a').querySelector(WRAPPER)).toHaveClass('ring-ring');
+      expect(nodeOf(container, 'b').querySelector(WRAPPER)).toHaveClass('ring-gray-80');
     });
 
     it('carries NO glow on the split ring (rule 8b)', () => {
@@ -236,12 +236,12 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       // Solid, not outlined: `*-border` is the family's only mid-tone, and white on either lands at about
       // 4.7:1, which clears AA for text this size.
       expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveClass(
-        'bg-blue-60',
+        'bg-ring',
         'text-white',
         'font-semibold',
       );
       expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toHaveClass(
-        'bg-gray-60',
+        'bg-gray-80',
         'text-white',
       );
     });
@@ -278,7 +278,7 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       const wrapper = nodeOf(container, 'c').querySelector(WRAPPER);
       expect(wrapper).toHaveAttribute('data-end');
       expect(wrapper).toHaveClass('ring-danger-border');
-      expect(wrapper).not.toHaveClass('ring-gray-60');
+      expect(wrapper).not.toHaveClass('ring-gray-80');
       expect(nodeOf(container, 'c').querySelector(BADGE_SLOT)).toHaveTextContent('Not reachable');
     });
 

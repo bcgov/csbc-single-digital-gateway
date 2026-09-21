@@ -2,23 +2,32 @@
 // it, in one of three tones. Shared by the Stage and the Condition so the vocabulary cannot drift between them.
 //
 // The tones carry MEANING, not decoration, and the meanings are exclusive:
-//   success  the flow starts here — BLUE (user 2026-09-21)
+//   success  the flow starts here — BLUE (user 2026-09-21), `#2e5dd7`
 //   neutral  the flow ends here — a Stage no edge leaves. GREY (user 2026-09-21); before that black, and
 //            before that red. Not red for the same reason it never went back: an end is a perfectly good
 //            state, and a finished flow's last Stage would otherwise wear a warning forever.
 //   danger   RESERVED for something actually wrong — a Condition that can never route an answer anywhere.
 //
-// Start and end are BCDS palette steps (`blue-60`, `gray-60`) rather than the `success`/`neutral` state
-// families they began as. The tone NAMES are kept: they are what the three treatments mean, and renaming
-// them would churn every call site to say the same thing in different words.
+// Start is `ring` and end is `gray-80`, rather than the `success`/`neutral` state families they began as.
+//
+// `ring` is not a borrowed name: `--app-ring` IS `--bcds-surface-color-border-active` = `#2e5dd7`, the
+// colour asked for, and the repo's rule is that `--app-*` is the only authoring surface — a raw hex here
+// would be the one thing tokens.css tells you not to write. It does not collide with selection either:
+// rule 8d gives a selected ringed Stage a `gray-80` border precisely so the two stay distinguishable.
+//
+// NOTE the first attempt used `blue-60`/`gray-60`, which are the PALE ends of those scales (`#7ab8f9`,
+// `#c6c5c3`) — a step number is not a brightness, and both read as washed out against the canvas.
+//
+// The tone NAMES are kept: they are what the three treatments mean, and renaming them would churn every
+// call site to say the same thing in different words.
 export type NodeTone = 'success' | 'neutral' | 'danger';
 
 /** The ring around the card. All three sit OUTSIDE the card's own border, so none of them fight it. */
 const RINGS: Readonly<Record<NodeTone, string>> = {
-  success: 'ring-4 ring-blue-60 shadow-[0_0_0_6px_var(--color-blue-20)]',
+  success: 'ring-4 ring-ring shadow-[0_0_0_6px_var(--color-blue-20)]',
   // The glow was `--color-muted`, which resolves to WHITE in this theme — so the end ring has never
   // actually had one, despite asking for it. `gray-20` is the pale tint the pattern intends.
-  neutral: 'ring-4 ring-gray-60 shadow-[0_0_0_6px_var(--color-gray-20)]',
+  neutral: 'ring-4 ring-gray-80 shadow-[0_0_0_6px_var(--color-gray-20)]',
   danger: 'ring-4 ring-danger-border shadow-[0_0_0_6px_var(--color-danger-surface)]',
 };
 
@@ -27,8 +36,8 @@ const RINGS: Readonly<Record<NodeTone, string>> = {
  * is the BACKGROUND here despite its name; `*-surface` is a pale tint white would disappear into.
  */
 const FILLS: Readonly<Record<NodeTone, string>> = {
-  success: 'bg-blue-60',
-  neutral: 'bg-gray-60',
+  success: 'bg-ring',
+  neutral: 'bg-gray-80',
   danger: 'bg-danger-border',
 };
 
@@ -47,7 +56,18 @@ export const ringClass = (tone: NodeTone): string => RINGS[tone];
  * dispatch renders, whose own `data-[selected]:border-ring` would otherwise win on equal specificity.
  */
 export const frameOverrideClass = (): string =>
-  '[&_[data-slot=studio-element]]:border-transparent! [&_[data-slot=studio-element][data-selected]]:border-gray-80!';
+  [
+    '[&_[data-slot=studio-element]]:border-transparent!',
+    '[&_[data-slot=studio-element][data-selected]]:border-gray-80!',
+    '[&_[data-slot=studio-element][data-hovered]]:border-gray-80!',
+    /**
+     * The frame is `rounded-sm`, which inside a `rounded-xl` ring left the hover and selected borders
+     * cutting the corner at a different radius from the outline around them (user 2026-09-21).
+     * `inherit` follows whichever box actually contains it — the wrapper for a single ring, the opaque
+     * inner body for the split — so the two can never drift apart again.
+     */
+    '[&_[data-slot=studio-element]]:rounded-[inherit]!',
+  ].join(' ');
 
 /**
  * Doc 203 rule 8b: the ring for a Stage that is BOTH start and end — a one-Stage flow.
@@ -68,7 +88,7 @@ export const frameOverrideClass = (): string =>
  * distinctive treatment on the canvas.
  */
 export const splitRingClass = (): string =>
-  'p-1 bg-[linear-gradient(135deg,var(--color-blue-60)_0_50%,var(--color-gray-60)_50%_100%)]';
+  'p-1 bg-[linear-gradient(135deg,var(--color-ring)_0_50%,var(--color-gray-80)_50%_100%)]';
 
 /** Which end of the strip above the card a caption sits at (doc 203 rule 8b). */
 export type BadgeSide = 'left' | 'right';
