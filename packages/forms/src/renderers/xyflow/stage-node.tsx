@@ -1,12 +1,18 @@
 import { JsonFormsDispatch } from '@jsonforms/react';
 import { Handle, type NodeProps } from '@xyflow/react';
-import { useContext } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { AddNodeMenu } from './add-affordance';
 import { FlowContext } from './flow-context';
 import { connectorClass, sourceSide, targetSide, trailingAnchor } from './flow-handles';
 import { useFlowEditor } from './flow-editor';
 import type { StageFlowNode } from './flow-nodes';
-import { NodeBadge, ringClass, type NodeTone } from './node-badge';
+import {
+  frameOverrideClass,
+  NodeBadge,
+  ringClass,
+  splitRingClass,
+  type NodeTone,
+} from './node-badge';
 
 // xyflow's stylesheet is imported unlayered, so it beats Tailwind's layered utilities: handle sizes and colours need
 // the important modifier to apply.
@@ -14,30 +20,38 @@ const EDIT_HANDLE_CLASS = 'size-2.5! border-ring! bg-background!';
 const VIEW_HANDLE_CLASS = 'opacity-0';
 
 /**
- * Doc 203 rules 8-9, amended 2026-09-17: where a Stage sits in the flow, said on the CARD rather than in chrome
- * hung off it — a green ring on the one the flow starts at, a BLACK one on any Stage no edge leaves.
+ * Doc 203 rules 8-9, amended 2026-09-17 and 2026-09-21: where a Stage sits in the flow, said on the CARD rather
+ * than in chrome hung off it — a BLUE ring on the one the flow starts at, a GREY one on any Stage no edge leaves.
  *
- * Black, not red (user 2026-09-17: "black should be the border, background for the End Stages. Red should be
- * reserved for parsing errors"). An end is a perfectly good state — a finished flow's last Stage is one — and a
+ * Not red (user 2026-09-17). An end is a perfectly good state — a finished flow's last Stage is one — and a
  * ring that reads as a warning on a correct document trains the author to ignore it. Red now means only that a
  * node can never route an answer anywhere (doc 199 rule 45b).
  *
- * Precedence, highest first: UNREACHABLE, start, end. Unreachable is the only one of the three that means
- * something is WRONG (doc 203 rule 9, widened 2026-09-17 to red), so it outranks either — an unreachable end
- * Stage needs to say it is stranded far more than it needs to say the flow stops there. A start is never
- * unreachable, so that pair never arises; start beats end because a one-Stage flow is trivially its own end.
+ * Rule 8b (2026-09-21): the three treatments are NO LONGER exclusive. `stageTones` returns a LIST, and a Stage
+ * that is both start and end wears both captions and a split ring. Unreachable still SUPPRESSES the others — an
+ * unreachable Stage needs to say it is stranded before it says anything else — and a start is never
+ * unreachable, so that pair never arises.
  */
-function stageTone(data: StageFlowNode['data']): NodeTone | null {
-  if (data.isUnreachable) return 'danger';
-  if (data.isStart) return 'success';
-  if (data.isLeaf) return 'neutral';
-  return null;
+function stageTones(data: StageFlowNode['data']): NodeTone[] {
+  // Unreachable SUPPRESSES the others: a stranded node needs to say that before it says anything else. A
+  // start is never unreachable, so that pair never arises.
+  if (data.isUnreachable) return ['danger'];
+  const tones: NodeTone[] = [];
+  if (data.isStart) tones.push('success');
+  if (data.isLeaf) tones.push('neutral');
+  return tones;
 }
 
+/** Rule 8b: a Stage that is both start and end — a one-Stage flow. */
+const isSplit = (tones: readonly NodeTone[]) => tones.length > 1;
+
 function stageTreatment(data: StageFlowNode['data']): string {
-  const tone = stageTone(data);
+  const tones = stageTones(data);
   const base = 'pointer-events-auto rounded-xl';
-  return tone === null ? base : `${base} ${ringClass(tone)}`;
+  if (tones.length === 0) return base;
+  // Rule 8d: any ringed node drops the frame's own outline — the ring is what carries the meaning.
+  const ring = isSplit(tones) ? splitRingClass() : ringClass(tones[0] as NodeTone);
+  return `${base} ${ring} ${frameOverrideClass()}`;
 }
 
 /** Doc 203 rules 8-9 (amended): what a Stage's ring says in words. */
@@ -51,10 +65,37 @@ const STAGE_LABELS: Readonly<Record<NodeTone, string>> = {
   neutral: END_LABEL,
 };
 
-/** The caption for this Stage, or none — the same precedence the ring follows, so the two always agree. */
-function StageBadge({ data }: { readonly data: StageFlowNode['data'] }) {
-  const tone = stageTone(data);
-  return tone === null ? null : <NodeBadge label={STAGE_LABELS[tone]} tone={tone} />;
+/** Rule 8b: the opaque inset the split ring needs; a single ring sits outside the box and needs none. */
+function StageBody({ split, children }: { readonly split: boolean; readonly children: ReactNode }) {
+  return split ? (
+    <div data-slot="stage-node-body" className="rounded-lg bg-background">
+      {children}
+    </div>
+  ) : (
+    children
+  );
+}
+
+/**
+ * The captions for this Stage — the same tones the ring uses, so the two can never disagree.
+ *
+ * Rule 8b: Start sits LEFT and End sits RIGHT, so a Stage that is both wears one at each end of the strip
+ * above the card, each directly above its own half of the split ring.
+ */
+function StageBadges({ data }: { readonly data: StageFlowNode['data'] }) {
+  const tones = stageTones(data);
+  return (
+    <>
+      {tones.map((tone) => (
+        <NodeBadge
+          key={tone}
+          label={STAGE_LABELS[tone]}
+          tone={tone}
+          side={tone === 'neutral' ? 'right' : 'left'}
+        />
+      ))}
+    </>
+  );
 }
 
 /**
@@ -91,7 +132,7 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
         make an authored edge into the start VANISH with no error anywhere. Kept, such an edge still draws, and
         its source still earns the "Not reachable" badge — which is the honest reading of that document.
       */}
-      <StageBadge data={data} />
+      <StageBadges data={data} />
       <Handle
         type="target"
         position={targetSide(flow.direction)}
@@ -104,15 +145,24 @@ export function StageNode({ data }: NodeProps<StageFlowNode>) {
         {...(data.isStart ? { 'data-start': '' } : {})}
         {...(data.isLeaf ? { 'data-end': '' } : {})}
         {...(data.isUnreachable ? { 'data-unreachable': '' } : {})}
+        {...(isSplit(stageTones(data)) ? { 'data-split': '' } : {})}
       >
-        <JsonFormsDispatch
-          uischema={data.element}
-          schema={schema}
-          path={path}
-          enabled={enabled}
-          {...(renderers ? { renderers } : {})}
-          {...(cells ? { cells } : {})}
-        />
+        {/*
+          Rule 8b: the split ring is a gradient BACKGROUND, so it needs an opaque child to cover everything
+          but the 4px band. Without one it showed through the studio frame's transparent padding too, and
+          the "ring" came out about 30px thick instead of matching `ring-4`. `rounded-lg` is `rounded-xl`
+          less the 4px band, so the inner corner follows the outer one.
+        */}
+        <StageBody split={isSplit(stageTones(data))}>
+          <JsonFormsDispatch
+            uischema={data.element}
+            schema={schema}
+            path={path}
+            enabled={enabled}
+            {...(renderers ? { renderers } : {})}
+            {...(cells ? { cells } : {})}
+          />
+        </StageBody>
       </div>
       <Handle
         type="source"

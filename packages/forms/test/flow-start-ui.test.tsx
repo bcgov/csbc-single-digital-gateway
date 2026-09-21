@@ -97,11 +97,15 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
   });
 
   describe('the start and end treatments (rule 8, amended)', () => {
-    it('rings the start Stage green, with no marker chrome hung off it', () => {
-      const { container } = renderFlow(flow([stage('a'), stage('b')], { startId: 'a' }));
+    it('rings the start Stage blue, with no marker chrome hung off it', () => {
+      // Rule 8b: 'a' needs an outgoing edge to be a PURE start — without one it is also a leaf, and a
+      // Stage that is both now wears the split ring instead.
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
+      );
       const wrapper = nodeOf(container, 'a').querySelector(WRAPPER);
       expect(wrapper).toHaveAttribute('data-start');
-      expect(wrapper).toHaveClass('ring-4', 'ring-success-border');
+      expect(wrapper).toHaveClass('ring-4', 'ring-blue-60');
       // The "Start" badge and its connector line are gone: the card itself says it now.
       expect(container.querySelector(MARKER)).toBeNull();
     });
@@ -132,21 +136,49 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       expect(end).toHaveAttribute('data-end');
       // Black, not red: an end is a perfectly good state, and red is reserved for a node that can never route
       // an answer anywhere. A finished flow's last Stage would otherwise wear a warning forever.
-      expect(end).toHaveClass('ring-4', 'ring-foreground');
+      expect(end).toHaveClass('ring-4', 'ring-gray-60');
       expect(end).not.toHaveClass('ring-danger-border');
       // The Stage the flow leaves is not an end, so it keeps no ring of its own.
       expect(nodeOf(container, 'a').querySelector(WRAPPER)).not.toHaveAttribute('data-end');
     });
 
-    it('lets the start win when one Stage is both, and it is still an end', () => {
+    it('says BOTH when one Stage is start and end, with a split ring (rule 8b)', () => {
+      // SUPERSEDES "start wins" (2026-09-21). A one-Stage flow begins and ends on the same card, and
+      // saying only "Start" hid the half the author needed: that nothing follows it.
       const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
       const wrapper = nodeOf(container, 'a').querySelector(WRAPPER);
-      // A one-Stage flow begins and ends on the same card. Where it BEGINS is the stronger thing to say, and
-      // only one ring can be worn — but the flag stays, so nothing downstream loses the fact.
       expect(wrapper).toHaveAttribute('data-start');
       expect(wrapper).toHaveAttribute('data-end');
-      expect(wrapper).toHaveClass('ring-success-border');
-      expect(wrapper).not.toHaveClass('ring-danger-border');
+      // The split is its own STATE, not a class the test reads — see rule 8b.
+      expect(wrapper).toHaveAttribute('data-split');
+    });
+
+    it('wears a SINGLE ring when it is only one of the two (rule 8b)', () => {
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
+      );
+      for (const id of ['a', 'b'])
+        expect(nodeOf(container, id).querySelector(WRAPPER)).not.toHaveAttribute('data-split');
+      expect(nodeOf(container, 'a').querySelector(WRAPPER)).toHaveClass('ring-blue-60');
+      expect(nodeOf(container, 'b').querySelector(WRAPPER)).toHaveClass('ring-gray-60');
+    });
+
+    it('carries NO glow on the split ring (rule 8b)', () => {
+      // Every single tone pairs its ring with a `*-surface` glow; a box-shadow cannot be a gradient, and
+      // borrowing one family's would say the node is more that thing than the other.
+      const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
+      const wrapper = nodeOf(container, 'a').querySelector(WRAPPER);
+      expect(wrapper?.className).not.toContain('shadow-[0_0_0_6px');
+      expect(wrapper).not.toHaveClass('ring-4');
+    });
+
+    it('lets UNREACHABLE suppress both, since a stranded node says that first (rule 8b)', () => {
+      // A start is never unreachable, so the only way to reach this is an end that nothing routes to.
+      const { container } = renderFlow(flow([stage('a'), stage('b')], { startId: 'a' }));
+      const stranded = nodeOf(container, 'b').querySelector(WRAPPER);
+      expect(stranded).toHaveAttribute('data-unreachable');
+      expect(stranded).not.toHaveAttribute('data-split');
+      expect(stranded).toHaveClass('ring-danger-border');
     });
 
     it('captions the start and the end above the card, so the ring is not colour alone', () => {
@@ -155,6 +187,24 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       );
       expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveTextContent('Start');
       expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toHaveTextContent('End');
+    });
+
+    it('puts Start on the left of the strip and End on the right (rule 8b)', () => {
+      const { container } = renderFlow(
+        flow([stage('a'), stage('b')], { startId: 'a', edges: [edge('e1', 'a', 'b')] }),
+      );
+      expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveAttribute('data-side', 'left');
+      expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toHaveAttribute(
+        'data-side',
+        'right',
+      );
+    });
+
+    it('shows BOTH captions on a one-Stage flow, one at each end of the strip (rule 8b)', () => {
+      const { container } = renderFlow(flow([stage('a')], { startId: 'a' }));
+      const badges = [...nodeOf(container, 'a').querySelectorAll(BADGE_SLOT)];
+      expect(badges.map((badge) => badge.textContent)).toEqual(['Start', 'End']);
+      expect(badges.map((badge) => badge.getAttribute('data-side'))).toEqual(['left', 'right']);
     });
 
     it('captions a middle Stage with nothing at all', () => {
@@ -186,12 +236,12 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       // Solid, not outlined: `*-border` is the family's only mid-tone, and white on either lands at about
       // 4.7:1, which clears AA for text this size.
       expect(nodeOf(container, 'a').querySelector(BADGE_SLOT)).toHaveClass(
-        'bg-success-border',
+        'bg-blue-60',
         'text-white',
         'font-semibold',
       );
       expect(nodeOf(container, 'b').querySelector(BADGE_SLOT)).toHaveClass(
-        'bg-foreground',
+        'bg-gray-60',
         'text-white',
       );
     });
@@ -228,7 +278,7 @@ describe('Flow start stage — canvas and inspector (doc 203)', () => {
       const wrapper = nodeOf(container, 'c').querySelector(WRAPPER);
       expect(wrapper).toHaveAttribute('data-end');
       expect(wrapper).toHaveClass('ring-danger-border');
-      expect(wrapper).not.toHaveClass('ring-foreground');
+      expect(wrapper).not.toHaveClass('ring-gray-60');
       expect(nodeOf(container, 'c').querySelector(BADGE_SLOT)).toHaveTextContent('Not reachable');
     });
 
