@@ -190,3 +190,20 @@ describe('RichTextInput read-only (rule 14)', () => {
     expect(document.getElementById('a')).toHaveAttribute('contenteditable', 'false');
   });
 });
+
+describe('RichTextInput sizing hooks (doc 207)', () => {
+  it('carries the data-slots the Form Studio inspector shrinks by', () => {
+    // The inspector's compact density is a set of `[&_[data-slot=…]]` descendant variants; without these
+    // hooks it could not reach the editor at all, and the editor stood out at 14px among 12px controls.
+    const { container } = render(<RichTextInput id="a" />);
+    for (const slot of ['rich-text-input', 'rich-text-toolbar', 'rich-text-content'])
+      expect(container.querySelector(`[data-slot="${slot}"]`)).toBeInTheDocument();
+  });
+
+  it('sizes its paragraphs from the container too', () => {
+    render(<RichTextInput id="a" value={hello} />);
+    expect(screen.getByText('Hello world').closest('p')?.className).toContain(
+      'text-[length:inherit]',
+    );
+  });
+});

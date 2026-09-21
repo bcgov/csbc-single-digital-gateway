@@ -99,3 +99,23 @@ describe('RichTextView value updates', () => {
     await waitFor(() => expect(screen.getByText('Same')).toBeInTheDocument());
   });
 });
+
+describe('rich text sizing (doc 207)', () => {
+  it('sizes paragraphs from the CONTAINER, not from the base stylesheet', () => {
+    /**
+     * `packages/ui/src/styles/base.css` sizes bare `p`, `li`, `dd` and `blockquote` at `--app-text-base`
+     * in `@layer base`. That is an explicit font-size on the element, so it beats anything INHERITED from
+     * a container's `text-sm`/`text-xs` — rich content rendered at 16px everywhere, whatever it sat in.
+     *
+     * jsdom applies no Tailwind, so the class is what is pinned here; the sizes were measured in the
+     * browser (inspector 12px, fillable 14px).
+     */
+    render(<RichTextView value={textState('Body')} />);
+    expect(screen.getByText('Body').closest('p')?.className).toContain('text-[length:inherit]');
+  });
+
+  it('carries a data-slot so a host can restyle it by descendant variant', () => {
+    const { container } = render(<RichTextView value={textState('Body')} />);
+    expect(container.querySelector('[data-slot="rich-text-view"]')).toBeInTheDocument();
+  });
+});

@@ -55,7 +55,10 @@ export function RichTextView({ value, className }: RichTextViewProps) {
     },
   };
   return (
-    <div className={cn('text-sm leading-relaxed [&_a]:cursor-pointer', className)}>
+    <div
+      data-slot="rich-text-view"
+      className={cn('text-sm leading-relaxed [&_a]:cursor-pointer', className)}
+    >
       <LexicalComposer initialConfig={initialConfig}>
         <SyncPlugin serialized={serialized} />
         <RichTextPlugin

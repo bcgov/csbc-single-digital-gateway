@@ -246,6 +246,7 @@ function Toolbar({ features }: { features: readonly RichTextFeature[] }) {
 
   return (
     <div
+      data-slot="rich-text-toolbar"
       className="flex flex-wrap items-center gap-0.5 border-b border-input bg-muted/30 p-1"
       role="toolbar"
       aria-label="Formatting"
@@ -322,6 +323,7 @@ export function RichTextInput({
 
   return (
     <div
+      data-slot="rich-text-input"
       className={cn(
         'overflow-hidden rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
         className,
@@ -340,6 +342,7 @@ export function RichTextInput({
                 {...(ariaLabel === undefined ? {} : { 'aria-label': ariaLabel })}
                 {...(ariaLabelledBy === undefined ? {} : { 'aria-labelledby': ariaLabelledBy })}
                 {...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy })}
+                data-slot="rich-text-content"
                 className="min-h-28 px-3 py-2 outline-none [&_a]:cursor-pointer"
                 {...(rows === undefined ? {} : { style: { minHeight: `${rows}lh` } })}
               />

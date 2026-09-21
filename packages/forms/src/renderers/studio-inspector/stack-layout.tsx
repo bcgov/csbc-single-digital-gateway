@@ -34,6 +34,16 @@ const COMPACT_CLASS = [
   '[&_[data-slot=radio-group]]:gap-2',
   '[&_[data-slot=input-group]]:h-7',
   '[&_[data-slot=input-group-control]]:text-xs',
+  // Doc 207: the rich text editor. Its paragraphs INHERIT their size (see `richTextTheme`), so setting it
+  // on the container is enough — before that fix a bare `p` was 16px from base.css and nothing here could
+  // reach it. The editor is also given a shorter body and smaller toolbar buttons: `min-h-28` is most of
+  // the 300px panel, and the toolbar wrapped to two rows at full size.
+  '[&_[data-slot=rich-text-input]]:text-xs',
+  '[&_[data-slot=rich-text-content]]:min-h-16',
+  '[&_[data-slot=rich-text-content]]:px-2',
+  '[&_[data-slot=rich-text-content]]:py-1',
+  '[&_[data-slot=rich-text-toolbar]]:p-0.5',
+  '[&_[data-slot=rich-text-toolbar]_button]:size-6',
 ].join(' ');
 
 /**

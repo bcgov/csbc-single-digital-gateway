@@ -233,6 +233,11 @@ describe('Section and Stack layouts (rules 5-6)', () => {
       '[&_[data-slot=radio-group]]:gap-2',
       '[&_[data-slot=input-group]]:h-7',
       '[&_[data-slot=input-group-control]]:text-xs',
+      // Doc 207: the rich text editor. Its paragraphs inherit their size, so the container is enough —
+      // before that fix a bare `p` was sized by base.css and nothing here could reach it.
+      '[&_[data-slot=rich-text-input]]:text-xs',
+      '[&_[data-slot=rich-text-content]]:min-h-16',
+      '[&_[data-slot=rich-text-toolbar]_button]:size-6',
     );
     const input = within(stack as HTMLElement).getByRole('textbox', { name: 'Label' });
     expect(input).toHaveAttribute('data-slot', 'input');
