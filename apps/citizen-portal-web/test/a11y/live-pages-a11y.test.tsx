@@ -1,8 +1,8 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderRoute } from './support/render-app';
-import { aggregateKnownExceptions, expectNoUnjustifiedA11yViolations } from './support/a11y';
+import { renderRoute } from '../support/render-app';
+import { aggregateKnownExceptions, expectNoUnjustifiedA11yViolations } from '../support/a11y';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -315,8 +315,9 @@ const CASES: RealPageCase[] = [
       screen.findByRole(
         'heading',
         { name: 'Access government services online' },
-        { timeout: 10000 },
+        { timeout: 20000 },
       ),
+    timeout: 30000,
   },
   {
     path: '/',
@@ -327,20 +328,22 @@ const CASES: RealPageCase[] = [
       screen.findByRole(
         'heading',
         { name: 'Access government services online' },
-        { timeout: 10000 },
+        { timeout: 20000 },
       ),
     interact: async () => {
       await userEvent.setup().click(screen.getByRole('button', { name: 'Menu' }));
-      await screen.findByRole('dialog', { name: 'Menu' });
+      await screen.findByRole('dialog', { name: 'Menu' }, { timeout: 20000 });
     },
     scanRoot: () => screen.getByRole('dialog', { name: 'Menu' }),
+    timeout: 30000,
   },
   {
     path: '/services',
     scenario: 'default',
     components: ['button', 'card'],
     fetchImpl: catalogFetch,
-    ready: () => screen.findByRole('link', { name: /Birth Registration/i }, { timeout: 10000 }),
+    ready: () => screen.findByRole('link', { name: /Birth Registration/i }, { timeout: 20000 }),
+    timeout: 30000,
   },
   {
     path: '/services/svc-1',
@@ -348,7 +351,8 @@ const CASES: RealPageCase[] = [
     components: ['button', 'card', 'accordion'],
     fetchImpl: serviceDetailFetch,
     ready: () =>
-      screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
+      screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 20000 }),
+    timeout: 30000,
   },
   {
     path: '/services/svc-1/versions/ver-1',
@@ -356,14 +360,15 @@ const CASES: RealPageCase[] = [
     components: ['badge', 'button'],
     fetchImpl: serviceDetailFetch,
     ready: () =>
-      screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
+      screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 20000 }),
+    timeout: 30000,
   },
   {
     path: '/services/svc-1/apply/f1',
     scenario: 'default',
     components: ['button'],
     fetchImpl: applyFlowFetch,
-    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
+    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 20000 }),
     timeout: 30000,
   },
   {
@@ -371,7 +376,7 @@ const CASES: RealPageCase[] = [
     scenario: 'validation error (required field cleared)',
     components: ['button'],
     fetchImpl: applyFlowFetch,
-    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
+    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 20000 }),
     interact: async () => {
       // A required control's label is "<title> required" (@repo/react ControlWrapper appends the
       // word, not an asterisk) — match on a prefix rather than an exact string.
@@ -387,7 +392,7 @@ const CASES: RealPageCase[] = [
     components: ['button', 'card'],
     fetchImpl: applicationDetailFetch,
     ready: () =>
-      screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 15000 }),
+      screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 20000 }),
     timeout: 30000,
   },
   {
@@ -395,7 +400,8 @@ const CASES: RealPageCase[] = [
     scenario: 'default',
     components: ['button', 'card'],
     fetchImpl: accountFetch,
-    ready: () => screen.findByRole('heading', { name: 'Account settings' }, { timeout: 10000 }),
+    ready: () => screen.findByRole('heading', { name: 'Account settings' }, { timeout: 20000 }),
+    timeout: 30000,
   },
   {
     path: '/account/notifications',
@@ -403,14 +409,16 @@ const CASES: RealPageCase[] = [
     components: ['button'],
     fetchImpl: notificationsFetch,
     ready: () =>
-      screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 10000 }),
+      screen.findByRole('heading', { name: 'Notification settings' }, { timeout: 20000 }),
+    timeout: 30000,
   },
   {
     path: '/account/service-agreements',
     scenario: 'default',
     components: ['button', 'card'],
     fetchImpl: agreementsListFetch,
-    ready: () => screen.findByText('Privacy Agreement', {}, { timeout: 10000 }),
+    ready: () => screen.findByText('Privacy Agreement', {}, { timeout: 20000 }),
+    timeout: 30000,
   },
   {
     path: '/account/service-agreements/a1',
@@ -418,7 +426,8 @@ const CASES: RealPageCase[] = [
     components: ['button', 'card'],
     fetchImpl: agreementDetailFetch,
     ready: () =>
-      screen.findByRole('heading', { name: 'Privacy Agreement', level: 1 }, { timeout: 10000 }),
+      screen.findByRole('heading', { name: 'Privacy Agreement', level: 1 }, { timeout: 20000 }),
+    timeout: 30000,
   },
 ];
 

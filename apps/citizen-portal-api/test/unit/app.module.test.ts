@@ -51,6 +51,7 @@ describe('AppModule Unit Test Suite', () => {
         if (key === 'AUTH_RP_LOGOUT') return true;
         if (key === 'AUTH_ALLOWED_ORIGINS') return ['http://origin'];
         if (key === 'AUTH_TOKEN_REFRESH_SKEW_SECONDS') return 10;
+        if (key === 'AUTH_CLOCK_TOLERANCE_SECONDS') return 5;
         return undefined;
       }),
     } as unknown as ConfigService;
@@ -60,6 +61,7 @@ describe('AppModule Unit Test Suite', () => {
     expect(testOptions).toBeDefined();
     expect(testOptions.config).toBeDefined();
     expect(testOptions.issuer).toBe('http://issuer');
+    expect(testOptions.clockToleranceSeconds).toBe(5);
 
     // Test with NODE_ENV = 'production'
     mockConfigService.get = vi.fn((key: string, _options?: { infer: boolean }) => {
@@ -74,6 +76,7 @@ describe('AppModule Unit Test Suite', () => {
       if (key === 'AUTH_RP_LOGOUT') return true;
       if (key === 'AUTH_ALLOWED_ORIGINS') return ['http://origin'];
       if (key === 'AUTH_TOKEN_REFRESH_SKEW_SECONDS') return 10;
+      if (key === 'AUTH_CLOCK_TOLERANCE_SECONDS') return 15;
       return undefined;
     });
 
@@ -81,8 +84,9 @@ describe('AppModule Unit Test Suite', () => {
     expect(prodOptions).toBeDefined();
     expect(prodOptions.config).toBeUndefined(); // Config stub should not be present in prod
     expect(prodOptions.issuer).toBe('http://issuer');
+    expect(prodOptions.clockToleranceSeconds).toBe(15);
 
-    // Test with undefined AUTH_POST_LOGOUT_REDIRECT
+    // Test with undefined AUTH_POST_LOGOUT_REDIRECT and undefined AUTH_CLOCK_TOLERANCE_SECONDS
     mockConfigService.get = vi.fn((key: string, _options?: { infer: boolean }) => {
       if (key === 'NODE_ENV') return 'test';
       if (key === 'OIDC_ISSUER') return 'http://issuer';
@@ -98,6 +102,7 @@ describe('AppModule Unit Test Suite', () => {
     });
     const testOptionsNoPostLogout = useFactory(mockConfigService);
     expect(testOptionsNoPostLogout.postLogoutRedirect).toBeUndefined();
+    expect(testOptionsNoPostLogout.clockToleranceSeconds).toBeUndefined();
   });
 
   it('should verify LoggerModule useFactory behaviour under test, development, and other environments', async () => {

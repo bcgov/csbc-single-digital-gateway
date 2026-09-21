@@ -249,5 +249,38 @@ describe('validateAddressLocks — fail-open and empty cases (rules 10, 11)', ()
   it('does not throw when the whole structure is empty', () => {
     expect(() => collectAddressLocks('basic-form', {})).not.toThrow();
     expect(collectAddressLocks('basic-form', {})).toEqual([]);
+    expect(collectAddressLocks('multi-stage-form', {})).toEqual([]);
+    expect(
+      collectAddressLocks('multi-stage-form', {
+        stages: [{ pages: [{}] }, {}],
+      }),
+    ).toEqual([]);
+  });
+
+  it('handles uischema with non-record elements or missing schema properties safely', () => {
+    expect(
+      collectAddressLocks('basic-form', {
+        schema: {},
+        uischema: {
+          type: 'VerticalLayout',
+          elements: [
+            null,
+            undefined,
+            123,
+            {
+              type: 'Control',
+              scope: '#/properties/addr',
+              options: { format: 'address', fields: { country: { readOnly: true } } },
+            },
+          ],
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it('handles non-object data passed to validateAddressLocks safely', () => {
+    const constraints = collectAddressLocks('basic-form', lockedCountry);
+    expect(validateAddressLocks(constraints, null)).toEqual([]);
+    expect(validateAddressLocks(constraints, 'string')).toEqual([]);
   });
 });

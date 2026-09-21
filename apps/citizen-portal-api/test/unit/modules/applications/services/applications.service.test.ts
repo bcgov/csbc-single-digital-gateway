@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
+  countries,
   documentReferences,
   documentVersions,
   documents,
@@ -757,6 +758,262 @@ describe('ApplicationsService Unit Test Suite', () => {
       const result = await service.submit('user-1', 'sub-1', {});
 
       expect(result.status).toBe('pending');
+    });
+
+    it('should validate address postal codes against database country regexes and throw UnprocessableEntityException if invalid', async () => {
+      const sub = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        userId: 'user-1',
+      };
+      const ver = { id: 'ver-1', status: 'draft' };
+      const formSchema = {
+        kind: 'basic-form',
+        structure: {
+          schema: {
+            type: 'object',
+            properties: {
+              homeAddress: {
+                type: 'object',
+                properties: {
+                  country: { type: 'string' },
+                  postal_code: { type: 'string' },
+                },
+              },
+            },
+          },
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [
+              {
+                type: 'Control',
+                scope: '#/properties/homeAddress',
+                options: { format: 'address' },
+              },
+            ],
+          },
+        },
+      };
+
+      mockResponse([sub], submissions, 'select'); // requireOwn
+      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
+      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
+      mockResponse(
+        [
+          {
+            name: 'Canada',
+            regex:
+              '^([ABCEGHJKLMNPRSTVXY]\\d[ABCEGHJKLMNPRSTVWXYZ])(?: ?(\\d[ABCEGHJKLMNPRSTVWXYZ]\\d))?$',
+          },
+        ],
+        countries,
+        'select',
+      ); // postal code regex lookup from countries table
+
+      await expect(
+        service.submit('user-1', 'sub-1', {
+          homeAddress: { country: 'Canada', postal_code: 'INVALID' },
+        }),
+      ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('should validate address postal codes and succeed when valid or when country regex is missing', async () => {
+      const sub = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        userId: 'user-1',
+        createdAt: new Date('2026-07-08T12:00:00.000Z'),
+      };
+      const ver = { id: 'ver-1', status: 'draft' };
+      const formSchema = {
+        kind: 'basic-form',
+        structure: {
+          schema: {
+            type: 'object',
+            properties: {
+              homeAddress: {
+                type: 'object',
+                properties: {
+                  country: { type: 'string' },
+                  postal_code: { type: 'string' },
+                },
+              },
+              workAddress: {
+                type: 'object',
+                properties: {
+                  country: { type: 'string' },
+                  postal_code: { type: 'string' },
+                },
+              },
+            },
+          },
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [
+              {
+                type: 'Control',
+                scope: '#/properties/homeAddress',
+                options: { format: 'address' },
+              },
+              {
+                type: 'Control',
+                scope: '#/properties/workAddress',
+                options: { format: 'address' },
+              },
+            ],
+          },
+        },
+      };
+      const submittedVer = {
+        id: 'ver-1',
+        status: 'pending',
+        data: {
+          homeAddress: { country: 'Canada', postal_code: 'V8W 1A1' },
+          workAddress: { country: 'Otherland', postal_code: '12345' },
+        },
+        updatedAt: new Date('2026-07-08T12:40:00.000Z'),
+        submittedAt: new Date('2026-07-08T12:40:00.000Z'),
+      };
+
+      mockResponse([sub], submissions, 'select'); // requireOwn
+      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
+      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
+      mockResponse(
+        [
+          {
+            name: 'Canada',
+            regex:
+              '^([ABCEGHJKLMNPRSTVXY]\\d[ABCEGHJKLMNPRSTVWXYZ])(?: ?(\\d[ABCEGHJKLMNPRSTVWXYZ]\\d))?$',
+          },
+          { name: 'Otherland', regex: null },
+        ],
+        countries,
+        'select',
+      ); // countries table lookup (covers matching regex and null regex fallback)
+      mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email
+      mockResponse([{ slug: 'workspace-slug' }], workspaces, 'select'); // workspace slug
+      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef
+      mockResponse(
+        [{ userId: 'member-1', email: 'member1@example.com' }],
+        workspaceMembers,
+        'select',
+      ); // members
+      mockResponse([submittedVer], submissionVersions, 'update'); // update query
+      mockResponse([], notificationOutbox, 'insert'); // citizen notification
+      mockResponse([], notificationOutbox, 'insert'); // staff notification
+
+      const result = await service.submit('user-1', 'sub-1', {
+        homeAddress: { country: 'Canada', postal_code: 'V8W 1A1' },
+        workAddress: { country: 'Otherland', postal_code: '12345' },
+      });
+
+      expect(result.status).toBe('pending');
+      expect(result.data).toEqual({
+        homeAddress: { country: 'Canada', postal_code: 'V8W 1A1' },
+        workAddress: { country: 'Otherland', postal_code: '12345' },
+      });
+    });
+
+    it('should throw UnprocessableEntityException if decimal constraints validation fails', async () => {
+      const sub = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        userId: 'user-1',
+      };
+      const ver = { id: 'ver-1', status: 'draft' };
+      const formSchema = {
+        kind: 'basic-form',
+        structure: {
+          schema: {
+            type: 'object',
+            properties: {
+              amount: { type: 'number' },
+            },
+          },
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [
+              {
+                type: 'Control',
+                scope: '#/properties/amount',
+                options: { decimals: 2 },
+              },
+            ],
+          },
+        },
+      };
+
+      mockResponse([sub], submissions, 'select'); // requireOwn
+      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
+      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
+
+      await expect(service.submit('user-1', 'sub-1', { amount: 12.345 })).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+    });
+
+    it('should throw UnprocessableEntityException if address read-only lock validation fails', async () => {
+      const sub = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        userId: 'user-1',
+      };
+      const ver = { id: 'ver-1', status: 'draft' };
+      const formSchema = {
+        kind: 'basic-form',
+        structure: {
+          schema: {
+            type: 'object',
+            properties: {
+              homeAddress: {
+                type: 'object',
+                default: { country: 'Canada' },
+                properties: {
+                  country: { type: 'string' },
+                  postal_code: { type: 'string' },
+                },
+              },
+            },
+          },
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [
+              {
+                type: 'Control',
+                scope: '#/properties/homeAddress',
+                options: {
+                  format: 'address',
+                  fields: { country: { readOnly: true } },
+                },
+              },
+            ],
+          },
+        },
+      };
+
+      mockResponse([sub], submissions, 'select'); // requireOwn
+      mockResponse([ver], submissionVersions, 'select'); // requireDraft -> latestVersion
+      mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
+      mockResponse(
+        [
+          {
+            name: 'United States',
+            regex: '^\\d{5}(-\\d{4})?$',
+          },
+        ],
+        countries,
+        'select',
+      ); // address postal lookup for United States passes
+
+      await expect(
+        service.submit('user-1', 'sub-1', {
+          homeAddress: { country: 'United States', postal_code: '90210' },
+        }),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
   });
 

@@ -1,8 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Env } from '../src/config/env.schema';
-import { GeocoderService, normalizeBcFeature } from '../src/modules/geo/services/geocoder.service';
+import type { Env } from '../../../../../src/config/env.schema';
+import {
+  GeocoderService,
+  normalizeBcFeature,
+} from '../../../../../src/modules/geo/services/geocoder.service';
 
 /** A minimal ConfigService stub returning the two geocoder env values. */
 function config(apiKey?: string): ConfigService<Env, true> {

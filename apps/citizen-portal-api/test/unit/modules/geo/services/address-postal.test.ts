@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collectAddressPostals,
   validateAddressPostals,
-} from '../src/modules/applications/util/validate';
+} from '../../../../../src/modules/applications/util/validate';
 
 // Canada + US postal regexes from geo reference data (geo.countries.postal_code_regex).
 const CA_REGEX =
@@ -72,6 +72,86 @@ describe('collectAddressPostals', () => {
         home: { country: '', postal_code: 'V8W 1A1' },
       }),
     ).toEqual([]);
+  });
+
+  it('returns empty list when uischema is missing or contains non-record elements', () => {
+    expect(
+      collectAddressPostals(
+        'basic-form',
+        {},
+        {
+          home: { country: 'Canada', postal_code: 'V8W 1A1' },
+        },
+      ),
+    ).toEqual([]);
+    expect(
+      collectAddressPostals(
+        'basic-form',
+        {
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [null, undefined, 123, 'not-an-element'],
+          },
+        },
+        { home: { country: 'Canada', postal_code: 'V8W 1A1' } },
+      ),
+    ).toEqual([]);
+  });
+
+  it('returns empty list when address control has missing or invalid scope', () => {
+    expect(
+      collectAddressPostals(
+        'basic-form',
+        {
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [
+              { type: 'Control', options: { format: 'address' } },
+              { type: 'Control', scope: '#/definitions/invalid', options: { format: 'address' } },
+            ],
+          },
+        },
+        { home: { country: 'Canada', postal_code: 'V8W 1A1' } },
+      ),
+    ).toEqual([]);
+  });
+
+  it('handles multi-stage forms with empty/missing stages or pages safely', () => {
+    expect(
+      collectAddressPostals(
+        'multi-stage-form',
+        {},
+        {
+          home: { country: 'Canada', postal_code: 'V8W 1A1' },
+        },
+      ),
+    ).toEqual([]);
+    expect(
+      collectAddressPostals(
+        'multi-stage-form',
+        { stages: [{}] },
+        {
+          home: { country: 'Canada', postal_code: 'V8W 1A1' },
+        },
+      ),
+    ).toEqual([]);
+    expect(
+      collectAddressPostals(
+        'multi-stage-form',
+        { stages: [{ pages: [{}] }] },
+        {
+          home: { country: 'Canada', postal_code: 'V8W 1A1' },
+        },
+      ),
+    ).toEqual([]);
+  });
+
+  it('returns empty list when address data is missing, null, or not an object', () => {
+    expect(collectAddressPostals('basic-form', basicStructure, {})).toEqual([]);
+    expect(collectAddressPostals('basic-form', basicStructure, { home: null })).toEqual([]);
+    expect(collectAddressPostals('basic-form', basicStructure, { home: 'invalid' })).toEqual([]);
+    expect(collectAddressPostals('basic-form', basicStructure, null)).toEqual([]);
+    expect(collectAddressPostals('basic-form', basicStructure, 'not-an-object')).toEqual([]);
   });
 });
 

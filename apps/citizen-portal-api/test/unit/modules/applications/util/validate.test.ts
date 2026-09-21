@@ -286,10 +286,40 @@ describe('validate utils', () => {
       ]);
     });
 
+    it('handles missing uischema, undefined elements, or non-record elements safely', () => {
+      expect(collectDecimalConstraints('basic-form', {})).toEqual([]);
+      expect(
+        collectDecimalConstraints('basic-form', {
+          uischema: {
+            type: 'VerticalLayout',
+            elements: [
+              null,
+              undefined,
+              123,
+              'element',
+              { type: 'Control', options: { decimals: 2 } },
+              { type: 'Control', scope: '#/definitions/foo', options: { decimals: 2 } },
+            ],
+          },
+        }),
+      ).toEqual([]);
+      expect(collectDecimalConstraints('multi-stage-form', {})).toEqual([]);
+      expect(
+        collectDecimalConstraints('multi-stage-form', {
+          stages: [{ pages: [{}] }, {}],
+        }),
+      ).toEqual([]);
+    });
+
     it('flags a value with too many decimal places', () => {
       const errors = validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 1.234 });
       expect(errors).toHaveLength(1);
-      expect(errors[0]).toMatch(/price/);
+      expect(errors[0]).toBe('price: enter at most 2 decimal places');
+    });
+
+    it('formats singular decimal place correctly when maxDecimals is 1', () => {
+      const errors = validateDecimals([{ key: 'price', maxDecimals: 1 }], { price: 1.23 });
+      expect(errors).toEqual(['price: enter at most 1 decimal place']);
     });
 
     it('accepts a value within the decimal limit', () => {
@@ -297,9 +327,34 @@ describe('validate utils', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 5 })).toEqual([]);
     });
 
-    it('ignores absent or non-numeric values', () => {
+    it('handles numbers with exponent notation correctly', () => {
+      expect(validateDecimals([{ key: 'price', maxDecimals: 6 }], { price: 1e-7 })).toEqual([
+        'price: enter at most 6 decimal places',
+      ]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 7 }], { price: 1e-7 })).toEqual([]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 10 }], { price: 1.234e-8 })).toEqual([
+        'price: enter at most 10 decimal places',
+      ]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 11 }], { price: 1.234e-8 })).toEqual(
+        [],
+      );
+    });
+
+    it('handles non-finite numbers (NaN, Infinity) by treating them as 0 decimal places', () => {
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: Infinity })).toEqual([]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: -Infinity })).toEqual(
+        [],
+      );
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: Number.NaN })).toEqual(
+        [],
+      );
+    });
+
+    it('ignores absent or non-numeric values and handles non-object data', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], {})).toEqual([]);
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 'x' })).toEqual([]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], null)).toEqual([]);
+      expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], 'string')).toEqual([]);
     });
   });
 });

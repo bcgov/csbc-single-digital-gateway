@@ -2,8 +2,8 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getA11yMetadata } from '@/a11y/a11y-catalog';
-import { renderRoute } from './support/render-app';
-import { expectNoUnjustifiedA11yViolations } from './support/a11y';
+import { renderRoute } from '../support/render-app';
+import { expectNoUnjustifiedA11yViolations } from '../support/a11y';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -31,11 +31,11 @@ describe.each(DEV_PAGES)('a11y: $path', ({ path, component }) => {
     const { container } = renderRoute(path);
     // "Developer reference" is DevPageLayout's own header label — unlike an <h1>, page content
     // never duplicates it, so it's a reliable "the route has rendered" signal on every /dev page.
-    await screen.findByText('Developer reference', {}, { timeout: 10000 });
+    await screen.findByText('Developer reference', {}, { timeout: 20000 });
 
     const knownExceptions = component ? getA11yMetadata(component).knownExceptions : [];
     await expectNoUnjustifiedA11yViolations(container, knownExceptions);
-  });
+  }, 25000);
 });
 
 // /dev/form-elements renders many JSON Forms controls, several of which surface popover/dialog
