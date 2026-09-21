@@ -174,7 +174,13 @@ function newConditionElement(root: TreeElement, newId: () => string): TreeElemen
   return {
     type: CONDITION_TYPE,
     label: nextElementLabel(root, CONDITION_TYPE, 'Condition'),
-    options: { id: freshId(taken, newId), criteria: [] },
+    /**
+     * `rows`, NOT `criteria`. Doc 199 rule 35 renamed the key and this seeding site was missed, so every
+     * Condition the canvas added was REFUSED by the code panel's apply gate — the studio's own output
+     * failing its own gate, exactly the trap doc 205 rule 37b records. `rows` is required, so an empty
+     * list is what makes a fresh Condition valid.
+     */
+    options: { id: freshId(taken, newId), rows: [] },
   } as TreeElement;
 }
 

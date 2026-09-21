@@ -12,6 +12,7 @@ import {
   nextElementLabel,
 } from '../src/studio/layout/flow-edits';
 import { removeElement } from '../src/studio/layout/remove-element';
+import { validateUischemaDocument } from '../src/studio/code/validate-document';
 
 // Doc 196 rules 6-7, 9, 18-20 — pure Flow document edits (studio/layout/flow-edits + remove-element).
 // moveStage is retired and no insert writes options.position any more (doc 198 rules 5, 11).
@@ -235,7 +236,7 @@ describe('insertNode appends a Condition (doc 199 rules 20, 24)', () => {
   const conditionAt = (id: string, criteria: object[] = []) =>
     tree({ type: 'Condition', label: 'C', options: { id, criteria } });
 
-  it("appends 'Condition <n>' holding no children, with an empty criteria list", () => {
+  it("appends 'Condition <n>' holding no children, with an empty ROWS list", () => {
     const ids = createElementIds();
     const root = flow([stage('a', 'Stage 1')]);
     const { uischema, inserted } = insertNode(
@@ -250,7 +251,7 @@ describe('insertNode appends a Condition (doc 199 rules 20, 24)', () => {
     expect(inserted).toEqual({
       type: 'Condition',
       label: 'Condition 1',
-      options: { id: 'c1', criteria: [] },
+      options: { id: 'c1', rows: [] },
     });
     expect(child(uischema, 1)).toBe(inserted);
   });
@@ -267,7 +268,7 @@ describe('insertNode appends a Condition (doc 199 rules 20, 24)', () => {
       ids,
       sequence('a', 'b', 'c3'),
     );
-    expect(inserted?.options).toEqual({ id: 'c3', criteria: [] });
+    expect(inserted?.options).toEqual({ id: 'c3', rows: [] });
   });
 
   it("carries the criterion as the new edge's sourceHandle (rule 20)", () => {
@@ -482,4 +483,40 @@ describe('connecting from a Condition row (doc 199 rule 45c)', () => {
       { id: 'e9', source: 'a', target: 'b' },
     ]);
   });
+});
+
+describe('the studio never produces a node its own gate refuses (doc 199 rule 35b)', () => {
+  /**
+   * The gap that let `criteria` survive: every test asserted the SHAPE the code produced, so renaming the
+   * key in the metaschema and missing this one seeding site broke nothing — the studio emitted a Condition
+   * the apply gate REFUSED, and no test noticed.
+   *
+   * Scoped to the node's own SHAPE, not to full validity: a freshly appended Condition is legitimately
+   * incomplete until it is wired, because doc 199 requires an Else path, and asserting `valid` here would
+   * be asserting that rule away.
+   */
+  const seeded = () =>
+    flow([stage('s1', 'Stage 1', {}, [form('Untitled form')])], []) as UISchemaElement;
+
+  for (const kind of ['condition', 'stage'] as const) {
+    it(`appends a ${kind} whose own shape the gate accepts`, () => {
+      const ids = createElementIds();
+      const root = seeded();
+      const { uischema } = insertNode(
+        root,
+        ids.idOf(child(root, 0)),
+        kind,
+        undefined,
+        ids,
+        sequence('n2'),
+      );
+      // `DocumentCheck` is a UNION: `problems` exists only on the invalid arm, which is why this narrows
+      // rather than reaching for the key. An appended Stage takes the valid arm outright.
+      const result = validateUischemaDocument(uischema);
+      const shapeProblems = result.valid
+        ? []
+        : result.problems.filter((problem) => problem.message.includes('required property'));
+      expect(shapeProblems).toEqual([]);
+    });
+  }
 });

@@ -263,7 +263,9 @@ describe('editing a branch in its popover (rules 25-26, 28, 46-48)', () => {
     const add = await addCriterionButton();
     expect(add).toBeDisabled();
     expect(add).toHaveAttribute('title', NO_UPSTREAM_FIELDS_HINT);
-    expect(nodeOf('c1').querySelector('[data-slot="condition-no-fields"]')).toHaveTextContent(
+    // Rule 46b: the reason sits WHERE A ROW WOULD, not under the button — a `title` on a disabled
+    // control is not something an author discovers.
+    expect(nodeOf('c1').querySelector('[data-slot="condition-empty-row"]')).toHaveTextContent(
       NO_UPSTREAM_FIELDS_HINT,
     );
   });

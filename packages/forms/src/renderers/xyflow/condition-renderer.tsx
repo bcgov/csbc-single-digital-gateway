@@ -25,8 +25,10 @@ import {
 // row opens its popover, every unwired output grows a + (rule 20), and the footer adds a row.
 
 /** Doc 199 rule 46: why `+ Add condition` is disabled — any clause it created would be invalid. */
-export const NO_UPSTREAM_FIELDS_HINT =
-  'Connect this condition after a stage with fields to add a condition.';
+export const NO_UPSTREAM_FIELDS_HINT = 'Add fields to preceding stages to create conditions.';
+
+/** Rule 46b: shown in the ROW position when there are fields but no rows yet. */
+export const NO_ROWS_HINT = 'No conditions yet.';
 
 /** Rule 42: the header's mode hint. Rows are evaluated top to bottom and the first match wins (rule 39). */
 export const MODE_HINT = 'first match';
@@ -155,24 +157,24 @@ function ConditionLayout({ uischema, visible }: LayoutProps) {
             onOpenChange={(open) => setOpenRow(open ? row.id : null)}
           />
         ))}
-        {/* Rule 45: the Else row is pinned last, never draggable and never deletable. */}
-        <li
-          data-slot="condition-default-row"
-          onPointerEnter={() => hover.setHovered(nodeId, DEFAULT_HANDLE)}
-          onPointerLeave={() => hover.setHovered(null, null)}
-          className="relative mt-1 flex items-center gap-1.5 border-t border-dashed px-2 pt-2 text-xs"
-        >
-          <span className="min-w-0 flex-1 truncate italic text-warning-text">{ELSE_LABEL}</span>
-          <span className="shrink-0 text-[11px] text-muted-foreground">{ELSE_HINT}</span>
-          <ConditionOutputHandle handleId={DEFAULT_HANDLE} />
-          {editor && conditionId !== null && !wired(DEFAULT_HANDLE) ? (
-            <OutputAdd editor={editor} conditionId={conditionId} handle={DEFAULT_HANDLE} />
-          ) : null}
-        </li>
+        {/*
+          Rule 46b (user 2026-09-21): an empty Condition draws a PLACEHOLDER where a row would sit, so the
+          card says why it is empty from view alone. The reason used to be legible only by hovering the
+          disabled button for its `title`, which is not something an author discovers.
+        */}
+        {rows.length === 0 ? (
+          <li
+            data-slot="condition-empty-row"
+            /* The same grey as the disabled `+ Add condition` button below it: both say the same thing. */
+            className="px-2 py-1.5 text-xs italic text-muted-foreground opacity-60"
+          >
+            {fields.length === 0 ? NO_UPSTREAM_FIELDS_HINT : NO_ROWS_HINT}
+          </li>
+        ) : null}
       </ul>
       {/* Rule 46: a clause is only ever born COMPLETE, so with nothing upstream there is nothing to add. */}
       {editor && conditionId !== null ? (
-        <div className="px-3 pb-2">
+        <div className="px-3 pb-1">
           <button
             type="button"
             data-slot="condition-add-criterion"
@@ -184,13 +186,27 @@ function ConditionLayout({ uischema, visible }: LayoutProps) {
             <Icon path={mdiPlus} size="14px" className="shrink-0" />
             <span>{mode === 'switch' ? ADD_VALUE_LABEL : ADD_ROW_LABEL}</span>
           </button>
-          {fields.length === 0 ? (
-            <p data-slot="condition-no-fields" className="pt-1 text-xs text-muted-foreground">
-              {NO_UPSTREAM_FIELDS_HINT}
-            </p>
-          ) : null}
         </div>
       ) : null}
+      {/*
+        Rule 45, reordered 2026-09-21 (user): the Else row is pinned to the BOTTOM of the card, below the
+        add affordance, with the divider above it. It is the branch taken when everything above matches
+        nothing, so it reads last — and the add button now sits with the rows it appends to rather than
+        below the fallback.
+      */}
+      <div
+        data-slot="condition-default-row"
+        onPointerEnter={() => hover.setHovered(nodeId, DEFAULT_HANDLE)}
+        onPointerLeave={() => hover.setHovered(null, null)}
+        className="relative mx-1.5 mb-1.5 flex items-center gap-1.5 border-t border-dashed px-2 pt-2 text-xs"
+      >
+        <span className="min-w-0 flex-1 truncate italic text-warning-text">{ELSE_LABEL}</span>
+        <span className="shrink-0 text-[11px] text-muted-foreground">{ELSE_HINT}</span>
+        <ConditionOutputHandle handleId={DEFAULT_HANDLE} />
+        {editor && conditionId !== null && !wired(DEFAULT_HANDLE) ? (
+          <OutputAdd editor={editor} conditionId={conditionId} handle={DEFAULT_HANDLE} />
+        ) : null}
+      </div>
     </div>
   );
 }

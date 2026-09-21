@@ -41,6 +41,12 @@ export function StudioStageActions({
         finalFocus={false}
         aria-label={label}
         data-studio-actions-for={elementId}
+        /**
+         * Node CHROME sits below node EDITORS. Both popovers default to `z-50` on their positioner, so they
+         * tied and DOM order decided — which put this bar over an open Condition row editor. Lowering the
+         * chrome, rather than raising each editor, keeps one rule instead of an escalating ladder.
+         */
+        positionerClassName="z-40"
         className="w-auto gap-0 p-0.5"
       >
         <Button
