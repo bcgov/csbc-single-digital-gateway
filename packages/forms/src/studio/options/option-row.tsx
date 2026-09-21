@@ -1,4 +1,4 @@
-import { mdiChevronDown, mdiChevronUp, mdiClose } from '@mdi/js';
+import { mdiChevronDown, mdiChevronUp, mdiClose, mdiDragVertical } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
@@ -32,7 +32,15 @@ export interface OptionRowProps {
   onInsertAfter(id: string): void;
   /** Rule 14: Backspace in a wholly empty row deletes it. */
   onRemoveEmpty(id: string): void;
+  /** Doc 208 rules 14-16: a drag from this row's handle landed on `position`. */
+  onDropAt(fromId: string, position: number): void;
 }
+
+/**
+ * Doc 208 rule 14: a private drag type, so a drag from anywhere else in the app cannot be mistaken for a
+ * row of THIS list. The same shape doc 199 rule 49 uses for Condition rows.
+ */
+const DRAG_TYPE = 'text/option-row';
 
 const isEmptyRow = (option: Option) =>
   option.label === '' && option.value === '' && (option.description ?? '') === '';
@@ -48,6 +56,7 @@ export function OptionRow({
   onMove,
   onInsertAfter,
   onRemoveEmpty,
+  onDropAt,
 }: OptionRowProps) {
   const name = `Option ${position}`;
 
@@ -68,8 +77,37 @@ export function OptionRow({
   return (
     <div
       data-slot="option-row"
-      className="grid grid-cols-[auto_1.2fr_1fr_1.4fr_auto] items-center gap-2"
+      /**
+       * Rules 14-15: native HTML drag, and the DROP is taken on the row — only the handle starts one, so
+       * the text inputs stay selectable. jsdom cannot perform a real drag (doc 199 rule 49), so the pure
+       * `moveOption` is what the unit tests assert and the gesture is verified by hand.
+       */
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes(DRAG_TYPE)) event.preventDefault();
+      }}
+      onDrop={(event) => {
+        const fromId = event.dataTransfer.getData(DRAG_TYPE);
+        if (fromId === '') return;
+        event.preventDefault();
+        onDropAt(fromId, position - 1);
+      }}
+      className="grid grid-cols-[auto_auto_1.2fr_1fr_1.4fr_auto] items-center gap-2"
     >
+      <div className="flex shrink-0 items-center">
+        <span
+          role="button"
+          tabIndex={-1}
+          aria-label={`Reorder ${name.toLowerCase()}`}
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.setData(DRAG_TYPE, option.id);
+            event.dataTransfer.effectAllowed = 'move';
+          }}
+          className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
+        >
+          <Icon path={mdiDragVertical} size="14px" />
+        </span>
+      </div>
       <div className="flex shrink-0 flex-col">
         <Button
           variant="ghost"

@@ -355,3 +355,164 @@ describe('condition references (rules 21-23)', () => {
     expect(dialog().queryByText(/no longer exists/i)).toBeNull();
   });
 });
+
+// Doc 208 — bulk edit, import and drag, inside the dialog.
+
+const modeSwitch = () => dialog().getByRole('group', { name: /edit mode/i });
+const bulkText = () => dialog().getByRole('textbox', { name: /bulk/i }) as HTMLTextAreaElement;
+const toMode = (name: 'List' | 'Bulk') =>
+  fireEvent.click(within(modeSwitch()).getByRole('button', { name }));
+
+describe('the List / Bulk switch (rules 1-3)', () => {
+  it('starts in List mode', async () => {
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    expect(within(modeSwitch()).getByRole('button', { name: 'List' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(labelInputs()).toHaveLength(3);
+  });
+
+  it('serialises the rows when switching to Bulk (rule 3)', async () => {
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    toMode('Bulk');
+    expect(bulkText().value).toBe('Email | email\nPhone | phone\nMail | mail');
+  });
+
+  it('parses the text back when switching to List', async () => {
+    const user = userEvent.setup();
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    toMode('Bulk');
+    await retype(user, bulkText() as unknown as HTMLInputElement, 'One | one\nTwo | two');
+    toMode('List');
+    expect(labelInputs().map((input) => (input as HTMLInputElement).value)).toEqual(['One', 'Two']);
+  });
+
+  it('stays in its mode when the active segment is pressed again (rule 2)', async () => {
+    // Base UI reports an EMPTY array on re-press; unguarded, the dialog would show neither mode.
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    toMode('Bulk');
+    toMode('Bulk');
+    expect(bulkText()).toBeInTheDocument();
+  });
+
+  it('does not lose a row edited in List after a trip through Bulk (rule 5)', async () => {
+    const user = userEvent.setup();
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    await retype(user, labelInputs()[0] as HTMLInputElement, 'Electronic mail');
+    toMode('Bulk');
+    toMode('List');
+    expect((labelInputs()[0] as HTMLInputElement).value).toBe('Electronic mail');
+  });
+});
+
+describe('the import strip (rules 8-13)', () => {
+  const importToggle = () => dialog().getByRole('button', { name: /^Import/ });
+  const importText = () => dialog().getByRole('textbox', { name: /paste/i }) as HTMLTextAreaElement;
+  const importConfirm = () => dialog().getByRole('button', { name: /^Import \d+/ });
+
+  it('is closed until asked for', async () => {
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    expect(dialog().queryByRole('textbox', { name: /paste/i })).toBeNull();
+  });
+
+  it('disables Import until something parses (rule 12)', async () => {
+    const user = userEvent.setup();
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    fireEvent.click(importToggle());
+    expect(importConfirm()).toBeDisabled();
+    await retype(user, importText() as unknown as HTMLInputElement, 'Fax,fax');
+    await waitFor(() => expect(importConfirm()).toBeEnabled());
+    expect(importConfirm()).toHaveTextContent('Import 1');
+  });
+
+  it('APPENDS by default, keeping the existing rows (rule 11)', async () => {
+    const user = userEvent.setup();
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    fireEvent.click(importToggle());
+    await retype(user, importText() as unknown as HTMLInputElement, 'Fax,fax');
+    fireEvent.click(importConfirm());
+    await waitFor(() => expect(labelInputs()).toHaveLength(4));
+    expect((labelInputs()[3] as HTMLInputElement).value).toBe('Fax');
+  });
+
+  it('REPLACES when asked, and keeps the id of a value that survives (rules 5, 11)', async () => {
+    const user = userEvent.setup();
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    fireEvent.click(importToggle());
+    fireEvent.click(
+      within(dialog().getByRole('group', { name: /import mode/i })).getByRole('button', {
+        name: 'Replace',
+      }),
+    );
+    await retype(user, importText() as unknown as HTMLInputElement, 'Email,email\nFax,fax');
+    fireEvent.click(importConfirm());
+    await waitFor(() => expect(labelInputs()).toHaveLength(2));
+    // `email` survived, so no delete is warned for it.
+    expect(dialog().queryByText(/no longer exists/i)).toBeNull();
+  });
+
+  it('closes the strip after importing (rule 13)', async () => {
+    const user = userEvent.setup();
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    fireEvent.click(importToggle());
+    await retype(user, importText() as unknown as HTMLInputElement, 'Fax,fax');
+    fireEvent.click(importConfirm());
+    await waitFor(() => expect(dialog().queryByRole('textbox', { name: /paste/i })).toBeNull());
+  });
+});
+
+describe('drag reorder (rules 14-17)', () => {
+  it('gives each row a drag handle, and drags from it alone (rule 15)', async () => {
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    const handles = dialog().getAllByRole('button', { name: /^Reorder/ });
+    expect(handles).toHaveLength(3);
+    expect(handles[0]).toHaveAttribute('draggable', 'true');
+    // The inputs must stay selectable, so they are never draggable.
+    expect(labelInputs()[0]).not.toHaveAttribute('draggable', 'true');
+  });
+
+  it('keeps the up/down buttons as the keyboard path (rule 16)', async () => {
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    expect(dialog().getAllByRole('button', { name: /^Move .* down/ })).toHaveLength(3);
+  });
+});
+
+describe('Bulk mode commits through List (rule 19)', () => {
+  it('hides + Add option, since the text IS the list', async () => {
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    toMode('Bulk');
+    expect(dialog().queryByRole('button', { name: /Add option/ })).toBeNull();
+  });
+
+  it('disables Save while Bulk is open, and says why', async () => {
+    // The footer reads the DRAFT; in Bulk the draft is only as current as the last parse, so saving here
+    // would commit rows the author cannot see and ignore what they just typed.
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    toMode('Bulk');
+    expect(save()).toBeDisabled();
+    expect(dialog().getByText(/Switch to List/)).toBeInTheDocument();
+  });
+
+  it('re-enables Save on returning to List', async () => {
+    renderSeededStudio();
+    await openFor('radiogroup', /^Preferred contact method/);
+    toMode('Bulk');
+    toMode('List');
+    expect(save()).toBeEnabled();
+  });
+});

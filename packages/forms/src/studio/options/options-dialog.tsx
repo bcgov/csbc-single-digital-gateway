@@ -2,15 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/dialog';
-import { Kbd } from '@repo/ui/kbd';
+import { Dialog, DialogContent } from '@repo/ui/dialog';
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { clauseUsers, deletedConsts, originalConsts, renamedConsts } from './option-cascade';
 import {
@@ -27,6 +19,12 @@ import {
   type RowProblem,
   type SavedEntry,
 } from './option-draft';
+import { carryIds, parseBulk, serialiseBulk } from './option-bulk';
+import { OptionsBulkPanel } from './options-bulk-panel';
+import { OptionsDialogHeader } from './options-dialog-header';
+import { OptionsDialogFooter } from './options-dialog-footer';
+import { OptionsImportStrip, type ImportMode } from './options-import-strip';
+import type { ParsedRow } from './option-bulk';
 import { OptionRow } from './option-row';
 import type { OptionsTarget } from './options-target';
 
@@ -49,8 +47,6 @@ export interface OptionsDialogProps {
     renames: ReadonlyMap<string | number, string | number>,
   ): void;
 }
-
-const countLabel = (count: number) => `${count} ${count === 1 ? 'option' : 'options'}`;
 
 /**
  * Rules 17-20: why Save is disabled, or `undefined` when it is not. EVERY row problem is named — hand
@@ -96,6 +92,9 @@ interface BodyProps extends Omit<OptionsDialogProps, 'target'> {
   readonly target: OptionsTarget;
 }
 
+/** Rule 19: why Save is disabled while Bulk is open. */
+const BULK_SAVE_HINT = 'Switch to List to review and save.';
+
 function OptionsDialogBody({ target, uischema, onCancel, onSave }: BodyProps) {
   // Rule 10: the draft is built ONCE, from the options the field opened with. `originals` maps those rows'
   // ids to the consts they started as, which is the ONLY thing that makes a rename distinguishable from a
@@ -111,6 +110,11 @@ function OptionsDialogBody({ target, uischema, onCancel, onSave }: BodyProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the opening list never changes; see above
     [],
   );
+
+  /** Doc 208 rules 1-3: which surface the author is editing on, and the text behind Bulk. */
+  const [mode, setMode] = useState<'list' | 'bulk'>('list');
+  const [bulkText, setBulkText] = useState('');
+  const [importing, setImporting] = useState(false);
 
   /** Rule 13: which row's Label to focus once the render lands. */
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -151,9 +155,37 @@ function OptionsDialogBody({ target, uischema, onCancel, onSave }: BodyProps) {
     // Rule 14: focus moves to the PREVIOUS row's Label, or the first one when the row was at the top.
     setFocusId(draft[Math.max(0, index - 1)]?.id ?? null);
   };
+  /** Rule 16: the drag is a gesture layer over the SAME pure reorder the buttons use. */
+  const onDropAt = (fromId: string, position: number) => {
+    const from = draft.findIndex((row) => row.id === fromId);
+    setDraft(moveOption(draft, from, position));
+  };
   const move = (id: string, by: -1 | 1) => {
     const index = draft.findIndex((row) => row.id === id);
     setDraft(moveOption(draft, index, index + by));
+  };
+
+  /**
+   * Rule 3: switching modes is a round-trip through text, and rule 5's `carryIds` is what stops that
+   * round-trip destroying the rename cascade.
+   */
+  const toMode = (next: 'list' | 'bulk') => {
+    if (next === mode) return;
+    if (next === 'bulk') setBulkText(serialiseBulk(draft));
+    else setDraft(carryIds(parseBulk(bulkText), draft));
+    setMode(next);
+  };
+
+  /** Rules 11, 13: imported rows land in the DRAFT — or in the TEXTAREA while Bulk is open. */
+  const onImport = (rows: readonly ParsedRow[], importMode: ImportMode) => {
+    if (mode === 'bulk') {
+      const merged = importMode === 'replace' ? rows : [...parseBulk(bulkText), ...rows];
+      setBulkText(serialiseBulk(carryIds(merged, draft)));
+    } else {
+      const existing = importMode === 'replace' ? [] : draft.map((row) => ({ ...row }));
+      setDraft(carryIds([...existing, ...rows], draft));
+    }
+    setImporting(false);
   };
 
   const save = () => {
@@ -187,21 +219,26 @@ function OptionsDialogBody({ target, uischema, onCancel, onSave }: BodyProps) {
         initialFocus={firstLabelRef}
         className="flex max-h-[85vh] w-[51.25rem] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[51.25rem]"
       >
-        <DialogHeader showCloseButton className="border-b border-border px-4 py-3 text-left">
-          <DialogTitle className="text-sm font-bold">Options</DialogTitle>
-          <DialogDescription className="truncate text-xs text-muted-foreground">
-            {target.label} · {target.fieldName}
-          </DialogDescription>
-        </DialogHeader>
+        <OptionsDialogHeader
+          target={target}
+          mode={mode}
+          importing={importing}
+          onMode={toMode}
+          onToggleImport={() => setImporting(!importing)}
+        />
+        {importing ? <OptionsImportStrip onImport={onImport} /> : null}
 
         <div ref={bodyRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3">
-          {draft.length === 0 ? (
+          {mode === 'bulk' ? (
+            <OptionsBulkPanel text={bulkText} onChange={setBulkText} />
+          ) : draft.length === 0 ? (
             <p className="rounded-md border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
               No options. Add one below.
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-[auto_1.2fr_1fr_1.4fr_auto] items-center gap-2 text-[0.6875rem] font-bold tracking-wide text-muted-foreground uppercase">
+              <div className="grid grid-cols-[auto_auto_1.2fr_1fr_1.4fr_auto] items-center gap-2 text-[0.6875rem] font-bold tracking-wide text-muted-foreground uppercase">
+                <span className="w-4" aria-hidden="true" />
                 <span className="w-6" aria-hidden="true" />
                 <span>Label</span>
                 <span>Value</span>
@@ -221,15 +258,20 @@ function OptionsDialogBody({ target, uischema, onCancel, onSave }: BodyProps) {
                   onMove={move}
                   onInsertAfter={insert}
                   onRemoveEmpty={removeEmpty}
+                  onDropAt={onDropAt}
                 />
               ))}
             </>
           )}
 
-          <Button variant="outline" size="sm" className="w-full" onClick={() => insert(null)}>
-            <Icon path={mdiPlus} size="14px" />
-            Add option
-          </Button>
+          {/* Rule 19: a List affordance. In Bulk the text IS the list, and a row added here would be
+              discarded by the next parse. */}
+          {mode === 'list' ? (
+            <Button variant="outline" size="sm" className="w-full" onClick={() => insert(null)}>
+              <Icon path={mdiPlus} size="14px" />
+              Add option
+            </Button>
+          ) : null}
 
           {/* Rule 23: named before Save, never auto-repaired (doc 199 rule 9). */}
           {stranded.length > 0 ? (
@@ -241,26 +283,19 @@ function OptionsDialogBody({ target, uischema, onCancel, onSave }: BodyProps) {
           ) : null}
         </div>
 
-        <DialogFooter className="items-center border-t border-border px-4 py-3 sm:justify-between">
-          <div className="flex flex-col gap-0.5 text-left">
-            {summary === undefined ? (
-              <span className="text-xs text-muted-foreground">{countLabel(kept)}</span>
-            ) : (
-              <span className="text-xs text-destructive">{summary}</span>
-            )}
-            <span className="text-[0.6875rem] text-muted-foreground">
-              <Kbd>Enter</Kbd> adds a row · <Kbd>⌘↵</Kbd> saves
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button size="sm" disabled={entries === undefined} onClick={save}>
-              Save options
-            </Button>
-          </div>
-        </DialogFooter>
+        <OptionsDialogFooter
+          summary={mode === 'bulk' ? BULK_SAVE_HINT : summary}
+          kept={kept}
+          /**
+           * Rule 19: Save is unreachable from Bulk without returning to List. The footer's count and
+           * problems read the DRAFT, and in Bulk the draft is only as current as the last parse — so
+           * saving here would commit rows the author cannot see, and silently ignore what they just typed.
+           * Switching to List is what commits the text.
+           */
+          canSave={mode === 'list' && entries !== undefined}
+          onCancel={onCancel}
+          onSave={save}
+        />
       </DialogContent>
     </Dialog>
   );
