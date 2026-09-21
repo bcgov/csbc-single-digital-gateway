@@ -94,7 +94,17 @@ export function setClause(
 
   const fields = fieldsOf(document, condition);
   const next = patchedClause(current, patch, fields);
-  if (clauseProblems(next, fields).length > 0) return document;
+  /**
+   * Doc 206 rule 24b: refuse only an edit that would BREAK a clause that is currently valid.
+   *
+   * This used to refuse any patch whose result still had problems, which protected a valid clause and
+   * made a broken one UN-EDITABLE — the only repair was to delete and re-create it. An author fixing a
+   * value one keystroke at a time passes through states that are still invalid, so refusing them is
+   * refusing the repair. It also kept rule 24's membership check permanently off, since the markers it
+   * raises would have been unfixable.
+   */
+  if (clauseProblems(next, fields).length > 0 && clauseProblems(current, fields).length === 0)
+    return document;
 
   const rewritten = replacingRow(rows, rowId, (row) => ({
     ...row,

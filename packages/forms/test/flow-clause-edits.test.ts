@@ -228,3 +228,63 @@ describe('setClause (rules 28, 36)', () => {
     ).toBe(document);
   });
 });
+
+describe('repairing an already-invalid clause (doc 206 rule 24b)', () => {
+  /**
+   * `setClause` refused ANY patch whose result still had problems — which is right for protecting a VALID
+   * clause, and wrong for a broken one: it made a stranded clause un-editable, so the only repair was to
+   * delete and re-create it. That also blocked doc 206 rule 24 (membership-checking multi-choice clauses)
+   * from ever being turned on, because the markers it raises would have been unfixable.
+   */
+  /**
+   * `base()` wires only k1 and k2 upstream, so a k4 clause there is DANGLING — invalid for a reason that
+   * has nothing to do with its value, which would make every assertion below pass for the wrong reason.
+   */
+  const choiceFlow = (clause: object) =>
+    flow(
+      [stage('a', [control('k4')]), condition('c', [row('x', clause)]), stage('b')],
+      [{ id: 'e0', source: 'a', target: 'c' }],
+    );
+
+  const strandedDoc = () => {
+    const ids = createElementIds();
+    // `zz` is not one of k4's consts, so this clause is already invalid — and k4 IS upstream.
+    const root = choiceFlow({ id: 'cl1', field: 'k4', operator: 'equals', value: 'zz' });
+    return { ids, root, conditionId: ids.idOf(child(root, 1)) };
+  };
+
+  // NOT named `patch`: a `patch` helper already exists in the upper scope of this file.
+  const patched = (changes: object) => {
+    const { ids, root, conditionId } = strandedDoc();
+    const next = setClause({ schema, uischema: root }, conditionId, 'x', 'cl1', changes, ids);
+    return clausesIn(child(next.uischema, 1))[0];
+  };
+
+  it('accepts an edit that REPAIRS it', () => {
+    expect(patched({ value: 'bc' })).toMatchObject({ value: 'bc' });
+  });
+
+  it('accepts an edit that leaves it still broken, so the author can keep typing', () => {
+    // Refusing here is what made the clause un-editable: an author fixing a value one keystroke at a
+    // time passes through states that are still invalid.
+    expect(patched({ value: 'b' })).toMatchObject({ value: 'b' });
+  });
+
+  it('accepts a move to another field from a broken clause', () => {
+    expect(patched({ field: 'k1' })).toMatchObject({ field: 'k1' });
+  });
+
+  it('still REFUSES an edit that would break a clause that is currently valid', () => {
+    const ids = createElementIds();
+    const root = choiceFlow({ id: 'cl1', field: 'k4', operator: 'equals', value: 'bc' });
+    const next = setClause(
+      { schema, uischema: root },
+      ids.idOf(child(root, 1)),
+      'x',
+      'cl1',
+      { value: 'zz' },
+      ids,
+    );
+    expect(clausesIn(child(next.uischema, 1))[0]).toMatchObject({ value: 'bc' });
+  });
+});

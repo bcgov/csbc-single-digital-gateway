@@ -177,7 +177,16 @@ export function clauseProblems(clause: Clause, fields: readonly CriterionField[]
   if (listOf(clause.value) !== undefined || !valueMatchesKind(field.kind, clause.value)) {
     problems.push(wrongTypeMessage(field.label));
   } else if (
-    field.kind === 'choice' &&
+    /**
+     * Doc 206 rule 24, CLOSED 2026-09-21. This checked `choice` only, so a broken `includes` value on a
+     * multi-choice field was reported NOWHERE: not here, and deliberately not at fill time either
+     * (`criterion-match.ts` does not re-check membership), where it silently followed the Else path.
+     *
+     * It was left open because the markers would have been UNFIXABLE — `setClause` refused every edit to
+     * a clause with problems, so a newly-marked clause could only be deleted and re-made. Rule 24b lifted
+     * that, so the check can be turned on with a repair path behind it.
+     */
+    (field.kind === 'choice' || field.kind === 'multi-choice') &&
     !optionValuesOf(field).has(clause.value as string | number)
   ) {
     problems.push(unknownChoiceMessage(field.label));

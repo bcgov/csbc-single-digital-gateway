@@ -2,6 +2,7 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import { controlKindOf } from '../src/renderers/ui/control-kind';
 import {
+  clauseProblems as rawClauseProblems,
   OPERATOR_LABELS,
   OPERATORS_BY_KIND,
   operatorsFor,
@@ -28,7 +29,10 @@ const schema = {
   },
 } as JsonSchema;
 
-const field = criterionFieldOf('supports', schema);
+const field = criterionFieldOf('supports', schema)!;
+
+/** `clauseProblems` takes the field LIST; every case here is about one field. */
+const clauseProblems = (c: Clause, f: typeof field) => rawClauseProblems(c, [f]);
 
 const clause = (operator: Clause['operator'], value?: unknown): Clause =>
   ({ id: 'c1', field: 'supports', operator, ...(value === undefined ? {} : { value }) }) as Clause;
@@ -207,5 +211,41 @@ describe('the flow metaschema (rules 30, 39)', () => {
 
   it('still refuses an operator that does not exist', () => {
     expect(validateUischemaDocument(document('containsAny')).valid).toBe(false);
+  });
+});
+
+describe('a multi-choice clause is membership-checked too (doc 206 rule 24, closed)', () => {
+  /**
+   * `criteria.ts` checked membership for `choice` ONLY, so a broken `includes` value was reported NOWHERE:
+   * not on the canvas at authoring time, and deliberately not at fill time either (`criterion-match.ts`
+   * does not re-check), where it silently followed the Else path. Doc 206 rule 24 left it open because the
+   * markers would have been unfixable — `setClause` refused every edit to a clause with problems. Rule 24b
+   * fixed that, so the check can now be turned on.
+   */
+  it('reports a value that is not one of the options', () => {
+    expect(clauseProblems(clause('includes', 'nonsense'), field)).not.toEqual([]);
+    expect(clauseProblems(clause('notIncludes', 'nonsense'), field)).not.toEqual([]);
+  });
+
+  it('accepts every value that IS one of the options', () => {
+    for (const option of SUPPORTS)
+      expect(clauseProblems(clause('includes', option.const), field), option.const).toEqual([]);
+  });
+
+  it('leaves the operators that take no value alone', () => {
+    expect(clauseProblems(clause('isEmpty'), field)).toEqual([]);
+    expect(clauseProblems(clause('isNotEmpty'), field)).toEqual([]);
+  });
+
+  it('still reports a wrong-TYPED value as a type problem, not a membership one', () => {
+    expect(clauseProblems(clause('includes', true), field)).not.toEqual([]);
+  });
+
+  it('leaves SINGLE choice behaving exactly as before', () => {
+    const plan = criterionFieldOf('plan', schema)!;
+    const on = (value: unknown) =>
+      ({ id: 'c1', field: 'plan', operator: 'equals', value }) as Clause;
+    expect(clauseProblems(on('basic'), plan)).toEqual([]);
+    expect(clauseProblems(on('gone'), plan)).not.toEqual([]);
   });
 });
