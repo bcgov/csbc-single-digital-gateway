@@ -31,6 +31,8 @@ export interface SelectableDocument {
   readonly elementTypes: ReadonlyMap<string, string>;
   /** The root element's studio id (doc 186 rule 6). */
   readonly rootId: string;
+  /** Doc 210 rule 8b: whether deleting `elementId` would join its neighbours, which the confirmation says. */
+  joinsOnDelete(elementId: string): boolean;
   /** The id of the element holding `elementId`; `null` for the root or an unknown id. */
   parentOf(elementId: string): string | null;
   copy(elementId: string, placement: StudioItemPlacement): string | undefined;
@@ -45,6 +47,8 @@ export interface SelectableDocument {
 export interface PendingDelete {
   readonly elementId: string;
   readonly elementType: string;
+  /** Doc 210 rule 8b: the node's neighbours will be joined, so the wording must not promise they are cut. */
+  readonly joins: boolean;
 }
 
 type PointerTarget =
@@ -226,6 +230,7 @@ function takenBy(
 function useDeleteConfirmation(
   remove: (elementId: string) => void,
   elementTypes: ReadonlyMap<string, string>,
+  joinsOnDelete: (elementId: string) => boolean,
 ) {
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [skip, setSkip] = useState(false);
@@ -235,7 +240,12 @@ function useDeleteConfirmation(
       pending,
       request: (elementId: string) => {
         if (skip) remove(elementId);
-        else setPending({ elementId, elementType: elementTypes.get(elementId) ?? 'Element' });
+        else
+          setPending({
+            elementId,
+            elementType: elementTypes.get(elementId) ?? 'Element',
+            joins: joinsOnDelete(elementId),
+          });
       },
       confirm: (dontAskAgain: boolean) => {
         if (pending) remove(pending.elementId);
@@ -244,7 +254,7 @@ function useDeleteConfirmation(
       },
       cancel: () => setPending(null),
     }),
-    [pending, skip, remove, elementTypes],
+    [pending, skip, remove, elementTypes, joinsOnDelete],
   );
 }
 
@@ -326,6 +336,7 @@ export function useStudioSelection(
     rootId,
     parentOf,
     canvasRootOf,
+    joinsOnDelete,
   } = studio;
   // Insert gestures read the latest document through a ref, so the Grid editor keeps its identity and grids never
   // reload merely because the document changed (doc 189 rule 25).
@@ -356,7 +367,7 @@ export function useStudioSelection(
     });
   }, []);
 
-  const confirmation = useDeleteConfirmation(removeAndReselect, elementTypes);
+  const confirmation = useDeleteConfirmation(removeAndReselect, elementTypes, joinsOnDelete);
   const confirming = confirmation.pending !== null;
   usePointerSelection(rootRef, {
     active,

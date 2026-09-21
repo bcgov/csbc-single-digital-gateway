@@ -1,8 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
-import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import {
   authoredStageId,
-  CONDITION_TYPE,
   drawnNodes,
   FLOW_TYPE,
   STAGE_TYPE,
@@ -11,9 +9,12 @@ import {
 } from '../../renderers/xyflow/flow-elements';
 import { connectionProblem } from '../../renderers/xyflow/flow-gestures';
 import { flowEdges } from '../../renderers/xyflow/flow-graph';
+import { edgeIdOf, freshId, isRecord, rawEdges, withOptions } from './element-parts';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, withElements, type TreeElement } from './element-tree';
-import { formIdsUsed } from './form-address';
+import { newFormElement, newNodeElement, newStageElement } from './flow-node-factory';
+
+export { nextElementLabel } from './flow-node-factory';
 
 // Flow edits in the studio document (doc 196 rules 4, 6-7, 9, 18-20). Pure: every changed element is a new object
 // carrying its studio id, and untouched subtrees keep identity. Refused edits return the same uischema.
@@ -22,35 +23,6 @@ import { formIdsUsed } from './form-address';
 export interface FlowInsertResult {
   readonly uischema: UISchemaElement;
   readonly inserted: UISchemaElement | undefined;
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-/** `element` with `options` merged with `changes`, carrying its id. */
-function withOptions(
-  element: TreeElement,
-  changes: Record<string, unknown>,
-  ids: ElementIds,
-): TreeElement {
-  const next = { ...element, options: { ...element.options, ...changes } };
-  ids.carry(element, next);
-  return next;
-}
-
-/** A Flow's authored `options.edges` entries, or `[]`. */
-const rawEdges = (flow: UISchemaElement): readonly unknown[] => {
-  const edges = flow.options?.['edges'];
-  return Array.isArray(edges) ? edges : [];
-};
-
-const edgeIdOf = (entry: unknown) => (isRecord(entry) ? entry['id'] : undefined);
-
-/** A new id from `newId`, regenerated while `taken` has it. */
-function freshId(taken: ReadonlySet<unknown>, newId: () => string): string {
-  let id = newId();
-  while (taken.has(id)) id = newId();
-  return id;
 }
 
 /** Rule 6: `source → target` appended to the Flow's edges with a fresh `nanoid(8)` id, when nothing refuses it. */
@@ -122,72 +94,31 @@ export function clearFlowStart(flow: TreeElement, stageId: string, ids: ElementI
   return next;
 }
 
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-/** Rule 20: `"<label> <n>"`, `n` one more than the highest among `type` elements labelled exactly `"<label> <digits>"`. */
-export function nextElementLabel(root: UISchemaElement, type: string, label: string): string {
-  const pattern = new RegExp(`^${escapeRegExp(label)} (\\d+)$`);
-  let highest = 0;
-  const visit = (element: TreeElement) => {
-    const text = (element as { label?: unknown }).label;
-    const match = element.type === type && typeof text === 'string' ? pattern.exec(text) : null;
-    highest = Math.max(highest, Number(match?.[1] ?? 0));
-    for (const child of element.elements ?? []) visit(child);
-  };
-  visit(root as TreeElement);
-  return `${label} ${highest + 1}`;
-}
-
 /**
- * Rules 18, 20: a fresh `"Stage <n>"` holding one `"Form <m>"`, both with ids unused anywhere in `root`. Shared by
- * `insertStage` and `insertStageBetween` so an appended and an inserted Stage are identical but for their edges.
+ * Doc 210 rules 9-13: `flow` with a new Stage wired from `conditionId`'s ELSE output. Appending a Condition
+ * creates both in one edit, so the Condition never exists in the document wearing its `No Else path` fault
+ * (doc 199 rule 45b) and one undo takes the pair away.
  *
- * Doc 198 rule 11: no `options.position` is written — where the Stage lands follows from its rank and its place in
- * `elements` (doc 198 rules 1-2).
+ * The Else edge carries NO `sourceHandle` — that is the stored form of the default path (doc 199 rule 18) —
+ * and rule 12: the Stage is never stamped as the Flow's start, since it is downstream of a Condition by
+ * construction. `insertNode` has already stamped one if it was going to.
  */
-function newStageElement(root: TreeElement, newId: () => string): TreeElement {
-  // Doc 199 rule 15: Stages and Conditions share ONE id-space, so a new id must avoid both.
-  const taken = new Set(drawnNodes(root).map(({ element }) => authoredStageId(element)));
-  return {
-    type: STAGE_TYPE,
-    label: nextElementLabel(root, STAGE_TYPE, 'Stage'),
-    options: { id: freshId(taken, newId) },
-    // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists. It is UNTITLED — the Stage card
-    // and the canvas both draw "Untitled form" for a Form with no label, which says more to an author than a
-    // numbered "Form 3" they did not choose (user request 2026-09-18).
-    elements: [
-      {
-        type: FORM_TYPE,
-        options: { id: freshId(formIdsUsed(root), newId) },
-        elements: [],
-      },
-    ],
-  } as TreeElement;
+function withElseStage(
+  flow: TreeElement,
+  conditionId: string,
+  ids: ElementIds,
+  newId: () => string,
+): TreeElement {
+  const stage = newStageElement(flow, newId);
+  const withStage = withElements(flow, [...(flow.elements ?? []), stage], ids);
+  const edges = rawEdges(withStage);
+  const edge = {
+    id: freshId(new Set(edges.map(edgeIdOf)), newId),
+    source: conditionId,
+    target: authoredStageId(stage) as string,
+  };
+  return withOptions(withStage, { edges: [...edges, edge] }, ids);
 }
-
-/**
- * Doc 199 rule 24: a fresh `"Condition <n>"`, with an id unused by any node (rule 15). It holds NO children —
- * a Condition is not a Layout — and starts with no criteria, which is a legal pass-through (rule 13); its
- * criteria are authored on the card afterwards, each born complete (rule 26).
- */
-function newConditionElement(root: TreeElement, newId: () => string): TreeElement {
-  const taken = new Set(drawnNodes(root).map(({ element }) => authoredStageId(element)));
-  return {
-    type: CONDITION_TYPE,
-    label: nextElementLabel(root, CONDITION_TYPE, 'Condition'),
-    /**
-     * `rows`, NOT `criteria`. Doc 199 rule 35 renamed the key and this seeding site was missed, so every
-     * Condition the canvas added was REFUSED by the code panel's apply gate — the studio's own output
-     * failing its own gate, exactly the trap doc 205 rule 37b records. `rows` is required, so an empty
-     * list is what makes a fresh Condition valid.
-     */
-    options: { id: freshId(taken, newId), rows: [] },
-  } as TreeElement;
-}
-
-/** The new node of `kind`, so an appended and an inserted node are identical but for their edges. */
-const newNodeElement = (root: TreeElement, kind: FlowNodeKind, newId: () => string): TreeElement =>
-  kind === 'condition' ? newConditionElement(root, newId) : newStageElement(root, newId);
 
 /**
  * Rules 18, 20, widened by doc 199 rules 20, 24: a Flow root gains a new node of `kind`, with a fresh id. When the
@@ -230,6 +161,9 @@ export function insertNode(
   // Doc 203 rule 19: the FIRST Stage of a Flow is stamped as its start, so a flow built from the empty-Flow
   // origin `+` is never startless. Later Stages — and every Condition — leave it alone.
   if (kind === 'stage' && startless) next = withOptions(next, { startId: id }, ids);
+  if (kind === 'condition') next = withElseStage(next, id, ids, newId);
+  // Doc 210 rule 11: the CONDITION is the inserted element even when a Stage came with it — authoring its
+  // criteria is what the author does next, and a single `inserted` is what selection follows (doc 198 rule 16).
   return { uischema: next, inserted: node };
 }
 
@@ -291,11 +225,7 @@ export function insertForm(
   const root = uischema as TreeElement;
   const stage = selectedId === null ? undefined : findById(root, selectedId, ids);
   if (selectedId === null || stage?.type !== STAGE_TYPE) return { uischema, inserted: undefined };
-  const form = {
-    type: FORM_TYPE,
-    options: { id: freshId(formIdsUsed(root), newId) },
-    elements: [],
-  } as TreeElement;
+  const form = newFormElement(root, newId);
   const next = updateById(
     root,
     selectedId,

@@ -1,17 +1,20 @@
 import { mdiAlertOutline, mdiDragVertical } from '@mdi/js';
 import type React from 'react';
+import { useContext, useMemo } from 'react';
+import { useNodeId } from '@xyflow/react';
 import { Icon } from '@mdi/react';
 import { Popover, PopoverTrigger } from '@repo/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/tooltip';
 import type { ConditionRow as Row } from '../../types/elements';
-import { AddAffordance } from './add-affordance';
+import { AddOrConnectMenu, type ConnectCandidate } from './add-affordance';
 import { useConditionHover } from './condition-hover';
+import { FlowContext } from './flow-context';
 import { ConditionOutputHandle } from './condition-output-handle';
 import { ConditionRowPopover } from './condition-row-popover';
 import { rowProblems, rowSummary, rowTitle } from './condition-rows';
 import { decisionFieldHint, type CriterionField } from './criteria';
 import { ROW_CONTROL_CLASS } from './criterion-controls';
-import { DEFAULT_HANDLE } from './flow-elements';
+import { DEFAULT_HANDLE, drawnNodes, nodeLabel } from './flow-elements';
 import type { FlowEditor } from './flow-editor';
 
 // One row of the Condition card (doc 199 rules 43-44), split out of `condition-renderer` to keep both files
@@ -40,7 +43,14 @@ function OptionalFieldHint({ field }: { readonly field: CriterionField | undefin
   );
 }
 
-/** Rule 20: the + that wires an unconnected output to a new Stage, carrying the output as the edge's handle. */
+/**
+ * Rule 20, widened by doc 210 rules 16-21: the + on an unconnected output. It wires the branch to a NEW node of
+ * either kind, or to an existing one — and it is only ever on screen for an output that leads nowhere, so
+ * "where does this branch go?" is exactly the question it answers.
+ *
+ * Which existing nodes are offered is decided by `connectionProblem`, the same judge the drag and the code
+ * panel use (doc 209 rule 14), so the menu can never offer an edge the document would refuse.
+ */
 export function OutputAdd({
   editor,
   conditionId,
@@ -50,18 +60,43 @@ export function OutputAdd({
   readonly conditionId: string;
   readonly handle: string;
 }) {
+  const flow = useContext(FlowContext);
+  // The xyflow node id IS the Condition's authored id (doc 195 rule 10), which is what an edge addresses.
+  const nodeId = useNodeId();
+  // The Else output leaves by no row, so its edge carries no handle (doc 199 rules 18, 37).
+  const sourceHandle = handle === DEFAULT_HANDLE ? undefined : handle;
+  const flowElement = flow?.element;
+  const candidates = useMemo<ConnectCandidate[]>(() => {
+    if (!flowElement || nodeId === null) return [];
+    return drawnNodes(flowElement).flatMap((node) =>
+      node.authored &&
+      editor.connectionProblem(flowElement, nodeId, node.id, sourceHandle) === undefined
+        ? [{ id: node.id, label: nodeLabel(node.element) }]
+        : [],
+    );
+  }, [flowElement, nodeId, sourceHandle, editor]);
+
+  const flowId = flow?.id;
   return (
-    <AddAffordance
-      label="Add a stage"
+    <AddOrConnectMenu
+      label="Add a node"
       className="shrink-0"
-      onAdd={() =>
+      candidates={flowId === undefined || nodeId === null ? [] : candidates}
+      onAdd={(kind) =>
         editor.onGesture(
-          // The Else output leaves by no row, so its edge carries no handle (rules 18, 37).
-          handle === DEFAULT_HANDLE
-            ? { type: 'append', stageId: conditionId, kind: 'stage' }
-            : { type: 'append', stageId: conditionId, kind: 'stage', sourceHandle: handle },
+          sourceHandle === undefined
+            ? { type: 'append', stageId: conditionId, kind }
+            : { type: 'append', stageId: conditionId, kind, sourceHandle },
         )
       }
+      onConnect={(target) => {
+        if (flowId === undefined || nodeId === null) return;
+        editor.onGesture(
+          sourceHandle === undefined
+            ? { type: 'connect', flowId, source: nodeId, target }
+            : { type: 'connect', flowId, source: nodeId, target, sourceHandle },
+        );
+      }}
     />
   );
 }

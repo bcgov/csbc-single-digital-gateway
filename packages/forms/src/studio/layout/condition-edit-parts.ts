@@ -1,4 +1,3 @@
-import type { UISchemaElement } from '@jsonforms/core';
 import {
   needsValue,
   operatorsFor,
@@ -7,6 +6,7 @@ import {
 } from '../../renderers/xyflow/criteria';
 import { isCondition } from '../../renderers/xyflow/flow-elements';
 import type { Clause, ConditionRow, Operator } from '../../types/elements';
+import { freshId, rawEdges, withOptions } from './element-parts';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, type TreeElement } from './element-tree';
 import type { StudioDocument } from './schema-properties';
@@ -19,29 +19,8 @@ import { upstreamFieldsOf } from './upstream-fields';
 // These take a StudioDocument rather than a uischema, unlike the Flow edits in `flow-edits.ts`: a clause is only
 // ever authored complete (rule 46), and deciding what "complete" means needs the schema.
 
-/** `element` with `options` merged with `changes`, carrying its id. */
-export function withOptions(
-  element: TreeElement,
-  changes: Record<string, unknown>,
-  ids: ElementIds,
-): TreeElement {
-  const next = { ...element, options: { ...element.options, ...changes } };
-  ids.carry(element, next);
-  return next;
-}
-
-/** A new id from `newId`, regenerated while `taken` has it. */
-export function freshId(taken: ReadonlySet<string>, newId: () => string): string {
-  let id = newId();
-  while (taken.has(id)) id = newId();
-  return id;
-}
-
-/** The Flow's `options.edges` as authored, or `[]`. */
-export const rawEdges = (flow: UISchemaElement): readonly unknown[] => {
-  const edges = flow.options?.['edges'];
-  return Array.isArray(edges) ? edges : [];
-};
+// Re-exported so `condition-edits.ts` and `clause-edits.ts` keep taking every shared part from one module.
+export { freshId, rawEdges, withOptions };
 
 /** The Condition with `conditionId`, or `undefined` when it is not one. */
 export function conditionAt(

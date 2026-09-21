@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GridDropSource, GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import { allowedInLayout, type GridLayoutKind } from '../renderers/gridstack/grid-layouts';
 import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
+import { authoredStageId, FLOW_TYPE, flowNodeKind } from '../renderers/xyflow/flow-elements';
 import { sameJson } from './code/document-text';
 import { applyInspector } from './inspector/apply-inspector';
 import type { InspectorValues } from './inspector/inspector-fields';
@@ -14,6 +15,7 @@ import { addTargetId, insertElement, type InsertTarget } from './layout/insert-e
 import { createElementIds, type ElementIds } from './layout/element-ids';
 import { pathSegments, type PathSegment } from './layout/element-path';
 import { findById, findParentById, type TreeElement } from './layout/element-tree';
+import { joinsNeighbours } from './layout/node-join';
 import { removeElement } from './layout/remove-element';
 import { setChoices } from './layout/set-choices';
 import { carryIdsByPath } from './layout/carry-ids-by-path';
@@ -211,6 +213,24 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [insertInto, currentUischema, ids],
   );
 
+  /**
+   * Doc 210 rule 8b: whether deleting `elementId` would JOIN its neighbours. The delete confirmation says what
+   * goes with the element, and "its connections will be removed" stops being true for a node in a chain.
+   *
+   * Only a Flow node at the Flow root can join; anything else answers `false` without touching the graph.
+   */
+  const joinsOnDelete = useCallback(
+    (elementId: string): boolean => {
+      const root = currentUischema as TreeElement;
+      if (root.type !== FLOW_TYPE) return false;
+      const element = findById(root, elementId, ids);
+      if (!element || flowNodeKind(element) === undefined) return false;
+      const authored = authoredStageId(element);
+      return authored !== undefined && joinsNeighbours(root, authored);
+    },
+    [currentUischema, ids],
+  );
+
   const remove = useCallback(
     (elementId: string) => {
       setState((previous) => ({
@@ -306,6 +326,7 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     pathOf,
     elementOf,
     canvasRootOf,
+    joinsOnDelete,
     inspectorFor,
     updateElement,
     updateOptions,

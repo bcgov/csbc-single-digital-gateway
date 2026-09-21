@@ -26,15 +26,25 @@ const GRID_DESCRIPTION = 'This grid and everything inside it will be removed fro
 const LAYOUT_DESCRIPTION = 'This layout and everything inside it will be removed from the form.';
 const STAGE_DESCRIPTION =
   'This stage, its forms and its connections will be removed from the flow.';
+/**
+ * Doc 210 rule 8c: when the node's neighbours will be JOINED (rule 1), saying its connections are removed is
+ * simply untrue — the author would expect a broken chain and find a mended one.
+ */
+const STAGE_JOIN_DESCRIPTION =
+  'This stage and its forms will be removed from the flow. What leads into it will be connected to what follows.';
 const FORM_DESCRIPTION = 'This form and everything inside it will be removed from its stage.';
 /** Doc 199 rule 30: a Condition holds no children, so what goes with it is its criteria and its branches. */
 const CONDITION_DESCRIPTION =
   'This condition, its criteria and its connections will be removed from the flow.';
+/** Rule 8c, for a Condition: the same join, named by what a Condition holds. */
+const CONDITION_JOIN_DESCRIPTION =
+  'This condition and its criteria will be removed from the flow. What leads into it will be connected to what follows.';
 
 /** Rule 21: a Grid and the other gridstack layouts say their children go too; a Stage and a Form in one say theirs (doc 196). */
-function descriptionFor(elementType: string | undefined): string {
-  if (elementType === STAGE_TYPE) return STAGE_DESCRIPTION;
-  if (elementType === CONDITION_TYPE) return CONDITION_DESCRIPTION;
+function descriptionFor(elementType: string | undefined, joins = false): string {
+  if (elementType === STAGE_TYPE) return joins ? STAGE_JOIN_DESCRIPTION : STAGE_DESCRIPTION;
+  if (elementType === CONDITION_TYPE)
+    return joins ? CONDITION_JOIN_DESCRIPTION : CONDITION_DESCRIPTION;
   // Only a Form in a Stage can be deleted — a root Form has no delete action.
   if (elementType === FORM_TYPE) return FORM_DESCRIPTION;
   if (elementType === 'Grid') return GRID_DESCRIPTION;
@@ -69,7 +79,9 @@ export function DeleteConfirmation({ pending, onConfirm, onCancel }: DeleteConfi
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete element?</AlertDialogTitle>
-          <AlertDialogDescription>{descriptionFor(pending?.elementType)}</AlertDialogDescription>
+          <AlertDialogDescription>
+            {descriptionFor(pending?.elementType, pending?.joins)}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex items-center gap-2">
           <Checkbox

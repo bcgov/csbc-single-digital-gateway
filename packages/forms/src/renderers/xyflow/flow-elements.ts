@@ -54,6 +54,15 @@ export interface DrawnNode {
 /** Kept for the Stage-only readers (doc 199 rule 16). */
 export type DrawnStage = DrawnNode;
 
+/**
+ * A node's label for a list or a menu — doc 210 rule 17's `Connect to` items and doc 209 rule 7's pickers name
+ * nodes the same way, so they read the same way.
+ */
+export const nodeLabel = (element: UISchemaElement, fallback = 'Untitled'): string => {
+  const label = (element as { label?: unknown }).label;
+  return typeof label === 'string' && label !== '' ? label : fallback;
+};
+
 /** A layout's `elements`, or `[]`. */
 export const elementsOf = (element: UISchemaElement): readonly UISchemaElement[] =>
   (element as { elements?: UISchemaElement[] }).elements ?? [];

@@ -3,6 +3,7 @@ import {
   CONDITION_TYPE,
   DEFAULT_HANDLE,
   drawnNodes,
+  nodeLabel,
   rowsOf,
 } from '../../renderers/xyflow/flow-elements';
 import { flowEdges } from '../../renderers/xyflow/flow-graph';
@@ -33,11 +34,6 @@ const UNNAMED_NODE = 'Untitled';
 const UNNAMED_BRANCH = 'Untitled condition';
 const ELSE_LABEL = 'Else';
 
-const labelOf = (element: UISchemaElement, fallback: string): string => {
-  const label = (element as { label?: unknown }).label;
-  return typeof label === 'string' && label !== '' ? label : fallback;
-};
-
 /**
  * Rule 7: a value the pickers do not otherwise offer is ADDED to them, so the panel says what the edge
  * actually names. Silently showing the first option instead would read as the edge pointing somewhere it does
@@ -64,7 +60,7 @@ export function edgeInspectorModel(
   const drawn = drawnNodes(flow).filter(({ authored }) => authored);
   const nodes = drawn.map(({ id, element }) => ({
     value: id,
-    label: labelOf(element, UNNAMED_NODE),
+    label: nodeLabel(element, UNNAMED_NODE),
   }));
   const source = drawn.find(({ id }) => id === edge.source);
 

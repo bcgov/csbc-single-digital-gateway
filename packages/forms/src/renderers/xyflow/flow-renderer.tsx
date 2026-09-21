@@ -180,9 +180,21 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
   // than state, and `useFlowLayout` re-runs on the document alone.
   const direction = DEFAULT_DIRECTION;
   const layout = useFlowLayout(uischema, { direction });
+  // Doc 210 rule 23: the Flow element and — under an editor — its element id travel with the dispatch props,
+  // so a Condition's output + can list the nodes it may connect to and name the Flow in its gesture.
+  const flowElementId = editor ? editor.idOf(uischema) : undefined;
   const context = useMemo<FlowContextValue>(
-    () => ({ schema, path, enabled, renderers, cells, direction }),
-    [schema, path, enabled, renderers, cells, direction],
+    () => ({
+      schema,
+      path,
+      enabled,
+      renderers,
+      cells,
+      direction,
+      element: uischema,
+      id: flowElementId,
+    }),
+    [schema, path, enabled, renderers, cells, direction, uischema, flowElementId],
   );
   const derivedNodes = useMemo(
     () => toFlowNodes(uischema, layout.positions),

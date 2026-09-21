@@ -221,7 +221,8 @@ describe('inserting a Condition (rule 24)', () => {
 
     await waitFor(() => expect(conditionCards()).toHaveLength(1));
     // Connected from the leaf it was added under, and selected like every other inserting gesture.
-    await waitFor(() => expect(edgeCount()).toBe(2));
+    // Doc 210 rule 9: it also arrives with a Stage on its Else output, so that is a second new edge.
+    await waitFor(() => expect(edgeCount()).toBe(3));
     expect(currentCrumb()).toBe('Condition 1');
     expect(conditionCards()[0]).toHaveTextContent('Condition 1');
   });
@@ -231,9 +232,10 @@ describe('inserting a Condition (rule 24)', () => {
     await chooseNode(await buttonIn('s2', 'Add a node'), 'Condition');
     await waitFor(() => expect(conditionCards()).toHaveLength(1));
 
+    // s1, s2, the Condition, and the Stage on its Else output (doc 210 rule 9) — every id distinct.
     const ids = nodeIds();
-    expect(ids).toHaveLength(3);
-    expect(new Set(ids).size).toBe(3);
+    expect(ids).toHaveLength(4);
+    expect(new Set(ids).size).toBe(4);
     expect(ids).toContain('s1');
     expect(ids).toContain('s2');
   });
@@ -371,10 +373,11 @@ describe('wiring an output (rules 20, 29)', () => {
   it("appends a connected Stage from an unconnected output's +, carrying the criterion as sourceHandle", async () => {
     renderStudio(branched([criterion('x')]));
     const row = required((await waitFor(() => rows()))[0], 'criterion row');
-    // The criterion's output leads nowhere yet, so the row carries its own +.
-    const add = within(row).getByRole('button', { name: 'Add a stage' });
+    // The criterion's output leads nowhere yet, so the row carries its own +. Doc 210 rule 17: it opens a menu
+    // now, rather than appending outright, so the new Stage is chosen from it.
+    fireEvent.click(within(row).getByRole('button', { name: 'Add a node' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'New stage' }));
 
-    fireEvent.click(add);
     await waitFor(() => expect(stageCount()).toBe(3));
     await waitFor(() => expect(edgeCount()).toBe(3));
     // The new edge leaves BY THE CRITERION, not by the default path: the criterion's output is now wired, so
@@ -382,7 +385,7 @@ describe('wiring an output (rules 20, 29)', () => {
     // row would still be offering to wire itself.
     await waitFor(() =>
       expect(
-        within(required(rows()[0], 'row')).queryByRole('button', { name: 'Add a stage' }),
+        within(required(rows()[0], 'row')).queryByRole('button', { name: 'Add a node' }),
       ).toBeNull(),
     );
   });
@@ -393,7 +396,7 @@ describe('wiring an output (rules 20, 29)', () => {
     );
     await waitFor(() => expect(edgeCount()).toBe(3));
     const row = required(rows()[0], 'criterion row');
-    expect(within(row).queryByRole('button', { name: 'Add a stage' })).toBeNull();
+    expect(within(row).queryByRole('button', { name: 'Add a node' })).toBeNull();
 
     // Split the criterion's own edge. `insertStageBetween` RETARGETS it, so it keeps both its id and its handle.
     const adds = [...centre().querySelectorAll<HTMLElement>('[data-slot="flow-edge-add"]')];
@@ -402,7 +405,7 @@ describe('wiring an output (rules 20, 29)', () => {
 
     // Still wired by the criterion: its row grows no + back.
     expect(
-      within(required(rows()[0], 'row')).queryByRole('button', { name: 'Add a stage' }),
+      within(required(rows()[0], 'row')).queryByRole('button', { name: 'Add a node' }),
     ).toBeNull();
   });
 
@@ -421,7 +424,7 @@ describe('wiring an output (rules 20, 29)', () => {
     await waitFor(() => expect(edgeCount()).toBe(4));
     await waitFor(() => expect(rows()).toHaveLength(2));
     for (const row of rows())
-      expect(within(row).queryByRole('button', { name: 'Add a stage' })).toBeNull();
+      expect(within(row).queryByRole('button', { name: 'Add a node' })).toBeNull();
   });
 });
 
@@ -432,13 +435,15 @@ describe('studio integration (rules 30-32)', () => {
     const menu = await screen.findByRole('dialog', { name: 'Condition actions' });
     fireEvent.click(within(menu).getByRole('button', { name: 'Delete' }));
 
-    // Rule 30: a Condition holds no children, so the wording names what actually goes with it.
+    // Rule 30: a Condition holds no children, so the wording names what actually goes with it. Doc 210 rule
+    // 8c: this one sits in a chain, so the wording promises the join rather than a cut connection.
     await confirmDelete(
-      'This condition, its criteria and its connections will be removed from the flow.',
+      'This condition and its criteria will be removed from the flow. What leads into it will be connected to what follows.',
     );
     await waitFor(() => expect(conditionCards()).toHaveLength(0));
-    // Its edges go with it (rule 27), leaving nothing joining the two Stages.
-    await waitFor(() => expect(edgeCount()).toBe(0));
+    // Doc 210 rules 1-3 supersede rule 27's outcome HERE: the Condition had one edge in and one out, so its
+    // neighbours are joined rather than left dangling — s1 → s2 remains.
+    await waitFor(() => expect(edgeCount()).toBe(1));
   });
 
   it('gives a Condition the Delete-only actions popover, like a Stage', async () => {

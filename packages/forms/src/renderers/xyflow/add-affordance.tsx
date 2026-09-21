@@ -3,7 +3,10 @@ import { Icon } from '@mdi/react';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import type { FlowNodeKind } from './flow-elements';
@@ -73,6 +76,68 @@ export function AddNodeMenu({ label, onAdd, className = '', variant = 'round' }:
       <DropdownMenuContent data-slot="flow-add-menu" className={`w-auto ${CANVAS_BUTTON_CLASS}`}>
         <DropdownMenuItem onClick={() => onAdd('stage')}>Stage</DropdownMenuItem>
         <DropdownMenuItem onClick={() => onAdd('condition')}>Condition</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** Doc 210 rule 17: one existing node a branch may be connected to. */
+export interface ConnectCandidate {
+  readonly id: string;
+  readonly label: string;
+}
+
+interface AddOrConnectMenuProps {
+  readonly label: string;
+  readonly candidates: readonly ConnectCandidate[];
+  readonly onAdd: (kind: FlowNodeKind) => void;
+  readonly onConnect: (nodeId: string) => void;
+  readonly className?: string;
+}
+
+/**
+ * Doc 210 rules 16-20: the + on an UNCONNECTED Condition output. It offers a new node of either kind and, below
+ * them, every existing node the connection rules permit — because routing a branch into a Stage that already
+ * exists is otherwise only reachable by dragging from a handle, the one gesture that is easiest to miss.
+ *
+ * Rule 19: a refused candidate is OMITTED rather than shown disabled. A disabled row states a refusal without
+ * its reason, and the menu has no room for reasons; rule 20: with no candidates the section is absent, not
+ * empty. The caller decides what is legal — this component only draws what it is given.
+ */
+export function AddOrConnectMenu({
+  label,
+  candidates,
+  onAdd,
+  onConnect,
+  className = '',
+}: AddOrConnectMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={label}
+        data-slot="flow-add"
+        className={`${CANVAS_BUTTON_CLASS} ${className} ${FOCUS_CLASS} ${ROUND_CLASS}`}
+      >
+        <Icon path={mdiPlus} size="14px" />
+      </DropdownMenuTrigger>
+      {/* The menu is portalled out of the canvas, so it needs the pane's gesture opt-outs of its own. */}
+      <DropdownMenuContent data-slot="flow-add-menu" className={`w-auto ${CANVAS_BUTTON_CLASS}`}>
+        <DropdownMenuItem onClick={() => onAdd('stage')}>New stage</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onAdd('condition')}>New condition</DropdownMenuItem>
+        {candidates.length > 0 ? (
+          <>
+            <DropdownMenuSeparator />
+            {/* Base UI requires a group around a menu label — a bare one throws for a missing group context. */}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Connect to</DropdownMenuLabel>
+              {candidates.map((candidate) => (
+                <DropdownMenuItem key={candidate.id} onClick={() => onConnect(candidate.id)}>
+                  {candidate.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

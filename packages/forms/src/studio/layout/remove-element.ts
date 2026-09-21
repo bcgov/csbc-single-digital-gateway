@@ -2,7 +2,8 @@ import type { JsonSchema } from '@jsonforms/core';
 import { authoredStageId, flowNodeKind, FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
-import { clearFlowStart, removeStageEdges } from './flow-edits';
+import { clearFlowStart } from './flow-edits';
+import { joinAroundNode } from './node-join';
 import { propertyKeysUsed, type StudioDocument } from './schema-properties';
 
 /** Rule 25: the schema without `keys` in `properties` or `required`; an emptied `required` is dropped. */
@@ -48,13 +49,20 @@ export function removeElement(
     root,
     ids.idOf(parent),
     (grid) => {
-      const kept = withElements(
-        grid,
-        (grid.elements ?? []).filter((element) => element !== removed),
+      /**
+       * Doc 210 rule 1: the edges are resolved on the Flow that STILL HOLDS the node. `joinAroundNode` counts
+       * SANITISED edges, and `flowEdges` drops an edge whose end no longer exists — so running it after the
+       * removal left the node with no edges to join and every chain broke silently.
+       */
+      const joined =
+        stageId === undefined
+          ? grid
+          : clearFlowStart(joinAroundNode(grid, stageId, ids), stageId, ids);
+      return withElements(
+        joined,
+        (joined.elements ?? []).filter((element) => element !== removed),
         ids,
       );
-      if (stageId === undefined) return kept;
-      return clearFlowStart(removeStageEdges(kept, stageId, ids), stageId, ids);
     },
     ids,
   );
