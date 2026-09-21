@@ -43,6 +43,7 @@ import {
   connectGesture,
   disconnectGesture,
   reconnectGesture,
+  reconnectRefusal,
   selectEdgeGesture,
 } from './flow-gestures';
 import { ConditionNode } from './condition-node';
@@ -105,6 +106,12 @@ function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
      */
     edgesReconnectable: true,
     onReconnect: (oldEdge, connection) => emit(reconnectGesture(flowId, oldEdge.id, connection)),
+    /**
+     * Rules 15-16: a drop xyflow judges invalid never reaches `onReconnect`, so without this the drag would
+     * snap back saying nothing while the inspector's pickers explained themselves.
+     */
+    onReconnectEnd: (_event, oldEdge, anchor, state) =>
+      emit(reconnectRefusal(flowId, oldEdge, anchor, state)),
     onBeforeDelete: ({ edges }) => {
       emit(disconnectGesture(flowId, edges));
       return Promise.resolve(false);

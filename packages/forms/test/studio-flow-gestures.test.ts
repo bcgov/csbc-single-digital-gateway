@@ -4,6 +4,9 @@ import {
   connectGesture,
   connectionProblem,
   disconnectGesture,
+  reconnectGesture,
+  reconnectRefusal,
+  selectEdgeGesture,
 } from '../src/renderers/xyflow/flow-gestures';
 
 // Doc 196 rules 1, 5-7 — pure xyflow callback → FlowGesture translation (renderers/xyflow/flow-gestures).
@@ -161,5 +164,79 @@ describe('dragging from a Condition output (doc 199 rule 45c)', () => {
     expect(canConnect(flowEl, 'c', 't', 'else')).toBe(true);
     // ...and a row's edge does not stand in for it.
     expect(canConnect(flowEl, 'c', 't')).toBe(true);
+  });
+});
+
+describe('edge gestures (doc 209 rules 2, 15-16, 19)', () => {
+  const edge = { id: 'e1' };
+
+  it('reports the edge a batch of changes SELECTS', () => {
+    expect(
+      selectEdgeGesture('f1', [
+        { type: 'select', id: 'e0', selected: false },
+        { type: 'select', id: 'e1', selected: true },
+      ]),
+    ).toEqual({ type: 'select-edge', flowId: 'f1', edgeId: 'e1' });
+  });
+
+  it('reports NO edge when the batch only deselects', () => {
+    expect(selectEdgeGesture('f1', [{ type: 'select', id: 'e1', selected: false }])).toEqual({
+      type: 'select-edge',
+      flowId: 'f1',
+      edgeId: null,
+    });
+  });
+
+  it('says NOTHING about a batch that is not a selection (rule 2)', () => {
+    // Every layout pass emits changes. Reading those as "nothing is selected" would clear the panel out
+    // from under the author.
+    expect(selectEdgeGesture('f1', [{ type: 'position', id: 'e1' }])).toBeUndefined();
+  });
+
+  it('turns a tip drag into a re-point of the whole connection (rule 19)', () => {
+    expect(reconnectGesture('f1', 'e1', { source: 'a', target: 'c', sourceHandle: 'r1' })).toEqual({
+      type: 'repoint',
+      flowId: 'f1',
+      edgeId: 'e1',
+      patch: { source: 'a', target: 'c', sourceHandle: 'r1' },
+    });
+  });
+
+  it('ignores a tip drag released over nothing', () => {
+    expect(reconnectGesture('f1', 'e1', { source: 'a', target: null })).toBeUndefined();
+  });
+
+  it('re-points anyway when xyflow REFUSED the drop, so the reason gets said (rules 15-16)', () => {
+    // `isValidConnection` runs during a reconnect, so a refused drop never reaches `onReconnect` — the edge
+    // snapped back in silence. `repointEdge` stays the single judge and produces the message.
+    //
+    // The anchor is `'source'` here: xyflow reports the handle the edge is still ATTACHED to, so a dragged
+    // TARGET arrives as `'source'`. Reading it the other way inverted every refusal (found by hand).
+    expect(
+      reconnectRefusal('f1', edge, 'source', { isValid: false, toHandle: { nodeId: 'b' } }),
+    ).toEqual({ type: 'repoint', flowId: 'f1', edgeId: 'e1', patch: { target: 'b' } });
+  });
+
+  it('carries the branch when the SOURCE end moved, and normalises Else', () => {
+    expect(
+      reconnectRefusal('f1', edge, 'target', {
+        isValid: false,
+        toHandle: { nodeId: 'c', id: 'else' },
+      }),
+    ).toEqual({
+      type: 'repoint',
+      flowId: 'f1',
+      edgeId: 'e1',
+      patch: { source: 'c', sourceHandle: undefined },
+    });
+  });
+
+  it('says nothing about a drag released over nothing, or one that landed', () => {
+    expect(
+      reconnectRefusal('f1', edge, 'source', { isValid: false, toHandle: null }),
+    ).toBeUndefined();
+    expect(
+      reconnectRefusal('f1', edge, 'source', { isValid: true, toHandle: { nodeId: 'b' } }),
+    ).toBeUndefined();
   });
 });

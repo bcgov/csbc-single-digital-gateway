@@ -171,6 +171,47 @@ export function reconnectGesture(
   };
 }
 
+/** The part of xyflow's final connection state a refused reconnect reads. Structural — no xyflow import. */
+export interface ReconnectEnd {
+  /** `false` once the drag settled over a handle it may not join; `null` when it settled over nothing. */
+  readonly isValid: boolean | null;
+  readonly toHandle: { readonly nodeId: string; readonly id?: string | null } | null;
+}
+
+/**
+ * Which end of the edge stays PUT — xyflow's `handleType` here is the ANCHOR, not the end being dragged
+ * (`EdgeUpdateAnchors`: grabbing the target anchor calls back with `type: 'source'`, the handle the
+ * connection is still attached to). Reading it as the moving end inverts every refusal, which is how a
+ * dragged target reported the Else path of the node it was dropped on. Found by hand.
+ */
+export type ReconnectAnchor = 'source' | 'target';
+
+/**
+ * Doc 209 rules 15-16: a reconnect xyflow REFUSED, as the re-point it was reaching for.
+ *
+ * `isValidConnection` runs during a reconnect too, so a drop xyflow judges invalid never reaches `onReconnect`
+ * — the edge snaps back in silence, and the author is told nothing. Found by hand: the inspector's pickers
+ * reported their reasons and the identical drag reported none.
+ *
+ * Emitting the re-point anyway is deliberate rather than a second refusal path: `repointEdge` is the single
+ * judge (rule 10), so the drag and the panel produce the SAME message, and a drop that turns out to be fine
+ * after all simply lands. `undefined` for a drag released over nothing — that is an abandoned gesture, not an
+ * edit to explain.
+ */
+export function reconnectRefusal(
+  flowId: string,
+  edge: { readonly id: string },
+  anchor: ReconnectAnchor,
+  state: ReconnectEnd,
+): FlowGesture | undefined {
+  if (state.isValid !== false || state.toHandle === null) return undefined;
+  const { nodeId, id } = state.toHandle;
+  // The end that MOVED is the other one from the anchor.
+  const patch: EdgePatch =
+    anchor === 'source' ? { target: nodeId } : { source: nodeId, sourceHandle: storedHandle(id) };
+  return { type: 'repoint', flowId, edgeId: edge.id, patch };
+}
+
 /** Rule 7: the edges xyflow is about to delete as a disconnect, or `undefined` when there are none. */
 export function disconnectGesture(
   flowId: string,
