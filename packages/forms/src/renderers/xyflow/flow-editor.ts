@@ -74,20 +74,25 @@ export interface FlowEditor {
   /** `true` when a pan or zoom starts, `false` when it stops (doc 196 rule 4). Optional. */
   onGestureActive?(active: boolean): void;
   /**
-   * Whether an edge `source → target` may be added to `flow` (rule 5). `sourceHandle` is the output it would
-   * leave by, which decides whether it duplicates an existing edge (doc 199 rules 11, 45c).
+   * WHY an edge `source → target` may not be added to `flow`, or `undefined` when it may (rule 5, reshaped by
+   * doc 209 rule 14). `sourceHandle` is the output it would leave by, which decides whether it duplicates an
+   * existing edge (doc 199 rules 11, 45c); `exceptEdgeId` is the edge being RE-POINTED, which must not read as
+   * a duplicate of itself.
+   *
+   * A boolean here carried no reason, and doc 209 rule 15 has to tell the author why an edit snapped back.
    */
-  canConnect(
+  connectionProblem(
     flow: UISchemaElement,
     source: string,
     target: string,
     sourceHandle?: string | null,
-  ): boolean;
+    exceptEdgeId?: string,
+  ): string | undefined;
   /**
    * Doc 199 rule 25 (amendment): the fields the Condition with `conditionId` may test — those answerable
    * before it (rule 6). The popover's field picker has no other route to them: `FlowContext` carries only
    * JSONForms dispatch props, and `upstreamFieldsOf` lives in the studio, which `renderers/xyflow` may never
-   * import. Like `canConnect`, it delegates a whole-document question to the consumer.
+   * import. Like `connectionProblem`, it delegates a whole-document question to the consumer.
    */
   fieldsFor(conditionId: string): readonly CriterionField[];
 }

@@ -1,8 +1,8 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import {
-  canConnect,
   connectGesture,
+  connectionProblem,
   disconnectGesture,
 } from '../src/renderers/xyflow/flow-gestures';
 
@@ -18,6 +18,14 @@ const flow = (stages: UISchemaElement[], pairs: [string, string][] = []) =>
     elements: stages,
     options: { edges: pairs.map(([source, target], i) => ({ id: `e${i}`, source, target })) },
   });
+
+/**
+ * Doc 209 rule 14: the port now returns the REASON, and "may connect" is `=== undefined` derived at the call
+ * sites. These rule-5 cases are about WHETHER, so they derive it the same way; `edge-edits.test.ts` asserts the
+ * reasons themselves.
+ */
+const canConnect = (...args: Parameters<typeof connectionProblem>) =>
+  connectionProblem(...args) === undefined;
 
 describe('canConnect (rule 5)', () => {
   const chain = flow([stage('a'), stage('b'), stage('c')], [['a', 'b']]);

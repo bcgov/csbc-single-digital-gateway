@@ -60,3 +60,6 @@ export const base = (rows: object[] = [], edges: object[] = []) =>
     [stage('a', [control('k1'), control('k2')]), condition('c', rows), stage('b')],
     [{ id: 'e0', source: 'a', target: 'c' }, ...edges],
   );
+
+/** Doc 209: an edge entry, as `options.edges` stores one. Spread to add a `sourceHandle`. */
+export const edge = (id: string, source: string, target: string) => ({ id, source, target });

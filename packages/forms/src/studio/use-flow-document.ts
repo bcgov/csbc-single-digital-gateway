@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { CriterionField } from '../renderers/xyflow/criteria';
 import { authoredStageId } from '../renderers/xyflow/flow-elements';
 import type { FlowEditor, FlowGesture } from '../renderers/xyflow/flow-editor';
-import { canConnect } from '../renderers/xyflow/flow-gestures';
+import { connectionProblem } from '../renderers/xyflow/flow-gestures';
 import { addClause, removeClause, setClause } from './layout/clause-edits';
 import { addRow, moveRow, removeRow, setMode, setRow } from './layout/condition-edits';
 import type { ElementIds } from './layout/element-ids';
@@ -172,7 +172,13 @@ export function useFlowDocument(
         updateUischema((current) =>
           applyFlowGesture({ schema: latest.current.schema, uischema: current }, gesture, ids),
         ),
-      canConnect: (flow, source, target) => canConnect(flow, source, target),
+      /**
+       * Doc 209 rule 14. Every argument is FORWARDED — the previous wrapper passed only `(flow, source, target)`,
+       * so `isValidConnection` judged a Condition row's drag without knowing which row it left by (doc 199 rule
+       * 45c) and refused the second row to a shared target while `connectStages` would have accepted it.
+       */
+      connectionProblem: (flow, source, target, sourceHandle, exceptEdgeId) =>
+        connectionProblem(flow, source, target, sourceHandle, exceptEdgeId),
       fieldsFor: (conditionId) => fieldsOf(latest.current, conditionId, ids),
     }),
     [ids, updateUischema],
@@ -219,7 +225,8 @@ export function useSelectionFlowEditor(
   return useMemo<FlowEditor>(
     () => ({
       idOf: (element) => documentEditor.idOf(element),
-      canConnect: (flow, source, target) => documentEditor.canConnect(flow, source, target),
+      connectionProblem: (flow, source, target, sourceHandle, exceptEdgeId) =>
+        documentEditor.connectionProblem(flow, source, target, sourceHandle, exceptEdgeId),
       fieldsFor: (conditionId) => documentEditor.fieldsFor(conditionId),
       onGestureActive: (active) => latest.current.setGesturing(active),
       onGesture: (gesture) => {

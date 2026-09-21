@@ -62,7 +62,7 @@ const VIEW_ONLY_PROPS: FlowProps = {
 };
 
 /**
- * Doc 196 rules 5-7: an editable canvas connects handles that `canConnect` allows and turns Delete / Backspace on
+ * Doc 196 rules 5-7: an editable canvas connects handles that `connectionProblem` allows and turns Delete / Backspace on
  * selected edges into a disconnect. xyflow never changes anything itself — `onBeforeDelete` resolves `false` — so the
  * uischema stays the only source of truth.
  *
@@ -81,8 +81,10 @@ function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
     multiSelectionKeyCode: null,
     deleteKeyCode: ['Delete', 'Backspace'],
     // Doc 199 rule 45c: the handle decides whether this duplicates an edge, so it is part of the question.
+    // Doc 209 rule 14: "may connect" is derived here — `=== undefined` — rather than kept as a second port
+    // method that could drift from the one carrying the reason.
     isValidConnection: ({ source, target, sourceHandle }) =>
-      editor.canConnect(flow, source, target, sourceHandle),
+      editor.connectionProblem(flow, source, target, sourceHandle) === undefined,
     onConnect: (connection) => emit(connectGesture(flowId, connection)),
     onBeforeDelete: ({ edges }) => {
       emit(disconnectGesture(flowId, edges));

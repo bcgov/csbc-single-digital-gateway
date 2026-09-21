@@ -9,7 +9,7 @@ import {
   startStageId,
   type FlowNodeKind,
 } from '../../renderers/xyflow/flow-elements';
-import { canConnect } from '../../renderers/xyflow/flow-gestures';
+import { connectionProblem } from '../../renderers/xyflow/flow-gestures';
 import { flowEdges } from '../../renderers/xyflow/flow-graph';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, withElements, type TreeElement } from './element-tree';
@@ -53,7 +53,7 @@ function freshId(taken: ReadonlySet<unknown>, newId: () => string): string {
   return id;
 }
 
-/** Rule 6: `source → target` appended to the Flow's edges with a fresh `nanoid(8)` id, when `canConnect` allows it. */
+/** Rule 6: `source → target` appended to the Flow's edges with a fresh `nanoid(8)` id, when nothing refuses it. */
 export function connectStages(
   uischema: UISchemaElement,
   flowId: string,
@@ -69,7 +69,8 @@ export function connectStages(
 ): UISchemaElement {
   const root = uischema as TreeElement;
   const flow = findById(root, flowId, ids);
-  if (flow?.type !== FLOW_TYPE || !canConnect(flow, source, target, sourceHandle)) return uischema;
+  if (flow?.type !== FLOW_TYPE) return uischema;
+  if (connectionProblem(flow, source, target, sourceHandle) !== undefined) return uischema;
   const edges = rawEdges(flow);
   const id = freshId(new Set(edges.map(edgeIdOf)), newId);
   const edge =

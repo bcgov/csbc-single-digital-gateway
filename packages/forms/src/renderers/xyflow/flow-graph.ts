@@ -21,6 +21,12 @@ export interface FlowProblem {
 export const SELF_LOOP_MESSAGE = 'An edge cannot connect a Stage to itself.';
 export const DUPLICATE_EDGE_MESSAGE = 'This edge is already defined.';
 export const CYCLE_MESSAGE = 'This edge would create a cycle.';
+/**
+ * Doc 209 rule 11: a Condition ROW leads to exactly one place. A second edge off the same row would send one
+ * answer to two stages at once, which is not a branch — it is an ambiguity nothing downstream could resolve.
+ */
+export const BRANCH_TAKEN_MESSAGE = 'This condition already leads somewhere from that branch.';
+export const DEFAULT_TAKEN_MESSAGE = 'This condition already has an Else path.';
 export const MISSING_DEFAULT_MESSAGE =
   'This condition has no Else path, so an answer matching no condition would have nowhere to go.';
 export const duplicateStageIdMessage = (id: string) => `Stage id "${id}" is already used.`;
