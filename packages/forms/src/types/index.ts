@@ -121,4 +121,13 @@ export type FormStudioProps = {
    * should replace the history entry in that case, and push in every other.
    */
   onFocusedFormChange?: ((formId: string | null, meta: { replace: boolean }) => void) | undefined;
+  /**
+   * Doc 209 rules 16-18: called with a short, human message when the studio REFUSES an edit — today, an edge
+   * re-point that would duplicate a branch, close a cycle or point a node at itself.
+   *
+   * A host concern, like `onFocusedFormChange` and `loadDocument`: `@repo/forms` serves two apps with
+   * different chrome, and `renderers/` may not import the studio, so a direct toast dependency in this package
+   * would be the wrong layer. With no `onNotice` the edit is still refused — it just says nothing (rule 18).
+   */
+  onNotice?: ((message: string) => void) | undefined;
 };

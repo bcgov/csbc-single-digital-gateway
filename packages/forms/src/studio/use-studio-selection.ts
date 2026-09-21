@@ -11,6 +11,7 @@ import {
 import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement, StudioSelection } from '../renderers/studio/studio-selection';
 import type { FlowEditor } from '../renderers/xyflow/flow-editor';
+import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
 import { useSelectionFlowEditor, type FlowInsertGesture } from './use-flow-document';
 
 /** What selection needs from the studio document (`useStudioDocument`). */
@@ -20,6 +21,8 @@ export interface SelectableDocument {
   readonly flowEditor: FlowEditor;
   /** Doc 198 rule 16: applies an on-canvas + gesture, returning the new element's id. */
   insertFlowGesture(gesture: FlowInsertGesture): string | undefined;
+  /** Doc 209 rules 9-10: re-points one edge of a Flow, returning WHY it was refused (rule 15). */
+  repointFlowEdge(flowId: string, edgeId: string, patch: EdgePatch): string | undefined;
   /** The Form the canvas shows for `selectedId`, or `null` (doc 196 rule 12). */
   canvasRootOf(selectedId: string | null): string | null;
   /** Replaced when a new seed document resets the studio, and with it the element ids. */
@@ -93,6 +96,11 @@ interface PointerSelectionOptions {
   readonly setHovered: IdSetter;
   readonly setSelected: IdSetter;
   readonly setPressing: (pressing: boolean) => void;
+  /**
+   * Doc 209 rule 3: clears a selected edge and reports whether there was one. Escape belongs to the edge
+   * first — it is the innermost thing selected — and only walks the ELEMENT selection up when there was none.
+   */
+  readonly clearEdge: () => boolean;
 }
 
 /**
@@ -123,6 +131,7 @@ function usePointerSelection(
     setHovered,
     setSelected,
     setPressing,
+    clearEdge,
   }: PointerSelectionOptions,
 ) {
   useEffect(() => {
@@ -161,6 +170,8 @@ function usePointerSelection(
       // and Escape would both close the dialog AND walk the selection up.
       if (event.key !== 'Escape' || confirming || editingOptions || insidePanelForm(event.target))
         return;
+      // Rule 3: the edge goes first, and Escape stops there — one press, one step out.
+      if (clearEdge()) return;
       setSelected((current) => (current === null ? null : parentOf(current)));
     };
 
@@ -190,6 +201,7 @@ function usePointerSelection(
     setHovered,
     setSelected,
     setPressing,
+    clearEdge,
   ]);
 }
 
@@ -262,17 +274,48 @@ export function useStudioSelection(
   active: boolean,
   studio: SelectableDocument,
   options: OptionsGestures = NO_OPTIONS_EDITOR,
+  /** Doc 209 rules 16-18: the host's notice channel. Absent, a refusal still refuses — it just says nothing. */
+  onNotice?: ((message: string) => void) | undefined,
 ) {
   const [hovered, setHovered] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  /**
+   * Doc 209 rule 1: a PARALLEL field, not a discriminated union with the element selection. Every existing
+   * reader — the frame highlight, the breadcrumbs, `canvasFocusId`, the inspector's element path — keeps
+   * working unchanged and sees "no element selected" while an edge is selected, which is the behaviour wanted.
+   * The invariant (at most one is set) is enforced in `setSelected` and `selectEdge` alone.
+   */
+  const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  const edgeRef = useRef<string | null>(null);
+  edgeRef.current = selectedEdge;
+
+  /** Rule 1: selecting an element clears the edge. The one place the two selections are reconciled. */
+  const setSelected = useCallback<IdSetter>((update) => {
+    setSelectedElement(update);
+    setSelectedEdge(null);
+  }, []);
+  const selectEdge = useCallback((edgeId: string | null) => {
+    setSelectedEdge(edgeId);
+    if (edgeId !== null) setSelectedElement(null);
+  }, []);
+  const clearEdge = useCallback(() => {
+    if (edgeRef.current === null) return false;
+    setSelectedEdge(null);
+    return true;
+  }, []);
   const [gesturing, setGesturing] = useState(false);
   const [pressing, setPressing] = useState(false);
   const [seed, setSeed] = useState(studio.seed);
 
-  if (seed !== studio.seed || (!active && (hovered !== null || selected !== null || gesturing))) {
+  if (
+    seed !== studio.seed ||
+    (!active &&
+      (hovered !== null || selectedElement !== null || selectedEdge !== null || gesturing))
+  ) {
     setSeed(studio.seed);
     setHovered(null);
-    setSelected(null);
+    setSelectedElement(null);
+    setSelectedEdge(null);
     setGesturing(false);
   }
   const {
@@ -290,6 +333,10 @@ export function useStudioSelection(
   useEffect(() => {
     latest.current = studio;
   });
+  // Read through a ref for the same reason the document is: the Flow editor must keep its identity across
+  // renders, and a host passing an inline arrow would otherwise rebuild it on every one (doc 200's trap).
+  const noticeRef = useRef(onNotice);
+  noticeRef.current = onNotice;
 
   /**
    * Deleting settles the selection exactly as a press on empty canvas does (doc 196 rule 14): `canvasRootOf` keeps a
@@ -321,6 +368,7 @@ export function useStudioSelection(
     setHovered,
     setSelected,
     setPressing,
+    clearEdge,
   });
   const flowEditor = useSelectionFlowEditor(studio.flowEditor, {
     select: setSelected,
@@ -328,11 +376,17 @@ export function useStudioSelection(
     setGesturing,
     // Reads the latest document, like the Grid editor's insert, so the editor keeps its identity across edits.
     insert: (gesture) => latest.current.insertFlowGesture(gesture),
+    selectEdge,
+    // Doc 209 rules 15-16: the drag and the inspector panel run the SAME edit and report the same reason.
+    repoint: (flowId, edgeId, patch) => {
+      const problem = latest.current.repointFlowEdge(flowId, edgeId, patch);
+      if (problem !== undefined) noticeRef.current?.(problem);
+    },
   });
 
   const known = (id: string | null) => id !== null && (id === rootId || elementTypes.has(id));
   const hoveredId = known(hovered) ? hovered : null;
-  const selectedId = known(selected) ? selected : null;
+  const selectedId = known(selectedElement) ? selectedElement : null;
 
   const port = useMemo<StudioSelection>(
     () => ({
@@ -383,5 +437,16 @@ export function useStudioSelection(
     [addToDocument, selectedId],
   );
 
-  return { port, editor, flowEditor, confirmation, hover, select: setSelected, pressing, add };
+  return {
+    port,
+    editor,
+    flowEditor,
+    confirmation,
+    hover,
+    select: setSelected,
+    pressing,
+    add,
+    selectedEdgeId: selectedEdge,
+    selectEdge,
+  };
 }

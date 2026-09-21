@@ -108,6 +108,69 @@ export function connectGesture(
     : { type: 'connect', flowId, source, target, sourceHandle };
 }
 
+/**
+ * Doc 209 rules 8-9: which ends of an edge a re-point moves. An absent key leaves that end alone.
+ *
+ * Declared HERE rather than beside `repointEdge`: the drag gesture carries one across the editor port, and
+ * `renderers/xyflow` may never import the studio.
+ */
+export interface EdgePatch {
+  readonly source?: string;
+  readonly target?: string;
+  /**
+   * The Condition ROW the edge leaves by. `DEFAULT_HANDLE`, `''` and `undefined` all mean the Else path, which
+   * is stored as no handle at all (doc 199 rule 18).
+   */
+  readonly sourceHandle?: string | undefined;
+}
+
+/** The shape of an xyflow edge change this file reads. Structural, so xyflow's own type is not needed here. */
+interface EdgeChange {
+  readonly type: string;
+  readonly id?: string;
+  readonly selected?: boolean;
+}
+
+/**
+ * Doc 209 rule 2: xyflow's edge selection, as a gesture — the edge a batch of changes SELECTS, or `null` when
+ * it only deselects, and `undefined` when the batch is about something else (a measurement, a removal).
+ *
+ * A click deselects every other edge and selects one, so the batch carries both kinds; the selected one wins.
+ * Returning `undefined` for an unrelated batch matters — every layout pass emits changes, and treating those as
+ * "nothing is selected" would clear the panel out from under the author.
+ */
+export function selectEdgeGesture(
+  flowId: string,
+  changes: readonly EdgeChange[],
+): FlowGesture | undefined {
+  const selections = changes.filter((change) => change.type === 'select');
+  if (selections.length === 0) return undefined;
+  const chosen = selections.find((change) => change.selected === true);
+  return { type: 'select-edge', flowId, edgeId: chosen?.id ?? null };
+}
+
+/**
+ * Doc 209 rule 19: an edge end dragged onto another node, as a re-point. `undefined` when the drag was released
+ * over nothing — xyflow reports a connection with a missing end, which is not an edit, just an abandoned drag.
+ *
+ * The WHOLE connection is sent, not the end that moved: xyflow does not say which one did, and `repointEdge`
+ * ignores an end that did not change anyway (rule 9).
+ */
+export function reconnectGesture(
+  flowId: string,
+  edgeId: string,
+  connection: FlowConnection,
+): FlowGesture | undefined {
+  const { source, target } = connection;
+  if (!source || !target) return undefined;
+  return {
+    type: 'repoint',
+    flowId,
+    edgeId,
+    patch: { source, target, sourceHandle: storedHandle(connection.sourceHandle) },
+  };
+}
+
 /** Rule 7: the edges xyflow is about to delete as a disconnect, or `undefined` when there are none. */
 export function disconnectGesture(
   flowId: string,

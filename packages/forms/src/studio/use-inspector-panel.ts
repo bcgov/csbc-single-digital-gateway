@@ -23,6 +23,12 @@ export function useInspectorPanel(
   selectedId: string | null,
   pressing: boolean,
   right: DockPanel,
+  /**
+   * Doc 209 rule 5: a selected EDGE fills the panel too, so it opens the panel on the same terms. It is
+   * namespaced rather than mixed in with element ids — an edge id and an element id are different id-spaces,
+   * and one could otherwise read as the other and suppress the open.
+   */
+  selectedEdgeId: string | null = null,
 ): InspectorForm | undefined {
   const form = useMemo(
     () => (selectedId === null ? undefined : inspectorFor(selectedId)),
@@ -31,15 +37,16 @@ export function useInspectorPanel(
 
   const openedFor = useRef<string | null>(null);
   const { show } = right;
+  const openKey = selectedId ?? (selectedEdgeId === null ? null : `edge:${selectedEdgeId}`);
   useEffect(() => {
-    if (selectedId === null) {
+    if (openKey === null) {
       openedFor.current = null;
       return;
     }
-    if (pressing || selectedId === openedFor.current) return;
-    openedFor.current = selectedId;
+    if (pressing || openKey === openedFor.current) return;
+    openedFor.current = openKey;
     show();
-  }, [selectedId, pressing, show]);
+  }, [openKey, pressing, show]);
 
   return form;
 }

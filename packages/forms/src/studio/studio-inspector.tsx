@@ -1,6 +1,9 @@
 import type { JsonFormsCore, Layout } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { useState } from 'react';
+import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
+import { EdgeInspector } from './edge-inspector';
+import type { EdgeInspectorModel } from './inspector/edge-fields';
 import { InspectorOptions } from './options/inspector-options';
 import type { OptionsTarget } from './options/options-target';
 import * as inspectorSet from '../renderers/studio-inspector/index';
@@ -21,6 +24,12 @@ const INSPECTOR_RENDERERS = [
 const EMPTY_MESSAGE = 'Select an element to configure it.';
 const NO_SETTINGS_MESSAGE = 'This element has no settings.';
 
+/** Doc 209 rules 5-8: the selected edge's pickers, and where their changes go. */
+export interface EdgeSection {
+  readonly model: EdgeInspectorModel;
+  onChange(patch: EdgePatch): void;
+}
+
 /** Doc 206 rules 1-3: the selected field's option list, when it has one. */
 export interface OptionsSection {
   readonly target: OptionsTarget;
@@ -37,6 +46,11 @@ export interface StudioInspectorProps {
    * inspector FIELD — `fieldAccepts` admits only a string, boolean or finite number, never an array.
    */
   readonly options?: OptionsSection | undefined;
+  /**
+   * Doc 209 rules 5-6: the selected EDGE's panel, which replaces the element form entirely — at most one of
+   * the two selections is ever set (rule 1), so they are never both on screen.
+   */
+  readonly edge?: EdgeSection | undefined;
   onChange(elementId: string, values: InspectorValues): void;
 }
 
@@ -98,11 +112,14 @@ export function StudioInspector({
   label,
   form,
   options,
+  edge,
   onChange,
 }: StudioInspectorProps) {
   return (
     <div data-studio-inspector="" className="flex flex-col gap-3 p-2">
-      {elementId === null || form === undefined ? (
+      {edge !== undefined ? (
+        <EdgeInspector model={edge.model} onChange={edge.onChange} />
+      ) : elementId === null || form === undefined ? (
         <p className="text-sm text-muted-foreground">{EMPTY_MESSAGE}</p>
       ) : (
         <InspectorBody

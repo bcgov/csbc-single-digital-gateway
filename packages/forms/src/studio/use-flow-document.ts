@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { CriterionField } from '../renderers/xyflow/criteria';
 import { authoredStageId } from '../renderers/xyflow/flow-elements';
 import type { FlowEditor, FlowGesture } from '../renderers/xyflow/flow-editor';
+import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
 import { connectionProblem } from '../renderers/xyflow/flow-gestures';
+import { repointEdgeIn } from './layout/edge-edits';
 import { addClause, removeClause, setClause } from './layout/clause-edits';
 import { addRow, moveRow, removeRow, setMode, setRow } from './layout/condition-edits';
 import type { ElementIds } from './layout/element-ids';
@@ -197,7 +199,24 @@ export function useFlowDocument(
     [ids, document, updateUischema],
   );
 
-  return { flowEditor, insertFlowGesture };
+  /**
+   * Doc 209 rules 9-10, 15: re-points one edge and returns WHY it was refused, or `undefined` when it landed.
+   *
+   * The reason is read off the document the author is looking at (`latest`), while the write runs the same pure
+   * function inside the updater — so a refusal never queues a state update, and StrictMode's double invocation
+   * changes nothing.
+   */
+  const repointFlowEdge = useCallback(
+    (flowId: string, edgeId: string, patch: EdgePatch): string | undefined => {
+      const { problem } = repointEdgeIn(latest.current.uischema, flowId, edgeId, patch, ids);
+      if (problem !== undefined) return problem;
+      updateUischema((current) => repointEdgeIn(current, flowId, edgeId, patch, ids).uischema);
+      return undefined;
+    },
+    [ids, updateUischema],
+  );
+
+  return { flowEditor, insertFlowGesture, repointFlowEdge };
 }
 
 /** What the selection-side Flow editor needs from the studio selection. */
@@ -207,6 +226,10 @@ export interface SelectionFlowActions {
   setGesturing(active: boolean): void;
   /** Doc 198 rule 16: applies an inserting gesture, returning the new element's id. */
   insert(gesture: FlowInsertGesture): string | undefined;
+  /** Doc 209 rules 1-2: xyflow's edge selection, which the studio's `selectedEdgeId` follows. */
+  selectEdge(edgeId: string | null): void;
+  /** Doc 209 rules 15-16: applies a tip drag, and reports the reason when it is refused. */
+  repoint(flowId: string, edgeId: string, patch: EdgePatch): void;
 }
 
 /**
@@ -230,7 +253,10 @@ export function useSelectionFlowEditor(
       fieldsFor: (conditionId) => documentEditor.fieldsFor(conditionId),
       onGestureActive: (active) => latest.current.setGesturing(active),
       onGesture: (gesture) => {
-        if (gesture.type === 'open') latest.current.select(gesture.formId);
+        if (gesture.type === 'select-edge') latest.current.selectEdge(gesture.edgeId);
+        else if (gesture.type === 'repoint')
+          latest.current.repoint(gesture.flowId, gesture.edgeId, gesture.patch);
+        else if (gesture.type === 'open') latest.current.select(gesture.formId);
         else if (gesture.type === 'remove') latest.current.requestDelete(gesture.elementId);
         else if (isFlowInsert(gesture)) {
           // Doc 198 rule 16: an inserting gesture becomes the selection, like a dropped palette template.

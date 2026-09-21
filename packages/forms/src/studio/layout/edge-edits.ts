@@ -3,24 +3,21 @@ import {
   CONDITION_TYPE,
   DEFAULT_HANDLE,
   drawnNodes,
+  FLOW_TYPE,
   rowsOf,
 } from '../../renderers/xyflow/flow-elements';
-import { connectionProblem, storedHandle } from '../../renderers/xyflow/flow-gestures';
+import type { ElementIds } from './element-ids';
+import { findById, updateById, type TreeElement } from './element-tree';
+import {
+  connectionProblem,
+  storedHandle,
+  type EdgePatch,
+} from '../../renderers/xyflow/flow-gestures';
+
+export type { EdgePatch };
 
 // Re-pointing one edge of a Flow (doc 209 rules 8-13). Pure — no React, no ids, no studio state — so the
 // inspector panel and the drag of an edge's tip run the SAME rule from their two entry points (rule 19).
-
-/** Which ends of an edge a re-point is moving. An absent key means "leave this one alone" (rule 9). */
-export interface EdgePatch {
-  readonly source?: string;
-  readonly target?: string;
-  /**
-   * The Condition ROW the edge leaves by. `DEFAULT_HANDLE`, `''` and `undefined` all mean the Else path, which
-   * is stored as NO handle at all (doc 199 rule 18) — the panel addresses Else by the reserved id, and this is
-   * where the two forms are reconciled.
-   */
-  readonly sourceHandle?: string | undefined;
-}
 
 /** A re-point's outcome: the Flow to keep, and WHY it was refused when it was (rules 14-15). */
 export interface RepointResult {
@@ -104,4 +101,38 @@ export function repointEdge(
   const edges = [...entries];
   edges[index] = next;
   return { uischema: { ...flow, options: { ...flow.options, edges } } };
+}
+
+/**
+ * Doc 209 rule 9: the same re-point, addressed by the FLOW's studio element id — what the inspector panel and
+ * the tip drag both call. Returns the whole document, so it can be handed straight to a state updater.
+ *
+ * The Flow element is rebuilt, so its id has to be CARRIED (doc 187's trap: `updateById` carries ids only for
+ * rebuilt ANCESTORS, and without this the first edit would drop the selection).
+ */
+export function repointEdgeIn(
+  uischema: UISchemaElement,
+  flowId: string,
+  edgeId: string,
+  patch: EdgePatch,
+  ids: ElementIds,
+): RepointResult {
+  const root = uischema as TreeElement;
+  const flow = findById(root, flowId, ids);
+  if (flow?.type !== FLOW_TYPE) return { uischema };
+  const { uischema: next, problem } = repointEdge(flow, edgeId, patch);
+  if (problem !== undefined) return { uischema, problem };
+  if (next === flow) return { uischema };
+  return {
+    uischema: updateById(
+      root,
+      flowId,
+      (element) => {
+        const rebuilt = next as TreeElement;
+        ids.carry(element, rebuilt);
+        return rebuilt;
+      },
+      ids,
+    ),
+  };
 }

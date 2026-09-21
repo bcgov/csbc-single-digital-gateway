@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react';
 import type { Clause, ConditionRow } from '../../types/elements';
 import type { CriterionField } from './criteria';
 import type { FlowNodeKind } from './flow-elements';
+import type { EdgePatch } from './flow-gestures';
 
 /**
  * Doc 196 rule 11, amended by doc 198 rule 12: what an editable Flow with no Stages shows over its canvas. The palette
@@ -23,6 +24,14 @@ export type FlowGesture =
   /** Doc 199 rule 45c: `sourceHandle` is the ROW the drag started at — absent for a Stage and for Else. */
   | { type: 'connect'; flowId: string; source: string; target: string; sourceHandle?: string }
   | { type: 'disconnect'; flowId: string; edgeIds: string[] }
+  /**
+   * Doc 209 rules 1-2: which edge xyflow now has selected, or `null` for none. The canvas OWNS edge
+   * selection — doc 196 rule 1 put edges in `useEdgesState` so click-select and Delete work — so this reports
+   * it rather than asking to be given it, and the studio's `selectedEdgeId` follows.
+   */
+  | { type: 'select-edge'; flowId: string; edgeId: string | null }
+  /** Doc 209 rule 19: an edge end dragged onto another node. The same edit the inspector's panel makes. */
+  | { type: 'repoint'; flowId: string; edgeId: string; patch: EdgePatch }
   | { type: 'open'; formId: string }
   | { type: 'remove'; elementId: string }
   /**

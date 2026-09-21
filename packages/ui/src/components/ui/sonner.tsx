@@ -1,6 +1,6 @@
 'use client';
 
-import { Toaster as Sonner, type ToasterProps } from 'sonner';
+import { Toaster as Sonner, toast, type ToasterProps } from 'sonner';
 import { mdiCheckCircle, mdiInformation, mdiAlert, mdiCloseOctagon, mdiLoading } from '@mdi/js';
 import { Icon } from '@mdi/react';
 
@@ -34,4 +34,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-export { Toaster };
+/**
+ * Re-exported so a consumer never imports `sonner` itself. `toast()` talks to the mounted `Toaster` through a
+ * module-level store, so two copies of the package would leave one of them mute; going through `@repo/ui`
+ * guarantees the caller and the host share one.
+ */
+export { Toaster, toast };

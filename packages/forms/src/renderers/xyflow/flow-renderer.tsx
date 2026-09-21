@@ -11,7 +11,15 @@ import {
   type NodeTypes,
   type ReactFlowProps,
 } from '@xyflow/react';
-import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { ConditionHoverProvider, type ConditionHover } from './condition-hover';
 import { LayoutNestingContext } from '../gridstack/layout-nesting';
 import { ActionEdge } from './action-edge';
@@ -31,7 +39,12 @@ import {
   FLOW_CHILD_MESSAGE,
   FLOW_NESTED_MESSAGE,
 } from './flow-elements';
-import { connectGesture, disconnectGesture } from './flow-gestures';
+import {
+  connectGesture,
+  disconnectGesture,
+  reconnectGesture,
+  selectEdgeGesture,
+} from './flow-gestures';
 import { ConditionNode } from './condition-node';
 import {
   ACTION_EDGE_TYPE,
@@ -86,6 +99,12 @@ function editingProps(editor: FlowEditor, flow: UISchemaElement): FlowProps {
     isValidConnection: ({ source, target, sourceHandle }) =>
       editor.connectionProblem(flow, source, target, sourceHandle) === undefined,
     onConnect: (connection) => emit(connectGesture(flowId, connection)),
+    /**
+     * Doc 209 rules 19-20: dragging an edge's tip re-points it, through the SAME `repointEdge` the inspector
+     * panel runs. Only under an editor — a view-only canvas is not connectable either (doc 196 rule 5).
+     */
+    edgesReconnectable: true,
+    onReconnect: (oldEdge, connection) => emit(reconnectGesture(flowId, oldEdge.id, connection)),
     onBeforeDelete: ({ edges }) => {
       emit(disconnectGesture(flowId, edges));
       return Promise.resolve(false);
@@ -179,6 +198,20 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
   // passed as derived props with no onEdgesChange never become selected, so Delete has nothing to delete.
   const [nodes, setNodes, onNodesChange] = useNodesState(derivedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(derivedEdges);
+  /**
+   * Doc 209 rule 2: xyflow's own edge selection is the source of truth for WHICH edge, so the studio is told
+   * about it rather than driving it. The state update still goes through `onEdgesChange` first — the gesture
+   * only reports what it did.
+   */
+  const handleEdgesChange = useCallback<typeof onEdgesChange>(
+    (changes) => {
+      onEdgesChange(changes);
+      if (!editor) return;
+      const gesture = selectEdgeGesture(editor.idOf(uischema), changes);
+      if (gesture) editor.onGesture(gesture);
+    },
+    [onEdgesChange, editor, uischema],
+  );
   const [seeded, setSeeded] = useState(uischema);
   if (seeded !== uischema) {
     setSeeded(uischema);
@@ -234,7 +267,7 @@ function FlowLayout({ uischema, schema, path, enabled, renderers, cells, visible
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
+              onEdgesChange={handleEdgesChange}
               nodeTypes={NODE_TYPES}
               edgeTypes={EDGE_TYPES}
               fitView

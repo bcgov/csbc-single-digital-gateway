@@ -133,7 +133,11 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     () => ({ schema: currentSchema, uischema: currentUischema }),
     [currentSchema, currentUischema],
   );
-  const { flowEditor, insertFlowGesture } = useFlowDocument(ids, updateUischema, flowDocument);
+  const { flowEditor, insertFlowGesture, repointFlowEdge } = useFlowDocument(
+    ids,
+    updateUischema,
+    flowDocument,
+  );
 
   /** The element with `elementId` in the document, or `undefined`. */
   const elementOf = useCallback(
@@ -295,6 +299,7 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     editor,
     flowEditor,
     insertFlowGesture,
+    repointFlowEdge,
     elementTypes,
     rootId,
     parentOf,

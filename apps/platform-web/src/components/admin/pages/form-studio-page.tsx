@@ -1,5 +1,13 @@
 import type { FormStudioProps } from '@repo/forms';
 import { FormStudio } from '@repo/forms/studio';
+import { toast } from '@repo/ui/sonner';
+
+/**
+ * Doc 209 rules 16-17: the studio refuses some edits — an edge re-point that would duplicate a branch, close a
+ * cycle or point a node at itself — and says why through this. A module const, not an inline arrow: the studio
+ * reads it through a ref, and a new identity each render is the trap doc 200 rule 2 records for `loadDocument`.
+ */
+const notify = (message: string) => toast(message);
 
 /** The focus props the route passes through (doc 197 rule 22); both optional, so the page still renders bare. */
 export type FormStudioPageProps = Pick<FormStudioProps, 'focusedForm' | 'onFocusedFormChange'>;
@@ -17,7 +25,11 @@ export type FormStudioPageProps = Pick<FormStudioProps, 'focusedForm' | 'onFocus
 export function FormStudioPage({ focusedForm, onFocusedFormChange }: FormStudioPageProps) {
   return (
     <div data-slot="form-studio-frame" className="h-full border bg-background">
-      <FormStudio focusedForm={focusedForm} onFocusedFormChange={onFocusedFormChange} />
+      <FormStudio
+        focusedForm={focusedForm}
+        onFocusedFormChange={onFocusedFormChange}
+        onNotice={notify}
+      />
     </div>
   );
 }

@@ -18,6 +18,8 @@ import { StudioBreadcrumbs } from './studio-breadcrumbs';
 import { StudioCanvas } from './studio-canvas';
 import { OptionsDialog } from './options/options-dialog';
 import { optionsTargetOf } from './options/options-target';
+import { edgeInspectorModel } from './inspector/edge-fields';
+import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
 import { StudioInspector } from './studio-inspector';
 import { useOptionsEditor } from './use-options-editor';
 import { StudioPalette } from './studio-palette';
@@ -90,6 +92,7 @@ export const FormStudio: FC<FormStudioProps> = ({
   onSaveDocument,
   focusedForm,
   onFocusedFormChange,
+  onNotice,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   // Doc 200 rules 1-2: which document to open, and what to show while getting there. A seeded document is `ready` at
@@ -119,8 +122,8 @@ export const FormStudio: FC<FormStudioProps> = ({
     }),
     [optionsEditor.target, optionsEditor.open],
   );
-  const { port, editor, flowEditor, confirmation, hover, select, pressing, add } =
-    useStudioSelection(rootRef, !mode.previewing, studio, optionsGestures);
+  const { port, editor, flowEditor, confirmation, hover, select, pressing, add, selectedEdgeId } =
+    useStudioSelection(rootRef, !mode.previewing, studio, optionsGestures, onNotice);
   const { selectedId } = port;
   const focusId = studio.canvasRootOf(selectedId);
   // Doc 197 rules 8-13: optional, two-way URL wiring for the drilled-in Form. No props, no effect.
@@ -143,7 +146,24 @@ export const FormStudio: FC<FormStudioProps> = ({
   // (rule 11), a chosen size is the author's working setup, not data to discard.
   const [viewport, setViewport] = useState<PreviewViewport>('desktop');
   const paletteActions = useMemo(() => ({ add }), [add]);
-  const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right);
+  const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right, selectedEdgeId);
+  /**
+   * Doc 209 rules 5-7, 15-16: the selected edge's panel, resolved from the CURRENT document so a re-point is
+   * reflected at once. A Flow is root-only (doc 195 rule 6), so the Flow holding the edge is the root.
+   */
+  const edgeSection = useMemo(() => {
+    if (selectedEdgeId === null || studio.uischema.type !== FLOW_TYPE) return undefined;
+    const model = edgeInspectorModel(studio.uischema, selectedEdgeId);
+    if (model === undefined) return undefined;
+    const flowId = studio.ids.idOf(studio.uischema);
+    return {
+      model,
+      onChange: (patch: EdgePatch) => {
+        const problem = studio.repointFlowEdge(flowId, selectedEdgeId, patch);
+        if (problem !== undefined) onNotice?.(problem);
+      },
+    };
+  }, [studio, selectedEdgeId, onNotice]);
   /**
    * Doc 206 rules 1-3: resolved from the CURRENT document, so an option edit is reflected in the summary at
    * once. `undefined` for every element that is not a choice field, which is what hides the section.
@@ -248,6 +268,7 @@ export const FormStudio: FC<FormStudioProps> = ({
                 label={segments.at(-1)?.label ?? ''}
                 form={inspector}
                 options={optionsSection}
+                edge={edgeSection}
                 onChange={studio.updateElement}
               />
             )
