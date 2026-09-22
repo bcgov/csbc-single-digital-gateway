@@ -140,7 +140,6 @@ export function SubmissionView({ schema, uischema, data }: SubmissionViewProps) 
                 schema={schema}
                 data={data as RunnerData | undefined}
                 stageIds={listed}
-                presentation="plain"
               />
             ) : (
               // Rule 16: no `onChange` and nothing validates. The page has nothing to report and nothing to

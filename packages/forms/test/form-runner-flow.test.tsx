@@ -691,9 +691,12 @@ describe('the review page (doc 202 rules 47-53)', () => {
     await settle();
 
     const page = reviewPage() as HTMLElement;
-    // Both stages' fields at once — the whole path on one page, unlike every other step.
-    expect(within(page).getByRole('textbox', { name: /^Name/ })).toHaveValue('Ada');
-    expect(within(page).getByRole('textbox', { name: /^Note/ })).toHaveValue('hi');
+    // Both stages' answers at once — the whole path on one page, unlike every other step. As plain text since
+    // doc 214: these were read-only inputs, read with `getByRole('textbox')`.
+    const values = [...page.querySelectorAll('[data-slot="plain-field-value"]')].map(
+      (node) => node.textContent,
+    );
+    expect(values).toEqual(['Ada', 'hi']);
     // Doc 213: one SECTION per path Form, inside one synthesised document — this was two
     // `runner-review-form` wrappers, one per `<JsonForms>`, before the page became one document.
     expect(page.querySelectorAll('[data-slot="section"]')).toHaveLength(2);
@@ -748,17 +751,24 @@ describe('the review page (doc 202 rules 47-53)', () => {
     expect(page.querySelectorAll('h2')).toHaveLength(2);
   });
 
-  it('renders the fields READ-ONLY, not disabled (rule 50)', async () => {
+  it('renders the fields as PLAIN TEXT, with no inputs at all (doc 214 rule 1)', async () => {
     renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
     await toEnd();
     fireEvent.click(nextButton());
     await settle();
 
-    const field = within(reviewPage() as HTMLElement).getByRole('textbox', { name: /^Name/ });
-    // Read-only keeps full contrast and stays focusable and selectable — a citizen can read and copy their
-    // answers. Disabled would grey them out and skip them, which reads as "this form is locked".
-    expect(field).toHaveAttribute('readonly');
-    expect(field).not.toBeDisabled();
+    const page = reviewPage() as HTMLElement;
+    // Doc 202 rule 50 drew these as read-only INPUTS, which was right against the alternative it was weighed
+    // on — disabled, which greys the answers out and skips them. But an input with nothing to type into is
+    // still a box inviting a citizen to try, and there is nothing on this page to fill in (user, 2026-09-22).
+    expect(page.querySelector('input, textarea, select')).toBeNull();
+    expect(within(page).queryByRole('textbox', { name: /^Name/ })).toBeNull();
+
+    const values = [...page.querySelectorAll('[data-slot="plain-field-value"]')].map(
+      (node) => node.textContent,
+    );
+    expect(values).toContain('Ada');
+    expect(values).toContain('hi');
   });
 
   it('leaves by Back, returning to the Form the citizen was on (rule 48)', async () => {

@@ -22,14 +22,18 @@ export { REVIEW_STEP_LABEL } from './runner-review-row';
 export { REVIEW_TITLE } from './review-document';
 
 /**
- * Doc 202 rule 50: read-only for a whole subtree, through JSONForms' `config` — the channel
- * `hideRequiredAsterisk` already uses. Nothing in the authored uischema turns it on, and a control reads it
- * through `isReadonly`.
+ * Doc 214 rule 1: the review page is PURELY PRESENTATIONAL, so its fields are plain text — the same
+ * `PLAIN_CONFIG` a submission view uses (doc 211 rule 3).
+ *
+ * This SUPERSEDES doc 202 rule 50, which drew them as read-only INPUTS. Read-only was the right call against
+ * the alternative it was weighed on — disabled, which greys the answers out and skips them — but an input with
+ * nothing to type into is still a box inviting a citizen to try. There is nothing on this page to fill in.
+ *
+ * It also retires doc 211 rule 23's `presentation` prop: with both callers wanting the same page, a prop
+ * choosing between two configs has no reader left, and a key nothing reads is worse than no key (doc 213
+ * rule 12's reasoning, applied to the flag doc 211 added).
  */
-const REVIEW_CONFIG = { readonly: true };
-
-/** Doc 211 rules 21, 23: the same page as plain text rather than as read-only inputs. */
-const PLAIN_REVIEW_CONFIG = PLAIN_CONFIG;
+const REVIEW_CONFIG = PLAIN_CONFIG;
 
 // Built once at module load, exactly as the runner's own registry is: a new array per render makes JSONForms
 // re-dispatch everything below it.
@@ -49,11 +53,6 @@ interface RunnerReviewProps {
    * may no longer be on their branch, so reviewing it would show them data they are not submitting.
    */
   readonly stageIds: readonly string[];
-  /**
-   * Doc 211 rule 23: how the answers are drawn. Defaults to `readonly` so the runner's review page is
-   * unchanged; `<SubmissionView>` passes `plain`.
-   */
-  readonly presentation?: 'readonly' | 'plain';
 }
 
 /**
@@ -69,13 +68,7 @@ interface RunnerReviewProps {
  * Rule 15: the `runner-review` wrapper stays. It is what the rail finds the page by, and what doc 202 rule 48c's
  * "the review and a Form share one slot" refers to.
  */
-export function RunnerReview({
-  flow,
-  schema,
-  data,
-  stageIds,
-  presentation = 'readonly',
-}: RunnerReviewProps) {
+export function RunnerReview({ flow, schema, data, stageIds }: RunnerReviewProps) {
   return (
     <section data-slot="runner-review" className="flex flex-col">
       <JsonForms
@@ -84,7 +77,7 @@ export function RunnerReview({
         data={data}
         renderers={RENDERERS}
         cells={defaults.cells}
-        config={presentation === 'plain' ? PLAIN_REVIEW_CONFIG : REVIEW_CONFIG}
+        config={REVIEW_CONFIG}
         validationMode="NoValidation"
       />
     </section>
