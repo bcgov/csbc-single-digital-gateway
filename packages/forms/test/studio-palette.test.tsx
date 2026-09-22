@@ -35,7 +35,7 @@ async function renderStudio() {
 }
 
 describe('the palette panel (rules 19, 26-27)', () => {
-  it('fills the open left panel with Display, Layout and Fields groups of thirteen items', async () => {
+  it('fills the open left panel with Display, Layout and Fields groups of eighteen items', async () => {
     await renderStudio();
     const left = document.querySelector('[data-slot="form-studio-left-panel"]');
     expect(left).toContainElement(paletteNode());
@@ -44,7 +44,7 @@ describe('the palette panel (rules 19, 26-27)', () => {
     expect(inPalette().getByRole('group', { name: 'Layout' })).toBeInTheDocument();
     expect(inPalette().getByRole('group', { name: 'Fields' })).toBeInTheDocument();
     // Doc 205 rule 40: Multi-select and Checkbox group join the field templates; doc 212 rule 19 adds Section.
-    expect(inPalette().getAllByRole('button')).toHaveLength(17);
+    expect(inPalette().getAllByRole('button')).toHaveLength(18); // doc 216: +1 for Tabs
     expect(inPalette().getByRole('searchbox', { name: 'Search elements' })).toBeInTheDocument();
   });
 

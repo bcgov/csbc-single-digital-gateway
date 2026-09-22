@@ -10,8 +10,11 @@ import { JsonFormsDispatch, withJsonFormsLayoutProps } from '@jsonforms/react';
 import type { ComponentProps, CSSProperties } from 'react';
 import { createFormRenderer, FillFormTitle } from '../gridstack/form-renderer';
 import { FillServiceTitle, NESTED_SERVICE_MESSAGE } from '../gridstack/service-renderer';
+import { TabsRenderer } from '../gridstack/tabs-renderer';
 import { createSectionRenderer } from '../gridstack/section-renderer';
 import {
+  TABS_TYPE,
+  TAB_CONTENT_TYPE,
   dividersOf,
   GRID_LAYOUT_TYPES,
   isPageRoot,
@@ -186,4 +189,8 @@ export const fillLayoutRenderers: readonly JsonFormsRendererRegistryEntry[] = Ob
   // Doc 212 rules 1-2: a Section wraps the SAME column renderer a VerticalLayout uses, so there is no second
   // column implementation to drift. APPENDED — `renderers-default*.test` pin this list's length.
   { tester: rankWith(1, uiTypeIs(SECTION_TYPE)), renderer: FillSection },
+  // Doc 216 rules 1-2, 21: the same shared strip the studio uses — without a `TabsEditor` above it, it draws no
+  // `+` and no drag. A TabContent is the SAME column renderer a VerticalLayout uses; a Tab has no entry at all.
+  { tester: rankWith(1, uiTypeIs(TABS_TYPE)), renderer: TabsRenderer },
+  { tester: rankWith(1, uiTypeIs(TAB_CONTENT_TYPE)), renderer: FillStackRenderer },
 ]);

@@ -81,6 +81,11 @@ export function createGridLayoutRenderer(
     const editorRef = useRef(editor);
     editorRef.current = editor;
 
+    // Doc 216 rule 12: `accepts` needs this layout's element id to walk its ancestors. Read through a ref for the
+    // same reason as `hasRoom` and `editorRef` — a new `acceptWidgets` would change the options and reload the grid.
+    const idRef = useRef<string>('');
+    idRef.current = editor ? editor.idOf(uischema) : '';
+
     // Doc 183 rule 14: grid items, never one that contains this grid (a Grid into itself); doc 189 rule 13: and
     // drag-in sources.
     const acceptWidgets = useCallback((el: Element) => {
@@ -91,7 +96,10 @@ export function createGridLayoutRenderer(
         : el.hasAttribute(DRAG_IN_ATTRIBUTE);
       if (!candidate) return false;
       const source = dropSourceOf(el as GridItemHTMLElement, isItem);
-      return source === undefined || (editorRef.current?.accepts?.(layout, source) ?? true);
+      return (
+        source === undefined ||
+        (editorRef.current?.accepts?.(layout, source, idRef.current) ?? true)
+      );
     }, []);
     const idOf = useMemo(
       () => (editor ? (element: UISchemaElement) => editor.idOf(element) : undefined),

@@ -289,10 +289,10 @@ describe('the runner and the submission view (rule 16)', () => {
 });
 
 describe('the renderer sets (rules 8-9, 26)', () => {
-  it('createGridRenderers returns five layout entries, the Service appended after the Form', () => {
+  it('createGridRenderers returns seven layout entries, the Service appended after the Form', () => {
     const entries = createGridRenderers().layoutRenderers;
     // Six: Grid, VerticalLayout, HorizontalLayout, Form, Service, Section.
-    expect(entries).toHaveLength(6);
+    expect(entries).toHaveLength(8); // doc 216: +2 for Tabs and TabContentContent
     expect(entries[3]?.tester({ type: 'Form' }, schema, testerContext)).toBe(1);
     expect(entries[4]?.tester).toBe(serviceTester);
   });

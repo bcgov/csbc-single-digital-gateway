@@ -12,6 +12,8 @@ import { DockToggles } from './dock-toggles';
 import { useFocusAddress } from './use-focus-address';
 import { PreviewControl } from './preview-control';
 import { previewableStages } from './preview-forms';
+import { TabsToggles } from './tabs-toggles';
+import { hasTabs, type TabsComponent } from '../renderers/gridstack/tabs-options';
 import { PreviewModeToggles, type PreviewMode } from './preview-mode-toggles';
 import { ViewportToggles, type PreviewViewport } from './viewport-toggles';
 import { StudioBackButton } from './studio-back-button';
@@ -123,8 +125,18 @@ export const FormStudio: FC<FormStudioProps> = ({
     }),
     [optionsEditor.target, optionsEditor.open],
   );
-  const { port, editor, flowEditor, confirmation, hover, select, pressing, add, selectedEdgeId } =
-    useStudioSelection(rootRef, !mode.previewing, studio, optionsGestures, onNotice);
+  const {
+    port,
+    editor,
+    flowEditor,
+    tabsEditor,
+    confirmation,
+    hover,
+    select,
+    pressing,
+    add,
+    selectedEdgeId,
+  } = useStudioSelection(rootRef, !mode.previewing, studio, optionsGestures, onNotice);
   const { selectedId } = port;
   const focusId = studio.canvasRootOf(selectedId);
   // Doc 197 rules 8-13: optional, two-way URL wiring for the drilled-in Form. No props, no effect.
@@ -151,6 +163,10 @@ export const FormStudio: FC<FormStudioProps> = ({
   // that is the state it should always be found in; a Readable preview left over from last time would have an
   // author pressing Preview and seeing a page with no fields on it.
   const [previewMode, setPreviewMode] = useState<PreviewMode>('fillable');
+  // Doc 216 rule 31: preview may force the other shape without touching the document. `null` is "as authored",
+  // which is where it starts and where leaving preview returns it — the same reasoning as the mode above, and
+  // for the stronger reason that an override left on would misreport what the form actually is.
+  const [tabs, setTabs] = useState<TabsComponent | null>(null);
   const paletteActions = useMemo(() => ({ add }), [add]);
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right, selectedEdgeId);
   /**
@@ -248,6 +264,11 @@ export const FormStudio: FC<FormStudioProps> = ({
         {ready && previewing ? (
           <PreviewModeToggles value={previewMode} onValueChange={setPreviewMode} />
         ) : null}
+        {/* Doc 216 rule 33: omitted when the previewed root holds no Tabs — a control that cannot
+            change what is on screen is worse than no control. */}
+        {ready && previewing && hasTabs(rootOf(previewFocusId)) ? (
+          <TabsToggles value={tabs} onValueChange={setTabs} />
+        ) : null}
         {ready ? (
           <PreviewControl
             previewing={previewing}
@@ -259,6 +280,8 @@ export const FormStudio: FC<FormStudioProps> = ({
               setPreviewing(false);
               // Rule 30: leaving preview returns the mode to Fillable.
               setPreviewMode('fillable');
+              // Doc 216 rule 31: and clears any Tabs / List override.
+              setTabs(null);
             }}
             onPreviewForm={previewForm}
           />
@@ -303,6 +326,7 @@ export const FormStudio: FC<FormStudioProps> = ({
             uischema={studio.uischema}
             canvasRoot={rootOf(focusId)}
             previewRoot={rootOf(previewFocusId)}
+            tabs={tabs}
             rootKey={(previewing ? previewFocusId : focusId) ?? 'document'}
             previewing={previewing}
             viewport={viewport}
@@ -310,6 +334,7 @@ export const FormStudio: FC<FormStudioProps> = ({
             selection={port}
             editor={editor}
             flowEditor={flowEditor}
+            tabsEditor={tabsEditor}
             status={session.status}
             reason={session.reason}
             onNewForm={() => setDialogOpen(true)}

@@ -138,7 +138,9 @@ describe('fields per element (rules 8-10)', () => {
   });
 
   it('renders no sections for an element with no settings', () => {
-    const unknown = el({ type: 'Categorization', elements: [] });
+    // A type the studio does not know. It was `Categorization` until doc 216 made that a real element with a
+    // Component setting — the variable is named `unknown` for a reason, so it needs a type that stays unknown.
+    const unknown = el({ type: 'NotAnElement', elements: [] });
     expect(sections(formFor(unknown, unknown).form)).toEqual([]);
   });
 

@@ -413,7 +413,8 @@ describe('Form Studio code metaschemas (doc 191)', () => {
           // Doc 212 rule 4 ends the blanket "every template fits everywhere": a Section sits in VERTICAL
           // contexts only, so the sample's Grid refuses one. Asserted rather than skipped — the placement rule
           // and the metaschema must agree, and a refusal that stopped happening should fail here.
-          if (key === 'section' && kind === 'grid') {
+          // Doc 216 rule 9: a Tabs sits in vertical contexts only, exactly as a Section does.
+          if ((key === 'section' || key === 'tabs') && kind === 'grid') {
             expect(result.inserted, `${key} into ${kind}`).toBeUndefined();
             continue;
           }

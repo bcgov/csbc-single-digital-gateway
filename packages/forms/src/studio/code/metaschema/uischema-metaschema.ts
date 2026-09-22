@@ -1,5 +1,6 @@
 import { LAYOUT_GAPS } from '../../../renderers/gridstack/layout-gap';
 import { SECTION_INSETS, SECTION_VARIANTS } from '../../../renderers/gridstack/section-options';
+import { TABS, TAB_DEFINITIONS } from './tabs-metaschema';
 import { deepFreeze } from './deep-freeze';
 import { FLOW_DEFINITIONS } from './flow-metaschema';
 
@@ -17,13 +18,15 @@ const ELEMENTS = {
 // so the code editor refuses what a drag would refuse.
 const ROW_ELEMENTS = {
   description:
-    'The child elements, in order. A Separator is not allowed in a row: set options.dividers instead. A Section is not allowed in a row either.',
+    'The child elements, in order. A Separator is not allowed in a row: set options.dividers instead. A Section and a Tabs are not allowed in a row either.',
   type: 'array',
   items: {
     allOf: [
       { $ref: '#/definitions/element' },
       { not: { properties: { type: { const: 'Separator' } }, required: ['type'] } },
       { not: { properties: { type: { const: 'Section' } }, required: ['type'] } },
+      // Doc 216 rule 9: a Tabs is a vertical division of a page, like a Section.
+      { not: { properties: { type: { const: 'Tabs' } }, required: ['type'] } },
     ],
   },
 } as const;
@@ -34,12 +37,14 @@ const ROW_ELEMENTS = {
  * from `ROW_ELEMENTS` so a row keeps its own Separator wording.
  */
 const GRID_ELEMENTS = {
-  description: 'The child elements, in order. A Section is not allowed in a grid.',
+  description: 'The child elements, in order. A Section and a Tabs are not allowed in a grid.',
   type: 'array',
   items: {
     allOf: [
       { $ref: '#/definitions/element' },
       { not: { properties: { type: { const: 'Section' } }, required: ['type'] } },
+      // Doc 216 rule 9: for the same reason as a Section — a tab strip in one cell is unusable.
+      { not: { properties: { type: { const: 'Tabs' } }, required: ['type'] } },
     ],
   },
 } as const;
@@ -389,6 +394,7 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
       },
     },
     ...FLOW_DEFINITIONS,
+    ...TAB_DEFINITIONS,
     element: {
       description: 'A uischema element.',
       type: 'object',
@@ -405,6 +411,7 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
             'Separator',
             'RichContent',
             'Section',
+            'Tabs',
           ],
         },
         label: {
@@ -419,7 +426,16 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
           properties: { gridItem: { $ref: '#/definitions/gridItem' } },
         },
       },
-      allOf: [HEADING, RICH_CONTENT, GRID, VERTICAL_LAYOUT, HORIZONTAL_LAYOUT, SECTION, CONTROL],
+      allOf: [
+        HEADING,
+        RICH_CONTENT,
+        GRID,
+        VERTICAL_LAYOUT,
+        HORIZONTAL_LAYOUT,
+        SECTION,
+        TABS,
+        CONTROL,
+      ],
     },
     gridItem: {
       description:

@@ -13,7 +13,7 @@ import { canvasFocusId } from './layout/canvas-focus';
 import { copyElement } from './layout/copy-element';
 import { addTargetId, insertElement, type InsertTarget } from './layout/insert-element';
 import { createElementIds, type ElementIds } from './layout/element-ids';
-import { pathSegments, type PathSegment } from './layout/element-path';
+import { elementPath, pathSegments, type PathSegment } from './layout/element-path';
 import { findById, findParentById, type TreeElement } from './layout/element-tree';
 import { joinsNeighbours } from './layout/node-join';
 import { removeElement } from './layout/remove-element';
@@ -24,6 +24,7 @@ import type { SavedEntry } from './options/option-draft';
 import { buildTemplate } from './palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
 import { useFlowDocument, type UischemaUpdate } from './use-flow-document';
+import { useTabsDocument } from './use-tabs-document';
 
 interface StudioDocumentSource {
   schema?: JsonSchema | undefined;
@@ -101,15 +102,25 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [ids],
   );
 
-  /** Whether a dragged element or palette template may enter a layout of `layout`'s kind; unknown sources pass. */
+  /**
+   * Whether a dragged element or palette template may enter the layout `layoutId` (of kind `layout`); unknown
+   * sources pass. Doc 216 rules 11-12: the drop gate is given the layout's ID, so it can walk the ancestor types
+   * down to it — a Tabs may not enter a layout that sits inside a Tab.
+   */
   const accepts = useCallback(
-    (layout: GridLayoutKind, source: GridDropSource) => {
+    (layout: GridLayoutKind, source: GridDropSource, layoutId: string) => {
       const { schema: documentSchema, uischema: documentUischema } = latest.current;
+      const root = documentUischema as TreeElement;
       const type =
         'elementId' in source
-          ? findById(documentUischema as TreeElement, source.elementId, ids)?.type
+          ? findById(root, source.elementId, ids)?.type
           : buildTemplate(source.template, documentSchema)?.element.type;
-      return type === undefined || allowedInLayout(type, layout);
+      if (type === undefined) return true;
+      return allowedInLayout(
+        type,
+        layout,
+        elementPath(root, layoutId, ids).map((element) => element.type),
+      );
     },
     [ids],
   );
@@ -139,6 +150,13 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     ids,
     updateUischema,
     flowDocument,
+  );
+  // Doc 216 rules 16-19: the tab strip's document half. Its own file, since this one is already over the
+  // 300-line gate — and it needs the uischema alone, never the schema.
+  const { tabsEditor, insertTab, openTabFor } = useTabsDocument(
+    ids,
+    updateUischema,
+    currentUischema,
   );
 
   /** The element with `elementId` in the document, or `undefined`. */
@@ -320,6 +338,9 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     flowEditor,
     insertFlowGesture,
     repointFlowEdge,
+    tabsEditor,
+    insertTab,
+    openTabFor,
     elementTypes,
     rootId,
     parentOf,

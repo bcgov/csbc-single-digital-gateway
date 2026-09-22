@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { FormRunner } from '../runner/form-runner';
 import * as defaultSet from '../renderers/default/index';
 import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid-editor';
+import { TabsEditorProvider, type TabsEditor } from '../renderers/gridstack/tabs-editor';
+import { TabsOverrideProvider, type TabsComponent } from '../renderers/gridstack/tabs-options';
 import { FORM_TYPE, isPageRoot, SERVICE_TYPE } from '../renderers/gridstack/grid-layouts';
 import * as studioSet from '../renderers/studio/index';
 import {
@@ -50,9 +52,13 @@ export interface StudioCanvasProps {
   readonly viewport: PreviewViewport;
   /** Doc 211 rule 27: whether preview shows the form to FILL IN or the answers to READ. */
   readonly previewMode: PreviewMode;
+  /** Doc 216 rules 31-32: the component preview forces, or `null` to draw every Tabs as authored. */
+  readonly tabs: TabsComponent | null;
   readonly selection: StudioSelection;
   readonly editor: GridEditor;
   readonly flowEditor: FlowEditor;
+  /** Doc 216 rule 14: present ONLY here — a preview or a fillable form has no provider, so its strip is static. */
+  readonly tabsEditor: TabsEditor;
   /** Whether there is a document to draw at all (doc 200 rule 15). */
   readonly status: DocumentSessionStatus;
   /** Why the load failed, when it did (doc 200 rule 5). */
@@ -76,9 +82,11 @@ export function StudioCanvas({
   previewing,
   viewport,
   previewMode,
+  tabs,
   selection,
   editor,
   flowEditor,
+  tabsEditor,
   status,
   reason,
   onNewForm,
@@ -184,7 +192,10 @@ export function StudioCanvas({
           data-viewport={viewport}
           className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card ${VIEWPORT_WIDTH[viewport]}`}
         >
-          {content}
+          {/* Doc 216 rules 31-32: the override wraps ALL THREE preview paths at once, which is the whole reason
+              it is a context and not a `config` key — each of them builds its own config. `null` provides
+              nothing to force, so every Tabs draws as authored. */}
+          <TabsOverrideProvider value={tabs}>{content}</TabsOverrideProvider>
         </div>
       </div>
     );
@@ -193,15 +204,17 @@ export function StudioCanvas({
     <StudioSelectionProvider value={selection}>
       <GridEditorProvider value={editor}>
         <FlowEditorProvider value={flowEditor}>
-          <JsonForms
-            key={`studio-${rootKey}`}
-            schema={schema}
-            uischema={canvasRoot}
-            data={STUDIO_SAMPLE_DATA}
-            renderers={STUDIO_RENDERERS}
-            cells={studioSet.cells}
-            validationMode="NoValidation"
-          />
+          <TabsEditorProvider value={tabsEditor}>
+            <JsonForms
+              key={`studio-${rootKey}`}
+              schema={schema}
+              uischema={canvasRoot}
+              data={STUDIO_SAMPLE_DATA}
+              renderers={STUDIO_RENDERERS}
+              cells={studioSet.cells}
+              validationMode="NoValidation"
+            />
+          </TabsEditorProvider>
         </FlowEditorProvider>
       </GridEditorProvider>
     </StudioSelectionProvider>

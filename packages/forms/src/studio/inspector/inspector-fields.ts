@@ -1,6 +1,11 @@
 import type { JsonSchema } from '@jsonforms/core';
 import { FORM_TITLE_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
-import { FORM_TYPE, isPageRoot, SERVICE_TYPE } from '../../renderers/gridstack/grid-layouts';
+import {
+  TAB_TYPE,
+  FORM_TYPE,
+  isPageRoot,
+  SERVICE_TYPE,
+} from '../../renderers/gridstack/grid-layouts';
 import { SERVICE_TITLE_PLACEHOLDER } from '../../renderers/gridstack/service-renderer';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
@@ -20,6 +25,7 @@ import {
   withWidth,
   type InspectorEdit,
 } from './inspector-edits';
+import { TAB_FIELDS } from './tab-fields';
 import { CONTENT_FIELDS } from './content-fields';
 import { DOCUMENT_FIELDS } from './document-fields';
 import { optionField, propertyField, type Applies } from './field-factory';
@@ -83,6 +89,8 @@ export interface InspectorField {
 }
 
 const LAYOUT_LABEL_HINT = 'Names the layout in the element path.';
+/** Doc 216 rule 36: a Tab's label is not a path name — it is the text a person reads ON the tab. */
+const TAB_LABEL_HINT = 'Shown on the tab itself.';
 const STAGE_LABEL_HINT = 'Names the stage on its card and in the element path.';
 const CONDITION_LABEL_HINT = 'Names the condition on its card and in the element path.';
 /** Doc 201 rule 13: a Form's label is its Title, and it is shown to the citizen, not just in the path. */
@@ -106,7 +114,17 @@ const isFlowElement = (ctx: InspectorContext) =>
   ctx.element.type === FLOW_TYPE ||
   ctx.element.type === STAGE_TYPE ||
   ctx.element.type === CONDITION_TYPE;
+/**
+ * Doc 216 rule 36: a Tab carries the NAME while its TabContent carries the layout kind, so the generic Label
+ * field has to name it explicitly. Everything else that takes a Label is a Control, a Flow element, or
+ * something with a `layoutKind` — a Tab is the first element that is none of the three and still has a name.
+ * FOUND BY HAND: splitting `Category` into `Tab` + `TabContent` moved the kind off the element holding the
+ * label, and the tab's name silently became unauthorable.
+ */
+const isTab = (ctx: InspectorContext) => ctx.element.type === TAB_TYPE;
+
 const labelHint = (ctx: InspectorContext) => {
+  if (ctx.element.type === TAB_TYPE) return TAB_LABEL_HINT;
   if (ctx.element.type === SERVICE_TYPE) return SERVICE_TITLE_HINT;
   if (ctx.element.type === FORM_TYPE) return FORM_TITLE_HINT;
   if (ctx.element.type === STAGE_TYPE) return STAGE_LABEL_HINT;
@@ -132,9 +150,10 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     section: 'general',
     label: 'Label',
     labelFor: (ctx) => (isBoundary(ctx) ? FORM_TITLE_LABEL : 'Label'),
-    applies: (ctx) => isControl(ctx) || ctx.layoutKind !== undefined || isFlowElement(ctx),
+    applies: (ctx) =>
+      isControl(ctx) || ctx.layoutKind !== undefined || isFlowElement(ctx) || isTab(ctx),
     schema: (ctx) =>
-      ctx.layoutKind || isFlowElement(ctx)
+      ctx.layoutKind || isFlowElement(ctx) || isTab(ctx)
         ? { type: 'string', description: labelHint(ctx) }
         : STRING,
     options: (ctx) => {
@@ -261,6 +280,8 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   ...LAYOUT_FIELDS,
   // Doc 212 rules 20-22: after the generic layout settings, since a Section already has Label and Gap from them.
   ...SECTION_FIELDS,
+  // Doc 216 rules 6-7: a Tab, for the same reason — Label and Gap already arrive from its layout kind.
+  ...TAB_FIELDS,
   {
     key: 'width',
     section: 'layout',

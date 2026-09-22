@@ -79,8 +79,8 @@ describe('Form Studio Flow root (doc 195)', () => {
   describe('renderer set (rule 20)', () => {
     // Doc 199 rule 17: the Condition is a third xyflow entry, so the set grew to ui + 7; doc 212's Section
     // makes it ui + 8, and doc 215's Service ui + 9.
-    it('renders/studio spreads the xyflow layout renderers, framed: ui + 9 layout entries', () => {
-      expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 9);
+    it('renders/studio spreads the xyflow layout renderers, framed: ui + 11 layout entries', () => {
+      expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 11); // doc 216: +2
       const [flowEntry, stageEntry, conditionEntry] = studio.layoutRenderers.slice(-3);
       expect(flowEntry?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
       expect(stageEntry?.tester).toBe(xyflow.layoutRenderers[1]?.tester);

@@ -10,9 +10,11 @@ import {
 } from 'react';
 import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement, StudioSelection } from '../renderers/studio/studio-selection';
+import type { TabsEditor } from '../renderers/gridstack/tabs-editor';
 import type { FlowEditor } from '../renderers/xyflow/flow-editor';
 import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
 import { useSelectionFlowEditor, type FlowInsertGesture } from './use-flow-document';
+import { useSelectionTabsEditor } from './use-tabs-document';
 
 /** What selection needs from the studio document (`useStudioDocument`). */
 export interface SelectableDocument {
@@ -23,6 +25,12 @@ export interface SelectableDocument {
   insertFlowGesture(gesture: FlowInsertGesture): string | undefined;
   /** Doc 209 rules 9-10: re-points one edge of a Flow, returning WHY it was refused (rule 15). */
   repointFlowEdge(flowId: string, edgeId: string, patch: EdgePatch): string | undefined;
+  /** Doc 216 rule 14: the tabs editor writing Tabs edits to the document. */
+  readonly tabsEditor: TabsEditor;
+  /** Doc 216 rule 16: adds a Tab to that Tabs, returning the new element's id. */
+  insertTab(tabsId: string): string | undefined;
+  /** Doc 216 rule 17: the open Tab derived from `selectedId`, or `undefined`. */
+  openTabFor(tabsId: string, selectedId: string | null): string | undefined;
   /** The Form the canvas shows for `selectedId`, or `null` (doc 196 rule 12). */
   canvasRootOf(selectedId: string | null): string | null;
   /** Replaced when a new seed document resets the studio, and with it the element ids. */
@@ -399,6 +407,19 @@ export function useStudioSelection(
   const hoveredId = known(hovered) ? hovered : null;
   const selectedId = known(selectedElement) ? selectedElement : null;
 
+  // Doc 216 rules 15-17. Declared AFTER `selectedId`, which rule 17 derives the open tab from; the document
+  // is reached through `latest` for the same identity reason the Flow's insert is.
+  const tabsEditor = useSelectionTabsEditor(
+    studio.tabsEditor,
+    {
+      select: setSelected,
+      requestDelete: confirmation.request,
+      insert: (tabsId) => latest.current.insertTab(tabsId),
+      openTabId: (tabsId) => latest.current.openTabFor(tabsId, selectedId),
+    },
+    selectedId,
+  );
+
   const port = useMemo<StudioSelection>(
     () => ({
       hoveredId,
@@ -427,7 +448,12 @@ export function useStudioSelection(
       },
       onGestureActive: setGesturing,
       // Doc 194 rule 11: drag acceptance is the document's decision.
-      accepts: (layout, source) => documentEditor.accepts?.(layout, source) ?? true,
+      //
+      // Doc 216 rule 12: `layoutId` MUST be forwarded. A shorter arrow is assignable to the wider port and
+      // typechecks clean, so dropping it here would leave `use-studio-document` walking `elementPath` from
+      // `undefined` — an empty ancestor chain, and an ancestry rule that silently never refuses anything.
+      accepts: (layout, source, layoutId) =>
+        documentEditor.accepts?.(layout, source, layoutId) ?? true,
     }),
     [documentEditor],
   );
@@ -452,6 +478,7 @@ export function useStudioSelection(
     port,
     editor,
     flowEditor,
+    tabsEditor,
     confirmation,
     hover,
     select: setSelected,

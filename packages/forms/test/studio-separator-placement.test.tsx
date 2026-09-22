@@ -163,7 +163,10 @@ describe('Separator placement (doc 194)', () => {
       return { f, roots };
     }
 
-    it('asks editor.accepts with the dragged element id or drag-in template', async () => {
+    // Doc 216 rule 12: the LAYOUT'S ID travels too, because the ancestry rule (a Tabs inside a
+    // Tab) cannot be asked of the kind alone. Pinned here because a wrapper passing a shorter arrow is
+    // assignable to the wider port and typechecks clean — the drop gate would then silently refuse nothing.
+    it('asks editor.accepts with the dragged element id or drag-in template, and the layout id', async () => {
       const ids = new WeakMap<object, string>();
       let next = 0;
       const accepts = vi.fn(() => false);
@@ -181,15 +184,21 @@ describe('Separator placement (doc 194)', () => {
 
       const [separatorItem] = itemsOf(stackGrid);
       expect(accept(separatorItem as Element)).toBe(false);
-      expect(accepts).toHaveBeenLastCalledWith('horizontal', {
-        elementId: editor.idOf(f.separator),
-      });
+      expect(accepts).toHaveBeenLastCalledWith(
+        'horizontal',
+        { elementId: editor.idOf(f.separator) },
+        editor.idOf(f.row),
+      );
 
       const source = document.createElement('div') as unknown as GridItemHTMLElement;
       source.setAttribute(DRAG_IN_ATTRIBUTE, '');
       source.gridstackNode = { w: 12, h: 4, dragInTemplate: 'separator' } as never;
       expect(accept(source)).toBe(false);
-      expect(accepts).toHaveBeenLastCalledWith('horizontal', { template: 'separator' });
+      expect(accepts).toHaveBeenLastCalledWith(
+        'horizontal',
+        { template: 'separator' },
+        editor.idOf(f.row),
+      );
 
       accepts.mockReturnValue(true);
       expect(accept(separatorItem as Element)).toBe(true);

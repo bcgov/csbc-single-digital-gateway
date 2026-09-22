@@ -10,6 +10,7 @@ import {
 import { buildTemplate } from '../palette/palette-templates';
 import { layoutGrid } from './apply-layout';
 import type { ElementIds } from './element-ids';
+import { elementPath } from './element-path';
 import {
   findById,
   findParentById,
@@ -17,6 +18,7 @@ import {
   withElements,
   type TreeElement,
 } from './element-tree';
+import { panelTargetOf } from './tabs-edits';
 import { propertyScope, type StudioDocument } from './schema-properties';
 
 // Inserting a palette template into the studio document (doc 189 rules 18, 20-23). Pure: every changed element is a
@@ -74,6 +76,15 @@ function dropPlacement(
   return { ...placement, ...fitDropIn(placement, nodes, gridColumns(layout.options)) };
 }
 
+/**
+ * Doc 216 rule 11: the element types from the root down to the layout with `layoutId`, innermost last. The layout
+ * itself is included — a Tab is its own ancestor for this question, so a Tabs dropped straight into a
+ * Tab panel is refused as well.
+ */
+function ancestorTypes(root: TreeElement, layoutId: string, ids: ElementIds): string[] {
+  return elementPath(root, layoutId, ids).map((element) => element.type);
+}
+
 /** Rule 18: a new key, regenerated while an existing property has it. */
 function freshKey(schema: JsonSchema, newKey: () => string): string {
   const properties = schema.properties ?? {};
@@ -114,7 +125,10 @@ export function insertElement(
   const built = buildTemplate(template, document.schema);
   if (!layout || !kind || !built) return { ...document, inserted: undefined };
   // Doc 194 rule 8: an element the layout's kind cannot hold (a Separator in a row) is refused.
-  if (!allowedInLayout(built.element.type, kind)) return { ...document, inserted: undefined };
+  // Doc 216 rule 11: with the ancestor types down to — and including — the target layout, so a Tabs
+  // inside a Tab is refused too.
+  if (!allowedInLayout(built.element.type, kind, ancestorTypes(root, target.gridId, ids)))
+    return { ...document, inserted: undefined };
   if (kind === 'horizontal' && !rowHasRoom(layout.options, layout.elements ?? []))
     return { ...document, inserted: undefined };
 
@@ -156,6 +170,10 @@ export function addTargetId(
   const root = uischema as TreeElement;
   const selected = selectedId === null ? undefined : findById(root, selectedId, ids);
   if (!selected) return ids.idOf(root);
+  // Doc 216 rule 39: a selected Tabs or Tab means the open tab's PANEL — neither is a layout kind, so without
+  // this the walk goes UP to something that cannot hold an element and the insert is refused.
+  const panel = panelTargetOf(selected);
+  if (panel) return ids.idOf(panel);
   if (layoutKindOf(selected.type)) return ids.idOf(selected);
   return ids.idOf(findParentById(root, ids.idOf(selected), ids) ?? root);
 }

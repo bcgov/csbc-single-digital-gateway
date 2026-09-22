@@ -27,6 +27,26 @@ export const SECTION_TYPE = 'Section';
 export const SERVICE_TYPE = 'Service';
 
 /**
+ * Doc 216 rule 1: the tabbed layout — one page divided into named tabs. Deliberately NOT a layout kind: its
+ * children are Tabs made by the `+`, so it is never a drop target and has no gap of its own. A custom
+ * container with its own authoring affordance, exactly as a Flow is.
+ */
+export const TABS_TYPE = 'Tabs';
+
+/**
+ * Doc 216 rule 1: one tab's TRIGGER — its name and its description. NOT a layout kind: it holds exactly one
+ * `TabContent` and nothing else, and it is never dispatched through JSONForms (the strip draws it from its
+ * label). Legal ONLY as a direct child of a `Tabs` (rule 10).
+ */
+export const TAB_TYPE = 'Tab';
+
+/**
+ * Doc 216 rule 1: one tab's PANEL — a `vertical` layout, like a Section, so it is a drop target and a drag
+ * target with no new machinery. Legal ONLY as the single child of a `Tab` (rule 10).
+ */
+export const TAB_CONTENT_TYPE = 'TabContent';
+
+/**
  * Doc 215 rule 4: whether `type` is a root that is ONE PAGE of elements — a `Form` or a `Service` — as opposed to a
  * `Flow`, which is a journey of Stages.
  *
@@ -52,6 +72,10 @@ const KIND_BY_TYPE: ReadonlyMap<string, GridLayoutKind> = new Map([
   [SECTION_TYPE, 'vertical'] as const,
   // Doc 215 rules 2-3: and a Service, for the same reason and with the same warning about `GRID_LAYOUT_TYPES`.
   [SERVICE_TYPE, 'vertical'] as const,
+  // Doc 216 rule 1: and a TabContent — a tab's panel. The same warning again: NOT `GRID_LAYOUT_TYPES`.
+  // `Tabs` and `Tab` are both absent on purpose: nothing may be dropped into the tab strip, and a Tab is a
+  // trigger holding one panel, not a place to put fields.
+  [TAB_CONTENT_TYPE, 'vertical'] as const,
 ]);
 
 /** The layout kind rendering `type`, or `undefined` for anything that is not a gridstack layout. */
@@ -79,6 +103,11 @@ const NEVER_IN_LAYOUT: ReadonlySet<string> = new Set([
   FLOW_TYPE,
   STAGE_TYPE,
   CONDITION_TYPE,
+  // Doc 216 rule 10: a Tab is legal only as a direct child of a Tabs and a TabContent only as the single child
+  // of a Tab, both created by the `+`. No layout accepts either and the palette lists neither — the same reason
+  // a Stage is refused everywhere.
+  TAB_TYPE,
+  TAB_CONTENT_TYPE,
 ]);
 
 /**
@@ -86,13 +115,27 @@ const NEVER_IN_LAYOUT: ReadonlySet<string> = new Set([
  * Form, Flow or Stage in any layout, and a Separator in a HorizontalLayout, where it would take one of the row's columns
  * (rows draw `options.dividers` instead).
  *
+ * Doc 216 rules 9, 11: a Tabs sits in vertical contexts only for the same reason as a Section, and
+ * NEVER inside a Tab — tabs within tabs is a structure an author cannot read back. That second half is an
+ * ANCESTRY question, not a parent one (a Tabs in a VerticalLayout inside a Tab is still in a tab
+ * panel), and it cannot be asked of `kind` at all: a Tab's kind IS `vertical`, identical to a
+ * VerticalLayout's. Hence `ancestors` — the element types from the root down to the target layout. It is
+ * OPTIONAL so callers asking a pure kind question (`review-document`) still mean what they say; all three
+ * production gates — insert, move and the drop gate — must pass it, or the ancestry clause silently does nothing.
+ *
  * Doc 212 rules 4-5: a Section sits in VERTICAL contexts only — the root, a VerticalLayout, or another Section
  * (whose own kind is `vertical`). A heading, a description and a stack of fields inside one cell of a row reads
  * as a mistake, and the row engine (doc 180 rule 30b) would have to size the whole block as a single-line item.
  */
-export function allowedInLayout(type: string, kind: GridLayoutKind): boolean {
+export function allowedInLayout(
+  type: string,
+  kind: GridLayoutKind,
+  ancestors?: readonly string[],
+): boolean {
   if (NEVER_IN_LAYOUT.has(type)) return false;
   if (type === SECTION_TYPE) return kind === 'vertical';
+  if (type === TABS_TYPE)
+    return kind === 'vertical' && !(ancestors ?? []).includes(TAB_CONTENT_TYPE);
   return !(type === SEPARATOR_TYPE && kind === 'horizontal');
 }
 

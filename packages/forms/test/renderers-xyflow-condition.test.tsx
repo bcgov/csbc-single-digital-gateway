@@ -338,8 +338,8 @@ describe('placement (rules 21-23)', () => {
 
   it('leaves renderers/default untouched: no Condition entry, and the Flow still refuses (rule 23)', () => {
     // 6 before doc 212's Section; what this pins is that no CONDITION entry joined them.
-    // 7 until doc 215 added Service.
-    expect(defaults.layoutRenderers).toHaveLength(8);
+    // 7 until doc 215 added Service; 8 until doc 216 added Tabs and Tab.
+    expect(defaults.layoutRenderers).toHaveLength(10);
     const matching = defaults.layoutRenderers.filter(
       (entry) =>
         entry.tester({ type: 'Condition' }, schema, { rootSchema: schema, config: {} }) > 0,

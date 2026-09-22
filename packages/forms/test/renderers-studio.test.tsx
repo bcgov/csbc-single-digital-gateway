@@ -71,18 +71,18 @@ const handleSides = (item: HTMLElement | null | undefined) =>
   );
 
 describe('renderers/studio composition', () => {
-  it("holds ui's entries, then the draggable grid factory's, then xyflow's, 1:1 per category", () => {
+  it("holds ui's entries, then the draggable grid factory's, then xyflow's, 1:1 per tab", () => {
     for (const category of CATEGORIES) {
       expect(studio[category], category).toHaveLength(
         ui[category].length + grid[category].length + xyflow[category].length,
       );
     }
     // Grid, VerticalLayout, HorizontalLayout (rule 23), Form (doc 192 rule 2), Section (doc 212 rule 1), then
-    // Flow, Stage and — since doc 199 rule 17 — Condition (doc 195 rule 20).
+    // Tabs and Tab (doc 216 rule 1), then Flow, Stage and — since doc 199 rule 17 — Condition.
     //
     // COUNTED FROM THE END, so every one of these offsets moves when an entry is added anywhere before them.
     // A failure here reads as a dispatch regression and is usually just this arithmetic.
-    const firstGridEntry = studio.layoutRenderers.at(-9);
+    const firstGridEntry = studio.layoutRenderers.at(-11);
     expect(firstGridEntry?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);
     expect(studio.layoutRenderers.at(-3)?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
     expect(studio.layoutRenderers.at(-2)?.tester).toBe(xyflow.layoutRenderers[1]?.tester);
@@ -91,7 +91,7 @@ describe('renderers/studio composition', () => {
 
   it("does not spread default's entries (no second, tied Grid or Flow entry)", () => {
     // default = ui + CSS layouts + an unsupported Flow, so spreading it as well would tie every layout entry.
-    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 9);
+    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 11);
     expect(matching('Grid')).toHaveLength(1);
     expect(matching('Flow')).toHaveLength(1);
   });

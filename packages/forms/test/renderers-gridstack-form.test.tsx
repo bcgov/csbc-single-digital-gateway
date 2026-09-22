@@ -68,7 +68,7 @@ describe('gridstack Form renderer (doc 192)', () => {
     it('adds a fourth layout entry after Grid, VerticalLayout and HorizontalLayout', () => {
       const entries = createGridRenderers().layoutRenderers;
       // Six since doc 212 appended the Section entry and doc 215 the Service entry AFTER this one, which is why the Form is still at [3].
-      expect(entries).toHaveLength(6);
+      expect(entries).toHaveLength(8); // doc 216: +2 for Tabs and TabContentContent
       expect(entries[3]?.tester).toBe(formTester);
       expect(entries[3]?.tester({ type: 'Form' }, schema, testerContext)).toBe(1);
       expect(entries[0]?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);

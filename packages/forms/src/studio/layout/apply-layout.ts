@@ -8,6 +8,7 @@ import {
 } from '../../renderers/gridstack/grid-layouts';
 import { resizingFor } from '../../renderers/studio/studio-item-resize';
 import type { ElementIds } from './element-ids';
+import { elementPath } from './element-path';
 import { findById, updateById, withElements, type TreeElement } from './element-tree';
 
 // Pure uischema updates for finished grid gestures (doc 183 rules 6, 11-14, 12b). Nothing is mutated:
@@ -154,8 +155,11 @@ export function applyMove(
   if (!source || !target || !moved || source === target) return uischema;
   if (findById(moved, move.toGridId, ids)) return uischema;
   // Doc 194 rule 9: an element the target's kind cannot hold (a Separator into a row) stays where it is.
+  // Doc 216 rule 11: the target's ancestor types — the target layout included — decide it too, so a Tabs
+  // can never be dragged into a Tab.
   const targetKind = layoutKindOf(target.type);
-  if (targetKind && !allowedInLayout(moved.type, targetKind)) return uischema;
+  const ancestors = elementPath(uischema as TreeElement, move.toGridId, ids).map((el) => el.type);
+  if (targetKind && !allowedInLayout(moved.type, targetKind, ancestors)) return uischema;
 
   const removed = updateById(
     uischema,

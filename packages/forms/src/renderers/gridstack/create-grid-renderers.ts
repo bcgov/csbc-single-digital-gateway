@@ -2,9 +2,12 @@ import { rankWith, uiTypeIs, type RankedTester } from '@jsonforms/core';
 import type { ComponentMap } from 'gridstack/dist/react';
 import type { GridRenderersOptions } from '../../types/elements';
 import type { RendererSet } from '../../types/renderer-set';
+import { TabsRenderer } from './tabs-renderer';
 import { createFormRenderer, StudioFormTitle } from './form-renderer';
 import { GridElementDispatch } from './grid-element';
 import {
+  TABS_TYPE,
+  TAB_CONTENT_TYPE,
   FORM_TYPE,
   GRID_LAYOUT_TYPES,
   SECTION_TYPE,
@@ -30,6 +33,17 @@ export const formTester: RankedTester = rankWith(1, uiTypeIs(FORM_TYPE));
 export const serviceTester: RankedTester = rankWith(1, uiTypeIs(SERVICE_TYPE));
 /** Doc 212 rule 1: the Section, also rendered by the vertical layout — a second type of the same kind. */
 export const sectionTester: RankedTester = rankWith(1, uiTypeIs(SECTION_TYPE));
+/**
+ * Doc 216 rule 4: ONE entry on the bare type. The component is chosen INSIDE the renderer from the sanitised
+ * `options.component`, not by a second tester — with `tabs` both the default and the only value, a rank-2
+ * `optionIs` entry would resolve to the same component as this one.
+ */
+export const tabsTester: RankedTester = rankWith(1, uiTypeIs(TABS_TYPE));
+/**
+ * Doc 216 rule 1: a TabContent IS a vertical layout — the same renderer, no wrapper of its own. There is no
+ * `Tab` entry: a Tab is a TRIGGER, drawn by the strip from its label, and never dispatched.
+ */
+export const tabContentTester: RankedTester = rankWith(1, uiTypeIs(TAB_CONTENT_TYPE));
 
 // Registry order (doc 180 rule 23, doc 192 rule 2). The types differ, so no two testers ever tie on one element.
 const LAYOUT_TESTERS: readonly (readonly [GridLayoutKind, RankedTester])[] = [
@@ -88,6 +102,11 @@ export function createGridRenderers({
       // Doc 212 rules 1-2: the same vertical renderer the kind already has, inside a titled shell. APPENDED, like
       // the Form entry — `renderers-studio.test.tsx` reaches these by position from the end.
       { tester: sectionTester, renderer: createSectionRenderer(rendererFor('vertical')) },
+      // Doc 216 rules 1-2: the strip, and the panel as the vertical renderer the kind already has. APPENDED for
+      // the same reason as the entries above — tests reach this list by position from the end. TWO entries, not
+      // three: a Tab is never dispatched.
+      { tester: tabsTester, renderer: TabsRenderer },
+      { tester: tabContentTester, renderer: rendererFor('vertical') },
     ],
   };
 }

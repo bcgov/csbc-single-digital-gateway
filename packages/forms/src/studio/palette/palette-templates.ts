@@ -17,6 +17,7 @@ import {
   mdiViewColumnOutline,
   mdiViewGridOutline,
   mdiViewSequentialOutline,
+  mdiTabPlus,
 } from '@mdi/js';
 
 // The palette's catalogue (doc 189 rules 16-17): every element the studio renders, grouped, with the default
@@ -140,6 +141,30 @@ const DEFINITIONS: readonly TemplateDefinition[] = Object.freeze(
         // it is rather than what it was stamped with. (A HorizontalLayout authors `columns` because a row with an
         // unstated column count would be a different shape on every drop.)
         build: () => ({ element: element({ type: 'Section', elements: [] }) }),
+      },
+      {
+        // Doc 216 rules 9-10, 16: it arrives with ONE Tab, because a strip with no tabs has nothing to
+        // click and nothing to drop into — the author would have to find the `+` before the element did
+        // anything at all. `Tab` itself is NOT a palette entry: a tab is made by the `+` alone.
+        key: 'tabs',
+        group: 'layout',
+        label: 'Tabs',
+        icon: mdiTabPlus,
+        keywords: ['tabs', 'tabs', 'tab', 'sections', 'steps'],
+        // No authored `options.component`: `tabs` is the default (rule 3), and doc 212 rule 19's reason applies
+        // — a new element should show what it IS, not what it was stamped with.
+        build: () => ({
+          element: element({
+            type: 'Tabs',
+            elements: [
+              {
+                type: 'Tab',
+                label: 'Tab 1',
+                elements: [{ type: 'TabContent', elements: [] }],
+              },
+            ],
+          }),
+        }),
       },
       {
         key: 'text',

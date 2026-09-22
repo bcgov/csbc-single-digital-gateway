@@ -58,8 +58,12 @@ export interface GridEditor {
   /**
    * Whether a grid of kind `layout` may take `source` (doc 194 rules 10-11), asked by `acceptWidgets` on top of its
    * own checks so a refused drag shows no placeholder. Optional: omitted, every candidate is accepted.
+   *
+   * Doc 216 rules 11-12: `layoutId` is the target layout's ELEMENT ID, not its type — placement now depends on the
+   * whole ancestor chain (a Tabs may not sit inside a Tab), and only an id can be walked back to the
+   * root. The type is derivable from the id; the reverse is not.
    */
-  accepts?(layout: GridLayoutKind, source: GridDropSource): boolean;
+  accepts?(layout: GridLayoutKind, source: GridDropSource, layoutId: string): boolean;
 }
 
 // Kept in a module with no components, like grid-context.ts, so components using it stay Fast Refresh-able.

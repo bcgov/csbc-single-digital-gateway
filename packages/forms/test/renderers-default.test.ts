@@ -42,7 +42,7 @@ describe('renderers/default', () => {
     expect(Object.keys(defaults).toSorted()).toEqual([...CATEGORIES]);
   });
 
-  it("spreads ui's entries first in each category, preserving entry identity", () => {
+  it("spreads ui's entries first in each tab, preserving entry identity", () => {
     for (const category of CATEGORIES) {
       const source: readonly object[] = ui[category];
       const target: readonly object[] = defaults[category];
@@ -58,7 +58,7 @@ describe('renderers/default', () => {
     // Grid, VerticalLayout, HorizontalLayout and Form (doc 193 rule 3), then Flow and Stage (doc 195 rule 19),
     // then Section (doc 212 rule 1).
     // 7 until doc 215 added Service.
-    expect(defaults.layoutRenderers).toHaveLength(8);
+    expect(defaults.layoutRenderers).toHaveLength(10); // doc 216: +2 for Tabs and TabContentContent
   });
 
   it('renders its Grid with plain CSS, not gridstack', async () => {
