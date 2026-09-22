@@ -25,11 +25,18 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
   );
 }
 
+/**
+ * `text-[length:inherit]` because `@layer base` sizes a bare `li` at `--app-text-base` (`styles/base.css`),
+ * which is an explicit font-size ON THE ELEMENT and so beats the `text-xs/relaxed` inherited from
+ * `BreadcrumbList`: every item rendered at 16px inside a 12px list. The same defect the rich text theme
+ * documents for `p` (`inputs/rich-text/shared.ts`), and the same fix — the size goes back under the LIST's
+ * control, so a consumer still sets it in one place.
+ */
 function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
   return (
     <li
       data-slot="breadcrumb-item"
-      className={cn('inline-flex items-center gap-1', className)}
+      className={cn('inline-flex items-center gap-1 text-[length:inherit]', className)}
       {...props}
     />
   );
@@ -70,7 +77,8 @@ function BreadcrumbSeparator({ children, className, ...props }: React.ComponentP
       data-slot="breadcrumb-separator"
       role="presentation"
       aria-hidden="true"
-      className={cn('[&>svg]:size-3.5', className)}
+      // A separator is an `li` too, so it takes the same base-layer font-size as an item (see above).
+      className={cn('text-[length:inherit] [&>svg]:size-3.5', className)}
       {...props}
     >
       {children ?? <Icon path={mdiChevronRight} size="14px" />}

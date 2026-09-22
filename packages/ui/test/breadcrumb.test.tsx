@@ -69,6 +69,18 @@ describe('Breadcrumb', () => {
     });
   });
 
+  it('lets the LIST decide the font size, which base styles would otherwise override', () => {
+    const { container } = renderBreadcrumb();
+
+    // `@layer base` sizes a bare `li` at `--app-text-base` (styles/base.css) — an explicit font-size ON the
+    // element, which beats the `text-xs/relaxed` inherited from BreadcrumbList. Without this the Form Studio's
+    // breadcrumbs rendered at 16px inside a 12px list. jsdom loads no stylesheet, so the class is the pin.
+    for (const li of container.querySelectorAll('li'))
+      expect(li, li.getAttribute('data-slot') ?? 'li').toHaveClass('text-[length:inherit]');
+
+    expect(container.querySelector('ol')).toHaveClass('text-xs/relaxed');
+  });
+
   it('exposes an accessible label on the ellipsis via sr-only text', () => {
     renderBreadcrumb();
     expect(screen.getByText('More')).toHaveClass('sr-only');
