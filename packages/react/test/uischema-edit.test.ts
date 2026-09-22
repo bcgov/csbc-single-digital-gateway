@@ -187,6 +187,13 @@ describe('scopePath / collectScopes', () => {
   });
 });
 
+const at = (scoped: Record<string, unknown>, path: string): Record<string, unknown> =>
+  path
+    .split('.')
+    .reduce<
+      Record<string, unknown>
+    >((node, key) => (node[key] ?? {}) as Record<string, unknown>, scoped);
+
 describe('scopedSchema', () => {
   const schema = {
     type: 'object',
@@ -207,13 +214,6 @@ describe('scopedSchema', () => {
       },
     },
   };
-
-  const at = (scoped: Record<string, unknown>, path: string): Record<string, unknown> =>
-    path
-      .split('.')
-      .reduce<
-        Record<string, unknown>
-      >((node, key) => (node[key] ?? {}) as Record<string, unknown>, scoped);
 
   it('keeps required only for properties the subtree reaches', () => {
     const scoped = scopedSchema(schema, [

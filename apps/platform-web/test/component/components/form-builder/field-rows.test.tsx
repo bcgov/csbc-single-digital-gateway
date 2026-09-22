@@ -631,3 +631,32 @@ describe('Section canvas card (feature 172)', () => {
     expect(screen.queryByText('Section')).not.toBeInTheDocument();
   });
 });
+
+describe('Grid layout container', () => {
+  it('applies grid styles with explicit columns count', () => {
+    const gridNode: ContainerNode = {
+      kind: 'container',
+      layout: 'grid',
+      columns: 4,
+      children: [],
+    };
+
+    const { container } = renderContainer(gridNode);
+    const gridDiv = container.querySelector('.grid.gap-2') as HTMLElement;
+    expect(gridDiv).toBeInTheDocument();
+    expect(gridDiv.style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))');
+  });
+
+  it('defaults gridTemplateColumns to 2 columns when node.columns is undefined', () => {
+    const gridNode: ContainerNode = {
+      kind: 'container',
+      layout: 'grid',
+      children: [],
+    };
+
+    const { container } = renderContainer(gridNode);
+    const gridDiv = container.querySelector('.grid.gap-2') as HTMLElement;
+    expect(gridDiv).toBeInTheDocument();
+    expect(gridDiv.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
+  });
+});

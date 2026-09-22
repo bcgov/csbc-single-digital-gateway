@@ -29,6 +29,15 @@ describe('newFieldKey / defaultFieldLabel (feature 159)', () => {
     expect(defaultFieldLabel(model, 'number')).toBe('Number 1');
     expect(defaultFieldLabel(model, 'select')).toBe('Select 1');
   });
+
+  it('defaultFieldLabel falls back to "Field" for unknown field types', () => {
+    const model: FormModel = {
+      title: '',
+      description: '',
+      fields: [],
+    };
+    expect(defaultFieldLabel(model, 'unknown_type' as any)).toBe('Field 1');
+  });
 });
 
 describe('Form Builder Model Component Test Suite', () => {
@@ -76,6 +85,78 @@ describe('Form Builder Model Component Test Suite', () => {
         numberType: 'decimal',
         min: 0,
         decimalPlaces: 2,
+      });
+    });
+
+    it('creates boolean field defaulting to checkbox renderAs', () => {
+      const node = createField('boolean');
+      expect(node).toEqual({
+        kind: 'control',
+        key: '',
+        fieldType: 'boolean',
+        label: '',
+        required: false,
+        options: {},
+        renderAs: 'checkbox',
+      });
+    });
+
+    it('creates select field with default option and single selection', () => {
+      const node = createField('select');
+      expect(node).toEqual({
+        kind: 'control',
+        key: '',
+        fieldType: 'select',
+        label: '',
+        required: false,
+        options: {},
+        enumOptions: [{ value: 'option_1', label: 'Option 1' }],
+        multiple: false,
+      });
+    });
+
+    it('creates slider field with min 0, max 100, step 1', () => {
+      const node = createField('slider');
+      expect(node).toEqual({
+        kind: 'control',
+        key: '',
+        fieldType: 'slider',
+        label: '',
+        required: false,
+        options: {},
+        min: 0,
+        max: 100,
+        step: 1,
+      });
+    });
+
+    it('creates accordiongroup field with itemLabel and defaultOpen', () => {
+      const node = createField('accordiongroup');
+      expect(node).toEqual({
+        kind: 'control',
+        key: '',
+        fieldType: 'accordiongroup',
+        label: '',
+        required: false,
+        options: {},
+        itemLabel: 'item',
+        defaultOpen: 'none',
+      });
+    });
+
+    it('creates address field with BC-Gov defaults', () => {
+      const node = createField('address');
+      expect(node).toEqual({
+        kind: 'control',
+        key: '',
+        fieldType: 'address',
+        label: '',
+        required: false,
+        options: {},
+        defaultCountry: 'Canada',
+        defaultProvince: 'British Columbia',
+        readOnlyCountry: false,
+        readOnlyProvince: false,
       });
     });
 

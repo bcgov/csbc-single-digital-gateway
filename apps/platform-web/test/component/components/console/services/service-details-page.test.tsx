@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServiceDetail, ServiceVersion } from '@/lib/services';
 
-const { navigateMock, paramsRef, queryRef } = vi.hoisted(() => ({
+const { locationRef, navigateMock, paramsRef, queryRef } = vi.hoisted(() => ({
+  locationRef: { current: { hash: '' } },
   navigateMock: vi.fn(),
   paramsRef: {
     current: { slug: 'riverton', id: 'svc-1' } as {
@@ -30,7 +31,7 @@ vi.mock('@tanstack/react-router', () => ({
   useParams: () => paramsRef.current,
   useNavigate: () => navigateMock,
   useLocation: (options?: { select?: (l: { hash: string }) => unknown }) => {
-    const location = { hash: '' };
+    const location = locationRef.current;
     return options?.select ? options.select(location) : location;
   },
 }));
@@ -118,7 +119,10 @@ beforeEach(() => {
   arrange(detail());
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  locationRef.current = { hash: '' };
+});
 
 /**
  * Feature 174. The Service details page renders the service read-only from `definition.schema` /
@@ -422,6 +426,46 @@ describe('ServiceDetailsPage', () => {
       render(<ServiceDetailsPage />);
 
       expect(screen.getByText(/couldn’t be loaded/)).toBeInTheDocument();
+    });
+
+    it('should render an error message when detail is undefined without query error', () => {
+      arrange(undefined, { isError: false, isPending: false });
+
+      render(<ServiceDetailsPage />);
+
+      expect(screen.getByText(/couldn’t be loaded/)).toBeInTheDocument();
+    });
+
+    it('should render loading skeleton while service query is pending', () => {
+      arrange(undefined, { isPending: true });
+
+      const { container } = render(<ServiceDetailsPage />);
+
+      expect(container.querySelector('div[aria-hidden]')).not.toBeNull();
+    });
+  });
+
+  describe('useHashScroll and props override', () => {
+    it('scrolls the matching section into view when hash is provided and definition is ready', () => {
+      const scrollIntoViewMock = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoViewMock;
+      locationRef.current = { hash: 'service-description' };
+
+      render(<ServiceDetailsPage />);
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    });
+
+    it('safely handles non-existent element for hash', () => {
+      locationRef.current = { hash: 'non-existent-hash' };
+
+      expect(() => render(<ServiceDetailsPage />)).not.toThrow();
+    });
+
+    it('uses versionId passed as a prop override', () => {
+      render(<ServiceDetailsPage versionId="v-1" />);
+
+      expect(screen.getByRole('button', { name: /Version v1/ })).toBeInTheDocument();
     });
   });
 });

@@ -4,6 +4,7 @@ import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateWorkspaceDto,
   ListWorkspacesQueryDto,
+  ListMembersQueryDto,
   AddableStaffQueryDto,
   AddMemberDto,
   UpdateMemberDto,
@@ -32,6 +33,7 @@ describe('WorkspacesV1Controller', () => {
       getBySlug: vi.fn(),
       get: vi.fn(),
       listMembers: vi.fn(),
+      listMembersPage: vi.fn(),
       listAddableStaff: vi.fn(),
       addMember: vi.fn(),
       updateMember: vi.fn(),
@@ -100,6 +102,29 @@ describe('WorkspacesV1Controller', () => {
       const result = await controller.listMembers(mockUser, 'ws-1');
 
       expect(workspacesServiceMock.listMembers).toHaveBeenCalledWith(mockUser.id, 'ws-1');
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('listMembersPage', () => {
+    it('calls listMembersPage on workspaces service', async () => {
+      const query: ListMembersQueryDto = {
+        limit: 10,
+        offset: 0,
+        sort: 'role',
+        order: 'asc',
+        q: 'test',
+      };
+      const mockResult = { items: [], total: 0, limit: 10, offset: 0 };
+      workspacesServiceMock.listMembersPage.mockResolvedValue(mockResult);
+
+      const result = await controller.listMembersPage(mockUser, 'ws-1', query);
+
+      expect(workspacesServiceMock.listMembersPage).toHaveBeenCalledWith(
+        mockUser.id,
+        'ws-1',
+        query,
+      );
       expect(result).toEqual(mockResult);
     });
   });

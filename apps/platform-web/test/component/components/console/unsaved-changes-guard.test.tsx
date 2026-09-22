@@ -27,12 +27,26 @@ vi.mock('@repo/ui/alert-dialog', async (importOriginal) => {
       capturedOnOpenChange = onOpenChange;
       // If original.AlertDialog is not functional/rendered properly in JSDOM tests due to Radix portals,
       // fallback to custom div, but original.AlertDialog is preferred if it works.
-      return original.AlertDialog ? (
+      return (
         <original.AlertDialog open={open} onOpenChange={onOpenChange}>
           {children}
         </original.AlertDialog>
-      ) : (
-        <div data-testid="mock-alert-dialog">{children}</div>
+      );
+    },
+  };
+});
+
+let capturedButtonOnClick: any = null;
+vi.mock('@repo/ui/button', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@repo/ui/button')>();
+  return {
+    ...original,
+    Button: ({ onClick, children, ...props }: any) => {
+      capturedButtonOnClick = onClick;
+      return (
+        <button data-testid="save-btn" onClick={onClick} {...props}>
+          {children}
+        </button>
       );
     },
   };
@@ -293,5 +307,64 @@ describe('UnsavedChangesGuard — save action (feature 177)', () => {
     const calls = vi.mocked(useBlocker).mock.calls;
     // Same memoized predicate every render — a stable `when` never re-registers the blocker.
     expect((calls.at(-1)?.[0] as any)?.shouldBlockFn).toBe(first);
+  });
+
+  it('calls onDiscard before proceeding when discarding changes', async () => {
+    const user = userEvent.setup();
+    const onDiscard = vi.fn();
+    render(<UnsavedChangesGuard when={true} onDiscard={onDiscard} />);
+
+    await user.click(screen.getByRole('button', { name: 'Discard changes' }));
+
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+    expect(mockProceed).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows default error message when onSave rejects with a non-Error value', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockRejectedValue('string failure');
+    render(<UnsavedChangesGuard when={true} onSave={onSave} />);
+
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your changes couldn’t be saved.');
+  });
+
+  it('handles successful onSave safely when blocker.proceed is undefined', async () => {
+    const user = userEvent.setup();
+    mockHasProceed = false;
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<UnsavedChangesGuard when={true} onSave={onSave} />);
+
+    await expect(
+      user.click(screen.getByRole('button', { name: 'Save changes' })),
+    ).resolves.not.toThrow();
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not trigger concurrent saves while saving is already in progress', async () => {
+    let resolveSave!: () => void;
+    const onSave = vi.fn(
+      () =>
+        new Promise<void>((res) => {
+          resolveSave = res;
+        }),
+    );
+    render(<UnsavedChangesGuard when={true} onSave={onSave} />);
+
+    const saveBtn = screen.getByRole('button', { name: 'Save changes' });
+    const { fireEvent, act } = await import('@testing-library/react');
+    // First click triggers save
+    fireEvent.click(saveBtn);
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    // Call capturedButtonOnClick while saving is in progress -> triggers line 80 return
+    await act(async () => {
+      capturedButtonOnClick();
+    });
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    resolveSave();
+    await waitFor(() => expect(mockProceed).toHaveBeenCalledTimes(1));
   });
 });

@@ -1637,4 +1637,367 @@ describe('Section layout codec (feature 172)', () => {
     expect(definition.schema.properties).toHaveProperty('first_name');
     expect(definition.schema.required).toContain('first_name');
   });
+
+  it('serializes required checkboxes field with minItems: 1', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'checkboxes',
+          key: 'interests',
+          label: 'Interests',
+          required: true,
+          options: {},
+          enumOptions: [{ value: 'sports', label: 'Sports' }],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    expect(properties.interests).toHaveProperty('minItems', 1);
+  });
+
+  it('handles non-array oneOf in choicesFromSchema defensively', () => {
+    let calledFirst = true;
+    const schema = {
+      type: 'object',
+      properties: {
+        pref: {
+          get type() {
+            return 'string';
+          },
+          get oneOf() {
+            if (calledFirst) {
+              calledFirst = false;
+              return [{ const: 'yes', title: 'Yes' }];
+            }
+            return null; // non-array on second access
+          },
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [{ type: 'Control', scope: '#/properties/pref' }],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.enumOptions).toEqual([]);
+  });
+
+  it('infers address field when format is address even if type is not object', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        address_field: { type: 'string' },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/address_field',
+          options: { format: 'address' },
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.fieldType).toBe('address');
+  });
+
+  it('parses address defaults and readOnly locks for country and province', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        user_addr: {
+          type: 'object',
+          default: { country: 'CA', province: 'BC' },
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/user_addr',
+          options: {
+            format: 'address',
+            fields: {
+              country: { readOnly: true },
+              province: { readOnly: true },
+            },
+          },
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.defaultCountry).toBe('CA');
+    expect(field.defaultProvince).toBe('BC');
+    expect(field.readOnlyCountry).toBe(true);
+    expect(field.readOnlyProvince).toBe(true);
+  });
+
+  it('parses address with empty defaults and missing lock bags as false/undefined', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        user_addr: {
+          type: 'object',
+          default: { country: '', province: '' },
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/user_addr',
+          options: {
+            format: 'address',
+            fields: {
+              country: { readOnly: false },
+            },
+          },
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.defaultCountry).toBeUndefined();
+    expect(field.defaultProvince).toBeUndefined();
+    expect(field.readOnlyCountry).toBe(false);
+    expect(field.readOnlyProvince).toBe(false);
+  });
+
+  it('serializes address field with required subfields, defaults, and read-only locks', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'address',
+          key: 'home_addr',
+          label: 'Home Address',
+          required: true,
+          options: {},
+          defaultCountry: 'CA',
+          defaultProvince: 'BC',
+          readOnlyCountry: true,
+          readOnlyProvince: true,
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.home_addr;
+    expect(prop.type).toBe('object');
+    expect(prop.required).toEqual(['country', 'address_one', 'city', 'province', 'postal_code']);
+    expect(prop.properties.country).toEqual({ type: 'string', minLength: 1 });
+    expect(prop.properties.address_two).toEqual({ type: 'string' });
+    expect(prop.default).toEqual({ country: 'CA', province: 'BC' });
+
+    const elem = (definition.uischema.elements as any)[0];
+    expect(elem.options.format).toBe('address');
+    expect(elem.options.fields).toEqual({
+      country: { readOnly: true },
+      province: { readOnly: true },
+    });
+  });
+
+  it('serializes optional address field without defaults or locks', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'address',
+          key: 'shipping_addr',
+          label: 'Shipping Address',
+          required: false,
+          options: {},
+          defaultCountry: '',
+          defaultProvince: '',
+          readOnlyCountry: false,
+          readOnlyProvince: false,
+        },
+      ],
+    };
+
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.shipping_addr;
+    expect(prop.type).toBe('object');
+    expect(prop.required).toBeUndefined();
+    expect(prop.properties.country).toEqual({ type: 'string' });
+    expect(prop.default).toBeUndefined();
+
+    const elem = (definition.uischema.elements as any)[0];
+    expect(elem.options.format).toBe('address');
+    expect(elem.options.fields).toBeUndefined();
+  });
+
+  it('serializes optional daterange field without required array', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'daterange',
+          key: 'optional_trip',
+          label: 'Trip Dates',
+          required: false,
+          options: {},
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.optional_trip;
+    expect(prop.required).toBeUndefined();
+  });
+
+  it('serializes optional multi-select field without minItems', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'select',
+          key: 'optional_categories',
+          label: 'Categories',
+          multiple: true,
+          required: false,
+          options: {},
+          enumOptions: [{ value: 'cat1', label: 'Category 1' }],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.optional_categories;
+    expect(prop.minItems).toBeUndefined();
+  });
+
+  it('serializes required daterange field with start and end in required array', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'daterange',
+          key: 'trip_dates',
+          label: 'Trip Dates',
+          required: true,
+          options: {},
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.trip_dates;
+    expect(prop.required).toEqual(['start', 'end']);
+  });
+
+  it('serializes required multi-select field with minItems: 1', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'control',
+          fieldType: 'select',
+          key: 'category_ids',
+          label: 'Categories',
+          multiple: true,
+          required: true,
+          options: {},
+          enumOptions: [{ value: 'cat1', label: 'Category 1' }],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const properties = definition.schema.properties as Record<string, any>;
+    const prop = properties.category_ids;
+    expect(prop.minItems).toBe(1);
+  });
+
+  it('serializes grid layout container with undefined columns defaulting to 2', () => {
+    const original: FormModel = {
+      title: '',
+      description: '',
+      fields: [
+        {
+          kind: 'container',
+          layout: 'grid',
+          children: [],
+        },
+      ],
+    };
+    const definition = serializeModel(original);
+    const elem = (definition.uischema.elements as any)[0];
+    expect(elem.options).toEqual({ columns: 2 });
+  });
+
+  it('handles array prop without items in schema parsing', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        raw_list: {
+          type: 'array',
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/raw_list',
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.fieldType).toBe('text');
+  });
+
+  it('handles choice oneOf entries with missing const and empty title', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        choice_field: {
+          type: 'string',
+          oneOf: [{ title: 'No Const Option' }, { const: 'c2', title: '' }],
+        },
+      },
+    };
+    const uischema = {
+      type: 'VerticalLayout',
+      elements: [
+        {
+          type: 'Control',
+          scope: '#/properties/choice_field',
+        },
+      ],
+    };
+    const model = parseModel({ schema, uischema });
+    const field = model.fields[0] as ControlNode;
+    expect(field.enumOptions).toEqual([
+      { value: '', label: 'No Const Option' },
+      { value: 'c2', label: 'c2' },
+    ]);
+  });
 });

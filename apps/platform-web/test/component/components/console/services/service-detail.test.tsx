@@ -8,6 +8,7 @@ let capturedSaveFn: any = null;
 let capturedPublishFn: any = null;
 let mockState: any = null;
 export let mockReferencesOverride: any = null;
+export let mockServiceDetailOverride: any = null;
 // When true, the mocked ServiceEditor mimics @jsonforms/react's DEBOUNCED mount-time onChange: it emits
 // the data it was MOUNTED with, slightly later (after the parent's seeding). Off by default so it only
 // affects the regression test that exercises the warm-cache seeding race.
@@ -209,7 +210,7 @@ vi.mock('@/lib/services', async (importOriginal) => {
     reactivateService: vi.fn(),
     serviceQueryOptions: (id: string) => ({
       queryKey: ['services', 'detail', id],
-      queryFn: () => Promise.resolve(mockServiceDetailResponse),
+      queryFn: () => Promise.resolve(mockServiceDetailOverride ?? mockServiceDetailResponse),
     }),
     serviceReferencesQueryOptions: (id: string, versionId: string) => ({
       queryKey: ['services', 'detail', id, 'references', versionId],
@@ -225,6 +226,7 @@ afterEach(() => {
   capturedPublishFn = null;
   mockState = null;
   mockReferencesOverride = null;
+  mockServiceDetailOverride = null;
   mockSimulateEditorMountEmit = false;
   capturedApplicationMethodsProps = null;
 });
@@ -327,11 +329,11 @@ function renderServiceDetail(props: {
   // Seed cache
   queryClient.setQueryData(
     ['services', 'detail', props.id ?? 'srv-123'],
-    mockServiceDetailResponse,
+    mockServiceDetailOverride ?? mockServiceDetailResponse,
   );
   queryClient.setQueryData(
     ['services', 'detail', props.id ?? 'srv-123', 'references', props.versionId ?? 'v2'],
-    mockReferences,
+    mockReferencesOverride ?? mockReferences,
   );
 
   return render(
@@ -900,5 +902,42 @@ describe('ServiceDetail Component Test Suite', () => {
     });
     expect(capturedApplicationMethodsProps.references[0].id).toBe('ref-1');
     expect(capturedApplicationMethodsProps.references[1].id).toBe('ref-2');
+  });
+
+  it('seeds formData and formBaseline with empty object when selected version has nullish data', async () => {
+    mockServiceDetailOverride = {
+      service: mockService,
+      versions: [
+        {
+          id: 'v-no-data',
+          documentId: 'srv-123',
+          version: 1,
+          status: 'draft',
+          data: null,
+          createdAt: '2026-06-01T00:00:00.000Z',
+          publishedAt: null,
+          archivedAt: null,
+        },
+      ],
+      definition: {
+        schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', title: 'Title' },
+          },
+        },
+        uischema: {
+          type: 'VerticalLayout',
+          elements: [{ type: 'Control', scope: '#/properties/title' }],
+        },
+      },
+      hasSubmissions: false,
+    };
+
+    renderServiceDetail({ versionId: 'v-no-data' });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Title')).toHaveValue('');
+    });
   });
 });

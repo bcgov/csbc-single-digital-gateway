@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useEffect } from 'react';
@@ -46,6 +46,11 @@ const mockOnOpenChange = vi.fn();
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
   useParams: () => mockParams,
+  Link: ({ children, to, className }: any) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock('@/lib/services', () => ({
@@ -58,7 +63,7 @@ afterEach(() => {
 
 // @jsonforms/react debounces onChange (~10ms), so give the controlled data a beat to flush from the
 // last keystroke before submitting (memory: jsonforms-onchange-debounce).
-const flushDebounce = () => new Promise((resolve) => setTimeout(resolve, 50));
+const flushDebounce = () => new Promise((resolve) => setTimeout(resolve, 100));
 
 function renderNewServiceModal(seedWorkspace = true) {
   const queryClient = new QueryClient({
@@ -120,9 +125,9 @@ describe('New Service Modal Component Test Suite', () => {
 
     renderNewServiceModal(true);
 
-    await user.type(await screen.findByLabelText(/name of the service/i), 'Business License');
-    await flushDebounce();
-    await user.type(descInput(), 'Apply for business license');
+    const titleInput = await screen.findByLabelText(/name of the service/i);
+    fireEvent.change(titleInput, { target: { value: 'Business License' } });
+    fireEvent.change(descInput(), { target: { value: 'Apply for business license' } });
     await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
@@ -160,18 +165,56 @@ describe('New Service Modal Component Test Suite', () => {
 
     renderNewServiceModal(true);
 
-    await user.type(await screen.findByLabelText(/name of the service/i), 'Permit Office');
+    const titleInput = await screen.findByLabelText(/name of the service/i);
+    fireEvent.change(titleInput, { target: { value: 'Permit Office' } });
     await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Service title is taken');
   });
 
+  it('shows a validation error when submitting with empty untouched form', async () => {
+    const user = userEvent.setup();
+    renderNewServiceModal(true);
+
+    const submitBtn = await screen.findByRole('button', { name: /create service/i });
+    await user.click(submitBtn);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('A title is required');
+    expect(createService).not.toHaveBeenCalled();
+  });
+
+  it('submits successfully when description is omitted', async () => {
+    const user = userEvent.setup();
+    const createdResult = {
+      service: { id: 'srv-888', workspaceId: 'w1', title: 'Permits Only' },
+      versions: [],
+    };
+    vi.mocked(createService).mockResolvedValueOnce(createdResult as any);
+
+    renderNewServiceModal(true);
+
+    const titleInput = await screen.findByLabelText(/name of the service/i);
+    fireEvent.change(titleInput, { target: { value: 'Permits Only' } });
+    await flushDebounce();
+    await user.click(screen.getByRole('button', { name: /create service/i }));
+
+    await waitFor(() => {
+      expect(createService).toHaveBeenCalledWith({
+        workspaceId: 'w1',
+        title: 'Permits Only',
+        data: { title: 'Permits Only', description: '' },
+        applications: [],
+      });
+    });
+  });
+
   it('shows a validation error when submitting a whitespace-only name', async () => {
     const user = userEvent.setup();
     renderNewServiceModal(true);
 
-    await user.type(await screen.findByLabelText(/name of the service/i), '   ');
+    const titleInput = await screen.findByLabelText(/name of the service/i);
+    fireEvent.change(titleInput, { target: { value: '   ' } });
     await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
@@ -180,10 +223,10 @@ describe('New Service Modal Component Test Suite', () => {
   });
 
   it('shows an error when submitting with no active workspace', async () => {
-    const user = userEvent.setup();
     renderNewServiceModal(false);
 
-    await user.type(await screen.findByLabelText(/name of the service/i), 'Valid Title');
+    const titleInput = await screen.findByLabelText(/name of the service/i);
+    fireEvent.change(titleInput, { target: { value: 'Valid Title' } });
     await flushDebounce();
 
     const form = document.querySelector('form');

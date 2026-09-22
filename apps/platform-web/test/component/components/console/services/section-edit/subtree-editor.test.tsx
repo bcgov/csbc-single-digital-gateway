@@ -440,4 +440,76 @@ describe('SubtreeSectionEditor — unsaved changes (feature 177)', () => {
     expect(guardRef.current?.onSave).toBeTypeOf('function');
     expect(guardRef.current?.saveDisabled).toBe(false);
   });
+
+  it('renders flow subtree without step control when step prop is omitted (covers lines 184 and 235)', () => {
+    renderEditor({ variant: 'flow', withStep: false });
+
+    // Action provider is mounted for flow, but step provider is omitted
+    expect(flowRef.current).not.toBeNull();
+    expect(stepRef.current).toBeNull();
+  });
+
+  it('renders an empty state message when the section element has no elements array (line 17)', () => {
+    const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <SubtreeSectionEditor
+          section={{
+            id: 'no-elements-prop',
+            label: 'No elements prop',
+            editor: null,
+            actionLabel: null,
+            element: { type: 'Control', scope: '#/properties/test' } as any,
+          }}
+          schema={schema}
+          serviceId="svc-1"
+          version={version()}
+          onClose={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      screen.getByText(/This section has no fields to edit\. Give it an editor with/),
+    ).toBeInTheDocument();
+  });
+
+  it('mounts FlowStepProvider with stepId null when flow categorization has no categories (line 240)', () => {
+    const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const go = vi.fn();
+    render(
+      <QueryClientProvider client={client}>
+        <SubtreeSectionEditor
+          section={{
+            id: 'empty-categories-flow',
+            label: 'Empty categories flow',
+            editor: null,
+            actionLabel: null,
+            element: {
+              type: 'Group',
+              elements: [{ type: 'Categorization', options: { variant: 'flow' }, elements: [] }],
+            },
+          }}
+          schema={schema}
+          serviceId="svc-1"
+          version={version()}
+          onClose={vi.fn()}
+          step={{ id: null, go }}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(stepRef.current?.stepId).toBeNull();
+  });
+
+  it('displays default error message when save rejects with a non-Error instance', async () => {
+    updateDraftMock.mockRejectedValue('unknown failure string');
+    renderEditor({ variant: 'flow' });
+
+    await flowRef.current?.onSave({ details: { a: 'x' } })?.catch(() => null);
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('This section couldn’t be saved.'),
+    );
+  });
 });

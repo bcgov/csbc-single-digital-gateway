@@ -239,7 +239,7 @@ describe('AdminDocumentTypeDetail', () => {
     expect(screen.queryByText('Read-only (not a draft)')).not.toBeInTheDocument();
   });
 
-  it('switches the selected version via the dropdown (older non-draft is read-only)', async () => {
+  it('switches the selected version via the dropdown and returns via Go to current', async () => {
     mockApi([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -252,8 +252,15 @@ describe('AdminDocumentTypeDetail', () => {
 
     await waitFor(() => expect(textarea).toHaveValue(JSON.stringify(defWithSchema('v1'), null, 2)));
     expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Go to current' })).toBeInTheDocument();
+    const goToCurrentButton = screen.getByRole('button', { name: 'Go to current' });
+    expect(goToCurrentButton).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument();
+
+    await user.click(goToCurrentButton);
+    await waitFor(() => expect(textarea).toHaveValue(JSON.stringify(defWithSchema('v2'), null, 2)));
+    expect(screen.queryByRole('button', { name: 'Go to current' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();
   });
 
   it('saves the draft definition via PATCH', async () => {
@@ -308,6 +315,7 @@ describe('AdminDocumentTypeDetail', () => {
       { name: 'Publish' },
       { timeout: 32000 },
     );
+    await waitFor(() => expect(publishButton).toBeEnabled());
     await user.click(publishButton);
 
     await waitFor(() => {
@@ -341,7 +349,7 @@ describe('AdminDocumentTypeDetail', () => {
     });
   });
 
-  it('renders the live preview and toggles between interactive and read-only', async () => {
+  it('renders the live preview and toggles between interactive and read-only, and ignores deselect', async () => {
     mockApi([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
@@ -350,8 +358,47 @@ describe('AdminDocumentTypeDetail', () => {
     const preview = await screen.findByTestId('jsonforms', undefined, { timeout: 32000 });
     expect(preview).toHaveTextContent('interactive');
 
-    await user.click(screen.getByRole('button', { name: 'Read-only' }));
+    const interactiveBtn = screen.getByRole('button', { name: 'Interactive' });
+    const readonlyBtn = screen.getByRole('button', { name: 'Read-only' });
+
+    // Clicking already active toggle item deselects it, fallback retains interactive
+    await user.click(interactiveBtn);
+    expect(screen.getByTestId('jsonforms')).toHaveTextContent('interactive');
+
+    await user.click(readonlyBtn);
     await waitFor(() => expect(screen.getByTestId('jsonforms')).toHaveTextContent('readonly'));
+  });
+
+  it('handles a document type with no versions and allows creating a version', async () => {
+    const emptyEntry: Entry = {
+      type: {
+        id: 'dt-empty',
+        workspaceId: null,
+        name: 'Empty Type',
+        kind: 'empty-kind',
+        createdAt: ISO,
+      },
+      versions: [],
+    };
+    const { fetchMock } = mockApi([emptyEntry]);
+    renderApp('/admin/document-types/dt-empty');
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole('heading', { name: 'Empty Type' })).toBeInTheDocument();
+    expect(screen.getByText('Read-only (not a draft)')).toBeInTheDocument();
+
+    const newVersionBtn = screen.getByRole('button', { name: 'New version' });
+    await user.click(newVersionBtn);
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            String(input).includes('/v1/admin/document-types/dt-empty/versions') &&
+            (init?.method ?? 'GET').toUpperCase() === 'POST',
+        ),
+      ).toBe(true);
+    });
   });
 
   it('renders nothing when the document type is not found', async () => {

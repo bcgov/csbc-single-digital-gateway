@@ -13,6 +13,7 @@ const mockQuery = (resolvedValue: any) => {
     from: vi.fn().mockReturnThis(),
     innerJoin: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
+    offset: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
   });
@@ -290,6 +291,165 @@ describe('ServiceAgreementsService', () => {
       expect(result[1]!.isGlobal).toBe(true);
       expect(result[2]!.status).toBe('none');
       expect(result[2]!.isGlobal).toBe(true);
+    });
+  });
+
+  describe('listPage', () => {
+    it('throws ForbiddenException if non-admin tries to list global service agreements', async () => {
+      await expect(
+        service.listPage(mockUserActor, {
+          sort: 'updated',
+          order: 'desc',
+          limit: 10,
+          offset: 0,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException if user is not a member of the target workspace', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([])); // isMember -> false
+      await expect(
+        service.listPage(mockUserActor, {
+          workspaceId: mockWorkspaceId,
+          sort: 'updated',
+          order: 'desc',
+          limit: 10,
+          offset: 0,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lists workspace-scoped agreements with search query, sort title asc, and aggregates multiple versions', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([{ role: 'member' }])) // isMember -> true
+        .mockImplementationOnce(() =>
+          mockQuery([
+            {
+              id: 'doc-1',
+              workspaceId: mockWorkspaceId,
+              title: 'Terms of Service',
+              kind: 'service-agreement',
+              createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
+            },
+            {
+              id: 'doc-2',
+              workspaceId: mockWorkspaceId,
+              title: 'Privacy Policy',
+              kind: 'service-agreement',
+              createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
+            },
+          ]),
+        ) // docs
+        .mockImplementationOnce(() => mockQuery([{ count: 2 }])) // totals
+        .mockImplementationOnce(() =>
+          mockQuery([
+            { documentId: 'doc-1', status: 'draft' },
+            { documentId: 'doc-1', status: 'published' },
+          ]),
+        ); // versionRows
+
+      const result = await service.listPage(mockUserActor, {
+        workspaceId: mockWorkspaceId,
+        q: '  terms  ',
+        sort: 'title',
+        order: 'asc',
+        limit: 10,
+        offset: 0,
+      });
+
+      expect(result).toEqual({
+        items: [
+          {
+            id: 'doc-1',
+            workspaceId: mockWorkspaceId,
+            title: 'Terms of Service',
+            kind: 'service-agreement',
+            createdAt: '2026-07-28T12:00:00.000Z',
+            updatedAt: '2026-07-28T12:00:00.000Z',
+            status: 'published',
+            isGlobal: false,
+          },
+          {
+            id: 'doc-2',
+            workspaceId: mockWorkspaceId,
+            title: 'Privacy Policy',
+            kind: 'service-agreement',
+            createdAt: '2026-07-28T12:00:00.000Z',
+            updatedAt: '2026-07-28T12:00:00.000Z',
+            status: 'none',
+            isGlobal: false,
+          },
+        ],
+        total: 2,
+        limit: 10,
+        offset: 0,
+      });
+    });
+
+    it('lists global agreements by admin with sort status, blank q string, and totals fallback', async () => {
+      dbMock.select
+        .mockImplementationOnce(() =>
+          mockQuery([
+            {
+              id: 'doc-global',
+              workspaceId: null,
+              title: 'Global Agreement',
+              kind: 'service-agreement',
+              createdAt: new Date('2026-07-28T12:00:00.000Z'),
+              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
+            },
+          ]),
+        ) // docs
+        .mockImplementationOnce(() => mockQuery([])) // totals empty [] to test totals[0]?.count ?? 0
+        .mockImplementationOnce(() => mockQuery([{ documentId: 'doc-global', status: 'draft' }])); // versionRows
+
+      const result = await service.listPage(mockAdminActor, {
+        q: '   ',
+        sort: 'status',
+        order: 'desc',
+        limit: 5,
+        offset: 10,
+      });
+
+      expect(result).toEqual({
+        items: [
+          {
+            id: 'doc-global',
+            workspaceId: null,
+            title: 'Global Agreement',
+            kind: 'service-agreement',
+            createdAt: '2026-07-28T12:00:00.000Z',
+            updatedAt: '2026-07-28T12:00:00.000Z',
+            status: 'draft',
+            isGlobal: true,
+          },
+        ],
+        total: 0,
+        limit: 5,
+        offset: 10,
+      });
+    });
+
+    it('returns empty items and does not query versions when docs is empty', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([])) // docs
+        .mockImplementationOnce(() => mockQuery([{ count: 0 }])); // totals
+
+      const result = await service.listPage(mockAdminActor, {
+        sort: 'updated',
+        order: 'desc',
+        limit: 10,
+        offset: 0,
+      });
+
+      expect(result).toEqual({
+        items: [],
+        total: 0,
+        limit: 10,
+        offset: 0,
+      });
     });
   });
 

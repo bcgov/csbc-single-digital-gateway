@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -128,10 +128,11 @@ describe('Address codec — parse locks back onto the flat model (rules 2, 5)', 
 const COUNTRIES = [
   { id: 39, name: 'Canada', iso2: 'CA', hasStates: true, hasPostal: true },
   { id: 233, name: 'United States', iso2: 'US', hasStates: true, hasPostal: true },
+  { id: 75, name: 'France', iso2: 'FR', hasStates: false, hasPostal: true },
 ];
 const STATES = [{ id: 3, name: 'British Columbia', type: 'province', iso2: 'BC' }];
 
-function renderEditor(node: ControlNode) {
+function renderEditor(node: ControlNode, queryOverrides?: (client: QueryClient) => void) {
   const onChange = vi.fn();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
@@ -139,6 +140,9 @@ function renderEditor(node: ControlNode) {
   queryClient.setQueryData(['geo', 'countries'], COUNTRIES);
   queryClient.setQueryData(['geo', 'states', 39], STATES);
   queryClient.setQueryData(['geo', 'states', 233], STATES);
+  if (queryOverrides) {
+    queryOverrides(queryClient);
+  }
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
@@ -241,5 +245,152 @@ describe('Address field defaults — new node (rule 2)', () => {
     const node = createField('address');
     expect(node.readOnlyCountry).toBe(false);
     expect(node.readOnlyProvince).toBe(false);
+  });
+});
+
+describe('AddressDefaultsEditor — province selection and input behaviors', () => {
+  it('selects a default province from the combobox when country has states', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor(
+      addressNode({ defaultCountry: 'Canada', defaultProvince: '' }),
+    );
+
+    await user.click(screen.getByLabelText('Default Province'));
+    await user.click(await screen.findByRole('option', { name: 'British Columbia' }));
+
+    expect(onChange).toHaveBeenCalledWith({
+      defaultProvince: 'British Columbia',
+    });
+  });
+
+  it('clears default province and its lock via combobox clear button', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor(
+      addressNode({
+        defaultCountry: 'Canada',
+        defaultProvince: 'British Columbia',
+        readOnlyProvince: true,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Clear default Province' }));
+    expect(onChange).toHaveBeenCalledWith({
+      defaultProvince: '',
+      readOnlyProvince: false,
+    });
+  });
+
+  it('allows typing and clearing free-text province when country has no states', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor(
+      addressNode({ defaultCountry: 'France', defaultProvince: 'Paris' }),
+    );
+
+    const input = screen.getByLabelText('Default State / Province');
+    expect(input).toBeInTheDocument();
+    expect(input).not.toBeDisabled();
+
+    // Type in input
+    fireEvent.change(input, { target: { value: 'Lyon' } });
+    expect(onChange).toHaveBeenCalledWith({ defaultProvince: 'Lyon' });
+
+    // Clear via clear button
+    const clearBtn = screen.getByRole('button', { name: 'Clear' });
+    await user.click(clearBtn);
+    expect(onChange).toHaveBeenCalledWith({ defaultProvince: '', readOnlyProvince: false });
+  });
+
+  it('disables province input and shows placeholder when no country is selected', () => {
+    renderEditor(addressNode({ defaultCountry: '', defaultProvince: '' }));
+    const input = screen.getByLabelText('Default State / Province');
+    expect(input).toBeDisabled();
+    expect(input).toHaveAttribute('placeholder', 'Choose a country first');
+  });
+
+  it('handles turning switches off from an active state', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor(
+      addressNode({
+        defaultCountry: 'Canada',
+        defaultProvince: 'British Columbia',
+        readOnlyCountry: true,
+        readOnlyProvince: true,
+      }),
+    );
+
+    // Turn country switch off
+    await user.click(countrySwitch()!);
+    expect(onChange).toHaveBeenCalledWith({ readOnlyCountry: false });
+
+    // Turn province switch off
+    await user.click(provinceSwitch()!);
+    expect(onChange).toHaveBeenCalledWith({ readOnlyProvince: false });
+  });
+
+  it('renders safely when node default and lock properties are undefined', () => {
+    const {
+      defaultCountry: _defaultCountry,
+      defaultProvince: _defaultProvince,
+      readOnlyCountry: _readOnlyCountry,
+      readOnlyProvince: _readOnlyProvince,
+      ...baseNode
+    } = createField('address');
+    const sparseNode: ControlNode = {
+      ...baseNode,
+      key: 'addr_sparse',
+      label: 'Sparse Address',
+      options: {},
+      required: false,
+    };
+    renderEditor(sparseNode);
+    expect(countrySwitch()).not.toBeInTheDocument();
+    expect(provinceSwitch()).not.toBeInTheDocument();
+  });
+
+  it('renders safely when defaults are set but lock properties are undefined', () => {
+    const {
+      readOnlyCountry: _readOnlyCountry,
+      readOnlyProvince: _readOnlyProvince,
+      ...baseNode
+    } = createField('address');
+    const nodeWithDefaults: ControlNode = {
+      ...baseNode,
+      key: 'addr_partial',
+      label: 'Partial Address',
+      options: {},
+      required: false,
+      defaultCountry: 'Canada',
+      defaultProvince: 'British Columbia',
+    };
+    renderEditor(nodeWithDefaults);
+    expect(countrySwitch()).toBeInTheDocument();
+    expect(countrySwitch()).not.toBeChecked();
+    expect(provinceSwitch()).toBeInTheDocument();
+    expect(provinceSwitch()).not.toBeChecked();
+  });
+
+  it('renders province combobox when defaultCountry is set but defaultProvince is undefined and states are loading', () => {
+    const { defaultProvince: _defaultProvince, ...baseNode } = createField('address');
+    const nodeNoProvince: ControlNode = {
+      ...baseNode,
+      key: 'addr_no_prov',
+      label: 'No Province Address',
+      options: {},
+      required: false,
+      defaultCountry: 'Canada',
+      readOnlyCountry: false,
+      readOnlyProvince: false,
+    };
+    renderEditor(nodeNoProvince, (client) => {
+      client.setQueryData(['geo', 'states', 39], undefined);
+    });
+    expect(screen.getByLabelText('Default Province')).toBeInTheDocument();
+  });
+
+  it('handles empty query cache gracefully without crash', () => {
+    renderEditor(addressNode({ defaultCountry: '', defaultProvince: '' }), (client) => {
+      client.removeQueries({ queryKey: ['geo'] });
+    });
+    expect(screen.getByLabelText('Default country')).toBeInTheDocument();
   });
 });

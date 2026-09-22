@@ -197,6 +197,106 @@ describe('WorkspacesService', () => {
     });
   });
 
+  describe('listMembersPage', () => {
+    const mockWorkspace = { id: 'ws-1', ownerUserId: 'owner-1' };
+    const memberRow = {
+      id: 'member-1',
+      userId: 'user-1',
+      role: 'admin',
+      status: 'active',
+      displayName: 'Alice',
+      email: 'alice@example.com',
+      createdAt: new Date('2026-07-12T00:00:00.000Z'),
+    };
+
+    it('returns paginated members with search and role sort order asc', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(mockQuery([memberRow]))
+        // 3. totals select
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+        q: 'alice',
+        sort: 'role',
+        order: 'asc',
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(result.offset).toBe(0);
+      expect(result.items[0]!.userId).toBe('user-1');
+    });
+
+    it('handles name sort and order desc when query q is undefined', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(mockQuery([memberRow]))
+        // 3. totals select
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+        sort: 'name',
+        order: 'desc',
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('handles joined sort and empty query string (whitespace)', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(mockQuery([memberRow]))
+        // 3. totals select
+        .mockReturnValueOnce(mockQuery([{ count: 1 }]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+        q: '   ',
+        sort: 'joined',
+        order: 'asc',
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('falls back to 0 when totals array is empty', async () => {
+      dbMock.select = vi
+        .fn()
+        // 1. requireMembership
+        .mockReturnValueOnce(mockQuery([{ workspace: mockWorkspace, role: 'member' }]))
+        // 2. rows select
+        .mockReturnValueOnce(mockQuery([]))
+        // 3. totals select (empty)
+        .mockReturnValueOnce(mockQuery([]));
+
+      const result = await service.listMembersPage('user-1', 'ws-1', {
+        limit: 10,
+        offset: 0,
+      } as any);
+
+      expect(result.items).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+  });
+
   describe('listAddableStaff', () => {
     it('lists eligible staff users not already in the workspace', async () => {
       const mockWorkspace = { id: 'ws-1', ownerUserId: 'user-1' };

@@ -1,5 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import { Inspector } from '@/components/form-builder/inspector';
 import { createField } from '@/components/form-builder/model';
@@ -1033,5 +1034,534 @@ describe('Section inspector settings (feature 172)', () => {
     renderContainerInspector(containerNode({ layout: 'group', label: 'G' }));
     expect(screen.getByLabelText('Section title')).toBeInTheDocument();
     expect(screen.queryByLabelText('Description')).not.toBeInTheDocument();
+  });
+});
+
+describe('Inspector full branch and onClear coverage', () => {
+  const defaultForm = {
+    title: 'Customer Survey',
+    description: 'Please answer accurately.',
+  };
+
+  it('resets copied state after timeout on FieldIdBadge', async () => {
+    const user = userEvent.setup();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'testKey',
+      label: 'Username',
+      required: false,
+      options: {},
+    };
+    render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    const idButton = screen.getByRole('button', { name: 'Copy field ID testKey' });
+    await user.click(idButton);
+    expect(idButton).toHaveTextContent('Copied!');
+    await waitFor(
+      () => {
+        expect(idButton).toHaveTextContent('ID: testKey');
+      },
+      { timeout: 2500 },
+    );
+  });
+
+  it('supports editing option label, moving up/down, removing, out-of-bounds move, and Add option button in ChoiceOptionsEditor', () => {
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'select',
+      key: 'colors',
+      label: 'Color',
+      required: false,
+      options: {},
+      enumOptions: [
+        { label: 'Red', value: 'red' },
+        { label: 'Blue', value: 'blue' },
+        { label: 'Green', value: 'green' },
+      ],
+    };
+
+    render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // Edit Option 1 label (Line 91)
+    const opt1LabelInput = screen.getByLabelText('Option 1 label');
+    fireEvent.change(opt1LabelInput, { target: { value: 'Crimson' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({
+      enumOptions: [
+        { label: 'Crimson', value: 'red' },
+        { label: 'Blue', value: 'blue' },
+        { label: 'Green', value: 'green' },
+      ],
+    });
+
+    // Edit Option 1 value (Line 98)
+    const opt1ValueInput = screen.getByLabelText('Option 1 value');
+    fireEvent.change(opt1ValueInput, { target: { value: 'crimson_val' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({
+      enumOptions: [
+        { label: 'Red', value: 'crimson_val' },
+        { label: 'Blue', value: 'blue' },
+        { label: 'Green', value: 'green' },
+      ],
+    });
+
+    // Move Option 2 up (Line 107)
+    const moveUpBtn = screen.getByRole('button', { name: 'Move option 2 up' });
+    fireEvent.click(moveUpBtn);
+    expect(handleChangeControl).toHaveBeenCalledWith({
+      enumOptions: [
+        { label: 'Blue', value: 'blue' },
+        { label: 'Red', value: 'red' },
+        { label: 'Green', value: 'green' },
+      ],
+    });
+
+    // Out of bounds move up defensive check (Line 65)
+    const moveOpt1UpBtn = screen.getByRole('button', { name: 'Move option 1 up' });
+    handleChangeControl.mockClear();
+    const fiberKey1 = Object.keys(moveOpt1UpBtn).find((k) => k.startsWith('__reactFiber'));
+    const fiber1 = (moveOpt1UpBtn as any)[fiberKey1!];
+    let fn1 = fiber1?.return?.memoizedProps?.onClick || fiber1?.memoizedProps?.onClick;
+    if (typeof fn1 === 'function') fn1();
+    expect(handleChangeControl).not.toHaveBeenCalled();
+
+    // Out of bounds move down defensive check (Line 65)
+    const moveOpt3DownBtn = screen.getByRole('button', { name: 'Move option 3 down' });
+    handleChangeControl.mockClear();
+    const fiberKey3 = Object.keys(moveOpt3DownBtn).find((k) => k.startsWith('__reactFiber'));
+    const fiber3 = (moveOpt3DownBtn as any)[fiberKey3!];
+    let fn3 = fiber3?.return?.memoizedProps?.onClick || fiber3?.memoizedProps?.onClick;
+    if (typeof fn3 === 'function') fn3();
+    expect(handleChangeControl).not.toHaveBeenCalled();
+
+    // Move Option 2 down (Line 117)
+    const moveDownBtn = screen.getByRole('button', { name: 'Move option 2 down' });
+    fireEvent.click(moveDownBtn);
+    expect(handleChangeControl).toHaveBeenCalledWith({
+      enumOptions: [
+        { label: 'Red', value: 'red' },
+        { label: 'Green', value: 'green' },
+        { label: 'Blue', value: 'blue' },
+      ],
+    });
+
+    // Remove Option 1 (Line 126)
+    const removeBtn = screen.getByRole('button', { name: 'Remove option 1' });
+    fireEvent.click(removeBtn);
+    expect(handleChangeControl).toHaveBeenCalledWith({
+      enumOptions: [
+        { label: 'Blue', value: 'blue' },
+        { label: 'Green', value: 'green' },
+      ],
+    });
+
+    // Add option button (Line 140)
+    const addBtn = screen.getByRole('button', { name: 'Add option' });
+    fireEvent.click(addBtn);
+    expect(handleChangeControl).toHaveBeenCalledWith({
+      enumOptions: [
+        { label: 'Red', value: 'red' },
+        { label: 'Blue', value: 'blue' },
+        { label: 'Green', value: 'green' },
+        { label: 'Option 4', value: 'option_4' },
+      ],
+    });
+  });
+
+  it('handles onClear for placeholder, mask, maxLength, label, and parsePositiveInt in TextSettings/ControlInspector', () => {
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'text',
+      key: 'name',
+      label: 'Full Name',
+      placeholder: 'John Doe',
+      mask: '(999) 999-9999',
+      maxLength: 50,
+      multiline: false,
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // Clear Label (Line 346)
+    const labelInput = screen.getByLabelText('Label');
+    const labelClear = labelInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(labelClear).toBeTruthy();
+    fireEvent.click(labelClear!);
+    expect(handleChangeControl).toHaveBeenCalledWith({ label: '' });
+
+    // Clear Placeholder (Line 291)
+    const placeholderInput = screen.getByLabelText('Placeholder');
+    const placeholderClear = placeholderInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(placeholderClear).toBeTruthy();
+    fireEvent.click(placeholderClear!);
+    expect(handleChangeControl).toHaveBeenCalledWith({ placeholder: '' });
+
+    // Clear Mask (Line 310)
+    const maskInput = screen.getByLabelText('Input mask');
+    const maskClear = maskInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(maskClear).toBeTruthy();
+    fireEvent.click(maskClear!);
+    expect(handleChangeControl).toHaveBeenCalledWith({ mask: '' });
+
+    // Clear Max length (Line 324)
+    const maxLenInput = screen.getByLabelText('Max length');
+    const maxLenClear = maxLenInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(maxLenClear).toBeTruthy();
+    fireEvent.click(maxLenClear!);
+    expect(handleChangeControl).toHaveBeenCalledWith({ maxLength: undefined });
+
+    // parsePositiveInt tests
+    fireEvent.change(maxLenInput, { target: { value: '' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ maxLength: undefined });
+    fireEvent.change(maxLenInput, { target: { value: '0' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ maxLength: undefined });
+    fireEvent.change(maxLenInput, { target: { value: '100' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ maxLength: 100 });
+  });
+
+  it('handles NumberSettings onClear, parseBound, parseDecimals, and boundsInverted', () => {
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'number',
+      key: 'age',
+      label: 'Age',
+      numberType: 'decimal',
+      min: 10,
+      max: 5,
+      decimalPlaces: 2,
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // Inverted bounds warning
+    expect(screen.getByText('Max must be greater than or equal to Min.')).toBeInTheDocument();
+
+    // Clear Minimum (Line 219)
+    const minInput = screen.getByLabelText('Min');
+    const minClear = minInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(minClear).toBeTruthy();
+    fireEvent.click(minClear!);
+    expect(handleChangeControl).toHaveBeenCalledWith({ min: undefined });
+
+    // Clear Maximum (Line 229)
+    const maxInput = screen.getByLabelText('Max');
+    const maxClear = maxInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(maxClear).toBeTruthy();
+    fireEvent.click(maxClear!);
+    expect(handleChangeControl).toHaveBeenCalledWith({ max: undefined });
+
+    // Clear Decimal places (Line 208)
+    const decInput = screen.getByLabelText('Decimal places');
+    const decClear = decInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(decClear).toBeTruthy();
+    fireEvent.click(decClear!);
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: undefined });
+
+    // parseBound tests: empty string, NaN, 1e999, valid number
+    fireEvent.change(minInput, { target: { value: '' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ min: undefined });
+    const minProps = (minInput as any)[
+      Object.keys(minInput).find((k) => k.startsWith('__reactProps'))!
+    ];
+    minProps?.onChange({
+      target: { value: 'not-a-number' },
+      currentTarget: { value: 'not-a-number' },
+    });
+    expect(handleChangeControl).toHaveBeenCalledWith({ min: undefined });
+    minProps?.onChange({ target: { value: '1e999' }, currentTarget: { value: '1e999' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ min: Infinity });
+    fireEvent.change(minInput, { target: { value: '18' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ min: 18 });
+
+    // parseDecimals tests: empty string, NaN, negative, valid integer
+    fireEvent.change(decInput, { target: { value: '' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: undefined });
+    const decProps = (decInput as any)[
+      Object.keys(decInput).find((k) => k.startsWith('__reactProps'))!
+    ];
+    decProps?.onChange({ target: { value: 'not-an-int' }, currentTarget: { value: 'not-an-int' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: undefined });
+    decProps?.onChange({ target: { value: '-1' }, currentTarget: { value: '-1' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: undefined });
+    fireEvent.change(decInput, { target: { value: '10' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: 10 });
+    fireEvent.change(decInput, { target: { value: '3' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ decimalPlaces: 3 });
+  });
+
+  it('covers fallbacks for numberType and renderAs, required toggle on accordiongroup, and address fieldType', () => {
+    const handleChangeControl = vi.fn();
+
+    // 1. numberType fallback to 'decimal'
+    const numberNode: ControlNode = {
+      kind: 'control',
+      fieldType: 'number',
+      key: 'numField',
+      label: 'Num',
+      required: false,
+      options: {},
+    };
+    const { unmount: unmountNum } = render(
+      <Inspector
+        node={numberNode}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText('Decimal places')).toBeInTheDocument();
+    unmountNum();
+
+    // 2. renderAs fallback to 'checkbox'
+    const boolNode: ControlNode = {
+      kind: 'control',
+      fieldType: 'boolean',
+      key: 'boolField',
+      label: 'Bool',
+      required: false,
+      options: {},
+    };
+    const { unmount: unmountBool } = render(
+      <Inspector
+        node={boolNode}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Checkbox' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    unmountBool();
+
+    // 3. Required toggle on accordiongroup
+    const accordionGroupNode: ControlNode = {
+      kind: 'control',
+      fieldType: 'accordiongroup',
+      key: 'accField',
+      label: 'Accordion',
+      required: false,
+      options: {},
+    };
+    const { unmount: unmountAcc } = render(
+      <Inspector
+        node={accordionGroupNode}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+    const reqSwitch = screen.getByRole('switch', { name: 'Required' });
+    fireEvent.click(reqSwitch);
+    expect(handleChangeControl).toHaveBeenCalledWith(expect.objectContaining({ required: true }));
+    unmountAcc();
+
+    // 4. Address fieldType renders AddressDefaultsEditor
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const addressNode: ControlNode = {
+      kind: 'control',
+      fieldType: 'address',
+      key: 'addrField',
+      label: 'Address',
+      required: false,
+      options: {},
+    };
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Inspector
+          node={addressNode}
+          form={defaultForm}
+          onChangeControl={handleChangeControl}
+          onChangeContainer={vi.fn()}
+          onChangeDisplay={vi.fn()}
+          onChangeForm={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText('Default country')).toBeInTheDocument();
+  });
+
+  it('handles Slider settings in ControlInspector', () => {
+    const handleChangeControl = vi.fn();
+    const node: ControlNode = {
+      kind: 'control',
+      fieldType: 'slider',
+      key: 'volume',
+      label: 'Volume',
+      min: 10,
+      max: 90,
+      step: 5,
+      required: false,
+      options: {},
+    };
+
+    render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={handleChangeControl}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    const minInput = screen.getByLabelText('Min');
+    const maxInput = screen.getByLabelText('Max');
+    const stepInput = screen.getByLabelText('Step');
+
+    fireEvent.change(minInput, { target: { value: '0' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ min: 0 });
+
+    fireEvent.change(maxInput, { target: { value: '100' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ max: 100 });
+
+    fireEvent.change(stepInput, { target: { value: '1' } });
+    expect(handleChangeControl).toHaveBeenCalledWith({ step: 1 });
+  });
+
+  it('handles onClear for form title in form settings', () => {
+    const handleChangeForm = vi.fn();
+    render(
+      <Inspector
+        node={null}
+        form={{ title: 'My Form', description: 'Desc' }}
+        onChangeControl={vi.fn()}
+        onChangeContainer={vi.fn()}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={handleChangeForm}
+      />,
+    );
+
+    // Clear Title (Line 470)
+    const titleInput = screen.getByLabelText('Title');
+    const clearBtn = titleInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(clearBtn).toBeTruthy();
+    fireEvent.click(clearBtn!);
+    expect(handleChangeForm).toHaveBeenCalledWith({ title: '' });
+  });
+
+  it('handles onClear for container section title and covers grid fallback values', () => {
+    const handleChangeContainer = vi.fn();
+    const node: ContainerNode = {
+      kind: 'container',
+      layout: 'section',
+      label: 'Personal Info',
+      description: 'Please fill in details',
+      children: [],
+    };
+
+    const { unmount } = render(
+      <Inspector
+        node={node}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={handleChangeContainer}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    // Clear Section title (Line 514)
+    const titleInput = screen.getByLabelText('Section title');
+    const clearBtn = titleInput
+      .closest('.group\\/input-group')
+      ?.querySelector('button[aria-label="Clear"]');
+    expect(clearBtn).toBeTruthy();
+    fireEvent.click(clearBtn!);
+    expect(handleChangeContainer).toHaveBeenCalledWith({ label: '' });
+
+    unmount();
+
+    // Grid container with columns fallback (Line 498 & 500)
+    const gridNode: ContainerNode = {
+      kind: 'container',
+      layout: 'grid',
+      children: [],
+    };
+    render(
+      <Inspector
+        node={gridNode}
+        form={defaultForm}
+        onChangeControl={vi.fn()}
+        onChangeContainer={handleChangeContainer}
+        onChangeDisplay={vi.fn()}
+        onChangeForm={vi.fn()}
+      />,
+    );
+
+    const colsInput = screen.getByLabelText('Columns');
+    expect(colsInput).toHaveValue(2); // fallback columns ?? 2
+
+    // Invalid value falls back to 2 in onChange
+    fireEvent.change(colsInput, { target: { value: 'invalid' } });
+    expect(handleChangeContainer).toHaveBeenCalledWith({ columns: 2 });
   });
 });

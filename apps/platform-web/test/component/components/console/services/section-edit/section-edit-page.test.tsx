@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import type { PageChrome } from '@/lib/page-chrome';
 import type { ServiceDetail, ServiceVersion } from '@/lib/services';
+import {
+  SECTION_EDITORS,
+  type SectionEditorProps,
+} from '@/components/console/services/section-edit/editors';
 
 const { navigateMock, queryRef, updateDraftMock, invalidateMock, paramsRef, chromeRef } =
   vi.hoisted(() => ({
@@ -311,6 +315,56 @@ describe('SectionEditPage', () => {
     render(<SectionEditPage />);
 
     expect(await screen.findByText(/couldn’t be loaded/)).toBeInTheDocument();
+  });
+
+  it('renders a loading spinner while service query is pending (line 115)', () => {
+    queryRef.current = { data: undefined, isPending: true, isError: false };
+    const { container } = render(<SectionEditPage />);
+
+    expect(container.querySelector('.flex.justify-center.py-8')).toBeInTheDocument();
+  });
+
+  it('handles empty route params and fallback titles gracefully', () => {
+    paramsRef.current = {};
+    const untitledDetail = detail();
+    (untitledDetail.service as any).title = undefined;
+    queryRef.current = { data: untitledDetail, isPending: false, isError: false };
+
+    render(<SectionEditPage />);
+    expect(chromeRef.current?.title).toBe('Edit section');
+    expect(chromeRef.current?.description).toBe('Section of Service');
+  });
+
+  it('navigates without replacing when options is omitted in go (line 80)', async () => {
+    SECTION_EDITORS['custom-test-editor'] = ({ step }: SectionEditorProps) => (
+      <button type="button" onClick={() => step?.go('step-two')}>
+        Next Step
+      </button>
+    );
+
+    const customDetail = detail();
+    customDetail.definitions['tv-1'] = {
+      schema: SCHEMA,
+      uischema: {
+        type: 'VerticalLayout',
+        elements: [
+          {
+            type: 'Group',
+            label: 'Service description',
+            options: { edit: { editor: 'custom-test-editor' } },
+            elements: [],
+          },
+        ],
+      },
+    };
+    queryRef.current = { data: customDetail, isPending: false, isError: false };
+
+    render(<SectionEditPage />);
+    const btn = await screen.findByRole('button', { name: 'Next Step' });
+    await userEvent.click(btn);
+
+    const nav = editNavigations().find((n) => n.params?.stepId === 'step-two');
+    expect(nav?.replace).toBe(false);
   });
 });
 

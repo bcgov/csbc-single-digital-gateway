@@ -114,19 +114,30 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     expect(screen.getByTestId('mock-notifications-menu')).toHaveAttribute('data-disabled', 'true');
     expect(screen.queryByTestId('mock-command-palette')).not.toBeInTheDocument();
 
-    // Nav labels still render, but as disabled spans (not links).
-    expect(screen.queryByRole('link', { name: 'Services' })).not.toBeInTheDocument();
-    const disabled = screen.getByText('Services');
-    expect(disabled).toHaveAttribute('aria-disabled', 'true');
+    // Nav labels still render, but as disabled spans (not links) for all top nav items (L52).
+    const navItemLabels = [
+      'Overview',
+      'Services',
+      'Service Requests',
+      'Shared Resources',
+      'Settings',
+    ];
+    for (const label of navItemLabels) {
+      expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
+      const disabledSpan = screen.getByText(label);
+      expect(disabledSpan).toHaveAttribute('aria-disabled', 'true');
+      expect(disabledSpan.tagName.toLowerCase()).toBe('span');
+    }
   });
 
-  it('renders the minimal variant (brand + notifications + avatar only) with no workspace context', () => {
+  it('renders the minimal variant (brand + notifications + avatar only) with no workspace context (L93)', () => {
     render(<ConsoleHeader slug={undefined} minimal />);
 
     // Brand + right-side actions remain.
     expect(screen.getByText('Operations Portal')).toBeInTheDocument();
     expect(screen.getByTestId('mock-icon')).toBeInTheDocument();
     expect(screen.getByTestId('mock-notifications-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-notifications-menu')).toHaveAttribute('data-disabled', 'true');
     expect(screen.getByTestId('mock-profile-menu')).toBeInTheDocument();
 
     // Switcher, primary nav, and search are all gone.
@@ -134,5 +145,74 @@ describe('ConsoleHeader (top bar) Component Test Suite', () => {
     expect(screen.queryByText('Services')).not.toBeInTheDocument();
     expect(screen.queryByText('Overview')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+  });
+
+  it('renders minimal variant with active workspace and enabled notifications (L93)', () => {
+    render(<ConsoleHeader slug="riverton" minimal={true} />);
+
+    expect(screen.getByTestId('mock-notifications-menu')).toHaveAttribute('data-disabled', 'false');
+    expect(screen.queryByTestId('mock-workspace-switcher')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+  });
+
+  it('renders full header when minimal is explicitly false', () => {
+    render(<ConsoleHeader slug="riverton" minimal={false} />);
+
+    expect(screen.getByTestId('mock-workspace-switcher')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Overview' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument();
+  });
+
+  describe('active link highlighting', () => {
+    it('highlights Overview when on /app/:slug or /app/:slug/ and inactive otherwise (L33)', () => {
+      mockPathname = '/app/riverton';
+      const { rerender } = render(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Overview' })).toHaveClass('border-bcgov-blue');
+
+      mockPathname = '/app/riverton/';
+      rerender(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Overview' })).toHaveClass('border-bcgov-blue');
+
+      mockPathname = '/app/riverton/other';
+      rerender(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Overview' })).not.toHaveClass('border-bcgov-blue');
+    });
+
+    it('highlights Settings when on /app/:slug/settings or /app/:slug/team and inactive otherwise (L36)', () => {
+      mockPathname = '/app/riverton/settings';
+      const { rerender } = render(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('border-bcgov-blue');
+
+      mockPathname = '/app/riverton/settings/general';
+      rerender(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('border-bcgov-blue');
+
+      mockPathname = '/app/riverton/team';
+      rerender(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('border-bcgov-blue');
+
+      mockPathname = '/app/riverton/team/members';
+      rerender(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('border-bcgov-blue');
+
+      mockPathname = '/app/riverton';
+      rerender(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Settings' })).not.toHaveClass('border-bcgov-blue');
+    });
+
+    it('highlights other nav items (e.g. Services, Service Requests) based on path prefix', () => {
+      mockPathname = '/app/riverton/services/srv-1';
+      const { rerender } = render(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Services' })).toHaveClass('border-bcgov-blue');
+      expect(screen.getByRole('link', { name: 'Overview' })).not.toHaveClass('border-bcgov-blue');
+      expect(screen.getByRole('link', { name: 'Settings' })).not.toHaveClass('border-bcgov-blue');
+
+      mockPathname = '/app/riverton/submissions';
+      rerender(<ConsoleHeader slug="riverton" />);
+      expect(screen.getByRole('link', { name: 'Service Requests' })).toHaveClass(
+        'border-bcgov-blue',
+      );
+      expect(screen.getByRole('link', { name: 'Services' })).not.toHaveClass('border-bcgov-blue');
+    });
   });
 });

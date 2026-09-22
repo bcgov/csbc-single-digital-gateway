@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Palette } from '@/components/form-builder/palette';
+import { useDraggable } from '@dnd-kit/react';
 
 // Mock dnd-kit useDraggable
 vi.mock('@dnd-kit/react', () => ({
@@ -12,6 +13,12 @@ vi.mock('@dnd-kit/react', () => ({
 }));
 
 describe('Palette Component Test Suite', () => {
+  afterEach(() => {
+    vi.mocked(useDraggable).mockReturnValue({
+      ref: () => {},
+      isDragging: false,
+    } as any);
+  });
   it('renders all component groups and fields by default', () => {
     render(<Palette onAdd={vi.fn()} />);
 
@@ -79,5 +86,32 @@ describe('Palette Component Test Suite', () => {
 
     expect(screen.getByText('No components match.')).toBeInTheDocument();
     expect(screen.queryByText('Core')).not.toBeInTheDocument();
+  });
+
+  it('resets query when onClear is triggered on search input', async () => {
+    const user = userEvent.setup();
+    render(<Palette onAdd={vi.fn()} />);
+
+    const searchInput = screen.getByLabelText('Search components');
+    await user.type(searchInput, 'text');
+
+    expect(screen.queryByRole('button', { name: 'Number' })).not.toBeInTheDocument();
+
+    const clearBtn = screen.getByRole('button', { name: 'Clear' });
+    await user.click(clearBtn);
+
+    expect(screen.getByRole('button', { name: 'Number' })).toBeInTheDocument();
+  });
+
+  it('renders palette item with dragging state when isDragging is true', () => {
+    vi.mocked(useDraggable).mockReturnValue({
+      ref: () => {},
+      isDragging: true,
+    } as any);
+
+    render(<Palette onAdd={vi.fn()} />);
+
+    const textBtn = screen.getByRole('button', { name: 'Text' });
+    expect(textBtn).toHaveAttribute('data-dragging', 'true');
   });
 });

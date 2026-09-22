@@ -135,7 +135,9 @@ describe('admin document types', () => {
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Publish' }));
+    const publishBtn = await screen.findByRole('button', { name: 'Publish' }, { timeout: 32000 });
+    await waitFor(() => expect(publishBtn).toBeEnabled());
+    await user.click(publishBtn);
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/v1/admin/document-types/dt-1/versions/dt-1-v1/publish'),

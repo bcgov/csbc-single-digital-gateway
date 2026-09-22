@@ -38,6 +38,11 @@ describe('DisplayCard Component Test Suite', () => {
     await user.type(input, '!');
     expect(handleChange).toHaveBeenCalledWith([0], { text: 'Main Heading!' });
 
+    // Clear text via onClear button
+    const clearButton = screen.getByRole('button', { name: 'Clear' });
+    await user.click(clearButton);
+    expect(handleChange).toHaveBeenCalledWith([0], { text: '' });
+
     // Test level 3 styling
     rerender(<DisplayCard node={{ ...node, level: 3 }} path={[0]} onChange={handleChange} />);
     expect(screen.getByLabelText('Heading')).toHaveClass('text-lg');
@@ -103,7 +108,7 @@ describe('DisplayCard Component Test Suite', () => {
     expect(input).toHaveClass('text-xl');
   });
 
-  it('defaults to left text alignment when align is undefined', () => {
+  it('defaults to left text alignment when align is undefined and supports right align', () => {
     const handleChange = vi.fn();
     const node: DisplayNode = {
       kind: 'display',
@@ -112,10 +117,13 @@ describe('DisplayCard Component Test Suite', () => {
       text: 'Paragraph text without alignment',
     };
 
-    render(<DisplayCard node={node} path={[1]} onChange={handleChange} />);
+    const { rerender } = render(<DisplayCard node={node} path={[1]} onChange={handleChange} />);
 
     const textarea = screen.getByLabelText('Paragraph');
     expect(textarea).toHaveClass('text-left');
+
+    rerender(<DisplayCard node={{ ...node, align: 'right' }} path={[1]} onChange={handleChange} />);
+    expect(screen.getByLabelText('Paragraph')).toHaveClass('text-right');
   });
 
   it('handles omitted content value in RichTextInput', () => {

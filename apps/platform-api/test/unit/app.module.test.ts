@@ -178,6 +178,7 @@ describe('AppModule metadata and factories tests', () => {
         const config = new MockConfigService({
           NODE_ENV: 'test',
           AUTH_POST_LOGOUT_REDIRECT: 'https://logout.redirect',
+          AUTH_CLOCK_TOLERANCE_SECONDS: 5,
           OIDC_ISSUER: 'https://issuer',
           OIDC_CLIENT_ID: 'client',
           OIDC_CLIENT_SECRET: 'secret',
@@ -192,6 +193,7 @@ describe('AppModule metadata and factories tests', () => {
 
         expect(options.config).toEqual({});
         expect(options.postLogoutRedirect).toBe('https://logout.redirect');
+        expect(options.clockToleranceSeconds).toBe(5);
       });
 
       it('returns regular options without stub config under non-test environments', () => {
@@ -211,6 +213,7 @@ describe('AppModule metadata and factories tests', () => {
 
         expect(options.config).toBeUndefined();
         expect(options.postLogoutRedirect).toBeUndefined();
+        expect(options.clockToleranceSeconds).toBeUndefined();
       });
     });
   });

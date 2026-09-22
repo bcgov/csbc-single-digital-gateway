@@ -12,7 +12,6 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/lib/workspaces', () => ({
   createWorkspace: vi.fn((name) => {
-    console.log('MOCKED createWorkspace CALLED WITH:', name);
     return Promise.resolve({
       id: 'w-1',
       slug: 'city-of-riverton',
@@ -150,15 +149,18 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
   });
 
-  it('does not submit if the workspace name is empty or only whitespace', async () => {
+  it('does not submit if the workspace name is empty or only whitespace (L41)', () => {
     renderModal(queryClient, { dismissable: true, open: true });
     const input = screen.getByLabelText(/workspace name/i);
     const form = input.closest('form')!;
 
-    // Set input value to spaces
+    // Submitting with empty initial name (trimmed.length === 0)
+    fireEvent.submit(form);
+    expect(createWorkspace).not.toHaveBeenCalled();
+
+    // Set input value to whitespace only (trimmed.length === 0)
     fireEvent.change(input, { target: { value: '   ' } });
     fireEvent.submit(form);
-
     expect(createWorkspace).not.toHaveBeenCalled();
   });
 
@@ -234,22 +236,5 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     await waitFor(() => {
       expect(createWorkspace).toHaveBeenCalledTimes(1);
     });
-  });
-
-  it('does not submit when workspace name is empty or only whitespace', async () => {
-    const user = userEvent.setup();
-    renderModal(queryClient, { dismissable: true, open: true });
-
-    const input = screen.getByLabelText(/workspace name/i);
-    const form = input.closest('form')!;
-
-    // Test completely empty name (initial state)
-    fireEvent.submit(form);
-    expect(createWorkspace).not.toHaveBeenCalled();
-
-    // Test whitespace-only name
-    await user.type(input, '   ');
-    fireEvent.submit(form);
-    expect(createWorkspace).not.toHaveBeenCalled();
   });
 });

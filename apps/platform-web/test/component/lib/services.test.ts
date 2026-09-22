@@ -23,7 +23,11 @@ import {
   detachServiceAgreement,
   createExternalApplication,
   updateExternalApplication,
+  selectServiceVersion,
+  definitionForServiceVersion,
   type ServiceListParams,
+  type ServiceDetail,
+  type ServiceVersion,
 } from '@/lib/services';
 
 // Mock BFF origin
@@ -501,6 +505,149 @@ describe('Services Unit Test Suite', () => {
         }),
       );
       expect(res.targetTitle).toBe('Updated Go Link');
+    });
+  });
+
+  describe('servicesQueryOptions search query handling', () => {
+    it('appends search parameter q when non-empty', async () => {
+      mockFetch.mockResolvedValue(
+        mockResponse(200, { items: [{ id: 'srv-2', title: 'Service B' }] }),
+      );
+
+      const params: ServiceListParams = {
+        q: 'license renewal',
+        sort: 'title',
+        order: 'asc',
+        limit: 25,
+        offset: 10,
+      };
+      const options = servicesQueryOptions('ws-2', params);
+      const items = await (options.queryFn as any)();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://bff-test/v1/services?workspaceId=ws-2&sort=title&order=asc&limit=25&offset=10&q=license+renewal',
+        { credentials: 'include' },
+      );
+      expect(items.items).toHaveLength(1);
+    });
+  });
+
+  describe('selectServiceVersion', () => {
+    const v1: ServiceVersion = {
+      id: 'v1',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-1',
+      version: 1,
+      status: 'archived',
+      data: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      publishedAt: null,
+      archivedAt: '2026-01-02T00:00:00Z',
+    };
+    const v2: ServiceVersion = {
+      id: 'v2',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-2',
+      version: 2,
+      status: 'published',
+      data: {},
+      createdAt: '2026-01-03T00:00:00Z',
+      publishedAt: '2026-01-03T00:00:00Z',
+      archivedAt: null,
+    };
+    const v3: ServiceVersion = {
+      id: 'v3',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-3',
+      version: 3,
+      status: 'draft',
+      data: {},
+      createdAt: '2026-01-04T00:00:00Z',
+      publishedAt: null,
+      archivedAt: null,
+    };
+
+    it('returns the requested version when versionId is provided and exists', () => {
+      expect(selectServiceVersion([v1, v2, v3], 'v1')).toEqual(v1);
+      expect(selectServiceVersion([v1, v2, v3], 'v3')).toEqual(v3);
+    });
+
+    it('returns undefined when versionId is provided but not found', () => {
+      expect(selectServiceVersion([v1, v2, v3], 'v-unknown')).toBeUndefined();
+    });
+
+    it('returns the published version when versionId is omitted', () => {
+      expect(selectServiceVersion([v1, v2, v3])).toEqual(v2);
+    });
+
+    it('falls back to the latest version when no version is published and versionId is omitted', () => {
+      expect(selectServiceVersion([v1, v3])).toEqual(v3);
+    });
+
+    it('returns undefined when versions array is empty and versionId is omitted', () => {
+      expect(selectServiceVersion([])).toBeUndefined();
+    });
+  });
+
+  describe('definitionForServiceVersion', () => {
+    const v1: ServiceVersion = {
+      id: 'v1',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-1',
+      version: 1,
+      status: 'published',
+      data: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      publishedAt: '2026-01-01T00:00:00Z',
+      archivedAt: null,
+    };
+    const v2: ServiceVersion = {
+      id: 'v2',
+      documentId: 'doc-1',
+      typeVersionId: 'tv-missing-def',
+      version: 2,
+      status: 'draft',
+      data: {},
+      createdAt: '2026-01-02T00:00:00Z',
+      publishedAt: null,
+      archivedAt: null,
+    };
+
+    const def1 = { schema: { title: 'Def 1' }, uischema: { type: 'Control' } };
+    const defaultDef = { schema: { title: 'Default Def' }, uischema: { type: 'VerticalLayout' } };
+
+    const mockDetail: ServiceDetail = {
+      service: {
+        id: 'srv-1',
+        workspaceId: 'ws-1',
+        title: 'Service 1',
+        description: 'Test Service',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      },
+      versions: [v1, v2],
+      definition: defaultDef,
+      definitions: {
+        'tv-1': def1,
+      },
+      hasSubmissions: false,
+    };
+
+    it('returns undefined when detail is undefined', () => {
+      expect(definitionForServiceVersion(undefined)).toBeUndefined();
+    });
+
+    it('returns undefined when version cannot be selected', () => {
+      expect(definitionForServiceVersion({ ...mockDetail, versions: [] })).toBeUndefined();
+      expect(definitionForServiceVersion(mockDetail, 'non-existent-version')).toBeUndefined();
+    });
+
+    it('returns definition matching the version typeVersionId when present in definitions record', () => {
+      expect(definitionForServiceVersion(mockDetail, 'v1')).toEqual(def1);
+    });
+
+    it('falls back to detail.definition when typeVersionId is not in definitions record', () => {
+      expect(definitionForServiceVersion(mockDetail, 'v2')).toEqual(defaultDef);
     });
   });
 });

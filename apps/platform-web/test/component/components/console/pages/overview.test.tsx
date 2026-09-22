@@ -50,7 +50,15 @@ const service = (over: Partial<ServiceSummary>): ServiceSummary => ({
 });
 
 /** Seed the workspace-by-slug + recently-updated (limit 3) queries and render the page. */
-function renderOverview(items: ServiceSummary[] = [], seedWorkspace = true) {
+function renderOverview({
+  items = [],
+  seedWorkspace = true,
+  seedServices = true,
+}: {
+  items?: ServiceSummary[];
+  seedWorkspace?: boolean;
+  seedServices?: boolean;
+} = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
@@ -63,13 +71,15 @@ function renderOverview(items: ServiceSummary[] = [], seedWorkspace = true) {
     });
   }
 
-  const params = { q: '', sort: 'updated', order: 'desc', limit: 3, offset: 0 };
-  queryClient.setQueryData(['services', 'w1', params], {
-    items,
-    total: items.length,
-    limit: 3,
-    offset: 0,
-  });
+  if (seedServices) {
+    const params = { q: '', sort: 'updated', order: 'desc', limit: 3, offset: 0 };
+    queryClient.setQueryData(['services', 'w1', params], {
+      items,
+      total: items.length,
+      limit: 3,
+      offset: 0,
+    });
+  }
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -96,11 +106,17 @@ describe('OverviewPage Component Test Suite', () => {
     expect(screen.getByText('Unique Visitors')).toBeInTheDocument();
   });
 
-  it('renders the Resources accordion triggers', () => {
+  it('renders the Resources accordion triggers and expands Legal accordion', async () => {
+    const user = userEvent.setup();
     renderOverview();
 
     expect(screen.getByRole('button', { name: 'Learn More' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Legal' })).toBeInTheDocument();
+    const legalTrigger = screen.getByRole('button', { name: 'Legal' });
+    expect(legalTrigger).toBeInTheDocument();
+
+    await user.click(legalTrigger);
+    expect(await screen.findByText('Disclaimer')).toBeInTheDocument();
+    expect(screen.getByText('Privacy')).toBeInTheDocument();
   });
 
   it('opens the New service modal when the Create-new-service card is clicked', async () => {
@@ -115,11 +131,13 @@ describe('OverviewPage Component Test Suite', () => {
   });
 
   it('renders the 3 most-recently-updated services as service cards', () => {
-    renderOverview([
-      service({ id: 'srv-1', title: 'Parking Permits', status: 'published' }),
-      service({ id: 'srv-2', title: 'Business Licensing', status: 'draft' }),
-      service({ id: 'srv-3', title: 'Dog Licences', status: 'archived' }),
-    ]);
+    renderOverview({
+      items: [
+        service({ id: 'srv-1', title: 'Parking Permits', status: 'published' }),
+        service({ id: 'srv-2', title: 'Business Licensing', status: 'draft' }),
+        service({ id: 'srv-3', title: 'Dog Licences', status: 'archived' }),
+      ],
+    });
 
     expect(screen.getByRole('link', { name: /Parking Permits/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Business Licensing/ })).toBeInTheDocument();
@@ -127,8 +145,20 @@ describe('OverviewPage Component Test Suite', () => {
   });
 
   it('shows the empty state when the workspace has no services', () => {
-    renderOverview([]);
+    renderOverview({ items: [] });
 
     expect(screen.getByText('No services yet — create one to get started.')).toBeInTheDocument();
+  });
+
+  it('renders loading skeletons when workspace data is missing', () => {
+    const { container } = renderOverview({ seedWorkspace: false, seedServices: false });
+
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
+  });
+
+  it('renders loading skeletons when recent services query is pending', () => {
+    const { container } = renderOverview({ seedWorkspace: true, seedServices: false });
+
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
   });
 });

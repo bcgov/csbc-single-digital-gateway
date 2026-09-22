@@ -58,6 +58,64 @@ describe('Preview Component Test Suite', () => {
     expect(screen.getByText('Fill this out')).toBeInTheDocument();
   });
 
+  it('renders only title when description is omitted or empty', () => {
+    render(
+      <Preview
+        definition={
+          {
+            schema: {
+              type: 'object',
+              title: 'Only Title Form',
+              description: '',
+              properties: {},
+            },
+            uischema: { type: 'VerticalLayout', elements: [] },
+          } as any
+        }
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Only Title Form' })).toBeInTheDocument();
+  });
+
+  it('renders only description when title is omitted or empty', () => {
+    render(
+      <Preview
+        definition={
+          {
+            schema: {
+              type: 'object',
+              title: '',
+              description: 'Only Description Text',
+              properties: {},
+            },
+            uischema: { type: 'VerticalLayout', elements: [] },
+          } as any
+        }
+      />,
+    );
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.getByText('Only Description Text')).toBeInTheDocument();
+  });
+
+  it('handles non-string title and description safely without rendering header', () => {
+    render(
+      <Preview
+        definition={
+          {
+            schema: {
+              type: 'object',
+              title: 123,
+              description: null,
+              properties: {},
+            },
+            uischema: { type: 'VerticalLayout', elements: [] },
+          } as any
+        }
+      />,
+    );
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+  });
+
   it('updates form runner data on onChange triggers', async () => {
     const user = userEvent.setup();
     render(<Preview definition={mockDefinition as any} />);

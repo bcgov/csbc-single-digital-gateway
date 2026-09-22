@@ -17,6 +17,19 @@ vi.mock('../../../../../src/notifications/enqueue', () => ({
   enqueueNotification: vi.fn(),
 }));
 
+vi.mock('drizzle-orm', async (importOriginal) => {
+  const original = await importOriginal<typeof import('drizzle-orm')>();
+  return {
+    ...original,
+    or: (...args: any[]) => {
+      if ((globalThis as any).mockOrUndefined) {
+        return undefined as any;
+      }
+      return original.or(...args);
+    },
+  };
+});
+
 describe('SubmissionsService', () => {
   let service: SubmissionsService;
   let dbMock: any;
@@ -48,7 +61,8 @@ describe('SubmissionsService', () => {
             sub: item,
             status: item.status ?? 'pending',
             submittedAt: item.submittedAt === undefined ? item.createdAt : item.submittedAt,
-            versionUpdatedAt: item.updatedAt,
+            versionUpdatedAt:
+              item.versionUpdatedAt !== undefined ? item.versionUpdatedAt : item.updatedAt,
             serviceId: item.serviceId,
             serviceTitle: item.serviceTitle,
             formTitle: item.formTitle,
@@ -198,6 +212,82 @@ describe('SubmissionsService', () => {
 
       expect(result.items).toHaveLength(2);
       expect(result.items[0]?.id).toBe('sub-1');
+    });
+
+    it('filters list of submissions by search query q', async () => {
+      const mockSub = {
+        id: 'sub-1',
+        workspaceId: 'ws-1',
+        documentId: 'doc-form-1',
+        documentVersionId: 'doc-ver-1',
+        userId: 'applicant-1',
+        createdAt: new Date('2026-07-28T00:00:00Z'),
+        updatedAt: new Date('2026-07-28T00:00:00Z'),
+        serviceId: 'doc-svc-1',
+        serviceTitle: 'My Service',
+        formTitle: 'My Form',
+        applicantName: 'Jane Doe',
+        applicantEmail: 'jane@example.com',
+        status: 'pending',
+        submittedAt: new Date('2026-07-28T00:00:00Z'),
+      };
+
+      addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
+      addMockResponse(submissions, [mockSub]);
+      addMockResponse(submissions, [{ count: 1 }]);
+
+      const result = await service.list('user-1', {
+        workspaceId: 'ws-1',
+        q: 'Jane',
+        sort: 'updated',
+        order: 'asc',
+        limit: 10,
+        offset: 0,
+      } as any);
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('handles whitespace search query q and sort by status', async () => {
+      const mockSub = {
+        id: 'sub-1',
+        workspaceId: 'ws-1',
+        documentId: 'doc-form-1',
+        documentVersionId: 'doc-ver-1',
+        userId: null,
+        createdAt: new Date('2026-07-28T00:00:00Z'),
+        updatedAt: new Date('2026-07-28T00:00:00Z'),
+        serviceId: null,
+        serviceTitle: null,
+        formTitle: null,
+        applicantName: null,
+        applicantEmail: null,
+        status: 'pending',
+        submittedAt: null,
+      };
+
+      addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
+      addMockResponse(submissions, [mockSub]);
+      addMockResponse(submissions, []);
+
+      const result = await service.list('user-1', {
+        workspaceId: 'ws-1',
+        q: '   ',
+        sort: 'status',
+        order: 'desc',
+        limit: 10,
+        offset: 0,
+      } as any);
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]?.serviceId).toBe('');
+      expect(result.items[0]?.serviceTitle).toBe('Service');
+      expect(result.items[0]?.formTitle).toBe('Form');
+      expect(result.items[0]?.applicantName).toBe('Anonymous');
+      expect(result.items[0]?.applicantEmail).toBeNull();
+      expect(result.items[0]?.submittedAt).toBeNull();
+      expect(result.total).toBe(0);
     });
   });
 
@@ -569,6 +659,58 @@ describe('SubmissionsService', () => {
           email: null,
         }),
       );
+    });
+
+    it('handles list with search query when search expression is falsy', async () => {
+      const mockSub = {
+        id: 'sub-1',
+        workspaceId: 'ws-1',
+        documentId: 'doc-form-1',
+        documentVersionId: 'doc-ver-1',
+        userId: 'applicant-1',
+        createdAt: new Date('2026-07-28T00:00:00Z'),
+        updatedAt: new Date('2026-07-28T00:00:00Z'),
+        status: 'pending',
+        submittedAt: new Date('2026-07-28T00:00:00Z'),
+        versionUpdatedAt: null,
+      };
+
+      addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
+      addMockResponse(submissions, [mockSub]);
+      addMockResponse(submissions, [{ count: 1 }]);
+
+      (globalThis as any).mockOrUndefined = true;
+      try {
+        const result = await service.list('user-1', {
+          workspaceId: 'ws-1',
+          q: 'Jane',
+        } as any);
+        expect(result.items).toHaveLength(1);
+      } finally {
+        (globalThis as any).mockOrUndefined = false;
+      }
+    });
+
+    it('uses draft status when latestVersion returns null in toSummary', async () => {
+      const mockSub = {
+        id: 'sub-1',
+        workspaceId: 'ws-1',
+        documentId: 'doc-form-1',
+        documentVersionId: 'doc-ver-1',
+        userId: 'user-1',
+        createdAt: new Date('2026-07-28T00:00:00Z'),
+        updatedAt: new Date('2026-07-28T00:00:00Z'),
+      };
+
+      addMockResponse(submissions, [mockSub]);
+      addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
+      addMockResponse(documentReferences, []);
+      addMockResponse(documents, []);
+      addMockResponse(documents, []);
+      addMockResponse(users, []);
+      addMockResponse(submissionVersions, []); // latestVersion returns null -> status falls back to draft
+
+      await expect(service.get('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
   });
 });

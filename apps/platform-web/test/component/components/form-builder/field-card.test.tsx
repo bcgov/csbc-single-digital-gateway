@@ -4,19 +4,24 @@ import { FieldPreview, previewNodeForType } from '@/components/form-builder/fiel
 import type { FieldNode } from '@/components/form-builder/model';
 
 vi.mock('@repo/react/jsonforms', () => ({
-  JsonForms: ({ schema, uischema, readonly }: any) => (
-    <div data-testid="mock-jsonforms" data-readonly={readonly}>
-      Mock JsonForms rendering
-      <span data-testid="schema-val">{JSON.stringify(schema)}</span>
-      <span data-testid="uischema-val">{JSON.stringify(uischema)}</span>
-    </div>
-  ),
+  JsonForms: ({ schema, uischema, data, readonly, onChange }: any) => {
+    onChange?.();
+    return (
+      <div data-testid="mock-jsonforms" data-readonly={readonly}>
+        Mock JsonForms rendering
+        <span data-testid="schema-val">{JSON.stringify(schema)}</span>
+        <span data-testid="uischema-val">{JSON.stringify(uischema)}</span>
+        <span data-testid="data-val">{JSON.stringify(data)}</span>
+      </div>
+    );
+  },
 }));
 
 vi.mock('@/components/form-builder/display-card', () => ({
-  DisplayCard: ({ node }: any) => (
-    <div data-testid="mock-display-card">Mock DisplayCard: {node.text}</div>
-  ),
+  DisplayCard: ({ node, onChange }: any) => {
+    onChange?.();
+    return <div data-testid="mock-display-card">Mock DisplayCard: {node.text}</div>;
+  },
 }));
 
 describe('Field Card Component Test Suite', () => {
@@ -62,6 +67,60 @@ describe('Field Card Component Test Suite', () => {
 
       const wrapper = container.firstChild as HTMLElement;
       expect(wrapper).toHaveClass('pointer-events-none', 'border-dashed', 'border-primary');
+    });
+
+    it('seeds data from schema property defaults for address field', () => {
+      const node: FieldNode = {
+        kind: 'control',
+        fieldType: 'address',
+        key: 'mailing_address',
+        label: 'Mailing Address',
+        defaultCountry: 'Canada',
+        defaultProvince: 'British Columbia',
+        options: {},
+        required: false,
+      };
+
+      render(<FieldPreview node={node} />);
+
+      const dataVal = screen.getByTestId('data-val').textContent || '';
+      expect(JSON.parse(dataVal)).toHaveProperty('mailing_address');
+    });
+
+    it('handles schema without properties or with non-object properties safely', async () => {
+      const modelModule = await import('@/components/form-builder/model');
+      const spy = vi.spyOn(modelModule, 'serializeModel').mockReturnValueOnce({
+        schema: {
+          type: 'object',
+          properties: {
+            nullProp: null as any,
+            primitiveProp: 'string' as any,
+          },
+        } as any,
+        uischema: { type: 'Control', scope: '#/properties/test' } as any,
+      });
+
+      const node: FieldNode = {
+        kind: 'control',
+        fieldType: 'text',
+        key: 'test',
+        label: 'Test',
+        options: {},
+        required: false,
+      };
+
+      const { unmount } = render(<FieldPreview node={node} />);
+      expect(screen.getByTestId('data-val').textContent).toBe('{}');
+      unmount();
+
+      spy.mockReturnValueOnce({
+        schema: { type: 'object' } as any,
+        uischema: { type: 'Control', scope: '#/properties/test' } as any,
+      });
+
+      render(<FieldPreview node={node} />);
+      expect(screen.getByTestId('data-val').textContent).toBe('{}');
+      spy.mockRestore();
     });
 
     it('defaults to non-ghost styling when ghost prop is omitted', () => {

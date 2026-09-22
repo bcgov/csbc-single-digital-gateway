@@ -142,4 +142,113 @@ describe('ServiceDetailsBody windowed editing', () => {
     renderBody();
     expect(screen.getByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
   });
+
+  describe('loose elements and omitted scopes', () => {
+    it('omits top-level title and description controls from loose runs', () => {
+      const uischema = {
+        type: 'VerticalLayout',
+        elements: [
+          { type: 'Control', scope: '#/properties/title' },
+          { type: 'Control', scope: '#/properties/description' },
+          { type: 'Group', label: 'Main', elements: [] },
+        ],
+      };
+
+      const { container } = render(
+        <ServiceDetailsBody
+          slug="riverton"
+          serviceId="svc-1"
+          versionId="ver-2"
+          isDraft={true}
+          schema={{ type: 'object' }}
+          uischema={uischema}
+          data={{}}
+        />,
+      );
+
+      // Only the group section and the always-on section render (no loose div rendered because elements were omitted)
+      expect(container.querySelectorAll('div[class*="loose"]')).toHaveLength(0);
+    });
+
+    it('renders non-omitted loose controls and elements without scope', () => {
+      const uischema = {
+        type: 'VerticalLayout',
+        elements: [
+          { type: 'Control', scope: '#/properties/custom_property' },
+          { type: 'Label', text: 'Informational label' }, // typeof scope !== 'string' -> line 20
+        ],
+      };
+
+      render(
+        <ServiceDetailsBody
+          slug="riverton"
+          serviceId="svc-1"
+          versionId="ver-2"
+          isDraft={true}
+          schema={{ type: 'object' }}
+          uischema={uischema}
+          data={{}}
+        />,
+      );
+
+      expect(screen.getByTestId('jsonforms')).toBeInTheDocument();
+    });
+
+    it('handles scope when split array is empty to exercise pop fallback', () => {
+      const origSplit = String.prototype.split;
+      const splitSpy = vi.spyOn(String.prototype, 'split').mockImplementation(function (
+        this: string,
+        separator: any,
+        limit?: any,
+      ) {
+        if (this === '#/properties/empty_split') {
+          return [];
+        }
+        return origSplit.call(this, separator, limit);
+      });
+
+      const uischema = {
+        type: 'VerticalLayout',
+        elements: [{ type: 'Control', scope: '#/properties/empty_split' }],
+      };
+
+      render(
+        <ServiceDetailsBody
+          slug="riverton"
+          serviceId="svc-1"
+          versionId="ver-2"
+          isDraft={true}
+          schema={{ type: 'object' }}
+          uischema={uischema}
+          data={{}}
+        />,
+      );
+
+      expect(screen.getByTestId('jsonforms')).toBeInTheDocument();
+      splitSpy.mockRestore();
+    });
+
+    it('handles a Group with an empty label setting aria-label to undefined', () => {
+      const uischema = {
+        type: 'VerticalLayout',
+        elements: [{ type: 'Group', label: '', elements: [] }],
+      };
+
+      const { container } = render(
+        <ServiceDetailsBody
+          slug="riverton"
+          serviceId="svc-1"
+          versionId="ver-2"
+          isDraft={true}
+          schema={{ type: 'object' }}
+          uischema={uischema}
+          data={{}}
+        />,
+      );
+
+      const section = container.querySelector('section:not(#configuration)');
+      expect(section).not.toBeNull();
+      expect(section).not.toHaveAttribute('aria-label');
+    });
+  });
 });

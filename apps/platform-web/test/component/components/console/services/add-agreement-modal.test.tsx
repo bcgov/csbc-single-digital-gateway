@@ -229,7 +229,7 @@ describe('AddAgreementModal Component Test Suite', () => {
 
     // Grab Dialog call props from the latest render
     const dialogProps = [...vi.mocked(Dialog).mock.calls]
-      .reverse()
+      .toReversed()
       .find((call) => (call[0] as any).open === true)?.[0] as any;
 
     // Call onOpenChange(false) while pending

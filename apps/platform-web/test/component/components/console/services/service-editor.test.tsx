@@ -169,9 +169,12 @@ describe('ServiceEditor Component Test Suite', () => {
       await user.click(within(dialog).getByRole('button', { name: /save|add/i }));
 
       await waitFor(() => {
-        const state = JSON.parse(screen.getByTestId('state').textContent ?? '{}');
-        expect(state.title).toBe('Birth certificate');
-        expect(state.contact_methods?.[0]).toMatchObject({ type: 'phone', value: '+12505551234' });
+        const currentState = JSON.parse(screen.getByTestId('state').textContent ?? '{}');
+        expect(currentState.title).toBe('Birth certificate');
+        expect(currentState.contact_methods?.[0]).toMatchObject({
+          type: 'phone',
+          value: '+12505551234',
+        });
       });
     });
   });

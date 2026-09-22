@@ -170,6 +170,7 @@ describe('ServiceContent Component', () => {
   });
 
   it('covers the fallback branch for empty pop', () => {
+    /* eslint-disable no-extend-native, no-underscore-dangle */
     const originalSplit = String.prototype.split;
     const originalPop = Array.prototype.pop;
 
@@ -203,6 +204,7 @@ describe('ServiceContent Component', () => {
       String.prototype.split = originalSplit;
       Array.prototype.pop = originalPop;
     }
+    /* eslint-enable no-extend-native, no-underscore-dangle */
   });
 });
 

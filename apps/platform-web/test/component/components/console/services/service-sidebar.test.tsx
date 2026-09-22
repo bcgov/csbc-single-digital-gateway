@@ -272,4 +272,30 @@ describe('ServiceSidebar — schema-derived submenu (feature 174)', () => {
       '/app/riverton/services/svc-1/versions/v-9/details#configuration',
     );
   });
+
+  it('highlights the active submenu link when hash matches the section anchor', () => {
+    locationRef.current = {
+      pathname: '/app/riverton/services/svc-1/details',
+      hash: 'service-description',
+    };
+
+    render(<ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />);
+
+    const activeLink = screen.getByRole('link', { name: 'Service description' });
+    const inactiveLink = screen.getByRole('link', { name: 'Eligibility criteria' });
+
+    expect(activeLink.className).toContain('!text-bcgov-blue');
+    expect(inactiveLink.className).not.toContain('!text-bcgov-blue');
+  });
+
+  it('shows submenu on nested subpath of details route', () => {
+    locationRef.current = {
+      pathname: '/app/riverton/services/svc-1/details/edit',
+      hash: '',
+    };
+
+    render(<ServiceSidebar slug="riverton" id="svc-1" serviceName="Business licence" />);
+
+    expect(screen.getByRole('link', { name: 'Service description' })).toBeInTheDocument();
+  });
 });
