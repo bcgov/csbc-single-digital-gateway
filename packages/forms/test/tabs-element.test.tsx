@@ -344,6 +344,20 @@ describe('component traps (rules 25-27)', () => {
     expect(add).toHaveClass('shrink-0');
   });
 
+  it('hides the scrollbar and shows no edge shadow until the row overflows (rule 15c)', () => {
+    const { container } = renderEditable(formRoot([tabs([tab('One'), tab('Two')])]));
+    const list = screen.getByRole('tablist');
+
+    // `no-scrollbar` is the design system's own utility (combobox, command, sidebar use it) rather than a
+    // second hand-rolled one.
+    expect(list).toHaveClass('no-scrollbar', 'overflow-x-auto');
+    // The shadows stand in for the hidden scrollbar, so they must not appear when there is nothing to scroll.
+    // jsdom reports every width as 0, so this is the only half of rule 15c a test can see — a real overflow
+    // and the shadow following the scroll position are hand-verified.
+    expect(container.querySelector('[data-slot="tab-strip-shadow-start"]')).toBeNull();
+    expect(container.querySelector('[data-slot="tab-strip-shadow-end"]')).toBeNull();
+  });
+
   it('gives triggers flex-none against TabsTrigger flex-1, and left-aligns them', () => {
     renderEditable(formRoot([tabs([tab('One'), tab('Two')])]));
 

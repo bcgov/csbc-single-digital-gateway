@@ -1,7 +1,7 @@
 import { mdiClose, mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { TabsList, TabsTrigger } from '@repo/ui/tabs';
-import { useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import type { TabsEditor } from './tabs-editor';
 
 // The row of tabs, and the `+` at its end (doc 216 rules 15, 19-20).
@@ -27,8 +27,25 @@ const DRAG_TYPE = 'application/x-sdg-tab-index';
  * not belong.
  */
 const STRIP_CLASS = 'flex items-center gap-1';
-/** Rule 15b: the tabs start at the left edge — `TabsList` centres its children by default. */
-const LIST_CLASS = 'min-w-0 flex-1 justify-start overflow-x-auto';
+/**
+ * Rule 15b: the tabs start at the left edge — `TabsList` centres its children by default.
+ *
+ * Rule 15c: and the overflow scrolls with NO scrollbar (user, 2026-09-22). `no-scrollbar` is the utility the
+ * design system already uses for exactly this (`combobox`, `command`, `sidebar`), rather than a second
+ * hand-rolled one.
+ */
+const LIST_CLASS = 'no-scrollbar min-w-0 w-full justify-start overflow-x-auto';
+
+/** Rule 15c: the scroller and its edge shadows share a stacking context; the list keeps the track's shape. */
+const SCROLLER_CLASS = 'relative min-w-0 flex-1 overflow-hidden rounded-lg';
+
+/**
+ * Rule 15c: a shadow on whichever side has more tabs, standing in for the scrollbar that is now hidden —
+ * without one there is nothing at all to say the row continues.
+ */
+const EDGE_CLASS = 'pointer-events-none absolute inset-y-0 w-6';
+const EDGE_START = `${EDGE_CLASS} left-0 bg-gradient-to-r from-black/12 to-transparent`;
+const EDGE_END = `${EDGE_CLASS} right-0 bg-gradient-to-l from-black/12 to-transparent`;
 /**
  * Rule 15b: a tab is exactly as wide as its name, aligned left.
  *
@@ -90,6 +107,40 @@ function draggedIndex(event: DragEvent<HTMLElement>): number | undefined {
 
 export function TabStrip({ tabs, editor, tabsId }: TabStripProps) {
   /**
+   * Rule 15c: which edges have more tabs beyond them. Measured rather than derived — whether a row overflows
+   * depends on the rendered width of its labels, which nothing in the document knows.
+   */
+  const listRef = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: false, end: false });
+  const measure = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    // A 1px slack: fractional layout widths otherwise leave `end` true at the very end of the scroll.
+    const next = { start: el.scrollLeft > 1, end: el.scrollLeft < max - 1 };
+    setEdges((current) =>
+      current.start === next.start && current.end === next.end ? current : next,
+    );
+  }, []);
+
+  /**
+   * Adding, deleting or renaming a tab changes the scroll width with no scroll event, so the row is measured
+   * again whenever its CONTENT changes — keyed on a string of the labels, NOT on the `tabs` array, which is
+   * rebuilt on every render and would re-subscribe the observer each time (that churn froze the browser).
+   */
+  const contentKey = tabs.map((tab) => tab.label).join('\u0000');
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return undefined;
+    measure();
+    // The element alone: its width changing is the other way the shadows can go stale (a dock panel resize).
+    // jsdom has no ResizeObserver (stubbed in test/setup.ts), where every width is 0 and no shadow shows.
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measure, contentKey]);
+
+  /**
    * Rule 19b: the drag in progress — where it started, and where it would land. Held here rather than derived,
    * because a native HTML drag reports only the element under the pointer and the document does not change
    * until the drop: the preview IS local state, and clearing it on `dragend` is what guarantees it never
@@ -106,86 +157,90 @@ export function TabStrip({ tabs, editor, tabsId }: TabStripProps) {
 
   return (
     <div data-slot="tab-strip" className={STRIP_CLASS}>
-      <TabsList className={LIST_CLASS}>
-        {previewed.map(({ tab, index }, position) => (
-          <TabsTrigger
-            key={tab.value}
-            value={tab.value}
-            className={`${TRIGGER_CLASS} ${DRAGGING_CLASS}`}
-            {...(drag?.from === index ? { 'data-dragging': '' } : {})}
-            // Rules 19-20: native HTML drag, like the options editor's rows. jsdom cannot perform a real drag,
-            // so the gesture is tested through these handlers and the pure edit, never through a scripted drag.
-            draggable={editor !== null}
-            /**
-             * Rule 40: the trigger selects its Tab on EVERY click, not through the `Tabs` root's
-             * `onValueChange` — Base UI fires that only when the value CHANGES, so clicking the tab that is
-             * already open emitted nothing, the Tab was never selected, and the first tab's label and
-             * description could not be edited at all.
-             */
-            /**
-             * Rule 40b: on POINTERDOWN, and the press stops here.
-             *
-             * The studio selects on pointerdown too, and a press on the strip resolves to the Tabs element —
-             * so the selection went to the Tabs first (and rule 17's derivation fell back to the FIRST tab),
-             * and only on mouseup did the click handler select the tab actually under the cursor. The tab bar
-             * visibly selected the wrong tab and then corrected itself.
-             */
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              editor?.onGesture({ type: 'open-tab', tabId: tab.value });
-            }}
-            // Rule 40: also on click, for the keyboard — Base UI's `onValueChange` stays silent when the
-            // already-open tab is activated. Selecting the same Tab twice is a no-op.
-            onClick={() => editor?.onGesture({ type: 'open-tab', tabId: tab.value })}
-            onDragStart={(event) => {
-              event.dataTransfer.setData(DRAG_TYPE, String(index));
-              event.dataTransfer.effectAllowed = 'move';
-              setDrag({ from: index, to: index });
-            }}
-            onDragOver={(event) => {
-              if (editor === null || draggedIndex(event) === undefined) return;
-              event.preventDefault();
-              event.dataTransfer.dropEffect = 'move';
-              // Rule 19b: `position` is where the pointer is in the PREVIEWED strip, which is exactly the
-              // index the dragged tab would occupy — so the preview converges instead of oscillating.
-              setDrag((current) =>
-                current === null || current.to === position
-                  ? current
-                  : { ...current, to: position },
-              );
-            }}
-            onDragEnd={() => setDrag(null)}
-            onDrop={(event) => {
-              const from = draggedIndex(event);
-              setDrag(null);
-              if (editor === null || from === undefined || from === position) return;
-              event.preventDefault();
-              // `position`, not `index`: the drop lands where the preview showed it, and `reorderTabs`
-              // re-inserts AFTER removing, which is the same indexing the preview used.
-              editor.onGesture({ type: 'reorder-tabs', tabsId, from, to: position });
-            }}
-          >
-            {tab.label}
-            {editor === null ? null : (
-              <span
-                role="button"
-                tabIndex={-1}
-                data-slot="tab-strip-remove"
-                aria-label={`Delete ${tab.label === '' ? 'tab' : tab.label}`}
-                className={REMOVE_CLASS}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  // The trigger would otherwise also open the tab; the confirmation is the only outcome wanted.
-                  event.stopPropagation();
-                  editor.onGesture({ type: 'remove-tab', tabId: tab.value });
-                }}
-              >
-                <Icon path={mdiClose} size="12px" />
-              </span>
-            )}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      <div className={SCROLLER_CLASS}>
+        <TabsList ref={listRef} className={LIST_CLASS} onScroll={measure}>
+          {previewed.map(({ tab, index }, position) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className={`${TRIGGER_CLASS} ${DRAGGING_CLASS}`}
+              {...(drag?.from === index ? { 'data-dragging': '' } : {})}
+              // Rules 19-20: native HTML drag, like the options editor's rows. jsdom cannot perform a real drag,
+              // so the gesture is tested through these handlers and the pure edit, never through a scripted drag.
+              draggable={editor !== null}
+              /**
+               * Rule 40: the trigger selects its Tab on EVERY click, not through the `Tabs` root's
+               * `onValueChange` — Base UI fires that only when the value CHANGES, so clicking the tab that is
+               * already open emitted nothing, the Tab was never selected, and the first tab's label and
+               * description could not be edited at all.
+               */
+              /**
+               * Rule 40b: on POINTERDOWN, and the press stops here.
+               *
+               * The studio selects on pointerdown too, and a press on the strip resolves to the Tabs element —
+               * so the selection went to the Tabs first (and rule 17's derivation fell back to the FIRST tab),
+               * and only on mouseup did the click handler select the tab actually under the cursor. The tab bar
+               * visibly selected the wrong tab and then corrected itself.
+               */
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                editor?.onGesture({ type: 'open-tab', tabId: tab.value });
+              }}
+              // Rule 40: also on click, for the keyboard — Base UI's `onValueChange` stays silent when the
+              // already-open tab is activated. Selecting the same Tab twice is a no-op.
+              onClick={() => editor?.onGesture({ type: 'open-tab', tabId: tab.value })}
+              onDragStart={(event) => {
+                event.dataTransfer.setData(DRAG_TYPE, String(index));
+                event.dataTransfer.effectAllowed = 'move';
+                setDrag({ from: index, to: index });
+              }}
+              onDragOver={(event) => {
+                if (editor === null || draggedIndex(event) === undefined) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                // Rule 19b: `position` is where the pointer is in the PREVIEWED strip, which is exactly the
+                // index the dragged tab would occupy — so the preview converges instead of oscillating.
+                setDrag((current) =>
+                  current === null || current.to === position
+                    ? current
+                    : { ...current, to: position },
+                );
+              }}
+              onDragEnd={() => setDrag(null)}
+              onDrop={(event) => {
+                const from = draggedIndex(event);
+                setDrag(null);
+                if (editor === null || from === undefined || from === position) return;
+                event.preventDefault();
+                // `position`, not `index`: the drop lands where the preview showed it, and `reorderTabs`
+                // re-inserts AFTER removing, which is the same indexing the preview used.
+                editor.onGesture({ type: 'reorder-tabs', tabsId, from, to: position });
+              }}
+            >
+              {tab.label}
+              {editor === null ? null : (
+                <span
+                  role="button"
+                  tabIndex={-1}
+                  data-slot="tab-strip-remove"
+                  aria-label={`Delete ${tab.label === '' ? 'tab' : tab.label}`}
+                  className={REMOVE_CLASS}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    // The trigger would otherwise also open the tab; the confirmation is the only outcome wanted.
+                    event.stopPropagation();
+                    editor.onGesture({ type: 'remove-tab', tabId: tab.value });
+                  }}
+                >
+                  <Icon path={mdiClose} size="12px" />
+                </span>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {edges.start ? <div data-slot="tab-strip-shadow-start" className={EDGE_START} /> : null}
+        {edges.end ? <div data-slot="tab-strip-shadow-end" className={EDGE_END} /> : null}
+      </div>
       {editor === null ? null : (
         <button
           type="button"
