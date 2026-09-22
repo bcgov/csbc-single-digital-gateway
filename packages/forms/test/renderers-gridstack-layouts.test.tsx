@@ -96,9 +96,9 @@ describe('layout kinds (rules 23-24)', () => {
 
   it('returns Grid, VerticalLayout and HorizontalLayout entries, each ranking 1 for its own type only', () => {
     const entries = createGridRenderers().layoutRenderers;
-    // Plus the root Form entry (doc 192 rule 2, tested in renderers-gridstack-form.test.tsx) and the Section
+    // Plus the Service entry (doc 215 rule 8) and the root Form entry (doc 192 rule 2, tested in renderers-gridstack-form.test.tsx) and the Section
     // (doc 212 rule 1), both after the three axis entries this test indexes into.
-    expect(entries).toHaveLength(5);
+    expect(entries).toHaveLength(6);
     LAYOUT_TYPES.forEach((type, index) => {
       for (const other of [...LAYOUT_TYPES, 'Form', 'Heading']) {
         const rank = entries[index]?.tester({ type: other }, schema, testerContext);

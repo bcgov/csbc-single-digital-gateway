@@ -4,7 +4,14 @@ import type { GridRenderersOptions } from '../../types/elements';
 import type { RendererSet } from '../../types/renderer-set';
 import { createFormRenderer, StudioFormTitle } from './form-renderer';
 import { GridElementDispatch } from './grid-element';
-import { FORM_TYPE, GRID_LAYOUT_TYPES, SECTION_TYPE, type GridLayoutKind } from './grid-layouts';
+import {
+  FORM_TYPE,
+  GRID_LAYOUT_TYPES,
+  SECTION_TYPE,
+  SERVICE_TYPE,
+  type GridLayoutKind,
+} from './grid-layouts';
+import { NESTED_SERVICE_MESSAGE, StudioServiceTitle } from './service-renderer';
 import { createSectionRenderer } from './section-renderer';
 import { GRID_ELEMENT_COMPONENT } from './grid-options';
 import { createGridLayoutRenderer } from './grid-renderer';
@@ -19,6 +26,8 @@ export const horizontalLayoutTester: RankedTester = rankWith(
 );
 /** Doc 192 rule 2: the root-only Form, rendered by the vertical layout. */
 export const formTester: RankedTester = rankWith(1, uiTypeIs(FORM_TYPE));
+/** Doc 215 rule 8: the other root-only boundary, rendered by the vertical layout exactly as the Form is. */
+export const serviceTester: RankedTester = rankWith(1, uiTypeIs(SERVICE_TYPE));
 /** Doc 212 rule 1: the Section, also rendered by the vertical layout — a second type of the same kind. */
 export const sectionTester: RankedTester = rankWith(1, uiTypeIs(SECTION_TYPE));
 
@@ -66,7 +75,15 @@ export function createGridRenderers({
       // Doc 201 rule 7: on the canvas the title is the heading alone, with a placeholder when it is empty.
       {
         tester: formTester,
-        renderer: createFormRenderer(rendererFor('vertical'), StudioFormTitle, true),
+        renderer: createFormRenderer(rendererFor('vertical'), StudioFormTitle, { dropZone: true }),
+      },
+      // Doc 215 rule 8: the Service — the same renderer, the same drop zone, its own title and nested message.
+      {
+        tester: serviceTester,
+        renderer: createFormRenderer(rendererFor('vertical'), StudioServiceTitle, {
+          dropZone: true,
+          nestedMessage: NESTED_SERVICE_MESSAGE,
+        }),
       },
       // Doc 212 rules 1-2: the same vertical renderer the kind already has, inside a titled shell. APPENDED, like
       // the Form entry — `renderers-studio.test.tsx` reaches these by position from the end.

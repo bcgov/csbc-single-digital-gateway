@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FormRunner } from '../runner/form-runner';
 import * as defaultSet from '../renderers/default/index';
 import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid-editor';
-import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
+import { FORM_TYPE, isPageRoot, SERVICE_TYPE } from '../renderers/gridstack/grid-layouts';
 import * as studioSet from '../renderers/studio/index';
 import {
   StudioSelectionProvider,
@@ -31,9 +31,9 @@ const PREVIEW_RENDERERS = [
   ...defaultSet.layoutRenderers,
 ];
 
-const ROOT_MESSAGE = 'The root element must be a Form or a Flow.';
-/** Doc 192 rule 7, doc 195 rule 21: the uischema types a studio document's root may have. */
-const ROOT_TYPES: ReadonlySet<string> = new Set([FORM_TYPE, FLOW_TYPE]);
+const ROOT_MESSAGE = 'The root element must be a Form, a Service or a Flow.';
+/** Doc 192 rule 7, doc 195 rule 21, doc 215 rule 12: the uischema types a studio document's root may have. */
+const ROOT_TYPES: ReadonlySet<string> = new Set([FORM_TYPE, SERVICE_TYPE, FLOW_TYPE]);
 
 export interface StudioCanvasProps {
   readonly schema: JsonSchema;
@@ -147,7 +147,7 @@ export function StudioCanvas({
           uischema={previewRoot}
           data={previewData}
         />
-      ) : previewRoot.type === FLOW_TYPE || uischema.type === FORM_TYPE ? (
+      ) : previewRoot.type === FLOW_TYPE || isPageRoot(uischema.type) ? (
         <FormRunner
           key={`preview-${rootKey}`}
           schema={schema}

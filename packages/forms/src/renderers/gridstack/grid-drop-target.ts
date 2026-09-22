@@ -1,4 +1,5 @@
 import type { GridStack } from 'gridstack';
+import { isPageRoot } from './grid-layouts';
 
 /** The part of gridstack's private `DDDroppable` this module touches (`eventEl` is declared `protected`). */
 interface DroppableTarget {
@@ -49,11 +50,14 @@ export const FORM_DROP_ZONE_SLOT = 'form-drop-zone';
  * relative to the grid element, a pointer above it gives a negative row, and the engine's `nodeBoundFix` clamps that to
  * row 0 — the FIRST slot. Every other grid listens on itself (doc 190). Scoped by the grid's own uischema type, so a
  * grid nested inside the Form never claims the zone.
+ *
+ * Doc 215 rule 11: a root Service has the same title block and the same drop zone, so this asks `isPageRoot` rather
+ * than naming one type.
  */
 export function dropTargetFor(
   gridEl: HTMLElement | undefined,
   uischemaType: string,
 ): HTMLElement | undefined {
-  if (!gridEl || uischemaType !== 'Form') return gridEl;
+  if (!gridEl || !isPageRoot(uischemaType)) return gridEl;
   return gridEl.closest<HTMLElement>(`[data-slot="${FORM_DROP_ZONE_SLOT}"]`) ?? gridEl;
 }

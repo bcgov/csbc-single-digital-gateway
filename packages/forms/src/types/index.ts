@@ -36,6 +36,7 @@ export type {
   RadioGroupControlElement,
   SectionElement,
   SeparatorElement,
+  ServiceElement,
   StageElement,
   StagePosition,
   SwitchControlElement,

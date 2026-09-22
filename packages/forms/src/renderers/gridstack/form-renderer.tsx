@@ -25,7 +25,7 @@ export const FORM_DESCRIPTION_PLACEHOLDER = 'Add a description...';
  * Doc 201 rule 2: a title component is given the Form's element and reads `uischema.label` itself. JSONForms'
  * `withJsonFormsLayoutProps` supplies no translated label to a layout, so there is no `label` prop to read.
  */
-interface FormTitleProps {
+export interface FormTitleProps {
   readonly uischema: UISchemaElement;
 }
 
@@ -59,51 +59,62 @@ function studioInset(uischema: UISchemaElement): CSSProperties {
 }
 
 /**
+ * Doc 215 rule 6: the studio canvas title of a root boundary, built for one element type by its empty-title
+ * placeholder — 'Untitled form' for a Form, 'Untitled service' for a Service. Everything else about the block is the
+ * same for both, so there is one implementation.
+ *
  * Doc 201 rule 7: the studio canvas title — the heading alone, no rule and no chrome. Rule 7b: styled like the
  * studio's disabled fields, and inset to line up with the elements. Rule 11: an empty title draws a muted placeholder
  * instead, so an untitled Form still shows the author where its title goes. Rule 20: the description sits under it
  * with the same inset and grey; rule 22: unwritten, it shows a placeholder of its own.
  */
-export function StudioFormTitle({ uischema }: FormTitleProps) {
-  const title = labelOf(uischema, '');
-  const description = formDescriptionOf(uischema);
-  return (
-    // Rule 7b: `opacity-50`, the same treatment the studio's disabled fields get (`@repo/ui` Field/Label), so the
-    // title and description read as part of the non-interactive canvas rather than as a greyed colour. `select-none`
-    // for the same reason: a disabled field's Label can't be text-selected either (user request 2026-09-17).
-    <div
-      data-slot="form-title-block"
-      className={`${TITLE_SPACING} opacity-50 select-none`}
-      style={studioInset(uischema)}
-    >
-      {title === '' ? (
-        <Heading
-          level={1}
-          size={1}
-          data-slot="form-title-placeholder"
-          className="text-muted-foreground"
-        >
-          {FORM_TITLE_PLACEHOLDER}
-        </Heading>
-      ) : (
-        <Heading level={1} size={1} data-slot="form-title">
-          {title}
-        </Heading>
-      )}
-      {/* Rule 22: an unwritten description shows its own placeholder, exactly as the title does (rule 11), so the
+export function createStudioTitle(placeholder: string) {
+  function StudioTitle({ uischema }: FormTitleProps) {
+    const title = labelOf(uischema, '');
+    const description = formDescriptionOf(uischema);
+    return (
+      // Rule 7b: `opacity-50`, the same treatment the studio's disabled fields get (`@repo/ui` Field/Label), so the
+      // title and description read as part of the non-interactive canvas rather than as a greyed colour. `select-none`
+      // for the same reason: a disabled field's Label can't be text-selected either (user request 2026-09-17).
+      <div
+        data-slot="form-title-block"
+        className={`${TITLE_SPACING} opacity-50 select-none`}
+        style={studioInset(uischema)}
+      >
+        {title === '' ? (
+          <Heading
+            level={1}
+            size={1}
+            data-slot="form-title-placeholder"
+            className="text-muted-foreground"
+          >
+            {placeholder}
+          </Heading>
+        ) : (
+          <Heading level={1} size={1} data-slot="form-title">
+            {title}
+          </Heading>
+        )}
+        {/* Rule 22: an unwritten description shows its own placeholder, exactly as the title does (rule 11), so the
           author can see where it goes. Fillable forms still render nothing (rule 20b). */}
-      {description === undefined ? (
-        <p data-slot="form-description-placeholder" className="mt-2 text-muted-foreground">
-          {FORM_DESCRIPTION_PLACEHOLDER}
-        </p>
-      ) : (
-        <div data-slot="form-description" className="mt-2 text-muted-foreground">
-          <RichTextView value={description} />
-        </div>
-      )}
-    </div>
-  );
+        {description === undefined ? (
+          <p data-slot="form-description-placeholder" className="mt-2 text-muted-foreground">
+            {FORM_DESCRIPTION_PLACEHOLDER}
+          </p>
+        ) : (
+          <div data-slot="form-description" className="mt-2 text-muted-foreground">
+            <RichTextView value={description} />
+          </div>
+        )}
+      </div>
+    );
+  }
+  StudioTitle.displayName = 'StudioTitle';
+  return StudioTitle;
 }
+
+/** Doc 192, doc 201: the studio title of a Form. */
+export const StudioFormTitle = createStudioTitle(FORM_TITLE_PLACEHOLDER);
 
 /**
  * Doc 201 rule 8b: what the fillable title's TEXT is inset by. It lives on the heading, never on the bar around it —
@@ -195,11 +206,20 @@ export function useLayoutVisible({ uischema, schema, path }: OwnPropsOfRenderer)
  * Every layout renderer provides `LayoutNestingContext` to its children, so finding a layout kind there means this Form
  * is nested; testers cannot see an element's depth, so root-only is enforced here. That error path renders no title.
  */
+export interface BoundaryRendererOptions {
+  /** Doc 201 rule 21: wrap the title and layout in one drop zone (the studio). Fillable forms add no element. */
+  readonly dropZone?: boolean;
+  /**
+   * Doc 215 rule 10: what this boundary says when it is nested. The SLOT is shared with the Form's — it is one
+   * error ("a root-only element is nested"), told apart by its message — so nothing already querying it changes.
+   */
+  readonly nestedMessage?: string;
+}
+
 export function createFormRenderer<P extends OwnPropsOfRenderer>(
   VerticalLayout: ComponentType<P>,
   Title: ComponentType<FormTitleProps>,
-  /** Doc 201 rule 21: wrap the title and layout in one drop zone (the studio). Fillable forms add no element. */
-  dropZone = false,
+  { dropZone = false, nestedMessage = NESTED_FORM_MESSAGE }: BoundaryRendererOptions = {},
 ): ComponentType<P> {
   function FormRenderer(props: P) {
     const nested = useContext(LayoutNestingContext) !== null;
@@ -207,7 +227,7 @@ export function createFormRenderer<P extends OwnPropsOfRenderer>(
     if (nested) {
       return (
         <p role="alert" data-slot="form-nested-error" className="text-sm text-destructive">
-          {NESTED_FORM_MESSAGE}
+          {nestedMessage}
         </p>
       );
     }

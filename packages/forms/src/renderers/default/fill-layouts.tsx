@@ -9,8 +9,16 @@ import {
 import { JsonFormsDispatch, withJsonFormsLayoutProps } from '@jsonforms/react';
 import type { ComponentProps, CSSProperties } from 'react';
 import { createFormRenderer, FillFormTitle } from '../gridstack/form-renderer';
+import { FillServiceTitle, NESTED_SERVICE_MESSAGE } from '../gridstack/service-renderer';
 import { createSectionRenderer } from '../gridstack/section-renderer';
-import { dividersOf, FORM_TYPE, GRID_LAYOUT_TYPES, SECTION_TYPE } from '../gridstack/grid-layouts';
+import {
+  dividersOf,
+  GRID_LAYOUT_TYPES,
+  isPageRoot,
+  FORM_TYPE,
+  SECTION_TYPE,
+  SERVICE_TYPE,
+} from '../gridstack/grid-layouts';
 import { GAP_CLASS, GAP_REM, layoutGapOf } from '../gridstack/layout-gap';
 import { LayoutNestingContext } from '../gridstack/layout-nesting';
 import { FillPage } from './fill-page';
@@ -61,8 +69,8 @@ const gapClassOf = (uischema: UISchemaElement) => GAP_CLASS[layoutGapOf(uischema
 
 /**
  * Doc 201 rule 8c: a Form's element container is inset by TWICE the title's horizontal padding (`px-6` → `px-12`), with
- * the same amount below it. Only a **Form** takes it: a nested VerticalLayout is a stack sitting inside that inset, and
- * padding it again would compound on every level of nesting.
+ * the same amount below it. Only a **root boundary** takes it (doc 215 rule 9): a nested VerticalLayout is a stack
+ * sitting inside that inset, and padding it again would compound on every level of nesting.
  */
 const FORM_PADDING = 'px-12 pb-12';
 
@@ -71,7 +79,7 @@ function FillStack(props: LayoutProps) {
   const { uischema, visible } = props;
   if (!visible) return null;
   // Literal class strings only: Tailwind generates nothing from an interpolated name.
-  const padding = uischema.type === FORM_TYPE ? ` ${FORM_PADDING}` : '';
+  const padding = isPageRoot(uischema.type) ? ` ${FORM_PADDING}` : '';
   return (
     <LayoutNestingContext.Provider value="vertical">
       <div
@@ -142,6 +150,18 @@ function FillForm(props: ComponentProps<typeof FillFormInner>) {
   );
 }
 
+/** Doc 215 rule 9: the Service — the same page chrome a Form gets, its own nested message. */
+const FillServiceInner = createFormRenderer(FillStackRenderer, FillServiceTitle, {
+  nestedMessage: NESTED_SERVICE_MESSAGE,
+});
+function FillService(props: ComponentProps<typeof FillServiceInner>) {
+  return (
+    <FillPage>
+      <FillServiceInner {...props} />
+    </FillPage>
+  );
+}
+
 /** Doc 212: the Section around the very same column renderer, with no page chrome of its own. */
 const FillSection = createSectionRenderer(FillStackRenderer);
 
@@ -161,6 +181,8 @@ export const fillLayoutRenderers: readonly JsonFormsRendererRegistryEntry[] = Ob
     tester: rankWith(1, uiTypeIs(FORM_TYPE)),
     renderer: FillForm,
   },
+  // Doc 215 rule 9: the Service, rendered exactly as the Form above it.
+  { tester: rankWith(1, uiTypeIs(SERVICE_TYPE)), renderer: FillService },
   // Doc 212 rules 1-2: a Section wraps the SAME column renderer a VerticalLayout uses, so there is no second
   // column implementation to drift. APPENDED — `renderers-default*.test` pin this list's length.
   { tester: rankWith(1, uiTypeIs(SECTION_TYPE)), renderer: FillSection },

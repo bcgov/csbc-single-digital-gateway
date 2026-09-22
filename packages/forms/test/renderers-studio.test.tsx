@@ -82,7 +82,7 @@ describe('renderers/studio composition', () => {
     //
     // COUNTED FROM THE END, so every one of these offsets moves when an entry is added anywhere before them.
     // A failure here reads as a dispatch regression and is usually just this arithmetic.
-    const firstGridEntry = studio.layoutRenderers.at(-8);
+    const firstGridEntry = studio.layoutRenderers.at(-9);
     expect(firstGridEntry?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);
     expect(studio.layoutRenderers.at(-3)?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
     expect(studio.layoutRenderers.at(-2)?.tester).toBe(xyflow.layoutRenderers[1]?.tester);
@@ -91,7 +91,7 @@ describe('renderers/studio composition', () => {
 
   it("does not spread default's entries (no second, tied Grid or Flow entry)", () => {
     // default = ui + CSS layouts + an unsupported Flow, so spreading it as well would tie every layout entry.
-    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 8);
+    expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 9);
     expect(matching('Grid')).toHaveLength(1);
     expect(matching('Flow')).toHaveLength(1);
   });

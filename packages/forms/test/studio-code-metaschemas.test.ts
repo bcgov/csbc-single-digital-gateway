@@ -148,13 +148,19 @@ describe('UISCHEMA_METASCHEMA Form root (doc 192 rule 11)', () => {
   });
 
   it('gives the root type a description and no if-condition descriptions', () => {
-    // Doc 195 rule 17: a Flow root is checked as a flow, every other root as a Form.
+    // Doc 195 rule 17, doc 215 rule 20: a Flow root is checked as a flow, a Service root as a service, every
+    // other root as a Form.
     expect(UISCHEMA_METASCHEMA.allOf).toEqual([
       {
         if: { properties: { type: { const: 'Flow' } }, required: ['type'] },
         // eslint-disable-next-line unicorn/no-thenable -- the JSON Schema draft-07 `then` keyword; never awaited
         then: { $ref: '#/definitions/flow' },
-        else: { $ref: '#/definitions/form' },
+        else: {
+          if: { properties: { type: { const: 'Service' } }, required: ['type'] },
+          // eslint-disable-next-line unicorn/no-thenable -- draft-07 `then`; never awaited
+          then: { $ref: '#/definitions/service' },
+          else: { $ref: '#/definitions/form' },
+        },
       },
     ]);
     expect(UISCHEMA_METASCHEMA.definitions.form.properties.type).toMatchObject({
@@ -162,6 +168,8 @@ describe('UISCHEMA_METASCHEMA Form root (doc 192 rule 11)', () => {
       description: expect.any(String),
     });
     expect(UISCHEMA_METASCHEMA.definitions.element.properties.type.enum).not.toContain('Form');
+    // Doc 215 rule 22: nor a Service — the enum is unchanged, so a nested Service is a problem.
+    expect(UISCHEMA_METASCHEMA.definitions.element.properties.type.enum).not.toContain('Service');
     const conditions = ifConditions(UISCHEMA_METASCHEMA);
     expect(conditions.length).toBeGreaterThan(0);
     expect(JSON.stringify(conditions)).not.toContain('description');

@@ -285,13 +285,20 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
   $schema: 'http://json-schema.org/draft-07/schema#',
   title: 'Form Studio uischema',
   description: 'The layout of a Form Studio form.',
-  // Doc 195 rule 17: the root is a Flow or a Form. No description on the `if` (doc 191 rule 11).
+  // Doc 195 rule 17, doc 215 rule 20: the root is a Flow, a Service or a Form — a CHAIN, each `else` asking the next
+  // question. No description on any `if` (doc 191 rule 11): Monaco's hover shows text from every `if` it evaluates,
+  // matching or not.
   allOf: [
     {
       if: { properties: { type: { const: 'Flow' } }, required: ['type'] },
       // eslint-disable-next-line unicorn/no-thenable -- the JSON Schema draft-07 `then` keyword; never awaited
       then: { $ref: '#/definitions/flow' },
-      else: { $ref: '#/definitions/form' },
+      else: {
+        if: { properties: { type: { const: 'Service' } }, required: ['type'] },
+        // eslint-disable-next-line unicorn/no-thenable -- the JSON Schema draft-07 `then` keyword; never awaited
+        then: { $ref: '#/definitions/service' },
+        else: { $ref: '#/definitions/form' },
+      },
     },
   ],
   definitions: {
@@ -340,6 +347,42 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
                 'The id that addresses this form in a link. Unique among the forms of this document.',
               type: 'string',
               minLength: 1,
+            },
+          },
+        },
+      },
+    },
+    /**
+     * Doc 215 rules 21-22: a Service is the form definition with its own `type` and NO `options.id` — a Service is
+     * never a Flow node, so nothing addresses one. `element` lists neither Form nor Service, so a Service anywhere
+     * but the root is a problem.
+     */
+    service: {
+      description: 'A service: the root of a service document. It renders like a VerticalLayout.',
+      type: 'object',
+      required: ['type', 'elements'],
+      properties: {
+        type: { description: 'Always "Service" — a service.', const: 'Service' },
+        elements: ELEMENTS,
+        label: {
+          description: "The service's title, shown at the top of the page and in the element path.",
+          // Absent is fine; present-but-blank is not — a `""` reads as titled in the JSON and untitled everywhere
+          // else. An emptied Title removes the key, so nothing the inspector writes can trip this.
+          type: 'string',
+          minLength: 1,
+        },
+        rule: { $ref: '#/definitions/rule' },
+        options: {
+          description: 'Service options.',
+          type: 'object',
+          properties: {
+            gap: GAP,
+            description: {
+              description:
+                'A description shown under the service title, as a Lexical editor state. Rich content, not plain text.',
+              type: 'object',
+              required: ['root'],
+              properties: { root: { description: 'The editor state root node.', type: 'object' } },
             },
           },
         },

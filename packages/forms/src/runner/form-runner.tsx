@@ -3,7 +3,7 @@ import { JsonForms } from '@jsonforms/react';
 import { useCallback, useMemo, useState } from 'react';
 import * as defaults from '../renderers/default/index';
 import { FillPage } from '../renderers/default/fill-page';
-import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
+import { isPageRoot } from '../renderers/gridstack/grid-layouts';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import type { FormRunnerProps } from '../types/index';
 import type { RunnerData } from './criterion-match';
@@ -32,7 +32,7 @@ import { SubmissionPreview } from './submission-preview';
 // the host's (rule 3, controlled `data`/`onChange`), and the graph is the document's — nothing here copies either.
 
 /** Doc 202 rule 6: the runner accepts a document from a host, so it says so rather than rendering nothing. */
-export const ROOT_MESSAGE = 'The form must be a Form or a Flow.';
+export const ROOT_MESSAGE = 'The form must be a Form, a Service or a Flow.';
 
 const EMPTY_VISITED: ReadonlySet<string> = new Set<string>();
 const NO_STAGES: readonly string[] = [];
@@ -57,7 +57,8 @@ export function FormRunner({
   onSubmit,
 }: FormRunnerProps) {
   const isFlow = uischema.type === FLOW_TYPE;
-  const isForm = uischema.type === FORM_TYPE;
+  // Doc 215 rule 16: a Service root is one page of elements exactly as a Form root is, which is all this ever meant.
+  const isPage = isPageRoot(uischema.type);
 
   // The position is seeded from the document once and then moves only through `goTo`, so a re-render caused by a
   // keystroke never resets where the citizen is.
@@ -92,7 +93,7 @@ export function FormRunner({
   const current = formAt(uischema, position);
   const blocked =
     current === undefined
-      ? isForm
+      ? isPage
         ? documentHasError(errors)
         : false
       : formHasError(current, schema, errors);
@@ -155,7 +156,7 @@ export function FormRunner({
     [position, goTo, visited, data, blocked, atEnd],
   );
 
-  if (!isFlow && !isForm) {
+  if (!isFlow && !isPage) {
     return (
       <p role="alert" data-slot="runner-root-error" className="text-sm text-destructive">
         {ROOT_MESSAGE}

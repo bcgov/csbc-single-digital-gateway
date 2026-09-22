@@ -191,6 +191,21 @@ export interface FormElement extends Layout {
 }
 
 /**
+ * `{ type: 'Service' }` — the OTHER root-only boundary (doc 215): a service, rendered exactly as a `Form` is, with the
+ * same Title, Description and Gap. It has no `id`, because a Service is never a Flow node and nothing addresses one;
+ * inside any layout it renders an error instead of its elements.
+ */
+export interface ServiceElement extends Layout {
+  type: 'Service';
+  label?: string;
+  options?: LayoutGapOptions & {
+    /** Doc 215 rule 1: shown under the title, as RICH content — a Lexical editor state, exactly as a Form's is. */
+    description?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+}
+
+/**
  * What a `Clause` tests (doc 199 rules 1, 36). Which operators a field may use is decided by its `ControlKind`
  * in `renderers/xyflow/criteria.ts` — this union is only the vocabulary.
  *

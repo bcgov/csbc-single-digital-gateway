@@ -57,7 +57,8 @@ describe('renderers/default', () => {
     expect(matching('Heading')).toHaveLength(1);
     // Grid, VerticalLayout, HorizontalLayout and Form (doc 193 rule 3), then Flow and Stage (doc 195 rule 19),
     // then Section (doc 212 rule 1).
-    expect(defaults.layoutRenderers).toHaveLength(7);
+    // 7 until doc 215 added Service.
+    expect(defaults.layoutRenderers).toHaveLength(8);
   });
 
   it('renders its Grid with plain CSS, not gridstack', async () => {

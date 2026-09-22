@@ -1,6 +1,7 @@
 import type { JsonSchema } from '@jsonforms/core';
 import { FORM_TITLE_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
-import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
+import { FORM_TYPE, isPageRoot, SERVICE_TYPE } from '../../renderers/gridstack/grid-layouts';
+import { SERVICE_TITLE_PLACEHOLDER } from '../../renderers/gridstack/service-renderer';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
 import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
@@ -86,14 +87,17 @@ const STAGE_LABEL_HINT = 'Names the stage on its card and in the element path.';
 const CONDITION_LABEL_HINT = 'Names the condition on its card and in the element path.';
 /** Doc 201 rule 13: a Form's label is its Title, and it is shown to the citizen, not just in the path. */
 const FORM_TITLE_HINT = 'Shown at the top of the form.';
+/** Doc 215 rule 18: the same sentence, naming the element the author actually selected. */
+const SERVICE_TITLE_HINT = 'Shown at the top of the service.';
 const FORM_TITLE_LABEL = 'Title';
 
 const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
 /**
- * Doc 201 rule 13. A Form's layout kind is `'vertical'` (doc 192 rule 3), so it already satisfies the
- * generic layout branches — test it FIRST wherever a Form differs from a plain layout.
+ * Doc 201 rule 13, widened by doc 215 rule 17. A root boundary's layout kind is `'vertical'` (doc 192 rule 3,
+ * doc 215 rule 3), so it already satisfies the generic layout branches — test it FIRST wherever a Form or a
+ * Service differs from a plain layout. `isPageRoot` is the ONE predicate for that (doc 215 rule 4).
  */
-const isForm = (ctx: InspectorContext) => ctx.element.type === FORM_TYPE;
+const isBoundary = (ctx: InspectorContext) => isPageRoot(ctx.element.type);
 /**
  * Doc 195 rule 24, widened by doc 199 rule 32: a Flow, Stage or Condition is named like a layout — none has a
  * layout kind. A Condition's criteria are authored on its card, never here, so Label is all it gets.
@@ -103,7 +107,8 @@ const isFlowElement = (ctx: InspectorContext) =>
   ctx.element.type === STAGE_TYPE ||
   ctx.element.type === CONDITION_TYPE;
 const labelHint = (ctx: InspectorContext) => {
-  if (isForm(ctx)) return FORM_TITLE_HINT;
+  if (ctx.element.type === SERVICE_TYPE) return SERVICE_TITLE_HINT;
+  if (ctx.element.type === FORM_TYPE) return FORM_TITLE_HINT;
   if (ctx.element.type === STAGE_TYPE) return STAGE_LABEL_HINT;
   return ctx.element.type === CONDITION_TYPE ? CONDITION_LABEL_HINT : LAYOUT_LABEL_HINT;
 };
@@ -126,15 +131,21 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'label',
     section: 'general',
     label: 'Label',
-    labelFor: (ctx) => (isForm(ctx) ? FORM_TITLE_LABEL : 'Label'),
+    labelFor: (ctx) => (isBoundary(ctx) ? FORM_TITLE_LABEL : 'Label'),
     applies: (ctx) => isControl(ctx) || ctx.layoutKind !== undefined || isFlowElement(ctx),
     schema: (ctx) =>
       ctx.layoutKind || isFlowElement(ctx)
         ? { type: 'string', description: labelHint(ctx) }
         : STRING,
     options: (ctx) => {
-      // Doc 201 rule 22: a Form's Title offers the canvas placeholder; a Control's offers the property's title.
-      if (isForm(ctx)) return { placeholder: FORM_TITLE_PLACEHOLDER };
+      // Doc 201 rule 22, doc 215 rule 18: a boundary's Title offers ITS OWN canvas placeholder — 'Untitled form' or
+      // 'Untitled service' — so the field shows the author what the canvas already shows them. A Control's offers the
+      // bound property's title.
+      if (isBoundary(ctx))
+        return {
+          placeholder:
+            ctx.element.type === SERVICE_TYPE ? SERVICE_TITLE_PLACEHOLDER : FORM_TITLE_PLACEHOLDER,
+        };
       const title = text(ctx.property?.title)?.trim();
       return title ? { placeholder: title } : undefined;
     },

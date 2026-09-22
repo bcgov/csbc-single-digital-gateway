@@ -20,6 +20,26 @@ export const FORM_TYPE = 'Form';
  */
 export const SECTION_TYPE = 'Section';
 
+/**
+ * Doc 215 rule 1: the OTHER root-only boundary — a service, rendered exactly as a Form is. A second type of the
+ * `vertical` kind, like the Section.
+ */
+export const SERVICE_TYPE = 'Service';
+
+/**
+ * Doc 215 rule 4: whether `type` is a root that is ONE PAGE of elements — a `Form` or a `Service` — as opposed to a
+ * `Flow`, which is a journey of Stages.
+ *
+ * This is the ONE test for that idea. Every boundary decision reads it: the inspector's Title and Description fields,
+ * `dropTargetFor`, `StudioCanvas`'s preview branch, `FormRunner` and `SubmissionView`. A bare `=== FORM_TYPE` written
+ * for this reason is a bug waiting for the next boundary — the data-flow audit found the same comparison written twice
+ * before there was a second one. Comparisons meaning "a Form INSIDE A STAGE" are a different question and stay literal
+ * (rule 5).
+ */
+export function isPageRoot(type: string): boolean {
+  return type === FORM_TYPE || type === SERVICE_TYPE;
+}
+
 const KIND_BY_TYPE: ReadonlyMap<string, GridLayoutKind> = new Map([
   ...(Object.keys(GRID_LAYOUT_TYPES) as GridLayoutKind[]).map(
     (kind) => [GRID_LAYOUT_TYPES[kind], kind] as const,
@@ -30,6 +50,8 @@ const KIND_BY_TYPE: ReadonlyMap<string, GridLayoutKind> = new Map([
   // the axis testers and by `fill-layouts`, so a second entry there would DISPLACE `VerticalLayout`. Nothing
   // type-checks the difference, which is why `test/studio-section-placement.test.tsx` pins both halves.
   [SECTION_TYPE, 'vertical'] as const,
+  // Doc 215 rules 2-3: and a Service, for the same reason and with the same warning about `GRID_LAYOUT_TYPES`.
+  [SERVICE_TYPE, 'vertical'] as const,
 ]);
 
 /** The layout kind rendering `type`, or `undefined` for anything that is not a gridstack layout. */
@@ -37,7 +59,7 @@ export function layoutKindOf(type: string): GridLayoutKind | undefined {
   return KIND_BY_TYPE.get(type);
 }
 
-/** Whether `type` is rendered by gridstack — `Grid`, `VerticalLayout`, `HorizontalLayout` or `Form`. */
+/** Whether `type` is rendered by gridstack — `Grid`, `VerticalLayout`, `HorizontalLayout`, `Form`, `Service` or `Section`. */
 export function isGridLayoutType(type: string): boolean {
   return KIND_BY_TYPE.has(type);
 }
@@ -48,9 +70,12 @@ export const SEPARATOR_TYPE = 'Separator';
 /**
  * Doc 195 rule 16: a Flow is only the root, a Stage only in a Flow, a Form only the root or in a Stage.
  * Doc 199 rule 21: a Condition is a Flow node too, so no layout accepts one either.
+ * Doc 215 rule 13: a Service is root-only with no Stage exception at all, so this one entry is the whole of its
+ * placement rule — it is what `insert-element`, `apply-layout`, the drop gate and the grid's `accepts` all read.
  */
 const NEVER_IN_LAYOUT: ReadonlySet<string> = new Set([
   FORM_TYPE,
+  SERVICE_TYPE,
   FLOW_TYPE,
   STAGE_TYPE,
   CONDITION_TYPE,

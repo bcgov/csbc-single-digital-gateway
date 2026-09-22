@@ -157,7 +157,7 @@ describe('FormRunner (doc 202 rules 1-8)', () => {
   });
 
   describe('an unsupported root (rule 6)', () => {
-    it('renders "The form must be a Form or a Flow." for any other root type', async () => {
+    it('renders "The form must be a Form, a Service or a Flow." for any other root type', async () => {
       renderRunner({ uischema: el({ type: 'VerticalLayout', elements: [control('name')] }) });
       await settle();
       const alert = screen.getByRole('alert');

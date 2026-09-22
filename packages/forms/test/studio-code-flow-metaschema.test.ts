@@ -111,12 +111,19 @@ describe('uischema metaschema — Flow root (rule 17)', () => {
     }
   });
 
-  it('carries no description on the root Flow/Form if condition', () => {
+  it('carries no description on the root Flow/Service/Form if conditions', () => {
+    // Doc 215 rule 20: a CHAIN now — Flow, else Service, else Form.
     const [branch] = UISCHEMA_METASCHEMA.allOf;
     expect(branch.if).toEqual({ properties: { type: { const: 'Flow' } }, required: ['type'] });
     expect(branch.if).not.toHaveProperty('description');
     expect(branch.then).toEqual({ $ref: '#/definitions/flow' });
-    expect(branch.else).toEqual({ $ref: '#/definitions/form' });
+    expect(branch.else.if).toEqual({
+      properties: { type: { const: 'Service' } },
+      required: ['type'],
+    });
+    expect(branch.else.if).not.toHaveProperty('description');
+    expect(branch.else.then).toEqual({ $ref: '#/definitions/service' });
+    expect(branch.else.else).toEqual({ $ref: '#/definitions/form' });
     // A non-Flow root is still checked as a Form.
     expect(ok({ type: 'VerticalLayout', elements: [] })).toBe(false);
     expect(ok({ elements: [] })).toBe(false);

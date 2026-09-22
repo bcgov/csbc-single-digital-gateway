@@ -127,7 +127,7 @@ describe('FormStudio document lifecycle', () => {
       render(<FormStudio loadDocument={load} />);
 
       expect(
-        await screen.findByText('The root element must be a Form or a Flow.'),
+        await screen.findByText('The root element must be a Form, a Service or a Flow.'),
       ).toBeInTheDocument();
     });
 

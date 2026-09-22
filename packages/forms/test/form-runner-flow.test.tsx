@@ -606,10 +606,11 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       expect(source).toMatch(/from ['"]\.\.\/xyflow\/flow-elements['"]/);
     });
 
-    it('keeps the Flow entry REPLACED, not added, in a set of 7 (rule 43)', () => {
+    it('keeps the Flow entry REPLACED, not added, in a set of 8 (rule 43)', () => {
       // 6 until doc 212 added Section. What rule 43 pins is that the Flow entry replaced one rather than
       // joining them, which is the `matching('Flow')` check below, not the total.
-      expect(defaults.layoutRenderers).toHaveLength(7);
+      // 7 until doc 215 added Service.
+      expect(defaults.layoutRenderers).toHaveLength(8);
     });
   });
 });

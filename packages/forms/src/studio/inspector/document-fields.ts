@@ -1,6 +1,6 @@
 import { FORM_DESCRIPTION_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
 import { richTextIsEmpty, richTextValue } from '../../renderers/ui/rich-text-value';
-import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
+import { isPageRoot } from '../../renderers/gridstack/grid-layouts';
 import { FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
 import { startStage } from './field-schemas';
 import { optionsOf, orCleared, setElement, withOption } from './inspector-edits';
@@ -48,7 +48,9 @@ export const DOCUMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'formDescription',
     section: 'general',
     label: 'Description',
-    applies: (ctx) => ctx.element.type === FORM_TYPE,
+    // Doc 215 rule 17: a Service takes the same Description. ONE predicate with the Title field above (rule 4) —
+    // adding a boundary to one and not the other would give it a Title and no Description.
+    applies: (ctx) => isPageRoot(ctx.element.type),
     /**
      * Doc 207 rules 30-31: RICH content now. The field schema is the rich text property shape, which is
      * what makes the inspector's own JSONForms dispatch the rich text control — the inspector reuses the

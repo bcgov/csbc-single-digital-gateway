@@ -2,7 +2,7 @@ import { JsonForms } from '@jsonforms/react';
 import { useCallback, useMemo, useState } from 'react';
 import * as defaults from '../renderers/default/index';
 import { FillPage } from '../renderers/default/fill-page';
-import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
+import { isPageRoot } from '../renderers/gridstack/grid-layouts';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import { PLAIN_CONFIG } from '../renderers/ui/control-presentation';
 import type { SubmissionViewProps } from '../types/index';
@@ -29,7 +29,8 @@ const NO_STAGES: readonly string[] = [];
 
 export function SubmissionView({ schema, uischema, data }: SubmissionViewProps) {
   const isFlow = uischema.type === FLOW_TYPE;
-  const isForm = uischema.type === FORM_TYPE;
+  // Doc 215 rule 16: a Service root reads back as answers exactly as a Form root does.
+  const isPage = isPageRoot(uischema.type);
 
   /**
    * Rule 18: the ONLY state — which page is on screen. Seeded from the document once, so a re-render never
@@ -94,7 +95,7 @@ export function SubmissionView({ schema, uischema, data }: SubmissionViewProps) 
 
   // Rule 15: the runner's own words for the same condition — a document this cannot show is not a different
   // problem here than it is there.
-  if (!isFlow && !isForm) {
+  if (!isFlow && !isPage) {
     return (
       <p role="alert" data-slot="submission-view-root-error" className="text-sm text-destructive">
         {ROOT_MESSAGE}
