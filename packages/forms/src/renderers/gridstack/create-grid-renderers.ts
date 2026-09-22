@@ -8,6 +8,7 @@ import { FORM_TYPE, GRID_LAYOUT_TYPES, SECTION_TYPE, type GridLayoutKind } from 
 import { createSectionRenderer } from './section-renderer';
 import { GRID_ELEMENT_COMPONENT } from './grid-options';
 import { createGridLayoutRenderer } from './grid-renderer';
+import { installGrabOffsetClamp } from './grid-grab-offset';
 import { installGridUpdateGuard } from './grid-update-guard';
 
 export const gridTester: RankedTester = rankWith(1, uiTypeIs(GRID_LAYOUT_TYPES.grid));
@@ -50,6 +51,9 @@ export function createGridRenderers({
 }: GridRenderersOptions = {}): RendererSet {
   // Doc 183 rule 15b: every grid's items may be updated with a live, cyclic mid-drag node.
   installGridUpdateGuard();
+  // Doc 190 B1: gridstack picks the grid by the CURSOR but the cell by the HELPER's top-left. Without this a
+  // tall element grabbed below its top lands in the PARENT of the layout the pointer is over.
+  installGrabOffsetClamp();
   const componentMap = buildComponentMap(components);
   const rendererFor = (layout: GridLayoutKind) =>
     createGridLayoutRenderer(componentMap, gridOptions, className, layout);
