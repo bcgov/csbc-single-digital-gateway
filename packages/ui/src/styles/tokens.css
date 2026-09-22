@@ -28,7 +28,19 @@
   --app-secondary: var(--bcds-surface-color-secondary-button-default);
   --app-secondary-foreground: var(--bcds-typography-color-secondary);
 
-  --app-muted: var(--bcds-typography-color-primary-invert);
+  /*
+   * A SURFACE, not a typography colour. This read `--bcds-typography-color-primary-invert` — white text on a
+   * dark background — which resolves to #ffffff, exactly `--app-background`. Everything that uses `bg-muted`
+   * as a subtle surface was therefore painting white on white and disappearing: the Tabs track and its active
+   * pill, and `table`, `progress`, `kbd`, `button-group`, `input-group`, `drawer`, `combobox`,
+   * `navigation-menu`, `item`, `empty` and `alert-dialog`.
+   *
+   * Every other entry in this block is a surface paired with its text, and `--app-muted-foreground` was
+   * already correct; only the surface half was wrong. `theme-gray-20` is the same token `--app-sidebar-accent`
+   * uses for the same "subtle surface" role, and it is a visible step under a white `bg-background` pill,
+   * which `background-light-gray` (#faf9f8) would not be.
+   */
+  --app-muted: var(--bcds-theme-gray-20);
   --app-muted-foreground: var(--bcds-typography-color-secondary);
 
   --app-accent: var(--bcds-surface-color-background-light-blue);
