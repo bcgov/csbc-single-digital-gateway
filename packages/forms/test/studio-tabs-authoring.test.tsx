@@ -767,9 +767,13 @@ describe('found by hand (rules 35-38)', () => {
   });
 
   it('gives a Tab an inspector Label (rule 36)', () => {
-    const tab = { type: 'Tab', label: 'Tab 1', elements: [{ type: 'TabContent', elements: [] }] };
-    const label = INSPECTOR_FIELDS.find((field) => field.key === 'label');
-    const ctx = { element: tab, layoutKind: undefined } as unknown as InspectorContext;
+    const element = {
+      type: 'Tab',
+      label: 'Tab 1',
+      elements: [{ type: 'TabContent', elements: [] }],
+    };
+    const label = INSPECTOR_FIELDS.find((entry) => entry.key === 'label');
+    const ctx = { element, layoutKind: undefined } as unknown as InspectorContext;
 
     // The layout kind sits on the TabContent while the NAME sits on the Tab, so the generic Label field —
     // which applies to a Control, a Flow element, or anything with a layoutKind — matched none of the three
@@ -871,18 +875,18 @@ describe('found by hand (rules 35-38)', () => {
     const ids = createElementIds();
     const uischema = tabsDocument();
     const tabsEl = (uischema as Node).elements?.[0] as Node;
-    const tab = tabsEl.elements?.[0] as Node;
-    const panel = tab.elements?.[0] as Node;
+    const firstTab = tabsEl.elements?.[0] as Node;
+    const panel = firstTab.elements?.[0] as Node;
 
     // Neither a Tabs nor a Tab is a layout kind, so the old "selection if it is a layout, else its parent"
     // walked UP to something that could hold nothing and the insert was refused — a panel with no way in.
-    expect(addTargetId(uischema, ids.idOf(tab), ids)).toBe(ids.idOf(panel));
+    expect(addTargetId(uischema, ids.idOf(firstTab), ids)).toBe(ids.idOf(panel));
     expect(addTargetId(uischema, ids.idOf(tabsEl), ids)).toBe(ids.idOf(panel));
 
     const result = insertElement(
       { schema, uischema },
       'text',
-      { gridId: addTargetId(uischema, ids.idOf(tab), ids) },
+      { gridId: addTargetId(uischema, ids.idOf(firstTab), ids) },
       ids,
       () => 'newField',
     );
@@ -906,8 +910,8 @@ describe('found by hand (rules 35-38)', () => {
   it("keys the Component field 'tabsComponent', not the reader's name (rule 38)", () => {
     // The rename sweep turned the KEY into `tabsComponentOf`, the reader function's name, because both matched
     // the same pattern. It typechecks and the key is only ever compared to itself, so nothing failed.
-    expect(TAB_FIELDS.map((field) => field.key)).toContain('tabsComponent');
-    expect(TAB_FIELDS.map((field) => field.key)).not.toContain('tabsComponentOf');
+    expect(TAB_FIELDS.map((entry) => entry.key)).toContain('tabsComponent');
+    expect(TAB_FIELDS.map((entry) => entry.key)).not.toContain('tabsComponentOf');
   });
 
   it('offers a Delete on EVERY tab under an editor, which asks before removing (rule 18)', () => {
