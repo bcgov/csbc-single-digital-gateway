@@ -77,9 +77,10 @@ const renderStudio = (uischema: UISchemaElement = FLOW) =>
 
 describe('Form Studio Flow root (doc 195)', () => {
   describe('renderer set (rule 20)', () => {
-    // Doc 199 rule 17: the Condition is a third xyflow entry, so the set grows to ui + 7.
-    it('renders/studio spreads the xyflow layout renderers, framed: ui + 7 layout entries', () => {
-      expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 7);
+    // Doc 199 rule 17: the Condition is a third xyflow entry, so the set grew to ui + 7; doc 212's Section
+    // makes it ui + 8.
+    it('renders/studio spreads the xyflow layout renderers, framed: ui + 8 layout entries', () => {
+      expect(studio.layoutRenderers).toHaveLength(ui.layoutRenderers.length + 8);
       const [flowEntry, stageEntry, conditionEntry] = studio.layoutRenderers.slice(-3);
       expect(flowEntry?.tester).toBe(xyflow.layoutRenderers[0]?.tester);
       expect(stageEntry?.tester).toBe(xyflow.layoutRenderers[1]?.tester);

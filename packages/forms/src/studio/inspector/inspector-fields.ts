@@ -21,7 +21,9 @@ import {
 } from './inspector-edits';
 import { CONTENT_FIELDS } from './content-fields';
 import { DOCUMENT_FIELDS } from './document-fields';
+import { optionField, propertyField, type Applies } from './field-factory';
 import { LAYOUT_FIELDS } from './layout-fields';
+import { SECTION_FIELDS } from './section-fields';
 import { componentsOf, currentComponent } from './control-components';
 import {
   HIDE_WHEN_MASKED,
@@ -110,49 +112,6 @@ const hasProperty = (ctx: InspectorContext) => ctx.propertyKey !== undefined;
 const isText = (ctx: InspectorContext) => ctx.controlKind === 'text';
 const isNumber = (ctx: InspectorContext) => ctx.controlKind === 'number';
 const STEP: JsonSchema = { type: 'number', exclusiveMinimum: 0 };
-
-type Applies = (ctx: InspectorContext) => boolean;
-type Read = (value: unknown) => unknown;
-
-/** A setting stored in the bound property under its key, e.g. `maxLength`. */
-function propertyField(
-  key: string,
-  section: SectionId,
-  label: string,
-  applies: Applies,
-  schema: JsonSchema,
-  read: Read,
-): InspectorField {
-  return {
-    key,
-    section,
-    label,
-    applies,
-    schema: () => schema,
-    read: (ctx) => read(ctx.property?.[key as keyof JsonSchema]),
-    write: (ctx, edit, value) => setProperty(ctx, edit, key, orCleared(value)),
-  };
-}
-
-/** A setting stored in the element's `options` under its key. */
-function optionField(
-  key: string,
-  section: SectionId,
-  label: string,
-  applies: Applies,
-  schema: JsonSchema,
-  read: Read,
-): InspectorField {
-  return {
-    key,
-    section,
-    label,
-    applies,
-    schema: () => schema,
-    read: (ctx) => read(optionsOf(ctx.element)[key]),
-    write: (_ctx, edit, value) => setElement(edit, withOption(edit.element, key, orCleared(value))),
-  };
-}
 
 /** Rule 25: text and number controls, and a choice unless it renders as a radio group. */
 const takesPlaceholder: Applies = (ctx) =>
@@ -289,6 +248,8 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   optionField('size', 'appearance', 'Heading size', isHeading, wholeNumbers(1, 6), finite),
   // Columns, Gap and Dividers (doc 194 rule 18).
   ...LAYOUT_FIELDS,
+  // Doc 212 rules 20-22: after the generic layout settings, since a Section already has Label and Gap from them.
+  ...SECTION_FIELDS,
   {
     key: 'width',
     section: 'layout',

@@ -2,6 +2,7 @@ import type { BaseUISchemaElement, ControlElement, Layout } from '@jsonforms/cor
 import type { HeadingLevel } from '@repo/ui/heading';
 import type { ComponentMap, GridStackOptions, GridStackWidget } from 'gridstack/dist/react';
 import type { LayoutGap } from '../renderers/gridstack/layout-gap';
+import type { SectionInset, SectionVariant } from '../renderers/gridstack/section-options';
 
 /** `{ type: 'Heading' }` — a display element rendered by `@repo/ui`'s `Heading` (doc 180). */
 export interface HeadingElement extends BaseUISchemaElement {
@@ -33,6 +34,30 @@ export interface RichContentElement {
 
 export interface SeparatorElement extends BaseUISchemaElement {
   type: 'Separator';
+}
+
+/**
+ * `{ type: 'Section' }` — a titled, nestable division inside a page (doc 212).
+ *
+ * It lays its children out exactly as a `VerticalLayout` does, because it wraps the same renderer: `label` is the
+ * heading (absent or empty renders none), `options.description` is rich content under it, and `variant` decides
+ * whether a box is drawn around the lot. The heading LEVEL is derived from nesting depth and is never authored
+ * (rule 9), so there is no `level` key here.
+ */
+export interface SectionElement extends Layout {
+  type: 'Section';
+  label?: string;
+  options?: {
+    /** Rich content under the heading — the same shape a Form's description takes (doc 207). */
+    description?: unknown;
+    /** Rule 13: `container` draws a box; anything else, including absent, reads as `plain`. */
+    variant?: SectionVariant;
+    /** Rule 15: the container's padding. Read ONLY by `container` (rule 16). */
+    inset?: SectionInset;
+    /** The space between children, exactly as any vertical layout takes it. */
+    gap?: LayoutGap;
+    [key: string]: unknown;
+  };
 }
 
 /** Options every `renderers/ui` control reads. Values of the wrong type are ignored (doc 182). */

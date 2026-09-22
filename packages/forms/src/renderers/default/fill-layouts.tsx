@@ -9,7 +9,8 @@ import {
 import { JsonFormsDispatch, withJsonFormsLayoutProps } from '@jsonforms/react';
 import type { ComponentProps, CSSProperties } from 'react';
 import { createFormRenderer, FillFormTitle } from '../gridstack/form-renderer';
-import { dividersOf, FORM_TYPE, GRID_LAYOUT_TYPES } from '../gridstack/grid-layouts';
+import { createSectionRenderer } from '../gridstack/section-renderer';
+import { dividersOf, FORM_TYPE, GRID_LAYOUT_TYPES, SECTION_TYPE } from '../gridstack/grid-layouts';
 import { GAP_CLASS, GAP_REM, layoutGapOf } from '../gridstack/layout-gap';
 import { LayoutNestingContext } from '../gridstack/layout-nesting';
 import { FillPage } from './fill-page';
@@ -141,6 +142,9 @@ function FillForm(props: ComponentProps<typeof FillFormInner>) {
   );
 }
 
+/** Doc 212: the Section around the very same column renderer, with no page chrome of its own. */
+const FillSection = createSectionRenderer(FillStackRenderer);
+
 /** Rule 3: one entry per layout type — the Form a fragment around the column (doc 192 rule 4). */
 export const fillLayoutRenderers: readonly JsonFormsRendererRegistryEntry[] = Object.freeze([
   {
@@ -157,4 +161,7 @@ export const fillLayoutRenderers: readonly JsonFormsRendererRegistryEntry[] = Ob
     tester: rankWith(1, uiTypeIs(FORM_TYPE)),
     renderer: FillForm,
   },
+  // Doc 212 rules 1-2: a Section wraps the SAME column renderer a VerticalLayout uses, so there is no second
+  // column implementation to drift. APPENDED — `renderers-default*.test` pin this list's length.
+  { tester: rankWith(1, uiTypeIs(SECTION_TYPE)), renderer: FillSection },
 ]);

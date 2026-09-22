@@ -1,4 +1,5 @@
 import { LAYOUT_GAPS } from '../../../renderers/gridstack/layout-gap';
+import { SECTION_INSETS, SECTION_VARIANTS } from '../../../renderers/gridstack/section-options';
 import { deepFreeze } from './deep-freeze';
 import { FLOW_DEFINITIONS } from './flow-metaschema';
 
@@ -12,14 +13,33 @@ const ELEMENTS = {
 } as const;
 
 // Doc 194 rule 12: a row's children are any element but a Separator, which would take one of its columns.
+// Doc 212 rule 5: nor a Section — it sits in vertical contexts only, and the metaschema restates the runtime rule
+// so the code editor refuses what a drag would refuse.
 const ROW_ELEMENTS = {
   description:
-    'The child elements, in order. A Separator is not allowed in a row: set options.dividers instead.',
+    'The child elements, in order. A Separator is not allowed in a row: set options.dividers instead. A Section is not allowed in a row either.',
   type: 'array',
   items: {
     allOf: [
       { $ref: '#/definitions/element' },
       { not: { properties: { type: { const: 'Separator' } }, required: ['type'] } },
+      { not: { properties: { type: { const: 'Section' } }, required: ['type'] } },
+    ],
+  },
+} as const;
+
+/**
+ * Doc 212 rules 4-5: a Grid's cells take any element but a Section, for the same reason a row does — a Section is
+ * a vertical division of a page, and the runtime gate (`allowedInLayout`) refuses it in both. Stated separately
+ * from `ROW_ELEMENTS` so a row keeps its own Separator wording.
+ */
+const GRID_ELEMENTS = {
+  description: 'The child elements, in order. A Section is not allowed in a grid.',
+  type: 'array',
+  items: {
+    allOf: [
+      { $ref: '#/definitions/element' },
+      { not: { properties: { type: { const: 'Section' } }, required: ['type'] } },
     ],
   },
 } as const;
@@ -85,7 +105,7 @@ const HEADING = whenType('Heading', {
 const GRID = whenType('Grid', {
   required: ['elements'],
   properties: {
-    elements: ELEMENTS,
+    elements: GRID_ELEMENTS,
     options: {
       description: 'Grid options. Children are placed with options.gridItem.',
       type: 'object',
@@ -113,6 +133,41 @@ const VERTICAL_LAYOUT = whenType('VerticalLayout', {
   properties: {
     elements: ELEMENTS,
     options: { description: 'Column options.', type: 'object', properties: { gap: GAP } },
+  },
+});
+
+// Doc 212 rules 1-3, 13-16: a titled division inside a page. Its `elements` are a VerticalLayout's, because it IS
+// one — the type only adds the heading, the description and the box.
+const SECTION = whenType('Section', {
+  required: ['elements'],
+  properties: {
+    elements: ELEMENTS,
+    options: {
+      description: 'Section options.',
+      type: 'object',
+      properties: {
+        gap: GAP,
+        variant: {
+          description:
+            'plain (default) draws no box; container draws a bordered, grey panel around the section.',
+          enum: SECTION_VARIANTS,
+        },
+        inset: {
+          description:
+            "The container's padding: xs 0.25rem, sm 0.5rem, md 1rem, lg 1.5rem (default), xl 2rem. Read only when variant is container.",
+          enum: SECTION_INSETS,
+        },
+        // Doc 207's shape, verbatim: rich content, never a plain string. Accepting both would let an author
+        // save a description that renders nothing.
+        description: {
+          description:
+            'A description shown under the section heading, as a Lexical editor state. Rich content, not plain text.',
+          type: 'object',
+          required: ['root'],
+          properties: { root: { description: 'The editor state root node.', type: 'object' } },
+        },
+      },
+    },
   },
 });
 
@@ -306,6 +361,7 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
             'Heading',
             'Separator',
             'RichContent',
+            'Section',
           ],
         },
         label: {
@@ -320,7 +376,7 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
           properties: { gridItem: { $ref: '#/definitions/gridItem' } },
         },
       },
-      allOf: [HEADING, RICH_CONTENT, GRID, VERTICAL_LAYOUT, HORIZONTAL_LAYOUT, CONTROL],
+      allOf: [HEADING, RICH_CONTENT, GRID, VERTICAL_LAYOUT, HORIZONTAL_LAYOUT, SECTION, CONTROL],
     },
     gridItem: {
       description:

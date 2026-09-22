@@ -34,6 +34,7 @@ export type {
   PaletteGroupElement,
   PaletteItemElement,
   RadioGroupControlElement,
+  SectionElement,
   SeparatorElement,
   StageElement,
   StagePosition,

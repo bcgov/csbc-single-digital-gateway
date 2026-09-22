@@ -13,6 +13,7 @@ import {
   mdiRadioboxMarked,
   mdiTextLong,
   mdiToggleSwitchOutline,
+  mdiViewAgendaOutline,
   mdiViewColumnOutline,
   mdiViewGridOutline,
   mdiViewSequentialOutline,
@@ -128,6 +129,17 @@ const DEFINITIONS: readonly TemplateDefinition[] = Object.freeze(
         build: () => ({
           element: element({ type: 'HorizontalLayout', options: { columns: 2 }, elements: [] }),
         }),
+      },
+      {
+        key: 'section',
+        group: 'layout',
+        label: 'Section',
+        icon: mdiViewAgendaOutline,
+        keywords: ['heading', 'group', 'panel', 'divide'],
+        // Doc 212 rule 19: NO authored options — a new Section is entirely defaults, so the inspector shows what
+        // it is rather than what it was stamped with. (A HorizontalLayout authors `columns` because a row with an
+        // unstated column count would be a different shape on every drop.)
+        build: () => ({ element: element({ type: 'Section', elements: [] }) }),
       },
       {
         key: 'text',

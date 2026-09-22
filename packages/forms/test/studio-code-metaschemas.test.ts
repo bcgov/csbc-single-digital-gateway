@@ -397,12 +397,19 @@ describe('Form Studio code metaschemas (doc 191)', () => {
       expect(delivery).toBeDefined();
       // Doc 198 rule 19: the Flow group is gone, so every remaining template is a layout one.
       for (const { key } of PALETTE_TEMPLATES) {
-        for (const gridId of [
-          addTargetId(document.uischema, null, ids),
-          ids.idOf(delivery ?? {}),
-        ]) {
+        for (const [gridId, kind] of [
+          [addTargetId(document.uischema, null, ids), 'vertical'],
+          [ids.idOf(delivery ?? {}), 'grid'],
+        ] as const) {
           const result = insertElement(document, key, { gridId }, ids, newPropertyKey);
-          expect(result.inserted, `${key} into ${gridId}`).toBeDefined();
+          // Doc 212 rule 4 ends the blanket "every template fits everywhere": a Section sits in VERTICAL
+          // contexts only, so the sample's Grid refuses one. Asserted rather than skipped — the placement rule
+          // and the metaschema must agree, and a refusal that stopped happening should fail here.
+          if (key === 'section' && kind === 'grid') {
+            expect(result.inserted, `${key} into ${kind}`).toBeUndefined();
+            continue;
+          }
+          expect(result.inserted, `${key} into ${kind}`).toBeDefined();
           document = { schema: result.schema, uischema: result.uischema };
         }
       }

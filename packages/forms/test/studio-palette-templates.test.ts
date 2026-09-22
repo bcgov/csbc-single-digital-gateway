@@ -32,6 +32,8 @@ describe('catalogue (rule 16)', () => {
       ['layout', 'grid', 'Grid'],
       ['layout', 'vertical-layout', 'Vertical layout'],
       ['layout', 'horizontal-layout', 'Horizontal layout'],
+      // Doc 212 rule 19: the Section joins the layout group, last, so the existing keys keep their order.
+      ['layout', 'section', 'Section'],
       ['fields', 'text', 'Text'],
       ['fields', 'textarea', 'Textarea'],
       ['fields', 'rich-text', 'Rich text'],

@@ -67,7 +67,8 @@ describe('gridstack Form renderer (doc 192)', () => {
   describe('dispatch (rule 2)', () => {
     it('adds a fourth layout entry after Grid, VerticalLayout and HorizontalLayout', () => {
       const entries = createGridRenderers().layoutRenderers;
-      expect(entries).toHaveLength(4);
+      // Five since doc 212 appended the Section entry AFTER this one, which is why the Form is still at [3].
+      expect(entries).toHaveLength(5);
       expect(entries[3]?.tester).toBe(formTester);
       expect(entries[3]?.tester({ type: 'Form' }, schema, testerContext)).toBe(1);
       expect(entries[0]?.tester({ type: 'Grid' }, schema, testerContext)).toBe(1);

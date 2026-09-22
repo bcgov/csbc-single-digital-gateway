@@ -173,8 +173,11 @@ export function FillFormTitle({ uischema }: FormTitleProps) {
  * Doc 201 rule 5: a `rule` that hides the Form hides its title too. The layout renderer computes `visible` for itself
  * and returns null; the title is its sibling, so it asks the same question the same way — `ctxToLayoutProps` is exactly
  * what `withJsonFormsLayoutProps` maps the layout's props with, so the two can never disagree.
+ *
+ * Doc 212 rule 12: SHARED with the Section, which has a title beside a layout for exactly the same reason. Named for
+ * the job rather than for the Form, since it is now asked by both.
  */
-function useFormVisible({ uischema, schema, path }: OwnPropsOfRenderer): boolean {
+export function useLayoutVisible({ uischema, schema, path }: OwnPropsOfRenderer): boolean {
   const ctx = useJsonForms();
   if (uischema === undefined || ctx.core === undefined) return false;
   return ctxToLayoutProps(ctx, {
@@ -203,7 +206,7 @@ export function createFormRenderer<P extends OwnPropsOfRenderer>(
 ): ComponentType<P> {
   function FormRenderer(props: P) {
     const nested = useContext(LayoutNestingContext) !== null;
-    const visible = useFormVisible(props);
+    const visible = useLayoutVisible(props);
     if (nested) {
       return (
         <p role="alert" data-slot="form-nested-error" className="text-sm text-destructive">

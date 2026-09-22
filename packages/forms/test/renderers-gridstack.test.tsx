@@ -65,12 +65,13 @@ function renderGrid(uischema: object, set: RendererSet = createGridRenderers(), 
 
 describe('createGridRenderers', () => {
   // Rule 6, amended by rule 23 and doc 192 rule 2: Grid, VerticalLayout, HorizontalLayout and Form entries.
-  it('returns a RendererSet with four layout entries and empty cells, controlRenderers, displayRenderers', () => {
+  it('returns a RendererSet with five layout entries and empty cells, controlRenderers, displayRenderers', () => {
     const set = createGridRenderers();
     expect(set.cells).toEqual([]);
     expect(set.controlRenderers).toEqual([]);
     expect(set.displayRenderers).toEqual([]);
-    expect(set.layoutRenderers).toHaveLength(4);
+    // Grid, VerticalLayout, HorizontalLayout, Form (doc 192) and Section (doc 212).
+    expect(set.layoutRenderers).toHaveLength(5);
     expect(set.layoutRenderers[0]?.renderer).toBeDefined();
   });
 

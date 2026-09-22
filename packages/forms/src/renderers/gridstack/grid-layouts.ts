@@ -14,12 +14,22 @@ export const GRID_LAYOUT_TYPES: Readonly<Record<GridLayoutKind, string>> = Objec
 /** The root-only Form element (doc 192): a `vertical` layout identified by its own type. */
 export const FORM_TYPE = 'Form';
 
+/**
+ * Doc 212 rule 1: the titled, nestable division INSIDE a page — a `vertical` layout with a heading and a
+ * description, identified by its own type exactly as a Form is.
+ */
+export const SECTION_TYPE = 'Section';
+
 const KIND_BY_TYPE: ReadonlyMap<string, GridLayoutKind> = new Map([
   ...(Object.keys(GRID_LAYOUT_TYPES) as GridLayoutKind[]).map(
     (kind) => [GRID_LAYOUT_TYPES[kind], kind] as const,
   ),
   // Doc 192 rule 3: every kind-keyed decision treats a Form exactly like a VerticalLayout.
   [FORM_TYPE, 'vertical'] as const,
+  // Doc 212: and a Section too. THIS MAP, never `GRID_LAYOUT_TYPES` — that one is one type per kind, read by
+  // the axis testers and by `fill-layouts`, so a second entry there would DISPLACE `VerticalLayout`. Nothing
+  // type-checks the difference, which is why `test/studio-section-placement.test.tsx` pins both halves.
+  [SECTION_TYPE, 'vertical'] as const,
 ]);
 
 /** The layout kind rendering `type`, or `undefined` for anything that is not a gridstack layout. */
@@ -50,9 +60,14 @@ const NEVER_IN_LAYOUT: ReadonlySet<string> = new Set([
  * Whether an element of `type` may sit in a layout of `kind` (doc 194 rule 7, doc 195 rule 16): everything may, except a
  * Form, Flow or Stage in any layout, and a Separator in a HorizontalLayout, where it would take one of the row's columns
  * (rows draw `options.dividers` instead).
+ *
+ * Doc 212 rules 4-5: a Section sits in VERTICAL contexts only — the root, a VerticalLayout, or another Section
+ * (whose own kind is `vertical`). A heading, a description and a stack of fields inside one cell of a row reads
+ * as a mistake, and the row engine (doc 180 rule 30b) would have to size the whole block as a single-line item.
  */
 export function allowedInLayout(type: string, kind: GridLayoutKind): boolean {
   if (NEVER_IN_LAYOUT.has(type)) return false;
+  if (type === SECTION_TYPE) return kind === 'vertical';
   return !(type === SEPARATOR_TYPE && kind === 'horizontal');
 }
 

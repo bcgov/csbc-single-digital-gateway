@@ -4,7 +4,8 @@ import type { GridRenderersOptions } from '../../types/elements';
 import type { RendererSet } from '../../types/renderer-set';
 import { createFormRenderer, StudioFormTitle } from './form-renderer';
 import { GridElementDispatch } from './grid-element';
-import { FORM_TYPE, GRID_LAYOUT_TYPES, type GridLayoutKind } from './grid-layouts';
+import { FORM_TYPE, GRID_LAYOUT_TYPES, SECTION_TYPE, type GridLayoutKind } from './grid-layouts';
+import { createSectionRenderer } from './section-renderer';
 import { GRID_ELEMENT_COMPONENT } from './grid-options';
 import { createGridLayoutRenderer } from './grid-renderer';
 import { installGridUpdateGuard } from './grid-update-guard';
@@ -17,6 +18,8 @@ export const horizontalLayoutTester: RankedTester = rankWith(
 );
 /** Doc 192 rule 2: the root-only Form, rendered by the vertical layout. */
 export const formTester: RankedTester = rankWith(1, uiTypeIs(FORM_TYPE));
+/** Doc 212 rule 1: the Section, also rendered by the vertical layout — a second type of the same kind. */
+export const sectionTester: RankedTester = rankWith(1, uiTypeIs(SECTION_TYPE));
 
 // Registry order (doc 180 rule 23, doc 192 rule 2). The types differ, so no two testers ever tie on one element.
 const LAYOUT_TESTERS: readonly (readonly [GridLayoutKind, RankedTester])[] = [
@@ -61,6 +64,9 @@ export function createGridRenderers({
         tester: formTester,
         renderer: createFormRenderer(rendererFor('vertical'), StudioFormTitle, true),
       },
+      // Doc 212 rules 1-2: the same vertical renderer the kind already has, inside a titled shell. APPENDED, like
+      // the Form entry — `renderers-studio.test.tsx` reaches these by position from the end.
+      { tester: sectionTester, renderer: createSectionRenderer(rendererFor('vertical')) },
     ],
   };
 }

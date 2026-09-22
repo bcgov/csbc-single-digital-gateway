@@ -70,8 +70,9 @@ describe('renderers/default Flow and Stage (rule 19, amended by doc 202)', () =>
     expect(screen.queryByText('One')).toBeNull();
   });
 
-  it('holds 6 layout entries, exactly one matching Flow and one matching Stage', () => {
-    expect(defaults.layoutRenderers).toHaveLength(6);
+  it('holds 7 layout entries, exactly one matching Flow and one matching Stage', () => {
+    // 6 before doc 212's Section.
+    expect(defaults.layoutRenderers).toHaveLength(7);
     for (const type of ['Flow', 'Stage']) {
       const matching = renderers().filter(
         (entry) => entry.tester({ type }, schema, testerContext) > 0,
