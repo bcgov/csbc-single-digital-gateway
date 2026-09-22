@@ -3,6 +3,7 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Input } from '@repo/ui/input';
 import { ControlField } from './control-field';
 import { maskConfig, stringInputProps } from './control-options';
+import { plainText } from './control-plain-value';
 import { maskedValue, useMaskRef } from './mask-input';
 
 /** Any string control — `options.component` absent, `'input'` or unrecognised (doc 182 rule 8). */
@@ -24,7 +25,12 @@ function InputControl(props: ControlProps) {
   const { mask, unmasked } = maskConfig(uischema.options);
   const maskRef = useMaskRef(mask);
   return (
-    <ControlField control={props} maxLength={inputProps.maxLength}>
+    // Doc 211 rules 11-12: the stored string, re-masked when the field stores raw characters.
+    <ControlField
+      control={props}
+      maxLength={inputProps.maxLength}
+      plainValue={plainText(data, uischema.options)}
+    >
       {(input) => (
         <Input
           {...input}

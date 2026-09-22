@@ -18,6 +18,8 @@ import {
 import { useMemo } from 'react';
 import type { ChoiceOption } from './choice-control';
 import { ControlField } from './control-field';
+import { PlainList } from './control-plain-field';
+import { plainMultiChoice } from './control-plain-value';
 import { choiceInputProps } from './control-options';
 import {
   chosenOptions,
@@ -55,7 +57,8 @@ function MultiComboboxControl(props: ControlProps) {
 
   return (
     // Doc 202 rule 50: a Combobox has no HTML read-only, so read-only falls back to disabled.
-    <ControlField control={props} noReadOnly>
+    // Doc 211 rule 11: the chosen labels as a list, in authoring order.
+    <ControlField control={props} noReadOnly plainValue={PlainList(plainMultiChoice(schema, data))}>
       {(input) => (
         <Combobox
           items={options}

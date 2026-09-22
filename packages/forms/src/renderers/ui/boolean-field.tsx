@@ -2,6 +2,9 @@ import { computeLabel, type ControlProps } from '@jsonforms/core';
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@repo/ui/field';
 import type { MouseEvent, ReactNode } from 'react';
 import { controlWiring, type ControlInputProps } from './control-field';
+import { PlainField } from './control-plain-field';
+import { plainBoolean } from './control-plain-value';
+import { presentationOf } from './control-presentation';
 
 /**
  * Doc 188 rule 23: a boolean field that must be TICKED is `const: true` on its property (doc 187 rule 29) — Ajv's own
@@ -41,6 +44,10 @@ interface BooleanFieldProps {
  */
 export function BooleanField({ control, placement, children }: BooleanFieldProps) {
   const { label, required, description, errors, enabled, visible, config } = control;
+  // Doc 211 rule 5: both boolean controls read Yes or No, so the value is computed here rather than passed in
+  // by each of them — there is nothing for a Checkbox and a Switch to disagree about once neither is drawn.
+  if (presentationOf(config) === 'plain')
+    return <PlainField control={control} value={plainBoolean(control.data)} />;
   if (!visible) return null;
   // Rule 23: a must-be-checked field reads as required to a citizen — asterisk included — and says why in plain words.
   const ticked = mustBeChecked(control);

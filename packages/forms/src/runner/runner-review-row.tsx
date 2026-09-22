@@ -35,6 +35,7 @@ export function ReviewRow({
   open,
   current,
   locked,
+  reached = false,
   onOpen,
 }: {
   readonly label: string;
@@ -44,9 +45,17 @@ export function ReviewRow({
   readonly current: boolean;
   /** Rule 48b: the review sits after the last Form, so it opens exactly when that Form does. */
   readonly locked: boolean;
+  /**
+   * Doc 211 rule 19b: whether this step has been REACHED, which decides its tone exactly as a Stage row's does.
+   *
+   * Defaults to false, which is doc 202's behaviour: while a form is being filled in, the review genuinely IS
+   * ahead until the citizen arrives at it. In a submission view nothing is ahead — every step has been taken —
+   * so a review row drawn in the `ahead` tone reads as unavailable when it is not.
+   */
+  readonly reached?: boolean;
   onOpen(): void;
 }) {
-  const tone = current ? 'reached' : 'ahead';
+  const tone = current || reached ? 'reached' : 'ahead';
 
   return (
     <li data-slot="runner-review-step" {...(current ? { 'data-current': '' } : {})}>

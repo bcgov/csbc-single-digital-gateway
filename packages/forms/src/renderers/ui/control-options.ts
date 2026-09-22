@@ -5,7 +5,8 @@ import type { JsonSchema } from '@jsonforms/core';
 // has the right type. A dropped value is an ABSENT key, never `undefined`, so the result spreads
 // straight onto a component under `exactOptionalPropertyTypes`.
 
-type AuthoredOptions = Record<string, unknown> | undefined;
+/** Doc 211 rule 8: exported so the plain-value formatters take the same authored bag these sanitisers do. */
+export type AuthoredOptions = Record<string, unknown> | undefined;
 
 /** Props derived for `Input` / `Textarea`. */
 export interface StringInputProps {

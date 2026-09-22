@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import { choiceOptions, isChoiceControl, type ChoiceOption } from './choice-control';
 import { ControlField } from './control-field';
 import { choiceInputProps } from './control-options';
+import { plainChoice } from './control-plain-value';
 
 /**
  * Any choice control — `options.component` absent, `'combobox'` or unrecognised. Rank 3 outranks Input, Textarea
@@ -34,7 +35,8 @@ function ComboboxControl(props: ControlProps) {
 
   return (
     // Doc 202 rule 50: a Combobox has no HTML read-only, so read-only falls back to disabled.
-    <ControlField control={props} noReadOnly>
+    // Doc 211 rule 11: the chosen option's LABEL, never the stored const.
+    <ControlField control={props} noReadOnly plainValue={plainChoice(schema, data)}>
       {(input) => (
         <Combobox
           items={options}

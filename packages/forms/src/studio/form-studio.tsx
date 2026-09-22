@@ -12,6 +12,7 @@ import { DockToggles } from './dock-toggles';
 import { useFocusAddress } from './use-focus-address';
 import { PreviewControl } from './preview-control';
 import { previewableStages } from './preview-forms';
+import { PreviewModeToggles, type PreviewMode } from './preview-mode-toggles';
 import { ViewportToggles, type PreviewViewport } from './viewport-toggles';
 import { StudioBackButton } from './studio-back-button';
 import { StudioBreadcrumbs } from './studio-breadcrumbs';
@@ -145,6 +146,11 @@ export const FormStudio: FC<FormStudioProps> = ({
   // Doc 184 rule 16: Desktop by default, and KEPT across preview sessions for this mount — unlike preview answers
   // (rule 11), a chosen size is the author's working setup, not data to discard.
   const [viewport, setViewport] = useState<PreviewViewport>('desktop');
+  // Doc 211 rule 30: Fillable by default, and RESET to it on leaving preview (user, 2026-09-21) — unlike the
+  // size (doc 184 rule 16), which is the author's working setup. Preview is for building a form to fill in, so
+  // that is the state it should always be found in; a Readable preview left over from last time would have an
+  // author pressing Preview and seeing a page with no fields on it.
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('fillable');
   const paletteActions = useMemo(() => ({ add }), [add]);
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right, selectedEdgeId);
   /**
@@ -237,6 +243,11 @@ export const FormStudio: FC<FormStudioProps> = ({
         {ready && previewing ? (
           <ViewportToggles value={viewport} onValueChange={setViewport} />
         ) : null}
+        {/* Doc 211 rule 27: between the size picker and Exit preview — the two preview settings sit together,
+            and the action that leaves preview stays last in the row. */}
+        {ready && previewing ? (
+          <PreviewModeToggles value={previewMode} onValueChange={setPreviewMode} />
+        ) : null}
         {ready ? (
           <PreviewControl
             previewing={previewing}
@@ -244,7 +255,11 @@ export const FormStudio: FC<FormStudioProps> = ({
             // drilled into a Form, Preview previews THAT Form, so there is nothing for the menu to add.
             stages={focusId === null ? previewableStages(studio.uischema, studio.ids) : NO_STAGES}
             onPreview={() => setPreviewing(true)}
-            onExit={() => setPreviewing(false)}
+            onExit={() => {
+              setPreviewing(false);
+              // Rule 30: leaving preview returns the mode to Fillable.
+              setPreviewMode('fillable');
+            }}
             onPreviewForm={previewForm}
           />
         ) : null}
@@ -291,6 +306,7 @@ export const FormStudio: FC<FormStudioProps> = ({
             rootKey={(previewing ? previewFocusId : focusId) ?? 'document'}
             previewing={previewing}
             viewport={viewport}
+            previewMode={previewMode}
             selection={port}
             editor={editor}
             flowEditor={flowEditor}

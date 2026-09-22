@@ -36,7 +36,14 @@ function RichTextControl(props: ControlProps) {
      * therefore falls back to `disabled`. This control has a better one — the view — so read-only is handled
      * here, and `disabled` keeps its own meaning.
      */
-    <ControlField control={props}>
+    // Doc 211 rule 11: the rich text control's plain value is its own read-only VIEW, not text — which is
+    // why `control-plain-value.ts` stays React-free and this one node is built here.
+    <ControlField
+      control={props}
+      {...(richTextIsEmpty(value ?? undefined)
+        ? {}
+        : { plainValue: <RichTextView value={value} /> })}
+    >
       {(input, ids) => {
         /**
          * Rule 14: READ-ONLY shows the view — the authored option or the form-level prop, either wins.

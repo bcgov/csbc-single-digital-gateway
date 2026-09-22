@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { labelOf } from '../renderers/gridstack/element-label';
 import { formDescriptionOf } from '../renderers/gridstack/form-renderer';
 import * as defaults from '../renderers/default';
+import { PLAIN_CONFIG } from '../renderers/ui/control-presentation';
 import { navigableStage, stageFormsOf } from './runner-position';
 import type { RunnerData } from './criterion-match';
 
@@ -37,6 +38,12 @@ const reviewDescription = (flow: UISchemaElement): ReactNode => {
  */
 const REVIEW_CONFIG = { readonly: true, plainFormTitle: true };
 
+/**
+ * Doc 211 rules 21, 23: the same page in the PLAIN presentation — the answers as text rather than as read-only
+ * inputs. `plainFormTitle` travels with it for rule 51b's reason, unchanged.
+ */
+const PLAIN_REVIEW_CONFIG = { ...PLAIN_CONFIG, plainFormTitle: true };
+
 // Built once at module load, exactly as the runner's own registry is: a new array per render makes JSONForms
 // re-dispatch everything below it.
 const RENDERERS = [
@@ -55,6 +62,11 @@ interface RunnerReviewProps {
    * may no longer be on their branch, so reviewing it would show them data they are not submitting.
    */
   readonly stageIds: readonly string[];
+  /**
+   * Doc 211 rule 23: how the answers are drawn. Defaults to `readonly` so doc 202's review page is unchanged
+   * by this feature; `<SubmissionView>` passes `plain`.
+   */
+  readonly presentation?: 'readonly' | 'plain';
 }
 
 /**
@@ -76,7 +88,14 @@ interface RunnerReviewProps {
  * `NoValidation` and no `onChange`: the page is read-only, so it has nothing to report and must not push errors
  * of its own into the runner's state (rule 52 — Submit's gate is unchanged, and it reads the real errors).
  */
-export function RunnerReview({ flow, schema, data, stageIds }: RunnerReviewProps) {
+export function RunnerReview({
+  flow,
+  schema,
+  data,
+  stageIds,
+  presentation = 'readonly',
+}: RunnerReviewProps) {
+  const config = presentation === 'plain' ? PLAIN_REVIEW_CONFIG : REVIEW_CONFIG;
   const stages = stageIds.flatMap((stageId) => {
     const stage = navigableStage(flow, stageId);
     return stage === undefined ? [] : [{ stageId, stage }];
@@ -109,7 +128,7 @@ export function RunnerReview({ flow, schema, data, stageIds }: RunnerReviewProps
                 data={data}
                 renderers={RENDERERS}
                 cells={defaults.cells}
-                config={REVIEW_CONFIG}
+                config={config}
                 validationMode="NoValidation"
               />
             </div>

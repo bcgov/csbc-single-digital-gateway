@@ -6,6 +6,8 @@ import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
 import { useMemo } from 'react';
 import type { ChoiceOption } from './choice-control';
 import { ControlField } from './control-field';
+import { PlainList } from './control-plain-field';
+import { plainMultiChoice } from './control-plain-value';
 import {
   chosenOptions,
   isMultiChoiceControl,
@@ -39,7 +41,8 @@ function CheckboxGroupControl(props: ControlProps) {
 
   return (
     // Doc 202 rule 50: a checkbox group has no HTML read-only, so read-only falls back to disabled.
-    <ControlField control={props} noReadOnly>
+    // Doc 211 rule 11: the same list the multi Combobox shows — one formatter for both.
+    <ControlField control={props} noReadOnly plainValue={PlainList(plainMultiChoice(schema, data))}>
       {({ id, disabled, ...described }, { labelId }) => (
         <CheckboxGroup
           id={id}

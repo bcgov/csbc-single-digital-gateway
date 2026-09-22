@@ -1,6 +1,8 @@
 import { computeLabel, type ControlProps } from '@jsonforms/core';
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@repo/ui/field';
 import type { ReactNode } from 'react';
+import { PlainField } from './control-plain-field';
+import { isReadonly, presentationOf } from './control-presentation';
 
 /** What `ControlField` hands its input: the id the label points at, plus state and aria wiring. */
 export interface ControlInputProps {
@@ -24,11 +26,12 @@ export interface ControlInputProps {
  * Doc 202 rule 50: whether this subtree is being shown read-only. It travels through JSONForms' `config` prop
  * — the channel `hideRequiredAsterisk` already uses — so a whole page turns it on without any authored uischema
  * saying so, and nothing an author wrote can accidentally set it.
+ *
+ * Doc 211 rule 2: read-only is now one END of a three-position axis (`control-presentation.ts`), and this says
+ * "not the editable one" — true for the read-only page AND the plain-text one. Re-exported here because that is
+ * where every control already looks for it.
  */
-export const isReadonly = (config: unknown): boolean =>
-  typeof config === 'object' &&
-  config !== null &&
-  (config as { readonly?: unknown }).readonly === true;
+export { isReadonly };
 
 /** The label's id, for an input named by `aria-labelledby` rather than `htmlFor` (doc 188 rule 8). */
 export interface ControlLabelIds {
@@ -45,6 +48,11 @@ interface ControlFieldProps {
    * take it, and React would warn about an unknown attribute on whatever DOM node it reached.
    */
   readonly noReadOnly?: boolean;
+  /**
+   * Doc 211 rule 8: the answer as this control formats it, used ONLY in the `plain` presentation. Optional —
+   * a control that passes none falls back to the stored value shown as itself.
+   */
+  readonly plainValue?: ReactNode;
   readonly children: (input: ControlInputProps, ids: ControlLabelIds) => ReactNode;
 }
 
@@ -114,9 +122,18 @@ function CharacterCounter({ id, length, max }: { id: string; length: number; max
  * label, description and errors stack in a `FieldContent` beside a narrow input box, which also holds the
  * counter. The Form Studio inspector uses it for number fields (doc 187 rule 9b).
  */
-export function ControlField({ control, maxLength, noReadOnly, children }: ControlFieldProps) {
+export function ControlField({
+  control,
+  maxLength,
+  noReadOnly,
+  plainValue,
+  children,
+}: ControlFieldProps) {
   const { data, label, required, description, errors, enabled, visible, config, uischema } =
     control;
+  // Doc 211 rule 5: the plain presentation has no input, so it leaves before any of the input wiring below.
+  if (presentationOf(config) === 'plain')
+    return <PlainField control={control} value={plainValue} />;
   if (!visible) return null;
   // Rule 50: `data-disabled` dims the whole Field, and JSONForms reports `enabled: false` for a read-only
   // subtree — so the flag is read through `dimmed`, which is false when the field is merely read-only. The

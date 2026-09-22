@@ -15,6 +15,9 @@ export {
   type SidebarStage,
 } from './runner-sidebar';
 export { SubmissionPreview, submissionPayload } from './submission-preview';
+// Doc 211: the fill side's second entry point — the same document, shown as answers.
+export { SubmissionView } from './submission-view';
+export { RunnerReview, REVIEW_TITLE, REVIEW_DESCRIPTION } from './runner-review';
 
 export {
   conditionEdge,

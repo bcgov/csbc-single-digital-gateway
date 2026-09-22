@@ -10,6 +10,7 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { NumberInput } from '@repo/ui/number-input';
 import { ControlField } from './control-field';
 import { numberInputProps } from './control-options';
+import { plainNumber } from './control-plain-value';
 
 /**
  * Any `type: 'number'` OR `type: 'integer'` control; `options.component: 'number'` is optional and ignored.
@@ -28,7 +29,8 @@ export const numberInputTester: RankedTester = rankWith(1, or(isNumberControl, i
 function NumberInputControl(props: ControlProps) {
   const { data, path, schema, uischema, handleChange } = props;
   return (
-    <ControlField control={props}>
+    // Doc 211 rule 11: formatted as the field formatted it, decimals and locale included.
+    <ControlField control={props} plainValue={plainNumber(data, schema, uischema.options)}>
       {(input) => (
         <NumberInput
           {...input}

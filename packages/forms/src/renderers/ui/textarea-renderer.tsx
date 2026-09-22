@@ -10,6 +10,7 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Textarea } from '@repo/ui/textarea';
 import { ControlField } from './control-field';
 import { stringInputProps } from './control-options';
+import { plainText } from './control-plain-value';
 
 /** A string control with `options.component: 'textarea'` — outranks `inputTester` (doc 182 rule 8). */
 export const textareaTester: RankedTester = rankWith(
@@ -25,7 +26,13 @@ function TextareaControl(props: ControlProps) {
   const { data, path, schema, uischema, handleChange } = props;
   const inputProps = stringInputProps(schema, uischema.options);
   return (
-    <ControlField control={props} maxLength={inputProps.maxLength}>
+    // Doc 211 rule 11: no mask is read here — a Textarea has none (doc 204 rule 8). `PlainField` keeps the
+    // line breaks.
+    <ControlField
+      control={props}
+      maxLength={inputProps.maxLength}
+      plainValue={plainText(data, undefined)}
+    >
       {(input) => (
         <Textarea
           {...input}

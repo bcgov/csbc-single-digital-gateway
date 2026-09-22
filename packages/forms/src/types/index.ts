@@ -87,6 +87,19 @@ export type FormRunnerProps = {
 };
 
 /**
+ * Props accepted by `SubmissionView` (doc 211 rules 14-16): a finished submission and the document it was made
+ * on. No callbacks — the component cannot change an answer, save a draft or submit anything, which is the
+ * difference between it and `FormRunnerProps` rather than a mode of it.
+ */
+export type SubmissionViewProps = {
+  schema: JsonSchema;
+  /** The document the answers were given on: a `Form` or a `Flow`. Any other root is refused (rule 15). */
+  uischema: UISchemaElement;
+  /** The answers, read and never written. */
+  data: Record<string, unknown>;
+};
+
+/**
  * Props accepted by `FormStudio` (doc 183 rules 1-3, doc 197 rules 7-8, doc 200 rules 1-3): the form to open, where
  * focus is, and how a document arrives and leaves.
  *

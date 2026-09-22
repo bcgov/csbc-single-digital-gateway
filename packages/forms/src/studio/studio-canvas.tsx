@@ -16,6 +16,8 @@ import { StudioEmptyState } from './document/studio-empty-state';
 import type { DocumentSessionStatus } from './document/use-document-session';
 import { STUDIO_SAMPLE_DATA } from './sample';
 import { VIEWPORT_WIDTH, type PreviewViewport } from './viewport-toggles';
+import type { PreviewMode } from './preview-mode-toggles';
+import { SubmissionView } from '../runner/submission-view';
 
 // Built once at module load — a new array per render would make JSONForms re-dispatch everything.
 const STUDIO_RENDERERS = [
@@ -46,6 +48,8 @@ export interface StudioCanvasProps {
   readonly previewing: boolean;
   /** Doc 184 rule 17: the width preview's frame is capped to. */
   readonly viewport: PreviewViewport;
+  /** Doc 211 rule 27: whether preview shows the form to FILL IN or the answers to READ. */
+  readonly previewMode: PreviewMode;
   readonly selection: StudioSelection;
   readonly editor: GridEditor;
   readonly flowEditor: FlowEditor;
@@ -71,6 +75,7 @@ export function StudioCanvas({
   rootKey,
   previewing,
   viewport,
+  previewMode,
   selection,
   editor,
   flowEditor,
@@ -126,8 +131,23 @@ export function StudioCanvas({
     // one step of a longer journey, and offering Submit there would misrepresent how a citizen reaches it.
     //
     // The document root is what separates them — a focused Form has a `Form` preview root under a `Flow` document.
+    /**
+     * Doc 211 rules 28-29: Readable shows the SAME preview root with the SAME answers, as a submission —
+     * so an author fills the form in, flips the toggle, and sees exactly what a reviewer will read back.
+     *
+     * It takes ALL THREE preview cases, including the Form focused inside a Flow that falls through the
+     * runner below: `SubmissionView` accepts a `Form` root as readily as a `Flow`, and there is no action
+     * bar here to misrepresent (rule 22), which is the one thing rule 40c's fall-through exists to avoid.
+     */
     const content =
-      previewRoot.type === FLOW_TYPE || uischema.type === FORM_TYPE ? (
+      previewMode === 'readable' ? (
+        <SubmissionView
+          key={`readable-${rootKey}`}
+          schema={schema}
+          uischema={previewRoot}
+          data={previewData}
+        />
+      ) : previewRoot.type === FLOW_TYPE || uischema.type === FORM_TYPE ? (
         <FormRunner
           key={`preview-${rootKey}`}
           schema={schema}

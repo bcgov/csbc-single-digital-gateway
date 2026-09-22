@@ -89,6 +89,11 @@ export interface RunnerSidebarProps {
   readonly reviewing?: boolean;
   /** Rule 48b: opening the review from the rail. Absent where nothing can open it (no runner). */
   onOpenReview?: () => void;
+  /**
+   * Doc 211 rule 19b: whether the review counts as REACHED. False while a form is being filled in — the review
+   * is a step still to come — and true in a submission view, where every step has already been taken.
+   */
+  readonly reviewReached?: boolean;
 }
 
 /**
@@ -110,6 +115,7 @@ export function RunnerSidebar({
   onGoTo,
   reviewing = false,
   onOpenReview,
+  reviewReached = false,
 }: RunnerSidebarProps) {
   // Rule 9e: the ONLY state this component owns, and it is presentational. Navigation state stays the runner's.
   const [open, setOpen] = useState(true);
@@ -203,6 +209,7 @@ export function RunnerSidebar({
             open={open}
             current={reviewing}
             locked={reviewLocked}
+            reached={reviewReached}
             onOpen={onOpenReview}
           />
         ) : null}

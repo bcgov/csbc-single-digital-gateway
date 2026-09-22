@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from '@repo/ui/radio-group';
 import { useMemo } from 'react';
 import { choiceOptions, isChoiceControl } from './choice-control';
 import { ControlField } from './control-field';
+import { plainChoice } from './control-plain-value';
 
 /** A choice control with `options.component: 'radio-group'` — outranks `comboboxTester` (doc 188 rule 4). */
 export const radioGroupTester: RankedTester = rankWith(
@@ -25,7 +26,8 @@ function RadioGroupControl(props: ControlProps) {
 
   return (
     // Doc 202 rule 50: a RadioGroup has no HTML read-only, so read-only falls back to disabled.
-    <ControlField control={props} noReadOnly>
+    // Doc 211 rule 11: the same label the Combobox shows — one formatter, so the two cannot disagree.
+    <ControlField control={props} noReadOnly plainValue={plainChoice(schema, data)}>
       {({ id, disabled, ...described }, { labelId }) => (
         <RadioGroup
           id={id}

@@ -247,6 +247,8 @@ describe('entering preview (rules 5-8)', () => {
 });
 
 const sizeGroup = () => screen.queryByRole('group', { name: 'Preview size' });
+const modeGroup = () => screen.queryByRole('group', { name: 'Preview mode' });
+const mode = (name: string) => within(modeGroup() as HTMLElement).getByRole('button', { name });
 const size = (name: string) => within(sizeGroup() as HTMLElement).getByRole('button', { name });
 const frame = (slot: (name: string) => HTMLElement | null) => slot('form-studio-preview-frame');
 
@@ -258,7 +260,10 @@ describe('preview size (rules 15-17)', () => {
 
     await user.click(previewToggle());
 
-    expect(previewToggle().previousElementSibling).toBe(sizeGroup());
+    // Doc 211 rule 27 AMENDS rule 15's "immediately left of the Preview toggle": the mode picker now sits
+    // between them, so the two preview SETTINGS are adjacent and the action that leaves preview stays last.
+    expect(previewToggle().previousElementSibling).toBe(modeGroup());
+    expect(modeGroup()?.previousElementSibling).toBe(sizeGroup());
     expect(
       within(sizeGroup() as HTMLElement)
         .getAllByRole('button')
@@ -382,5 +387,139 @@ describe('leaving preview (rules 9-12)', () => {
 
     expect(count('.grid-stack, .grid-stack-item')).toBe(0);
     expect(count('[data-slot="fill-layout"]')).toBeGreaterThan(1);
+  });
+});
+
+// Doc 211 rules 27-31 — the preview MODE picker: the same document as a form to fill in, or as answers to read.
+
+describe('preview mode (doc 211 rules 27-31)', () => {
+  const plainValues = (slot: (name: string) => HTMLElement | null) => [
+    ...(slot('form-studio-preview-frame')?.querySelectorAll('[data-slot="plain-field-value"]') ??
+      []),
+  ];
+
+  it('is offered only while previewing, between the size picker and Exit preview (rule 27)', async () => {
+    const user = userEvent.setup();
+    renderStudio();
+    expect(modeGroup()).toBeNull();
+
+    await user.click(previewToggle());
+
+    expect(
+      within(modeGroup() as HTMLElement)
+        .getAllByRole('button')
+        .map((item) => item.getAttribute('aria-label')),
+    ).toEqual(['Fillable', 'Readable']);
+
+    await user.click(previewToggle());
+    expect(modeGroup()).toBeNull();
+  });
+
+  it('starts Fillable, so preview opens exactly as it did before (rule 30)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+
+    expect(mode('Fillable')).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toBeInTheDocument();
+    expect(plainValues(slot)).toHaveLength(0);
+  });
+
+  it('shows the answers as plain text in Readable, with no inputs (rule 28)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await screen.findByRole('textbox', { name: 'Name' });
+
+    await user.click(mode('Readable'));
+
+    expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull();
+    expect(plainValues(slot).length).toBeGreaterThan(0);
+  });
+
+  it('carries the answers typed in Fillable straight into Readable (rule 28)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await typeWithoutPointer(
+      user,
+      await screen.findByRole('textbox', { name: 'Name' }),
+      'Jo Rivers',
+    );
+
+    await user.click(mode('Readable'));
+
+    // The SAME preview data, which is the whole point: fill it in, then read it back.
+    expect(plainValues(slot).map((node) => node.textContent)).toContain('Jo Rivers');
+  });
+
+  it('goes back to the fillable form when Fillable is pressed again (rule 27)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await user.click(mode('Readable'));
+    expect(plainValues(slot).length).toBeGreaterThan(0);
+
+    await user.click(mode('Fillable'));
+
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toBeInTheDocument();
+    expect(plainValues(slot)).toHaveLength(0);
+  });
+
+  it('keeps a mode when its own button is pressed again, so one is always chosen (rule 27)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await user.click(mode('Readable'));
+
+    // Base UI reports an EMPTY set for pressing the active item; a preview always has a mode.
+    await user.click(mode('Readable'));
+
+    expect(mode('Readable')).toHaveAttribute('aria-pressed', 'true');
+    expect(plainValues(slot).length).toBeGreaterThan(0);
+  });
+
+  it('returns to Fillable when preview is exited (rule 30)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await user.click(mode('Readable'));
+    expect(plainValues(slot).length).toBeGreaterThan(0);
+
+    await user.click(previewToggle());
+    await user.click(previewToggle());
+
+    // Unlike the size (doc 184 rule 16), the mode does NOT persist: preview is for building a form to fill in.
+    expect(mode('Fillable')).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toBeInTheDocument();
+    expect(plainValues(slot)).toHaveLength(0);
+  });
+
+  it('replaces the RUNNER for a Flow document, rail and all, with no action bar (rules 22, 29)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio(FLOW_TEMPLATE_UISCHEMA, FLOW_TEMPLATE_SCHEMA);
+    await user.click(previewToggle());
+    // Fillable previews a Flow through the runner, which is where Next lives (doc 202 rule 40b).
+    expect(await screen.findByRole('button', { name: 'Next' })).toBeInTheDocument();
+
+    await user.click(mode('Readable'));
+
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+    // The rail is still there — it is how a reviewer moves through a multi-stage submission (rule 18).
+    expect(screen.getByRole('navigation', { name: 'Steps' })).toBeInTheDocument();
+    expect(slot('submission-view')).toBeInTheDocument();
+  });
+
+  it('still caps the frame to the chosen size in Readable (rule 31)', async () => {
+    const user = userEvent.setup();
+    const { slot } = renderStudio();
+    await user.click(previewToggle());
+    await user.click(mode('Readable'));
+
+    await user.click(size('Mobile'));
+
+    expect(frame(slot)).toHaveAttribute('data-viewport', 'mobile');
+    expect(frame(slot)).toHaveClass('max-w-[400px]');
   });
 });
