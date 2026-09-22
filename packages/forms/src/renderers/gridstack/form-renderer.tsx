@@ -131,20 +131,17 @@ const TITLELESS_SPACING = 'pt-6';
  * full width.
  */
 export function FillFormTitle({ uischema }: FormTitleProps) {
-  // Doc 202 rule 51b: the review page draws ONE gold rule, under the whole document's title — so the Forms it
-  // stacks render their own titles without one. Read from JSONForms' `config`, the same channel `readonly`
-  // travels (rule 50), so nothing in the authored uischema can turn it on.
-  const plain = useJsonForms().config?.plainFormTitle === true;
+  // Doc 213 rule 12: a Form's title bar ALWAYS draws its gold rule now. `config.plainFormTitle` used to
+  // suppress it, because doc 202 rule 51b's review page stacked one Form per step and a pile of gold lines
+  // read as a pile of separate documents. That page is one document of Sections now (doc 213), so there are
+  // no stacked Forms and nothing left to suppress — and a config key nothing reads is worse than no key.
   const title = labelOf(uischema, '');
   const description = formDescriptionOf(uischema);
   // No rule and no margin: there is no bar to separate from anything, only the space above the first element.
   if (title === '' && description === undefined)
     return <div data-slot="form-title-space" className={TITLELESS_SPACING} />;
   return (
-    <div
-      data-slot="form-title-bar"
-      className={`${TITLE_SPACING}${plain ? '' : ' border-b-2 border-bcgov-gold'}`}
-    >
+    <div data-slot="form-title-bar" className={`${TITLE_SPACING} border-b-2 border-bcgov-gold`}>
       {title === '' ? null : (
         <Heading
           level={1}

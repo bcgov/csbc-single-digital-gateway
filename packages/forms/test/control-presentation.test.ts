@@ -12,8 +12,9 @@ describe('presentationOf (rules 1-2)', () => {
 
   it('reads config.readonly true as "readonly", so doc 202 rule 50 is unchanged', () => {
     expect(presentationOf({ readonly: true })).toBe('readonly');
-    // The review page's own config, verbatim — it must keep meaning what it meant.
-    expect(presentationOf({ readonly: true, plainFormTitle: true })).toBe('readonly');
+    // The review page's own config, verbatim — it must keep meaning what it meant. (It carried a
+    // `plainFormTitle: true` alongside until doc 213 deleted that flag with the stacked Forms it served.)
+    expect(presentationOf({ readonly: true, hideRequiredAsterisk: true })).toBe('readonly');
   });
 
   it('reads config.presentation "plain" as "plain"', () => {

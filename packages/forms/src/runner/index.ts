@@ -17,7 +17,10 @@ export {
 export { SubmissionPreview, submissionPayload } from './submission-preview';
 // Doc 211: the fill side's second entry point — the same document, shown as answers.
 export { SubmissionView } from './submission-view';
-export { RunnerReview, REVIEW_TITLE, REVIEW_DESCRIPTION } from './runner-review';
+export { RunnerReview, REVIEW_TITLE } from './runner-review';
+// Doc 213: the pure transform behind the review page, exported for a host that wants the whole submission
+// as one document without the runner around it.
+export { reviewDocument } from './review-document';
 
 export {
   conditionEdge,

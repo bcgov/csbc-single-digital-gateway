@@ -694,7 +694,9 @@ describe('the review page (doc 202 rules 47-53)', () => {
     // Both stages' fields at once — the whole path on one page, unlike every other step.
     expect(within(page).getByRole('textbox', { name: /^Name/ })).toHaveValue('Ada');
     expect(within(page).getByRole('textbox', { name: /^Note/ })).toHaveValue('hi');
-    expect(page.querySelectorAll('[data-slot="runner-review-form"]')).toHaveLength(2);
+    // Doc 213: one SECTION per path Form, inside one synthesised document — this was two
+    // `runner-review-form` wrappers, one per `<JsonForms>`, before the page became one document.
+    expect(page.querySelectorAll('[data-slot="section"]')).toHaveLength(2);
   });
 
   it('does NOT name the stages (rule 51)', async () => {
@@ -709,27 +711,41 @@ describe('the review page (doc 202 rules 47-53)', () => {
     expect(reviewPage()).not.toHaveTextContent('Details');
   });
 
-  it('draws ONE gold rule, under the title, and none inside the forms (rule 51b)', async () => {
+  it('draws ONE gold rule, under the title, and none inside the forms (rule 51b, doc 213)', async () => {
     renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
     await toEnd();
     fireEvent.click(nextButton());
     await settle();
 
     const page = reviewPage() as HTMLElement;
-    // The rule sits BETWEEN the heading and the content, not around the page.
-    expect(page.querySelector('[data-slot="runner-review-title-bar"]')).toHaveClass(
-      'border-b-2',
-      'border-bcgov-gold',
-    );
-    expect(page).not.toHaveClass('border-bcgov-gold');
-    // Each stacked Form KEEPS its title but gives up its own rule — a pile of gold lines would read as a pile
-    // of separate documents. Asserting the count first, or the loop below would pass with no titles at all.
+    // Doc 213 rule 13: the page's title bar IS a Form title bar, because the page is one document now. There
+    // is exactly ONE of them, and the rule sits BETWEEN the heading and the content rather than around the page.
     const bars = page.querySelectorAll('[data-slot="form-title-bar"]');
-    expect(bars).toHaveLength(2);
+    expect(bars).toHaveLength(1);
+    expect(bars[0]).toHaveClass('border-b-2', 'border-bcgov-gold');
+    expect(page).not.toHaveClass('border-bcgov-gold');
+    // Each path Form still shows its name — as a Section heading, which draws no rule of its own, so
+    // `plainFormTitle` has nothing left to suppress (rule 12). The count comes first, or the loop below would
+    // pass with no headings at all.
+    const headings = page.querySelectorAll('[data-slot="section-heading"]');
+    expect(headings).toHaveLength(2);
     expect(page).toHaveTextContent('Contact');
-    for (const bar of bars) {
-      expect(bar).not.toHaveClass('border-bcgov-gold');
+    for (const heading of headings) {
+      expect(heading).not.toHaveClass('border-bcgov-gold');
     }
+  });
+
+  it('gives the page ONE h1 and each path Form an h2 under it (doc 213 rule 16)', async () => {
+    renderFlow({ uischema: REVIEWED, initial: { name: 'Ada', note: 'hi' } });
+    await toEnd();
+    fireEvent.click(nextButton());
+    await settle();
+
+    const page = reviewPage() as HTMLElement;
+    // Before doc 213 every stacked Form rendered its OWN h1, so the page had as many h1s as the path had
+    // Forms. As Sections they sit under the document's single h1 (doc 212 rule 9).
+    expect(page.querySelectorAll('h1')).toHaveLength(1);
+    expect(page.querySelectorAll('h2')).toHaveLength(2);
   });
 
   it('renders the fields READ-ONLY, not disabled (rule 50)', async () => {
