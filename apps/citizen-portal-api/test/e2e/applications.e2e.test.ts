@@ -46,7 +46,7 @@ describe('citizen applications (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('protects the /v1/me/applications lifecycle (401 without a session)', async () => {
+  it('Should protect the /v1/me/applications lifecycle (401 without a session)', async () => {
     expect((await http().get('/v1/me/applications')).status).toBe(401);
     expect(
       (await http().post('/v1/me/applications').set('Origin', ORIGIN).send({ formVersionId: 'x' }))
@@ -66,7 +66,7 @@ describe('citizen applications (e2e)', () => {
     ).toBe(401);
   });
 
-  it('rejects a mutating request with no allowlisted Origin (CSRF, 403)', async () => {
+  it('Should reject a mutating request with no allowlisted Origin (CSRF, 403)', async () => {
     const res = await http()
       .post('/v1/me/applications')
       .set('x-test-user', seedUser())
@@ -74,7 +74,7 @@ describe('citizen applications (e2e)', () => {
     expect(res.status).toBe(403);
   });
 
-  it('validates the create body once past the guards (400)', async () => {
+  it('Should validate the create body once past the guards (400)', async () => {
     // Missing formVersionId, and a non-uuid value — both fail Zod before any DB access.
     expect(
       (
@@ -96,7 +96,7 @@ describe('citizen applications (e2e)', () => {
     ).toBe(400);
   });
 
-  it('exposes the form-to-fill read publicly (no session required)', async () => {
+  it('Should expose the form-to-fill read publicly (no session required)', async () => {
     const res = await http().get('/v1/services/svc-1/applications/form-1');
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);

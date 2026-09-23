@@ -27,7 +27,7 @@ describe('service-agreements DTO schemas', () => {
   };
 
   describe('serviceAgreementListItemSchema', () => {
-    it('should validate a valid list item', () => {
+    it('Should validate a valid list item', () => {
       const result = serviceAgreementListItemSchema.safeParse(validListItem);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -35,7 +35,7 @@ describe('service-agreements DTO schemas', () => {
       }
     });
 
-    it('should fail validation if required fields are missing', () => {
+    it('Should fail validation if required fields are missing', () => {
       const result = serviceAgreementListItemSchema.safeParse({
         id: 'consent-id-123',
       });
@@ -44,7 +44,7 @@ describe('service-agreements DTO schemas', () => {
   });
 
   describe('ServiceAgreementListDto', () => {
-    it('should validate a valid list DTO', () => {
+    it('Should validate a valid list DTO', () => {
       const listData = {
         items: [validListItem],
       };
@@ -55,7 +55,7 @@ describe('service-agreements DTO schemas', () => {
       }
     });
 
-    it('should fail validation if items is missing or not an array', () => {
+    it('Should fail validation if items is missing or not an array', () => {
       expect(ServiceAgreementListDto.schema.safeParse({}).success).toBe(false);
       expect(ServiceAgreementListDto.schema.safeParse({ items: 'not-an-array' }).success).toBe(
         false,
@@ -64,7 +64,7 @@ describe('service-agreements DTO schemas', () => {
   });
 
   describe('serviceAgreementDetailSchema', () => {
-    it('should validate a valid detail item with non-null description', () => {
+    it('Should validate a valid detail item with non-null description', () => {
       const result = serviceAgreementDetailSchema.safeParse(validDetail);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -72,7 +72,7 @@ describe('service-agreements DTO schemas', () => {
       }
     });
 
-    it('should allow nullable description', () => {
+    it('Should allow nullable description', () => {
       const result = serviceAgreementDetailSchema.safeParse({
         ...validDetail,
         description: null,
@@ -80,14 +80,7 @@ describe('service-agreements DTO schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should fail validation if required fields are missing', () => {
-      const result = serviceAgreementDetailSchema.safeParse({
-        id: 'consent-id-123',
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it('should fail validation for invalid decisions', () => {
+    it('Should fail validation for invalid decisions', () => {
       const result = serviceAgreementDetailSchema.safeParse({
         ...validDetail,
         decision: 'invalid-decision',
@@ -97,7 +90,7 @@ describe('service-agreements DTO schemas', () => {
   });
 
   describe('ServiceAgreementDetailDto', () => {
-    it('should validate a valid detail DTO', () => {
+    it('Should validate a valid detail DTO', () => {
       const result = ServiceAgreementDetailDto.schema.safeParse(validDetail);
       expect(result.success).toBe(true);
     });

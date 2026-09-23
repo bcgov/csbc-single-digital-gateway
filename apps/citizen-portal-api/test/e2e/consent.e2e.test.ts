@@ -42,7 +42,7 @@ describe('citizen consent (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('protects the consent endpoints (401 without a session)', async () => {
+  it('Should protect the consent endpoints (401 without a session)', async () => {
     expect((await http().get(`/v1/me/services/${UUID}/agreements`)).status).toBe(401);
     expect(
       (
@@ -54,7 +54,7 @@ describe('citizen consent (e2e)', () => {
     ).toBe(401);
   });
 
-  it('400s an invalid record body for a signed-in user', async () => {
+  it('Should return 400 for an invalid record body for a signed-in user', async () => {
     const user = seedUser();
     expect(
       (

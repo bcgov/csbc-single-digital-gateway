@@ -17,7 +17,7 @@ describe('ConsentV1Controller Unit Test Suite', () => {
   });
 
   describe('agreements', () => {
-    it('should call agreementsForService on ConsentService with user ID and service ID', async () => {
+    it('Should call agreementsForService on ConsentService with user ID and service ID', async () => {
       const user = { id: 'user-1' } as AuthUser;
       const serviceId = 'svc-1';
       const expectedItems = [
@@ -39,7 +39,7 @@ describe('ConsentV1Controller Unit Test Suite', () => {
   });
 
   describe('record', () => {
-    it('should call record on ConsentService with user ID, agreementVersionId, and decision', async () => {
+    it('Should call record on ConsentService with user ID, agreementVersionId, and decision', async () => {
       const user = { id: 'user-1' } as AuthUser;
       const body = {
         agreementVersionId: 'ver-1',

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
@@ -9,83 +9,7 @@ import {
   workspaceDefaultAgreements,
 } from '@repo/database';
 import { ConsentService } from '../../../../../src/modules/applications/services/consent.service';
-
-const createDbMock = () => {
-  const mocks: {
-    queries: Array<{
-      table?: any;
-      action?: 'select' | 'insert' | 'update' | undefined;
-      resolve: any;
-    }>;
-  } = {
-    queries: [],
-  };
-
-  const createBuilder = () => {
-    let activeTable: any = null;
-    let action: 'select' | 'insert' | 'update' = 'select';
-
-    const builder = {
-      select: vi.fn().mockImplementation(() => {
-        action = 'select';
-        return builder;
-      }),
-      insert: vi.fn().mockImplementation((table) => {
-        action = 'insert';
-        activeTable = table;
-        return builder;
-      }),
-      update: vi.fn().mockImplementation((table) => {
-        action = 'update';
-        activeTable = table;
-        return builder;
-      }),
-      from: vi.fn().mockImplementation((table) => {
-        activeTable = table;
-        return builder;
-      }),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockReturnThis(),
-      onConflictDoNothing: vi.fn().mockReturnThis(),
-      // eslint-disable-next-line unicorn/no-thenable -- Drizzle ORM queries are thenables; the mock must implement .then() to support direct await
-      then: (onfulfilled: any) => {
-        const index = mocks.queries.findIndex(
-          (q) =>
-            (q.table === undefined || q.table === activeTable) &&
-            (q.action === undefined || q.action === action),
-        );
-        let result: any = [];
-        if (index !== -1) {
-          const entry = mocks.queries[index];
-          if (entry !== undefined) {
-            result = entry.resolve;
-            mocks.queries.splice(index, 1);
-          }
-        }
-        return Promise.resolve(result).then(onfulfilled);
-      },
-    };
-    return builder;
-  };
-
-  const dbMock = {
-    ...createBuilder(),
-    transaction: vi.fn(async (cb: any) => {
-      return cb(createBuilder());
-    }),
-  };
-
-  const mockResponse = (resolve: any, table?: any, action?: 'select' | 'insert' | 'update') => {
-    mocks.queries.push({ table, action, resolve });
-  };
-
-  return { dbMock, mockResponse };
-};
+import { createMockDb } from '../../../../utils/createMockDb';
 
 describe('ConsentService Unit Test Suite', () => {
   let service: ConsentService;
@@ -93,14 +17,14 @@ describe('ConsentService Unit Test Suite', () => {
   let mockResponse: any;
 
   beforeEach(() => {
-    const mocks = createDbMock();
-    dbMock = mocks.dbMock;
+    const mocks = createMockDb();
+    dbMock = mocks.builderMock;
     mockResponse = mocks.mockResponse;
     service = new ConsentService(dbMock as unknown as Database);
   });
 
   describe('agreementsForService', () => {
-    it('should throw NotFoundException if service is not found', async () => {
+    it('Should throw NotFoundException if service is not found', async () => {
       mockResponse([], documents, 'select'); // no service found
 
       await expect(service.agreementsForService('user-1', 'svc-id')).rejects.toThrow(
@@ -108,7 +32,7 @@ describe('ConsentService Unit Test Suite', () => {
       );
     });
 
-    it('should return service agreements (attached and defaults, deduped, with latest user decision)', async () => {
+    it('Should return service agreements (attached and defaults, deduped, with latest user decision)', async () => {
       // 1. service check (documents query)
       mockResponse([{ versionId: 'svc-ver-1' }], documents, 'select');
 
@@ -165,7 +89,7 @@ describe('ConsentService Unit Test Suite', () => {
       ]);
     });
 
-    it('should deduplicate agreements by agreementDocumentId (defaults first)', async () => {
+    it('Should deduplicate agreements by agreementDocumentId (defaults first)', async () => {
       // 1. service check (documents query)
       mockResponse([{ versionId: 'svc-ver-1' }], documents, 'select');
 
@@ -215,7 +139,7 @@ describe('ConsentService Unit Test Suite', () => {
   });
 
   describe('record', () => {
-    it('should throw UnprocessableEntityException if not a published service agreement version', async () => {
+    it('Should throw UnprocessableEntityException if not a published service agreement version', async () => {
       mockResponse([], documentVersions, 'select');
 
       await expect(service.record('user-1', 'agreement-ver-1', 'approve')).rejects.toThrow(
@@ -223,7 +147,7 @@ describe('ConsentService Unit Test Suite', () => {
       );
     });
 
-    it('should skip write if latest decision is already the same', async () => {
+    it('Should skip write if latest decision is already the same', async () => {
       // 1. agreement check
       mockResponse([{ agreementDocumentId: 'agreement-doc-1' }], documentVersions, 'select');
       // 2. latest consent check
@@ -238,7 +162,7 @@ describe('ConsentService Unit Test Suite', () => {
       // We expect no further mock responses since it should return early and not insert
     });
 
-    it('should insert new consent decision if different or does not exist', async () => {
+    it('Should insert new consent decision if different or does not exist', async () => {
       // 1. agreement check
       mockResponse([{ agreementDocumentId: 'agreement-doc-1' }], documentVersions, 'select');
       // 2. latest consent check (empty -> does not exist)
@@ -256,7 +180,7 @@ describe('ConsentService Unit Test Suite', () => {
   });
 
   describe('assertSubmittableForForm', () => {
-    it('should return undefined (no gate) if form version is not linked to a service', async () => {
+    it('Should return undefined (no gate) if form version is not linked to a service', async () => {
       mockResponse([], documentReferences, 'select'); // no service version reference found
 
       await expect(
@@ -264,7 +188,7 @@ describe('ConsentService Unit Test Suite', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should throw UnprocessableEntityException if a required service agreement is not approved', async () => {
+    it('Should throw UnprocessableEntityException if a required service agreement is not approved', async () => {
       // 1. get serviceVersionId
       mockResponse([{ serviceVersionId: 'svc-ver-1' }], documentReferences, 'select');
       // 2. resolveForServiceVersion -> attached agreements
@@ -291,7 +215,7 @@ describe('ConsentService Unit Test Suite', () => {
       );
     });
 
-    it('should throw UnprocessableEntityException if any agreement is not decided (decision is null)', async () => {
+    it('Should throw UnprocessableEntityException if any agreement is not decided (decision is null)', async () => {
       // 1. get serviceVersionId
       mockResponse([{ serviceVersionId: 'svc-ver-1' }], documentReferences, 'select');
       // 2. resolveForServiceVersion -> attached agreements
@@ -318,7 +242,7 @@ describe('ConsentService Unit Test Suite', () => {
       );
     });
 
-    it('should succeed if all required agreements are approved and all optional agreements are decided', async () => {
+    it('Should succeed if all required agreements are approved and all optional agreements are decided', async () => {
       // 1. get serviceVersionId
       mockResponse([{ serviceVersionId: 'svc-ver-1' }], documentReferences, 'select');
       // 2. resolveForServiceVersion -> attached agreements
@@ -352,7 +276,7 @@ describe('ConsentService Unit Test Suite', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should fall back to "Service agreement" if title is not a string', async () => {
+    it('Should fall back to "Service agreement" if title is not a string', async () => {
       // 1. get serviceVersionId
       mockResponse([{ serviceVersionId: 'svc-ver-1' }], documentReferences, 'select');
       // 2. resolveForServiceVersion -> attached agreements
@@ -383,7 +307,7 @@ describe('ConsentService Unit Test Suite', () => {
       }
     });
 
-    it('should skip querying default agreements if workspaceId is null', async () => {
+    it('Should skip querying default agreements if workspaceId is null', async () => {
       // 1. get serviceVersionId
       mockResponse([{ serviceVersionId: 'svc-ver-1' }], documentReferences, 'select');
       // 2. resolveForServiceVersion -> attached agreements

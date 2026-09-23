@@ -2,82 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { type Database, documentReferences, documentVersions, documents } from '@repo/database';
 import { CatalogService } from '../../../../../src/modules/catalog/services/catalog.service';
-
-const createDbMock = () => {
-  const mocks: {
-    queries: Array<{
-      table?: any;
-      action?: 'select' | 'insert' | 'update' | undefined;
-      resolve: any;
-    }>;
-  } = {
-    queries: [],
-  };
-
-  const createBuilder = () => {
-    let activeTable: any = null;
-    let action: 'select' | 'insert' | 'update' = 'select';
-
-    const builder = {
-      select: vi.fn().mockImplementation(() => {
-        action = 'select';
-        return builder;
-      }),
-      insert: vi.fn().mockImplementation((table) => {
-        action = 'insert';
-        activeTable = table;
-        return builder;
-      }),
-      update: vi.fn().mockImplementation((table) => {
-        action = 'update';
-        activeTable = table;
-        return builder;
-      }),
-      from: vi.fn().mockImplementation((table) => {
-        activeTable = table;
-        return builder;
-      }),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockReturnThis(),
-      // eslint-disable-next-line unicorn/no-thenable -- Drizzle ORM queries are thenables; the mock must implement .then() to support direct await
-      then: (onfulfilled: any) => {
-        const index = mocks.queries.findIndex(
-          (q) =>
-            (q.table === undefined || q.table === activeTable) &&
-            (q.action === undefined || q.action === action),
-        );
-        let result: any = [];
-        if (index !== -1) {
-          const entry = mocks.queries[index];
-          if (entry !== undefined) {
-            result = entry.resolve;
-            mocks.queries.splice(index, 1);
-          }
-        }
-        return Promise.resolve(result).then(onfulfilled);
-      },
-    };
-    return builder;
-  };
-
-  const dbMock = {
-    ...createBuilder(),
-    transaction: vi.fn(async (cb: any) => {
-      return cb(createBuilder());
-    }),
-  };
-
-  const mockResponse = (resolve: any, table?: any, action?: 'select' | 'insert' | 'update') => {
-    mocks.queries.push({ table, action, resolve });
-  };
-
-  return { dbMock, mockResponse };
-};
+import { createMockDb } from '../../../../utils/createMockDb';
 
 describe('CatalogService Unit Test Suite', () => {
   let service: CatalogService;
@@ -85,14 +10,14 @@ describe('CatalogService Unit Test Suite', () => {
   let mockResponse: any;
 
   beforeEach(() => {
-    const mocks = createDbMock();
-    dbMock = mocks.dbMock;
+    const mocks = createMockDb();
+    dbMock = mocks.builderMock;
     mockResponse = mocks.mockResponse;
     service = new CatalogService(dbMock as unknown as Database);
   });
 
   describe('listServices', () => {
-    it('should list services with search and limit filters applied', async () => {
+    it('Should list services with search and limit filters applied', async () => {
       const mockRows = [
         {
           id: 'service-1',
@@ -126,7 +51,7 @@ describe('CatalogService Unit Test Suite', () => {
       ]);
     });
 
-    it('should handle undefined search parameter', async () => {
+    it('Should handle undefined search parameter', async () => {
       const mockRows = [
         {
           id: 'service-1',
@@ -149,7 +74,7 @@ describe('CatalogService Unit Test Suite', () => {
       ]);
     });
 
-    it('should handle empty search parameter ("")', async () => {
+    it('Should handle empty search parameter ("")', async () => {
       const mockRows = [
         {
           id: 'service-1',
@@ -172,7 +97,7 @@ describe('CatalogService Unit Test Suite', () => {
       ]);
     });
 
-    it('should not add match filter if searchFilter returns undefined', async () => {
+    it('Should not add match filter if searchFilter returns undefined', async () => {
       const searchSpy = vi.spyOn(service as any, 'searchFilter').mockReturnValue(undefined);
       mockResponse([], documents, 'select');
 
@@ -184,13 +109,13 @@ describe('CatalogService Unit Test Suite', () => {
   });
 
   describe('getService', () => {
-    it('should throw NotFoundException if service is not found', async () => {
+    it('Should throw NotFoundException if service is not found', async () => {
       mockResponse([], documents, 'select');
 
       await expect(service.getService('svc-invalid')).rejects.toThrow(NotFoundException);
     });
 
-    it('should return service detail with associated applications on success', async () => {
+    it('Should return service detail with associated applications on success', async () => {
       const mockServiceRow = [
         {
           id: 'service-123',
@@ -245,7 +170,7 @@ describe('CatalogService Unit Test Suite', () => {
       });
     });
 
-    it('should map applications with external url correctly', async () => {
+    it('Should map applications with external url correctly', async () => {
       const mockServiceRow = [
         {
           id: 'service-123',
@@ -307,7 +232,7 @@ describe('CatalogService Unit Test Suite', () => {
       ]);
     });
 
-    it('should handle null publishedAt on success', async () => {
+    it('Should handle null publishedAt on success', async () => {
       const mockServiceRow = [
         {
           id: 'service-123',
@@ -330,7 +255,7 @@ describe('CatalogService Unit Test Suite', () => {
   });
 
   describe('getServiceVersion', () => {
-    it('should throw NotFoundException if version is not found', async () => {
+    it('Should throw NotFoundException if version is not found', async () => {
       mockResponse([], documentVersions, 'select');
 
       await expect(service.getServiceVersion('service-123', 'version-invalid')).rejects.toThrow(
@@ -338,7 +263,7 @@ describe('CatalogService Unit Test Suite', () => {
       );
     });
 
-    it('should return service version details on success', async () => {
+    it('Should return service version details on success', async () => {
       const mockVersionRow = [
         {
           id: 'version-456',
@@ -372,7 +297,7 @@ describe('CatalogService Unit Test Suite', () => {
       });
     });
 
-    it('should handle null publishedAt and archivedAt on success', async () => {
+    it('Should handle null publishedAt and archivedAt on success', async () => {
       const mockVersionRow = [
         {
           id: 'version-456',
@@ -394,7 +319,7 @@ describe('CatalogService Unit Test Suite', () => {
       expect(result.archivedAt).toBeNull();
     });
 
-    it('should return service version details with archived status and defined archivedAt/publishedAt on success', async () => {
+    it('Should return service version details with archived status and defined archivedAt/publishedAt on success', async () => {
       const mockVersionRow = [
         {
           id: 'version-456',
@@ -428,7 +353,7 @@ describe('CatalogService Unit Test Suite', () => {
       });
     });
 
-    it('should throw NotFoundException if version exists but status is neither published nor archived', async () => {
+    it('Should throw NotFoundException if version exists but status is neither published nor archived', async () => {
       const mockVersionRow = [
         {
           id: 'version-456',

@@ -29,21 +29,21 @@ const mockValidate = () => false;
 
 describe('validate utils', () => {
   describe('validateSubmission - basic form', () => {
-    it('should pass valid basic-form data', () => {
+    it('Should pass valid basic-form data', () => {
       expect(validateSubmission('basic-form', basic, { name: 'Ann', age: 3 }).valid).toBe(true);
     });
 
-    it('should fail on a missing required field', () => {
+    it('Should fail on a missing required field', () => {
       const result = validateSubmission('basic-form', basic, { age: 3 });
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('should fail on a wrong type', () => {
+    it('Should fail on a wrong type', () => {
       expect(validateSubmission('basic-form', basic, { name: 123 }).valid).toBe(false);
     });
 
-    it('should validate successfully when data matches schema', () => {
+    it('Should validate successfully when data matches schema', () => {
       const structure = {
         schema: {
           type: 'object',
@@ -64,7 +64,7 @@ describe('validate utils', () => {
       });
     });
 
-    it('should fail validation and return formatted errors when data is invalid', () => {
+    it('Should fail validation and return formatted errors when data is invalid', () => {
       const structure = {
         schema: {
           type: 'object',
@@ -84,7 +84,7 @@ describe('validate utils', () => {
       expect(result.errors).toContain('/age must be >= 18');
     });
 
-    it('should default to empty schema if schema is missing', () => {
+    it('Should default to empty schema if schema is missing', () => {
       const structure = {};
       const result = validateSubmission('basic-form', structure, { anyData: 'value' });
 
@@ -96,7 +96,7 @@ describe('validate utils', () => {
   });
 
   describe('validateSubmission - multi-stage form', () => {
-    it('should validate every page of a multi-stage form', () => {
+    it('Should validate every page of a multi-stage form', () => {
       expect(validateSubmission('multi-stage-form', multiStage, { a: 'x', b: true }).valid).toBe(
         true,
       );
@@ -104,7 +104,7 @@ describe('validate utils', () => {
       expect(validateSubmission('multi-stage-form', multiStage, { b: 'nope' }).valid).toBe(false);
     });
 
-    it('should validate successfully when data matches all pages schemas', () => {
+    it('Should validate successfully when data matches all pages schemas', () => {
       const structure = {
         stages: [
           {
@@ -141,7 +141,7 @@ describe('validate utils', () => {
       });
     });
 
-    it('should collect errors from multiple stages/pages when data is invalid', () => {
+    it('Should collect errors from multiple stages/pages when data is invalid', () => {
       const structure = {
         stages: [
           {
@@ -177,7 +177,7 @@ describe('validate utils', () => {
       expect(result.errors).toContain('/email must match format "email"');
     });
 
-    it('should handle missing stages or pages safely without throwing', () => {
+    it('Should handle missing stages or pages safely without throwing', () => {
       const structureEmptyStages = { stages: [] };
       const resultEmptyStages = validateSubmission('multi-stage-form', structureEmptyStages, {});
       expect(resultEmptyStages).toEqual({ valid: true, errors: [] });
@@ -199,7 +199,7 @@ describe('validate utils', () => {
       expect(resultUndefinedStages).toEqual({ valid: true, errors: [] });
     });
 
-    it('should handle undefined validate.errors and undefined error.message gracefully', () => {
+    it('Should handle undefined validate.errors and undefined error.message gracefully', () => {
       const compileSpy = vi.spyOn(Ajv.prototype, 'compile').mockImplementation(() => {
         const validate = mockValidate as any;
         validate.errors = [
@@ -220,7 +220,7 @@ describe('validate utils', () => {
       compileSpy.mockRestore();
     });
 
-    it('should handle missing validate.errors list gracefully', () => {
+    it('Should handle missing validate.errors list gracefully', () => {
       const compileSpy = vi.spyOn(Ajv.prototype, 'compile').mockImplementation(() => {
         const validate = mockValidate as any;
         validate.errors = undefined;
@@ -269,7 +269,7 @@ describe('validate utils', () => {
       ],
     };
 
-    it('collects decimal constraints from a basic form (including nested)', () => {
+    it('Should collect decimal constraints from a basic form (including nested)', () => {
       const constraints = collectDecimalConstraints('basic-form', basicForm);
       expect(constraints).toEqual(
         expect.arrayContaining([
@@ -280,13 +280,13 @@ describe('validate utils', () => {
       expect(constraints).toHaveLength(2);
     });
 
-    it('collects decimal constraints across multi-stage pages', () => {
+    it('Should collect decimal constraints across multi-stage pages', () => {
       expect(collectDecimalConstraints('multi-stage-form', multiStageForm)).toEqual([
         { key: 'amount', maxDecimals: 1 },
       ]);
     });
 
-    it('handles missing uischema, undefined elements, or non-record elements safely', () => {
+    it('Should handle missing uischema, undefined elements, or non-record elements safely', () => {
       expect(collectDecimalConstraints('basic-form', {})).toEqual([]);
       expect(
         collectDecimalConstraints('basic-form', {
@@ -311,23 +311,23 @@ describe('validate utils', () => {
       ).toEqual([]);
     });
 
-    it('flags a value with too many decimal places', () => {
+    it('Should flag a value with too many decimal places', () => {
       const errors = validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 1.234 });
       expect(errors).toHaveLength(1);
       expect(errors[0]).toBe('price: enter at most 2 decimal places');
     });
 
-    it('formats singular decimal place correctly when maxDecimals is 1', () => {
+    it('Should format singular decimal place correctly when maxDecimals is 1', () => {
       const errors = validateDecimals([{ key: 'price', maxDecimals: 1 }], { price: 1.23 });
       expect(errors).toEqual(['price: enter at most 1 decimal place']);
     });
 
-    it('accepts a value within the decimal limit', () => {
+    it('Should accept a value within the decimal limit', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 1.2 })).toEqual([]);
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 5 })).toEqual([]);
     });
 
-    it('handles numbers with exponent notation correctly', () => {
+    it('Should handle numbers with exponent notation correctly', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 6 }], { price: 1e-7 })).toEqual([
         'price: enter at most 6 decimal places',
       ]);
@@ -340,7 +340,7 @@ describe('validate utils', () => {
       );
     });
 
-    it('handles non-finite numbers (NaN, Infinity) by treating them as 0 decimal places', () => {
+    it('Should handle non-finite numbers (NaN, Infinity) by treating them as 0 decimal places', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: Infinity })).toEqual([]);
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: -Infinity })).toEqual(
         [],
@@ -350,7 +350,7 @@ describe('validate utils', () => {
       );
     });
 
-    it('ignores absent or non-numeric values and handles non-object data', () => {
+    it('Should ignore absent or non-numeric values and handle non-object data', () => {
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], {})).toEqual([]);
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], { price: 'x' })).toEqual([]);
       expect(validateDecimals([{ key: 'price', maxDecimals: 2 }], null)).toEqual([]);

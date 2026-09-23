@@ -15,83 +15,7 @@ import {
   notificationOutbox,
 } from '@repo/database';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
-
-const createDbMock = () => {
-  const mocks: {
-    queries: Array<{
-      table?: any;
-      action?: 'select' | 'insert' | 'update' | undefined;
-      resolve: any;
-    }>;
-  } = {
-    queries: [],
-  };
-
-  const createBuilder = () => {
-    let activeTable: any = null;
-    let action: 'select' | 'insert' | 'update' = 'select';
-
-    const builder = {
-      select: vi.fn().mockImplementation(() => {
-        action = 'select';
-        return builder;
-      }),
-      insert: vi.fn().mockImplementation((table) => {
-        action = 'insert';
-        activeTable = table;
-        return builder;
-      }),
-      update: vi.fn().mockImplementation((table) => {
-        action = 'update';
-        activeTable = table;
-        return builder;
-      }),
-      from: vi.fn().mockImplementation((table) => {
-        activeTable = table;
-        return builder;
-      }),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockReturnThis(),
-      onConflictDoNothing: vi.fn().mockReturnThis(),
-      // eslint-disable-next-line unicorn/no-thenable -- Drizzle ORM queries are thenables; the mock must implement .then() to support direct await
-      then: (onfulfilled: any) => {
-        const index = mocks.queries.findIndex(
-          (q) =>
-            (q.table === undefined || q.table === activeTable) &&
-            (q.action === undefined || q.action === action),
-        );
-        let result: any = [];
-        if (index !== -1) {
-          const entry = mocks.queries[index];
-          if (entry !== undefined) {
-            result = entry.resolve;
-            mocks.queries.splice(index, 1);
-          }
-        }
-        return Promise.resolve(result).then(onfulfilled);
-      },
-    };
-    return builder;
-  };
-
-  const dbMock = {
-    ...createBuilder(),
-    transaction: vi.fn(async (cb: any) => {
-      return cb(createBuilder());
-    }),
-  };
-
-  const mockResponse = (resolve: any, table?: any, action?: 'select' | 'insert' | 'update') => {
-    mocks.queries.push({ table, action, resolve });
-  };
-
-  return { dbMock, mockResponse };
-};
+import { createMockDb } from '../../../../utils/createMockDb';
 
 describe('ApplicationsService Unit Test Suite', () => {
   let service: ApplicationsService;
@@ -101,8 +25,8 @@ describe('ApplicationsService Unit Test Suite', () => {
   let configMock: any;
 
   beforeEach(() => {
-    const mocks = createDbMock();
-    dbMock = mocks.dbMock;
+    const mocks = createMockDb();
+    dbMock = mocks.builderMock;
     mockResponse = mocks.mockResponse;
     consentMock = {
       assertSubmittableForForm: vi.fn().mockResolvedValue(undefined),
@@ -122,7 +46,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('getApplicationForm', () => {
-    it('should throw NotFoundException if service is not found', async () => {
+    it('Should throw NotFoundException if service is not found', async () => {
       mockResponse([], documents, 'select'); // no service version found
 
       await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(
@@ -130,7 +54,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should throw NotFoundException if form reference is not found', async () => {
+    it('Should throw NotFoundException if form reference is not found', async () => {
       mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
       mockResponse([], documentReferences, 'select'); // form reference not found
 
@@ -139,7 +63,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should throw NotFoundException if form document or version is not found', async () => {
+    it('Should throw NotFoundException if form document or version is not found', async () => {
       mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
       mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
       mockResponse([], documentVersions, 'select'); // form details not found
@@ -149,7 +73,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should return normalized form details on success', async () => {
+    it('Should return normalized form details on success', async () => {
       const mockForm = {
         kind: 'basic-form',
         title: 'Apply Now',
@@ -178,7 +102,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should return normalized form details on success even if structure is null', async () => {
+    it('Should return normalized form details on success even if structure is null', async () => {
       const mockForm = {
         kind: 'basic-form',
         title: 'Apply Now',
@@ -209,7 +133,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('createOrResumeDraft', () => {
-    it('should throw UnprocessableEntityException if form version is not found or kind is invalid', async () => {
+    it('Should throw UnprocessableEntityException if form version is not found or kind is invalid', async () => {
       mockResponse([], documentVersions, 'select'); // form version not found
 
       await expect(service.createOrResumeDraft('user-1', 'fv-1')).rejects.toThrow(
@@ -217,7 +141,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should resume existing draft if one is found', async () => {
+    it('Should resume existing draft if one is found', async () => {
       const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
       const existingSub = {
         id: 'sub-1',
@@ -256,7 +180,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should create a new draft if no existing draft is found', async () => {
+    it('Should create a new draft if no existing draft is found', async () => {
       const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
       const newSub = {
         id: 'new-sub-1',
@@ -296,7 +220,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should throw an Error if submission insert returns no row', async () => {
+    it('Should throw an Error if submission insert returns no row', async () => {
       const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
 
       // 1. check form version
@@ -311,7 +235,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should throw an Error if submission version insert returns no row', async () => {
+    it('Should throw an Error if submission version insert returns no row', async () => {
       const fv = { documentId: 'doc-1', kind: 'basic-form', workspaceId: 'ws-1' };
       const newSub = {
         id: 'new-sub-1',
@@ -335,13 +259,13 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('getDetail', () => {
-    it('should throw NotFoundException if submission is not found or not owned by user', async () => {
+    it('Should throw NotFoundException if submission is not found or not owned by user', async () => {
       mockResponse([], submissions, 'select'); // requireOwn returns empty
 
       await expect(service.getDetail('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw NotFoundException if latest submission version is not found', async () => {
+    it('Should throw NotFoundException if latest submission version is not found', async () => {
       const sub = { id: 'sub-1', documentId: 'doc-1', userId: 'user-1' };
       mockResponse([sub], submissions, 'select'); // requireOwn
       mockResponse([], submissionVersions, 'select'); // requireLatest -> latestVersion returns null
@@ -349,7 +273,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       await expect(service.getDetail('user-1', 'sub-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('should return full details on success', async () => {
+    it('Should return full details on success', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -401,7 +325,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should return details with default fallback values when form doc, version, reference, or service are missing', async () => {
+    it('Should return details with default fallback values when form doc, version, reference, or service are missing', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -454,7 +378,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('revise', () => {
-    it('should throw ConflictException if submission is not in needs_changes status', async () => {
+    it('Should throw ConflictException if submission is not in needs_changes status', async () => {
       const sub = { id: 'sub-1', userId: 'user-1' };
       const ver = { id: 'ver-1', status: 'draft', version: 1 };
 
@@ -464,7 +388,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       await expect(service.revise('user-1', 'sub-1')).rejects.toThrow(ConflictException);
     });
 
-    it('should insert new submission version (N+1) with draft status on success', async () => {
+    it('Should insert new submission version (N+1) with draft status on success', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -508,7 +432,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('saveDraft', () => {
-    it('should throw ConflictException if latest version is not draft', async () => {
+    it('Should throw ConflictException if latest version is not draft', async () => {
       const sub = { id: 'sub-1', userId: 'user-1' };
       const ver = { id: 'ver-1', status: 'pending' };
 
@@ -520,7 +444,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should update version data on success', async () => {
+    it('Should update version data on success', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -555,7 +479,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should throw Error if update returns no row', async () => {
+    it('Should throw Error if update returns no row', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -576,7 +500,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('submit', () => {
-    it('should throw UnprocessableEntityException if validation fails', async () => {
+    it('Should throw UnprocessableEntityException if validation fails', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -604,7 +528,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should update status to pending and set submittedAt on successful validation', async () => {
+    it('Should update status to pending and set submittedAt on successful validation', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -660,7 +584,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should throw NotFoundException if form version is not found during submit', async () => {
+    it('Should throw NotFoundException if form version is not found during submit', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -678,7 +602,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should submit successfully even if form schema structure is null', async () => {
+    it('Should submit successfully even if form schema structure is null', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -719,7 +643,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should submit successfully even if workspace is not found or has no slug but members exist', async () => {
+    it('Should submit successfully even if workspace is not found or has no slug but members exist', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -760,7 +684,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       expect(result.status).toBe('pending');
     });
 
-    it('should validate address postal codes against database country regexes and throw UnprocessableEntityException if invalid', async () => {
+    it('Should validate address postal codes against database country regexes and throw UnprocessableEntityException if invalid', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -818,7 +742,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('should validate address postal codes and succeed when valid or when country regex is missing', async () => {
+    it('Should validate address postal codes and succeed when valid or when country regex is missing', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -916,7 +840,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should throw UnprocessableEntityException if decimal constraints validation fails', async () => {
+    it('Should throw UnprocessableEntityException if decimal constraints validation fails', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -955,7 +879,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       );
     });
 
-    it('should throw UnprocessableEntityException if address read-only lock validation fails', async () => {
+    it('Should throw UnprocessableEntityException if address read-only lock validation fails', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -1018,7 +942,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('listMine', () => {
-    it('should list all owned submissions and map to MyApplication DTOS, skipping null entries', async () => {
+    it('Should list all owned submissions and map to MyApplication DTOS, skipping null entries', async () => {
       const sub1 = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -1069,7 +993,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should fall back to defaults when service, form, or version are missing/undefined', async () => {
+    it('Should fall back to defaults when service, form, or version are missing/undefined', async () => {
       const sub1 = {
         id: 'sub-1',
         documentId: 'doc-1',

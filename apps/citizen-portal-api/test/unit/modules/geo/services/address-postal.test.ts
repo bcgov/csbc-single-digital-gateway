@@ -46,7 +46,7 @@ const multiStageStructure = {
 };
 
 describe('collectAddressPostals', () => {
-  it('finds an address field with a non-empty postal (basic form)', () => {
+  it('Should find an address field with a non-empty postal (basic form)', () => {
     const entries = collectAddressPostals('basic-form', basicStructure, {
       home: { country: 'Canada', postal_code: 'V8W 1A1' },
       name: 'Ada',
@@ -54,14 +54,14 @@ describe('collectAddressPostals', () => {
     expect(entries).toEqual([{ key: 'home', country: 'Canada', postal: 'V8W 1A1' }]);
   });
 
-  it('recurses into layout groups (multi-stage form)', () => {
+  it('Should recurse into layout groups (multi-stage form)', () => {
     const entries = collectAddressPostals('multi-stage-form', multiStageStructure, {
       work: { country: 'United States', postal_code: '90210' },
     });
     expect(entries).toEqual([{ key: 'work', country: 'United States', postal: '90210' }]);
   });
 
-  it('skips addresses with an empty postal or missing country', () => {
+  it('Should skip addresses with an empty postal or missing country', () => {
     expect(
       collectAddressPostals('basic-form', basicStructure, {
         home: { country: 'Canada', postal_code: '' },
@@ -74,7 +74,7 @@ describe('collectAddressPostals', () => {
     ).toEqual([]);
   });
 
-  it('returns empty list when uischema is missing or contains non-record elements', () => {
+  it('Should return empty list when uischema is missing or contains non-record elements', () => {
     expect(
       collectAddressPostals(
         'basic-form',
@@ -98,7 +98,7 @@ describe('collectAddressPostals', () => {
     ).toEqual([]);
   });
 
-  it('returns empty list when address control has missing or invalid scope', () => {
+  it('Should return empty list when address control has missing or invalid scope', () => {
     expect(
       collectAddressPostals(
         'basic-form',
@@ -116,7 +116,7 @@ describe('collectAddressPostals', () => {
     ).toEqual([]);
   });
 
-  it('handles multi-stage forms with empty/missing stages or pages safely', () => {
+  it('Should handle multi-stage forms with empty/missing stages or pages safely', () => {
     expect(
       collectAddressPostals(
         'multi-stage-form',
@@ -146,7 +146,7 @@ describe('collectAddressPostals', () => {
     ).toEqual([]);
   });
 
-  it('returns empty list when address data is missing, null, or not an object', () => {
+  it('Should return empty list when address data is missing, null, or not an object', () => {
     expect(collectAddressPostals('basic-form', basicStructure, {})).toEqual([]);
     expect(collectAddressPostals('basic-form', basicStructure, { home: null })).toEqual([]);
     expect(collectAddressPostals('basic-form', basicStructure, { home: 'invalid' })).toEqual([]);
@@ -156,7 +156,7 @@ describe('collectAddressPostals', () => {
 });
 
 describe('validateAddressPostals', () => {
-  it('passes a valid postal for the country', () => {
+  it('Should pass a valid postal for the country', () => {
     expect(
       validateAddressPostals([{ key: 'home', country: 'Canada', postal: 'V8W 1A1' }], regexFor),
     ).toEqual([]);
@@ -168,7 +168,7 @@ describe('validateAddressPostals', () => {
     ).toEqual([]);
   });
 
-  it('flags a postal that does not match the country regex', () => {
+  it('Should flag a postal that does not match the country regex', () => {
     const errors = validateAddressPostals(
       [{ key: 'home', country: 'Canada', postal: '90210' }],
       regexFor,
@@ -178,13 +178,13 @@ describe('validateAddressPostals', () => {
     expect(errors[0]).toContain('Canada');
   });
 
-  it('imposes no constraint for a country with no known regex', () => {
+  it('Should impose no constraint for a country with no known regex', () => {
     expect(
       validateAddressPostals([{ key: 'home', country: 'Nowhere', postal: 'anything' }], regexFor),
     ).toEqual([]);
   });
 
-  it('treats a malformed regex as no constraint (never throws)', () => {
+  it('Should treat a malformed regex as no constraint (never throws)', () => {
     expect(
       validateAddressPostals([{ key: 'home', country: 'X', postal: 'y' }], () => '([unclosed'),
     ).toEqual([]);

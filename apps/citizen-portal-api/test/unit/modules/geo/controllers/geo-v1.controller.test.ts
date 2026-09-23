@@ -31,7 +31,7 @@ describe('GeoV1Controller Unit Test Suite', () => {
   });
 
   describe('listCountries', () => {
-    it('should return list of countries wrapped in items', async () => {
+    it('Should return list of countries wrapped in items', async () => {
       const mockCountries = [
         {
           id: 'country-1',
@@ -52,7 +52,7 @@ describe('GeoV1Controller Unit Test Suite', () => {
   });
 
   describe('listStates', () => {
-    it('should return list of states for a country wrapped in items', async () => {
+    it('Should return list of states for a country wrapped in items', async () => {
       const mockStates = [
         {
           id: 'state-1',
@@ -71,7 +71,7 @@ describe('GeoV1Controller Unit Test Suite', () => {
   });
 
   describe('addressSearchRegions', () => {
-    it('should return supported regions wrapped in items', () => {
+    it('Should return supported regions wrapped in items', () => {
       const mockRegions = [{ country: 'CA', province: 'BC' }];
       geocoderServiceMock.regions.mockReturnValue(mockRegions);
 
@@ -83,7 +83,7 @@ describe('GeoV1Controller Unit Test Suite', () => {
   });
 
   describe('addressSearch', () => {
-    it('should delegate search to geocoder and return suggestions wrapped in items', async () => {
+    it('Should delegate search to geocoder and return suggestions wrapped in items', async () => {
       const query: AddressSearchQueryDto = {
         country: 'CA',
         province: 'BC',

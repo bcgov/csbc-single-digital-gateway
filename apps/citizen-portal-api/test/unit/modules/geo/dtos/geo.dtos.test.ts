@@ -14,7 +14,7 @@ import {
 
 describe('Geo DTOs Unit Test Suite', () => {
   describe('geoCountrySchema and GeoCountryListDto', () => {
-    it('should validate a valid geo country object', () => {
+    it('Should validate a valid geo country object', () => {
       const valid = {
         id: 1,
         name: 'Canada',
@@ -29,7 +29,7 @@ describe('Geo DTOs Unit Test Suite', () => {
       }
     });
 
-    it('should accept nullable iso2', () => {
+    it('Should accept nullable iso2', () => {
       const valid = {
         id: 2,
         name: 'Unknown Territory',
@@ -41,7 +41,7 @@ describe('Geo DTOs Unit Test Suite', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid geo country objects', () => {
+    it('Should reject invalid geo country objects', () => {
       expect(geoCountrySchema.safeParse({ id: 1.5, name: 'Canada' }).success).toBe(false);
       expect(geoCountrySchema.safeParse({ id: 1, name: 123 }).success).toBe(false);
       expect(
@@ -55,7 +55,7 @@ describe('Geo DTOs Unit Test Suite', () => {
       ).toBe(false);
     });
 
-    it('should instantiate and validate GeoCountryListDto', () => {
+    it('Should instantiate and validate GeoCountryListDto', () => {
       const dto = new GeoCountryListDto();
       expect(dto).toBeDefined();
       const list = {
@@ -75,7 +75,7 @@ describe('Geo DTOs Unit Test Suite', () => {
   });
 
   describe('geoStateSchema and GeoStateListDto', () => {
-    it('should validate a valid geo state object', () => {
+    it('Should validate a valid geo state object', () => {
       const valid = {
         id: 10,
         name: 'British Columbia',
@@ -89,7 +89,7 @@ describe('Geo DTOs Unit Test Suite', () => {
       }
     });
 
-    it('should accept nullable type and iso2', () => {
+    it('Should accept nullable type and iso2', () => {
       const valid = {
         id: 11,
         name: 'Some Region',
@@ -100,12 +100,12 @@ describe('Geo DTOs Unit Test Suite', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid geo state objects', () => {
+    it('Should reject invalid geo state objects', () => {
       expect(geoStateSchema.safeParse({ id: 'ten', name: 'BC' }).success).toBe(false);
       expect(geoStateSchema.safeParse({ id: 10 }).success).toBe(false);
     });
 
-    it('should instantiate and validate GeoStateListDto', () => {
+    it('Should instantiate and validate GeoStateListDto', () => {
       const dto = new GeoStateListDto();
       expect(dto).toBeDefined();
       const list = {
@@ -117,7 +117,7 @@ describe('Geo DTOs Unit Test Suite', () => {
   });
 
   describe('addressSearchRegionSchema and AddressSearchRegionListDto', () => {
-    it('should validate a valid address search region', () => {
+    it('Should validate a valid address search region', () => {
       const valid = {
         country: 'CA',
         province: 'BC',
@@ -129,12 +129,12 @@ describe('Geo DTOs Unit Test Suite', () => {
       }
     });
 
-    it('should reject invalid address search region', () => {
+    it('Should reject invalid address search region', () => {
       expect(addressSearchRegionSchema.safeParse({ country: 123 }).success).toBe(false);
       expect(addressSearchRegionSchema.safeParse({ country: 'CA' }).success).toBe(false);
     });
 
-    it('should instantiate and validate AddressSearchRegionListDto', () => {
+    it('Should instantiate and validate AddressSearchRegionListDto', () => {
       const dto = new AddressSearchRegionListDto();
       expect(dto).toBeDefined();
       const list = { items: [{ country: 'CA', province: 'BC' }] };
@@ -144,7 +144,7 @@ describe('Geo DTOs Unit Test Suite', () => {
   });
 
   describe('addressSuggestionSchema and AddressSuggestionListDto', () => {
-    it('should validate a valid address suggestion', () => {
+    it('Should validate a valid address suggestion', () => {
       const valid = {
         label: '501 Belleville St, Victoria, BC',
         streetAddress: '501 Belleville St',
@@ -158,11 +158,11 @@ describe('Geo DTOs Unit Test Suite', () => {
       }
     });
 
-    it('should reject missing fields in address suggestion', () => {
+    it('Should reject missing fields in address suggestion', () => {
       expect(addressSuggestionSchema.safeParse({ label: '501 Belleville St' }).success).toBe(false);
     });
 
-    it('should instantiate and validate AddressSuggestionListDto', () => {
+    it('Should instantiate and validate AddressSuggestionListDto', () => {
       const dto = new AddressSuggestionListDto();
       expect(dto).toBeDefined();
       const list = {
@@ -181,7 +181,7 @@ describe('Geo DTOs Unit Test Suite', () => {
   });
 
   describe('addressSearchQuerySchema and AddressSearchQueryDto', () => {
-    it('should validate and trim query parameters', () => {
+    it('Should validate and trim query parameters', () => {
       const query = {
         country: ' CA ',
         province: ' BC ',
@@ -198,7 +198,7 @@ describe('Geo DTOs Unit Test Suite', () => {
       }
     });
 
-    it('should reject country shorter than 2 or longer than 3 characters', () => {
+    it('Should reject country shorter than 2 or longer than 3 characters', () => {
       expect(
         addressSearchQuerySchema.safeParse({ country: 'C', province: 'BC', q: 'Main' }).success,
       ).toBe(false);
@@ -207,7 +207,7 @@ describe('Geo DTOs Unit Test Suite', () => {
       ).toBe(false);
     });
 
-    it('should reject empty or overly long query text', () => {
+    it('Should reject empty or overly long query text', () => {
       expect(
         addressSearchQuerySchema.safeParse({ country: 'CA', province: 'BC', q: '' }).success,
       ).toBe(false);
@@ -220,7 +220,7 @@ describe('Geo DTOs Unit Test Suite', () => {
       ).toBe(false);
     });
 
-    it('should instantiate AddressSearchQueryDto', () => {
+    it('Should instantiate AddressSearchQueryDto', () => {
       const dto = new AddressSearchQueryDto();
       expect(dto).toBeDefined();
     });

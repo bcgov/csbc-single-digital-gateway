@@ -1,14 +1,14 @@
 import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { AuthModule, SESSION_REGISTRY } from '@repo/nestjs/auth';
 import { LoggerModule } from '@repo/nestjs/logger';
 import { DatabaseModule } from '@repo/nestjs/database';
 import { ValkeySessionRegistry } from '../../src/auth/valkey-session-registry';
+import { createMockConfigService } from '../utils/createMockConfigService';
 
 describe('AppModule Unit Test Suite', () => {
-  it('should compile AppModule successfully', async () => {
+  it('Should compile AppModule successfully', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -17,7 +17,7 @@ describe('AppModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify AuthModule useFactory behaviour under test and non-test environments', () => {
+  it('Should verify AuthModule useFactory behaviour under test and non-test environments', () => {
     const imports = Reflect.getMetadata('imports', AppModule) as any[];
     expect(imports).toBeDefined();
 
@@ -37,75 +37,34 @@ describe('AppModule Unit Test Suite', () => {
     const useFactory = factoryProvider ? factoryProvider.useFactory : authModuleImport.useFactory;
     expect(useFactory).toBeDefined();
 
-    // Let's mock ConfigService to test the useFactory implementation
-    const mockConfigService = {
-      get: vi.fn((key: string, _options?: { infer: boolean }) => {
-        if (key === 'NODE_ENV') return 'test';
-        if (key === 'OIDC_ISSUER') return 'http://issuer';
-        if (key === 'OIDC_CLIENT_ID') return 'client-id';
-        if (key === 'OIDC_CLIENT_SECRET') return 'secret';
-        if (key === 'OIDC_REDIRECT_URI') return 'http://redirect';
-        if (key === 'AUTH_POST_LOGOUT_REDIRECT') return 'http://post-logout';
-        if (key === 'AUTH_POST_LOGIN_REDIRECT') return 'http://post-login';
-        if (key === 'AUTH_SESSION_SECRET') return 'session-secret';
-        if (key === 'AUTH_RP_LOGOUT') return true;
-        if (key === 'AUTH_ALLOWED_ORIGINS') return ['http://origin'];
-        if (key === 'AUTH_TOKEN_REFRESH_SKEW_SECONDS') return 10;
-        if (key === 'AUTH_CLOCK_TOLERANCE_SECONDS') return 5;
-        return undefined;
-      }),
-    } as unknown as ConfigService;
-
     // Test with NODE_ENV = 'test'
-    const testOptions = useFactory(mockConfigService);
+    const testOptions = useFactory(createMockConfigService());
     expect(testOptions).toBeDefined();
     expect(testOptions.config).toBeDefined();
     expect(testOptions.issuer).toBe('http://issuer');
     expect(testOptions.clockToleranceSeconds).toBe(5);
 
     // Test with NODE_ENV = 'production'
-    mockConfigService.get = vi.fn((key: string, _options?: { infer: boolean }) => {
-      if (key === 'NODE_ENV') return 'production';
-      if (key === 'OIDC_ISSUER') return 'http://issuer';
-      if (key === 'OIDC_CLIENT_ID') return 'client-id';
-      if (key === 'OIDC_CLIENT_SECRET') return 'secret';
-      if (key === 'OIDC_REDIRECT_URI') return 'http://redirect';
-      if (key === 'AUTH_POST_LOGOUT_REDIRECT') return 'http://post-logout';
-      if (key === 'AUTH_POST_LOGIN_REDIRECT') return 'http://post-login';
-      if (key === 'AUTH_SESSION_SECRET') return 'session-secret';
-      if (key === 'AUTH_RP_LOGOUT') return true;
-      if (key === 'AUTH_ALLOWED_ORIGINS') return ['http://origin'];
-      if (key === 'AUTH_TOKEN_REFRESH_SKEW_SECONDS') return 10;
-      if (key === 'AUTH_CLOCK_TOLERANCE_SECONDS') return 15;
-      return undefined;
-    });
-
-    const prodOptions = useFactory(mockConfigService);
+    const prodOptions = useFactory(
+      createMockConfigService({ NODE_ENV: 'production', AUTH_CLOCK_TOLERANCE_SECONDS: 15 }),
+    );
     expect(prodOptions).toBeDefined();
     expect(prodOptions.config).toBeUndefined(); // Config stub should not be present in prod
     expect(prodOptions.issuer).toBe('http://issuer');
     expect(prodOptions.clockToleranceSeconds).toBe(15);
 
     // Test with undefined AUTH_POST_LOGOUT_REDIRECT and undefined AUTH_CLOCK_TOLERANCE_SECONDS
-    mockConfigService.get = vi.fn((key: string, _options?: { infer: boolean }) => {
-      if (key === 'NODE_ENV') return 'test';
-      if (key === 'OIDC_ISSUER') return 'http://issuer';
-      if (key === 'OIDC_CLIENT_ID') return 'client-id';
-      if (key === 'OIDC_CLIENT_SECRET') return 'secret';
-      if (key === 'OIDC_REDIRECT_URI') return 'http://redirect';
-      if (key === 'AUTH_POST_LOGIN_REDIRECT') return 'http://post-login';
-      if (key === 'AUTH_SESSION_SECRET') return 'session-secret';
-      if (key === 'AUTH_RP_LOGOUT') return true;
-      if (key === 'AUTH_ALLOWED_ORIGINS') return ['http://origin'];
-      if (key === 'AUTH_TOKEN_REFRESH_SKEW_SECONDS') return 10;
-      return undefined;
-    });
-    const testOptionsNoPostLogout = useFactory(mockConfigService);
+    const testOptionsNoPostLogout = useFactory(
+      createMockConfigService({
+        AUTH_POST_LOGOUT_REDIRECT: undefined,
+        AUTH_CLOCK_TOLERANCE_SECONDS: undefined,
+      }),
+    );
     expect(testOptionsNoPostLogout.postLogoutRedirect).toBeUndefined();
     expect(testOptionsNoPostLogout.clockToleranceSeconds).toBeUndefined();
   });
 
-  it('should verify LoggerModule useFactory behaviour under test, development, and other environments', async () => {
+  it('Should verify LoggerModule useFactory behaviour under test, development, and other environments', async () => {
     const imports = Reflect.getMetadata('imports', AppModule) as any[];
     const loggerModuleImport = imports.find((imp) => imp && imp.module === LoggerModule);
     expect(loggerModuleImport).toBeDefined();
@@ -120,41 +79,28 @@ describe('AppModule Unit Test Suite', () => {
     expect(factoryProvider).toBeDefined();
     const useFactory = factoryProvider.useFactory;
 
-    // Mock ConfigService
-    const mockConfigService = {
-      get: vi.fn((key: string) => {
-        if (key === 'NODE_ENV') return 'test';
-        if (key === 'LOG_LEVEL') return 'info';
-        return undefined;
-      }),
-    } as unknown as ConfigService;
-
     // Test env
-    const testOptions = await useFactory(mockConfigService);
+    const testOptions = await useFactory(
+      createMockConfigService({ NODE_ENV: 'test', LOG_LEVEL: 'info' }),
+    );
     expect(testOptions.pinoHttp.level).toBe('silent');
 
     // Dev env
-    mockConfigService.get = vi.fn((key: string) => {
-      if (key === 'NODE_ENV') return 'development';
-      if (key === 'LOG_LEVEL') return 'debug';
-      return undefined;
-    });
-    const devOptions = await useFactory(mockConfigService);
+    const devOptions = await useFactory(
+      createMockConfigService({ NODE_ENV: 'development', LOG_LEVEL: 'debug' }),
+    );
     expect(devOptions.pinoHttp.level).toBe('debug');
     expect(devOptions.pinoHttp.transport?.target).toBe('pino-pretty');
 
     // Prod env
-    mockConfigService.get = vi.fn((key: string) => {
-      if (key === 'NODE_ENV') return 'production';
-      if (key === 'LOG_LEVEL') return 'warn';
-      return undefined;
-    });
-    const prodOptions = await useFactory(mockConfigService);
+    const prodOptions = await useFactory(
+      createMockConfigService({ NODE_ENV: 'production', LOG_LEVEL: 'warn' }),
+    );
     expect(prodOptions.pinoHttp.level).toBe('warn');
     expect(prodOptions.pinoHttp.transport).toBeUndefined();
   });
 
-  it('should verify DatabaseModule onDestroy end method is called', async () => {
+  it('Should verify DatabaseModule onDestroy end method is called', async () => {
     const imports = Reflect.getMetadata('imports', AppModule) as any[];
     const databaseModuleImport = imports.find((imp) => imp && imp.module === DatabaseModule);
     expect(databaseModuleImport).toBeDefined();
@@ -177,7 +123,7 @@ describe('AppModule Unit Test Suite', () => {
     expect(mockEnd).toHaveBeenCalled();
   });
 
-  it('should verify AuthModule sessionRegistry provider useFactory', () => {
+  it('Should verify AuthModule sessionRegistry provider useFactory', () => {
     const imports = Reflect.getMetadata('imports', AppModule) as any[];
     const authModuleImport = imports.find((imp) => imp && imp.module === AuthModule);
     expect(authModuleImport).toBeDefined();
@@ -190,15 +136,12 @@ describe('AppModule Unit Test Suite', () => {
     const sessionRegistryFactory = registryProvider.useFactory;
     expect(sessionRegistryFactory).toBeDefined();
 
-    const mockConfigService = {
-      get: vi.fn((key: string) => {
-        if (key === 'VALKEY_URL') return 'valkey://localhost:6379';
-        if (key === 'SESSION_KEY_PREFIX') return 'prefix:';
-        return undefined;
+    const registry = sessionRegistryFactory(
+      createMockConfigService({
+        VALKEY_URL: 'valkey://localhost:6379',
+        SESSION_KEY_PREFIX: 'prefix:',
       }),
-    } as unknown as ConfigService;
-
-    const registry = sessionRegistryFactory(mockConfigService);
+    );
     expect(registry).toBeDefined();
     expect(registry).toBeInstanceOf(ValkeySessionRegistry);
   });

@@ -15,7 +15,7 @@ describe('ApplicationFormsV1Controller Unit Test Suite', () => {
     );
   });
 
-  it('should call getApplicationForm on ApplicationsService with the correct arguments', async () => {
+  it('Should call getApplicationForm on ApplicationsService with the correct arguments', async () => {
     const id = 'test-id';
     const formId = 'test-form-id';
     const expectedResult = { id: 'test-form-id', schema: {}, layout: {} };

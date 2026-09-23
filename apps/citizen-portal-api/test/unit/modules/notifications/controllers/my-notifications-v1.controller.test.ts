@@ -1,18 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Request, Response } from 'express';
-import { type AuthUser } from '@repo/nestjs/auth';
 import { MyNotificationsV1Controller } from '../../../../../src/modules/notifications/controllers/my-notifications-v1.controller';
 import { NotificationsProxyService } from '../../../../../src/modules/notifications/services/notifications-proxy.service';
 import type {
   FeedQueryDto,
   UpdatePreferencesDto,
 } from '../../../../../src/modules/notifications/dtos/notification.dtos';
+import { createMockUser } from '../../../../utils/createMockUser';
+import { createMockReq } from '../../../../utils/createMockReq';
+import { createMockRes } from '../../../../utils/createMockRes';
 
 describe('MyNotificationsV1Controller Unit Test Suite', () => {
   let controller: MyNotificationsV1Controller;
   let notificationsProxyServiceMock: any;
 
-  const mockUser = { id: 'user-123' } as unknown as AuthUser;
+  const mockUser = createMockUser();
 
   beforeEach(() => {
     notificationsProxyServiceMock = {
@@ -25,7 +26,7 @@ describe('MyNotificationsV1Controller Unit Test Suite', () => {
   });
 
   describe('list', () => {
-    it('should list notifications for the current user with limit and offset', async () => {
+    it('Should list notifications for the current user with limit and offset', async () => {
       const query: FeedQueryDto = { limit: 10, offset: 0 };
       const mockResult = { items: [], total: 0 };
       notificationsProxyServiceMock.request.mockResolvedValue(mockResult);
@@ -41,9 +42,9 @@ describe('MyNotificationsV1Controller Unit Test Suite', () => {
   });
 
   describe('stream', () => {
-    it('should pipe stream to response', async () => {
-      const mockReq = {} as Request;
-      const mockRes = {} as Response;
+    it('Should pipe stream to response', async () => {
+      const mockReq = createMockReq();
+      const mockRes = createMockRes();
       notificationsProxyServiceMock.pipeStream.mockResolvedValue(undefined);
 
       await controller.stream(mockUser, mockReq, mockRes);
@@ -57,7 +58,7 @@ describe('MyNotificationsV1Controller Unit Test Suite', () => {
   });
 
   describe('unreadCount', () => {
-    it('should get unread count for the current user', async () => {
+    it('Should get unread count for the current user', async () => {
       const mockResult = { count: 5 };
       notificationsProxyServiceMock.request.mockResolvedValue(mockResult);
 
@@ -72,7 +73,7 @@ describe('MyNotificationsV1Controller Unit Test Suite', () => {
   });
 
   describe('readAll', () => {
-    it('should mark all notifications as read for the current user', async () => {
+    it('Should mark all notifications as read for the current user', async () => {
       const mockResult = { success: true };
       notificationsProxyServiceMock.request.mockResolvedValue(mockResult);
 
@@ -87,7 +88,7 @@ describe('MyNotificationsV1Controller Unit Test Suite', () => {
   });
 
   describe('markRead', () => {
-    it('should mark specific notification as read and encode deliveryId', async () => {
+    it('Should mark specific notification as read and encode deliveryId', async () => {
       const deliveryId = 'delivery/123+abc';
       const mockResult = { id: deliveryId, read: true };
       notificationsProxyServiceMock.request.mockResolvedValue(mockResult);
@@ -103,7 +104,7 @@ describe('MyNotificationsV1Controller Unit Test Suite', () => {
   });
 
   describe('preferences', () => {
-    it('should get notification preferences for the current user', async () => {
+    it('Should get notification preferences for the current user', async () => {
       const mockResult = { channels: [] };
       notificationsProxyServiceMock.request.mockResolvedValue(mockResult);
 
@@ -118,7 +119,7 @@ describe('MyNotificationsV1Controller Unit Test Suite', () => {
   });
 
   describe('updatePreferences', () => {
-    it('should update notification preferences for the current user', async () => {
+    it('Should update notification preferences for the current user', async () => {
       const updateDto: UpdatePreferencesDto = {
         channels: [{ channel: 'email', enabled: true }],
       };

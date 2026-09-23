@@ -7,7 +7,7 @@ import { CatalogV1Controller } from '../../../../src/modules/catalog/controllers
 import { CatalogService } from '../../../../src/modules/catalog/services/catalog.service';
 
 describe('CatalogModule Unit Test Suite', () => {
-  it('should compile CatalogModule successfully and resolve all controllers and providers', async () => {
+  it('Should compile CatalogModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {}; // mock database client
 
     @Global()
@@ -39,7 +39,7 @@ describe('CatalogModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly', () => {
     const controllers = Reflect.getMetadata('controllers', CatalogModule) as any[];
     const providers = Reflect.getMetadata('providers', CatalogModule) as any[];
 

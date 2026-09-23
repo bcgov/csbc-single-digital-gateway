@@ -41,12 +41,12 @@ describe('citizen service-agreement history (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('protects the history endpoints (401 without a session)', async () => {
+  it('Should protect the history endpoints (401 without a session)', async () => {
     expect((await http().get('/v1/me/service-agreements')).status).toBe(401);
     expect((await http().get('/v1/me/service-agreements/abc')).status).toBe(401);
   });
 
-  it('rejects a malformed :id with 400 once past the guard (before any DB access)', async () => {
+  it('Should reject a malformed :id with 400 once past the guard (before any DB access)', async () => {
     const res = await http()
       .get('/v1/me/service-agreements/not-a-uuid')
       .set('x-test-user', seedUser());

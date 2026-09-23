@@ -8,7 +8,7 @@ import type { SubmissionStatus } from '../../../../../src/modules/applications/d
 
 describe('format utils', () => {
   describe('submissionStatusLabel', () => {
-    it('should map each SubmissionStatus to its correct human-facing label', () => {
+    it('Should map each SubmissionStatus to its correct human-facing label', () => {
       const cases: Record<SubmissionStatus, string> = {
         draft: 'Draft',
         pending: 'Submitted',
@@ -26,7 +26,7 @@ describe('format utils', () => {
   });
 
   describe('applicationReference', () => {
-    it('should format creation date and last 4 chars of submission ID into stable reference', () => {
+    it('Should format creation date and last 4 chars of submission ID into stable reference', () => {
       const createdAt = new Date('2026-07-08T11:52:11-07:00');
       // toISOString of 2026-07-08T11:52:11-07:00 is 2026-07-08T18:52:11.000Z.
       // slice(0, 10) is "2026-07-08", replaceAll('-', '') is "20260708".
@@ -37,7 +37,7 @@ describe('format utils', () => {
       expect(ref).toBe('20260708-7890');
     });
 
-    it('should convert the suffix to uppercase', () => {
+    it('Should convert the suffix to uppercase', () => {
       const createdAt = new Date('2026-01-01T00:00:00Z');
       const submissionId = 'some-uuid-with-abcdef';
 
@@ -49,7 +49,7 @@ describe('format utils', () => {
 
   describe('normalizeFormStructure', () => {
     describe('multi-stage-form kind', () => {
-      it('should return valid structure with fields preserved when they are of correct types', () => {
+      it('Should return valid structure with fields preserved when they are of correct types', () => {
         const structure = {
           name: 'My Form',
           description: 'A test form',
@@ -66,7 +66,7 @@ describe('format utils', () => {
         });
       });
 
-      it('should default missing or incorrectly typed fields to empty strings/arrays', () => {
+      it('Should default missing or incorrectly typed fields to empty strings/arrays', () => {
         const structure = {
           name: 123, // wrong type
           description: null, // wrong type
@@ -85,7 +85,7 @@ describe('format utils', () => {
     });
 
     describe('other kinds (e.g., basic-form)', () => {
-      it('should preserve custom schema and uischema if they exist', () => {
+      it('Should preserve custom schema and uischema if they exist', () => {
         const structure = {
           schema: { type: 'object', properties: { test: { type: 'string' } } },
           uischema: { type: 'VerticalLayout', elements: [{ type: 'Control' }] },
@@ -98,7 +98,7 @@ describe('format utils', () => {
         });
       });
 
-      it('should return default schema and uischema if they are missing', () => {
+      it('Should return default schema and uischema if they are missing', () => {
         const result = normalizeFormStructure('basic-form', {});
         expect(result).toEqual({
           schema: {

@@ -9,7 +9,7 @@ import { GeoService } from '../../../../src/modules/geo/services/geo.service';
 import { GeocoderService } from '../../../../src/modules/geo/services/geocoder.service';
 
 describe('GeoModule Unit Test Suite', () => {
-  it('should compile GeoModule successfully and resolve all controllers and providers', async () => {
+  it('Should compile GeoModule successfully and resolve all controllers and providers', async () => {
     const mockDbClient = {};
 
     @Global()
@@ -44,7 +44,7 @@ describe('GeoModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly', () => {
     const controllers = Reflect.getMetadata('controllers', GeoModule) as any[];
     const providers = Reflect.getMetadata('providers', GeoModule) as any[];
 
