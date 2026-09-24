@@ -8,11 +8,14 @@ import {
   type RefObject,
   type SetStateAction,
 } from 'react';
+import type { TreeElement } from './layout/element-tree';
 import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement, StudioSelection } from '../renderers/studio/studio-selection';
 import type { TabsEditor } from '../renderers/gridstack/tabs-editor';
 import type { FlowEditor } from '../renderers/xyflow/flow-editor';
 import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
+import { capabilityFor } from '../capabilities/capability-for';
+import { grantsNothing, useCapabilities } from '../renderers/studio/studio-capabilities';
 import { useSelectionFlowEditor, type FlowInsertGesture } from './use-flow-document';
 import { useSelectionTabsEditor } from './use-tabs-document';
 
@@ -43,6 +46,8 @@ export interface SelectableDocument {
   joinsOnDelete(elementId: string): boolean;
   /** The id of the element holding `elementId`; `null` for the root or an unknown id. */
   parentOf(elementId: string): string | null;
+  /** Doc 221: the element itself, so selection can ask what a governing template permits for it. */
+  elementOf(elementId: string): TreeElement | undefined;
   copy(elementId: string, placement: StudioItemPlacement): string | undefined;
   /** Inserts a dropped palette template (doc 189 rule 25): the new element's id, or `undefined` when refused. */
   insert(gesture: Extract<GridGesture, { type: 'insert' }>): string | undefined;
@@ -303,15 +308,34 @@ export function useStudioSelection(
    * working unchanged and sees "no element selected" while an edge is selected, which is the behaviour wanted.
    * The invariant (at most one is set) is enforced in `setSelected` and `selectEdge` alone.
    */
+  // Doc 221: the GOVERNING map, or `null` when nothing governs this document.
+  const capabilities = useCapabilities();
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const edgeRef = useRef<string | null>(null);
   edgeRef.current = selectedEdge;
 
-  /** Rule 1: selecting an element clears the edge. The one place the two selections are reconciled. */
-  const setSelected = useCallback<IdSetter>((update) => {
-    setSelectedElement(update);
-    setSelectedEdge(null);
-  }, []);
+  /**
+   * Rule 1: selecting an element clears the edge. The one place the two selections are reconciled.
+   *
+   * Doc 221 rule 3: an element a governing template permits NOTHING on cannot be selected — there is
+   * nothing to do with it once selected, and an empty inspector reads as a bug. Selectability is
+   * DERIVED, never a stored flag: an element whose label is editable but whose validation is frozen
+   * still selects, and shows the reduced inspector. Ungoverned resolves to FULLY_GRANTED, so this
+   * refuses nothing when no template governs the document.
+   */
+  const setSelected = useCallback<IdSetter>(
+    (update) => {
+      setSelectedElement((previous) => {
+        const next = typeof update === 'function' ? update(previous) : update;
+        if (next === null || capabilities === null) return next;
+        const element = studio.elementOf(next);
+        if (element === undefined) return next;
+        return grantsNothing(capabilityFor(capabilities, element)) ? previous : next;
+      });
+      setSelectedEdge(null);
+    },
+    [capabilities, studio],
+  );
   const selectEdge = useCallback((edgeId: string | null) => {
     setSelectedEdge(edgeId);
     if (edgeId !== null) setSelectedElement(null);

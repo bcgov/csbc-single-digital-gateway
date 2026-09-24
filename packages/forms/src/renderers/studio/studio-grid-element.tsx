@@ -1,3 +1,4 @@
+import type { UISchemaElement } from '@jsonforms/core';
 import { useContext, useRef } from 'react';
 import { GridContext } from '../gridstack/grid-context';
 import { GridElementDispatch, type GridElementDispatchProps } from '../gridstack/index';
@@ -6,6 +7,10 @@ import { StudioElementToolbar } from './studio-element-toolbar';
 import { StudioItemContext } from './studio-item-context';
 import { resizingFor, useResizeHandles } from './studio-item-resize';
 import { useSelectionPort } from './studio-selection';
+import { grantsNothing, useCapability } from './studio-capabilities';
+
+/** A stand-in so the capability hook runs unconditionally even before the element resolves. */
+const EMPTY_ELEMENT = { type: 'Element' } as UISchemaElement;
 
 /**
  * The studio's grid item (doc 180 rules 17b, 17d), registered under `GRID_ELEMENT_COMPONENT`.
@@ -37,6 +42,10 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
 
   const hovered = id !== undefined && selection?.hoveredId === id;
   const selected = id !== undefined && selection?.selectedId === id;
+  // Doc 221: what a GOVERNING template permits for this element. Ungoverned resolves to
+  // FULLY_GRANTED, so `locked` is false and every affordance below renders exactly as before.
+  const capability = useCapability(element ?? EMPTY_ELEMENT);
+  const locked = grantsNothing(capability);
 
   return (
     <div
@@ -46,6 +55,7 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
       data-element-id={selection ? id : undefined}
       data-hovered={hovered ? '' : undefined}
       data-selected={selected ? '' : undefined}
+      data-locked={locked ? '' : undefined}
       className="p-2"
     >
       <StudioItemContext.Provider value>
@@ -59,6 +69,7 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
           open={(hovered || selected) && !selection.gesturing}
           itemRef={rootRef}
           selection={selection}
+          canDelete={capability.remove}
         />
       ) : null}
     </div>

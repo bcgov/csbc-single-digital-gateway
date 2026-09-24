@@ -304,7 +304,8 @@ export function useStudioDocument({ schema, uischema, capabilities }: StudioDocu
         { schema: currentSchema, uischema: currentUischema },
         elementId,
         ids,
-        current.capabilities,
+        // `exactOptionalPropertyTypes`: an absent map is an absent KEY, never an explicit undefined.
+        current.capabilities === undefined ? {} : { authored: current.capabilities },
       ),
     [currentSchema, currentUischema, ids],
   );

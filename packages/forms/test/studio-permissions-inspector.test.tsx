@@ -46,7 +46,7 @@ const buildForm = (element: UISchemaElement, capabilities?: CapabilityMap) => {
   const ids = createElementIds();
   const uischema = docWith(element);
   const document = { schema, uischema };
-  const form = inspectorForm(document, ids.idOf(element), ids, capabilities);
+  const form = inspectorForm(document, ids.idOf(element), ids, { authored: capabilities });
   return { ids, document, form: form! };
 };
 
@@ -97,7 +97,7 @@ describe('the two labelled groups', () => {
   it('offers edges only on a Flow', () => {
     const flow = el({ type: 'Flow', id: 'flow1', label: 'F', elements: [] });
     const ids = createElementIds();
-    const form = inspectorForm({ schema, uischema: flow }, ids.idOf(flow), ids, {})!;
+    const form = inspectorForm({ schema, uischema: flow }, ids.idOf(flow), ids, { authored: {} })!;
     expect(keysIn(form.uischema, 'Its contents')).toContain('perm_edges');
     expect(keysIn(buildForm(section(), {}).form.uischema, 'Its contents')).not.toContain(
       'perm_edges',

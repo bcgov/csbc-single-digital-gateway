@@ -13,6 +13,15 @@ interface StudioElementToolbarProps {
   /** The studio grid item root — the single child of gridstack's item content box. */
   readonly itemRef: RefObject<HTMLElement | null>;
   readonly selection: StudioSelection;
+  /**
+   * Doc 221: whether a governing template permits deleting this element. Passed as a plain boolean
+   * rather than resolved here — this component is presentational and has no element to resolve.
+   * Defaults to `true`, so an ungoverned studio renders exactly as before.
+   *
+   * COPY is NOT gated here. A copy needs somewhere to go, so it is the PARENT's `addChildren` that
+   * decides, and only the studio's `copy` command can resolve a parent — the write gate covers it.
+   */
+  readonly canDelete?: boolean;
 }
 
 /** The item's engine placement at click time (rule 15); authored `gridItem` may lack `x`/`y`. */
@@ -32,6 +41,7 @@ export function StudioElementToolbar({
   open,
   itemRef,
   selection,
+  canDelete = true,
 }: StudioElementToolbarProps) {
   const anchor = useCallback(() => itemRef.current?.parentElement ?? null, [itemRef]);
 
@@ -57,15 +67,20 @@ export function StudioElementToolbar({
           >
             <Icon path={mdiContentCopy} size="14px" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Delete"
-            className="text-destructive"
-            onClick={() => selection.requestDelete(elementId)}
-          >
-            <Icon path={mdiDeleteOutline} size="14px" />
-          </Button>
+          {/* Doc 221 rule 6: a denied affordance is ABSENT, not disabled with a tooltip — nothing
+              was attempted, and explaining policy on every hover puts it in front of the owner
+              constantly rather than on contact. */}
+          {canDelete ? (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Delete"
+              className="text-destructive"
+              onClick={() => selection.requestDelete(elementId)}
+            >
+              <Icon path={mdiDeleteOutline} size="14px" />
+            </Button>
+          ) : null}
         </ButtonGroup>
       </PopoverContent>
     </Popover>

@@ -1,7 +1,8 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import type { ElementIds } from '../layout/element-ids';
 import type { EditableDocument } from '../layout/schema-properties';
-import type { CapabilityMap } from '../../capabilities/capability-types';
+import type { CapabilityMap, ResolvedCapability } from '../../capabilities/capability-types';
+import { mayEdit } from '../../capabilities/capability-for';
 import {
   entryFor,
   permissionFieldsFor,
@@ -86,15 +87,36 @@ const PERMISSION_GROUPS: readonly { readonly id: PermissionGroup; readonly label
  * `VerticalLayout` of headed `Group` sections (empty sections left out), and the view model read from the
  * document. `undefined` when the element is not in the document.
  */
+/**
+ * The two capability inputs, which are DIFFERENT things travelling in different directions.
+ *
+ * `authored` (doc 220) is the map being EDITED on a template — its presence is what adds the
+ * Permissions section. `governing` (doc 221) is what a template permits on a document built FROM one
+ * — it filters which settings are offered at all. A template is authored and ungoverned; a derived
+ * document is governed and authors nothing. An options bag rather than two positional parameters,
+ * because `inspectorForm(doc, id, ids, mapA, mapB)` would be unreadable at every call site.
+ */
+export interface InspectorFormOptions {
+  readonly authored?: CapabilityMap | undefined;
+  readonly governing?: ResolvedCapability | undefined;
+}
+
 export function inspectorForm(
   document: EditableDocument,
   elementId: string,
   ids: ElementIds,
-  capabilities?: CapabilityMap | undefined,
+  options: InspectorFormOptions = {},
 ): InspectorForm | undefined {
+  const { authored: capabilities, governing } = options;
   const ctx = inspectorContext(document, elementId, ids);
   if (!ctx) return undefined;
-  const fields = fieldsFor(ctx);
+  // Doc 221: a governing template decides which settings are offered at all. Ungoverned (no
+  // provider) means `governing` is absent and every applicable field is offered, exactly as before.
+  const applicable = fieldsFor(ctx);
+  const fields =
+    governing === undefined
+      ? applicable
+      : applicable.filter((field) => mayEdit(governing, field.key));
   // Doc 220: the Permissions section exists only when this document HAS a capability map — the
   // package's "presence enables it" idiom. An empty `{}` still counts: that is a template whose
   // author has not written a rule yet, which a non-empty check could not express.

@@ -9,6 +9,10 @@ import { FLOW_TYPE, isFlowNodeType } from '../xyflow/flow-elements';
 import { StudioContent } from './studio-content';
 import { StudioItemContext } from './studio-item-context';
 import { useSelectionPort } from './studio-selection';
+import { grantsNothing, useCapability } from './studio-capabilities';
+
+/** A stand-in so the capability hook runs unconditionally even for a renderer with no uischema. */
+const EMPTY_ELEMENT = { type: 'Element' } as UISchemaElement;
 import { StudioStageActions } from './studio-stage-actions';
 
 interface FramedProps {
@@ -39,12 +43,18 @@ export function withStudioFrame<P extends FramedProps>(
     const selection = useSelectionPort();
     const editor = useGridEditor();
     const frameRef = useRef<HTMLDivElement>(null);
+    // Declared BEFORE the early return: a hook may not be called conditionally, and this component
+    // returns early for a framed grid item.
+    const capability = useCapability(props.uischema ?? EMPTY_ELEMENT);
     if (insideGridItem) return <Renderer {...props} />;
 
     const type = props.uischema?.type ?? 'Element';
     const id = selection && editor && props.uischema ? editor.idOf(props.uischema) : undefined;
     const hovered = id !== undefined && selection?.hoveredId === id;
     const selected = id !== undefined && selection?.selectedId === id;
+    // Doc 221: what a GOVERNING template permits. Ungoverned resolves to FULLY_GRANTED, so `locked`
+    // is false and everything below behaves exactly as it did before this feature.
+    const locked = grantsNothing(capability);
     // Generic props can't take a JSX `enabled={false}` override, hence the spread-and-cast.
     const disabled = { ...props, enabled: false } as P;
     // Doc 195 rule 23: a Flow's canvas fills the centre panel, so its frame does.
@@ -57,15 +67,16 @@ export function withStudioFrame<P extends FramedProps>(
         data-element-id={id}
         data-hovered={hovered ? '' : undefined}
         data-selected={selected ? '' : undefined}
+        data-locked={locked ? '' : undefined}
         // Arbitrary `data-[…]` variants, not `data-selected:`: the imported shadcn stylesheet redefines
         // `data-selected` as a custom variant for `[data-selected="true"]`, which a presence flag never matches.
-        className={`${fill}rounded-sm border border-dashed border-border p-2 data-[hovered]:border-ring data-[selected]:border-ring data-[selected]:border-solid`}
+        className={`${fill}rounded-sm border border-dashed border-border p-2 data-[hovered]:border-ring data-[selected]:border-ring data-[selected]:border-solid data-[locked]:cursor-not-allowed data-[locked]:border-muted-foreground/30`}
       >
         <StudioContent type={type}>
           <Renderer {...disabled} />
         </StudioContent>
         {/* Doc 199 rule 31: a Condition gets the same Delete-only popover a Stage has. */}
-        {isFlowNodeType(type) && selection && id !== undefined ? (
+        {isFlowNodeType(type) && selection && id !== undefined && capability.remove ? (
           <StudioStageActions
             elementId={id}
             label={`${type} actions`}
