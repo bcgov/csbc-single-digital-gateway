@@ -23,13 +23,20 @@ const basicStructure = {
   },
 };
 
-const multiStageStructure = {
-  stages: [
-    {
-      pages: [
-        {
-          uischema: {
-            type: 'VerticalLayout',
+/**
+ * Feature 217: a staged application is a `Flow` ROOT inside the single uischema — Stages and Forms
+ * are nested `elements`, not a separate `{ stages: [{ pages }] }` object with its own uischemas.
+ * The collector walks the whole tree, so a control several layouts deep is still found.
+ */
+const flowStructure = {
+  uischema: {
+    type: 'Flow',
+    elements: [
+      {
+        type: 'Stage',
+        elements: [
+          {
+            type: 'Form',
             elements: [
               {
                 type: 'Group',
@@ -39,23 +46,23 @@ const multiStageStructure = {
               },
             ],
           },
-        },
-      ],
-    },
-  ],
+        ],
+      },
+    ],
+  },
 };
 
 describe('collectAddressPostals', () => {
   it('finds an address field with a non-empty postal (basic form)', () => {
-    const entries = collectAddressPostals('basic-form', basicStructure, {
+    const entries = collectAddressPostals(basicStructure, {
       home: { country: 'Canada', postal_code: 'V8W 1A1' },
       name: 'Ada',
     });
     expect(entries).toEqual([{ key: 'home', country: 'Canada', postal: 'V8W 1A1' }]);
   });
 
-  it('recurses into layout groups (multi-stage form)', () => {
-    const entries = collectAddressPostals('multi-stage-form', multiStageStructure, {
+  it('recurses into the nested layouts of a Flow', () => {
+    const entries = collectAddressPostals(flowStructure, {
       work: { country: 'United States', postal_code: '90210' },
     });
     expect(entries).toEqual([{ key: 'work', country: 'United States', postal: '90210' }]);
@@ -63,12 +70,12 @@ describe('collectAddressPostals', () => {
 
   it('skips addresses with an empty postal or missing country', () => {
     expect(
-      collectAddressPostals('basic-form', basicStructure, {
+      collectAddressPostals(basicStructure, {
         home: { country: 'Canada', postal_code: '' },
       }),
     ).toEqual([]);
     expect(
-      collectAddressPostals('basic-form', basicStructure, {
+      collectAddressPostals(basicStructure, {
         home: { country: '', postal_code: 'V8W 1A1' },
       }),
     ).toEqual([]);

@@ -79,22 +79,24 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
     it('should retrieve list of approved agreements newest first and map correctly', async () => {
       const createdAt = new Date('2026-07-31T20:00:00Z');
       const mockRows = [
+        // Feature 217: the title is the CONSENTED version's GENERATED column, not a value read
+        // out of its `data` blob. A NULL means its content carried no root label.
         {
           id: 'consent-id-1',
           agreementDocumentId: 'doc-id-1',
-          data: { title: 'First Agreement' },
+          title: 'First Agreement',
           createdAt,
         },
         {
           id: 'consent-id-2',
           agreementDocumentId: 'doc-id-2',
-          data: { title: '' }, // tests str empty string fallback
+          title: '', // an empty generated title still falls back
           createdAt,
         },
         {
           id: 'consent-id-3',
           agreementDocumentId: 'doc-id-3',
-          data: null, // tests asData null fallback
+          title: null,
           createdAt,
         },
       ];
@@ -149,12 +151,17 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         id: consentId,
         agreementDocumentId: 'doc-id-1',
         decision: 'approve',
-        data: {
-          title: 'Agreement Detail Title',
-          description: 'A detailed description',
-          content: { type: 'doc', children: [] },
-          approveLabel: 'Custom Approve',
-          rejectLabel: 'Custom Reject',
+        // Feature 217: title/description are GENERATED columns; the approve/reject labels are
+        // AUTHORED options on the content's root element; `content` is the whole document.
+        title: 'Agreement Detail Title',
+        description: 'A detailed description',
+        content: {
+          schema: { type: 'object', properties: {} },
+          uischema: {
+            type: 'Form',
+            elements: [],
+            options: { approveLabel: 'Custom Approve', rejectLabel: 'Custom Reject' },
+          },
         },
         createdAt,
       };
@@ -168,7 +175,14 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         agreementDocumentId: 'doc-id-1',
         title: 'Agreement Detail Title',
         description: 'A detailed description',
-        content: { type: 'doc', children: [] },
+        content: {
+          schema: { type: 'object', properties: {} },
+          uischema: {
+            type: 'Form',
+            elements: [],
+            options: { approveLabel: 'Custom Approve', rejectLabel: 'Custom Reject' },
+          },
+        },
         decision: 'approve',
         approveLabel: 'Custom Approve',
         rejectLabel: 'Custom Reject',
@@ -176,19 +190,15 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
       });
     });
 
-    it('should fallback to null / default labels when fields in JSON data are missing or empty', async () => {
+    it('falls back to a default title and labels when the content authors none', async () => {
       const createdAt = new Date('2026-07-31T20:00:00Z');
       const mockRow = {
         id: consentId,
         agreementDocumentId: 'doc-id-1',
         decision: 'reject',
-        data: {
-          title: undefined,
-          description: '', // empty description should fallback to null
-          content: undefined, // missing content should fallback to null
-          approveLabel: '',
-          rejectLabel: undefined,
-        },
+        title: null, // no root label → NULL generated title
+        description: '', // an empty generated description falls back to null
+        content: { schema: {}, uischema: { type: 'Form', elements: [] } },
         createdAt,
       };
 
@@ -201,7 +211,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         agreementDocumentId: 'doc-id-1',
         title: 'Service agreement', // Fallback title
         description: null, // Fallback description
-        content: null, // Fallback content
+        content: { schema: {}, uischema: { type: 'Form', elements: [] } },
         decision: 'reject',
         approveLabel: 'I approve', // Fallback label
         rejectLabel: 'I do not approve', // Fallback label

@@ -26,28 +26,21 @@ export function applicationReference(submissionId: string, createdAt: Date): str
 }
 
 /**
- * Coerce a form version's stored `schema` JSONB into the structure the renderer needs, defaulting
- * any missing arrays/fields (a template-seeded blob can omit them — see CLAUDE.md normalize rule).
+ * Coerce a document version's stored `content` JSONB into the structure the renderer needs,
+ * defaulting either half when absent.
+ *
+ * Feature 217: `content` IS `{ schema, uischema }` (a `@repo/forms` StudioDocument), so there is no
+ * per-kind shape to branch on — a staged application is a `Flow` root inside `uischema`, not a
+ * different top-level object.
  */
-export function normalizeFormStructure(
-  kind: string,
-  structure: Record<string, unknown>,
-): Record<string, unknown> {
-  if (kind === 'multi-stage-form') {
-    return {
-      name: typeof structure['name'] === 'string' ? structure['name'] : '',
-      description: typeof structure['description'] === 'string' ? structure['description'] : '',
-      stages: Array.isArray(structure['stages']) ? structure['stages'] : [],
-      edges: Array.isArray(structure['edges']) ? structure['edges'] : [],
-    };
-  }
+export function normalizeContent(content: Record<string, unknown>): Record<string, unknown> {
   return {
-    schema: (structure['schema'] as Record<string, unknown> | undefined) ?? {
+    schema: (content['schema'] as Record<string, unknown> | undefined) ?? {
       type: 'object',
       properties: {},
     },
-    uischema: (structure['uischema'] as Record<string, unknown> | undefined) ?? {
-      type: 'VerticalLayout',
+    uischema: (content['uischema'] as Record<string, unknown> | undefined) ?? {
+      type: 'Form',
       elements: [],
     },
   };

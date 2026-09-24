@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
-import { type Database, documentReferences, documentVersions, documents } from '@repo/database';
+import { type Database, documentVersions, documents } from '@repo/database';
 import { CatalogService } from '../../../../../src/modules/catalog/services/catalog.service';
 
 const createDbMock = () => {
@@ -79,6 +79,41 @@ const createDbMock = () => {
   return { dbMock, mockResponse };
 };
 
+/**
+ * Feature 217. A service is an AUTHORED document: title and description are GENERATED columns on
+ * its version (nullable), the version's own `content` is what renders, and the "ways to apply"
+ * list is gone with `document_references`.
+ */
+const serviceRow = (over: Record<string, unknown> = {}) => [
+  {
+    id: 'service-123',
+    title: 'Published Service Title',
+    description: 'Published Service Desc',
+    versionId: 'version-456',
+    versionNumber: 1,
+    publishedAt: new Date('2026-07-08T12:00:00Z'),
+    content: {
+      schema: { type: 'object' },
+      uischema: { type: 'Service', elements: [] },
+    },
+    ...over,
+  },
+];
+
+const versionRow = (over: Record<string, unknown> = {}) => [
+  {
+    id: 'version-456',
+    versionNumber: 2,
+    status: 'published',
+    title: 'Published Service Title',
+    content: { schema: { type: 'object' }, uischema: { type: 'Service', elements: [] } },
+    createdAt: new Date('2026-07-01T12:00:00Z'),
+    publishedAt: new Date('2026-07-08T12:00:00Z'),
+    archivedAt: null,
+    ...over,
+  },
+];
+
 describe('CatalogService Unit Test Suite', () => {
   let service: CatalogService;
   let dbMock: any;
@@ -92,132 +127,56 @@ describe('CatalogService Unit Test Suite', () => {
   });
 
   describe('listServices', () => {
-    it('should list services with search and limit filters applied', async () => {
-      const mockRows = [
-        {
-          id: 'service-1',
-          docTitle: 'Service 1 Title',
-          docDescription: 'Service 1 Desc',
-          data: { title: 'Custom Service 1', description: 'Custom Desc 1' },
-        },
-        {
-          id: 'service-2',
-          docTitle: 'Service 2 Title',
-          docDescription: 'Service 2 Desc',
-          data: {}, // no custom fields, should fall back
-        },
-      ];
+    it("lists services from the published version's generated columns", async () => {
+      mockResponse(
+        [
+          { id: 'service-1', title: 'Business licence', description: 'Apply for a licence' },
+          { id: 'service-2', title: 'Waste permit', description: null },
+        ],
+        documents,
+        'select',
+      );
 
-      mockResponse(mockRows, documents, 'select');
-
-      const result = await service.listServices({ q: 'health', limit: 10 });
+      const result = await service.listServices({ q: 'licence', limit: 10 });
 
       expect(result).toEqual([
-        {
-          id: 'service-1',
-          title: 'Custom Service 1',
-          description: 'Custom Desc 1',
-        },
-        {
-          id: 'service-2',
-          title: 'Service 2 Title',
-          description: 'Service 2 Desc',
-        },
+        { id: 'service-1', title: 'Business licence', description: 'Apply for a licence' },
+        { id: 'service-2', title: 'Waste permit', description: null },
       ]);
     });
 
-    it('should handle undefined search parameter', async () => {
-      const mockRows = [
-        {
-          id: 'service-1',
-          docTitle: 'Service 1 Title',
-          docDescription: 'Service 1 Desc',
-          data: {},
-        },
-      ];
-
-      mockResponse(mockRows, documents, 'select');
+    it('passes a NULL title and description straight through', async () => {
+      // A service whose content carries no root label, or a rich (Lexical) description, yields
+      // NULL from the generated column — the portal decides how to present that, not the API.
+      mockResponse([{ id: 'service-1', title: null, description: null }], documents, 'select');
 
       const result = await service.listServices({ limit: 50 });
 
-      expect(result).toEqual([
-        {
-          id: 'service-1',
-          title: 'Service 1 Title',
-          description: 'Service 1 Desc',
-        },
-      ]);
+      expect(result).toEqual([{ id: 'service-1', title: null, description: null }]);
     });
 
-    it('should handle empty search parameter ("")', async () => {
-      const mockRows = [
-        {
-          id: 'service-1',
-          docTitle: 'Service 1 Title',
-          docDescription: 'Service 1 Desc',
-          data: {},
-        },
-      ];
+    it('handles an undefined search parameter', async () => {
+      mockResponse([{ id: 'service-1', title: 'A', description: null }], documents, 'select');
 
-      mockResponse(mockRows, documents, 'select');
-
-      const result = await service.listServices({ q: '', limit: 50 });
-
-      expect(result).toEqual([
-        {
-          id: 'service-1',
-          title: 'Service 1 Title',
-          description: 'Service 1 Desc',
-        },
-      ]);
+      await expect(service.listServices({ limit: 50 })).resolves.toHaveLength(1);
     });
 
-    it('should not add match filter if searchFilter returns undefined', async () => {
-      const searchSpy = vi.spyOn(service as any, 'searchFilter').mockReturnValue(undefined);
-      mockResponse([], documents, 'select');
+    it('handles an empty search parameter', async () => {
+      mockResponse([{ id: 'service-1', title: 'A', description: null }], documents, 'select');
 
-      await service.listServices({ q: 'health', limit: 10 });
-
-      expect(searchSpy).toHaveBeenCalledWith('health');
-      searchSpy.mockRestore();
+      await expect(service.listServices({ q: '', limit: 50 })).resolves.toHaveLength(1);
     });
   });
 
   describe('getService', () => {
-    it('should throw NotFoundException if service is not found', async () => {
+    it('throws NotFoundException if the service is not found', async () => {
       mockResponse([], documents, 'select');
 
       await expect(service.getService('svc-invalid')).rejects.toThrow(NotFoundException);
     });
 
-    it('should return service detail with associated applications on success', async () => {
-      const mockServiceRow = [
-        {
-          id: 'service-123',
-          docTitle: 'Fallback Title',
-          docDescription: 'Fallback Desc',
-          versionId: 'version-456',
-          version: 1,
-          publishedAt: new Date('2026-07-08T12:00:00Z'),
-          data: { title: 'Published Service Title', description: 'Published Service Desc' },
-          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
-        },
-      ];
-
-      const mockApplicationsRow = [
-        {
-          id: 'ref-1',
-          label: 'Apply Online',
-          title: 'Intake Form',
-          formId: 'form-abc',
-          formVersionId: 'form-ver-xyz',
-          kind: 'form',
-          targetData: { url: null },
-        },
-      ];
-
-      mockResponse(mockServiceRow, documents, 'select');
-      mockResponse(mockApplicationsRow, documentReferences, 'select');
+    it("renders from the version's OWN content, with no ways-to-apply list", async () => {
+      mockResponse(serviceRow(), documents, 'select');
 
       const result = await service.getService('service-123');
 
@@ -226,228 +185,108 @@ describe('CatalogService Unit Test Suite', () => {
         title: 'Published Service Title',
         description: 'Published Service Desc',
         publishedVersionId: 'version-456',
-        version: 1,
+        versionNumber: 1,
         publishedAt: '2026-07-08T12:00:00.000Z',
-        data: { title: 'Published Service Title', description: 'Published Service Desc' },
         schema: { type: 'object' },
-        uischema: { type: 'VerticalLayout' },
-        applications: [
-          {
-            id: 'ref-1',
-            label: 'Apply Online',
-            title: 'Intake Form',
-            formId: 'form-abc',
-            formVersionId: 'form-ver-xyz',
-            kind: 'form',
-            url: null,
-          },
-        ],
+        uischema: { type: 'Service', elements: [] },
+      });
+      expect(result).not.toHaveProperty('applications');
+      expect(result).not.toHaveProperty('data');
+    });
+
+    it('resolves the whole detail in ONE query', async () => {
+      // It used to need a second query for the application-method references.
+      mockResponse(serviceRow(), documents, 'select');
+
+      await service.getService('service-123');
+
+      expect(dbMock.select).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles a null publishedAt', async () => {
+      mockResponse(serviceRow({ publishedAt: null }), documents, 'select');
+
+      await expect(service.getService('service-123')).resolves.toMatchObject({
+        publishedAt: null,
       });
     });
 
-    it('should map applications with external url correctly', async () => {
-      const mockServiceRow = [
-        {
-          id: 'service-123',
-          docTitle: 'Fallback Title',
-          docDescription: 'Fallback Desc',
-          versionId: 'version-456',
-          version: 1,
-          publishedAt: new Date('2026-07-08T12:00:00Z'),
-          data: { title: 'Published Service Title', description: 'Published Service Desc' },
-          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
-        },
-      ];
+    it('defaults both halves when the content is empty', async () => {
+      mockResponse(serviceRow({ content: {} }), documents, 'select');
 
-      const mockApplicationsRow = [
-        {
-          id: 'ref-1',
-          label: 'Apply Externally 1',
-          title: 'External Site 1',
-          formId: 'form-abc',
-          formVersionId: 'form-ver-xyz',
-          kind: 'external-application',
-          targetData: { url: 'https://example.com' },
-        },
-        {
-          id: 'ref-2',
-          label: 'Apply Externally 2',
-          title: 'External Site 2',
-          formId: 'form-def',
-          formVersionId: 'form-ver-uvw',
-          kind: 'external-application',
-          targetData: { url: 123 },
-        },
-      ];
-
-      mockResponse(mockServiceRow, documents, 'select');
-      mockResponse(mockApplicationsRow, documentReferences, 'select');
-
-      const result = await service.getService('service-123');
-
-      expect(result.applications).toEqual([
-        {
-          id: 'ref-1',
-          label: 'Apply Externally 1',
-          title: 'External Site 1',
-          formId: 'form-abc',
-          formVersionId: 'form-ver-xyz',
-          kind: 'external-application',
-          url: 'https://example.com',
-        },
-        {
-          id: 'ref-2',
-          label: 'Apply Externally 2',
-          title: 'External Site 2',
-          formId: 'form-def',
-          formVersionId: 'form-ver-uvw',
-          kind: 'external-application',
-          url: null,
-        },
-      ]);
-    });
-
-    it('should handle null publishedAt on success', async () => {
-      const mockServiceRow = [
-        {
-          id: 'service-123',
-          docTitle: 'Fallback Title',
-          docDescription: 'Fallback Desc',
-          versionId: 'version-456',
-          version: 1,
-          publishedAt: null,
-          data: { title: 'Published Service Title', description: 'Published Service Desc' },
-          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
-        },
-      ];
-
-      mockResponse(mockServiceRow, documents, 'select');
-      mockResponse([], documentReferences, 'select');
-
-      const result = await service.getService('service-123');
-      expect(result.publishedAt).toBeNull();
+      await expect(service.getService('service-123')).resolves.toMatchObject({
+        schema: {},
+        uischema: {},
+      });
     });
   });
 
   describe('getServiceVersion', () => {
-    it('should throw NotFoundException if version is not found', async () => {
+    it('throws NotFoundException if the version is not found', async () => {
       mockResponse([], documentVersions, 'select');
 
-      await expect(service.getServiceVersion('service-123', 'version-invalid')).rejects.toThrow(
+      await expect(service.getServiceVersion('service-123', 'missing')).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should return service version details on success', async () => {
-      const mockVersionRow = [
-        {
-          id: 'version-456',
-          version: 2,
-          status: 'published',
-          data: { title: 'Service Title v2', description: 'Service Desc v2' },
-          createdAt: new Date('2026-07-08T10:00:00Z'),
-          publishedAt: new Date('2026-07-08T12:00:00Z'),
-          archivedAt: null,
-          docTitle: 'Fallback Title',
-          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
-        },
-      ];
-
-      mockResponse(mockVersionRow, documentVersions, 'select');
+    it('returns a published version rendered from its own content', async () => {
+      mockResponse(versionRow(), documentVersions, 'select');
 
       const result = await service.getServiceVersion('service-123', 'version-456');
 
       expect(result).toEqual({
         id: 'version-456',
         serviceId: 'service-123',
-        version: 2,
+        versionNumber: 2,
         status: 'published',
-        title: 'Service Title v2',
-        data: { title: 'Service Title v2', description: 'Service Desc v2' },
+        title: 'Published Service Title',
         schema: { type: 'object' },
-        uischema: { type: 'VerticalLayout' },
-        createdAt: '2026-07-08T10:00:00.000Z',
+        uischema: { type: 'Service', elements: [] },
+        createdAt: '2026-07-01T12:00:00.000Z',
         publishedAt: '2026-07-08T12:00:00.000Z',
         archivedAt: null,
       });
     });
 
-    it('should handle null publishedAt and archivedAt on success', async () => {
-      const mockVersionRow = [
-        {
-          id: 'version-456',
-          version: 2,
-          status: 'published',
-          data: { title: 'Service Title v2', description: 'Service Desc v2' },
-          createdAt: new Date('2026-07-08T10:00:00Z'),
-          publishedAt: null,
-          archivedAt: null,
-          docTitle: 'Fallback Title',
-          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
-        },
-      ];
+    it('returns an archived version with both timestamps', async () => {
+      mockResponse(
+        versionRow({ status: 'archived', archivedAt: new Date('2026-08-01T12:00:00Z') }),
+        documentVersions,
+        'select',
+      );
 
-      mockResponse(mockVersionRow, documentVersions, 'select');
-
-      const result = await service.getServiceVersion('service-123', 'version-456');
-      expect(result.publishedAt).toBeNull();
-      expect(result.archivedAt).toBeNull();
-    });
-
-    it('should return service version details with archived status and defined archivedAt/publishedAt on success', async () => {
-      const mockVersionRow = [
-        {
-          id: 'version-456',
-          version: 2,
-          status: 'archived',
-          data: { title: 'Service Title v2', description: 'Service Desc v2' },
-          createdAt: new Date('2026-07-08T10:00:00Z'),
-          publishedAt: new Date('2026-07-08T12:00:00Z'),
-          archivedAt: new Date('2026-07-08T14:00:00Z'),
-          docTitle: 'Fallback Title',
-          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
-        },
-      ];
-
-      mockResponse(mockVersionRow, documentVersions, 'select');
-
-      const result = await service.getServiceVersion('service-123', 'version-456');
-
-      expect(result).toEqual({
-        id: 'version-456',
-        serviceId: 'service-123',
-        version: 2,
+      await expect(service.getServiceVersion('service-123', 'version-456')).resolves.toMatchObject({
         status: 'archived',
-        title: 'Service Title v2',
-        data: { title: 'Service Title v2', description: 'Service Desc v2' },
-        schema: { type: 'object' },
-        uischema: { type: 'VerticalLayout' },
-        createdAt: '2026-07-08T10:00:00.000Z',
+        archivedAt: '2026-08-01T12:00:00.000Z',
         publishedAt: '2026-07-08T12:00:00.000Z',
-        archivedAt: '2026-07-08T14:00:00.000Z',
       });
     });
 
-    it('should throw NotFoundException if version exists but status is neither published nor archived', async () => {
-      const mockVersionRow = [
-        {
-          id: 'version-456',
-          version: 2,
-          status: 'draft',
-          data: { title: 'Service Title v2', description: 'Service Desc v2' },
-          createdAt: new Date('2026-07-08T10:00:00Z'),
-          publishedAt: null,
-          archivedAt: null,
-          docTitle: 'Fallback Title',
-          definition: { schema: { type: 'object' }, uischema: { type: 'VerticalLayout' } },
-        },
-      ];
+    it('handles null publishedAt and archivedAt', async () => {
+      mockResponse(versionRow({ publishedAt: null, archivedAt: null }), documentVersions, 'select');
 
-      mockResponse(mockVersionRow, documentVersions, 'select');
+      await expect(service.getServiceVersion('service-123', 'version-456')).resolves.toMatchObject({
+        publishedAt: null,
+        archivedAt: null,
+      });
+    });
+
+    it('refuses a version that is neither published nor archived', async () => {
+      // The query already filters on status; this is the belt-and-braces guard behind it.
+      mockResponse(versionRow({ status: 'draft' }), documentVersions, 'select');
 
       await expect(service.getServiceVersion('service-123', 'version-456')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('allows a null title', async () => {
+      mockResponse(versionRow({ title: null }), documentVersions, 'select');
+
+      await expect(service.getServiceVersion('service-123', 'version-456')).resolves.toMatchObject({
+        title: null,
+      });
     });
   });
 });

@@ -15,9 +15,18 @@ const asData = (data: unknown): Record<string, unknown> =>
   typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
 
 /**
+ * The authored options on an agreement's root element. Feature 217: an agreement is AUTHORED, so
+ * the approve/reject labels its author chose are options on its `uischema` root rather than values
+ * filled into a `data` blob.
+ */
+const rootOptions = (content: unknown): Record<string, unknown> =>
+  (asData(asData(content)['uischema'])['options'] as Record<string, unknown>) ?? {};
+
+/**
  * The citizen's service-agreement consent history (feature 139) — read-only over the append-only
  * `service_agreement_consents` audit. Every query is scoped to the caller and to `decision='approve'`
- * (the "agreements you accepted"); the title/content come from the CONSENTED version's `data` JSONB.
+ * (the "agreements you accepted"). Feature 217: the title and description are GENERATED columns on
+ * the CONSENTED version, and its `content` is the authored document the page renders.
  */
 @Injectable()
 export class ServiceAgreementsService {
@@ -29,7 +38,7 @@ export class ServiceAgreementsService {
       .select({
         id: serviceAgreementConsents.id,
         agreementDocumentId: serviceAgreementConsents.agreementDocumentId,
-        data: documentVersions.data,
+        title: documentVersions.title,
         createdAt: serviceAgreementConsents.createdAt,
       })
       .from(serviceAgreementConsents)
@@ -48,7 +57,7 @@ export class ServiceAgreementsService {
     return rows.map((row) => ({
       id: row.id,
       agreementDocumentId: row.agreementDocumentId,
-      title: str(asData(row.data).title, 'Service agreement'),
+      title: str(row.title, 'Service agreement'),
       consentedAt: row.createdAt.toISOString(),
     }));
   }
@@ -64,7 +73,9 @@ export class ServiceAgreementsService {
         id: serviceAgreementConsents.id,
         agreementDocumentId: serviceAgreementConsents.agreementDocumentId,
         decision: serviceAgreementConsents.decision,
-        data: documentVersions.data,
+        title: documentVersions.title,
+        description: documentVersions.description,
+        content: documentVersions.content,
         createdAt: serviceAgreementConsents.createdAt,
       })
       .from(serviceAgreementConsents)
@@ -84,19 +95,17 @@ export class ServiceAgreementsService {
     if (row === undefined) {
       throw new NotFoundException('Service agreement not found');
     }
-    const data = asData(row.data);
+    const options = rootOptions(row.content);
     return {
       id: row.id,
       agreementDocumentId: row.agreementDocumentId,
-      title: str(data.title, 'Service agreement'),
-      description:
-        typeof data.description === 'string' && data.description.length > 0
-          ? data.description
-          : null,
-      content: data.content ?? null,
+      title: str(row.title, 'Service agreement'),
+      description: row.description !== null && row.description.length > 0 ? row.description : null,
+      // The whole authored document, rendered read-only by the portal.
+      content: row.content,
       decision: row.decision,
-      approveLabel: str(data.approveLabel, 'I approve'),
-      rejectLabel: str(data.rejectLabel, 'I do not approve'),
+      approveLabel: str(options.approveLabel, 'I approve'),
+      rejectLabel: str(options.rejectLabel, 'I do not approve'),
       consentedAt: row.createdAt.toISOString(),
     };
   }

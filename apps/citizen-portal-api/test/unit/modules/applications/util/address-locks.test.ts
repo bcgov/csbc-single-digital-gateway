@@ -42,23 +42,21 @@ const lockedCountry = basicForm({ country: { readOnly: true } });
 
 describe('collectAddressLocks — walking the definition', () => {
   it('collects a locked country with its expected default value', () => {
-    expect(collectAddressLocks('basic-form', lockedCountry)).toEqual([
+    expect(collectAddressLocks(lockedCountry)).toEqual([
       { key: 'addr', field: 'country', expected: 'Canada' },
     ]);
   });
 
   it('collects a locked province with its expected default value', () => {
     const form = basicForm({ province: { readOnly: true } });
-    expect(collectAddressLocks('basic-form', form)).toEqual([
+    expect(collectAddressLocks(form)).toEqual([
       { key: 'addr', field: 'province', expected: 'British Columbia' },
     ]);
   });
 
   it('collects nothing when no address sub-field is locked', () => {
-    expect(collectAddressLocks('basic-form', basicForm({}))).toEqual([]);
-    expect(collectAddressLocks('basic-form', basicForm({ country: { readOnly: false } }))).toEqual(
-      [],
-    );
+    expect(collectAddressLocks(basicForm({}))).toEqual([]);
+    expect(collectAddressLocks(basicForm({ country: { readOnly: false } }))).toEqual([]);
   });
 
   it('collects nothing for a form with no address fields at all', () => {
@@ -69,16 +67,30 @@ describe('collectAddressLocks — walking the definition', () => {
         elements: [{ type: 'Control', scope: '#/properties/name' }],
       },
     };
-    expect(collectAddressLocks('basic-form', form)).toEqual([]);
+    expect(collectAddressLocks(form)).toEqual([]);
   });
 
-  it('collects locks from every page of a multi-stage form', () => {
-    const page = (key: string) =>
-      basicForm({ country: { readOnly: true } }, { country: 'Canada' }, key);
+  it('collects locks from every Form of a Flow', () => {
+    // Feature 217: a staged application is a `Flow` ROOT inside ONE uischema, so both addresses
+    // live in the same tree and the schema carries both properties.
+    const home = basicForm({ country: { readOnly: true } }, { country: 'Canada' }, 'home');
+    const mailing = basicForm({ country: { readOnly: true } }, { country: 'Canada' }, 'mailing');
     const structure = {
-      stages: [{ pages: [page('home')] }, { pages: [page('mailing')] }],
+      schema: {
+        type: 'object',
+        properties: { ...home.schema.properties, ...mailing.schema.properties },
+      },
+      uischema: {
+        type: 'Flow',
+        elements: [
+          { type: 'Stage', elements: [{ type: 'Form', elements: home.uischema.elements }] },
+          { type: 'Stage', elements: [{ type: 'Form', elements: mailing.uischema.elements }] },
+        ],
+      },
     };
-    const found = collectAddressLocks('multi-stage-form', structure);
+
+    const found = collectAddressLocks(structure);
+
     expect(found.map((c) => c.key).toSorted()).toEqual(['home', 'mailing']);
   });
 
@@ -106,7 +118,7 @@ describe('collectAddressLocks — walking the definition', () => {
         ],
       },
     };
-    expect(collectAddressLocks('basic-form', form)).toEqual([
+    expect(collectAddressLocks(form)).toEqual([
       { key: 'addr', field: 'country', expected: 'Canada' },
     ]);
   });
@@ -136,7 +148,7 @@ describe('collectAddressLocks — walking the definition', () => {
         ],
       },
     };
-    expect(collectAddressLocks('basic-form', form)).toEqual([
+    expect(collectAddressLocks(form)).toEqual([
       { key: 'home', field: 'country', expected: 'Canada' },
       { key: 'work', field: 'country', expected: 'France' },
     ]);
@@ -144,17 +156,15 @@ describe('collectAddressLocks — walking the definition', () => {
 
   it('does not throw on a hand-edited non-object fields blob', () => {
     for (const blob of ['nope', 42, null, true]) {
-      expect(() => collectAddressLocks('basic-form', basicForm(blob as never))).not.toThrow();
-      expect(collectAddressLocks('basic-form', basicForm(blob as never))).toEqual([]);
+      expect(() => collectAddressLocks(basicForm(blob as never))).not.toThrow();
+      expect(collectAddressLocks(basicForm(blob as never))).toEqual([]);
     }
-    expect(collectAddressLocks('basic-form', basicForm({ country: 'locked' as never }))).toEqual(
-      [],
-    );
+    expect(collectAddressLocks(basicForm({ country: 'locked' as never }))).toEqual([]);
   });
 });
 
 describe('validateAddressLocks — enforcement (rule 9)', () => {
-  const constraints = collectAddressLocks('basic-form', lockedCountry);
+  const constraints = collectAddressLocks(lockedCountry);
 
   it('returns no errors when the submitted value equals the locked default', () => {
     expect(validateAddressLocks(constraints, { addr: { country: 'Canada' } })).toEqual([]);
@@ -166,10 +176,7 @@ describe('validateAddressLocks — enforcement (rule 9)', () => {
   });
 
   it('returns an error when the submitted province differs from the locked default', () => {
-    const provinceConstraints = collectAddressLocks(
-      'basic-form',
-      basicForm({ province: { readOnly: true } }),
-    );
+    const provinceConstraints = collectAddressLocks(basicForm({ province: { readOnly: true } }));
     const errors = validateAddressLocks(provinceConstraints, {
       addr: { province: 'Alberta' },
     });
@@ -191,7 +198,6 @@ describe('validateAddressLocks — enforcement (rule 9)', () => {
 
   it('reports both sub-fields when country and province are both violated', () => {
     const both = collectAddressLocks(
-      'basic-form',
       basicForm({ country: { readOnly: true }, province: { readOnly: true } }),
     );
     const errors = validateAddressLocks(both, {
@@ -213,27 +219,24 @@ describe('validateAddressLocks — fail-open and empty cases (rules 10, 11)', ()
   it('imposes no constraint when a lock has no matching schema default (rule 10)', () => {
     // readOnly: true but the schema pins nothing — an enforced lock here would make the form
     // unsatisfiable, so it must fail OPEN.
-    const constraints = collectAddressLocks(
-      'basic-form',
-      basicForm({ country: { readOnly: true } }, {}),
-    );
+    const constraints = collectAddressLocks(basicForm({ country: { readOnly: true } }, {}));
     expect(constraints).toEqual([]);
     expect(validateAddressLocks(constraints, { addr: { country: 'Anything' } })).toEqual([]);
   });
 
   it('rejects an empty submitted value for a locked sub-field (rule 11)', () => {
-    const constraints = collectAddressLocks('basic-form', lockedCountry);
+    const constraints = collectAddressLocks(lockedCountry);
     expect(validateAddressLocks(constraints, { addr: { country: '' } })).toHaveLength(1);
   });
 
   it('imposes no constraint when the address key is absent from the submitted data', () => {
-    const constraints = collectAddressLocks('basic-form', lockedCountry);
+    const constraints = collectAddressLocks(lockedCountry);
     expect(validateAddressLocks(constraints, {})).toEqual([]);
     expect(validateAddressLocks(constraints, { other: 'value' })).toEqual([]);
   });
 
   it('does not throw when the submitted address is not an object', () => {
-    const constraints = collectAddressLocks('basic-form', lockedCountry);
+    const constraints = collectAddressLocks(lockedCountry);
     for (const blob of ['nope', 42, null, true]) {
       expect(() => validateAddressLocks(constraints, { addr: blob })).not.toThrow();
     }
@@ -241,13 +244,13 @@ describe('validateAddressLocks — fail-open and empty cases (rules 10, 11)', ()
 
   it('does not throw when a locked default is a non-string', () => {
     const form = basicForm({ country: { readOnly: true } }, { country: 42 });
-    expect(() => collectAddressLocks('basic-form', form)).not.toThrow();
+    expect(() => collectAddressLocks(form)).not.toThrow();
     // A non-string default coerces to '' → no constraint (same fail-open path as rule 10).
-    expect(collectAddressLocks('basic-form', form)).toEqual([]);
+    expect(collectAddressLocks(form)).toEqual([]);
   });
 
   it('does not throw when the whole structure is empty', () => {
-    expect(() => collectAddressLocks('basic-form', {})).not.toThrow();
-    expect(collectAddressLocks('basic-form', {})).toEqual([]);
+    expect(() => collectAddressLocks({})).not.toThrow();
+    expect(collectAddressLocks({})).toEqual([]);
   });
 });

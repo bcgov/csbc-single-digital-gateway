@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import {
   type Database,
-  documentReferences,
   documentVersions,
-  documents,
   reviews,
   submissionVersions,
   submissions,
@@ -96,16 +94,12 @@ describe('ApplicationsService Unit Test Suite', () => {
   let service: ApplicationsService;
   let dbMock: any;
   let mockResponse: any;
-  let consentMock: any;
   let configMock: any;
 
   beforeEach(() => {
     const mocks = createDbMock();
     dbMock = mocks.dbMock;
     mockResponse = mocks.mockResponse;
-    consentMock = {
-      assertSubmittableForForm: vi.fn().mockResolvedValue(undefined),
-    };
     configMock = {
       get: vi.fn((key: string) => {
         if (key === 'CITIZEN_WEB_URL') return 'http://citizen';
@@ -113,98 +107,7 @@ describe('ApplicationsService Unit Test Suite', () => {
         return undefined;
       }),
     };
-    service = new ApplicationsService(
-      dbMock as unknown as Database,
-      consentMock as any,
-      configMock as any,
-    );
-  });
-
-  describe('getApplicationForm', () => {
-    it('should throw NotFoundException if service is not found', async () => {
-      mockResponse([], documents, 'select'); // no service version found
-
-      await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw NotFoundException if form reference is not found', async () => {
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([], documentReferences, 'select'); // form reference not found
-
-      await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw NotFoundException if form document or version is not found', async () => {
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
-      mockResponse([], documentVersions, 'select'); // form details not found
-
-      await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should return normalized form details on success', async () => {
-      const mockForm = {
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: { schema: { type: 'object' } },
-      };
-
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
-      mockResponse([mockForm], documentVersions, 'select'); // form details found
-
-      const result = await service.getApplicationForm('svc-id', 'form-id');
-
-      expect(result).toEqual({
-        serviceId: 'svc-id',
-        formId: 'form-id',
-        formVersionId: 'form-ver-id',
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: {
-          schema: { type: 'object' },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
-        },
-      });
-    });
-
-    it('should return normalized form details on success even if structure is null', async () => {
-      const mockForm = {
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: null,
-      };
-
-      mockResponse([{ versionId: 'svc-ver-id' }], documents, 'select'); // service found
-      mockResponse([{ formVersionId: 'form-ver-id' }], documentReferences, 'select'); // form ref found
-      mockResponse([mockForm], documentVersions, 'select'); // form details found
-
-      const result = await service.getApplicationForm('svc-id', 'form-id');
-
-      expect(result).toEqual({
-        serviceId: 'svc-id',
-        formId: 'form-id',
-        formVersionId: 'form-ver-id',
-        kind: 'basic-form',
-        title: 'Apply Now',
-        structure: {
-          schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
-        },
-      });
-    });
+    service = new ApplicationsService(dbMock as unknown as Database, configMock as any);
   });
 
   describe('createOrResumeDraft', () => {
@@ -366,10 +269,13 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       mockResponse([sub], submissions, 'select'); // requireOwn
       mockResponse([ver], submissionVersions, 'select'); // requireLatest -> latestVersion
-      mockResponse([{ title: 'Form Title', kind: 'basic-form' }], documents, 'select'); // form doc details
-      mockResponse([{ schema: { type: 'object' } }], documentVersions, 'select'); // form version details
-      mockResponse([{ serviceId: 'svc-1' }], documentReferences, 'select'); // documentReferences relation
-      mockResponse([{ title: 'Service Title' }], documents, 'select'); // owning service document
+      // Feature 217: one lookup — the form VERSION's generated title + its content. There is no
+      // owning service to resolve, and no `kind`.
+      mockResponse(
+        [{ title: 'Form Title', content: { schema: { type: 'object' } } }],
+        documentVersions,
+        'select',
+      );
       mockResponse([], reviews, 'select'); // latestReviewReason -> reviews select
 
       const result = await service.getDetail('user-1', 'sub-1');
@@ -382,15 +288,10 @@ describe('ApplicationsService Unit Test Suite', () => {
         formId: 'doc-1',
         formVersionId: 'fv-1',
         formTitle: 'Form Title',
-        serviceId: 'svc-1',
-        serviceTitle: 'Service Title',
-        kind: 'basic-form',
         structure: {
-          schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
+          // normalizeContent passes a present schema through verbatim.
+          schema: { type: 'object' },
+          uischema: { type: 'Form', elements: [] },
         },
         data: { field: 'value' },
         reviewReason: null,
@@ -400,7 +301,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       });
     });
 
-    it('should return details with default fallback values when form doc, version, reference, or service are missing', async () => {
+    it('falls back to a null title and an empty document when the form version is missing', async () => {
       const sub = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -418,9 +319,7 @@ describe('ApplicationsService Unit Test Suite', () => {
 
       mockResponse([sub], submissions, 'select'); // requireOwn
       mockResponse([ver], submissionVersions, 'select'); // requireLatest
-      mockResponse([], documents, 'select'); // form doc details (empty -> formDoc undefined)
       mockResponse([], documentVersions, 'select'); // form version details (empty -> formVer undefined)
-      mockResponse([], documentReferences, 'select'); // documentReferences relation (empty -> refRows[0] undefined)
       mockResponse([{ reason: 'Some reason' }], reviews, 'select'); // latestReviewReason -> reviews select
 
       const result = await service.getDetail('user-1', 'sub-1');
@@ -432,16 +331,10 @@ describe('ApplicationsService Unit Test Suite', () => {
         statusLabel: 'Draft',
         formId: 'doc-1',
         formVersionId: 'fv-1',
-        formTitle: 'Application', // fallback
-        serviceId: '', // fallback
-        serviceTitle: 'Service', // fallback
-        kind: 'basic-form', // fallback
+        formTitle: null, // no version row → no generated title
         structure: {
           schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
+          uischema: { type: 'Form', elements: [] },
         },
         data: { field: 'value' },
         reviewReason: 'Some reason',
@@ -584,8 +477,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
       const ver = { id: 'ver-1', status: 'draft' };
       const formSchema = {
-        kind: 'basic-form',
-        structure: {
+        content: {
           schema: {
             type: 'object',
             properties: { age: { type: 'number' } },
@@ -613,13 +505,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
       const ver = { id: 'ver-1', status: 'draft' };
       const formSchema = {
-        kind: 'basic-form',
-        structure: {
-          schema: {
-            type: 'object',
-            properties: { age: { type: 'number' } },
-          },
-        },
+        content: { schema: { type: 'object', properties: { age: { type: 'number' } } } },
       };
       const submittedVer = {
         id: 'ver-1',
@@ -634,7 +520,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
       mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email query
       mockResponse([{ slug: 'workspace-slug' }], workspaces, 'select'); // workspace slug query
-      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef query
+      mockResponse([{ title: 'Service Title' }], documentVersions, 'select'); // form title for the staff message
       mockResponse(
         [{ userId: 'member-1', email: 'member1@example.com' }],
         workspaceMembers,
@@ -686,10 +572,8 @@ describe('ApplicationsService Unit Test Suite', () => {
         createdAt: new Date('2026-07-08T12:00:00.000Z'),
       };
       const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: null,
-      };
+      // A content row with no schema half — normalizeContent supplies the empty defaults.
+      const formSchema = { content: {} };
       const submittedVer = {
         id: 'ver-1',
         status: 'pending',
@@ -727,10 +611,8 @@ describe('ApplicationsService Unit Test Suite', () => {
         createdAt: new Date('2026-07-08T12:00:00.000Z'),
       };
       const ver = { id: 'ver-1', status: 'draft' };
-      const formSchema = {
-        kind: 'basic-form',
-        structure: null,
-      };
+      // A content row with no schema half — normalizeContent supplies the empty defaults.
+      const formSchema = { content: {} };
       const submittedVer = {
         id: 'ver-1',
         status: 'pending',
@@ -744,7 +626,7 @@ describe('ApplicationsService Unit Test Suite', () => {
       mockResponse([formSchema], documentVersions, 'select'); // loadFormStructure
       mockResponse([{ email: 'citizen@example.com' }], users, 'select'); // owner email
       mockResponse([], workspaces, 'select'); // workspace is undefined
-      mockResponse([{ title: 'Service Title' }], documentReferences, 'select'); // serviceRef
+      mockResponse([{ title: 'Service Title' }], documentVersions, 'select'); // form title
       mockResponse(
         [{ userId: 'member-1', email: 'member1@example.com' }],
         workspaceMembers,
@@ -761,58 +643,12 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('listMine', () => {
-    it('should list all owned submissions and map to MyApplication DTOS, skipping null entries', async () => {
-      const sub1 = {
-        id: 'sub-1',
-        documentId: 'doc-1',
-        documentVersionId: 'fv-1',
-        createdAt: new Date('2026-07-08T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-08T12:00:00.000Z'),
-      };
-      const sub2 = {
-        id: 'sub-2',
-        documentId: 'doc-2',
-        documentVersionId: 'fv-2',
-        createdAt: new Date('2026-07-08T12:05:00.000Z'),
-        updatedAt: new Date('2026-07-08T12:05:00.000Z'),
-      };
-
-      mockResponse([sub1, sub2], submissions, 'select'); // listMine submissions query
-
-      // toMyApplication for sub1:
-      mockResponse(
-        [{ serviceId: 'svc-1', serviceVersionId: 'svc-ver-1' }],
-        documentReferences,
-        'select',
-      ); // ref
-      mockResponse([{ title: 'Service 1' }], documents, 'select'); // svc doc
-      mockResponse([{ title: 'Form 1' }], documents, 'select'); // form doc
-      mockResponse(
-        [{ status: 'draft', updatedAt: new Date('2026-07-08T12:10:00.000Z') }],
-        submissionVersions,
-        'select',
-      ); // latestVersion
-
-      // toMyApplication for sub2 (let it return empty reference, which skips the item):
-      mockResponse([], documentReferences, 'select'); // no reference found
-
-      const result = await service.listMine('user-1');
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        id: 'sub-1',
-        serviceId: 'svc-1',
-        serviceVersionId: 'svc-ver-1',
-        serviceTitle: 'Service 1',
-        formTitle: 'Form 1',
-        reference: expect.any(String),
-        status: 'draft',
-        statusLabel: 'Draft',
-        lastUpdated: '2026-07-08T12:10:00.000Z',
-      });
-    });
-
-    it('should fall back to defaults when service, form, or version are missing/undefined', async () => {
+    /**
+     * Feature 217: `toMyApplication` used to resolve the OWNING SERVICE through the form's
+     * `application_form` reference, and returned null — hiding the row — when there was none.
+     * There is no service to name now, and every one of the citizen's applications is listed.
+     */
+    it('lists every owned submission, identified by the form it was made on', async () => {
       const sub1 = {
         id: 'sub-1',
         documentId: 'doc-1',
@@ -822,15 +658,39 @@ describe('ApplicationsService Unit Test Suite', () => {
       };
 
       mockResponse([sub1], submissions, 'select'); // listMine submissions query
-
-      // toMyApplication mocks:
+      mockResponse([{ title: 'Form 1' }], documentVersions, 'select'); // form version title
       mockResponse(
-        [{ serviceId: 'svc-1', serviceVersionId: 'svc-ver-1' }],
-        documentReferences,
+        [{ status: 'draft', updatedAt: new Date('2026-07-08T12:10:00.000Z') }],
+        submissionVersions,
         'select',
-      ); // ref
-      mockResponse([], documents, 'select'); // svc doc (empty -> svc undefined)
-      mockResponse([], documents, 'select'); // form doc (empty -> form undefined)
+      ); // latestVersion
+
+      const result = await service.listMine('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: 'sub-1',
+        formId: 'doc-1',
+        formVersionId: 'fv-1',
+        formTitle: 'Form 1',
+        reference: expect.any(String),
+        status: 'draft',
+        statusLabel: 'Draft',
+        lastUpdated: '2026-07-08T12:10:00.000Z',
+      });
+    });
+
+    it('no longer hides a submission whose form has no owning service', async () => {
+      const sub1 = {
+        id: 'sub-1',
+        documentId: 'doc-1',
+        documentVersionId: 'fv-1',
+        createdAt: new Date('2026-07-08T12:00:00.000Z'),
+        updatedAt: new Date('2026-07-08T12:05:00.000Z'),
+      };
+
+      mockResponse([sub1], submissions, 'select');
+      mockResponse([], documentVersions, 'select'); // no form version row
       mockResponse([], submissionVersions, 'select'); // latestVersion (empty -> ver undefined)
 
       const result = await service.listMine('user-1');
@@ -838,10 +698,9 @@ describe('ApplicationsService Unit Test Suite', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         id: 'sub-1',
-        serviceId: 'svc-1',
-        serviceVersionId: 'svc-ver-1',
-        serviceTitle: 'Service',
-        formTitle: 'Application',
+        formId: 'doc-1',
+        formVersionId: 'fv-1',
+        formTitle: null,
         reference: expect.any(String),
         status: 'draft',
         statusLabel: 'Draft',
