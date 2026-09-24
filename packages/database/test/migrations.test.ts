@@ -103,11 +103,14 @@ describe('migration identifiers', () => {
     const offenders: string[] = [];
     for (const file of readdirSync(migrationsDir).filter((f) => f.endsWith('.sql'))) {
       const sql = readFileSync(resolve(migrationsDir, file), 'utf8');
-      for (const [, name] of sql.matchAll(
+      for (const match of sql.matchAll(
         /(?:ADD CONSTRAINT|CREATE (?:UNIQUE )?INDEX(?: IF NOT EXISTS)?|CREATE TABLE|CONSTRAINT)\s+"([^"]+)"/gi,
       )) {
-        if (name.length > 63 && !KNOWN_TRUNCATED.has(name))
+        // `noUncheckedIndexedAccess` widens a capture group to `string | undefined`.
+        const name = match[1];
+        if (name !== undefined && name.length > 63 && !KNOWN_TRUNCATED.has(name)) {
           offenders.push(`${file}: ${name} (${String(name.length)})`);
+        }
       }
     }
     expect(offenders).toEqual([]);

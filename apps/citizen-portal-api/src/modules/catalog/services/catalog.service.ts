@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { type Database, documentVersions, documents } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type {
   CatalogService as CatalogServiceDto,
   CatalogServiceDetail,
@@ -59,7 +59,9 @@ export class CatalogService {
       )
       .where(and(...filters))
       // A NULL title sorts last rather than first, so an unlabelled service doesn't head the list.
-      .orderBy(asc(sql`${documentVersions.title} nulls last`))
+      // Written as ONE raw expression: wrapping it in drizzle's `asc()` appends the direction AFTER
+      // the null ordering (`… nulls last asc`), which Postgres rejects.
+      .orderBy(sql`${documentVersions.title} asc nulls last`)
       .limit(query.limit);
     return rows.map((row) => ({
       id: row.id,
