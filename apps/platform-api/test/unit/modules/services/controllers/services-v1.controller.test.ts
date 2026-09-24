@@ -4,8 +4,7 @@ import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateServiceDto,
   ListServicesPageQueryDto,
-  ListServicesQueryDto,
-  UpdateVersionDataDto,
+  UpdateVersionContentDto,
 } from '../../../../../src/modules/services/dtos/service.dtos';
 
 describe('ServicesV1Controller', () => {
@@ -28,7 +27,6 @@ describe('ServicesV1Controller', () => {
       list: vi.fn(),
       create: vi.fn(),
       getServiceDefinition: vi.fn(),
-      listForms: vi.fn(),
       get: vi.fn(),
       remove: vi.fn(),
       archive: vi.fn(),
@@ -66,8 +64,6 @@ describe('ServicesV1Controller', () => {
       const body: CreateServiceDto = {
         workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
         title: 'New Service',
-        data: {},
-        applications: [],
       };
       const mockResult = { id: 'service-1', title: 'New Service' };
       servicesServiceMock.create.mockResolvedValue(mockResult);
@@ -88,21 +84,6 @@ describe('ServicesV1Controller', () => {
 
       expect(servicesServiceMock.getServiceDefinition).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockDef);
-    });
-  });
-
-  describe('listForms', () => {
-    it('returns the forms catalog for a workspace', async () => {
-      const query: ListServicesQueryDto = {
-        workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
-      };
-      const mockResult = [{ documentId: 'form-1', title: 'Form 1' }];
-      servicesServiceMock.listForms.mockResolvedValue(mockResult);
-
-      const result = await controller.listForms(mockUser, query);
-
-      expect(servicesServiceMock.listForms).toHaveBeenCalledWith(mockUser.id, query.workspaceId);
-      expect(result).toEqual({ items: mockResult });
     });
   });
 
@@ -150,10 +131,13 @@ describe('ServicesV1Controller', () => {
 
   describe('updateDraft', () => {
     it('updates a draft version via the service versions service', async () => {
-      const body: UpdateVersionDataDto = {
-        data: { updated: true },
+      const body: UpdateVersionContentDto = {
+        content: {
+          schema: { type: 'object', properties: {} },
+          uischema: { type: 'Service', elements: [], label: 'Updated' },
+        },
       };
-      const mockResult = { id: 'version-1', data: { updated: true } };
+      const mockResult = { id: 'version-1', content: body.content };
       serviceVersionsServiceMock.updateDraft.mockResolvedValue(mockResult);
 
       const result = await controller.updateDraft(mockUser, 'service-1', 'version-1', body);

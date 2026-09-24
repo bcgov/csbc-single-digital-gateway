@@ -5,20 +5,18 @@ import { ZodSerializerDto } from 'nestjs-zod';
 import {
   CreateServiceDto,
   DefinitionDto,
-  FormCatalogListDto,
   ListServicesPageQueryDto,
-  ListServicesQueryDto,
   ServiceDetailDto,
   ServiceListDto,
   ServiceVersionDto,
   ServiceWithVersionsDto,
-  UpdateVersionDataDto,
+  UpdateVersionContentDto,
 } from '../dtos/service.dtos';
 import { ServiceVersionsService } from '../services/service-versions.service';
 import { ServicesService } from '../services/services.service';
 
 /**
- * `/v1/services` — staff-facing service documents (instances of the seeded Service type).
+ * `/v1/services` — staff-facing service documents (`type = 'service'`, feature 217).
  * Protected-by-default (session); per-workspace membership authz lives in the service.
  */
 @ApiTags('Services')
@@ -46,12 +44,6 @@ export class ServicesV1Controller {
   @ZodSerializerDto(DefinitionDto)
   getDefinition() {
     return this.services.getServiceDefinition();
-  }
-
-  @Get('forms')
-  @ZodSerializerDto(FormCatalogListDto)
-  async listForms(@CurrentUser() user: AuthUser, @Query() query: ListServicesQueryDto) {
-    return { items: await this.services.listForms(user.id, query.workspaceId) };
   }
 
   @Get(':id')
@@ -84,7 +76,7 @@ export class ServicesV1Controller {
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Param('versionId') versionId: string,
-    @Body() body: UpdateVersionDataDto,
+    @Body() body: UpdateVersionContentDto,
   ) {
     return this.versions.updateDraft(user.id, id, versionId, body);
   }

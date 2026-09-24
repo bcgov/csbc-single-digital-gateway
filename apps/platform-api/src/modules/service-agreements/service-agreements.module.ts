@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { TemplatesModule } from '../templates/templates.module';
 import { ServiceAgreementsV1Controller } from './controllers/service-agreements-v1.controller';
-import { ServiceAgreementTypeResolver } from './services/service-agreement-type.resolver';
 import { ServiceAgreementsService } from './services/service-agreements.service';
 
 @Module({
+  imports: [TemplatesModule],
   controllers: [ServiceAgreementsV1Controller],
-  providers: [ServiceAgreementsService, ServiceAgreementTypeResolver],
+  providers: [ServiceAgreementsService],
 })
 export class ServiceAgreementsModule {}

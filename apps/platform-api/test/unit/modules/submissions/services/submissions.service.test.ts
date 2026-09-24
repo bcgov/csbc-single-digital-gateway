@@ -3,7 +3,6 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { SubmissionsService } from '../../../../../src/modules/submissions/services/submissions.service';
 import {
   documents,
-  documentReferences,
   documentVersions,
   reviews,
   submissionVersions,
@@ -49,8 +48,6 @@ describe('SubmissionsService', () => {
             status: item.status ?? 'pending',
             submittedAt: item.submittedAt === undefined ? item.createdAt : item.submittedAt,
             versionUpdatedAt: item.updatedAt,
-            serviceId: item.serviceId,
-            serviceTitle: item.serviceTitle,
             formTitle: item.formTitle,
             applicantName: item.applicantName,
             applicantEmail: item.applicantEmail,
@@ -118,8 +115,6 @@ describe('SubmissionsService', () => {
         userId: 'applicant-1',
         createdAt: new Date('2026-07-28T00:00:00Z'),
         updatedAt: new Date('2026-07-28T00:00:00Z'),
-        serviceId: 'doc-svc-1',
-        serviceTitle: 'My Service',
         formTitle: 'My Form',
         applicantName: 'Jane Doe',
         applicantEmail: 'jane@example.com',
@@ -136,8 +131,6 @@ describe('SubmissionsService', () => {
       expect(result.items).toEqual([
         {
           id: 'sub-1',
-          serviceId: 'doc-svc-1',
-          serviceTitle: 'My Service',
           formId: 'doc-form-1',
           formTitle: 'My Form',
           applicantName: 'Jane Doe',
@@ -161,8 +154,6 @@ describe('SubmissionsService', () => {
         userId: 'applicant-1',
         createdAt: new Date('2026-07-28T00:00:00Z'),
         updatedAt: new Date('2026-07-28T00:00:00Z'),
-        serviceId: 'doc-svc-1',
-        serviceTitle: 'My Service',
         formTitle: 'My Form',
         applicantName: 'Jane Doe',
         applicantEmail: 'jane@example.com',
@@ -177,8 +168,6 @@ describe('SubmissionsService', () => {
         userId: 'applicant-1',
         createdAt: new Date('2026-07-28T00:00:00Z'),
         updatedAt: new Date('2026-07-28T00:00:00Z'),
-        serviceId: 'doc-svc-1',
-        serviceTitle: 'My Service',
         formTitle: 'My Form',
         applicantName: 'Jane Doe',
         applicantEmail: 'jane@example.com',
@@ -238,9 +227,9 @@ describe('SubmissionsService', () => {
 
       addMockResponse(submissions, [mockSub]);
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
-      addMockResponse(documentReferences, [{ serviceId: 'doc-svc-1' }]);
-      addMockResponse(documents, [{ title: 'My Service' }]); // toSummary (service)
-      addMockResponse(documents, [{ title: 'My Form' }]); // toSummary (form)
+      // Feature 217: toSummary reads the FORM's generated title off its submitted version —
+      // there is no documents.title, and no reference lookup to find an owning service.
+      addMockResponse(documentVersions, [{ title: 'My Form' }]); // toSummary (form title)
       addMockResponse(users, [{ displayName: 'Jane Doe', email: 'jane@example.com' }]); // toSummary (user)
       addMockResponse(submissionVersions, [
         {
@@ -250,12 +239,7 @@ describe('SubmissionsService', () => {
         },
       ]); // toSummary (latestVersion)
       addMockResponse(submissionVersions, [{ data: { name: 'Jane' } }]); // get (latestVersion data)
-      addMockResponse(documentVersions, [
-        {
-          kind: 'basic-form',
-          schema: { type: 'object' },
-        },
-      ]); // get (documentVersions schema/kind)
+      addMockResponse(documentVersions, [{ content: { schema: { type: 'object' } } }]); // get (content)
       addMockResponse(reviews, [
         {
           id: 'review-1',
@@ -270,8 +254,6 @@ describe('SubmissionsService', () => {
 
       expect(result).toEqual({
         id: 'sub-1',
-        serviceId: 'doc-svc-1',
-        serviceTitle: 'My Service',
         formId: 'doc-form-1',
         formTitle: 'My Form',
         applicantName: 'Jane Doe',
@@ -281,11 +263,11 @@ describe('SubmissionsService', () => {
         reference: '20260728-SUB1',
         submittedAt: '2026-07-28T00:00:00.000Z',
         updatedAt: '2026-07-28T00:00:00.000Z',
-        kind: 'basic-form',
         structure: {
-          schema: { type: 'object', properties: {} },
+          // normalizeContent passes a present schema through verbatim; it only defaults an absent one.
+          schema: { type: 'object' },
           uischema: {
-            type: 'VerticalLayout',
+            type: 'Form',
             elements: [],
           },
         },
@@ -361,7 +343,6 @@ describe('SubmissionsService', () => {
       // get() mocks:
       addMockResponse(submissions, [mockSub]);
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
-      addMockResponse(documentReferences, [{ serviceId: 'doc-svc-1' }]);
       addMockResponse(documents, [{ title: 'My Service' }]);
       addMockResponse(documents, [{ title: 'My Form' }]);
       addMockResponse(users, []); // anonymous applicant
@@ -373,7 +354,7 @@ describe('SubmissionsService', () => {
         },
       ]);
       addMockResponse(submissionVersions, [{ data: {} }]);
-      addMockResponse(documentVersions, [{ kind: 'basic-form', schema: {} }]);
+      addMockResponse(documentVersions, [{ title: 'My Form', content: {} }]);
       addMockResponse(reviews, [
         {
           id: 'review-1',
@@ -417,7 +398,6 @@ describe('SubmissionsService', () => {
       // get() mocks:
       addMockResponse(submissions, [mockSub]);
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
-      addMockResponse(documentReferences, [{ serviceId: 'doc-svc-1' }]);
       addMockResponse(documents, [{ title: 'My Service' }]);
       addMockResponse(documents, [{ title: 'My Form' }]);
       addMockResponse(users, [{ displayName: 'Jane Doe', email: 'jane@example.com' }]);
@@ -429,7 +409,7 @@ describe('SubmissionsService', () => {
         },
       ]);
       addMockResponse(submissionVersions, [{ data: {} }]);
-      addMockResponse(documentVersions, [{ kind: 'basic-form', schema: {} }]);
+      addMockResponse(documentVersions, [{ title: 'My Form', content: {} }]);
       addMockResponse(reviews, []);
 
       await service.review('user-1', 'sub-1', {
@@ -478,10 +458,8 @@ describe('SubmissionsService', () => {
       expect(result.items).toEqual([
         {
           id: 'sub-1',
-          serviceId: '',
-          serviceTitle: 'Service',
           formId: 'doc-form-1',
-          formTitle: 'Form',
+          formTitle: null,
           applicantName: 'Anonymous',
           applicantEmail: null,
           status: 'draft',
@@ -506,7 +484,6 @@ describe('SubmissionsService', () => {
 
       addMockResponse(submissions, [mockSub]);
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
-      addMockResponse(documentReferences, []);
       addMockResponse(documents, []);
       addMockResponse(documents, []);
       addMockResponse(users, []);
@@ -522,11 +499,10 @@ describe('SubmissionsService', () => {
       addMockResponse(reviews, []);
 
       const result = await service.get('user-1', 'sub-1');
-      expect(result.kind).toBe('basic-form');
       expect(result.data).toEqual({});
       expect(result.structure).toEqual({
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'VerticalLayout', elements: [] },
+        uischema: { type: 'Form', elements: [] },
       });
     });
 
@@ -550,7 +526,6 @@ describe('SubmissionsService', () => {
 
       addMockResponse(submissions, [mockSub]);
       addMockResponse(workspaceMembers, [{ userId: 'user-1' }]);
-      addMockResponse(documentReferences, []);
       addMockResponse(documents, []);
       addMockResponse(documents, []);
       addMockResponse(users, []);

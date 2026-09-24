@@ -28,26 +28,21 @@ export function submissionReference(submissionId: string, createdAt: Date): stri
   return `${date}-${suffix}`;
 }
 
-/** Coerce a form version's stored `schema` JSONB into a render structure, defaulting missing arrays. */
-export function normalizeFormStructure(
-  kind: string,
-  structure: Record<string, unknown>,
-): Record<string, unknown> {
-  if (kind === 'multi-stage-form') {
-    return {
-      name: typeof structure['name'] === 'string' ? structure['name'] : '',
-      description: typeof structure['description'] === 'string' ? structure['description'] : '',
-      stages: Array.isArray(structure['stages']) ? structure['stages'] : [],
-      edges: Array.isArray(structure['edges']) ? structure['edges'] : [],
-    };
-  }
+/**
+ * Coerce a document version's stored `content` JSONB into a render structure.
+ *
+ * Feature 217: `content` IS `{ schema, uischema }` (a `@repo/forms` StudioDocument), so there is no
+ * longer a per-kind shape to branch on — a multi-stage form is a `Flow` root inside `uischema`,
+ * not a different top-level object.
+ */
+export function normalizeContent(content: Record<string, unknown>): Record<string, unknown> {
   return {
-    schema: (structure['schema'] as Record<string, unknown> | undefined) ?? {
+    schema: (content['schema'] as Record<string, unknown> | undefined) ?? {
       type: 'object',
       properties: {},
     },
-    uischema: (structure['uischema'] as Record<string, unknown> | undefined) ?? {
-      type: 'VerticalLayout',
+    uischema: (content['uischema'] as Record<string, unknown> | undefined) ?? {
+      type: 'Form',
       elements: [],
     },
   };

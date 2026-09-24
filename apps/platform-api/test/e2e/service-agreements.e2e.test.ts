@@ -64,7 +64,7 @@ describe('service-agreements (e2e)', () => {
 
   it('401s agreement endpoints without a session', async () => {
     expect((await http().get('/v1/service-agreements')).status).toBe(401);
-    expect((await http().post('/v1/service-agreements').send({ data: {} })).status).toBe(401);
+    expect((await http().post('/v1/service-agreements').send({ title: 'ToS' })).status).toBe(401);
   });
 
   it('400s an invalid create body for a signed-in user', async () => {
@@ -79,7 +79,7 @@ describe('service-agreements (e2e)', () => {
         await http()
           .post('/v1/service-agreements')
           .set('x-test-user', staff)
-          .send({ workspaceId: 'not-a-uuid', data: {} })
+          .send({ workspaceId: 'not-a-uuid', title: 'ToS' })
       ).status,
     ).toBe(400);
   });
@@ -91,7 +91,7 @@ describe('service-agreements (e2e)', () => {
         await http()
           .post('/v1/service-agreements')
           .set('x-test-user', asUser(['staff']))
-          .send({ data: { title: 'ToS' } })
+          .send({ title: 'ToS' })
       ).status,
     ).toBe(403);
   });

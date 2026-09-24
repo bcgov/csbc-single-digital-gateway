@@ -1,13 +1,22 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
+import { documentVersions, documents } from '@repo/database';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceAgreementsService } from '../../../../../src/modules/service-agreements/services/service-agreements.service';
 
-const mockQuery = (resolvedValue: any) => {
+/**
+ * Feature 217. An agreement is a `documents` row with `type = 'service-agreement'`: create takes a
+ * TITLE (stamped into the content's root label, which the GENERATED title column reads) rather
+ * than a `data` blob; a draft save writes one `content`; publish validates the content's SHAPE
+ * rather than filled values against a JSON schema; and the "attached services" list and the
+ * "only editable while its service is a draft" gate are gone with `document_references`.
+ */
+
+const mockQuery = (resolvedValue: unknown) => {
   const qb = Promise.resolve(resolvedValue);
   return Object.assign(qb, {
     from: vi.fn().mockReturnThis(),
@@ -18,11 +27,51 @@ const mockQuery = (resolvedValue: any) => {
   });
 };
 
+const TEMPLATE = {
+  templateId: 'template-1',
+  templateVersionId: 'template-version-1',
+  schema: { type: 'object', properties: {} },
+  uischema: { type: 'Form', elements: [] },
+};
+const CONTENT = {
+  schema: { type: 'object', properties: {} },
+  uischema: { type: 'Form', elements: [], label: 'Terms' },
+};
+
+const agreementDoc = (over: Record<string, unknown> = {}) => ({
+  id: 'agreement-1',
+  workspaceId: null,
+  type: 'service-agreement',
+  kind: 'document',
+  templateId: TEMPLATE.templateId,
+  templateKind: 'template',
+  createdAt: new Date('2026-07-28T12:00:00.000Z'),
+  updatedAt: new Date('2026-07-28T12:00:00.000Z'),
+  ...over,
+});
+const agreementVersion = (over: Record<string, unknown> = {}) => ({
+  id: 'version-1',
+  documentId: 'agreement-1',
+  templateId: TEMPLATE.templateId,
+  templateVersionId: TEMPLATE.templateVersionId,
+  versionNumber: 1,
+  revision: 1,
+  status: 'draft',
+  title: 'Terms',
+  description: null,
+  content: CONTENT,
+  createdAt: new Date('2026-07-28T12:00:00.000Z'),
+  updatedAt: new Date('2026-07-28T12:00:00.000Z'),
+  publishedAt: null,
+  archivedAt: null,
+  ...over,
+});
+
 describe('ServiceAgreementsService', () => {
   let service: ServiceAgreementsService;
   let dbMock: any;
   let txMock: any;
-  let agreementTypeMock: any;
+  let templatesMock: any;
 
   const mockAdminActor = { id: 'admin-1', isAdmin: true };
   const mockUserActor = { id: 'user-1', isAdmin: false };
@@ -53,697 +102,312 @@ describe('ServiceAgreementsService', () => {
       transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
     };
 
-    agreementTypeMock = {
-      resolve: vi.fn().mockResolvedValue({
-        typeId: 'type-123',
-        typeVersionId: 'ver-123',
-        schema: { type: 'object', properties: { title: { type: 'string' } } },
-        uischema: {},
-      }),
-      schemaForVersion: vi.fn().mockResolvedValue({
-        type: 'object',
-        properties: { title: { type: 'string' } },
-        required: ['title'],
-      }),
-    };
+    templatesMock = { resolve: vi.fn().mockResolvedValue(TEMPLATE) };
 
-    service = new ServiceAgreementsService(dbMock, agreementTypeMock);
+    service = new ServiceAgreementsService(dbMock, templatesMock);
   });
 
   describe('create', () => {
-    it('throws ForbiddenException if non-admin attempts to create a global service agreement', async () => {
-      await expect(service.create(mockUserActor, { data: { title: 'Terms' } })).rejects.toThrow(
+    it('throws ForbiddenException if a non-admin creates a global agreement', async () => {
+      await expect(service.create(mockUserActor, { title: 'Terms' })).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('throws NotFoundException if user is not a member of the target workspace', async () => {
-      dbMock.select.mockImplementationOnce(() => mockQuery([])); // isMember -> false
+    it('throws NotFoundException if the caller is not a member of the target workspace', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([]));
 
       await expect(
-        service.create(mockUserActor, {
-          workspaceId: mockWorkspaceId,
-          data: { title: 'Terms' },
-        }),
+        service.create(mockUserActor, { workspaceId: mockWorkspaceId, title: 'Terms' }),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('creates workspace-scoped service agreement successfully', async () => {
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ role: 'member' }])); // isMember -> true
-      const mockDoc = {
-        id: 'doc-123',
+    it('creates a workspace-scoped agreement and its draft v1', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([{ role: 'member' }]));
+      txMock.returning
+        .mockResolvedValueOnce([agreementDoc({ workspaceId: mockWorkspaceId })])
+        .mockResolvedValueOnce([agreementVersion()]);
+
+      const result = await service.create(mockUserActor, {
         workspaceId: mockWorkspaceId,
-        kind: 'service-agreement',
         title: 'Terms',
-        createdAt: new Date('2026-07-28T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-      };
-      const mockVer = {
-        id: 'ver-123',
-        version: 1,
-        status: 'draft',
-        data: { title: 'Terms' },
-        createdAt: new Date('2026-07-28T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-        publishedAt: null,
-        archivedAt: null,
-      };
+      });
 
-      txMock.returning.mockResolvedValueOnce([mockDoc]).mockResolvedValueOnce([mockVer]);
-
-      const result = await service.create(mockUserActor, {
+      expect(txMock.insert).toHaveBeenNthCalledWith(1, documents);
+      expect(txMock.insert).toHaveBeenNthCalledWith(2, documentVersions);
+      expect(txMock.values.mock.calls[0][0]).toEqual({
+        type: 'service-agreement',
+        kind: 'document',
         workspaceId: mockWorkspaceId,
-        data: { title: 'Terms' },
+        templateId: TEMPLATE.templateId,
       });
-
-      expect(result).toEqual({
-        agreement: {
-          id: 'doc-123',
-          workspaceId: mockWorkspaceId,
-          title: 'Terms',
-          kind: 'service-agreement',
-          createdAt: '2026-07-28T12:00:00.000Z',
-          updatedAt: '2026-07-28T12:00:00.000Z',
-        },
-        version: {
-          id: 'ver-123',
-          version: 1,
-          status: 'draft',
-          data: { title: 'Terms' },
-          createdAt: '2026-07-28T12:00:00.000Z',
-          publishedAt: null,
-          archivedAt: null,
-        },
-      });
+      expect(result.agreement.id).toBe('agreement-1');
     });
 
-    it('creates global service agreement successfully by admin', async () => {
-      const mockDoc = {
-        id: 'doc-global',
-        workspaceId: null,
-        kind: 'service-agreement',
-        title: 'Global Terms',
-        createdAt: new Date('2026-07-28T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-      };
-      const mockVer = {
-        id: 'ver-global',
-        version: 1,
-        status: 'draft',
-        data: { title: 'Global Terms' },
-        createdAt: new Date('2026-07-28T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-        publishedAt: null,
-        archivedAt: null,
-      };
+    it('stamps the title into the label the GENERATED title column reads', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([{ role: 'member' }]));
+      txMock.returning
+        .mockResolvedValueOnce([agreementDoc({ workspaceId: mockWorkspaceId })])
+        .mockResolvedValueOnce([agreementVersion()]);
 
-      txMock.returning.mockResolvedValueOnce([mockDoc]).mockResolvedValueOnce([mockVer]);
+      await service.create(mockUserActor, { workspaceId: mockWorkspaceId, title: 'Terms' });
 
-      const result = await service.create(mockAdminActor, {
-        data: { title: 'Global Terms' },
-      });
+      const values = txMock.values.mock.calls[1][0];
+      expect(values.content.uischema.label).toBe('Terms');
+      expect(values.templateVersionId).toBe(TEMPLATE.templateVersionId);
+      expect(values.versionNumber).toBe(1);
+    });
 
+    it('lets an admin create a global agreement (workspaceId null)', async () => {
+      txMock.returning
+        .mockResolvedValueOnce([agreementDoc()])
+        .mockResolvedValueOnce([agreementVersion()]);
+
+      const result = await service.create(mockAdminActor, { title: 'Terms' });
+
+      expect(txMock.values.mock.calls[0][0].workspaceId).toBeNull();
       expect(result.agreement.workspaceId).toBeNull();
-      expect(result.agreement.title).toBe('Global Terms');
     });
 
-    it('throws Error if document insert returned no row', async () => {
-      txMock.returning.mockResolvedValueOnce([]); // empty document insert returning
+    it('throws if the document insert returns no row', async () => {
+      txMock.returning.mockResolvedValueOnce([]);
 
-      await expect(
-        service.create(mockAdminActor, {
-          data: { title: 'Global Terms' },
-        }),
-      ).rejects.toThrow('document insert returned no row');
+      await expect(service.create(mockAdminActor, { title: 'Terms' })).rejects.toThrow(
+        'document insert returned no row',
+      );
     });
 
-    it('creates workspace-scoped service agreement with untitled fallback title if title is missing or empty', async () => {
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ role: 'member' }])); // isMember -> true
-      const mockDoc = {
-        id: 'doc-123',
-        workspaceId: mockWorkspaceId,
-        kind: 'service-agreement',
-        title: 'Untitled service agreement',
-        createdAt: new Date('2026-07-28T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-      };
-      const mockVer = {
-        id: 'ver-123',
-        version: 1,
-        status: 'draft',
-        data: {},
-        createdAt: new Date('2026-07-28T12:00:00.000Z'),
-        updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-        publishedAt: null,
-        archivedAt: null,
-      };
+    it('throws if the version insert returns no row', async () => {
+      txMock.returning.mockResolvedValueOnce([agreementDoc()]).mockResolvedValueOnce([]);
 
-      txMock.returning.mockResolvedValueOnce([mockDoc]).mockResolvedValueOnce([mockVer]);
-
-      const result = await service.create(mockUserActor, {
-        workspaceId: mockWorkspaceId,
-        data: {},
-      });
-
-      expect(result.agreement.title).toBe('Untitled service agreement');
+      await expect(service.create(mockAdminActor, { title: 'Terms' })).rejects.toThrow(
+        'document version insert returned no row',
+      );
     });
   });
 
   describe('list', () => {
-    it('throws ForbiddenException if non-admin tries to list global service agreements', async () => {
+    it('throws ForbiddenException if a non-admin lists global agreements', async () => {
       await expect(service.list(mockUserActor, {})).rejects.toThrow(ForbiddenException);
     });
 
-    it('lists agreements successfully', async () => {
+    it('takes each row title from its current version', async () => {
       dbMock.select
-        .mockImplementationOnce(() => mockQuery([{ role: 'member' }])) // isMember -> true
+        .mockImplementationOnce(() => mockQuery([{ role: 'member' }])) // requireMembership
+        .mockImplementationOnce(() => mockQuery([agreementDoc({ workspaceId: mockWorkspaceId })]))
         .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'doc-123',
-              workspaceId: mockWorkspaceId,
-              title: 'Terms',
-              kind: 'service-agreement',
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-            },
-          ]),
-        ) // select docs
-        .mockImplementationOnce(() => mockQuery([{ status: 'published' }])); // versionsOf
+          mockQuery([agreementVersion({ status: 'published', publishedAt: new Date() })]),
+        );
 
       const result = await service.list(mockUserActor, { workspaceId: mockWorkspaceId });
 
-      expect(result).toEqual([
-        {
-          id: 'doc-123',
-          workspaceId: mockWorkspaceId,
-          title: 'Terms',
-          kind: 'service-agreement',
-          createdAt: '2026-07-28T12:00:00.000Z',
-          updatedAt: '2026-07-28T12:00:00.000Z',
-          status: 'published',
-          isGlobal: false,
-        },
-      ]);
+      expect(result).toHaveLength(1);
+      expect(result[0]?.title).toBe('Terms');
+      expect(result[0]?.status).toBe('published');
+      expect(result[0]?.isGlobal).toBe(false);
     });
 
-    it('lists global agreements successfully by admin with various version statuses (draft, archived, none)', async () => {
+    it('marks a workspace-less agreement as global', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'doc-draft',
-              workspaceId: null,
-              title: 'Draft Global',
-              kind: 'service-agreement',
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-            },
-            {
-              id: 'doc-archived',
-              workspaceId: null,
-              title: 'Archived Global',
-              kind: 'service-agreement',
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-            },
-            {
-              id: 'doc-none',
-              workspaceId: null,
-              title: 'None Global',
-              kind: 'service-agreement',
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-            },
-          ]),
-        ) // select docs
-        .mockImplementationOnce(() => mockQuery([{ status: 'draft' }])) // versionsOf doc-draft
-        .mockImplementationOnce(() => mockQuery([{ status: 'archived' }])) // versionsOf doc-archived
-        .mockImplementationOnce(() => mockQuery([])); // versionsOf doc-none (empty)
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([]));
 
       const result = await service.list(mockAdminActor, {});
 
-      expect(result).toHaveLength(3);
-      expect(result[0]!.status).toBe('draft');
-      expect(result[0]!.isGlobal).toBe(true);
-      expect(result[1]!.status).toBe('archived');
-      expect(result[1]!.isGlobal).toBe(true);
-      expect(result[2]!.status).toBe('none');
-      expect(result[2]!.isGlobal).toBe(true);
+      expect(result[0]?.isGlobal).toBe(true);
+      expect(result[0]?.status).toBe('none');
     });
   });
 
   describe('get', () => {
-    it('throws NotFoundException if user has no access to workspace service agreement', async () => {
+    it('throws NotFoundException if a non-member reads a workspace agreement', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'doc-123',
-              workspaceId: mockWorkspaceId,
-              kind: 'service-agreement',
-            },
-          ]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([])); // isMember -> false
+        .mockImplementationOnce(() => mockQuery([agreementDoc({ workspaceId: mockWorkspaceId })]))
+        .mockImplementationOnce(() => mockQuery([])); // not a member
 
-      await expect(service.get(mockUserActor, 'doc-123')).rejects.toThrow(NotFoundException);
+      await expect(service.get(mockUserActor, 'agreement-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('retrieves details successfully', async () => {
+    it('returns the agreement, its versions and the template, with no attached-services list', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'doc-123',
-              workspaceId: null, // global
-              kind: 'service-agreement',
-              title: 'Global Terms',
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-            },
-          ]),
-        ) // loadAgreement
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'ver-123',
-              version: 1,
-              status: 'published',
-              data: {},
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-              publishedAt: new Date('2026-07-28T12:00:00.000Z'),
-              archivedAt: null,
-            },
-          ]),
-        ); // versionsOf
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion()]));
 
-      dbMock.selectDistinct.mockImplementationOnce(() => mockQuery([])); // associatedServices
+      const result = await service.get(mockAdminActor, 'agreement-1');
 
-      const result = await service.get(mockUserActor, 'doc-123');
-
-      expect(result).toEqual({
-        agreement: {
-          id: 'doc-123',
-          workspaceId: null,
-          title: 'Global Terms',
-          kind: 'service-agreement',
-          createdAt: '2026-07-28T12:00:00.000Z',
-          updatedAt: '2026-07-28T12:00:00.000Z',
-        },
-        versions: [
-          {
-            id: 'ver-123',
-            version: 1,
-            status: 'published',
-            data: {},
-            createdAt: '2026-07-28T12:00:00.000Z',
-            publishedAt: '2026-07-28T12:00:00.000Z',
-            archivedAt: null,
-          },
-        ],
-        definition: {
-          schema: { type: 'object', properties: { title: { type: 'string' } } },
-          uischema: {},
-        },
-        services: [],
-      });
-    });
-
-    it('retrieves details successfully by admin', async () => {
-      dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'doc-123',
-              workspaceId: 'ws-123', // workspace scoped
-              kind: 'service-agreement',
-              title: 'Global Terms',
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-            },
-          ]),
-        ) // loadAgreement
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'ver-123',
-              version: 1,
-              status: 'published',
-              data: {},
-              createdAt: new Date('2026-07-28T12:00:00.000Z'),
-              updatedAt: new Date('2026-07-28T12:00:00.000Z'),
-              publishedAt: new Date('2026-07-28T12:00:00.000Z'),
-            },
-          ]),
-        ); // versionsOf
-
-      dbMock.selectDistinct.mockImplementationOnce(() =>
-        mockQuery([{ id: 'svc-1', title: 'Service 1', workspaceSlug: 'slug-1' }]),
-      ); // associatedServices (will cover isAdmin check)
-
-      const result = await service.get(mockAdminActor, 'doc-123');
-
-      expect(result.services).toHaveLength(1);
+      expect(result.agreement.title).toBe('Terms');
+      expect(result.versions).toHaveLength(1);
+      expect(result.definition).toEqual({ schema: TEMPLATE.schema, uischema: TEMPLATE.uischema });
+      expect(result).not.toHaveProperty('services');
+      // The attached-services lookup was the only selectDistinct in this service.
+      expect(dbMock.selectDistinct).not.toHaveBeenCalled();
     });
   });
 
   describe('updateDraft', () => {
-    it('throws ConflictException if agreement status is not draft', async () => {
+    it('writes the content and bumps the revision', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([{ id: 'ver-123', status: 'published' }])); // requireDraftVersion (not draft)
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion()]));
+      dbMock.returning.mockResolvedValueOnce([agreementVersion({ revision: 2 })]);
+
+      const result = await service.updateDraft(mockAdminActor, 'agreement-1', 'version-1', {
+        content: CONTENT,
+      });
+
+      const setArg = dbMock.set.mock.calls[0][0];
+      expect(setArg.content).toEqual(CONTENT);
+      expect(setArg.revision).toBeDefined();
+      expect(result.revision).toBe(2);
+    });
+
+    it('never writes a document title — there is no title column to sync', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion()]));
+      dbMock.returning.mockResolvedValueOnce([agreementVersion()]);
+
+      await service.updateDraft(mockAdminActor, 'agreement-1', 'version-1', { content: CONTENT });
+
+      expect(dbMock.update).toHaveBeenCalledTimes(1);
+      expect(dbMock.update).not.toHaveBeenCalledWith(documents);
+    });
+
+    it('rejects a content whose root is not a Form', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion()]));
 
       await expect(
-        service.updateDraft(mockAdminActor, 'doc-123', 'ver-123', {
-          title: 'New Title',
-          data: {},
+        service.updateDraft(mockAdminActor, 'agreement-1', 'version-1', {
+          content: {
+            schema: { type: 'object', properties: {} },
+            uischema: { type: 'Service', elements: [] },
+          },
         }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException if the version is not a draft', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion({ status: 'published' })]));
+
+      await expect(
+        service.updateDraft(mockAdminActor, 'agreement-1', 'version-1', { content: CONTENT }),
       ).rejects.toThrow(ConflictException);
     });
 
-    it('updates draft version data successfully', async () => {
-      dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([{ id: 'ver-123', status: 'draft' }])) // requireDraftVersion
-        .mockImplementationOnce(() => mockQuery([])); // requireServiceEditable (none)
+    it('throws ForbiddenException if a non-admin edits a global agreement', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([agreementDoc()]));
 
-      dbMock.returning.mockResolvedValueOnce([
-        {
-          id: 'ver-123',
-          version: 1,
-          status: 'draft',
-          data: { title: 'New Title' },
-          createdAt: new Date('2026-07-28T12:00:00.000Z'),
-          publishedAt: null,
-          archivedAt: null,
-        },
-      ]);
-
-      const result = await service.updateDraft(mockAdminActor, 'doc-123', 'ver-123', {
-        title: 'New Title',
-        data: { title: 'New Title' },
-      });
-
-      expect(result).toEqual({
-        id: 'ver-123',
-        version: 1,
-        status: 'draft',
-        data: { title: 'New Title' },
-        createdAt: '2026-07-28T12:00:00.000Z',
-        publishedAt: null,
-        archivedAt: null,
-      });
-    });
-
-    it('updates draft title falling back to titleFromData when title input is omitted', async () => {
-      dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([{ id: 'ver-123', status: 'draft' }])) // requireDraftVersion
-        .mockImplementationOnce(() => mockQuery([])); // requireServiceEditable (none)
-
-      dbMock.returning.mockResolvedValueOnce([
-        {
-          id: 'ver-123',
-          version: 1,
-          status: 'draft',
-          data: { title: 'Terms' },
-          createdAt: new Date('2026-07-28T12:00:00.000Z'),
-          publishedAt: null,
-          archivedAt: null,
-        },
-      ]);
-
-      const result = await service.updateDraft(mockAdminActor, 'doc-123', 'ver-123', {
-        data: { title: 'Terms' },
-      });
-
-      expect(result.data).toEqual({ title: 'Terms' });
-    });
-
-    it('allows admin to update draft of workspace-scoped agreement even if not a member', async () => {
-      dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: 'ws-123', kind: 'service-agreement' }]),
-        ) // loadAgreement (workspace-scoped, workspaceId is not null)
-        .mockImplementationOnce(() => mockQuery([{ id: 'ver-123', status: 'draft' }])) // requireDraftVersion
-        .mockImplementationOnce(() => mockQuery([])); // requireServiceEditable (none)
-
-      dbMock.returning.mockResolvedValueOnce([
-        {
-          id: 'ver-123',
-          version: 1,
-          status: 'draft',
-          data: { title: 'Workspace Terms' },
-          createdAt: new Date('2026-07-28T12:00:00.000Z'),
-          publishedAt: null,
-          archivedAt: null,
-        },
-      ]);
-
-      const result = await service.updateDraft(mockAdminActor, 'doc-123', 'ver-123', {
-        title: 'New Workspace Title',
-        data: { title: 'Workspace Terms' },
-      });
-
-      expect(result.status).toBe('draft');
+      await expect(
+        service.updateDraft(mockUserActor, 'agreement-1', 'version-1', { content: CONTENT }),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('addVersion', () => {
-    it('appends a new version copying the latest data', async () => {
-      dbMock.select.mockImplementationOnce(() =>
-        mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-      ); // loadAgreement
-
-      txMock.returning.mockResolvedValueOnce([
-        {
-          id: 'ver-124',
-          version: 2,
-          status: 'draft',
-          data: { key: 'value' },
-          createdAt: new Date('2026-07-28T12:00:00.000Z'),
-          publishedAt: null,
-          archivedAt: null,
-        },
-      ]);
-
+    it('copies the latest content into the next version number', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([agreementDoc()]));
       txMock.select.mockImplementationOnce(() =>
-        mockQuery([{ version: 1, data: { key: 'value' } }]),
-      ); // select latest version
+        mockQuery([agreementVersion({ versionNumber: 2 })]),
+      );
+      txMock.returning.mockResolvedValueOnce([agreementVersion({ versionNumber: 3 })]);
 
-      const result = await service.addVersion(mockAdminActor, 'doc-123');
+      const result = await service.addVersion(mockAdminActor, 'agreement-1');
 
-      expect(result).toEqual({
-        id: 'ver-124',
-        version: 2,
-        status: 'draft',
-        data: { key: 'value' },
-        createdAt: '2026-07-28T12:00:00.000Z',
-        publishedAt: null,
-        archivedAt: null,
-      });
+      const values = txMock.values.mock.calls[0][0];
+      expect(values.versionNumber).toBe(3);
+      expect(values.content).toEqual(CONTENT);
+      expect(result.versionNumber).toBe(3);
     });
 
-    it('appends a new version using default fallbacks when latest version is undefined', async () => {
-      dbMock.select.mockImplementationOnce(() =>
-        mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-      ); // loadAgreement
+    it('starts at version 1 from the template when there is no prior version', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([agreementDoc()]));
+      txMock.select.mockImplementationOnce(() => mockQuery([]));
+      txMock.returning.mockResolvedValueOnce([agreementVersion()]);
 
-      txMock.returning.mockResolvedValueOnce([
-        {
-          id: 'ver-124',
-          version: 1, // falls back to 1
-          status: 'draft',
-          data: {}, // falls back to {}
-          createdAt: new Date('2026-07-28T12:00:00.000Z'),
-          publishedAt: null,
-          archivedAt: null,
-        },
-      ]);
+      await service.addVersion(mockAdminActor, 'agreement-1');
 
-      txMock.select.mockImplementationOnce(() => mockQuery([])); // select latest version returns empty
-
-      const result = await service.addVersion(mockAdminActor, 'doc-123');
-
-      expect(result.version).toBe(1);
-      expect(result.data).toEqual({});
+      const values = txMock.values.mock.calls[0][0];
+      expect(values.versionNumber).toBe(1);
+      expect(values.content).toEqual({ schema: TEMPLATE.schema, uischema: TEMPLATE.uischema });
     });
   });
 
   describe('publish', () => {
-    it('throws UnprocessableEntityException if validation fails against Zod schema', async () => {
+    it('validates the content shape rather than filled values', async () => {
       dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
         .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'ver-123', status: 'draft', data: {}, typeVersionId: 'type-ver-1' }]),
-        ); // requireDraftVersion
+          mockQuery([
+            agreementVersion({
+              content: {
+                schema: { type: 'object', properties: {} },
+                uischema: { type: 'Service', elements: [] },
+              },
+            }),
+          ]),
+        );
 
-      await expect(service.publish(mockAdminActor, 'doc-123', 'ver-123')).rejects.toThrow(
-        UnprocessableEntityException,
+      await expect(service.publish(mockAdminActor, 'agreement-1', 'version-1')).rejects.toThrow(
+        BadRequestException,
       );
     });
 
-    it('publishes and archives previous version successfully', async () => {
+    it('archives the currently-published version BEFORE promoting the draft', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'ver-123',
-              status: 'draft',
-              data: { title: 'Terms' },
-              typeVersionId: 'type-ver-1',
-            },
-          ]),
-        ); // requireDraftVersion
-
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion()]));
       txMock.returning.mockResolvedValueOnce([
-        {
-          id: 'ver-123',
-          version: 1,
-          status: 'published',
-          data: { title: 'Terms' },
-          createdAt: new Date('2026-07-28T12:00:00.000Z'),
-          publishedAt: new Date('2026-07-28T12:00:00.000Z'),
-          archivedAt: null,
-        },
+        agreementVersion({ status: 'published', publishedAt: new Date() }),
       ]);
 
-      const result = await service.publish(mockAdminActor, 'doc-123', 'ver-123');
+      const result = await service.publish(mockAdminActor, 'agreement-1', 'version-1');
 
-      expect(result).toEqual({
-        id: 'ver-123',
-        version: 1,
-        status: 'published',
-        data: { title: 'Terms' },
-        createdAt: '2026-07-28T12:00:00.000Z',
-        publishedAt: '2026-07-28T12:00:00.000Z',
-        archivedAt: null,
-      });
+      expect(txMock.set.mock.calls[0][0]).toHaveProperty('archivedAt');
+      expect(txMock.set.mock.calls[1][0]).toHaveProperty('publishedAt');
+      expect(result.status).toBe('published');
     });
 
-    it('throws Error if publish returning returns empty array', async () => {
+    it('throws if the promote mutation returns no row', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() =>
-          mockQuery([
-            {
-              id: 'ver-123',
-              status: 'draft',
-              data: { title: 'Terms' },
-              typeVersionId: 'type-ver-1',
-            },
-          ]),
-        ); // requireDraftVersion
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion()]));
+      txMock.returning.mockResolvedValueOnce([]);
 
-      txMock.returning.mockResolvedValueOnce([]); // empty returning
-
-      await expect(service.publish(mockAdminActor, 'doc-123', 'ver-123')).rejects.toThrow(
-        new Error('document version mutation returned no row'),
+      await expect(service.publish(mockAdminActor, 'agreement-1', 'version-1')).rejects.toThrow(
+        'document version mutation returned no row',
       );
     });
   });
 
   describe('error boundaries', () => {
-    it('throws NotFoundException if agreement is not found in loadAgreement', async () => {
-      dbMock.select.mockImplementationOnce(() => mockQuery([])); // loadAgreement returns empty
+    it('throws NotFoundException if the agreement does not exist', async () => {
+      dbMock.select.mockImplementationOnce(() => mockQuery([]));
 
-      await expect(service.get(mockUserActor, 'doc-123')).rejects.toThrow(NotFoundException);
+      await expect(service.get(mockAdminActor, 'missing')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException if workspace agreement is read by non-member non-admin', async () => {
+    it('throws NotFoundException if a non-member non-admin updates a workspace agreement', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: 'ws-123', kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([])); // isMember check (false)
-
-      await expect(service.get(mockUserActor, 'doc-123')).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws ForbiddenException if non-admin tries to update global agreement draft', async () => {
-      dbMock.select.mockImplementationOnce(() =>
-        mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-      ); // loadAgreement
+        .mockImplementationOnce(() => mockQuery([agreementDoc({ workspaceId: mockWorkspaceId })]))
+        .mockImplementationOnce(() => mockQuery([])); // not a member
 
       await expect(
-        service.updateDraft(mockUserActor, 'doc-123', 'ver-123', {
-          title: 'New Title',
-          data: {},
-        }),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('throws NotFoundException if non-member non-admin tries to update workspace agreement draft', async () => {
-      dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: 'ws-123', kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([])); // isMember check (false)
-
-      await expect(
-        service.updateDraft(mockUserActor, 'doc-123', 'ver-123', {
-          title: 'New Title',
-          data: {},
-        }),
+        service.updateDraft(mockUserActor, 'agreement-1', 'version-1', { content: CONTENT }),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('throws Error if document version insert returned no row in create', async () => {
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ role: 'member' }])); // isMember -> true
-      txMock.returning.mockResolvedValueOnce([{ id: 'doc-123' }]).mockResolvedValueOnce([]); // empty version insert
-
-      await expect(
-        service.create(mockUserActor, {
-          workspaceId: mockWorkspaceId,
-          data: { title: 'Terms' },
-        }),
-      ).rejects.toThrow('document version insert returned no row');
-    });
-
-    it('throws NotFoundException if agreement version not found in requireDraftVersion', async () => {
+    it('throws NotFoundException if the draft version is not found', async () => {
       dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([])); // requireDraftVersion returns empty
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([]));
 
       await expect(
-        service.updateDraft(mockAdminActor, 'doc-123', 'ver-123', {
-          title: 'New Title',
-          data: {},
-        }),
+        service.updateDraft(mockAdminActor, 'agreement-1', 'version-1', { content: CONTENT }),
       ).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws ConflictException if associated service is not in draft status in requireServiceEditable', async () => {
-      dbMock.select
-        .mockImplementationOnce(() =>
-          mockQuery([{ id: 'doc-123', workspaceId: null, kind: 'service-agreement' }]),
-        ) // loadAgreement
-        .mockImplementationOnce(() => mockQuery([{ id: 'ver-123', status: 'draft' }])) // requireDraftVersion
-        .mockImplementationOnce(() => mockQuery([{ status: 'published' }])); // requireServiceEditable returns published owner
-
-      await expect(
-        service.updateDraft(mockAdminActor, 'doc-123', 'ver-123', {
-          title: 'New Title',
-          data: {},
-        }),
-      ).rejects.toThrow(ConflictException);
     });
   });
 });

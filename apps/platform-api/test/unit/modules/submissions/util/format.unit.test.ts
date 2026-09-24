@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   submissionStatusLabel,
   submissionReference,
-  normalizeFormStructure,
+  normalizeContent,
 } from '../../../../../src/modules/submissions/util/format';
 import type { SubmissionStatus } from '../../../../../src/modules/submissions/dtos/submission.dtos';
 
@@ -37,58 +37,35 @@ describe('format utility tests', () => {
     });
   });
 
-  describe('normalizeFormStructure', () => {
-    describe('multi-stage-form', () => {
-      it('returns valid values if they exist in structure', () => {
-        const input = {
-          name: 'My Multi Form',
-          description: 'A desc',
-          stages: [{ id: 's1' }],
-          edges: [{ id: 'e1' }],
-        };
-        const result = normalizeFormStructure('multi-stage-form', input);
-        expect(result).toEqual(input);
-      });
+  describe('normalizeContent', () => {
+    // Feature 217: `content` IS `{ schema, uischema }`, so there is no per-kind branch any more —
+    // a multi-stage form is a `Flow` root inside `uischema`, not a different top-level object.
+    it("returns the content's schema and uischema unchanged", () => {
+      const input = {
+        schema: { type: 'object', properties: { field: { type: 'string' } } },
+        uischema: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/field' }] },
+      };
 
-      it('defaults missing or invalid types to empty strings or arrays', () => {
-        const input = {
-          name: 123, // invalid
-          description: null, // invalid
-          stages: 'not-an-array', // invalid
-        };
-        const result = normalizeFormStructure('multi-stage-form', input as any);
-        expect(result).toEqual({
-          name: '',
-          description: '',
-          stages: [],
-          edges: [],
-        });
+      expect(normalizeContent(input)).toEqual(input);
+    });
+
+    it('defaults an empty content to an empty object schema and an empty Form', () => {
+      expect(normalizeContent({})).toEqual({
+        schema: { type: 'object', properties: {} },
+        uischema: { type: 'Form', elements: [] },
       });
     });
 
-    describe('basic-form and other kinds', () => {
-      it('returns existing schema and uischema', () => {
-        const input = {
-          schema: { type: 'object', properties: { field: { type: 'string' } } },
-          uischema: { type: 'Horizontal' },
-        };
-        const result = normalizeFormStructure('basic-form', input);
-        expect(result).toEqual(input);
-      });
+    it('keeps a Flow root as-is rather than coercing it', () => {
+      const input = { schema: {}, uischema: { type: 'Flow', elements: [] } };
 
-      it('defaults schema and uischema if missing', () => {
-        const result = normalizeFormStructure('basic-form', {});
-        expect(result).toEqual({
-          schema: {
-            type: 'object',
-            properties: {},
-          },
-          uischema: {
-            type: 'VerticalLayout',
-            elements: [],
-          },
-        });
-      });
+      expect(normalizeContent(input).uischema).toEqual({ type: 'Flow', elements: [] });
+    });
+
+    it('ignores keys that are not schema or uischema', () => {
+      const result = normalizeContent({ schema: { type: 'object' }, stages: [{ id: 's1' }] });
+
+      expect(Object.keys(result).toSorted()).toEqual(['schema', 'uischema']);
     });
   });
 });

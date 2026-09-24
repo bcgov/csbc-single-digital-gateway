@@ -1,37 +1,23 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { ConflictException, UnprocessableEntityException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { documentVersions } from '@repo/database';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceVersionsService } from '../../../../../src/modules/services/services/service-versions.service';
-import {
-  resolveApplications,
-  formHasStructure,
-  insertApplication,
-} from '../../../../../src/modules/services/util/applications';
-import { validateData } from '../../../../../src/modules/services/util/validate-data';
-import {
-  copyReferences,
-  dedupCopiedForms,
-  discardVersionTx,
-} from '../../../../../src/modules/services/util/version-copy';
-import { documentVersions, documents, documentReferences } from '@repo/database';
-
-vi.mock('../../../../../src/modules/services/util/applications', () => ({
-  resolveApplications: vi.fn(),
-  insertApplication: vi.fn(),
-  formHasStructure: vi.fn(),
-  structureFromDefinition: vi.fn(),
-}));
-
-vi.mock('../../../../../src/modules/services/util/validate-data', () => ({
-  validateData: vi.fn(),
-}));
+import { discardVersionTx } from '../../../../../src/modules/services/util/version-copy';
 
 vi.mock('../../../../../src/modules/services/util/version-copy', () => ({
-  copyReferences: vi.fn(),
-  dedupCopiedForms: vi.fn(),
   discardVersionTx: vi.fn(),
+  reactivateServiceTx: vi.fn(),
 }));
 
-const mockQuery = (resolvedValue: any) => {
+/**
+ * Feature 217. A draft save writes ONE `content` — no `data`, no title sync onto the document row
+ * (the title is GENERATED from `content.uischema.label`), and no reconciled application
+ * references. Publish validates the content's SHAPE; it no longer validates filled values against
+ * the template's JSON schema (a service has no values), and no longer gates on
+ * "≥ 1 application method", which needed `document_references`.
+ */
+
+const mockQuery = (resolvedValue: unknown) => {
   const qb = Promise.resolve(resolvedValue);
   return Object.assign(qb, {
     from: vi.fn().mockReturnValue(qb),
@@ -42,12 +28,50 @@ const mockQuery = (resolvedValue: any) => {
   });
 };
 
+const CONTENT = {
+  schema: { type: 'object', properties: {} },
+  uischema: { type: 'Service', elements: [], label: 'Waste permit' },
+};
+const TEMPLATE = {
+  templateId: 'template-1',
+  templateVersionId: 'template-version-1',
+  schema: { type: 'object', properties: {} },
+  uischema: { type: 'Service', elements: [] },
+};
+const SERVICE_DOC = {
+  id: 'service-1',
+  workspaceId: 'ws-1',
+  type: 'service' as const,
+  kind: 'document' as const,
+  templateId: TEMPLATE.templateId,
+  templateKind: 'template' as const,
+  createdAt: new Date('2026-07-12T00:00:00.000Z'),
+  updatedAt: new Date('2026-07-12T00:00:00.000Z'),
+};
+const draftVersion = (over: Record<string, unknown> = {}) => ({
+  id: 'version-1',
+  documentId: 'service-1',
+  templateId: TEMPLATE.templateId,
+  templateVersionId: TEMPLATE.templateVersionId,
+  versionNumber: 1,
+  revision: 1,
+  status: 'draft',
+  title: 'Waste permit',
+  description: null,
+  content: CONTENT,
+  createdAt: new Date('2026-07-12T00:00:00.000Z'),
+  updatedAt: new Date('2026-07-12T00:00:00.000Z'),
+  publishedAt: null,
+  archivedAt: null,
+  ...over,
+});
+
 describe('ServiceVersionsService', () => {
   let service: ServiceVersionsService;
   let dbMock: any;
   let txMock: any;
   let servicesServiceMock: any;
-  let serviceTypeResolverMock: any;
+  let templatesMock: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,614 +99,166 @@ describe('ServiceVersionsService', () => {
       where: vi.fn().mockReturnThis(),
     });
 
-    servicesServiceMock = {
-      requireDocument: vi.fn(),
-    };
+    servicesServiceMock = { requireDocument: vi.fn().mockResolvedValue(SERVICE_DOC) };
+    templatesMock = { resolve: vi.fn().mockResolvedValue(TEMPLATE) };
 
-    serviceTypeResolverMock = {
-      schemaForVersion: vi.fn(),
-      resolve: vi.fn(),
-    };
-
-    service = new ServiceVersionsService(dbMock, servicesServiceMock, serviceTypeResolverMock);
+    service = new ServiceVersionsService(dbMock, servicesServiceMock, templatesMock);
   });
 
   describe('updateDraft', () => {
-    const mockDraftVersion = {
-      id: 'version-1',
-      documentId: 'service-1',
-      version: 1,
-      status: 'draft',
-      data: {},
-      createdAt: new Date('2026-07-12T00:00:00.000Z'),
-    };
-
-    it('successfully updates a draft version and syncs title/applications', async () => {
-      // 1. servicesService.requireDocument
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-
-      // 2. requireVersion query -> status: draft
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-
-      // 3. resolveApplications mock
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-
-      // 4. tx.update returning updated version
-      const mockUpdated = {
-        id: 'version-1',
-        documentId: 'service-1',
-        version: 1,
-        status: 'draft',
-        data: { title: 'Updated Title' },
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      txMock.returning.mockResolvedValueOnce([mockUpdated]);
-
-      // 5. reconcileApplications -> tx.select from documentReferences
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([])); // no existing references
+    it('writes the content and bumps the revision', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+      dbMock.returning.mockResolvedValueOnce([draftVersion({ revision: 2 })]);
 
       const result = await service.updateDraft('user-1', 'service-1', 'version-1', {
-        data: { title: 'Updated Title' },
-        applications: [],
+        content: CONTENT,
       });
 
-      expect(servicesServiceMock.requireDocument).toHaveBeenCalledWith('user-1', 'service-1');
-      expect(result.id).toBe('version-1');
-      expect(result.data).toEqual({ title: 'Updated Title' });
+      expect(dbMock.update).toHaveBeenCalledWith(documentVersions);
+      const setArg = dbMock.set.mock.calls[0][0];
+      expect(setArg.content).toEqual(CONTENT);
+      expect(setArg.revision).toBeDefined();
+      expect(result.revision).toBe(2);
     });
 
-    it('throws ConflictException if version is not a draft', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'published' }]));
+    it('never writes a document title — there is no title column to sync', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+      dbMock.returning.mockResolvedValueOnce([draftVersion()]);
+
+      await service.updateDraft('user-1', 'service-1', 'version-1', { content: CONTENT });
+
+      expect(dbMock.update).toHaveBeenCalledTimes(1);
+      expect(dbMock.set.mock.calls[0][0]).not.toHaveProperty('title');
+    });
+
+    it('rejects a content whose root is not a Service', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
 
       await expect(
-        service.updateDraft('user-1', 'service-1', 'version-1', { data: {} }),
+        service.updateDraft('user-1', 'service-1', 'version-1', {
+          content: {
+            schema: { type: 'object', properties: {} },
+            uischema: { type: 'Form', elements: [] },
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException if the version is not a draft', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion({ status: 'published' })]));
+
+      await expect(
+        service.updateDraft('user-1', 'service-1', 'version-1', { content: CONTENT }),
       ).rejects.toThrow(ConflictException);
     });
 
-    it('successfully resolves and inserts a new application', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-
-      const newAppInput = {
-        label: 'New App',
-        position: 1,
-        form: { mode: 'new' as const, typeId: 't-1', title: 'New Title' },
-      };
-      const resolvedApp = { typeId: 't-1', kind: 'basic-form' } as any;
-      vi.mocked(resolveApplications).mockResolvedValueOnce([resolvedApp]);
-
-      const mockUpdated = {
-        id: 'version-1',
-        documentId: 'service-1',
-        version: 1,
-        status: 'draft',
-        data: {},
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      txMock.returning.mockResolvedValueOnce([mockUpdated]);
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([])); // existing references count
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        data: {},
-        applications: [newAppInput],
-      });
-
-      expect(vi.mocked(resolveApplications)).toHaveBeenCalledWith(dbMock, 'service-1', 'ws-1', [
-        newAppInput,
-      ]);
-      expect(vi.mocked(insertApplication)).toHaveBeenCalledWith(
-        txMock,
-        { ownerVersionId: 'version-1', ownerDocumentId: 'service-1', workspaceId: 'ws-1' },
-        resolvedApp,
-      );
-    });
-
-    it('reorders applications successfully when applicationOrder is provided', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-
-      const mockUpdated = {
-        id: 'version-1',
-        documentId: 'service-1',
-        version: 1,
-        status: 'draft',
-        data: {},
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      txMock.returning.mockResolvedValueOnce([mockUpdated]);
-
-      // Mock the select query inside reorderApplications
-      txMock.select = vi
-        .fn()
-        .mockImplementationOnce(() => mockQuery([{ id: 'ref-1' }, { id: 'ref-2' }]));
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        data: {},
-        applicationOrder: ['ref-2', 'ref-1', 'ref-invalid'],
-      });
-
-      expect(txMock.update).toHaveBeenCalledWith(documentReferences);
-      expect(txMock.set).toHaveBeenCalledWith({ position: 0 });
-      expect(txMock.set).toHaveBeenCalledWith({ position: 1 });
-    });
-
-    it('throws Error if version update returned no row', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-      txMock.returning.mockResolvedValueOnce([]); // empty update returning
+    it('throws NotFoundException if the version is not found', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([]));
 
       await expect(
-        service.updateDraft('user-1', 'service-1', 'version-1', { data: {} }),
-      ).rejects.toThrow(new Error('document version mutation returned no row'));
-    });
-
-    it('updates document title using input.title if provided', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-      txMock.returning.mockResolvedValueOnce([mockDraftVersion]);
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([]));
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        title: 'Explicit Title Input',
-        data: {},
-      });
-
-      expect(txMock.update).toHaveBeenCalledWith(documents);
-      expect(txMock.set).toHaveBeenCalledWith({ title: 'Explicit Title Input' });
-    });
-
-    it('does not update document title if title is empty or whitespace', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-      txMock.returning.mockResolvedValueOnce([mockDraftVersion]);
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([]));
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        title: '   ',
-        data: {},
-      });
-
-      expect(txMock.update).not.toHaveBeenCalledWith(documents);
-    });
-
-    it('does not update document title if title is undefined', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-      txMock.returning.mockResolvedValueOnce([mockDraftVersion]);
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([]));
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        data: {},
-      });
-
-      expect(txMock.update).not.toHaveBeenCalledWith(documents);
-    });
-
-    it('successfully deletes a dropped application reference if referenced elsewhere', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-      txMock.returning.mockResolvedValueOnce([mockDraftVersion]);
-
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'ref-1', targetDocumentId: 'target-1' }]))
-        .mockReturnValueOnce(mockQuery([{ n: 2 }]));
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        data: {},
-        applications: [],
-      });
-
-      expect(txMock.delete).toHaveBeenCalledWith(documentReferences);
-    });
-
-    it('throws ConflictException if a dropped reference is not referenced elsewhere', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'ref-1', targetDocumentId: 'target-1' }]))
-        .mockReturnValueOnce(mockQuery([{ n: 1 }]));
-
-      await expect(
-        service.updateDraft('user-1', 'service-1', 'version-1', {
-          data: {},
-          applications: [],
-        }),
-      ).rejects.toThrow(new ConflictException('A form must be referenced by at least one service'));
-
-      expect(txMock.delete).not.toHaveBeenCalled();
-    });
-
-    it('successfully updates label and position of a kept application reference', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-      txMock.returning.mockResolvedValueOnce([mockDraftVersion]);
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'ref-1', targetDocumentId: 'target-1' }]));
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        data: {},
-        applications: [
-          {
-            id: 'ref-1',
-            label: 'Updated Label',
-            position: 5,
-            form: { mode: 'existing' as const, versionId: '00000000-0000-0000-0000-000000000000' },
-          },
-        ],
-      });
-
-      expect(txMock.update).toHaveBeenCalledWith(documentReferences);
-      expect(txMock.set).toHaveBeenCalledWith({ label: 'Updated Label', position: 5 });
-    });
-
-    it('throws ConflictException if a dropped reference query returns empty counts', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'ref-1', targetDocumentId: 'target-1' }]))
-        .mockReturnValueOnce(mockQuery([])); // empty count returns undefined
-
-      await expect(
-        service.updateDraft('user-1', 'service-1', 'version-1', {
-          data: {},
-          applications: [],
-        }),
-      ).rejects.toThrow(new ConflictException('A form must be referenced by at least one service'));
-
-      expect(txMock.delete).not.toHaveBeenCalled();
-    });
-
-    it('ignores kept application references that do not exist in the database', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
-      vi.mocked(resolveApplications).mockResolvedValueOnce([]);
-      txMock.returning.mockResolvedValueOnce([mockDraftVersion]);
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([])); // empty existing references
-
-      await service.updateDraft('user-1', 'service-1', 'version-1', {
-        data: {},
-        applications: [
-          {
-            id: 'ref-nonexistent',
-            label: 'Ignored Label',
-            position: 5,
-            form: { mode: 'existing' as const, versionId: '00000000-0000-0000-0000-000000000000' },
-          },
-        ],
-      });
-
-      expect(txMock.update).not.toHaveBeenCalledWith(documentReferences);
+        service.updateDraft('user-1', 'service-1', 'version-1', { content: CONTENT }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('publish', () => {
-    it('successfully validates and publishes a draft service version', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-
-      // select calls in tx:
-      // - requireVersion -> status: draft
-      // - documentReferences -> returns 1 application
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(
-          mockQuery([{ id: 'version-1', status: 'draft', typeVersionId: 'tv-1', data: {} }]),
-        )
-        .mockReturnValueOnce(
-          mockQuery([
-            {
-              targetVersionId: 'form-version-1',
-              targetKind: 'basic-form',
-              targetSchema: {},
-              targetTitle: 'Form 1',
-            },
-          ]),
-        );
-
-      // schema resolver mock
-      serviceTypeResolverMock.schemaForVersion.mockResolvedValue({ type: 'object' });
-      // validateData mock
-      vi.mocked(validateData).mockReturnValueOnce({ valid: true, errors: [] });
-      // formHasStructure mock
-      vi.mocked(formHasStructure).mockReturnValueOnce(true);
-
-      const mockPublished = {
-        id: 'version-1',
-        documentId: 'service-1',
-        version: 1,
-        status: 'published',
-        data: {},
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      txMock.returning.mockResolvedValueOnce([mockPublished]);
+    it('archives the currently-published version BEFORE promoting the draft', async () => {
+      // The partial unique index is not deferrable, so promote-then-demote would collide.
+      txMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+      txMock.returning.mockResolvedValueOnce([
+        draftVersion({ status: 'published', publishedAt: new Date() }),
+      ]);
 
       const result = await service.publish('user-1', 'service-1', 'version-1');
 
-      expect(vi.mocked(dedupCopiedForms)).toHaveBeenCalledWith(txMock, 'service-1', 'version-1');
+      expect(txMock.update).toHaveBeenNthCalledWith(1, documentVersions);
+      expect(txMock.set.mock.calls[0][0]).toHaveProperty('archivedAt');
+      expect(txMock.set.mock.calls[1][0]).toHaveProperty('publishedAt');
       expect(result.status).toBe('published');
     });
 
-    it('throws UnprocessableEntityException if validation fails', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(
-          mockQuery([{ id: 'version-1', status: 'draft', typeVersionId: 'tv-1', data: {} }]),
-        );
-
-      serviceTypeResolverMock.schemaForVersion.mockResolvedValue({ type: 'object' });
-      vi.mocked(validateData).mockReturnValueOnce({
-        valid: false,
-        errors: [{ message: 'invalid' } as any],
-      });
+    it('validates the content shape rather than filled values', async () => {
+      txMock.select.mockReturnValueOnce(
+        mockQuery([
+          draftVersion({
+            content: {
+              schema: { type: 'object', properties: {} },
+              uischema: { type: 'Form', elements: [] },
+            },
+          }),
+        ]),
+      );
 
       await expect(service.publish('user-1', 'service-1', 'version-1')).rejects.toThrow(
-        UnprocessableEntityException,
+        BadRequestException,
       );
     });
 
-    it('throws UnprocessableEntityException if no application forms are referenced', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(
-          mockQuery([{ id: 'version-1', status: 'draft', typeVersionId: 'tv-1', data: {} }]),
-        )
-        .mockReturnValueOnce(mockQuery([])); // empty references
+    it('does not require an application method to publish', async () => {
+      // Feature 217: the "a service needs ≥ 1 way to apply" gate needed document_references.
+      txMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+      txMock.returning.mockResolvedValueOnce([draftVersion({ status: 'published' })]);
 
-      serviceTypeResolverMock.schemaForVersion.mockResolvedValue({ type: 'object' });
-      vi.mocked(validateData).mockReturnValueOnce({ valid: true, errors: [] });
-
-      await expect(service.publish('user-1', 'service-1', 'version-1')).rejects.toThrow(
-        UnprocessableEntityException,
-      );
+      await expect(service.publish('user-1', 'service-1', 'version-1')).resolves.toBeDefined();
+      expect(txMock.select).toHaveBeenCalledTimes(1);
     });
 
     it('throws NotFoundException if the version is not found', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([])); // version not found
+      txMock.select.mockReturnValueOnce(mockQuery([]));
 
       await expect(service.publish('user-1', 'service-1', 'version-1')).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('throws ConflictException if trying to publish a non-draft version', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(
-          mockQuery([{ id: 'version-1', status: 'published', typeVersionId: 'tv-1', data: {} }]),
-        );
+    it('throws ConflictException when publishing a non-draft version', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([draftVersion({ status: 'archived' })]));
 
       await expect(service.publish('user-1', 'service-1', 'version-1')).rejects.toThrow(
         ConflictException,
       );
     });
 
-    it('throws UnprocessableEntityException if a referenced form has no structure', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(
-          mockQuery([{ id: 'version-1', status: 'draft', typeVersionId: 'tv-1', data: {} }]),
-        )
-        .mockReturnValueOnce(
-          mockQuery([
-            {
-              targetVersionId: 'form-version-1',
-              targetKind: 'basic-form',
-              targetSchema: {},
-              targetTitle: 'Form Without Fields',
-            },
-          ]),
-        );
-
-      serviceTypeResolverMock.schemaForVersion.mockResolvedValue({ type: 'object' });
-      vi.mocked(validateData).mockReturnValueOnce({ valid: true, errors: [] });
-      vi.mocked(formHasStructure).mockReturnValueOnce(false); // no fields structure
-
-      await expect(service.publish('user-1', 'service-1', 'version-1')).rejects.toThrow(
-        UnprocessableEntityException,
-      );
-    });
-
-    it('throws Error if publish mutation returns no row', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(
-          mockQuery([{ id: 'version-1', status: 'draft', typeVersionId: 'tv-1', data: {} }]),
-        )
-        .mockReturnValueOnce(
-          mockQuery([
-            {
-              targetVersionId: 'form-version-1',
-              targetKind: 'basic-form',
-              targetSchema: {},
-              targetTitle: 'Form 1',
-            },
-          ]),
-        );
-      serviceTypeResolverMock.schemaForVersion.mockResolvedValue({ type: 'object' });
-      vi.mocked(validateData).mockReturnValueOnce({ valid: true, errors: [] });
-      vi.mocked(formHasStructure).mockReturnValueOnce(true);
+    it('throws if the promote mutation returns no row', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
       txMock.returning.mockResolvedValueOnce([]);
 
       await expect(service.publish('user-1', 'service-1', 'version-1')).rejects.toThrow(
-        new Error('document version mutation returned no row'),
+        'document version mutation returned no row',
       );
-    });
-
-    it('skips publishing application if targetVersionId is null', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(
-          mockQuery([{ id: 'version-1', status: 'draft', typeVersionId: 'tv-1', data: {} }]),
-        )
-        .mockReturnValueOnce(
-          mockQuery([
-            {
-              targetVersionId: 'form-version-1',
-              targetKind: 'basic-form',
-              targetSchema: {},
-              targetTitle: 'Form 1',
-            },
-            {
-              targetVersionId: null, // targetVersionId is null
-              targetKind: 'service_agreement',
-              targetSchema: null,
-              targetTitle: 'Agreement Ref',
-            },
-          ]),
-        );
-
-      serviceTypeResolverMock.schemaForVersion.mockResolvedValue({ type: 'object' });
-      vi.mocked(validateData).mockReturnValueOnce({ valid: true, errors: [] });
-      vi.mocked(formHasStructure).mockReturnValueOnce(true).mockReturnValueOnce(true);
-
-      const mockPublished = {
-        id: 'version-1',
-        documentId: 'service-1',
-        version: 1,
-        status: 'published',
-        data: {},
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      txMock.returning.mockResolvedValueOnce([mockPublished]);
-
-      await service.publish('user-1', 'service-1', 'version-1');
-
-      expect(txMock.update).toHaveBeenCalledWith(documentVersions);
     });
   });
 
   describe('archive', () => {
-    it('archives an active service version', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'published' }]));
-
-      const mockArchived = {
-        id: 'version-1',
-        documentId: 'service-1',
-        version: 1,
-        status: 'archived',
-        data: {},
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      dbMock.returning.mockResolvedValueOnce([mockArchived]);
+    it('archives an active version', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+      dbMock.returning.mockResolvedValueOnce([draftVersion({ status: 'archived' })]);
 
       const result = await service.archive('user-1', 'service-1', 'version-1');
 
+      expect(dbMock.update).toHaveBeenCalledWith(documentVersions);
       expect(result.status).toBe('archived');
     });
 
-    it('throws ConflictException if already archived', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'archived' }]));
+    it('throws ConflictException if it is already archived', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion({ status: 'archived' })]));
 
       await expect(service.archive('user-1', 'service-1', 'version-1')).rejects.toThrow(
         ConflictException,
       );
     });
 
-    it('throws Error if archive mutation returns no row', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'published' }]));
-      dbMock.returning.mockResolvedValueOnce([]); // empty
+    it('throws if the archive mutation returns no row', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+      dbMock.returning.mockResolvedValueOnce([]);
 
       await expect(service.archive('user-1', 'service-1', 'version-1')).rejects.toThrow(
-        new Error('document version mutation returned no row'),
+        'document version mutation returned no row',
       );
     });
 
     it('throws NotFoundException if the version is not found', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi.fn().mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(mockQuery([]));
 
       await expect(service.archive('user-1', 'service-1', 'version-1')).rejects.toThrow(
         NotFoundException,
@@ -692,21 +268,15 @@ describe('ServiceVersionsService', () => {
 
   describe('discardVersion', () => {
     it('discards a draft version via discardVersionTx', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'draft' }]));
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
 
       await service.discardVersion('user-1', 'service-1', 'version-1');
 
       expect(vi.mocked(discardVersionTx)).toHaveBeenCalledWith(txMock, 'service-1', 'version-1');
     });
 
-    it('throws ConflictException if trying to discard a published version', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', status: 'published' }]));
+    it('throws ConflictException when discarding a published version', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion({ status: 'published' })]));
 
       await expect(service.discardVersion('user-1', 'service-1', 'version-1')).rejects.toThrow(
         ConflictException,
@@ -714,8 +284,7 @@ describe('ServiceVersionsService', () => {
     });
 
     it('throws NotFoundException if the version is not found', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      dbMock.select = vi.fn().mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(mockQuery([]));
 
       await expect(service.discardVersion('user-1', 'service-1', 'version-1')).rejects.toThrow(
         NotFoundException,
@@ -724,80 +293,37 @@ describe('ServiceVersionsService', () => {
   });
 
   describe('addVersion', () => {
-    it('adds a new version by copying from the latest', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 't-1', typeVersionId: 'tv-1' });
-
-      // select latest version inside transaction:
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', version: 1, data: { text: 'test' } }]));
-
-      const mockNewVersion = {
-        id: 'version-2',
-        documentId: 'service-1',
-        version: 2,
-        status: 'draft',
-        data: { text: 'test' },
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      txMock.returning.mockResolvedValueOnce([mockNewVersion]);
+    it('copies the latest version content into the next version number', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([draftVersion({ versionNumber: 2 })]));
+      txMock.returning.mockResolvedValueOnce([draftVersion({ id: 'version-3', versionNumber: 3 })]);
 
       const result = await service.addVersion('user-1', 'service-1');
 
-      expect(txMock.insert).toHaveBeenCalledWith(documentVersions);
-      expect(vi.mocked(copyReferences)).toHaveBeenCalledWith(txMock, {
-        sourceVersionId: 'version-1',
-        newVersionId: 'version-2',
-        serviceId: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      expect(result.version).toBe(2);
+      const values = txMock.values.mock.calls[0][0];
+      expect(values.versionNumber).toBe(3);
+      expect(values.content).toEqual(CONTENT);
+      expect(values.templateVersionId).toBe(TEMPLATE.templateVersionId);
+      expect(result.versionNumber).toBe(3);
     });
 
-    it('throws Error if addVersion mutation returns no row', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 't-1', typeVersionId: 'tv-1' });
-      txMock.select = vi
-        .fn()
-        .mockReturnValueOnce(mockQuery([{ id: 'version-1', version: 1, data: {} }]));
-      txMock.returning.mockResolvedValueOnce([]); // empty
+    it('starts at version 1 from the template when there is no prior version', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([]));
+      txMock.returning.mockResolvedValueOnce([draftVersion()]);
+
+      await service.addVersion('user-1', 'service-1');
+
+      const values = txMock.values.mock.calls[0][0];
+      expect(values.versionNumber).toBe(1);
+      expect(values.content).toEqual({ schema: TEMPLATE.schema, uischema: TEMPLATE.uischema });
+    });
+
+    it('throws if the insert returns no row', async () => {
+      txMock.select.mockReturnValueOnce(mockQuery([]));
+      txMock.returning.mockResolvedValueOnce([]);
 
       await expect(service.addVersion('user-1', 'service-1')).rejects.toThrow(
-        new Error('document version mutation returned no row'),
+        'document version mutation returned no row',
       );
-    });
-
-    it('adds a new version as version 1 when no prior version exists', async () => {
-      servicesServiceMock.requireDocument.mockResolvedValue({
-        id: 'service-1',
-        workspaceId: 'ws-1',
-      });
-      serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 't-1', typeVersionId: 'tv-1' });
-      txMock.select = vi.fn().mockReturnValueOnce(mockQuery([]));
-
-      const mockNewVersion = {
-        id: 'version-1',
-        documentId: 'service-1',
-        version: 1,
-        status: 'draft',
-        data: {},
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      txMock.returning.mockResolvedValueOnce([mockNewVersion]);
-
-      const result = await service.addVersion('user-1', 'service-1');
-
-      expect(txMock.insert).toHaveBeenCalledWith(documentVersions);
-      expect(vi.mocked(copyReferences)).not.toHaveBeenCalled();
-      expect(result.version).toBe(1);
-      expect(result.data).toEqual({});
     });
   });
 });

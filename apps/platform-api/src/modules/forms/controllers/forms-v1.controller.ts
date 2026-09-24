@@ -6,7 +6,7 @@ import {
   CreateFormDto,
   FormVersionDto,
   FormWithVersionDto,
-  UpdateFormSchemaDto,
+  UpdateFormContentDto,
 } from '../dtos/form.dtos';
 import { FormsService } from '../services/forms.service';
 
@@ -33,12 +33,12 @@ export class FormsV1Controller {
 
   @Patch(':id/versions/:versionId')
   @ZodSerializerDto(FormVersionDto)
-  updateSchema(
+  updateContent(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Param('versionId') versionId: string,
-    @Body() body: UpdateFormSchemaDto,
+    @Body() body: UpdateFormContentDto,
   ) {
-    return this.forms.updateSchema(user.id, id, versionId, body);
+    return this.forms.updateContent(user.id, id, versionId, body);
   }
 }

@@ -4,7 +4,7 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { HttpExceptionFilter } from '../../src/filters/http-exception.filter';
 import { WorkspacesModule } from '../../src/modules/workspaces/workspaces.module';
-import { DocumentTypesModule } from '../../src/modules/document-types/document-types.module';
+import { TemplatesModule } from '../../src/modules/templates/templates.module';
 import { ServicesModule } from '../../src/modules/services/services.module';
 import { FormsModule } from '../../src/modules/forms/forms.module';
 import { SubmissionsModule } from '../../src/modules/submissions/submissions.module';
@@ -47,7 +47,7 @@ describe('AppModule metadata and factories tests', () => {
   it('should have all feature modules registered correctly', () => {
     expect(imports).toBeDefined();
     expect(imports).toContain(WorkspacesModule);
-    expect(imports).toContain(DocumentTypesModule);
+    expect(imports).toContain(TemplatesModule);
     expect(imports).toContain(ServicesModule);
     expect(imports).toContain(FormsModule);
     expect(imports).toContain(SubmissionsModule);

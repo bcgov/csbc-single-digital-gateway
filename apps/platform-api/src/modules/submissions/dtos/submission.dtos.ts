@@ -50,10 +50,9 @@ export type ReviewSubmissionInput = z.infer<typeof reviewSubmissionSchema>;
 /** A submission as a review-queue row. */
 export const submissionSummarySchema = z.object({
   id: z.string(),
-  serviceId: z.string(),
-  serviceTitle: z.string(),
   formId: z.string(),
-  formTitle: z.string(),
+  /** From the form version's GENERATED title — NULL when its content carries no root label. */
+  formTitle: z.string().nullable(),
   applicantName: z.string(),
   applicantEmail: z.string().nullable(),
   status: submissionStatusSchema,
@@ -85,7 +84,6 @@ export type ReviewEntry = z.infer<typeof reviewEntrySchema>;
 
 /** A submission + its answers, the form's render structure, and its review history. */
 export const submissionDetailSchema = submissionSummarySchema.extend({
-  kind: z.string(),
   structure: z.record(z.string(), z.unknown()),
   data: z.record(z.string(), z.unknown()),
   reviews: z.array(reviewEntrySchema),

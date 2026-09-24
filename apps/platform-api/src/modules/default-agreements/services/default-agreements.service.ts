@@ -16,7 +16,17 @@ import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, eq } from 'drizzle-orm';
 import type { DefaultAgreementResponse } from '../dtos/default-agreement.dtos';
 
-const AGREEMENT_KIND = 'service-agreement';
+const AGREEMENT_TYPE = 'service-agreement' as const;
+
+/**
+ * Whether an agreement is optional for the citizen. Feature 217: this used to be
+ * `document_versions.data.isOptional`, a value filled against the agreement type's schema. An
+ * agreement is now AUTHORED, so the flag is an option on its root element.
+ */
+function isOptionalFrom(content: Record<string, unknown> | null | undefined): boolean {
+  const uischema = content?.uischema as { options?: Record<string, unknown> } | undefined;
+  return uischema?.options?.isOptional === true;
+}
 
 /**
  * Workspace-admin management of a workspace's DEFAULT service agreements (feature 96). Per-resource
@@ -35,8 +45,8 @@ export class DefaultAgreementsService {
         id: workspaceDefaultAgreements.id,
         agreementDocumentId: workspaceDefaultAgreements.agreementDocumentId,
         agreementWorkspaceId: workspaceDefaultAgreements.agreementWorkspaceId,
-        title: documents.title,
-        data: documentVersions.data,
+        title: documentVersions.title,
+        content: documentVersions.content,
         createdAt: workspaceDefaultAgreements.createdAt,
       })
       .from(workspaceDefaultAgreements)
@@ -54,7 +64,7 @@ export class DefaultAgreementsService {
       id: row.id,
       agreementDocumentId: row.agreementDocumentId,
       title: row.title,
-      isOptional: row.data.isOptional === true,
+      isOptional: isOptionalFrom(row.content),
       isGlobal: row.agreementWorkspaceId === null,
       createdAt: row.createdAt.toISOString(),
     }));
@@ -87,12 +97,9 @@ export class DefaultAgreementsService {
     }
     const inserted = await this.db
       .insert(workspaceDefaultAgreements)
-      .values({
-        workspaceId,
-        agreementDocumentId,
-        agreementKind: AGREEMENT_KIND,
-        agreementWorkspaceId: agreement.workspaceId,
-      })
+      // `agreement_type` / `agreement_kind` are GENERATED constants (feature 217) — the composite
+      // FK uses them to pin the target to a service-agreement DOCUMENT, and they cannot be written.
+      .values({ workspaceId, agreementDocumentId, agreementWorkspaceId: agreement.workspaceId })
       .returning();
     const row = inserted[0];
     if (row === undefined) {
@@ -128,12 +135,12 @@ export class DefaultAgreementsService {
   /** Resolve a service-agreement document's currently-published version (422 if none / not an agreement). */
   private async resolvePublishedAgreement(
     documentId: string,
-  ): Promise<{ workspaceId: string | null; title: string; isOptional: boolean }> {
+  ): Promise<{ workspaceId: string | null; title: string | null; isOptional: boolean }> {
     const rows = await this.db
       .select({
         workspaceId: documents.workspaceId,
-        title: documents.title,
-        data: documentVersions.data,
+        title: documentVersions.title,
+        content: documentVersions.content,
       })
       .from(documents)
       .innerJoin(
@@ -143,7 +150,13 @@ export class DefaultAgreementsService {
           eq(documentVersions.status, 'published'),
         ),
       )
-      .where(and(eq(documents.id, documentId), eq(documents.kind, AGREEMENT_KIND)))
+      .where(
+        and(
+          eq(documents.id, documentId),
+          eq(documents.type, AGREEMENT_TYPE),
+          eq(documents.kind, 'document'),
+        ),
+      )
       .limit(1);
     const row = rows[0];
     if (row === undefined) {
@@ -154,7 +167,7 @@ export class DefaultAgreementsService {
     return {
       workspaceId: row.workspaceId,
       title: row.title,
-      isOptional: row.data.isOptional === true,
+      isOptional: isOptionalFrom(row.content),
     };
   }
 

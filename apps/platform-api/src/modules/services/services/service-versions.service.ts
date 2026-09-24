@@ -1,173 +1,63 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
-import {
-  type Database,
-  type DocumentVersion,
-  documentReferences,
-  documentVersions,
-  documents,
-} from '@repo/database';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { type Database, type DocumentVersion, documentVersions } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
+import { TemplateResolver } from '../../templates/services/template.resolver';
+import { validateContent } from '../../templates/services/validate-content';
 import {
-  type ApplicationInput,
   type ServiceVersionResponse,
-  type UpdateVersionDataInput,
+  type UpdateVersionContentInput,
   toServiceVersionDto,
 } from '../dtos/service.dtos';
-import {
-  type ResolvedApplication,
-  type Tx,
-  formHasStructure,
-  insertApplication,
-  resolveApplications,
-} from '../util/applications';
-import { validateData } from '../util/validate-data';
-import { copyReferences, dedupCopiedForms, discardVersionTx } from '../util/version-copy';
-import { ServiceTypeResolver } from './service-type.resolver';
+import { discardVersionTx } from '../util/version-copy';
 import { ServicesService } from './services.service';
 
+/**
+ * The version lifecycle for SERVICE documents.
+ *
+ * Feature 217: a draft save now writes one `content` (the authored document) instead of `data` +
+ * a reconciled set of application references, and the title is no longer synced onto the document
+ * row — `documents.title` is gone and `document_versions.title` is GENERATED from the content.
+ * Publish validates the content's shape; it no longer validates filled VALUES against the
+ * template's JSON schema, because a service has no values to fill, and it no longer gates on
+ * "≥ 1 application method", which needed `document_references`.
+ */
 @Injectable()
 export class ServiceVersionsService {
   constructor(
     @InjectDatabase() private readonly db: Database,
     private readonly services: ServicesService,
-    private readonly serviceType: ServiceTypeResolver,
+    private readonly templates: TemplateResolver,
   ) {}
 
-  /**
-   * Composite save of a draft version: form data + title sync, and (when `applications` is given)
-   * reconcile the version's application references — add new, relabel/reorder kept, remove dropped
-   * (a form's last reference can't be removed → 409). Drafts only.
-   */
+  /** Save a draft version's content. Drafts only. */
   async updateDraft(
     userId: string,
     id: string,
     versionId: string,
-    input: UpdateVersionDataInput,
+    input: UpdateVersionContentInput,
   ): Promise<ServiceVersionResponse> {
     const service = await this.services.requireDocument(userId, id);
     const version = await this.requireVersion(id, versionId);
     if (version.status !== 'draft') {
       throw new ConflictException('Only draft versions can be edited');
     }
-    // Pre-resolve NEW applications (no id) before opening the write tx.
-    const newApps = (input.applications ?? []).filter((app) => app.id === undefined);
-    const resolvedNew = await resolveApplications(this.db, id, service.workspaceId, newApps);
-
-    const updated = await this.db.transaction(async (tx) => {
-      const rows = await tx
-        .update(documentVersions)
-        .set({ data: input.data })
-        .where(eq(documentVersions.id, versionId))
-        .returning();
-      const title =
-        input.title ?? (typeof input.data.title === 'string' ? input.data.title : undefined);
-      if (title !== undefined && title.trim() !== '') {
-        await tx.update(documents).set({ title }).where(eq(documents.id, id));
-      }
-      if (input.applications !== undefined) {
-        await this.reconcileApplications(
-          tx,
-          { ownerVersionId: versionId, ownerDocumentId: id, workspaceId: service.workspaceId },
-          input.applications,
-          resolvedNew,
-        );
-      }
-      if (input.applicationOrder !== undefined) {
-        await this.reorderApplications(tx, versionId, input.applicationOrder);
-      }
-      return rows[0];
-    });
-    return toServiceVersionDto(this.orThrow(updated));
+    const content = validateContent(service, input.content);
+    const rows = await this.db
+      .update(documentVersions)
+      .set({ content, revision: sql`${documentVersions.revision} + 1` })
+      .where(eq(documentVersions.id, versionId))
+      .returning();
+    return toServiceVersionDto(this.orThrow(rows[0]));
   }
 
-  private async reconcileApplications(
-    tx: Tx,
-    owner: { ownerVersionId: string; ownerDocumentId: string; workspaceId: string },
-    incoming: ApplicationInput[],
-    resolvedNew: ResolvedApplication[],
-  ): Promise<void> {
-    const existing = await tx
-      .select()
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.ownerVersionId, owner.ownerVersionId),
-          eq(documentReferences.relation, 'application_form'),
-        ),
-      );
-    const keptIds = new Set(incoming.map((app) => app.id).filter((appId) => appId !== undefined));
-
-    // Remove dropped references (a form's last reference is protected). Sequential — one tx connection.
-    for (const ref of existing) {
-      if (keptIds.has(ref.id)) {
-        continue;
-      }
-      // eslint-disable-next-line no-await-in-loop
-      const counts = await tx
-        .select({ n: sql<number>`count(*)::int` })
-        .from(documentReferences)
-        .where(eq(documentReferences.targetDocumentId, ref.targetDocumentId));
-      if ((counts[0]?.n ?? 0) <= 1) {
-        throw new ConflictException('A form must be referenced by at least one service');
-      }
-      // eslint-disable-next-line no-await-in-loop
-      await tx.delete(documentReferences).where(eq(documentReferences.id, ref.id));
-    }
-
-    // Relabel/reorder kept references.
-    const existingIds = new Set(existing.map((ref) => ref.id));
-    for (const app of incoming) {
-      if (app.id !== undefined && existingIds.has(app.id)) {
-        // eslint-disable-next-line no-await-in-loop
-        await tx
-          .update(documentReferences)
-          .set({ label: app.label, position: app.position })
-          .where(eq(documentReferences.id, app.id));
-      }
-    }
-
-    // Insert new applications (creating inline forms as needed).
-    for (const app of resolvedNew) {
-      // eslint-disable-next-line no-await-in-loop
-      await insertApplication(tx, owner, app);
-    }
-  }
-
-  /** Reposition a draft version's application-method references (forms + external links) to the given
-   * order (feature 132): each id becomes `position = its index`. Ids that aren't application-method
-   * refs of this version are ignored (defensive — can't touch another version/workspace). This
-   * `position` is what both the staff list and the citizen "How to apply" read order by. */
-  private async reorderApplications(tx: Tx, versionId: string, order: string[]): Promise<void> {
-    const existing = await tx
-      .select({ id: documentReferences.id })
-      .from(documentReferences)
-      .where(
-        and(
-          eq(documentReferences.ownerVersionId, versionId),
-          inArray(documentReferences.relation, ['application_form', 'external_application']),
-        ),
-      );
-    const valid = new Set(existing.map((row) => row.id));
-    let position = 0;
-    for (const id of order) {
-      if (!valid.has(id)) {
-        continue;
-      }
-      // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-      await tx.update(documentReferences).set({ position }).where(eq(documentReferences.id, id));
-      position += 1;
-    }
-  }
-
-  /** Validate the draft against its bound type-version schema (422 if invalid), then publish it. */
+  /**
+   * Publish a draft. The currently-published version is archived FIRST: the partial unique index
+   * `document_versions_one_published_key` is not deferrable, so promote-then-demote would collide
+   * inside the transaction.
+   */
   async publish(userId: string, id: string, versionId: string): Promise<ServiceVersionResponse> {
-    await this.services.requireDocument(userId, id);
+    const service = await this.services.requireDocument(userId, id);
     return this.db.transaction(async (tx) => {
       const rows = await tx
         .select()
@@ -181,57 +71,7 @@ export class ServiceVersionsService {
       if (version.status !== 'draft') {
         throw new ConflictException('Only draft versions can be published');
       }
-      const schema = await this.serviceType.schemaForVersion(version.typeVersionId);
-      const result = validateData(schema, version.data);
-      if (!result.valid) {
-        throw new UnprocessableEntityException({
-          message: 'Service data failed validation',
-          errors: result.errors,
-        });
-      }
-      // Drop deep-copied forms unchanged from the previous published version (re-point + delete the
-      // redundant copy) before the promote loop below.
-      await dedupCopiedForms(tx, id, versionId);
-      // A service must have ≥1 application method (a form OR an external link), and every FORM
-      // method must have structure. An external method is valid once it has a url (feature 131).
-      const apps = await tx
-        .select({
-          targetVersionId: documentReferences.targetVersionId,
-          targetKind: documentReferences.targetKind,
-          targetSchema: documentVersions.schema,
-          targetTitle: documents.title,
-        })
-        .from(documentReferences)
-        .innerJoin(documentVersions, eq(documentVersions.id, documentReferences.targetVersionId))
-        .innerJoin(documents, eq(documents.id, documentReferences.targetDocumentId))
-        .where(
-          and(
-            eq(documentReferences.ownerVersionId, versionId),
-            inArray(documentReferences.relation, ['application_form', 'external_application']),
-          ),
-        );
-      if (apps.length === 0) {
-        throw new UnprocessableEntityException({
-          message: 'A service must have at least one application method to publish',
-          errors: [],
-        });
-      }
-      const structureless = apps
-        .filter(
-          (app) =>
-            app.targetKind !== 'external-application' &&
-            !formHasStructure(app.targetKind, app.targetSchema),
-        )
-        .map((app) => app.targetTitle);
-      if (structureless.length > 0) {
-        throw new UnprocessableEntityException({
-          message: 'Every application method needs fields before the service can be published',
-          errors: structureless,
-        });
-      }
-      // Service agreements are shared policy documents (document-only references) published
-      // independently in the console — publishing a service does NOT publish its agreements.
-      // Demote the currently-published version, then promote this draft (≤1 published per document).
+      validateContent(service, version.content);
       await tx
         .update(documentVersions)
         .set({ archivedAt: sql`now()` })
@@ -241,16 +81,6 @@ export class ServiceVersionsService {
         .set({ publishedAt: sql`now()` })
         .where(eq(documentVersions.id, versionId))
         .returning();
-      // Publishing a service publishes its application forms (one version each; forms always pin a
-      // version, so target_version_id is non-null here).
-      for (const app of apps) {
-        if (app.targetVersionId === null) continue;
-        // eslint-disable-next-line no-await-in-loop -- sequential writes share one tx connection
-        await tx
-          .update(documentVersions)
-          .set({ publishedAt: sql`now()`, archivedAt: null })
-          .where(eq(documentVersions.id, app.targetVersionId));
-      }
       return toServiceVersionDto(this.orThrow(published[0]));
     });
   }
@@ -260,17 +90,17 @@ export class ServiceVersionsService {
     await this.services.requireDocument(userId, id);
     const version = await this.requireVersion(id, versionId);
     if (version.status === 'archived') {
-      throw new ConflictException('Version is already archived');
+      throw new ConflictException('This version is already archived');
     }
-    const archived = await this.db
+    const rows = await this.db
       .update(documentVersions)
       .set({ archivedAt: sql`now()` })
       .where(eq(documentVersions.id, versionId))
       .returning();
-    return toServiceVersionDto(this.orThrow(archived[0]));
+    return toServiceVersionDto(this.orThrow(rows[0]));
   }
 
-  /** Discard a DRAFT version: delete it (+ the application forms it owned). Refuses the last version. */
+  /** Discard a DRAFT version. Refuses the last remaining version — delete the service instead. */
   async discardVersion(userId: string, id: string, versionId: string): Promise<void> {
     await this.services.requireDocument(userId, id);
     const version = await this.requireVersion(id, versionId);
@@ -280,40 +110,30 @@ export class ServiceVersionsService {
     await this.db.transaction((tx) => discardVersionTx(tx, id, versionId));
   }
 
-  /** Add a new draft version copying the latest version's data + methods (each form deep-copied so the
-   * new version edits its own forms; other references copied as-is). */
+  /** Add a new draft version, copying the latest version's content. */
   async addVersion(userId: string, id: string): Promise<ServiceVersionResponse> {
-    const service = await this.services.requireDocument(userId, id);
-    const type = await this.serviceType.resolve();
+    await this.services.requireDocument(userId, id);
+    const template = await this.templates.resolve('service');
     return this.db.transaction(async (tx) => {
       const existing = await tx
         .select()
         .from(documentVersions)
         .where(eq(documentVersions.documentId, id))
-        .orderBy(sql`${documentVersions.version} desc`)
+        .orderBy(sql`${documentVersions.versionNumber} desc`)
         .limit(1);
       const latest = existing[0];
-      const next = (latest?.version ?? 0) + 1;
+      const next = (latest?.versionNumber ?? 0) + 1;
       const inserted = await tx
         .insert(documentVersions)
         .values({
           documentId: id,
-          typeId: type.typeId,
-          typeVersionId: type.typeVersionId,
-          version: next,
-          data: latest?.data ?? {},
+          templateId: template.templateId,
+          templateVersionId: template.templateVersionId,
+          versionNumber: next,
+          content: latest?.content ?? { schema: template.schema, uischema: template.uischema },
         })
         .returning();
-      const newVersion = this.orThrow(inserted[0]);
-      if (latest !== undefined) {
-        await copyReferences(tx, {
-          sourceVersionId: latest.id,
-          newVersionId: newVersion.id,
-          serviceId: id,
-          workspaceId: service.workspaceId,
-        });
-      }
-      return toServiceVersionDto(newVersion);
+      return toServiceVersionDto(this.orThrow(inserted[0]));
     });
   }
 
