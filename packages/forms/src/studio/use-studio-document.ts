@@ -1,4 +1,6 @@
 import { authoredId } from '../renderers/ui/authored-id';
+import { mayAddTo, mayRemove } from '../capabilities/capability-gates';
+import { useCapabilities } from '../renderers/studio/studio-capabilities';
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GridDropSource, GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
@@ -40,6 +42,14 @@ interface StudioDocumentSource {
    * never appears. No separate prop: the package's existing "presence enables it" idiom.
    */
   capabilities?: CapabilityMap | undefined;
+  /**
+   * Doc 221 rule 6: said when the studio REFUSES an edit the author already committed to.
+   *
+   * Absent affordances say nothing — nothing was attempted. A DRAG is different: by the time it
+   * fails the author has already picked the element up, and a silent snap-back is the shape users
+   * report as a bug. Same channel doc 209 rule 18 uses for a refused edge re-point.
+   */
+  onNotice?: ((message: string) => void) | undefined;
 }
 
 /** The halves `replaceDocument` replaces — an absent half is left as it is (doc 191 rule 22). */
@@ -105,7 +115,15 @@ function typesById(uischema: UISchemaElement, ids: ElementIds): Map<string, stri
  * A different prop object resets it (React's "adjust state while rendering" pattern, so no render ever
  * shows the stale document).
  */
-export function useStudioDocument({ schema, uischema, capabilities }: StudioDocumentSource) {
+/** Doc 221 rule 6: the one message a refused drag shows. */
+const MOVE_REFUSED = 'This form’s template does not allow moving that element.';
+
+export function useStudioDocument({
+  schema,
+  uischema,
+  capabilities,
+  onNotice,
+}: StudioDocumentSource) {
   const sourceSchema = schema ?? STUDIO_SAMPLE_SCHEMA;
   const sourceUischema = uischema ?? STUDIO_SAMPLE_UISCHEMA;
   const [ids] = useState(() => createElementIds());
@@ -124,18 +142,39 @@ export function useStudioDocument({ schema, uischema, capabilities }: StudioDocu
   // Doc 194 rule 11: `accepts` reads the latest document, so the editor keeps its identity across edits.
   const latest = useRef(current);
   latest.current = current;
+  /**
+   * Doc 221: the GOVERNING map, held in a ref for the same reason `latest` is — the write gates below
+   * read it, and a new dependency would change `accepts`'s identity, reload every grid, and (doc 218)
+   * put the map within reach of the re-seed comparison. Ungoverned is `null`, which every gate treats
+   * as fully granted.
+   */
+  const governing = useCapabilities();
+  const governingRef = useRef(governing);
+  governingRef.current = governing;
+  // Held in a ref like the rest: a new identity would rebuild the editor on every render.
+  const noticeRef = useRef(onNotice);
+  noticeRef.current = onNotice;
 
   const onGesture = useCallback(
     (gesture: GridGesture) => {
       // An insert creates an element selection must pick, so the selection editor routes it to `insert` (doc 189).
       if (gesture.type === 'insert') return;
-      setState((previous) => ({
-        ...previous,
-        uischema:
+      setState((previous) => {
+        const next =
           gesture.type === 'layout'
             ? applyLayout(previous.uischema, gesture.gridId, gesture.nodes, ids)
-            : applyMove(previous.uischema, gesture, ids),
-      }));
+            : applyMove(previous.uischema, gesture, ids, governingRef.current ?? undefined);
+        // A move that comes back UNCHANGED under a governing template was refused by a capability.
+        // The author already committed to the gesture, so this one says why (rule 6).
+        if (
+          gesture.type === 'move' &&
+          next === previous.uischema &&
+          governingRef.current !== null
+        ) {
+          noticeRef.current?.(MOVE_REFUSED);
+        }
+        return { ...previous, uischema: next };
+      });
     },
     [ids],
   );
@@ -154,11 +193,18 @@ export function useStudioDocument({ schema, uischema, capabilities }: StudioDocu
           ? findById(root, source.elementId, ids)?.type
           : buildTemplate(source.template, documentSchema)?.element.type;
       if (type === undefined) return true;
-      return allowedInLayout(
-        type,
-        layout,
-        elementPath(root, layoutId, ids).map((element) => element.type),
-      );
+      if (
+        !allowedInLayout(
+          type,
+          layout,
+          elementPath(root, layoutId, ids).map((element) => element.type),
+        )
+      )
+        return false;
+      // Doc 221: refusing only in write-back would leave gridstack's DOM moved — a ghost item — so the
+      // capability is asked HERE too, exactly as doc 194 rule 8 requires of the placement rule.
+      const target = findById(root, layoutId, ids);
+      return target === undefined || mayAddTo(governingRef.current ?? undefined, target);
     },
     [ids],
   );
@@ -231,12 +277,20 @@ export function useStudioDocument({ schema, uischema, capabilities }: StudioDocu
   const copy = useCallback(
     (elementId: string, placement: StudioItemPlacement): string | undefined => {
       const document = { schema: currentSchema, uischema: currentUischema };
+      // Doc 221: a copy needs somewhere to GO, so it is the PARENT's `addChildren` that decides — the
+      // reason the toolbar cannot gate Copy itself (it is presentational and has no parent to resolve).
+      const parentId = parentOf(elementId);
+      const parent =
+        parentId === null
+          ? (currentUischema as TreeElement)
+          : findById(currentUischema as TreeElement, parentId, ids);
+      if (parent && !mayAddTo(governingRef.current ?? undefined, parent)) return undefined;
       const result = copyElement(document, elementId, placement, ids, newPropertyKey);
       if (!result.copy) return undefined;
       setState((previous) => ({ ...previous, schema: result.schema, uischema: result.uischema }));
       return ids.idOf(result.copy);
     },
-    [currentSchema, currentUischema, ids],
+    [currentSchema, currentUischema, ids, parentOf],
   );
 
   // Inserts into the rendered document, like `copy`, so the new element's id can be returned — and selected — at once
@@ -289,10 +343,26 @@ export function useStudioDocument({ schema, uischema, capabilities }: StudioDocu
 
   const remove = useCallback(
     (elementId: string) => {
-      setState((previous) => ({
-        ...previous,
-        ...removeElement({ schema: previous.schema, uischema: previous.uischema }, elementId, ids),
-      }));
+      setState((previous) => {
+        // Doc 221: refused defensively even though the button is already absent — `requestDelete` is
+        // reachable from the Flow gestures and the keyboard too, and a gate that only hides a control
+        // is not a gate.
+        const root = previous.uischema as TreeElement;
+        const element = findById(root, elementId, ids);
+        const parentId = findParentById(root, elementId, ids);
+        const parent = parentId === undefined ? undefined : parentId;
+        if (element && !mayRemove(governingRef.current ?? undefined, element, parent)) {
+          return previous;
+        }
+        return {
+          ...previous,
+          ...removeElement(
+            { schema: previous.schema, uischema: previous.uischema },
+            elementId,
+            ids,
+          ),
+        };
+      });
     },
     [ids],
   );

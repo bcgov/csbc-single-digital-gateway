@@ -1,4 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
+import { mayMove } from '../../capabilities/capability-gates';
+import type { CapabilityMap } from '../../capabilities/capability-types';
 import type { LayoutNode } from '../../renderers/gridstack/grid-editor';
 import {
   allowedInLayout,
@@ -148,6 +150,7 @@ export function applyMove(
   uischema: UISchemaElement,
   move: LayoutMove,
   ids: ElementIds,
+  capabilities?: CapabilityMap | undefined,
 ): UISchemaElement {
   const source = findById(uischema, move.fromGridId, ids);
   const target = findById(uischema, move.toGridId, ids);
@@ -160,6 +163,9 @@ export function applyMove(
   const targetKind = layoutKindOf(target.type);
   const ancestors = elementPath(uischema as TreeElement, move.toGridId, ids).map((el) => el.type);
   if (targetKind && !allowedInLayout(moved.type, targetKind, ancestors)) return uischema;
+  // Doc 221: placement says the target CAN hold it; a capability says the owner MAY move it there.
+  // Three permissions have to hold — see `mayMove`. Ungoverned passes.
+  if (!mayMove(capabilities, moved, source, target)) return uischema;
 
   const removed = updateById(
     uischema,

@@ -1,4 +1,6 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import { mayAddTo } from '../../capabilities/capability-gates';
+import type { CapabilityMap } from '../../capabilities/capability-types';
 import { stampMissingIds } from './stamp-ids';
 import { allIdsUsed } from './form-address';
 import type { LayoutNode } from '../../renderers/gridstack/grid-editor';
@@ -120,6 +122,7 @@ export function insertElement(
   target: InsertTarget,
   ids: ElementIds,
   newKey: () => string,
+  capabilities?: CapabilityMap | undefined,
 ): InsertResult {
   const root = document.uischema as TreeElement;
   const layout = findById(root, target.gridId, ids);
@@ -139,6 +142,9 @@ export function insertElement(
   // inside a Tab is refused too.
   if (!allowedInLayout(built.element.type, kind, ancestorTypes(root, target.gridId, ids)))
     return { ...document, inserted: undefined };
+  // Doc 221: a SECOND, orthogonal gate — placement says the layout CAN hold this, a capability says
+  // the owner MAY put one there. Ungoverned passes, so this refuses nothing without a template.
+  if (!mayAddTo(capabilities, layout)) return { ...document, inserted: undefined };
   if (kind === 'horizontal' && !rowHasRoom(layout.options, layout.elements ?? []))
     return { ...document, inserted: undefined };
 

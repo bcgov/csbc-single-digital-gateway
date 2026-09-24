@@ -53,3 +53,32 @@ export function useResizeHandles(contentRef: RefObject<HTMLElement | null>, hand
     grid.prepareDragDrop(itemEl, true);
   }, [contentRef, handles]);
 }
+
+/**
+ * Doc 221: applies a governing template's `move` / `reorderChildren` to the grid item itself.
+ *
+ * gridstack owns whether an item can be dragged or resized, and it decides that from the NODE, not
+ * from React — so a capability has to be written onto the node. `grid.update` is the supported way
+ * to change a live node's flags, and it is idempotent, so re-running on every render costs nothing.
+ *
+ * This lives in a STUDIO module on purpose. `renderers/gridstack` is shared with the fillable
+ * renderers and must stay capability-agnostic; the studio item is the first place that knows both
+ * the element and what governs it.
+ *
+ * Refusing in the ENGINE as well as in write-back matters: a gate that only refuses on write-back
+ * leaves gridstack's DOM moved — a ghost item the author sees snap back — which doc 194 rule 8
+ * already records for the placement rule.
+ */
+export function useItemPermissions(
+  contentRef: RefObject<HTMLElement | null>,
+  { canMove, canResize }: { readonly canMove: boolean; readonly canResize: boolean },
+) {
+  useLayoutEffect(() => {
+    const itemEl = contentRef.current?.closest<GridItemHTMLElement>('.grid-stack-item');
+    const node = itemEl?.gridstackNode;
+    const grid = node?.grid;
+    if (!itemEl || !grid || !node) return;
+    if (node.noMove === !canMove && node.noResize === !canResize) return;
+    grid.update(itemEl, { noMove: !canMove, noResize: !canResize });
+  }, [contentRef, canMove, canResize]);
+}

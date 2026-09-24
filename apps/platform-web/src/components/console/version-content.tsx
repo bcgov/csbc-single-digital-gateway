@@ -1,6 +1,6 @@
 import type { CapabilityMap, StudioDocument } from '@repo/forms';
 import { FormRunner } from '@repo/forms/runner';
-import { FormStudio } from '@repo/forms/studio';
+import { CapabilityProvider, FormStudio } from '@repo/forms/studio';
 import { toast } from '@repo/ui/sonner';
 
 /**
@@ -24,6 +24,13 @@ export interface VersionContentProps {
   editable: boolean;
   /** Doc 218 rules 1-2: the studio's baseline on mount, then every edit. Never called while read-only. */
   onDocumentChange: (document: StudioDocument) => void;
+  /**
+   * Doc 221: the map of the template GOVERNING this document — what its owner may do. Distinct from
+   * `capabilities` below, which is the map being AUTHORED on a template. A document is governed and
+   * authors nothing; a template authors and is ungoverned. Absent means ungoverned, and the studio
+   * then offers every affordance exactly as it does today.
+   */
+  governedBy?: CapabilityMap | undefined;
   /**
    * Doc 220: the capability map, on a TEMPLATE. Passing it — even as `{}` — is what gives the studio
    * its Permissions section; omit it and the studio never offers one.
@@ -49,6 +56,7 @@ export function VersionContent({
   editable,
   onDocumentChange,
   capabilities,
+  governedBy,
 }: VersionContentProps) {
   // Rule 13: a row written before this feature came from a free-form JSON editor and could hold anything, so a
   // document that cannot be opened says so rather than being spread into a component's props.
@@ -63,13 +71,17 @@ export function VersionContent({
     // Rule 14: no `onSaveDocument` — that would render a second Save button inside the studio, and only the host
     // page knows about versions, publishing and 409s.
     return (
-      <FormStudio
-        schema={document.schema}
-        uischema={document.uischema}
-        {...(capabilities === undefined ? {} : { capabilities })}
-        onDocumentChange={onDocumentChange}
-        onNotice={notify}
-      />
+      // Doc 221: the GOVERNING map is a PROVIDER, never a document half — emitting it through
+      // `onDocumentChange` would make this page save the template's capabilities into the document.
+      <CapabilityProvider value={governedBy ?? null}>
+        <FormStudio
+          schema={document.schema}
+          uischema={document.uischema}
+          {...(capabilities === undefined ? {} : { capabilities })}
+          onDocumentChange={onDocumentChange}
+          onNotice={notify}
+        />
+      </CapabilityProvider>
     );
   }
   return (

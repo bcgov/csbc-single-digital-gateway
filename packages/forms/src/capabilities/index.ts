@@ -5,6 +5,7 @@
 // validator (doc 222) both read it through `capabilityFor`.
 
 export { capabilityFor, mayEdit } from './capability-for';
+export { mayAddTo, mayChangeEdges, mayMove, mayRemove } from './capability-gates';
 export {
   FULLY_GRANTED,
   WILDCARD_TYPE,

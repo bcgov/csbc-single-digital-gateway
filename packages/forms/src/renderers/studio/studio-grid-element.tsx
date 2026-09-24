@@ -5,7 +5,7 @@ import { GridElementDispatch, type GridElementDispatchProps } from '../gridstack
 import { StudioContent } from './studio-content';
 import { StudioElementToolbar } from './studio-element-toolbar';
 import { StudioItemContext } from './studio-item-context';
-import { resizingFor, useResizeHandles } from './studio-item-resize';
+import { resizingFor, useItemPermissions, useResizeHandles } from './studio-item-resize';
 import { useSelectionPort } from './studio-selection';
 import { grantsNothing, useCapability } from './studio-capabilities';
 
@@ -46,6 +46,13 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
   // FULLY_GRANTED, so `locked` is false and every affordance below renders exactly as before.
   const capability = useCapability(element ?? EMPTY_ELEMENT);
   const locked = grantsNothing(capability);
+  // Doc 221: gridstack decides drag/resize from the NODE, so the capability is written onto it.
+  // Resizing is the container's call — it rearranges what is around the item — while moving is the
+  // element's own.
+  useItemPermissions(rootRef, {
+    canMove: capability.move,
+    canResize: capability.reorderChildren,
+  });
 
   return (
     <div

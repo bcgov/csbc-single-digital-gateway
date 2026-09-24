@@ -35,6 +35,12 @@ export interface ServiceAgreementVersion {
   /** GENERATED from `content`; null for a rich (Lexical) description. */
   description: string | null;
   content: Record<string, unknown>;
+  /**
+   * Doc 221: the template version this version is PINNED to (doc 217). Look its template up in
+   * `definitions[templateVersionId]` — a version authored before a template reshape must render
+   * against the template it was authored under, not whichever one is published now.
+   */
+  templateVersionId: string | null;
   createdAt: string;
   publishedAt: string | null;
   archivedAt: string | null;
@@ -44,10 +50,21 @@ export interface ServiceAgreementVersion {
  * Feature 217 dropped `services` (which services this agreement is attached to): it came from
  * `document_references`, and linking documents is a later feature.
  */
+export interface AgreementDefinition {
+  schema: Record<string, unknown>;
+  uischema: Record<string, unknown>;
+  /** Doc 220/221: what a consuming document's owner may do. Absent means the template governs nothing. */
+  capabilities?: Record<string, unknown>;
+}
+
 export interface ServiceAgreementDetail {
   agreement: ServiceAgreement;
   versions: ServiceAgreementVersion[];
-  definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
+  /**
+   * Doc 221: the template of every version, keyed by `templateVersionId` — feature 174's shape. A
+   * surface MUST look up `definitions[version.templateVersionId]`, never assume one template.
+   */
+  definitions: Record<string, AgreementDefinition>;
 }
 
 const BASE = `${BFF_ORIGIN}/v1/service-agreements`;

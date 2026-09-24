@@ -1,4 +1,7 @@
 import { authoredId } from '../renderers/ui/authored-id';
+import { mayChangeEdges } from '../capabilities/capability-gates';
+import { useCapabilities } from '../renderers/studio/studio-capabilities';
+import type { CapabilityMap } from '../capabilities/capability-types';
 import type { UISchemaElement } from '@jsonforms/core';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { CriterionField } from '../renderers/xyflow/criteria';
@@ -114,8 +117,18 @@ export function applyFlowGesture(
   document: EditableDocument,
   gesture: FlowGesture,
   ids: ElementIds,
+  capabilities?: CapabilityMap | undefined,
 ): UISchemaElement {
   const { uischema } = document;
+  // Doc 221: a Flow's `edges` governs every edge gesture. Asked once, here, rather than at each of
+  // `connect` / `disconnect` / `repoint` — they are three spellings of the same permission, and
+  // splitting them would let one route through while another was refused. Ungoverned passes.
+  // Written as a union check rather than a set membership test: only the discriminant narrows
+  // `gesture`, and a set would leave `flowId` unreachable on the union.
+  if (gesture.type === 'connect' || gesture.type === 'disconnect' || gesture.type === 'repoint') {
+    const flow = findById(uischema as TreeElement, gesture.flowId, ids);
+    if (flow && !mayChangeEdges(capabilities, flow)) return uischema;
+  }
   switch (gesture.type) {
     case 'connect':
       return connectStages(
@@ -167,13 +180,23 @@ export function useFlowDocument(
   // `fieldsFor`, and the schema a criterion edit needs — read the latest document through a ref.
   const latest = useRef(document);
   latest.current = document;
+  // Doc 221: the governing map, through a ref for the same reason as the document — the editor keeps
+  // its identity across edits, and a new dependency would rebuild it on every change.
+  const governing = useCapabilities();
+  const governingRef = useRef(governing);
+  governingRef.current = governing;
 
   const flowEditor = useMemo<FlowEditor>(
     () => ({
       idOf: (element) => ids.idOf(element),
       onGesture: (gesture) =>
         updateUischema((current) =>
-          applyFlowGesture({ schema: latest.current.schema, uischema: current }, gesture, ids),
+          applyFlowGesture(
+            { schema: latest.current.schema, uischema: current },
+            gesture,
+            ids,
+            governingRef.current ?? undefined,
+          ),
         ),
       /**
        * Doc 209 rule 14. Every argument is FORWARDED — the previous wrapper passed only `(flow, source, target)`,

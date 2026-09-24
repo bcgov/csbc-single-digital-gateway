@@ -39,6 +39,12 @@ export async function formStudioMock() {
         />
       );
     },
+    /**
+     * Doc 221: a host wraps the studio in this to say what a GOVERNING template permits. The stub is a
+     * PASSTHROUGH — enforcement is the package's business and is tested in `packages/forms/test/`;
+     * what a page test needs is only that wrapping its studio renders the studio.
+     */
+    CapabilityProvider: ({ children }: { children?: unknown }) => children,
   };
 }
 

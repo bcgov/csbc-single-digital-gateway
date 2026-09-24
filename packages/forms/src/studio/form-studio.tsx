@@ -108,7 +108,11 @@ export const FormStudio: FC<FormStudioProps> = ({
   const [dialogOpen, setDialogOpen] = useState(true);
   // Until there is a document the studio still holds one (the sample) so the hooks below stay unconditional — the
   // canvas never draws it, because rule 15 returns the empty state before the document is rendered.
-  const studio = useStudioDocument(session.document ?? {});
+  // Doc 221 rule 6: the studio says why a committed gesture was refused, through the same channel
+  // doc 209 uses for a refused edge re-point.
+  const studio = useStudioDocument(
+    onNotice === undefined ? (session.document ?? {}) : { ...session.document, onNotice },
+  );
   /**
    * Doc 218 rules 1-4: report the document without giving it up.
    *

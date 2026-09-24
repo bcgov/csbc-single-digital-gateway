@@ -23,6 +23,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { VersionContent } from '@/components/console/version-content';
+import type { CapabilityMap } from '@repo/forms';
 import { studioDocumentOf } from '@/lib/studio-content';
 import { useAuth } from '@/lib/auth';
 import { useSetPageChrome } from '@/lib/page-chrome';
@@ -62,6 +63,10 @@ function AgreementBody({
   const latest = versions[versions.length - 1];
   const [selectedId, setSelectedId] = useState(latest?.id ?? '');
   const selected = versions.find((v) => v.id === selectedId) ?? latest;
+  const governing =
+    selected?.templateVersionId === null || selected?.templateVersionId === undefined
+      ? undefined
+      : (detail.definitions[selected.templateVersionId]?.capabilities as CapabilityMap | undefined);
 
   /**
    * Doc 218 rule 1: the document the studio last reported. `null` until it mounts and emits its
@@ -277,6 +282,10 @@ function AgreementBody({
           document={seed}
           editable={editable}
           onDocumentChange={setLive}
+          // Doc 221: the template THIS version is pinned to (doc 217), looked up in `definitions` —
+          // never whichever template happens to be published now, or a template author tightening
+          // permissions would retroactively re-govern documents already built from an earlier one.
+          governedBy={governing}
         />
       </div>
     </div>
