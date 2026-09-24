@@ -333,14 +333,14 @@ export function useStudioDocument({ schema, uischema, capabilities }: StudioDocu
           previous.capabilities === undefined
             ? undefined
             : inspectorContext(document, elementId, ids);
-        const capabilities =
+        const nextCapabilities =
           ctx && previous.capabilities
             ? applyPermissions(previous.capabilities, ctx, permissionValues)
             : previous.capabilities;
 
         // Both halves unchanged: the SAME state object, so the canvas does not re-render (rule 7).
-        if (next === document && capabilities === previous.capabilities) return previous;
-        return { ...previous, ...next, capabilities };
+        if (next === document && nextCapabilities === previous.capabilities) return previous;
+        return { ...previous, ...next, capabilities: nextCapabilities };
       });
     },
     [ids],
