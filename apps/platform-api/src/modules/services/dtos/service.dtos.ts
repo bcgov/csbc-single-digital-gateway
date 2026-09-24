@@ -114,10 +114,16 @@ export const serviceWithVersionsSchema = z.object({
 export class ServiceWithVersionsDto extends createZodDto(serviceWithVersionsSchema) {}
 export type ServiceWithVersions = z.infer<typeof serviceWithVersionsSchema>;
 
-/** The `{ schema, uischema }` a renderer needs. */
+/**
+ * The content a renderer needs, as authored on ONE template version.
+ *
+ * Doc 220/221: `capabilities` says what a consuming document's owner may do. ABSENT means the
+ * template governs nothing, which is deliberately different from an empty map.
+ */
 export const definitionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
   uischema: z.record(z.string(), z.unknown()),
+  capabilities: z.record(z.string(), z.unknown()).optional(),
 });
 export class DefinitionDto extends createZodDto(definitionSchema) {}
 export type DefinitionResponse = z.infer<typeof definitionSchema>;

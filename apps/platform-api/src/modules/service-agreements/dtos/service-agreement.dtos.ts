@@ -74,6 +74,12 @@ export const serviceAgreementVersionSchema = z.object({
   title: z.string().nullable(),
   description: z.string().nullable(),
   content: z.record(z.string(), z.unknown()),
+  /**
+   * Doc 221: the template version this version is PINNED to (doc 217). A client looks its content up
+   * in `definitions[templateVersionId]` — the same shape services has used since feature 174 — rather
+   * than being handed whichever template happens to be published now.
+   */
+  templateVersionId: z.string().nullable(),
   createdAt: z.string(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
@@ -94,6 +100,8 @@ export type ServiceAgreementWithVersion = z.infer<typeof serviceAgreementWithVer
 export const agreementDefinitionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
   uischema: z.record(z.string(), z.unknown()),
+  /** Doc 220/221: what a consuming document's owner may do. Absent means the template governs nothing. */
+  capabilities: z.record(z.string(), z.unknown()).optional(),
 });
 
 /** Detail: the agreement + all its versions + the template to render.
@@ -103,7 +111,13 @@ export const agreementDefinitionSchema = z.object({
 export const serviceAgreementDetailSchema = z.object({
   agreement: serviceAgreementSchema,
   versions: z.array(serviceAgreementVersionSchema),
-  definition: agreementDefinitionSchema,
+  /**
+   * Doc 221: the template of every version, keyed by `templateVersionId` — the shape services has
+   * used since feature 174. A surface MUST look up `definitions[version.templateVersionId]`: a
+   * version authored before a template reshape has to render against the template it was authored
+   * under, not whichever one is published now.
+   */
+  definitions: z.record(z.string(), agreementDefinitionSchema),
 });
 export class ServiceAgreementDetailDto extends createZodDto(serviceAgreementDetailSchema) {}
 export type ServiceAgreementDetail = z.infer<typeof serviceAgreementDetailSchema>;
@@ -160,6 +174,7 @@ export function toAgreementVersionDto(row: DocumentVersion): ServiceAgreementVer
     title: row.title,
     description: row.description,
     content: row.content,
+    templateVersionId: row.templateVersionId,
     createdAt: row.createdAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
     archivedAt: row.archivedAt?.toISOString() ?? null,

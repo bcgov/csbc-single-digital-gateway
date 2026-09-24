@@ -4,20 +4,46 @@ import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { DocumentTypeValue } from '../dtos/template.dtos';
 
-/** The `{ schema, uischema }` a renderer needs, as authored on one template version. */
+/**
+ * The content a renderer needs, as authored on ONE template version.
+ *
+ * Doc 220 added `capabilities` — what a consuming document's owner may do — and it is carried here
+ * rather than dropped, because doc 221's studio gates read it from the PINNED template version. An
+ * absent key means the template governs nothing, which is deliberately different from an empty map.
+ */
 export interface TemplateContent {
   schema: Record<string, unknown>;
   uischema: Record<string, unknown>;
+  capabilities?: Record<string, unknown>;
 }
 
+/** An unknown template version. No `capabilities` key: an unknown template governs NOTHING. */
 const EMPTY_CONTENT: TemplateContent = { schema: {}, uischema: {} };
 
-/** Split a `document_versions.content` JSONB into `{ schema, uischema }`, tolerating nulls. */
+/**
+ * Split a `document_versions.content` JSONB into the parts a renderer needs, tolerating nulls.
+ *
+ * `capabilities` is carried only when it is actually an object. This function is the choke point every
+ * read path goes through, so dropping the key here would lose the map one layer BELOW the DTO — the
+ * same silent-drop shape doc 220 found in zod's `z.object`.
+ */
 export function toContent(content: unknown): TemplateContent {
-  const value = (content ?? {}) as { schema?: unknown; uischema?: unknown };
+  const value = (content ?? {}) as {
+    schema?: unknown;
+    uischema?: unknown;
+    capabilities?: unknown;
+  };
+  const capabilities =
+    typeof value.capabilities === 'object' &&
+    value.capabilities !== null &&
+    !Array.isArray(value.capabilities)
+      ? (value.capabilities as Record<string, unknown>)
+      : undefined;
   return {
     schema: (value.schema as Record<string, unknown> | undefined) ?? {},
     uischema: (value.uischema as Record<string, unknown> | undefined) ?? {},
+    // `exactOptionalPropertyTypes`: an absent map must be an absent KEY, never an explicit undefined.
+    ...(capabilities === undefined ? {} : { capabilities }),
   };
 }
 

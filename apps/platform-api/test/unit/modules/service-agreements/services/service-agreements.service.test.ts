@@ -102,7 +102,17 @@ describe('ServiceAgreementsService', () => {
       transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
     };
 
-    templatesMock = { resolve: vi.fn().mockResolvedValue(TEMPLATE) };
+    templatesMock = {
+      resolve: vi.fn().mockResolvedValue(TEMPLATE),
+      // Doc 221: the READ path resolves by the PINNED template version, so the detail test must
+      // mock what it actually calls. `resolve` stays mocked for the CREATE path.
+      contentsForVersions: vi.fn().mockResolvedValue({
+        [TEMPLATE.templateVersionId]: {
+          schema: TEMPLATE.schema,
+          uischema: TEMPLATE.uischema,
+        },
+      }),
+    };
 
     service = new ServiceAgreementsService(dbMock, templatesMock);
   });
@@ -237,7 +247,12 @@ describe('ServiceAgreementsService', () => {
 
       expect(result.agreement.title).toBe('Terms');
       expect(result.versions).toHaveLength(1);
-      expect(result.definition).toEqual({ schema: TEMPLATE.schema, uischema: TEMPLATE.uischema });
+      // Doc 221: keyed by the PINNED template version, never a single currently-published template.
+      expect(result.definitions).toEqual({
+        [TEMPLATE.templateVersionId]: { schema: TEMPLATE.schema, uischema: TEMPLATE.uischema },
+      });
+      expect(templatesMock.contentsForVersions).toHaveBeenCalledWith([TEMPLATE.templateVersionId]);
+      expect(templatesMock.resolve).not.toHaveBeenCalled();
       expect(result).not.toHaveProperty('services');
       // The attached-services lookup was the only selectDistinct in this service.
       expect(dbMock.selectDistinct).not.toHaveBeenCalled();

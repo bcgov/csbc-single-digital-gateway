@@ -232,15 +232,25 @@ export class ServiceAgreementsService {
     return { items, total: totals[0]?.count ?? 0, limit: query.limit, offset: query.offset };
   }
 
-  /** An agreement + its versions + the template to render the editor. */
+  /**
+   * An agreement + its versions + the template each version renders against.
+   *
+   * Doc 221: resolved by the PINNED template version, never `resolve()`. `resolve()` returns whichever
+   * template version is published NOW, which the resolver's own comment (`template.resolver.ts:76-87`)
+   * warns makes a version authored before a template reshape render every field empty — and, since
+   * doc 220, would let a template author retroactively re-govern documents already built from an
+   * earlier version. `resolve()` remains correct for the CREATE path only.
+   */
   async get(actor: Actor, id: string): Promise<ServiceAgreementDetail> {
     const doc = await this.requireAgreementForRead(actor, id);
-    const template = await this.templates.resolve(TYPE);
     const versions = await this.versionsOf(id);
+    const definitions = await this.templates.contentsForVersions(
+      versions.flatMap((version) => (version.templateVersionId ? [version.templateVersionId] : [])),
+    );
     return {
       agreement: toAgreementDto(doc, currentVersion(versions)),
       versions: versions.map(toAgreementVersionDto),
-      definition: { schema: template.schema, uischema: template.uischema },
+      definitions,
     };
   }
 

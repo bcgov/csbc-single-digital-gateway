@@ -47,7 +47,14 @@ describe('FormsService', () => {
       returning: vi.fn(),
     };
 
-    templatesMock = { resolve: vi.fn().mockResolvedValue(TEMPLATE) };
+    templatesMock = {
+      resolve: vi.fn().mockResolvedValue(TEMPLATE),
+      // Doc 221: the READ path resolves the PINNED template version; `resolve` stays for CREATE.
+      contentForVersion: vi.fn().mockResolvedValue({
+        schema: TEMPLATE.schema,
+        uischema: TEMPLATE.uischema,
+      }),
+    };
 
     service = new FormsService(dbMock, templatesMock);
   });

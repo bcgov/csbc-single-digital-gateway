@@ -87,7 +87,18 @@ export class FormsService {
     if (latest === undefined) {
       throw new NotFoundException('Form has no versions');
     }
-    return { form: toFormDto(doc, latest), version: toFormVersionDto(latest) };
+    // Doc 221: the PINNED template, never `resolve()` — a version authored before a template
+    // reshape must render against the template it was authored under, and a governing capability
+    // map must not change because a newer template version was published.
+    const definition =
+      latest.templateVersionId === null
+        ? undefined
+        : await this.templates.contentForVersion(latest.templateVersionId);
+    return {
+      form: toFormDto(doc, latest),
+      version: toFormVersionDto(latest),
+      ...(definition === undefined ? {} : { definition }),
+    };
   }
 
   /** Edit a draft version's content. */

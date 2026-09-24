@@ -55,9 +55,24 @@ export class FormVersionDto extends createZodDto(formVersionSchema) {}
 export type FormVersionResponse = z.infer<typeof formVersionSchema>;
 
 /** Create/get response: the form document + a single version. */
+/**
+ * Doc 221: the template a form version renders against, resolved by the PINNED template version
+ * (`document_versions.template_version_id`, doc 217) rather than whichever one is published now.
+ *
+ * ABSENT when the version is pinned to nothing. Wired ahead of a page consuming it, deliberately, so
+ * all three document types resolve their template identically and the next surface needs no new
+ * plumbing.
+ */
+export const formDefinitionSchema = z.object({
+  schema: z.record(z.string(), z.unknown()),
+  uischema: z.record(z.string(), z.unknown()),
+  capabilities: z.record(z.string(), z.unknown()).optional(),
+});
+
 export const formWithVersionSchema = z.object({
   form: formSchema,
   version: formVersionSchema,
+  definition: formDefinitionSchema.optional(),
 });
 export class FormWithVersionDto extends createZodDto(formWithVersionSchema) {}
 export type FormWithVersion = z.infer<typeof formWithVersionSchema>;

@@ -121,6 +121,9 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         title: 'Terms',
         description: null,
         content: CONTENT,
+        // Doc 221: a version names the template version it is PINNED to, so a client can look its
+        // content up in `definitions` rather than being handed the currently-published template.
+        templateVersionId: VALID_UUID,
         createdAt: '2026-07-28T12:00:00.000Z',
         publishedAt: null,
         archivedAt: null,
@@ -146,6 +149,9 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         title: 'Terms',
         description: null,
         content: CONTENT,
+        // Doc 221: a version names the template version it is PINNED to, so a client can look its
+        // content up in `definitions` rather than being handed the currently-published template.
+        templateVersionId: VALID_UUID,
         createdAt: '2026-07-28T12:00:00.000Z',
         publishedAt: '2026-07-28T12:00:00.000Z',
         archivedAt: null,
@@ -159,7 +165,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         serviceAgreementDetailSchema.parse({
           agreement,
           versions: [version],
-          definition: { schema: {}, uischema: {} },
+          definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
         }),
       ).toBeDefined();
     });
@@ -176,7 +182,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
           updatedAt: '2026-07-28T12:00:00.000Z',
         },
         versions: [],
-        definition: { schema: {}, uischema: {} },
+        definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
         services: [{ id: 'srv-1', title: 'A service', workspaceSlug: 'ws' }],
       });
 
@@ -247,8 +253,9 @@ describe('service-agreement DTO schemas (feature 217)', () => {
       const dto = toAgreementVersionDto({
         id: VALID_UUID,
         documentId: VALID_UUID,
-        templateId: null,
-        templateVersionId: null,
+        templateId: VALID_UUID,
+        // Doc 221: the mapper must CARRY the pinned id through, so the row under test has one.
+        templateVersionId: VALID_UUID,
         versionNumber: 2,
         revision: 5,
         title: 'Terms',
@@ -269,6 +276,9 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         title: 'Terms',
         description: null,
         content: CONTENT,
+        // Doc 221: a version names the template version it is PINNED to, so a client can look its
+        // content up in `definitions` rather than being handed the currently-published template.
+        templateVersionId: VALID_UUID,
         createdAt: '2026-07-28T12:00:00.000Z',
         publishedAt: '2026-07-28T12:00:00.000Z',
         archivedAt: null,
