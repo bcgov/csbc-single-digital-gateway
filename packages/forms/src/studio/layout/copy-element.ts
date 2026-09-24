@@ -4,7 +4,7 @@ import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
 import { allIdsUsed } from './form-address';
 import { authoredId } from '../../renderers/ui/authored-id';
-import { propertyKeyOf, propertyScope, type StudioDocument } from './schema-properties';
+import { propertyKeyOf, propertyScope, type EditableDocument } from './schema-properties';
 
 /** A grid item's current engine placement, read when Copy is clicked (doc 185 rule 15). */
 export interface ItemPlacement {
@@ -14,7 +14,7 @@ export interface ItemPlacement {
   readonly h: number;
 }
 
-export interface CopyResult extends StudioDocument {
+export interface CopyResult extends EditableDocument {
   /** The inserted copy, or `undefined` when the copy was refused (rule 20). */
   readonly copy: UISchemaElement | undefined;
 }
@@ -139,7 +139,7 @@ function withCopiedProperties(schema: JsonSchema, keyMap: ReadonlyMap<string, st
  * HorizontalLayout returns the same document.
  */
 export function copyElement(
-  document: StudioDocument,
+  document: EditableDocument,
   elementId: string,
   placement: ItemPlacement,
   ids: ElementIds,

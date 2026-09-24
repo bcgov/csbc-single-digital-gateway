@@ -1,7 +1,7 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import { createElementIds } from '../src/studio/layout/element-ids';
-import type { StudioDocument } from '../src/studio/layout/schema-properties';
+import type { EditableDocument } from '../src/studio/layout/schema-properties';
 import { setChoices } from '../src/studio/layout/set-choices';
 
 // Doc 206 rules 26-28 — the ONLY writer of an option list. Pure.
@@ -40,7 +40,7 @@ const setup = (schema: JsonSchema, key: string) => {
   const ids = createElementIds();
   const uischema = uischemaFor(key);
   const control = (uischema as unknown as { elements: object[] }).elements[0]!;
-  return { document: { schema, uischema } as StudioDocument, ids, controlId: ids.idOf(control) };
+  return { document: { schema, uischema } as EditableDocument, ids, controlId: ids.idOf(control) };
 };
 
 const ENTRIES = [
@@ -48,7 +48,7 @@ const ENTRIES = [
   { const: 'ab', title: 'Alberta', description: 'Wild Rose Country' },
 ];
 
-const propertyOf = (document: StudioDocument, key: string) =>
+const propertyOf = (document: EditableDocument, key: string) =>
   document.schema.properties?.[key] as Record<string, unknown>;
 
 describe('a single-choice field (rule 26)', () => {
@@ -143,7 +143,7 @@ describe('the rename cascade (rules 21-22)', () => {
       (uischema as unknown as { elements: { elements: { elements: object[] }[] }[] }).elements[0]!
         .elements[0]!.elements as object[]
     )[0]!;
-    const document = { schema: single(), uischema } as StudioDocument;
+    const document = { schema: single(), uischema } as EditableDocument;
 
     const next = setChoices(
       document,

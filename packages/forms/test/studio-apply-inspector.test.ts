@@ -4,7 +4,7 @@ import { applyInspector } from '../src/studio/inspector/apply-inspector';
 import { inspectorForm } from '../src/studio/inspector/inspector-form';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import { findById, type TreeElement } from '../src/studio/layout/element-tree';
-import type { StudioDocument } from '../src/studio/layout/schema-properties';
+import type { EditableDocument } from '../src/studio/layout/schema-properties';
 
 // Doc 187 rules 15-22 — writing inspector values back into the studio document.
 
@@ -65,7 +65,7 @@ function fixture() {
   const grid = el({ type: 'Grid', elements: [name, qty, heading] });
   const uischema = el({ type: 'VerticalLayout', elements: [grid, row, about, agree, plan] });
   const ids = createElementIds();
-  const document: StudioDocument = { schema, uischema };
+  const document: EditableDocument = { schema, uischema };
   const elements = { name, about, qty, heading, rowQty, row, grid, agree, plan };
   return { document, ids, elements };
 }
@@ -82,10 +82,10 @@ function apply(fx: Fixture, key: Key, changes: Values, document = fx.document) {
   return { id, next: applyInspector(document, id, values, fx.ids) };
 }
 
-const nodeOf = (fx: Fixture, doc: StudioDocument, id: string) =>
+const nodeOf = (fx: Fixture, doc: EditableDocument, id: string) =>
   findById(doc.uischema as TreeElement, id, fx.ids) as Node | undefined;
 
-const property = (doc: StudioDocument, key: string) =>
+const property = (doc: EditableDocument, key: string) =>
   doc.schema.properties?.[key] as Record<string, unknown> | undefined;
 
 describe('no change (rule 21)', () => {

@@ -12,19 +12,19 @@ import {
 } from './condition-edit-parts';
 import type { ElementIds } from './element-ids';
 import type { TreeElement } from './element-tree';
-import type { StudioDocument } from './schema-properties';
+import type { EditableDocument } from './schema-properties';
 
 // Clause edits inside a Condition's row (doc 199 rules 28, 36, 48). A clause never changes its row, and a row
 // never changes its id, so no clause edit can move or detach a branch's edges.
 
 /** Rule 48: the row gains another complete clause, built exactly as `addRow` builds its first. */
 export function addClause(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   rowId: string,
   ids: ElementIds,
   newId: () => string,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;
@@ -49,12 +49,12 @@ export function addClause(
  * matches (rule 38), so it would be an output that can never be taken; the popover clears it instead.
  */
 export function removeClause(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   rowId: string,
   clauseId: string,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;
@@ -77,13 +77,13 @@ export function removeClause(
  * invalid is refused.
  */
 export function setClause(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   rowId: string,
   clauseId: string,
   patch: Partial<Omit<Clause, 'id'>>,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;

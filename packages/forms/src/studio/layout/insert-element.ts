@@ -21,7 +21,7 @@ import {
   type TreeElement,
 } from './element-tree';
 import { panelTargetOf } from './tabs-edits';
-import { propertyScope, type StudioDocument } from './schema-properties';
+import { propertyScope, type EditableDocument } from './schema-properties';
 
 // Inserting a palette template into the studio document (doc 189 rules 18, 20-23). Pure: every changed element is a
 // new object carrying its id, and the schema object is replaced only for field templates.
@@ -33,7 +33,7 @@ export interface InsertTarget {
   readonly nodes?: readonly LayoutNode[];
 }
 
-export interface InsertResult extends StudioDocument {
+export interface InsertResult extends EditableDocument {
   /** The inserted element as it is in the returned uischema, or `undefined` when refused (rule 20). */
   readonly inserted: UISchemaElement | undefined;
 }
@@ -115,7 +115,7 @@ function withProperty(schema: JsonSchema, key: string, property: JsonSchema): Js
  * returns the same document.
  */
 export function insertElement(
-  document: StudioDocument,
+  document: EditableDocument,
   template: string,
   target: InsertTarget,
   ids: ElementIds,

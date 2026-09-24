@@ -1,6 +1,6 @@
 import type { ElementIds } from '../layout/element-ids';
 import { updateById, type TreeElement } from '../layout/element-tree';
-import type { StudioDocument } from '../layout/schema-properties';
+import type { EditableDocument } from '../layout/schema-properties';
 import { fieldAccepts } from './field-accepts';
 import { inspectorContext } from './inspector-context';
 import { fieldsFor, type InspectorEdit, type InspectorValues } from './inspector-fields';
@@ -28,11 +28,11 @@ function unchanged(value: unknown, current: unknown): boolean {
 }
 
 export function applyInspector(
-  document: StudioDocument,
+  document: EditableDocument,
   elementId: string,
   values: InspectorValues,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const ctx = inspectorContext(document, elementId, ids);
   if (!ctx) return document;
 

@@ -19,7 +19,7 @@ import {
   insertStageBetween,
   type FlowInsertResult,
 } from './layout/flow-edits';
-import { newPropertyKey, type StudioDocument } from './layout/schema-properties';
+import { newPropertyKey, type EditableDocument } from './layout/schema-properties';
 import { upstreamFieldsOf } from './layout/upstream-fields';
 
 /** Replaces the studio uischema with `update(current)`; an unchanged result keeps the state object. */
@@ -46,7 +46,7 @@ export const isFlowInsert = (gesture: FlowGesture): gesture is FlowInsertGesture
 
 /** Doc 199 rule 25 (amendment): the upstream fields of the Condition with `conditionId`, or `[]`. */
 function fieldsOf(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   ids: ElementIds,
 ): CriterionField[] {
@@ -58,7 +58,7 @@ function fieldsOf(
 
 /** Doc 198 rule 16: an inserting gesture as a pure edit of `document`. */
 function applyFlowInsert(
-  document: StudioDocument,
+  document: EditableDocument,
   gesture: FlowInsertGesture,
   ids: ElementIds,
 ): FlowInsertResult {
@@ -111,7 +111,7 @@ function applyFlowInsert(
  * COMPLETE clause is needs the schema (rule 46). None ever changes the schema, so the uischema alone comes back.
  */
 export function applyFlowGesture(
-  document: StudioDocument,
+  document: EditableDocument,
   gesture: FlowGesture,
   ids: ElementIds,
 ): UISchemaElement {
@@ -161,7 +161,7 @@ export function applyFlowGesture(
 export function useFlowDocument(
   ids: ElementIds,
   updateUischema: UischemaUpdate,
-  document: StudioDocument,
+  document: EditableDocument,
 ) {
   // The editor keeps its identity across edits (doc 189 rule 25), so the whole-document questions it answers —
   // `fieldsFor`, and the schema a criterion edit needs — read the latest document through a ref.

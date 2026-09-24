@@ -6,7 +6,7 @@ import { choiceOptions } from '../../renderers/ui/choice-control';
 import { multiChoiceOptions } from '../../renderers/ui/multi-choice-control';
 import { controlKindOf } from '../../renderers/ui/control-kind';
 import { elementLabel } from './element-path';
-import { propertyKeyOf, type StudioDocument } from './schema-properties';
+import { propertyKeyOf, type EditableDocument } from './schema-properties';
 
 // The fields a Condition may test (doc 199 rules 6-9). Pure — no React.
 //
@@ -63,7 +63,7 @@ function fieldOf(control: UISchemaElement, schema: JsonSchema): CriterionField |
  * The same key can be bound by only one Control (`newPropertyKey` is unique per insert), but a duplicate is
  * tolerated first-wins rather than producing two identically-keyed entries.
  */
-export function upstreamFieldsOf(document: StudioDocument, nodeId: string): CriterionField[] {
+export function upstreamFieldsOf(document: EditableDocument, nodeId: string): CriterionField[] {
   const { schema, uischema } = document;
   const edges = flowEdges(uischema);
   const nodes = drawnNodes(uischema);

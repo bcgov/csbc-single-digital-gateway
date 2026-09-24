@@ -1,4 +1,4 @@
-import type { StudioDocument } from '@repo/forms';
+import type { CapabilityMap, StudioDocument } from '@repo/forms';
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 
 /**
@@ -20,11 +20,18 @@ export function studioDocumentOf(
   if (content === undefined) {
     return null;
   }
-  const { schema, uischema } = content;
+  const { schema, uischema, capabilities } = content;
   if (!isPlainObject(schema) || !isPlainObject(uischema)) {
     return null;
   }
-  return { schema: schema as JsonSchema, uischema: uischema as unknown as UISchemaElement };
+  // Doc 220: a TEMPLATE version also stores a capability map. Carried through as shallowly as the
+  // other two halves — the API validates its shape on the way in, and `capabilityFor` tolerates a
+  // malformed one by falling back to the level below, so a second check here would only drift.
+  return {
+    schema: schema as JsonSchema,
+    uischema: uischema as unknown as UISchemaElement,
+    ...(isPlainObject(capabilities) ? { capabilities: capabilities as CapabilityMap } : {}),
+  };
 }
 
 /** An array is an object to `typeof`, and neither half of a studio document may be one. */

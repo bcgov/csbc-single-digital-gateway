@@ -16,7 +16,7 @@ import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
 import { useSelectionFlowEditor, type FlowInsertGesture } from './use-flow-document';
 import { useSelectionTabsEditor } from './use-tabs-document';
 
-/** What selection needs from the studio document (`useStudioDocument`). */
+/** What selection needs from the studio document (`useEditableDocument`). */
 export interface SelectableDocument {
   readonly editor: GridEditor;
   /** The Flow editor writing Flow gestures to the document (doc 196). */

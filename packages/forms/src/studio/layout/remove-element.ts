@@ -5,7 +5,7 @@ import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
 import { clearFlowStart } from './flow-edits';
 import { joinAroundNode } from './node-join';
-import { propertyKeysUsed, type StudioDocument } from './schema-properties';
+import { propertyKeysUsed, type EditableDocument } from './schema-properties';
 
 /** Rule 25: the schema without `keys` in `properties` or `required`; an emptied `required` is dropped. */
 function withoutProperties(schema: JsonSchema, keys: readonly string[]): JsonSchema {
@@ -33,10 +33,10 @@ function withoutProperties(schema: JsonSchema, keys: readonly string[]): JsonSch
  * the resolver simply falls back to the first one. The root or an unknown id returns the same document.
  */
 export function removeElement(
-  document: StudioDocument,
+  document: EditableDocument,
   elementId: string,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const parent = findParentById(root, elementId, ids);
   const removed = parent?.elements?.find((element) => ids.idOf(element) === elementId);

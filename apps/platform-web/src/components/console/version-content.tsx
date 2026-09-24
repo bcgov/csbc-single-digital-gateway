@@ -1,4 +1,4 @@
-import type { StudioDocument } from '@repo/forms';
+import type { CapabilityMap, StudioDocument } from '@repo/forms';
 import { FormRunner } from '@repo/forms/runner';
 import { FormStudio } from '@repo/forms/studio';
 import { toast } from '@repo/ui/sonner';
@@ -24,6 +24,15 @@ export interface VersionContentProps {
   editable: boolean;
   /** Doc 218 rules 1-2: the studio's baseline on mount, then every edit. Never called while read-only. */
   onDocumentChange: (document: StudioDocument) => void;
+  /**
+   * Doc 220: the capability map, on a TEMPLATE. Passing it — even as `{}` — is what gives the studio
+   * its Permissions section; omit it and the studio never offers one.
+   *
+   * The `?? {}` belongs to the CALLER, not here: only the template page knows that its documents are
+   * templates whose permissions are authorable, and a stored template that has no map yet must still
+   * be able to grow one. The service-agreement page passes nothing at all.
+   */
+  capabilities?: CapabilityMap | undefined;
 }
 
 /**
@@ -35,7 +44,12 @@ export interface VersionContentProps {
  * studio re-seeds on a REFERENTIAL change of `schema`/`uischema`, so the refetch after a save would otherwise
  * clear its element ids and selection mid-edit. Remounting per version sidesteps that entirely.
  */
-export function VersionContent({ document, editable, onDocumentChange }: VersionContentProps) {
+export function VersionContent({
+  document,
+  editable,
+  onDocumentChange,
+  capabilities,
+}: VersionContentProps) {
   // Rule 13: a row written before this feature came from a free-form JSON editor and could hold anything, so a
   // document that cannot be opened says so rather than being spread into a component's props.
   if (document === null) {
@@ -52,6 +66,7 @@ export function VersionContent({ document, editable, onDocumentChange }: Version
       <FormStudio
         schema={document.schema}
         uischema={document.uischema}
+        {...(capabilities === undefined ? {} : { capabilities })}
         onDocumentChange={onDocumentChange}
         onNotice={notify}
       />

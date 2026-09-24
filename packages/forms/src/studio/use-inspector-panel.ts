@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { DockPanel } from './dock-panels';
 import type { InspectorForm } from './inspector/inspector-form';
 
-/** What the inspector panel needs from the studio document (`useStudioDocument`). */
+/** What the inspector panel needs from the studio document (`useEditableDocument`). */
 export interface InspectableDocument {
   inspectorFor(elementId: string): InspectorForm | undefined;
 }

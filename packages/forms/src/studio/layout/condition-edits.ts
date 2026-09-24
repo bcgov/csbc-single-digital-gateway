@@ -15,7 +15,7 @@ import {
 } from './condition-edit-parts';
 import type { ElementIds } from './element-ids';
 import type { TreeElement } from './element-tree';
-import type { StudioDocument } from './schema-properties';
+import type { EditableDocument } from './schema-properties';
 
 // Row edits on a Condition (doc 199 rules 27, 46, 48-49): the four gestures that change WHICH branches a
 // Condition has and in what order. The clauses inside a row are edited in `clause-edits.ts`.
@@ -30,11 +30,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  * invalid, and a UI-authored document must always stay appliable by the code editor's gate.
  */
 export function addRow(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   ids: ElementIds,
   newId: () => string,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;
@@ -58,11 +58,11 @@ export function addRow(
  * `(source, sourceHandle)` names it. The Else edge and the other rows' edges are untouched.
  */
 export function removeRow(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   rowId: string,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;
@@ -95,12 +95,12 @@ export function removeRow(
  * `setClause` this is never refused for the patch's content; an unknown row id still returns the document.
  */
 export function setRow(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   rowId: string,
   patch: Partial<Pick<ConditionRow, 'label' | 'match'>>,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;
@@ -117,12 +117,12 @@ export function setRow(
  * author saw while dragging.
  */
 export function moveRow(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   rowId: string,
   toIndex: number,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;
@@ -145,11 +145,11 @@ export function moveRow(
  * is lossless, which is exactly why the toggle is gated on `switchField` rather than on a conversion.
  */
 export function setMode(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   mode: 'rules' | 'switch',
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const condition = conditionAt(root, conditionId, ids);
   if (!condition) return document;

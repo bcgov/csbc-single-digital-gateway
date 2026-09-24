@@ -66,6 +66,31 @@ function VersionDropdown({
  * contract, and the studio can only build roots that satisfy it. Raw JSON is still reachable, in the studio's own
  * code panel (doc 191).
  */
+/**
+ * Doc 220: this page is the TEMPLATE surface, so every document it opens has authorable permissions.
+ * It seeds `capabilities ?? {}` so a template that has never had a rule can still grow one.
+ */
+const seededContent = (document: StudioDocument | null): StudioDocument | null =>
+  document === null ? null : { ...document, capabilities: document.capabilities ?? {} };
+
+/**
+ * The same document reduced to what a CHANGE means: an EMPTY capability map and no map at all say
+ * the same thing, so neither counts as an edit.
+ *
+ * Normalising BOTH sides, not just the stored one. The studio reports its document on mount as the
+ * BASELINE (doc 218 rules 1-2), and that emit carries the `{}` this page seeded — comparing it
+ * against a stored row with no `capabilities` key would make the page dirty from the first paint,
+ * with no edit at all. FOUND BY HAND in the browser: the page refused to navigate away from a form
+ * nobody had touched. The reverse is just as real — a studio that does NOT echo the key must not
+ * read as an edit either, which is what a one-sided fix got wrong.
+ */
+const comparable = (document: StudioDocument | null): object | null => {
+  if (document === null) return null;
+  const { capabilities, ...halves } = document;
+  const governed = capabilities !== undefined && Object.keys(capabilities).length > 0;
+  return governed ? { ...halves, capabilities } : halves;
+};
+
 export function AdminTemplateDetail() {
   const { id } = useParams({ from: '/admin/templates/$id' });
   const queryClient = useQueryClient();
@@ -99,8 +124,9 @@ export function AdminTemplateDetail() {
    * only stops one version's document leaking into another. Both are needed, and they are not the same guard.
    */
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the version id IS the identity of its content here.
-  const seed = useMemo(() => stored, [selected?.id]);
-  const dirty = live !== null && JSON.stringify(live) !== JSON.stringify(stored);
+  const seed = useMemo(() => seededContent(stored), [selected?.id]);
+  const dirty =
+    live !== null && JSON.stringify(comparable(live)) !== JSON.stringify(comparable(stored));
   // Rule 20 (feature 177): the guard reads `when` at block time through a ref, because a boolean captured at render
   // can still read stale `true` in the continuation after an awaited save.
   const dirtyRef = useRef(dirty);
@@ -257,6 +283,10 @@ export function AdminTemplateDetail() {
           document={seed}
           editable={isDraft}
           onDocumentChange={setLive}
+          // Doc 220: this page IS the template surface, so its documents always have authorable
+          // permissions. `?? {}` is what lets a template that has never had a rule grow one — a
+          // non-empty map could not express "a template with nothing written yet".
+          capabilities={seed?.capabilities ?? {}}
         />
       </div>
     </div>

@@ -3,10 +3,13 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GridDropSource, GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import { allowedInLayout, type GridLayoutKind } from '../renderers/gridstack/grid-layouts';
+import type { CapabilityMap } from '../capabilities/capability-types';
 import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
 import { FLOW_TYPE, flowNodeKind } from '../renderers/xyflow/flow-elements';
 import { sameJson } from './code/document-text';
 import { applyInspector } from './inspector/apply-inspector';
+import { inspectorContext } from './inspector/inspector-context';
+import { applyPermissions, isPermissionKey } from './inspector/permission-fields';
 import type { InspectorValues } from './inspector/inspector-fields';
 import { inspectorForm, type InspectorForm } from './inspector/inspector-form';
 import { applyLayout, applyMove } from './layout/apply-layout';
@@ -31,6 +34,12 @@ import { useTabsDocument } from './use-tabs-document';
 interface StudioDocumentSource {
   schema?: JsonSchema | undefined;
   uischema?: UISchemaElement | undefined;
+  /**
+   * Doc 220: the capability map, on a TEMPLATE. Its PRESENCE — even as `{}` — is what tells the studio
+   * this document's permissions are authorable; a document page seeds none and the Permissions section
+   * never appears. No separate prop: the package's existing "presence enables it" idiom.
+   */
+  capabilities?: CapabilityMap | undefined;
 }
 
 /** The halves `replaceDocument` replaces — an absent half is left as it is (doc 191 rule 22). */
@@ -43,6 +52,12 @@ interface DocumentState {
   seed: object;
   schema: JsonSchema;
   uischema: UISchemaElement;
+  /**
+   * Doc 220: its OWN slice, never part of the edited halves. `undefined` means this document has no
+   * capability map at all (an ordinary document, not a template) — distinct from `{}`, which means a
+   * template whose author has not written any rule yet.
+   */
+  capabilities: CapabilityMap | undefined;
 }
 
 /**
@@ -57,12 +72,17 @@ interface DocumentState {
  * `sourceUischema` keeps the RAW prop, never the stamped copy — it is the identity the re-seed comparison
  * below reads, and swapping in a new object here would make every render look like a new document.
  */
-const fromSource = (schema: JsonSchema, uischema: UISchemaElement): DocumentState => ({
+const fromSource = (
+  schema: JsonSchema,
+  uischema: UISchemaElement,
+  capabilities: CapabilityMap | undefined,
+): DocumentState => ({
   sourceSchema: schema,
   sourceUischema: uischema,
   seed: {},
   schema,
   uischema: stampMissingIds(uischema),
+  capabilities,
 });
 
 /** Every element below the root by studio id, with its uischema type (doc 185 rules 8, 21). */
@@ -85,16 +105,20 @@ function typesById(uischema: UISchemaElement, ids: ElementIds): Map<string, stri
  * A different prop object resets it (React's "adjust state while rendering" pattern, so no render ever
  * shows the stale document).
  */
-export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
+export function useStudioDocument({ schema, uischema, capabilities }: StudioDocumentSource) {
   const sourceSchema = schema ?? STUDIO_SAMPLE_SCHEMA;
   const sourceUischema = uischema ?? STUDIO_SAMPLE_UISCHEMA;
   const [ids] = useState(() => createElementIds());
-  const [state, setState] = useState(() => fromSource(sourceSchema, sourceUischema));
+  const [state, setState] = useState(() => fromSource(sourceSchema, sourceUischema, capabilities));
 
   let current = state;
+  // Doc 220: `capabilities` is deliberately NOT part of this condition. `ids.clear()` below destroys
+  // every element id and the author's selection, and capabilities arrive from the same `content`
+  // object as the other two halves — so a real version change moves all three together. A third
+  // `!==` would buy nothing and hand a host a third way to re-seed by accident (doc 218's trap).
   if (state.sourceSchema !== sourceSchema || state.sourceUischema !== sourceUischema) {
     ids.clear();
-    current = fromSource(sourceSchema, sourceUischema);
+    current = fromSource(sourceSchema, sourceUischema, capabilities);
     setState(current);
   }
   // Doc 194 rule 11: `accepts` reads the latest document, so the editor keeps its identity across edits.
@@ -276,7 +300,12 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
   /** The inspector form for `elementId`, or `undefined` when it is not in the document (doc 187). */
   const inspectorFor = useCallback(
     (elementId: string): InspectorForm | undefined =>
-      inspectorForm({ schema: currentSchema, uischema: currentUischema }, elementId, ids),
+      inspectorForm(
+        { schema: currentSchema, uischema: currentUischema },
+        elementId,
+        ids,
+        current.capabilities,
+      ),
     [currentSchema, currentUischema, ids],
   );
 
@@ -288,8 +317,30 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     (elementId: string, values: InspectorValues) => {
       setState((previous) => {
         const document = { schema: previous.schema, uischema: previous.uischema };
-        const next = applyInspector(document, elementId, values, ids);
-        return next === document ? previous : { ...previous, ...next };
+        // Doc 220: the Permissions fields write the capability MAP, not the element, so their values
+        // are split off BEFORE `applyInspector` — which takes and returns an `EditableDocument` that
+        // cannot carry capabilities by design. Splitting here is what keeps the map out of the edit
+        // pipeline that would silently drop it.
+        const elementValues: InspectorValues = {};
+        const permissionValues: InspectorValues = {};
+        for (const [key, value] of Object.entries(values)) {
+          if (isPermissionKey(key)) permissionValues[key] = value;
+          else elementValues[key] = value;
+        }
+
+        const next = applyInspector(document, elementId, elementValues, ids);
+        const ctx =
+          previous.capabilities === undefined
+            ? undefined
+            : inspectorContext(document, elementId, ids);
+        const capabilities =
+          ctx && previous.capabilities
+            ? applyPermissions(previous.capabilities, ctx, permissionValues)
+            : previous.capabilities;
+
+        // Both halves unchanged: the SAME state object, so the canvas does not re-render (rule 7).
+        if (next === document && capabilities === previous.capabilities) return previous;
+        return { ...previous, ...next, capabilities };
       });
     },
     [ids],
@@ -346,9 +397,23 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
     [ids],
   );
 
+  /**
+   * Doc 220: the Permissions inspector's write path. Capabilities never travel through the pure edit
+   * pipeline (see `EditableDocument`), so they are set here directly — and an update that changes
+   * nothing returns the SAME state object, for the reason `applyInspector` does: a new object on
+   * every pass re-renders the canvas on every selection.
+   */
+  const setCapabilities = useCallback((next: CapabilityMap) => {
+    setState((previous) =>
+      sameJson(next, previous.capabilities) ? previous : { ...previous, capabilities: next },
+    );
+  }, []);
+
   return {
     schema: currentSchema,
     uischema: currentUischema,
+    capabilities: current.capabilities,
+    setCapabilities,
     seed: current.seed,
     // Doc 197: the focus address hook resolves authored Form ids to studio ids, so it needs the id registry.
     ids,

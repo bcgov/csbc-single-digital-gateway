@@ -8,7 +8,7 @@ import { itemsChoiceType, multiChoiceOptions } from '../../renderers/ui/multi-ch
 import { currentComponent } from '../inspector/control-components';
 import { inspectorContext } from '../inspector/inspector-context';
 import type { ElementIds } from '../layout/element-ids';
-import type { StudioDocument } from '../layout/schema-properties';
+import type { EditableDocument } from '../layout/schema-properties';
 
 // Doc 206 rules 1, 16 — what the Options section and the dialog need to know about the selected field.
 // Pure. Resolving it is also the test for whether the section appears at all (rule 1).
@@ -43,7 +43,7 @@ const FIELD_NAMES: Readonly<Record<string, Readonly<Record<string, string>>>> = 
  * can never appear on a field that does not render its options, nor be missing from one that does.
  */
 export function optionsTargetOf(
-  document: StudioDocument,
+  document: EditableDocument,
   elementId: string,
   ids: ElementIds,
 ): OptionsTarget | undefined {

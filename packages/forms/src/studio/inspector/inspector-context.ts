@@ -8,7 +8,7 @@ import {
 } from '../../renderers/gridstack/grid-layouts';
 import type { ElementIds } from '../layout/element-ids';
 import { findById, findParentById, type TreeElement } from '../layout/element-tree';
-import { propertyKeyOf, type StudioDocument } from '../layout/schema-properties';
+import { propertyKeyOf, type EditableDocument } from '../layout/schema-properties';
 
 // Doc 199 rule 1: the classifier moved to `renderers/ui/control-kind` so `renderers/xyflow/criteria.ts` can
 // share it without importing the studio. Re-exported here so existing importers are unaffected.
@@ -67,7 +67,7 @@ function maxWidthIn(parent: TreeElement | undefined, element: TreeElement): numb
 
 /** The inspector context for the element with `elementId`, or `undefined` when it is not in the document. */
 export function inspectorContext(
-  document: StudioDocument,
+  document: EditableDocument,
   elementId: string,
   ids: ElementIds,
 ): InspectorContext | undefined {

@@ -21,10 +21,42 @@ export const uiSchemaSchema = z
   .object({ type: z.string(), elements: z.array(z.unknown()) })
   .catchall(z.unknown());
 
-/** The two halves `@repo/forms` opens and hands back (`StudioDocument`). */
+/**
+ * Doc 220 — what a consuming document's owner may do to one element, and to its contents.
+ *
+ * `strictObject`, deliberately: an unknown verb key is a MISTAKE, not forward compatibility. Feature
+ * 222 enforces against this map server-side, so a key nothing reads would look like a granted or
+ * denied permission to an author and mean nothing at all to the enforcer.
+ */
+const capabilitySchema = z.strictObject({
+  edit: z.union([z.literal('all'), z.literal('none'), z.array(z.string())]).optional(),
+  remove: z.boolean().optional(),
+  move: z.boolean().optional(),
+  addChildren: z.boolean().optional(),
+  removeChildren: z.boolean().optional(),
+  reorderChildren: z.boolean().optional(),
+  edges: z.boolean().optional(),
+});
+
+/** `default` is keyed by element TYPE plus the `'*'` baseline; `elements` by an authored element id. */
+export const capabilityMapSchema = z.strictObject({
+  default: z.record(z.string(), capabilitySchema).optional(),
+  elements: z.record(z.string(), capabilitySchema).optional(),
+});
+
+/**
+ * The halves `@repo/forms` opens and hands back (`StudioDocument`).
+ *
+ * `capabilities` is OPTIONAL and present only on a TEMPLATE. It MUST be listed here: `z.object`
+ * STRIPS unknown keys, so before doc 220 a capability map reaching this schema was silently deleted
+ * on every save — no error, no warning, the map simply gone. It is VALIDATED rather than passed
+ * through because feature 222 enforces against it: a malformed map is a governance hole, not untidy
+ * data, unlike the uischema internals whose authority is the studio's own metaschema.
+ */
 export const studioDocumentSchema = z.object({
   schema: jsonSchemaSchema,
   uischema: uiSchemaSchema,
+  capabilities: capabilityMapSchema.optional(),
 });
 export type StudioDocumentInput = z.infer<typeof studioDocumentSchema>;
 

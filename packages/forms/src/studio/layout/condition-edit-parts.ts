@@ -10,14 +10,14 @@ import type { Clause, ConditionRow, Operator } from '../../types/elements';
 import { freshId, rawEdges, withOptions } from './element-parts';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, type TreeElement } from './element-tree';
-import type { StudioDocument } from './schema-properties';
+import type { EditableDocument } from './schema-properties';
 import { upstreamFieldsOf } from './upstream-fields';
 
 // What the row edits (`condition-edits.ts`) and the clause edits (`clause-edits.ts`) share (doc 199 rules 25-28,
 // 46, 48-49). Pure: every changed element is a new object carrying its studio id, untouched subtrees keep
 // identity, and a refused edit returns the SAME document object.
 //
-// These take a StudioDocument rather than a uischema, unlike the Flow edits in `flow-edits.ts`: a clause is only
+// These take a EditableDocument rather than a uischema, unlike the Flow edits in `flow-edits.ts`: a clause is only
 // ever authored complete (rule 46), and deciding what "complete" means needs the schema.
 
 // Re-exported so `condition-edits.ts` and `clause-edits.ts` keep taking every shared part from one module.
@@ -35,7 +35,7 @@ export function conditionAt(
 
 /** The fields the Condition may test (rule 6), or `[]` when it has no authored id to walk back from. */
 export function fieldsOf(
-  document: StudioDocument,
+  document: EditableDocument,
   condition: TreeElement,
 ): readonly CriterionField[] {
   const id = authoredId(condition);
@@ -83,11 +83,11 @@ export function newClause(
 
 /** `rows` written back onto the Condition, as a new document. */
 export function withRows(
-  document: StudioDocument,
+  document: EditableDocument,
   conditionId: string,
   rows: ConditionRow[],
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   const root = document.uischema as TreeElement;
   const uischema = updateById(
     root,

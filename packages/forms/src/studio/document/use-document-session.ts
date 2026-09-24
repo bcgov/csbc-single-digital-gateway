@@ -1,13 +1,17 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormChoice, FormStudioProps, StudioDocument } from '../../types/index';
+import type { CapabilityMap } from '../../capabilities/capability-types';
 import { documentFor } from './document-source';
 
 /** The four statuses the studio shell renders (doc 200 rule 2). */
 export type DocumentSessionStatus = 'choosing' | 'loading' | 'ready' | 'failed';
 
 /** What the session hook is told: the same three document props `FormStudio` takes. */
-export type DocumentSessionInput = Pick<FormStudioProps, 'schema' | 'uischema' | 'loadDocument'>;
+export type DocumentSessionInput = Pick<
+  FormStudioProps,
+  'schema' | 'uischema' | 'capabilities' | 'loadDocument'
+>;
 
 /**
  * The document the session hands to `useStudioDocument` (doc 200 principle 1). Both halves are optional because a host
@@ -17,6 +21,8 @@ export type DocumentSessionInput = Pick<FormStudioProps, 'schema' | 'uischema' |
 export type SessionDocument = {
   schema?: JsonSchema | undefined;
   uischema?: UISchemaElement | undefined;
+  /** Doc 220: present (even as `{}`) only for a TEMPLATE, whose permissions are authorable. */
+  capabilities?: CapabilityMap | undefined;
 };
 
 export type DocumentSession = {
@@ -44,15 +50,20 @@ const reasonOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
 /** The seeded halves as one stable object, or `null` when the host seeded neither. */
-function useSeededDocument({ schema, uischema }: DocumentSessionInput): SessionDocument | null {
+function useSeededDocument({
+  schema,
+  uischema,
+  capabilities,
+}: DocumentSessionInput): SessionDocument | null {
   return useMemo(() => {
     if (schema === undefined && uischema === undefined) return null;
     // `exactOptionalPropertyTypes`: an absent half must be an absent KEY, not an explicit `undefined`.
     const document: SessionDocument = {};
     if (schema !== undefined) document.schema = schema;
     if (uischema !== undefined) document.uischema = uischema;
+    if (capabilities !== undefined) document.capabilities = capabilities;
     return document;
-  }, [schema, uischema]);
+  }, [schema, uischema, capabilities]);
 }
 
 /**

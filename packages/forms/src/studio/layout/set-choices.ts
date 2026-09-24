@@ -5,7 +5,7 @@ import type { SavedEntry } from '../options/option-draft';
 import { sameJson } from '../code/document-text';
 import type { ElementIds } from './element-ids';
 import { findById, type TreeElement } from './element-tree';
-import type { StudioDocument } from './schema-properties';
+import type { EditableDocument } from './schema-properties';
 
 // Doc 206 rules 26-28 — the ONLY writer of an option list. Pure.
 //
@@ -51,12 +51,12 @@ function withEntries(property: JsonSchema, entries: readonly SavedEntry[]): Json
  * change. JSONForms' debounced mount emit re-renders the canvas on every new document object (doc 187 rule 15).
  */
 export function setChoices(
-  document: StudioDocument,
+  document: EditableDocument,
   elementId: string,
   entries: readonly SavedEntry[],
   renames: ReadonlyMap<string | number, string | number>,
   ids: ElementIds,
-): StudioDocument {
+): EditableDocument {
   if (entries.length === 0) return document;
 
   const element = findById(document.uischema as TreeElement, elementId, ids);

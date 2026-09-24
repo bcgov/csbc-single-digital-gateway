@@ -7,6 +7,7 @@
  */
 
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import type { CapabilityMap } from '../capabilities/capability-types';
 
 export type { RendererSet } from './renderer-set';
 export type { LayoutGap } from '../renderers/gridstack/layout-gap';
@@ -44,11 +45,28 @@ export type {
   VerticalLayoutElement,
 } from './elements';
 
-/** A studio document: the two halves `FormStudio` opens, edits and hands back (doc 200 rule 1). */
+/**
+ * A studio document: the halves `FormStudio` opens, edits and hands back (doc 200 rule 1).
+ *
+ * Doc 220 adds `capabilities`, present only on a TEMPLATE. It is NOT part of the pipeline type the
+ * studio's pure edits use (`EditableDocument`) — see that type for why an optional third key there
+ * would be silently dropped.
+ */
 export type StudioDocument = {
   schema: JsonSchema;
   uischema: UISchemaElement;
+  capabilities?: CapabilityMap | undefined;
 };
+
+// Doc 220: the capability vocabulary is part of the public API — a host narrows stored content into
+// it and passes it back. TYPES only here; `FULLY_GRANTED` and `capabilityFor` are values and live on
+// the `@repo/forms/capabilities` subpath, because this root entry is types-only (doc 178).
+export type {
+  Capability,
+  CapabilityMap,
+  EditCapability,
+  ResolvedCapability,
+} from '../capabilities/capability-types';
 
 /**
  * What the New form dialog offers (doc 200 rule 8). `new-*` are blank documents; `template-*` are
@@ -128,6 +146,20 @@ export type SubmissionViewProps = {
 export type FormStudioProps = {
   schema?: JsonSchema | undefined;
   uischema?: UISchemaElement | undefined;
+  /**
+   * Doc 220: the capability map of a TEMPLATE — what a consuming document's owner may do.
+   *
+   * Its PRESENCE is the switch: pass it (even as `{}`) and the inspector gains a Permissions section;
+   * omit it and the studio never offers one. There is deliberately no separate boolean prop — this is
+   * the package's existing "presence enables it" idiom, the same way `onSaveDocument` being passed is
+   * what makes the studio render a Save button. `{}` is the case a non-empty map could not express:
+   * a template whose author has not written a single rule yet.
+   *
+   * This is the map being AUTHORED, never a map being enforced. A document GOVERNED by a template
+   * receives its template's map through a different channel entirely (doc 221), because emitting a
+   * governing map here would make a host save the template's capabilities into the derived document.
+   */
+  capabilities?: CapabilityMap | undefined;
   /**
    * Fetches the form to edit (doc 200 rules 1-2, 4-6). Called once per function identity, from an effect, and only
    * when no `schema`/`uischema` is passed — a seeded document always wins. The studio shows its loading state until

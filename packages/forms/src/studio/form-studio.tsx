@@ -91,6 +91,7 @@ const FLOW_PANEL_IDS: readonly DockPanelId[] = Object.freeze(['bottom', 'right']
 export const FormStudio: FC<FormStudioProps> = ({
   schema,
   uischema,
+  capabilities,
   loadDocument,
   onSaveDocument,
   onDocumentChange,
@@ -101,7 +102,7 @@ export const FormStudio: FC<FormStudioProps> = ({
   const rootRef = useRef<HTMLDivElement>(null);
   // Doc 200 rules 1-2: which document to open, and what to show while getting there. A seeded document is `ready` at
   // once, so a host passing `schema`/`uischema` behaves exactly as it did before this feature.
-  const session = useDocumentSession({ schema, uischema, loadDocument });
+  const session = useDocumentSession({ schema, uischema, capabilities, loadDocument });
   const ready = session.status === 'ready';
   // Doc 200 rule 7: open while choosing, and reopened by the empty state's call to action.
   const [dialogOpen, setDialogOpen] = useState(true);
@@ -121,11 +122,18 @@ export const FormStudio: FC<FormStudioProps> = ({
    */
   const notifyDocument = useRef(onDocumentChange);
   notifyDocument.current = onDocumentChange;
-  const { schema: liveSchema, uischema: liveUischema } = studio;
+  const { schema: liveSchema, uischema: liveUischema, capabilities: liveCapabilities } = studio;
   useEffect(() => {
     if (!ready) return;
-    notifyDocument.current?.({ schema: liveSchema, uischema: liveUischema });
-  }, [ready, liveSchema, liveUischema]);
+    // Doc 220: the HOST BOUNDARY — the one place the edited halves and the capability slice are
+    // recombined. `exactOptionalPropertyTypes`: an absent map must be an absent KEY, never an explicit
+    // `undefined`, or a host spreading this would create a `capabilities: undefined` it then saves.
+    notifyDocument.current?.({
+      schema: liveSchema,
+      uischema: liveUischema,
+      ...(liveCapabilities === undefined ? {} : { capabilities: liveCapabilities }),
+    });
+  }, [ready, liveSchema, liveUischema, liveCapabilities]);
   const panels = {
     left: useDockPanel('left'),
     right: useDockPanel('right'),
@@ -263,7 +271,11 @@ export const FormStudio: FC<FormStudioProps> = ({
             size="sm"
             variant="ghost"
             onClick={() =>
-              void onSaveDocument({ schema: studio.schema, uischema: studio.uischema })
+              void onSaveDocument({
+                schema: studio.schema,
+                uischema: studio.uischema,
+                ...(studio.capabilities === undefined ? {} : { capabilities: studio.capabilities }),
+              })
             }
           >
             Save

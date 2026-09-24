@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ElementIds } from './layout/element-ids';
-import type { StudioDocument } from './layout/schema-properties';
+import type { EditableDocument } from './layout/schema-properties';
 import type { SavedEntry } from './options/option-draft';
 import { optionsTargetOf, type OptionsTarget } from './options/options-target';
 
@@ -10,7 +10,7 @@ import { optionsTargetOf, type OptionsTarget } from './options/options-target';
 // It deliberately does NOT hold the draft. That lives in the dialog and dies with it, which is what makes
 // Cancel / Escape / the overlay discard everything (rule 9) without any state to reset.
 
-interface OptionsDocument extends StudioDocument {
+interface OptionsDocument extends EditableDocument {
   readonly ids: ElementIds;
   updateOptions(
     elementId: string,
