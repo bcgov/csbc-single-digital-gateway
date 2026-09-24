@@ -155,6 +155,13 @@
       "when": 1785455936820,
       "tag": "0021_geo_reference",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790211761276,
+      "tag": "0022_documents_rewrite",
+      "breakpoints": true
     }
   ]
 }

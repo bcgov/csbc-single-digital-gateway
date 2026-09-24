@@ -1,7 +1,7 @@
 import { foreignKey, index, pgEnum, pgTable, uuid } from 'drizzle-orm/pg-core';
 
 import { createdAt, uuidPk } from './_shared';
-import { documentVersions } from './documents';
+import { documentVersions } from './document-versions';
 import { users } from './users';
 
 export const serviceAgreementConsentsDecision = pgEnum('service_agreement_consents_decision', [

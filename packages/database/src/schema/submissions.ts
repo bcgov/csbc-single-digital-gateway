@@ -13,7 +13,8 @@ import {
 } from 'drizzle-orm/pg-core';
 
 import { createdAt, updatedAt, uuidPk } from './_shared';
-import { documents, documentVersions } from './documents';
+import { documents } from './documents';
+import { documentVersions } from './document-versions';
 import { users } from './users';
 
 /**
