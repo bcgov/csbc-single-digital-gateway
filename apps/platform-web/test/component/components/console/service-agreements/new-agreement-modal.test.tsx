@@ -68,20 +68,18 @@ describe('NewAgreementModal Component Test Suite', () => {
     expect(screen.getByText('New service agreement')).toBeInTheDocument();
 
     const titleInput = screen.getByLabelText(/title/i);
-    const descInput = screen.getByLabelText(/description/i);
     const createBtn = screen.getByRole('button', { name: /create agreement/i });
 
+    // Feature 217: create takes a TITLE only — the description field went with the version `data`.
+    expect(screen.queryByLabelText(/description/i)).toBeNull();
+
     await userEvent.type(titleInput, 'Workspace Agreement');
-    await userEvent.type(descInput, 'Description content');
     await userEvent.click(createBtn);
 
     // Verify createAgreement was called with workspaceId
     expect(createAgreement).toHaveBeenCalledWith({
       workspaceId: 'w1',
-      data: {
-        title: 'Workspace Agreement',
-        description: 'Description content',
-      },
+      title: 'Workspace Agreement',
     });
 
     // Verify navigate was called with correct router parameters
@@ -113,12 +111,7 @@ describe('NewAgreementModal Component Test Suite', () => {
     await userEvent.click(createBtn);
 
     // Verify createAgreement does not carry workspaceId
-    expect(createAgreement).toHaveBeenCalledWith({
-      data: {
-        title: 'Global Policy',
-        description: '',
-      },
-    });
+    expect(createAgreement).toHaveBeenCalledWith({ title: 'Global Policy' });
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({

@@ -1,76 +1,60 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgreementEditor } from '@/components/console/service-agreements/agreement-editor';
-import { JsonForms } from '@repo/react/jsonforms';
 
-vi.mock('@repo/react/jsonforms', () => ({
-  JsonForms: vi.fn(({ onChange, data }: any) => (
-    <div data-testid="mock-json-forms">
-      <button
-        data-testid="mock-change-btn"
-        onClick={() => onChange({ data: { ...data, title: 'Updated Title' } })}
-      >
-        Change
-      </button>
-    </div>
-  )),
+// Monaco can't run in jsdom — proxy it with a plain textarea, as the templates admin suite does.
+vi.mock('@monaco-editor/react', () => ({
+  default: ({
+    value,
+    onChange,
+    options,
+  }: {
+    value: string;
+    onChange?: (v: string) => void;
+    options?: { readOnly?: boolean };
+  }) => (
+    <textarea
+      aria-label="content"
+      value={value}
+      onChange={(e) => onChange?.(e.target.value)}
+      readOnly={options?.readOnly}
+    />
+  ),
 }));
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
+/**
+ * Feature 217: the editor was a controlled `<JsonForms>` over the Service Agreement TYPE's
+ * definition, editing the version's filled `data`. An agreement is authored now — its version
+ * carries one `content` — and the JSONForms renderers are gone, so this is the Monaco JSON editor.
+ */
 describe('AgreementEditor Component Test Suite', () => {
-  const definition = {
-    schema: { type: 'object', properties: { title: { type: 'string' } } },
-    uischema: { type: 'VerticalLayout', elements: [] },
-  };
+  const content = JSON.stringify(
+    { schema: { type: 'object', properties: {} }, uischema: { type: 'Form', elements: [] } },
+    null,
+    2,
+  );
 
-  it('renders JsonForms with correct props and allows changes when not readonly', () => {
+  it('renders the content JSON and reports edits when not readonly', async () => {
     const onChange = vi.fn();
-    const data = { title: 'Old Title' };
+    render(<AgreementEditor value={content} onChange={onChange} readonly={false} />);
 
-    render(
-      <AgreementEditor definition={definition} data={data} onChange={onChange} readonly={false} />,
-    );
+    const editor = screen.getByLabelText('content');
+    expect(editor).toHaveValue(content);
+    expect(editor).not.toHaveAttribute('readonly');
 
-    // Verify JsonForms was rendered with the correct props
-    const call1 = vi.mocked(JsonForms).mock.calls[0];
-    expect(call1 ? call1[0] : null).toEqual(
-      expect.objectContaining({
-        schema: definition.schema,
-        uischema: definition.uischema,
-        data: data,
-        readonly: false,
-      }),
-    );
+    await userEvent.type(editor, '!');
 
-    // Simulate change
-    const changeBtn = screen.getByTestId('mock-change-btn');
-    changeBtn.click();
-
-    expect(onChange).toHaveBeenCalledWith({ title: 'Updated Title' });
+    expect(onChange).toHaveBeenCalled();
   });
 
-  it('does not trigger onChange when readonly is true', () => {
-    const onChange = vi.fn();
-    const data = { title: 'Old Title' };
+  it('is read-only when the selected version is not a draft', () => {
+    render(<AgreementEditor value={content} onChange={vi.fn()} readonly />);
 
-    render(
-      <AgreementEditor definition={definition} data={data} onChange={onChange} readonly={true} />,
-    );
-
-    const call2 = vi.mocked(JsonForms).mock.calls[0];
-    expect(call2 ? call2[0] : null).toEqual(
-      expect.objectContaining({
-        readonly: true,
-      }),
-    );
-
-    // Simulate change
-    const changeBtn = screen.getByTestId('mock-change-btn');
-    changeBtn.click();
-
-    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('content')).toHaveAttribute('readonly');
   });
 });

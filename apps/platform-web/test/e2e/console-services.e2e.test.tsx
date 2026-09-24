@@ -174,7 +174,7 @@ describe('Console Services Integration Test Suite', () => {
     expect(listCall((url) => url.includes('sort=updated') && url.includes('limit=20'))).toBe(true);
   });
 
-  it('opens the New service modal (title + description) from the services list New button', async () => {
+  it('opens the New service modal (title only) from the services list New button', async () => {
     withServices(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/services');
     const user = userEvent.setup();
@@ -183,21 +183,23 @@ describe('Console Services Integration Test Suite', () => {
     await waitFor(() => expect(newButton).toBeEnabled());
     await user.click(newButton);
 
-    // The modal + its JSONForms bundle are lazy-loaded on click — allow for the first compile.
     const modal = await screen.findByRole('dialog', { name: /new service/i }, { timeout: 32000 });
     expect(within(modal).getByLabelText(/name of the service/i)).toBeInTheDocument();
-    expect(within(modal).getByLabelText('Short description')).toBeInTheDocument();
+    // Feature 217: create takes only a title — the short-description field went with the
+    // JSONForms body, since a service is authored rather than filled.
+    expect(within(modal).queryByLabelText('Short description')).toBeNull();
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 
-  it('tabs the detail, lists methods, and publishes via the summary modal', async () => {
-    const fetchMock = withServices(mockAuth(authedUser, { workspaces: [riverton] }));
-    renderApp('/app/riverton/services/s1/old/edit');
-    const user = userEvent.setup();
+  it('opens a service on the console shell, with Details "coming soon"', async () => {
+    // Feature 217: the tabbed `/old/edit` reference editor — the JSONForms details body, the
+    // application-methods and service-agreements tabs, and the publish summary modal — is gone with
+    // `@repo/react` and `document_references`. What remains is the `_console` shell.
+    withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+    renderApp('/app/riverton/services/s1/details');
 
-    // Service details tab (default): the JSONForms title control.
     expect(
-      await screen.findByLabelText(/title/i, undefined, { timeout: 32000 }),
+      await screen.findByRole('heading', { name: 'Service details' }, { timeout: 32000 }),
     ).toBeInTheDocument();
 
     // Application methods tab: the method list (count badge + form title).

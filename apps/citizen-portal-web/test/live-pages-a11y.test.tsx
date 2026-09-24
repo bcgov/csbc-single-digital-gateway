@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, it, vi } from 'vitest';
 import { renderRoute } from './support/render-app';
 import { aggregateKnownExceptions, expectNoUnjustifiedA11yViolations } from './support/a11y';
 
@@ -82,101 +82,6 @@ function serviceDetailFetch(): typeof fetch {
     if (url.includes('/v1/services')) return jsonResponse({ items: [] });
     if (url.includes('/v1/me/applications')) return new Response(null, { status: 401 });
     if (url.includes('/auth/me')) return new Response(null, { status: 401 });
-    return new Response(null, { status: 404 });
-  }) as unknown as typeof fetch;
-}
-
-// ---- /services/:id/apply/:formId ----
-
-const APPLY_AUTHED_USER = {
-  id: 'c1',
-  roles: ['citizen'],
-  claims: { sub: 'c1', name: 'Amina Ali' },
-};
-// Required (unlike the plain-fixture form used elsewhere) so the "clear the field" scenario below
-// has a real, live validation error to scan — not just this test's own invention of one.
-const APPLY_FORM = {
-  serviceId: 'svc-1',
-  formId: 'f1',
-  formVersionId: 'fv1',
-  kind: 'basic-form',
-  title: 'Your Profile',
-  structure: {
-    schema: {
-      type: 'object',
-      properties: { name: { type: 'string', title: 'Name' } },
-      required: ['name'],
-    },
-    uischema: {
-      type: 'VerticalLayout',
-      elements: [{ type: 'Control', scope: '#/properties/name' }],
-    },
-  },
-};
-const APPLY_DRAFT = {
-  id: 'sub1',
-  formId: 'f1',
-  formVersionId: 'fv1',
-  status: 'draft',
-  data: { name: 'Amina' },
-  reference: '20260630-0001',
-  createdAt: '2026-06-30T00:00:00.000Z',
-  updatedAt: '2026-06-30T00:00:00.000Z',
-  submittedAt: null,
-};
-
-function applyFlowFetch(): typeof fetch {
-  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = init?.method ?? 'GET';
-    if (url.includes('/auth/me')) return jsonResponse(APPLY_AUTHED_USER);
-    if (url.includes('/v1/me/services/') && url.endsWith('/agreements'))
-      return jsonResponse({ items: [] });
-    if (url.includes('/v1/services/') && url.includes('/applications/'))
-      return jsonResponse(APPLY_FORM);
-    if (method === 'POST' && url.endsWith('/v1/me/applications')) return jsonResponse(APPLY_DRAFT);
-    if (method === 'PATCH') return jsonResponse(APPLY_DRAFT);
-    return new Response(null, { status: 404 });
-  }) as unknown as typeof fetch;
-}
-
-// ---- /applications/:id ----
-
-const APP_DETAIL_AUTHED = {
-  id: 'c1',
-  roles: ['citizen'],
-  claims: { sub: 'c1', name: 'Amina Ali' },
-};
-const APP_DETAIL = {
-  id: 'sub1',
-  reference: '20260630-0001',
-  status: 'pending',
-  statusLabel: 'Submitted',
-  formId: 'f1',
-  formVersionId: 'fv1',
-  formTitle: 'Your Profile',
-  serviceId: 'svc-1',
-  serviceTitle: 'Birth Registration',
-  kind: 'basic-form',
-  structure: {
-    schema: { type: 'object', properties: { name: { type: 'string', title: 'Name' } } },
-    uischema: {
-      type: 'VerticalLayout',
-      elements: [{ type: 'Control', scope: '#/properties/name' }],
-    },
-  },
-  data: { name: 'Amina' },
-  reviewReason: null,
-  createdAt: '2026-06-30T00:00:00.000Z',
-  updatedAt: '2026-06-30T00:00:00.000Z',
-  submittedAt: '2026-06-30T00:00:00.000Z',
-};
-
-function applicationDetailFetch(): typeof fetch {
-  return vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.includes('/auth/me')) return jsonResponse(APP_DETAIL_AUTHED);
-    if (url.includes('/v1/me/applications/sub1')) return jsonResponse(APP_DETAIL);
     return new Response(null, { status: 404 });
   }) as unknown as typeof fetch;
 }
@@ -359,38 +264,8 @@ const CASES: RealPageCase[] = [
     ready: () =>
       screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
   },
-  {
-    path: '/services/svc-1/apply/f1',
-    scenario: 'default',
-    components: ['button'],
-    fetchImpl: applyFlowFetch,
-    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
-    timeout: 30000,
-  },
-  {
-    path: '/services/svc-1/apply/f1',
-    scenario: 'validation error (required field cleared)',
-    components: ['button'],
-    fetchImpl: applyFlowFetch,
-    ready: () => screen.findByRole('heading', { name: 'Apply — Your Profile' }, { timeout: 10000 }),
-    interact: async () => {
-      // A required control's label is "<title> required" (@repo/react ControlWrapper appends the
-      // word, not an asterisk) — match on a prefix rather than an exact string.
-      const nameInput = screen.getByLabelText(/^Name/);
-      await userEvent.setup().clear(nameInput);
-      await vi.waitFor(() => expect(nameInput).toHaveAttribute('aria-invalid', 'true'));
-    },
-    timeout: 30000,
-  },
-  {
-    path: '/applications/sub1',
-    scenario: 'default (submitted, read-only)',
-    components: ['button', 'card'],
-    fetchImpl: applicationDetailFetch,
-    ready: () =>
-      screen.findByRole('heading', { name: 'Your Profile', level: 1 }, { timeout: 15000 }),
-    timeout: 30000,
-  },
+  // Feature 217: `/services/:id/apply/:formId` and `/applications/:id` went with the
+  // `@repo/react` renderers (the fill and read-only submission views).
   {
     path: '/account',
     scenario: 'default',

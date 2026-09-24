@@ -1,30 +1,28 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
-  servicesQueryOptions,
-  serviceQueryOptions,
-  serviceDefinitionQueryOptions,
-  formTypesQueryOptions,
-  formsCatalogQueryOptions,
-  serviceReferencesQueryOptions,
-  createService,
-  updateDraft,
-  publishVersion,
-  archiveVersion,
   addServiceVersion,
+  archiveService,
+  archiveVersion,
+  createService,
+  definitionForServiceVersion,
   deleteService,
   discardServiceVersion,
-  archiveService,
+  publishVersion,
   reactivateService,
-  createReferencedForm,
-  removeReference,
-  archiveReference,
-  serviceAgreementRefsQueryOptions,
-  attachServiceAgreement,
-  detachServiceAgreement,
-  createExternalApplication,
-  updateExternalApplication,
+  selectServiceVersion,
+  serviceDefinitionQueryOptions,
+  serviceQueryOptions,
+  servicesQueryOptions,
+  updateDraft,
   type ServiceListParams,
+  type ServiceVersion,
 } from '@/lib/services';
+
+/**
+ * Feature 217: the reference, agreement-ref, forms-catalog and form-type endpoints are gone with
+ * `document_references`, and a service create/save carries a title / `content` instead of `data`
+ * and `applications`.
+ */
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
@@ -47,6 +45,22 @@ const runAndCatch = async (fn: () => Promise<unknown>) => {
     return err as Error;
   }
 };
+
+const version = (over: Partial<ServiceVersion>): ServiceVersion => ({
+  id: 'v1',
+  documentId: 'srv-1',
+  templateVersionId: 'tv-1',
+  versionNumber: 1,
+  revision: 1,
+  status: 'draft',
+  title: null,
+  description: null,
+  content: {},
+  createdAt: '2026-07-28T12:00:00.000Z',
+  publishedAt: null,
+  archivedAt: null,
+  ...over,
+});
 
 describe('Services Unit Test Suite', () => {
   const mockFetch = vi.fn();
@@ -110,60 +124,6 @@ describe('Services Unit Test Suite', () => {
     expect(definition.schema).toBeDefined();
   });
 
-  it('queries published form types filtered by kind basic-form and multi-stage-form', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse(200, {
-        items: [
-          { type: { id: 'ft-1', name: 'Form One', kind: 'basic-form' } },
-          { type: { id: 'ft-2', name: 'Form Two', kind: 'multi-stage-form' } },
-          { type: { id: 'ft-3', name: 'Document Type', kind: 'some-other-kind' } },
-        ],
-      }),
-    );
-
-    const options = formTypesQueryOptions();
-    expect(options.queryKey).toEqual(['document-types', 'forms']);
-
-    const types = await (options.queryFn as any)();
-    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/document-types', {
-      credentials: 'include',
-    });
-    expect(types).toHaveLength(2);
-    expect(types[0]).toEqual({ typeId: 'ft-1', name: 'Form One', kind: 'basic-form' });
-    expect(types[1]).toEqual({ typeId: 'ft-2', name: 'Form Two', kind: 'multi-stage-form' });
-  });
-
-  it('queries forms catalog entries with query options', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse(200, { items: [{ documentId: 'doc-1', title: 'Doc Form' }] }),
-    );
-
-    const options = formsCatalogQueryOptions('ws-1');
-    expect(options.queryKey).toEqual(['services', 'forms', 'ws-1']);
-
-    const catalog = await (options.queryFn as any)();
-    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/services/forms?workspaceId=ws-1', {
-      credentials: 'include',
-    });
-    expect(catalog).toHaveLength(1);
-  });
-
-  it('queries service references for a specific service version', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse(200, { items: [{ id: 'ref-1', relation: 'application_form' }] }),
-    );
-
-    const options = serviceReferencesQueryOptions('srv-1', 'ver-1');
-    expect(options.queryKey).toEqual(['services', 'detail', 'srv-1', 'references', 'ver-1']);
-
-    const references = await (options.queryFn as any)();
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://bff-test/v1/services/srv-1/versions/ver-1/references',
-      { credentials: 'include' },
-    );
-    expect(references).toHaveLength(1);
-  });
-
   it('handles detailed API error message array structures', async () => {
     mockFetch.mockResolvedValue(
       mockResponse(
@@ -182,12 +142,7 @@ describe('Services Unit Test Suite', () => {
   it('creates service with a POST request', async () => {
     mockFetch.mockResolvedValue(mockResponse(201, { service: { id: 'srv-1' }, versions: [] }));
 
-    const input = {
-      workspaceId: 'ws-1',
-      title: 'Service Intake',
-      data: {},
-      applications: [],
-    };
+    const input = { workspaceId: 'ws-1', title: 'Service Intake' };
 
     const res = await createService(input);
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/services', {
@@ -199,10 +154,14 @@ describe('Services Unit Test Suite', () => {
     expect(res.service.id).toBe('srv-1');
   });
 
-  it('saves draft service version data with a PATCH request', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', data: { updated: true } }));
+  it("saves a draft version's content with a PATCH request", async () => {
+    const content = {
+      schema: { type: 'object', properties: {} },
+      uischema: { type: 'Service', elements: [] },
+    };
+    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', content }));
 
-    const input = { data: { updated: true } };
+    const input = { content };
     const res = await updateDraft('srv-1', 'ver-1', input);
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/services/srv-1/versions/ver-1', {
       method: 'PATCH',
@@ -210,7 +169,7 @@ describe('Services Unit Test Suite', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(input),
     });
-    expect(res.data).toEqual({ updated: true });
+    expect(res.content).toEqual(content);
   });
 
   it('handles simple publish, archive, and add version triggers', async () => {
@@ -278,44 +237,6 @@ describe('Services Unit Test Suite', () => {
     });
   });
 
-  it('manages form reference creation, delete, and archive', async () => {
-    mockFetch.mockResolvedValue(mockResponse(201, { id: 'ref-1' }));
-
-    const input = { typeId: 'ft-1', title: 'New Form' };
-    const ref = await createReferencedForm('srv-1', 'ver-1', input);
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://bff-test/v1/services/srv-1/versions/ver-1/forms',
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(input),
-      },
-    );
-    expect(ref.id).toBe('ref-1');
-
-    // Remove reference
-    mockFetch.mockResolvedValue(mockResponse(204, null));
-    await removeReference('srv-1', 'ver-1', 'ref-1');
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://bff-test/v1/services/srv-1/versions/ver-1/references/ref-1',
-      {
-        method: 'DELETE',
-        credentials: 'include',
-      },
-    );
-
-    // Archive reference
-    await archiveReference('srv-1', 'ver-1', 'ref-1');
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://bff-test/v1/services/srv-1/versions/ver-1/references/ref-1/archive',
-      {
-        method: 'POST',
-        credentials: 'include',
-      },
-    );
-  });
-
   describe('API error handling boundaries', () => {
     it('handles non-JSON error body gracefully', async () => {
       mockFetch.mockResolvedValue({
@@ -371,7 +292,7 @@ describe('Services Unit Test Suite', () => {
       expect(thrown?.message).toBe('Only Message');
     });
 
-    it('handles deletion, archive, reactivation, and reference failures gracefully', async () => {
+    it('handles deletion, archive and reactivation failures gracefully', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 409,
@@ -388,119 +309,49 @@ describe('Services Unit Test Suite', () => {
 
       const err4 = await runAndCatch(() => reactivateService('srv-1'));
       expect(err4?.message).toBe('Request failed: 409');
+    });
+  });
 
-      const err5 = await runAndCatch(() => removeReference('srv-1', 'ver-1', 'ref-1'));
-      expect(err5?.message).toBe('Request failed: 409');
+  describe('version selection (feature 174)', () => {
+    it('prefers the version named in the path', () => {
+      const versions = [version({ id: 'v1' }), version({ id: 'v2' })];
 
-      const err6 = await runAndCatch(() => archiveReference('srv-1', 'ver-1', 'ref-1'));
-      expect(err6?.message).toBe('Request failed: 409');
+      expect(selectServiceVersion(versions, 'v2')?.id).toBe('v2');
+      expect(selectServiceVersion(versions, 'missing')).toBeUndefined();
     });
 
-    it('queries service agreements attached to a service version', async () => {
-      mockFetch.mockResolvedValue(
-        mockResponse(200, {
-          items: [{ id: 'ref-1', agreementDocumentId: 'doc-1', title: 'Terms' }],
-        }),
-      );
+    it('falls back to the published version, then to the newest', () => {
+      const published = version({ id: 'v1', status: 'published' });
+      const draft = version({ id: 'v2', versionNumber: 2 });
 
-      const options = serviceAgreementRefsQueryOptions('srv-1', 'ver-1');
-      expect(options.queryKey).toEqual(['services', 'detail', 'srv-1', 'agreements', 'ver-1']);
-
-      const agreements = await (options.queryFn as any)();
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://bff-test/v1/services/srv-1/versions/ver-1/agreements',
-        { credentials: 'include' },
-      );
-      expect(agreements).toHaveLength(1);
-      expect(agreements[0].title).toBe('Terms');
+      expect(selectServiceVersion([published, draft])?.id).toBe('v1');
+      expect(selectServiceVersion([draft])?.id).toBe('v2');
+      expect(selectServiceVersion([])).toBeUndefined();
     });
 
-    it('attaches a service agreement', async () => {
-      mockFetch.mockResolvedValue(
-        mockResponse(200, { id: 'ref-1', agreementDocumentId: 'doc-1', title: 'Terms' }),
-      );
+    it('resolves the template the selected version was authored under, by templateVersionId', () => {
+      const detail = {
+        service: {} as never,
+        versions: [version({ id: 'v1', templateVersionId: 'tv-old' })],
+        definition: { schema: { marker: 'current' }, uischema: {} },
+        definitions: { 'tv-old': { schema: { marker: 'old' }, uischema: {} } },
+        hasSubmissions: false,
+      };
 
-      const res = await attachServiceAgreement('srv-1', 'ver-1', 'doc-1');
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://bff-test/v1/services/srv-1/versions/ver-1/agreements',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ agreementDocumentId: 'doc-1' }),
-        }),
-      );
-      expect(res.title).toBe('Terms');
+      expect(definitionForServiceVersion(detail, 'v1')?.schema).toEqual({ marker: 'old' });
     });
 
-    it('detaches a service agreement successfully or throws error on failure', async () => {
-      mockFetch.mockResolvedValue(mockResponse(204, null, true));
+    it('falls back to the current definition for an unknown or absent template version', () => {
+      const detail = {
+        service: {} as never,
+        versions: [version({ id: 'v1', templateVersionId: null })],
+        definition: { schema: { marker: 'current' }, uischema: {} },
+        definitions: {},
+        hasSubmissions: false,
+      };
 
-      await detachServiceAgreement('srv-1', 'ver-1', 'ref-1');
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://bff-test/v1/services/srv-1/versions/ver-1/agreements/ref-1',
-        expect.objectContaining({
-          method: 'DELETE',
-        }),
-      );
-
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 400,
-      } as Response);
-
-      let thrown: Error | undefined;
-      try {
-        await detachServiceAgreement('srv-1', 'ver-1', 'ref-1');
-      } catch (err) {
-        thrown = err as Error;
-      }
-      expect(thrown).toBeDefined();
-      expect(thrown?.message).toBe('Request failed: 400');
-    });
-
-    it('creates an external application method', async () => {
-      mockFetch.mockResolvedValue(
-        mockResponse(200, {
-          id: 'ref-1',
-          relation: 'external_application',
-          targetTitle: 'Go link',
-        }),
-      );
-
-      const res = await createExternalApplication('srv-1', 'ver-1', {
-        label: 'Go',
-        url: 'https://go.com',
-      });
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://bff-test/v1/services/srv-1/versions/ver-1/external-applications',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ label: 'Go', url: 'https://go.com' }),
-        }),
-      );
-      expect(res.targetTitle).toBe('Go link');
-    });
-
-    it('updates an external application method', async () => {
-      mockFetch.mockResolvedValue(
-        mockResponse(200, {
-          id: 'ref-1',
-          relation: 'external_application',
-          targetTitle: 'Updated Go Link',
-        }),
-      );
-
-      const res = await updateExternalApplication('srv-1', 'ver-1', 'ref-1', {
-        label: 'Go New',
-        url: 'https://go-new.com',
-      });
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://bff-test/v1/services/srv-1/versions/ver-1/external-applications/ref-1',
-        expect.objectContaining({
-          method: 'PATCH',
-          body: JSON.stringify({ label: 'Go New', url: 'https://go-new.com' }),
-        }),
-      );
-      expect(res.targetTitle).toBe('Updated Go Link');
+      expect(definitionForServiceVersion(detail, 'v1')?.schema).toEqual({ marker: 'current' });
+      expect(definitionForServiceVersion(undefined)).toBeUndefined();
     });
   });
 });

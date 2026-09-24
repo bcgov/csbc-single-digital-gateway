@@ -30,11 +30,11 @@ export const ADMIN_OVERVIEW: AdminNavItem = {
 export const ADMIN_NAV: AdminNavItem[] = [
   ADMIN_OVERVIEW,
   {
-    key: 'document-types',
-    label: 'Document Types',
-    to: '/admin/document-types',
+    key: 'templates',
+    label: 'Templates',
+    to: '/admin/templates',
     icon: FileType,
-    subtitle: 'Manage the document type definitions available to workspaces.',
+    subtitle: 'Manage the document templates available to workspaces.',
   },
   {
     key: 'service-agreements',

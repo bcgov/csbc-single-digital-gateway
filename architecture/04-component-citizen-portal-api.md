@@ -17,12 +17,12 @@ C4Component
     Container_Boundary(api, "citizen-portal-api") {
         Component(guards, "Global Guard Chain", "@repo/nestjs/auth", "CSRF → Auth → TokenRefresh (same as platform-api)")
 
-        Component(catalog, "Catalogue Module", "NestJS feature", "@Public: published services, service detail + form refs, version reads, form-to-fill")
-        Component(catalogSvc, "CatalogService", "Service", "Reads published documents across all workspaces; returns bound schema/uischema")
+        Component(catalog, "Catalogue Module", "NestJS feature", "@Public: published services, service detail, version reads")
+        Component(catalogSvc, "CatalogService", "Service", "Reads published documents across all workspaces; returns the version's own content")
 
         Component(meApps, "My Applications Module", "NestJS feature", "@CurrentUser-scoped: get-or-create draft, resume, save, submit, list")
         Component(subSvc, "SubmissionService", "Service", "Draft lifecycle; formVersionId in body, not path")
-        Component(validator, "Submit Validator", "Ajv + ajv-formats", "Validates submitted data vs schema(s) on submit → 422; drafts never validated")
+        Component(validator, "Submit Validator", "Ajv + ajv-formats", "Validates submitted data vs the document's single schema on submit → 422; drafts never validated")
     }
 
     Rel(web, guards, "Requests", "JSON/HTTPS")
@@ -30,7 +30,7 @@ C4Component
     Rel(guards, meApps, "Auth-only requests", "")
 
     Rel(catalog, catalogSvc, "", "")
-    Rel(catalogSvc, db, "Read published services/forms", "SQL")
+    Rel(catalogSvc, db, "Read published services", "SQL")
 
     Rel(meApps, subSvc, "", "")
     Rel(meApps, validator, "Validate on submit", "")

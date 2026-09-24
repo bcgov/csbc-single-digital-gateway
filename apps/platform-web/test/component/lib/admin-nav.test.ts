@@ -10,12 +10,12 @@ describe('Admin Nav Unit Test Suite', () => {
   });
 
   it('returns matched AdminNavItem when path starts with admin and matches a key', () => {
-    const docTypesItem = ADMIN_NAV.find((item) => item.key === 'document-types');
+    const docTypesItem = ADMIN_NAV.find((item) => item.key === 'templates');
     expect(docTypesItem).toBeDefined();
 
-    expect(adminSectionFor('/admin/document-types')).toBe(docTypesItem);
-    expect(adminSectionFor('/admin/document-types/')).toBe(docTypesItem);
-    expect(adminSectionFor('/admin/document-types/new')).toBe(docTypesItem);
+    expect(adminSectionFor('/admin/templates')).toBe(docTypesItem);
+    expect(adminSectionFor('/admin/templates/')).toBe(docTypesItem);
+    expect(adminSectionFor('/admin/templates/new')).toBe(docTypesItem);
   });
 
   it('falls back to ADMIN_OVERVIEW for invalid admin paths or cross-app pathnames', () => {

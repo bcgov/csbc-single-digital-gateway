@@ -23,11 +23,11 @@ describe('AdminSidebar', () => {
     expect(bcGovElements).toHaveLength(2);
 
     expect(screen.getByRole('link', { name: 'Overview' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Document Types' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Templates' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Back to app' })).toBeInTheDocument();
 
     expect(screen.getByText('Overview')).toBeInTheDocument();
-    expect(screen.getByText('Document Types')).toBeInTheDocument();
+    expect(screen.getByText('Templates')).toBeInTheDocument();
     expect(screen.getByText('Back to app')).toBeInTheDocument();
   });
 
@@ -38,9 +38,7 @@ describe('AdminSidebar', () => {
     expect(aside).toHaveAttribute('data-collapsed', 'true');
 
     expect(screen.getByText('Overview')).toHaveClass('group-data-[collapsed=true]/rail:hidden');
-    expect(screen.getByText('Document Types')).toHaveClass(
-      'group-data-[collapsed=true]/rail:hidden',
-    );
+    expect(screen.getByText('Templates')).toHaveClass('group-data-[collapsed=true]/rail:hidden');
     expect(screen.getByText('Back to app')).toHaveClass('group-data-[collapsed=true]/rail:hidden');
   });
 });

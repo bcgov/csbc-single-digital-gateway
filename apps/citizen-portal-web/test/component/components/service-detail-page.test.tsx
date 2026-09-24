@@ -21,45 +21,27 @@ const uischema = {
   ],
 };
 
+/**
+ * Feature 217: title and description are GENERATED columns on the version, a service renders from
+ * its own `content` (no `data`), and the "ways to apply" list is gone with `document_references`.
+ */
 const detail = {
   id: 'svc-1',
   title: 'Service One',
   description: 'Financial support for residents.',
   publishedVersionId: 'ver-3',
-  version: 3,
+  versionNumber: 3,
   publishedAt: '2025-01-15T00:00:00.000Z',
-  data: { title: 'Service One', description: 'Financial support for residents.' },
   schema,
   uischema,
-  applications: [
-    {
-      id: 'ref-1',
-      label: 'Apply online',
-      title: 'Your Profile',
-      formId: 'f1',
-      formVersionId: 'fv1',
-      kind: 'basic-form',
-      url: null,
-    },
-    {
-      id: 'ref-2',
-      label: 'Apply on GOV.UK',
-      title: 'Apply on GOV.UK',
-      formId: 'ext-1',
-      formVersionId: 'extv-1',
-      kind: 'external-application',
-      url: 'https://gov.uk/apply',
-    },
-  ],
 };
 
 const version = {
   id: 'ver-1',
   serviceId: 'svc-1',
-  version: 1,
+  versionNumber: 1,
   status: 'archived',
   title: 'Service One',
-  data: { title: 'Service One', description: 'The original copy.' },
   schema,
   uischema,
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -121,7 +103,7 @@ describe('service detail page', () => {
   });
 
   it('renders without description if service has no description', async () => {
-    const detailNoDesc = { ...detail, description: '' };
+    const detailNoDesc = { ...detail, description: null };
     mockBff({ svc: jsonResponse(detailNoDesc) });
     await renderRoute('/services/svc-1');
     expect(
@@ -130,60 +112,22 @@ describe('service detail page', () => {
     expect(screen.queryByText('Financial support for residents.')).not.toBeInTheDocument();
   });
 
-  it('surfaces the application forms in How to apply', async () => {
+  it('disables the call to action — there is no way to apply to link to yet', async () => {
     mockBff();
-    renderRoute('/services/svc-1');
+    await renderRoute('/services/svc-1');
     await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
-    expect(screen.getByRole('heading', { name: 'How to apply' })).toBeInTheDocument();
-    expect(screen.getByText('Your Profile')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Apply online' })).toHaveAttribute(
-      'href',
-      '/services/svc-1/apply/f1',
-    );
+
+    expect(screen.getByRole('button', { name: 'Start an application' })).toBeDisabled();
+    expect(screen.queryByRole('heading', { name: 'How to apply' })).toBeNull();
   });
 
-  it('renders an external method as a "Visit site" link opening the url in a new tab', async () => {
-    mockBff();
-    renderRoute('/services/svc-1');
-    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
-    const visit = screen.getByRole('link', { name: 'Visit site' });
-    expect(visit).toHaveAttribute('href', 'https://gov.uk/apply');
-    expect(visit).toHaveAttribute('target', '_blank');
-    expect(visit).toHaveAttribute('rel', 'noopener noreferrer');
-    // The external method does NOT link into the in-portal apply flow.
-    expect(visit).not.toHaveAttribute('href', expect.stringContaining('/apply/'));
-  });
+  it('falls back to "Service" when the published version has no generated title', async () => {
+    mockBff({ svc: jsonResponse({ ...detail, title: null }) });
+    await renderRoute('/services/svc-1');
 
-  it('titles the "Your activity" card by application name, then a Ref/date line', async () => {
-    const myApp = {
-      id: 'app-1',
-      serviceId: 'svc-1',
-      serviceVersionId: 'ver-3',
-      serviceTitle: 'Service One',
-      formTitle: 'Service One application',
-      reference: '20250701-0009',
-      status: 'draft',
-      statusLabel: 'Draft',
-      lastUpdated: '2025-07-01T00:00:00.000Z',
-    };
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/versions/')) return jsonResponse(version);
-      if (/\/v1\/services\/[^?]+$/.test(url)) return jsonResponse(detail);
-      if (url.includes('/v1/services')) return jsonResponse({ items: [] });
-      if (url.includes('/v1/me/applications')) return jsonResponse({ items: [myApp] });
-      if (url.includes('/auth/me')) return new Response(null, { status: 401 });
-      return new Response(null, { status: 404 });
-    }) as unknown as typeof fetch;
-
-    renderRoute('/services/svc-1');
-    await screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 });
-
-    // First line = the application (form) name, linking to the application page.
-    const activityLink = await screen.findByRole('link', { name: /Service One application/i });
-    expect(activityLink).toHaveAttribute('href', '/applications/app-1');
-    // Second line leads with "Ref #" — the service is implicit here, so no name prefixes the meta.
-    expect(screen.getByText(/^Ref #20250701-0009 •/)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Service', level: 1 }, { timeout: 10000 }),
+    ).toBeInTheDocument();
   });
 
   it('shows a not-available state on 404', async () => {
@@ -204,7 +148,6 @@ describe('service version page', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('archived')).toBeInTheDocument();
     expect(screen.getByText(/historical version/i)).toBeInTheDocument();
-    expect(screen.getByText('The original copy.')).toBeInTheDocument();
   });
 
   it('shows a not-available state on 404', async () => {

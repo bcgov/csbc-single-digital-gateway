@@ -8,8 +8,6 @@ const workspace = { id: 'w1', slug: 'riverton', name: 'Riverton', role: 'admin',
 
 const summary = {
   id: 'sub1',
-  serviceId: 'svc1',
-  serviceTitle: 'Income Assistance',
   formId: 'f1',
   formTitle: 'Income application',
   applicantName: 'Amina Ali',
@@ -23,7 +21,6 @@ const summary = {
 
 const detail = {
   ...summary,
-  kind: 'basic-form',
   structure: {
     schema: { type: 'object', properties: { name: { type: 'string', title: 'Name' } } },
     uischema: {
@@ -86,7 +83,10 @@ describe('Console Submissions Integration Test Suite', () => {
     expect(
       await screen.findByRole('link', { name: 'Amina Ali' }, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Income Assistance')).toBeInTheDocument();
+    // Feature 217: a submission no longer knows its service — the row names the FORM it was
+    // made on, and the Service column is gone.
+    expect(screen.getByText('Income application')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Service' })).toBeNull();
     expect(screen.getByText('Income application')).toBeInTheDocument();
     expect(screen.getByText('20260601-AB12')).toBeInTheDocument();
   });
@@ -124,7 +124,7 @@ describe('Console Submissions Integration Test Suite', () => {
     expect(
       await screen.findByRole('heading', { name: 'Amina Ali', level: 1 }, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Income Assistance · Income application')).toBeInTheDocument();
+    expect(screen.getByText('Income application')).toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', { name: 'Approve' }));
 

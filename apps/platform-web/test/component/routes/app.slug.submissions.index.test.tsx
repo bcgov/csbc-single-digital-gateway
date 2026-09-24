@@ -38,8 +38,6 @@ const mockSubmissionsList = {
   items: [
     {
       id: 'sub-123',
-      serviceId: 'srv-123',
-      serviceTitle: 'Parking Permits',
       formId: 'form-123',
       formTitle: 'Application Form',
       applicantName: 'Test User',
@@ -88,7 +86,8 @@ describe('App Slug Submissions Index Route', () => {
 
     // Verify headers inside the submissions table
     expect(await screen.findByText('Applicant')).toBeInTheDocument();
-    expect(screen.getByText('Service')).toBeInTheDocument();
+    // Feature 217: no Service column — a submission does not know its service.
+    expect(screen.queryByText('Service')).toBeNull();
     expect(screen.getByText('Application')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
     expect(screen.getByText('Submitted')).toBeInTheDocument();
@@ -96,7 +95,7 @@ describe('App Slug Submissions Index Route', () => {
     // Verify submission row details are correctly loaded asynchronously
     expect(await screen.findByText('Test User')).toBeInTheDocument();
     expect(screen.getByText('REF-0001')).toBeInTheDocument();
-    expect(screen.getByText('Parking Permits')).toBeInTheDocument();
+    expect(screen.queryByText('Parking Permits')).toBeNull();
     expect(screen.getByText('Application Form')).toBeInTheDocument();
     expect(screen.getByText('Pending Review')).toBeInTheDocument();
   });

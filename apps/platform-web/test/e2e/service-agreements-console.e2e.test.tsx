@@ -74,7 +74,7 @@ function withAgreements(base: ReturnType<typeof mockAuth>) {
 }
 
 describe('Service Agreements Console Integration Test Suite', () => {
-  it('opens the New agreement modal (title + description) at /new', async () => {
+  it('opens the New agreement modal (title only) at /new', async () => {
     withAgreements(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/service-agreements/new');
     const modal = await screen.findByRole(
@@ -83,7 +83,8 @@ describe('Service Agreements Console Integration Test Suite', () => {
       { timeout: 32000 },
     );
     expect(within(modal).getByLabelText(/title/i)).toBeInTheDocument();
-    expect(within(modal).getByLabelText(/description/i)).toBeInTheDocument();
+    // Feature 217: the create modal collects a TITLE only.
+    expect(within(modal).queryByLabelText(/description/i)).toBeNull();
     expect(within(modal).getByRole('button', { name: /create agreement/i })).toBeInTheDocument();
   });
 

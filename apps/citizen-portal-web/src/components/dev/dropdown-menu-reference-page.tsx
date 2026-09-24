@@ -194,7 +194,7 @@ export function DropdownMenuReferencePage() {
   return (
     <DevPageLayout
       title="Dropdown menu"
-      description="A menu of actions or options, opened from a trigger. Used for account menus and overflow (⋯) action menus — not for form selects (see the form-elements page)."
+      description="A menu of actions or options, opened from a trigger. Used for account menus and overflow (⋯) action menus — not for form selects."
       navItems={navItems}
       navLabel="On this page"
       navClassName="sticky top-0 h-screen overflow-y-auto"

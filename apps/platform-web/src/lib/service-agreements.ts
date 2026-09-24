@@ -13,8 +13,9 @@ export interface ServiceAgreement {
   id: string;
   /** Null for a global (admin-authored) agreement. */
   workspaceId: string | null;
-  title: string;
-  kind: string;
+  /** From the current version's GENERATED title — null when its content carries no root label. */
+  title: string | null;
+  type: 'service-agreement';
   createdAt: string;
   updatedAt: string;
 }
@@ -26,26 +27,27 @@ export interface ServiceAgreementSummary extends ServiceAgreement {
 
 export interface ServiceAgreementVersion {
   id: string;
-  version: number;
+  versionNumber: number;
+  revision: number;
   status: VersionStatus;
-  data: Record<string, unknown>;
+  /** GENERATED from `content`; null when its root carries no label. */
+  title: string | null;
+  /** GENERATED from `content`; null for a rich (Lexical) description. */
+  description: string | null;
+  content: Record<string, unknown>;
   createdAt: string;
   publishedAt: string | null;
   archivedAt: string | null;
 }
 
-/** A service this agreement is attached to (agreements may be attached to many services). */
-export interface AssociatedService {
-  id: string;
-  title: string;
-  workspaceSlug: string;
-}
-
+/**
+ * Feature 217 dropped `services` (which services this agreement is attached to): it came from
+ * `document_references`, and linking documents is a later feature.
+ */
 export interface ServiceAgreementDetail {
   agreement: ServiceAgreement;
   versions: ServiceAgreementVersion[];
   definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
-  services: AssociatedService[];
 }
 
 const BASE = `${BFF_ORIGIN}/v1/service-agreements`;
@@ -142,7 +144,7 @@ export function agreementQueryOptions(id: string) {
 
 export function createAgreement(input: {
   workspaceId?: string;
-  data: Record<string, unknown>;
+  title: string;
 }): Promise<{ agreement: ServiceAgreement; version: ServiceAgreementVersion }> {
   return send(BASE, 'POST', input);
 }
@@ -150,7 +152,7 @@ export function createAgreement(input: {
 export function updateAgreementDraft(
   id: string,
   versionId: string,
-  input: { data: Record<string, unknown>; title?: string },
+  input: { content: Record<string, unknown> },
 ): Promise<ServiceAgreementVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
@@ -179,7 +181,8 @@ export function publishAgreementVersion(
 export interface DefaultAgreement {
   id: string;
   agreementDocumentId: string;
-  title: string;
+  /** From the agreement version's GENERATED title — null when it carries no root label. */
+  title: string | null;
   isOptional: boolean;
   isGlobal: boolean;
   createdAt: string;

@@ -19,10 +19,8 @@ export type ReviewDecision = 'approve' | 'reject' | 'request_changes';
 
 export interface SubmissionSummary {
   id: string;
-  serviceId: string;
-  serviceTitle: string;
   formId: string;
-  formTitle: string;
+  formTitle: string | null;
   applicantName: string;
   applicantEmail: string | null;
   status: SubmissionStatus;
@@ -41,7 +39,7 @@ export interface ReviewEntry {
 }
 
 export interface SubmissionDetail extends SubmissionSummary {
-  kind: string;
+  /** The authored document the answers were given on: `{ schema, uischema }`. */
   structure: Record<string, unknown>;
   data: Record<string, unknown>;
   reviews: ReviewEntry[];

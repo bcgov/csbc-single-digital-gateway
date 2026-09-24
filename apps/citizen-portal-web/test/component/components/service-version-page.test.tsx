@@ -61,20 +61,7 @@ vi.mock('@/components/layout/citizen-shell', () => ({
   ),
 }));
 
-vi.mock('@/components/services/detail-sections', () => ({
-  ServiceSections: ({ serviceId, schema, uischema, data, applications }: any) => (
-    <div
-      data-testid="service-sections"
-      data-service-id={serviceId}
-      data-schema={JSON.stringify(schema)}
-      data-uischema={JSON.stringify(uischema)}
-      data-data={JSON.stringify(data)}
-      data-apps-count={applications.length}
-    />
-  ),
-}));
-
-vi.mock('@/components/services/service-content', () => ({
+vi.mock('@/components/breadcrumb', () => ({
   Breadcrumb: ({ trail }: any) => (
     <nav data-testid="breadcrumb" data-trail={JSON.stringify(trail)} />
   ),
@@ -82,7 +69,6 @@ vi.mock('@/components/services/service-content', () => ({
 
 // Mock catalog query options
 vi.mock('@/lib/catalog', () => ({
-  serviceQueryOptions: vi.fn((id) => ({ queryKey: ['service', id] })),
   serviceVersionQueryOptions: vi.fn((sId, vId) => ({ queryKey: ['version', sId, vId] })),
 }));
 
@@ -131,29 +117,21 @@ describe('ServiceVersionPage Component', () => {
     expect(link).toHaveAttribute('href', '/services/svc-abc');
   });
 
-  it('renders historical version detail with validity range details and sections', () => {
+  it('renders historical version detail with its validity range', () => {
     const mockVersionData = {
-      version: 2,
+      versionNumber: 2,
       title: 'Historical Title',
       status: 'archived',
       createdAt: '2026-01-01T00:00:00.000Z',
       publishedAt: '2026-01-10T00:00:00.000Z',
       archivedAt: '2026-02-01T00:00:00.000Z',
       schema: { type: 'object' },
-      uischema: { type: 'VerticalLayout' },
-      data: { description: 'Historical description detail text' },
-    };
-
-    const mockServiceData = {
-      applications: [{ id: 'app1', label: 'Apply' }],
+      uischema: { type: 'Service' },
     };
 
     vi.mocked(useQuery).mockImplementation((options: any) => {
       if (options.queryKey[0] === 'version') {
         return { isPending: false, data: mockVersionData } as any;
-      }
-      if (options.queryKey[0] === 'service') {
-        return { isPending: false, data: mockServiceData } as any;
       }
       return { isPending: false } as any;
     });
@@ -174,9 +152,6 @@ describe('ServiceVersionPage Component', () => {
     const badge = screen.getByTestId('badge');
     expect(badge).toHaveTextContent('archived');
 
-    // Verify Description
-    expect(screen.getByText('Historical description detail text')).toBeInTheDocument();
-
     // Verify validityRange formatting: Published and Archived
     const expectedFrom = new Date(mockVersionData.publishedAt).toLocaleDateString();
     const expectedTo = new Date(mockVersionData.archivedAt).toLocaleDateString();
@@ -188,18 +163,15 @@ describe('ServiceVersionPage Component', () => {
     const link = screen.getByRole('link', { name: /View the current service/i });
     expect(link).toHaveAttribute('href', '/services/svc-abc');
 
-    // Verify ServiceSections render props
-    const sections = screen.getByTestId('service-sections');
-    expect(sections).toHaveAttribute('data-service-id', 'svc-abc');
-    expect(sections).toHaveAttribute('data-schema', JSON.stringify(mockVersionData.schema));
-    expect(sections).toHaveAttribute('data-uischema', JSON.stringify(mockVersionData.uischema));
-    expect(sections).toHaveAttribute('data-data', JSON.stringify(mockVersionData.data));
-    expect(sections).toHaveAttribute('data-apps-count', '1');
+    // Feature 217: the sectioned render of the version's content went with the @repo/react
+    // renderers, and the page no longer queries the service for its application methods.
+    expect(screen.queryByTestId('service-sections')).toBeNull();
+    expect(screen.getByText(/not available yet/i)).toBeInTheDocument();
   });
 
   it('correctly falls back in validity range formatting when publishedAt is null', () => {
     const mockVersionData = {
-      version: 1,
+      versionNumber: 1,
       title: 'Historical Title',
       status: 'archived',
       createdAt: '2026-01-01T00:00:00.000Z',
@@ -207,14 +179,13 @@ describe('ServiceVersionPage Component', () => {
       archivedAt: null,
       schema: {},
       uischema: {},
-      data: {},
     };
 
     vi.mocked(useQuery).mockImplementation((options: any) => {
       if (options.queryKey[0] === 'version') {
         return { isPending: false, data: mockVersionData } as any;
       }
-      return { isPending: false, data: { applications: [] } } as any;
+      return { isPending: false } as any;
     });
 
     render(<ServiceVersionPage />);
@@ -228,7 +199,7 @@ describe('ServiceVersionPage Component', () => {
 
   it('returns empty string for validity range when both publishedAt and createdAt are null', () => {
     const mockVersionData = {
-      version: 3,
+      versionNumber: 3,
       title: 'Historical Title',
       status: 'archived',
       createdAt: null,
@@ -236,7 +207,6 @@ describe('ServiceVersionPage Component', () => {
       archivedAt: null,
       schema: {},
       uischema: {},
-      data: {},
     };
 
     vi.mocked(useQuery).mockImplementation((options: any) => {

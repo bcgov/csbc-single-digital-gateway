@@ -3,18 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApplicationRow } from '@/components/services/application-row';
 import type { MyApplication } from '@/lib/catalog';
 
-// Mock UI elements from @repo
 vi.mock('@repo/ui/card', () => ({
-  Card: ({ children, column }: any) => (
-    <div data-testid="card" data-column={column ? 'true' : 'false'}>
-      {children}
-    </div>
-  ),
-  CardIconAction: ({ children, size }: any) => (
-    <div data-testid="card-icon-action" data-size={size}>
-      {children}
-    </div>
-  ),
+  Card: ({ children }: any) => <div data-testid="card">{children}</div>,
   CardHeader: ({ children }: any) => <div data-testid="card-header">{children}</div>,
   CardTitle: ({ children }: any) => <h3 data-testid="card-title">{children}</h3>,
   CardDescription: ({ children }: any) => <div data-testid="card-description">{children}</div>,
@@ -28,31 +18,16 @@ vi.mock('@repo/ui/badge', () => ({
   ),
 }));
 
-// Mock @mdi/react Icon component
-vi.mock('@mdi/react', () => ({
-  Icon: ({ path, size, className }: any) => (
-    <span data-testid="icon" data-path={path} data-size={size} className={className} />
-  ),
-}));
-
-// Mock @tanstack/react-router Link component
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to, params, ...props }: any) => {
-    const href = to.replace('$id', params?.id || '');
-    return (
-      <a href={href} {...props}>
-        {children}
-      </a>
-    );
-  },
-}));
-
+/**
+ * Feature 217: the row led with the owning SERVICE's name and linked to `/applications/:id`.
+ * A submission no longer knows its service, and the application page went with the `@repo/react`
+ * renderers, so the row leads with the form and is not a link.
+ */
 describe('ApplicationRow Component', () => {
   const mockApplication: MyApplication = {
     id: 'app-abc',
-    serviceId: 'svc-123',
-    serviceVersionId: 'ver-456',
-    serviceTitle: 'Income Assistance',
+    formId: 'form-123',
+    formVersionId: 'ver-456',
     formTitle: 'Income Form',
     reference: '20260708-0001',
     status: 'pending',
@@ -60,29 +35,34 @@ describe('ApplicationRow Component', () => {
     lastUpdated: '2026-07-08T12:00:00.000Z',
   };
 
-  it('renders application details correctly in card elements', () => {
+  it('leads with the form title and shows the status pill', () => {
     render(<ApplicationRow application={mockApplication} />);
 
-    // Assert card and card-header are in the document
-    expect(screen.getByTestId('card')).toBeInTheDocument();
-    expect(screen.getByTestId('card-header')).toBeInTheDocument();
-
-    // Assert Title Link and target path substitution
-    const link = screen.getByRole('link', { name: /Income Assistance/i });
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', '/applications/app-abc');
-
-    // Assert Badge
+    expect(screen.getByTestId('card-title')).toHaveTextContent('Income Form');
     const badge = screen.getByTestId('badge');
     expect(badge).toHaveAttribute('data-color', 'yellow');
     expect(badge).toHaveTextContent('Submitted');
+  });
 
-    // Assert remaining descriptions: reference, formTitle and formatted date
-    const descriptionText = screen.getByTestId('card-description');
-    expect(descriptionText).toHaveTextContent('20260708-0001');
-    expect(descriptionText).toHaveTextContent('Income Form');
+  it('shows the reference and the formatted last-updated date', () => {
+    render(<ApplicationRow application={mockApplication} />);
 
-    const formattedDate = new Date(mockApplication.lastUpdated).toLocaleDateString();
-    expect(descriptionText).toHaveTextContent(formattedDate);
+    const description = screen.getByTestId('card-description');
+    expect(description).toHaveTextContent('20260708-0001');
+    expect(description).toHaveTextContent(
+      new Date(mockApplication.lastUpdated).toLocaleDateString(),
+    );
+  });
+
+  it('falls back to "Application" when the form version has no generated title', () => {
+    render(<ApplicationRow application={{ ...mockApplication, formTitle: null }} />);
+
+    expect(screen.getByTestId('card-title')).toHaveTextContent('Application');
+  });
+
+  it('is no longer a link — there is nowhere to navigate to yet', () => {
+    render(<ApplicationRow application={mockApplication} />);
+
+    expect(screen.queryByRole('link')).toBeNull();
   });
 });

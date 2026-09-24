@@ -57,10 +57,11 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// @jsonforms/react debounces onChange (~10ms), so give the controlled data a beat to flush from the
-// last keystroke before submitting (memory: jsonforms-onchange-debounce).
-const flushDebounce = () => new Promise((resolve) => setTimeout(resolve, 50));
-
+/**
+ * Feature 217: the modal collected a name + short description through JSONForms and posted them as
+ * the service's `data`. A service is authored now, so create takes only a title and the modal is a
+ * single plain field — no JSONForms, and therefore no onChange debounce to flush.
+ */
 function renderNewServiceModal(seedWorkspace = true) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -86,20 +87,14 @@ function renderNewServiceModal(seedWorkspace = true) {
   return { ...utils, queryClient };
 }
 
-const descInput = () => screen.getByLabelText('Short description');
-
 describe('New Service Modal Component Test Suite', () => {
-  it('renders the JSONForms layout and disables submit when workspace is loading', async () => {
+  it('renders a single title field and disables submit while the workspace is loading', async () => {
     renderNewServiceModal(false);
 
     expect(screen.getByRole('heading', { name: /new service/i })).toBeInTheDocument();
-    // JSONForms heading (display-only Label element).
-    expect(
-      await screen.findByText('Name & description', undefined, { timeout: 20000 }),
-    ).toBeInTheDocument();
-
     expect(screen.getByLabelText(/name of the service/i)).toHaveValue('');
-    expect(descInput()).toHaveValue('');
+    // The short-description field went with the JSONForms body.
+    expect(screen.queryByLabelText(/short description/i)).toBeNull();
 
     expect(screen.getByRole('button', { name: /create service/i })).toBeDisabled();
   });
@@ -131,14 +126,12 @@ describe('New Service Modal Component Test Suite', () => {
       expect(createService).toHaveBeenCalledWith({
         workspaceId: 'w1',
         title: 'Business License',
-        data: { title: 'Business License', description: 'Apply for business license' },
-        applications: [],
       });
     });
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/app/$slug/services/$id/old/edit',
+        to: '/app/$slug/services/$id',
         params: { slug: 'riverton', id: 'srv-999' },
         replace: true,
       });
@@ -162,7 +155,6 @@ describe('New Service Modal Component Test Suite', () => {
     renderNewServiceModal(true);
 
     await user.type(await screen.findByLabelText(/name of the service/i), 'Permit Office');
-    await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Service title is taken');
@@ -173,7 +165,6 @@ describe('New Service Modal Component Test Suite', () => {
     renderNewServiceModal(true);
 
     await user.type(await screen.findByLabelText(/name of the service/i), '   ');
-    await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('A title is required');
@@ -185,7 +176,6 @@ describe('New Service Modal Component Test Suite', () => {
     renderNewServiceModal(false);
 
     await user.type(await screen.findByLabelText(/name of the service/i), 'Valid Title');
-    await flushDebounce();
 
     const form = document.querySelector('form');
     expect(form).toBeInTheDocument();
@@ -215,7 +205,6 @@ describe('New Service Modal Component Test Suite', () => {
     renderNewServiceModal(true);
 
     await user.type(await screen.findByLabelText(/name of the service/i), 'New Service');
-    await flushDebounce();
     const submitBtn = screen.getByRole('button', { name: /create service/i });
     await user.click(submitBtn);
 
@@ -233,7 +222,6 @@ describe('New Service Modal Component Test Suite', () => {
     renderNewServiceModal(true);
 
     await user.type(await screen.findByLabelText(/name of the service/i), 'Business License');
-    await flushDebounce();
     await user.click(screen.getByRole('button', { name: /create service/i }));
 
     await waitFor(() => {

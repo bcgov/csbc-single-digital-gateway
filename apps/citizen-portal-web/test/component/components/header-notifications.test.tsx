@@ -131,7 +131,9 @@ describe('header notification bell', () => {
     });
   });
 
-  it('navigates to the application page when the notification carries a submissionId', async () => {
+  it('no longer navigates for a submissionId — the application page is gone', async () => {
+    // Feature 217: `/applications/:id` went with the `@repo/react` renderers, so a click closes
+    // the panel and stays put rather than deep-linking to a route that does not exist.
     const user = userEvent.setup();
     const { router } = renderHome();
     const bell = await screen.findByRole(
@@ -143,9 +145,11 @@ describe('header notification bell', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Your application was approved (unread)' }),
     );
+
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/applications/sub-1');
+      expect(screen.queryByRole('button', { name: /unread\)$/ })).toBeNull();
     });
+    expect(router.state.location.pathname).toBe('/');
   });
 
   it('does not navigate for a notification without a destination payload', async () => {

@@ -6,45 +6,39 @@
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
 
-/** A catalog service card — id + title + description, no workspace. */
+/**
+ * A catalog service card — id + title + description, no workspace.
+ *
+ * Feature 217: title and description are GENERATED from the published version's content, so both
+ * are nullable — a service whose content carries no root label, or whose description is authored as
+ * rich content rather than plain text, has none to show.
+ */
 export interface CatalogService {
   id: string;
-  title: string;
-  description: string;
+  title: string | null;
+  description: string | null;
 }
 
-/** An application method a service offers — an in-portal form (`kind` basic-form/multi-stage-form)
- * or an external link (`kind` external-application, feature 131). For an external method `url` is the
- * https destination the citizen visits ("Visit site"); null for forms. */
-export interface ApplicationForm {
-  id: string;
-  label: string | null;
-  title: string;
-  formId: string;
-  formVersionId: string;
-  kind: string;
-  url: string | null;
-}
-
-/** A service detail — the card fields + its current published version + render definition. */
+/**
+ * A service detail — the card fields + its current published version + the authored document to
+ * render. Feature 217 dropped `applications` (the ways to apply, from `document_references`) and
+ * `data` (a service is authored, not filled).
+ */
 export interface CatalogServiceDetail extends CatalogService {
   publishedVersionId: string;
-  version: number;
+  versionNumber: number;
   publishedAt: string | null;
-  data: Record<string, unknown>;
   schema: Record<string, unknown>;
   uischema: Record<string, unknown>;
-  applications: ApplicationForm[];
 }
 
-/** A historical service version (published or archived) + its render definition. */
+/** A historical service version (published or archived) + the document to render. */
 export interface CatalogServiceVersion {
   id: string;
   serviceId: string;
-  version: number;
+  versionNumber: number;
   status: 'published' | 'archived';
-  title: string;
-  data: Record<string, unknown>;
+  title: string | null;
   schema: Record<string, unknown>;
   uischema: Record<string, unknown>;
   createdAt: string;
@@ -62,14 +56,18 @@ export type ApplicationStatus =
   | 'needs_changes'
   | 'withdrawn';
 
-/** One of the signed-in citizen's applications. */
+/**
+ * One of the signed-in citizen's applications.
+ *
+ * Feature 217: the owning-service fields are gone — a submission's document is the FORM, and the
+ * service was only ever reachable through a `document_references` row.
+ */
 export interface MyApplication {
   id: string;
-  serviceId: string;
-  serviceVersionId: string;
-  serviceTitle: string;
-  /** The application method / form the citizen applied through (the row's title). */
-  formTitle: string;
+  formId: string;
+  formVersionId: string;
+  /** The application method / form the citizen applied through — its version's generated title. */
+  formTitle: string | null;
   reference: string;
   status: ApplicationStatus;
   statusLabel: string;

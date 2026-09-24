@@ -41,17 +41,25 @@ const detailResponse = {
     id: 'g1',
     workspaceId: null,
     title: 'Global Privacy Policy',
-    kind: 'service-agreement',
+    type: 'service-agreement',
     createdAt: ISO,
   },
   versions: [
     {
       id: 'v1',
-      version: 1,
+      versionNumber: 1,
+      revision: 1,
       status: 'draft',
-      data: {
-        title: 'Global Privacy Policy',
-        body: 'This is the draft agreement content.',
+      title: 'Global Privacy Policy',
+      description: null,
+      content: {
+        schema: {},
+        uischema: {
+          type: 'Form',
+          label: 'Global Privacy Policy',
+          elements: [],
+          options: { body: 'This is the draft agreement content.' },
+        },
       },
       createdAt: ISO,
       publishedAt: null,
@@ -80,20 +88,23 @@ function setupMocks() {
     if (url.includes('/v1/service-agreements')) {
       if (method === 'POST') {
         const body = init?.body
-          ? (JSON.parse(String(init.body)) as { data: { title: string } })
-          : { data: { title: '' } };
+          ? (JSON.parse(String(init.body)) as { title: string })
+          : { title: '' };
         const newAgreement = {
           id: 'g2',
           workspaceId: null,
-          title: body.data.title || 'Untitled',
-          kind: 'service-agreement',
+          title: body.title || 'Untitled',
+          type: 'service-agreement',
           createdAt: ISO,
         };
         const newVersion = {
           id: 'v2',
-          version: 1,
+          versionNumber: 1,
+          revision: 1,
           status: 'draft',
-          data: body.data,
+          title: body.title,
+          description: null,
+          content: { schema: {}, uischema: { type: 'Form', label: body.title, elements: [] } },
           createdAt: ISO,
           publishedAt: null,
           archivedAt: null,
@@ -132,12 +143,12 @@ describe('Admin Agreements Pages Component Test Suite', () => {
     );
     expect(modal).toBeInTheDocument();
 
+    // Feature 217: the create modal collects a TITLE only.
     const titleInput = within(modal).getByLabelText(/title/i);
-    const descInput = within(modal).getByLabelText(/description/i);
+    expect(within(modal).queryByLabelText(/description/i)).toBeNull();
     const createBtn = within(modal).getByRole('button', { name: /create agreement/i });
 
     await userEvent.type(titleInput, 'New Global TOS');
-    await userEvent.type(descInput, 'Description for New Global TOS');
     await userEvent.click(createBtn);
 
     // Verify it sent a POST to create agreement

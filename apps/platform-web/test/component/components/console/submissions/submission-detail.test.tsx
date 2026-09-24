@@ -26,13 +26,12 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   },
 }));
 
-vi.mock('@repo/react/jsonforms', () => ({
-  JsonForms: vi.fn(({ data, readonly }: any) => (
-    <div data-testid="mock-json-forms">
-      Mocked JSONForms: {JSON.stringify(data)} (readonly: {String(readonly)})
-    </div>
-  )),
-}));
+/**
+ * Feature 217: the answers were a read-only `<JsonForms>` over the submission's `structure`, which
+ * went with the `@repo/react` renderers. They are listed as key/value pairs until `@repo/forms`'
+ * `SubmissionView` (doc 211) is wired in, so there is no JSONForms mock left — and no per-page
+ * multi-stage rendering, since a staged form is one `Flow` document now.
+ */
 
 vi.mock('@repo/ui/skeleton', () => ({
   Skeleton: () => <div data-testid="skeleton" />,
@@ -65,8 +64,6 @@ vi.mock('@/lib/submissions', async (importOriginal) => {
 
 const mockBasicSubmission: SubmissionDetailData = {
   id: 'sub-123',
-  serviceId: 'srv-123',
-  serviceTitle: 'Parking Permits',
   formId: 'form-123',
   formTitle: 'Application Form',
   applicantName: 'Test User',
@@ -76,7 +73,6 @@ const mockBasicSubmission: SubmissionDetailData = {
   reference: 'REF-0001',
   submittedAt: '2026-07-15T00:00:00Z',
   updatedAt: '2026-07-15T00:00:00Z',
-  kind: 'basic-form',
   structure: {
     schema: { type: 'object', properties: { parkingType: { type: 'string' } } },
     uischema: { type: 'VerticalLayout', elements: [] },
@@ -87,8 +83,6 @@ const mockBasicSubmission: SubmissionDetailData = {
 
 const mockMultiStageSubmission: SubmissionDetailData = {
   id: 'sub-456',
-  serviceId: 'srv-123',
-  serviceTitle: 'Business Permit',
   formId: 'form-456',
   formTitle: 'Multi Form',
   applicantName: 'Jane Doe',
@@ -98,7 +92,6 @@ const mockMultiStageSubmission: SubmissionDetailData = {
   reference: 'REF-0002',
   submittedAt: '2026-07-15T00:00:00Z',
   updatedAt: '2026-07-15T00:00:00Z',
-  kind: 'multi-stage-form',
   structure: {
     stages: [
       {
@@ -185,15 +178,13 @@ describe('SubmissionDetail Component Test Suite', () => {
     // Header info
     expect(await screen.findByRole('heading', { name: 'Test User' })).toBeInTheDocument();
     expect(screen.getByText('Pending Review')).toBeInTheDocument();
-    expect(screen.getByText('Parking Permits · Application Form')).toBeInTheDocument();
+    expect(screen.getByText('Application Form')).toBeInTheDocument();
     expect(screen.getByText(/REF-0001 · test@example\.com/)).toBeInTheDocument();
 
     // Answers section
     expect(screen.getByRole('heading', { name: 'Answers' })).toBeInTheDocument();
-    expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Mocked JSONForms: {"parkingType":"Residential"} \(readonly: true\)/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('parkingType')).toBeInTheDocument();
+    expect(screen.getByText('Residential')).toBeInTheDocument();
 
     // Review Panel for reviewable status ('pending')
     expect(screen.getByRole('heading', { name: 'Review' })).toBeInTheDocument();
@@ -212,13 +203,11 @@ describe('SubmissionDetail Component Test Suite', () => {
 
     expect(await screen.findByRole('heading', { name: 'Jane Doe' })).toBeInTheDocument();
     expect(screen.getAllByText('Approved')).toHaveLength(2);
-    expect(screen.getByText('Business Permit · Multi Form')).toBeInTheDocument();
+    expect(screen.getByText('Multi Form')).toBeInTheDocument();
     expect(screen.getByText(/REF-0002/)).toBeInTheDocument();
 
-    // Multi-stage answers should show titles of pages
-    expect(screen.getByRole('heading', { name: 'Business Details' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Contact Details' })).toBeInTheDocument();
-    expect(screen.getAllByTestId('mock-json-forms')).toHaveLength(2);
+    // Feature 217: no per-page sections — the answers are one flat list, whatever the document.
+    expect(screen.queryByRole('heading', { name: 'Business Details' })).toBeNull();
 
     // Actioned review status notice
     expect(screen.getByText(/has been actioned/i)).toBeInTheDocument();
@@ -283,8 +272,6 @@ describe('SubmissionDetail Component Test Suite', () => {
   it('handles null submittedAt, empty page names, and reviews without reason in multi-stage form', async () => {
     const mockCustomSubmission: SubmissionDetailData = {
       id: 'sub-custom',
-      serviceId: 'srv-123',
-      serviceTitle: 'Custom Service',
       formId: 'form-custom',
       formTitle: 'Custom Form',
       applicantName: 'Charlie',
@@ -294,7 +281,6 @@ describe('SubmissionDetail Component Test Suite', () => {
       reference: 'REF-0003',
       submittedAt: null as any,
       updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'multi-stage-form',
       structure: {
         stages: [
           {
@@ -336,8 +322,6 @@ describe('SubmissionDetail Component Test Suite', () => {
   it('handles basic form submission with empty/missing schema', async () => {
     const mockEmptyBasicSubmission: SubmissionDetailData = {
       id: 'sub-empty',
-      serviceId: 'srv-123',
-      serviceTitle: 'Empty Service',
       formId: 'form-empty',
       formTitle: 'Empty Form',
       applicantName: 'Empty User',
@@ -347,7 +331,6 @@ describe('SubmissionDetail Component Test Suite', () => {
       reference: 'REF-0004',
       submittedAt: '2026-07-15T00:00:00Z',
       updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'basic-form',
       structure: {},
       data: {},
       reviews: [],
@@ -357,65 +340,18 @@ describe('SubmissionDetail Component Test Suite', () => {
     renderSubmissionDetail(queryClient);
 
     expect(await screen.findByRole('heading', { name: 'Empty User' })).toBeInTheDocument();
-    expect(screen.getByTestId('mock-json-forms')).toBeInTheDocument();
+    expect(screen.getByText(/no answers/i)).toBeInTheDocument();
   });
 
-  it('covers multi-stage form structure fallbacks', async () => {
-    const mockFallbackSubmission: SubmissionDetailData = {
-      id: 'sub-fallback',
-      serviceId: 'srv-123',
-      serviceTitle: 'Custom Service',
-      formId: 'form-custom',
-      formTitle: 'Custom Form',
-      applicantName: 'Charlie',
-      applicantEmail: null,
-      status: 'approved',
-      statusLabel: 'Approved',
-      reference: 'REF-0004',
-      submittedAt: null as any,
-      updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'multi-stage-form',
-      structure: {},
-      data: {},
-      reviews: [],
+  it('renders a non-string answer as JSON rather than dropping it', async () => {
+    mockSubmissionData = {
+      ...mockBasicSubmission,
+      data: { consent: true, contacts: ['a@example.com'] },
     };
-
-    mockSubmissionData = mockFallbackSubmission;
     renderSubmissionDetail(queryClient);
 
-    expect(await screen.findByText('REF-0004')).toBeInTheDocument();
-  });
-
-  it('covers stage pages and page id fallback', async () => {
-    const mockPageFallbackSubmission: SubmissionDetailData = {
-      id: 'sub-page-fallback',
-      serviceId: 'srv-123',
-      serviceTitle: 'Custom Service',
-      formId: 'form-custom',
-      formTitle: 'Custom Form',
-      applicantName: 'Charlie',
-      applicantEmail: null,
-      status: 'approved',
-      statusLabel: 'Approved',
-      reference: 'REF-0005',
-      submittedAt: null as any,
-      updatedAt: '2026-07-15T00:00:00Z',
-      kind: 'multi-stage-form',
-      structure: {
-        stages: [
-          {},
-          {
-            pages: [{}],
-          },
-        ],
-      },
-      data: {},
-      reviews: [],
-    };
-
-    mockSubmissionData = mockPageFallbackSubmission;
-    renderSubmissionDetail(queryClient);
-
-    expect(await screen.findByText('REF-0005')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Test User' })).toBeInTheDocument();
+    expect(screen.getByText('true')).toBeInTheDocument();
+    expect(screen.getByText('["a@example.com"]')).toBeInTheDocument();
   });
 });

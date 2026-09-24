@@ -1,29 +1,23 @@
-import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
-
-interface AgreementEditorProps {
-  definition: { schema: Record<string, unknown>; uischema: Record<string, unknown> };
-  data: Record<string, unknown>;
-  onChange: (data: Record<string, unknown>) => void;
-  readonly: boolean;
-}
+import { DefinitionEditor } from '@/components/admin/templates/definition-editor';
 
 /**
- * The fixed-field agreement editor — a controlled `<JsonForms>` over the Service Agreement type's
- * definition (title, description, rich-text content, isOptional, approveLabel, rejectLabel). No form
- * builder: the fields are fixed by the seeded type. Shared by the console + admin surfaces.
+ * The agreement content editor.
+ *
+ * Feature 217: this was a controlled `<JsonForms>` over the Service Agreement TYPE's definition,
+ * editing the version's filled `data` (title, description, rich-text content, isOptional,
+ * approveLabel, rejectLabel). An agreement is AUTHORED now — its version carries one `content` (a
+ * `@repo/forms` StudioDocument) — and the JSONForms renderers are gone, so this is the same Monaco
+ * JSON editor the templates admin uses, until the Form Studio is wired to the documents API.
  */
-export function AgreementEditor({ definition, data, onChange, readonly }: AgreementEditorProps) {
-  return (
-    <JsonForms
-      schema={definition.schema as JsonSchema}
-      uischema={definition.uischema as unknown as UISchemaElement}
-      data={data}
-      readonly={readonly}
-      onChange={({ data: next }) => {
-        if (!readonly) {
-          onChange(next as Record<string, unknown>);
-        }
-      }}
-    />
-  );
+export function AgreementEditor({
+  value,
+  onChange,
+  readonly,
+}: {
+  /** The version's `content`, as formatted JSON text. */
+  value: string;
+  onChange: (text: string) => void;
+  readonly: boolean;
+}) {
+  return <DefinitionEditor value={value} onChange={onChange} readOnly={readonly} />;
 }

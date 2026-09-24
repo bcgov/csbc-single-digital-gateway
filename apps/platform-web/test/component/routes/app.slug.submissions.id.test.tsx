@@ -36,8 +36,6 @@ const riverton: WorkspaceLike = {
 
 const mockBasicSubmission = {
   id: 'sub-123',
-  serviceId: 'srv-123',
-  serviceTitle: 'Parking Permits',
   formId: 'form-123',
   formTitle: 'Application Form',
   applicantName: 'Test User',
@@ -47,7 +45,6 @@ const mockBasicSubmission = {
   reference: 'REF-0001',
   submittedAt: '2026-07-15T00:00:00Z',
   updatedAt: '2026-07-15T00:00:00Z',
-  kind: 'basic-form',
   structure: {
     schema: { type: 'object', properties: {} },
     uischema: { type: 'VerticalLayout', elements: [] },
@@ -88,7 +85,7 @@ describe('App Slug Submissions ID Detail Route', () => {
 
     // Verify submission details and metadata
     expect(screen.getByText('Pending Review')).toBeInTheDocument();
-    expect(screen.getByText(/Parking Permits · Application Form/i)).toBeInTheDocument();
+    expect(screen.getByText(/Application Form/i)).toBeInTheDocument();
     expect(screen.getByText(/REF-0001/i)).toBeInTheDocument();
     expect(screen.getByText(/test@example\.com/i)).toBeInTheDocument();
 

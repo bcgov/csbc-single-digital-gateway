@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -47,21 +47,25 @@ import '@/routes/app.$slug.service-agreements';
 import '@/routes/app.$slug.service-agreements.index';
 import '@/routes/app.$slug.service-agreements.$id';
 
-vi.mock('@repo/react/jsonforms', () => ({
-  JsonForms: vi.fn(({ data, readonly, onChange }: any) => (
-    <div data-testid="mock-json-forms">
-      <label htmlFor="title-input">Title</label>
-      <input
-        id="title-input"
-        type="text"
-        value={data?.title ?? ''}
-        disabled={readonly}
-        onChange={(e) => {
-          onChange({ data: { ...data, title: e.target.value } });
-        }}
-      />
-    </div>
-  )),
+// Monaco can't run in jsdom — proxy it with a plain textarea (feature 217: the agreement editor
+// is a JSON content editor now, not a JSONForms form).
+vi.mock('@monaco-editor/react', () => ({
+  default: ({
+    value,
+    onChange,
+    options,
+  }: {
+    value: string;
+    onChange?: (v: string) => void;
+    options?: { readOnly?: boolean };
+  }) => (
+    <textarea
+      aria-label="content"
+      value={value}
+      onChange={(e) => onChange?.(e.target.value)}
+      readOnly={options?.readOnly}
+    />
+  ),
 }));
 
 afterEach(() => {
@@ -85,17 +89,25 @@ const initialDetailResponse = {
     id: 'g1',
     workspaceId: null,
     title: 'Global Privacy Policy',
-    kind: 'service-agreement',
+    type: 'service-agreement',
     createdAt: ISO,
   },
   versions: [
     {
       id: 'v1',
-      version: 1,
+      versionNumber: 1,
+      revision: 1,
       status: 'published',
-      data: {
-        title: 'Global Privacy Policy V1',
-        body: 'V1 published agreement content.',
+      title: 'Global Privacy Policy V1',
+      description: null,
+      content: {
+        schema: {},
+        uischema: {
+          type: 'Form',
+          label: 'Global Privacy Policy V1',
+          elements: [],
+          options: { body: 'V1 published agreement content.' },
+        },
       },
       createdAt: ISO,
       publishedAt: ISO,
@@ -103,11 +115,19 @@ const initialDetailResponse = {
     },
     {
       id: 'v2',
-      version: 2,
+      versionNumber: 2,
+      revision: 1,
       status: 'draft',
-      data: {
-        title: 'Global Privacy Policy V2 Draft',
-        body: 'V2 draft agreement content.',
+      title: 'Global Privacy Policy V2 Draft',
+      description: null,
+      content: {
+        schema: {},
+        uischema: {
+          type: 'Form',
+          label: 'Global Privacy Policy V2 Draft',
+          elements: [],
+          options: { body: 'V2 draft agreement content.' },
+        },
       },
       createdAt: ISO,
       publishedAt: null,
@@ -124,13 +144,6 @@ const initialDetailResponse = {
     },
     uischema: {},
   },
-  services: [
-    {
-      id: 's1',
-      title: 'Service One',
-      workspaceSlug: 'w1-slug',
-    },
-  ],
 };
 
 const riverton: WorkspaceLike = {
@@ -152,9 +165,12 @@ function setupMocks(detailData: any = initialDetailResponse) {
         const body = init?.body ? JSON.parse(String(init.body)) : {};
         const updatedVersion = {
           id: 'v2',
-          version: 2,
+          versionNumber: 2,
+          revision: 2,
           status: 'draft',
-          data: body.data,
+          title: 'Global Privacy Policy V2 Draft',
+          description: null,
+          content: body.content,
           createdAt: ISO,
           publishedAt: null,
           archivedAt: null,
@@ -165,9 +181,12 @@ function setupMocks(detailData: any = initialDetailResponse) {
       if (method === 'POST' && url.includes('/versions/v2/publish')) {
         const publishedVersion = {
           id: 'v2',
-          version: 2,
+          versionNumber: 2,
+          revision: 1,
           status: 'published',
-          data: detailData.versions[1].data,
+          title: 'Global Privacy Policy V2 Draft',
+          description: null,
+          content: detailData.versions[1].content,
           createdAt: ISO,
           publishedAt: ISO,
           archivedAt: null,
@@ -178,9 +197,12 @@ function setupMocks(detailData: any = initialDetailResponse) {
       if (method === 'POST' && url.includes('/versions')) {
         const newVersion = {
           id: 'v3',
-          version: 3,
+          versionNumber: 3,
+          revision: 1,
           status: 'draft',
-          data: detailData.versions[1].data,
+          title: 'Global Privacy Policy V2 Draft',
+          description: null,
+          content: detailData.versions[1].content,
           createdAt: ISO,
           publishedAt: null,
           archivedAt: null,
@@ -198,7 +220,7 @@ function setupMocks(detailData: any = initialDetailResponse) {
 }
 
 describe('AgreementDetail Component Test Suite', () => {
-  it('renders details of a service agreement, switches versions, and lists associated services', async () => {
+  it('renders details of a service agreement and switches versions', async () => {
     setupMocks();
     renderApp('/admin/service-agreements/g1');
 
@@ -207,16 +229,16 @@ describe('AgreementDetail Component Test Suite', () => {
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    // Check title & version and associated services are rendered
+    // Feature 217: the "Associated services" list came from document_references and is gone.
     expect(screen.getByText('Global Privacy Policy')).toBeInTheDocument();
-    expect(screen.getByText('Service One')).toBeInTheDocument();
+    expect(screen.queryByText('Service One')).toBeNull();
 
     // Check default picker is on version 2 (the latest one)
     expect(screen.getByText(/Version v2/)).toBeInTheDocument();
 
-    // The fields for version 2 should be populated in the inputs
-    const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
-    expect(titleInput.value).toBe('Global Privacy Policy V2 Draft');
+    // The editor holds version 2's content JSON.
+    const editor = screen.getByLabelText('content') as HTMLTextAreaElement;
+    expect(editor.value).toContain('Global Privacy Policy V2 Draft');
 
     // 2. Switch to version 1 using picker
     const pickerButton = screen.getByRole('button', { name: /Version v2/i });
@@ -227,7 +249,7 @@ describe('AgreementDetail Component Test Suite', () => {
 
     // Verify picker text changed and fields updated
     expect(await screen.findByText(/Version v1/, {}, { timeout: 10000 })).toBeInTheDocument();
-    expect(titleInput.value).toBe('Global Privacy Policy V1');
+    expect(editor.value).toContain('Global Privacy Policy V1');
   });
 
   it('allows editing and saving a draft version', async () => {
@@ -239,33 +261,30 @@ describe('AgreementDetail Component Test Suite', () => {
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
+    const editor = screen.getByLabelText('content') as HTMLTextAreaElement;
 
     // Initially Save should be disabled because it's not dirty
     const saveBtn = screen.getByRole('button', { name: /save/i });
     expect(saveBtn).toBeDisabled();
 
-    // Modify a field to make it dirty
-    await userEvent.clear(titleInput);
-    await userEvent.type(titleInput, 'Global Privacy Policy V2 Updated');
-    expect(saveBtn).not.toBeDisabled();
+    // Feature 217: a save writes the whole authored content, not a filled `data` bag.
+    const updated = {
+      schema: {},
+      uischema: { type: 'Form', label: 'Global Privacy Policy V2 Updated', elements: [] },
+    };
+    fireEvent.change(editor, { target: { value: JSON.stringify(updated, null, 2) } });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled());
 
-    // Click Save
     await userEvent.click(saveBtn);
 
-    // Verify PATCH request was sent
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/v1/service-agreements/g1/versions/v2'),
-      expect.objectContaining({
-        method: 'PATCH',
-        body: JSON.stringify({
-          data: {
-            title: 'Global Privacy Policy V2 Updated',
-            body: 'V2 draft agreement content.',
-          },
-          title: 'Global Privacy Policy V2 Updated',
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/v1/service-agreements/g1/versions/v2'),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ content: updated }),
         }),
-      }),
+      ),
     );
   });
 
@@ -355,7 +374,7 @@ describe('AgreementDetail Component Test Suite', () => {
         id: 'g1',
         workspaceId: 'w1',
         title: 'Workspace TOS',
-        kind: 'service-agreement',
+        type: 'service-agreement',
         createdAt: ISO,
       },
     };
@@ -398,11 +417,12 @@ describe('AgreementDetail Component Test Suite', () => {
     // Wait for form to load
     const saveBtn = await screen.findByRole('button', { name: /save/i }, { timeout: 10000 });
 
-    // Make form dirty by typing in mock editor title input
-    const titleInput = screen.getByLabelText('Title');
-    await userEvent.type(titleInput, '!');
+    // Make the editor dirty.
+    fireEvent.change(screen.getByLabelText('content'), {
+      target: { value: JSON.stringify({ schema: {}, uischema: { type: 'Form', elements: [] } }) },
+    });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled());
 
-    // Click save
     await userEvent.click(saveBtn);
 
     // Expect save button to be disabled and show spinner (busy)
@@ -416,7 +436,7 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(errorAlert).toHaveTextContent('Request failed');
   });
 
-  it('shows read-only view for non-admin member, empty services fallback, and title undefined branch', async () => {
+  it('shows a read-only view for a non-admin member on a global agreement', async () => {
     const staffResponse = {
       ...initialDetailResponse,
       agreement: {
@@ -425,9 +445,13 @@ describe('AgreementDetail Component Test Suite', () => {
       },
       versions: [
         initialDetailResponse.versions[0],
-        { ...initialDetailResponse.versions[1], data: { body: 'no title' } },
+        // A version whose content carries no root label → no generated title.
+        {
+          ...initialDetailResponse.versions[1],
+          title: null,
+          content: { schema: {}, uischema: { type: 'Form', elements: [] } },
+        },
       ],
-      services: [],
     };
 
     // Setup mock auth as staff member
@@ -438,7 +462,7 @@ describe('AgreementDetail Component Test Suite', () => {
       const url = String(input);
       if (url.includes('/v1/service-agreements/g1/versions/v2')) {
         patchUrl = url;
-        return json({ id: 'v2', data: {} });
+        return json({ id: 'v2', content: {} });
       }
       if (url.includes('/v1/service-agreements/g1')) {
         return json(staffResponse);
@@ -458,10 +482,10 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /publish/i })).not.toBeInTheDocument();
 
-    // Verify empty services fallback is rendered
-    expect(screen.getByText(/Not attached to any service yet/i)).toBeInTheDocument();
+    // Feature 217: there is no "Associated services" section any more.
+    expect(screen.queryByText(/Not attached to any service yet/i)).toBeNull();
 
-    // Now, let's call the captured save mutation options manually to cover `formData.title` undefined branch!
+    // Call the captured save mutation directly to cover the content-parse branch.
     const saveOpt = capturedOptionsList.find((o) =>
       o.mutationFn?.toString().includes('updateAgreementDraft'),
     );

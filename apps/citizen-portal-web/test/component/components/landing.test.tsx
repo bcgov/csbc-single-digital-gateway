@@ -19,9 +19,8 @@ const services = [
 const applications = [
   {
     id: 'a1',
-    serviceId: 's2',
-    serviceVersionId: 'v1',
-    serviceTitle: 'Birth Registration',
+    formId: 'f1',
+    formVersionId: 'v1',
     formTitle: 'Birth Registration application',
     reference: '20250615-0003',
     status: 'in_review',
@@ -150,11 +149,11 @@ describe('citizen-portal-web home — signed in', () => {
     await renderHome();
     expect(await screen.findByRole('heading', { name: 'Hi, Amina' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Track your applications' })).toBeInTheDocument();
-    // The application row's status pill + subheading (application name • Ref # • last updated).
+    // Feature 217: the row's title is the FORM, and the subheading is Ref # • last updated —
+    // the owning service's name went with `document_references`.
     expect(await screen.findByText('Review')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Birth Registration application • Ref #20250615-0003/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Birth Registration application')).toBeInTheDocument();
+    expect(screen.getByText(/Ref #20250615-0003/)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Access government services online' })).toBeNull();
   });
 

@@ -12,8 +12,8 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    // @repo/react + @repo/ui (source via the `development` export) and @jsonforms/react must all share
-    // one React instance, or JSONForms/Lexical hooks throw.
+    // @repo/ui and @repo/forms (source via the `development` export) must share ONE React instance
+    // with the app, or their hooks throw.
     dedupe: ['react', 'react-dom'],
     alias: [
       // @repo/ui is consumed from source (its `development` export). Its internal `@ui/*` maps to
@@ -22,16 +22,15 @@ export default defineConfig({
       { find: '@', replacement: resolve(import.meta.dirname, 'src') },
     ],
   },
-  // The form-builder's @dnd-kit graph is reachable ONLY through the lazy /forms routes, so Vite
-  // wouldn't discover it at startup — first navigation would trigger a dep re-optimization + reload
-  // that 504s the in-flight dynamic import ("Failed to fetch dynamically imported module"). Pre-bundle
-  // these (incl. the @dnd-kit/dom/sortable subpath we import directly) so they're ready on boot.
+  // Reached only through lazy routes (or through @repo/ui / @repo/forms source), so Vite wouldn't
+  // discover them at startup — the first navigation would trigger a dep re-optimization + reload
+  // that 504s the in-flight dynamic import ("Failed to fetch dynamically imported module").
+  // Pre-bundle them so they're ready on boot.
+  //
+  // Feature 217 removed the @dnd-kit entries: they were the form-builder's drag graph, and the
+  // builder is gone.
   optimizeDeps: {
     include: [
-      '@dnd-kit/react',
-      '@dnd-kit/react/sortable',
-      '@dnd-kit/dom/sortable',
-      '@dnd-kit/helpers',
       '@xyflow/react',
       // Address geocoder search (feature 154) — reached only via the lazy form route through
       // @repo/ui source, so pre-bundle it or the first builder/preview nav 504s the dynamic import.

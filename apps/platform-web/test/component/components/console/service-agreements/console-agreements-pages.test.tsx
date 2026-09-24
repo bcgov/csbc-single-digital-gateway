@@ -31,21 +31,25 @@ import '@/routes/app.$slug.service-agreements.index';
 import '@/routes/app.$slug.service-agreements.new';
 import '@/routes/app.$slug.service-agreements.$id';
 
-vi.mock('@repo/react/jsonforms', () => ({
-  JsonForms: vi.fn(({ data, readonly, onChange }: any) => (
-    <div data-testid="mock-json-forms">
-      <label htmlFor="title-input">Title</label>
-      <input
-        id="title-input"
-        type="text"
-        value={data?.title ?? ''}
-        disabled={readonly}
-        onChange={(e) => {
-          onChange({ data: { ...data, title: e.target.value } });
-        }}
-      />
-    </div>
-  )),
+// Monaco can't run in jsdom — proxy it with a plain textarea (feature 217: the agreement editor
+// is a JSON content editor now, not a JSONForms form).
+vi.mock('@monaco-editor/react', () => ({
+  default: ({
+    value,
+    onChange,
+    options,
+  }: {
+    value: string;
+    onChange?: (v: string) => void;
+    options?: { readOnly?: boolean };
+  }) => (
+    <textarea
+      aria-label="content"
+      value={value}
+      onChange={(e) => onChange?.(e.target.value)}
+      readOnly={options?.readOnly}
+    />
+  ),
 }));
 
 afterEach(() => {
@@ -83,17 +87,25 @@ const detailResponse = {
     id: 'a1',
     workspaceId: 'w1',
     title: 'Workspace TOS',
-    kind: 'service-agreement',
+    type: 'service-agreement',
     createdAt: ISO,
   },
   versions: [
     {
       id: 'v1',
-      version: 1,
+      versionNumber: 1,
+      revision: 1,
       status: 'draft',
-      data: {
-        title: 'Workspace TOS',
-        body: 'Workspace agreement content.',
+      title: 'Workspace TOS',
+      description: null,
+      content: {
+        schema: {},
+        uischema: {
+          type: 'Form',
+          label: 'Workspace TOS',
+          elements: [],
+          options: { body: 'Workspace agreement content.' },
+        },
       },
       createdAt: ISO,
       publishedAt: null,
@@ -134,7 +146,13 @@ function setupMocks() {
             workspaceId: 'w1',
             createdAt: ISO,
           },
-          version: { id: 'v2', version: 1, status: 'draft', data: body.data, createdAt: ISO },
+          version: {
+            id: 'v2',
+            versionNumber: 1,
+            status: 'draft',
+            content: body.content,
+            createdAt: ISO,
+          },
         });
       }
 
@@ -171,12 +189,12 @@ describe('Console Agreements  Component Test Suite', () => {
     const modal = await screen.findByRole('dialog', { name: /new service agreement/i });
     expect(modal).toBeInTheDocument();
 
+    // Feature 217: the create modal collects a TITLE only.
     const titleInput = within(modal).getByLabelText(/title/i);
-    const descInput = within(modal).getByLabelText(/description/i);
+    expect(within(modal).queryByLabelText(/description/i)).toBeNull();
     const createBtn = within(modal).getByRole('button', { name: /create agreement/i });
 
     await userEvent.type(titleInput, 'New Custom TOS');
-    await userEvent.type(descInput, 'Description');
     await userEvent.click(createBtn);
 
     // Verify POST create endpoint was called
@@ -198,8 +216,9 @@ describe('Console Agreements  Component Test Suite', () => {
     ).toBeInTheDocument();
 
     expect(screen.getByRole('heading', { name: 'Workspace TOS' })).toBeInTheDocument();
-    const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
-    expect(titleInput.value).toBe('Workspace TOS');
+    // Feature 217: the editor is the version's content JSON, not a JSONForms title field.
+    const editor = screen.getByLabelText('content') as HTMLTextAreaElement;
+    expect(editor.value).toContain('Workspace TOS');
   });
 
   it('covers useWorkspaceScope loading state (undefined workspace)', () => {

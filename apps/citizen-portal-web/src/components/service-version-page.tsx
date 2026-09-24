@@ -5,13 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { History } from 'lucide-react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { type ApplicationMethod, ServiceSections } from '@/components/services/detail-sections';
-import { Breadcrumb } from '@/components/services/service-content';
-import {
-  type CatalogServiceVersion,
-  serviceQueryOptions,
-  serviceVersionQueryOptions,
-} from '@/lib/catalog';
+import { Breadcrumb } from '@/components/breadcrumb';
+import { type CatalogServiceVersion, serviceVersionQueryOptions } from '@/lib/catalog';
 
 const fmt = (iso: string | null): string | null =>
   iso ? new Date(iso).toLocaleDateString() : null;
@@ -25,42 +20,38 @@ function validityRange(version: CatalogServiceVersion): string {
   return '';
 }
 
-/** The loaded historical version, laid out exactly like the detail page + a historical header. */
+/** The loaded historical version: a historical header over the version's (unrendered) content. */
 function VersionDetail({
   serviceId,
   version,
-  applications,
 }: {
   serviceId: string;
   version: CatalogServiceVersion;
-  applications: readonly ApplicationMethod[];
 }) {
-  const description = version.data['description'];
   const range = validityRange(version);
   return (
     <>
       <Breadcrumb
         trail={[
           { label: 'Services', href: '/services' },
-          { label: version.title, href: `/services/${serviceId}` },
-          { label: `Version ${version.version}` },
+          { label: version.title ?? 'Service', href: `/services/${serviceId}` },
+          { label: `Version ${String(version.versionNumber)}` },
         ]}
       />
 
       <header className="flex flex-col gap-3 border-b pb-6">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">{version.title}</h1>
+          <h1 className="font-heading text-2xl font-semibold text-foreground">
+            {version.title ?? 'Service'}
+          </h1>
           <Badge color="yellow" className="capitalize">
             {version.status}
           </Badge>
         </div>
-        {typeof description === 'string' && description ? (
-          <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
-        ) : null}
         <div className="flex items-start gap-2 rounded-lg border-l-2 border-amber-500 bg-amber-50/50 p-3 text-xs text-muted-foreground">
           <History className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
           <span>
-            You’re viewing a historical version of this service (version {version.version}
+            You’re viewing a historical version of this service (version {version.versionNumber}
             {range ? ` · ${range}` : ''}).{' '}
             <Link
               to="/services/$serviceId"
@@ -74,29 +65,23 @@ function VersionDetail({
         </div>
       </header>
 
-      <ServiceSections
-        serviceId={serviceId}
-        schema={version.schema}
-        uischema={version.uischema}
-        data={version.data}
-        applications={applications}
-      />
+      {/* Feature 217: the sectioned render of the version's content is gone with the
+          `@repo/react` renderers. */}
+      <p className="text-sm text-muted-foreground">
+        The full service details are not available yet.
+      </p>
     </>
   );
 }
 
 /**
- * A historical service version (`/services/:serviceId/versions/:versionId`) — public. Same layout as
- * the service detail page, driven by the version's content, plus a historical banner + validity range
- * + a link to the current service. If the version IS the current published one, redirect to the
- * canonical `/services/:serviceId`.
+ * A historical service version (`/services/:serviceId/versions/:versionId`) — public. A historical
+ * banner + validity range + a link to the current service. If the version IS the current published
+ * one, redirect to the canonical `/services/:serviceId`.
  */
 export function ServiceVersionPage() {
   const { serviceId, versionId } = useParams({ from: '/services/$serviceId/versions/$versionId' });
   const version = useQuery(serviceVersionQueryOptions(serviceId, versionId));
-  // The current published version is redirected away in the route's beforeLoad; here `service` only
-  // supplies the (current) application methods for the shared "How to apply" section.
-  const service = useQuery(serviceQueryOptions(serviceId));
 
   return (
     <CitizenShell activeNav="services">
@@ -121,11 +106,7 @@ export function ServiceVersionPage() {
             </Button>
           </div>
         ) : (
-          <VersionDetail
-            serviceId={serviceId}
-            version={version.data}
-            applications={service.data?.applications ?? []}
-          />
+          <VersionDetail serviceId={serviceId} version={version.data} />
         )}
       </div>
     </CitizenShell>

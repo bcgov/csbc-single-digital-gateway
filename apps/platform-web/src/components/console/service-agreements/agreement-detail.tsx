@@ -33,6 +33,10 @@ import { AgreementDefaultToggle } from './agreement-default-toggle';
 import { AgreementEditor } from './agreement-editor';
 import type { AgreementScope } from './scope';
 
+// Feature 217: the editor is JSON text over the version's `content`, not a JSONForms `data` bag.
+const asText = (content: Record<string, unknown> | undefined) =>
+  JSON.stringify(content ?? {}, null, 2);
+
 /** Detail page — gates render on the query so the editor mounts WITH the data (memory
  * client-first-composite-write); the body owns the version selection + edit/publish state. */
 export function AgreementDetail({ scope, id }: { scope: AgreementScope; id: string }) {
@@ -55,22 +59,22 @@ function AgreementBody({
   const { data: user } = useAuth();
   const isAdmin = user?.roles.includes('admin') ?? false;
   const queryClient = useQueryClient();
-  const { versions, definition, agreement, services } = detail;
+  const { versions, agreement } = detail;
   const latest = versions[versions.length - 1];
   const [selectedId, setSelectedId] = useState(latest?.id ?? '');
   const selected = versions.find((v) => v.id === selectedId) ?? latest;
 
-  const [formData, setFormData] = useState<Record<string, unknown>>(selected?.data ?? {});
-  const [baseline, setBaseline] = useState<Record<string, unknown>>(selected?.data ?? {});
+  const [contentText, setContentText] = useState(asText(selected?.content));
+  const [baseline, setBaseline] = useState(asText(selected?.content));
   // Reseed when the SELECTED version identity changes (switch versions, or a new one after add).
   // Not keyed on the query data, so a save-triggered refetch never clobbers in-progress edits.
   useEffect(() => {
     const v = versions.find((x) => x.id === selectedId);
-    setFormData(v?.data ?? {});
-    setBaseline(v?.data ?? {});
+    setContentText(asText(v?.content));
+    setBaseline(asText(v?.content));
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const dirty = JSON.stringify(formData) !== JSON.stringify(baseline);
+  const dirty = contentText !== baseline;
   const isGlobal = agreement.workspaceId === null;
   // A global agreement is admin-only to edit; otherwise a draft is editable.
   const editable = selected?.status === 'draft' && (!isGlobal || isAdmin);
@@ -83,11 +87,16 @@ function AgreementBody({
       if (selected === undefined) {
         throw new Error('No version selected');
       }
-      const title = typeof formData.title === 'string' ? formData.title : undefined;
-      return updateAgreementDraft(id, selected.id, { data: formData, ...(title ? { title } : {}) });
+      let content: Record<string, unknown>;
+      try {
+        content = JSON.parse(contentText) as Record<string, unknown>;
+      } catch {
+        throw new Error('Content is not valid JSON.');
+      }
+      return updateAgreementDraft(id, selected.id, { content });
     },
     onSuccess: async () => {
-      setBaseline(formData);
+      setBaseline(contentText);
       await Promise.all([
         invalidate(),
         queryClient.invalidateQueries({ queryKey: ['service-agreements'] }),
@@ -135,7 +144,7 @@ function AgreementBody({
   // Console breadcrumb bar (workspace scope): Service agreements → this agreement, mirroring the
   // service detail (feature 44). No-ops in admin scope (no PageChromeProvider there).
   useSetPageChrome({
-    title: agreement.title,
+    title: agreement.title ?? 'Untitled',
     breadcrumb:
       scope.kind === 'workspace' ? (
         <Breadcrumb>
@@ -196,45 +205,16 @@ function AgreementBody({
         </div>
       </div>
       {/* The page owns its title heading now that the console shell no longer renders one. */}
-      <h1 className="text-xl font-semibold">{agreement.title}</h1>
+      {/* The title is generated from the version content, so it can be absent. */}
+      <h1 className="text-xl font-semibold">{agreement.title ?? 'Untitled'}</h1>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error.message}
         </p>
       ) : null}
       <div className="rounded-xl border border-border bg-card p-6">
-        <AgreementEditor
-          definition={definition}
-          data={formData}
-          onChange={setFormData}
-          readonly={!editable}
-        />
+        <AgreementEditor value={contentText} onChange={setContentText} readonly={!editable} />
       </div>
-
-      {/* The services that reference this shared agreement (it applies to each at current-published). */}
-      <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
-        <span className="text-sm font-medium">Associated services</span>
-        {services.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Not attached to any service yet — attach it from a service&apos;s Service agreements
-            tab.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {services.map((service) => (
-              <li key={service.id}>
-                <Link
-                  to="/app/$slug/services/$id"
-                  params={{ slug: service.workspaceSlug, id: service.id }}
-                  className="text-sm font-medium text-foreground hover:underline"
-                >
-                  {service.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
@@ -257,7 +237,7 @@ function VersionPicker({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button size="sm" variant="outline" type="button" />}>
-        Version v{selected?.version}
+        Version v{selected?.versionNumber}
         <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
@@ -267,7 +247,7 @@ function VersionPicker({
             className={version.id === selectedId ? 'font-semibold' : undefined}
             onClick={() => onSelect(version.id)}
           >
-            v{version.version}
+            v{version.versionNumber}
             <span className="ml-auto text-xs text-muted-foreground">{version.status}</span>
           </DropdownMenuItem>
         ))}

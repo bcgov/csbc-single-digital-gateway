@@ -1,6 +1,5 @@
-import { screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { afterEach, describe, it, vi } from 'vitest';
 import { getA11yMetadata } from '@/a11y/a11y-catalog';
 import { renderRoute } from './support/render-app';
 import { expectNoUnjustifiedA11yViolations } from './support/a11y';
@@ -22,7 +21,6 @@ const DEV_PAGES: { path: string; component?: string }[] = [
   { path: '/dev/accordion', component: 'accordion' },
   { path: '/dev/icons', component: 'icons' },
   { path: '/dev/status-banner', component: 'status-banner' },
-  { path: '/dev/form-elements', component: 'form-elements' },
   { path: '/dev/draggable' },
 ];
 

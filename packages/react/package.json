@@ -11,41 +11,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./form-runner": {
-      "types": "./dist/form-runner.d.ts",
-      "development": "./src/form-runner.ts",
-      "import": "./dist/form-runner.js",
-      "require": "./dist/form-runner.cjs"
-    },
-    "./jsonforms": {
-      "types": "./dist/jsonforms.d.ts",
-      "development": "./src/jsonforms.ts",
-      "import": "./dist/jsonforms.js",
-      "require": "./dist/jsonforms.cjs"
-    },
-    "./jsonforms-renderers": {
-      "types": "./dist/jsonforms-renderers.d.ts",
-      "development": "./src/jsonforms-renderers.ts",
-      "import": "./dist/jsonforms-renderers.js",
-      "require": "./dist/jsonforms-renderers.cjs"
-    },
-    "./jsonforms-renderers-display": {
-      "types": "./dist/jsonforms-renderers-display.d.ts",
-      "development": "./src/jsonforms-renderers-display.ts",
-      "import": "./dist/jsonforms-renderers-display.js",
-      "require": "./dist/jsonforms-renderers-display.cjs"
-    },
     "./notification-center": {
       "types": "./dist/notification-center.d.ts",
       "development": "./src/notification-center.ts",
       "import": "./dist/notification-center.js",
       "require": "./dist/notification-center.cjs"
-    },
-    "./uischema-edit": {
-      "types": "./dist/uischema-edit.d.ts",
-      "development": "./src/uischema-edit.ts",
-      "import": "./dist/uischema-edit.js",
-      "require": "./dist/uischema-edit.cjs"
     }
   },
   "files": [
@@ -60,15 +30,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnd-kit/helpers": "^0.5.0",
-    "@dnd-kit/react": "^0.5.0",
-    "@jsonforms/core": "^3.8.0",
-    "@jsonforms/react": "^3.8.0",
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
-    "@repo/ui": "*",
-    "lucide-react": "^1.21.0",
-    "nanoid": "^3.3.17"
+    "@repo/ui": "*"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.9.1",
@@ -77,7 +41,6 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
-    "ajv": "^8.20.0",
     "jsdom": "29.1.1",
     "react": "19.2.7",
     "react-dom": "19.2.7",

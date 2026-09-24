@@ -74,12 +74,12 @@ describe('Service Agreements Unit Test Suite', () => {
   it('creates an agreement', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { agreement: { id: 'a2' } }));
 
-    const result = await createAgreement({ workspaceId: 'w1', data: { title: 'TOS' } });
+    const result = await createAgreement({ workspaceId: 'w1', title: 'TOS' });
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/service-agreements', {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ workspaceId: 'w1', data: { title: 'TOS' } }),
+      body: JSON.stringify({ workspaceId: 'w1', title: 'TOS' }),
     });
     expect(result.agreement.id).toBe('a2');
   });
@@ -87,12 +87,14 @@ describe('Service Agreements Unit Test Suite', () => {
   it('updates an agreement draft', async () => {
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'v1' }));
 
-    const result = await updateAgreementDraft('a1', 'v1', { data: { title: 'New' } });
+    // Feature 217: a draft save writes the whole authored `content`, not a filled `data` bag.
+    const content = { schema: {}, uischema: { type: 'Form', label: 'New', elements: [] } };
+    const result = await updateAgreementDraft('a1', 'v1', { content });
     expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/service-agreements/a1/versions/v1', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ data: { title: 'New' } }),
+      body: JSON.stringify({ content }),
     });
     expect(result.id).toBe('v1');
   });

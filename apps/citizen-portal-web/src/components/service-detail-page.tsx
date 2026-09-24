@@ -4,15 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { PageHeaderBanner } from '@/components/layout/page-header-banner';
-import { ServiceSections } from '@/components/services/detail-sections';
-import { Breadcrumb } from '@/components/services/service-content';
+import { Breadcrumb } from '@/components/breadcrumb';
 import { serviceQueryOptions } from '@/lib/catalog';
+import { ServiceSections } from './services/detail-sections';
 
 /**
  * A single service's detail page (`/services/:serviceId`) — public (feature 60). Always shows the
  * current PUBLISHED version (no version switcher; a specific version is reachable only via its
- * permalink). Layout follows `inspiration/services-detail.png`: a sticky "On this page" rail beside
- * a sectioned overview (shared with the historical version page via `ServiceSections`).
+ * permalink).
+ *
+ * Feature 217: the sectioned overview (`ServiceSections`, a JSONForms render of the service's
+ * content) and the "ways to apply" list are gone with the `@repo/react` renderers and
+ * `document_references`. The page is the header — title, description and a disabled call to
+ * action — until `@repo/forms` renders the authored document.
  */
 export function ServiceDetailPage() {
   const { serviceId } = useParams({ from: '/services/$serviceId/' });
@@ -58,7 +62,7 @@ export function ServiceDetailPage() {
               trail={[
                 { label: 'Home', href: '/' },
                 { label: 'Services', href: '/services' },
-                { label: service.title },
+                { label: service.title ?? 'Service' },
               ]}
             />
           }
@@ -66,13 +70,17 @@ export function ServiceDetailPage() {
           <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col gap-1">
               <h1 className="font-heading text-2xl font-semibold text-foreground">
-                {service.title}
+                {service.title ?? 'Service'}
               </h1>
               {service.description ? (
                 <p className="max-w-2xl text-sm text-muted-foreground">{service.description}</p>
               ) : null}
             </div>
-            <Button className="shrink-0">Start an application</Button>
+            {/* Feature 217: there is no way to apply to link to until documents can reference
+                one another again. */}
+            <Button className="shrink-0" disabled>
+              Start an application
+            </Button>
           </header>
         </PageHeaderBanner>
 

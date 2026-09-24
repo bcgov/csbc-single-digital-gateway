@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NotificationCenter, type NotificationItem } from '@repo/react/notification-center';
+import { NotificationCenter } from '@repo/react/notification-center';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 
@@ -47,14 +47,11 @@ export function HeaderNotifications() {
   const markRead = useMutation({ mutationFn: markNotificationRead, onSuccess: invalidate });
   const markAllRead = useMutation({ mutationFn: markAllNotificationsRead, onSuccess: invalidate });
 
-  const handleItemClick = (item: NotificationItem) => {
-    // The module's item is the render subset — resolve the full feed item for its payload.
-    const full = feed.data?.items.find((i) => i.deliveryId === item.deliveryId);
-    const submissionId = full?.payload?.['submissionId'];
-    if (typeof submissionId === 'string' && submissionId !== '') {
-      setOpen(false);
-      void navigate({ to: '/applications/$id', params: { id: submissionId } });
-    }
+  // Feature 217: clicking a notification navigated to `/applications/:id`, which went with the
+  // `@repo/react` renderers. Until `@repo/forms` renders a submission there is nowhere to go, so a
+  // click just closes the panel and marking-read still works.
+  const handleItemClick = () => {
+    setOpen(false);
   };
 
   return (

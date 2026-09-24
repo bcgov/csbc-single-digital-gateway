@@ -1,54 +1,27 @@
 import { Badge } from '@repo/ui/badge';
-import { Card, CardHeader, CardTitle, CardDescription } from '@repo/ui/card';
-import { mdiChevronRight } from '@mdi/js';
-import { Icon } from '@mdi/react';
-import { Link } from '@tanstack/react-router';
+import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import type { MyApplication } from '@/lib/catalog';
 
 /**
- * One tracked application, linking to the application page (`/applications/:id`). A thick blue left
- * accent; the title (with the status pill to its right) and a single metadata line below it. Shared
- * by "Track your applications" (home) and a service's "Your activity"; `titleBy` selects which name
- * leads:
- * - `'service'` (default, home — disambiguates across services): title = service name; meta =
- *   `<application name> • Ref #<reference> • <last updated>`.
- * - `'application'` (a service's own "Your activity", where the service is implicit): title =
- *   application/form name; meta = `Ref #<reference> • <last updated>` (the form name is the title,
- *   so it is not repeated).
+ * One tracked application. A thick blue left accent; the title (with the status pill to its right)
+ * and a single metadata line below it.
+ *
+ * Feature 217: the row used to link to `/applications/:id` and to lead with the owning SERVICE's
+ * name. The application page went with the `@repo/react` renderers, and a submission no longer
+ * knows its service, so the row leads with the form it was made on and is not a link. Both come
+ * back when `@repo/forms` renders a submission and documents can reference one another again.
  */
-export function ApplicationRow({
-  application,
-  titleBy = 'service',
-}: {
-  application: MyApplication;
-  titleBy?: 'service' | 'application';
-}) {
-  const byApplication = titleBy === 'application';
+export function ApplicationRow({ application }: { application: MyApplication }) {
   return (
     <Card className="border-l-4 border-l-blue-70">
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
-          <CardTitle>
-            <Link
-              to="/applications/$id"
-              params={{ id: application.id }}
-              className="no-underline hover:underline"
-            >
-              {byApplication ? application.formTitle : application.serviceTitle}
-              <Icon
-                path={mdiChevronRight}
-                size="20px"
-                className="inline-flex text-link"
-                aria-hidden={true}
-              />
-            </Link>
-          </CardTitle>
+          <CardTitle>{application.formTitle ?? 'Application'}</CardTitle>
           <Badge color="yellow" className="shrink-0">
             {application.statusLabel}
           </Badge>
         </div>
         <CardDescription>
-          {byApplication ? null : <>{application.formTitle} &#8226; </>}
           Ref #{application.reference} &#8226;{' '}
           {new Date(application.lastUpdated).toLocaleDateString()}
         </CardDescription>

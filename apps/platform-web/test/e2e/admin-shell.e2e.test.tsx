@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
 import '@/routes/admin';
-import '@/routes/admin.document-types';
-import '@/routes/admin.document-types.index';
+import '@/routes/admin.templates';
+import '@/routes/admin.templates.index';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -29,14 +29,14 @@ describe('Admin Shell Integration Test Suite', () => {
       await screen.findByText(/admin overview is being set up/i, {}, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/admin');
-    expect(screen.getByRole('link', { name: 'Document Types' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Templates' })).toHaveAttribute(
       'href',
-      '/admin/document-types',
+      '/admin/templates',
     );
     expect(screen.getByRole('link', { name: 'Back to app' })).toHaveAttribute('href', '/app');
   });
 
-  it('renders the Document Types placeholder at /admin/document-types', async () => {
+  it('renders the Templates placeholder at /admin/templates', async () => {
     mockAuth(adminUser);
     renderApp('/admin/document-types');
     expect(
@@ -49,7 +49,7 @@ describe('Admin Shell Integration Test Suite', () => {
     const { router } = renderApp('/admin');
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/app'));
-    expect(screen.queryByRole('link', { name: 'Document Types' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Templates' })).not.toBeInTheDocument();
   });
 });
 

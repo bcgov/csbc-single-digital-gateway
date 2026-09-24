@@ -15,20 +15,11 @@ export default defineConfig({
   // lazily code-split form route via @repo/ui source, so Vite's scanner may miss it — pre-bundle it
   // explicitly or the first form navigation 504s the dynamic import.
   optimizeDeps: {
-    include: [
-      'react-select',
-      'react-select-async-paginate',
-      'use-mask-input',
-      // Accordion group field (feature 171) — reached only via the lazy form route through
-      // @repo/react source, so pre-bundle it or the first application nav 504s the dynamic import.
-      '@dnd-kit/react',
-      '@dnd-kit/react/sortable',
-      '@dnd-kit/helpers',
-    ],
+    include: ['react-select', 'react-select-async-paginate', 'use-mask-input'],
   },
   resolve: {
-    // @repo/react + @repo/ui (source via the `development` export) and @jsonforms/react / Lexical
-    // must all share ONE React instance, or hooks throw.
+    // @repo/ui (source via the `development` export) must share ONE React instance with the app,
+    // or its hooks throw.
     dedupe: ['react', 'react-dom'],
     alias: [
       // @repo/ui is consumed from source (its `development` export). Its internal `@ui/*` maps to

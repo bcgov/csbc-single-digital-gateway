@@ -19,8 +19,6 @@ const mockWorkspace = {
 const submissionsList = [
   {
     id: 'sub-1',
-    serviceId: 'srv-1',
-    serviceTitle: 'Business License',
     formId: 'frm-1',
     formTitle: 'Application Form',
     applicantName: 'Alice Smith',
@@ -33,8 +31,6 @@ const submissionsList = [
   },
   {
     id: 'sub-2',
-    serviceId: 'srv-1',
-    serviceTitle: 'Business License',
     formId: 'frm-1',
     formTitle: 'Application Form',
     applicantName: 'Bob Jones',
@@ -131,7 +127,8 @@ describe('SubmissionsPage Component Test Suite', () => {
     ).toBeInTheDocument();
 
     // Verify service and form labels render
-    expect(screen.getAllByText('Business License')).toHaveLength(2);
+    // Feature 217: the Service column is gone — the row names the FORM it was made on.
+    expect(screen.getAllByText('Application Form')).toHaveLength(2);
     expect(screen.getAllByText('Application Form')).toHaveLength(2);
   });
 
@@ -179,8 +176,6 @@ describe('SubmissionsPage Component Test Suite', () => {
     const nullDateSubmission = [
       {
         id: 'sub-3',
-        serviceId: 'srv-1',
-        serviceTitle: 'Business License',
         formId: 'frm-1',
         formTitle: 'Application Form',
         applicantName: 'Charlie Brown',
@@ -206,8 +201,6 @@ describe('SubmissionsPage Component Test Suite', () => {
       ...submissionsList,
       {
         id: 'sub-3',
-        serviceId: 'srv-1',
-        serviceTitle: 'Business License',
         formId: 'frm-1',
         formTitle: 'Application Form',
         applicantName: 'Charlie Brown',
@@ -220,8 +213,6 @@ describe('SubmissionsPage Component Test Suite', () => {
       },
       {
         id: 'sub-4',
-        serviceId: 'srv-1',
-        serviceTitle: 'Business License',
         formId: 'frm-1',
         formTitle: 'Application Form',
         applicantName: 'Diana Prince',
