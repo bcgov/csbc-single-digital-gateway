@@ -13,11 +13,12 @@ const form = (label: string | undefined, keys: string[] = [], options?: object) 
   el({
     ...(label === undefined ? {} : { label }),
     type: 'Form',
-    options: { id: `${label ?? 'untitled'}-id`, ...options },
+    id: `${label ?? 'untitled'}-id`,
+    options: { ...options },
     elements: keys.map(control),
   });
 const stage = (id: string, label: string, forms: object[]) =>
-  el({ type: 'Stage', label, elements: forms, options: { id } });
+  el({ type: 'Stage', label, elements: forms, id });
 const flow = (elements: object[], options: object = {}) => el({ type: 'Flow', elements, options });
 
 /** The synthesised root, typed enough to read. */

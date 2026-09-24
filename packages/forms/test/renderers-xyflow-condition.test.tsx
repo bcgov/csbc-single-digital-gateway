@@ -37,12 +37,13 @@ const criterion = (id: string, patch: object = {}) => ({
   clauses: [{ id: `cl-${id}`, field: 'k1', operator: 'equals', value: 'x', ...patch }],
 });
 const stage = (id: string, label = id.toUpperCase()) =>
-  el({ type: 'Stage', label, options: { id }, elements: [] });
+  el({ type: 'Stage', label, id, elements: [] });
 const condition = (id: string, rows: object[] = [], label?: string) =>
   el({
     type: 'Condition',
     ...(label === undefined ? {} : { label }),
-    options: { id, rows },
+    id,
+    options: { rows },
   });
 const flow = (elements: object[], edges: object[] = []) =>
   el({ type: 'Flow', elements, options: { edges } });

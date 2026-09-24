@@ -1,3 +1,4 @@
+import { authoredId } from '../renderers/ui/authored-id';
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { FORM_TYPE } from '../renderers/gridstack/grid-layouts';
 import {
@@ -73,8 +74,8 @@ export function stageFormsOf(stage: UISchemaElement): StageForm[] {
   for (const element of elementsOf(stage)) {
     if (element.type !== FORM_TYPE) continue;
     const index = forms.length;
-    const authored = element.options?.['id'];
-    if (typeof authored === 'string' && authored !== '' && !used.has(authored)) {
+    const authored = authoredId(element);
+    if (authored !== undefined && !used.has(authored)) {
       used.add(authored);
       forms.push({ element, index, id: authored, authored: true });
       continue;

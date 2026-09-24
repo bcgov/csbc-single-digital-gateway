@@ -176,12 +176,12 @@ describe('the flow metaschema (rules 30, 39)', () => {
         ],
       },
       elements: [
-        { type: 'Stage', label: 'Start', options: { id: 'a' }, elements: [] },
+        { type: 'Stage', label: 'Start', id: 'a', elements: [] },
         {
           type: 'Condition',
           label: 'Needs support',
+          id: 'x',
           options: {
-            id: 'x',
             rows: [
               {
                 id: 'r1',
@@ -192,8 +192,8 @@ describe('the flow metaschema (rules 30, 39)', () => {
             ],
           },
         },
-        { type: 'Stage', label: 'Yes', options: { id: 'b' }, elements: [] },
-        { type: 'Stage', label: 'No', options: { id: 'c' }, elements: [] },
+        { type: 'Stage', label: 'Yes', id: 'b', elements: [] },
+        { type: 'Stage', label: 'No', id: 'c', elements: [] },
       ],
     }) as unknown as UISchemaElement;
 

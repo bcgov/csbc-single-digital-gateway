@@ -1,3 +1,4 @@
+import { authoredId } from '../ui/authored-id';
 import type { JsonSchema, LayoutProps, UISchemaElement } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
 import { mdiCallSplit, mdiPlus } from '@mdi/js';
@@ -79,7 +80,7 @@ function ConditionLayout({ uischema, visible }: LayoutProps) {
   const oneField = switchField(rows);
   const mode = oneField === undefined ? 'rules' : conditionMode(uischema);
   const conditionId = editor ? editor.idOf(uischema) : null;
-  const nodeId = typeof uischema.options?.['id'] === 'string' ? uischema.options['id'] : '';
+  const nodeId = authoredId(uischema) ?? '';
   const fields = editor && conditionId !== null ? editor.fieldsFor(conditionId) : [];
   const wired = (handle: string) => connected?.has(handle) ?? true;
   // Rule 34: the FIRST row naming each optional field carries its hint, so a field is flagged once.

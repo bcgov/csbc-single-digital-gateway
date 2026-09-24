@@ -10,7 +10,7 @@ const el = (element: object) => element as UISchemaElement;
 const control = el({ type: 'Control', scope: '#/properties/a' });
 const grid = el({ type: 'Grid', elements: [control] });
 const contact = el({ type: 'Form', label: 'Contact', elements: [grid] });
-const applicant = el({ type: 'Stage', options: { id: 's1' }, elements: [contact] });
+const applicant = el({ type: 'Stage', id: 's1', elements: [contact] });
 const FLOW = el({ type: 'Flow', elements: [applicant] });
 
 describe('canvasFocusId (rule 12)', () => {

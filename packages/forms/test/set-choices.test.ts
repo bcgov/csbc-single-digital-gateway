@@ -120,13 +120,13 @@ describe('the rename cascade (rules 21-22)', () => {
       elements: [
         {
           type: 'Stage',
-          options: { id: 's1' },
+          id: 's1',
           elements: [{ type: 'Form', elements: [{ type: 'Control', scope: '#/properties/k1' }] }],
         },
         {
           type: 'Condition',
+          id: 'x',
           options: {
-            id: 'x',
             rows: [
               {
                 id: 'r1',

@@ -15,8 +15,8 @@ const stage = (id: string, label: string) =>
   el({
     type: 'Stage',
     label,
-    options: { id },
-    elements: [{ type: 'Form', label: `Form ${id}`, options: { id: `f-${id}` }, elements: [] }],
+    id,
+    elements: [{ type: 'Form', label: `Form ${id}`, id: `f-${id}`, elements: [] }],
   });
 
 /** s1 → s2, one plain edge — the simplest thing that can be selected. */

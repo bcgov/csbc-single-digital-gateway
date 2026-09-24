@@ -1,7 +1,8 @@
+import { authoredId } from '../renderers/ui/authored-id';
 import type { UISchemaElement } from '@jsonforms/core';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { CriterionField } from '../renderers/xyflow/criteria';
-import { authoredStageId } from '../renderers/xyflow/flow-elements';
+
 import type { FlowEditor, FlowGesture } from '../renderers/xyflow/flow-editor';
 import type { EdgePatch } from '../renderers/xyflow/flow-gestures';
 import { connectionProblem } from '../renderers/xyflow/flow-gestures';
@@ -51,7 +52,7 @@ function fieldsOf(
 ): CriterionField[] {
   const element = findById(document.uischema as TreeElement, conditionId, ids);
   // `upstreamFieldsOf` walks the graph, so it needs the node's AUTHORED id, not its studio one.
-  const authored = element ? authoredStageId(element) : undefined;
+  const authored = element ? authoredId(element) : undefined;
   return authored === undefined ? [] : upstreamFieldsOf(document, authored);
 }
 

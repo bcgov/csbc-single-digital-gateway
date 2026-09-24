@@ -24,12 +24,12 @@ const flowDocument = () =>
       {
         type: 'Stage',
         label: 'Applicant',
-        options: { id: 's1' },
+        id: 's1',
         elements: [
           {
             type: 'Form',
             label: 'Contact',
-            options: { id: 'f1' },
+            id: 'f1',
             elements: [{ type: 'Control', scope: '#/properties/name' }],
           },
           { type: 'Form', label: 'Plain', elements: [] },
@@ -38,8 +38,8 @@ const flowDocument = () =>
       {
         type: 'Stage',
         label: 'Review',
-        options: { id: 's2' },
-        elements: [{ type: 'Form', label: 'Decision', options: { id: 'f3' }, elements: [] }],
+        id: 's2',
+        elements: [{ type: 'Form', label: 'Decision', id: 'f3', elements: [] }],
       },
     ],
   });
@@ -143,13 +143,18 @@ describe('studio → host (rule 10)', () => {
     expect(flowCanvas()).not.toBeNull();
   });
 
-  it('reports null for a focused Form that has no authored id, inventing nothing', async () => {
+  // Doc 219 SUPERSEDES doc 197 rule 10. Seed normalisation stamps an id on every id-less element, so a Form
+  // without an address no longer exists in an open document — the studio now always has one to report, and
+  // every Form is deep-linkable. Rule 10 existed precisely because an un-addressed Form could not be.
+  it('reports an address for a Form authored without one, because seeding stamps every element', async () => {
     const onChange = vi.fn();
     render(<FormStudio schema={schema} uischema={FLOW} onFocusedFormChange={onChange} />);
     await open('Plain');
 
     await waitFor(() => expect(rootFrameType()).toBe('Form'));
-    expect(onChange.mock.calls.every(([formId]) => formId === null)).toBe(true);
+    const reported = onChange.mock.calls.map(([formId]) => formId);
+    expect(reported.length).toBeGreaterThan(0);
+    expect(reported.every((formId) => typeof formId === 'string' && formId !== '')).toBe(true);
   });
 });
 
@@ -201,7 +206,7 @@ describe('self-healing (rule 11)', () => {
 
     const without = el({
       type: 'Flow',
-      elements: [{ type: 'Stage', label: 'Review', options: { id: 's2' }, elements: [] }],
+      elements: [{ type: 'Stage', label: 'Review', id: 's2', elements: [] }],
     });
     rerender(
       <FormStudio

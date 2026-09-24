@@ -26,8 +26,8 @@ const stage = (id: string, label: string) =>
   el({
     type: 'Stage',
     label,
-    options: { id },
-    elements: [{ type: 'Form', label: `Form ${id}`, options: { id: `f-${id}` }, elements: [] }],
+    id,
+    elements: [{ type: 'Form', label: `Form ${id}`, id: `f-${id}`, elements: [] }],
   });
 
 const flowOf = (stages: object[], pairs: [string, string][]) =>

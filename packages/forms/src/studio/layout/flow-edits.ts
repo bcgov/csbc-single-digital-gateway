@@ -1,6 +1,6 @@
+import { authoredId } from '../../renderers/ui/authored-id';
 import type { UISchemaElement } from '@jsonforms/core';
 import {
-  authoredStageId,
   drawnNodes,
   FLOW_TYPE,
   STAGE_TYPE,
@@ -115,7 +115,7 @@ function withElseStage(
   const edge = {
     id: freshId(new Set(edges.map(edgeIdOf)), newId),
     source: conditionId,
-    target: authoredStageId(stage) as string,
+    target: authoredId(stage) as string,
   };
   return withOptions(withStage, { edges: [...edges, edge] }, ids);
 }
@@ -145,7 +145,7 @@ export function insertNode(
   const startless = startStageId(root) === undefined;
 
   const node = newNodeElement(root, kind, newId);
-  const id = authoredStageId(node) as string;
+  const id = authoredId(node) as string;
 
   let next = withElements(root, [...(root.elements ?? []), node], ids);
   if (drawn?.authored) {
@@ -196,7 +196,7 @@ export function insertStageBetween(
   if (!split) return { uischema, inserted: undefined };
 
   const stage = newNodeElement(root, kind, newId);
-  const stageId = authoredStageId(stage) as string;
+  const stageId = authoredId(stage) as string;
   let next = withElements(root, [...(root.elements ?? []), stage], ids);
 
   const edges = rawEdges(next);

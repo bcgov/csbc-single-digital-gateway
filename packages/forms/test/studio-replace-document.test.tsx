@@ -37,15 +37,21 @@ describe('useStudioDocument replaceDocument (doc 191)', () => {
         type: 'object',
         properties: { a: { type: 'string', title: 'Renamed' } },
       };
+      // Doc 219: the studio holds the NORMALISED seed, so identity is against that, not the raw prop.
+      const seeded = result.current.uischema;
       act(() => result.current.replaceDocument({ schema: next }));
       expect(result.current.schema).toBe(next);
-      expect(result.current.uischema).toBe(UISCHEMA);
+      expect(result.current.uischema).toBe(seeded);
       expect(result.current.pathOf(null)).toHaveLength(1);
     });
 
     it('replaces only the uischema when given only a uischema', () => {
       const { result } = renderHook(() => useStudioDocument(SOURCE));
-      const next = copy(UISCHEMA) as UISchemaElement & { elements: { text?: string }[] };
+      // Doc 219: build from the SEEDED (stamped) document, as a code-panel round-trip does — then every
+      // element already has an id, `stampMissingIds` is a no-op, and identity is preserved.
+      const next = copy(result.current.uischema) as UISchemaElement & {
+        elements: { text?: string }[];
+      };
       next.elements[0] = { ...next.elements[0], text: 'Changed' };
       act(() => result.current.replaceDocument({ uischema: next }));
       expect(result.current.uischema).toBe(next);
@@ -55,9 +61,12 @@ describe('useStudioDocument replaceDocument (doc 191)', () => {
     it('keeps the current objects when both halves are structurally equal', () => {
       const { result } = renderHook(() => useStudioDocument(SOURCE));
       const before = result.current;
-      act(() => result.current.replaceDocument({ schema: copy(SCHEMA), uischema: copy(UISCHEMA) }));
+      // Doc 219: the code panel shows the NORMALISED document, so what it applies back carries the ids.
+      // Copying the seeded uischema is what a real round-trip through the panel looks like.
+      const seeded = result.current.uischema;
+      act(() => result.current.replaceDocument({ schema: copy(SCHEMA), uischema: copy(seeded) }));
       expect(result.current.schema).toBe(SCHEMA);
-      expect(result.current.uischema).toBe(UISCHEMA);
+      expect(result.current.uischema).toBe(seeded);
       expect(result.current.elementTypes).toBe(before.elementTypes);
       expect(result.current.inspectorFor).toBe(before.inspectorFor);
     });
@@ -94,7 +103,9 @@ describe('useStudioDocument replaceDocument (doc 191)', () => {
       act(() => result.current.selection.select(gridId ?? null));
       expect(result.current.selection.port.selectedId).toBe(gridId);
 
-      const next = copy(UISCHEMA) as UISchemaElement & { elements: { text?: string }[] };
+      const next = copy(result.current.document.uischema) as UISchemaElement & {
+        elements: { text?: string }[];
+      };
       next.elements[0] = { ...next.elements[0], text: 'Changed' };
       act(() => result.current.document.replaceDocument({ uischema: next }));
       expect(result.current.document.uischema).toBe(next);

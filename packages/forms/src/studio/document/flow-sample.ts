@@ -105,12 +105,12 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Stage',
       label: 'Applicant',
-      options: { id: APPLICANT_STAGE },
+      id: APPLICANT_STAGE,
       elements: [
         {
           type: 'Form',
           label: 'Your details',
-          options: { id: DETAILS_FORM },
+          id: DETAILS_FORM,
           elements: [
             { type: 'Control', scope: `#/properties/${FULL_NAME}` },
             { type: 'Control', scope: `#/properties/${EMAIL}` },
@@ -122,8 +122,8 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Condition',
       label: 'Applicant type',
+      id: TYPE_CONDITION,
       options: {
-        id: TYPE_CONDITION,
         rows: [
           {
             id: IS_BUSINESS,
@@ -144,12 +144,12 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Stage',
       label: 'Business',
-      options: { id: BUSINESS_STAGE },
+      id: BUSINESS_STAGE,
       elements: [
         {
           type: 'Form',
           label: 'About the business',
-          options: { id: BUSINESS_FORM },
+          id: BUSINESS_FORM,
           elements: [
             { type: 'Control', scope: `#/properties/${BUSINESS_NAME}` },
             { type: 'Control', scope: `#/properties/${BUSINESS_NUMBER}` },
@@ -160,12 +160,12 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Stage',
       label: 'Individual',
-      options: { id: INDIVIDUAL_STAGE },
+      id: INDIVIDUAL_STAGE,
       elements: [
         {
           type: 'Form',
           label: 'About you',
-          options: { id: INDIVIDUAL_FORM },
+          id: INDIVIDUAL_FORM,
           elements: [{ type: 'Control', scope: `#/properties/${MAILING_ADDRESS}` }],
         },
       ],
@@ -173,12 +173,12 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Stage',
       label: 'Supporting information',
-      options: { id: SUPPORTING_STAGE },
+      id: SUPPORTING_STAGE,
       elements: [
         {
           type: 'Form',
           label: 'Tell us more',
-          options: { id: SUPPORTING_FORM },
+          id: SUPPORTING_FORM,
           elements: [
             {
               type: 'Control',
@@ -193,8 +193,8 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Condition',
       label: 'Inspection needed',
+      id: INSPECTION_CONDITION,
       options: {
-        id: INSPECTION_CONDITION,
         rows: [
           {
             id: NEEDS_INSPECTION,
@@ -211,12 +211,12 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Stage',
       label: 'Inspection',
-      options: { id: INSPECTION_STAGE },
+      id: INSPECTION_STAGE,
       elements: [
         {
           type: 'Form',
           label: 'Book an inspection',
-          options: { id: INSPECTION_FORM },
+          id: INSPECTION_FORM,
           elements: [{ type: 'Control', scope: `#/properties/${PREFERRED_DATE}` }],
         },
       ],
@@ -224,12 +224,12 @@ export const FLOW_TEMPLATE_UISCHEMA: FlowElement = {
     {
       type: 'Stage',
       label: 'Review',
-      options: { id: REVIEW_STAGE },
+      id: REVIEW_STAGE,
       elements: [
         {
           type: 'Form',
           label: 'Confirm and submit',
-          options: { id: CONFIRM_FORM },
+          id: CONFIRM_FORM,
           elements: [{ type: 'Control', scope: `#/properties/${CONFIRMED}` }],
         },
       ],

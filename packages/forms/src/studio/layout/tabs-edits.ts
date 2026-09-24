@@ -1,4 +1,6 @@
 import type { UISchemaElement } from '@jsonforms/core';
+import { stampMissingIds } from './stamp-ids';
+import { allIdsUsed } from './form-address';
 import { TABS_TYPE, TAB_CONTENT_TYPE, TAB_TYPE } from '../../renderers/gridstack/grid-layouts';
 import type { ElementIds } from './element-ids';
 import { findById, updateById, withElements, type TreeElement } from './element-tree';
@@ -64,7 +66,9 @@ export function addTab(
   const tabs = findById(root, tabsId, ids);
   if (tabs?.type !== TABS_TYPE) return { uischema, inserted: undefined };
 
-  const tab = newTabElement(tabs);
+  // Doc 219 rule 4: every element carries an authored id, and a Tab is built here rather than through
+  // `insertElement`, so it is stamped here too — against the whole document's ids, not just this Tabs'.
+  const tab = stampMissingIds(newTabElement(tabs), undefined, allIdsUsed(uischema)) as TreeElement;
   const next = updateById(
     root,
     tabsId,

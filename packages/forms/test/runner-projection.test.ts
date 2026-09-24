@@ -18,10 +18,10 @@ const stage = (id: string, forms = 1) =>
   el({
     type: 'Stage',
     label: id,
-    options: { id },
+    id,
     elements: Array.from({ length: forms }, (_, index) => ({
       type: 'Form',
-      options: { id: `${id}-f${index}` },
+      id: `${id}-f${index}`,
       elements: [],
     })),
   });
@@ -29,8 +29,8 @@ const stage = (id: string, forms = 1) =>
 const condition = (id: string, field: string, value = 'yes') =>
   el({
     type: 'Condition',
+    id,
     options: {
-      id,
       rows: [
         {
           id: `c-${id}`,
@@ -93,9 +93,11 @@ const template = (visited: string[], data: object = {}, required: string[] = [])
     data: data as Record<string, unknown>,
   };
   const labels = new Map(
-    (FLOW_TEMPLATE_UISCHEMA.elements as { label?: string; options?: { id?: string } }[]).map(
-      (element) => [element.options?.id, element.label],
-    ),
+    // Doc 219: the authored id is a top-level sibling, not an option.
+    (FLOW_TEMPLATE_UISCHEMA.elements as { label?: string; id?: string }[]).map((element) => [
+      element.id,
+      element.label,
+    ]),
   );
   const ids = visited.map((label) => [...labels].find(([, name]) => name === label)?.[0] ?? label);
   const set = new Set(ids);

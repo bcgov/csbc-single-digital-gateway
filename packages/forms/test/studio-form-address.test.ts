@@ -1,23 +1,24 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it, vi } from 'vitest';
+import { authoredId } from '../src/renderers/ui/authored-id';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import { insertForm, insertStage } from '../src/studio/layout/flow-edits';
 import {
   addressOf,
-  authoredFormId,
   authoredIdsUsed,
   formIdsUsed,
   resolveAddress,
 } from '../src/studio/layout/form-address';
 
-// Doc 197 rules 1-5 — the Form address: an authored `options.id` that survives a reload, unlike the
+// Doc 197 rules 1-5 — the Form address: an authored TOP-LEVEL id (doc 219) that survives a reload, unlike the
 // per-mount studio ids. Pure module (`studio/layout/form-address.ts`), so no React and no rendering.
 
 type Element = UISchemaElement & { elements?: Element[] };
 const el = (element: object) => element as Element;
 
-const form = (options?: object, label = 'Form') =>
-  el({ type: 'Form', label, elements: [], ...(options ? { options } : {}) });
+// Doc 219: `extra` spreads at the ELEMENT level — the authored id is a top-level sibling, not an option.
+const form = (extra?: object, label = 'Form') =>
+  el({ type: 'Form', label, elements: [], ...extra });
 
 /** Flow [ Applicant [ contact 'f1', plain (no id) ], Review [ decision 'f3' ] ]. */
 function fixture() {
@@ -27,13 +28,13 @@ function fixture() {
   const applicant = el({
     type: 'Stage',
     label: 'Applicant',
-    options: { id: 's1' },
+    id: 's1',
     elements: [contact, plain],
   });
   const review = el({
     type: 'Stage',
     label: 'Review',
-    options: { id: 's2' },
+    id: 's2',
     elements: [decision],
   });
   const flow = el({ type: 'Flow', elements: [applicant, review] });
@@ -50,18 +51,18 @@ const ids = (...values: string[]) => {
   });
 };
 
-describe('authoredFormId (rule 1)', () => {
-  it('returns options.id when it is a non-empty string', () => {
-    expect(authoredFormId(form({ id: 'abcd1234' }))).toBe('abcd1234');
-    expect(authoredFormId(form({ id: 'f1', gap: 'lg' }))).toBe('f1');
+describe('authoredId (rule 1, doc 219)', () => {
+  it('returns the top-level id when it is a non-empty string', () => {
+    expect(authoredId(form({ id: 'abcd1234' }))).toBe('abcd1234');
+    expect(authoredId(form({ id: 'f1', options: { gap: 'lg' } }))).toBe('f1');
   });
 
   it('returns undefined for an absent, empty or non-string options.id', () => {
-    expect(authoredFormId(form())).toBeUndefined();
-    expect(authoredFormId(form({ gap: 'md' }))).toBeUndefined();
-    expect(authoredFormId(form({ id: '' }))).toBeUndefined();
-    expect(authoredFormId(form({ id: 7 }))).toBeUndefined();
-    expect(authoredFormId(form({ id: null }))).toBeUndefined();
+    expect(authoredId(form())).toBeUndefined();
+    expect(authoredId(form({ options: { gap: 'md' } }))).toBeUndefined();
+    expect(authoredId(form({ id: '' }))).toBeUndefined();
+    expect(authoredId(form({ id: 7 }))).toBeUndefined();
+    expect(authoredId(form({ id: null }))).toBeUndefined();
   });
 });
 
@@ -125,8 +126,8 @@ describe('resolveAddress (rules 2-3)', () => {
     const flow = el({
       type: 'Flow',
       elements: [
-        el({ type: 'Stage', options: { id: 's1' }, elements: [first] }),
-        el({ type: 'Stage', options: { id: 's2' }, elements: [second] }),
+        el({ type: 'Stage', id: 's1', elements: [first] }),
+        el({ type: 'Stage', id: 's2', elements: [second] }),
       ],
     });
     const elementIds = createElementIds();
@@ -155,7 +156,7 @@ describe('insertForm / insertStage stamp a Form id (rules 4-5)', () => {
     const elementIds = createElementIds();
     const result = insertForm(flow, elementIds.idOf(applicant), elementIds, ids('newform1'));
 
-    expect(authoredFormId(result.inserted as UISchemaElement)).toBe('newform1');
+    expect(authoredId(result.inserted as UISchemaElement)).toBe('newform1');
     expect(formIdsUsed(result.uischema)).toEqual(new Set(['f1', 'f3', 'newform1']));
   });
 
@@ -165,9 +166,9 @@ describe('insertForm / insertStage stamp a Form id (rules 4-5)', () => {
     const result = insertStage(flow, null, elementIds, ids('newstage', 'newform1'));
 
     const stage = result.inserted as Element;
-    expect(stage.options?.['id']).toBe('newstage');
+    expect(authoredId(stage)).toBe('newstage');
     const inner = stage.elements?.[0] as UISchemaElement;
-    expect(authoredFormId(inner)).toBe('newform1');
+    expect(authoredId(inner)).toBe('newform1');
     expect(formIdsUsed(result.uischema)).toEqual(new Set(['f1', 'f3', 'newform1']));
   });
 
@@ -177,13 +178,13 @@ describe('insertForm / insertStage stamp a Form id (rules 4-5)', () => {
     const newId = ids('f1', 'f3', 'free1');
     const result = insertForm(flow, elementIds.idOf(applicant), elementIds, newId);
 
-    expect(authoredFormId(result.inserted as UISchemaElement)).toBe('free1');
+    expect(authoredId(result.inserted as UISchemaElement)).toBe('free1');
     expect(newId).toHaveBeenCalledTimes(3);
   });
 
   it('leaves a Form authored without an id addressless rather than stamping one on render', () => {
     const { flow, plain } = fixture();
-    expect(authoredFormId(plain)).toBeUndefined();
+    expect(authoredId(plain)).toBeUndefined();
     expect(addressOf(flow, createElementIds().idOf(plain), createElementIds())).toBeNull();
     expect(formIdsUsed(flow).size).toBe(2);
   });

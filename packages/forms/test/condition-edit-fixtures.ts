@@ -11,12 +11,13 @@ export const control = (key: string, label?: string) => ({
 });
 export const stage = (id: string, controls: object[] = []) => ({
   type: 'Stage',
-  options: { id },
+  id,
   elements: [{ type: 'Form', elements: controls }],
 });
 export const condition = (id: string, rows: object[] = []) => ({
   type: 'Condition',
-  options: { id, rows },
+  id,
+  options: { rows },
 });
 export const flow = (elements: object[], edges: object[] = []) =>
   tree({ type: 'Flow', elements, options: { edges } });

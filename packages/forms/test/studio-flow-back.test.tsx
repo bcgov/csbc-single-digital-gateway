@@ -25,12 +25,12 @@ const FLOW = el({
     {
       type: 'Stage',
       label: 'Applicant',
-      options: { id: 's1' },
+      id: 's1',
       elements: [
         {
           type: 'Form',
           label: 'Contact',
-          options: { id: 'f1' },
+          id: 'f1',
           elements: [{ type: 'Control', scope: '#/properties/name' }],
         },
       ],

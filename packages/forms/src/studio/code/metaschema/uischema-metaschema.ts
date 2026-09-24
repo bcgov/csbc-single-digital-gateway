@@ -318,6 +318,12 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
       // documents the studio itself creates. A label that IS written must still say something (`minLength`).
       required: ['type', 'elements'],
       properties: {
+        id: {
+          description:
+            'The authored id of this element: stable across reloads, and what a template capability names. Stamped automatically — you rarely write one by hand.',
+          type: 'string',
+          minLength: 1,
+        },
         type: { description: 'Always "Form" — a studio form.', const: 'Form' },
         elements: ELEMENTS,
         label: {
@@ -358,15 +364,28 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
       },
     },
     /**
-     * Doc 215 rules 21-22: a Service is the form definition with its own `type` and NO `options.id` — a Service is
-     * never a Flow node, so nothing addresses one. `element` lists neither Form nor Service, so a Service anywhere
-     * but the root is a problem.
+     * Doc 215 rules 21-22: a Service is the form definition with its own `type`. `element` lists neither Form nor
+     * Service, so a Service anywhere but the root is a problem.
+     *
+     * Doc 219 AMENDS rule 22: a Service now carries a top-level `id` like every other element, because a template
+     * capability keys on one. It still is not ADDRESSABLE — a Service is never a Flow node, so no edge or focus
+     * address can name it. Carrying an id and being addressable are different things.
+     *
+     * Note what this definition CANNOT do: the uischema metaschema sets `additionalProperties` nowhere, so an
+     * authored `options.id` is not REFUSED — it is merely undeclared and inert. A test must pin the absence of
+     * `id` from the options definition, never a refusal that cannot exist (doc 215's own finding).
      */
     service: {
       description: 'A service: the root of a service document. It renders like a VerticalLayout.',
       type: 'object',
       required: ['type', 'elements'],
       properties: {
+        id: {
+          description:
+            'The authored id of this element: stable across reloads, and what a template capability names. Stamped automatically — you rarely write one by hand.',
+          type: 'string',
+          minLength: 1,
+        },
         type: { description: 'Always "Service" — a service.', const: 'Service' },
         elements: ELEMENTS,
         label: {
@@ -400,6 +419,16 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
       type: 'object',
       required: ['type'],
       properties: {
+        // Doc 219: the authored id — a TOP-LEVEL sibling of `type`, stamped on every element so a template
+        // capability map can key on it. OPTIONAL here (only a Stage and a Condition require one, since edges
+        // address them); an id-less element is stamped when the document is opened, so an OPEN document never
+        // has one missing.
+        id: {
+          description:
+            'The authored id of this element: stable across reloads, and what a template capability names. Stamped automatically — you rarely write one by hand.',
+          type: 'string',
+          minLength: 1,
+        },
         type: {
           description: 'The element kind.',
           enum: [

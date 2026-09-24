@@ -42,10 +42,10 @@ const emptyFlow = (): FlowElement => ({
     {
       type: 'Stage',
       label: 'Stage 1',
-      options: { id: FIRST_STAGE },
+      id: FIRST_STAGE,
       // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists.
       // Untitled, exactly like the Form the canvas `+` creates: it reads as "Untitled form" until named.
-      elements: [{ type: 'Form', options: { id: FIRST_FORM }, elements: [] }],
+      elements: [{ type: 'Form', id: FIRST_FORM, elements: [] }],
     },
   ],
 });

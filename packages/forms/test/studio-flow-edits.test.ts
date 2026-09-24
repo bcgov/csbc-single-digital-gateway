@@ -28,7 +28,9 @@ const stage = (
   tree({
     type: 'Stage',
     label,
-    options: { ...(id === undefined ? {} : { id }), ...options },
+    // Doc 219: the id is a top-level sibling; `options` keeps only real options.
+    ...(id === undefined ? {} : { id }),
+    ...(Object.keys(options).length > 0 ? { options } : {}),
     elements,
   });
 const flow = (elements: object[], edges?: object[]) =>
@@ -168,8 +170,8 @@ describe('insertStage (rules 18, 20)', () => {
     expect(inserted).toEqual({
       type: 'Stage',
       label: 'Stage 1',
-      options: { id: 's1' },
-      elements: [{ type: 'Form', options: { id: 'f1' }, elements: [] }],
+      id: 's1',
+      elements: [{ type: 'Form', id: 'f1', elements: [] }],
     });
     expect(child(uischema, 0)).toBe(inserted);
     expect(ids.idOf(uischema)).toBe(ids.idOf(root));
@@ -193,7 +195,8 @@ describe('insertStage (rules 18, 20)', () => {
       // 'a' is taken, so the Stage regenerates to 's3'; then the Stage's Form takes 'f3' and the edge 'e1'.
       sequence('a', 's3', 'f3', 'e1'),
     );
-    expect(inserted?.options).toEqual({ id: 's3' });
+    expect(inserted?.id).toBe('s3');
+    expect(inserted?.options).toBeUndefined();
     expect(labelOf(inserted)).toBe('Stage 3');
     expect(edgesOf(uischema)).toEqual([edge('e1', 'a', 's3')]);
   });
@@ -202,7 +205,8 @@ describe('insertStage (rules 18, 20)', () => {
     const ids = createElementIds();
     const root = flow([stage('a', 'A'), stage(undefined, 'No id')]);
     const { uischema, inserted } = insertStage(root, ids.idOf(child(root, 1)), ids, sequence('s'));
-    expect(inserted?.options).toEqual({ id: 's' });
+    expect(inserted?.id).toBe('s');
+    expect(inserted?.options).toBeUndefined();
     expect(uischema.options).toBeUndefined();
   });
 
@@ -210,10 +214,14 @@ describe('insertStage (rules 18, 20)', () => {
     const ids = createElementIds();
     const root = flow([stage('a', 'A'), stage('b', 'B')]);
     const selectedForm = ids.idOf(child(child(root, 0), 0));
-    expect(insertStage(root, null, ids, sequence('n')).inserted?.options).toEqual({ id: 'n' });
+    expect(insertStage(root, null, ids, sequence('n')).inserted?.id).toBe('n');
     // A selected Form is not a selected Stage.
     expect(insertStage(root, selectedForm, ids, sequence('m')).uischema.options).toBeUndefined();
-    expect(insertStage(flow([]), null, ids, sequence('o')).inserted?.options).toEqual({ id: 'o' });
+    // Doc 219: the id is top-level, so a fresh Stage writes NO options at all — which proves
+    // "never writes options.position" more strongly than an options object that merely lacks it.
+    const fresh = insertStage(flow([]), null, ids, sequence('o')).inserted;
+    expect(fresh?.id).toBe('o');
+    expect(fresh?.options).toBeUndefined();
   });
 
   it('numbers a Stage by the highest "Stage <digits>" label + 1, ignoring other labels', () => {
@@ -234,7 +242,7 @@ describe('insertStage (rules 18, 20)', () => {
 
 describe('insertNode appends a Condition (doc 199 rules 20, 24)', () => {
   const conditionAt = (id: string, criteria: object[] = []) =>
-    tree({ type: 'Condition', label: 'C', options: { id, criteria } });
+    tree({ type: 'Condition', label: 'C', id, options: { criteria } });
 
   it("appends 'Condition <n>' holding no children, with an empty ROWS list", () => {
     const ids = createElementIds();
@@ -251,7 +259,8 @@ describe('insertNode appends a Condition (doc 199 rules 20, 24)', () => {
     expect(inserted).toEqual({
       type: 'Condition',
       label: 'Condition 1',
-      options: { id: 'c1', rows: [] },
+      id: 'c1',
+      options: { rows: [] },
     });
     expect(child(uischema, 1)).toBe(inserted);
   });
@@ -268,7 +277,8 @@ describe('insertNode appends a Condition (doc 199 rules 20, 24)', () => {
       ids,
       sequence('a', 'b', 'c3'),
     );
-    expect(inserted?.options).toEqual({ id: 'c3', rows: [] });
+    expect(inserted?.id).toBe('c3');
+    expect(inserted?.options).toEqual({ rows: [] });
   });
 
   it("carries the criterion as the new edge's sourceHandle (rule 20)", () => {
@@ -336,7 +346,8 @@ describe('insertStageBetween (doc 198 rule 10)', () => {
       ids,
       sequence('s3', 'f3', 'e2'),
     );
-    expect(inserted?.options).toEqual({ id: 's3' });
+    expect(inserted?.id).toBe('s3');
+    expect(inserted?.options).toBeUndefined();
     expect(labelOf(inserted)).toBe('Stage 3');
     // The upstream edge KEEPS its id across the split; the downstream Stage is never orphaned.
     expect(edgesOf(uischema)).toEqual([edge('e1', 'a', 's3'), edge('e2', 's3', 'b')]);
@@ -416,7 +427,7 @@ describe('insertForm (rules 19-20)', () => {
     // Doc 197 rule 4: an inserted Form is addressable from the start.
     expect(inserted).toEqual({
       type: 'Form',
-      options: { id: 'f4' },
+      id: 'f4',
       elements: [],
     });
     expect(child(child(uischema, 1), 1)).toBe(inserted);
@@ -446,8 +457,8 @@ describe('connecting from a Condition row (doc 199 rule 45c)', () => {
       elements: [
         {
           type: 'Condition',
+          id: 'c',
           options: {
-            id: 'c',
             rows: [
               {
                 id: 'r1',
@@ -458,7 +469,7 @@ describe('connecting from a Condition row (doc 199 rule 45c)', () => {
             ],
           },
         },
-        { type: 'Stage', options: { id: 't' }, elements: [] },
+        { type: 'Stage', id: 't', elements: [] },
       ],
       options: { edges: [] },
     });
@@ -473,8 +484,8 @@ describe('connecting from a Condition row (doc 199 rule 45c)', () => {
     const root = tree({
       type: 'Flow',
       elements: [
-        { type: 'Stage', options: { id: 'a' }, elements: [] },
-        { type: 'Stage', options: { id: 'b' }, elements: [] },
+        { type: 'Stage', id: 'a', elements: [] },
+        { type: 'Stage', id: 'b', elements: [] },
       ],
       options: { edges: [] },
     });

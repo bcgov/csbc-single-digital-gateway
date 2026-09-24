@@ -28,9 +28,18 @@ const noKey = () => 'unused';
 const KINDS = ['vertical', 'horizontal', 'grid'] as const;
 
 /** Doc 201 rule 15: a Form's title is required, so every Form fixture carries one. */
-const formOf = (...elements: object[]) => el({ type: 'Form', label: 'Untitled form', elements });
-const tabOf = (label: string, panel: object) => ({ type: 'Tab', label, elements: [panel] });
-const tabsOf = (...elements: object[]) => ({ type: 'Tabs', elements });
+// Doc 219: fixtures carry ids so seed normalisation is a no-op and the studio holds these exact objects.
+let fixtureId = 0;
+const nextId = () => `fx-${(fixtureId += 1)}`;
+const formOf = (...elements: object[]) =>
+  el({ type: 'Form', id: nextId(), label: 'Untitled form', elements });
+const tabOf = (label: string, panel: object) => ({
+  type: 'Tab',
+  id: nextId(),
+  label,
+  elements: [panel],
+});
+const tabsOf = (...elements: object[]) => ({ type: 'Tabs', id: nextId(), elements });
 const ajv = createAjv();
 const validate = ajv.compile(UISCHEMA_METASCHEMA);
 const uischemaOk = (uischema: unknown) => validate(uischema) === true;
@@ -41,17 +50,25 @@ const uischemaOk = (uischema: unknown) => validate(uischema) === true;
  * `panelStack` is a VerticalLayout inside a TabContent: identical in kind to `stack`, and the whole point
  * of rule 11.
  */
+// Doc 219: every element carries an id, so seed normalisation is a NO-OP and the studio holds these exact
+// objects — which is what lets the tests below hand `editor.idOf` a fixture element and get its studio id.
 function fixture() {
-  const stack = el({ type: 'VerticalLayout', elements: [] });
-  const row = el({ type: 'HorizontalLayout', options: { columns: 2 }, elements: [] });
-  const grid = el({ type: 'Grid', elements: [] });
-  const panelStack = el({ type: 'VerticalLayout', elements: [] });
-  const panel = el({ type: 'TabContent', elements: [panelStack] });
+  const stack = el({ type: 'VerticalLayout', id: 'stack-1', elements: [] });
+  const row = el({
+    type: 'HorizontalLayout',
+    id: 'row-1',
+    options: { columns: 2 },
+    elements: [],
+  });
+  const grid = el({ type: 'Grid', id: 'grid-1', elements: [] });
+  const panelStack = el({ type: 'VerticalLayout', id: 'panelstack-1', elements: [] });
+  const panel = el({ type: 'TabContent', id: 'panel-1', elements: [panelStack] });
   const firstTab = tabOf('Tab 1', panel);
-  const strip = el({ type: 'Tabs', elements: [firstTab] });
+  const strip = el({ type: 'Tabs', id: 'strip-1', elements: [firstTab] });
   const other = el({
     type: 'Tabs',
-    elements: [tabOf('Tab 1', { type: 'TabContent', elements: [] })],
+    id: 'other-1',
+    elements: [tabOf('Tab 1', { type: 'TabContent', id: 'otherpanel-1', elements: [] })],
   });
   const root = formOf(stack, row, grid, strip, other);
   const ids = createElementIds();

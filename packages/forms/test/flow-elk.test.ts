@@ -16,15 +16,15 @@ import { FLOW_TEMPLATE_UISCHEMA } from '../src/studio/document/flow-sample';
 const stage = (id: string, forms = 0) =>
   ({
     type: 'Stage',
-    options: { id },
+    id,
     elements: Array.from({ length: forms }, () => ({ type: 'Form', elements: [] })),
   }) as UISchemaElement;
 const condition = (id: string, rows = 0) =>
   ({
     type: 'Condition',
     elements: [],
+    id,
     options: {
-      id,
       rows: Array.from({ length: rows }, (_, index) => ({
         id: `r${index}`,
         label: `Condition ${index + 1}`,

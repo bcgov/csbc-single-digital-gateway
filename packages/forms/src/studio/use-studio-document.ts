@@ -1,9 +1,10 @@
+import { authoredId } from '../renderers/ui/authored-id';
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GridDropSource, GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import { allowedInLayout, type GridLayoutKind } from '../renderers/gridstack/grid-layouts';
 import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
-import { authoredStageId, FLOW_TYPE, flowNodeKind } from '../renderers/xyflow/flow-elements';
+import { FLOW_TYPE, flowNodeKind } from '../renderers/xyflow/flow-elements';
 import { sameJson } from './code/document-text';
 import { applyInspector } from './inspector/apply-inspector';
 import type { InspectorValues } from './inspector/inspector-fields';
@@ -20,6 +21,7 @@ import { removeElement } from './layout/remove-element';
 import { setChoices } from './layout/set-choices';
 import { carryIdsByPath } from './layout/carry-ids-by-path';
 import { newPropertyKey } from './layout/schema-properties';
+import { stampMissingIds } from './layout/stamp-ids';
 import type { SavedEntry } from './options/option-draft';
 import { buildTemplate } from './palette/palette-templates';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from './sample';
@@ -43,12 +45,24 @@ interface DocumentState {
   uischema: UISchemaElement;
 }
 
+/**
+ * Doc 219: the working uischema is NORMALISED — every id-less element is stamped as it is seeded.
+ *
+ * Here, and nowhere later, for two reasons. This is where the BASELINE is computed, so the stamped document
+ * IS the baseline: `onDocumentChange`'s mount emission already carries the ids, the host's dirty check
+ * compares against the stamped version, and opening a template without editing it stays clean. Stamping in
+ * an effect or on save would instead dirty a document merely by opening it and bump its revision for no
+ * authored change.
+ *
+ * `sourceUischema` keeps the RAW prop, never the stamped copy — it is the identity the re-seed comparison
+ * below reads, and swapping in a new object here would make every render look like a new document.
+ */
 const fromSource = (schema: JsonSchema, uischema: UISchemaElement): DocumentState => ({
   sourceSchema: schema,
   sourceUischema: uischema,
   seed: {},
   schema,
-  uischema,
+  uischema: stampMissingIds(uischema),
 });
 
 /** Every element below the root by studio id, with its uischema type (doc 185 rules 8, 21). */
@@ -243,7 +257,7 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
       if (root.type !== FLOW_TYPE) return false;
       const element = findById(root, elementId, ids);
       if (!element || flowNodeKind(element) === undefined) return false;
-      const authored = authoredStageId(element);
+      const authored = authoredId(element);
       return authored !== undefined && joinsNeighbours(root, authored);
     },
     [currentUischema, ids],
@@ -317,8 +331,12 @@ export function useStudioDocument({ schema, uischema }: StudioDocumentSource) {
             : next.schema;
         let nextUischema = previous.uischema;
         if (next.uischema !== undefined && !sameJson(next.uischema, previous.uischema)) {
-          carryIdsByPath(previous.uischema, next.uischema, ids);
-          nextUischema = next.uischema;
+          // Doc 219: `replaceDocument` is the OTHER whole-document entry point (the code panel's apply), so it
+          // normalises too — otherwise a pasted document, or one whose ids the author deleted in the panel,
+          // would leave the open document with id-less elements and nothing to re-stamp them.
+          const stamped = stampMissingIds(next.uischema);
+          carryIdsByPath(previous.uischema, stamped, ids);
+          nextUischema = stamped;
         }
         return nextSchema === previous.schema && nextUischema === previous.uischema
           ? previous

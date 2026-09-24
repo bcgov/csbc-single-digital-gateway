@@ -31,7 +31,7 @@ const el = (element: object) => element as UISchemaElement;
 const form = (label?: string, elements: object[] = []) =>
   el({ type: 'Form', elements, ...(label === undefined ? {} : { label }) });
 const stage = (id: unknown, elements: object[] = [form('Details')], extra: object = {}) =>
-  el({ type: 'Stage', elements, options: { id }, ...extra });
+  el({ type: 'Stage', elements, id, ...extra });
 const flow = (elements: object[], edges?: object[]) =>
   el({ type: 'Flow', elements, ...(edges ? { options: { edges } } : {}) });
 

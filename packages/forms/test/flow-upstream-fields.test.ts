@@ -14,7 +14,7 @@ const control = (key: string, label?: string) =>
 const stage = (id: string, controls: object[], nested = false) =>
   el({
     type: 'Stage',
-    options: { id },
+    id,
     elements: [
       {
         type: 'Form',
@@ -23,7 +23,7 @@ const stage = (id: string, controls: object[], nested = false) =>
     ],
   });
 
-const condition = (id: string) => el({ type: 'Condition', options: { id, criteria: [] } });
+const condition = (id: string) => el({ type: 'Condition', id, options: { criteria: [] } });
 
 const flow = (elements: object[], pairs: [string, string][] = []) =>
   el({

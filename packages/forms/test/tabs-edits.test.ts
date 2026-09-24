@@ -1,4 +1,5 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import { withoutAuthoredIds } from './without-ids';
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_TABS_COMPONENT,
@@ -51,7 +52,7 @@ describe('addTab (rule 16)', () => {
     const { uischema } = addTab(root, ids.idOf(root), ids);
 
     const added = elementsOf(uischema)[0];
-    expect(added).toEqual({
+    expect(withoutAuthoredIds(added)).toEqual({
       type: 'Tab',
       label: 'Tab 1',
       elements: [{ type: 'TabContent', elements: [] }],

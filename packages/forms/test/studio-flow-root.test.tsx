@@ -25,13 +25,13 @@ const FLOW = el({
     {
       type: 'Stage',
       label: 'Applicant',
-      options: { id: 's1' },
+      id: 's1',
       elements: [{ type: 'Form', label: 'Contact', elements: [] }],
     },
     {
       type: 'Stage',
       label: 'Review',
-      options: { id: 's2' },
+      id: 's2',
       elements: [{ type: 'Form', label: 'Decision', elements: [] }],
     },
   ],
@@ -106,7 +106,7 @@ describe('Form Studio Flow root (doc 195)', () => {
     });
 
     it('shows "The root element must be a Form, a Service or a Flow." for any other root', () => {
-      renderStudio(el({ type: 'Stage', options: { id: 's1' }, elements: [] }));
+      renderStudio(el({ type: 'Stage', id: 's1', elements: [] }));
       const alert = within(centre()).getByRole('alert');
       expect(alert).toHaveTextContent('The root element must be a Form, a Service or a Flow.');
       expect(alert).toHaveAttribute('data-slot', 'form-studio-root-error');

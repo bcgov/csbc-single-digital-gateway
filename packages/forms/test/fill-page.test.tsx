@@ -23,8 +23,8 @@ const FLOW = el({
   type: 'Flow',
   options: { edges: [{ id: 'e1', source: 's1', target: 's2' }] },
   elements: [
-    { type: 'Stage', label: 'One', options: { id: 's1' }, elements: [FORM] },
-    { type: 'Stage', label: 'Two', options: { id: 's2' }, elements: [FORM] },
+    { type: 'Stage', label: 'One', id: 's1', elements: [FORM] },
+    { type: 'Stage', label: 'Two', id: 's2', elements: [FORM] },
   ],
 });
 

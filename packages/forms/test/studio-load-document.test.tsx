@@ -6,6 +6,14 @@ import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/samp
 import type { StudioDocument } from '../src/types/index';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
+/** Doc 219: the studio normalises what it opens, so compare structure with the stamped ids removed. */
+const stripIds = (node: unknown): unknown => {
+  if (Array.isArray(node)) return node.map(stripIds);
+  if (typeof node !== 'object' || node === null) return node;
+  const { id: _id, ...rest } = node as Record<string, unknown>;
+  return Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, stripIds(v)]));
+};
+
 // Doc 200 rules 1, 3, 22-23 — the lifecycle through the real FormStudio: the new default, a
 // host-supplied loadDocument, and the stubbed save channel.
 
@@ -150,12 +158,12 @@ describe('FormStudio document lifecycle', () => {
           {
             type: 'Stage',
             label: 'Only stage',
-            options: { id: 's1' },
+            id: 's1',
             elements: [
               {
                 type: 'Form',
                 label: 'Details',
-                options: { id: 'f1' },
+                id: 'f1',
                 elements: [{ type: 'Control', scope: '#/properties/who' }],
               },
             ],
@@ -185,10 +193,11 @@ describe('FormStudio document lifecycle', () => {
       await user.click(screen.getByRole('button', { name: 'Save' }));
 
       expect(onSaveDocument).toHaveBeenCalledTimes(1);
-      expect(onSaveDocument).toHaveBeenCalledWith({
-        schema: STUDIO_SAMPLE_SCHEMA,
-        uischema: STUDIO_SAMPLE_UISCHEMA,
-      });
+      // Doc 219: what the host saves is the NORMALISED document — the sample plus a stamped id on every
+      // element. Compare structure with those removed; the ids are random per mount.
+      const saved = onSaveDocument.mock.calls[0]?.[0] as { schema: unknown; uischema: unknown };
+      expect(saved.schema).toEqual(STUDIO_SAMPLE_SCHEMA);
+      expect(stripIds(saved.uischema)).toEqual(STUDIO_SAMPLE_UISCHEMA);
     });
 
     it('renders no save affordance when onSaveDocument is absent', () => {

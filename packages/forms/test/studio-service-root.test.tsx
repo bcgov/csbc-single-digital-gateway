@@ -289,7 +289,7 @@ describe('the uischema metaschema (rules 20-23)', () => {
     // The metaschema never sets `additionalProperties`, so it CANNOT refuse an unknown key — and rule 1 says
     // unknown options are kept, never read. An authored `id` on a Service is inert, exactly as doc 198 leaves
     // `Stage.options.position`; what rule 21 pins is that the SERVICE DEFINITION does not describe one.
-    expect(ok(service({ options: { id: 'abc12345' } }))).toBe(true);
+    expect(ok(service({ id: 'abc12345' }))).toBe(true);
     expect(
       UISCHEMA_METASCHEMA.definitions.service.properties.options.properties,
     ).not.toHaveProperty('id');

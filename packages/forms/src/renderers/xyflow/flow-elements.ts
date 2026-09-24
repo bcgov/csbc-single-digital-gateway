@@ -1,5 +1,6 @@
 import { rankWith, uiTypeIs, type RankedTester, type UISchemaElement } from '@jsonforms/core';
 import type { Clause, ConditionRow } from '../../types/elements';
+import { authoredId } from '../ui/authored-id';
 
 // The Flow, Stage and Condition elements (doc 195 rules 4-5, 8; doc 199 rules 16-17). Pure — no React, no
 // @xyflow/react — so renderers/default and the studio's code editor can import it.
@@ -83,12 +84,6 @@ export function flowNodeKind(element: UISchemaElement): FlowNodeKind | undefined
 export const isFlowNodeType = (type: string): boolean =>
   type === STAGE_TYPE || type === CONDITION_TYPE;
 
-/** A node's `options.id` when a non-empty string, else `undefined`. Stages and Conditions share one id-space. */
-export function authoredStageId(stage: UISchemaElement): string | undefined {
-  const id = stage.options?.['id'];
-  return typeof id === 'string' && id !== '' ? id : undefined;
-}
-
 /**
  * Doc 199 rules 35, 38: a Condition's authored ROWS — the entries that are records with a non-empty string `id`
  * and at least one usable clause, in order, the first winning a repeated id. Anything else is not a row and is
@@ -166,7 +161,7 @@ export function drawnNodes(flow: UISchemaElement): DrawnNode[] {
   elementsOf(flow).forEach((element, index) => {
     const kind = flowNodeKind(element);
     if (kind === undefined) return;
-    const authored = authoredStageId(element);
+    const authored = authoredId(element);
     if (authored !== undefined && !used.has(authored)) {
       used.add(authored);
       nodes.push({ element, index, id: authored, authored: true, kind });

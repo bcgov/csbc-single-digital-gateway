@@ -1,4 +1,5 @@
 import { createAjv, type JsonSchema, type UISchemaElement } from '@jsonforms/core';
+import { withoutAuthoredIds } from './without-ids';
 import { JsonForms } from '@jsonforms/react';
 import { act, render, renderHook, screen } from '@testing-library/react';
 import { mdiMinus } from '@mdi/js';
@@ -30,14 +31,22 @@ const noKey = () => 'unused';
 const itemsOf = (grid: GridHTMLElement | undefined) =>
   Array.from(grid?.querySelectorAll<GridItemHTMLElement>(':scope > .grid-stack-item') ?? []);
 
+// Doc 219: every element carries an id, so seed normalisation is a NO-OP and `stampMissingIds` returns the
+// same objects — which is what lets these tests hand `editor.idOf` a fixture element and get the studio's id
+// for it. An id-less fixture would be stamped into copies the studio holds instead.
 function fixture() {
-  const separator = el({ type: 'Separator' });
-  const rowHeading = el({ type: 'Heading', text: 'r' });
-  const row = el({ type: 'HorizontalLayout', options: { columns: 3 }, elements: [rowHeading] });
-  const stackHeading = el({ type: 'Heading', text: 's' });
-  const stack = el({ type: 'VerticalLayout', elements: [separator, stackHeading] });
-  const grid = el({ type: 'Grid', elements: [] });
-  const root = el({ type: 'Form', elements: [row, stack, grid] });
+  const separator = el({ type: 'Separator', id: 'sep-1' });
+  const rowHeading = el({ type: 'Heading', text: 'r', id: 'rh-1' });
+  const row = el({
+    type: 'HorizontalLayout',
+    id: 'row-1',
+    options: { columns: 3 },
+    elements: [rowHeading],
+  });
+  const stackHeading = el({ type: 'Heading', text: 's', id: 'sh-1' });
+  const stack = el({ type: 'VerticalLayout', id: 'stack-1', elements: [separator, stackHeading] });
+  const grid = el({ type: 'Grid', id: 'grid-1', elements: [] });
+  const root = el({ type: 'Form', id: 'root-1', elements: [row, stack, grid] });
   const ids = createElementIds();
   return {
     separator,
@@ -83,7 +92,7 @@ describe('Separator placement (doc 194)', () => {
         f.ids,
         noKey,
       );
-      expect(intoStack.inserted).toEqual({ type: 'Separator' });
+      expect(withoutAuthoredIds(intoStack.inserted)).toEqual({ type: 'Separator' });
       const intoGrid = insertElement(
         f.document,
         'separator',

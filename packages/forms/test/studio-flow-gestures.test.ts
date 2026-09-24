@@ -14,7 +14,7 @@ import {
 
 const el = (element: object) => element as UISchemaElement;
 const stage = (id?: string) =>
-  el({ type: 'Stage', elements: [], ...(id === undefined ? {} : { options: { id } }) });
+  el({ type: 'Stage', elements: [], ...(id === undefined ? {} : { id }) });
 const flow = (stages: UISchemaElement[], pairs: [string, string][] = []) =>
   el({
     type: 'Flow',
@@ -105,8 +105,8 @@ describe('dragging from a Condition output (doc 199 rule 45c)', () => {
       elements: [
         el({
           type: 'Condition',
+          id: 'c',
           options: {
-            id: 'c',
             rows: ['r1', 'r2'].map((id) => ({
               id,
               label: id,

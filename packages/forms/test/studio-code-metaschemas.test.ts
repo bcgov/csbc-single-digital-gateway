@@ -26,7 +26,7 @@ const form = (extra: object = {}) => ({ type: 'Form', label: FORM_TITLE, element
 const stage = (formEl: object, id = 's1') => ({
   type: 'Stage',
   elements: [formEl],
-  options: { id },
+  id,
 });
 const flowOf = (formEl: object) => ({ type: 'Flow', elements: [stage(formEl)] });
 
@@ -63,16 +63,16 @@ function ifConditions(schema: unknown): Record<string, unknown>[] {
 // Doc 197 rule 6 — a Form may carry the authored `options.id` that addresses it in a URL.
 describe('UISCHEMA_METASCHEMA Form options.id (doc 197 rule 6)', () => {
   it('accepts a Form whose options carry a non-empty string id', () => {
-    expect(uischemaOk(form({ options: { id: 'abcd1234' } }))).toBe(true);
-    expect(uischemaOk(flowOf(form({ options: { id: 'abcd1234' } })))).toBe(true);
-    expect(uischemaOk(form({ options: { id: 'abcd1234', gap: 'lg' } }))).toBe(true);
+    expect(uischemaOk(form({ id: 'abcd1234' }))).toBe(true);
+    expect(uischemaOk(flowOf(form({ id: 'abcd1234' })))).toBe(true);
+    expect(uischemaOk(form({ id: 'abcd1234', options: { gap: 'lg' } }))).toBe(true);
   });
 
   it('rejects an empty or non-string Form options.id', () => {
-    expect(uischemaOk(form({ options: { id: '' } }))).toBe(false);
-    expect(uischemaOk(form({ options: { id: 7 } }))).toBe(false);
-    expect(uischemaOk(form({ options: { id: null } }))).toBe(false);
-    expect(uischemaOk(flowOf(form({ options: { id: '' } })))).toBe(false);
+    expect(uischemaOk(form({ id: '' }))).toBe(false);
+    expect(uischemaOk(form({ id: 7 }))).toBe(false);
+    expect(uischemaOk(form({ id: null }))).toBe(false);
+    expect(uischemaOk(flowOf(form({ id: '' })))).toBe(false);
   });
 
   it('does not require options.id on a Form, so documents predating it still apply', () => {
@@ -83,7 +83,7 @@ describe('UISCHEMA_METASCHEMA Form options.id (doc 197 rule 6)', () => {
   });
 
   it("still requires a Stage's options.id", () => {
-    const withId = form({ options: { id: 'abcd1234' } });
+    const withId = form({ id: 'abcd1234' });
     expect(uischemaOk({ type: 'Flow', elements: [{ type: 'Stage', elements: [withId] }] })).toBe(
       false,
     );

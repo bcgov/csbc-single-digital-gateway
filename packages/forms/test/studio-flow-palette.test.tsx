@@ -22,14 +22,14 @@ const FLOW = el({
     {
       type: 'Stage',
       label: 'Applicant',
-      options: { id: 's1' },
-      elements: [{ type: 'Form', label: 'Contact', options: { id: 'f1' }, elements: [] }],
+      id: 's1',
+      elements: [{ type: 'Form', label: 'Contact', id: 'f1', elements: [] }],
     },
     {
       type: 'Stage',
       label: 'Review',
-      options: { id: 's2' },
-      elements: [{ type: 'Form', label: 'Decision', options: { id: 'f2' }, elements: [] }],
+      id: 's2',
+      elements: [{ type: 'Form', label: 'Decision', id: 'f2', elements: [] }],
     },
   ],
 });

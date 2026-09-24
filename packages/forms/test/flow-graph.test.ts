@@ -23,9 +23,10 @@ const stage = (id?: unknown, extra: object = {}) =>
   ({
     type: 'Stage',
     elements: [],
-    ...(id === undefined ? {} : { options: { id } }),
+    ...(id === undefined ? {} : { id }),
     ...extra,
-  }) as UISchemaElement;
+    // Doc 219: `id` is typed `string` on the element, and this helper deliberately passes bad values.
+  }) as unknown as UISchemaElement;
 
 const flow = (elements: readonly UISchemaElement[], edges?: unknown) =>
   ({
@@ -55,7 +56,8 @@ const row = (id: string, index: number) => ({
 const condition = (id: string, rows: string[] = []) =>
   ({
     type: 'Condition',
-    options: { id, rows: rows.map(row) },
+    id,
+    options: { rows: rows.map(row) },
   }) as UISchemaElement;
 const branch = (id: string, source: string, target: string, sourceHandle: string) => ({
   id,

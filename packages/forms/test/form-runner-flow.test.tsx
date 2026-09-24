@@ -34,11 +34,11 @@ const control = (key: string) => ({ type: 'Control', scope: `#/properties/${key}
 const form = (label: string, keys: string[] = []) => ({
   type: 'Form',
   label,
-  options: { id: `${label}-id` },
+  id: `${label}-id`,
   elements: keys.map(control),
 });
 const stage = (id: string, label: string, forms: object[] = [form(`${label} form`)]) =>
-  el({ type: 'Stage', label, elements: forms, options: { id } });
+  el({ type: 'Stage', label, elements: forms, id });
 const edge = (id: string, source: string, target: string, sourceHandle?: string) => ({
   id,
   source,
@@ -140,7 +140,7 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
       const withCondition = flow(
         [
           stage('s1', 'Applicant', [form('Contact', ['name'])]),
-          el({ type: 'Condition', label: 'Branch', options: { id: 'x', rows: [] } }),
+          el({ type: 'Condition', label: 'Branch', id: 'x', options: { rows: [] } }),
           stage('s2', 'Review'),
         ],
         { edges: [edge('e1', 's1', 'x'), edge('e2', 'x', 's2')] },
@@ -213,13 +213,15 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
           el({
             type: 'Stage',
             label: 'Applicant',
-            options: { id: 's1', position: { x: 900, y: 900 } },
+            id: 's1',
+            options: { position: { x: 900, y: 900 } },
             elements: [form('Contact', ['name'])],
           }),
           el({
             type: 'Stage',
             label: 'Review',
-            options: { id: 's2', position: { x: 0, y: 0 } },
+            id: 's2',
+            options: { position: { x: 0, y: 0 } },
             elements: [form('Decision')],
           }),
         ],
@@ -252,8 +254,8 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
         el({
           type: 'Condition',
           label: 'Which plan',
+          id: 'x',
           options: {
-            id: 'x',
             rows: [
               {
                 id: 'c1',
@@ -313,8 +315,8 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
         el({
           type: 'Condition',
           label: 'Which plan',
+          id: 'x',
           options: {
-            id: 'x',
             rows: [
               {
                 id: 'c1',
@@ -513,8 +515,8 @@ describe('FormRunner — a Flow root (doc 202 rules 9-13)', () => {
         el({
           type: 'Condition',
           label: 'Which plan',
+          id: 'x',
           options: {
-            id: 'x',
             rows: [
               {
                 id: 'c1',

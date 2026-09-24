@@ -12,8 +12,8 @@ const stage = (id: string, label = id.toUpperCase()) =>
   tree({
     type: 'Stage',
     label,
-    options: { id },
-    elements: [{ type: 'Form', options: { id: `f-${id}` }, elements: [] }],
+    id,
+    elements: [{ type: 'Form', id: `f-${id}`, elements: [] }],
   });
 
 const flow = (elements: object[], edges: object[] = [], options: object = {}) =>
@@ -79,7 +79,7 @@ describe('appending a Condition (rules 9-13)', () => {
   it('carries the source handle on the INCOMING edge only, when appended from a Condition row', () => {
     const ids = createElementIds();
     const root = flow(
-      [stage('a'), tree({ type: 'Condition', label: 'C', options: { id: 'c0', rows: [] } })],
+      [stage('a'), tree({ type: 'Condition', label: 'C', id: 'c0', options: { rows: [] } })],
       [edge('e0', 'a', 'c0')],
       { startId: 'a' },
     );
@@ -94,7 +94,7 @@ describe('appending a Condition (rules 9-13)', () => {
   it('never stamps the Else Stage as the Flow start (rule 12)', () => {
     const ids = createElementIds();
     // A startless Flow whose only node is a Condition: the Else Stage must not claim the start.
-    const root = flow([tree({ type: 'Condition', label: 'C', options: { id: 'c0', rows: [] } })]);
+    const root = flow([tree({ type: 'Condition', label: 'C', id: 'c0', options: { rows: [] } })]);
     const source = childrenOf(root)[0] as TreeElement;
     const { uischema } = insertNode(
       root,

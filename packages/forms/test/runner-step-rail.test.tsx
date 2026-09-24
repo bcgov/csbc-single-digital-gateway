@@ -17,11 +17,11 @@ const el = (element: object) => element as UISchemaElement;
 const form = (label: string, keys: string[] = []) => ({
   type: 'Form',
   label,
-  options: { id: `${label}-id` },
+  id: `${label}-id`,
   elements: keys.map((key) => ({ type: 'Control', scope: `#/properties/${key}` })),
 });
 const stage = (id: string, label: string, forms: object[]) =>
-  el({ type: 'Stage', label, options: { id }, elements: forms });
+  el({ type: 'Stage', label, id, elements: forms });
 
 /** Applicant (two Forms) → Condition on `note` → (pro) Pro → Extra | (default) Basic. Branches of 2 and 1 stages. */
 const BRANCHING = el({
@@ -38,8 +38,8 @@ const BRANCHING = el({
     stage('s1', 'Applicant', [form('Contact', ['note']), form('Address')]),
     el({
       type: 'Condition',
+      id: 'x',
       options: {
-        id: 'x',
         rows: [
           {
             id: 'c1',

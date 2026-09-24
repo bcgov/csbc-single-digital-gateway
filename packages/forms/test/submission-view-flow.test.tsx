@@ -29,11 +29,11 @@ const control = (key: string) => ({ type: 'Control', scope: `#/properties/${key}
 const form = (label: string, keys: string[] = []) => ({
   type: 'Form',
   label,
-  options: { id: `${label}-id` },
+  id: `${label}-id`,
   elements: keys.map(control),
 });
 const stage = (id: string, label: string, forms: object[] = [form(`${label} form`)]) =>
-  el({ type: 'Stage', label, elements: forms, options: { id } });
+  el({ type: 'Stage', label, elements: forms, id });
 const edge = (id: string, source: string, target: string, sourceHandle?: string) => ({
   id,
   source,
@@ -57,8 +57,8 @@ const BRANCHING = flow(
     el({
       type: 'Condition',
       label: 'Which plan',
+      id: 'x',
       options: {
-        id: 'x',
         rows: [
           {
             id: 'c1',

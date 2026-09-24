@@ -47,7 +47,7 @@ describe('documentFor', () => {
       const [stage] = stages as [StageElement];
       expect(stage.label).toBe('Stage 1');
       // The Stage is named as the start, so a brand new flow is never startless (doc 203 rule 19).
-      expect(flow.options?.startId).toBe(stage.options?.id);
+      expect(flow.options?.startId).toBe(stage.id);
 
       expect(stage.elements).toHaveLength(1);
       const [form] = stage.elements as [FormElement];
@@ -61,9 +61,9 @@ describe('documentFor', () => {
     it('gives the Stage and its Form authored ids, so both are addressable', () => {
       const [stage] = stagesOf(flowOf('new-multi-stage')) as [StageElement];
       const [form] = stage.elements as [FormElement];
-      expect(typeof stage.options?.id).toBe('string');
-      expect(typeof form.options?.id).toBe('string');
-      expect(form.options?.id).not.toBe(stage.options?.id);
+      expect(typeof stage.id).toBe('string');
+      expect(typeof form.id).toBe('string');
+      expect(form.id).not.toBe(stage.id);
     });
 
     it('hands back a document of its own each time, sharing nothing with the last', () => {
@@ -125,16 +125,16 @@ describe('documentFor', () => {
       expect(flowProblems(flowOf('template-multi-stage'))).toEqual([]);
     });
 
-    it('gives every Stage the required options.id', () => {
-      // types/elements.ts:196 — a Stage's id is required and is what edges address.
-      const ids = stagesOf(flowOf('template-multi-stage')).map((stage) => stage.options.id);
+    it('gives every Stage the required top-level id', () => {
+      // Doc 219: the id is a TOP-LEVEL sibling now; still required, still what edges address.
+      const ids = stagesOf(flowOf('template-multi-stage')).map((stage) => stage.id);
       expect(ids.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
       expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it('gives every Form an options.id so doc 197 can deep link it', () => {
+    it('gives every Form a top-level id so doc 197 can deep link it', () => {
       const forms = walk(flowOf('template-multi-stage')).filter((node) => node.type === 'Form');
-      const ids = forms.map((form) => (form as { options?: { id?: string } }).options?.id);
+      const ids = forms.map((form) => (form as { id?: string }).id);
       expect(forms.length).toBeGreaterThan(0);
       expect(ids.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
       expect(new Set(ids).size).toBe(ids.length);
@@ -174,7 +174,7 @@ describe('documentFor', () => {
       // Doc 199 rule 10: a Condition with no default path (an edge carrying no sourceHandle) is a flow problem.
       const flow = flowOf('template-multi-stage');
       for (const condition of conditionsOf(flow)) {
-        const outgoing = edgesOf(flow).filter((edge) => edge.source === condition.options.id);
+        const outgoing = edgesOf(flow).filter((edge) => edge.source === condition.id);
         const handles = outgoing.flatMap((edge) =>
           edge.sourceHandle === undefined ? [] : [edge.sourceHandle],
         );
@@ -187,8 +187,8 @@ describe('documentFor', () => {
     it('names every edge source and target as an existing node id', () => {
       const flow = flowOf('template-multi-stage');
       const ids = new Set([
-        ...stagesOf(flow).map((stage) => stage.options.id),
-        ...conditionsOf(flow).map((condition) => condition.options.id),
+        ...stagesOf(flow).map((stage) => stage.id),
+        ...conditionsOf(flow).map((condition) => condition.id),
       ]);
       for (const edge of edgesOf(flow)) {
         expect(ids.has(edge.source)).toBe(true);

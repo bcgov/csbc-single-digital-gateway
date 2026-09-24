@@ -1,3 +1,4 @@
+import { authoredId } from '../../renderers/ui/authored-id';
 import {
   needsValue,
   operatorsFor,
@@ -37,10 +38,8 @@ export function fieldsOf(
   document: StudioDocument,
   condition: TreeElement,
 ): readonly CriterionField[] {
-  const authoredId = condition.options?.['id'];
-  return typeof authoredId === 'string' && authoredId !== ''
-    ? upstreamFieldsOf(document, authoredId)
-    : [];
+  const id = authoredId(condition);
+  return id === undefined ? [] : upstreamFieldsOf(document, id);
 }
 
 /** The value a complete clause starts with for `field` (rules 26, 46), or `undefined` when it needs none. */

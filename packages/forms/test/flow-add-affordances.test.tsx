@@ -23,11 +23,11 @@ const stage = (id: string, label: string, forms: string[] = ['Form']) =>
   el({
     type: 'Stage',
     label,
-    options: { id },
+    id,
     elements: forms.map((name) => ({
       type: 'Form',
       label: name,
-      options: { id: `f-${name}` },
+      id: `f-${name}`,
       elements: [],
     })),
   });

@@ -71,7 +71,7 @@ const uischemaOk = (value: unknown) => ajv.validate(UISCHEMA_METASCHEMA, value) 
 /** A Flow whose single Stage holds `formEl` — the shared `#/definitions/form` reached through the Flow half. */
 const stageOf = (formEl: object) => ({
   type: 'Flow',
-  elements: [{ type: 'Stage', elements: [formEl], options: { id: 's1' } }],
+  elements: [{ type: 'Stage', elements: [formEl], id: 's1' }],
 });
 
 /** The inspector's `label` field, and a context for `element` inside `uischema`. */

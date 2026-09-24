@@ -15,8 +15,8 @@ const FLOW = {
   type: 'Flow',
   options: { edges: [{ id: 'e1', source: 's1', target: 's2' }] },
   elements: [
-    { type: 'Stage', label: 'A', options: { id: 's1' }, elements: [] },
-    { type: 'Stage', label: 'B', options: { id: 's2' }, elements: [] },
+    { type: 'Stage', label: 'A', id: 's1', elements: [] },
+    { type: 'Stage', label: 'B', id: 's2', elements: [] },
   ],
 } as UISchemaElement;
 

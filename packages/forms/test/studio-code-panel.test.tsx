@@ -1,9 +1,16 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { withoutAuthoredIds } from './without-ids';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { renderSeededStudio } from './render-studio';
 import { documentText } from '../src/studio/code/document-text';
 import { APPLY_DELAY_MS } from '../src/studio/code/use-code-document';
 import { STUDIO_SAMPLE_SCHEMA, STUDIO_SAMPLE_UISCHEMA } from '../src/studio/sample';
+
+/**
+ * Doc 219: the code panel shows the document the studio holds, which is NORMALISED — every element carries a
+ * stamped `id` the author never typed. Compare structure with those removed; the ids are random per mount.
+ */
+const withoutIds = (text: string): unknown => withoutAuthoredIds(JSON.parse(text));
 
 /** Doc 184 rule 19: entering and leaving preview are two buttons now, so one matcher finds whichever shows. */
 const PREVIEW_BUTTON = /^(Preview|Exit preview)$/;
@@ -184,7 +191,9 @@ describe('Form Studio code panel (doc 191)', () => {
       fireEvent.click(screen.getByRole('button', { name: PREVIEW_BUTTON }));
       const remounted = await screen.findByRole('textbox', { name: 'UI schema' });
       expect(remounted).not.toBe(uischema);
-      expect(remounted).toHaveValue(documentText(JSON.parse(uischemaWith('Edited heading'))));
+      expect(withoutIds((remounted as HTMLTextAreaElement).value)).toEqual(
+        JSON.parse(uischemaWith('Edited heading')),
+      );
     });
   });
 
@@ -193,7 +202,7 @@ describe('Form Studio code panel (doc 191)', () => {
       renderSeededStudio();
       const { schema, uischema } = await openCode();
       expect(schema).toHaveValue(documentText(STUDIO_SAMPLE_SCHEMA));
-      expect(uischema).toHaveValue(documentText(STUDIO_SAMPLE_UISCHEMA));
+      expect(withoutIds((uischema as HTMLTextAreaElement).value)).toEqual(STUDIO_SAMPLE_UISCHEMA);
       expect(statusOf(schema)).toHaveTextContent('Applied');
       expect(statusOf(uischema)).toHaveTextContent('Applied');
     });
@@ -213,8 +222,10 @@ describe('Form Studio code panel (doc 191)', () => {
       );
       expect(canvas().queryByRole('heading', { name: GREETING })).toBeNull();
       expect(statusOf(uischema)).toHaveTextContent('Applied');
-      // The author's own text is kept, not reformatted.
-      expect(uischema).toHaveValue(text);
+      // Doc 191's "the author's own text is kept" AMENDED by doc 219: the applied text carried no ids, so the
+      // studio normalised it and the panel re-synced to show what was stamped. The author's STRUCTURE is
+      // untouched — only ids were added.
+      expect(withoutIds((uischema as HTMLTextAreaElement).value)).toEqual(JSON.parse(text));
     });
 
     it('applies valid schema text so the canvas shows the new property title', async () => {

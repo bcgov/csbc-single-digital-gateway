@@ -22,9 +22,9 @@ const schema: JsonSchema = {
 
 const el = (element: object) => element as UISchemaElement;
 const form = (id?: string) =>
-  el({ type: 'Form', elements: [], ...(id === undefined ? {} : { options: { id } }) });
+  el({ type: 'Form', elements: [], ...(id === undefined ? {} : { id }) });
 const stage = (id: string, forms: object[] = [form(`${id}-f1`)]) =>
-  el({ type: 'Stage', elements: forms, options: { id } });
+  el({ type: 'Stage', elements: forms, id });
 /** One row holding one clause — `id` is the row id, so it is what an edge's `sourceHandle` names. */
 const row = (id: string, field: string, operator: Operator, value?: unknown): ConditionRow =>
   ({
@@ -34,7 +34,7 @@ const row = (id: string, field: string, operator: Operator, value?: unknown): Co
     clauses: [{ id: `${id}-1`, field, operator, ...(value === undefined ? {} : { value }) }],
   }) as ConditionRow;
 const condition = (id: string, rows: ConditionRow[] = []) =>
-  el({ type: 'Condition', options: { id, rows } });
+  el({ type: 'Condition', id, options: { rows } });
 const flow = (elements: object[], options?: object) =>
   el({ type: 'Flow', elements, ...(options === undefined ? {} : { options }) });
 const edge = (id: string, source: string, target: string, sourceHandle?: string) => ({

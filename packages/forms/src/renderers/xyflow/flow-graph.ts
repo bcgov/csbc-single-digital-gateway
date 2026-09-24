@@ -1,7 +1,7 @@
+import { authoredId } from '../ui/authored-id';
 import type { UISchemaElement } from '@jsonforms/core';
 import type { FlowEdge } from '../../types/elements';
 import {
-  authoredStageId,
   DEFAULT_HANDLE,
   drawnNodes,
   elementsOf,
@@ -185,7 +185,7 @@ function nodeIdProblems(flow: UISchemaElement): { ids: Set<string>; problems: Fl
   const ids = new Set<string>();
   const problems: FlowProblem[] = [];
   elementsOf(flow).forEach((element, index) => {
-    const id = flowNodeKind(element) === undefined ? undefined : authoredStageId(element);
+    const id = flowNodeKind(element) === undefined ? undefined : authoredId(element);
     if (id === undefined) return;
     if (ids.has(id))
       problems.push({

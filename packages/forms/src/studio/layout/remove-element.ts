@@ -1,5 +1,6 @@
+import { authoredId } from '../../renderers/ui/authored-id';
 import type { JsonSchema } from '@jsonforms/core';
-import { authoredStageId, flowNodeKind, FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
+import { flowNodeKind, FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
 import { clearFlowStart } from './flow-edits';
@@ -42,7 +43,7 @@ export function removeElement(
   if (!parent || !removed) return document;
   const stageId =
     flowNodeKind(removed) !== undefined && parent.type === FLOW_TYPE
-      ? authoredStageId(removed)
+      ? authoredId(removed)
       : undefined;
 
   const uischema = updateById(

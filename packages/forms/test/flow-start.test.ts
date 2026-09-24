@@ -26,15 +26,17 @@ const stage = (id?: unknown, extra: object = {}) =>
   ({
     type: 'Stage',
     elements: [],
-    ...(id === undefined ? {} : { options: { id } }),
+    ...(id === undefined ? {} : { id }),
     ...extra,
-  }) as UISchemaElement;
+    // Doc 219: `id` is typed `string` on the element, and this helper deliberately passes bad values.
+  }) as unknown as UISchemaElement;
 
 const criterion = (id: string) => ({ id, field: 'k1', operator: 'equals', value: 'x' });
 const condition = (id: string, criteria: string[] = []) =>
   ({
     type: 'Condition',
-    options: { id, criteria: criteria.map(criterion) },
+    id,
+    options: { criteria: criteria.map(criterion) },
   }) as UISchemaElement;
 
 /** A Flow taking its WHOLE options bag, so `startId` can be authored beside `edges`. */
@@ -208,7 +210,7 @@ describe('Flow start stage (doc 203)', () => {
       const ids = createElementIds();
       const { uischema, inserted } = insertStage(emptyFlowDoc(), null, ids, counter());
       expect(inserted).toBeDefined();
-      expect(startIdOf(uischema)).toBe(inserted?.options?.['id']);
+      expect(startIdOf(uischema)).toBe(inserted?.id);
       // And the resolver agrees with the stamp.
       expect(startStageId(uischema)).toBe(startIdOf(uischema));
     });
@@ -220,7 +222,7 @@ describe('Flow start stage (doc 203)', () => {
       const stamped = startIdOf(first.uischema);
       const second = insertStage(first.uischema, null, ids, newId);
       expect(startIdOf(second.uischema)).toBe(stamped);
-      expect(second.inserted?.options?.['id']).not.toBe(stamped);
+      expect(second.inserted?.id).not.toBe(stamped);
     });
 
     it('clears startId when removeElement removes the start Stage', () => {

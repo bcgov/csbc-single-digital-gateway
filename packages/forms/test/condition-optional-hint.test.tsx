@@ -88,11 +88,11 @@ const flow = (schemaRequired: string[]) => {
       {
         type: 'Stage',
         label: 'Applicant',
-        options: { id: 's1' },
+        id: 's1',
         elements: [
           {
             type: 'Form',
-            options: { id: 'f1' },
+            id: 'f1',
             elements: [{ type: 'Control', scope: '#/properties/kind', label: 'Applying as' }],
           },
         ],
@@ -100,8 +100,8 @@ const flow = (schemaRequired: string[]) => {
       {
         type: 'Condition',
         label: 'Type',
+        id: 'c1',
         options: {
-          id: 'c1',
           rows: [
             {
               id: 'k1',
@@ -115,8 +115,8 @@ const flow = (schemaRequired: string[]) => {
       {
         type: 'Stage',
         label: 'Review',
-        options: { id: 's2' },
-        elements: [{ type: 'Form', options: { id: 'f2' }, elements: [] }],
+        id: 's2',
+        elements: [{ type: 'Form', id: 'f2', elements: [] }],
       },
     ],
   } as unknown as UISchemaElement;

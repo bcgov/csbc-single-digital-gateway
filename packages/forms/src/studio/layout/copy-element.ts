@@ -2,7 +2,8 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { layoutKindOf, rowHasRoom } from '../../renderers/gridstack/grid-layouts';
 import type { ElementIds } from './element-ids';
 import { findParentById, updateById, withElements, type TreeElement } from './element-tree';
-import { authoredFormId, authoredIdsUsed } from './form-address';
+import { allIdsUsed } from './form-address';
+import { authoredId } from '../../renderers/ui/authored-id';
 import { propertyKeyOf, propertyScope, type StudioDocument } from './schema-properties';
 
 /** A grid item's current engine placement, read when Copy is clicked (doc 185 rule 15). */
@@ -86,14 +87,18 @@ function rekeyControls(
 }
 
 /**
- * Doc 197 rules 19-20: every authored Stage / Form `options.id` in `clone` (a fresh deep copy, so mutated in place)
- * replaced by one no element in the document uses. A duplicated id would make an edge target and a Form address
- * ambiguous. An element authored without an id keeps none — nothing is stamped on copy.
+ * Doc 197 rules 19-20, widened by doc 219 rule 8: every authored id in `clone` (a fresh deep copy, so mutated in
+ * place) replaced by one no element in the document uses. A duplicated id would make an edge target and a Form
+ * address ambiguous — and since doc 220 keys a capability by element id, it would also make TWO elements match one
+ * capability entry.
+ *
+ * Widened from "Stage and Form only" because every element now carries an id. An element that somehow has none
+ * still gets none — copy regenerates, it does not stamp; `fromSource` is the one place that stamps.
  */
 function refreshAuthoredIds(clone: TreeElement, taken: Set<string>, nextId: () => string): void {
-  if (authoredFormId(clone) !== undefined) {
+  if (authoredId(clone) !== undefined) {
     const id = nextId();
-    (clone as { options?: Record<string, unknown> }).options = { ...clone.options, id };
+    (clone as { id?: string }).id = id;
     taken.add(id);
   }
   for (const child of clone.elements ?? []) refreshAuthoredIds(child as TreeElement, taken, nextId);
@@ -159,7 +164,7 @@ export function copyElement(
   rekeyControls(clone, document.schema, keyMap, nextKey);
 
   // Rules 19-20: ids are their own namespace, so they regenerate against the document's ids, not the property keys.
-  const takenIds = authoredIdsUsed(document.uischema);
+  const takenIds = allIdsUsed(document.uischema);
   const nextId = () => {
     let id = newKey();
     while (takenIds.has(id)) id = newKey();

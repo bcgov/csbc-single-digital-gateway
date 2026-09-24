@@ -1,3 +1,5 @@
+import { authoredId } from '../src/renderers/ui/authored-id';
+import { authoredIdsUsed } from '../src/studio/layout/form-address';
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { Tabs } from '@repo/ui/tabs';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -331,13 +333,29 @@ describe('the open tab is derived (rule 17)', () => {
     expect(within(centre).getAllByRole('tab')).toHaveLength(4);
   });
 
-  it('authors no id on a Tab, and stores no open-tab option', async () => {
+  // Doc 219 re-points this. A Tab now CARRIES an authored id like every other element — a capability
+  // (doc 220) must be able to name one — but it is still not ADDRESSABLE: nothing may target a Tab by id,
+  // so `authoredIdsUsed` (the Form + Stage space an edge or a focus address draws from) excludes it.
+  // The original assertion ("a Tab has no id") encoded the second property through the first; stamping
+  // every element separates them, so assert the one that still holds.
+  it('a Tab carries an id but is not addressable, and stores no open-tab option', async () => {
     const { centre, saved } = await studioOn();
     fireEvent.click(within(centre).getByRole('button', { name: 'Add tab' }));
     await within(centre).findByRole('tab', { name: 'Tab 4' });
 
     const written = saved();
-    for (const element of allOf(written, 'Tab')) expect(element.options?.['id']).toBeUndefined();
+    const tabsWritten = allOf(written, 'Tab');
+    expect(tabsWritten.length).toBeGreaterThan(0);
+    for (const element of tabsWritten) {
+      expect(authoredId(element as UISchemaElement)).toBeTypeOf('string');
+      // ...and never in `options`, which is where it used to live.
+      expect(element.options?.['id']).toBeUndefined();
+    }
+    // No Tab id reaches the ADDRESSABLE space.
+    const addressable = authoredIdsUsed(written as UISchemaElement);
+    for (const element of tabsWritten) {
+      expect(addressable.has(authoredId(element as UISchemaElement) as string)).toBe(false);
+    }
     // Nothing on the Tabs remembers which tab was open either — the value is a per-mount studio id.
     const tabs = allOf(written, 'Tabs')[0] as Node;
     expect(Object.keys(tabs.options ?? {})).toEqual([]);

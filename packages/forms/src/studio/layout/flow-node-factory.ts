@@ -1,7 +1,7 @@
+import { authoredId } from '../../renderers/ui/authored-id';
 import type { UISchemaElement } from '@jsonforms/core';
 import { FORM_TYPE } from '../../renderers/gridstack/grid-layouts';
 import {
-  authoredStageId,
   CONDITION_TYPE,
   drawnNodes,
   STAGE_TYPE,
@@ -31,8 +31,9 @@ export function nextElementLabel(root: UISchemaElement, type: string, label: str
 }
 
 /** Doc 199 rule 15: Stages and Conditions share ONE id-space, so a new node id must avoid both. */
-const nodeIdsUsed = (root: TreeElement): ReadonlySet<unknown> =>
-  new Set(drawnNodes(root).map(({ element }) => authoredStageId(element)));
+/** Doc 219: the Stage + Condition id-space — they share one, so an edge target is unambiguous. */
+export const nodeIdsUsed = (root: TreeElement): ReadonlySet<unknown> =>
+  new Set(drawnNodes(root).map(({ element }) => authoredId(element)));
 
 /**
  * Rules 18, 20: a fresh `"Stage <n>"` holding one Form, both with ids unused anywhere in `root`.
@@ -44,14 +45,16 @@ export function newStageElement(root: TreeElement, newId: () => string): TreeEle
   return {
     type: STAGE_TYPE,
     label: nextElementLabel(root, STAGE_TYPE, 'Stage'),
-    options: { id: freshId(nodeIdsUsed(root), newId) },
+    // Doc 219: the authored id is a TOP-LEVEL sibling of `type`. A Stage now writes no `options` at all —
+    // the only key it ever held besides the id was `position`, left INERT by doc 198 and never written.
+    id: freshId(nodeIdsUsed(root), newId),
     // Doc 197 rule 4: the Stage's Form is addressable from the moment it exists. It is UNTITLED — the Stage card
     // and the canvas both draw "Untitled form" for a Form with no label, which says more to an author than a
     // numbered "Form 3" they did not choose (user request 2026-09-18).
     elements: [
       {
         type: FORM_TYPE,
-        options: { id: freshId(formIdsUsed(root), newId) },
+        id: freshId(formIdsUsed(root), newId),
         elements: [],
       },
     ],
@@ -73,7 +76,8 @@ export function newConditionElement(root: TreeElement, newId: () => string): Tre
      * failing its own gate, exactly the trap doc 205 rule 37b records. `rows` is required, so an empty
      * list is what makes a fresh Condition valid.
      */
-    options: { id: freshId(nodeIdsUsed(root), newId), rows: [] },
+    id: freshId(nodeIdsUsed(root), newId),
+    options: { rows: [] },
   } as TreeElement;
 }
 
@@ -89,6 +93,6 @@ export const newNodeElement = (
 export const newFormElement = (root: TreeElement, newId: () => string): TreeElement =>
   ({
     type: FORM_TYPE,
-    options: { id: freshId(formIdsUsed(root), newId) },
+    id: freshId(formIdsUsed(root), newId),
     elements: [],
   }) as TreeElement;

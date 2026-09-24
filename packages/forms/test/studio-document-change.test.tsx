@@ -5,6 +5,21 @@ import { describe, expect, it, vi } from 'vitest';
 import type { StudioDocument } from '../src/types/index';
 import { renderSeededStudio, SAMPLE_DOCUMENT } from './render-studio';
 
+/** Doc 219: the seed is normalised, so compare structure with the stamped ids removed. */
+const stripIds = (node: unknown): unknown => {
+  if (Array.isArray(node)) return node.map(stripIds);
+  if (typeof node !== 'object' || node === null) return node;
+  const { id: _id, ...rest } = node as Record<string, unknown>;
+  return Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, stripIds(v)]));
+};
+
+const everyElementHasId = (node: unknown): boolean => {
+  if (typeof node !== 'object' || node === null) return true;
+  const element = node as { type?: unknown; id?: unknown; elements?: unknown[] };
+  if (typeof element.type === 'string' && typeof element.id !== 'string') return false;
+  return (element.elements ?? []).every(everyElementHasId);
+};
+
 // Doc 218 rules 1-4 — `FormStudio.onDocumentChange`: the studio reporting its document without giving it up.
 
 const itemOf = (element: Element) => {
@@ -39,11 +54,12 @@ describe('FormStudio onDocumentChange (doc 218 rules 1-4)', () => {
     await screen.findByRole('textbox', { name: 'Name' });
 
     expect(onDocumentChange).toHaveBeenCalledTimes(1);
-    // The BASELINE: exactly what was seeded, so a host comparing it to the stored content reads clean, not dirty.
-    expect(lastDocument(onDocumentChange)).toEqual({
-      schema: SAMPLE_DOCUMENT.schema,
-      uischema: SAMPLE_DOCUMENT.uischema,
-    });
+    // The BASELINE, so a host comparing it to the stored content reads clean, not dirty. Doc 219: it is the
+    // NORMALISED seed — every id-less element stamped — which is exactly what the host would save.
+    const baseline = lastDocument(onDocumentChange) as { schema: unknown; uischema: unknown };
+    expect(baseline.schema).toEqual(SAMPLE_DOCUMENT.schema);
+    expect(stripIds(baseline.uischema)).toEqual(SAMPLE_DOCUMENT.uischema);
+    expect(everyElementHasId(baseline.uischema)).toBe(true);
   });
 
   it('reports the edited document after an inspector edit (rule 1)', async () => {

@@ -208,12 +208,13 @@ describe('Form description in the runner (rule 20b)', () => {
         {
           type: 'Stage',
           label: 'One',
-          options: { id: 's1' },
+          id: 's1',
           elements: [
             {
               type: 'Form',
               label: 'Contact',
-              options: { id: 'f1', description: richText('How we reach you.') },
+              id: 'f1',
+              options: { description: richText('How we reach you.') },
               elements: [{ type: 'Heading', text: 'Body' }],
             },
           ],

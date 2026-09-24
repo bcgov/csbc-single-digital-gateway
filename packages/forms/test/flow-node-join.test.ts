@@ -17,12 +17,12 @@ const stage = (id: string, label = id.toUpperCase()) =>
   tree({
     type: 'Stage',
     label,
-    options: { id },
-    elements: [{ type: 'Form', options: { id: `f-${id}` }, elements: [] }],
+    id,
+    elements: [{ type: 'Form', id: `f-${id}`, elements: [] }],
   });
 
 const condition = (id: string, rows: object[] = []) =>
-  tree({ type: 'Condition', label: id.toUpperCase(), options: { id, rows } });
+  tree({ type: 'Condition', label: id.toUpperCase(), id, options: { rows } });
 
 const row = (id: string) => ({
   id,
@@ -42,9 +42,7 @@ const edgesOf = (element: UISchemaElement) => (element.options?.['edges'] ?? [])
 /** Deletes the element with `authoredId` through the real studio path. */
 function deleteNode(root: TreeElement, authoredId: string) {
   const ids = createElementIds();
-  const node = (root.elements ?? []).find(
-    (element) => (element as TreeElement).options?.['id'] === authoredId,
-  );
+  const node = (root.elements ?? []).find((element) => (element as TreeElement).id === authoredId);
   if (!node) throw new Error(`no node ${authoredId}`);
   return removeElement({ schema, uischema: root }, ids.idOf(node), ids).uischema;
 }

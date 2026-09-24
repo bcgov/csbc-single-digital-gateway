@@ -289,12 +289,12 @@ describe('copyElement — authored ids (doc 197 rules 19-20)', () => {
 
   /** Flow [ Applicant 's1' [ contact 'f1', plain (no id) ] ] with one edge out of s1. */
   function flowFixture() {
-    const contact = { type: 'Form', label: 'Contact', options: { id: 'f1' }, elements: [] };
+    const contact = { type: 'Form', label: 'Contact', id: 'f1', elements: [] };
     const plain = { type: 'Form', label: 'Plain', elements: [] };
     const stage = {
       type: 'Stage',
       label: 'Applicant',
-      options: { id: 's1' },
+      id: 's1',
       elements: [contact, plain],
     };
     const flow = {
@@ -319,8 +319,8 @@ describe('copyElement — authored ids (doc 197 rules 19-20)', () => {
       keys('cccccccc'),
     );
 
-    expect(optionsOf(result.copy)['id']).toBe('cccccccc');
-    expect(contact.options.id).toBe('f1');
+    expect(result.copy?.id).toBe('cccccccc');
+    expect(contact.id).toBe('f1');
   });
 
   it('gives a copied Stage a fresh id, and fresh ids to every Form inside it', () => {
@@ -334,10 +334,10 @@ describe('copyElement — authored ids (doc 197 rules 19-20)', () => {
       keys('cccccccc', 'dddddddd'),
     );
 
-    expect(optionsOf(result.copy)['id']).toBe('cccccccc');
+    expect(result.copy?.id).toBe('cccccccc');
     const copiedForms = elementsOf(result.copy);
-    expect(optionsOf(copiedForms[0])['id']).toBe('dddddddd');
-    expect(stage.options.id).toBe('s1');
+    expect(copiedForms[0]?.id).toBe('dddddddd');
+    expect(stage.id).toBe('s1');
   });
 
   it('regenerates an id that collides with one already in the document', () => {
@@ -352,7 +352,7 @@ describe('copyElement — authored ids (doc 197 rules 19-20)', () => {
       newKey,
     );
 
-    expect(optionsOf(result.copy)['id']).toBe('cccccccc');
+    expect(result.copy?.id).toBe('cccccccc');
     expect(newKey).toHaveBeenCalledTimes(3);
   });
 

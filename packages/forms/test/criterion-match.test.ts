@@ -66,7 +66,8 @@ const edge = (id: string, source: string, target: string, sourceHandle?: string)
 const condition = (id: string, clauses: Clause[]) =>
   ({
     type: 'Condition',
-    options: { id, rows: clauses.map((clause) => rowOf(clause)) },
+    id,
+    options: { rows: clauses.map((clause) => rowOf(clause)) },
   }) as unknown as UISchemaElement;
 
 describe('matchesClause (doc 202 rules 19-23)', () => {

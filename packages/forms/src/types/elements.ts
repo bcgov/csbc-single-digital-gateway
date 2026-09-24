@@ -4,6 +4,32 @@ import type { ComponentMap, GridStackOptions, GridStackWidget } from 'gridstack/
 import type { LayoutGap } from '../renderers/gridstack/layout-gap';
 import type { SectionInset, SectionVariant } from '../renderers/gridstack/section-options';
 
+/**
+ * Doc 219: every uischema element carries its authored id at the TOP LEVEL — a sibling of `type`,
+ * `scope` and `options` — so a template capability map (doc 220) has something stable to key on.
+ *
+ * Declared by AUGMENTING `BaseUISchemaElement` rather than adding `id?: string` to each of the 24
+ * element interfaces below: `Layout`, `ControlElement`, `LabelElement` and `Category` all extend it,
+ * and `UISchemaElement` is the union of those, so one declaration reaches every element — including
+ * the JSONForms-owned types we do not declare ourselves. (The repo augments third-party modules
+ * elsewhere for the same reason: `express-session` in `@repo/nestjs`, `@tanstack/react-router` in both
+ * web apps.)
+ *
+ * OPTIONAL here, and optional in the metaschema for every type but `Stage` and `Condition` — whose
+ * edges address them, so they require one. That optionality is made honest at runtime by seed
+ * normalisation: `fromSource` stamps every id-less element when a document is opened, so a document
+ * may arrive without ids but an OPEN one never lacks them.
+ *
+ * Read it ONLY through `authoredId()` (`studio/layout/element-id.ts`) — reaching for `element.id`
+ * directly skips the non-empty-string guard and treats `id: ''` as a real id.
+ */
+declare module '@jsonforms/core' {
+  interface BaseUISchemaElement {
+    /** The authored id: a `nanoid(8)`, unique within its id-space. Absent until stamped. */
+    id?: string;
+  }
+}
+
 /** `{ type: 'Heading' }` — a display element rendered by `@repo/ui`'s `Heading` (doc 180). */
 export interface HeadingElement extends BaseUISchemaElement {
   type: 'Heading';
@@ -175,12 +201,13 @@ export interface VerticalLayoutElement extends Layout {
 export interface FormElement extends Layout {
   type: 'Form';
   label?: string;
+  /**
+   * The Form's address (doc 197), now a TOP-LEVEL sibling (doc 219): a `nanoid(8)`, unique among the document's
+   * Forms, and what a host puts in a URL to open this Form. Declared on `BaseUISchemaElement` for every element;
+   * restated here because a Form's id is the one an address names.
+   */
+  id?: string;
   options?: LayoutGapOptions & {
-    /**
-     * The Form's address (doc 197): stamped on insert as a `nanoid(8)`, unique among the document's Forms, and what a
-     * host puts in a URL to open this Form. Optional — a Form without one drills in normally but cannot be linked.
-     */
-    id?: string;
     /**
      * Doc 207 rule 30 (superseding doc 201 rule 20): shown under the title, as RICH content — a Lexical
      * editor state, not a string. Typed loosely because `@repo/forms` depends on `@repo/ui`, not Lexical.
@@ -294,7 +321,10 @@ export interface StageElement extends Layout {
   type: 'Stage';
   label?: string;
   elements: FormElement[];
-  options: { id: string; position?: StagePosition; [key: string]: unknown };
+  /** Doc 219: the authored id, a TOP-LEVEL sibling. Required — edges address a Stage by it. */
+  id: string;
+  /** Doc 198 leaves `position` INERT: placement is derived from rank and `elements` order, never authored. */
+  options?: { position?: StagePosition; [key: string]: unknown };
 }
 
 /**
@@ -312,8 +342,10 @@ export interface StageElement extends Layout {
 export interface ConditionElement extends BaseUISchemaElement {
   type: 'Condition';
   label?: string;
+  /** Doc 219: the authored id, a TOP-LEVEL sibling. Required — edges address a Condition by it. */
+  id: string;
+  /** `rows` STAYS in options, so a Condition still has a required `options` (doc 199 rule 35). */
   options: {
-    id: string;
     rows: ConditionRow[];
     position?: StagePosition;
     [key: string]: unknown;

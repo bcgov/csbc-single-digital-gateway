@@ -24,10 +24,10 @@ const stage = (id: string, label?: string) =>
   el({
     type: 'Stage',
     elements: [form('Details')],
-    options: { id },
+    id,
     ...(label === undefined ? {} : { label }),
   });
-const condition = (id: string) => el({ type: 'Condition', options: { id, criteria: [] } });
+const condition = (id: string) => el({ type: 'Condition', id, options: { criteria: [] } });
 const flow = (elements: object[], options?: object) =>
   el({ type: 'Flow', elements, ...(options === undefined ? {} : { options }) });
 const edge = (id: string, source: string, target: string) => ({ id, source, target });

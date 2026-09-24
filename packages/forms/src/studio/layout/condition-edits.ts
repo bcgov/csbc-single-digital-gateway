@@ -1,3 +1,4 @@
+import { authoredId } from '../../renderers/ui/authored-id';
 import { nextRowLabel } from '../../renderers/xyflow/condition-rows';
 import { rowsOf } from '../../renderers/xyflow/flow-elements';
 import type { ConditionRow } from '../../types/elements';
@@ -71,15 +72,19 @@ export function removeRow(
   if (kept.length === rows.length) return document;
 
   const next = withRows(document, conditionId, kept, ids);
-  const authoredId = condition.options?.['id'];
-  if (typeof authoredId !== 'string' || authoredId === '') return next;
+  const conditionAuthoredId = authoredId(condition);
+  if (conditionAuthoredId === undefined) return next;
 
   // The Flow is the root: a Condition is only ever a Flow child.
   const flow = next.uischema as TreeElement;
   const edges = rawEdges(flow);
   const remaining = edges.filter(
     (entry) =>
-      !(isRecord(entry) && entry['source'] === authoredId && entry['sourceHandle'] === rowId),
+      !(
+        isRecord(entry) &&
+        entry['source'] === conditionAuthoredId &&
+        entry['sourceHandle'] === rowId
+      ),
   );
   if (remaining.length === edges.length) return next;
   return { schema: next.schema, uischema: withOptions(flow, { edges: remaining }, ids) };

@@ -1,4 +1,6 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import { stampMissingIds } from './stamp-ids';
+import { allIdsUsed } from './form-address';
 import type { LayoutNode } from '../../renderers/gridstack/grid-editor';
 import { fitDropIn } from '../../renderers/gridstack/grid-drop-fit';
 import {
@@ -122,8 +124,16 @@ export function insertElement(
   const root = document.uischema as TreeElement;
   const layout = findById(root, target.gridId, ids);
   const kind = layout ? layoutKindOf(layout.type) : undefined;
-  const built = buildTemplate(template, document.schema);
-  if (!layout || !kind || !built) return { ...document, inserted: undefined };
+  const rawBuilt = buildTemplate(template, document.schema);
+  if (!layout || !kind || !rawBuilt) return { ...document, inserted: undefined };
+  // Doc 219 rule 4: every element carries an authored id, so a palette template is stamped on the way in —
+  // against the ids ALREADY in the document, since a freshly built template knows nothing of them. Without
+  // this an inserted element would have no id until the document was next seeded, and a capability (doc 220)
+  // would have nothing to key on.
+  const built = {
+    ...rawBuilt,
+    element: stampMissingIds(rawBuilt.element, undefined, allIdsUsed(document.uischema)),
+  };
   // Doc 194 rule 8: an element the layout's kind cannot hold (a Separator in a row) is refused.
   // Doc 216 rule 11: with the ancestor types down to — and including — the target layout, so a Tabs
   // inside a Tab is refused too.

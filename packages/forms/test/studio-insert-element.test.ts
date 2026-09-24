@@ -1,4 +1,5 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import { withoutAuthoredIds } from './without-ids';
 import { describe, expect, it } from 'vitest';
 import { horizontalWidth } from '../src/renderers/gridstack/grid-layouts';
 import { createElementIds } from '../src/studio/layout/element-ids';
@@ -76,7 +77,11 @@ describe('click placement (rule 22)', () => {
       fx.ids,
       keys(),
     );
-    expect(result.inserted).toEqual({ type: 'Heading', text: 'Heading', options: { level: 2 } });
+    expect(withoutAuthoredIds(result.inserted)).toEqual({
+      type: 'Heading',
+      text: 'Heading',
+      options: { level: 2 },
+    });
     expect(result.schema).toBe(fx.document.schema);
     expect(nodeIn(fx, result.uischema, fx.stack)?.elements).toEqual([
       fx.stackHeading,
@@ -101,7 +106,7 @@ describe('click placement (rule 22)', () => {
       fx.ids,
       keys(),
     );
-    expect(inPlain.inserted).toEqual({
+    expect(withoutAuthoredIds(inPlain.inserted)).toEqual({
       type: 'Grid',
       elements: [],
       options: { gridItem: { w: 12 } },
@@ -136,7 +141,10 @@ describe('fields (rules 17-18)', () => {
     expect(result.schema.properties?.['Kq6sJ1uA']).toEqual({ type: 'string', title: 'Text 2' });
     // A new field is required by default, appended after the properties already required.
     expect(result.schema.required).toEqual(['name', 'Kq6sJ1uA']);
-    expect(result.inserted).toEqual({ type: 'Control', scope: '#/properties/Kq6sJ1uA' });
+    expect(withoutAuthoredIds(result.inserted)).toEqual({
+      type: 'Control',
+      scope: '#/properties/Kq6sJ1uA',
+    });
     expect((result.uischema as TreeElement).elements?.at(-1)).toBe(result.inserted);
   });
 
@@ -236,7 +244,10 @@ describe('drop placement (rule 21)', () => {
       result.inserted,
       fx.stackHeading,
     ]);
-    expect(result.inserted).toEqual({ type: 'Control', scope: '#/properties/k1' });
+    expect(withoutAuthoredIds(result.inserted)).toEqual({
+      type: 'Control',
+      scope: '#/properties/k1',
+    });
   });
 
   it('orders a dropped item by x in a HorizontalLayout, at width 1', () => {

@@ -274,8 +274,8 @@ const flowWith = (value: unknown): UISchemaElement =>
       {
         type: 'Condition',
         label: 'How to reach you',
+        id: 'x',
         options: {
-          id: 'x',
           rows: [
             {
               id: 'r1',

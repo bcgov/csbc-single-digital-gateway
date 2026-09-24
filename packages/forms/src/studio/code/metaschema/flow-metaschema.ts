@@ -12,6 +12,14 @@ export const FLOW_DEFINITIONS = {
     type: 'object',
     required: ['type', 'elements'],
     properties: {
+      // Doc 219: a Flow carries a top-level authored id like every other element, so a capability can name
+      // it — `edges` on a Flow is a container capability (doc 220). Optional: nothing ADDRESSES a Flow.
+      id: {
+        description:
+          'The authored id of this flow: stable across reloads, and what a template capability names. Stamped automatically.',
+        type: 'string',
+        minLength: 1,
+      },
       type: { description: 'Always "Flow" — the root of a multi-stage form.', const: 'Flow' },
       elements: {
         description:
@@ -48,9 +56,12 @@ export const FLOW_DEFINITIONS = {
   stage: {
     description: "One stage of a Flow, holding that stage's Forms. Allowed only in a Flow.",
     type: 'object',
-    required: ['type', 'elements', 'options'],
+    required: ['type', 'elements', 'id'],
     properties: {
       type: { description: 'Always "Stage" — one stage of a Flow.', const: 'Stage' },
+      // Doc 219: the authored id is a TOP-LEVEL sibling of `type`, not an option. Required here because edges
+      // address a Stage by it.
+      id: nonEmptyString('The id edges use to connect this stage. Unique in the Flow.'),
       elements: {
         description: 'The Forms of this stage, in order. A Stage holds only Forms.',
         type: 'array',
@@ -62,11 +73,11 @@ export const FLOW_DEFINITIONS = {
       },
       rule: { $ref: '#/definitions/rule' },
       options: {
+        // Doc 219: `id` moved out, leaving only the INERT `position` (doc 198 derives placement from rank and
+        // `elements` order), so a Stage's options are now optional in full.
         description: 'Stage options.',
         type: 'object',
-        required: ['id'],
         properties: {
-          id: nonEmptyString('The id edges use to connect this stage. Unique in the Flow.'),
           position: {
             description: 'Where the stage sits on the canvas. Placed automatically when absent.',
             type: 'object',
@@ -84,9 +95,11 @@ export const FLOW_DEFINITIONS = {
     description:
       'A branching node of a Flow (doc 199): each row owns one output, and an answer matching none takes the Else path. Allowed only in a Flow, and it holds no elements.',
     type: 'object',
-    required: ['type', 'options'],
+    required: ['type', 'options', 'id'],
     properties: {
       type: { description: 'Always "Condition" — a branching node of a Flow.', const: 'Condition' },
+      // Doc 219: top-level, like a Stage's. `options` stays REQUIRED because `rows` still lives there.
+      id: nonEmptyString('The id edges use to connect this condition. Unique in the Flow.'),
       label: {
         description: 'A name for the condition, shown on its card and in the element path.',
         type: 'string',
@@ -95,9 +108,8 @@ export const FLOW_DEFINITIONS = {
       options: {
         description: 'Condition options.',
         type: 'object',
-        required: ['id', 'rows'],
+        required: ['rows'],
         properties: {
-          id: nonEmptyString('The id edges use to connect this condition. Unique in the Flow.'),
           rows: {
             description:
               'The branches, in evaluation order: the first row whose clauses are satisfied wins. Each owns one output, addressed by an edge sourceHandle.',

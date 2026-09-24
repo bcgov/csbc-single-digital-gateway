@@ -23,7 +23,8 @@ const form = (extra: object = {}) => ({
 const stage = (id: string, elements: object[] = [form()], options: object = {}) => ({
   type: 'Stage',
   elements,
-  options: { id, ...options },
+  id,
+  options: { ...options },
 });
 const flow = (elements: object[], edges?: object[]) => ({
   type: 'Flow',
@@ -87,7 +88,7 @@ describe('uischema metaschema — Flow root (rule 17)', () => {
     expect(ok(flow([{ type: 'Stage', elements: [] }]))).toBe(false);
     expect(ok(flow([{ type: 'Stage', elements: [], options: {} }]))).toBe(false);
     expect(ok(flow([stage('')]))).toBe(false);
-    expect(ok(flow([{ type: 'Stage', elements: [], options: { id: 7 } }]))).toBe(false);
+    expect(ok(flow([{ type: 'Stage', elements: [], id: 7 }]))).toBe(false);
   });
 
   it('refuses a position missing x or y, and an edge missing id, source or target', () => {

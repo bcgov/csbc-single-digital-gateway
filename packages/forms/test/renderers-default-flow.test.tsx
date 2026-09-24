@@ -35,13 +35,13 @@ const FLOW = {
     {
       type: 'Stage',
       label: 'One',
-      options: { id: 's1' },
+      id: 's1',
       elements: [{ type: 'Form', elements: [] }],
     },
     {
       type: 'Stage',
       label: 'Two',
-      options: { id: 's2' },
+      id: 's2',
       elements: [{ type: 'Form', elements: [] }],
     },
   ],

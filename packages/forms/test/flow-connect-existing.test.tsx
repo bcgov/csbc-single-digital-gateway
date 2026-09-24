@@ -28,14 +28,12 @@ const stage = (id: string, label: string, controls: object[] = []) =>
   el({
     type: 'Stage',
     label,
-    options: { id },
-    elements: [
-      { type: 'Form', label: `Form ${id}`, options: { id: `f-${id}` }, elements: controls },
-    ],
+    id,
+    elements: [{ type: 'Form', label: `Form ${id}`, id: `f-${id}`, elements: controls }],
   });
 
 const condition = (id: string, rows: object[] = [], label = 'Route') =>
-  el({ type: 'Condition', label, options: { id, rows } });
+  el({ type: 'Condition', label, id, options: { rows } });
 
 const row = (id: string) => ({
   id,

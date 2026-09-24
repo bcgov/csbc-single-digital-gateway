@@ -23,7 +23,7 @@ const el = (element: object) => element as UISchemaElement;
 const form = (id: string, label: string, keys: string[]) => ({
   type: 'Form',
   label,
-  options: { id },
+  id,
   elements: keys.map((key) => ({ type: 'Control', scope: `#/properties/${key}` })),
 });
 
@@ -45,26 +45,24 @@ const FLOW = el({
     {
       type: 'Stage',
       label: 'Applicant',
-      options: { id: 's1' },
+      id: 's1',
       elements: [form('f-contact', 'Contact', ['name', 'kind']), form('f-extra', 'Extra', [])],
     },
     {
       type: 'Condition',
-      options: {
-        id: 'x',
-        criteria: [{ id: 'c1', field: 'kind', operator: 'equals', value: 'biz' }],
-      },
+      id: 'x',
+      options: { criteria: [{ id: 'c1', field: 'kind', operator: 'equals', value: 'biz' }] },
     },
     {
       type: 'Stage',
       label: 'Business',
-      options: { id: 's2' },
+      id: 's2',
       elements: [form('f-biz', 'About the business', ['bizName'])],
     },
     {
       type: 'Stage',
       label: 'Review',
-      options: { id: 's3' },
+      id: 's3',
       elements: [form('f-review', 'Confirm', ['agree'])],
     },
   ],

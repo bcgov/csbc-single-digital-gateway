@@ -39,7 +39,7 @@ const FLOW = el({
     {
       type: 'Stage',
       label: 'Applicant',
-      options: { id: 's1' },
+      id: 's1',
       elements: [
         {
           type: 'Form',
@@ -51,7 +51,7 @@ const FLOW = el({
     {
       type: 'Stage',
       label: 'Review',
-      options: { id: 's2' },
+      id: 's2',
       elements: [{ type: 'Form', label: 'Decision', elements: [] }],
     },
   ],
