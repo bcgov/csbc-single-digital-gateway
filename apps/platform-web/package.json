@@ -15,7 +15,6 @@
   "dependencies": {
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
-    "@monaco-editor/react": "^4.7.0",
     "@repo/forms": "*",
     "@repo/react": "*",
     "@repo/ui": "*",

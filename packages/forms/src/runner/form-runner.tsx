@@ -37,6 +37,15 @@ export const ROOT_MESSAGE = 'The form must be a Form, a Service or a Flow.';
 const EMPTY_VISITED: ReadonlySet<string> = new Set<string>();
 const NO_STAGES: readonly string[] = [];
 
+/**
+ * Doc 218 rule 6: how a disabled runner draws its controls — the `'readonly'` position of the presentation axis
+ * (`renderers/ui/control-presentation.ts`), which every ui control already implements for doc 202 rule 50 and which
+ * has had no caller since doc 211 superseded that rule for the review page. Real inputs at full contrast, `readOnly`
+ * where HTML has it and `disabled` where it does not — NOT a new presentation, and not the `plain` one a submission
+ * uses, which draws answers as text and would say the wrong thing about an empty template.
+ */
+const READONLY_CONFIG = { readonly: true } as const;
+
 /** The Form element the position names, for the error gate. `null` for a Form root, which is its own form. */
 function formAt(
   uischema: UISchemaElement,
@@ -55,6 +64,7 @@ export function FormRunner({
   onChange,
   onSaveDraft,
   onSubmit,
+  disabled = false,
 }: FormRunnerProps) {
   const isFlow = uischema.type === FLOW_TYPE;
   // Doc 215 rule 16: a Service root is one page of elements exactly as a Form root is, which is all this ever meant.
@@ -91,8 +101,11 @@ export function FormRunner({
 
   // Rule 24: the gate reads only the errors the Form ON SCREEN owns. For a Form root that is the whole document.
   const current = formAt(uischema, position);
-  const blocked =
-    current === undefined
+  // Doc 218 rule 8: a document nobody can fill must not gate on emptiness, or a disabled Flow is stuck on its first
+  // stage for ever. Nothing here is a validity CLAIM — with rule 7's `NoValidation` there are no errors to read.
+  const blocked = disabled
+    ? false
+    : current === undefined
       ? isPage
         ? documentHasError(errors)
         : false
@@ -236,7 +249,8 @@ export function FormRunner({
               visited={visited}
               errorForms={flaggedForms}
               // Rule 24b: forward moves wait for the pages in between; `flowErrors` always exists for a Flow.
-              {...(flowErrors === undefined
+              // Doc 218 rule 8: no gate at all while disabled — every Stage opens, for the same reason `blocked` does.
+              {...(disabled || flowErrors === undefined
                 ? {}
                 : { canOpen: (target: RunnerPosition) => mayOpen(flowErrors, position, target) })}
               onGoTo={goTo}
@@ -262,6 +276,12 @@ export function FormRunner({
                   data={data}
                   renderers={RENDERERS}
                   cells={defaults.cells}
+                  // Doc 218 rules 6-7. `NoValidation` is not cosmetic: JSONForms validates on mount, so without it a
+                  // blank published template paints every required field red before anyone has touched it — the same
+                  // escape the studio canvas takes (doc 187).
+                  {...(disabled
+                    ? { config: READONLY_CONFIG, validationMode: 'NoValidation' as const }
+                    : {})}
                   onChange={({ data: next, errors: nextErrors }) => {
                     setErrors(nextErrors ?? []);
                     onChange(next as RunnerData);
@@ -279,13 +299,16 @@ export function FormRunner({
               blocked={blocked}
               // Rule 27c: a Flow's Submit stays pressable while there is an errored Form to take the citizen to; it is
               // disabled only for errors no Form owns, which have nowhere to go (rule 32). A Form root keeps rule 27.
+              // Doc 218 rule 9: both forward actions are refused while disabled, and the handlers are ignored — there
+              // is nothing to save or submit on a document that cannot be answered.
               submitBlocked={
-                flowErrors === undefined
+                disabled ||
+                (flowErrors === undefined
                   ? documentHasError(errors)
-                  : flowErrors.submitBlocked && flowErrors.firstError === undefined
+                  : flowErrors.submitBlocked && flowErrors.firstError === undefined)
               }
               busy={busy}
-              canSaveDraft={onSaveDraft !== undefined}
+              canSaveDraft={!disabled && onSaveDraft !== undefined}
               onBack={onBack}
               onNext={onNext}
               onSaveDraft={() => run(onSaveDraft)}

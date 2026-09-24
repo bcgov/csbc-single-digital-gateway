@@ -72,8 +72,11 @@ describe('UnsavedChangesGuard Component Test Suite', () => {
     render(<UnsavedChangesGuard when={true} />);
 
     expect(screen.getByText('Discard unsaved changes?')).toBeInTheDocument();
+    // Doc 218 rule 19: the no-save variant IS `ConfirmDiscardDialog`, whose copy has to be true of an
+    // in-page version switch too — so it says "if you continue", not "if you leave this page". The
+    // save variant below, which only ever blocks a navigation, keeps the more specific wording.
     expect(
-      screen.getByText('Your changes haven’t been saved and will be lost if you leave this page.'),
+      screen.getByText('Your changes haven’t been saved and will be lost if you continue.'),
     ).toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: 'Keep editing' })).toBeInTheDocument();

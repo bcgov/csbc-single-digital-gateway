@@ -10,6 +10,16 @@ import '@/routes/admin.service-agreements.index';
 import '@/routes/admin.service-agreements.new';
 import '@/routes/admin.service-agreements.$id';
 
+// Doc 218: the detail page opens a version's content in the studio or a disabled runner — see
+// `test/support/mock-forms.tsx`. Without the stubs the real runner also draws the document's title, so this
+// file's `getByText('Global Privacy Policy')` matches the page heading AND the form title.
+vi.mock('@repo/forms/studio', async () =>
+  (await import('../../../../support/mock-forms')).formStudioMock(),
+);
+vi.mock('@repo/forms/runner', async () =>
+  (await import('../../../../support/mock-forms')).formRunnerMock(),
+);
+
 afterEach(() => {
   vi.restoreAllMocks();
 });

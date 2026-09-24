@@ -93,6 +93,7 @@ export const FormStudio: FC<FormStudioProps> = ({
   uischema,
   loadDocument,
   onSaveDocument,
+  onDocumentChange,
   focusedForm,
   onFocusedFormChange,
   onNotice,
@@ -107,6 +108,24 @@ export const FormStudio: FC<FormStudioProps> = ({
   // Until there is a document the studio still holds one (the sample) so the hooks below stay unconditional — the
   // canvas never draws it, because rule 15 returns the empty state before the document is rendered.
   const studio = useStudioDocument(session.document ?? {});
+  /**
+   * Doc 218 rules 1-4: report the document without giving it up.
+   *
+   * An effect in the SHELL, not a callback threaded through `useStudioDocument` — the hook keeps the invariant its
+   * own comment states, and this gets correctness for free: `current` there is state, and `updateUischema` returns
+   * the previous object when an update changes nothing, so selection and hover emit nothing.
+   *
+   * Ref-held (rule 3) so a host may pass an inline arrow. Gated on `ready` (rule 2's "the document as opened"):
+   * until then the hook is holding the built-in sample to keep the hooks below unconditional, and reporting THAT
+   * would tell a host it had opened a form it never asked for.
+   */
+  const notifyDocument = useRef(onDocumentChange);
+  notifyDocument.current = onDocumentChange;
+  const { schema: liveSchema, uischema: liveUischema } = studio;
+  useEffect(() => {
+    if (!ready) return;
+    notifyDocument.current?.({ schema: liveSchema, uischema: liveUischema });
+  }, [ready, liveSchema, liveUischema]);
   const panels = {
     left: useDockPanel('left'),
     right: useDockPanel('right'),

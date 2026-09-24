@@ -33,24 +33,14 @@ import '@/routes/app.$slug.service-agreements.$id';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea (feature 217: the agreement editor
 // is a JSON content editor now, not a JSONForms form).
-vi.mock('@monaco-editor/react', () => ({
-  default: ({
-    value,
-    onChange,
-    options,
-  }: {
-    value: string;
-    onChange?: (v: string) => void;
-    options?: { readOnly?: boolean };
-  }) => (
-    <textarea
-      aria-label="content"
-      value={value}
-      onChange={(e) => onChange?.(e.target.value)}
-      readOnly={options?.readOnly}
-    />
-  ),
-}));
+// Doc 218: the detail page opens a version's content in the studio or a disabled runner — see
+// `test/support/mock-forms.tsx`.
+vi.mock('@repo/forms/studio', async () =>
+  (await import('../../../../support/mock-forms')).formStudioMock(),
+);
+vi.mock('@repo/forms/runner', async () =>
+  (await import('../../../../support/mock-forms')).formRunnerMock(),
+);
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -216,9 +206,9 @@ describe('Console Agreements  Component Test Suite', () => {
     ).toBeInTheDocument();
 
     expect(screen.getByRole('heading', { name: 'Workspace TOS' })).toBeInTheDocument();
-    // Feature 217: the editor is the version's content JSON, not a JSONForms title field.
-    const editor = screen.getByLabelText('content') as HTMLTextAreaElement;
-    expect(editor.value).toContain('Workspace TOS');
+    // Doc 218: an editable version opens in the Form Studio, holding that version's document.
+    const studio = screen.getByLabelText('document') as HTMLTextAreaElement;
+    expect(studio.value).toContain('Workspace TOS');
   });
 
   it('covers useWorkspaceScope loading state (undefined workspace)', () => {

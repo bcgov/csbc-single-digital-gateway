@@ -15,11 +15,15 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { Spinner } from '@repo/ui/spinner';
+import type { StudioDocument } from '@repo/forms';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronDown, Pencil } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
+import { VersionContent } from '@/components/console/version-content';
+import { studioDocumentOf } from '@/lib/studio-content';
 import { useAuth } from '@/lib/auth';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import {
@@ -30,12 +34,7 @@ import {
   updateAgreementDraft,
 } from '@/lib/service-agreements';
 import { AgreementDefaultToggle } from './agreement-default-toggle';
-import { AgreementEditor } from './agreement-editor';
 import type { AgreementScope } from './scope';
-
-// Feature 217: the editor is JSON text over the version's `content`, not a JSONForms `data` bag.
-const asText = (content: Record<string, unknown> | undefined) =>
-  JSON.stringify(content ?? {}, null, 2);
 
 /** Detail page — gates render on the query so the editor mounts WITH the data (memory
  * client-first-composite-write); the body owns the version selection + edit/publish state. */
@@ -64,17 +63,48 @@ function AgreementBody({
   const [selectedId, setSelectedId] = useState(latest?.id ?? '');
   const selected = versions.find((v) => v.id === selectedId) ?? latest;
 
-  const [contentText, setContentText] = useState(asText(selected?.content));
-  const [baseline, setBaseline] = useState(asText(selected?.content));
-  // Reseed when the SELECTED version identity changes (switch versions, or a new one after add).
-  // Not keyed on the query data, so a save-triggered refetch never clobbers in-progress edits.
-  useEffect(() => {
-    const v = versions.find((x) => x.id === selectedId);
-    setContentText(asText(v?.content));
-    setBaseline(asText(v?.content));
-  }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
+  /**
+   * Doc 218 rule 1: the document the studio last reported. `null` until it mounts and emits its
+   * baseline, and reset on every version change so a stale document from the previous version can
+   * never read as an edit to this one.
+   *
+   * This replaces the old `contentText`/`baseline` JSON-text pair: the content is a form document
+   * now, authored as one, so there is no text to reseed and no parse that can fail.
+   */
+  const [live, setLive] = useState<StudioDocument | null>(null);
+  /** An action waiting on the discard confirmation (rule 19). Stored as a thunk, hence the extra arrow. */
+  const [pending, setPending] = useState<(() => void) | null>(null);
 
-  const dirty = contentText !== baseline;
+  /**
+   * Rule 11: what `dirty` compares against — the content as the server now holds it, rebuilt every
+   * render. After a save the refetch makes it equal to `live` again, which is what turns Save back
+   * off and Publish back on.
+   */
+  const stored = studioDocumentOf(selected?.content);
+  /**
+   * Rule 12: what the studio is SEEDED with — pinned to the version id, deliberately NOT to the
+   * query data.
+   *
+   * `useStudioDocument` re-seeds on a REFERENTIAL change of `schema`/`uischema`, so handing it the
+   * refetched objects after a save clears its element ids and the author's selection. `key` alone
+   * does not prevent that: it only stops one version's document leaking into another. Both are
+   * needed, and they are not the same guard.
+   */
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the version id IS the identity of its content here.
+  const seed = useMemo(() => stored, [selected?.id]);
+  const dirty = live !== null && JSON.stringify(live) !== JSON.stringify(stored);
+  // Rule 20 (feature 177): read at block time through a ref, because a boolean captured at render can
+  // still read stale `true` in the continuation after an awaited save.
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const isDirty = useCallback(() => dirtyRef.current, []);
+
+  const selectVersion = (versionId: string) => {
+    setSelectedId(versionId);
+    setLive(null);
+  };
+  /** Anything that would throw the current edits away asks first (rule 19). */
+  const confirmed = (action: () => void) => (dirty ? setPending(() => action) : action());
   const isGlobal = agreement.workspaceId === null;
   // A global agreement is admin-only to edit; otherwise a draft is editable.
   const editable = selected?.status === 'draft' && (!isGlobal || isAdmin);
@@ -83,26 +113,24 @@ function AgreementBody({
     queryClient.invalidateQueries({ queryKey: ['service-agreements', 'detail', id] });
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: (document: StudioDocument) => {
       if (selected === undefined) {
         throw new Error('No version selected');
       }
-      let content: Record<string, unknown>;
-      try {
-        content = JSON.parse(contentText) as Record<string, unknown>;
-      } catch {
-        throw new Error('Content is not valid JSON.');
-      }
-      return updateAgreementDraft(id, selected.id, { content });
+      return updateAgreementDraft(id, selected.id, { content: document });
     },
     onSuccess: async () => {
-      setBaseline(contentText);
       await Promise.all([
         invalidate(),
         queryClient.invalidateQueries({ queryKey: ['service-agreements'] }),
       ]);
     },
   });
+  const saveDraft = async () => {
+    if (live !== null) {
+      await save.mutateAsync(live);
+    }
+  };
 
   const publish = useMutation({
     mutationFn: () => {
@@ -118,7 +146,7 @@ function AgreementBody({
     mutationFn: () => addAgreementVersion(id),
     onSuccess: async (created) => {
       await invalidate();
-      setSelectedId(created.id);
+      selectVersion(created.id);
     },
   });
 
@@ -166,9 +194,20 @@ function AgreementBody({
   });
 
   return (
-    <div className="mx-auto flex max-w-[1000px] flex-col gap-4">
-      <UnsavedChangesGuard when={dirty} />
-      <div className="flex items-center gap-3">
+    // Doc 218 rule 16: full height — the studio sizes itself to its container, and the console
+    // `<main>` is a flex child with a definite height. The header keeps its own height.
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <UnsavedChangesGuard when={isDirty} onSave={saveDraft} onDiscard={() => setLive(null)} />
+      <ConfirmDiscardDialog
+        open={pending !== null}
+        onCancel={() => setPending(null)}
+        onConfirm={() => {
+          const action = pending;
+          setPending(null);
+          action?.();
+        }}
+      />
+      <div className="flex shrink-0 items-center gap-3">
         {backLink}
         <div className="ml-auto flex items-center gap-2">
           {isGlobal ? <Badge color="grey">Global</Badge> : null}
@@ -180,15 +219,32 @@ function AgreementBody({
               published={publishedAgreement}
             />
           ) : null}
-          <VersionPicker versions={versions} selectedId={selectedId} onSelect={setSelectedId} />
+          <VersionPicker
+            versions={versions}
+            selectedId={selectedId}
+            onSelect={(versionId) => confirmed(() => selectVersion(versionId))}
+          />
           {latestPublished && editableContext(isGlobal, isAdmin) ? (
-            <Button size="sm" type="button" disabled={busy} onClick={() => newVersion.mutate()}>
+            <Button
+              size="sm"
+              type="button"
+              disabled={busy}
+              onClick={() => confirmed(() => newVersion.mutate())}
+            >
               <Pencil className="size-4" aria-hidden />
               New version
             </Button>
           ) : null}
           {editable ? (
-            <Button size="sm" type="button" disabled={!dirty || busy} onClick={() => save.mutate()}>
+            <Button
+              size="sm"
+              type="button"
+              disabled={!dirty || busy}
+              // The rejection is CAUGHT here, and only here: the failure is already on screen through the
+              // error banner, and an uncaught one from a click is an unhandled rejection. The guard's `onSave`
+              // deliberately gets the rejecting promise, because its dialog stays open on failure.
+              onClick={() => void saveDraft().catch(() => {})}
+            >
               {save.isPending ? <Spinner className="size-4" /> : null} Save
             </Button>
           ) : null}
@@ -206,14 +262,22 @@ function AgreementBody({
       </div>
       {/* The page owns its title heading now that the console shell no longer renders one. */}
       {/* The title is generated from the version content, so it can be absent. */}
-      <h1 className="text-xl font-semibold">{agreement.title ?? 'Untitled'}</h1>
+      <h1 className="shrink-0 text-xl font-semibold">{agreement.title ?? 'Untitled'}</h1>
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="shrink-0 text-sm text-destructive">
           {error.message}
         </p>
       ) : null}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <AgreementEditor value={contentText} onChange={setContentText} readonly={!editable} />
+      <div
+        data-slot="agreement-content"
+        className="min-h-0 flex-1 rounded-xl border border-border bg-background"
+      >
+        <VersionContent
+          key={selected?.id}
+          document={seed}
+          editable={editable}
+          onDocumentChange={setLive}
+        />
       </div>
     </div>
   );

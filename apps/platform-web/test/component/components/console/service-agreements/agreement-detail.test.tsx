@@ -49,24 +49,14 @@ import '@/routes/app.$slug.service-agreements.$id';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea (feature 217: the agreement editor
 // is a JSON content editor now, not a JSONForms form).
-vi.mock('@monaco-editor/react', () => ({
-  default: ({
-    value,
-    onChange,
-    options,
-  }: {
-    value: string;
-    onChange?: (v: string) => void;
-    options?: { readOnly?: boolean };
-  }) => (
-    <textarea
-      aria-label="content"
-      value={value}
-      onChange={(e) => onChange?.(e.target.value)}
-      readOnly={options?.readOnly}
-    />
-  ),
-}));
+// Doc 218: the page opens a version's content in the Form Studio (editable) or a disabled FormRunner (otherwise).
+// jsdom can run neither — see `test/support/mock-forms.tsx`.
+vi.mock('@repo/forms/studio', async () =>
+  (await import('../../../../support/mock-forms')).formStudioMock(),
+);
+vi.mock('@repo/forms/runner', async () =>
+  (await import('../../../../support/mock-forms')).formRunnerMock(),
+);
 
 afterEach(() => {
   mockUser = adminUser;
@@ -236,9 +226,9 @@ describe('AgreementDetail Component Test Suite', () => {
     // Check default picker is on version 2 (the latest one)
     expect(screen.getByText(/Version v2/)).toBeInTheDocument();
 
-    // The editor holds version 2's content JSON.
-    const editor = screen.getByLabelText('content') as HTMLTextAreaElement;
-    expect(editor.value).toContain('Global Privacy Policy V2 Draft');
+    // v2 is a draft, so it opens in the studio, holding that version's document.
+    const studio = screen.getByLabelText('document') as HTMLTextAreaElement;
+    expect(studio.value).toContain('Global Privacy Policy V2 Draft');
 
     // 2. Switch to version 1 using picker
     const pickerButton = screen.getByRole('button', { name: /Version v2/i });
@@ -247,9 +237,12 @@ describe('AgreementDetail Component Test Suite', () => {
     const v1Item = await screen.findByRole('menuitem', { name: /v1/i });
     await userEvent.click(v1Item);
 
-    // Verify picker text changed and fields updated
+    // v1 is published, so it is READ in a disabled runner rather than authored (doc 218 rules 5-9).
     expect(await screen.findByText(/Version v1/, {}, { timeout: 10000 })).toBeInTheDocument();
-    expect(editor.value).toContain('Global Privacy Policy V1');
+    const runner = await screen.findByTestId('form-runner');
+    expect(runner).toHaveAttribute('data-disabled', 'true');
+    expect(runner).toHaveTextContent('Global Privacy Policy V1');
+    expect(screen.queryByLabelText('document')).toBeNull();
   });
 
   it('allows editing and saving a draft version', async () => {
@@ -261,9 +254,10 @@ describe('AgreementDetail Component Test Suite', () => {
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    const editor = screen.getByLabelText('content') as HTMLTextAreaElement;
+    const editor = screen.getByLabelText('document') as HTMLTextAreaElement;
 
-    // Initially Save should be disabled because it's not dirty
+    // Initially Save should be disabled because it's not dirty — the studio's baseline emit is not an edit
+    // (doc 218 rule 2).
     const saveBtn = screen.getByRole('button', { name: /save/i });
     expect(saveBtn).toBeDisabled();
 
@@ -363,7 +357,7 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(saveOpt).toBeDefined();
     expect(publishOpt).toBeDefined();
 
-    expect(() => saveOpt.mutationFn()).toThrow('No version selected');
+    expect(() => saveOpt.mutationFn(null)).toThrow('No version selected');
     expect(() => publishOpt.mutationFn()).toThrow('No version selected');
   });
 
@@ -418,7 +412,7 @@ describe('AgreementDetail Component Test Suite', () => {
     const saveBtn = await screen.findByRole('button', { name: /save/i }, { timeout: 10000 });
 
     // Make the editor dirty.
-    fireEvent.change(screen.getByLabelText('content'), {
+    fireEvent.change(screen.getByLabelText('document'), {
       target: { value: JSON.stringify({ schema: {}, uischema: { type: 'Form', elements: [] } }) },
     });
     await waitFor(() => expect(saveBtn).not.toBeDisabled());
@@ -491,7 +485,7 @@ describe('AgreementDetail Component Test Suite', () => {
     );
     expect(saveOpt).toBeDefined();
 
-    await saveOpt.mutationFn();
+    await saveOpt.mutationFn({ schema: {}, uischema: { type: 'Form', elements: [] } });
     expect(patchUrl).toContain('/v1/service-agreements/g1/versions/v2');
   });
 

@@ -9,11 +9,14 @@ import '@/routes/admin.document-types.index';
 import '@/routes/admin.document-types.$id';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
-vi.mock('@monaco-editor/react', () => ({
-  default: ({ value, onChange }: { value: string; onChange?: (v: string) => void }) => (
-    <textarea aria-label="content" value={value} onChange={(e) => onChange?.(e.target.value)} />
-  ),
-}));
+// Doc 218: the detail page opens a version's content in the studio or a disabled runner, neither of which runs in
+// jsdom — see `test/support/mock-forms.tsx`.
+vi.mock('@repo/forms/studio', async () =>
+  (await import('../../../../support/mock-forms')).formStudioMock(),
+);
+vi.mock('@repo/forms/runner', async () =>
+  (await import('../../../../support/mock-forms')).formRunnerMock(),
+);
 
 afterEach(() => {
   vi.restoreAllMocks();

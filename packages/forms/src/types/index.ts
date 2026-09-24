@@ -85,6 +85,19 @@ export type FormRunnerProps = {
   onSaveDraft?: ((data: Record<string, unknown>) => void | Promise<void>) | undefined;
   /** Submits the answers. Awaited, and gated on the whole document validating (rules 27, 35). */
   onSubmit?: ((data: Record<string, unknown>) => void | Promise<void>) | undefined;
+  /**
+   * Doc 218 rules 5-9: show the document as a form that CANNOT be filled — a published or archived template, which
+   * an author reads rather than answers.
+   *
+   * Deliberately a MODE of the runner, not a third component: the point is the citizen's real chrome — the stage
+   * rail, Back/Next, the action bar — over a document nobody can fill. `SubmissionView` (doc 211) stays what it is,
+   * a submission's answers read back, which is not what an empty published template should look like.
+   *
+   * Controls draw in the `readonly` presentation (doc 202 rule 50), navigation stays free because a document nobody
+   * can fill must not gate on emptiness, and Save draft and Submit are both refused — `onSaveDraft` and `onSubmit`
+   * are IGNORED while this is set.
+   */
+  disabled?: boolean | undefined;
 };
 
 /**
@@ -105,7 +118,8 @@ export type SubmissionViewProps = {
  * focus is, and how a document arrives and leaves.
  *
  * The studio owns the document *while it is edited* — every drag, inspector edit and code-editor apply is its own
- * state — but it no longer originates one. With no `schema`/`uischema` and no `loadDocument`, it opens the New form
+ * state — but it no longer originates one, and since doc 218 it is OBSERVABLE: `onDocumentChange` reports each
+ * document without taking ownership of it. With no `schema`/`uischema` and no `loadDocument`, it opens the New form
  * dialog instead of seeding the built-in sample (doc 200 rule 23).
  *
  * `focusedForm` / `onFocusedFormChange` let a host put the drilled-in Form in a URL without the studio knowing anything
@@ -121,10 +135,22 @@ export type FormStudioProps = {
    */
   loadDocument?: (() => Promise<StudioDocument>) | undefined;
   /**
-   * Called with the current document when the author saves (doc 200 rule 22). Accepting this prop is what makes
-   * persistence an addition rather than a redesign; nothing in the studio writes to an API today.
+   * Called with the current document when the author saves (doc 200 rule 22). The studio renders its OWN Save
+   * button whenever this is passed, so a host that already has a save affordance of its own (doc 218 rule 14 —
+   * the template and agreement detail pages, which alone know about versions, publishing and 409s) should
+   * observe `onDocumentChange` instead and leave this absent.
    */
   onSaveDocument?: ((document: StudioDocument) => void | Promise<void>) | undefined;
+  /**
+   * Doc 218 rules 1-4: called with the current document whenever it changes, and ONCE on mount with the document
+   * as opened — that first call is the BASELINE, not an edit, and a host that counts it as a change is dirty from
+   * the first paint.
+   *
+   * An OBSERVER, never a controlled-value channel: the studio still owns the document while it is edited, and
+   * feeding a reported document back in as `schema`/`uischema` would reset it. Held in a ref, so an inline arrow
+   * is safe here — deliberately unlike `loadDocument`, whose identity IS its re-run signal (doc 200 rule 4b).
+   */
+  onDocumentChange?: ((document: StudioDocument) => void) | undefined;
   /**
    * The address of the Form to drill into — a Form's authored `options.id` — or `null` for the Flow itself. Only
    * meaningful under a Flow root. An address that names no Form is corrected through `onFocusedFormChange`.
