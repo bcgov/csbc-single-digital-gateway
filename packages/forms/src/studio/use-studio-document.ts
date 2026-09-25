@@ -1,4 +1,5 @@
 import { authoredId } from '../renderers/ui/authored-id';
+import { capabilityFor } from '../capabilities/capability-for';
 import { mayAddTo, mayRemove } from '../capabilities/capability-gates';
 import { useCapabilities } from '../renderers/studio/studio-capabilities';
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
@@ -273,24 +274,37 @@ export function useStudioDocument({
     [currentUischema, currentSchema, ids],
   );
 
-  // Copies from the rendered document so the copy's id can be returned — and selected — at once.
-  const copy = useCallback(
-    (elementId: string, placement: StudioItemPlacement): string | undefined => {
-      const document = { schema: currentSchema, uischema: currentUischema };
-      // Doc 221: a copy needs somewhere to GO, so it is the PARENT's `addChildren` that decides — the
-      // reason the toolbar cannot gate Copy itself (it is presentational and has no parent to resolve).
+  /**
+   * Doc 221: whether a copy of `elementId` would have somewhere to GO — its PARENT's `addChildren`,
+   * since the copy lands beside it, not inside it.
+   *
+   * Exposed so the toolbar can leave the Copy button OUT (rule 6: a denied affordance is absent, not
+   * a button that silently does nothing). `copy` asks the same question again before writing, because
+   * the code panel and a stale render can both reach it without passing the button.
+   */
+  const mayCopy = useCallback(
+    (elementId: string): boolean => {
       const parentId = parentOf(elementId);
       const parent =
         parentId === null
           ? (currentUischema as TreeElement)
           : findById(currentUischema as TreeElement, parentId, ids);
-      if (parent && !mayAddTo(governingRef.current ?? undefined, parent)) return undefined;
+      return parent === undefined || mayAddTo(governingRef.current ?? undefined, parent);
+    },
+    [currentUischema, ids, parentOf],
+  );
+
+  // Copies from the rendered document so the copy's id can be returned — and selected — at once.
+  const copy = useCallback(
+    (elementId: string, placement: StudioItemPlacement): string | undefined => {
+      const document = { schema: currentSchema, uischema: currentUischema };
+      if (!mayCopy(elementId)) return undefined;
       const result = copyElement(document, elementId, placement, ids, newPropertyKey);
       if (!result.copy) return undefined;
       setState((previous) => ({ ...previous, schema: result.schema, uischema: result.uischema }));
       return ids.idOf(result.copy);
     },
-    [currentSchema, currentUischema, ids, parentOf],
+    [currentSchema, currentUischema, ids, mayCopy],
   );
 
   // Inserts into the rendered document, like `copy`, so the new element's id can be returned — and selected — at once
@@ -369,14 +383,25 @@ export function useStudioDocument({
 
   /** The inspector form for `elementId`, or `undefined` when it is not in the document (doc 187). */
   const inspectorFor = useCallback(
-    (elementId: string): InspectorForm | undefined =>
-      inspectorForm(
-        { schema: currentSchema, uischema: currentUischema },
-        elementId,
-        ids,
+    (elementId: string): InspectorForm | undefined => {
+      /**
+       * Doc 221: a governing template decides which settings are OFFERED, so the resolved capability
+       * has to reach `inspectorForm` — a field the template froze must not appear at all.
+       *
+       * Read from the REF, like every other gate in this hook: `governing` is a prop-shaped value and
+       * naming it as a dependency would rebuild `inspectorFor` on every render, which `useInspectorPanel`
+       * memoises against (doc 187 rule 15 — a rebuilt form resets the control being typed into).
+       */
+      const governing = governingRef.current;
+      const element = governing === null ? undefined : findById(currentUischema, elementId, ids);
+      return inspectorForm({ schema: currentSchema, uischema: currentUischema }, elementId, ids, {
         // `exactOptionalPropertyTypes`: an absent map is an absent KEY, never an explicit undefined.
-        current.capabilities === undefined ? {} : { authored: current.capabilities },
-      ),
+        ...(current.capabilities === undefined ? {} : { authored: current.capabilities }),
+        ...(governing === null || element === undefined
+          ? {}
+          : { governing: capabilityFor(governing, element) }),
+      });
+    },
     [currentSchema, currentUischema, ids],
   );
 
@@ -507,6 +532,7 @@ export function useStudioDocument({
     updateOptions,
     replaceDocument,
     copy,
+    mayCopy,
     insert,
     add,
     remove,

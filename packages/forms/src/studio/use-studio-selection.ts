@@ -49,6 +49,8 @@ export interface SelectableDocument {
   /** Doc 221: the element itself, so selection can ask what a governing template permits for it. */
   elementOf(elementId: string): TreeElement | undefined;
   copy(elementId: string, placement: StudioItemPlacement): string | undefined;
+  /** Doc 221: whether a copy of this element would have somewhere to go (its parent's `addChildren`). */
+  mayCopy(elementId: string): boolean;
   /** Inserts a dropped palette template (doc 189 rule 25): the new element's id, or `undefined` when refused. */
   insert(gesture: Extract<GridGesture, { type: 'insert' }>): string | undefined;
   /** Inserts a clicked palette template next to `selectedId` (doc 189 rule 24). */
@@ -372,6 +374,7 @@ export function useStudioSelection(
   }
   const {
     copy,
+    mayCopy,
     add: addToDocument,
     editor: documentEditor,
     elementTypes,
@@ -463,9 +466,10 @@ export function useStudioSelection(
         const copyId = copy(elementId, placement);
         if (copyId !== undefined) setSelected(copyId);
       },
+      mayCopy,
       requestDelete: confirmation.request,
     }),
-    [hoveredId, selectedId, gesturing, copy, confirmation.request],
+    [hoveredId, selectedId, gesturing, copy, mayCopy, confirmation.request],
   );
 
   const editor = useMemo<GridEditor>(

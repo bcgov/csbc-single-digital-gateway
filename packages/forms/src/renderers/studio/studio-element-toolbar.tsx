@@ -22,6 +22,8 @@ interface StudioElementToolbarProps {
    * decides, and only the studio's `copy` command can resolve a parent — the write gate covers it.
    */
   readonly canDelete?: boolean;
+  /** Doc 221: whether a copy has somewhere to land — the PARENT's `addChildren`. */
+  readonly canCopy?: boolean;
 }
 
 /** The item's engine placement at click time (rule 15); authored `gridItem` may lack `x`/`y`. */
@@ -42,6 +44,7 @@ export function StudioElementToolbar({
   itemRef,
   selection,
   canDelete = true,
+  canCopy = true,
 }: StudioElementToolbarProps) {
   const anchor = useCallback(() => itemRef.current?.parentElement ?? null, [itemRef]);
 
@@ -59,14 +62,16 @@ export function StudioElementToolbar({
         className="w-auto gap-0 p-0.5"
       >
         <ButtonGroup variant="joined">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Copy"
-            onClick={() => selection.copy(elementId, placementOf(itemRef))}
-          >
-            <Icon path={mdiContentCopy} size="14px" />
-          </Button>
+          {canCopy ? (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Copy"
+              onClick={() => selection.copy(elementId, placementOf(itemRef))}
+            >
+              <Icon path={mdiContentCopy} size="14px" />
+            </Button>
+          ) : null}
           {/* Doc 221 rule 6: a denied affordance is ABSENT, not disabled with a tooltip — nothing
               was attempted, and explaining policy on every hover puts it in front of the owner
               constantly rather than on contact. */}

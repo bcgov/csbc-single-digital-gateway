@@ -75,7 +75,9 @@ export function withStudioFrame<P extends FramedProps>(
         <StudioContent type={type}>
           <Renderer {...disabled} />
         </StudioContent>
-        {/* Doc 199 rule 31: a Condition gets the same Delete-only popover a Stage has. */}
+        {/* Doc 199 rule 31: a Condition gets the same Delete-only popover a Stage has. Doc 221 rule 5
+            wants no popover on a LOCKED element, and `capability.remove` already gives that: this
+            popover holds Delete alone, and a locked element grants nothing, so it never renders. */}
         {isFlowNodeType(type) && selection && id !== undefined && capability.remove ? (
           <StudioStageActions
             elementId={id}

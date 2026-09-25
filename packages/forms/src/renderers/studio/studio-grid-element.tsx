@@ -49,6 +49,8 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
   // Doc 221: gridstack decides drag/resize from the NODE, so the capability is written onto it.
   // Resizing is the container's call — it rearranges what is around the item — while moving is the
   // element's own.
+  // Doc 221: a copy lands BESIDE this element, so it is the parent that must accept a child.
+  const canCopy = id === undefined ? false : (selection?.mayCopy?.(id) ?? true);
   useItemPermissions(rootRef, {
     canMove: capability.move,
     canResize: capability.reorderChildren,
@@ -73,10 +75,23 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
       {selection && id !== undefined ? (
         <StudioElementToolbar
           elementId={id}
-          open={(hovered || selected) && !selection.gesturing}
+          /**
+           * Doc 221 rules 5-6: the popover opens only when it would hold SOMETHING. A locked element
+           * offers nothing by definition, and a governed one can have both its actions denied
+           * separately — Copy by its parent's `addChildren`, Delete by its own `remove`. Either way
+           * an empty popover is still chrome, and "a denied affordance is absent" has to mean the
+           * box goes too, not just the buttons inside it.
+           */
+          open={
+            (hovered || selected) &&
+            !selection.gesturing &&
+            !locked &&
+            (canCopy || capability.remove)
+          }
           itemRef={rootRef}
           selection={selection}
           canDelete={capability.remove}
+          canCopy={canCopy}
         />
       ) : null}
     </div>

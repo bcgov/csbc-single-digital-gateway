@@ -20,6 +20,11 @@ export interface StudioSelection {
   /** `true` while a drag or resize is in progress, when every actions popover hides (rule 10). */
   readonly gesturing: boolean;
   copy(elementId: string, placement: StudioItemPlacement): void;
+  /**
+   * Doc 221: whether a copy of `elementId` would have somewhere to go — its PARENT's `addChildren`.
+   * A frame asks this to leave the Copy button out, rather than offering one that does nothing.
+   */
+  mayCopy?(elementId: string): boolean;
   /** Deletes the element, asking first unless the author switched confirmation off (rules 21-22). */
   requestDelete(elementId: string): void;
 }
