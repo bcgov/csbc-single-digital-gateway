@@ -24,7 +24,7 @@ import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialo
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { VersionContent } from '@/components/console/version-content';
 import type { CapabilityMap } from '@repo/forms';
-import { studioDocumentOf } from '@/lib/studio-content';
+import { sameStudioDocument, studioDocumentOf } from '@/lib/studio-content';
 import { useAuth } from '@/lib/auth';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import {
@@ -97,7 +97,9 @@ function AgreementBody({
    */
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the version id IS the identity of its content here.
   const seed = useMemo(() => stored, [selected?.id]);
-  const dirty = live !== null && JSON.stringify(live) !== JSON.stringify(stored);
+  // Doc 221: the same order-insensitive comparison the template page needs — the server's zod parse
+  // reorders keys, so a plain JSON.stringify left this page dirty forever after a successful save.
+  const dirty = live !== null && !sameStudioDocument(live, stored);
   // Rule 20 (feature 177): read at block time through a ref, because a boolean captured at render can
   // still read stale `true` in the continuation after an awaited save.
   const dirtyRef = useRef(dirty);

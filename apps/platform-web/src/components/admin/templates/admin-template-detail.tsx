@@ -15,7 +15,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { VersionContent } from '@/components/console/version-content';
-import { studioDocumentOf } from '@/lib/studio-content';
+import { sameStudioDocument, studioDocumentOf } from '@/lib/studio-content';
 import {
   addVersion,
   adminTemplateQueryOptions,
@@ -73,24 +73,6 @@ function VersionDropdown({
 const seededContent = (document: StudioDocument | null): StudioDocument | null =>
   document === null ? null : { ...document, capabilities: document.capabilities ?? {} };
 
-/**
- * The same document reduced to what a CHANGE means: an EMPTY capability map and no map at all say
- * the same thing, so neither counts as an edit.
- *
- * Normalising BOTH sides, not just the stored one. The studio reports its document on mount as the
- * BASELINE (doc 218 rules 1-2), and that emit carries the `{}` this page seeded — comparing it
- * against a stored row with no `capabilities` key would make the page dirty from the first paint,
- * with no edit at all. FOUND BY HAND in the browser: the page refused to navigate away from a form
- * nobody had touched. The reverse is just as real — a studio that does NOT echo the key must not
- * read as an edit either, which is what a one-sided fix got wrong.
- */
-const comparable = (document: StudioDocument | null): object | null => {
-  if (document === null) return null;
-  const { capabilities, ...halves } = document;
-  const governed = capabilities !== undefined && Object.keys(capabilities).length > 0;
-  return governed ? { ...halves, capabilities } : halves;
-};
-
 export function AdminTemplateDetail() {
   const { id } = useParams({ from: '/admin/templates/$id' });
   const queryClient = useQueryClient();
@@ -125,8 +107,7 @@ export function AdminTemplateDetail() {
    */
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the version id IS the identity of its content here.
   const seed = useMemo(() => seededContent(stored), [selected?.id]);
-  const dirty =
-    live !== null && JSON.stringify(comparable(live)) !== JSON.stringify(comparable(stored));
+  const dirty = live !== null && !sameStudioDocument(live, stored);
   // Rule 20 (feature 177): the guard reads `when` at block time through a ref, because a boolean captured at render
   // can still read stale `true` in the continuation after an awaited save.
   const dirtyRef = useRef(dirty);
