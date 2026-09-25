@@ -4,12 +4,14 @@ import { Heading } from '@repo/ui/heading';
 import { Tabs, TabsContent } from '@repo/ui/tabs';
 import { useContext, useState, type ReactNode } from 'react';
 import { presentationOf } from '../ui/control-presentation';
-import { tabsComponentOf, useTabsOverride, type TabsComponent } from './tabs-options';
+import { tabsComponentOf, type TabsComponent } from './tabs-options';
+import { useTabsOverride } from './tabs-override';
 import { labelOf } from './element-label';
 import { TAB_CONTENT_TYPE, TAB_TYPE } from './grid-layouts';
 import { GAP_CLASS, layoutGapOf } from './layout-gap';
 import { LayoutNestingContext } from './layout-nesting';
-import { SectionDepthContext, sectionHeadingLevel } from './section-options';
+import { SectionDepthContext } from './section-depth-context';
+import { sectionHeadingLevel } from './section-options';
 import { TabStrip, type TabDescriptor } from './tab-strip';
 import { useTabsEditor, type TabsEditor } from './tabs-editor';
 

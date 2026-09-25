@@ -1,12 +1,14 @@
 import type { JsonSchema } from '@jsonforms/core';
-import { FORM_TITLE_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
+import {
+  FORM_TITLE_PLACEHOLDER,
+  SERVICE_TITLE_PLACEHOLDER,
+} from '../../renderers/gridstack/element-placeholders';
 import {
   TAB_TYPE,
   FORM_TYPE,
   isPageRoot,
   SERVICE_TYPE,
 } from '../../renderers/gridstack/grid-layouts';
-import { SERVICE_TITLE_PLACEHOLDER } from '../../renderers/gridstack/service-renderer';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
 import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';

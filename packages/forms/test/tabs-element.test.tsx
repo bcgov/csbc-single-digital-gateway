@@ -15,7 +15,8 @@ import * as defaults from '../src/renderers-default';
 import * as studio from '../src/renderers-studio';
 import { NESTED_FORM_MESSAGE } from '../src/renderers/gridstack/form-renderer';
 import { LayoutNestingContext } from '../src/renderers/gridstack/layout-nesting';
-import { TabsOverrideProvider, hasTabs } from '../src/renderers/gridstack/tabs-options';
+import { hasTabs } from '../src/renderers/gridstack/tabs-options';
+import { TabsOverrideProvider } from '../src/renderers/gridstack/tabs-override';
 import { TabsEditorProvider, type TabsEditor } from '../src/renderers/gridstack/tabs-editor';
 import { PLAIN_CONFIG } from '../src/renderers/ui/control-presentation';
 

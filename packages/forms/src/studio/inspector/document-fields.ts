@@ -1,4 +1,4 @@
-import { FORM_DESCRIPTION_PLACEHOLDER } from '../../renderers/gridstack/form-renderer';
+import { FORM_DESCRIPTION_PLACEHOLDER } from '../../renderers/gridstack/element-placeholders';
 import { richTextIsEmpty, richTextValue } from '../../renderers/ui/rich-text-value';
 import { isPageRoot } from '../../renderers/gridstack/grid-layouts';
 import { FLOW_TYPE } from '../../renderers/xyflow/flow-elements';

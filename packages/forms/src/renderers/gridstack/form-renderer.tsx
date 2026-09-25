@@ -4,6 +4,7 @@ import { Heading } from '@repo/ui/heading';
 import { RichTextView } from '@repo/ui/rich-text-view';
 import { useContext, type ComponentType, type CSSProperties } from 'react';
 import { labelOf } from './element-label';
+import { FORM_DESCRIPTION_PLACEHOLDER, FORM_TITLE_PLACEHOLDER } from './element-placeholders';
 import { FORM_DROP_ZONE_SLOT } from './grid-drop-target';
 import { GAP_REM, layoutGapOf } from './layout-gap';
 import { LayoutNestingContext } from './layout-nesting';
@@ -15,11 +16,9 @@ import { richTextValue, type RichTextState } from '../ui/rich-text-value';
  */
 export const NESTED_FORM_MESSAGE = 'A Form can only be the root element or sit in a Stage.';
 
-/** Doc 201 rule 11: what the studio canvas shows in place of an unwritten title. A placeholder only — never authored. */
-export const FORM_TITLE_PLACEHOLDER = 'Untitled form';
-
-/** Doc 201 rule 22: the same, for an unwritten description. Never authored, and never shown to a citizen. */
-export const FORM_DESCRIPTION_PLACEHOLDER = 'Add a description...';
+// Doc 222: declared in a React-free module so the capability validator can read them server-side;
+// re-exported here because this is where they are drawn and where callers already look for them.
+export { FORM_DESCRIPTION_PLACEHOLDER, FORM_TITLE_PLACEHOLDER } from './element-placeholders';
 
 /**
  * Doc 201 rule 2: a title component is given the Form's element and reads `uischema.label` itself. JSONForms'

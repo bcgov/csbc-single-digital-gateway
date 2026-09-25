@@ -6,13 +6,8 @@ import { richTextValue } from '../ui/rich-text-value';
 import { labelOf } from './element-label';
 import { GAP_CLASS, layoutGapOf } from './layout-gap';
 import { useLayoutVisible } from './form-renderer';
-import {
-  INSET_CLASS,
-  SectionDepthContext,
-  sectionHeadingLevel,
-  sectionInset,
-  sectionVariant,
-} from './section-options';
+import { SectionDepthContext } from './section-depth-context';
+import { INSET_CLASS, sectionHeadingLevel, sectionInset, sectionVariant } from './section-options';
 
 // The `Section` renderer (doc 212 rules 1-3, 8-17): a heading, a rich description, and a vertical layout of the
 // children — with an optional box drawn round the lot.

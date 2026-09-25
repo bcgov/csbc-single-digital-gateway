@@ -5,7 +5,8 @@ import { FormRunner } from '../runner/form-runner';
 import * as defaultSet from '../renderers/default/index';
 import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid-editor';
 import { TabsEditorProvider, type TabsEditor } from '../renderers/gridstack/tabs-editor';
-import { TabsOverrideProvider, type TabsComponent } from '../renderers/gridstack/tabs-options';
+import { type TabsComponent } from '../renderers/gridstack/tabs-options';
+import { TabsOverrideProvider } from '../renderers/gridstack/tabs-override';
 import { FORM_TYPE, isPageRoot, SERVICE_TYPE } from '../renderers/gridstack/grid-layouts';
 import * as studioSet from '../renderers/studio/index';
 import {

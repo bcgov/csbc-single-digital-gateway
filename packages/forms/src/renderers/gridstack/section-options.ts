@@ -1,4 +1,3 @@
-import { createContext } from 'react';
 import type { HeadingLevel } from '@repo/ui/heading';
 
 // The Section's authored settings and its derived heading level (doc 212 rules 9-10, 13-18), shaped exactly like
@@ -84,12 +83,3 @@ export function sectionHeadingLevel(depth: number): HeadingLevel {
   const level = SECTION_TOP_LEVEL + Math.max(0, Math.trunc(depth));
   return Math.min(level, 6) as HeadingLevel;
 }
-
-/**
- * Rule 10: how many Sections deep the children of this element are — `0` outside any Section.
- *
- * Its OWN context, not `LayoutNestingContext`: that one carries the nearest layout's KIND (doc 194 rule 1) and
- * cannot answer this, because a Section inside a VerticalLayout inside a Section is still two Sections deep
- * while its nearest layout kind is just `vertical`.
- */
-export const SectionDepthContext = createContext(0);

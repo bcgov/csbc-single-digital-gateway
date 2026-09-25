@@ -1,3 +1,4 @@
+import { SERVICE_TITLE_PLACEHOLDER } from './element-placeholders';
 import { createStudioTitle, FillFormTitle } from './form-renderer';
 
 /**
@@ -8,8 +9,8 @@ import { createStudioTitle, FillFormTitle } from './form-renderer';
 /** Doc 215 rule 10: what a Service shows in place of its elements inside a layout. */
 export const NESTED_SERVICE_MESSAGE = 'A Service can only be the root element.';
 
-/** Doc 215 rule 7: the studio canvas placeholder for an unwritten Service title. Never authored. */
-export const SERVICE_TITLE_PLACEHOLDER = 'Untitled service';
+// Doc 222: declared in a React-free module; re-exported here, where it is drawn.
+export { SERVICE_TITLE_PLACEHOLDER } from './element-placeholders';
 
 /** Doc 215 rule 8: the studio title block of a Service — a Form's, with its own placeholder. */
 export const StudioServiceTitle = createStudioTitle(SERVICE_TITLE_PLACEHOLDER);
