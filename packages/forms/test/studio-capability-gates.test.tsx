@@ -1,6 +1,7 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import {
+  acceptsChildrenAnywhere,
   capabilityFor,
   mayAddTo,
   mayChangeEdges,
@@ -381,3 +382,47 @@ describe('an ungoverned document is untouched by any of this', () => {
 
 /** A TreeElement helper, so the fixtures above read as documents rather than casts. */
 export type _Tree = TreeElement;
+
+describe('the palette is unavailable when nothing accepts a child', () => {
+  // A governing template can lock every container in a document. The palette then offers a drag that
+  // every drop target refuses — futile in a way the author discovers only by trying it — so the shell
+  // hides the panel, its content and its toggle, exactly as the Flow canvas already does.
+  const root = form(stack('stack1', control('a1')), stack('stack2', control('a2')));
+
+  it('is available when ungoverned, for every untemplated document', () => {
+    expect(acceptsChildrenAnywhere(root, ungoverned)).toBe(true);
+  });
+
+  it('is unavailable when every container refuses children', () => {
+    expect(acceptsChildrenAnywhere(root, governed({ default: { '*': CLOSED } }))).toBe(false);
+  });
+
+  it('is available when a SINGLE container deep in the tree still accepts one', () => {
+    // The palette is worth showing for one open container; this is why it is an "anywhere" question
+    // rather than one asked of the root.
+    const map = governed({
+      default: { '*': CLOSED },
+      elements: { stack2: { addChildren: true } },
+    });
+    expect(acceptsChildrenAnywhere(root, map)).toBe(true);
+  });
+
+  it('is available when only the root accepts children', () => {
+    const map = governed({ default: { '*': CLOSED }, elements: { root1: { addChildren: true } } });
+    expect(acceptsChildrenAnywhere(root, map)).toBe(true);
+  });
+
+  it('asks the CANVAS ROOT, so a locked Form hides it while a sibling keeps it', () => {
+    // Drilling into a Form on a Flow renders that Form as the canvas root (doc 196 rule 12), so the
+    // question has to be asked of what is on screen, not of the whole document.
+    const locked = el({ type: 'Form', id: 'f1', elements: [control('a1')] });
+    const open = el({ type: 'Form', id: 'f2', elements: [control('a2')] });
+    const map = governed({ default: { '*': CLOSED }, elements: { f2: { addChildren: true } } });
+    expect(acceptsChildrenAnywhere(locked, map)).toBe(false);
+    expect(acceptsChildrenAnywhere(open, map)).toBe(true);
+  });
+
+  it('is unavailable when there is no canvas root at all', () => {
+    expect(acceptsChildrenAnywhere(undefined, ungoverned)).toBe(false);
+  });
+});

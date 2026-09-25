@@ -1,5 +1,7 @@
 import { Button } from '@repo/ui/button';
 import { useEffect, useMemo, useRef, useState, type FC } from 'react';
+import { acceptsChildrenAnywhere } from '../capabilities/accepts-children';
+import { useCapabilities } from '../renderers/studio/studio-capabilities';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import type { FormStudioProps } from '../types/index';
 import { StudioCodePanel } from './code/studio-code-panel';
@@ -86,7 +88,8 @@ import { useStudioSelection } from './use-studio-selection';
 /** Doc 198 rule 17: the toggles shown while the Flow canvas is up — the left panel is unreachable there. */
 const NO_STAGES: readonly never[] = [];
 
-const FLOW_PANEL_IDS: readonly DockPanelId[] = Object.freeze(['bottom', 'right']);
+/** Doc 198 rule 18, doc 221: the toggles when there is no left panel to toggle. */
+const NO_LEFT_PANEL_IDS: readonly DockPanelId[] = Object.freeze(['bottom', 'right']);
 
 export const FormStudio: FC<FormStudioProps> = ({
   schema,
@@ -240,16 +243,35 @@ export const FormStudio: FC<FormStudioProps> = ({
   const onFlowCanvas = studio.uischema.type === FLOW_TYPE && focusId === null;
 
   /**
+   * Doc 221: the palette is unavailable when NOTHING on this canvas would accept a new child — a
+   * governing template can lock every container, and a palette whose every drop target refuses is a
+   * drag the author only learns is futile by trying it.
+   *
+   * The SAME treatment the Flow canvas already gets, for the same reason (doc 198 rule 18): there is
+   * nothing to insert into, so the panel, its content and its toggle all go. Ungoverned documents
+   * resolve to `FULLY_GRANTED` and keep the palette exactly as it is.
+   */
+  // NOT the `capabilities` prop: that is the map being AUTHORED on a template. This is the one
+  // GOVERNING this document, which only ever arrives through the provider (doc 221's contract).
+  const governing = useCapabilities();
+  const canvasRoot = rootOf(focusId);
+  const paletteUnavailable = useMemo(
+    () => !acceptsChildrenAnywhere(canvasRoot, governing ?? undefined),
+    [canvasRoot, governing],
+  );
+  const noLeftPanel = onFlowCanvas || paletteUnavailable;
+
+  /**
    * Doc 198 rule 18: hiding only the toggle would strand an open panel with no way to shut it, so the panel closes with
    * it — and reopens, at its remembered size, when the author drills into a Form. `hide`/`show` are both idempotent
    * (doc 184 rule 13), and the restore flag means a panel the author had already closed stays closed.
    *
-   * Declared AFTER `onFlowCanvas`: a hook reading it any earlier is a temporal dead zone, and the whole shell throws.
+   * Declared AFTER `noLeftPanel`: a hook reading it any earlier is a temporal dead zone, and the whole shell throws.
    */
   const restoreLeft = useRef(false);
   const { open: leftOpen, show: showLeft, hide: hideLeft } = panels.left;
   useEffect(() => {
-    if (onFlowCanvas) {
+    if (noLeftPanel) {
       if (!leftOpen) return;
       restoreLeft.current = true;
       hideLeft();
@@ -257,7 +279,7 @@ export const FormStudio: FC<FormStudioProps> = ({
       restoreLeft.current = false;
       showLeft();
     }
-  }, [onFlowCanvas, leftOpen, hideLeft, showLeft]);
+  }, [noLeftPanel, leftOpen, hideLeft, showLeft]);
 
   return (
     <div ref={rootRef} data-slot="form-studio" className="flex h-full flex-col">
@@ -288,7 +310,7 @@ export const FormStudio: FC<FormStudioProps> = ({
         {/* `exactOptionalPropertyTypes`: an absent `ids` must be an ABSENT KEY, never an explicit `undefined`. */}
         {/* Doc 200 rule 18: no document means no panels at all — the toggles go with them. */}
         {previewing || !ready ? null : (
-          <DockToggles panels={panels} {...(onFlowCanvas ? { ids: FLOW_PANEL_IDS } : {})} />
+          <DockToggles panels={panels} {...(noLeftPanel ? { ids: NO_LEFT_PANEL_IDS } : {})} />
         )}
         {/* Doc 184 rule 15: only while previewing, immediately left of the Preview toggle. */}
         {ready && previewing ? (
@@ -332,7 +354,7 @@ export const FormStudio: FC<FormStudioProps> = ({
             // Doc 200 rule 18: with no document there are no panels, so their content is not mounted
             // either — the same treatment preview already gives them, rather than leaving an inert
             // palette mounted behind the dialog.
-            previewing || !ready || onFlowCanvas ? null : <StudioPalette actions={paletteActions} />
+            previewing || !ready || noLeftPanel ? null : <StudioPalette actions={paletteActions} />
           }
           right={
             previewing || !ready ? null : (
@@ -359,7 +381,7 @@ export const FormStudio: FC<FormStudioProps> = ({
           <StudioCanvas
             schema={studio.schema}
             uischema={studio.uischema}
-            canvasRoot={rootOf(focusId)}
+            canvasRoot={canvasRoot}
             previewRoot={rootOf(previewFocusId)}
             tabs={tabs}
             rootKey={(previewing ? previewFocusId : focusId) ?? 'document'}

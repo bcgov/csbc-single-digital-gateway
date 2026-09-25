@@ -4,6 +4,7 @@
 // document. This module is storage + resolution only; the studio gates (doc 221) and the server-side
 // validator (doc 222) both read it through `capabilityFor`.
 
+export { acceptsChildrenAnywhere } from './accepts-children';
 export { capabilityFor, mayEdit } from './capability-for';
 export { mayAddTo, mayChangeEdges, mayMove, mayRemove } from './capability-gates';
 export {
