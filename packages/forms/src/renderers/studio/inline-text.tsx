@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { InlineEditableProps } from '../../types/elements';
-import { useInlineEdit } from './use-inline-edit';
+import { useCommitOnLeave, useInlineEdit } from './use-inline-edit';
 
 /**
  * Doc 223: a single-line value edited in place on the canvas — a Title, a Section heading, a
@@ -24,12 +24,28 @@ export function InlineText({
   inputClassName,
   children,
 }: InlineEditableProps) {
-  const { editable, active, draft, setDraft, commit, revert } = useInlineEdit(
+  // `InlineValue` routes only string values here; the cast states that rather than widening every
+  // read below.
+  const { editable, active, draft, setDraft, commit, commitValue, revert } = useInlineEdit(
     element,
     fieldKey,
-    value,
+    typeof value === 'string' ? value : '',
   );
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // The same commit-on-leave the rich editor needs: clicking away on the canvas deselects, which
+  // unmounts this input before `onBlur` can fire.
+  const text = typeof value === 'string' ? value : '';
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
+  const seeded = useRef(text);
+  if (!active) seeded.current = text;
+  useCommitOnLeave(
+    active,
+    () => latestDraft.current,
+    () => seeded.current,
+    commitValue,
+  );
 
   /**
    * Focus when the editor goes live.

@@ -136,6 +136,36 @@ describe('the draft is local until it is committed', () => {
   });
 });
 
+describe('leaving the editor commits', () => {
+  // FOUND BY HAND. Blur alone is not enough, and the gap is the COMMON case: clicking away on the
+  // canvas deselects the element, which unmounts the editor, and React does not deliver `onBlur` for
+  // an element being removed. The author typed, clicked elsewhere, and silently lost the edit.
+  const heading = () => document.querySelector('[data-element-type="Heading"]') as HTMLElement;
+
+  it('keeps the edit when selection moves to another element', async () => {
+    renderStudio();
+    selectTitle();
+    await waitFor(() => expect(input()).not.toBeNull());
+
+    fireEvent.change(input() as HTMLInputElement, { target: { value: 'Survived' } });
+    // No blur: selection simply moves, exactly as a press on another element does.
+    fireEvent.pointerDown(heading());
+
+    await waitFor(() => expect(titleText()?.textContent).toBe('Survived'));
+  });
+
+  it('writes nothing when the editor is left untouched', async () => {
+    renderStudio();
+    selectTitle();
+    await waitFor(() => expect(input()).not.toBeNull());
+
+    fireEvent.pointerDown(heading());
+
+    await waitFor(() => expect(input()).toBeNull());
+    expect(titleText()?.textContent).toBe('Original title');
+  });
+});
+
 describe('the read view outside the studio', () => {
   it('adds no wrapper element when nothing is editable', () => {
     // These renderers are shared with the citizen's form, so the DOM has to stay identical there —

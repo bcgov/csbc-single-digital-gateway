@@ -10,6 +10,7 @@ import {
   SERVICE_TITLE_PLACEHOLDER,
 } from './element-placeholders';
 import { formDescriptionOf, TITLE_SPACING, type FormTitleProps } from './form-renderer';
+import { EMPTY_RICH_TEXT } from '../ui/rich-text-value';
 import { GAP_REM, layoutGapOf } from './layout-gap';
 
 /**
@@ -89,16 +90,24 @@ export function createStudioTitle(placeholder: string) {
           )}
         </Editable>
         {/* Rule 22: an unwritten description shows its own placeholder, exactly as the title does (rule 11), so the
-          author can see where it goes. Fillable forms still render nothing (rule 20b). */}
-        {description === undefined ? (
-          <p data-slot="form-description-placeholder" className="mt-2 text-muted-foreground">
-            {FORM_DESCRIPTION_PLACEHOLDER}
-          </p>
-        ) : (
-          <div data-slot="form-description" className="mt-2 text-muted-foreground">
-            <RichTextView value={description} />
-          </div>
-        )}
+          author can see where it goes. Fillable forms still render nothing (rule 20b).
+          Doc 223: and it edits in place, writing the same `formDescription` inspector field the panel does. */}
+        <Editable
+          element={uischema}
+          fieldKey="formDescription"
+          value={description ?? EMPTY_RICH_TEXT}
+          placeholder={FORM_DESCRIPTION_PLACEHOLDER}
+        >
+          {description === undefined ? (
+            <p data-slot="form-description-placeholder" className="mt-2 text-muted-foreground">
+              {FORM_DESCRIPTION_PLACEHOLDER}
+            </p>
+          ) : (
+            <div data-slot="form-description" className="mt-2 text-muted-foreground">
+              <RichTextView value={description} />
+            </div>
+          )}
+        </Editable>
       </div>
     );
   }

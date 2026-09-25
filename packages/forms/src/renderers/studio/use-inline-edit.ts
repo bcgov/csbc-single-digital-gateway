@@ -42,6 +42,14 @@ export interface InlineEdit<T> {
   readonly setDraft: (value: T) => void;
   /** Writes the draft through the inspector field, if it changed. */
   readonly commit: () => void;
+  /**
+   * Writes an explicit value, for an editor that holds its own content.
+   *
+   * A rich text editor owns its state after mount and reports every change; putting those reports in
+   * React state would re-render the editor on its own output, which is the loop this whole design is
+   * shaped to avoid. Such an editor keeps its latest value in a ref and hands it over here.
+   */
+  readonly commitValue: (value: T) => void;
   /** Throws the draft away and restores the document's value. */
   readonly revert: () => void;
 }
@@ -73,14 +81,49 @@ export function useInlineEdit<T>(
     if (!active) setDraft(value);
   }, [active, value]);
 
-  const commit = useCallback(() => {
-    if (id === undefined || selection?.editField === undefined) return;
-    selection.editField(id, fieldKey, draft);
-  }, [id, selection, fieldKey, draft]);
+  const commitValue = useCallback(
+    (next: T) => {
+      if (id === undefined || selection?.editField === undefined) return;
+      selection.editField(id, fieldKey, next);
+    },
+    [id, selection, fieldKey],
+  );
+
+  const commit = useCallback(() => commitValue(draft), [commitValue, draft]);
 
   const revert = useCallback(() => setDraft(committed.current), []);
 
-  return { editable, active, draft, setDraft, commit, revert };
+  return { editable, active, draft, setDraft, commit, commitValue, revert };
+}
+
+/**
+ * Doc 223: commits when the editor STOPS being live — by deselection, or by unmounting.
+ *
+ * Blur alone is not enough, and the gap is the common case rather than an edge one: clicking away on
+ * the canvas deselects the element, which unmounts the editor, and React does not deliver `onBlur`
+ * for an element that is being removed. The author types, clicks somewhere else, and silently loses
+ * the edit. FOUND BY HAND — every jsdom test passed, because they blur an editor that stays mounted.
+ *
+ * `getDraft` is read at cleanup time, so it must return the LATEST value rather than a captured one.
+ * Nothing is written when the draft is still the value the editor was seeded with, so leaving an
+ * untouched editor costs nothing.
+ */
+export function useCommitOnLeave<T>(
+  active: boolean,
+  getDraft: () => T,
+  getSeed: () => T,
+  commitValue: (value: T) => void,
+) {
+  const latest = useRef({ getDraft, getSeed, commitValue });
+  latest.current = { getDraft, getSeed, commitValue };
+
+  useEffect(() => {
+    if (!active) return undefined;
+    return () => {
+      const { getDraft: draft, getSeed: seed, commitValue: commit } = latest.current;
+      if (!Object.is(draft(), seed())) commit(draft());
+    };
+  }, [active]);
 }
 
 /** A stand-in so the capability hook runs unconditionally even before the element resolves. */

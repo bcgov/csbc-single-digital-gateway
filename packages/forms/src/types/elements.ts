@@ -3,6 +3,7 @@ import type { HeadingLevel } from '@repo/ui/heading';
 import type { ComponentMap, GridStackOptions, GridStackWidget } from 'gridstack/dist/react';
 import type { ComponentType, ReactNode } from 'react';
 import type { LayoutGap } from '../renderers/gridstack/layout-gap';
+import type { RichTextState } from '../renderers/ui/rich-text-value';
 import type { SectionInset, SectionVariant } from '../renderers/gridstack/section-options';
 
 /**
@@ -433,7 +434,13 @@ export interface InlineEditableProps {
   readonly element: UISchemaElement | undefined;
   /** The `InspectorField` key this value writes. */
   readonly fieldKey: string;
-  readonly value: string;
+  /**
+   * The document's current value. Its TYPE selects the editor: a string gets a single-line input, a
+   * rich text state gets a Lexical editor. One prop rather than two components on the context,
+   * because every surface asks the same question ("edit this value of this element's field") and the
+   * only thing that varies is what the value is.
+   */
+  readonly value: string | RichTextState;
   readonly placeholder: string;
   /** Classes the editor must carry so the text does not change size when it becomes editable. */
   readonly inputClassName?: string;

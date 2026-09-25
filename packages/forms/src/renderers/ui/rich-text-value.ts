@@ -72,3 +72,34 @@ function hasText(node: unknown): boolean {
  */
 export const richTextIsEmpty = (state: RichTextState | undefined): boolean =>
   state === undefined || !hasText(state.root);
+
+/**
+ * Doc 223: an empty editor state — what an UNWRITTEN rich value hands an inline editor.
+ *
+ * It has to be a rich text OBJECT rather than `undefined`, because the value's TYPE is what selects
+ * the editor (`InlineValue`): an absent value would otherwise open the single-line input and write a
+ * string into a field whose schema is an object, which `fieldAccepts` then silently refuses.
+ *
+ * `richTextIsEmpty` still reads this as empty, so committing an untouched editor writes nothing.
+ */
+export const EMPTY_RICH_TEXT = {
+  root: {
+    type: 'root',
+    format: '',
+    indent: 0,
+    version: 1,
+    direction: null,
+    children: [
+      {
+        type: 'paragraph',
+        format: '',
+        indent: 0,
+        version: 1,
+        direction: null,
+        textStyle: '',
+        textFormat: 0,
+        children: [],
+      },
+    ],
+  },
+} as unknown as RichTextState;
