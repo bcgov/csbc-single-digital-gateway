@@ -1,5 +1,4 @@
-import { SERVICE_TITLE_PLACEHOLDER } from './element-placeholders';
-import { createStudioTitle, FillFormTitle } from './form-renderer';
+import { FillFormTitle } from './form-renderer';
 
 /**
  * Doc 215 rules 7, 10: everything that differs between a Service and a Form. The renderer itself is
@@ -12,8 +11,8 @@ export const NESTED_SERVICE_MESSAGE = 'A Service can only be the root element.';
 // Doc 222: declared in a React-free module; re-exported here, where it is drawn.
 export { SERVICE_TITLE_PLACEHOLDER } from './element-placeholders';
 
-/** Doc 215 rule 8: the studio title block of a Service — a Form's, with its own placeholder. */
-export const StudioServiceTitle = createStudioTitle(SERVICE_TITLE_PLACEHOLDER);
+// Doc 223: `StudioServiceTitle` moved to `studio-title.tsx` with the rest of the studio title block —
+// this module is reached by `renderers/default`, which must not pull in the studio's contexts.
 
 /**
  * Doc 215 rule 9: the fillable title bar of a Service. IDENTICAL to a Form's — doc 201 rule 10 renders no text for an

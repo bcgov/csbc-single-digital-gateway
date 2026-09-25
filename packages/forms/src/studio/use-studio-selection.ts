@@ -51,6 +51,8 @@ export interface SelectableDocument {
   copy(elementId: string, placement: StudioItemPlacement): string | undefined;
   /** Doc 221: whether a copy of this element would have somewhere to go (its parent's `addChildren`). */
   mayCopy(elementId: string): boolean;
+  /** Doc 223: commits one inspector field, for an inline editor on the canvas. */
+  editField(elementId: string, key: string, value: unknown): void;
   /** Inserts a dropped palette template (doc 189 rule 25): the new element's id, or `undefined` when refused. */
   insert(gesture: Extract<GridGesture, { type: 'insert' }>): string | undefined;
   /** Inserts a clicked palette template next to `selectedId` (doc 189 rule 24). */
@@ -123,12 +125,19 @@ interface PointerSelectionOptions {
 }
 
 /**
- * Whether a key event came from inside the inspector, the palette or the code editors, where Escape belongs to their
- * fields — Monaco closes its suggest widget with it (doc 187 rule 29, doc 189 rule 27, doc 191 rule 25).
+ * Whether a key event came from inside the inspector, the palette, the code editors or an INLINE canvas
+ * editor, where Escape belongs to their fields — Monaco closes its suggest widget with it (doc 187 rule 29,
+ * doc 189 rule 27, doc 191 rule 25), and an inline editor reverts the edit in progress (doc 223).
+ *
+ * `[data-studio-inline]` is on the canvas, not in a panel, which is the point: without it Escape would
+ * revert the edit AND walk the selection up to the parent in the same press, so the author would lose both
+ * their text and their place.
  */
 const insidePanelForm = (target: EventTarget | null) =>
   target instanceof Element &&
-  target.closest('[data-studio-inspector], [data-studio-palette], [data-studio-code]') !== null;
+  target.closest(
+    '[data-studio-inspector], [data-studio-palette], [data-studio-code], [data-studio-inline]',
+  ) !== null;
 
 /**
  * Document listeners turning pointer and key events into hover and selection (doc 185 rules 2, 5, 7; doc
@@ -375,6 +384,7 @@ export function useStudioSelection(
   const {
     copy,
     mayCopy,
+    editField,
     add: addToDocument,
     editor: documentEditor,
     elementTypes,
@@ -467,9 +477,10 @@ export function useStudioSelection(
         if (copyId !== undefined) setSelected(copyId);
       },
       mayCopy,
+      editField,
       requestDelete: confirmation.request,
     }),
-    [hoveredId, selectedId, gesturing, copy, mayCopy, confirmation.request],
+    [hoveredId, selectedId, gesturing, copy, mayCopy, editField, confirmation.request],
   );
 
   const editor = useMemo<GridEditor>(

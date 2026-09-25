@@ -10,7 +10,7 @@ import type { CapabilityMap } from '../capabilities/capability-types';
 import type { StudioItemPlacement } from '../renderers/studio/studio-selection';
 import { FLOW_TYPE, flowNodeKind } from '../renderers/xyflow/flow-elements';
 import { sameJson } from './code/document-text';
-import { applyInspector } from './inspector/apply-inspector';
+import { applyInspector, applyInspectorField } from './inspector/apply-inspector';
 import { inspectorContext } from './inspector/inspector-context';
 import { applyPermissions, isPermissionKey } from './inspector/permission-fields';
 import type { InspectorValues } from './inspector/inspector-fields';
@@ -412,6 +412,25 @@ export function useStudioDocument({
    * Writes inspector values back (doc 187 rules 15-22). An unchanged document keeps the same state object,
    * so JSONForms' mount emit re-renders nothing.
    */
+  /**
+   * Doc 223: commits ONE inspector field — what an inline editor on the canvas writes.
+   *
+   * Deliberately NOT `updateElement(id, { [key]: value })`: a partial `InspectorValues` CLEARS every
+   * field it omits (`apply-inspector.ts`), so inline editing gets its own single-field path rather
+   * than a convenient-looking call that would quietly empty the rest of the element.
+   */
+  const editField = useCallback(
+    (elementId: string, key: string, value: unknown) => {
+      setState((previous) => {
+        const document = { schema: previous.schema, uischema: previous.uischema };
+        const next = applyInspectorField(document, elementId, key, value, ids);
+        // Unchanged: the SAME state object, so the canvas does not re-render (doc 187 rule 15).
+        return next === document ? previous : { ...previous, ...next };
+      });
+    },
+    [ids],
+  );
+
   const updateElement = useCallback(
     (elementId: string, values: InspectorValues) => {
       setState((previous) => {
@@ -536,6 +555,7 @@ export function useStudioDocument({
     replaceDocument,
     copy,
     mayCopy,
+    editField,
     insert,
     add,
     remove,

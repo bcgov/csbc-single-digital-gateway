@@ -3,7 +3,8 @@ import type { ComponentMap } from 'gridstack/dist/react';
 import type { GridRenderersOptions } from '../../types/elements';
 import type { RendererSet } from '../../types/renderer-set';
 import { TabsRenderer } from './tabs-renderer';
-import { createFormRenderer, StudioFormTitle } from './form-renderer';
+import { createFormRenderer } from './form-renderer';
+import { studioFormTitle, studioServiceTitle } from './studio-title';
 import { GridElementDispatch } from './grid-element';
 import {
   TABS_TYPE,
@@ -14,7 +15,7 @@ import {
   SERVICE_TYPE,
   type GridLayoutKind,
 } from './grid-layouts';
-import { NESTED_SERVICE_MESSAGE, StudioServiceTitle } from './service-renderer';
+import { NESTED_SERVICE_MESSAGE } from './service-renderer';
 import { createSectionRenderer } from './section-renderer';
 import { GRID_ELEMENT_COMPONENT } from './grid-options';
 import { createGridLayoutRenderer } from './grid-renderer';
@@ -71,6 +72,7 @@ export function createGridRenderers({
   components,
   gridOptions,
   className,
+  inlineEditable,
 }: GridRenderersOptions = {}): RendererSet {
   // Doc 183 rule 15b: every grid's items may be updated with a live, cyclic mid-drag node.
   installGridUpdateGuard();
@@ -89,12 +91,14 @@ export function createGridRenderers({
       // Doc 201 rule 7: on the canvas the title is the heading alone, with a placeholder when it is empty.
       {
         tester: formTester,
-        renderer: createFormRenderer(rendererFor('vertical'), StudioFormTitle, { dropZone: true }),
+        renderer: createFormRenderer(rendererFor('vertical'), studioFormTitle(inlineEditable), {
+          dropZone: true,
+        }),
       },
       // Doc 215 rule 8: the Service — the same renderer, the same drop zone, its own title and nested message.
       {
         tester: serviceTester,
-        renderer: createFormRenderer(rendererFor('vertical'), StudioServiceTitle, {
+        renderer: createFormRenderer(rendererFor('vertical'), studioServiceTitle(inlineEditable), {
           dropZone: true,
           nestedMessage: NESTED_SERVICE_MESSAGE,
         }),

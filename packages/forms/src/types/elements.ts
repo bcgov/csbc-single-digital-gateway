@@ -1,6 +1,7 @@
-import type { BaseUISchemaElement, ControlElement, Layout } from '@jsonforms/core';
+import type { BaseUISchemaElement, ControlElement, Layout, UISchemaElement } from '@jsonforms/core';
 import type { HeadingLevel } from '@repo/ui/heading';
 import type { ComponentMap, GridStackOptions, GridStackWidget } from 'gridstack/dist/react';
+import type { ComponentType, ReactNode } from 'react';
 import type { LayoutGap } from '../renderers/gridstack/layout-gap';
 import type { SectionInset, SectionVariant } from '../renderers/gridstack/section-options';
 
@@ -420,8 +421,35 @@ export interface PaletteEmptyElement extends BaseUISchemaElement {
 /** GridStack options a consumer may pass to the factory — the widgets always come from `elements`. */
 export type GridStackLayoutOptions = Omit<GridStackOptions, 'children' | 'subGridOpts'>;
 
+/**
+ * Doc 223: how a canvas value becomes editable in place.
+ *
+ * The contract lives HERE, with the other renderer-set types, because the implementation is in
+ * `renderers/studio` while the consumer is `renderers/gridstack` — and `renderers/gridstack` may not
+ * import `renderers/studio` (`form-errors.test.ts` pins that the dependency only runs downward).
+ * Declaring the shape in the types module lets both sides name it without either importing the other.
+ */
+export interface InlineEditableProps {
+  readonly element: UISchemaElement | undefined;
+  /** The `InspectorField` key this value writes. */
+  readonly fieldKey: string;
+  readonly value: string;
+  readonly placeholder: string;
+  /** Classes the editor must carry so the text does not change size when it becomes editable. */
+  readonly inputClassName?: string;
+  /** The read view, rendered whenever the editor is not live. */
+  readonly children: ReactNode;
+}
+
+export type InlineEditable = ComponentType<InlineEditableProps>;
+
 /** Options for `createGridRenderers` (`@repo/forms/renderers/gridstack`). */
 export interface GridRenderersOptions {
+  /**
+   * Doc 223: how a title becomes editable in place. Absent — every caller but the Form Studio —
+   * renders the title read-only, exactly as before.
+   */
+  inlineEditable?: InlineEditable;
   /**
    * Merged over the built-in components map. An entry under `GRID_ELEMENT_COMPONENT` replaces the
    * built-in grid item renderer (e.g. to add a drag handle around `GridElementDispatch`).

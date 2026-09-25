@@ -25,6 +25,13 @@ export interface StudioSelection {
    * A frame asks this to leave the Copy button out, rather than offering one that does nothing.
    */
   mayCopy?(elementId: string): boolean;
+  /**
+   * Doc 223: commits one inspector field by key — the ONE write path an inline canvas editor uses,
+   * so the canvas and the inspector panel can never disagree about a value.
+   *
+   * Optional like `mayCopy`: a host that provides no editing capability simply renders read-only.
+   */
+  editField?(elementId: string, key: string, value: unknown): void;
   /** Deletes the element, asking first unless the author switched confirmation off (rules 21-22). */
   requestDelete(elementId: string): void;
 }

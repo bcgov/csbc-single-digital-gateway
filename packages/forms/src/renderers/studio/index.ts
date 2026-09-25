@@ -2,6 +2,7 @@ import type { RendererSet } from '../../types/renderer-set';
 import { createGridRenderers, GRID_ELEMENT_COMPONENT } from '../gridstack/index';
 import * as ui from '../ui/index';
 import * as xyflow from '../xyflow/index';
+import { InlineText } from './inline-text';
 import { STUDIO_GRID_CLASS } from './studio-grid-class';
 import { StudioGridElement } from './studio-grid-element';
 import { frameCells, frameRenderers } from './with-studio-frame';
@@ -14,6 +15,9 @@ import { frameCells, frameRenderers } from './with-studio-frame';
 // tie JSONForms takes the FIRST entry, so the static grid would silently win.
 const grid = createGridRenderers({
   components: { [GRID_ELEMENT_COMPONENT]: StudioGridElement },
+  // Doc 223: on the canvas a title is edited in place. Injected rather than imported by the grid
+  // factory, because `renderers/gridstack` may not import this directory (form-errors.test.ts).
+  inlineEditable: InlineText,
   // Height is always size-to-content, so only the side handles resize; animation off stops every
   // swap during a drag sliding the neighbours over 0.3s, which read as choppy (rule 15).
   gridOptions: { staticGrid: false, animate: false, resizable: { handles: 'e, w' } },

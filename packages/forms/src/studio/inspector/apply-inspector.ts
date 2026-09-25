@@ -43,11 +43,52 @@ export function applyInspector(
     edit = field.write(ctx, edit, value);
   }
 
-  if (edit.element === ctx.element && edit.schema === document.schema) return document;
-  if (edit.element === ctx.element) return { schema: edit.schema, uischema: document.uischema };
+  return applied(document, ctx.element, elementId, edit, ids);
+}
+
+/** The document an `InspectorEdit` produces — the same identity when the edit changed nothing. */
+function applied(
+  document: EditableDocument,
+  before: TreeElement,
+  elementId: string,
+  edit: InspectorEdit,
+  ids: ElementIds,
+): EditableDocument {
+  if (edit.element === before && edit.schema === document.schema) return document;
+  if (edit.element === before) return { schema: edit.schema, uischema: document.uischema };
 
   const next = edit.element;
-  ids.carry(ctx.element, next);
+  ids.carry(before, next);
   const uischema = updateById(document.uischema as TreeElement, elementId, () => next, ids);
   return { schema: edit.schema, uischema };
+}
+
+/**
+ * Doc 223: writes ONE inspector field, by key — what an inline editor on the canvas commits.
+ *
+ * It exists because `applyInspector` CANNOT be called with a partial `InspectorValues`. That function
+ * walks every applicable field and reads `values[field.key]`, and `fieldAccepts` treats `undefined` as
+ * a deliberate CLEAR (`field-accepts.ts:9`) — so `applyInspector(doc, id, { label: 'x' })` would empty
+ * every other setting the element has. The inspector panel is safe because JSONForms always hands it
+ * the whole form's data.
+ *
+ * Same write path, same `unchanged` and `fieldAccepts` guards, same "unchanged returns the SAME
+ * document object" contract (doc 187 rule 15), so the canvas and the inspector can never disagree.
+ */
+export function applyInspectorField(
+  document: EditableDocument,
+  elementId: string,
+  key: string,
+  value: unknown,
+  ids: ElementIds,
+): EditableDocument {
+  const ctx = inspectorContext(document, elementId, ids);
+  if (!ctx) return document;
+
+  const field = fieldsFor(ctx).find((candidate) => candidate.key === key);
+  if (!field) return document;
+  if (unchanged(value, field.read(ctx)) || !fieldAccepts(field.schema(ctx), value)) return document;
+
+  const edit = field.write(ctx, { element: ctx.element, schema: document.schema }, value);
+  return applied(document, ctx.element, elementId, edit, ids);
 }

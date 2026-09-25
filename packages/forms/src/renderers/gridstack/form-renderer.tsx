@@ -2,11 +2,9 @@ import type { OwnPropsOfRenderer, UISchemaElement } from '@jsonforms/core';
 import { ctxToLayoutProps, useJsonForms } from '@jsonforms/react';
 import { Heading } from '@repo/ui/heading';
 import { RichTextView } from '@repo/ui/rich-text-view';
-import { useContext, type ComponentType, type CSSProperties } from 'react';
+import { useContext, type ComponentType } from 'react';
 import { labelOf } from './element-label';
-import { FORM_DESCRIPTION_PLACEHOLDER, FORM_TITLE_PLACEHOLDER } from './element-placeholders';
 import { FORM_DROP_ZONE_SLOT } from './grid-drop-target';
-import { GAP_REM, layoutGapOf } from './layout-gap';
 import { LayoutNestingContext } from './layout-nesting';
 import { richTextValue, type RichTextState } from '../ui/rich-text-value';
 
@@ -32,7 +30,7 @@ export interface FormTitleProps {
  * Doc 201 rule 9: the title is a sibling of the layout element, outside its gap flow — so a Form's `options.gap` still
  * spaces only its children and the title owns the space below itself.
  */
-const TITLE_SPACING = 'mb-6';
+export const TITLE_SPACING = 'mb-6';
 
 /**
  * Doc 207 rule 30 (superseding doc 201 rule 20): a Form's authored `options.description` as RICH content,
@@ -45,75 +43,6 @@ const TITLE_SPACING = 'mb-6';
 export function formDescriptionOf(uischema: UISchemaElement): RichTextState | undefined {
   return richTextValue((uischema.options as { description?: unknown } | undefined)?.description);
 }
-
-/**
- * Doc 201 rule 7b: the studio title and description are inset exactly as far as an element's content, so the text
- * lines up with the fields below. A studio grid item's content sits `gap / 2` (its gridstack margin) + 1px (the
- * frame's border) + 0.5rem (the frame's `p-2`) inside the grid's edge — measured in the browser, 17px at the default
- * `md` gap. The gap is authored per Form, so this is an inline style, not a class.
- */
-function studioInset(uischema: UISchemaElement): CSSProperties {
-  const half = GAP_REM[layoutGapOf(uischema.options)] / 2;
-  return { paddingInline: `calc(${half}rem + 1px + 0.5rem)` };
-}
-
-/**
- * Doc 215 rule 6: the studio canvas title of a root boundary, built for one element type by its empty-title
- * placeholder — 'Untitled form' for a Form, 'Untitled service' for a Service. Everything else about the block is the
- * same for both, so there is one implementation.
- *
- * Doc 201 rule 7: the studio canvas title — the heading alone, no rule and no chrome. Rule 7b: styled like the
- * studio's disabled fields, and inset to line up with the elements. Rule 11: an empty title draws a muted placeholder
- * instead, so an untitled Form still shows the author where its title goes. Rule 20: the description sits under it
- * with the same inset and grey; rule 22: unwritten, it shows a placeholder of its own.
- */
-export function createStudioTitle(placeholder: string) {
-  function StudioTitle({ uischema }: FormTitleProps) {
-    const title = labelOf(uischema, '');
-    const description = formDescriptionOf(uischema);
-    return (
-      // Rule 7b: `opacity-50`, the same treatment the studio's disabled fields get (`@repo/ui` Field/Label), so the
-      // title and description read as part of the non-interactive canvas rather than as a greyed colour. `select-none`
-      // for the same reason: a disabled field's Label can't be text-selected either (user request 2026-09-17).
-      <div
-        data-slot="form-title-block"
-        className={`${TITLE_SPACING} opacity-50 select-none`}
-        style={studioInset(uischema)}
-      >
-        {title === '' ? (
-          <Heading
-            level={1}
-            size={1}
-            data-slot="form-title-placeholder"
-            className="text-muted-foreground"
-          >
-            {placeholder}
-          </Heading>
-        ) : (
-          <Heading level={1} size={1} data-slot="form-title">
-            {title}
-          </Heading>
-        )}
-        {/* Rule 22: an unwritten description shows its own placeholder, exactly as the title does (rule 11), so the
-          author can see where it goes. Fillable forms still render nothing (rule 20b). */}
-        {description === undefined ? (
-          <p data-slot="form-description-placeholder" className="mt-2 text-muted-foreground">
-            {FORM_DESCRIPTION_PLACEHOLDER}
-          </p>
-        ) : (
-          <div data-slot="form-description" className="mt-2 text-muted-foreground">
-            <RichTextView value={description} />
-          </div>
-        )}
-      </div>
-    );
-  }
-  StudioTitle.displayName = 'StudioTitle';
-  return StudioTitle;
-}
-
-/** Doc 192, doc 201: the studio title of a Form. */
-export const StudioFormTitle = createStudioTitle(FORM_TITLE_PLACEHOLDER);
 
 /**
  * Doc 201 rule 8b: what the fillable title's TEXT is inset by. It lives on the heading, never on the bar around it —
