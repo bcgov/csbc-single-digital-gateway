@@ -6,6 +6,12 @@
 
 export { acceptsChildrenAnywhere } from './accepts-children';
 export { capabilityFor, mayEdit } from './capability-for';
+export {
+  checkCapabilities,
+  type Violation,
+  type ViolationCode,
+  type ViolationSeverity,
+} from './check-capabilities';
 export { mayAddTo, mayChangeEdges, mayMove, mayRemove } from './capability-gates';
 export {
   FULLY_GRANTED,
