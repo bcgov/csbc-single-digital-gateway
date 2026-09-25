@@ -136,11 +136,12 @@ describe('the draft is local until it is committed', () => {
   });
 });
 
+const heading = () => document.querySelector('[data-element-type="Heading"]') as HTMLElement;
+
 describe('leaving the editor commits', () => {
   // FOUND BY HAND. Blur alone is not enough, and the gap is the COMMON case: clicking away on the
   // canvas deselects the element, which unmounts the editor, and React does not deliver `onBlur` for
   // an element being removed. The author typed, clicked elsewhere, and silently lost the edit.
-  const heading = () => document.querySelector('[data-element-type="Heading"]') as HTMLElement;
 
   it('keeps the edit when selection moves to another element', async () => {
     renderStudio();
