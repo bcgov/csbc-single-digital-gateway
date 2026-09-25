@@ -117,6 +117,11 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 describe('SiteHeader Component', () => {
+  const mockUser = {
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+  };
+
   it('renders the brand lockup and navigation links', () => {
     render(<SiteHeader variant="anonymous" />);
 
@@ -157,11 +162,6 @@ describe('SiteHeader Component', () => {
   });
 
   it('renders ProfileMenu in authenticated variant', () => {
-    const mockUser = {
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-    };
-
     render(<SiteHeader variant="authenticated" user={mockUser} />);
 
     // Log in button should not be rendered
@@ -182,7 +182,6 @@ describe('SiteHeader Component', () => {
 
   it('triggers onLogout callback when logout dropdown item is clicked', async () => {
     const onLogout = vi.fn();
-    const mockUser = { name: 'John Doe' };
 
     render(<SiteHeader variant="authenticated" user={mockUser} onLogout={onLogout} />);
 

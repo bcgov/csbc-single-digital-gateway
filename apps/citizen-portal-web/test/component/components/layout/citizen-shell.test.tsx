@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { useAuth } from '@/lib/auth';
 import { logout } from '@/lib/bff';
+import { authedUser } from '../../../support/fixtures';
 
 // Mock PageShell component to isolate CitizenShell testing
 vi.mock('@/components/layout/page-shell', () => ({
@@ -34,7 +35,7 @@ vi.mock('@/lib/bff', () => ({
 }));
 
 describe('CitizenShell Component', () => {
-  const assignMock = vi.fn();
+  let assignMock = vi.fn();
 
   beforeEach(() => {
     Object.defineProperty(window, 'location', {
@@ -65,14 +66,7 @@ describe('CitizenShell Component', () => {
   });
 
   it('renders in authenticated variant with mapped user details when user is logged in', () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        email: 'john.doe@example.com',
-        name: 'John Doe',
-      },
-    };
-    vi.mocked(useAuth).mockReturnValue({ data: mockUser } as any);
+    vi.mocked(useAuth).mockReturnValue({ data: authedUser } as any);
 
     render(
       <CitizenShell activeNav="home">
@@ -84,20 +78,13 @@ describe('CitizenShell Component', () => {
     expect(pageShell).toHaveAttribute('data-variant', 'authenticated');
     expect(pageShell).toHaveAttribute('data-active-nav', 'home');
 
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Amina Ali')).toBeInTheDocument();
+    expect(screen.getByText('amina@example.com')).toBeInTheDocument();
     expect(screen.getByTestId('child-content')).toHaveTextContent('Home Content');
   });
 
   it('performs logout and redirects to root when onLogout triggers', async () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        email: 'john.doe@example.com',
-        name: 'John Doe',
-      },
-    };
-    vi.mocked(useAuth).mockReturnValue({ data: mockUser } as any);
+    vi.mocked(useAuth).mockReturnValue({ data: authedUser } as any);
     vi.mocked(logout).mockResolvedValue({} as any);
 
     render(

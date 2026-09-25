@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { jsonResponse } from '../../../support/render-app';
 import { ConsentGate, consentPending } from '@/components/application/consent-gate';
 import type { ServiceAgreementConsent } from '@/lib/applications';
 
@@ -39,13 +40,6 @@ const approvedRequired: ServiceAgreementConsent = {
   },
   decision: 'approve',
 };
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
 
 function renderGate(
   agreements: ServiceAgreementConsent[],

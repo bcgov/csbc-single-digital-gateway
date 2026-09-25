@@ -1,15 +1,8 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderRoute } from '../support/render-app';
+import { jsonResponse, renderRoute } from '../support/render-app';
 import { aggregateKnownExceptions, expectNoUnjustifiedA11yViolations } from '../support/a11y';
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
 
 // ---- / (home) + /services — anonymous catalog browsing ----
 

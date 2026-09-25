@@ -4,6 +4,8 @@ import { HomePage } from '@/components/home-page';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { logout } from '@/lib/bff';
+import { authedUser } from '../../support/fixtures';
+import { createMockAssign } from '../../support/create-mock-assign';
 
 // Mock components
 vi.mock('@/components/layout/page-shell', () => ({
@@ -135,16 +137,8 @@ describe('HomePage Component', () => {
   });
 
   it('renders authenticated (signed-in) view when user session exists', () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        name: 'Amina Ali',
-        email: 'amina@example.com',
-      },
-    };
-
     vi.mocked(useAuth).mockReturnValue({
-      data: mockUser,
+      data: authedUser,
       isPending: false,
     } as any);
 
@@ -187,16 +181,8 @@ describe('HomePage Component', () => {
   });
 
   it('calls logout and redirects to root when onLogout is triggered', async () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        name: 'Amina Ali',
-        email: 'amina@example.com',
-      },
-    };
-
     vi.mocked(useAuth).mockReturnValue({
-      data: mockUser,
+      data: authedUser,
       isPending: false,
     } as any);
 
@@ -206,11 +192,7 @@ describe('HomePage Component', () => {
     } as any);
 
     // Mock window.location.assign
-    const assignMock = vi.fn();
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: assignMock },
-    });
+    const assignMock = createMockAssign();
 
     render(<HomePage />);
 
@@ -224,16 +206,8 @@ describe('HomePage Component', () => {
   });
 
   it('handles nullish/empty data queries gracefully', () => {
-    const mockUser = {
-      id: 'user-123',
-      claims: {
-        name: 'Amina Ali',
-        email: 'amina@example.com',
-      },
-    };
-
     vi.mocked(useAuth).mockReturnValue({
-      data: mockUser,
+      data: authedUser,
       isPending: false,
     } as any);
 

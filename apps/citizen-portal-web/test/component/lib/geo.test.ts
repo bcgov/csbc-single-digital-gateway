@@ -9,6 +9,7 @@ import {
   statesQueryOptions,
 } from '@/lib/geo';
 import { BFF_ORIGIN } from '@/lib/bff';
+import { createMockSpy } from '../../support/create-mock-spy';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -23,7 +24,7 @@ function createWrapper() {
   };
 }
 
-describe('geo lib', () => {
+describe('Geo Library Test Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -35,10 +36,7 @@ describe('geo lib', () => {
         { id: 2, name: 'United States', iso2: 'US', hasStates: true, hasPostal: true },
       ];
 
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockCountries }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockCountries });
 
       const options = countriesQueryOptions();
       expect(options.queryKey).toEqual(['geo', 'countries']);
@@ -73,10 +71,7 @@ describe('geo lib', () => {
     it('constructs query options with enabled=true when countryId is provided', async () => {
       const mockStates = [{ id: 10, name: 'British Columbia', type: 'province', iso2: 'BC' }];
 
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockStates }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockStates });
 
       const options = statesQueryOptions(1);
       expect(options.queryKey).toEqual(['geo', 'states', 1]);
@@ -118,10 +113,7 @@ describe('geo lib', () => {
     it('constructs correct query options and fetches regions successfully', async () => {
       const mockRegions = [{ country: 'CA', province: 'BC' }];
 
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockRegions }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockRegions });
 
       const options = addressSearchRegionsQueryOptions();
       expect(options.queryKey).toEqual(['geo', 'address-search', 'regions']);
@@ -163,10 +155,7 @@ describe('geo lib', () => {
         },
       ];
 
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockSuggestions }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockSuggestions });
 
       const result = await appGeoData.searchAddresses!({
         country: 'CA',

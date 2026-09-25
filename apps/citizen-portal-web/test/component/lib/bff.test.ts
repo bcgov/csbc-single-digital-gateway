@@ -1,13 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { jsonResponse } from '../../support/render-app';
 import { loginUrl, loginUrlFor, getMe, logout, displayName, type AuthUser } from '@/lib/bff';
-
-// Helper to make json response
-const jsonResponse = (data: any, status = 200) => {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-};
 
 // loginUrlFor carries the current page path across the OIDC round-trip so a citizen who clicks
 // "Log in" lands back where they started (feature 67). The path is URL-encoded into `returnTo`.

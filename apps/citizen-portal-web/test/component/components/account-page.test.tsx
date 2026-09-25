@@ -5,25 +5,10 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
 import { InfoCell } from '@/components/account-page';
-
-const authedUser = {
-  id: 'c1',
-  roles: ['citizen'],
-  claims: {
-    sub: 'subject-1',
-    display_name: 'Amina Ali',
-    given_name: 'Amina',
-    family_name: 'Ali',
-    email: 'amina@example.com',
-  },
-};
-
-function jsonResponse(body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  });
-}
+import { jsonResponse } from '../../support/render-app';
+import { authedUser } from '../../support/fixtures';
+import { createMockBff } from '../../support/create-mock-bff';
+import { createMockAssign } from '../../support/create-mock-assign';
 
 async function renderAccount(me: Response | Promise<Response>) {
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
@@ -105,21 +90,9 @@ describe('citizen-portal-web /account page', () => {
   });
 
   it('logs out and redirects to homepage when log out button is clicked', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/auth/logout')) return new Response(null, { status: 204 });
-      if (url.includes('/v1/services')) return jsonResponse({ items: [] });
-      if (url.includes('/v1/me/applications')) return new Response(null, { status: 401 });
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const fetchMock = createMockBff();
 
-    const assign = vi.fn();
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign },
-    });
+    const assign = createMockAssign();
 
     const user = userEvent.setup();
     const router = createRouter({

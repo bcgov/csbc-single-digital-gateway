@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { jsonResponse } from '../../../support/render-app';
 import { ReviseForm } from '@/components/application/revise-form';
 import type { ApplicationDetail } from '@/lib/applications';
 
@@ -51,13 +52,6 @@ const mockApplication: ApplicationDetail = {
   updatedAt: '2026-07-08T12:00:00.000Z',
   submittedAt: null,
 };
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
 
 afterEach(() => {
   vi.restoreAllMocks();

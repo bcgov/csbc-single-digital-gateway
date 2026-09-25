@@ -10,8 +10,9 @@ import {
   serviceVersionQueryOptions,
 } from '@/lib/catalog';
 import { BFF_ORIGIN } from '@/lib/bff';
+import { createMockSpy } from '../../support/create-mock-spy';
 
-describe('catalog lib', () => {
+describe('Catalog Library Test Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -19,10 +20,7 @@ describe('catalog lib', () => {
   describe('API functions', () => {
     it('getServices fetches services from correct endpoint without search term', async () => {
       const mockItems = [{ id: 's1', title: 'Service 1', description: 'Desc 1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const result = await getServices();
 
@@ -34,10 +32,7 @@ describe('catalog lib', () => {
 
     it('getServices fetches services with query param when search term is provided', async () => {
       const mockItems = [{ id: 's1', title: 'Service 1', description: 'Desc 1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const result = await getServices('  passport  ');
 
@@ -65,10 +60,7 @@ describe('catalog lib', () => {
 
     it('getMyApplications fetches citizen applications', async () => {
       const mockItems = [{ id: 'app1', reference: 'REF-1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const result = await getMyApplications();
 
@@ -79,10 +71,7 @@ describe('catalog lib', () => {
     });
 
     it('getMyApplications returns empty array on 401 Unauthorized', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: false,
-        status: 401,
-      } as Response);
+      const fetchSpy = createMockSpy({}, 401);
 
       const result = await getMyApplications();
 
@@ -110,10 +99,7 @@ describe('catalog lib', () => {
 
     it('getService fetches a single service details by id', async () => {
       const mockService = { id: 's1', title: 'Service 1' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockService,
-      } as Response);
+      const fetchSpy = createMockSpy(mockService);
 
       const result = await getService('s1');
 
@@ -141,10 +127,7 @@ describe('catalog lib', () => {
 
     it('getServiceVersion fetches specific service version details', async () => {
       const mockVersion = { id: 'v1', version: 2 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockVersion,
-      } as Response);
+      const fetchSpy = createMockSpy(mockVersion);
 
       const result = await getServiceVersion('s1', 'v1');
 
@@ -174,10 +157,7 @@ describe('catalog lib', () => {
   describe('Query options', () => {
     it('servicesQueryOptions configuration', async () => {
       const mockItems = [{ id: 's1', title: 'Service' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const options = servicesQueryOptions('test');
       expect(options.queryKey).toEqual(['services', 'test']);
@@ -195,10 +175,7 @@ describe('catalog lib', () => {
 
     it('myApplicationsQueryOptions configuration', async () => {
       const mockItems = [{ id: 'app1' }];
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ items: mockItems }),
-      } as Response);
+      const fetchSpy = createMockSpy({ items: mockItems });
 
       const options = myApplicationsQueryOptions();
       expect(options.queryKey).toEqual(['me', 'applications']);
@@ -211,10 +188,7 @@ describe('catalog lib', () => {
 
     it('serviceQueryOptions configuration', async () => {
       const mockService = { id: 's1' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockService,
-      } as Response);
+      const fetchSpy = createMockSpy(mockService);
 
       const options = serviceQueryOptions('s1');
       expect(options.queryKey).toEqual(['services', 'detail', 's1']);
@@ -228,10 +202,7 @@ describe('catalog lib', () => {
 
     it('serviceVersionQueryOptions configuration', async () => {
       const mockVersion = { id: 'v1' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockVersion,
-      } as Response);
+      const fetchSpy = createMockSpy(mockVersion);
 
       const options = serviceVersionQueryOptions('s1', 'v1');
       expect(options.queryKey).toEqual(['services', 's1', 'versions', 'v1']);

@@ -10,6 +10,7 @@ import {
   subscribeToNotifications,
 } from '@/lib/notifications';
 import { BFF_ORIGIN } from '@/lib/bff';
+import { createMockSpy } from '../../support/create-mock-spy';
 
 describe('notifications lib', () => {
   beforeEach(() => {
@@ -32,10 +33,7 @@ describe('notifications lib', () => {
       expect(options.refetchOnWindowFocus).toBe(false);
 
       const mockFeed = { items: [], total: 0, limit: 10, offset: 0 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockFeed,
-      } as Response);
+      const fetchSpy = createMockSpy(mockFeed);
 
       const result = await options.queryFn!({} as any);
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications`, {
@@ -51,10 +49,7 @@ describe('notifications lib', () => {
       expect(options.refetchOnWindowFocus).toBe(false);
 
       const mockCount = { count: 5 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockCount,
-      } as Response);
+      const fetchSpy = createMockSpy(mockCount);
 
       const result = await options.queryFn!({} as any);
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications/unread-count`, {
@@ -73,10 +68,7 @@ describe('notifications lib', () => {
         email: 'test@example.com',
         channels: [],
       };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockPrefs,
-      } as Response);
+      const fetchSpy = createMockSpy(mockPrefs);
 
       const result = await options.queryFn!({} as any);
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notification-preferences`, {
@@ -108,10 +100,7 @@ describe('notifications lib', () => {
   describe('mutations and updates', () => {
     it('markNotificationRead sends POST request', async () => {
       const mockItem = { deliveryId: 'd1', notificationId: 'n1', title: 'Test' };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockItem,
-      } as Response);
+      const fetchSpy = createMockSpy(mockItem);
 
       const result = await markNotificationRead('d/1'); // with URI encoding check
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications/d%2F1/read`, {
@@ -123,10 +112,7 @@ describe('notifications lib', () => {
 
     it('markAllNotificationsRead sends POST request', async () => {
       const mockResponse = { updated: 3 };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response);
+      const fetchSpy = createMockSpy(mockResponse);
 
       const result = await markAllNotificationsRead();
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/notifications/read-all`, {
@@ -142,10 +128,7 @@ describe('notifications lib', () => {
         email: 'new@example.com',
         channels: [],
       };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => mockPrefs,
-      } as Response);
+      const fetchSpy = createMockSpy(mockPrefs);
 
       const input = { email: 'new@example.com' };
       const result = await updateNotificationPreferences(input);
