@@ -392,8 +392,11 @@ export function useStudioDocument({
        * naming it as a dependency would rebuild `inspectorFor` on every render, which `useInspectorPanel`
        * memoises against (doc 187 rule 15 — a rebuilt form resets the control being typed into).
        */
-      const governing = governingRef.current;
-      const element = governing === null ? undefined : findById(currentUischema, elementId, ids);
+      // NOT named `governing`: that is the hook-level binding, and shadowing it here would make the
+      // ref read and the live value indistinguishable at a glance (doc 219 lost an afternoon to
+      // exactly that shape).
+      const governingNow = governingRef.current;
+      const element = governingNow === null ? undefined : findById(currentUischema, elementId, ids);
       return inspectorForm({ schema: currentSchema, uischema: currentUischema }, elementId, ids, {
         // `exactOptionalPropertyTypes`: an absent map is an absent KEY, never an explicit undefined.
         ...(current.capabilities === undefined ? {} : { authored: current.capabilities }),
