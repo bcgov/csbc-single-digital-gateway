@@ -308,8 +308,20 @@ export function useStudioSelection(
    * working unchanged and sees "no element selected" while an edge is selected, which is the behaviour wanted.
    * The invariant (at most one is set) is enforced in `setSelected` and `selectEdge` alone.
    */
-  // Doc 221: the GOVERNING map, or `null` when nothing governs this document.
+  /**
+   * Doc 221: the GOVERNING map, or `null` when nothing governs this document.
+   *
+   * Both this and the studio are read through REFS inside `setSelected`, never as dependencies.
+   * `studio` is a fresh object on every render, so depending on it would give `setSelected` a new
+   * identity every render — and everything memoised on it (the selection port, the pointer effects)
+   * would rebuild, which showed up as an element selecting visibly while the inspector stayed empty.
+   * FOUND BY HAND in the browser; the jsdom tests passed throughout.
+   */
   const capabilities = useCapabilities();
+  const capabilitiesRef = useRef(capabilities);
+  capabilitiesRef.current = capabilities;
+  const studioRef = useRef(studio);
+  studioRef.current = studio;
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const edgeRef = useRef<string | null>(null);
   edgeRef.current = selectedEdge;
@@ -323,19 +335,17 @@ export function useStudioSelection(
    * still selects, and shows the reduced inspector. Ungoverned resolves to FULLY_GRANTED, so this
    * refuses nothing when no template governs the document.
    */
-  const setSelected = useCallback<IdSetter>(
-    (update) => {
-      setSelectedElement((previous) => {
-        const next = typeof update === 'function' ? update(previous) : update;
-        if (next === null || capabilities === null) return next;
-        const element = studio.elementOf(next);
-        if (element === undefined) return next;
-        return grantsNothing(capabilityFor(capabilities, element)) ? previous : next;
-      });
-      setSelectedEdge(null);
-    },
-    [capabilities, studio],
-  );
+  const setSelected = useCallback<IdSetter>((update) => {
+    setSelectedElement((previous) => {
+      const next = typeof update === 'function' ? update(previous) : update;
+      const capabilities = capabilitiesRef.current;
+      if (next === null || capabilities === null) return next;
+      const element = studioRef.current.elementOf(next);
+      if (element === undefined) return next;
+      return grantsNothing(capabilityFor(capabilities, element)) ? previous : next;
+    });
+    setSelectedEdge(null);
+  }, []);
   const selectEdge = useCallback((edgeId: string | null) => {
     setSelectedEdge(edgeId);
     if (edgeId !== null) setSelectedElement(null);
