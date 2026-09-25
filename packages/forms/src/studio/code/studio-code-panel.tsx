@@ -5,7 +5,8 @@ import type { DocumentHalves } from '../use-studio-document';
 import { CodePane } from './code-pane';
 import { SCHEMA_METASCHEMA } from './metaschema/schema-metaschema';
 import { UISCHEMA_METASCHEMA } from './metaschema/uischema-metaschema';
-import { validateSchemaDocument, validateUischemaDocument } from './validate-document';
+import { useCapabilities } from '../../renderers/studio/studio-capabilities';
+import { governedSchemaValidator, governedUischemaValidator } from './validate-document';
 
 export interface StudioCodePanelProps {
   readonly schema: JsonSchema;
@@ -28,6 +29,20 @@ export const StudioCodePanel: FC<StudioCodePanelProps> = ({ schema, uischema, on
     [onReplace],
   );
 
+  /**
+   * Doc 222: this panel is the studio's own bypass — every gate doc 221 installed sits on an
+   * affordance, and these panes replace a whole half of the document with hand-written JSON. The API
+   * refuses such a save, so without this the author writes valid JSON, watches it apply, and meets an
+   * unexplained 422. Refusing at the apply gate says which element and which setting instead.
+   *
+   * Rebuilt per render on purpose: `useCodeDocument` holds `validate` in a REF and reads it at call
+   * time, so a fresh identity costs nothing here (unlike `loadDocument`, doc 200 rule 4b).
+   */
+  const governing = useCapabilities() ?? undefined;
+  const current = { schema, uischema };
+  const validateSchema = governedSchemaValidator(current, governing);
+  const validateUischema = governedUischemaValidator(current, governing);
+
   return (
     <div data-studio-code="" className="nokey h-full">
       <ResizablePanelGroup orientation="horizontal">
@@ -38,7 +53,7 @@ export const StudioCodePanel: FC<StudioCodePanelProps> = ({ schema, uischema, on
             instanceId={instanceId}
             metaschema={SCHEMA_METASCHEMA}
             value={schema}
-            validate={validateSchemaDocument}
+            validate={validateSchema}
             apply={applySchema}
           />
         </ResizablePanel>
@@ -50,7 +65,7 @@ export const StudioCodePanel: FC<StudioCodePanelProps> = ({ schema, uischema, on
             instanceId={instanceId}
             metaschema={UISCHEMA_METASCHEMA}
             value={uischema}
-            validate={validateUischemaDocument}
+            validate={validateUischema}
             apply={applyUischema}
           />
         </ResizablePanel>

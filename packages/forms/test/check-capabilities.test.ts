@@ -2,6 +2,10 @@ import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
 import { checkCapabilities, type CapabilityMap } from '../src/capabilities/index';
 import { sameValue } from '../src/capabilities/document-index';
+import {
+  governedSchemaValidator,
+  governedUischemaValidator,
+} from '../src/studio/code/validate-document';
 
 // Doc 222 — the enforcement the studio's gates only advertise.
 //
@@ -263,5 +267,78 @@ describe('sameValue — order-insensitive, because storage reorders keys', () =>
     expect(sameValue(null, {})).toBe(false);
     expect(sameValue('x', 'x')).toBe(true);
     expect(sameValue(1, '1')).toBe(false);
+  });
+});
+
+describe('the code panel apply gate (doc 222)', () => {
+  // The studio's own bypass: every gate doc 221 installed sits on an affordance, and these panes
+  // replace a whole half of the document with hand-written JSON.
+  const current = base();
+  const map: CapabilityMap = { default: { '*': CLOSED } };
+
+  it('applies a pasted uischema that changes nothing governed', () => {
+    const validate = governedUischemaValidator(current, map);
+    const result = validate(current.uischema);
+    expect(result.valid).toBe(true);
+  });
+
+  it('refuses a pasted uischema that edits a frozen setting', () => {
+    const validate = governedUischemaValidator(current, map);
+    const result = validate(
+      form(stack('stack1', control('a1', 'a', { label: 'Renamed' }), control('b1', 'b'))),
+    );
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.problems[0]?.message).toContain('may not be changed');
+  });
+
+  it('refuses a pasted uischema that deletes a pinned element', () => {
+    const validate = governedUischemaValidator(current, map);
+    const result = validate(form(stack('stack1', control('a1', 'a'))));
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.problems[0]?.message).toContain('may not be removed');
+  });
+
+  it('is ungated when no template governs the document', () => {
+    const validate = governedUischemaValidator(current, undefined);
+    expect(validate(form(stack('stack1', control('a1', 'a')))).valid).toBe(true);
+  });
+
+  it('still refuses what the METASCHEMA rejects, capabilities or not', () => {
+    // The capability check is a THIRD gate, not a replacement for the first two.
+    const validate = governedUischemaValidator(current, map);
+    expect(validate({ type: 'NotAnElement' }).valid).toBe(false);
+  });
+
+  it('gates the SCHEMA pane too — marking a field Required is a schema edit', () => {
+    // `Required` is read from the ROOT schema, not the uischema, so gating only the uischema pane
+    // would leave that door open: an author could freeze a control's settings and still make it
+    // mandatory by hand.
+    const validate = governedSchemaValidator(current, map);
+    const result = validate({ ...current.schema, required: ['a'] });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.problems[0]?.message).toContain('Required');
+  });
+
+  it('does NOT gate a schema keyword the inspector never exposes', () => {
+    // A real limit of the language, worth pinning rather than discovering later: `edit` names
+    // INSPECTOR field keys (doc 220), so a keyword with no field — `minLength` has none today — is
+    // outside the vocabulary and no `edit` list can freeze it.
+    const validate = governedSchemaValidator(current, map);
+    const withMinLength = {
+      ...current.schema,
+      properties: {
+        a: { type: 'string', title: 'A', minLength: 5 },
+        b: { type: 'string', title: 'B' },
+      },
+    };
+    expect(validate(withMinLength).valid).toBe(true);
+  });
+
+  it('applies an unrelated schema change', () => {
+    const validate = governedSchemaValidator(current, map);
+    expect(validate(current.schema).valid).toBe(true);
   });
 });

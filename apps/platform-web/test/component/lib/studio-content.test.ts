@@ -36,7 +36,7 @@ describe('studioDocumentOf (doc 218 rule 13)', () => {
 // neither was visible to the component tests, whose fetch mocks hand back the shapes the studio
 // produces rather than the ones the server really returns.
 describe('sameStudioDocument (doc 221)', () => {
-  const capabilities = { elements: { h1: { edit: 'none' } } };
+  const capabilities = { elements: { h1: { edit: 'none' } } } as const;
 
   it('ignores KEY ORDER — the server reorders, the content is the same', () => {
     // `uiSchemaSchema` is `z.object({ type, elements }).catchall(...)`, so a root the studio holds as
