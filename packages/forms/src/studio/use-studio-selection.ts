@@ -338,11 +338,11 @@ export function useStudioSelection(
   const setSelected = useCallback<IdSetter>((update) => {
     setSelectedElement((previous) => {
       const next = typeof update === 'function' ? update(previous) : update;
-      const capabilities = capabilitiesRef.current;
-      if (next === null || capabilities === null) return next;
+      const governing = capabilitiesRef.current;
+      if (next === null || governing === null) return next;
       const element = studioRef.current.elementOf(next);
       if (element === undefined) return next;
-      return grantsNothing(capabilityFor(capabilities, element)) ? previous : next;
+      return grantsNothing(capabilityFor(governing, element)) ? previous : next;
     });
     setSelectedEdge(null);
   }, []);
