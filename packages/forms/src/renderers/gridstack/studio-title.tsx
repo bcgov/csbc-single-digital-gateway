@@ -2,7 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { Heading } from '@repo/ui/heading';
 import { RichTextView } from '@repo/ui/rich-text-view';
 import type { CSSProperties } from 'react';
-import type { InlineEditable } from '../../types/elements';
+import { useInlineEditable } from '../ui/inline-editable';
 import { labelOf } from './element-label';
 import {
   FORM_DESCRIPTION_PLACEHOLDER,
@@ -25,21 +25,6 @@ import { GAP_REM, layoutGapOf } from './layout-gap';
  */
 
 /**
- * Doc 223: how a value becomes editable in place. INJECTED, never imported.
- *
- * The implementation lives in `renderers/studio`, which imports `renderers/gridstack` — so importing
- * it here would make the two directories mutually dependent, which `form-errors.test.ts` pins
- * against ("the studio imports DOWN into the shared layer; the reverse would invert the dependency").
- * The title is ALREADY a parameter of `createFormRenderer`, so passing the editor the same way costs
- * nothing and keeps ONE implementation of the title block rather than an inline copy of it.
- *
- * The default renders the read view untouched, which is exactly right for every caller that is not
- * the studio.
- */
-/** The default: the value is shown, never edited. */
-const ReadOnlyText: InlineEditable = ({ children }) => children;
-
-/**
  * Doc 201 rule 7b: the studio title and description are inset exactly as far as an element's content, so the text
  * lines up with the fields below. A studio grid item's content sits `gap / 2` (its gridstack margin) + 1px (the
  * frame's border) + 0.5rem (the frame's `p-2`) inside the grid's edge — measured in the browser, 17px at the default
@@ -60,8 +45,11 @@ function studioInset(uischema: UISchemaElement): CSSProperties {
  * instead, so an untitled Form still shows the author where its title goes. Rule 20: the description sits under it
  * with the same inset and grey; rule 22: unwritten, it shows a placeholder of its own.
  */
-export function createStudioTitle(placeholder: string, Editable: InlineEditable = ReadOnlyText) {
+export function createStudioTitle(placeholder: string) {
   function StudioTitle({ uischema }: FormTitleProps) {
+    // Doc 223: the studio supplies this at the canvas root; everywhere else it is the read-only
+    // passthrough, so the block renders exactly as it always has.
+    const Editable = useInlineEditable();
     const title = labelOf(uischema, '');
     const description = formDescriptionOf(uischema);
     return (
@@ -118,14 +106,8 @@ export function createStudioTitle(placeholder: string, Editable: InlineEditable 
   return StudioTitle;
 }
 
-/**
- * Doc 192, doc 201, doc 215 rule 8: the studio titles, built per placeholder.
- *
- * Factories rather than constants so `createGridRenderers` can build them WITH an inline editor;
- * a module-level constant would have to pick one and could not be given the studio's.
- */
-export const studioFormTitle = (Editable?: InlineEditable) =>
-  createStudioTitle(FORM_TITLE_PLACEHOLDER, Editable);
+/** Doc 192, doc 201: the studio title of a Form. */
+export const StudioFormTitle = createStudioTitle(FORM_TITLE_PLACEHOLDER);
 
-export const studioServiceTitle = (Editable?: InlineEditable) =>
-  createStudioTitle(SERVICE_TITLE_PLACEHOLDER, Editable);
+/** Doc 215 rule 8: the studio title block of a Service — a Form's, with its own placeholder. */
+export const StudioServiceTitle = createStudioTitle(SERVICE_TITLE_PLACEHOLDER);

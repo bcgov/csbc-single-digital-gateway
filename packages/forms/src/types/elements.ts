@@ -446,11 +446,6 @@ export type InlineEditable = ComponentType<InlineEditableProps>;
 /** Options for `createGridRenderers` (`@repo/forms/renderers/gridstack`). */
 export interface GridRenderersOptions {
   /**
-   * Doc 223: how a title becomes editable in place. Absent — every caller but the Form Studio —
-   * renders the title read-only, exactly as before.
-   */
-  inlineEditable?: InlineEditable;
-  /**
    * Merged over the built-in components map. An entry under `GRID_ELEMENT_COMPONENT` replaces the
    * built-in grid item renderer (e.g. to add a drag handle around `GridElementDispatch`).
    */

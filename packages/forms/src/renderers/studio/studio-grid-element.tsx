@@ -68,7 +68,7 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
       className="p-2"
     >
       <StudioItemContext.Provider value>
-        <StudioContent type={type}>
+        <StudioContent type={type} selected={selected}>
           <GridElementDispatch elementId={elementId} enabled={false} sizing={sizing} />
         </StudioContent>
       </StudioItemContext.Provider>

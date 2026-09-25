@@ -106,7 +106,9 @@ export function InlineText({
         }
         if (event.key === 'Escape') revert();
       }}
-      className={`w-full rounded-xs bg-transparent outline-none focus:ring-1 focus:ring-ring ${inputClassName ?? ''}`}
+      // `pointer-events-auto`: locked studio content sets `pointer-events-none` so presses fall
+      // through to the grid item, and the editor has to opt back in (doc 196 rule 13's idiom).
+      className={`pointer-events-auto w-full rounded-xs bg-transparent outline-none focus:ring-1 focus:ring-ring ${inputClassName ?? ''}`}
     />
   );
 }

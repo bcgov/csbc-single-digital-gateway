@@ -7,6 +7,8 @@ import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid
 import { TabsEditorProvider, type TabsEditor } from '../renderers/gridstack/tabs-editor';
 import { type TabsComponent } from '../renderers/gridstack/tabs-options';
 import { TabsOverrideProvider } from '../renderers/gridstack/tabs-override';
+import { InlineText } from '../renderers/studio/inline-text';
+import { InlineEditableProvider } from '../renderers/ui/inline-editable';
 import { FORM_TYPE, isPageRoot, SERVICE_TYPE } from '../renderers/gridstack/grid-layouts';
 import * as studioSet from '../renderers/studio/index';
 import {
@@ -206,15 +208,20 @@ export function StudioCanvas({
       <GridEditorProvider value={editor}>
         <FlowEditorProvider value={flowEditor}>
           <TabsEditorProvider value={tabsEditor}>
-            <JsonForms
-              key={`studio-${rootKey}`}
-              schema={schema}
-              uischema={canvasRoot}
-              data={STUDIO_SAMPLE_DATA}
-              renderers={STUDIO_RENDERERS}
-              cells={studioSet.cells}
-              validationMode="NoValidation"
-            />
+            {/* Doc 223: every renderer that draws an editable value reaches the editor from here.
+                Supplied ONCE at the canvas root rather than threaded through the renderer sets: the
+                surfaces live in three directories and none of them may import `renderers/studio`. */}
+            <InlineEditableProvider value={InlineText}>
+              <JsonForms
+                key={`studio-${rootKey}`}
+                schema={schema}
+                uischema={canvasRoot}
+                data={STUDIO_SAMPLE_DATA}
+                renderers={STUDIO_RENDERERS}
+                cells={studioSet.cells}
+                validationMode="NoValidation"
+              />
+            </InlineEditableProvider>
           </TabsEditorProvider>
         </FlowEditorProvider>
       </GridEditorProvider>

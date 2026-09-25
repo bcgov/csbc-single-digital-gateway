@@ -4,12 +4,30 @@ import { useTabsEditor } from '../gridstack/tabs-editor';
 import { useFlowEditor } from '../xyflow/flow-editor';
 import { FLOW_TYPE, isFlowNodeType } from '../xyflow/flow-elements';
 
+/**
+ * Doc 223: element types whose CONTENT holds an inline editor.
+ *
+ * Named explicitly, exactly as `isFlowNodeType` and `TABS_TYPE` are, rather than exempting every
+ * selected element. `inert` is what stops a control on the canvas being typed into when
+ * `options.readonly` or an enable rule outranks the `enabled={false}` the studio passes down — so
+ * lifting it for ANY selected element would make a selected text field fillable on the canvas.
+ * A layout is not listed: it is already exempt through `isGridLayoutType`.
+ *
+ * `Heading` is deliberately NOT here. Making its text inline-editable replaces the `<h*>` with an
+ * input while it is selected — so the author cannot SEE the heading whose level and size they are
+ * changing in the inspector, which is the main reason to select one. Five existing tests caught it
+ * by looking for the heading role after selecting it. Its text stays an inspector field.
+ */
+const INLINE_EDITABLE_TYPES: ReadonlySet<string> = new Set(['RichContent']);
+
 interface StudioContentProps {
   /**
    * The element's uischema type. A gridstack layout stays interactive so its own items can be dragged, and a Flow so
    * its canvas pans and zooms.
    */
   readonly type: string;
+  /** Doc 223: whether this element is the selected one, which is when its inline editor goes live. */
+  readonly selected?: boolean;
   readonly children: ReactNode;
 }
 
@@ -32,7 +50,7 @@ function contentClass(locked: boolean, flow: boolean): string | undefined {
  * events. Doc 216 rule 35: a Tabs under a Tabs editor is the third case, for exactly that reason — its strip's
  * `+` and its triggers must stay clickable.
  */
-export function StudioContent({ type, children }: StudioContentProps) {
+export function StudioContent({ type, selected = false, children }: StudioContentProps) {
   const flowEditing = useFlowEditor() !== null;
   const tabsEditing = useTabsEditor() !== null;
   const flow = type === FLOW_TYPE;
@@ -58,7 +76,14 @@ export function StudioContent({ type, children }: StudioContentProps) {
    * HAND: the button worked from a script (`.click()` ignores inert) and could not be pressed with a mouse,
    * so nothing in jsdom would have caught it.
    */
-  const inert = locked && !(flowEditing && isFlowNodeType(type));
+  /**
+   * Doc 223: and an element being edited IN PLACE, for the same reason again — the inline editor is
+   * inside this content, and an input under an inert ancestor cannot be focused at all. It is still
+   * LOCKED, so presses keep falling through to the grid item; the editor opts back in to pointer
+   * events itself, exactly as a Stage card's row controls do.
+   */
+  const inlineEditing = selected && INLINE_EDITABLE_TYPES.has(type);
+  const inert = locked && !(flowEditing && isFlowNodeType(type)) && !inlineEditing;
   return (
     <div data-slot="studio-content" inert={inert} className={contentClass(locked, flow)}>
       {children}
