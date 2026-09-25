@@ -6,6 +6,9 @@
 
 export { acceptsChildrenAnywhere } from './accepts-children';
 export { capabilityFor, mayEdit } from './capability-for';
+// Re-exported so a caller at an untyped boundary (platform-api's jsonb `content`) can name the
+// shape `checkCapabilities` takes without importing a studio internal.
+export type { EditableDocument } from '../studio/layout/schema-properties';
 export {
   checkCapabilities,
   type Violation,

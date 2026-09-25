@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { type Database, documentVersions, documents } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, inArray } from 'drizzle-orm';
+import type { CapabilityMap } from '@repo/forms/capabilities';
 import type { DocumentTypeValue } from '../dtos/template.dtos';
 
 /**
@@ -93,6 +94,22 @@ export class TemplateResolver {
       templateVersionId: row.templateVersionId,
       ...toContent(row.content),
     };
+  }
+
+  /**
+   * The capability map GOVERNING a document version, or `undefined` when nothing does (doc 222).
+   *
+   * Takes the document version's `template_version_id` straight from the row, nullable and all, so
+   * no caller has to remember that an unpinned document is simply ungoverned. Deliberately NOT
+   * `resolve()`: that returns whichever template version is published NOW, which would let a
+   * template author retroactively re-govern documents already authored under an earlier version.
+   */
+  async capabilitiesForVersion(
+    templateVersionId: string | null,
+  ): Promise<CapabilityMap | undefined> {
+    if (templateVersionId === null) return undefined;
+    const { capabilities } = await this.contentForVersion(templateVersionId);
+    return capabilities as CapabilityMap | undefined;
   }
 
   /** The JSON schema a document version pinned to `templateVersionId` validates against. */

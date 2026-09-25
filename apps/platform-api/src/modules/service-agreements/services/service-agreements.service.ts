@@ -16,6 +16,7 @@ import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { TemplateResolver } from '../../templates/services/template.resolver';
 import { validateContent } from '../../templates/services/validate-content';
+import { assertWithinCapabilities } from '../../templates/services/capability-guard';
 import {
   type CreateServiceAgreementInput,
   type ListServiceAgreementsPageQuery,
@@ -270,6 +271,13 @@ export class ServiceAgreementsService {
     const doc = await this.requireAgreementForWrite(actor, id);
     const version = await this.requireDraftVersion(id, versionId);
     const content = validateContent(doc, input.content);
+    // Doc 222: the governing template has the final say — the studio's gates are UX, and both the
+    // uischema code panel and this endpoint bypass them.
+    assertWithinCapabilities(
+      version.content,
+      content,
+      await this.templates.capabilitiesForVersion(version.templateVersionId),
+    );
     const updated = await this.db
       .update(documentVersions)
       .set({ content, revision: sql`${documentVersions.revision} + 1` })

@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { documentVersions, documents } from '@repo/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FormsService } from '../../../../../src/modules/forms/services/forms.service';
@@ -49,6 +54,8 @@ describe('FormsService', () => {
 
     templatesMock = {
       resolve: vi.fn().mockResolvedValue(TEMPLATE),
+      // Doc 222: ungoverned — these cases are about versioning, not capabilities.
+      capabilitiesForVersion: vi.fn().mockResolvedValue(undefined),
       // Doc 221: the READ path resolves the PINNED template version; `resolve` stays for CREATE.
       contentForVersion: vi.fn().mockResolvedValue({
         schema: TEMPLATE.schema,
@@ -237,6 +244,93 @@ describe('FormsService', () => {
           },
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    // Doc 222 — the studio's gates are UX. This endpoint and the studio's own uischema code panel
+    // both bypass them, so a governing template has to be enforced HERE or it is not enforced.
+    describe('under a governing template', () => {
+      const GOVERNED = {
+        schema: { type: 'object', properties: { a: { type: 'string' } } },
+        uischema: {
+          type: 'Form',
+          id: 'root1',
+          label: 'Apply online',
+          elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'Name' }],
+        },
+      };
+      const CLOSED = {
+        edit: 'none',
+        remove: false,
+        move: false,
+        addChildren: false,
+        removeChildren: false,
+        reorderChildren: false,
+        edges: false,
+      };
+      const governedVersion = { ...version, content: GOVERNED };
+      const relabelled = {
+        ...GOVERNED,
+        uischema: {
+          ...GOVERNED.uischema,
+          elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'CHANGED' }],
+        },
+      };
+
+      const govern = (capabilities: unknown) =>
+        templatesMock.capabilitiesForVersion.mockResolvedValue(capabilities);
+
+      it('refuses an edit the template froze, with 422', async () => {
+        govern({ default: { '*': CLOSED } });
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+
+        await expect(
+          service.updateContent('user-1', 'doc-1', 'version-1', { content: relabelled }),
+        ).rejects.toThrow(UnprocessableEntityException);
+        // The refusal must happen BEFORE the write, not be cleaned up after one.
+        expect(dbMock.update).not.toHaveBeenCalled();
+      });
+
+      it('names the element and the field it refused', async () => {
+        govern({ default: { '*': CLOSED } });
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+
+        const error = await service
+          .updateContent('user-1', 'doc-1', 'version-1', { content: relabelled })
+          .catch((thrown: UnprocessableEntityException) => thrown);
+
+        const body = (error as UnprocessableEntityException).getResponse() as {
+          violations: { code: string; elementId: string; field: string }[];
+        };
+        expect(body.violations).toEqual([
+          expect.objectContaining({ code: 'edit', elementId: 'a1', field: 'label' }),
+        ]);
+      });
+
+      it('allows the same edit when the template grants that field', async () => {
+        govern({ default: { '*': CLOSED }, elements: { a1: { edit: ['label'] } } });
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+        dbMock.returning.mockResolvedValueOnce([{ ...governedVersion, revision: 2 }]);
+
+        await expect(
+          service.updateContent('user-1', 'doc-1', 'version-1', { content: relabelled }),
+        ).resolves.toBeDefined();
+        expect(dbMock.update).toHaveBeenCalled();
+      });
+
+      it('is resolved from the version PIN, never from whatever is published now', async () => {
+        // Otherwise a template author could retroactively re-govern documents already authored
+        // under an earlier version (doc 221's integration contract).
+        govern(undefined);
+        dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+        dbMock.returning.mockResolvedValueOnce([governedVersion]);
+
+        await service.updateContent('user-1', 'doc-1', 'version-1', { content: relabelled });
+
+        expect(templatesMock.capabilitiesForVersion).toHaveBeenCalledWith(
+          version.templateVersionId,
+        );
+        expect(templatesMock.resolve).not.toHaveBeenCalled();
+      });
     });
 
     it('throws NotFoundException if the version is not found', async () => {

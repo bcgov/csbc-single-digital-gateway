@@ -43,6 +43,9 @@ export interface Violation {
 
 type TreeElement = UISchemaElement & { elements?: UISchemaElement[] };
 
+const edgesOf = (element: UISchemaElement | undefined): unknown =>
+  (element?.options as Record<string, unknown> | undefined)?.['edges'];
+
 const describe = (element: UISchemaElement): string => {
   const id = authoredId(element);
   return id === undefined ? element.type : `${element.type} ${id}`;
@@ -197,9 +200,6 @@ function checkEdges(
   after: Map<string, PlacedElement>,
   violations: Violation[],
 ): void {
-  const edgesOf = (element: UISchemaElement | undefined): unknown =>
-    (element?.options as Record<string, unknown> | undefined)?.['edges'];
-
   for (const [id, was] of before) {
     if (was.element.type !== 'Flow') continue;
     const now = after.get(id);

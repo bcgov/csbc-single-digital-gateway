@@ -104,6 +104,8 @@ describe('ServiceAgreementsService', () => {
 
     templatesMock = {
       resolve: vi.fn().mockResolvedValue(TEMPLATE),
+      // Doc 222: ungoverned — these cases are about versioning, not capabilities.
+      capabilitiesForVersion: vi.fn().mockResolvedValue(undefined),
       // Doc 221: the READ path resolves by the PINNED template version, so the detail test must
       // mock what it actually calls. `resolve` stays mocked for the CREATE path.
       contentsForVersions: vi.fn().mockResolvedValue({

@@ -4,6 +4,7 @@ import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, sql } from 'drizzle-orm';
 import { TemplateResolver } from '../../templates/services/template.resolver';
 import { validateContent } from '../../templates/services/validate-content';
+import { assertWithinCapabilities } from '../../templates/services/capability-guard';
 import {
   type ServiceVersionResponse,
   type UpdateVersionContentInput,
@@ -43,6 +44,13 @@ export class ServiceVersionsService {
       throw new ConflictException('Only draft versions can be edited');
     }
     const content = validateContent(service, input.content);
+    // Doc 222: the governing template has the final say — the studio's gates are UX, and both the
+    // uischema code panel and this endpoint bypass them.
+    assertWithinCapabilities(
+      version.content,
+      content,
+      await this.templates.capabilitiesForVersion(version.templateVersionId),
+    );
     const rows = await this.db
       .update(documentVersions)
       .set({ content, revision: sql`${documentVersions.revision} + 1` })
