@@ -1,13 +1,26 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Roles } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
+  AdminTemplateDetailDto,
   AdminTemplateListDto,
+  CreateTemplateDto,
   TemplateVersionDto,
   TemplateWithVersionsDto,
   VersionContentDto,
 } from '../dtos/template.dtos';
+import { TemplateLifecycleService } from '../services/template-lifecycle.service';
 import { TemplateVersionsService } from '../services/template-versions.service';
 import { TemplatesService } from '../services/templates.service';
 
@@ -19,9 +32,8 @@ export class AdminTemplatesV1Controller {
   constructor(
     private readonly templates: TemplatesService,
     private readonly versions: TemplateVersionsService,
+    private readonly lifecycle: TemplateLifecycleService,
   ) {}
-
-  // Templates themselves are not created via the API (seeded only); admins manage their versions.
 
   @Get()
   @ZodSerializerDto(AdminTemplateListDto)
@@ -29,10 +41,25 @@ export class AdminTemplatesV1Controller {
     return { items: await this.templates.adminList() };
   }
 
-  @Get(':id')
+  /** Doc 227: a new GLOBAL template with a draft v1 of the type's blank content. */
+  @Post()
   @ZodSerializerDto(TemplateWithVersionsDto)
-  get(@Param('id') id: string) {
-    return this.templates.adminGet(id);
+  create(@Body() body: CreateTemplateDto) {
+    return this.lifecycle.create(body);
+  }
+
+  @Get(':id')
+  @ZodSerializerDto(AdminTemplateDetailDto)
+  async get(@Param('id', ParseUUIDPipe) id: string) {
+    const detail = await this.templates.adminGet(id);
+    return { ...detail, deletable: await this.lifecycle.deletable(id, detail.versions) };
+  }
+
+  /** Doc 227: refused (409, with the reason) while any document uses the template. */
+  @Delete(':id')
+  @HttpCode(204)
+  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.lifecycle.remove(id);
   }
 
   @Post(':id/versions')
@@ -51,13 +78,14 @@ export class AdminTemplatesV1Controller {
     return this.versions.editDraft(id, versionId, body.content);
   }
 
+  /** Doc 227: any status, but never the last version or one a document version is based on. */
   @Delete(':id/versions/:versionId')
   @HttpCode(204)
   async deleteVersion(
-    @Param('id') id: string,
-    @Param('versionId') versionId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('versionId', ParseUUIDPipe) versionId: string,
   ): Promise<void> {
-    await this.versions.deleteDraft(id, versionId);
+    await this.lifecycle.removeVersion(id, versionId);
   }
 
   @Post(':id/versions/:versionId/publish')

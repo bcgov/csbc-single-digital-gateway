@@ -4,7 +4,9 @@ import {
   adminTemplateQueryOptions,
   addVersion,
   editDraft,
-  deleteDraft,
+  createTemplate,
+  deleteTemplate,
+  deleteTemplateVersion,
   publishVersion,
   archiveVersion,
 } from '@/lib/templates';
@@ -118,10 +120,10 @@ describe('Document Types Unit Test Suite', () => {
     expect(res.versionNumber).toBe(1);
   });
 
-  it('sends DELETE to delete a draft version', async () => {
+  it('sends DELETE to delete a template version', async () => {
     mockFetch.mockResolvedValue(mockResponse(204, null));
 
-    await deleteDraft('dt-1', 'ver-1');
+    await deleteTemplateVersion('dt-1', 'ver-1');
     expect(mockFetch).toHaveBeenCalledWith(
       'http://bff-test/v1/admin/templates/dt-1/versions/ver-1',
       {
@@ -131,12 +133,39 @@ describe('Document Types Unit Test Suite', () => {
     );
   });
 
-  it('throws error when deleteDraft request fails', async () => {
+  it('throws error when deleteTemplateVersion request fails', async () => {
     mockFetch.mockResolvedValue(mockResponse(500, null, false));
 
-    await expect(deleteDraft('dt-1', 'ver-1').catch((e: any) => e.message)).resolves.toContain(
-      'Request failed: 500',
+    await expect(
+      deleteTemplateVersion('dt-1', 'ver-1').catch((e: any) => e.message),
+    ).resolves.toContain('Request failed: 500');
+  });
+
+  it('sends POST to create a template (doc 227)', async () => {
+    mockFetch.mockResolvedValue(mockResponse(201, { template: { id: 'dt-9' }, versions: [] }));
+
+    const res = await createTemplate({ type: 'services.service', title: 'Health' });
+    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/admin/templates', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'services.service', title: 'Health' }),
+    });
+    expect(res.template.id).toBe('dt-9');
+  });
+
+  it("sends DELETE to delete a template and surfaces the API's 409 reason (doc 227)", async () => {
+    mockFetch.mockResolvedValue(mockResponse(204, null));
+    await deleteTemplate('dt-1');
+    expect(mockFetch).toHaveBeenCalledWith('http://bff-test/v1/admin/templates/dt-1', {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    mockFetch.mockResolvedValue(
+      mockResponse(409, { message: '2 documents use this template.' }, false),
     );
+    await expect(deleteTemplate('dt-1')).rejects.toThrow('2 documents use this template.');
   });
 
   it('sends POST requests to publish and archive versions', async () => {

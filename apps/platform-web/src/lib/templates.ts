@@ -24,6 +24,9 @@ const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = Object.free
   'services.service-agreement': 'Service agreement',
 });
 
+/** Every type, in the order the console offers them. */
+export const DOCUMENT_TYPES = Object.freeze(Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[]);
+
 /** What the console shows for a type — never the raw value. An unknown value shows as itself. */
 export function documentTypeLabel(type: string): string {
   return Object.hasOwn(DOCUMENT_TYPE_LABELS, type)
@@ -61,24 +64,49 @@ export interface TemplateWithVersions {
   versions: TemplateVersion[];
 }
 
+/**
+ * Doc 227 (the doc 225 contract): what may be deleted, and why not. The API decides — the browser
+ * cannot see which documents are built from a template — so the detail renders from this alone.
+ */
+export interface TemplateDeletable {
+  template: boolean;
+  /** Why the template may not go, ready to show. Absent exactly when `template` is true. */
+  reason?: string;
+  /** Versions deletable on their own — empty when there is only one. */
+  versionIds: string[];
+}
+
+/** Admin detail: a template, every version, and what may be deleted. */
+export interface AdminTemplateDetail extends TemplateWithVersions {
+  deletable: TemplateDeletable;
+}
+
 const ADMIN = `${BFF_ORIGIN}/v1/admin/templates`;
 
-async function ok<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    let message = `Request failed: ${res.status}`;
-    try {
-      const body = (await res.json()) as { message?: unknown };
-      if (typeof body.message === 'string') {
-        message = body.message;
-      } else if (Array.isArray(body.message)) {
-        message = body.message.join(', ');
-      }
-    } catch {
-      /* non-JSON error body */
+/** The API's own message — a 409's reason is the whole point of refusing with one. */
+async function errorFrom(res: Response): Promise<Error> {
+  let message = `Request failed: ${res.status}`;
+  try {
+    const body = (await res.json()) as { message?: unknown };
+    if (typeof body.message === 'string') {
+      message = body.message;
+    } else if (Array.isArray(body.message)) {
+      message = body.message.join(', ');
     }
-    throw new Error(message);
+  } catch {
+    /* non-JSON error body */
   }
+  return new Error(message);
+}
+
+async function ok<T>(res: Response): Promise<T> {
+  if (!res.ok) throw await errorFrom(res);
   return res.json() as Promise<T>;
+}
+
+async function noContent(url: string, method: string): Promise<void> {
+  const res = await fetch(url, { method, credentials: 'include' });
+  if (!res.ok) throw await errorFrom(res);
 }
 
 export function adminTemplatesQueryOptions() {
@@ -98,7 +126,7 @@ export function adminTemplateQueryOptions(id: string) {
   return queryOptions({
     queryKey: ['admin', 'templates', id] as const,
     queryFn: async () =>
-      ok<TemplateWithVersions>(
+      ok<AdminTemplateDetail>(
         await fetch(`${ADMIN}/${encodeURIComponent(id)}`, { credentials: 'include' }),
       ),
     staleTime: 30_000,
@@ -133,14 +161,25 @@ export function editDraft(
   );
 }
 
-export async function deleteDraft(id: string, versionId: string): Promise<void> {
-  const res = await fetch(
+/** Doc 227: a new global template — a draft v1 of the type's blank content, titled `title`. */
+export function createTemplate(input: {
+  type: DocumentType;
+  title: string;
+}): Promise<TemplateWithVersions> {
+  return send(ADMIN, 'POST', input);
+}
+
+/** Doc 227: deletes the template. 409 with a reason while any document is built from it. */
+export async function deleteTemplate(id: string): Promise<void> {
+  await noContent(`${ADMIN}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+/** Doc 227: deletes ONE version, of any status — never the last, never one a document is based on. */
+export async function deleteTemplateVersion(id: string, versionId: string): Promise<void> {
+  await noContent(
     `${ADMIN}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
-    { method: 'DELETE', credentials: 'include' },
+    'DELETE',
   );
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
 }
 
 export function publishVersion(id: string, versionId: string): Promise<TemplateVersion> {

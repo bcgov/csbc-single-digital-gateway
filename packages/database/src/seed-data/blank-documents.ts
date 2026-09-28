@@ -17,6 +17,8 @@
  * metaschema on the way in.
  */
 
+import { DOCUMENT_TYPE, type DocumentType } from '../schema/documents';
+
 const blankSchema = { type: 'object', properties: {}, required: [] } as const;
 
 /** A service — the root-only `Service` boundary (doc 215). */
@@ -36,3 +38,24 @@ export const blankServiceAgreementContent = {
   schema: blankSchema,
   uischema: { type: 'Form', label: 'Service agreement', elements: [] },
 };
+
+/**
+ * The blank content a NEW template of each type starts from (doc 227): the seed's three templates
+ * and an admin's "New template" share it, so both begin from the same shape.
+ */
+const BLANK_CONTENT = {
+  [DOCUMENT_TYPE.service]: blankServiceContent,
+  [DOCUMENT_TYPE.applicationMethod]: blankApplicationMethodContent,
+  [DOCUMENT_TYPE.serviceAgreement]: blankServiceAgreementContent,
+} satisfies Record<DocumentType, unknown>;
+
+/** A fresh copy of `type`'s blank `{ schema, uischema }`, safe for the caller to modify. */
+export function blankContentFor(type: DocumentType): {
+  schema: Record<string, unknown>;
+  uischema: Record<string, unknown>;
+} {
+  return structuredClone(BLANK_CONTENT[type]) as {
+    schema: Record<string, unknown>;
+    uischema: Record<string, unknown>;
+  };
+}

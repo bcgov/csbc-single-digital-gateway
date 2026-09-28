@@ -2,16 +2,12 @@ import type { StudioDocument } from '@repo/forms';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { ButtonGroup } from '@repo/ui/button-group';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@repo/ui/dropdown-menu';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from '@tanstack/react-router';
-import { ArrowLeft, ChevronDown, Plus } from 'lucide-react';
+import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { TemplateVersionDropdown } from '@/components/admin/templates/template-version-dropdown';
+import { DocumentDeleteButton } from '@/components/common/document-delete-button';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { VersionContent } from '@/components/console/version-content';
@@ -19,51 +15,20 @@ import { sameStudioDocument, studioDocumentOf } from '@/lib/studio-content';
 import {
   addVersion,
   adminTemplateQueryOptions,
+  deleteTemplate,
+  deleteTemplateVersion,
   documentTypeLabel,
   editDraft,
   publishVersion,
-  type TemplateVersion,
+  type TemplateDeletable,
 } from '@/lib/templates';
-
-/** Header dropdown to switch the selected version (newest first). */
-function VersionDropdown({
-  versions,
-  selectedId,
-  onSelect,
-}: {
-  versions: TemplateVersion[];
-  selectedId: string;
-  onSelect: (versionId: string) => void;
-}) {
-  const selected = versions.find((version) => version.id === selectedId);
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button size="sm" variant="outline" type="button" />}>
-        Version v{selected?.versionNumber}
-        <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        {versions.toReversed().map((version) => (
-          <DropdownMenuItem
-            key={version.id}
-            className={version.id === selectedId ? 'font-semibold' : undefined}
-            onClick={() => onSelect(version.id)}
-          >
-            v{version.versionNumber}
-            <span className="ml-auto text-xs text-muted-foreground">{version.status}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 
 /**
  * Admin Template detail — a version dropdown + lifecycle actions in the header, over the version's content.
  *
  * Doc 218: the content is authored in the **Form Studio** for a draft and read in a **disabled FormRunner** for a
  * published or archived version. The Monaco JSON editor this replaced could produce payloads the API rejects — its
- * root-type rule (`service → Service`, `application-method → Form|Flow`, `service-agreement → Form`) is the real
+ * root-type rule (service → `Service`, application method → `Form|Flow`, service agreement → `Form`) is the real
  * contract, and the studio can only build roots that satisfy it. Raw JSON is still reachable, in the studio's own
  * code panel (doc 191).
  */
@@ -71,12 +36,21 @@ function VersionDropdown({
  * Doc 220: this page is the TEMPLATE surface, so every document it opens has authorable permissions.
  * It seeds `capabilities ?? {}` so a template that has never had a rule can still grow one.
  */
+const TEMPLATE_NOUN = { full: 'template', short: 'template' } as const;
+
+/** `deletable` less its `template` flag, which the shared button calls `document`. */
+const deletableRest = ({ reason, versionIds }: TemplateDeletable) => ({
+  versionIds,
+  ...(reason === undefined ? {} : { reason }),
+});
+
 const seededContent = (document: StudioDocument | null): StudioDocument | null =>
   document === null ? null : { ...document, capabilities: document.capabilities ?? {} };
 
 export function AdminTemplateDetail() {
   const { id } = useParams({ from: '/admin/templates/$id' });
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { data } = useQuery(adminTemplateQueryOptions(id));
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'templates'] });
 
@@ -113,7 +87,14 @@ export function AdminTemplateDetail() {
   // can still read stale `true` in the continuation after an awaited save.
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
-  const isDirty = useCallback(() => dirtyRef.current, []);
+  /**
+   * Doc 227 rule 7 (doc 225 B1): a deleted template has nothing to save. The refetch after a delete
+   * empties `stored`, which reads as dirty against any live document, so without this the guard
+   * blocked the navigation away offering to save what was just deleted. A REF, set synchronously
+   * before navigating, because a state update may not have re-rendered by then.
+   */
+  const deleted = useRef(false);
+  const isDirty = useCallback(() => !deleted.current && dirtyRef.current, []);
 
   const selectVersion = (versionId: string) => {
     setSelectedId(versionId);
@@ -233,7 +214,7 @@ export function AdminTemplateDetail() {
                 </Button>
               ) : null}
               {selected ? (
-                <VersionDropdown
+                <TemplateVersionDropdown
                   versions={versions}
                   selectedId={selected.id}
                   onSelect={(versionId) => confirmed(() => selectVersion(versionId))}
@@ -252,6 +233,28 @@ export function AdminTemplateDetail() {
                 New version
               </Button>
             ) : null}
+            <DocumentDeleteButton
+              noun={TEMPLATE_NOUN}
+              deletable={{ document: data.deletable.template, ...deletableRest(data.deletable) }}
+              versionCount={versions.length}
+              selected={selected}
+              deleteDocument={() => deleteTemplate(id)}
+              deleteVersion={(versionId) => deleteTemplateVersion(id, versionId)}
+              onDeleted={() => {
+                // First and synchronously: the navigation below is what the guard would block.
+                deleted.current = true;
+                void navigate({ to: '/admin/templates' }).then(() => {
+                  queryClient.removeQueries({ queryKey: ['admin', 'templates', id] });
+                  return queryClient.invalidateQueries({ queryKey: ['admin', 'templates'] });
+                });
+              }}
+              onVersionDeleted={() => {
+                // The deleted version may be the one on screen, so the selection falls back to the
+                // latest remaining version.
+                selectVersion('');
+                void invalidate();
+              }}
+            />
           </div>
         </div>
       </div>

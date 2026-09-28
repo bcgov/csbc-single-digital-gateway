@@ -82,7 +82,8 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
         return new Response(null, { status: 404 });
       }
       if (segs.length === 1 && method === 'GET') {
-        return json(entry);
+        // Doc 227: nothing deletable and no reason, so these cases see no delete control.
+        return json({ ...entry, deletable: { template: false, versionIds: [] } });
       }
       if (segs[1] === 'versions') {
         if (segs.length === 2 && method === 'POST') {

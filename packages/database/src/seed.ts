@@ -1,6 +1,5 @@
 import { resolve } from 'node:path';
 import { config } from 'dotenv';
-import { sql } from 'drizzle-orm';
 
 import { createDatabase } from './client';
 import { resolvePgSsl } from './ssl';
@@ -29,8 +28,9 @@ export const TEMPLATE_SERVICE_AGREEMENT_V1_ID = '00000000-0000-4000-8000-0000000
 
 /**
  * Seed runner — idempotent (fixed ids + `onConflictDoNothing`). Inserts one GLOBAL template
- * document per `document_type`, each with a PUBLISHED version 1 holding a blank `@repo/forms`
- * document, so a fresh database has a shape for every type a staff author can create.
+ * document per `document_type`, each with a DRAFT version 1 holding a blank `@repo/forms`
+ * document (doc 227). An admin authors and publishes each before staff can create documents of
+ * that type. `onConflictDoNothing` means an ALREADY-seeded database keeps whatever it has.
  *
  * `workspaceId` is omitted, so each template is global (available in every workspace).
  * `templateId`/`templateVersionId` are omitted: a template follows no template, which satisfies
@@ -41,7 +41,7 @@ export const TEMPLATE_SERVICE_AGREEMENT_V1_ID = '00000000-0000-4000-8000-0000000
  * by inventing a user.
  *
  * `title`, `description` and `status` are GENERATED columns, so they are absent from the insert
- * type and must not be set. `status` becomes `published` by virtue of `publishedAt`.
+ * type and must not be set. `status` is `draft` because neither `publishedAt` nor `archivedAt` is set.
  */
 async function seed(): Promise<void> {
   const url = process.env.DATABASE_URL;
@@ -78,27 +78,24 @@ async function seed(): Promise<void> {
           documentId: TEMPLATE_SERVICE_ID,
           versionNumber: 1,
           content: blankServiceContent,
-          publishedAt: sql`now()`,
         },
         {
           id: TEMPLATE_APPLICATION_METHOD_V1_ID,
           documentId: TEMPLATE_APPLICATION_METHOD_ID,
           versionNumber: 1,
           content: blankApplicationMethodContent,
-          publishedAt: sql`now()`,
         },
         {
           id: TEMPLATE_SERVICE_AGREEMENT_V1_ID,
           documentId: TEMPLATE_SERVICE_AGREEMENT_ID,
           versionNumber: 1,
           content: blankServiceAgreementContent,
-          publishedAt: sql`now()`,
         },
       ])
       .onConflictDoNothing();
 
     console.info(
-      '[seed] templates ready: Service, Application method, Service agreement (published v1).',
+      '[seed] templates ready: Service, Application method, Service agreement (draft v1).',
     );
   } finally {
     await db.$client.end();

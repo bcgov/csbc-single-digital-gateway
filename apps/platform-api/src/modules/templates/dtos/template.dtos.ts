@@ -143,6 +143,36 @@ export class StaffTemplateListDto extends createZodDto(
 ) {}
 export type TemplatePublished = z.infer<typeof templatePublishedSchema>;
 
+/** Doc 227: an admin creates a GLOBAL template — a draft v1 of the type's blank content. */
+export const createTemplateSchema = z.object({
+  type: documentTypeSchema,
+  /** Stamped into the blank content's `uischema.label`, which the GENERATED title reads. */
+  title: z.string().trim().min(1).max(200),
+});
+export class CreateTemplateDto extends createZodDto(createTemplateSchema) {}
+export type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
+
+/**
+ * Doc 227 (the doc 225 contract): what may be deleted, and why not. The API is the authority — the
+ * console cannot see which documents reference a template — so it renders from this alone.
+ */
+export const templateDeletableSchema = z.object({
+  /** Whether the whole template may go. */
+  template: z.boolean(),
+  /** Why it may not, ready to show. Absent exactly when `template` is true. */
+  reason: z.string().optional(),
+  /** The versions that may be deleted on their own — empty when there is only one. */
+  versionIds: z.array(z.string()),
+});
+export type TemplateDeletable = z.infer<typeof templateDeletableSchema>;
+
+/** Admin detail: a template, its versions, and what may be deleted. */
+export const adminTemplateDetailSchema = templateWithVersionsSchema.extend({
+  deletable: templateDeletableSchema,
+});
+export class AdminTemplateDetailDto extends createZodDto(adminTemplateDetailSchema) {}
+export type AdminTemplateDetail = z.infer<typeof adminTemplateDetailSchema>;
+
 // ── Row → DTO mappers ───────────────────────────────────────────────────────────────────────────
 
 export function toTemplateDto(row: Document): TemplateResponse {

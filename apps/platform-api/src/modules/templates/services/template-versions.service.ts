@@ -7,8 +7,8 @@ import { validateContent } from './validate-content';
 
 /**
  * The version lifecycle for TEMPLATES (feature 217), carried over from the old
- * `DocumentTypeVersionsService`: add a draft, edit it, delete it, publish it (demote-then-promote,
- * which the partial unique index forces), archive it.
+ * `DocumentTypeVersionsService`: add a draft, edit it, publish it (demote-then-promote,
+ * which the partial unique index forces), archive it. Deleting moved to `TemplateLifecycleService` (doc 227), which checks references.
  */
 @Injectable()
 export class TemplateVersionsService {
@@ -49,15 +49,6 @@ export class TemplateVersionsService {
       .where(eq(documentVersions.id, versionId))
       .returning();
     return toTemplateVersionDto(firstOrThrow(updated));
-  }
-
-  /** Delete a draft version (drafts only → 409). */
-  async deleteDraft(id: string, versionId: string): Promise<void> {
-    const { version } = await this.requireVersion(id, versionId);
-    if (version.status !== 'draft') {
-      throw new ConflictException('Only draft versions can be deleted');
-    }
-    await this.db.delete(documentVersions).where(eq(documentVersions.id, versionId));
   }
 
   /**

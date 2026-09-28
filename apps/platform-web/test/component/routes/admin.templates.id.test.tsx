@@ -44,6 +44,8 @@ const adminUser = { ...authedUser, roles: ['admin'] };
  * `type` replaces the text `kind`, and a version carries `content` rather than a `definition`.
  */
 const mockTemplate = {
+  // Doc 227: nothing deletable and no reason, so these cases see no delete control.
+  deletable: { template: false, versionIds: [] },
   template: {
     id: 'dt-1',
     type: 'services.service-application-method',

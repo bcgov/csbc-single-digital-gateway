@@ -80,7 +80,8 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
         return new Response(null, { status: 404 });
       }
       if (segs.length === 1) {
-        return json(entry);
+        // Doc 227: nothing deletable and no reason, so these cases see no delete control.
+        return json({ ...entry, deletable: { template: false, versionIds: [] } });
       }
       const version = entry.versions.find((v) => v.id === decodeURIComponent(segs[2] ?? ''));
       if (version && method === 'POST' && segs[3] === 'publish') {
@@ -138,12 +139,13 @@ describe('admin templates', () => {
     expect(screen.getByText('Published v1')).toBeInTheDocument();
   });
 
-  it('does not offer a create-template action', async () => {
+  // Doc 227 reversed this: templates are no longer seeded only, so the list offers creation.
+  it('offers a create-template action', async () => {
     mockApi([basicEntry]);
     renderApp('/admin/templates');
 
     await screen.findByRole('link', { name: 'Basic Form' });
-    expect(screen.queryByRole('button', { name: /new template/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /new template/i })).toBeInTheDocument();
   });
 
   it('publishes a draft version from the detail page', async () => {

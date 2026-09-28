@@ -12,8 +12,8 @@ import {
 } from '../dtos/template.dtos';
 
 /**
- * Read paths over TEMPLATES — `documents` rows with `kind = 'template'` (feature 217). Templates
- * are seeded, never created through the API; only their versions are authored.
+ * Read paths over TEMPLATES — `documents` rows with `kind = 'template'` (feature 217). Creating and
+ * deleting a template is `TemplateLifecycleService` (doc 227).
  */
 @Injectable()
 export class TemplatesService {
