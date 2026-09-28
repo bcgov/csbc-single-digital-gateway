@@ -82,9 +82,29 @@ export interface RichTextInputProps {
   placeholder?: string;
   /** Minimum height in lines. Absent keeps the built-in minimum. */
   rows?: number;
+  /**
+   * Drops the field chrome — the border, the background, the rounding, the focus ring and the
+   * content's inset — so the editor draws exactly where its text is read.
+   *
+   * For an editor that REPLACES a piece of rendered content in place rather than sitting in a form:
+   * the Form Studio's inline Title and Description (doc 223 rules 8-10, bugs 7-9). Without it the
+   * text jumped down and right by `px-3 py-2` the moment it became editable, inside a box the canvas
+   * had deliberately not drawn. The inset lives on a DESCENDANT, so a `className` override cannot
+   * reach it — which is why this is a prop and not a caller's class.
+   */
+  bare?: boolean;
 }
 
 const theme = richTextTheme;
+
+/**
+ * The content's inset — applied to the editable surface AND to the placeholder that overlays it.
+ *
+ * One constant because they must agree: the placeholder is absolutely positioned over the content,
+ * so a padding on one and not the other shows up as the placeholder sitting off the text it stands
+ * in for. `bare` has no inset at all (doc 223 rule 10), and that agrees too.
+ */
+const CONTENT_INSET = 'px-3 py-2';
 
 function ToolbarButton({
   label,
@@ -298,6 +318,7 @@ export function RichTextInput({
   toolbar,
   placeholder = 'Write…',
   rows,
+  bare = false,
   ...props
 }: RichTextInputProps) {
   const ariaInvalid = props['aria-invalid'];
@@ -325,7 +346,16 @@ export function RichTextInput({
     <div
       data-slot="rich-text-input"
       className={cn(
-        'overflow-hidden rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
+        'overflow-hidden',
+        bare
+          ? // Doc 223 rule 10b: `bare` sets NO font-size or line-height, so the editor takes the
+            // container's — the same "put the size back under the container's control" the rich text
+            // theme applies to paragraphs. `text-sm` here would be an explicit size on the element,
+            // which beats what it is standing in for: it shrank a 16px description placeholder to
+            // 14px, and tightened a 14px one's leading from 22.75px to text-sm's 20px. A caller
+            // states the typography of the read view it replaces.
+            'bg-transparent'
+          : 'rounded-md border border-input bg-input-background text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20',
         className,
       )}
       aria-invalid={ariaInvalid}
@@ -343,12 +373,32 @@ export function RichTextInput({
                 {...(ariaLabelledBy === undefined ? {} : { 'aria-labelledby': ariaLabelledBy })}
                 {...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy })}
                 data-slot="rich-text-content"
-                className="min-h-28 px-3 py-2 outline-none [&_a]:cursor-pointer"
+                className={cn(
+                  'outline-none [&_a]:cursor-pointer',
+                  bare ? 'min-h-[1lh]' : `min-h-28 ${CONTENT_INSET}`,
+                )}
                 {...(rows === undefined ? {} : { style: { minHeight: `${rows}lh` } })}
               />
             }
             placeholder={
-              <div className="pointer-events-none absolute top-2 left-3 text-muted-foreground">
+              /*
+               * The placeholder overlays the content EXACTLY: `inset-0` plus the very same inset
+               * constant, so the two can never drift apart.
+               *
+               * It used to carry its own `top-2 left-3`, hard-coded to this component's DEFAULT
+               * padding — so any consumer that repadded the content left the placeholder behind.
+               * Measured in the Form Studio inspector, whose compact density repads the content to
+               * `px-2 py-1`: the placeholder sat 4px lower and 4px further right than the text that
+               * replaced it, which reads as a too-tall first line. `data-slot` so a consumer
+               * overriding the content's padding can reach this in the same breath.
+               */
+              <div
+                data-slot="rich-text-placeholder"
+                className={cn(
+                  'pointer-events-none absolute inset-0 text-muted-foreground',
+                  bare ? undefined : CONTENT_INSET,
+                )}
+              >
                 {placeholder}
               </div>
             }

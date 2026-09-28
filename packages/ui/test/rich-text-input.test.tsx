@@ -207,3 +207,87 @@ describe('RichTextInput sizing hooks (doc 207)', () => {
     );
   });
 });
+
+describe('RichTextInput bare (doc 223 rules 8-10)', () => {
+  // For an editor that REPLACES rendered content in place. The field chrome is right in a form and
+  // wrong on a canvas: it moved the Form Studio's inline Description down and right by the content's
+  // inset, drew a border the canvas had deliberately not drawn, and reserved seven rem for a
+  // one-line value (bugs 7-9).
+
+  it('drops the border, the background and the rounding', () => {
+    const { container } = render(<RichTextInput id="a" bare />);
+    const root = container.querySelector('[data-slot="rich-text-input"]');
+    expect(root?.className).not.toContain('border-input');
+    expect(root?.className).not.toContain('rounded-md');
+    expect(root?.className).toContain('bg-transparent');
+  });
+
+  it('drops the content inset, which a className override could not reach', () => {
+    // The inset is on a DESCENDANT of the element `className` lands on — which is the whole reason
+    // this is a prop rather than a caller's class.
+    const { container } = render(<RichTextInput id="a" bare />);
+    const content = container.querySelector('[data-slot="rich-text-content"]');
+    expect(content?.className).not.toContain('px-3');
+    expect(content?.className).not.toContain('py-2');
+  });
+
+  it('starts one line tall instead of the field floor', () => {
+    const { container } = render(<RichTextInput id="a" bare />);
+    const content = container.querySelector('[data-slot="rich-text-content"]');
+    expect(content?.className).not.toContain('min-h-28');
+  });
+
+  it("sets no font size of its own, so it takes the container's", () => {
+    // Doc 223 rule 10b. `text-sm` here is an explicit size on the element, which beats whatever the
+    // editor is standing in for: it shrank a 16px description placeholder to 14px and tightened a
+    // 14px one's leading from 22.75px to text-sm's 20px. The caller states the read view's
+    // typography instead.
+    const { container } = render(<RichTextInput id="a" bare />);
+    const root = container.querySelector('[data-slot="rich-text-input"]');
+    expect(root?.className).not.toContain('text-sm');
+  });
+
+  it('keeps the field chrome by default', () => {
+    const { container } = render(<RichTextInput id="a" />);
+    expect(container.querySelector('[data-slot="rich-text-input"]')?.className).toContain(
+      'border-input',
+    );
+    expect(container.querySelector('[data-slot="rich-text-content"]')?.className).toContain('px-3');
+    expect(container.querySelector('[data-slot="rich-text-input"]')?.className).toContain(
+      'text-sm',
+    );
+  });
+});
+
+describe('RichTextInput placeholder overlays the content exactly', () => {
+  // The placeholder is absolutely positioned OVER the editable surface, so the two must share one
+  // inset. It used to carry its own `top-2 left-3`, hard-coded to this component's default padding —
+  // so the Form Studio inspector, whose density repads the content to `px-2 py-1`, left the
+  // placeholder 4px below and right of the text it stands in for (reported as a too-tall first line).
+
+  const slots = (bare?: boolean) => {
+    const { container } = render(<RichTextInput id="a" {...(bare ? { bare: true } : {})} />);
+    return {
+      content: container.querySelector('[data-slot="rich-text-content"]'),
+      placeholder: container.querySelector('[data-slot="rich-text-placeholder"]'),
+    };
+  };
+
+  it('gives the placeholder the same inset as the content', () => {
+    const { content, placeholder } = slots();
+    for (const cls of ['px-3', 'py-2']) {
+      expect(content).toHaveClass(cls);
+      expect(placeholder).toHaveClass(cls);
+    }
+  });
+
+  it('gives it no inset when the content has none', () => {
+    const { content, placeholder } = slots(true);
+    expect(content?.className).not.toContain('px-3');
+    expect(placeholder?.className).not.toContain('px-3');
+  });
+
+  it('names the placeholder with a slot, so a consumer repadding one can reach the other', () => {
+    expect(slots().placeholder).not.toBeNull();
+  });
+});
