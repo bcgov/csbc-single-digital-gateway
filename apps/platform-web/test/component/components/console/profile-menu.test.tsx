@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProfileMenu } from '@/components/console/profile-menu';
 import { logout } from '@/lib/bff';
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   Link: ({ to, children, ...props }: any) => {
     return (
       <a href={to} {...props}>

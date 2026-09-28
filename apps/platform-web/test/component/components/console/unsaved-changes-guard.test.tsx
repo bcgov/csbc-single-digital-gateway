@@ -10,7 +10,8 @@ let mockBlockerStatus = 'idle';
 let mockHasReset = true;
 let mockHasProceed = true;
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useBlocker: vi.fn(() => ({
     status: mockBlockerStatus,
     reset: mockHasReset ? mockReset : undefined,

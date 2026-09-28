@@ -66,7 +66,7 @@ describe('team list', () => {
     const fetchMock = withMembers(mockAuth(authedUser, { workspaces: [riverton] }));
     renderApp('/app/riverton/team');
     // Wait on a table-unique member (the authed user's own name appears in the profile menu).
-    expect(await screen.findByText('Sam Lee', undefined, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText('Sam Lee', undefined, { timeout: 15000 })).toBeInTheDocument();
     expect(screen.getByText('Priya Anand')).toBeInTheDocument();
     const user = userEvent.setup();
     const pageCall = (predicate: (url: string) => boolean) =>

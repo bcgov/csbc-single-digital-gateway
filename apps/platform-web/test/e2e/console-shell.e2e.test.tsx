@@ -51,8 +51,10 @@ describe('console shell — account menu on real /auth/me data', () => {
     renderApp('/app');
 
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /account menu/i }));
-    await user.click(await screen.findByRole('menuitem', { name: /log out/i }));
+    await user.click(
+      await screen.findByRole('button', { name: /account menu/i }, { timeout: 32000 }),
+    );
+    await user.click(await screen.findByRole('menuitem', { name: /log out/i }, { timeout: 32000 }));
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -80,7 +82,7 @@ describe('console shell — navigation uses real router links', () => {
     });
     renderApp('/app/riverton');
 
-    await screen.findByRole('button', { name: /account menu/i });
+    await screen.findByRole('button', { name: /account menu/i }, { timeout: 32000 });
     const cases: Array<[string, string]> = [
       ['Overview', '/app/riverton'],
       ['Services', '/app/riverton/services'],

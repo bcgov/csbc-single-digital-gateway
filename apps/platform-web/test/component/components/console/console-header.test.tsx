@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleHeader } from '@/components/console/console-header';
 
 let mockPathname = '/app/riverton/services';
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useLocation: (options?: { select?: (location: any) => any }) => {
     const location = { pathname: mockPathname };
     return options?.select ? options.select(location) : location;

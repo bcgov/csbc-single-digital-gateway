@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
 
+import '@/routes/admin';
+import '@/routes/admin.document-types';
+import '@/routes/admin.document-types.index';
+import '@/routes/admin.document-types.$id';
+
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, onChange }: { value: string; onChange?: (v: string) => void }) => (

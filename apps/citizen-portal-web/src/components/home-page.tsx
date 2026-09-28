@@ -18,7 +18,7 @@ async function handleLogout(): Promise<void> {
 /** Greeting block for a signed-in citizen: "Hi, <first name>" / "Welcome to MyBC." */
 function Greeting({ name }: { name: string }) {
   return (
-    <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col">
+    <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col py-6 border-b-2 border-bcgov-gold">
       <h1>Hi, {firstName(name)}</h1>
       <p>Welcome to MyBC.</p>
     </div>
@@ -47,16 +47,14 @@ export function HomePage() {
       }}
     >
       {isPending ? (
-        <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+        <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-40 w-full rounded-xl" />
         </div>
       ) : user ? (
         <div className="flex flex-col">
-          <div className="py-6 border-b-2 border-bcgov-gold">
-            <Greeting name={displayName(user)} />
-          </div>
-          <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+          <Greeting name={displayName(user)} />
+          <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
             <TrackApplications
               applications={applications.data ?? []}
               loading={applications.isPending}
@@ -71,7 +69,7 @@ export function HomePage() {
       ) : (
         <div className="flex flex-col">
           <Hero />
-          <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+          <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
             <WhatYouCanDo />
             <AvailableServices
               services={(services.data ?? []).slice(0, 3)}

@@ -148,7 +148,7 @@ export function ApplicationPage() {
 
   return (
     <CitizenShell activeNav="services">
-      <div className="mx-auto px-4 md:px-8 my-6 w-full max-w-280 flex flex-col gap-9">
+      <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
         <Breadcrumb
           trail={[
             { label: 'Services', href: '/services' },

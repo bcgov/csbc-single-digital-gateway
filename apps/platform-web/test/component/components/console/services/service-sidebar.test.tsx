@@ -21,7 +21,8 @@ vi.mock('@tanstack/react-query', () => ({
 
 // Mock TanStack Link → a plain anchor so the sidebar renders without a router context. `activeProps`
 // / `activeOptions` are irrelevant here (no active matching) — drop them.
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useLocation: (options?: { select?: (l: { pathname: string; hash: string }) => unknown }) => {
     const location = locationRef.current;
     return options?.select ? options.select(location) : location;

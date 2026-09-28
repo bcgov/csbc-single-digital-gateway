@@ -8,16 +8,11 @@ vi.mock('@/components/services-page', () => ({
   ServicesPage: () => <div data-testid="mock-services-page">Mock Services Page</div>,
 }));
 
-// Mock @tanstack/react-router createFileRoute helper and lazyRouteComponent partially
+// Mock @tanstack/react-router lazyRouteComponent partially if needed
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual: any = await importOriginal();
   return {
     ...actual,
-    createFileRoute: vi.fn(() =>
-      vi.fn((config) => ({
-        options: config,
-      })),
-    ),
     lazyRouteComponent: (importer: any, exportName: string) => {
       return React.lazy(async () => {
         const module = await importer();

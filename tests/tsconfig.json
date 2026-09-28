@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "exactOptionalPropertyTypes": false,
+    "noEmit": true
+  },
+  "include": ["playwright/**/*.pw.ts", "../playwright.config.ts"]
+}

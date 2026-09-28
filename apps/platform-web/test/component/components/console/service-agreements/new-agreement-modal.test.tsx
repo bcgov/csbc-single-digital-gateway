@@ -7,7 +7,8 @@ import { createAgreement } from '@/lib/service-agreements';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockNavigate = vi.fn();
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
 }));
 

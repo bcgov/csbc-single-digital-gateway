@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 
 // Mock Link from TanStack Router to prevent routing environment dependency
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   Link: ({ children, to, 'aria-label': ariaLabel, title }: any) => (
     <a href={to} aria-label={ariaLabel} title={title}>
       {children}

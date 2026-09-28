@@ -150,8 +150,8 @@
   --app-sidebar-foreground: var(--bcds-typography-color-primary);
   --app-sidebar-primary: var(--bcds-surface-color-primary-default);
   --app-sidebar-primary-foreground: var(--bcds-typography-color-primary-invert);
-  --app-sidebar-accent: var(--bcds-theme-gray-20);
-  --app-sidebar-accent-foreground: var(--bcds-typography-color-primary);
+  --app-sidebar-accent: var(--bcds-theme-blue-10);
+  --app-sidebar-accent-foreground: var(--bcds-typography-color-link);
   --app-sidebar-border: var(--bcds-surface-color-border-default);
   --app-sidebar-ring: var(--bcds-surface-color-border-active);
 

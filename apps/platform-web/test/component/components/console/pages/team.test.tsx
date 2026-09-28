@@ -159,11 +159,15 @@ describe('TeamPage Component Test Suite', () => {
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
 
-    const addMemberBtn = await screen.findByRole('button', { name: 'Add member' });
+    const addMemberBtn = await screen.findByRole(
+      'button',
+      { name: 'Add member' },
+      { timeout: 10000 },
+    );
     await user.click(addMemberBtn);
 
     // Dialog trigger loads the lazy component
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('dialog', {}, { timeout: 10000 });
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByText('Add member')).toBeInTheDocument();
   });

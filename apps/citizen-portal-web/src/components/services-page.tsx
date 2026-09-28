@@ -68,7 +68,7 @@ export function ServicesPage() {
           </div>
         </PageHeaderBanner>
 
-        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
+        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
           <section className="flex flex-col gap-4">
             <SectionHeading title="All services" />
 

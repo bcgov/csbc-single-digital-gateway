@@ -43,7 +43,8 @@ const mockNavigate = vi.fn();
 const mockParams = { slug: 'riverton' };
 const mockOnOpenChange = vi.fn();
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
   useParams: () => mockParams,
   Link: ({ children, to, className }: any) => (

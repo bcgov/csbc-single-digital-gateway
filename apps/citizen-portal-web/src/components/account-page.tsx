@@ -183,7 +183,7 @@ export function AccountPage() {
   if (isPending) {
     return (
       <CitizenShell>
-        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-3 px-4 md:px-8">
+        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-3 px-4 md:px-3">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-64 w-full" />
         </div>
@@ -194,7 +194,7 @@ export function AccountPage() {
   if (!user) {
     return (
       <CitizenShell>
-        <div className="mx-auto my-6 flex w-full max-w-280 flex-col px-4 md:px-8">
+        <div className="mx-auto my-6 flex w-full max-w-285 flex-col px-4 md:px-3">
           <div className="flex flex-col items-center gap-3 rounded-xl bg-background p-10 text-center ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">
               You need to be signed in to view your account.
@@ -217,7 +217,7 @@ export function AccountPage() {
           title="Account settings"
           subtitle="Your Single Digital Gateway account."
         />
-        <div className="mx-auto my-6 flex w-full max-w-280 flex-col gap-9 px-4 md:px-8">
+        <div className="mx-auto my-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
           <AccountDetails user={user} />
           <div className="flex flex-col">
             <SettingsCard

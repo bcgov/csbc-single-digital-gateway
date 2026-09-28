@@ -344,7 +344,7 @@ const CASES: RealPageCase[] = [
     components: ['button', 'card', 'accordion'],
     fetchImpl: serviceDetailFetch,
     ready: () =>
-      screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 20000 }),
+      screen.findByRole('heading', { name: 'Service One', level: 1 }, { timeout: 10000 }),
     timeout: 30000,
   },
   {
@@ -432,7 +432,7 @@ describe.each(CASES)('a11y: $path — $scenario', (testCase) => {
   it(
     'has no unjustified axe violations',
     async () => {
-      const { container } = renderRoute(testCase.path, testCase.fetchImpl());
+      const { container } = await renderRoute(testCase.path, testCase.fetchImpl());
       await testCase.ready();
       if (testCase.interact) {
         await testCase.interact();

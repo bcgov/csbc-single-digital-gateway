@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { WorkspaceNotFound } from '@/components/console/workspace-not-found';
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   Link: ({ to, children, ...props }: any) => {
     return (
       <a href={to} {...props}>

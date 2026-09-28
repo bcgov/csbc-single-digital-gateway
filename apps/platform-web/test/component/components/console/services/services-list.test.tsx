@@ -8,7 +8,8 @@ import type { ServiceSummary } from '@/lib/services';
 let mockSearchValue: any = { sort: 'updated', order: 'desc' };
 const mockNavigate = vi.fn();
 const mockParams = { slug: 'riverton' };
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
   useParams: () => mockParams,
   useSearch: () => mockSearchValue,

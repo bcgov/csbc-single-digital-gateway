@@ -6,7 +6,8 @@ import { AdminHeader } from '@/components/admin/admin-header';
 let currentPath = '/admin';
 
 // Mock useLocation from TanStack Router, supporting the select option
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useLocation: vi.fn((opts?: { select?: (location: { pathname: string }) => any }) => {
     const location = { pathname: currentPath };
     if (opts?.select) {

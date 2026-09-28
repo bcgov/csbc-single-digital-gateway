@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ServiceBuilderBreadcrumb } from '@/components/console/services/service-builder-breadcrumb';
 
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;
     if (params) {

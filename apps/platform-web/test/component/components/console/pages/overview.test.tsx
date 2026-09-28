@@ -7,7 +7,8 @@ import type { ServiceSummary } from '@/lib/services';
 
 const mockNavigate = vi.fn();
 const mockParams = { slug: 'riverton' };
-vi.mock('@tanstack/react-router', () => ({
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
   useParams: () => mockParams,
   Link: ({ to, params, children, ...props }: any) => {
