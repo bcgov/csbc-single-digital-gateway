@@ -1,5 +1,5 @@
 import { RichTextInput } from '@repo/ui/rich-text-input';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { RichTextState } from '../ui/rich-text-value';
 import { useCommitOnLeave, useInlineEdit } from './use-inline-edit';
 import type { InlineEditableProps } from '../../types/elements';
@@ -29,14 +29,14 @@ export function InlineRichText({
   fieldKey,
   value,
   placeholder,
+  inputClassName,
+  picksField,
   children,
 }: InlineEditableProps) {
   const current = typeof value === 'string' ? undefined : value;
-  const { editable, active, commitValue } = useInlineEdit<RichTextState | undefined>(
-    element,
-    fieldKey,
-    current,
-  );
+  const { editable, active, claim, release, commitValue } = useInlineEdit<
+    RichTextState | undefined
+  >(element, fieldKey, current, picksField);
 
   /**
    * The editor's latest content, in a REF rather than state.
@@ -68,23 +68,77 @@ export function InlineRichText({
     commitValue,
   );
 
+  /**
+   * Focus when the editor goes live — doc 223 bug 1, in the editor that never had the fix.
+   *
+   * Before rule 7 the editor was already mounted by the time the author pressed it, so the press
+   * landed in Lexical by itself. Now the press is what OPENS it, and the same failure bug 1 records
+   * for the single-line input applies here: the input does not exist when the press begins, and the
+   * browser finishes the mousedown by moving focus to the nearest focusable ancestor of what was
+   * clicked — `<body>`. Measured: one click opened the editor with no caret and a second was needed.
+   *
+   * The two halves are the input's, for the same two reasons: `onPointerUp` below covers a press
+   * (which ends ON the editor, already mounted by then), and this deferred focus covers a selection
+   * that came from somewhere else — a `RichContent` block reached from the breadcrumbs or just
+   * inserted, which under rule 9 goes live with no press at all.
+   */
+  const editorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!active) return undefined;
+    const frame = requestAnimationFrame(() => focusContent(editorRef.current));
+    return () => cancelAnimationFrame(frame);
+  }, [active]);
+
   if (!editable) return children;
   /**
-   * Nothing to show and not being edited: render NOTHING, exactly as before.
+   * Doc 207 rule 37: an EMPTY block shows its placeholder on the canvas, so the author can see the
+   * block is there and click into it. Before this it rendered literally nothing — an authored-but-
+   * unfilled Rich content block was invisible and reachable only by its frame.
    *
-   * A studio grid item measures its content to size itself (doc 180 rule 17b), and an empty
-   * `RichContent` used to render literally nothing. Wrapping that nothing in an affordance span was
-   * enough to put the measure/resize/re-render cycle into a loop that FROZE the renderer outright —
-   * at load, before anything was even selected. The read view at rest has to stay byte-identical
-   * inside a grid item, not merely equivalent.
+   * STUDIO ONLY, and that is why it lives here rather than in the renderer: outside the studio this
+   * component is not mounted at all (the context default renders `children`), so a citizen's form
+   * still renders nothing for empty content. A frozen field returns above, before this line.
+   *
+   * DOC 223 BUG 4 IS THE HAZARD HERE, and it was re-verified by hand. A studio grid item measures its
+   * content to size itself (doc 180 rule 17b), and wrapping the old NOTHING in an affordance span was
+   * once enough to put the measure/resize/re-render cycle into a loop that froze the renderer at load.
+   * What froze it was a wrapper with no content — a zero-height box the measurer could never settle
+   * on. Real text gives the item a stable height on the first pass, which is the difference.
    */
-  if (!active && children === null) return null;
+  if (!active && children === null)
+    return (
+      <span
+        data-slot="inline-rich-text-placeholder"
+        data-inline-editable=""
+        onPointerDown={claim}
+        /*
+         * `inputClassName` is the caller's read-view typography, and the placeholder needs it for the
+         * SAME reason the editor does (doc 223 rule 10b): without an explicit size this span takes the
+         * canvas's 16px, so the block's empty text stood a size larger than both the editor that opens
+         * on it and the content that eventually replaces it. Measured 16px against the editor's 14px —
+         * the very bug rule 10b was written for, reintroduced by a new bare wrapper.
+         */
+        /*
+         * Doc 223 rule 11's treatment, so the canvas has ONE resting look for "nothing written here":
+         * dimmed and muted at rest, full strength when the pointer is on it. The Form's title and
+         * description placeholders are dimmed by their areas, and `text-muted-foreground` alone left
+         * this one reading nearly black beside them (`rgb(71,69,67)` at full opacity).
+         */
+        className={`block cursor-text text-muted-foreground opacity-50 hover:text-foreground hover:opacity-100 ${inputClassName ?? ''}`}
+      >
+        {placeholder}
+      </span>
+    );
   if (!active)
     return (
       <span
         data-slot="inline-rich-text"
         data-inline-editable=""
-        className="block rounded-xs decoration-muted-foreground/50 underline-offset-4 hover:underline"
+        // Rule 7: the same press that selects the element picks this field — see `inline-text.tsx`
+        // for why it is `pointerdown` and not a click.
+        onPointerDown={claim}
+        // Rule 12: the cursor is the affordance — see `inline-text.tsx`.
+        className="block cursor-text rounded-xs"
       >
         {children}
       </span>
@@ -92,22 +146,77 @@ export function InlineRichText({
 
   return (
     <div
+      ref={editorRef}
       data-studio-inline=""
       data-slot="inline-rich-text-input"
       // Locked studio content sets `pointer-events-none` so presses fall through to the grid item;
       // the editor opts back in, exactly as a Stage card's row controls do (doc 196 rule 13).
-      className="pointer-events-auto"
+      // `inputClassName` carries the read view's own spacing and colour, so swapping one for the
+      // other moves nothing — the single-line editor does the same with its `text-h1 font-bold`.
+      className={`pointer-events-auto ${inputClassName ?? ''}`}
       // React's onBlur IS focusout, so it fires when focus leaves the editor entirely — which is the
       // commit point. Enter cannot be it here: inside rich text Enter is a new paragraph.
-      onBlur={() => commitValue(draft.current)}
+      // Rule 8: and leaving the field stops editing it. `release` is conditional, so a press that
+      // has already claimed another field is not undone by this blur arriving after it.
+      onBlur={() => {
+        commitValue(draft.current);
+        release();
+      }}
+      // The press that opened this editor ends here — see the focus note above.
+      onPointerUp={(event) => focusContent(event.currentTarget)}
     >
+      {/* Rules 8-10: drawn where the value is READ — no border, no background, no inset, and one
+          line tall until its content needs more. `rows={1}` writes an inline `minHeight` in `lh`,
+          which is what beats the component's own `min-h-28` floor. */}
       <RichTextInput
         value={seed.current ?? null}
         onChange={(next) => (draft.current = next)}
         toolbar={[]}
+        bare
+        rows={1}
         placeholder={placeholder}
         aria-label={placeholder}
       />
     </div>
   );
+}
+
+/**
+ * Focuses the Lexical surface inside the wrapper, caret at the END.
+ *
+ * Found by hand: `focus()` alone lands the caret at the START of a `contenteditable`, so the first
+ * thing typed was inserted BEFORE the existing description rather than after it. The end matches the
+ * single-line editor's rule and its reasoning — the editor is entered by clicking the value, not by
+ * a deliberate rewrite gesture, so what the author types must not disturb what is already there.
+ *
+ * The range is set BEFORE focusing: Lexical reconciles its own selection from the DOM one when the
+ * surface takes focus, so ordering it the other way leaves Lexical holding the caret it defaulted to.
+ *
+ * The surface is found by its `data-slot` rather than a ref of its own — `RichTextInput` owns that
+ * element and exposes no ref, and the slot is already a documented hook the Form Studio inspector
+ * styles through (doc 207).
+ */
+function focusContent(wrapper: HTMLElement | null): void {
+  const content = wrapper?.querySelector<HTMLElement>('[data-slot="rich-text-content"]');
+  if (!content) return;
+  /**
+   * Doc 223 rule 13: ONLY the press that opens the editor places the caret. Once the surface has focus
+   * the browser's own selection wins, untouched.
+   *
+   * Without this guard the caret-to-end below ran on EVERY pointerup inside the editor — including the
+   * second one of a double click, which lands after the browser has selected a word. The word was
+   * selected and then thrown away in the same gesture, so double click (and drag select) did nothing.
+   * FOUND BY THE AUTHOR; no jsdom test would see it, since jsdom neither selects words nor orders these
+   * events the way a browser does.
+   */
+  if (content === document.activeElement || content.contains(document.activeElement)) return;
+  const selection = globalThis.getSelection();
+  if (selection) {
+    const range = document.createRange();
+    range.selectNodeContents(content);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+  content.focus();
 }

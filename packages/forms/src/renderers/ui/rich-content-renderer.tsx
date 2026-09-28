@@ -1,6 +1,8 @@
 import { rankWith, uiTypeIs, type LabelProps, type RankedTester } from '@jsonforms/core';
 import { withJsonFormsLabelProps } from '@jsonforms/react';
 import { RichTextView } from '@repo/ui/rich-text-view';
+import { RICH_CONTENT_PLACEHOLDER } from '../gridstack/element-placeholders';
+import { richTextConfig } from './rich-text-options';
 import { EMPTY_RICH_TEXT, richTextValue } from './rich-text-value';
 import { useInlineEditable } from './inline-editable';
 
@@ -28,6 +30,15 @@ function RichContentRenderer({ visible, uischema }: LabelProps) {
   if (!visible) return null;
   // Rule 4: a malformed object crashes Lexical, and the code panel can author one.
   const content = richTextValue((uischema as { content?: unknown }).content);
+  /**
+   * Doc 207 rule 36: the authored empty-state text of the inline editor, sanitised by the SAME
+   * `richTextConfig` the control uses — one definition of what a placeholder is (a non-empty string),
+   * so a blank or wrong-typed one falls back here exactly as it does on a field.
+   *
+   * Only `placeholder` is read: the rest of that config is a CONTROL's (toolbar, rows, readOnly), and a
+   * display element has no use for any of it.
+   */
+  const { placeholder = RICH_CONTENT_PLACEHOLDER } = richTextConfig(uischema.options);
 
   /**
    * Doc 223: unlike every other surface this one can be EMPTY and still needs an editor — a Rich Text
@@ -40,7 +51,10 @@ function RichContentRenderer({ visible, uischema }: LabelProps) {
       element={uischema}
       fieldKey="content"
       value={content ?? EMPTY_RICH_TEXT}
-      placeholder="Write…"
+      placeholder={placeholder}
+      // Rule 10b: `bare` takes its typography from the container, so the editor names what its read
+      // view renders with — `RichTextView`'s own `text-sm leading-relaxed`.
+      inputClassName="text-sm leading-relaxed"
     >
       {content === undefined ? null : <RichTextView value={content} />}
     </Editable>

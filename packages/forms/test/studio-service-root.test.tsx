@@ -216,14 +216,13 @@ describe('the inspector (rules 17-19)', () => {
   const applying = (element: UISchemaElement) =>
     INSPECTOR_FIELDS.filter((entry) => entry.applies(ctxFor(element))).map((entry) => entry.key);
 
-  it('offers a selected Service exactly Title, Description and Gap', () => {
-    expect(applying(service({ label: 'Apply' }))).toEqual(['label', 'formDescription', 'gap']);
-    // And a Form offers the same three, which is the point of rule 4's one predicate.
-    expect(applying(el({ type: 'Form', elements: [] }))).toEqual([
-      'label',
-      'formDescription',
-      'gap',
-    ]);
+  it('offers a selected Service exactly Title, Show title, Description, Show description and Gap', () => {
+    // Doc 201 rules 23-24: each toggle sits directly under the value it governs.
+    const expected = ['label', 'showTitle', 'formDescription', 'showDescription', 'gap'];
+    expect(applying(service({ label: 'Apply' }))).toEqual(expected);
+    // And a Form offers the same five, which is the point of rule 4's one predicate — a boundary can
+    // never gain a value without the toggle that governs it.
+    expect(applying(el({ type: 'Form', elements: [] }))).toEqual(expected);
   });
 
   it('offers neither Width nor Columns on a Service', () => {
@@ -233,13 +232,15 @@ describe('the inspector (rules 17-19)', () => {
     expect(keys).not.toContain('dividers');
   });
 
-  it('places "Untitled service" in the Title field and names the element in its hint', () => {
+  it('places "Untitled service" in the Title field and gives it NO hint', () => {
     const ctx = ctxFor(service());
     expect(field('label').labelFor?.(ctx)).toBe('Title');
     expect(field('label').options?.(ctx)).toEqual({ placeholder: SERVICE_TITLE_PLACEHOLDER });
-    expect((field('label').schema(ctx) as { description: string }).description).toBe(
-      'Shown at the top of the service.',
-    );
+    // Doc 201 rule 25: the hint moved onto the "Show title" switch below, as its label. An ABSENT key,
+    // not `description: undefined` — the second renders an empty hint line.
+    expect(field('label').schema(ctx)).not.toHaveProperty('description');
+    // …and that switch says "service" where a Form's says "form".
+    expect(field('showTitle').labelFor?.(ctx)).toBe('Show the title at the top of the service.');
   });
 
   it('writes and clears the Title and the rich Description on a Service', () => {
@@ -257,12 +258,11 @@ describe('the inspector (rules 17-19)', () => {
     ).toBeUndefined();
   });
 
-  it('leaves a Form’s Title placeholder and hint unchanged', () => {
+  it('leaves a Form’s Title placeholder unchanged, and drops its hint the same way', () => {
     const ctx = ctxFor(el({ type: 'Form', elements: [] }));
     expect(field('label').options?.(ctx)).toEqual({ placeholder: 'Untitled form' });
-    expect((field('label').schema(ctx) as { description: string }).description).toBe(
-      'Shown at the top of the form.',
-    );
+    expect(field('label').schema(ctx)).not.toHaveProperty('description');
+    expect(field('showTitle').label).toBe('Show the title at the top of the form.');
   });
 
   it('labels an unlabelled Service crumb "Service" (rule 19)', () => {

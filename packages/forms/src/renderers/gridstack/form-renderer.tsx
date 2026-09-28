@@ -45,6 +45,23 @@ export function formDescriptionOf(uischema: UISchemaElement): RichTextState | un
 }
 
 /**
+ * Doc 201 rules 23-24: whether a page root draws its title / its description at all.
+ *
+ * ABSENT MEANS SHOWN, so every document authored before these options keeps its title block and nothing
+ * needs migrating; only an explicit `false` hides one — the same shape doc 202 rule 47's `review` uses,
+ * and the reason the inspector writes the option only when it is turned OFF.
+ *
+ * Hiding does NOT clear the value: the title and description stay in the document and in the inspector,
+ * so turning one back on restores what was written rather than asking for it again.
+ */
+const shows = (uischema: UISchemaElement, key: 'showTitle' | 'showDescription'): boolean =>
+  (uischema.options as Record<string, unknown> | undefined)?.[key] !== false;
+
+export const showsTitle = (uischema: UISchemaElement): boolean => shows(uischema, 'showTitle');
+export const showsDescription = (uischema: UISchemaElement): boolean =>
+  shows(uischema, 'showDescription');
+
+/**
  * Doc 201 rule 8b: what the fillable title's TEXT is inset by. It lives on the heading, never on the bar around it —
  * that split is the whole point. The gold rule must span the form's full width (rule 8), so the element carrying
  * `border-b-2` takes no padding at all; putting `p-*` or `px-*` there would inset the rule along with the text.
@@ -74,8 +91,11 @@ export function FillFormTitle({ uischema }: FormTitleProps) {
   // suppress it, because doc 202 rule 51b's review page stacked one Form per step and a pile of gold lines
   // read as a pile of separate documents. That page is one document of Sections now (doc 213), so there are
   // no stacked Forms and nothing left to suppress — and a config key nothing reads is worse than no key.
-  const title = labelOf(uischema, '');
-  const description = formDescriptionOf(uischema);
+  // Rules 23-24: a hidden title or description is treated exactly as an unwritten one from here down, so
+  // every existing branch below — the titleless spacing, the padding the pair share — keeps working with
+  // no new cases. The VALUE is untouched in the document.
+  const title = showsTitle(uischema) ? labelOf(uischema, '') : '';
+  const description = showsDescription(uischema) ? formDescriptionOf(uischema) : undefined;
   // No rule and no margin: there is no bar to separate from anything, only the space above the first element.
   if (title === '' && description === undefined)
     return <div data-slot="form-title-space" className={TITLELESS_SPACING} />;

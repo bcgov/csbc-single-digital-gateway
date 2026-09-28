@@ -19,3 +19,9 @@ export const FORM_DESCRIPTION_PLACEHOLDER = 'Add a description...';
 
 /** Doc 215 rule 7: the studio canvas placeholder for an unwritten Service title. Never authored. */
 export const SERVICE_TITLE_PLACEHOLDER = 'Untitled service';
+
+/**
+ * Doc 207 rule 36: what a `RichContent` block's editor and its empty canvas state show when the author
+ * has written no placeholder of their own. Authoring guidance — never shown to a citizen.
+ */
+export const RICH_CONTENT_PLACEHOLDER = 'Add content...';

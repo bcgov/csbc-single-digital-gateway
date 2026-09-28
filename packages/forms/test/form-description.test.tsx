@@ -8,6 +8,7 @@ import {
   FORM_DESCRIPTION_PLACEHOLDER,
   FORM_TITLE_PLACEHOLDER,
 } from '../src/renderers/gridstack/form-renderer';
+import * as studioVisibility from '../src/renderers/gridstack/form-renderer';
 import { FormRunner } from '../src/runner/form-runner';
 import { UISCHEMA_METASCHEMA } from '../src/studio/code/metaschema/uischema-metaschema';
 import { inspectorContext } from '../src/studio/inspector/inspector-context';
@@ -61,16 +62,15 @@ function contextFor(element: UISchemaElement) {
 }
 
 describe('studio canvas title (rule 7b)', () => {
-  it('looks disabled, like the studio fields: the block at half opacity, the title its normal colour', async () => {
+  it('looks disabled, like the studio fields: each area at half opacity, the title its normal colour', async () => {
     const { container } = await renderStudioSet(form({ label: 'Permit' }));
     // Not text-selectable either, like a disabled field's label.
-    expect(container.querySelector('[data-slot="form-title-block"]')).toHaveClass(
-      'opacity-50',
-      'select-none',
-    );
-    expect(container.querySelector('[data-slot="form-title"]')).not.toHaveClass(
-      'text-muted-foreground',
-    );
+    expect(container.querySelector('[data-slot="form-title-block"]')).toHaveClass('select-none');
+    // Doc 223 rule 11: the half opacity moved from the BLOCK down to each area, so one area can draw
+    // at full strength while the other stays dim — an ancestor's opacity cannot be undone below it.
+    const title = container.querySelector('[data-slot="form-title"]');
+    expect(title?.closest('.opacity-50')).not.toBeNull();
+    expect(title).not.toHaveClass('text-muted-foreground');
   });
 
   it('insets the title block exactly as far as an element’s content, from the Form’s own gap', async () => {
@@ -98,11 +98,13 @@ describe('Form description (rule 20)', () => {
     const block = container.querySelector('[data-slot="form-title-block"]');
     const description = block?.querySelector('[data-slot="form-description"]');
     expect(description).toHaveTextContent('Tell us about the work.');
-    // Muted like a field description, and faded with the block.
-    expect(description).toHaveClass('text-muted-foreground');
-    expect(block).toHaveClass('opacity-50');
-    // Under the title: the heading comes first in the block.
-    expect(block?.firstElementChild).toHaveAttribute('data-slot', 'form-title');
+    // Doc 223 rule 11: muted like a field description and faded — both now on the AREA that wraps it,
+    // so engaging the description can bring it to full colour without touching the title.
+    const area = description?.closest('.opacity-50');
+    expect(area).toHaveClass('text-muted-foreground');
+    expect(area).toHaveClass('hover:text-foreground');
+    // Under the title: the title's area comes first in the block.
+    expect(block?.firstElementChild?.querySelector('[data-slot="form-title"]')).not.toBeNull();
   });
 
   it('shows a placeholder on the canvas for an absent or blank description (rule 22)', async () => {
@@ -225,5 +227,80 @@ describe('Form description in the runner (rule 20b)', () => {
     // Doc 207: the slot is now the WRAPPER; RichTextView renders the text in its own paragraph inside it.
     const text = await screen.findByText('How we reach you.');
     expect(container.querySelector('[data-slot="form-description"]')).toContainElement(text);
+  });
+});
+
+describe('Show title / Show description (doc 201 rules 23-24)', () => {
+  const titleOnCanvas = () =>
+    document.querySelector('[data-slot="form-title"], [data-slot="form-title-placeholder"]');
+  const descriptionOnCanvas = () =>
+    document.querySelector(
+      '[data-slot="form-description"], [data-slot="form-description-placeholder"]',
+    );
+  const fieldsFor = (element: TreeElement) => {
+    const ids = createElementIds();
+    const ctx = inspectorContext({ schema, uischema: element }, ids.idOf(element), ids);
+    return INSPECTOR_FIELDS.filter((f) => ctx && f.applies(ctx)).map((f) => f.key);
+  };
+
+  it('are absent from a document that shows both', () => {
+    // Absent means shown, so nothing needs migrating and a plain document stays plain.
+    const { showsTitle, showsDescription } = studioVisibility;
+    expect(showsTitle(form())).toBe(true);
+    expect(showsDescription(form())).toBe(true);
+  });
+
+  it('read an explicit false as hidden, and anything else as shown', () => {
+    const { showsTitle, showsDescription } = studioVisibility;
+    expect(showsTitle(form({ options: { showTitle: false } }))).toBe(false);
+    expect(showsDescription(form({ options: { showDescription: false } }))).toBe(false);
+    // Only `false` hides: a truthy or junk value is not a hide instruction.
+    expect(showsTitle(form({ options: { showTitle: true } }))).toBe(true);
+    expect(showsTitle(form({ options: { showTitle: 'no' } }))).toBe(true);
+  });
+
+  it('hide the title on the studio canvas without clearing it', async () => {
+    const uischema = form({ label: 'Permit', options: { showTitle: false } });
+    await renderStudioSet(uischema);
+    expect(titleOnCanvas()).toBeNull();
+    // The value is untouched, so the inspector still offers it and turning the toggle back on restores it.
+    expect((uischema as { label?: unknown }).label).toBe('Permit');
+    expect(fieldsFor(uischema as TreeElement)).toContain('label');
+  });
+
+  it('hide the description on the studio canvas, independently of the title', async () => {
+    await renderStudioSet(
+      form({
+        label: 'Permit',
+        options: { description: richText('Guidance'), showDescription: false },
+      }),
+    );
+    expect(descriptionOnCanvas()).toBeNull();
+    expect(titleOnCanvas()).not.toBeNull();
+  });
+
+  it('hide them in the FILLABLE form too — the point of authoring it', () => {
+    const uischema = form({
+      label: 'Permit',
+      options: { description: richText('Guidance'), showTitle: false, showDescription: false },
+    }) as UISchemaElement;
+    render(<FormRunner schema={schema} uischema={uischema} data={{}} onChange={() => {}} />);
+    expect(document.querySelector('[data-slot="form-title"]')).toBeNull();
+    expect(document.querySelector('[data-slot="form-description"]')).toBeNull();
+    // Both hidden reads exactly like an untitled form: the bar goes, the top space stays.
+    expect(document.querySelector('[data-slot="form-title-space"]')).not.toBeNull();
+  });
+
+  it('are accepted by the apply gate on a Form and on a Service', () => {
+    const ajv = createAjv();
+    for (const type of ['Form', 'Service'])
+      expect(
+        ajv.validate(UISCHEMA_METASCHEMA, {
+          type,
+          elements: [],
+          options: { showTitle: false, showDescription: false },
+        }),
+        type,
+      ).toBe(true);
   });
 });

@@ -3,12 +3,7 @@ import {
   FORM_TITLE_PLACEHOLDER,
   SERVICE_TITLE_PLACEHOLDER,
 } from '../../renderers/gridstack/element-placeholders';
-import {
-  TAB_TYPE,
-  FORM_TYPE,
-  isPageRoot,
-  SERVICE_TYPE,
-} from '../../renderers/gridstack/grid-layouts';
+import { TAB_TYPE, isPageRoot, SERVICE_TYPE } from '../../renderers/gridstack/grid-layouts';
 import { CONDITION_TYPE, FLOW_TYPE, STAGE_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { TreeElement } from '../layout/element-tree';
 import { BOOLEAN, integer, NUMBER, STRING, wholeNumbers } from './field-schemas';
@@ -96,9 +91,7 @@ const TAB_LABEL_HINT = 'Shown on the tab itself.';
 const STAGE_LABEL_HINT = 'Names the stage on its card and in the element path.';
 const CONDITION_LABEL_HINT = 'Names the condition on its card and in the element path.';
 /** Doc 201 rule 13: a Form's label is its Title, and it is shown to the citizen, not just in the path. */
-const FORM_TITLE_HINT = 'Shown at the top of the form.';
 /** Doc 215 rule 18: the same sentence, naming the element the author actually selected. */
-const SERVICE_TITLE_HINT = 'Shown at the top of the service.';
 const FORM_TITLE_LABEL = 'Title';
 
 const isControl = (ctx: InspectorContext) => ctx.element.type === 'Control';
@@ -125,10 +118,16 @@ const isFlowElement = (ctx: InspectorContext) =>
  */
 const isTab = (ctx: InspectorContext) => ctx.element.type === TAB_TYPE;
 
+/**
+ * Doc 201 rule 25 (user, 2026-09-28): a PAGE ROOT's Title carries no hint. Its "Show title" toggle sits
+ * directly beneath it saying "Show the title at the top of the form." — so the hint restated, one line
+ * above, exactly what the next control already says.
+ *
+ * Every other element keeps its hint: nothing sits under those to explain them.
+ */
 const labelHint = (ctx: InspectorContext) => {
   if (ctx.element.type === TAB_TYPE) return TAB_LABEL_HINT;
-  if (ctx.element.type === SERVICE_TYPE) return SERVICE_TITLE_HINT;
-  if (ctx.element.type === FORM_TYPE) return FORM_TITLE_HINT;
+  if (isPageRoot(ctx.element.type)) return undefined;
   if (ctx.element.type === STAGE_TYPE) return STAGE_LABEL_HINT;
   return ctx.element.type === CONDITION_TYPE ? CONDITION_LABEL_HINT : LAYOUT_LABEL_HINT;
 };
@@ -142,6 +141,10 @@ const STEP: JsonSchema = { type: 'number', exclusiveMinimum: 0 };
 const takesPlaceholder: Applies = (ctx) =>
   isText(ctx) ||
   isNumber(ctx) ||
+  // Doc 207 rule 35: a rich text field takes one too. `richTextConfig` has always sanitised it and the
+  // renderer has always passed it to `RichTextInput` — the setting was simply unreachable, because this
+  // gate lists control KINDS and rich text is its own kind (`control-kind.ts`), not a `text` variant.
+  ctx.controlKind === 'rich-text' ||
   (ctx.controlKind === 'choice' && currentComponent(ctx) !== 'radio-group') ||
   // Doc 205 rule 34: the multi combobox takes one; the checkbox group ignores it, like a radio group.
   (ctx.controlKind === 'multi-choice' && currentComponent(ctx) !== 'checkbox-group');
@@ -154,10 +157,13 @@ export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
     labelFor: (ctx) => (isBoundary(ctx) ? FORM_TITLE_LABEL : 'Label'),
     applies: (ctx) =>
       isControl(ctx) || ctx.layoutKind !== undefined || isFlowElement(ctx) || isTab(ctx),
-    schema: (ctx) =>
-      ctx.layoutKind || isFlowElement(ctx) || isTab(ctx)
-        ? { type: 'string', description: labelHint(ctx) }
-        : STRING,
+    schema: (ctx) => {
+      if (!(ctx.layoutKind || isFlowElement(ctx) || isTab(ctx))) return STRING;
+      const hint = labelHint(ctx);
+      // An ABSENT key, never `description: undefined` — `exactOptionalPropertyTypes` treats those as
+      // different things, and JSONForms would render an empty hint line for the second.
+      return hint === undefined ? STRING : { type: 'string', description: hint };
+    },
     options: (ctx) => {
       // Doc 201 rule 22, doc 215 rule 18: a boundary's Title offers ITS OWN canvas placeholder — 'Untitled form' or
       // 'Untitled service' — so the field shows the author what the canvas already shows them. A Control's offers the

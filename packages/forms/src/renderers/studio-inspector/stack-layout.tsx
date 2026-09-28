@@ -40,8 +40,13 @@ const COMPACT_CLASS = [
   // the 300px panel, and the toolbar wrapped to two rows at full size.
   '[&_[data-slot=rich-text-input]]:text-xs',
   '[&_[data-slot=rich-text-content]]:min-h-16',
+  // The placeholder overlays the content, so it is repadded in the SAME breath — repadding only the
+  // content left the placeholder on the component's default inset, 4px below and right of the text it
+  // stands in for (reported as a too-tall placeholder line).
   '[&_[data-slot=rich-text-content]]:px-2',
   '[&_[data-slot=rich-text-content]]:py-1',
+  '[&_[data-slot=rich-text-placeholder]]:px-2',
+  '[&_[data-slot=rich-text-placeholder]]:py-1',
   '[&_[data-slot=rich-text-toolbar]]:p-0.5',
   '[&_[data-slot=rich-text-toolbar]_button]:size-6',
 ].join(' ');

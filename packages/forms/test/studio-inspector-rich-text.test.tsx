@@ -128,3 +128,61 @@ describe('Flow conditions (rule 29)', () => {
     expect(Object.keys(OPERATORS_BY_KIND)).toContain('rich-text');
   });
 });
+
+describe('Placeholder is authorable on both rich surfaces (rules 35-36)', () => {
+  const formWith = (element: TreeElement, schema: JsonSchema) => ({
+    schema,
+    uischema: { type: 'Form', label: 'A form', elements: [element] } as unknown as TreeElement,
+  });
+
+  const fieldsOf = (element: TreeElement, schema: JsonSchema) => {
+    const ids = createElementIds();
+    const document = formWith(element, schema);
+    return inspectorForm(document, ids.idOf(element), ids)!.schema.properties ?? {};
+  };
+
+  const RICH_FIELD = {
+    type: 'Control',
+    scope: '#/properties/notes',
+  } as unknown as TreeElement;
+  // Doc 207 rule 1: an object property REQUIRING `root` is what makes the kind `rich-text` — not an
+  // options.component. `required` is the load-bearing half (`isRichTextProperty`); without it the
+  // property is a plain object and the control kind comes back undefined.
+  const RICH_SCHEMA = {
+    type: 'object',
+    properties: {
+      notes: { type: 'object', required: ['root'], properties: { root: { type: 'object' } } },
+    },
+  } as JsonSchema;
+
+  it('offers it on a rich text FIELD', () => {
+    // The runtime always supported it — `richTextConfig` sanitises `placeholder` and the renderer
+    // passes it to `RichTextInput`. The gate listed control KINDS, and rich text is its own kind, so
+    // the setting existed with no way to reach it.
+    expect(fieldsOf(RICH_FIELD, RICH_SCHEMA)['placeholder']?.type).toBe('string');
+  });
+
+  it('offers it on a rich content BLOCK', () => {
+    const block = { type: 'RichContent', content: richText('Guidance') } as unknown as TreeElement;
+    expect(
+      fieldsOf(block, { type: 'object', properties: {} } as JsonSchema)['placeholder']?.type,
+    ).toBe('string');
+  });
+
+  it('writes it into the block’s options, not onto the element', () => {
+    const ids = createElementIds();
+    const block = { type: 'RichContent' } as unknown as TreeElement;
+    const document = formWith(block, { type: 'object', properties: {} } as JsonSchema);
+    const id = ids.idOf(block);
+    const form = inspectorForm(document, id, ids);
+    const next = applyInspector(
+      document,
+      id,
+      { ...form!.data, placeholder: 'Enter the terms' },
+      ids,
+    );
+    const written = (next.uischema as TreeElement).elements?.[0] as TreeElement;
+    expect(written.options?.['placeholder']).toBe('Enter the terms');
+    expect((written as { placeholder?: unknown }).placeholder).toBeUndefined();
+  });
+});

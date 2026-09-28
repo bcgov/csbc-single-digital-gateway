@@ -7,6 +7,10 @@ import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid
 import { TabsEditorProvider, type TabsEditor } from '../renderers/gridstack/tabs-editor';
 import { type TabsComponent } from '../renderers/gridstack/tabs-options';
 import { TabsOverrideProvider } from '../renderers/gridstack/tabs-override';
+import {
+  InlineEditFocusProvider,
+  useInlineEditFocusState,
+} from '../renderers/studio/inline-edit-focus';
 import { InlineValue } from '../renderers/studio/inline-value';
 import { InlineEditableProvider } from '../renderers/ui/inline-editable';
 import { FORM_TYPE, isPageRoot, SERVICE_TYPE } from '../renderers/gridstack/grid-layouts';
@@ -110,6 +114,10 @@ export function StudioCanvas({
   // The reset therefore keys off the preview session, not `rootKey` — `rootKey` changes only when the document or the
   // focused Form does, so seeding on it alone would carry one preview's answers into the next. (Re-entering preview
   // is the only route back in, so this subsumes a per-document reset.)
+  // Doc 223 rule 7: which of the selected element's fields is being edited in place. Declared here
+  // with the other canvas-wide state, ABOVE every early return, for the same hook-ordering reason.
+  const inlineFocus = useInlineEditFocusState();
+
   const [previewedAs, setPreviewedAs] = useState(previewing);
   if (previewedAs !== previewing) {
     setPreviewedAs(previewing);
@@ -211,17 +219,21 @@ export function StudioCanvas({
             {/* Doc 223: every renderer that draws an editable value reaches the editor from here.
                 Supplied ONCE at the canvas root rather than threaded through the renderer sets: the
                 surfaces live in three directories and none of them may import `renderers/studio`. */}
-            <InlineEditableProvider value={InlineValue}>
-              <JsonForms
-                key={`studio-${rootKey}`}
-                schema={schema}
-                uischema={canvasRoot}
-                data={STUDIO_SAMPLE_DATA}
-                renderers={STUDIO_RENDERERS}
-                cells={studioSet.cells}
-                validationMode="NoValidation"
-              />
-            </InlineEditableProvider>
+            {/* Doc 223 rule 7: and WHICH of a selected element's fields is live. Beside the editor
+                rather than inside it, because every inline surface on the canvas shares one claim. */}
+            <InlineEditFocusProvider value={inlineFocus}>
+              <InlineEditableProvider value={InlineValue}>
+                <JsonForms
+                  key={`studio-${rootKey}`}
+                  schema={schema}
+                  uischema={canvasRoot}
+                  data={STUDIO_SAMPLE_DATA}
+                  renderers={STUDIO_RENDERERS}
+                  cells={studioSet.cells}
+                  validationMode="NoValidation"
+                />
+              </InlineEditableProvider>
+            </InlineEditFocusProvider>
           </TabsEditorProvider>
         </FlowEditorProvider>
       </GridEditorProvider>

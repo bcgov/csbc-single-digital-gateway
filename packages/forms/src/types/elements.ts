@@ -442,8 +442,18 @@ export interface InlineEditableProps {
    */
   readonly value: string | RichTextState;
   readonly placeholder: string;
-  /** Classes the editor must carry so the text does not change size when it becomes editable. */
+  /** Classes the editor must carry so the text does not move or change size when it becomes editable. */
   readonly inputClassName?: string;
+  /**
+   * Doc 223 rules 7 and 9: whether a PRESS picks this field, rather than the element's selection
+   * opening it.
+   *
+   * Set it where an element owns more than one editable value — a root `Form` owns its Title and its
+   * Description — so clicking one edits that one alone. Leave it off where the element owns a single
+   * value (a `RichContent` block): there is nothing to disambiguate, and requiring a second press to
+   * reach an element that was just inserted or drilled into would be a rule with no defect behind it.
+   */
+  readonly picksField?: boolean;
   /** The read view, rendered whenever the editor is not live. */
   readonly children: ReactNode;
 }

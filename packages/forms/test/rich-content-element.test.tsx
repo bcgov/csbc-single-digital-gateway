@@ -12,6 +12,7 @@ import { inspectorForm } from '../src/studio/inspector/inspector-form';
 import { createElementIds } from '../src/studio/layout/element-ids';
 import type { TreeElement } from '../src/studio/layout/element-tree';
 import { emptyRichText, richText } from './rich-text-fixtures';
+import { richTextConfig } from '../src/renderers/ui/rich-text-options';
 
 // Doc 207 rules 17-23 — the RichContent DISPLAY element: authored content that collects nothing.
 
@@ -138,5 +139,22 @@ describe('authoring it in the inspector (rule 21)', () => {
     const next = applyInspector(document, id, { content: emptyRichText() }, ids);
     const written = (next.uischema as TreeElement).elements?.[0] as { content?: unknown };
     expect(written.content).toBeUndefined();
+  });
+});
+
+describe('the block’s placeholder (doc 207 rules 36-37)', () => {
+  it('sanitises an authored placeholder with the control’s own rule', () => {
+    // One definition of what a placeholder is — a non-empty string — shared with the rich text FIELD,
+    // so a blank or wrong-typed one falls back identically on both.
+    expect(richTextConfig({ placeholder: 'Enter the terms' }).placeholder).toBe('Enter the terms');
+    for (const bad of [{ placeholder: '' }, { placeholder: 7 }, {}, undefined])
+      expect(richTextConfig(bad).placeholder).toBeUndefined();
+  });
+
+  it('renders NOTHING for an empty block outside the studio', () => {
+    // The placeholder is authoring guidance. A citizen's form must still render nothing — the empty
+    // state lives in the studio's inline editor, which is not mounted here at all.
+    const { container } = renderElement(element());
+    expect(container.textContent).toBe('');
   });
 });

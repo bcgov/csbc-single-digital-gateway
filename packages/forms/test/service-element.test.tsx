@@ -92,7 +92,9 @@ describe('the studio Service renderer (rules 7-8)', () => {
     await settle();
     const block = titleBlock(container);
     expect(block).not.toBeNull();
-    expect(block).toHaveClass('opacity-50', 'select-none');
+    expect(block).toHaveClass('select-none');
+    // Doc 223 rule 11: the dimming sits on each inline AREA now, not on the block.
+    expect(block?.querySelector('.opacity-50')).not.toBeNull();
     expect(block).toHaveStyle({ paddingInline: 'calc(0.5rem + 1px + 0.5rem)' });
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Apply for a licence');
     expect(container.querySelector('[data-slot="form-description"]')).toHaveTextContent(

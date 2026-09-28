@@ -364,14 +364,14 @@ describe('Form title (doc 201)', () => {
       expect(built.schema.required).toBeUndefined();
     });
 
-    it('labels the field "Title" with the form hint on a Form', () => {
+    it('labels the field "Title" on a Form, with no hint of its own', () => {
       const ctx = contextFor(formRoot, formRoot);
       expect(labelField?.labelFor?.(ctx)).toBe('Title');
       expect(labelField?.required?.(ctx) ?? false).toBe(false);
       const { form: built } = formFor(formRoot, formRoot, schema);
-      expect(fieldSchema(built, 'label')).toMatchObject({
-        description: 'Shown at the top of the form.',
-      });
+      // Doc 201 rule 25: the hint became the label of the "Show title" switch directly beneath it, so it
+      // is said once rather than twice.
+      expect(fieldSchema(built, 'label')).not.toHaveProperty('description');
     });
 
     it('keeps "Label" and its existing hint on a layout', () => {

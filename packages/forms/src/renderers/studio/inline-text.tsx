@@ -22,15 +22,13 @@ export function InlineText({
   value,
   placeholder,
   inputClassName,
+  picksField,
   children,
 }: InlineEditableProps) {
   // `InlineValue` routes only string values here; the cast states that rather than widening every
   // read below.
-  const { editable, active, draft, setDraft, commit, commitValue, revert } = useInlineEdit(
-    element,
-    fieldKey,
-    typeof value === 'string' ? value : '',
-  );
+  const { editable, active, claim, release, draft, setDraft, commit, commitValue, revert } =
+    useInlineEdit(element, fieldKey, typeof value === 'string' ? value : '', picksField);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // The same commit-on-leave the rich editor needs: clicking away on the canvas deselects, which
@@ -91,10 +89,17 @@ export function InlineText({
     return (
       <span
         data-slot="inline-text"
-        // Doc 223: the affordance says "this text is editable" without drawing another box — the
-        // element already has a dashed frame around it, and a second one reads as two states.
+        // Doc 223 rule 12: the affordance is the CURSOR — a text caret over text that can be typed
+        // into, which is what every editable surface on the web says and what an author already
+        // reads without being taught. It used to underline on hover; that drew a second mark on an
+        // element whose frame already says "selectable", and rule 11's brightening says "reachable"
+        // more quietly.
         data-inline-editable=""
-        className="rounded-xs decoration-muted-foreground/50 underline-offset-4 hover:underline"
+        // Rule 7: the press that selects the element also picks WHICH of its fields is edited. It
+        // has to be `pointerdown` rather than a click: focus only sticks when the press ENDS on the
+        // input (bug 1), so the input must already exist by `pointerup`.
+        onPointerDown={claim}
+        className="cursor-text rounded-xs"
       >
         {children}
       </span>
@@ -113,7 +118,12 @@ export function InlineText({
       // The press that opened this editor ends here — see the focus note above.
       onPointerUp={(event) => event.currentTarget.focus()}
       onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
+      // Rule 8: leaving the field stops editing it. `release` is conditional, so a press that has
+      // already claimed ANOTHER field is not undone by this blur arriving after it.
+      onBlur={() => {
+        commit();
+        release();
+      }}
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           event.preventDefault();
@@ -124,7 +134,11 @@ export function InlineText({
       }}
       // `pointer-events-auto`: locked studio content sets `pointer-events-none` so presses fall
       // through to the grid item, and the editor has to opt back in (doc 196 rule 13's idiom).
-      className={`pointer-events-auto w-full rounded-xs bg-transparent outline-none focus:ring-1 focus:ring-ring ${inputClassName ?? ''}`}
+      // Rule 12: NO focus ring. An inline editor is drawn where its value is read (rule 10), and a ring
+      // is a box — the one thing the surrounding frame already provides. It also made the two halves of
+      // one title block disagree: the description's bare editor draws no ring, so clicking the title
+      // flashed a blue outline and clicking the description did not.
+      className={`pointer-events-auto w-full rounded-xs bg-transparent outline-none ${inputClassName ?? ''}`}
     />
   );
 }

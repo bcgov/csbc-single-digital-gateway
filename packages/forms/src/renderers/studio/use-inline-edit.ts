@@ -2,6 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { mayEdit } from '../../capabilities/capability-for';
 import { useGridEditor } from '../gridstack/grid-editor';
+import { useInlineEditFocus } from './inline-edit-focus';
 import { useCapability } from './studio-capabilities';
 import { useSelectionPort } from './studio-selection';
 
@@ -12,10 +13,16 @@ import { useSelectionPort } from './studio-selection';
  * text, a Rich Text block). The surfaces differ only in which `InspectorField` key they write and
  * what their read view looks like.
  *
- * The selection model is deliberately unchanged: hovering shows the value is editable, clicking
- * selects the OWNING element exactly as today, and the value becomes editable because that element
- * is selected. There is no `selectedPart` — a second selection axis would touch every gate in
- * `use-studio-selection.ts` for precision this does not need.
+ * The selection model is deliberately unchanged: hovering shows the value is editable, and clicking
+ * selects the OWNING element exactly as today. No gate in `use-studio-selection.ts` knows a field
+ * exists.
+ *
+ * WHICH field of that element is live is a separate, smaller axis (doc 223 rule 7,
+ * `inline-edit-focus.ts`). An element may own more than one — a root `Form` owns its Title and its
+ * Description — and keying on the element alone opened both at once. A surface that shares its
+ * element opts in with `picksField` and is claimed by the press that reaches it; a surface that owns
+ * its element's only value (a `RichContent` block) still goes live on selection, so arriving from
+ * the breadcrumbs or on a newly inserted block needs no second press.
  *
  * WRITES GO THROUGH THE INSPECTOR'S OWN FIELD. `selection.editField` applies the same
  * `InspectorField.write` the panel uses, so the canvas and the inspector cannot disagree about a
@@ -34,8 +41,15 @@ export interface InlineEdit<T> {
    * which is what keeps the shared renderers inert outside the studio.
    */
   readonly editable: boolean;
-  /** Whether the editor is LIVE: editable, and the owning element is the selected one. */
+  /**
+   * Whether the editor is LIVE: editable, the owning element is the selected one, and — for a
+   * surface that shares its element — this field is the one holding the inline focus.
+   */
   readonly active: boolean;
+  /** Takes the inline focus for this field. The read view calls it from its own `pointerdown`. */
+  readonly claim: () => void;
+  /** Gives it up, if this field still holds it. Called when the editor loses focus. */
+  readonly release: () => void;
   /** The value to render while editing — the local draft, never the document. */
   readonly draft: T;
   /** Replaces the draft. Does not write. */
@@ -58,15 +72,19 @@ export function useInlineEdit<T>(
   element: UISchemaElement | undefined,
   fieldKey: string,
   value: T,
+  picksField = false,
 ): InlineEdit<T> {
   const selection = useSelectionPort();
   const editor = useGridEditor();
   const capability = useCapability(element ?? EMPTY_ELEMENT);
+  const focus = useInlineEditFocus();
 
   const id = selection && editor && element ? editor.idOf(element) : undefined;
   const editable =
     id !== undefined && selection?.editField !== undefined && mayEdit(capability, fieldKey);
-  const active = editable && selection?.selectedId === id;
+  const selected = editable && selection?.selectedId === id;
+  // Rule 9: a surface that does not share its element goes live on selection alone, as before.
+  const active = selected && (!picksField || focus.isEditing(id ?? '', fieldKey));
 
   const [draft, setDraft] = useState<T>(value);
 
@@ -93,7 +111,25 @@ export function useInlineEdit<T>(
 
   const revert = useCallback(() => setDraft(committed.current), []);
 
-  return { editable, active, draft, setDraft, commit, commitValue, revert };
+  const { claim: claimFocus, release: releaseFocus } = focus;
+  const claim = useCallback(() => {
+    if (id !== undefined) claimFocus(id, fieldKey);
+  }, [claimFocus, id, fieldKey]);
+  const release = useCallback(() => {
+    if (id !== undefined) releaseFocus(id, fieldKey);
+  }, [releaseFocus, id, fieldKey]);
+
+  return {
+    editable,
+    active,
+    claim,
+    release,
+    draft,
+    setDraft,
+    commit,
+    commitValue,
+    revert,
+  };
 }
 
 /**

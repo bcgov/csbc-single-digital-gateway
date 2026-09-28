@@ -79,6 +79,21 @@ const RICH_CONTENT = whenType('RichContent', {
       required: ['root'],
       properties: { root: { description: 'The editor state root node.', type: 'object' } },
     },
+    // Doc 207 rule 36. This block drives Monaco's completion AND the apply gate, so an option missing
+    // here is an option with no hover text.
+    options: {
+      description: 'Rich content options.',
+      type: 'object',
+      properties: {
+        placeholder: {
+          description:
+            'What the block\u2019s editor shows while it is empty. Authoring guidance only \u2014 a form ' +
+            'renders nothing for empty content.',
+          type: 'string',
+          minLength: 1,
+        },
+      },
+    },
   },
 });
 
@@ -346,6 +361,19 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
              * refuses a plain string on purpose — accepting both would let an author save a description
              * that renders nothing, which is the one outcome worse than refusing it.
              */
+            /**
+             * Doc 201 rules 23-24. ABSENT MEANS SHOWN, so every document authored before these options is
+             * unchanged and only an explicit `false` hides one. The value itself is untouched — hiding is
+             * presentation, not deletion.
+             */
+            showTitle: {
+              description: 'Show the title at the top of the form. Absent means shown.',
+              type: 'boolean',
+            },
+            showDescription: {
+              description: 'Show the description under the title. Absent means shown.',
+              type: 'boolean',
+            },
             description: {
               description:
                 'A description shown under the form title, as a Lexical editor state. Rich content, not plain text.',
@@ -401,6 +429,15 @@ export const UISCHEMA_METASCHEMA = deepFreeze({
           type: 'object',
           properties: {
             gap: GAP,
+            // Doc 201 rules 23-24, doc 215 rule 17: a Service takes the same pair. Absent means shown.
+            showTitle: {
+              description: 'Show the title at the top of the page. Absent means shown.',
+              type: 'boolean',
+            },
+            showDescription: {
+              description: 'Show the description under the title. Absent means shown.',
+              type: 'boolean',
+            },
             description: {
               description:
                 'A description shown under the service title, as a Lexical editor state. Rich content, not plain text.',
