@@ -80,9 +80,10 @@ describe('ServicesV1Controller', () => {
       const mockDef = { schema: { type: 'object' }, uischema: {} };
       servicesServiceMock.getServiceDefinition.mockReturnValue(mockDef);
 
-      const result = controller.getDefinition();
+      const result = controller.getDefinition({ templateId: 'tpl-1' });
 
-      expect(servicesServiceMock.getServiceDefinition).toHaveBeenCalledTimes(1);
+      // Doc 228: the editor asks for the template the author chose.
+      expect(servicesServiceMock.getServiceDefinition).toHaveBeenCalledWith('tpl-1');
       expect(result).toEqual(mockDef);
     });
   });

@@ -202,6 +202,8 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
 export function createService(input: {
   workspaceId: string;
   title: string;
+  /** Doc 228: the template to build from. */
+  templateId?: string;
 }): Promise<{ service: Service; versions: ServiceVersion[] }> {
   return send(BASE, 'POST', input);
 }

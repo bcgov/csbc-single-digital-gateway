@@ -49,6 +49,18 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   useParams: () => mockParams,
 }));
 
+// Doc 228: the picker is covered by its own test; here it answers with one template, as it does
+// when exactly one is published.
+vi.mock('@/components/common/template-select', async () => {
+  const { useEffect } = await import('react');
+  return {
+    TemplateSelect: ({ onChange }: { onChange: (id: string) => void }) => {
+      useEffect(() => onChange('tpl-1'), [onChange]);
+      return null;
+    },
+  };
+});
+
 vi.mock('@/lib/services', () => ({
   createService: vi.fn(),
 }));
@@ -126,6 +138,7 @@ describe('New Service Modal Component Test Suite', () => {
       expect(createService).toHaveBeenCalledWith({
         workspaceId: 'w1',
         title: 'Business License',
+        templateId: 'tpl-1',
       });
     });
 

@@ -18,7 +18,9 @@ import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 export const createFormSchema = z.object({
   workspaceId: z.uuid(),
   title: z.string().trim().min(1).max(255),
-  /** Omitted = start from the published application-method template. */
+  /** Doc 228: the template to build from. Omitted = the only published one of this type. */
+  templateId: z.uuid().optional(),
+  /** Omitted = start from the template's content. */
   content: studioDocumentSchema.optional(),
 });
 export class CreateFormDto extends createZodDto(createFormSchema) {}

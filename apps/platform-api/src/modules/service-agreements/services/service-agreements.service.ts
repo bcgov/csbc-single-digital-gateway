@@ -83,7 +83,7 @@ export class ServiceAgreementsService {
       }
       workspaceId = null;
     }
-    const template = await this.templates.resolve(TYPE);
+    const template = await this.templates.forCreate(TYPE, input.templateId);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
@@ -239,11 +239,11 @@ export class ServiceAgreementsService {
   /**
    * An agreement + its versions + the template each version renders against.
    *
-   * Doc 221: resolved by the PINNED template version, never `resolve()`. `resolve()` returns whichever
+   * Doc 221: resolved by the PINNED template version, never `forCreate()`. `forCreate()` returns whichever
    * template version is published NOW, which the resolver's own comment (`template.resolver.ts:76-87`)
    * warns makes a version authored before a template reshape render every field empty — and, since
    * doc 220, would let a template author retroactively re-govern documents already built from an
-   * earlier version. `resolve()` remains correct for the CREATE path only.
+   * earlier version. `forCreate()` remains correct for the CREATE path only.
    */
   async get(actor: Actor, id: string): Promise<ServiceAgreementDetail> {
     const doc = await this.requireAgreementForRead(actor, id);
@@ -386,8 +386,9 @@ export class ServiceAgreementsService {
 
   /** Add a new draft version, copying the latest version's content. */
   async addVersion(actor: Actor, id: string): Promise<ServiceAgreementVersionResponse> {
-    await this.requireAgreementForWrite(actor, id);
-    const template = await this.templates.resolve(TYPE);
+    const agreement = await this.requireAgreementForWrite(actor, id);
+    // Doc 228: the document's OWN template — the version FK requires the same template_id.
+    const template = await this.templates.forDocument(agreement.templateId);
     return this.db.transaction(async (tx) => {
       const existing = await tx
         .select()

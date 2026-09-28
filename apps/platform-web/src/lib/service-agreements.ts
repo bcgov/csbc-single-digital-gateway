@@ -192,6 +192,8 @@ export function agreementQueryOptions(id: string) {
 export function createAgreement(input: {
   workspaceId?: string;
   title: string;
+  /** Doc 228: the template to build from. */
+  templateId?: string;
 }): Promise<{ agreement: ServiceAgreement; version: ServiceAgreementVersion }> {
   return send(BASE, 'POST', input);
 }

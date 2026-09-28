@@ -54,14 +54,14 @@ describe('ServicesService', () => {
     });
 
     templatesMock = {
-      resolve: vi.fn().mockResolvedValue({
+      forCreate: vi.fn().mockResolvedValue({
         templateId: 'template-1',
         templateVersionId: 'template-version-1',
         schema: { type: 'object', properties: {} },
         uischema: { type: 'Service', elements: [] },
       }),
       contentForVersion: vi.fn(),
-      // Feature 174: the READ path resolves templates per version, never via resolve().
+      // Feature 174: the READ path resolves templates per version, never via forCreate().
       contentsForVersions: vi.fn().mockResolvedValue({}),
     };
 
@@ -142,14 +142,15 @@ describe('ServicesService', () => {
 
   describe('getServiceDefinition', () => {
     it('returns the schema definition of the resolved service type', async () => {
-      templatesMock.resolve.mockResolvedValue({
+      templatesMock.forCreate.mockResolvedValue({
         schema: { type: 'object' },
         uischema: { type: 'Service' },
       });
 
-      const result = await service.getServiceDefinition();
+      const result = await service.getServiceDefinition('tpl-1');
 
-      expect(templatesMock.resolve).toHaveBeenCalledTimes(1);
+      // Doc 228: the template the author chose.
+      expect(templatesMock.forCreate).toHaveBeenCalledWith('services.service', 'tpl-1');
       expect(result).toEqual({
         schema: { type: 'object' },
         uischema: { type: 'Service' },
@@ -193,7 +194,7 @@ describe('ServicesService', () => {
         // 5. submissionRows select
         .mockReturnValueOnce(mockQuery([]));
 
-      templatesMock.resolve.mockResolvedValue({ typeId: 'type-1' });
+      templatesMock.forCreate.mockResolvedValue({ typeId: 'type-1' });
 
       const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
@@ -232,7 +233,7 @@ describe('ServicesService', () => {
         )
         .mockReturnValueOnce(mockQuery([]));
 
-      templatesMock.resolve.mockResolvedValue({ typeId: 'type-1' });
+      templatesMock.forCreate.mockResolvedValue({ typeId: 'type-1' });
 
       const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
       expect(result.items[0]!.status).toBe('draft');
@@ -267,7 +268,7 @@ describe('ServicesService', () => {
         )
         .mockReturnValueOnce(mockQuery([]));
 
-      templatesMock.resolve.mockResolvedValue({ typeId: 'type-1' });
+      templatesMock.forCreate.mockResolvedValue({ typeId: 'type-1' });
 
       const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
       expect(result.items[0]!.status).toBe('archived');
@@ -292,7 +293,7 @@ describe('ServicesService', () => {
         .mockReturnValueOnce(mockQuery([])) // empty versions
         .mockReturnValueOnce(mockQuery([]));
 
-      templatesMock.resolve.mockResolvedValue({ typeId: 'type-1' });
+      templatesMock.forCreate.mockResolvedValue({ typeId: 'type-1' });
 
       const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
       expect(result.items[0]!.status).toBe('none');
@@ -332,7 +333,7 @@ describe('ServicesService', () => {
         // 5. submissionRows select (empty result)
         .mockReturnValueOnce(mockQuery([]));
 
-      templatesMock.resolve.mockResolvedValue({ typeId: 'type-1' });
+      templatesMock.forCreate.mockResolvedValue({ typeId: 'type-1' });
 
       const result = await service.list('user-1', { workspaceId: 'ws-1' } as any);
 
@@ -459,7 +460,7 @@ describe('ServicesService', () => {
 
 /**
  * Feature 174. getServiceDetail() must resolve `definition` per the version being read
- * (contentsForVersions, keyed by document_versions.template_version_id), not via resolve()
+ * (contentsForVersions, keyed by document_versions.template_version_id), not via forCreate()
  * (currently-published). Without this, publishing a reshaped Service type version renders every
  * existing service's details page as empty em-dashes.
  */
@@ -508,7 +509,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
       select: vi.fn().mockImplementation(() => mockQuery([])),
     });
     templatesMock = {
-      resolve: vi.fn(),
+      forCreate: vi.fn(),
       contentForVersion: vi.fn(),
       contentsForVersions: vi.fn().mockResolvedValue({}),
     };
@@ -555,7 +556,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(result.definitions['tv-new']?.schema).toEqual({ marker: 'new' });
   });
 
-  it('should not call resolve() (currently-published) on the read path', async () => {
+  it('should not call forCreate() (currently-published) on the read path', async () => {
     arrange([versionRow({})]);
     templatesMock.contentsForVersions.mockResolvedValue({
       'type-version-1': { schema: {}, uischema: {} },
@@ -563,7 +564,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
 
     await service.get('user-1', 'service-1');
 
-    expect(templatesMock.resolve).not.toHaveBeenCalled();
+    expect(templatesMock.forCreate).not.toHaveBeenCalled();
   });
 
   it('should fall back to the newest version when none is published', async () => {
@@ -599,7 +600,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
     expect(result.definition).toEqual({ schema: {}, uischema: {} });
   });
 
-  it('should still use resolve() on the create path (a new service binds to the published template)', () => {
+  it('should still use forCreate() on the create path (a new service binds to a published template)', () => {
     // Guard against an over-eager fix: CREATE must keep binding to the currently-published
     // template version, or new services would be authored against a stale template.
     const source = readFileSync(
@@ -607,6 +608,8 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
       'utf8',
     );
     const createBody = source.slice(source.indexOf('async create('), source.indexOf('async get('));
-    expect(createBody).toContain('this.templates.resolve(DOCUMENT_TYPE.service)');
+    expect(createBody).toContain(
+      'this.templates.forCreate(DOCUMENT_TYPE.service, input.templateId)',
+    );
   });
 });

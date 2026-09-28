@@ -36,7 +36,10 @@ export class FormsService {
   /** Standalone create: the document + its draft v1 content, in ONE transaction. */
   async create(userId: string, input: CreateFormInput): Promise<FormWithVersion> {
     await this.requireMembership(userId, input.workspaceId);
-    const template = await this.templates.resolve(DOCUMENT_TYPE.applicationMethod);
+    const template = await this.templates.forCreate(
+      DOCUMENT_TYPE.applicationMethod,
+      input.templateId,
+    );
     // An explicit content still has to satisfy the type's allowed roots; an omitted one starts
     // from the template with the requested title stamped into the label the title column reads.
     const content = input.content ?? {
@@ -89,7 +92,7 @@ export class FormsService {
     if (latest === undefined) {
       throw new NotFoundException('Form has no versions');
     }
-    // Doc 221: the PINNED template, never `resolve()` — a version authored before a template
+    // Doc 221: the PINNED template, never `forCreate()` — a version authored before a template
     // reshape must render against the template it was authored under, and a governing capability
     // map must not change because a newer template version was published.
     const definition =

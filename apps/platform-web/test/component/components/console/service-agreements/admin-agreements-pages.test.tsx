@@ -97,6 +97,18 @@ function setupMocks() {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
 
+    // Doc 228: the New agreement picker reads the catalog — one published agreement template.
+    if (url.endsWith('/v1/templates')) {
+      return json({
+        items: [
+          {
+            template: { id: 'tpl-sa', type: 'services.service-agreement' },
+            published: { id: 'tpl-sa-v1', title: 'Service agreement' },
+          },
+        ],
+      });
+    }
+
     if (url.includes('/v1/service-agreements')) {
       if (method === 'POST') {
         const body = init?.body

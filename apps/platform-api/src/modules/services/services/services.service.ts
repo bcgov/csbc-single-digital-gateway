@@ -56,7 +56,7 @@ export class ServicesService {
    */
   async create(userId: string, input: CreateServiceInput): Promise<ServiceWithVersions> {
     await this.requireMembership(userId, input.workspaceId);
-    const template = await this.templates.resolve(DOCUMENT_TYPE.service);
+    const template = await this.templates.forCreate(DOCUMENT_TYPE.service, input.templateId);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
@@ -95,12 +95,12 @@ export class ServicesService {
     });
   }
 
-  /** The published Service template's `{ schema, uischema }` — for the create editor. */
-  async getServiceDefinition(): Promise<{
+  /** A published Service template's `{ schema, uischema }` — for the create editor (doc 228). */
+  async getServiceDefinition(templateId?: string): Promise<{
     schema: Record<string, unknown>;
     uischema: Record<string, unknown>;
   }> {
-    const template = await this.templates.resolve(DOCUMENT_TYPE.service);
+    const template = await this.templates.forCreate(DOCUMENT_TYPE.service, templateId);
     return { schema: template.schema, uischema: template.uischema };
   }
 
@@ -208,7 +208,7 @@ export class ServicesService {
    * A service + its versions + the template(s) to render.
    *
    * Feature 174 (carried forward): the template is resolved **per version** via
-   * `document_versions.template_version_id`, NOT via `templates.resolve()` (the currently-published
+   * `document_versions.template_version_id`, NOT via `templates.forCreate()` (the currently-published
    * template version). A service authored before a template reshape stays pinned to the old
    * version and must keep rendering against the template it was authored under.
    */

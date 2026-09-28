@@ -12,6 +12,7 @@ import { Spinner } from '@repo/ui/spinner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
+import { TemplateSelect } from '@/components/common/template-select';
 import { createService } from '@/lib/services';
 import { workspaceBySlugQueryOptions } from '@/lib/workspaces';
 
@@ -38,6 +39,7 @@ export function NewServiceModal({
   const { data: workspace } = useQuery(workspaceBySlugQueryOptions(slug));
   const workspaceId = workspace?.id ?? '';
   const [title, setTitle] = useState('');
+  const [templateId, setTemplateId] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -50,7 +52,10 @@ export function NewServiceModal({
       if (workspaceId === '') {
         throw new Error('No active workspace');
       }
-      return createService({ workspaceId, title: trimmed });
+      if (templateId === undefined) {
+        throw new Error('Choose a template');
+      }
+      return createService({ workspaceId, title: trimmed, templateId });
     },
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -66,6 +71,7 @@ export function NewServiceModal({
   /** Close and reset the form so a re-open starts clean (the modal stays mounted between opens). */
   const close = () => {
     setTitle('');
+    setTemplateId(undefined);
     create.reset();
     onOpenChange(false);
   };
@@ -100,6 +106,12 @@ export function NewServiceModal({
               onChange={(event) => setTitle(event.target.value)}
             />
           </Field>
+          <TemplateSelect
+            id="new-service-template"
+            type="services.service"
+            value={templateId}
+            onChange={setTemplateId}
+          />
           {create.error ? (
             <p role="alert" className="text-sm text-destructive">
               {create.error.message}
@@ -109,7 +121,10 @@ export function NewServiceModal({
             <Button type="button" variant="outline" onClick={close}>
               Cancel
             </Button>
-            <Button type="submit" disabled={create.isPending || workspaceId === ''}>
+            <Button
+              type="submit"
+              disabled={create.isPending || workspaceId === '' || templateId === undefined}
+            >
               {create.isPending ? <Spinner className="size-4" /> : null}
               Create service
             </Button>

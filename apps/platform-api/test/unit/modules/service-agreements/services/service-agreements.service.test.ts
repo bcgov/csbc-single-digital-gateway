@@ -105,11 +105,13 @@ describe('ServiceAgreementsService', () => {
     };
 
     templatesMock = {
-      resolve: vi.fn().mockResolvedValue(TEMPLATE),
+      forCreate: vi.fn().mockResolvedValue(TEMPLATE),
+      // Doc 228: a new version follows the agreement's OWN template.
+      forDocument: vi.fn().mockResolvedValue(TEMPLATE),
       // Doc 222: ungoverned — these cases are about versioning, not capabilities.
       capabilitiesForVersion: vi.fn().mockResolvedValue(undefined),
       // Doc 221: the READ path resolves by the PINNED template version, so the detail test must
-      // mock what it actually calls. `resolve` stays mocked for the CREATE path.
+      // mock what it actually calls. `forCreate` stays mocked for the CREATE path.
       contentsForVersions: vi.fn().mockResolvedValue({
         [TEMPLATE.templateVersionId]: {
           schema: TEMPLATE.schema,
@@ -305,7 +307,7 @@ describe('ServiceAgreementsService', () => {
         [TEMPLATE.templateVersionId]: { schema: TEMPLATE.schema, uischema: TEMPLATE.uischema },
       });
       expect(templatesMock.contentsForVersions).toHaveBeenCalledWith([TEMPLATE.templateVersionId]);
-      expect(templatesMock.resolve).not.toHaveBeenCalled();
+      expect(templatesMock.forCreate).not.toHaveBeenCalled();
       expect(result).not.toHaveProperty('services');
       /**
        * Doc 225 rule 7: the detail now says what may be deleted, so the console never decides for

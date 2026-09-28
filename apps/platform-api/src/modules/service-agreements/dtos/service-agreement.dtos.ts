@@ -21,6 +21,8 @@ import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 export const createServiceAgreementSchema = z.object({
   workspaceId: z.uuid().optional(),
   title: z.string().trim().min(1).max(255),
+  /** Doc 228: the template to build from. Omitted = the only published one of this type. */
+  templateId: z.uuid().optional(),
 });
 export class CreateServiceAgreementDto extends createZodDto(createServiceAgreementSchema) {}
 export type CreateServiceAgreementInput = z.infer<typeof createServiceAgreementSchema>;

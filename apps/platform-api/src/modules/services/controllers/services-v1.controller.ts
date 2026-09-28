@@ -6,6 +6,7 @@ import {
   CreateServiceDto,
   DefinitionDto,
   ListServicesPageQueryDto,
+  ServiceDefinitionQueryDto,
   ServiceDetailDto,
   ServiceListDto,
   ServiceVersionDto,
@@ -42,8 +43,8 @@ export class ServicesV1Controller {
   // Declared before `:id` so the static segments win route matching.
   @Get('definition')
   @ZodSerializerDto(DefinitionDto)
-  getDefinition() {
-    return this.services.getServiceDefinition();
+  getDefinition(@Query() query: ServiceDefinitionQueryDto) {
+    return this.services.getServiceDefinition(query.templateId);
   }
 
   @Get(':id')

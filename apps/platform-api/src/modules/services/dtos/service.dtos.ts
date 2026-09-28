@@ -24,9 +24,15 @@ import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 export const createServiceSchema = z.object({
   workspaceId: z.uuid(),
   title: z.string().trim().min(1).max(255),
+  /** Doc 228: the template to build from. Omitted = the only published one of this type. */
+  templateId: z.uuid().optional(),
 });
 export class CreateServiceDto extends createZodDto(createServiceSchema) {}
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;
+
+/** Doc 228: which template the create editor shows. Omitted = the only published one. */
+export const serviceDefinitionQuerySchema = z.object({ templateId: z.uuid().optional() });
+export class ServiceDefinitionQueryDto extends createZodDto(serviceDefinitionQuerySchema) {}
 
 export const listServicesQuerySchema = z.object({ workspaceId: z.uuid() });
 export class ListServicesQueryDto extends createZodDto(listServicesQuerySchema) {}

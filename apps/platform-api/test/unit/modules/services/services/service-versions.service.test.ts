@@ -101,7 +101,7 @@ describe('ServiceVersionsService', () => {
 
     servicesServiceMock = { requireDocument: vi.fn().mockResolvedValue(SERVICE_DOC) };
     templatesMock = {
-      resolve: vi.fn().mockResolvedValue(TEMPLATE),
+      forDocument: vi.fn().mockResolvedValue(TEMPLATE),
       // Doc 222: ungoverned — these cases are about versioning, not capabilities.
       capabilitiesForVersion: vi.fn().mockResolvedValue(undefined),
     };

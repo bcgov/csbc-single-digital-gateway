@@ -133,6 +133,26 @@ export function adminTemplateQueryOptions(id: string) {
   });
 }
 
+/** Staff catalog entry: a template and its current published version (doc 228's picker). */
+export interface PublishedTemplate {
+  template: Template;
+  published: TemplateVersion;
+}
+
+/** Every template with a published version — what a new document may be built from. */
+export function publishedTemplatesQueryOptions() {
+  return queryOptions({
+    queryKey: ['templates', 'published'] as const,
+    queryFn: async () => {
+      const envelope = await ok<{ items: PublishedTemplate[] }>(
+        await fetch(`${BFF_ORIGIN}/v1/templates`, { credentials: 'include' }),
+      );
+      return envelope.items;
+    },
+    staleTime: 30_000,
+  });
+}
+
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
   return ok<T>(
     await fetch(url, {

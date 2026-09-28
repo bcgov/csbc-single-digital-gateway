@@ -53,10 +53,10 @@ describe('FormsService', () => {
     };
 
     templatesMock = {
-      resolve: vi.fn().mockResolvedValue(TEMPLATE),
+      forCreate: vi.fn().mockResolvedValue(TEMPLATE),
       // Doc 222: ungoverned — these cases are about versioning, not capabilities.
       capabilitiesForVersion: vi.fn().mockResolvedValue(undefined),
-      // Doc 221: the READ path resolves the PINNED template version; `resolve` stays for CREATE.
+      // Doc 221: the READ path resolves the PINNED template version; `forCreate` stays for CREATE.
       contentForVersion: vi.fn().mockResolvedValue({
         schema: TEMPLATE.schema,
         uischema: TEMPLATE.uischema,
@@ -110,7 +110,10 @@ describe('FormsService', () => {
 
       await service.create('user-1', input);
 
-      expect(templatesMock.resolve).toHaveBeenCalledWith('services.service-application-method');
+      expect(templatesMock.forCreate).toHaveBeenCalledWith(
+        'services.service-application-method',
+        undefined,
+      );
       expect(txMock.values).toHaveBeenNthCalledWith(1, {
         type: 'services.service-application-method',
         kind: 'document',
@@ -329,7 +332,7 @@ describe('FormsService', () => {
         expect(templatesMock.capabilitiesForVersion).toHaveBeenCalledWith(
           version.templateVersionId,
         );
-        expect(templatesMock.resolve).not.toHaveBeenCalled();
+        expect(templatesMock.forCreate).not.toHaveBeenCalled();
       });
     });
 
