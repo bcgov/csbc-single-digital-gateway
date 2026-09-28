@@ -144,9 +144,14 @@ export class ServiceAgreementsService {
 
   /**
    * Paginated, sortable, searchable agreements list (initiative `staff-list-query`). Workspace scope
-   * lists the workspace's OWN published agreements only (globals excluded — feature 150); admin scope
-   * lists global published agreements. Paging/sort/search run in SQL; the page's status is derived in
-   * one batched follow-up query (not per-row).
+   * lists the workspace's OWN agreements (globals excluded — feature 150); admin scope lists global
+   * ones. Paging/sort/search run in SQL; the page's status is derived in one batched follow-up query
+   * (not per-row).
+   *
+   * EVERY status, published or not (doc 83 B1). This is the MANAGEMENT list — the page an agreement is
+   * created from — so a draft must appear here or it is written to the database and then invisible.
+   * `list` above is the other thing: a picker of agreements to attach, where published-only is right
+   * and stays. The two were once the same query, and that is how the picker's rule reached this one.
    */
   async listPage(
     actor: Actor,
@@ -164,20 +169,13 @@ export class ServiceAgreementsService {
       }
       scope = isNull(documents.workspaceId);
     }
-    const hasPublished = sql`exists (select 1 from ${documentVersions} dv where dv.document_id = ${documents.id} and dv.status = 'published')`;
     const q = query.q?.trim();
     // Feature 217: title moved to the VERSION and became generated, so search and title-sort go
     // through a correlated subquery over the latest version.
     const latestTitle = sql<string>`(SELECT dv.title FROM ${documentVersions} dv
       WHERE dv.document_id = ${documents.id} ORDER BY dv.version_number DESC LIMIT 1)`;
     const search = q !== undefined && q !== '' ? ilike(latestTitle, `%${q}%`) : undefined;
-    const where = and(
-      eq(documents.type, TYPE),
-      eq(documents.kind, 'document'),
-      scope,
-      hasPublished,
-      search,
-    );
+    const where = and(eq(documents.type, TYPE), eq(documents.kind, 'document'), scope, search);
     // Derived status precedence for `sort: 'status'` — published(0) → draft(1) → archived(2) → none(3).
     const statusRank = sql`(CASE
       WHEN EXISTS (SELECT 1 FROM ${documentVersions} dv WHERE dv.document_id = ${documents.id} AND dv.status = 'published') THEN 0
