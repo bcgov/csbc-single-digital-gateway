@@ -19,6 +19,7 @@ import { sameStudioDocument, studioDocumentOf } from '@/lib/studio-content';
 import {
   addVersion,
   adminTemplateQueryOptions,
+  documentTypeLabel,
   editDraft,
   publishVersion,
   type TemplateVersion,
@@ -184,7 +185,7 @@ export function AdminTemplateDetail() {
           <div className="flex items-center gap-3">
             {/* The name is generated from the version content, so it can be absent. */}
             <h2 className="text-lg font-semibold">{latest?.title ?? 'Untitled'}</h2>
-            <Badge color="yellow">{data.template.type}</Badge>
+            <Badge color="yellow">{documentTypeLabel(data.template.type)}</Badge>
             {/* The selected version's status, which the old page said in words beside the editor. A
                 disabled runner already shows that it cannot be filled; this says WHY. */}
             {selected ? <Badge color="grey">{selected.status}</Badge> : null}

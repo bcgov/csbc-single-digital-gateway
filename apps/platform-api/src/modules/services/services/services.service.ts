@@ -7,6 +7,7 @@ import {
   documents,
   submissions,
   workspaceMembers,
+  DOCUMENT_TYPE,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
@@ -55,12 +56,12 @@ export class ServicesService {
    */
   async create(userId: string, input: CreateServiceInput): Promise<ServiceWithVersions> {
     await this.requireMembership(userId, input.workspaceId);
-    const template = await this.templates.resolve('service');
+    const template = await this.templates.resolve(DOCUMENT_TYPE.service);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)
         .values({
-          type: 'service',
+          type: DOCUMENT_TYPE.service,
           kind: 'document',
           workspaceId: input.workspaceId,
           templateId: template.templateId,
@@ -99,7 +100,7 @@ export class ServicesService {
     schema: Record<string, unknown>;
     uischema: Record<string, unknown>;
   }> {
-    const template = await this.templates.resolve('service');
+    const template = await this.templates.resolve(DOCUMENT_TYPE.service);
     return { schema: template.schema, uischema: template.uischema };
   }
 
@@ -127,7 +128,7 @@ export class ServicesService {
         : undefined;
     const where = and(
       eq(documents.workspaceId, query.workspaceId),
-      eq(documents.type, 'service'),
+      eq(documents.type, DOCUMENT_TYPE.service),
       eq(documents.kind, 'document'),
       search,
     );

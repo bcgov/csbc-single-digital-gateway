@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 
 import { createDatabase } from './client';
 import { resolvePgSsl } from './ssl';
-import { documentVersions, documents } from './schema';
+import { DOCUMENT_TYPE, documentVersions, documents } from './schema';
 import {
   blankApplicationMethodContent,
   blankServiceAgreementContent,
@@ -56,9 +56,17 @@ async function seed(): Promise<void> {
     await db
       .insert(documents)
       .values([
-        { id: TEMPLATE_SERVICE_ID, kind: 'template', type: 'service' },
-        { id: TEMPLATE_APPLICATION_METHOD_ID, kind: 'template', type: 'application-method' },
-        { id: TEMPLATE_SERVICE_AGREEMENT_ID, kind: 'template', type: 'service-agreement' },
+        { id: TEMPLATE_SERVICE_ID, kind: 'template', type: DOCUMENT_TYPE.service },
+        {
+          id: TEMPLATE_APPLICATION_METHOD_ID,
+          kind: 'template',
+          type: DOCUMENT_TYPE.applicationMethod,
+        },
+        {
+          id: TEMPLATE_SERVICE_AGREEMENT_ID,
+          kind: 'template',
+          type: DOCUMENT_TYPE.serviceAgreement,
+        },
       ])
       .onConflictDoNothing();
 

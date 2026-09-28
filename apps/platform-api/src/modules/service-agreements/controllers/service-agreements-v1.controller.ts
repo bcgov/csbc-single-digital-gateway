@@ -16,7 +16,7 @@ import {
 import { type Actor, ServiceAgreementsService } from '../services/service-agreements.service';
 
 /**
- * `/v1/service-agreements` — staff-facing consent documents (kind 'service-agreement').
+ * `/v1/service-agreements` — staff-facing consent documents (type 'services.service-agreement').
  * Protected-by-default (session). Workspace-vs-global authorization is role-aware and lives in
  * the service; the controller only derives the actor's admin flag from the session roles.
  */

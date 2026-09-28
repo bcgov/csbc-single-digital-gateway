@@ -1,10 +1,11 @@
+import { DOCUMENT_TYPE } from '@repo/database';
 import type { Document, DocumentVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 
 /**
- * Feature 217. A service agreement is a `documents` row with `type = 'service-agreement'` whose
+ * Feature 217. A service agreement is a `documents` row with `type = 'services.service-agreement'` whose
  * version payload is one `content` (a `@repo/forms` StudioDocument), and whose `title` /
  * `description` are GENERATED from that content. The old `data`-filled-against-a-type model is
  * gone, and with `document_references` the "services this agreement is attached to" list went too.
@@ -59,7 +60,7 @@ export const serviceAgreementSchema = z.object({
   workspaceId: z.string().nullable(),
   /** From the current version's GENERATED title — NULL when its content carries no root label. */
   title: z.string().nullable(),
-  type: z.literal('service-agreement'),
+  type: z.literal(DOCUMENT_TYPE.serviceAgreement),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -170,7 +171,7 @@ export function toAgreementDto(
   row: Document,
   current?: Pick<DocumentVersion, 'title'>,
 ): ServiceAgreementResponse {
-  if (row.type !== 'service-agreement') {
+  if (row.type !== DOCUMENT_TYPE.serviceAgreement) {
     throw new Error(`document ${row.id} is a ${row.type}, not a service agreement`);
   }
   return {

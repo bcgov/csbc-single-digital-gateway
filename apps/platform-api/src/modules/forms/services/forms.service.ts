@@ -5,6 +5,7 @@ import {
   documentVersions,
   documents,
   workspaceMembers,
+  DOCUMENT_TYPE,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq, sql } from 'drizzle-orm';
@@ -22,7 +23,7 @@ import {
 
 /**
  * Application-method documents (feature 217). A "form" is a `documents` row with
- * `type = 'application-method'`; the caller no longer picks a type id, because the three old form
+ * `type = DOCUMENT_TYPE.applicationMethod`; the caller no longer picks a type id, because the three old form
  * kinds collapsed into one type whose flavour lives in `content.uischema`'s root element.
  */
 @Injectable()
@@ -35,7 +36,7 @@ export class FormsService {
   /** Standalone create: the document + its draft v1 content, in ONE transaction. */
   async create(userId: string, input: CreateFormInput): Promise<FormWithVersion> {
     await this.requireMembership(userId, input.workspaceId);
-    const template = await this.templates.resolve('application-method');
+    const template = await this.templates.resolve(DOCUMENT_TYPE.applicationMethod);
     // An explicit content still has to satisfy the type's allowed roots; an omitted one starts
     // from the template with the requested title stamped into the label the title column reads.
     const content = input.content ?? {
@@ -46,7 +47,7 @@ export class FormsService {
       const insertedDoc = await tx
         .insert(documents)
         .values({
-          type: 'application-method',
+          type: DOCUMENT_TYPE.applicationMethod,
           kind: 'document',
           workspaceId: input.workspaceId,
           templateId: template.templateId,
@@ -169,7 +170,7 @@ export class FormsService {
           eq(workspaceMembers.userId, userId),
         ),
       )
-      .where(and(eq(documents.id, id), eq(documents.type, 'application-method')))
+      .where(and(eq(documents.id, id), eq(documents.type, DOCUMENT_TYPE.applicationMethod)))
       .limit(1);
     const row = rows[0];
     if (row === undefined) {

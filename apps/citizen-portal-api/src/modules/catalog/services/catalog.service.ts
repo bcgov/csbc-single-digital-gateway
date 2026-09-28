@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { type Database, documentVersions, documents } from '@repo/database';
+import { type Database, documentVersions, documents, DOCUMENT_TYPE } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type {
@@ -12,7 +12,7 @@ import { contentSchemas } from '../util/format';
 
 /**
  * Read-only, workspace-free view of the service catalog for citizens (feature 60). Services are
- * `documents` with `type = 'service'`; a service is browsable once it has a published version.
+ * `documents` with `type = 'services.service'`; a service is browsable once it has a published version.
  * Nothing here leaks the workspace a service lives in.
  *
  * Feature 217: a service is an AUTHORED document. Title and description are GENERATED columns on
@@ -36,7 +36,7 @@ export class CatalogService {
    * surfaces the generated title/description.
    */
   async listServices(query: ListServicesQuery): Promise<CatalogServiceDto[]> {
-    const filters = [eq(documents.type, 'service'), eq(documents.kind, 'document')];
+    const filters = [eq(documents.type, DOCUMENT_TYPE.service), eq(documents.kind, 'document')];
     if (query.q !== undefined && query.q.length > 0) {
       const match = this.searchFilter(query.q);
       if (match !== undefined) {
@@ -94,7 +94,11 @@ export class CatalogService {
         ),
       )
       .where(
-        and(eq(documents.id, id), eq(documents.type, 'service'), eq(documents.kind, 'document')),
+        and(
+          eq(documents.id, id),
+          eq(documents.type, DOCUMENT_TYPE.service),
+          eq(documents.kind, 'document'),
+        ),
       )
       .limit(1);
     const row = rows[0];
@@ -134,7 +138,7 @@ export class CatalogService {
         and(
           eq(documentVersions.id, versionId),
           eq(documentVersions.documentId, serviceId),
-          eq(documents.type, 'service'),
+          eq(documents.type, DOCUMENT_TYPE.service),
           eq(documents.kind, 'document'),
           inArray(documentVersions.status, ['published', 'archived']),
         ),

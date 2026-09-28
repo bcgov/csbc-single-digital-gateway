@@ -35,7 +35,7 @@ interface Entry {
   template: {
     id: string;
     workspaceId: null;
-    type: 'service' | 'application-method' | 'service-agreement';
+    type: 'services.service' | 'services.service-application-method' | 'services.service-agreement';
     createdAt: string;
     updatedAt: string;
   };
@@ -85,7 +85,7 @@ describe('AdminTemplatesList', () => {
         template: {
           id: 'dt-published',
           workspaceId: null,
-          type: 'application-method',
+          type: 'services.service-application-method',
           createdAt: ISO,
           updatedAt: ISO,
         },
@@ -122,7 +122,7 @@ describe('AdminTemplatesList', () => {
         template: {
           id: 'dt-draft',
           workspaceId: null,
-          type: 'service',
+          type: 'services.service',
           createdAt: ISO,
           updatedAt: ISO,
         },
@@ -146,7 +146,7 @@ describe('AdminTemplatesList', () => {
         template: {
           id: 'dt-archived',
           workspaceId: null,
-          type: 'service-agreement',
+          type: 'services.service-agreement',
           createdAt: ISO,
           updatedAt: ISO,
         },
@@ -188,9 +188,9 @@ describe('AdminTemplatesList', () => {
     expect(linkArchived).toHaveAttribute('href', '/admin/templates/dt-archived');
 
     // 2. Verify type badges
-    expect(screen.getByText('application-method')).toBeInTheDocument();
-    expect(screen.getByText('service')).toBeInTheDocument();
-    expect(screen.getByText('service-agreement')).toBeInTheDocument();
+    expect(screen.getByText('Application method')).toBeInTheDocument();
+    expect(screen.getByText('Service')).toBeInTheDocument();
+    expect(screen.getByText('Service agreement')).toBeInTheDocument();
 
     // 3. Verify status mapping (statusSummary function)
     expect(screen.getByText('Published v2')).toBeInTheDocument();

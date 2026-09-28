@@ -15,7 +15,7 @@ import { validateContent } from '../../../src/modules/templates/services/validat
 // Validation is deliberate rather than passthrough: feature 222 enforces against this map
 // server-side, so a malformed one is a governance hole, not untidy data.
 
-const document = { type: 'application-method' } as Document;
+const document = { type: 'services.service-application-method' } as Document;
 
 const content = (capabilities?: unknown) => ({
   schema: { type: 'object', properties: {} },

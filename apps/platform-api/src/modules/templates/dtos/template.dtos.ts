@@ -1,4 +1,4 @@
-import type { Document, DocumentVersion } from '@repo/database';
+import { DOCUMENT_TYPE, type Document, type DocumentVersion, documentType } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
@@ -8,7 +8,8 @@ import { z } from 'zod';
  * template version is an ordinary `document_versions` row and its `definition` is now `content`.
  */
 
-export const documentTypeSchema = z.enum(['service', 'application-method', 'service-agreement']);
+/** Built from the DB enum (doc 226) — the ONE list of type values, never restated here. */
+export const documentTypeSchema = z.enum(documentType.enumValues);
 export type DocumentTypeValue = z.infer<typeof documentTypeSchema>;
 
 /** A JSON Schema object (basic top-level shape; extra keys preserved). */
@@ -66,9 +67,9 @@ export type StudioDocumentInput = z.infer<typeof studioDocumentSchema>;
  * This is the one place the API knows about element types — everything below it is opaque JSON.
  */
 const ROOTS_BY_TYPE: Record<DocumentTypeValue, readonly string[]> = {
-  service: ['Service'],
-  'application-method': ['Form', 'Flow'],
-  'service-agreement': ['Form'],
+  [DOCUMENT_TYPE.service]: ['Service'],
+  [DOCUMENT_TYPE.applicationMethod]: ['Form', 'Flow'],
+  [DOCUMENT_TYPE.serviceAgreement]: ['Form'],
 };
 
 /** The allowed `uischema.type` values for a document type. */

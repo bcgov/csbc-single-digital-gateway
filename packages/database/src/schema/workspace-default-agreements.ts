@@ -12,7 +12,7 @@ import { workspaces } from './workspaces';
  * Immutable: no `updated_at` — a default is added or removed, never edited.
  *
  * Integrity (feature 217 re-pointed this at the new enum columns): the target must be a
- * `service-agreement` DOCUMENT — not a template — which the three-column composite FK enforces
+ * `services.service-agreement` DOCUMENT — not a template — which the three-column composite FK enforces
  * against `documents_id_type_kind_key`, and it must be GLOBAL or in the owning workspace (composite
  * workspace FK — MATCH SIMPLE skips it when the agreement is global — plus a
  * same-workspace-or-global CHECK).
@@ -31,7 +31,7 @@ export const workspaceDefaultAgreements = pgTable(
     // drift, so a CHECK would add nothing. Absent from $inferInsert — never set them.
     agreementType: documentType('agreement_type')
       .notNull()
-      .generatedAlwaysAs(sql`'service-agreement'::document_type`),
+      .generatedAlwaysAs(sql`'services.service-agreement'::document_type`),
     agreementKind: documentKind('agreement_kind')
       .notNull()
       .generatedAlwaysAs(sql`'document'::document_kind`),

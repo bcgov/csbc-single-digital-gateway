@@ -51,7 +51,7 @@ const detailResponse = {
     id: 'g1',
     workspaceId: null,
     title: 'Global Privacy Policy',
-    type: 'service-agreement',
+    type: 'services.service-agreement',
     createdAt: ISO,
   },
   // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
@@ -106,7 +106,7 @@ function setupMocks() {
           id: 'g2',
           workspaceId: null,
           title: body.title || 'Untitled',
-          type: 'service-agreement',
+          type: 'services.service-agreement',
           createdAt: ISO,
         };
         const newVersion = {

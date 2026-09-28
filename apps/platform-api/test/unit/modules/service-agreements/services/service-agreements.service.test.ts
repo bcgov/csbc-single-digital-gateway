@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceAgreementsService } from '../../../../../src/modules/service-agreements/services/service-agreements.service';
 
 /**
- * Feature 217. An agreement is a `documents` row with `type = 'service-agreement'`: create takes a
+ * Feature 217. An agreement is a `documents` row with `type = 'services.service-agreement'`: create takes a
  * TITLE (stamped into the content's root label, which the GENERATED title column reads) rather
  * than a `data` blob; a draft save writes one `content`; publish validates the content's SHAPE
  * rather than filled values against a JSON schema; and the "attached services" list and the
@@ -41,7 +41,7 @@ const CONTENT = {
 const agreementDoc = (over: Record<string, unknown> = {}) => ({
   id: 'agreement-1',
   workspaceId: null,
-  type: 'service-agreement',
+  type: 'services.service-agreement',
   kind: 'document',
   templateId: TEMPLATE.templateId,
   templateKind: 'template',
@@ -150,7 +150,7 @@ describe('ServiceAgreementsService', () => {
       expect(txMock.insert).toHaveBeenNthCalledWith(1, documents);
       expect(txMock.insert).toHaveBeenNthCalledWith(2, documentVersions);
       expect(txMock.values.mock.calls[0][0]).toEqual({
-        type: 'service-agreement',
+        type: 'services.service-agreement',
         kind: 'document',
         workspaceId: mockWorkspaceId,
         templateId: TEMPLATE.templateId,

@@ -66,7 +66,7 @@ describe('the DTOs carry the pinned template through', () => {
         id: UUID,
         workspaceId: null,
         title: 'Terms',
-        type: 'service-agreement',
+        type: 'services.service-agreement',
         createdAt: '2026-07-28T12:00:00.000Z',
         updatedAt: '2026-07-28T12:00:00.000Z',
       },
@@ -106,7 +106,7 @@ describe('the DTOs carry the pinned template through', () => {
         id: UUID,
         workspaceId: UUID,
         title: 'A form',
-        type: 'application-method',
+        type: 'services.service-application-method',
         createdAt: '2026-07-28T12:00:00.000Z',
       },
       version: {
@@ -131,7 +131,7 @@ describe('the DTOs carry the pinned template through', () => {
         id: UUID,
         workspaceId: UUID,
         title: 'A form',
-        type: 'application-method',
+        type: 'services.service-application-method',
         createdAt: '2026-07-28T12:00:00.000Z',
       },
       version: {

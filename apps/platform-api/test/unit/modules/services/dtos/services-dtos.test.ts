@@ -177,7 +177,7 @@ describe('service DTO schemas (feature 217)', () => {
       templateId: null,
       workspaceId: VALID_UUID,
       kind: 'document' as const,
-      type: 'service' as const,
+      type: 'services.service' as const,
       templateKind: 'template' as const,
       createdAt: now,
       updatedAt: now,

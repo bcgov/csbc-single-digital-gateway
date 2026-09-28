@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 
 /**
- * Feature 217. A service is a `documents` row with `type = 'service'`, `kind = 'document'`, whose
+ * Feature 217. A service is a `documents` row with `type = 'services.service'`, `kind = 'document'`, whose
  * version payload is one `content` (a `@repo/forms` StudioDocument). The old split — a seeded
  * Service *type* carrying the template, and `data` carrying values filled against it — is gone: a
  * service is AUTHORED, the way a form is, and its `title` / `description` are GENERATED from

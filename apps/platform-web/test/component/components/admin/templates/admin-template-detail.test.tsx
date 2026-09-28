@@ -43,7 +43,7 @@ interface Entry {
   template: {
     id: string;
     workspaceId: null;
-    type: 'application-method';
+    type: 'services.service-application-method';
     createdAt: string;
     updatedAt: string;
   };
@@ -151,7 +151,7 @@ const publishedEntry: Entry = {
   template: {
     id: 'dt-1',
     workspaceId: null,
-    type: 'application-method',
+    type: 'services.service-application-method',
     createdAt: ISO,
     updatedAt: ISO,
   },
@@ -177,7 +177,7 @@ const draftLatestEntry: Entry = {
   template: {
     id: 'dt-1',
     workspaceId: null,
-    type: 'application-method',
+    type: 'services.service-application-method',
     createdAt: ISO,
     updatedAt: ISO,
   },
@@ -219,7 +219,7 @@ describe('AdminTemplateDetail (doc 218)', () => {
     expect(
       await screen.findByRole('heading', { name: 'Basic Form' }, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('application-method')).toBeInTheDocument();
+    expect(screen.getByText('Application method')).toBeInTheDocument();
     expect(screen.getByText('published')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /version v1/i })).toBeInTheDocument();
 

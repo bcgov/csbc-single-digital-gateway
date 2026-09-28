@@ -87,12 +87,12 @@ describe('form DTO schemas (feature 217)', () => {
         id: VALID_UUID,
         workspaceId: VALID_UUID,
         title: null,
-        type: 'application-method',
+        type: 'services.service-application-method',
         createdAt: '2026-07-28T12:00:00.000Z',
       };
 
       expect(formSchema.parse(form)).toEqual(form);
-      expect(formSchema.safeParse({ ...form, type: 'service' }).success).toBe(false);
+      expect(formSchema.safeParse({ ...form, type: 'services.service' }).success).toBe(false);
     });
 
     it('carries content, revision and the generated title/description on a version', () => {
@@ -115,7 +115,7 @@ describe('form DTO schemas (feature 217)', () => {
             id: VALID_UUID,
             workspaceId: VALID_UUID,
             title: 'Apply online',
-            type: 'application-method',
+            type: 'services.service-application-method',
             createdAt: '2026-07-28T12:00:00.000Z',
           },
           version,
@@ -131,7 +131,7 @@ describe('form DTO schemas (feature 217)', () => {
       templateId: null,
       workspaceId: VALID_UUID,
       kind: 'document' as const,
-      type: 'application-method' as const,
+      type: 'services.service-application-method' as const,
       templateKind: 'template' as const,
       createdAt: now,
       updatedAt: now,
@@ -147,7 +147,9 @@ describe('form DTO schemas (feature 217)', () => {
     });
 
     it('refuses a document of the wrong type rather than mislabelling it', () => {
-      expect(() => toFormDto({ ...doc, type: 'service' })).toThrow(/not an application method/);
+      expect(() => toFormDto({ ...doc, type: 'services.service' })).toThrow(
+        /not an application method/,
+      );
     });
 
     it('maps a version row, serialising dates and passing content through', () => {

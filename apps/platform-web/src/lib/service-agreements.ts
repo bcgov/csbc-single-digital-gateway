@@ -15,7 +15,7 @@ export interface ServiceAgreement {
   workspaceId: string | null;
   /** From the current version's GENERATED title — null when its content carries no root label. */
   title: string | null;
-  type: 'service-agreement';
+  type: 'services.service-agreement';
   createdAt: string;
   updatedAt: string;
 }

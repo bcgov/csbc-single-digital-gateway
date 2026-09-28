@@ -77,7 +77,7 @@ const detailResponse = {
     id: 'a1',
     workspaceId: 'w1',
     title: 'Workspace TOS',
-    type: 'service-agreement',
+    type: 'services.service-agreement',
     createdAt: ISO,
   },
   // Doc 225 rule 7: the API always says what may be deleted.

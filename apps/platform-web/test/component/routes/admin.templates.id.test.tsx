@@ -46,7 +46,7 @@ const adminUser = { ...authedUser, roles: ['admin'] };
 const mockTemplate = {
   template: {
     id: 'dt-1',
-    type: 'application-method',
+    type: 'services.service-application-method',
   },
   versions: [
     {
@@ -135,7 +135,7 @@ describe('Admin Template ID Route Integration Test Suite', () => {
     expect(
       await screen.findByRole('heading', { name: 'Passport Application Form' }, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('application-method')).toBeInTheDocument();
+    expect(screen.getByText('Application method')).toBeInTheDocument();
 
     // Latest (v2) is selected; the dropdown lists both versions with their statuses.
     await user.click(screen.getByRole('button', { name: /version v2/i }));

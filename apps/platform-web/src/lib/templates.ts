@@ -9,7 +9,27 @@
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
 
-export type DocumentType = 'service' | 'application-method' | 'service-agreement';
+/**
+ * Mirrors `@repo/database`'s `DOCUMENT_TYPES` (doc 226). platform-web never imports the database
+ * package, so this union is restated; the API's `documentTypeSchema` is the authority.
+ */
+export type DocumentType =
+  | 'services.service'
+  | 'services.service-application-method'
+  | 'services.service-agreement';
+
+const DOCUMENT_TYPE_LABELS: Readonly<Record<DocumentType, string>> = Object.freeze({
+  'services.service': 'Service',
+  'services.service-application-method': 'Application method',
+  'services.service-agreement': 'Service agreement',
+});
+
+/** What the console shows for a type — never the raw value. An unknown value shows as itself. */
+export function documentTypeLabel(type: string): string {
+  return Object.hasOwn(DOCUMENT_TYPE_LABELS, type)
+    ? DOCUMENT_TYPE_LABELS[type as DocumentType]
+    : type;
+}
 export type VersionStatus = 'draft' | 'published' | 'archived';
 
 export interface Template {

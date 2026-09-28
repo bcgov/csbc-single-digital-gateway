@@ -2,7 +2,11 @@ import { Badge } from '@repo/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { adminTemplatesQueryOptions, type TemplateWithVersions } from '@/lib/templates';
+import {
+  adminTemplatesQueryOptions,
+  documentTypeLabel,
+  type TemplateWithVersions,
+} from '@/lib/templates';
 
 function statusSummary(entry: TemplateWithVersions): string {
   const published = entry.versions.find((version) => version.status === 'published');
@@ -59,7 +63,7 @@ export function AdminTemplatesList() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge color="yellow">{entry.template.type}</Badge>
+                    <Badge color="yellow">{documentTypeLabel(entry.template.type)}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{statusSummary(entry)}</TableCell>
                   <TableCell className="text-muted-foreground">{entry.versions.length}</TableCell>

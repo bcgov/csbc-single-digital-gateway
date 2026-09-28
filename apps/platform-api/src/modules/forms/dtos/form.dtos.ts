@@ -1,10 +1,11 @@
+import { DOCUMENT_TYPE } from '@repo/database';
 import type { Document, DocumentVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 
 /**
- * Feature 217. A "form" is an APPLICATION METHOD document (`type = 'application-method'`) — the
+ * Feature 217. A "form" is an APPLICATION METHOD document (`type = 'services.service-application-method'`) — the
  * old `basic-form` / `multi-stage-form` / `external-application` kinds all collapsed into it.
  * Which flavour a method is now shows in its `content.uischema` root (`Form` for one page of
  * fields, `Flow` for stages), not in a column, so there is no per-kind definition union left: the
@@ -35,7 +36,7 @@ export const formSchema = z.object({
   workspaceId: z.string(),
   /** From the version's GENERATED title — NULL when its content carries no root label. */
   title: z.string().nullable(),
-  type: z.literal('application-method'),
+  type: z.literal(DOCUMENT_TYPE.applicationMethod),
   createdAt: z.string(),
 });
 export type FormResponse = z.infer<typeof formSchema>;
@@ -85,7 +86,7 @@ export function toFormDto(row: Document, version?: Pick<DocumentVersion, 'title'
     // workspace-less form document is a data invariant violation, not a valid response.
     throw new Error('form document has no workspace');
   }
-  if (row.type !== 'application-method') {
+  if (row.type !== DOCUMENT_TYPE.applicationMethod) {
     throw new Error(`document ${row.id} is a ${row.type}, not an application method`);
   }
   return {

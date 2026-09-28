@@ -14,6 +14,7 @@ import {
   workspaceDefaultAgreements,
   workspaceMembers,
   workspaces,
+  DOCUMENT_TYPE,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
@@ -35,7 +36,7 @@ import {
   toAgreementVersionDto,
 } from '../dtos/service-agreement.dtos';
 
-const TYPE = 'service-agreement' as const;
+const TYPE = DOCUMENT_TYPE.serviceAgreement;
 
 /** The caller identity + whether they hold the global `admin` role. */
 export interface Actor {

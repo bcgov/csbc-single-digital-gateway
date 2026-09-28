@@ -101,15 +101,15 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         id: VALID_UUID,
         workspaceId: null,
         title: null,
-        type: 'service-agreement',
+        type: 'services.service-agreement',
         createdAt: '2026-07-28T12:00:00.000Z',
         updatedAt: '2026-07-28T12:00:00.000Z',
       };
 
       expect(serviceAgreementSchema.parse(agreement)).toEqual(agreement);
-      expect(serviceAgreementSchema.safeParse({ ...agreement, type: 'service' }).success).toBe(
-        false,
-      );
+      expect(
+        serviceAgreementSchema.safeParse({ ...agreement, type: 'services.service' }).success,
+      ).toBe(false);
     });
 
     it('carries content, revision and generated title/description on a version', () => {
@@ -137,7 +137,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         id: VALID_UUID,
         workspaceId: null,
         title: 'Terms',
-        type: 'service-agreement' as const,
+        type: 'services.service-agreement' as const,
         createdAt: '2026-07-28T12:00:00.000Z',
         updatedAt: '2026-07-28T12:00:00.000Z',
       };
@@ -180,7 +180,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
           id: VALID_UUID,
           workspaceId: null,
           title: 'Terms',
-          type: 'service-agreement',
+          type: 'services.service-agreement',
           createdAt: '2026-07-28T12:00:00.000Z',
           updatedAt: '2026-07-28T12:00:00.000Z',
         },
@@ -211,7 +211,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
           templateId: null,
           workspaceId: null,
           kind: 'document',
-          type: 'service-agreement',
+          type: 'services.service-agreement',
           templateKind: 'template',
           createdAt: now,
           updatedAt: now,
@@ -220,7 +220,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
       );
 
       expect(dto.title).toBe('Terms');
-      expect(dto.type).toBe('service-agreement');
+      expect(dto.type).toBe('services.service-agreement');
     });
 
     it('yields a null title when there is no current version', () => {
@@ -229,7 +229,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         templateId: null,
         workspaceId: null,
         kind: 'document',
-        type: 'service-agreement',
+        type: 'services.service-agreement',
         templateKind: 'template',
         createdAt: now,
         updatedAt: now,
@@ -245,7 +245,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
           templateId: null,
           workspaceId: null,
           kind: 'document',
-          type: 'service',
+          type: 'services.service',
           templateKind: 'template',
           createdAt: now,
           updatedAt: now,

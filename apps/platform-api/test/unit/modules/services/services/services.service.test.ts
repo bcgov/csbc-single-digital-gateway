@@ -78,7 +78,7 @@ describe('ServicesService', () => {
       const mockDoc = {
         id: 'service-doc-1',
         workspaceId: 'ws-1',
-        type: 'service',
+        type: 'services.service',
         kind: 'document',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
         updatedAt: new Date('2026-07-12T00:00:00.000Z'),
@@ -345,7 +345,7 @@ describe('ServicesService', () => {
       const mockDoc = {
         id: 'service-1',
         workspaceId: 'ws-1',
-        type: 'service',
+        type: 'services.service',
         kind: 'document',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
         updatedAt: new Date('2026-07-12T00:00:00.000Z'),
@@ -488,7 +488,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
   const doc = {
     id: 'service-1',
     workspaceId: 'ws-1',
-    type: 'service',
+    type: 'services.service',
     kind: 'document',
     createdAt: new Date('2026-07-12T00:00:00.000Z'),
     updatedAt: new Date('2026-07-12T00:00:00.000Z'),
@@ -607,6 +607,6 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
       'utf8',
     );
     const createBody = source.slice(source.indexOf('async create('), source.indexOf('async get('));
-    expect(createBody).toContain("this.templates.resolve('service')");
+    expect(createBody).toContain('this.templates.resolve(DOCUMENT_TYPE.service)');
   });
 });

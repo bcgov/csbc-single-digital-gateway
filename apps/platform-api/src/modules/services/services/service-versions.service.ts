@@ -1,5 +1,10 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { type Database, type DocumentVersion, documentVersions } from '@repo/database';
+import {
+  type Database,
+  type DocumentVersion,
+  documentVersions,
+  DOCUMENT_TYPE,
+} from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, sql } from 'drizzle-orm';
 import { TemplateResolver } from '../../templates/services/template.resolver';
@@ -121,7 +126,7 @@ export class ServiceVersionsService {
   /** Add a new draft version, copying the latest version's content. */
   async addVersion(userId: string, id: string): Promise<ServiceVersionResponse> {
     await this.services.requireDocument(userId, id);
-    const template = await this.templates.resolve('service');
+    const template = await this.templates.resolve(DOCUMENT_TYPE.service);
     return this.db.transaction(async (tx) => {
       const existing = await tx
         .select()

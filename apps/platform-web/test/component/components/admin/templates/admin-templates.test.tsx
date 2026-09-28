@@ -47,7 +47,7 @@ interface Entry {
   template: {
     id: string;
     workspaceId: null;
-    type: 'application-method';
+    type: 'services.service-application-method';
     createdAt: string;
     updatedAt: string;
   };
@@ -106,7 +106,7 @@ const basicEntry: Entry = {
   template: {
     id: 'dt-1',
     workspaceId: null,
-    type: 'application-method',
+    type: 'services.service-application-method',
     createdAt: ISO,
     updatedAt: ISO,
   },

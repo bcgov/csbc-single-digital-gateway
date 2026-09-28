@@ -99,7 +99,7 @@ erDiagram
         uuid template_id "FK (template_id,type,template_kind)->(id,type,kind)"
         uuid workspace_id FK "nullable = global"
         doc_kind kind "document|template"
-        doc_type type "service|application-method|service-agreement"
+        doc_type type "services.service|services.service-application-method|services.service-agreement"
         doc_kind template_kind "GENERATED 'template'"
     }
     document_members {
@@ -169,8 +169,9 @@ erDiagram
     workspace_default_agreements {
         uuid id PK "UK(workspace_id,agreement_document_id)"
         uuid workspace_id FK
-        uuid agreement_document_id "FK (agreement_document_id,agreement_kind)"
-        text agreement_kind "CHECK = 'service-agreement'"
+        uuid agreement_document_id "FK (agreement_document_id,agreement_type,agreement_kind)"
+        doc_type agreement_type "GENERATED = 'services.service-agreement'"
+        doc_kind agreement_kind "GENERATED = 'document'"
         uuid agreement_workspace_id "null = global"
     }
     notification_outbox {

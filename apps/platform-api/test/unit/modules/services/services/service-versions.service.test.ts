@@ -41,7 +41,7 @@ const TEMPLATE = {
 const SERVICE_DOC = {
   id: 'service-1',
   workspaceId: 'ws-1',
-  type: 'service' as const,
+  type: 'services.service' as const,
   kind: 'document' as const,
   templateId: TEMPLATE.templateId,
   templateKind: 'template' as const,

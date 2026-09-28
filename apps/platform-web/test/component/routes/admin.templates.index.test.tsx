@@ -68,18 +68,18 @@ describe('Admin Document Types Index Route Integration Test Suite', () => {
       // Feature 217: the row's NAME is the latest version's GENERATED title, and the badge is the
       // template's `type` rather than a text kind.
       {
-        template: { id: 'dt-1', type: 'application-method' },
+        template: { id: 'dt-1', type: 'services.service-application-method' },
         versions: [
           { id: 'v1', versionNumber: 1, status: 'published' as const, title: 'Document A' },
           { id: 'v2', versionNumber: 2, status: 'draft' as const, title: 'Document A' },
         ],
       },
       {
-        template: { id: 'dt-2', type: 'service' },
+        template: { id: 'dt-2', type: 'services.service' },
         versions: [{ id: 'v3', versionNumber: 1, status: 'draft' as const, title: 'Document B' }],
       },
       {
-        template: { id: 'dt-3', type: 'service-agreement' },
+        template: { id: 'dt-3', type: 'services.service-agreement' },
         versions: [
           { id: 'v4', versionNumber: 1, status: 'archived' as const, title: 'Document C' },
         ],
@@ -111,15 +111,15 @@ describe('Admin Document Types Index Route Integration Test Suite', () => {
     );
     expect(screen.getByText('Archived')).toBeInTheDocument();
 
-    expect(screen.getByText('application-method')).toBeInTheDocument();
-    expect(screen.getByText('service')).toBeInTheDocument();
-    expect(screen.getByText('service-agreement')).toBeInTheDocument();
+    expect(screen.getByText('Application method')).toBeInTheDocument();
+    expect(screen.getByText('Service')).toBeInTheDocument();
+    expect(screen.getByText('Service agreement')).toBeInTheDocument();
   });
 
   it('renders Archived status and 0 version count when versions list is empty', async () => {
     const mockData = [
       {
-        template: { id: 'dt-4', type: 'application-method' },
+        template: { id: 'dt-4', type: 'services.service-application-method' },
         versions: [],
       },
     ];

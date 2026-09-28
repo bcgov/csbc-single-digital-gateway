@@ -69,7 +69,7 @@ describe('FormsService', () => {
   const doc = {
     id: 'doc-1',
     workspaceId: 'ws-1',
-    type: 'application-method',
+    type: 'services.service-application-method',
     kind: 'document',
     createdAt: new Date('2026-07-28T12:00:00.000Z'),
     updatedAt: new Date('2026-07-28T12:00:00.000Z'),
@@ -110,9 +110,9 @@ describe('FormsService', () => {
 
       await service.create('user-1', input);
 
-      expect(templatesMock.resolve).toHaveBeenCalledWith('application-method');
+      expect(templatesMock.resolve).toHaveBeenCalledWith('services.service-application-method');
       expect(txMock.values).toHaveBeenNthCalledWith(1, {
-        type: 'application-method',
+        type: 'services.service-application-method',
         kind: 'document',
         workspaceId: 'ws-1',
         templateId: TEMPLATE.templateId,

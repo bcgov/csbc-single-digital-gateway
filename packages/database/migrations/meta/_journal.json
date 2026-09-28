@@ -162,6 +162,13 @@
       "when": 1790211761276,
       "tag": "0022_documents_rewrite",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790629733769,
+      "tag": "0023_document_type_namespacing",
+      "breakpoints": true
     }
   ]
 }

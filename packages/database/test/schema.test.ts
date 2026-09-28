@@ -76,9 +76,9 @@ describe('schema — documents (feature 217: generic type + kind)', () => {
     expect(byName.get('kind')?.getSQLType()).toBe('document_kind');
     expect(byName.get('kind')?.hasDefault).toBe(true);
     expect(schema.documentType.enumValues).toEqual([
-      'service',
-      'application-method',
-      'service-agreement',
+      'services.service',
+      'services.service-application-method',
+      'services.service-agreement',
     ]);
     expect(schema.documentKind.enumValues).toEqual(['document', 'template']);
   });

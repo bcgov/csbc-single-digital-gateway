@@ -11,12 +11,13 @@ import {
   documents,
   workspaceDefaultAgreements,
   workspaceMembers,
+  DOCUMENT_TYPE,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, eq } from 'drizzle-orm';
 import type { DefaultAgreementResponse } from '../dtos/default-agreement.dtos';
 
-const AGREEMENT_TYPE = 'service-agreement' as const;
+const AGREEMENT_TYPE = DOCUMENT_TYPE.serviceAgreement;
 
 /**
  * Whether an agreement is optional for the citizen. Feature 217: this used to be

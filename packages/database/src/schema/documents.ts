@@ -16,7 +16,7 @@ import { workspaceMembers, workspaces } from './workspaces';
 
 /**
  * What a document IS. Feature 217 collapsed the old five text `kind`s: `basic-form`,
- * `multi-stage-form` and `external-application` are all `application-method` now — whether a
+ * `multi-stage-form` and `external-application` are all `services.service-application-method` now — whether a
  * method is one form, a staged flow or an external link is a property of its `content` root
  * element (`Form` / `Flow`), not of the row.
  *
@@ -25,11 +25,25 @@ import { workspaceMembers, workspaces } from './workspaces';
  * `CREATE TYPE` in the same transaction is fine — that is how migration 0022 creates these.
  */
 export const documentType = pgEnum('document_type', [
-  'service',
-  'application-method',
-  'service-agreement',
+  'services.service',
+  'services.service-application-method',
+  'services.service-agreement',
 ]);
 export type DocumentType = (typeof documentType.enumValues)[number];
+
+/**
+ * The type values by name (feature 226) — every workspace spells a type through these, never as a
+ * literal. Values are namespaced by domain (`services.*`) so a later domain can add its own types
+ * without colliding. Migration 0023 RENAMEd the old unprefixed values in place.
+ */
+export const DOCUMENT_TYPE = Object.freeze({
+  service: 'services.service',
+  applicationMethod: 'services.service-application-method',
+  serviceAgreement: 'services.service-agreement',
+} as const satisfies Record<string, DocumentType>);
+
+/** Every document type, in enum order. */
+export const DOCUMENT_TYPES: readonly DocumentType[] = Object.freeze([...documentType.enumValues]);
 
 /** Whether a document is an authored instance or the shape other documents follow. */
 export const documentKind = pgEnum('document_kind', ['document', 'template']);
