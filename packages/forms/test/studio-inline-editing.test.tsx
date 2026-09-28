@@ -1,5 +1,5 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { CapabilityMap } from '../src/capabilities/index';
 import { CapabilityProvider } from '../src/renderers/studio/studio-capabilities';
@@ -402,3 +402,68 @@ describe('the affordance is the cursor (doc 223 rule 12)', () => {
     expect(input()?.className).not.toContain('ring');
   });
 });
+
+describe('inline Rich content and the inspector follow each other (doc 223 bug 14)', () => {
+  // Reported by the author: typing in the block on the canvas left the inspector's Content field
+  // showing the old text, and typing in the inspector left the canvas showing the old text — for as
+  // long as the block stayed selected, which (rule 9) is exactly while its inline editor is open.
+
+  const withRichContent = {
+    type: 'Form',
+    id: 'root1',
+    label: 'Original title',
+    elements: [{ type: 'RichContent', id: 'rc1', content: richText('Some guidance') }],
+  } as unknown as UISchemaElement;
+
+  const CONTENT = '[data-slot="rich-text-content"]';
+  const inlineContent = () =>
+    document.querySelector<HTMLElement>(`[data-slot="inline-rich-text-input"] ${CONTENT}`);
+  const inspectorContent = () =>
+    document.querySelector<HTMLElement>(`[data-studio-inspector] ${CONTENT}`);
+
+  /**
+   * An edit as Lexical sees one. jsdom cannot type into a `contenteditable`, but a new editor state
+   * set on the surface's own editor runs the same update and change listeners typing does.
+   */
+  const edit = (surface: HTMLElement | null, text: string) => {
+    const editor = (surface as unknown as { __lexicalEditor?: LexicalLike } | null)
+      ?.__lexicalEditor;
+    if (!editor) throw new Error('no Lexical editor on that surface');
+    act(() => editor.setEditorState(editor.parseEditorState(JSON.stringify(richText(text)))));
+  };
+
+  async function selectBlock() {
+    render(<FormStudio schema={schema} uischema={withRichContent} />);
+    fireEvent.pointerDown(
+      document.querySelector('[data-element-type="RichContent"]') as HTMLElement,
+    );
+    await waitFor(() => expect(inlineContent()).not.toBeNull());
+    await waitFor(() => expect(inspectorContent()).toHaveTextContent('Some guidance'));
+  }
+
+  it('shows an inline edit in the inspector while the block is still being edited', async () => {
+    await selectBlock();
+
+    edit(inlineContent(), 'Typed on the canvas');
+
+    await waitFor(() => expect(inspectorContent()).toHaveTextContent('Typed on the canvas'));
+    // Still the same live editor — the sync did not close it to get there.
+    expect(inlineContent()).toHaveTextContent('Typed on the canvas');
+  }, 15000);
+
+  it('shows an inspector edit in the open inline editor', async () => {
+    await selectBlock();
+    // The author is typing IN the inspector, so focus is there — and the canvas editor, which focused
+    // itself on selection (bug 10), no longer holds it. A focused editor is never overwritten.
+    act(() => inspectorContent()?.focus());
+
+    edit(inspectorContent(), 'Typed in the inspector');
+
+    await waitFor(() => expect(inlineContent()).toHaveTextContent('Typed in the inspector'));
+  }, 15000);
+});
+
+interface LexicalLike {
+  parseEditorState: (json: string) => unknown;
+  setEditorState: (state: unknown) => void;
+}

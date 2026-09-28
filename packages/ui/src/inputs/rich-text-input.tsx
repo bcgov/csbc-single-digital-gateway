@@ -9,7 +9,6 @@ import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import {
   $getSelection,
@@ -29,10 +28,11 @@ import {
   mdiFormatUnderline,
 } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
+import { Fragment, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { Button } from '@ui/components/ui/button';
 import { cn } from '@ui/lib/utils';
 import { richTextNodes, richTextTheme } from './rich-text/shared';
+import { ValueSyncPlugin } from './rich-text/value-sync-plugin';
 
 /**
  * The toolbar features an author may ask for, in the order the toolbar draws them (doc 207 rule 11).
@@ -282,21 +282,44 @@ function Toolbar({ features }: { features: readonly RichTextFeature[] }) {
   );
 }
 
-/** Emit `SerializedEditorState` on edits, skipping the initial (mount-time) emit. */
-function ChangePlugin({ onChange }: { onChange?: (value: SerializedEditorState) => void }) {
-  const isFirst = useRef(true);
-  return (
-    <OnChangePlugin
-      ignoreSelectionChange
-      onChange={(editorState) => {
-        if (isFirst.current) {
-          isFirst.current = false;
-          return;
-        }
-        onChange?.(editorState.toJSON());
-      }}
-    />
-  );
+/**
+ * Emit `SerializedEditorState` on edits — only when the content actually differs from what the editor
+ * last held.
+ *
+ * This used to skip "the first emit", on the assumption that Lexical always emits once at mount. When
+ * it does not (measured in jsdom, doc 223 bug 14), the first thing skipped is the author's first real
+ * edit — so an editor whose one edit was a paste or a single change reported nothing. Comparing by
+ * content drops a mount-time emit (it carries the seed) and a selection-only update alike, and never
+ * drops an edit.
+ */
+function ChangePlugin({
+  onChange,
+  syncing,
+}: {
+  onChange?: ((value: SerializedEditorState) => void) | undefined;
+  /** Raised by `ValueSyncPlugin` while it applies a value taken from the parent. */
+  syncing: RefObject<boolean>;
+}) {
+  const [editor] = useLexicalComposerContext();
+  const latest = useRef(onChange);
+  latest.current = onChange;
+
+  useEffect(() => {
+    let last = JSON.stringify(editor.getEditorState().toJSON());
+    return editor.registerUpdateListener(({ editorState }) => {
+      const next = editorState.toJSON();
+      const json = JSON.stringify(next);
+      if (json === last) return;
+      last = json;
+      // A value synced IN from the parent (`ValueSyncPlugin`) is recorded as the new baseline but never
+      // reported back OUT — echoing it is how two editors bound to one value would write to each other
+      // for ever.
+      if (syncing.current) return;
+      latest.current?.(next);
+    });
+  }, [editor, syncing]);
+
+  return null;
 }
 
 /** Keep the editor's editable state in sync with `disabled`. */
@@ -341,6 +364,8 @@ export function RichTextInput({
   };
 
   const features = toolbar ?? RICH_TEXT_FEATURES;
+  // Doc 223 bug 14: shared by the two plugins below — see `ValueSyncPlugin`.
+  const syncing = useRef(false);
 
   return (
     <div
@@ -408,7 +433,8 @@ export function RichTextInput({
         <HistoryPlugin />
         <ListPlugin />
         <LinkPlugin />
-        <ChangePlugin {...(onChange ? { onChange } : {})} />
+        <ChangePlugin onChange={onChange} syncing={syncing} />
+        <ValueSyncPlugin value={value} syncing={syncing} />
         <EditablePlugin editable={!disabled} />
       </LexicalComposer>
     </div>

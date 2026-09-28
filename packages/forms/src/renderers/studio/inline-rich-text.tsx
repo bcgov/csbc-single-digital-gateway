@@ -7,18 +7,20 @@ import type { InlineEditableProps } from '../../types/elements';
 /**
  * Doc 223: rich content edited in place on the canvas — a Form's Description, a Rich Text block.
  *
- * THE LEXICAL LOOP IS SHUT BY CONSTRUCTION, not by comparison. `apply-inspector.ts` records the bug
- * this feature had to survive: an editor that writes on every keystroke, against `RichTextView`'s
- * `SyncPlugin` re-seeding whenever `value` changes, re-renders the canvas on every pass and fights
- * its own caret.
+ * THE CANVAS AND THE INSPECTOR SHOW ONE VALUE, LIVE (bug 14). A Rich Text block's editor is open for
+ * as long as the block is selected (rule 9), which is exactly when the inspector's Content field — the
+ * same value — is on screen beside it. Committing only on blur left each showing stale text while the
+ * other was typed in. So this editor now:
  *
- * Two things prevent it, and BOTH are needed:
+ *  1. WRITES as the author types, through the same `InspectorField.write` the inspector's own field
+ *     uses (which already wrote per keystroke), so the inspector follows.
+ *  2. Is handed the DOCUMENT's value, not a captured seed, so it follows the inspector.
  *
- *  1. The draft is local and only commits on blur, so the document changes once per edit.
- *  2. The editor is seeded ONCE, from a value captured when it goes live. `RichTextInput` owns its
- *     content after mount, so handing it a `value` that changes as the author types would re-seed it
- *     mid-keystroke — the same shape as (1) but inside Lexical, where it eats the caret instead of a
- *     render.
+ * The loop `apply-inspector.ts` records (a per-keystroke writer against an editor that re-seeds on
+ * every value change, fighting its own caret) is shut inside `RichTextInput`'s value sync instead: a
+ * FOCUSED editor is never re-seeded, a value it already holds is ignored, and a synced value is never
+ * reported back as a change. The commit on blur / on leave remains as the backstop; with the value
+ * already written it changes nothing.
  *
  * `toolbar={[]}` is deliberate: a floating toolbar over the canvas would cover the element being
  * edited, and the inspector's own Description field — the same value, the same write path — already
@@ -48,9 +50,8 @@ export function InlineRichText({
   const draft = useRef<RichTextState | undefined>(current);
 
   /**
-   * The value the editor was seeded with. Captured on the render that turns it live and never
-   * updated while it stays live — see (2) above. Keyed by that same capture so a NEW edit (select
-   * away, come back) starts from whatever the document holds now.
+   * The value the editor held when it went live — what `useCommitOnLeave` compares the draft with,
+   * so leaving an untouched editor writes nothing. Captured on the render that turns it live.
    */
   const seed = useRef<RichTextState | undefined>(current);
   const wasActive = useRef(false);
@@ -169,8 +170,14 @@ export function InlineRichText({
           line tall until its content needs more. `rows={1}` writes an inline `minHeight` in `lh`,
           which is what beats the component's own `min-h-28` floor. */}
       <RichTextInput
-        value={seed.current ?? null}
-        onChange={(next) => (draft.current = next)}
+        // Bug 14: the document's value, so an inspector edit shows here. `RichTextInput` ignores it
+        // while this editor has focus, which is what keeps the author's caret safe as they type.
+        value={current ?? null}
+        onChange={(next) => {
+          draft.current = next;
+          // Bug 14: written as typed, so the inspector's field shows it without waiting for a blur.
+          commitValue(next);
+        }}
         toolbar={[]}
         bare
         rows={1}
