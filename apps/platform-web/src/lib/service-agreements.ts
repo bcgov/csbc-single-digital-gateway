@@ -65,27 +65,57 @@ export interface ServiceAgreementDetail {
    * surface MUST look up `definitions[version.templateVersionId]`, never assume one template.
    */
   definitions: Record<string, AgreementDefinition>;
+  /**
+   * Doc 225 rule 7: what may be deleted, and why not.
+   *
+   * The API decides. Deletability turns on recorded consents and on workspace defaults, neither of
+   * which the browser can see, so a console working it out from `versions` would be guessing — and
+   * would guess differently from the endpoint that refuses.
+   */
+  deletable: {
+    agreement: boolean;
+    /** Why the agreement may not go, ready to show. Absent exactly when `agreement` is true. */
+    reason?: string;
+    /** Versions deletable on their own — empty when there is only one (rule 4). */
+    versionIds: string[];
+  };
 }
 
 const BASE = `${BFF_ORIGIN}/v1/service-agreements`;
 
-async function ok<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    let message = `Request failed: ${res.status}`;
-    try {
-      const body = (await res.json()) as { message?: unknown; errors?: unknown };
-      if (typeof body.message === 'string') {
-        message = body.message;
-      }
-      if (Array.isArray(body.errors) && body.errors.length > 0) {
-        message = `${message}: ${body.errors.join('; ')}`;
-      }
-    } catch {
-      /* non-JSON error body */
+/**
+ * The server's own message for a failed response, falling back to the status.
+ *
+ * Doc 225 leans on this: a refused delete answers 409 with WHY ("someone has already consented…",
+ * "this agreement is a default for Health…"), and that sentence is the entire value of the refusal.
+ * `services.ts`'s `noContent` throws `Request failed: 409` instead, which is why this is shared here
+ * rather than copied from there.
+ */
+async function errorFrom(res: Response): Promise<Error> {
+  let message = `Request failed: ${res.status}`;
+  try {
+    const body = (await res.json()) as { message?: unknown; errors?: unknown };
+    if (typeof body.message === 'string') {
+      message = body.message;
     }
-    throw new Error(message);
+    if (Array.isArray(body.errors) && body.errors.length > 0) {
+      message = `${message}: ${body.errors.join('; ')}`;
+    }
+  } catch {
+    /* non-JSON error body */
   }
+  return new Error(message);
+}
+
+async function ok<T>(res: Response): Promise<T> {
+  if (!res.ok) throw await errorFrom(res);
   return res.json() as Promise<T>;
+}
+
+/** A 204 response: no body to parse, but a failure still carries its reason. */
+async function noContent(url: string, method: string): Promise<void> {
+  const res = await fetch(url, { method, credentials: 'include' });
+  if (!res.ok) throw await errorFrom(res);
 }
 
 async function send<T>(url: string, method: string, body?: unknown): Promise<T> {
@@ -195,6 +225,19 @@ export function publishAgreementVersion(
 // ── Workspace default agreements (feature 96/98) ────────────────────────────────────────────────
 
 /** A workspace's default service agreement, resolved to its current published version. */
+/** Doc 225: deletes the whole agreement. 409 with a reason when something is in the way. */
+export async function deleteAgreement(id: string): Promise<void> {
+  await noContent(`${BASE}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+/** Doc 225: deletes ONE version — never the last, never a consented one. */
+export async function deleteAgreementVersion(id: string, versionId: string): Promise<void> {
+  await noContent(
+    `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
+    'DELETE',
+  );
+}
+
 export interface DefaultAgreement {
   id: string;
   agreementDocumentId: string;

@@ -10,7 +10,10 @@ import {
   type DocumentVersion,
   documentVersions,
   documents,
+  serviceAgreementConsents,
+  workspaceDefaultAgreements,
   workspaceMembers,
+  workspaces,
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
@@ -19,6 +22,7 @@ import { validateContent } from '../../templates/services/validate-content';
 import { assertWithinCapabilities } from '../../templates/services/capability-guard';
 import {
   type CreateServiceAgreementInput,
+  type ServiceAgreementDeletable,
   type ListServiceAgreementsPageQuery,
   type ListServiceAgreementsQuery,
   type ServiceAgreementDetail,
@@ -250,7 +254,102 @@ export class ServiceAgreementsService {
       agreement: toAgreementDto(doc, currentVersion(versions)),
       versions: versions.map(toAgreementVersionDto),
       definitions,
+      // Doc 225 rule 7: the console renders its delete control from this, never from its own count.
+      deletable: await this.deletableFor(id, versions),
     };
+  }
+
+  /**
+   * Doc 225 rule 1: the version ids that have recorded consents.
+   *
+   * CONSENT is what "someone has used this" means for an agreement (doc 225). Nothing links an
+   * agreement to a submission — `submissions.document_id` is the FORM, and feature 217 removed
+   * `document_references` — while a consent names the exact version a citizen agreed to.
+   */
+  private async consentedVersionIds(documentId: string): Promise<Set<string>> {
+    const rows = await this.db
+      .selectDistinct({ versionId: serviceAgreementConsents.agreementVersionId })
+      .from(serviceAgreementConsents)
+      .where(eq(serviceAgreementConsents.agreementDocumentId, documentId));
+    return new Set(rows.map((row) => row.versionId));
+  }
+
+  /** Doc 225 rule 3: the workspaces that default to this agreement, by name, for the refusal. */
+  private async defaultingWorkspaces(documentId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ name: workspaces.name })
+      .from(workspaceDefaultAgreements)
+      .innerJoin(workspaces, eq(workspaceDefaultAgreements.workspaceId, workspaces.id))
+      .where(eq(workspaceDefaultAgreements.agreementDocumentId, documentId));
+    return rows.map((row) => row.name);
+  }
+
+  /**
+   * Doc 225 rule 7: what may be deleted and why not, so the console renders from the API's answer
+   * instead of deciding for itself from the versions it happens to hold.
+   */
+  private async deletableFor(
+    documentId: string,
+    versions: DocumentVersion[],
+  ): Promise<ServiceAgreementDeletable> {
+    const [consented, defaulting] = await Promise.all([
+      this.consentedVersionIds(documentId),
+      this.defaultingWorkspaces(documentId),
+    ]);
+    // Rule 4: the last version is never deleted on its own — that is deleting the agreement.
+    const versionIds =
+      versions.length > 1 ? versions.filter((v) => !consented.has(v.id)).map((v) => v.id) : [];
+    const reason = this.deletionBlockedBy(consented.size > 0, defaulting);
+    return {
+      agreement: reason === undefined,
+      versionIds,
+      ...(reason === undefined ? {} : { reason }),
+    };
+  }
+
+  /** The one wording for both guards, so the API and the console never disagree about why. */
+  private deletionBlockedBy(consented: boolean, defaulting: string[]): string | undefined {
+    if (consented)
+      return 'Someone has already consented to this agreement, so it can no longer be deleted.';
+    if (defaulting.length > 0)
+      return `This agreement is a default for ${defaulting.join(', ')}. Remove it there first.`;
+    return undefined;
+  }
+
+  /**
+   * Doc 225 rules 1-5: deletes the whole agreement, cascading its versions, their history and its
+   * members (the schema already does that).
+   *
+   * Refused HERE, with what is in the way — the FK `RESTRICT`s behind this are a backstop, and a
+   * constraint violation is a correct refusal with a useless message.
+   */
+  async remove(actor: Actor, id: string): Promise<void> {
+    await this.requireAgreementForWrite(actor, id);
+    const [consented, defaulting] = await Promise.all([
+      this.consentedVersionIds(id),
+      this.defaultingWorkspaces(id),
+    ]);
+    const reason = this.deletionBlockedBy(consented.size > 0, defaulting);
+    if (reason !== undefined) throw new ConflictException(reason);
+    await this.db.delete(documents).where(eq(documents.id, id));
+  }
+
+  /** Doc 225 rules 1, 4: deletes ONE version, never the last one and never a consented one. */
+  async removeVersion(actor: Actor, id: string, versionId: string): Promise<void> {
+    await this.requireAgreementForWrite(actor, id);
+    const versions = await this.versionsOf(id);
+    const version = versions.find((candidate) => candidate.id === versionId);
+    if (!version) throw new NotFoundException('Service agreement version not found');
+    if (versions.length <= 1)
+      throw new ConflictException(
+        'This is the only version. Delete the service agreement instead.',
+      );
+    const consented = await this.consentedVersionIds(id);
+    if (consented.has(versionId))
+      throw new ConflictException(
+        'Someone has already consented to this version, so it can no longer be deleted.',
+      );
+    await this.db.delete(documentVersions).where(eq(documentVersions.id, versionId));
   }
 
   /**

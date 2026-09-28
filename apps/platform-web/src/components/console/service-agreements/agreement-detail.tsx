@@ -17,10 +17,11 @@ import {
 import { Spinner } from '@repo/ui/spinner';
 import type { StudioDocument } from '@repo/forms';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, Pencil } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
+import { AgreementDeleteButton } from './agreement-delete-button';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { VersionContent } from '@/components/console/version-content';
 import type { CapabilityMap } from '@repo/forms';
@@ -59,6 +60,7 @@ function AgreementBody({
   const { data: user } = useAuth();
   const isAdmin = user?.roles.includes('admin') ?? false;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { versions, agreement } = detail;
   const latest = versions[versions.length - 1];
   const [selectedId, setSelectedId] = useState(latest?.id ?? '');
@@ -265,6 +267,25 @@ function AgreementBody({
               {publish.isPending ? <Spinner className="size-4" /> : null} Publish
             </Button>
           ) : null}
+          {/* Doc 225 rule 12: ONE control for both pages — this component already serves
+              `admin/service-agreements/:id` and `app/:slug/service-agreements/:id` through `scope`. */}
+          <AgreementDeleteButton
+            id={id}
+            detail={detail}
+            selected={selected}
+            onDeleted={() => {
+              void queryClient.invalidateQueries({ queryKey: ['service-agreements'] });
+              void (scope.kind === 'admin'
+                ? navigate({ to: '/admin/service-agreements' })
+                : navigate({ to: '/app/$slug/service-agreements', params: { slug: scope.slug } }));
+            }}
+            onVersionDeleted={() => {
+              // The deleted version may be the one on screen, so the picker resets to the latest.
+              setSelectedId('');
+              setLive(null);
+              void queryClient.invalidateQueries({ queryKey: ['service-agreements'] });
+            }}
+          />
         </div>
       </div>
       {/* The page owns its title heading now that the console shell no longer renders one. */}

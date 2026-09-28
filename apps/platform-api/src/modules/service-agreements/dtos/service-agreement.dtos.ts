@@ -104,6 +104,23 @@ export const agreementDefinitionSchema = z.object({
   capabilities: z.record(z.string(), z.unknown()).optional(),
 });
 
+/**
+ * Doc 225 rule 7: what may be deleted, and why not.
+ *
+ * The API is the authority and the console mirrors it. Deletability depends on consents and on
+ * workspace defaults — neither of which the browser can see — so a console computing it from the
+ * versions it holds would be guessing, and would guess differently from the endpoint that refuses.
+ */
+export const serviceAgreementDeletableSchema = z.object({
+  /** Whether the whole agreement may go. */
+  agreement: z.boolean(),
+  /** Why it may not, ready to show. Absent exactly when `agreement` is true. */
+  reason: z.string().optional(),
+  /** The versions that may be deleted on their own — empty when there is only one (rule 4). */
+  versionIds: z.array(z.string()),
+});
+export type ServiceAgreementDeletable = z.infer<typeof serviceAgreementDeletableSchema>;
+
 /** Detail: the agreement + all its versions + the template to render.
  *
  * Feature 217 dropped `services` (which services this agreement is attached to): it was derived
@@ -118,6 +135,7 @@ export const serviceAgreementDetailSchema = z.object({
    * under, not whichever one is published now.
    */
   definitions: z.record(z.string(), agreementDefinitionSchema),
+  deletable: serviceAgreementDeletableSchema,
 });
 export class ServiceAgreementDetailDto extends createZodDto(serviceAgreementDetailSchema) {}
 export type ServiceAgreementDetail = z.infer<typeof serviceAgreementDetailSchema>;

@@ -99,6 +99,8 @@ describe('ServiceAgreementsService', () => {
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
+      // Doc 225: deletion resolves rather than chaining further.
+      delete: vi.fn().mockImplementation(() => mockQuery([])),
       transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
     };
 
@@ -231,6 +233,55 @@ describe('ServiceAgreementsService', () => {
     });
   });
 
+  describe('deletion (doc 225)', () => {
+    // "Has a submission" is spelled CONSENT here: nothing links an agreement to a submission
+    // (`submissions.document_id` is the FORM, and feature 217 removed `document_references`), while a
+    // consent names the exact version a citizen agreed to.
+
+    it('deletes an agreement nobody has consented to and no workspace defaults to', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()])) // load
+        .mockImplementationOnce(() => mockQuery([])); // defaulting workspaces: none
+      dbMock.selectDistinct.mockImplementationOnce(() => mockQuery([])); // consents: none
+
+      await expect(service.remove(mockAdminActor, 'agreement-1')).resolves.toBeUndefined();
+      expect(dbMock.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses an agreement someone has consented to, and says so', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([]));
+      dbMock.selectDistinct.mockImplementationOnce(() => mockQuery([{ versionId: 'v1' }]));
+
+      await expect(service.remove(mockAdminActor, 'agreement-1')).rejects.toThrow(/consented/i);
+      expect(dbMock.delete).not.toHaveBeenCalled();
+    });
+
+    it('refuses one a workspace defaults to, NAMING the workspace to detach it from', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([{ name: 'Health' }]));
+      dbMock.selectDistinct.mockImplementationOnce(() => mockQuery([]));
+
+      // Deleting must never silently change a workspace's configuration — and the deleter may not
+      // even be able to see the workspace, so the refusal has to name it.
+      await expect(service.remove(mockAdminActor, 'agreement-1')).rejects.toThrow(/Health/);
+      expect(dbMock.delete).not.toHaveBeenCalled();
+    });
+
+    it('refuses to delete the ONLY version — that is deleting the agreement', async () => {
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() => mockQuery([agreementVersion()]));
+
+      await expect(
+        service.removeVersion(mockAdminActor, 'agreement-1', 'version-1'),
+      ).rejects.toThrow(/only version/i);
+      expect(dbMock.delete).not.toHaveBeenCalled();
+    });
+  });
+
   describe('get', () => {
     it('throws NotFoundException if a non-member reads a workspace agreement', async () => {
       dbMock.select
@@ -256,8 +307,15 @@ describe('ServiceAgreementsService', () => {
       expect(templatesMock.contentsForVersions).toHaveBeenCalledWith([TEMPLATE.templateVersionId]);
       expect(templatesMock.resolve).not.toHaveBeenCalled();
       expect(result).not.toHaveProperty('services');
-      // The attached-services lookup was the only selectDistinct in this service.
-      expect(dbMock.selectDistinct).not.toHaveBeenCalled();
+      /**
+       * Doc 225 rule 7: the detail now says what may be deleted, so the console never decides for
+       * itself. With one version and no consents, the agreement may go and no version may go alone
+       * (rule 4: the last version IS the agreement).
+       *
+       * This assertion replaces "the attached-services lookup was the only selectDistinct in this
+       * service" — feature 217 removed that lookup, and doc 225's consent check is the one now.
+       */
+      expect(result.deletable).toEqual({ agreement: true, versionIds: [] });
     });
   });
 

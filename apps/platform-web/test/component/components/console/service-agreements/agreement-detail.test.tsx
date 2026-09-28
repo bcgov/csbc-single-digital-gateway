@@ -82,6 +82,8 @@ const initialDetailResponse = {
     type: 'service-agreement',
     createdAt: ISO,
   },
+  // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+  deletable: { agreement: true, versionIds: [] },
   versions: [
     {
       id: 'v1',
@@ -306,6 +308,8 @@ describe('AgreementDetail Component Test Suite', () => {
     // Mock where version 2 is already published so we can create a new version (v3)
     const publishedResponse = {
       ...initialDetailResponse,
+      // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+      deletable: { agreement: true, versionIds: [] },
       versions: [
         initialDetailResponse.versions[0],
         { ...initialDetailResponse.versions[1], status: 'published', publishedAt: ISO },
@@ -338,6 +342,8 @@ describe('AgreementDetail Component Test Suite', () => {
     // Render with empty versions list
     setupMocks({
       ...initialDetailResponse,
+      // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+      deletable: { agreement: true, versionIds: [] },
       versions: [],
     });
 
@@ -437,6 +443,8 @@ describe('AgreementDetail Component Test Suite', () => {
         ...initialDetailResponse.agreement,
         workspaceId: null, // represents global agreement
       },
+      // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+      deletable: { agreement: true, versionIds: [] },
       versions: [
         initialDetailResponse.versions[0],
         // A version whose content carries no root label → no generated title.

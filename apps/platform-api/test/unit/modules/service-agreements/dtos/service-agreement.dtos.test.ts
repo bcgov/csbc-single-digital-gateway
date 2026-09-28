@@ -166,6 +166,9 @@ describe('service-agreement DTO schemas (feature 217)', () => {
           agreement,
           versions: [version],
           definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
+          // Doc 225 rule 7: REQUIRED, not optional — the API always answers what may be deleted, and
+          // an optional field would let a surface quietly render a delete control from its own guess.
+          deletable: { agreement: true, versionIds: [] },
         }),
       ).toBeDefined();
     });
@@ -181,6 +184,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
           createdAt: '2026-07-28T12:00:00.000Z',
           updatedAt: '2026-07-28T12:00:00.000Z',
         },
+        deletable: { agreement: true, versionIds: [] },
         versions: [],
         definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
         services: [{ id: 'srv-1', title: 'A service', workspaceSlug: 'ws' }],

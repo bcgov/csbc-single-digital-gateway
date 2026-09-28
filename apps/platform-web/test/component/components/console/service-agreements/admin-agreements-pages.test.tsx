@@ -54,6 +54,8 @@ const detailResponse = {
     type: 'service-agreement',
     createdAt: ISO,
   },
+  // Doc 225 rule 7: the API always says what may be deleted; the console renders from it.
+  deletable: { agreement: true, versionIds: [] },
   versions: [
     {
       id: 'v1',

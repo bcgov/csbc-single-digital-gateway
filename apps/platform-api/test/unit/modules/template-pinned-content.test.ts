@@ -70,6 +70,8 @@ describe('the DTOs carry the pinned template through', () => {
         createdAt: '2026-07-28T12:00:00.000Z',
         updatedAt: '2026-07-28T12:00:00.000Z',
       },
+      // Doc 225 rule 7: the detail always says what may be deleted.
+      deletable: { agreement: true, versionIds: [] },
       versions: [
         {
           id: UUID,
