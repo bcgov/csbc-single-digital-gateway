@@ -1,6 +1,7 @@
 import type { UISchemaElement } from '@jsonforms/core';
 import { useContext, useRef } from 'react';
 import { GridContext } from '../gridstack/grid-context';
+import { useDropTargetLit } from '../gridstack/grid-drag-source';
 import { GridElementDispatch, type GridElementDispatchProps } from '../gridstack/index';
 import { StudioContent } from './studio-content';
 import { StudioElementToolbar } from './studio-element-toolbar';
@@ -51,6 +52,7 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
   // element's own.
   // Doc 221: a copy lands BESIDE this element, so it is the parent that must accept a child.
   const canCopy = id === undefined ? false : (selection?.mayCopy?.(id) ?? true);
+  const lit = useDropTargetLit(element);
   useItemPermissions(rootRef, {
     canMove: capability.move,
     canResize: capability.reorderChildren,
@@ -65,7 +67,9 @@ export function StudioGridElement({ elementId }: GridElementDispatchProps) {
       data-hovered={hovered ? '' : undefined}
       data-selected={selected ? '' : undefined}
       data-locked={locked ? '' : undefined}
-      className="p-2"
+      // Doc 224 rule 3: the WHOLE element lights, not just the grid inside it — a Section's heading and
+      // padding are part of what the author is aiming at.
+      className={lit ? 'bg-blue-10 p-2' : 'p-2'}
     >
       <StudioItemContext.Provider value>
         <StudioContent type={type} selected={selected}>

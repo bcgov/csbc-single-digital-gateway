@@ -4,6 +4,7 @@ import type {
   UISchemaElement,
 } from '@jsonforms/core';
 import { useContext, useRef, type ComponentType } from 'react';
+import { useDropTargetLit } from '../gridstack/grid-drag-source';
 import { useGridEditor } from '../gridstack/grid-editor';
 import { FLOW_TYPE, isFlowNodeType } from '../xyflow/flow-elements';
 import { StudioContent } from './studio-content';
@@ -46,6 +47,8 @@ export function withStudioFrame<P extends FramedProps>(
     // Declared BEFORE the early return: a hook may not be called conditionally, and this component
     // returns early for a framed grid item.
     const capability = useCapability(props.uischema ?? EMPTY_ELEMENT);
+    // Doc 224 rule 3: the root's own box, for a drag it would take.
+    const lit = useDropTargetLit(props.uischema);
     if (insideGridItem) return <Renderer {...props} />;
 
     const type = props.uischema?.type ?? 'Element';
@@ -70,7 +73,7 @@ export function withStudioFrame<P extends FramedProps>(
         data-locked={locked ? '' : undefined}
         // Arbitrary `data-[…]` variants, not `data-selected:`: the imported shadcn stylesheet redefines
         // `data-selected` as a custom variant for `[data-selected="true"]`, which a presence flag never matches.
-        className={`${fill}rounded-sm border border-dashed border-border p-2 data-[hovered]:border-ring data-[selected]:border-ring data-[selected]:border-solid data-[locked]:cursor-not-allowed data-[locked]:border-muted-foreground/30`}
+        className={`${fill}${lit ? 'bg-blue-10 ' : ''}rounded-sm border border-dashed border-border p-2 data-[hovered]:border-ring data-[selected]:border-ring data-[selected]:border-solid data-[locked]:cursor-not-allowed data-[locked]:border-muted-foreground/30`}
       >
         <StudioContent type={type}>
           <Renderer {...disabled} />

@@ -1,6 +1,7 @@
 import { Button } from '@repo/ui/button';
 import { useEffect, useMemo, useRef, useState, type FC } from 'react';
 import { acceptsChildrenAnywhere } from '../capabilities/accepts-children';
+import { isGridLayoutType } from '../renderers/gridstack/grid-layouts';
 import { useCapabilities } from '../renderers/studio/studio-capabilities';
 import { FLOW_TYPE } from '../renderers/xyflow/flow-elements';
 import type { FormStudioProps } from '../types/index';
@@ -162,6 +163,8 @@ export const FormStudio: FC<FormStudioProps> = ({
   const {
     port,
     editor,
+    dragSource,
+    beginPaletteDrag,
     flowEditor,
     tabsEditor,
     confirmation,
@@ -201,7 +204,11 @@ export const FormStudio: FC<FormStudioProps> = ({
   // which is where it starts and where leaving preview returns it — the same reasoning as the mode above, and
   // for the stronger reason that an override left on would misreport what the form actually is.
   const [tabs, setTabs] = useState<TabsComponent | null>(null);
-  const paletteActions = useMemo(() => ({ add }), [add]);
+  const paletteActions = useMemo(
+    // Doc 224: `beginDrag` lights the containers that would take this template.
+    () => ({ add, beginDrag: beginPaletteDrag }),
+    [add, beginPaletteDrag],
+  );
   const inspector = useInspectorPanel(studio, selectedId, pressing, panels.right, selectedEdgeId);
   /**
    * Doc 209 rules 5-7, 15-16: the selected edge's panel, resolved from the CURRENT document so a re-point is
@@ -256,7 +263,7 @@ export const FormStudio: FC<FormStudioProps> = ({
   const governing = useCapabilities();
   const canvasRoot = rootOf(focusId);
   const paletteUnavailable = useMemo(
-    () => !acceptsChildrenAnywhere(canvasRoot, governing ?? undefined),
+    () => !acceptsChildrenAnywhere(canvasRoot, governing ?? undefined, isGridLayoutType),
     [canvasRoot, governing],
   );
   const noLeftPanel = onFlowCanvas || paletteUnavailable;
@@ -390,6 +397,7 @@ export const FormStudio: FC<FormStudioProps> = ({
             previewMode={previewMode}
             selection={port}
             editor={editor}
+            dragSource={dragSource}
             flowEditor={flowEditor}
             tabsEditor={tabsEditor}
             status={session.status}

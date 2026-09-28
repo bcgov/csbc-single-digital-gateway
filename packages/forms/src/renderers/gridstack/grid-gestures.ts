@@ -2,7 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import type { GridItemHTMLElement, GridStack, GridStackNode } from 'gridstack';
 import type { GridStackHandle } from 'gridstack/dist/react';
 import { useEffect, type RefObject } from 'react';
-import { dragInTemplateOf } from './grid-drag-in';
+import { dragInTemplateOf, dropSourceOf } from './grid-drag-in';
 import type { GridEditor, LayoutNode } from './grid-editor';
 
 // The uischema Grid each mounted editable GridStack renders, so a drop can name its source grid.
@@ -47,10 +47,19 @@ export function useGridGestures(
     const gridId = editor.idOf(gridElement);
     gridIds.set(grid, gridId);
 
-    const onStart = () => editor.onGestureActive?.(true);
+    /**
+     * Doc 224: a drag of an EXISTING element starts on the grid holding it, so its subject is that
+     * item. A PALETTE drag starts outside every grid and is reported by the palette itself — no grid
+     * hears anything from it until `dropover`, by which point the author has already picked a target.
+     */
+    const onStart = (_event: Event, el: GridItemHTMLElement) => {
+      editor.onGestureActive?.(true);
+      editor.onDragSource?.(dropSourceOf(el, true) ?? null);
+    };
 
     const onStop = (_event: Event, el: GridItemHTMLElement) => {
       editor.onGestureActive?.(false);
+      editor.onDragSource?.(null);
       // A gesture that ended in another grid is reported by that grid's `dropped`.
       if (el.gridstackNode?.grid !== grid) return;
       editor.onGesture({ type: 'layout', gridId, nodes: nodesOf(grid) });
@@ -67,6 +76,7 @@ export function useGridGestures(
 
     const onDropped = (_event: Event, previous: GridStackNode | undefined, next: GridStackNode) => {
       editor.onGestureActive?.(false);
+      editor.onDragSource?.(null);
       const from = previous?.grid;
       if (!from) {
         onDropIn(next);

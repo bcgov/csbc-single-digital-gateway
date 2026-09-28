@@ -47,6 +47,10 @@ function PaletteItemEntry({ item }: { readonly item: PaletteItemElement }) {
       data-slot="palette-item"
       data-palette-template={template}
       className="flex h-7 cursor-grab items-center gap-2 rounded-md px-2 outline-none select-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/30 active:cursor-grabbing"
+      // Doc 224: POINTERDOWN, not a drag event — gridstack's own drag has not started yet, and this is
+      // the first moment the template is known. A press that turns out to be a click clears it the same
+      // way an abandoned drag does, on the host's document-level pointerup.
+      onPointerDown={dragIn ? () => actions?.beginDrag?.(template) : undefined}
       onClick={() => actions?.add(template)}
       onKeyDown={onKeyDown}
     >

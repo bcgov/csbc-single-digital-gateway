@@ -56,6 +56,15 @@ export interface GridEditor {
    */
   onGestureActive?(active: boolean): void;
   /**
+   * Doc 224: WHAT is being dragged, or `null` when nothing is — so a consumer can ask `accepts` of
+   * every container and show the author where the drag may land before they try it.
+   *
+   * Separate from `onGestureActive`, which answers only "is a gesture happening": the highlight needs
+   * the subject, and widening that boolean would change every consumer that reads `gesturing`.
+   * Optional, so a consumer that does not want the highlight is unaffected.
+   */
+  onDragSource?(source: GridDropSource | null): void;
+  /**
    * Whether a grid of kind `layout` may take `source` (doc 194 rules 10-11), asked by `acceptWidgets` on top of its
    * own checks so a refused drag shows no placeholder. Optional: omitted, every candidate is accepted.
    *

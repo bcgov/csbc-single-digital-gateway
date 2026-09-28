@@ -312,7 +312,23 @@ export function useStudioDocument({
   const insertInto = useCallback(
     (template: string, target: InsertTarget): string | undefined => {
       const document = { schema: currentSchema, uischema: currentUischema };
-      const result = insertElement(document, template, target, ids, newPropertyKey);
+      /**
+       * Doc 221 B2: the governing map MUST be passed. `insertElement` has carried the capability gate
+       * since doc 221, but as an OPTIONAL last argument — and omitting it typechecks, so the gate sat
+       * there consulting `undefined` and refusing nothing.
+       *
+       * The DRAG path was gated all along (`accepts`, above, asks `mayAddTo` so a refused drag shows
+       * no placeholder), which is what hid this: dragging into a locked container was correctly
+       * refused while CLICKING a palette item with that same container selected inserted anyway.
+       */
+      const result = insertElement(
+        document,
+        template,
+        target,
+        ids,
+        newPropertyKey,
+        governingRef.current ?? undefined,
+      );
       if (!result.inserted) return undefined;
       setState((previous) => ({ ...previous, schema: result.schema, uischema: result.uischema }));
       return ids.idOf(result.inserted);

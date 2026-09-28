@@ -7,6 +7,8 @@ import { GridEditorProvider, type GridEditor } from '../renderers/gridstack/grid
 import { TabsEditorProvider, type TabsEditor } from '../renderers/gridstack/tabs-editor';
 import { type TabsComponent } from '../renderers/gridstack/tabs-options';
 import { TabsOverrideProvider } from '../renderers/gridstack/tabs-override';
+import { GridDragSourceProvider } from '../renderers/gridstack/grid-drag-source';
+import type { GridDropSource } from '../renderers/gridstack/grid-editor';
 import {
   InlineEditFocusProvider,
   useInlineEditFocusState,
@@ -62,6 +64,8 @@ export interface StudioCanvasProps {
   /** Doc 216 rules 31-32: the component preview forces, or `null` to draw every Tabs as authored. */
   readonly tabs: TabsComponent | null;
   readonly selection: StudioSelection;
+  /** Doc 224: what is being dragged, provided down so each grid can light up if it would take it. */
+  readonly dragSource: GridDropSource | null;
   readonly editor: GridEditor;
   readonly flowEditor: FlowEditor;
   /** Doc 216 rule 14: present ONLY here — a preview or a fillable form has no provider, so its strip is static. */
@@ -92,6 +96,7 @@ export function StudioCanvas({
   tabs,
   selection,
   editor,
+  dragSource,
   flowEditor,
   tabsEditor,
   status,
@@ -221,19 +226,22 @@ export function StudioCanvas({
                 surfaces live in three directories and none of them may import `renderers/studio`. */}
             {/* Doc 223 rule 7: and WHICH of a selected element's fields is live. Beside the editor
                 rather than inside it, because every inline surface on the canvas shares one claim. */}
-            <InlineEditFocusProvider value={inlineFocus}>
-              <InlineEditableProvider value={InlineValue}>
-                <JsonForms
-                  key={`studio-${rootKey}`}
-                  schema={schema}
-                  uischema={canvasRoot}
-                  data={STUDIO_SAMPLE_DATA}
-                  renderers={STUDIO_RENDERERS}
-                  cells={studioSet.cells}
-                  validationMode="NoValidation"
-                />
-              </InlineEditableProvider>
-            </InlineEditFocusProvider>
+            {/* Doc 224: what is being dragged, so each grid can ask `accepts` and light up. */}
+            <GridDragSourceProvider value={dragSource}>
+              <InlineEditFocusProvider value={inlineFocus}>
+                <InlineEditableProvider value={InlineValue}>
+                  <JsonForms
+                    key={`studio-${rootKey}`}
+                    schema={schema}
+                    uischema={canvasRoot}
+                    data={STUDIO_SAMPLE_DATA}
+                    renderers={STUDIO_RENDERERS}
+                    cells={studioSet.cells}
+                    validationMode="NoValidation"
+                  />
+                </InlineEditableProvider>
+              </InlineEditFocusProvider>
+            </GridDragSourceProvider>
           </TabsEditorProvider>
         </FlowEditorProvider>
       </GridEditorProvider>

@@ -1,5 +1,6 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { describe, expect, it } from 'vitest';
+import { isGridLayoutType } from '../src/renderers/gridstack/grid-layouts';
 import {
   acceptsChildrenAnywhere,
   capabilityFor,
@@ -390,11 +391,13 @@ describe('the palette is unavailable when nothing accepts a child', () => {
   const root = form(stack('stack1', control('a1')), stack('stack2', control('a2')));
 
   it('is available when ungoverned, for every untemplated document', () => {
-    expect(acceptsChildrenAnywhere(root, ungoverned)).toBe(true);
+    expect(acceptsChildrenAnywhere(root, ungoverned, isGridLayoutType)).toBe(true);
   });
 
   it('is unavailable when every container refuses children', () => {
-    expect(acceptsChildrenAnywhere(root, governed({ default: { '*': CLOSED } }))).toBe(false);
+    expect(
+      acceptsChildrenAnywhere(root, governed({ default: { '*': CLOSED } }), isGridLayoutType),
+    ).toBe(false);
   });
 
   it('is available when a SINGLE container deep in the tree still accepts one', () => {
@@ -404,12 +407,12 @@ describe('the palette is unavailable when nothing accepts a child', () => {
       default: { '*': CLOSED },
       elements: { stack2: { addChildren: true } },
     });
-    expect(acceptsChildrenAnywhere(root, map)).toBe(true);
+    expect(acceptsChildrenAnywhere(root, map, isGridLayoutType)).toBe(true);
   });
 
   it('is available when only the root accepts children', () => {
     const map = governed({ default: { '*': CLOSED }, elements: { root1: { addChildren: true } } });
-    expect(acceptsChildrenAnywhere(root, map)).toBe(true);
+    expect(acceptsChildrenAnywhere(root, map, isGridLayoutType)).toBe(true);
   });
 
   it('asks the CANVAS ROOT, so a locked Form hides it while a sibling keeps it', () => {
@@ -418,11 +421,19 @@ describe('the palette is unavailable when nothing accepts a child', () => {
     const locked = el({ type: 'Form', id: 'f1', elements: [control('a1')] });
     const open = el({ type: 'Form', id: 'f2', elements: [control('a2')] });
     const map = governed({ default: { '*': CLOSED }, elements: { f2: { addChildren: true } } });
-    expect(acceptsChildrenAnywhere(locked, map)).toBe(false);
-    expect(acceptsChildrenAnywhere(open, map)).toBe(true);
+    expect(acceptsChildrenAnywhere(locked, map, isGridLayoutType)).toBe(false);
+    expect(acceptsChildrenAnywhere(open, map, isGridLayoutType)).toBe(true);
+  });
+
+  it('does NOT count a leaf whose capability happens to allow children (doc 221 B1)', () => {
+    // A Control, Heading or Separator carries a capability like anything else, so asking the
+    // capability ALONE reported "something accepts children" for a document whose only unlocked
+    // element cannot hold one — a palette every drop target refuses, the futility this prevents.
+    const map = governed({ default: { '*': CLOSED }, elements: { a1: { addChildren: true } } });
+    expect(acceptsChildrenAnywhere(root, map, isGridLayoutType)).toBe(false);
   });
 
   it('is unavailable when there is no canvas root at all', () => {
-    expect(acceptsChildrenAnywhere(undefined, ungoverned)).toBe(false);
+    expect(acceptsChildrenAnywhere(undefined, ungoverned, isGridLayoutType)).toBe(false);
   });
 });

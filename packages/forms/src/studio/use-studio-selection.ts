@@ -9,7 +9,7 @@ import {
   type SetStateAction,
 } from 'react';
 import type { TreeElement } from './layout/element-tree';
-import type { GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
+import type { GridDropSource, GridEditor, GridGesture } from '../renderers/gridstack/grid-editor';
 import type { StudioItemPlacement, StudioSelection } from '../renderers/studio/studio-selection';
 import type { TabsEditor } from '../renderers/gridstack/tabs-editor';
 import type { FlowEditor } from '../renderers/xyflow/flow-editor';
@@ -367,6 +367,31 @@ export function useStudioSelection(
     return true;
   }, []);
   const [gesturing, setGesturing] = useState(false);
+  /**
+   * Doc 224: WHAT is being dragged, held beside `gesturing` and handed back down to the grids so each
+   * can ask `accepts` and light up. A separate value, not a widened `gesturing`: every existing reader
+   * of that boolean would otherwise have to change to learn nothing it uses.
+   */
+  const [dragSource, setDragSource] = useState<GridDropSource | null>(null);
+
+  /**
+   * Doc 224: a palette drag has begun.
+   *
+   * It also arms the ONLY clear that covers a drag which never reaches a grid — a press the author
+   * thinks better of, or a drop on dead space. Every other ending already clears itself through the
+   * gesture wiring (`dragstop`, `dropped`). One listener per press, removed by its own handler, so
+   * nothing accumulates and no drag can leave the canvas lit.
+   */
+  const beginPaletteDrag = useCallback((template: string) => {
+    setDragSource({ template });
+    const clear = () => {
+      setDragSource(null);
+      document.removeEventListener('pointerup', clear);
+      document.removeEventListener('pointercancel', clear);
+    };
+    document.addEventListener('pointerup', clear);
+    document.addEventListener('pointercancel', clear);
+  }, []);
   const [pressing, setPressing] = useState(false);
   const [seed, setSeed] = useState(studio.seed);
 
@@ -488,6 +513,7 @@ export function useStudioSelection(
       idOf: (element) => documentEditor.idOf(element),
       onGesture: (gesture) => {
         setGesturing(false);
+        setDragSource(null);
         if (gesture.type === 'insert') {
           const insertedId = latest.current.insert(gesture);
           if (insertedId !== undefined) setSelected(insertedId);
@@ -496,6 +522,7 @@ export function useStudioSelection(
         }
       },
       onGestureActive: setGesturing,
+      onDragSource: setDragSource,
       // Doc 194 rule 11: drag acceptance is the document's decision.
       //
       // Doc 216 rule 12: `layoutId` MUST be forwarded. A shorter arrow is assignable to the wider port and
@@ -526,6 +553,9 @@ export function useStudioSelection(
   return {
     port,
     editor,
+    // Doc 224: handed to the canvas, which provides it back down to every grid.
+    dragSource,
+    beginPaletteDrag,
     flowEditor,
     tabsEditor,
     confirmation,
