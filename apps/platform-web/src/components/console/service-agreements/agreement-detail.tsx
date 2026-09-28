@@ -106,7 +106,19 @@ function AgreementBody({
   // still read stale `true` in the continuation after an awaited save.
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
-  const isDirty = useCallback(() => dirtyRef.current, []);
+  /**
+   * Doc 225 B1: a deleted agreement has NOTHING to save, so the guard must not ask.
+   *
+   * Deleting makes the page dirty by itself: the refetch empties it, `stored` becomes `null`, and
+   * `sameStudioDocument` reports any document against `null` as changed — so the navigation away
+   * from a delete was blocked by a prompt offering to save the thing just deleted.
+   *
+   * A REF, set synchronously before navigating, for the same reason `isDirty` is a function at all
+   * (rule 20): a state update is not guaranteed to have re-rendered before the next line navigates,
+   * so clearing `live` here would still read stale.
+   */
+  const deleted = useRef(false);
+  const isDirty = useCallback(() => !deleted.current && dirtyRef.current, []);
 
   const selectVersion = (versionId: string) => {
     setSelectedId(versionId);
@@ -274,6 +286,9 @@ function AgreementBody({
             detail={detail}
             selected={selected}
             onDeleted={() => {
+              // Before anything else, and synchronously: the refetch below is what makes the page
+              // dirty, and the navigation that follows is what the guard would block.
+              deleted.current = true;
               void queryClient.invalidateQueries({ queryKey: ['service-agreements'] });
               void (scope.kind === 'admin'
                 ? navigate({ to: '/admin/service-agreements' })
