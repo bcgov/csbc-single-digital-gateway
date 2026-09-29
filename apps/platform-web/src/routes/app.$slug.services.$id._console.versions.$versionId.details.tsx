@@ -1,9 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ServiceConsolePage } from '@/components/console/services/service-console-page';
+import { ServiceDetailsView } from '@/components/console/services/service-details-view';
 
-/** Feature 217: the version permalink shares the details section's placeholder. */
+/** Doc 229: the Details section opened on one version — what the header's version picker navigates to. */
+function ServiceVersionDetailsRoute() {
+  const { slug, id, versionId } = Route.useParams();
+  return <ServiceDetailsView slug={slug} id={id} versionId={versionId} />;
+}
+
 export const Route = createFileRoute(
   '/app/$slug/services/$id/_console/versions/$versionId/details',
 )({
-  component: () => <ServiceConsolePage title="Service details" />,
+  component: ServiceVersionDetailsRoute,
 });

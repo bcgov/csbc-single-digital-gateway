@@ -65,6 +65,7 @@ export function FormRunner({
   onSaveDraft,
   onSubmit,
   disabled = false,
+  actions = true,
 }: FormRunnerProps) {
   const isFlow = uischema.type === FLOW_TYPE;
   // Doc 215 rule 16: a Service root is one page of elements exactly as a Form root is, which is all this ever meant.
@@ -289,31 +290,34 @@ export function FormRunner({
                 />
               )}
             </div>
-            <RunnerActions
-              // Rule 34b: a `Form` root has no Back at all. `history` only ever grows through `goTo`, which only Flow
-              // navigation calls, so for a Form the button could never become enabled by any prop — dead chrome rather
-              // than a temporarily unavailable action, which is what separates it from Save draft (rule 37).
-              hasBack={isFlow}
-              canGoBack={reviewing || history.length > 0}
-              atEnd={atEnd}
-              blocked={blocked}
-              // Rule 27c: a Flow's Submit stays pressable while there is an errored Form to take the citizen to; it is
-              // disabled only for errors no Form owns, which have nowhere to go (rule 32). A Form root keeps rule 27.
-              // Doc 218 rule 9: both forward actions are refused while disabled, and the handlers are ignored — there
-              // is nothing to save or submit on a document that cannot be answered.
-              submitBlocked={
-                disabled ||
-                (flowErrors === undefined
-                  ? documentHasError(errors)
-                  : flowErrors.submitBlocked && flowErrors.firstError === undefined)
-              }
-              busy={busy}
-              canSaveDraft={!disabled && onSaveDraft !== undefined}
-              onBack={onBack}
-              onNext={onNext}
-              onSaveDraft={() => run(onSaveDraft)}
-              onSubmit={onSubmitClicked}
-            />
+            {/* Doc 229: a read-only page may leave the bar out entirely. */}
+            {actions ? (
+              <RunnerActions
+                // Rule 34b: a `Form` root has no Back at all. `history` only ever grows through `goTo`, which only Flow
+                // navigation calls, so for a Form the button could never become enabled by any prop — dead chrome rather
+                // than a temporarily unavailable action, which is what separates it from Save draft (rule 37).
+                hasBack={isFlow}
+                canGoBack={reviewing || history.length > 0}
+                atEnd={atEnd}
+                blocked={blocked}
+                // Rule 27c: a Flow's Submit stays pressable while there is an errored Form to take the citizen to; it is
+                // disabled only for errors no Form owns, which have nowhere to go (rule 32). A Form root keeps rule 27.
+                // Doc 218 rule 9: both forward actions are refused while disabled, and the handlers are ignored — there
+                // is nothing to save or submit on a document that cannot be answered.
+                submitBlocked={
+                  disabled ||
+                  (flowErrors === undefined
+                    ? documentHasError(errors)
+                    : flowErrors.submitBlocked && flowErrors.firstError === undefined)
+                }
+                busy={busy}
+                canSaveDraft={!disabled && onSaveDraft !== undefined}
+                onBack={onBack}
+                onNext={onNext}
+                onSaveDraft={() => run(onSaveDraft)}
+                onSubmit={onSubmitClicked}
+              />
+            ) : null}
           </div>
         </div>
       </FillPage>

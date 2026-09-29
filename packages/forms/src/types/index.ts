@@ -116,6 +116,15 @@ export type FormRunnerProps = {
    * are IGNORED while this is set.
    */
   disabled?: boolean | undefined;
+  /**
+   * Doc 229: whether to draw the action bar (Back / Save draft / Submit / Next). Default `true`.
+   *
+   * `false` is for a READ-ONLY runner on a page where nothing is answered or authored — the service console's
+   * Details section — so the page shows the document and no buttons that could never do anything. A `Flow` stays
+   * navigable through its stage rail. Pair it with `disabled`: a fillable runner without the bar has no way to
+   * save or submit.
+   */
+  actions?: boolean | undefined;
 };
 
 /**

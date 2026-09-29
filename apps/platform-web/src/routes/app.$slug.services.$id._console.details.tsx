@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ServiceConsolePage } from '@/components/console/services/service-console-page';
+import { ServiceDetailsView } from '@/components/console/services/service-details-view';
 
-/**
- * Feature 217: the schema-driven service details editor (`ServiceDetailsPage` → the JSONForms
- * `service-details-body`) is gone with the `@repo/react` renderers. The section falls back to the
- * shared "coming soon" page until the Form Studio is wired to the documents API.
- */
+/** Doc 229: the service's content, read-only — the current version. */
+function ServiceDetailsRoute() {
+  const { slug, id } = Route.useParams();
+  return <ServiceDetailsView slug={slug} id={id} />;
+}
+
 export const Route = createFileRoute('/app/$slug/services/$id/_console/details')({
-  component: () => <ServiceConsolePage title="Service details" />,
+  component: ServiceDetailsRoute,
 });

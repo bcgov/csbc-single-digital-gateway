@@ -50,8 +50,21 @@ export async function formStudioMock() {
 
 export function formRunnerMock() {
   return {
-    FormRunner: ({ disabled, uischema }: { disabled?: boolean; uischema: unknown }) => (
-      <div data-testid="form-runner" data-disabled={String(disabled === true)}>
+    FormRunner: ({
+      disabled,
+      actions,
+      uischema,
+    }: {
+      disabled?: boolean;
+      actions?: boolean;
+      uischema: unknown;
+    }) => (
+      <div
+        data-testid="form-runner"
+        data-disabled={String(disabled === true)}
+        // Doc 229: whether the host asked for the action bar (the runner's default is true).
+        data-actions={String(actions !== false)}
+      >
         {JSON.stringify(uischema)}
       </div>
     ),

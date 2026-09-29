@@ -6,15 +6,24 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
-import type { TemplateVersion } from '@/lib/templates';
 
-/** Header dropdown to switch the selected version (newest first). */
-export function TemplateVersionDropdown({
+/** What the picker reads off a version — any document's version satisfies it (doc 229). */
+export interface VersionOption {
+  readonly id: string;
+  readonly versionNumber: number;
+  readonly status: string;
+}
+
+/**
+ * Header dropdown to switch the selected version (newest first). Shared by the admin template page and
+ * the service Details section (doc 229); versions arrive oldest-first, as every detail endpoint returns them.
+ */
+export function VersionDropdown({
   versions,
   selectedId,
   onSelect,
 }: {
-  versions: TemplateVersion[];
+  versions: readonly VersionOption[];
   selectedId: string;
   onSelect: (versionId: string) => void;
 }) {

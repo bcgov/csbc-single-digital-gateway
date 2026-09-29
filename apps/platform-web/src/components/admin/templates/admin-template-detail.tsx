@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { TemplateVersionDropdown } from '@/components/admin/templates/template-version-dropdown';
+import { VersionDropdown } from '@/components/common/version-dropdown';
 import { DocumentDeleteButton } from '@/components/common/document-delete-button';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
@@ -214,7 +214,7 @@ export function AdminTemplateDetail() {
                 </Button>
               ) : null}
               {selected ? (
-                <TemplateVersionDropdown
+                <VersionDropdown
                   versions={versions}
                   selectedId={selected.id}
                   onSelect={(versionId) => confirmed(() => selectVersion(versionId))}

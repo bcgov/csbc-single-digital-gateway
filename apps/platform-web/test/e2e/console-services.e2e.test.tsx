@@ -191,7 +191,7 @@ describe('Console Services Integration Test Suite', () => {
     expect(within(modal).getByRole('button', { name: /create service/i })).toBeInTheDocument();
   });
 
-  it('opens a service on the console shell, with Details "coming soon"', async () => {
+  it('opens a service on the console shell, on its Details section', async () => {
     // Feature 217: the tabbed `/old/edit` reference editor — the JSONForms details body, the
     // application-methods and service-agreements tabs, and the publish summary modal — is gone with
     // `@repo/react` and `document_references`. What remains is the `_console` shell.
