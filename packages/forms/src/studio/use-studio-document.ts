@@ -421,7 +421,10 @@ export function useStudioDocument({
           : { governing: capabilityFor(governing, element) }),
       });
     },
-    [currentSchema, currentUischema, ids],
+    // Doc 231: the authored map is a dependency too. A cascade writes OTHER elements' entries without
+    // touching the uischema, and without it every reselection showed the map as it stood at the last
+    // uischema change — the child still "deletable" after its container stopped deletions.
+    [currentSchema, currentUischema, current.capabilities, ids],
   );
 
   /**

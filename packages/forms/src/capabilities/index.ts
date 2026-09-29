@@ -21,6 +21,7 @@ export {
   WILDCARD_TYPE,
   type Capability,
   type CapabilityMap,
+  type CascadeScope,
   type EditCapability,
   type ResolvedCapability,
 } from './capability-types';

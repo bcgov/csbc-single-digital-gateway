@@ -96,3 +96,20 @@ describe('validateContent — the map is validated, not trusted', () => {
     expect(studioDocumentSchema.safeParse(content(MAP)).success).toBe(true);
   });
 });
+
+// Doc 231 — the cascade scope an author picks is stored on the entry. `capabilitySchema` is STRICT,
+// so without listing it every save carrying a scope would be refused.
+describe('validateContent — the cascade scope (doc 231)', () => {
+  it('keeps each cascade scope', () => {
+    for (const cascade of ['descendants', 'children', 'self']) {
+      const map = { elements: { a1: { cascade, removeChildren: false } } };
+      expect(validateContent(document, content(map)).capabilities).toEqual(map);
+    }
+  });
+
+  it('rejects an unknown scope', () => {
+    expect(() =>
+      validateContent(document, content({ elements: { a1: { cascade: 'everything' } } })),
+    ).toThrow(BadRequestException);
+  });
+});

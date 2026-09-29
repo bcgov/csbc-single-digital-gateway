@@ -1,11 +1,17 @@
 import type { JsonSchema } from '@jsonforms/core';
-import type { Capability, CapabilityMap } from '../../capabilities/capability-types';
+import type { Capability, CapabilityMap, CascadeScope } from '../../capabilities/capability-types';
 import { authoredId } from '../../renderers/ui/authored-id';
 import { FLOW_TYPE } from '../../renderers/xyflow/flow-elements';
 import type { InspectorContext } from './inspector-context';
 import { fieldsFor } from './inspector-fields';
+import {
+  CASCADING_KEYS,
+  DEFAULT_CASCADE,
+  cascadePermissions,
+  type CascadingKey,
+} from './permission-cascade';
 
-// Doc 220 — the Permissions section: what a template author grants the owner of a document built
+// Doc 220 — the Permissions section (titled Editor Capabilities since doc 231): what a template author grants the owner of a document built
 // from this template.
 //
 // These are the FIRST inspector fields that write somewhere other than the selected element — they
@@ -17,7 +23,7 @@ import { fieldsFor } from './inspector-fields';
 /** Every permission key is prefixed, so splitting the inspector's values is unambiguous. */
 export const PERMISSION_PREFIX = 'perm_';
 
-/** Whether an inspector value belongs to the Permissions section rather than the element. */
+/** Whether an inspector value belongs to the Editor Capabilities section rather than the element. */
 export const isPermissionKey = (key: string): boolean => key.startsWith(PERMISSION_PREFIX);
 
 /** The two labelled groups the section renders. */
@@ -52,10 +58,26 @@ const EDIT_MODE: JsonSchema = {
   type: 'string',
   oneOf: [
     { const: 'all', title: 'Everything' },
-    { const: 'some', title: 'Only these settings' },
-    { const: 'none', title: 'Nothing' },
+    { const: 'some', title: 'Specific Fields' },
+    { const: 'none', title: 'None' },
   ],
 };
+
+/** Doc 231: label-left, input-right, with a box wide enough for "Specific Fields". */
+const EDIT_MODE_OPTIONS = { orientation: 'horizontal', inputWidth: 'wide' } as const;
+
+/** Doc 231: how far a change to a contents toggle reaches. Absent reads as `DEFAULT_CASCADE`. */
+const CASCADE_SCOPE: JsonSchema = {
+  type: 'string',
+  oneOf: [
+    { const: 'descendants', title: 'All descendants' },
+    { const: 'children', title: 'Immediate children' },
+    { const: 'self', title: 'This element only' },
+  ],
+};
+
+const isCascadeScope = (value: unknown): value is CascadeScope =>
+  value === 'descendants' || value === 'children' || value === 'self';
 
 /** Which settings the OWNER could be allowed to change — the element's own applicable fields. */
 const editableKeys = (ctx: InspectorContext) =>
@@ -89,7 +111,7 @@ const toggle = (
 });
 
 /**
- * The Permissions fields, in display order within their groups.
+ * The Editor Capabilities fields, in display order within their groups.
  *
  * Every default shown is the GRANTED one, matching `FULLY_GRANTED`: an author opens a template with
  * everything permitted and takes things away, rather than having to grant each thing individually.
@@ -101,6 +123,7 @@ export const PERMISSION_FIELDS: readonly PermissionField[] = Object.freeze([
     label: 'Editable settings',
     applies: () => true,
     schema: () => EDIT_MODE,
+    options: () => ({ ...EDIT_MODE_OPTIONS }),
     read: (entry) => modeOf(entry?.edit),
     write: (entry, value) => ({
       ...entry,
@@ -141,6 +164,15 @@ export const PERMISSION_FIELDS: readonly PermissionField[] = Object.freeze([
     (entry) => entry?.move ?? true,
     (entry, value) => ({ ...entry, move: value === true }),
   ),
+  {
+    key: `${PERMISSION_PREFIX}cascade`,
+    group: 'contents',
+    label: 'Apply changes to',
+    applies: holdsChildren,
+    schema: () => CASCADE_SCOPE,
+    read: (entry) => entry?.cascade ?? DEFAULT_CASCADE,
+    write: (entry, value) => (isCascadeScope(value) ? { ...entry, cascade: value } : entry),
+  },
   toggle(
     'addChildren',
     'contents',
@@ -210,6 +242,7 @@ export function applyPermissions(
   const before = capabilities.elements?.[id];
   let entry: Capability = before ?? {};
   let changed = false;
+  const toggled: CascadingKey[] = [];
   for (const field of permissionFieldsFor(ctx)) {
     if (!(field.key in values)) continue;
     const value = values[field.key];
@@ -222,11 +255,27 @@ export function applyPermissions(
     if (same) continue;
     entry = field.write(entry, value);
     changed = true;
+    const cascading = cascadingKeyOf(field.key);
+    if (cascading !== undefined) toggled.push(cascading);
   }
 
   // Tracked explicitly rather than by comparing `entry` to `before`: with no entry yet, `before` is
   // `undefined` while `entry` starts as `{}`, so an identity check would write an EMPTY entry for a
   // selection where the author changed nothing.
   if (!changed) return capabilities;
-  return { ...capabilities, elements: { ...capabilities.elements, [id]: entry } };
+
+  // Doc 231: only a CHANGED contents toggle cascades (rule 4), with the scope from this same pass
+  // (rule 6) — JSONForms emits every field together, so a scope changed alongside a toggle applies.
+  const scope = entry.cascade ?? DEFAULT_CASCADE;
+  let next = capabilities;
+  for (const key of toggled) {
+    next = cascadePermissions(next, ctx.element, key, entry[key] === true, scope);
+  }
+  return { ...next, elements: { ...next.elements, [id]: entry } };
+}
+
+/** The contents key a permission field writes, when it is one that cascades. */
+function cascadingKeyOf(fieldKey: string): CascadingKey | undefined {
+  const key = fieldKey.slice(PERMISSION_PREFIX.length);
+  return (CASCADING_KEYS as readonly string[]).includes(key) ? (key as CascadingKey) : undefined;
 }

@@ -196,3 +196,15 @@ describe('FULLY_GRANTED is a shared constant', () => {
     expect(resolved).not.toBe(FULLY_GRANTED);
   });
 });
+
+describe('doc 231 — `cascade` is an authoring hint, never a capability', () => {
+  it('does not return `cascade` in a resolved capability', () => {
+    const map: CapabilityMap = {
+      default: { '*': { cascade: 'self' } },
+      elements: { s1: { cascade: 'children', addChildren: false } },
+    };
+    const resolved = capabilityFor(map, el('Section', 's1'));
+    expect('cascade' in resolved).toBe(false);
+    expect(resolved).toEqual({ ...FULLY_GRANTED, addChildren: false });
+  });
+});

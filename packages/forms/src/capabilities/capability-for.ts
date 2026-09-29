@@ -21,13 +21,15 @@ import {
  * runtime, and the API validates the map only from doc 220 onward, so old or hand-edited content can
  * still carry one.
  */
-function stated(level: Capability | undefined): Partial<Capability> {
+function stated(level: Capability | undefined): Partial<ResolvedCapability> {
   if (!level) return {};
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(level)) {
+    // Doc 231: `cascade` is an authoring hint, not a capability, so it never reaches a resolved result.
+    if (key === 'cascade') continue;
     if (value !== undefined && value !== null) out[key] = value;
   }
-  return out as Partial<Capability>;
+  return out as Partial<ResolvedCapability>;
 }
 
 /**

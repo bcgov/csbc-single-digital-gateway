@@ -141,7 +141,7 @@ export function inspectorForm(
       .map((field) => fieldControl(field, ctx)),
   })).filter((section) => section.elements.length > 0);
 
-  // One Permissions section holding two labelled groups, so "may this element be deleted" and "may
+  // One Editor Capabilities section (doc 231's name for doc 220's Permissions) holding two labelled groups, so "may this element be deleted" and "may
   // its children be deleted" can never be read as the same setting (doc 220 rule 8).
   const permissionGroups = PERMISSION_GROUPS.map(({ id, label }) => ({
     type: 'Group',
@@ -152,7 +152,7 @@ export function inspectorForm(
   })).filter((group) => group.elements.length > 0);
   const permissionSection =
     permissionGroups.length > 0
-      ? [{ type: 'Group', label: 'Permissions', elements: permissionGroups }]
+      ? [{ type: 'Group', label: 'Editor Capabilities', elements: permissionGroups }]
       : [];
 
   // Doc 201 rule 12: the applicable required fields, omitted entirely when there are none.

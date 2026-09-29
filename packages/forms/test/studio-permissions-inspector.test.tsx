@@ -25,7 +25,7 @@ const docWith = (...elements: UISchemaElement[]) =>
 /** The labels of the groups inside the Permissions section, or `null` when there is no section. */
 function permissionGroups(uischema: UISchemaElement): string[] | null {
   const groups = (uischema as { elements?: { label?: string; elements?: unknown[] }[] }).elements;
-  const permissions = groups?.find((group) => group.label === 'Permissions');
+  const permissions = groups?.find((group) => group.label === 'Editor Capabilities');
   if (!permissions) return null;
   return (permissions.elements as { label?: string }[]).map((group) => group.label ?? '');
 }
@@ -33,7 +33,7 @@ function permissionGroups(uischema: UISchemaElement): string[] | null {
 /** The permission field keys offered under one group label. */
 function keysIn(uischema: UISchemaElement, groupLabel: string): string[] {
   const groups = (uischema as { elements?: { label?: string; elements?: unknown[] }[] }).elements;
-  const permissions = groups?.find((group) => group.label === 'Permissions');
+  const permissions = groups?.find((group) => group.label === 'Editor Capabilities');
   const group = (
     permissions?.elements as { label?: string; elements?: unknown[] }[] | undefined
   )?.find((entry) => entry.label === groupLabel);
@@ -51,7 +51,7 @@ const buildForm = (element: UISchemaElement, capabilities?: CapabilityMap) => {
 };
 
 describe('showing the section', () => {
-  it('shows Permissions when the seeded document carries a capabilities half', () => {
+  it('shows Editor Capabilities when the seeded document carries a capabilities half', () => {
     const { form } = buildForm(control(), { default: {} });
     expect(permissionGroups(form.uischema)).toEqual(['This element']);
   });
@@ -82,6 +82,7 @@ describe('the two labelled groups', () => {
     const { form } = buildForm(section(), {});
     expect(permissionGroups(form.uischema)).toEqual(['This element', 'Its contents']);
     expect(keysIn(form.uischema, 'Its contents')).toEqual([
+      'perm_cascade',
       'perm_addChildren',
       'perm_removeChildren',
       'perm_reorderChildren',
@@ -116,12 +117,69 @@ describe('the two labelled groups', () => {
     const picker = (
       (
         form.uischema as { elements: { label?: string; elements: { elements: unknown[] }[] }[] }
-      ).elements.find((group) => group.label === 'Permissions')!.elements[0]!.elements as {
+      ).elements.find((group) => group.label === 'Editor Capabilities')!.elements[0]!.elements as {
         scope?: string;
         rule?: { effect?: string };
       }[]
     ).find((entry) => entry.scope?.endsWith('perm_editFields'));
     expect(picker?.rule?.effect).toBe('SHOW');
+  });
+});
+
+describe('doc 231 — the Editor Capabilities layout', () => {
+  type Entry = { scope?: string; label?: string; options?: Record<string, unknown> };
+  const controlsOf = (uischema: UISchemaElement): Entry[] =>
+    (
+      (
+        uischema as { elements: { label?: string; elements: { elements: Entry[] }[] }[] }
+      ).elements.find((group) => group.label === 'Editor Capabilities')?.elements ?? []
+    ).flatMap((group) => group.elements);
+  const controlFor = (uischema: UISchemaElement, key: string) =>
+    controlsOf(uischema).find((entry) => entry.scope === `#/properties/${key}`);
+
+  it('titles the section "Editor Capabilities" (rule 1)', () => {
+    const labels = (
+      buildForm(control(), {}).form.uischema as { elements: { label?: string }[] }
+    ).elements.map((group) => group.label);
+    expect(labels).toContain('Editor Capabilities');
+    expect(labels).not.toContain('Permissions');
+  });
+
+  it('offers Everything / Specific Fields / None for the edit picker (rule 2)', () => {
+    const { form } = buildForm(control(), {});
+    const property = (form.schema.properties as Record<string, JsonSchema>)['perm_edit']!;
+    expect(property.oneOf).toEqual([
+      { const: 'all', title: 'Everything' },
+      { const: 'some', title: 'Specific Fields' },
+      { const: 'none', title: 'None' },
+    ]);
+  });
+
+  it('lays the edit picker out label-left, input-right, wide enough for its choices', () => {
+    const picker = controlFor(buildForm(control(), {}).form.uischema, 'perm_edit');
+    expect(picker?.options).toEqual({ orientation: 'horizontal', inputWidth: 'wide' });
+  });
+
+  it('puts "Apply changes to" first in Its contents, defaulting to All descendants (rule 3)', () => {
+    const { form } = buildForm(section(), {});
+    expect(keysIn(form.uischema, 'Its contents')[0]).toBe('perm_cascade');
+    expect(controlFor(form.uischema, 'perm_cascade')?.label).toBe('Apply changes to');
+    expect(form.data['perm_cascade']).toBe('descendants');
+    const property = (form.schema.properties as Record<string, JsonSchema>)['perm_cascade']!;
+    expect(property.oneOf).toEqual([
+      { const: 'descendants', title: 'All descendants' },
+      { const: 'children', title: 'Immediate children' },
+      { const: 'self', title: 'This element only' },
+    ]);
+  });
+
+  it('reads a stored scope back', () => {
+    const { form } = buildForm(section(), { elements: { sec1: { cascade: 'children' } } });
+    expect(form.data['perm_cascade']).toBe('children');
+  });
+
+  it('does not offer a scope on an element that holds no children', () => {
+    expect(controlFor(buildForm(control(), {}).form.uischema, 'perm_cascade')).toBeUndefined();
   });
 });
 
@@ -221,5 +279,28 @@ describe('capabilities survive the edit pipeline', () => {
     const target = (result.current.uischema as { elements: UISchemaElement[] }).elements[0]!;
     act(() => result.current.updateElement(result.current.ids.idOf(target), { label: 'Renamed' }));
     expect(result.current.capabilities).toBeUndefined();
+  });
+});
+
+// Doc 231: a cascade writes OTHER elements' entries without touching the uischema, so a form built for
+// the next selection must read the CURRENT map. `inspectorFor` once memoised on the document halves only,
+// and every reselection showed the map as it stood at the last uischema change.
+describe('the inspector reads the current map after a cascade', () => {
+  it('shows a child as not deletable once its container stops deletions', () => {
+    const uischema = docWith(section());
+    const { result } = renderHook(() => useStudioDocument({ schema, uischema, capabilities: {} }));
+    const sec = (result.current.uischema as { elements: UISchemaElement[] }).elements[0]!;
+    const ctl = (sec as { elements: UISchemaElement[] }).elements[0]!;
+    const { ids } = result.current;
+    // The WHOLE form's values, as JSONForms emits them — a partial set clears the missing element
+    // settings, which changes the uischema and would hide the stale-map bug this test pins.
+    const values = {
+      ...result.current.inspectorFor(ids.idOf(sec))!.data,
+      perm_removeChildren: false,
+    };
+    act(() => result.current.updateElement(ids.idOf(sec), values));
+    expect(result.current.uischema).toBe(uischema);
+    expect(result.current.inspectorFor(ids.idOf(ctl))?.data['perm_remove']).toBe(false);
+    expect(result.current.inspectorFor(ids.idOf(sec))?.data['perm_removeChildren']).toBe(false);
   });
 });

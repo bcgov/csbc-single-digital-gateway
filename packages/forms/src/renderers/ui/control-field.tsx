@@ -120,7 +120,8 @@ function CharacterCounter({ id, length, max }: { id: string; length: number; max
  *
  * `options.orientation: 'horizontal'` (rule 13b) lays the field out label-left, input-right instead: the
  * label, description and errors stack in a `FieldContent` beside a narrow input box, which also holds the
- * counter. The Form Studio inspector uses it for number fields (doc 187 rule 9b).
+ * counter. The Form Studio inspector uses it for number fields (doc 187 rule 9b). The box is sized for a
+ * number; `options.inputWidth: 'wide'` widens it for a short choice list (doc 231's edit picker).
  */
 export function ControlField({
   control,
@@ -164,7 +165,12 @@ export function ControlField({
           {fieldDescription}
           {fieldError}
         </FieldContent>
-        <div data-slot="control-field-input" className="w-24 shrink-0">
+        <div
+          data-slot="control-field-input"
+          className={
+            uischema.options?.['inputWidth'] === 'wide' ? 'w-40 shrink-0' : 'w-24 shrink-0'
+          }
+        >
           {children(input, labelIds)}
           {counter}
         </div>

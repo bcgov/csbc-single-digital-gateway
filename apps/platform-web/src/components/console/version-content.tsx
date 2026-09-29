@@ -33,7 +33,7 @@ export interface VersionContentProps {
   governedBy?: CapabilityMap | undefined;
   /**
    * Doc 220: the capability map, on a TEMPLATE. Passing it — even as `{}` — is what gives the studio
-   * its Permissions section; omit it and the studio never offers one.
+   * its Editor Capabilities section; omit it and the studio never offers one.
    *
    * The `?? {}` belongs to the CALLER, not here: only the template page knows that its documents are
    * templates whose permissions are authorable, and a stored template that has no map yet must still

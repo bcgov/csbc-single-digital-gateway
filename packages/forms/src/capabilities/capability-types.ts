@@ -17,6 +17,15 @@
 export type EditCapability = 'all' | 'none' | readonly string[];
 
 /**
+ * Doc 231: how far a change to a contents toggle reaches when the author makes it — the whole
+ * subtree, the first-level children, or the container alone. Absent reads as `'descendants'`.
+ *
+ * An AUTHORING hint, never a capability: the cascade is applied when the toggle changes, by writing
+ * explicit entries onto the elements it reaches, so nothing that enforces a capability ever reads it.
+ */
+export type CascadeScope = 'descendants' | 'children' | 'self';
+
+/**
  * What may be done to ONE element and to its contents.
  *
  * FLAT, with the container verbs named for children. An entry is keyed by a single element id and
@@ -47,10 +56,15 @@ export interface Capability {
   readonly reorderChildren?: boolean;
   /** A Flow only: may its Stages be connected, disconnected or re-pointed. */
   readonly edges?: boolean;
+  /** Doc 231: how far the author's contents-toggle changes cascade. Not a capability — see above. */
+  readonly cascade?: CascadeScope;
 }
 
-/** A `Capability` with every key resolved — what `capabilityFor` returns, so no caller guesses. */
-export type ResolvedCapability = Required<Capability>;
+/**
+ * A `Capability` with every key resolved — what `capabilityFor` returns, so no caller guesses.
+ * `cascade` is left out: it says how the map was WRITTEN, never what an owner may do.
+ */
+export type ResolvedCapability = Required<Omit<Capability, 'cascade'>>;
 
 /**
  * The map stored on a template version.

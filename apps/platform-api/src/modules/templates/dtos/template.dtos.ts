@@ -37,6 +37,9 @@ const capabilitySchema = z.strictObject({
   removeChildren: z.boolean().optional(),
   reorderChildren: z.boolean().optional(),
   edges: z.boolean().optional(),
+  // Doc 231: how far the author's contents-toggle changes cascade — an authoring hint that
+  // enforcement never reads, but the object is STRICT, so it must be listed or every save refuses it.
+  cascade: z.enum(['descendants', 'children', 'self']).optional(),
 });
 
 /** `default` is keyed by element TYPE plus the `'*'` baseline; `elements` by an authored element id. */
