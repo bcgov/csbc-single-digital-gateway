@@ -1,7 +1,13 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { type Database, type DocumentVersion, documentVersions } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, sql } from 'drizzle-orm';
+import { answerErrors } from '../util/validate-answers';
 import { TemplateResolver } from '../../templates/services/template.resolver';
 import { validateContent } from '../../templates/services/validate-content';
 import { assertWithinCapabilities } from '../../templates/services/capability-guard';
@@ -43,7 +49,11 @@ export class ServiceVersionsService {
     if (version.status !== 'draft') {
       throw new ConflictException('Only draft versions can be edited');
     }
-    const content = validateContent(service, input.content);
+    const document = validateContent(service, input.content);
+    // Doc 230: `validateContent` parses the DOCUMENT and drops `data`, so the answers are re-attached
+    // here — the new ones when sent, otherwise the stored ones (a document-only save never wipes them).
+    const data = input.content.data ?? storedAnswers(version.content);
+    const content = data === undefined ? document : { ...document, data };
     // Doc 222: the governing template has the final say — the studio's gates are UX, and both the
     // uischema code panel and this endpoint bypass them.
     assertWithinCapabilities(
@@ -79,7 +89,12 @@ export class ServiceVersionsService {
       if (version.status !== 'draft') {
         throw new ConflictException('Only draft versions can be published');
       }
-      validateContent(service, version.content);
+      const document = validateContent(service, version.content);
+      // Doc 230: never publish answers the service's own form rejects.
+      const problems = answerErrors(document.schema, storedAnswers(version.content) ?? {});
+      if (problems.length > 0) {
+        throw new BadRequestException(`Answers don't match the form: ${problems.join('; ')}`);
+      }
       await tx
         .update(documentVersions)
         .set({ archivedAt: sql`now()` })
@@ -165,4 +180,12 @@ export class ServiceVersionsService {
     }
     return row;
   }
+}
+
+/** Doc 230: the staff answers a stored version carries, when it carries any. */
+function storedAnswers(content: unknown): Record<string, unknown> | undefined {
+  const data = (content as { data?: unknown } | null)?.data;
+  return typeof data === 'object' && data !== null && !Array.isArray(data)
+    ? (data as Record<string, unknown>)
+    : undefined;
 }

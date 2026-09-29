@@ -1,17 +1,16 @@
 import { FormRunner } from '@repo/forms/runner';
 import { Badge } from '@repo/ui/badge';
+import { buttonVariants } from '@repo/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { Pencil } from 'lucide-react';
 import { VersionDropdown } from '@/components/common/version-dropdown';
 import { ServiceConsolePage } from '@/components/console/services/service-console-page';
+import { answersOf } from '@/lib/service-answers';
 import { selectServiceVersion, serviceQueryOptions } from '@/lib/services';
 import { studioDocumentOf } from '@/lib/studio-content';
 
-/**
- * A read-only runner takes `data`/`onChange` all the same (doc 218 rule 9). Module consts: a fresh `{}` each render
- * would churn JSONForms for a runner that can never produce a change.
- */
-const NO_ANSWERS: Record<string, unknown> = Object.freeze({});
+/** A read-only runner takes `onChange` all the same (doc 218 rule 9); it can never call it. */
 const noop = () => {};
 
 /**
@@ -89,6 +88,17 @@ export function ServiceDetailsView({
         })
       }
     />,
+    // Doc 230 rule 9: right of the picker — opens the version on screen for editing. A real link (it
+    // navigates), drawn as a small outline button.
+    <Link
+      key="edit"
+      to="/app/$slug/services/$id/versions/$versionId/edit"
+      params={{ slug, id, versionId: selected.id }}
+      className={buttonVariants({ size: 'sm', variant: 'outline' })}
+    >
+      <Pencil className="size-4" aria-hidden />
+      Edit
+    </Link>,
   ];
 
   return (
@@ -110,7 +120,8 @@ export function ServiceDetailsView({
             actions={false}
             schema={document.schema}
             uischema={document.uischema}
-            data={NO_ANSWERS}
+            // Doc 230 rule 9: the staff's answers, shown read-only.
+            data={answersOf(selected.content)}
             onChange={noop}
           />
         </div>

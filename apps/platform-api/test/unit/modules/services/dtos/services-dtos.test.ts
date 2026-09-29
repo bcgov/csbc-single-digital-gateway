@@ -158,6 +158,8 @@ describe('service DTO schemas (feature 217)', () => {
           definition: { schema: {}, uischema: {} },
           definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
           hasSubmissions: false,
+          // Doc 230: what may be deleted, and why not.
+          deletable: { service: true, versionIds: [] },
         }),
       ).toBeDefined();
     });

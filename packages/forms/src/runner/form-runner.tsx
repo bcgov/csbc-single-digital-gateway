@@ -66,6 +66,7 @@ export function FormRunner({
   onSubmit,
   disabled = false,
   actions = true,
+  onValidityChange,
 }: FormRunnerProps) {
   const isFlow = uischema.type === FLOW_TYPE;
   // Doc 215 rule 16: a Service root is one page of elements exactly as a Form root is, which is all this ever meant.
@@ -285,6 +286,8 @@ export function FormRunner({
                     : {})}
                   onChange={({ data: next, errors: nextErrors }) => {
                     setErrors(nextErrors ?? []);
+                    // Doc 230: never while disabled — `NoValidation` reports no errors, which is not "valid".
+                    if (!disabled) onValidityChange?.((nextErrors ?? []).length === 0);
                     onChange(next as RunnerData);
                   }}
                 />

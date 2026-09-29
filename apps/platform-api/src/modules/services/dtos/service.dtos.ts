@@ -55,7 +55,14 @@ export class ListServicesPageQueryDto extends createZodDto(listServicesPageQuery
 export type ListServicesPageQuery = z.infer<typeof listServicesPageQuerySchema>;
 
 /** Save a draft version: the whole authored document. */
-export const updateVersionContentSchema = z.object({ content: studioDocumentSchema });
+/**
+ * Doc 230: a service version's content also carries the staff's ANSWERS to its form, `data`. Only here —
+ * templates, agreements and forms keep the plain document. Absent `data` keeps the stored answers.
+ */
+export const serviceContentSchema = studioDocumentSchema.extend({
+  data: z.record(z.string(), z.unknown()).optional(),
+});
+export const updateVersionContentSchema = z.object({ content: serviceContentSchema });
 export class UpdateVersionContentDto extends createZodDto(updateVersionContentSchema) {}
 export type UpdateVersionContentInput = z.infer<typeof updateVersionContentSchema>;
 
@@ -134,6 +141,20 @@ export const definitionSchema = z.object({
 export class DefinitionDto extends createZodDto(definitionSchema) {}
 export type DefinitionResponse = z.infer<typeof definitionSchema>;
 
+/**
+ * Doc 230: what may be deleted from the edit page, and why not — the API decides (doc 225), since the
+ * console cannot see submissions.
+ */
+export const serviceDeletableSchema = z.object({
+  /** Whether the whole service may go. */
+  service: z.boolean(),
+  /** Why it may not, ready to show. Absent exactly when `service` is true. */
+  reason: z.string().optional(),
+  /** Versions deletable on their own: drafts, and never the only version. */
+  versionIds: z.array(z.string()),
+});
+export type ServiceDeletable = z.infer<typeof serviceDeletableSchema>;
+
 export const serviceDetailSchema = z.object({
   service: serviceSchema,
   versions: z.array(serviceVersionSchema),
@@ -151,6 +172,8 @@ export const serviceDetailSchema = z.object({
   definitions: z.record(z.string(), definitionSchema),
   /** Whether the service has submissions — gates delete vs archive. */
   hasSubmissions: z.boolean(),
+  /** Doc 230: what may be deleted, and why not. */
+  deletable: serviceDeletableSchema,
 });
 export class ServiceDetailDto extends createZodDto(serviceDetailSchema) {}
 export type ServiceDetail = z.infer<typeof serviceDetailSchema>;

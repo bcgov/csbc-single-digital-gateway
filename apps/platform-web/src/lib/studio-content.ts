@@ -47,7 +47,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  * studio holds as `type,label,elements,id` comes back as `type,elements,label,id`. Identical content,
  * different string.
  */
-function stable(value: unknown): unknown {
+export function stable(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stable);
   if (typeof value !== 'object' || value === null) return value;
   const entries = Object.entries(value as Record<string, unknown>).toSorted(([a], [b]) =>

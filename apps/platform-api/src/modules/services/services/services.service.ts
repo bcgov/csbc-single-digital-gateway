@@ -11,6 +11,7 @@ import {
 } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { deletableFor, SERVICE_HAS_SUBMISSIONS } from './service-deletable';
 import { TemplateResolver } from '../../templates/services/template.resolver';
 import {
   type CreateServiceInput,
@@ -223,12 +224,14 @@ export class ServicesService {
     const current = currentVersion(versions);
     const currentDefinition =
       current?.templateVersionId == null ? undefined : definitions[current.templateVersionId];
+    const hasSubmissions = await this.hasSubmissions(id);
     return {
       service: toServiceDto(doc, current),
       versions: versions.map(toServiceVersionDto),
       definition: currentDefinition ?? { schema: {}, uischema: {} },
       definitions,
-      hasSubmissions: await this.hasSubmissions(id),
+      hasSubmissions,
+      deletable: deletableFor(versions, hasSubmissions),
     };
   }
 
@@ -254,9 +257,7 @@ export class ServicesService {
   async remove(userId: string, id: string): Promise<void> {
     await this.requireDocument(userId, id);
     if (await this.hasSubmissions(id)) {
-      throw new ConflictException(
-        'This service has submissions — archive it instead of deleting it',
-      );
+      throw new ConflictException(SERVICE_HAS_SUBMISSIONS);
     }
     await this.db.delete(documents).where(eq(documents.id, id));
   }

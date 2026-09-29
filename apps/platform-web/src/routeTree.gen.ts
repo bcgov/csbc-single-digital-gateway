@@ -46,6 +46,7 @@ import { Route as AppSlugServicesIdConsoleSettingsRouteImport } from './routes/a
 import { Route as AppSlugServicesIdConsoleRequestsRouteImport } from './routes/app.$slug.services.$id._console.requests'
 import { Route as AppSlugServicesIdConsoleDetailsRouteImport } from './routes/app.$slug.services.$id._console.details'
 import { Route as AppSlugServicesIdConsoleAnalyticsRouteImport } from './routes/app.$slug.services.$id._console.analytics'
+import { Route as AppSlugServicesIdConsoleVersionsVersionIdEditRouteImport } from './routes/app.$slug.services.$id._console.versions.$versionId.edit'
 import { Route as AppSlugServicesIdConsoleVersionsVersionIdDetailsRouteImport } from './routes/app.$slug.services.$id._console.versions.$versionId.details'
 
 const AppRoute = AppRouteImport.update({
@@ -245,6 +246,12 @@ const AppSlugServicesIdConsoleAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AppSlugServicesIdConsoleRoute,
   } as any)
+const AppSlugServicesIdConsoleVersionsVersionIdEditRoute =
+  AppSlugServicesIdConsoleVersionsVersionIdEditRouteImport.update({
+    id: '/versions/$versionId/edit',
+    path: '/versions/$versionId/edit',
+    getParentRoute: () => AppSlugServicesIdConsoleRoute,
+  } as any)
 const AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute =
   AppSlugServicesIdConsoleVersionsVersionIdDetailsRouteImport.update({
     id: '/versions/$versionId/details',
@@ -290,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/app/$slug/services/$id/settings': typeof AppSlugServicesIdConsoleSettingsRoute
   '/app/$slug/services/$id/': typeof AppSlugServicesIdConsoleIndexRoute
   '/app/$slug/services/$id/versions/$versionId/details': typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
+  '/app/$slug/services/$id/versions/$versionId/edit': typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -319,6 +327,7 @@ export interface FileRoutesByTo {
   '/app/$slug/services/$id/requests': typeof AppSlugServicesIdConsoleRequestsRoute
   '/app/$slug/services/$id/settings': typeof AppSlugServicesIdConsoleSettingsRoute
   '/app/$slug/services/$id/versions/$versionId/details': typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
+  '/app/$slug/services/$id/versions/$versionId/edit': typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -360,6 +369,7 @@ export interface FileRoutesById {
   '/app/$slug/services/$id/_console/settings': typeof AppSlugServicesIdConsoleSettingsRoute
   '/app/$slug/services/$id/_console/': typeof AppSlugServicesIdConsoleIndexRoute
   '/app/$slug/services/$id/_console/versions/$versionId/details': typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
+  '/app/$slug/services/$id/_console/versions/$versionId/edit': typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -401,6 +411,7 @@ export interface FileRouteTypes {
     | '/app/$slug/services/$id/settings'
     | '/app/$slug/services/$id/'
     | '/app/$slug/services/$id/versions/$versionId/details'
+    | '/app/$slug/services/$id/versions/$versionId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -430,6 +441,7 @@ export interface FileRouteTypes {
     | '/app/$slug/services/$id/requests'
     | '/app/$slug/services/$id/settings'
     | '/app/$slug/services/$id/versions/$versionId/details'
+    | '/app/$slug/services/$id/versions/$versionId/edit'
   id:
     | '__root__'
     | '/'
@@ -470,6 +482,7 @@ export interface FileRouteTypes {
     | '/app/$slug/services/$id/_console/settings'
     | '/app/$slug/services/$id/_console/'
     | '/app/$slug/services/$id/_console/versions/$versionId/details'
+    | '/app/$slug/services/$id/_console/versions/$versionId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -739,6 +752,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSlugServicesIdConsoleAnalyticsRouteImport
       parentRoute: typeof AppSlugServicesIdConsoleRoute
     }
+    '/app/$slug/services/$id/_console/versions/$versionId/edit': {
+      id: '/app/$slug/services/$id/_console/versions/$versionId/edit'
+      path: '/versions/$versionId/edit'
+      fullPath: '/app/$slug/services/$id/versions/$versionId/edit'
+      preLoaderRoute: typeof AppSlugServicesIdConsoleVersionsVersionIdEditRouteImport
+      parentRoute: typeof AppSlugServicesIdConsoleRoute
+    }
     '/app/$slug/services/$id/_console/versions/$versionId/details': {
       id: '/app/$slug/services/$id/_console/versions/$versionId/details'
       path: '/versions/$versionId/details'
@@ -822,6 +842,7 @@ interface AppSlugServicesIdConsoleRouteChildren {
   AppSlugServicesIdConsoleSettingsRoute: typeof AppSlugServicesIdConsoleSettingsRoute
   AppSlugServicesIdConsoleIndexRoute: typeof AppSlugServicesIdConsoleIndexRoute
   AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute: typeof AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute
+  AppSlugServicesIdConsoleVersionsVersionIdEditRoute: typeof AppSlugServicesIdConsoleVersionsVersionIdEditRoute
 }
 
 const AppSlugServicesIdConsoleRouteChildren: AppSlugServicesIdConsoleRouteChildren =
@@ -836,6 +857,8 @@ const AppSlugServicesIdConsoleRouteChildren: AppSlugServicesIdConsoleRouteChildr
     AppSlugServicesIdConsoleIndexRoute: AppSlugServicesIdConsoleIndexRoute,
     AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute:
       AppSlugServicesIdConsoleVersionsVersionIdDetailsRoute,
+    AppSlugServicesIdConsoleVersionsVersionIdEditRoute:
+      AppSlugServicesIdConsoleVersionsVersionIdEditRoute,
   }
 
 const AppSlugServicesIdConsoleRouteWithChildren =

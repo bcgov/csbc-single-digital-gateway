@@ -125,6 +125,12 @@ export type FormRunnerProps = {
    * save or submit.
    */
   actions?: boolean | undefined;
+  /**
+   * Doc 230: told whether the answers currently validate, whenever JSONForms re-validates (on mount and after
+   * every edit) — the same errors the runner itself gates Submit on, so a host gating its OWN publish button
+   * cannot disagree with the form on screen. Never called while `disabled` (no validation runs).
+   */
+  onValidityChange?: ((valid: boolean) => void) | undefined;
 };
 
 /**

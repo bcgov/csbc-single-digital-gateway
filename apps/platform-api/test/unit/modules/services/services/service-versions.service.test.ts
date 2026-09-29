@@ -233,6 +233,57 @@ describe('ServiceVersionsService', () => {
     });
   });
 
+  describe('staff answers in content.data (doc 230)', () => {
+    const FORM = {
+      schema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+      uischema: { type: 'Service', elements: [], label: 'Waste permit' },
+    };
+
+    it('stores the answers sent with the document', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([draftVersion({ content: FORM })]));
+      dbMock.returning.mockResolvedValueOnce([draftVersion()]);
+
+      await service.updateDraft('user-1', 'service-1', 'version-1', {
+        content: { ...FORM, data: { name: 'Acme' } },
+      });
+
+      expect(dbMock.set.mock.calls[0][0].content).toEqual({ ...FORM, data: { name: 'Acme' } });
+    });
+
+    it('keeps the stored answers when a save sends none', async () => {
+      dbMock.select.mockReturnValueOnce(
+        mockQuery([draftVersion({ content: { ...FORM, data: { name: 'Kept' } } })]),
+      );
+      dbMock.returning.mockResolvedValueOnce([draftVersion()]);
+
+      await service.updateDraft('user-1', 'service-1', 'version-1', { content: FORM });
+
+      expect(dbMock.set.mock.calls[0][0].content.data).toEqual({ name: 'Kept' });
+    });
+
+    it('refuses to publish answers the form rejects, and says which', async () => {
+      txMock.select.mockReturnValueOnce(
+        mockQuery([draftVersion({ content: { ...FORM, data: {} } })]),
+      );
+
+      const attempt = service.publish('user-1', 'service-1', 'version-1');
+      await expect(attempt).rejects.toBeInstanceOf(BadRequestException);
+      await expect(attempt).rejects.toThrow("Answers don't match the form: name is required");
+      expect(txMock.update).not.toHaveBeenCalled();
+    });
+
+    it('publishes answers the form accepts', async () => {
+      txMock.select.mockReturnValueOnce(
+        mockQuery([draftVersion({ content: { ...FORM, data: { name: 'Acme' } } })]),
+      );
+      txMock.returning.mockResolvedValueOnce([draftVersion({ status: 'published' })]);
+
+      await expect(service.publish('user-1', 'service-1', 'version-1')).resolves.toMatchObject({
+        status: 'published',
+      });
+    });
+  });
+
   describe('archive', () => {
     it('archives an active version', async () => {
       dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));

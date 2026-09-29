@@ -8,6 +8,7 @@
  * `document_references`: the forms catalog, the reference and agreement-ref endpoints, and the
  * `applications` half of create and draft-save.
  */
+import type { StudioDocument } from '@repo/forms';
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
 import type { Paginated, SortOrder } from '@/lib/list-search';
@@ -18,6 +19,11 @@ export type VersionStatus = 'draft' | 'published' | 'archived';
 export interface FormDefinition {
   schema: Record<string, unknown>;
   uischema: Record<string, unknown>;
+  /**
+   * Doc 221: on a TEMPLATE definition, what a consuming document's owner may do. Absent = the template
+   * governs nothing. The service edit page (doc 230) hands it to the studio as `governedBy`.
+   */
+  capabilities?: Record<string, unknown>;
 }
 
 export interface Service {
@@ -69,6 +75,17 @@ export interface ServiceDetail {
   definitions: Record<string, FormDefinition>;
   /** Whether the service has submissions — gates delete vs archive. */
   hasSubmissions: boolean;
+  /**
+   * Doc 230 (the doc 225 contract): what may be deleted, and why not. The API decides — it can see
+   * submissions — so the edit page renders its delete control from this alone.
+   */
+  deletable: {
+    service: boolean;
+    /** Why the service may not go, ready to show. Absent exactly when `service` is true. */
+    reason?: string;
+    /** Versions deletable on their own: drafts, never the only version. */
+    versionIds: string[];
+  };
 }
 
 const BASE = `${BFF_ORIGIN}/v1/services`;
@@ -208,11 +225,14 @@ export function createService(input: {
   return send(BASE, 'POST', input);
 }
 
-/** Save a draft version's authored content. */
+/**
+ * Save a draft version's content: its form, and (doc 230) the staff's answers to it in `data`. Without
+ * `data` the server keeps the answers it has.
+ */
 export function updateDraft(
   id: string,
   versionId: string,
-  input: { content: FormDefinition },
+  input: { content: StudioDocument & { data?: Record<string, unknown> } },
 ): Promise<ServiceVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,
@@ -264,7 +284,7 @@ export async function reactivateService(id: string): Promise<void> {
 
 async function noContent(url: string, method: string): Promise<void> {
   const res = await fetch(url, { method, credentials: 'include' });
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
-  }
+  // Doc 230: through `ok`, so a refusal carries the API's own reason (a 409's whole point) rather
+  // than "Request failed: 409" — the edit page's delete dialog shows it.
+  if (!res.ok) await ok<never>(res);
 }

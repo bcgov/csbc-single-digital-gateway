@@ -50,23 +50,54 @@ export async function formStudioMock() {
 
 export function formRunnerMock() {
   return {
+    /**
+     * Doc 230: a FILLABLE runner is a textarea of the answers as JSON (edit it to "type"), and it reports
+     * validity the way the real one does — on mount and after every change, never while disabled — from the
+     * schema's top-level `required` keys alone.
+     */
     FormRunner: ({
       disabled,
       actions,
       uischema,
+      schema,
+      data,
+      onChange,
+      onValidityChange,
     }: {
       disabled?: boolean;
       actions?: boolean;
       uischema: unknown;
-    }) => (
-      <div
-        data-testid="form-runner"
-        data-disabled={String(disabled === true)}
-        // Doc 229: whether the host asked for the action bar (the runner's default is true).
-        data-actions={String(actions !== false)}
-      >
-        {JSON.stringify(uischema)}
-      </div>
-    ),
+      schema?: { required?: string[] };
+      data?: Record<string, unknown>;
+      onChange?: (data: Record<string, unknown>) => void;
+      onValidityChange?: (valid: boolean) => void;
+    }) => {
+      const answers = data ?? {};
+      const valid = (schema?.required ?? []).every(
+        (key) => answers[key] !== undefined && answers[key] !== '',
+      );
+      // Rendered, not an effect: the mock has no state of its own to settle first.
+      if (disabled !== true) queueMicrotask(() => onValidityChange?.(valid));
+      return (
+        <div
+          data-testid="form-runner"
+          data-disabled={String(disabled === true)}
+          // Doc 229: whether the host asked for the action bar (the runner's default is true).
+          data-actions={String(actions !== false)}
+          data-answers={JSON.stringify(answers)}
+        >
+          {JSON.stringify(uischema)}
+          {disabled === true ? null : (
+            <textarea
+              aria-label="answers"
+              value={JSON.stringify(answers)}
+              onChange={(event) =>
+                onChange?.(JSON.parse(event.target.value) as Record<string, unknown>)
+              }
+            />
+          )}
+        </div>
+      );
+    },
   };
 }

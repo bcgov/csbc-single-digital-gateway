@@ -1,6 +1,6 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
-import { act, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { FormRunner } from '../src/runner/form-runner';
 
 // Doc 229 rules 1-2 — `<FormRunner actions={false}>`: a read-only page shows the document and no action bar.
@@ -69,5 +69,56 @@ describe('FormRunner actions prop (doc 229)', () => {
     const name = screen.getByLabelText('Name');
     // Doc 218 rule 6: the readonly presentation — read-only where HTML has it, disabled where it does not.
     expect((name as HTMLInputElement).readOnly || (name as HTMLInputElement).disabled).toBe(true);
+  });
+});
+
+describe('FormRunner onValidityChange (doc 230)', () => {
+  const required: JsonSchema = { ...schema, required: ['name'] };
+
+  it('reports invalid answers on mount and valid ones once they are filled', async () => {
+    const onValidityChange = vi.fn();
+    let data: Record<string, unknown> = {};
+    const { rerender } = render(
+      <FormRunner
+        actions={false}
+        schema={required}
+        uischema={SERVICE_ROOT}
+        data={data}
+        onChange={(next) => (data = next)}
+        onValidityChange={onValidityChange}
+      />,
+    );
+    // JSONForms validates on mount and emits after it — not synchronously with the render.
+    await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
+
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Acme' } });
+    rerender(
+      <FormRunner
+        actions={false}
+        schema={required}
+        uischema={SERVICE_ROOT}
+        data={data}
+        onChange={(next) => (data = next)}
+        onValidityChange={onValidityChange}
+      />,
+    );
+    await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
+  });
+
+  it('never reports while disabled, where nothing is validated', async () => {
+    const onValidityChange = vi.fn();
+    render(
+      <FormRunner
+        disabled
+        schema={required}
+        uischema={SERVICE_ROOT}
+        data={EMPTY}
+        onChange={noop}
+        onValidityChange={onValidityChange}
+      />,
+    );
+    // Long enough for the mount emit that WOULD have reported.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(onValidityChange).not.toHaveBeenCalled();
   });
 });

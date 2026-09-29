@@ -310,6 +310,20 @@ describe('Services Unit Test Suite', () => {
       const err4 = await runAndCatch(() => reactivateService('srv-1'));
       expect(err4?.message).toBe('Request failed: 409');
     });
+
+    it("surfaces the API's own refusal reason from a no-content endpoint (doc 230)", async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: () =>
+          Promise.resolve({
+            message: 'This service has submissions — archive it instead of deleting it',
+          }),
+      } as unknown as Response);
+
+      const err = await runAndCatch(() => deleteService('srv-1'));
+      expect(err?.message).toBe('This service has submissions — archive it instead of deleting it');
+    });
   });
 
   describe('version selection (feature 174)', () => {
@@ -336,6 +350,7 @@ describe('Services Unit Test Suite', () => {
         definition: { schema: { marker: 'current' }, uischema: {} },
         definitions: { 'tv-old': { schema: { marker: 'old' }, uischema: {} } },
         hasSubmissions: false,
+        deletable: { service: true, versionIds: [] },
       };
 
       expect(definitionForServiceVersion(detail, 'v1')?.schema).toEqual({ marker: 'old' });
@@ -348,6 +363,7 @@ describe('Services Unit Test Suite', () => {
         definition: { schema: { marker: 'current' }, uischema: {} },
         definitions: {},
         hasSubmissions: false,
+        deletable: { service: true, versionIds: [] },
       };
 
       expect(definitionForServiceVersion(detail, 'v1')?.schema).toEqual({ marker: 'current' });
