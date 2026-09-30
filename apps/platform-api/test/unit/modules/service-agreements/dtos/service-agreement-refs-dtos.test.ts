@@ -10,8 +10,7 @@ import {
   toAgreementVersionDto,
   updateServiceAgreementSchema,
 } from '../../../../../src/modules/service-agreements/dtos/service-agreement.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('Service Agreements DTOs Unit Test Suite', () => {
   describe('service agreement DTO schemas', () => {

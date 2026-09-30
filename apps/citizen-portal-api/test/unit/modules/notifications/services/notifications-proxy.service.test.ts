@@ -7,12 +7,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NotificationsProxyService } from '../../../../../src/modules/notifications/services/notifications-proxy.service';
-import { M2mTokenClient } from '../../../../../src/notifications/m2m-token.client';
 import type { Env } from '../../../../../src/config/env.schema';
-import { createMockConfigService } from '../../../../utils/createMockConfigService';
-import { createMockResponse } from '../../../../utils/createMockResponse';
-import { createMockReq } from '../../../../utils/createMockReq';
-import { createMockRes } from '../../../../utils/createMockRes';
+import { createMockConfigService } from '../../../../utils/create-mock-config-service';
+import { createMockResponse } from '../../../../utils/create-mock-response';
+import { createMockReq } from '../../../../utils/create-mock-req';
+import { createMockRes } from '../../../../utils/create-mock-res';
+import { createTokenSpy } from '../../../../utils/create-token-spy';
 
 describe('NotificationsProxyService Unit Test Suite', () => {
   let service: NotificationsProxyService;
@@ -21,8 +21,7 @@ describe('NotificationsProxyService Unit Test Suite', () => {
 
   beforeEach(() => {
     // Spy on M2mTokenClient prototype methods so we mock their HTTP/OIDC requests
-    getTokenSpy = vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mocked-token');
-    invalidateSpy = vi.spyOn(M2mTokenClient.prototype, 'invalidate').mockImplementation(() => {});
+    ({ getTokenSpy, invalidateSpy } = createTokenSpy(getTokenSpy, invalidateSpy));
     service = new NotificationsProxyService(
       createMockConfigService() as unknown as ConfigService<Env, true>,
     );

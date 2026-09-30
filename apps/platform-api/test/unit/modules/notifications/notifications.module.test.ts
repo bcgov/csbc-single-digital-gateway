@@ -35,7 +35,7 @@ describe('NotificationsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('should verify metadata declaration directly for NotificationsModule', () => {
     const controllers = Reflect.getMetadata('controllers', NotificationsModule) as any[];
     const providers = Reflect.getMetadata('providers', NotificationsModule) as any[];
 

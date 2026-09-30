@@ -20,11 +20,9 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
 const base = `/v1/services/${UUID}/versions/${UUID}`;
 
 describe('service references (e2e)', () => {
@@ -84,7 +82,7 @@ describe('service references (e2e)', () => {
   });
 
   it('400s invalid external-application bodies (missing + non-https url)', async () => {
-    const staff = asUser(['staff']);
+    const staff = seedUser(['staff']);
     // Missing fields.
     expect(
       (await http().post(`${base}/external-applications`).set('x-test-user', staff).send({}))
@@ -111,7 +109,7 @@ describe('service references (e2e)', () => {
   });
 
   it('400s invalid reference + form bodies for a signed-in user', async () => {
-    const staff = asUser(['staff']);
+    const staff = seedUser(['staff']);
     expect(
       (await http().post(`${base}/references`).set('x-test-user', staff).send({})).status,
     ).toBe(400);

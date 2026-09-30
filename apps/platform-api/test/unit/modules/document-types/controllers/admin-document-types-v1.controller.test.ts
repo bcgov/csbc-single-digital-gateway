@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AdminDocumentTypesV1Controller } from '../../../../../src/modules/document-types/controllers/admin-document-types-v1.controller';
+import { createMockList, createMockTypeVersion } from '../../../../utils/test-helpers';
 
 describe('AdminDocumentTypesV1Controller', () => {
   let controller: AdminDocumentTypesV1Controller;
@@ -23,8 +24,8 @@ describe('AdminDocumentTypesV1Controller', () => {
     controller = new AdminDocumentTypesV1Controller(typesServiceMock, versionsServiceMock);
   });
 
-  it('list returns items from types service', async () => {
-    const mockList = [{ id: 'type-1', name: 'Type 1' }];
+  it('list returns items from types service when calling the admin controller list method', async () => {
+    const mockList = createMockList();
     typesServiceMock.adminList.mockResolvedValue(mockList);
 
     const result = await controller.list();
@@ -32,7 +33,7 @@ describe('AdminDocumentTypesV1Controller', () => {
     expect(result).toEqual({ items: mockList });
   });
 
-  it('get returns a single type from types service', async () => {
+  it('get returns a single type from types service when calling the admin controller get method', async () => {
     const mockType = { id: 'type-1', name: 'Type 1', versions: [] };
     typesServiceMock.adminGet.mockResolvedValue(mockType);
 
@@ -42,17 +43,17 @@ describe('AdminDocumentTypesV1Controller', () => {
   });
 
   it('addVersion adds a new version via versions service', async () => {
-    const mockVersion = { id: 'v-1', definition: { field: 'test' } };
-    versionsServiceMock.addVersion.mockResolvedValue(mockVersion);
+    const mockTypeVersion = createMockTypeVersion({ definition: { field: 'test' } });
+    versionsServiceMock.addVersion.mockResolvedValue(mockTypeVersion);
 
     const result = await controller.addVersion('type-1', { definition: { field: 'test' } } as any);
     expect(versionsServiceMock.addVersion).toHaveBeenCalledWith('type-1', { field: 'test' });
-    expect(result).toEqual(mockVersion);
+    expect(result).toEqual(mockTypeVersion);
   });
 
   it('editVersion edits a draft version via versions service', async () => {
-    const mockVersion = { id: 'v-1', definition: { field: 'updated' } };
-    versionsServiceMock.editDraft.mockResolvedValue(mockVersion);
+    const mockTypeVersion = createMockTypeVersion({ definition: { field: 'updated' } });
+    versionsServiceMock.editDraft.mockResolvedValue(mockTypeVersion);
 
     const result = await controller.editVersion('type-1', 'v-1', {
       definition: { field: 'updated' },
@@ -60,7 +61,7 @@ describe('AdminDocumentTypesV1Controller', () => {
     expect(versionsServiceMock.editDraft).toHaveBeenCalledWith('type-1', 'v-1', {
       field: 'updated',
     });
-    expect(result).toEqual(mockVersion);
+    expect(result).toEqual(mockTypeVersion);
   });
 
   it('deleteVersion deletes a draft version via versions service', async () => {
@@ -71,20 +72,20 @@ describe('AdminDocumentTypesV1Controller', () => {
   });
 
   it('publish publishes a draft version via versions service', async () => {
-    const mockVersion = { id: 'v-1', status: 'published' };
-    versionsServiceMock.publish.mockResolvedValue(mockVersion);
+    const mockTypeVersion = createMockTypeVersion({ status: 'published' });
+    versionsServiceMock.publish.mockResolvedValue(mockTypeVersion);
 
     const result = await controller.publish('type-1', 'v-1');
     expect(versionsServiceMock.publish).toHaveBeenCalledWith('type-1', 'v-1');
-    expect(result).toEqual(mockVersion);
+    expect(result).toEqual(mockTypeVersion);
   });
 
   it('archive archives a version via versions service', async () => {
-    const mockVersion = { id: 'v-1', status: 'archived' };
-    versionsServiceMock.archive.mockResolvedValue(mockVersion);
+    const mockTypeVersion = createMockTypeVersion({ status: 'archived' });
+    versionsServiceMock.archive.mockResolvedValue(mockTypeVersion);
 
     const result = await controller.archive('type-1', 'v-1');
     expect(versionsServiceMock.archive).toHaveBeenCalledWith('type-1', 'v-1');
-    expect(result).toEqual(mockVersion);
+    expect(result).toEqual(mockTypeVersion);
   });
 });

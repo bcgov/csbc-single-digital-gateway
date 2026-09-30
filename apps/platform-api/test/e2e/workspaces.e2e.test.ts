@@ -24,12 +24,7 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const seedUser = JSON.stringify({
-  id: 'u1',
-  roles: ['staff'],
-  claims: { sub: 'u1' },
-} satisfies AuthUser);
+import { seedUser } from '../utils/test-helpers';
 
 describe('workspaces (e2e)', () => {
   let app: INestApplication;
@@ -85,17 +80,18 @@ describe('workspaces (e2e)', () => {
   });
 
   it('400s an invalid create body for an authenticated caller', async () => {
-    expect((await http().post('/v1/workspaces').set('x-test-user', seedUser).send({})).status).toBe(
-      400,
-    );
     expect(
-      (await http().post('/v1/workspaces').set('x-test-user', seedUser).send({ name: '' })).status,
+      (await http().post('/v1/workspaces').set('x-test-user', seedUser()).send({})).status,
+    ).toBe(400);
+    expect(
+      (await http().post('/v1/workspaces').set('x-test-user', seedUser()).send({ name: '' }))
+        .status,
     ).toBe(400);
   });
 
   it('400s an invalid add-member body for an authenticated caller', async () => {
     const post = (body: object) =>
-      http().post('/v1/workspaces/abc/members').set('x-test-user', seedUser).send(body);
+      http().post('/v1/workspaces/abc/members').set('x-test-user', seedUser()).send(body);
     expect((await post({})).status).toBe(400); // missing userId + role
     expect((await post({ userId: 'not-a-uuid', role: 'member' })).status).toBe(400);
     expect(
@@ -108,7 +104,7 @@ describe('workspaces (e2e)', () => {
       (
         await http()
           .post('/v1/workspaces/abc/transfer-ownership')
-          .set('x-test-user', seedUser)
+          .set('x-test-user', seedUser())
           .send({})
       ).status,
     ).toBe(400);
@@ -116,7 +112,7 @@ describe('workspaces (e2e)', () => {
       (
         await http()
           .post('/v1/workspaces/abc/transfer-ownership')
-          .set('x-test-user', seedUser)
+          .set('x-test-user', seedUser())
           .send({ userId: 'not-a-uuid' })
       ).status,
     ).toBe(400);
@@ -124,9 +120,9 @@ describe('workspaces (e2e)', () => {
 
   it('400s an invalid list query for an authenticated caller', async () => {
     expect(
-      (await http().get('/v1/workspaces?sort=bogus').set('x-test-user', seedUser)).status,
+      (await http().get('/v1/workspaces?sort=bogus').set('x-test-user', seedUser())).status,
     ).toBe(400);
-    expect((await http().get('/v1/workspaces?limit=0').set('x-test-user', seedUser)).status).toBe(
+    expect((await http().get('/v1/workspaces?limit=0').set('x-test-user', seedUser())).status).toBe(
       400,
     );
   });
@@ -137,12 +133,15 @@ describe('workspaces (e2e)', () => {
 
   it('400s an invalid members browse query for an authenticated caller', async () => {
     expect(
-      (await http().get('/v1/workspaces/abc/members/page?limit=0').set('x-test-user', seedUser))
+      (await http().get('/v1/workspaces/abc/members/page?limit=0').set('x-test-user', seedUser()))
         .status,
     ).toBe(400);
     expect(
-      (await http().get('/v1/workspaces/abc/members/page?sort=bogus').set('x-test-user', seedUser))
-        .status,
+      (
+        await http()
+          .get('/v1/workspaces/abc/members/page?sort=bogus')
+          .set('x-test-user', seedUser())
+      ).status,
     ).toBe(400);
   });
 });

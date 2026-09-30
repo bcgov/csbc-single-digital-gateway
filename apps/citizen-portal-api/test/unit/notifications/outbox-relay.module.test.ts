@@ -5,17 +5,16 @@ import { ConfigService } from '@nestjs/config';
 import { DATABASE_CLIENT } from '@repo/nestjs/database';
 import { OutboxRelayModule } from '../../../src/notifications/outbox-relay.module';
 import { OutboxRelayService } from '../../../src/notifications/outbox-relay.service';
-import { createMockConfigService } from '../../utils/createMockConfigService';
+import { createMockConfigService } from '../../utils/create-mock-config-service';
 
 describe('OutboxRelayModule Unit Test Suite', () => {
   it('Should compile OutboxRelayModule successfully and resolve OutboxRelayService', async () => {
-    const mockDbClient = {}; // mock database client
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
         {
           provide: ConfigService,
@@ -39,7 +38,7 @@ describe('OutboxRelayModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('Should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for OutboxRelayModule', () => {
     const providers = Reflect.getMetadata('providers', OutboxRelayModule) as any[];
     const exports = Reflect.getMetadata('exports', OutboxRelayModule) as any[];
 

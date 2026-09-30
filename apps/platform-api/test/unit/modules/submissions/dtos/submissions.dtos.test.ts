@@ -7,8 +7,7 @@ import {
   submissionDetailSchema,
   reviewEntrySchema,
 } from '../../../../../src/modules/submissions/dtos/submission.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('Submission DTO schemas', () => {
   const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';

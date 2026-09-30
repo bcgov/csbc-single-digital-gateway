@@ -1,17 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { AgreementRefsService } from '../../../../../src/modules/services/services/agreement-refs.service';
-
-const mockQuery = (resolvedValue: any) => {
-  const qb = Promise.resolve(resolvedValue);
-  return Object.assign(qb, {
-    from: vi.fn().mockReturnThis(),
-    innerJoin: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-  });
-};
+import { createMockQuery } from '../../../../utils/create-mock-query';
 
 describe('AgreementRefsService', () => {
   let service: AgreementRefsService;
@@ -23,14 +13,14 @@ describe('AgreementRefsService', () => {
     vi.clearAllMocks();
 
     txMock = {
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
       delete: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       returning: vi.fn(),
     };
 
     dbMock = {
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
       insert: vi.fn().mockReturnThis(),
       values: vi.fn().mockReturnThis(),
       returning: vi.fn(),
@@ -51,9 +41,9 @@ describe('AgreementRefsService', () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
-        .mockImplementationOnce(() => mockQuery([{ status: 'draft' }])) // requireDraftOwner
+        .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner
         .mockImplementationOnce(() =>
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'doc-agreement-1',
               title: 'Agreement 1',
@@ -73,9 +63,9 @@ describe('AgreementRefsService', () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
-        .mockImplementationOnce(() => mockQuery([{ status: 'draft' }])) // requireDraftOwner
+        .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner
         .mockImplementationOnce(() =>
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'doc-agreement-1',
               title: 'Agreement 1',
@@ -85,7 +75,7 @@ describe('AgreementRefsService', () => {
             },
           ]),
         ) // resolvePublishedAgreement
-        .mockImplementationOnce(() => mockQuery([{ id: 'ref-1' }])); // already attached check
+        .mockImplementationOnce(() => createMockQuery([{ id: 'ref-1' }])); // already attached check
 
       await expect(service.attach('user-1', 'srv-1', 'ver-1', 'doc-agreement-1')).rejects.toThrow(
         ConflictException,
@@ -96,8 +86,8 @@ describe('AgreementRefsService', () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
-        .mockImplementationOnce(() => mockQuery([{ status: 'draft' }])) // requireDraftOwner
-        .mockImplementationOnce(() => mockQuery([])); // resolvePublishedAgreement resolves to empty
+        .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner
+        .mockImplementationOnce(() => createMockQuery([])); // resolvePublishedAgreement resolves to empty
 
       await expect(service.attach('user-1', 'srv-1', 'ver-1', 'doc-agreement-1')).rejects.toThrow(
         'Not a published service agreement (publish the agreement before attaching it)',
@@ -107,7 +97,7 @@ describe('AgreementRefsService', () => {
     it('throws NotFoundException if the service version is not found', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
-      dbMock.select.mockImplementationOnce(() => mockQuery([])); // requireDraftOwner version not found
+      dbMock.select.mockImplementationOnce(() => createMockQuery([])); // requireDraftOwner version not found
 
       await expect(service.attach('user-1', 'srv-1', 'ver-1', 'doc-agreement-1')).rejects.toThrow(
         NotFoundException,
@@ -117,7 +107,7 @@ describe('AgreementRefsService', () => {
     it('throws ConflictException if the service version is not draft', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ status: 'published' }])); // requireDraftOwner is not draft
+      dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'published' }])); // requireDraftOwner is not draft
 
       await expect(service.attach('user-1', 'srv-1', 'ver-1', 'doc-agreement-1')).rejects.toThrow(
         ConflictException,
@@ -128,9 +118,9 @@ describe('AgreementRefsService', () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
       dbMock.select
-        .mockImplementationOnce(() => mockQuery([{ status: 'draft' }])) // requireDraftOwner
+        .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner
         .mockImplementationOnce(() =>
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'doc-agreement-1',
               title: 'Agreement 1',
@@ -140,8 +130,8 @@ describe('AgreementRefsService', () => {
             },
           ]),
         ) // resolvePublishedAgreement
-        .mockImplementationOnce(() => mockQuery([])) // already attached check (none)
-        .mockImplementationOnce(() => mockQuery([{ max: 0 }])); // nextPosition
+        .mockImplementationOnce(() => createMockQuery([])) // already attached check (none)
+        .mockImplementationOnce(() => createMockQuery([{ max: 0 }])); // nextPosition
 
       dbMock.returning.mockResolvedValueOnce([]); // empty insertion row array
 
@@ -155,9 +145,9 @@ describe('AgreementRefsService', () => {
       const mockCreatedAt = new Date('2026-07-28T12:00:00.000Z');
 
       dbMock.select
-        .mockImplementationOnce(() => mockQuery([{ status: 'draft' }])) // requireDraftOwner
+        .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner
         .mockImplementationOnce(() =>
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'doc-agreement-1',
               title: 'Agreement 1',
@@ -167,8 +157,8 @@ describe('AgreementRefsService', () => {
             },
           ]),
         ) // resolvePublishedAgreement
-        .mockImplementationOnce(() => mockQuery([])) // already attached check (none)
-        .mockImplementationOnce(() => mockQuery([{ max: 0 }])); // nextPosition (max position is 0)
+        .mockImplementationOnce(() => createMockQuery([])) // already attached check (none)
+        .mockImplementationOnce(() => createMockQuery([{ max: 0 }])); // nextPosition (max position is 0)
 
       dbMock.returning.mockResolvedValueOnce([
         {
@@ -196,7 +186,7 @@ describe('AgreementRefsService', () => {
     it('throws NotFoundException if reference does not exist', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ status: 'draft' }])); // requireDraftOwner
+      dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])); // requireDraftOwner
       txMock.returning.mockResolvedValueOnce([]); // no reference row deleted
 
       await expect(service.detach('user-1', 'srv-1', 'ver-1', 'ref-1')).rejects.toThrow(
@@ -207,11 +197,11 @@ describe('AgreementRefsService', () => {
     it('detaches agreement successfully', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ status: 'draft' }])); // requireDraftOwner
+      dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])); // requireDraftOwner
       txMock.returning.mockResolvedValueOnce([{ agreementId: 'doc-agreement-1' }]); // reference deleted
       txMock.select
-        .mockImplementationOnce(() => mockQuery([{ n: 0 }])) // remaining count
-        .mockImplementationOnce(() => mockQuery([])); // published count (none -> orphaned draft deleted)
+        .mockImplementationOnce(() => createMockQuery([{ n: 0 }])) // remaining count
+        .mockImplementationOnce(() => createMockQuery([])); // published count (none -> orphaned draft deleted)
 
       await expect(service.detach('user-1', 'srv-1', 'ver-1', 'ref-1')).resolves.not.toThrow();
     });
@@ -219,11 +209,11 @@ describe('AgreementRefsService', () => {
     it('detaches agreement but does not delete if remaining references exist', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ status: 'draft' }]));
+      dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }]));
       txMock.returning.mockResolvedValueOnce([{ agreementId: 'doc-agreement-1' }]);
       txMock.select
-        .mockImplementationOnce(() => mockQuery([{ n: 1 }])) // remaining count > 0
-        .mockImplementationOnce(() => mockQuery([]));
+        .mockImplementationOnce(() => createMockQuery([{ n: 1 }])) // remaining count > 0
+        .mockImplementationOnce(() => createMockQuery([]));
 
       await expect(service.detach('user-1', 'srv-1', 'ver-1', 'ref-1')).resolves.not.toThrow();
       expect(txMock.delete).toHaveBeenCalledTimes(1);
@@ -232,11 +222,11 @@ describe('AgreementRefsService', () => {
     it('detaches agreement but does not delete if agreement is published', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ status: 'draft' }]));
+      dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }]));
       txMock.returning.mockResolvedValueOnce([{ agreementId: 'doc-agreement-1' }]);
       txMock.select
-        .mockImplementationOnce(() => mockQuery([{ n: 0 }]))
-        .mockImplementationOnce(() => mockQuery([{ id: 'ver-published-1' }])); // published exists
+        .mockImplementationOnce(() => createMockQuery([{ n: 0 }]))
+        .mockImplementationOnce(() => createMockQuery([{ id: 'ver-published-1' }])); // published exists
 
       await expect(service.detach('user-1', 'srv-1', 'ver-1', 'ref-1')).resolves.not.toThrow();
       expect(txMock.delete).toHaveBeenCalledTimes(1);
@@ -245,11 +235,11 @@ describe('AgreementRefsService', () => {
     it('detaches agreement successfully when remaining count returns empty rows array', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
 
-      dbMock.select.mockImplementationOnce(() => mockQuery([{ status: 'draft' }]));
+      dbMock.select.mockImplementationOnce(() => createMockQuery([{ status: 'draft' }]));
       txMock.returning.mockResolvedValueOnce([{ agreementId: 'doc-agreement-1' }]);
       txMock.select
-        .mockImplementationOnce(() => mockQuery([])) // remaining count returns empty array
-        .mockImplementationOnce(() => mockQuery([])); // published count (none -> orphaned draft deleted)
+        .mockImplementationOnce(() => createMockQuery([])) // remaining count returns empty array
+        .mockImplementationOnce(() => createMockQuery([])); // published count (none -> orphaned draft deleted)
 
       await expect(service.detach('user-1', 'srv-1', 'ver-1', 'ref-1')).resolves.not.toThrow();
       expect(txMock.delete).toHaveBeenCalledTimes(2);
@@ -259,7 +249,7 @@ describe('AgreementRefsService', () => {
   describe('list', () => {
     it('returns empty list if no agreement references are attached', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
-      dbMock.select.mockImplementationOnce(() => mockQuery([]));
+      dbMock.select.mockImplementationOnce(() => createMockQuery([]));
 
       const result = await service.list('user-1', 'srv-1', 'ver-1');
       expect(result).toEqual([]);
@@ -270,7 +260,7 @@ describe('AgreementRefsService', () => {
       const mockCreatedAt = new Date('2026-07-28T12:00:00.000Z');
 
       dbMock.select.mockImplementationOnce(() =>
-        mockQuery([
+        createMockQuery([
           {
             id: 'ref-1',
             agreementDocumentId: 'doc-agreement-1',
@@ -305,9 +295,9 @@ describe('AgreementRefsService', () => {
       const mockCreatedAt = new Date('2026-07-28T12:00:00.000Z');
 
       dbMock.select
-        .mockImplementationOnce(() => mockQuery([{ status: 'draft' }])) // requireDraftOwner
+        .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner
         .mockImplementationOnce(() =>
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'doc-agreement-1',
               title: 'Agreement 1',
@@ -317,8 +307,8 @@ describe('AgreementRefsService', () => {
             },
           ]),
         ) // resolvePublishedAgreement
-        .mockImplementationOnce(() => mockQuery([])) // already attached check (none)
-        .mockImplementationOnce(() => mockQuery([undefined])); // nextPosition returns rows[0] as undefined (or no max)
+        .mockImplementationOnce(() => createMockQuery([])) // already attached check (none)
+        .mockImplementationOnce(() => createMockQuery([undefined])); // nextPosition returns rows[0] as undefined (or no max)
 
       dbMock.returning.mockResolvedValueOnce([
         {

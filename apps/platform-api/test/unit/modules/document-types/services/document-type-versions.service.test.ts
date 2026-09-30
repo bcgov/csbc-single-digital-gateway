@@ -240,14 +240,14 @@ describe('DocumentTypeVersionsService', () => {
       await expect(service.archive('type-1', 'v-3')).rejects.toThrow(ConflictException);
     });
 
-    it('throws NotFoundException if target version is not found', async () => {
+    it('throws NotFoundException if target version is not found when archiving a document type version', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([]); // version not found
 
       await expect(service.archive('type-1', 'v-invalid')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws Error if archive mutation returns no row', async () => {
+    it('throws Error if archive mutation returns no row when archiving a document type version', async () => {
       dbMock.limit.mockResolvedValueOnce([dummyType]);
       dbMock.limit.mockResolvedValueOnce([dummyPublishedVersion]);
       dbMock.returning.mockResolvedValueOnce([]); // empty update returning

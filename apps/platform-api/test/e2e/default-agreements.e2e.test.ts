@@ -21,11 +21,9 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
 const BASE = `/v1/workspaces/${UUID}/default-agreements`;
 
 describe('workspace default agreements (e2e)', () => {
@@ -69,7 +67,7 @@ describe('workspace default agreements (e2e)', () => {
   });
 
   it('400s an add with a missing/invalid agreementDocumentId', async () => {
-    const staff = asUser(['staff']);
+    const staff = seedUser(['staff']);
     expect((await http().post(BASE).set('x-test-user', staff).send({})).status).toBe(400);
     expect(
       (await http().post(BASE).set('x-test-user', staff).send({ agreementDocumentId: 'nope' }))

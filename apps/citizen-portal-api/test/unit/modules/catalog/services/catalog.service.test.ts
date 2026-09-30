@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { type Database, documentReferences, documentVersions, documents } from '@repo/database';
 import { CatalogService } from '../../../../../src/modules/catalog/services/catalog.service';
-import { createMockDb } from '../../../../utils/createMockDb';
+import { createMockDb } from '../../../../utils/create-mock-db';
 
 describe('CatalogService Unit Test Suite', () => {
   let service: CatalogService;
@@ -109,7 +109,7 @@ describe('CatalogService Unit Test Suite', () => {
   });
 
   describe('getService', () => {
-    it('Should throw NotFoundException if service is not found', async () => {
+    it('Should throw NotFoundException if service is not found when fetching a service', async () => {
       mockResponse([], documents, 'select');
 
       await expect(service.getService('svc-invalid')).rejects.toThrow(NotFoundException);

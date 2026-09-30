@@ -15,7 +15,7 @@ import {
   notificationOutbox,
 } from '@repo/database';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
-import { createMockDb } from '../../../../utils/createMockDb';
+import { createMockDb } from '../../../../utils/create-mock-db';
 
 describe('ApplicationsService Unit Test Suite', () => {
   let service: ApplicationsService;
@@ -46,7 +46,7 @@ describe('ApplicationsService Unit Test Suite', () => {
   });
 
   describe('getApplicationForm', () => {
-    it('Should throw NotFoundException if service is not found', async () => {
+    it('Should throw NotFoundException if service is not found when fetching an application form', async () => {
       mockResponse([], documents, 'select'); // no service version found
 
       await expect(service.getApplicationForm('svc-id', 'form-id')).rejects.toThrow(

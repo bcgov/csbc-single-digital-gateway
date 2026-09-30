@@ -22,11 +22,8 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
 describe('services (e2e)', () => {
   let app: INestApplication;
@@ -69,8 +66,8 @@ describe('services (e2e)', () => {
     );
   });
 
-  it('400s an invalid create body for a signed-in user', async () => {
-    const staff = asUser(['staff']);
+  it('400s an invalid create body for a signed-in user when posting services', async () => {
+    const staff = seedUser(['staff']);
     expect((await http().post('/v1/services').set('x-test-user', staff).send({})).status).toBe(400);
     expect(
       (
@@ -82,12 +79,12 @@ describe('services (e2e)', () => {
     ).toBe(400);
   });
 
-  it('400s a list without a valid workspaceId query', async () => {
+  it('400s a list without a valid workspaceId query when fetching services', async () => {
     expect(
       (
         await http()
           .get('/v1/services')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });
@@ -97,14 +94,14 @@ describe('services (e2e)', () => {
       (
         await http()
           .get(`/v1/services?workspaceId=${UUID}&limit=0`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
     expect(
       (
         await http()
           .get(`/v1/services?workspaceId=${UUID}&sort=bogus`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });

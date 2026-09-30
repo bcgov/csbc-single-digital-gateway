@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationsModule } from '../../../../src/modules/notifications/notifications.module';
 import { MyNotificationsV1Controller } from '../../../../src/modules/notifications/controllers/my-notifications-v1.controller';
 import { NotificationsProxyService } from '../../../../src/modules/notifications/services/notifications-proxy.service';
-import { createMockConfigService } from '../../../utils/createMockConfigService';
+import { createMockConfigService } from '../../../utils/create-mock-config-service';
 
 describe('NotificationsModule Unit Test Suite', () => {
   it('Should compile NotificationsModule successfully and resolve all controllers and providers', async () => {

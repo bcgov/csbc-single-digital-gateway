@@ -12,8 +12,7 @@ import {
   toWorkspaceMemberDto,
   toWorkspaceDto,
 } from '../../../../../src/modules/workspaces/dtos/workspace.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('workspace DTO schemas and helpers', () => {
   describe('createWorkspaceSchema', () => {

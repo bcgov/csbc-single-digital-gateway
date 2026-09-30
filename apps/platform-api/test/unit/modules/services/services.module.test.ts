@@ -13,14 +13,12 @@ import { AgreementRefsService } from '../../../../src/modules/services/services/
 
 describe('ServicesModule Unit Test Suite', () => {
   it('should compile ServicesModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
       ],
       exports: [DATABASE_CLIENT],
@@ -47,7 +45,7 @@ describe('ServicesModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('should verify metadata declaration directly for ServicesModule', () => {
     const controllers = Reflect.getMetadata('controllers', ServicesModule) as any[];
     const providers = Reflect.getMetadata('providers', ServicesModule) as any[];
 

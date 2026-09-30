@@ -39,9 +39,7 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const seedUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u', roles, claims: { sub: 'u' } } satisfies AuthUser);
+import { seedUser } from '../utils/test-helpers';
 
 describe('global AuthGuard (e2e)', () => {
   let app: INestApplication;

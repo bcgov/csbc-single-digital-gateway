@@ -6,6 +6,7 @@ import type {
   ListServiceAgreementsDto,
   UpdateServiceAgreementDto,
 } from '../../../../../src/modules/service-agreements/dtos/service-agreement.dtos';
+import { createMockList } from '../../../../utils/test-helpers';
 
 describe('ServiceAgreementsV1Controller', () => {
   let controller: ServiceAgreementsV1Controller;
@@ -58,7 +59,7 @@ describe('ServiceAgreementsV1Controller', () => {
   describe('list', () => {
     it('returns agreements wrapped in items object', async () => {
       const query: ListServiceAgreementsDto = { workspaceId: 'ws-1' };
-      const mockList = [{ id: 'agreement-123' }];
+      const mockList = createMockList('agreement-123');
       serviceMock.list.mockResolvedValue(mockList);
 
       const result = await controller.list(mockUser, query);

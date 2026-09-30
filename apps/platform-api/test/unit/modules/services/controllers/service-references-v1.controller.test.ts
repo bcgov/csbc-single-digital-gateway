@@ -5,6 +5,7 @@ import type {
   AddReferenceDto,
   CreateReferencedFormDto,
 } from '../../../../../src/modules/services/dtos/reference.dtos';
+import { createMockList } from '../../../../utils/test-helpers';
 
 describe('ServiceReferencesV1Controller', () => {
   let controller: ServiceReferencesV1Controller;
@@ -43,7 +44,7 @@ describe('ServiceReferencesV1Controller', () => {
 
   describe('list', () => {
     it('returns references list from the service wrapped in an items object', async () => {
-      const mockList = [{ id: 'ref-1', name: 'Ref 1' }];
+      const mockList = createMockList('ref-1', 'Ref 1');
       referencesServiceMock.list.mockResolvedValue(mockList);
 
       const result = await controller.list(mockUser, 'service-1', 'version-1');
@@ -184,7 +185,7 @@ describe('ServiceReferencesV1Controller', () => {
 
   describe('listAgreements', () => {
     it('returns agreements list from the agreements service wrapped in an items object', async () => {
-      const mockList = [{ id: 'ref-agreement-1', title: 'Agreement 1' }];
+      const mockList = createMockList('ref-agreement-1', 'Reference Agreement 1', 'Agreement 1');
       agreementRefsServiceMock.list.mockResolvedValue(mockList);
 
       const result = await controller.listAgreements(mockUser, 'service-1', 'version-1');

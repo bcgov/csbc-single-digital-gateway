@@ -9,7 +9,7 @@ import {
   workspaceDefaultAgreements,
 } from '@repo/database';
 import { ConsentService } from '../../../../../src/modules/applications/services/consent.service';
-import { createMockDb } from '../../../../utils/createMockDb';
+import { createMockDb } from '../../../../utils/create-mock-db';
 
 describe('ConsentService Unit Test Suite', () => {
   let service: ConsentService;
@@ -24,7 +24,7 @@ describe('ConsentService Unit Test Suite', () => {
   });
 
   describe('agreementsForService', () => {
-    it('Should throw NotFoundException if service is not found', async () => {
+    it('Should throw NotFoundException if service is not found when fetching agreements for a service', async () => {
       mockResponse([], documents, 'select'); // no service found
 
       await expect(service.agreementsForService('user-1', 'svc-id')).rejects.toThrow(

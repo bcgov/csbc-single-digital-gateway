@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { type Database } from '@repo/database';
 import { OidcUserSyncService, mapClaims } from '../../../src/auth/oidc-user-sync.service';
-import { createMockDb } from '../../utils/createMockDb';
+import { createMockDb } from '../../utils/create-mock-db';
 
 describe('OidcUserSyncService Unit Test', () => {
   describe('mapClaims Function Unit Test', () => {

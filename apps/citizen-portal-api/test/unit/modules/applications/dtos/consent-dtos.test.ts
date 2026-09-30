@@ -3,8 +3,7 @@ import {
   recordConsentSchema,
   serviceAgreementConsentSchema,
 } from '../../../../../src/modules/applications/dtos/consent.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('consent DTO schemas', () => {
   it('Should require a uuid agreementVersionId and an approve/reject decision for record', () => {

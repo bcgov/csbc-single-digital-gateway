@@ -2,17 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { OutboxRelayService } from '../../../src/notifications/outbox-relay.service';
 import { M2mTokenClient } from '../../../src/notifications/m2m-token.client';
 import { notificationOutbox } from '@repo/database';
-
-const mockQuery = (resolvedValue: any) => {
-  const qb = Promise.resolve(resolvedValue);
-  return Object.assign(qb, {
-    from: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    for: vi.fn().mockResolvedValue(resolvedValue),
-    where: vi.fn().mockReturnThis(),
-  });
-};
+import { createMockQuery } from '../../utils/create-mock-query';
 
 describe('OutboxRelayService', () => {
   let service: OutboxRelayService;
@@ -26,7 +16,7 @@ describe('OutboxRelayService', () => {
     vi.useFakeTimers();
 
     txMock = {
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
@@ -156,7 +146,7 @@ describe('OutboxRelayService', () => {
 
   describe('processDueRows', () => {
     it('returns 0 if no due rows found', async () => {
-      txMock.select.mockImplementation(() => mockQuery([]));
+      txMock.select.mockImplementation(() => createMockQuery([]));
 
       const count = await service.processDueRows();
 
@@ -175,7 +165,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => mockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const fetchResponse = { ok: true, status: 200 };
@@ -217,7 +207,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => mockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const invalidateSpy = vi.spyOn(M2mTokenClient.prototype, 'invalidate');
@@ -243,7 +233,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 2, // will become 3 (exceeding/reaching limit of 3)
       };
-      txMock.select.mockImplementation(() => mockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const fetchResponse = { ok: false, status: 500 };
@@ -272,7 +262,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => mockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const fetchResponse = { ok: true, status: 200 };
@@ -307,7 +297,7 @@ describe('OutboxRelayService', () => {
         email: null,
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => mockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       vi.mocked(fetch).mockRejectedValue('Raw string fetch error');

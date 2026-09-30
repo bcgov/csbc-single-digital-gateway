@@ -80,15 +80,15 @@ describe('Applications Library Test Suite', () => {
     });
 
     it('getApplication fetches application detail by ID', async () => {
-      const mockDetail = { id: 'app-1', reference: 'REF-123' };
-      const fetchSpy = createMockSpy(mockDetail);
+      const mockResult = { id: 'app-1', reference: 'REF-123' };
+      const fetchSpy = createMockSpy(mockResult);
 
       const result = await getApplication('app-1');
 
       expect(fetchSpy).toHaveBeenCalledWith(`${BFF_ORIGIN}/v1/me/applications/app-1`, {
         credentials: 'include',
       });
-      expect(result).toEqual(mockDetail);
+      expect(result).toEqual(mockResult);
     });
 
     it('reviseApplication sends POST to revise endpoint', async () => {
@@ -123,8 +123,8 @@ describe('Applications Library Test Suite', () => {
 
   describe('query options configuration', () => {
     it('applicationQueryOptions creates correct options object', async () => {
-      const mockDetail = { id: 'app-1', reference: 'REF-123' };
-      const fetchSpy = createMockSpy(mockDetail);
+      const mockResult = { id: 'app-1', reference: 'REF-123' };
+      const fetchSpy = createMockSpy(mockResult);
 
       const options = applicationQueryOptions('app-1');
       expect(options.queryKey).toEqual(['me', 'applications', 'app-1']);
@@ -136,7 +136,7 @@ describe('Applications Library Test Suite', () => {
         `${BFF_ORIGIN}/v1/me/applications/app-1`,
         expect.any(Object),
       );
-      expect(result).toEqual(mockDetail);
+      expect(result).toEqual(mockResult);
     });
 
     it('applicationFormQueryOptions creates correct options object', async () => {

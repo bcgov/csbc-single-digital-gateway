@@ -10,14 +10,12 @@ import { GeocoderService } from '../../../../src/modules/geo/services/geocoder.s
 
 describe('GeoModule Unit Test Suite', () => {
   it('Should compile GeoModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {};
-
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
       ],
       exports: [DATABASE_CLIENT],

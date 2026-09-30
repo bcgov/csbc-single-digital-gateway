@@ -9,12 +9,7 @@ import {
   listServicesQuerySchema,
 } from '../../../../../src/modules/services/dtos/service.dtos';
 import type { Document, DocumentVersion } from '@repo/database';
-
-const VALID_UUID_1 = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
-const VALID_UUID_2 = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
-const VALID_UUID_3 = '11111111-1111-4111-8111-111111111111';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { VALID_UUID_1, VALID_UUID_2, VALID_UUID_3, UUID } from '../../../../utils/fixtures';
 
 describe('service DTO schemas', () => {
   describe('applicationFormRefSchema', () => {

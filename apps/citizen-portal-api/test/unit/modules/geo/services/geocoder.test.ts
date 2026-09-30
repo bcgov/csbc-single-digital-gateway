@@ -5,8 +5,8 @@ import {
   GeocoderService,
   normalizeBcFeature,
 } from '../../../../../src/modules/geo/services/geocoder.service';
-import { createMockConfigService } from '../../../../utils/createMockConfigService';
-import { createMockResponse } from '../../../../utils/createMockResponse';
+import { createMockConfigService } from '../../../../utils/create-mock-config-service';
+import { createMockResponse } from '../../../../utils/create-mock-response';
 
 describe('GeocoderService and normalizeBcFeature Unit Test Suite', () => {
   describe('Dependency Injection and Metadata', () => {

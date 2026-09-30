@@ -11,16 +11,8 @@ import {
   insertApplication,
 } from '../../../../../src/modules/services/util/applications';
 import { documents, documentVersions, documentReferences } from '@repo/database';
-
-const mockQuery = (resolvedValue: any) => {
-  const qb = Promise.resolve(resolvedValue);
-  return Object.assign(qb, {
-    from: vi.fn().mockReturnValue(qb),
-    innerJoin: vi.fn().mockReturnValue(qb),
-    limit: vi.fn().mockReturnValue(qb),
-    where: vi.fn().mockReturnValue(qb),
-  });
-};
+import { createMockQuery } from '../../../../utils/create-mock-query';
+import { VALID_UUID_1, VALID_UUID_2 } from '../../../../utils/fixtures';
 
 describe('applications utility tests', () => {
   describe('structureFromDefinition', () => {
@@ -115,18 +107,16 @@ describe('applications utility tests', () => {
 
   describe('resolveApplications', () => {
     let dbMock: any;
-    const VALID_UUID_1 = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
-    const VALID_UUID_2 = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
 
     beforeEach(() => {
       dbMock = Object.assign(Promise.resolve([]), {
-        select: vi.fn().mockImplementation(() => mockQuery([])),
+        select: vi.fn().mockImplementation(() => createMockQuery([])),
       });
     });
 
     it('resolves an existing application successfully', async () => {
       dbMock.select.mockReturnValueOnce(
-        mockQuery([
+        createMockQuery([
           {
             documentId: 'doc-1',
             kind: 'basic-form',
@@ -158,8 +148,8 @@ describe('applications utility tests', () => {
       });
     });
 
-    it('throws NotFoundException if target version is not found', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+    it('throws NotFoundException if target version is not found when resolving applications', async () => {
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       const input = [
         {
@@ -175,9 +165,9 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws BadRequestException if target is in a different workspace', async () => {
+    it('throws BadRequestException if target is in a different workspace when resolving applications', async () => {
       dbMock.select.mockReturnValueOnce(
-        mockQuery([
+        createMockQuery([
           {
             documentId: 'doc-1',
             kind: 'basic-form',
@@ -200,9 +190,9 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws BadRequestException if the service references itself', async () => {
+    it('throws BadRequestException if the service references itself when resolving applications', async () => {
       dbMock.select.mockReturnValueOnce(
-        mockQuery([
+        createMockQuery([
           {
             documentId: 'service-doc-1', // same as serviceId
             kind: 'basic-form',
@@ -227,7 +217,7 @@ describe('applications utility tests', () => {
 
     it('throws BadRequestException if the target document is not a form kind', async () => {
       dbMock.select.mockReturnValueOnce(
-        mockQuery([
+        createMockQuery([
           {
             documentId: 'doc-1',
             kind: 'service', // not basic-form or multi-stage-form
@@ -252,7 +242,7 @@ describe('applications utility tests', () => {
 
     it('resolves a new application successfully', async () => {
       dbMock.select.mockReturnValueOnce(
-        mockQuery([
+        createMockQuery([
           {
             kind: 'multi-stage-form',
             typeVersionId: 'type-version-1',
@@ -288,7 +278,7 @@ describe('applications utility tests', () => {
     });
 
     it('throws UnprocessableEntityException if the type is not found or has no published version', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       const input = [
         {
@@ -306,7 +296,7 @@ describe('applications utility tests', () => {
 
     it('throws BadRequestException if the new form type is not a form kind', async () => {
       dbMock.select.mockReturnValueOnce(
-        mockQuery([
+        createMockQuery([
           {
             kind: 'service', // not basic-form or multi-stage-form
             typeVersionId: 'type-version-1',
@@ -388,7 +378,7 @@ describe('applications utility tests', () => {
       expect(txMock.insert).toHaveBeenNthCalledWith(3, documentReferences);
     });
 
-    it('throws Error if form document insert returned no row', async () => {
+    it('throws Error if form document insert returned no row when submitting an application', async () => {
       const app = {
         id: undefined,
         label: 'Submit Application',
@@ -409,7 +399,7 @@ describe('applications utility tests', () => {
       );
     });
 
-    it('throws Error if form version insert returned no row', async () => {
+    it('throws Error if form version insert returned no row when submitting an application', async () => {
       const app = {
         id: undefined,
         label: 'Submit Application',

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MyApplicationsV1Controller } from '../../../../../src/modules/applications/controllers/my-applications-v1.controller';
 import { ApplicationsService } from '../../../../../src/modules/applications/services/applications.service';
-import { createMockUser } from '../../../../utils/createMockUser';
+import { createMockUser } from '../../../../utils/create-mock-user';
 
 describe('MyApplicationsV1Controller Unit Test Suite', () => {
   let controller: MyApplicationsV1Controller;
@@ -54,13 +54,13 @@ describe('MyApplicationsV1Controller Unit Test Suite', () => {
   describe('get', () => {
     it('Should get application details for the current user', async () => {
       const id = 'app-123';
-      const mockDetail = { id, formVersionId: 'version-1', status: 'draft' };
-      applicationsServiceMock.getDetail.mockResolvedValue(mockDetail);
+      const mockResult = { id, formVersionId: 'version-1', status: 'draft' };
+      applicationsServiceMock.getDetail.mockResolvedValue(mockResult);
 
       const result = await controller.get(mockUser, id);
 
       expect(applicationsServiceMock.getDetail).toHaveBeenCalledWith('user-123', id);
-      expect(result).toEqual(mockDetail);
+      expect(result).toEqual(mockResult);
     });
   });
 

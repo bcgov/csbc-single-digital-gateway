@@ -5,17 +5,8 @@ import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-
-/**
- * Auth + validation posture for the citizen notifications proxy (feature 113). The upstream
- * notification-service is NOT running in the suite, so only pre-proxy behavior (401 guard,
- * 400 boundary validation) is asserted; live proxy behavior is verified against the running
- * stack in integration.
- */
-const seedUser = (): string =>
-  JSON.stringify({ id: 'u', roles: ['staff'], claims: { sub: 'u' } } satisfies AuthUser);
-const ORIGIN = 'http://localhost:3001';
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { seedUser } from '../utils/test-helpers';
+import { UUID, ORIGIN } from '../utils/fixtures';
 
 describe('platform notifications proxy (e2e)', () => {
   let app: INestApplication;

@@ -10,7 +10,6 @@ import { GeocoderService } from '../../../../src/modules/geo/services/geocoder.s
 
 describe('GeoModule Unit Test Suite', () => {
   it('should compile GeoModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {};
     const mockConfigService = {
       get: () => undefined,
     };
@@ -20,7 +19,7 @@ describe('GeoModule Unit Test Suite', () => {
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
         {
           provide: ConfigService,
@@ -51,7 +50,7 @@ describe('GeoModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('should verify metadata declaration directly for GeoModule', () => {
     const controllers = Reflect.getMetadata('controllers', GeoModule) as any[];
     const providers = Reflect.getMetadata('providers', GeoModule) as any[];
 

@@ -8,6 +8,8 @@ import {
 } from '../../../../../src/modules/services/util/applications';
 import { reactivateServiceTx } from '../../../../../src/modules/services/util/version-copy';
 import { documents, documentVersions } from '@repo/database';
+import { createMockQuery } from '../../../../utils/create-mock-query';
+import { createMockDoc } from '../../../../utils/test-helpers';
 
 vi.mock('../../../../../src/modules/services/util/applications', () => ({
   insertApplication: vi.fn(),
@@ -31,20 +33,6 @@ vi.mock('drizzle-orm', async (importOriginal) => {
   };
 });
 
-const mockQuery = (resolvedValue: any) => {
-  const qb = Promise.resolve(resolvedValue);
-  return Object.assign(qb, {
-    from: vi.fn().mockReturnValue(qb),
-    innerJoin: vi.fn().mockReturnValue(qb),
-    leftJoin: vi.fn().mockReturnValue(qb),
-    limit: vi.fn().mockReturnValue(qb),
-    orderBy: vi.fn().mockReturnValue(qb),
-    where: vi.fn().mockReturnValue(qb),
-    offset: vi.fn().mockReturnValue(qb),
-    groupBy: vi.fn().mockReturnValue(qb),
-  });
-};
-
 describe('ServicesService', () => {
   let service: ServicesService;
   let dbMock: any;
@@ -60,12 +48,12 @@ describe('ServicesService', () => {
       returning: vi.fn(),
       delete: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
     });
 
     dbMock = Object.assign(Promise.resolve([]), {
       transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
@@ -95,7 +83,7 @@ describe('ServicesService', () => {
 
     it('successfully creates service document and draft version in a transaction', async () => {
       // 1. requireMembership select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
 
       // 2. serviceType.resolve
       serviceTypeResolverMock.resolve.mockResolvedValue({
@@ -106,15 +94,14 @@ describe('ServicesService', () => {
       // 3. resolveApplications mock
       vi.mocked(resolveApplications).mockResolvedValueOnce([]);
 
-      const mockDoc = {
+      const mockDoc = createMockDoc({
         id: 'service-doc-1',
         workspaceId: 'ws-1',
         title: 'New Service',
         kind: 'service',
         description: 'Service Desc',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
         updatedAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+      });
       const mockVersion = {
         id: 'service-version-1',
         documentId: 'service-doc-1',
@@ -144,13 +131,13 @@ describe('ServicesService', () => {
     });
 
     it('throws NotFoundException if user has no workspace membership', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(service.create('user-1', input)).rejects.toThrow(NotFoundException);
     });
 
     it('throws Error if documents insert returned no row', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       serviceTypeResolverMock.resolve.mockResolvedValue({
         typeId: 'type-1',
         typeVersionId: 'type-version-1',
@@ -164,7 +151,7 @@ describe('ServicesService', () => {
     });
 
     it('throws Error if documentVersions insert returned no row', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       serviceTypeResolverMock.resolve.mockResolvedValue({
         typeId: 'type-1',
         typeVersionId: 'type-version-1',
@@ -178,7 +165,7 @@ describe('ServicesService', () => {
     });
 
     it('successfully resolves and inserts inline applications', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       serviceTypeResolverMock.resolve.mockResolvedValue({
         typeId: 'type-1',
         typeVersionId: 'type-version-1',
@@ -240,11 +227,13 @@ describe('ServicesService', () => {
       // 1. requireMembership select
       dbMock.select = vi
         .fn()
-        .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
         // 2. list documents select
-        .mockReturnValueOnce(mockQuery([{ id: 'form-doc-1', title: 'Form 1', kind: 'basic-form' }]))
+        .mockReturnValueOnce(
+          createMockQuery([{ id: 'form-doc-1', title: 'Form 1', kind: 'basic-form' }]),
+        )
         // 3. versions for form select
-        .mockReturnValueOnce(mockQuery([{ id: 'form-version-1', status: 'published' }]));
+        .mockReturnValueOnce(createMockQuery([{ id: 'form-version-1', status: 'published' }]));
 
       const result = await service.listForms('user-1', 'ws-1');
 
@@ -261,11 +250,13 @@ describe('ServicesService', () => {
     it('returns latest draft version if no published version exists', async () => {
       dbMock.select = vi
         .fn()
-        .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
         // 2. list documents select
-        .mockReturnValueOnce(mockQuery([{ id: 'form-doc-1', title: 'Form 1', kind: 'basic-form' }]))
+        .mockReturnValueOnce(
+          createMockQuery([{ id: 'form-doc-1', title: 'Form 1', kind: 'basic-form' }]),
+        )
         // 3. versions for form select (no published)
-        .mockReturnValueOnce(mockQuery([{ id: 'form-version-draft', status: 'draft' }]));
+        .mockReturnValueOnce(createMockQuery([{ id: 'form-version-draft', status: 'draft' }]));
 
       const result = await service.listForms('user-1', 'ws-1');
 
@@ -275,11 +266,13 @@ describe('ServicesService', () => {
     it('ignores form document in catalog if it has no versions', async () => {
       dbMock.select = vi
         .fn()
-        .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
         // 2. list documents select
-        .mockReturnValueOnce(mockQuery([{ id: 'form-doc-1', title: 'Form 1', kind: 'basic-form' }]))
+        .mockReturnValueOnce(
+          createMockQuery([{ id: 'form-doc-1', title: 'Form 1', kind: 'basic-form' }]),
+        )
         // 3. versions for form select (empty)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       const result = await service.listForms('user-1', 'ws-1');
 
@@ -289,7 +282,7 @@ describe('ServicesService', () => {
 
   describe('list', () => {
     it('throws NotFoundException if user has no workspace membership', async () => {
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await expect(
         service.list('user-1', {
@@ -304,16 +297,16 @@ describe('ServicesService', () => {
 
     it('returns empty list and skips subqueries when no documents exist in workspace', async () => {
       // 1. requireMembership select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
       serviceTypeResolverMock.resolve.mockResolvedValueOnce({
         typeId: 'type-1',
         typeVersionId: 'type-version-1',
       });
       // 3. docs select (empty)
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
       // 4. totals select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ count: 0 }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ count: 0 }]));
 
       const result = await service.list('user-1', {
         workspaceId: 'ws-1',
@@ -331,7 +324,7 @@ describe('ServicesService', () => {
 
     it('returns paginated services with derived versions, multiple versions per doc, status, and submission flags', async () => {
       // 1. requireMembership select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
       serviceTypeResolverMock.resolve.mockResolvedValueOnce({
         typeId: 'type-1',
@@ -358,12 +351,12 @@ describe('ServicesService', () => {
       };
 
       // 3. docs select
-      dbMock.select.mockReturnValueOnce(mockQuery([mockDoc1, mockDoc2]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([mockDoc1, mockDoc2]));
       // 4. totals count select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ count: 2 }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ count: 2 }]));
       // 5. versionRows select (doc-1 has 2 versions -> exercises list.push(row), doc-2 has none)
       dbMock.select.mockReturnValueOnce(
-        mockQuery([
+        createMockQuery([
           {
             documentId: 'doc-1',
             id: 'version-1',
@@ -381,7 +374,7 @@ describe('ServicesService', () => {
         ]),
       );
       // 6. submissionRows select (doc-1 has submissions)
-      dbMock.select.mockReturnValueOnce(mockQuery([{ ownerDocumentId: 'doc-1', n: 5 }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ ownerDocumentId: 'doc-1', n: 5 }]));
 
       const result = await service.list('user-1', {
         workspaceId: 'ws-1',
@@ -416,16 +409,16 @@ describe('ServicesService', () => {
 
     it('handles status sort, order desc, whitespace q, and empty totals query', async () => {
       // 1. requireMembership select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
       serviceTypeResolverMock.resolve.mockResolvedValueOnce({
         typeId: 'type-1',
         typeVersionId: 'type-version-1',
       });
       // 3. docs select
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
       // 4. totals select (empty)
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
 
       const result = await service.list('user-1', {
         workspaceId: 'ws-1',
@@ -442,16 +435,16 @@ describe('ServicesService', () => {
 
     it('handles falsy search expression when search expression is undefined', async () => {
       // 1. requireMembership select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ role: 'member' }]));
       // 2. serviceType.resolve
       serviceTypeResolverMock.resolve.mockResolvedValueOnce({
         typeId: 'type-1',
         typeVersionId: 'type-version-1',
       });
       // 3. docs select
-      dbMock.select.mockReturnValueOnce(mockQuery([]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([]));
       // 4. totals select
-      dbMock.select.mockReturnValueOnce(mockQuery([{ count: 0 }]));
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ count: 0 }]));
 
       (globalThis as any).mockOrUndefined = true;
       try {
@@ -472,9 +465,9 @@ describe('ServicesService', () => {
     it('returns status draft when service only has draft versions', async () => {
       dbMock.select = vi
         .fn()
-        .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'service-1',
               workspaceId: 'ws-1',
@@ -484,9 +477,9 @@ describe('ServicesService', () => {
             },
           ]),
         )
-        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]))
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'service-1',
               id: 'version-1',
@@ -496,7 +489,7 @@ describe('ServicesService', () => {
             },
           ]),
         )
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
@@ -507,9 +500,9 @@ describe('ServicesService', () => {
     it('returns status archived when service only has archived versions', async () => {
       dbMock.select = vi
         .fn()
-        .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'service-1',
               workspaceId: 'ws-1',
@@ -519,9 +512,9 @@ describe('ServicesService', () => {
             },
           ]),
         )
-        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]))
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'service-1',
               id: 'version-1',
@@ -531,7 +524,7 @@ describe('ServicesService', () => {
             },
           ]),
         )
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
@@ -542,9 +535,9 @@ describe('ServicesService', () => {
     it('returns status none when service has no versions', async () => {
       dbMock.select = vi
         .fn()
-        .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'service-1',
               workspaceId: 'ws-1',
@@ -554,9 +547,9 @@ describe('ServicesService', () => {
             },
           ]),
         )
-        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
-        .mockReturnValueOnce(mockQuery([])) // empty versions
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]))
+        .mockReturnValueOnce(createMockQuery([])) // empty versions
+        .mockReturnValueOnce(createMockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
@@ -568,10 +561,10 @@ describe('ServicesService', () => {
       dbMock.select = vi
         .fn()
         // 1. requireMembership select
-        .mockReturnValueOnce(mockQuery([{ role: 'member' }]))
+        .mockReturnValueOnce(createMockQuery([{ role: 'member' }]))
         // 2. docs select
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'service-1',
               workspaceId: 'ws-1',
@@ -582,10 +575,10 @@ describe('ServicesService', () => {
           ]),
         )
         // 3. totals count select
-        .mockReturnValueOnce(mockQuery([{ count: 1 }]))
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]))
         // 4. versionRows select
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               documentId: 'service-1',
               id: 'version-1',
@@ -596,7 +589,7 @@ describe('ServicesService', () => {
           ]),
         )
         // 5. submissionRows select (empty result)
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       serviceTypeResolverMock.resolve.mockResolvedValue({ typeId: 'type-1' });
 
@@ -608,21 +601,21 @@ describe('ServicesService', () => {
 
   describe('get', () => {
     it('successfully retrieves detailed service information', async () => {
-      const mockDoc = {
+      const mockDoc = createMockDoc({
         id: 'service-1',
         workspaceId: 'ws-1',
         title: 'Service Title',
         description: 'Service Desc',
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
         updatedAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+      });
       dbMock.select = vi
         .fn()
         // 1. requireDocument select
-        .mockReturnValueOnce(mockQuery([{ doc: mockDoc }]))
+        .mockReturnValueOnce(createMockQuery([{ doc: mockDoc }]))
         // 2. versionsOf select
         .mockReturnValueOnce(
-          mockQuery([
+          createMockQuery([
             {
               id: 'version-1',
               documentId: 'service-1',
@@ -638,7 +631,7 @@ describe('ServicesService', () => {
           ]),
         )
         // 3. hasSubmissions select
-        .mockReturnValueOnce(mockQuery([]));
+        .mockReturnValueOnce(createMockQuery([]));
 
       serviceTypeResolverMock.definitionsForVersions.mockResolvedValue({
         'type-version-1': { schema: { type: 'object' }, uischema: {} },
@@ -653,7 +646,7 @@ describe('ServicesService', () => {
     });
 
     it('throws NotFoundException if the service document is not found', async () => {
-      dbMock.select = vi.fn().mockReturnValueOnce(mockQuery([])); // empty requireDocument
+      dbMock.select = vi.fn().mockReturnValueOnce(createMockQuery([])); // empty requireDocument
 
       await expect(service.get('user-1', 'service-1')).rejects.toThrow(NotFoundException);
     });
@@ -661,18 +654,18 @@ describe('ServicesService', () => {
 
   describe('remove', () => {
     it('successfully removes a service and its orphaned forms when no submissions exist', async () => {
-      const mockDoc = { id: 'service-1' };
+      const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
         // 1. requireDocument select
-        .mockReturnValueOnce(mockQuery([{ doc: mockDoc }]))
+        .mockReturnValueOnce(createMockQuery([{ doc: mockDoc }]))
         // 2. hasSubmissions count select
-        .mockReturnValueOnce(mockQuery([{ n: 0 }]))
+        .mockReturnValueOnce(createMockQuery([{ n: 0 }]))
         // 3. applicationFormIds select
-        .mockReturnValueOnce(mockQuery([{ formId: 'form-doc-1' }]));
+        .mockReturnValueOnce(createMockQuery([{ formId: 'form-doc-1' }]));
 
       // inside transaction: remaining count select
-      txMock.select.mockReturnValueOnce(mockQuery([{ n: 0 }]));
+      txMock.select.mockReturnValueOnce(createMockQuery([{ n: 0 }]));
 
       await service.remove('user-1', 'service-1');
 
@@ -681,28 +674,28 @@ describe('ServicesService', () => {
     });
 
     it('throws ConflictException if the service forms have submissions', async () => {
-      const mockDoc = { id: 'service-1' };
+      const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
-        .mockReturnValueOnce(mockQuery([{ doc: mockDoc }])) // requireDocument
-        .mockReturnValueOnce(mockQuery([{ n: 5 }])); // hasSubmissions returns > 0
+        .mockReturnValueOnce(createMockQuery([{ doc: mockDoc }])) // requireDocument
+        .mockReturnValueOnce(createMockQuery([{ n: 5 }])); // hasSubmissions returns > 0
 
       await expect(service.remove('user-1', 'service-1')).rejects.toThrow(ConflictException);
     });
 
     it('does not delete form document if another service still references it', async () => {
-      const mockDoc = { id: 'service-1' };
+      const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
         // 1. requireDocument select
-        .mockReturnValueOnce(mockQuery([{ doc: mockDoc }]))
+        .mockReturnValueOnce(createMockQuery([{ doc: mockDoc }]))
         // 2. hasSubmissions count select
-        .mockReturnValueOnce(mockQuery([{ n: 0 }]))
+        .mockReturnValueOnce(createMockQuery([{ n: 0 }]))
         // 3. applicationFormIds select
-        .mockReturnValueOnce(mockQuery([{ formId: 'form-doc-1' }]));
+        .mockReturnValueOnce(createMockQuery([{ formId: 'form-doc-1' }]));
 
       // inside transaction: remaining count select (1 remaining reference)
-      txMock.select.mockReturnValueOnce(mockQuery([{ n: 1 }]));
+      txMock.select.mockReturnValueOnce(createMockQuery([{ n: 1 }]));
 
       await service.remove('user-1', 'service-1');
 
@@ -710,19 +703,19 @@ describe('ServicesService', () => {
       expect(txMock.delete).toHaveBeenCalledWith(documents); // only deleted service doc
     });
 
-    it('deletes form document if remaining count query returns empty', async () => {
-      const mockDoc = { id: 'service-1' };
+    it('deletes form document if remaining count query returns empty when removing a service', async () => {
+      const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
         // 1. requireDocument select
-        .mockReturnValueOnce(mockQuery([{ doc: mockDoc }]))
+        .mockReturnValueOnce(createMockQuery([{ doc: mockDoc }]))
         // 2. hasSubmissions count select
-        .mockReturnValueOnce(mockQuery([{ n: 0 }]))
+        .mockReturnValueOnce(createMockQuery([{ n: 0 }]))
         // 3. applicationFormIds select
-        .mockReturnValueOnce(mockQuery([{ formId: 'form-doc-1' }]));
+        .mockReturnValueOnce(createMockQuery([{ formId: 'form-doc-1' }]));
 
       // inside transaction: remaining count select (empty result)
-      txMock.select.mockReturnValueOnce(mockQuery([]));
+      txMock.select.mockReturnValueOnce(createMockQuery([]));
 
       await service.remove('user-1', 'service-1');
 
@@ -733,13 +726,13 @@ describe('ServicesService', () => {
 
   describe('archive', () => {
     it('archives all service versions and referenced form versions', async () => {
-      const mockDoc = { id: 'service-1' };
+      const mockDoc = createMockDoc({ id: 'service-1' });
       dbMock.select = vi
         .fn()
         // 1. requireDocument
-        .mockReturnValueOnce(mockQuery([{ doc: mockDoc }]))
+        .mockReturnValueOnce(createMockQuery([{ doc: mockDoc }]))
         // 2. applicationFormIds
-        .mockReturnValueOnce(mockQuery([{ formId: 'form-doc-1' }]));
+        .mockReturnValueOnce(createMockQuery([{ formId: 'form-doc-1' }]));
 
       await service.archive('user-1', 'service-1');
 
@@ -749,8 +742,8 @@ describe('ServicesService', () => {
 
   describe('reactivate', () => {
     it('reactivates a service via reactivateServiceTx', async () => {
-      const mockDoc = { id: 'service-1' };
-      dbMock.select.mockReturnValueOnce(mockQuery([{ doc: mockDoc }])); // requireDocument
+      const mockDoc = createMockDoc({ id: 'service-1' });
+      dbMock.select.mockReturnValueOnce(createMockQuery([{ doc: mockDoc }])); // requireDocument
 
       await service.reactivate('user-1', 'service-1');
 
@@ -796,15 +789,15 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
   const arrange = (versions: unknown[]) => {
     dbMock.select = vi
       .fn()
-      .mockReturnValueOnce(mockQuery([{ doc }])) // requireDocument
-      .mockReturnValueOnce(mockQuery(versions)) // versionsOf (ascending)
-      .mockReturnValueOnce(mockQuery([{ n: 0 }])); // hasSubmissions
+      .mockReturnValueOnce(createMockQuery([{ doc }])) // requireDocument
+      .mockReturnValueOnce(createMockQuery(versions)) // versionsOf (ascending)
+      .mockReturnValueOnce(createMockQuery([{ n: 0 }])); // hasSubmissions
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     dbMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockImplementation(() => mockQuery([])),
+      select: vi.fn().mockImplementation(() => createMockQuery([])),
     });
     serviceTypeResolverMock = {
       resolve: vi.fn(),

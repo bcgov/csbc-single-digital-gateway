@@ -163,7 +163,7 @@ describe('DocumentTypesService', () => {
       await expect(service.staffGetVersion('type-1', 'v-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException if the version is not found', async () => {
+    it('throws NotFoundException if the version is not found when fetching document version', async () => {
       dbMock.limit.mockResolvedValueOnce([]); // not found
 
       await expect(service.staffGetVersion('type-1', 'invalid')).rejects.toThrow(NotFoundException);

@@ -9,18 +9,16 @@ import { MyApplicationsV1Controller } from '../../../../src/modules/applications
 import { ConsentV1Controller } from '../../../../src/modules/applications/controllers/consent-v1.controller';
 import { ApplicationsService } from '../../../../src/modules/applications/services/applications.service';
 import { ConsentService } from '../../../../src/modules/applications/services/consent.service';
-import { createMockConfigService } from '../../../utils/createMockConfigService';
+import { createMockConfigService } from '../../../utils/create-mock-config-service';
 
 describe('ApplicationsModule Unit Test Suite', () => {
   it('Should compile ApplicationsModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
         {
           provide: ConfigService,
@@ -54,7 +52,7 @@ describe('ApplicationsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('Should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for ApplicationsModule', () => {
     const controllers = Reflect.getMetadata('controllers', ApplicationsModule) as any[];
     const providers = Reflect.getMetadata('providers', ApplicationsModule) as any[];
 

@@ -20,11 +20,8 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
 describe('forms (e2e)', () => {
   let app: INestApplication;
@@ -67,7 +64,7 @@ describe('forms (e2e)', () => {
   });
 
   it('400s invalid create + patch bodies for a signed-in user', async () => {
-    const staff = asUser(['staff']);
+    const staff = seedUser(['staff']);
     expect((await http().post('/v1/forms').set('x-test-user', staff).send({})).status).toBe(400);
     expect(
       (

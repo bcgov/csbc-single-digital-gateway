@@ -5,6 +5,7 @@ import type { AuthModuleOptions, AuthUser } from '@repo/nestjs/auth';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { seedUser } from '../utils/test-telpers';
 
 @Controller('probe')
 class ProbeController {
@@ -39,9 +40,6 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const seedUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u', roles, claims: { sub: 'u' } } satisfies AuthUser);
 
 describe('global AuthGuard (e2e)', () => {
   let app: INestApplication;

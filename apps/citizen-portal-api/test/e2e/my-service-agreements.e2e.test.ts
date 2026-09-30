@@ -5,15 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-
-/**
- * Auth + validation posture for the citizen service-agreement history (feature 139). The test
- * DATABASE_URL is unreachable, so handler queries aren't exercised here (covered by a live-DB probe).
- * We assert: `/v1/me/service-agreements*` is protected (401 without a session), and a malformed
- * `:id` is a clean 400 (validated before any DB access).
- */
-const seedUser = (): string =>
-  JSON.stringify({ id: 'u', roles: ['citizen'], claims: { sub: 'u' } } satisfies AuthUser);
+import { seedUser } from '../utils/test-telpers';
 
 describe('citizen service-agreement history (e2e)', () => {
   let app: INestApplication;

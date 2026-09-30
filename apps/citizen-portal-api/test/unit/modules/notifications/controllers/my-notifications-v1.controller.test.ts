@@ -5,9 +5,9 @@ import type {
   FeedQueryDto,
   UpdatePreferencesDto,
 } from '../../../../../src/modules/notifications/dtos/notification.dtos';
-import { createMockUser } from '../../../../utils/createMockUser';
-import { createMockReq } from '../../../../utils/createMockReq';
-import { createMockRes } from '../../../../utils/createMockRes';
+import { createMockUser } from '../../../../utils/create-mock-user';
+import { createMockReq } from '../../../../utils/create-mock-req';
+import { createMockRes } from '../../../../utils/create-mock-res';
 
 describe('MyNotificationsV1Controller Unit Test Suite', () => {
   let controller: MyNotificationsV1Controller;

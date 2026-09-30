@@ -8,14 +8,12 @@ import { CatalogService } from '../../../../src/modules/catalog/services/catalog
 
 describe('CatalogModule Unit Test Suite', () => {
   it('Should compile CatalogModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
       ],
       exports: [DATABASE_CLIENT],
@@ -39,7 +37,7 @@ describe('CatalogModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('Should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for CatalogModule', () => {
     const controllers = Reflect.getMetadata('controllers', CatalogModule) as any[];
     const providers = Reflect.getMetadata('providers', CatalogModule) as any[];
 

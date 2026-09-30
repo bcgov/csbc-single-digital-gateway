@@ -22,9 +22,7 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
+import { seedUser } from '../utils/test-helpers';
 
 describe('document-types (e2e)', () => {
   let app: INestApplication;
@@ -65,12 +63,12 @@ describe('document-types (e2e)', () => {
     expect((await http().get('/v1/document-types')).status).toBe(401);
   });
 
-  it('403s admin endpoints for a non-admin (staff) session', async () => {
+  it('403s admin endpoints for a non-admin (staff) session when fetching document types', async () => {
     expect(
       (
         await http()
           .get('/v1/admin/document-types')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(403);
   });
@@ -81,7 +79,7 @@ describe('document-types (e2e)', () => {
       (
         await http()
           .post('/v1/admin/document-types')
-          .set('x-test-user', asUser(['admin']))
+          .set('x-test-user', seedUser(['admin']))
           .send({ name: 'X', kind: 'basic-form', definition: {} })
       ).status,
     ).toBe(404);

@@ -22,11 +22,8 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
 describe('service-agreements (e2e)', () => {
   let app: INestApplication;
@@ -67,8 +64,8 @@ describe('service-agreements (e2e)', () => {
     expect((await http().post('/v1/service-agreements').send({ data: {} })).status).toBe(401);
   });
 
-  it('400s an invalid create body for a signed-in user', async () => {
-    const staff = asUser(['staff']);
+  it('400s an invalid create body for a signed-in user when fetching service agreements', async () => {
+    const staff = seedUser(['staff']);
     // data is required.
     expect(
       (await http().post('/v1/service-agreements').set('x-test-user', staff).send({})).status,
@@ -90,7 +87,7 @@ describe('service-agreements (e2e)', () => {
       (
         await http()
           .post('/v1/service-agreements')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
           .send({ data: { title: 'ToS' } })
       ).status,
     ).toBe(403);
@@ -101,7 +98,7 @@ describe('service-agreements (e2e)', () => {
       (
         await http()
           .get('/v1/service-agreements')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(403);
   });
@@ -115,7 +112,7 @@ describe('service-agreements (e2e)', () => {
       (
         await http()
           .get('/v1/service-agreements/page')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(403);
   });
@@ -125,14 +122,14 @@ describe('service-agreements (e2e)', () => {
       (
         await http()
           .get(`/v1/service-agreements/page?workspaceId=${UUID}&limit=0`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
     expect(
       (
         await http()
           .get(`/v1/service-agreements/page?workspaceId=${UUID}&sort=bogus`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });

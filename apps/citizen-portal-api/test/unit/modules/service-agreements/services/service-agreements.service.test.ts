@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { type Database, serviceAgreementConsents } from '@repo/database';
 import { ServiceAgreementsService } from '../../../../../src/modules/service-agreements/services/service-agreements.service';
-import { createMockDb } from '../../../../utils/createMockDb';
+import { createMockDb } from '../../../../utils/create-mock-db';
 
 describe('ServiceAgreementsService Unit Test Suite', () => {
   let service: ServiceAgreementsService;

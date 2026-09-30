@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { notificationOutbox, type Database, type NotificationOutbox } from '@repo/database';
 import { OutboxRelayService } from '../../../src/notifications/outbox-relay.service';
-import { M2mTokenClient } from '../../../src/notifications/m2m-token.client';
 import { backoffMs, DEFAULT_BACKOFF_BASE_MS } from '../../../src/notifications/backoff';
 import type { Env } from '../../../src/config/env.schema';
-import { createMockConfigService } from '../../utils/createMockConfigService';
+import { createMockConfigService } from '../../utils/create-mock-config-service';
+import { createTokenSpy } from '../../utils/create-token-spy';
 
 describe('OutboxRelayService Unit Test Suite', () => {
   let service: OutboxRelayService;
@@ -20,8 +20,7 @@ describe('OutboxRelayService Unit Test Suite', () => {
 
   beforeEach(() => {
     // Spies for M2mTokenClient
-    getTokenSpy = vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mocked-token');
-    invalidateSpy = vi.spyOn(M2mTokenClient.prototype, 'invalidate').mockImplementation(() => {});
+    ({ getTokenSpy, invalidateSpy } = createTokenSpy(getTokenSpy, invalidateSpy));
 
     // Initialize mock builders
     selectBuilder = {

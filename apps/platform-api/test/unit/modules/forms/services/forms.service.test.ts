@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { FormsService } from '../../../../../src/modules/forms/services/forms.service';
 import { documents, documentVersions } from '@repo/database';
+import { createMockDoc, createMockFormVersion } from '../../../../utils/test-helpers';
 
 describe('FormsService', () => {
   let service: FormsService;
@@ -55,25 +56,13 @@ describe('FormsService', () => {
         },
       ]);
 
-      const mockDoc = {
-        id: 'doc-1',
-        workspaceId: 'ws-1',
-        title: 'New Form',
-        kind: 'basic-form',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      const mockVersion = {
-        id: 'version-1',
-        documentId: 'doc-1',
-        version: 1,
-        status: 'draft',
-        schema: { schema: {}, uischema: {} },
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+      const mockDoc = createMockDoc({});
+
+      const mockFormVersion = createMockFormVersion({});
 
       txMock.returning
         .mockResolvedValueOnce([mockDoc]) // inserted doc
-        .mockResolvedValueOnce([mockVersion]); // inserted version
+        .mockResolvedValueOnce([mockFormVersion]); // inserted version
 
       const result = await service.create('user-1', mockInput);
 
@@ -127,7 +116,7 @@ describe('FormsService', () => {
       await expect(service.create('user-1', mockInput)).rejects.toThrow(BadRequestException);
     });
 
-    it('throws Error if document insert returned no row', async () => {
+    it('throws Error if document insert returned no row when creating a form', async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
       dbMock.limit.mockResolvedValueOnce([
         {
@@ -152,7 +141,7 @@ describe('FormsService', () => {
           kind: 'basic-form',
         },
       ]);
-      const mockDoc = { id: 'doc-1', workspaceId: 'ws-1' };
+      const mockDoc = createMockDoc({ workspaceId: 'ws-1' });
       txMock.returning.mockResolvedValueOnce([mockDoc]).mockResolvedValueOnce([]); // empty version insert
 
       await expect(service.create('user-1', mockInput)).rejects.toThrow(
@@ -163,26 +152,13 @@ describe('FormsService', () => {
 
   describe('get', () => {
     it('successfully retrieves a form and its latest version', async () => {
-      const mockDoc = {
-        id: 'doc-1',
-        workspaceId: 'ws-1',
-        title: 'New Form',
-        kind: 'basic-form',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      const mockVersion = {
-        id: 'version-1',
-        documentId: 'doc-1',
-        version: 1,
-        status: 'draft',
-        schema: { schema: {}, uischema: {} },
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+      const mockDoc = createMockDoc({});
+      const mockFormVersion = createMockFormVersion({});
 
       // 1. requireDocument
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]);
       // 2. latest document version lookup
-      dbMock.limit.mockResolvedValueOnce([mockVersion]);
+      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
 
       const result = await service.get('user-1', 'doc-1');
 
@@ -206,13 +182,7 @@ describe('FormsService', () => {
     });
 
     it('throws NotFoundException if the document has no versions', async () => {
-      const mockDoc = {
-        id: 'doc-1',
-        workspaceId: 'ws-1',
-        title: 'New Form',
-        kind: 'basic-form',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+      const mockDoc = createMockDoc({});
 
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
       dbMock.limit.mockResolvedValueOnce([]); // no versions
@@ -234,30 +204,19 @@ describe('FormsService', () => {
     };
 
     it('successfully updates a draft form version and the document title', async () => {
-      const mockDoc = {
-        id: 'doc-1',
-        workspaceId: 'ws-1',
+      const mockDoc = createMockDoc({
         title: 'Old Form Title',
-        kind: 'basic-form',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      const mockVersion = {
-        id: 'version-1',
-        documentId: 'doc-1',
-        version: 1,
-        status: 'draft',
-        schema: { schema: {}, uischema: {} },
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+      });
+      const mockFormVersion = createMockFormVersion({});
       const mockUpdatedVersion = {
-        ...mockVersion,
+        ...mockFormVersion,
         schema: { schema: { new: true }, uischema: {} },
       };
 
       // 1. requireDocument
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]);
       // 2. document version lookup
-      dbMock.limit.mockResolvedValueOnce([mockVersion]);
+      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
       // 3. update version returning
       dbMock.returning = vi.fn().mockResolvedValueOnce([mockUpdatedVersion]);
 
@@ -275,8 +234,8 @@ describe('FormsService', () => {
       });
     });
 
-    it('throws NotFoundException if the version is not found', async () => {
-      const mockDoc = { id: 'doc-1', workspaceId: 'ws-1' };
+    it('throws NotFoundException if the version is not found when updating schema', async () => {
+      const mockDoc = createMockDoc({});
 
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
       dbMock.limit.mockResolvedValueOnce([]); // version not found
@@ -287,16 +246,13 @@ describe('FormsService', () => {
     });
 
     it('throws ConflictException if the version is not in draft status', async () => {
-      const mockDoc = { id: 'doc-1', workspaceId: 'ws-1' };
-      const mockVersion = {
-        id: 'version-1',
-        documentId: 'doc-1',
-        version: 1,
+      const mockDoc = createMockDoc({});
+      const mockFormVersion = createMockFormVersion({
         status: 'published', // not draft
-      };
+      });
 
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([mockVersion]);
+      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
 
       await expect(service.updateSchema('user-1', 'doc-1', 'version-1', mockInput)).rejects.toThrow(
         ConflictException,
@@ -304,16 +260,11 @@ describe('FormsService', () => {
     });
 
     it('throws NotFoundException if updating version query returned no row', async () => {
-      const mockDoc = { id: 'doc-1', workspaceId: 'ws-1' };
-      const mockVersion = {
-        id: 'version-1',
-        documentId: 'doc-1',
-        version: 1,
-        status: 'draft',
-      };
+      const mockDoc = createMockDoc({});
+      const mockFormVersion = createMockFormVersion({});
 
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([mockVersion]);
+      dbMock.limit.mockResolvedValueOnce([mockFormVersion]);
       dbMock.returning = vi.fn().mockResolvedValueOnce([]); // empty returning
 
       await expect(service.updateSchema('user-1', 'doc-1', 'version-1', mockInput)).rejects.toThrow(
@@ -322,28 +273,17 @@ describe('FormsService', () => {
     });
 
     it('successfully updates a draft form version without updating the document title if title is omitted', async () => {
-      const mockDoc = {
-        id: 'doc-1',
-        workspaceId: 'ws-1',
+      const mockDoc = createMockDoc({
         title: 'Old Form Title',
-        kind: 'basic-form',
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
-      const mockVersion = {
-        id: 'version-1',
-        documentId: 'doc-1',
-        version: 1,
-        status: 'draft',
-        schema: { schema: {}, uischema: {} },
-        createdAt: new Date('2026-07-12T00:00:00.000Z'),
-      };
+      });
+      const mockFormVersion = createMockFormVersion({});
       const mockUpdatedVersion = {
-        ...mockVersion,
+        ...mockFormVersion,
         schema: { schema: { updated: true }, uischema: {} },
       };
 
       dbMock.limit.mockResolvedValueOnce([{ doc: mockDoc }]); // requireDocument succeeds
-      dbMock.limit.mockResolvedValueOnce([mockVersion]); // version lookup
+      dbMock.limit.mockResolvedValueOnce([mockFormVersion]); // version lookup
       dbMock.returning = vi.fn().mockResolvedValueOnce([mockUpdatedVersion]); // update returning
 
       const result = await service.updateSchema('user-1', 'doc-1', 'version-1', {

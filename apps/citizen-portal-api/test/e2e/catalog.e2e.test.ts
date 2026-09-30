@@ -5,17 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-
-/**
- * Auth + validation posture for the citizen catalog (feature 60). The test DATABASE_URL is an
- * unreachable port (test/setup.ts), so handler queries can't be exercised here — those are
- * covered by an ephemeral live-DB probe. What we assert without a DB:
- *  - `/v1/me/applications` is protected (401 without a session).
- *  - `/v1/services` is public: a bad query returns 400 (validation), never 401 — proving the
- *    request reached the pipe past the guard.
- */
-const seedUser = (): string =>
-  JSON.stringify({ id: 'u', roles: ['citizen'], claims: { sub: 'u' } } satisfies AuthUser);
+import { seedUser } from '../utils/test-telpers';
 
 describe('citizen catalog (e2e)', () => {
   let app: INestApplication;

@@ -45,17 +45,17 @@ describe('ConsentV1Controller Unit Test Suite', () => {
         agreementVersionId: 'ver-1',
         decision: 'approve' as ConsentDecision,
       };
-      const expectedResult = {
+      const mockResult = {
         agreementVersionId: 'ver-1',
         decision: 'approve' as ConsentDecision,
       };
 
-      consentServiceMock.record.mockResolvedValue(expectedResult);
+      consentServiceMock.record.mockResolvedValue(mockResult);
 
       const result = await controller.record(user, body);
 
       expect(consentServiceMock.record).toHaveBeenCalledWith('user-1', 'ver-1', 'approve');
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(mockResult);
     });
   });
 });

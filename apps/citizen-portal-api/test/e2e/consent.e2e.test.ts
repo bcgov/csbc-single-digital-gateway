@@ -5,16 +5,8 @@ import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-
-/**
- * Auth + validation posture for the citizen consent surface (feature 89). The test DATABASE_URL is
- * unreachable, so handler queries aren't exercised (covered by a live-DB probe). We assert the
- * consent endpoints are protected (401) and the record body validates (400) past the guard.
- */
-const seedUser = (): string =>
-  JSON.stringify({ id: 'u', roles: ['citizen'], claims: { sub: 'u' } } satisfies AuthUser);
-const ORIGIN = 'http://localhost:3000';
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { seedUser } from '../utils/test-telpers';
+import { ORIGIN, UUID } from '../utils/fixtures';
 
 describe('citizen consent (e2e)', () => {
   let app: INestApplication;

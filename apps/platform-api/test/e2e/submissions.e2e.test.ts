@@ -23,11 +23,8 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
 describe('submissions (e2e)', () => {
   let app: INestApplication;
@@ -73,12 +70,12 @@ describe('submissions (e2e)', () => {
     ).toBe(401);
   });
 
-  it('400s a list without a valid workspaceId query', async () => {
+  it('400s a list without a valid workspaceId query when fetching submissions', async () => {
     expect(
       (
         await http()
           .get('/v1/submissions')
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });
@@ -88,21 +85,21 @@ describe('submissions (e2e)', () => {
       (
         await http()
           .get(`/v1/submissions?workspaceId=${UUID}&limit=0`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
     expect(
       (
         await http()
           .get(`/v1/submissions?workspaceId=${UUID}&sort=bogus`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
     expect(
       (
         await http()
           .get(`/v1/submissions?workspaceId=${UUID}&status=nope`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
       ).status,
     ).toBe(400);
   });
@@ -112,7 +109,7 @@ describe('submissions (e2e)', () => {
       (
         await http()
           .post(`/v1/submissions/${UUID}/review`)
-          .set('x-test-user', asUser(['staff']))
+          .set('x-test-user', seedUser(['staff']))
           .send({ decision: 'maybe' })
       ).status,
     ).toBe(400);

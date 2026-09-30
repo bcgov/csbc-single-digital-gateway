@@ -9,6 +9,8 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DocumentTypesModule } from '../../src/modules/document-types/document-types.module';
+import { seedUser } from '../utils/test-helpers';
+import { UUID } from '../utils/fixtures';
 
 const authOptions = {
   issuer: 'https://idp.example.com',
@@ -20,11 +22,6 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-
-const asUser = (roles: string[]): string =>
-  JSON.stringify({ id: 'u1', roles, claims: { sub: 'u1' } } satisfies AuthUser);
-
-const UUID = '11111111-1111-4111-8111-111111111111';
 
 describe('admin-document-types (e2e)', () => {
   let app: INestApplication;
@@ -85,8 +82,8 @@ describe('admin-document-types (e2e)', () => {
     ).toBe(401);
   });
 
-  it('403s admin endpoints for a non-admin (staff) session', async () => {
-    const staff = asUser(['staff']);
+  it('403s admin endpoints for a non-admin (staff) session when fetching document types', async () => {
+    const staff = seedUser(['staff']);
     expect((await http().get('/v1/admin/document-types').set('x-test-user', staff)).status).toBe(
       403,
     );
@@ -133,7 +130,7 @@ describe('admin-document-types (e2e)', () => {
   });
 
   it('400s version creation/update with invalid body for an admin session', async () => {
-    const admin = asUser(['admin']);
+    const admin = seedUser(['admin']);
 
     // Test POST /versions validation
     expect(

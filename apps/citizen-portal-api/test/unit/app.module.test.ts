@@ -5,7 +5,7 @@ import { AuthModule, SESSION_REGISTRY } from '@repo/nestjs/auth';
 import { LoggerModule } from '@repo/nestjs/logger';
 import { DatabaseModule } from '@repo/nestjs/database';
 import { ValkeySessionRegistry } from '../../src/auth/valkey-session-registry';
-import { createMockConfigService } from '../utils/createMockConfigService';
+import { createMockConfigService } from '../utils/create-mock-config-service';
 
 describe('AppModule Unit Test Suite', () => {
   it('Should compile AppModule successfully', async () => {

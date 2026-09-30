@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { type Database, countries, states } from '@repo/database';
 import { GeoService } from '../../../../../src/modules/geo/services/geo.service';
-import { createMockDb } from '../../../../utils/createDbMock';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('GeoService Unit Test Suite', () => {
   let service: GeoService;

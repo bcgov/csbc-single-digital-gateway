@@ -8,14 +8,12 @@ import { DefaultAgreementsService } from '../../../../src/modules/default-agreem
 
 describe('DefaultAgreementsModule Unit Test Suite', () => {
   it('should compile DefaultAgreementsModule successfully and resolve all controllers and providers', async () => {
-    const mockDbClient = {}; // mock database client
-
     @Global()
     @Module({
       providers: [
         {
           provide: DATABASE_CLIENT,
-          useValue: mockDbClient,
+          useValue: {}, // mock database client
         },
       ],
       exports: [DATABASE_CLIENT],
@@ -37,7 +35,7 @@ describe('DefaultAgreementsModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('should verify metadata declaration directly', () => {
+  it('should verify metadata declaration directly for DefaultAgreementsModule', () => {
     const controllers = Reflect.getMetadata('controllers', DefaultAgreementsModule) as any[];
     const providers = Reflect.getMetadata('providers', DefaultAgreementsModule) as any[];
 

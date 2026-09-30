@@ -4,8 +4,7 @@ import {
   createReferencedFormSchema,
   externalApplicationSchema,
 } from '../../../../../src/modules/services/dtos/reference.dtos';
-
-const UUID = '11111111-1111-4111-8111-111111111111';
+import { UUID } from '../../../../utils/fixtures';
 
 describe('reference DTO schemas', () => {
   it('addReferenceSchema requires a uuid target and a known relation', () => {
