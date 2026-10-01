@@ -75,7 +75,7 @@ describe('DocumentStudio', () => {
       within(dialog).getByRole('switch', { name: 'This document is a template' }),
     ).not.toBeChecked();
     expect(within(dialog).getByRole('radio', { name: /^Service(?! Agreement)/ })).toBeChecked();
-    expect(within(dialog).getByRole('button', { name: 'Create document' })).toBeEnabled();
+    expect(within(dialog).getByRole('button', { name: 'Next' })).toBeEnabled();
     const header = slot(container, 'document-studio-header') as HTMLElement;
     expect(header).toBeEmptyDOMElement();
 
@@ -96,7 +96,7 @@ describe('DocumentStudio', () => {
 
     await user.click(within(dialog).getByRole('radio', { name: /Application Method/ }));
     await user.click(within(dialog).getByRole('switch', { name: 'This document is a template' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Create document' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Next' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(container.querySelector('.react-flow')).toBeInTheDocument();

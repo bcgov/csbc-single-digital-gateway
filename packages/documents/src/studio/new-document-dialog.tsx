@@ -83,7 +83,7 @@ export function NewDocumentDialog({
               onOpenChange(false);
             }}
           >
-            Create document
+            Next
           </Button>
         </DialogFooter>
       </DialogContent>
