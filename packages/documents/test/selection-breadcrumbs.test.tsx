@@ -1,3 +1,4 @@
+import { mdiHome } from '@mdi/js';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -41,6 +42,14 @@ describe('SelectionBreadcrumbs', () => {
     await user.click(within(nav).getByRole('button', { name: 'A' }));
     await user.click(within(nav).getByRole('button', { name: 'Funnel' }));
     expect(onSelect.mock.calls).toEqual([['A'], [null]]);
+  });
+
+  it('draws the root crumb as a home icon that keeps the root label as its name', () => {
+    const { nav } = renderPath([seg('fun', 'funnel', 'Funnel'), seg('A', 'form')]);
+
+    const root = within(nav).getByRole('button', { name: 'Funnel' });
+    expect(root.querySelector('svg path')).toHaveAttribute('d', mdiHome);
+    expect(within(nav).getByText('A').querySelector('svg')).toBeNull();
   });
 
   it('collapses a long path to root › ⋯ › parent › current, listing the hidden crumbs in a menu', async () => {

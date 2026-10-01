@@ -1,3 +1,5 @@
+import { mdiHome } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -76,11 +78,15 @@ function Crumb({
   current: boolean;
   onSelect: SelectionBreadcrumbsProps['onSelect'];
 }) {
+  // A Funnel root draws as a home icon; a Form root is the whole path, so it keeps its name.
+  const root = segment.kind === 'funnel';
+  const content = root ? <RootLabel label={segment.label} /> : segment.label;
+  const className = root ? 'flex items-center' : LABEL_CLASS;
   return (
     <BreadcrumbItem>
       {current ? (
-        <BreadcrumbPage title={segment.label} className={LABEL_CLASS}>
-          {segment.label}
+        <BreadcrumbPage title={segment.label} className={className}>
+          {content}
         </BreadcrumbPage>
       ) : segment.kind === 'condition' ? (
         <ConditionLabel segment={segment} />
@@ -88,13 +94,23 @@ function Crumb({
         <BreadcrumbLink
           render={<button type="button" />}
           title={segment.label}
-          className={LABEL_CLASS}
+          className={className}
           onClick={() => onSelect(segment.kind === 'form' ? segment.id : null)}
         >
-          {segment.label}
+          {content}
         </BreadcrumbLink>
       )}
     </BreadcrumbItem>
+  );
+}
+
+/** The home icon of a Funnel root crumb; its label stays as screen-reader text, so it keeps its accessible name. */
+function RootLabel({ label }: { label: string }) {
+  return (
+    <>
+      <Icon path={mdiHome} size="14px" aria-hidden="true" />
+      <span className="sr-only">{label}</span>
+    </>
   );
 }
 
