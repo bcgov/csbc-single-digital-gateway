@@ -2,34 +2,19 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { mapClaims, OidcUserSyncService } from '../../../src/auth/oidc-user-sync.service';
 import { users, identities } from '@repo/database';
 import type { OidcClaims } from '@repo/nestjs/auth';
+import { createMockDb } from '../../utils/create-db-mock';
 
 describe('OidcUserSyncService', () => {
-  let dbMock: any;
   let txMock: any;
+  let dbMock: any;
   let configMock: any;
   let service: OidcUserSyncService;
 
   beforeEach(() => {
     // Reset all mock structures before each test run
-    txMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
-
-    dbMock = {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-    };
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     configMock = {
       getOrThrow: vi.fn().mockReturnValue('citizen'),

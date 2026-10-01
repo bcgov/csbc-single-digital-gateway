@@ -41,7 +41,7 @@ const authOptions = {
 } satisfies AuthModuleOptions;
 import { seedUser } from '../utils/test-helpers';
 
-describe('global AuthGuard (e2e)', () => {
+describe('Global AuthGuard E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

@@ -14,6 +14,8 @@ import {
 } from '../../../../../src/modules/services/util/version-copy';
 import { documentVersions, documents, documentReferences } from '@repo/database';
 import { createMockQuery } from '../../../../utils/create-mock-query';
+import { createMockDb } from '../../../../utils/create-db-mock';
+import { createMockService } from '../../../../utils/create-mock-services';
 
 vi.mock('../../../../../src/modules/services/util/applications', () => ({
   resolveApplications: vi.fn(),
@@ -34,40 +36,19 @@ vi.mock('../../../../../src/modules/services/util/version-copy', () => ({
 
 describe('ServiceVersionsService', () => {
   let service: ServiceVersionsService;
-  let dbMock: any;
   let txMock: any;
+  let dbMock: any;
   let servicesServiceMock: any;
   let serviceTypeResolverMock: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    txMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-    });
+    const mocks = createMockDb();
+    txMock = mocks.txMockQuery;
+    dbMock = mocks.dbMockQuery;
 
-    dbMock = Object.assign(Promise.resolve([]), {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      where: vi.fn().mockReturnThis(),
-    });
-
-    servicesServiceMock = {
-      requireDocument: vi.fn(),
-    };
+    servicesServiceMock = createMockService();
 
     serviceTypeResolverMock = {
       schemaForVersion: vi.fn(),

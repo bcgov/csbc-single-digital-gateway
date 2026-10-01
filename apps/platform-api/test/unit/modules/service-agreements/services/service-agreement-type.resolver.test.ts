@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { ServiceAgreementTypeResolver } from '../../../../../src/modules/service-agreements/services/service-agreement-type.resolver';
 import { createMockQuery } from '../../../../utils/create-mock-query';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('ServiceAgreementTypeResolver', () => {
   let resolver: ServiceAgreementTypeResolver;
@@ -10,9 +11,8 @@ describe('ServiceAgreementTypeResolver', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    dbMock = {
-      select: vi.fn(),
-    };
+    const mocks = createMockDb();
+    dbMock = mocks.dbMock;
 
     resolver = new ServiceAgreementTypeResolver(dbMock);
   });

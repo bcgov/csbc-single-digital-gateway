@@ -16,6 +16,9 @@ import {
 import { createSelectBuilder } from '../../../../utils/create-select-builder';
 import { createMockResponse } from '../../../../utils/create-mock-response';
 import { createMockDoc, createMockRef, createMockVersion } from '../../../../utils/test-helpers';
+import { mockCreatedAt } from '../../../../utils/fixtures';
+import { createMockDb } from '../../../../utils/create-db-mock';
+import { createMockService } from '../../../../utils/create-mock-services';
 
 describe('ReferencesService', () => {
   let service: ReferencesService;
@@ -28,36 +31,21 @@ describe('ReferencesService', () => {
     vi.clearAllMocks();
     tableResponses = new Map();
 
+    const mocks = createMockDb();
     txMock = {
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      delete: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
+      ...mocks.txMock,
       select: vi
         .fn()
         .mockImplementation((selector: any) => createSelectBuilder(tableResponses, selector)),
     };
-
     dbMock = {
-      transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
+      ...mocks.dbMock,
       select: vi
         .fn()
         .mockImplementation((selector: any) => createSelectBuilder(tableResponses, selector)),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      where: vi.fn().mockReturnThis(),
     };
 
-    servicesServiceMock = {
-      requireDocument: vi.fn(),
-    };
+    servicesServiceMock = createMockService();
 
     service = new ReferencesService(dbMock, servicesServiceMock);
   });
@@ -67,7 +55,6 @@ describe('ReferencesService', () => {
       // 1. servicesService.requireDocument
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
 
-      const mockCreatedAt = new Date('2026-07-12T00:00:00.000Z');
       createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
       createMockResponse(tableResponses, documentReferences, [
         {
@@ -106,7 +93,7 @@ describe('ReferencesService', () => {
         hasSubmissions: false,
         hasStructure: false,
         url: null,
-        createdAt: '2026-07-12T00:00:00.000Z',
+        createdAt: mockCreatedAt.toISOString(),
       });
     });
 
@@ -121,7 +108,6 @@ describe('ReferencesService', () => {
 
     it('sets url to null in list if external application targetData is null or invalid', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      const mockCreatedAt = new Date('2026-07-12T00:00:00.000Z');
 
       createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
       createMockResponse(tableResponses, documentReferences, [
@@ -150,7 +136,6 @@ describe('ReferencesService', () => {
 
     it('sets url to null in list if external application targetData url is not a string', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      const mockCreatedAt = new Date('2026-07-12T00:00:00.000Z');
 
       createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
       createMockResponse(tableResponses, documentReferences, [
@@ -179,7 +164,6 @@ describe('ReferencesService', () => {
 
     it('returns ReferenceResponse for external_application reference with its URL resolved', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ id: 'service-1' });
-      const mockCreatedAt = new Date('2026-07-12T00:00:00.000Z');
 
       createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
       createMockResponse(tableResponses, documentReferences, [
@@ -220,7 +204,6 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      const mockCreatedAt = new Date('2026-07-12T00:00:00.000Z');
       createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
       createMockResponse(tableResponses, documentVersions, [
         {
@@ -409,7 +392,6 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      const mockCreatedAt = new Date('2026-07-12T00:00:00.000Z');
       createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
       createMockResponse(tableResponses, documentVersions, [
         {
@@ -529,7 +511,6 @@ describe('ReferencesService', () => {
         workspaceId: 'ws-1',
       });
 
-      const mockCreatedAt = new Date('2026-07-12T00:00:00.000Z');
       createMockResponse(tableResponses, documentVersions, [{ status: 'draft' }]);
       createMockResponse(tableResponses, documentVersions, [
         {

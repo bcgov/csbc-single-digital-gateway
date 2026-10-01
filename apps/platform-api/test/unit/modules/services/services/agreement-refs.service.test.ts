@@ -2,6 +2,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { AgreementRefsService } from '../../../../../src/modules/services/services/agreement-refs.service';
 import { createMockQuery } from '../../../../utils/create-mock-query';
+import { mockCreatedAt } from '../../../../utils/fixtures';
+import { createMockDb } from '../../../../utils/create-db-mock';
+import { createMockService } from '../../../../utils/create-mock-services';
 
 describe('AgreementRefsService', () => {
   let service: AgreementRefsService;
@@ -12,27 +15,11 @@ describe('AgreementRefsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    txMock = {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      delete: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    };
+    const mocks = createMockDb();
+    dbMock = mocks.dbMock;
+    txMock = mocks.txMock;
 
-    dbMock = {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      delete: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
-    };
-
-    servicesServiceMock = {
-      requireDocument: vi.fn(),
-    };
-
+    servicesServiceMock = createMockService();
     service = new AgreementRefsService(dbMock, servicesServiceMock);
   });
 
@@ -142,7 +129,6 @@ describe('AgreementRefsService', () => {
 
     it('attaches agreement successfully if valid', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
-      const mockCreatedAt = new Date('2026-07-28T12:00:00.000Z');
 
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner
@@ -257,7 +243,6 @@ describe('AgreementRefsService', () => {
 
     it('returns mapped agreement references list', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
-      const mockCreatedAt = new Date('2026-07-28T12:00:00.000Z');
 
       dbMock.select.mockImplementationOnce(() =>
         createMockQuery([
@@ -292,7 +277,6 @@ describe('AgreementRefsService', () => {
   describe('nextPosition boundary', () => {
     it('uses fallback position 0 if max returned is null or rows undefined', async () => {
       servicesServiceMock.requireDocument.mockResolvedValue({ workspaceId: 'ws-1' });
-      const mockCreatedAt = new Date('2026-07-28T12:00:00.000Z');
 
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ status: 'draft' }])) // requireDraftOwner

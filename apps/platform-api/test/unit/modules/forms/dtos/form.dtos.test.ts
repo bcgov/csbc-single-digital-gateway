@@ -129,7 +129,7 @@ describe('form DTO schemas', () => {
 
   describe('toFormDto', () => {
     it('correctly maps a Document row to FormResponse', () => {
-      const mockRow = {
+      const mockBasicForm = {
         id: 'doc-1',
         workspaceId: 'ws-1',
         title: 'My Document',
@@ -137,7 +137,7 @@ describe('form DTO schemas', () => {
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
 
-      const mapped = toFormDto(mockRow as unknown as Document);
+      const mapped = toFormDto(mockBasicForm as unknown as Document);
 
       expect(mapped).toEqual({
         id: 'doc-1',
@@ -149,7 +149,7 @@ describe('form DTO schemas', () => {
     });
 
     it('throws an error if workspaceId is null', () => {
-      const mockRow = {
+      const mockFormError = {
         id: 'doc-1',
         workspaceId: null,
         title: 'My Document',
@@ -157,7 +157,7 @@ describe('form DTO schemas', () => {
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
 
-      expect(() => toFormDto(mockRow as unknown as Document)).toThrow(
+      expect(() => toFormDto(mockFormError as unknown as Document)).toThrow(
         'form document has no workspace',
       );
     });
@@ -165,7 +165,7 @@ describe('form DTO schemas', () => {
 
   describe('toFormVersionDto', () => {
     it('correctly maps a DocumentVersion row with a definition schema to FormVersionResponse', () => {
-      const mockRow = {
+      const mockFormVersionPublished = {
         id: 'v-1',
         documentId: 'doc-1',
         version: 2,
@@ -177,7 +177,7 @@ describe('form DTO schemas', () => {
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
 
-      const mapped = toFormVersionDto(mockRow as unknown as DocumentVersion);
+      const mapped = toFormVersionDto(mockFormVersionPublished as unknown as DocumentVersion);
 
       expect(mapped).toEqual({
         id: 'v-1',
@@ -193,7 +193,7 @@ describe('form DTO schemas', () => {
     });
 
     it('falls back to default empty schema/uischema when row schema is null or undefined', () => {
-      const mockRow = {
+      const mockFormVersionDraft = {
         id: 'v-1',
         documentId: 'doc-1',
         version: 1,
@@ -202,7 +202,7 @@ describe('form DTO schemas', () => {
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
 
-      const mapped = toFormVersionDto(mockRow as unknown as DocumentVersion);
+      const mapped = toFormVersionDto(mockFormVersionDraft as unknown as DocumentVersion);
 
       expect(mapped.schema).toEqual({
         schema: {},

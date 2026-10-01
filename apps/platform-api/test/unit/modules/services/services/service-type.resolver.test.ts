@@ -2,15 +2,15 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { InternalServerErrorException } from '@nestjs/common';
 import { ServiceTypeResolver } from '../../../../../src/modules/services/services/service-type.resolver';
 import { createMockQuery } from '../../../../utils/create-mock-query';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('ServiceTypeResolver', () => {
   let resolver: ServiceTypeResolver;
   let dbMock: any;
 
   beforeEach(() => {
-    dbMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-    });
+    const mocks = createMockDb();
+    dbMock = { ...mocks.dbMock, select: vi.fn().mockImplementation(() => createMockQuery([])) };
 
     resolver = new ServiceTypeResolver(dbMock);
   });

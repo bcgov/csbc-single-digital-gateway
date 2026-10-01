@@ -42,7 +42,7 @@ describe('GeoModule Unit Test Suite', () => {
     await moduleRef.close();
   });
 
-  it('Should verify metadata declaration directly', () => {
+  it('Should verify metadata declaration directly for GeoModule', () => {
     const controllers = Reflect.getMetadata('controllers', GeoModule) as any[];
     const providers = Reflect.getMetadata('providers', GeoModule) as any[];
 

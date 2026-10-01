@@ -1,6 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { DocumentTypeVersionsService } from '../../../../../src/modules/document-types/services/document-type-versions.service';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('DocumentTypeVersionsService', () => {
   let service: DocumentTypeVersionsService;
@@ -48,30 +49,9 @@ describe('DocumentTypeVersionsService', () => {
   };
 
   beforeEach(() => {
-    txMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
-
-    dbMock = Object.assign(Promise.resolve([]), {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     service = new DocumentTypeVersionsService(dbMock);
   });

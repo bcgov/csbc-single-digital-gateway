@@ -86,7 +86,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
 
     it('Should return service agreement detail when found', async () => {
       const createdAt = new Date('2026-07-31T20:00:00Z');
-      const mockRow = {
+      const mockServiceAgreement = {
         id: consentId,
         agreementDocumentId: 'doc-id-1',
         decision: 'approve',
@@ -100,7 +100,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         createdAt,
       };
 
-      mockResponse([mockRow], serviceAgreementConsents, 'select');
+      mockResponse([mockServiceAgreement], serviceAgreementConsents, 'select');
 
       const result = await service.getMine('user-123', consentId);
 
@@ -119,7 +119,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
 
     it('Should fallback to null / default labels when fields in JSON data are missing or empty', async () => {
       const createdAt = new Date('2026-07-31T20:00:00Z');
-      const mockRow = {
+      const mockUndefinedTitleServiceAgreement = {
         id: consentId,
         agreementDocumentId: 'doc-id-1',
         decision: 'reject',
@@ -133,7 +133,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         createdAt,
       };
 
-      mockResponse([mockRow], serviceAgreementConsents, 'select');
+      mockResponse([mockUndefinedTitleServiceAgreement], serviceAgreementConsents, 'select');
 
       const result = await service.getMine('user-123', consentId);
 

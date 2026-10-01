@@ -1,6 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { DocumentTypesService } from '../../../../../src/modules/document-types/services/document-types.service';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('DocumentTypesService', () => {
   let service: DocumentTypesService;
@@ -54,14 +55,8 @@ describe('DocumentTypesService', () => {
   };
 
   beforeEach(() => {
-    dbMock = Object.assign(Promise.resolve([]), {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn(),
-      limit: vi.fn(),
-    });
+    const mocks = createMockDb();
+    dbMock = mocks.dbMock;
 
     service = new DocumentTypesService(dbMock);
   });

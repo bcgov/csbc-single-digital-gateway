@@ -7,7 +7,7 @@ import { AppModule } from '../../src/app.module';
 
 // Under NODE_ENV=test the AuthModule factory injects a stub config and skips OIDC discovery, so
 // AppModule boots without a running Keycloak. The live login round-trip is verified separately.
-describe('platform-api auth wiring (e2e)', () => {
+describe('Auth Wiring E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

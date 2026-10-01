@@ -23,7 +23,7 @@ const authOptions = {
 import { seedUser } from '../utils/test-helpers';
 import { UUID } from '../utils/fixtures';
 
-describe('forms (e2e)', () => {
+describe('Forms E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

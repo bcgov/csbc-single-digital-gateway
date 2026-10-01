@@ -14,6 +14,7 @@ import {
 import { enqueueNotification } from '../../../../../src/notifications/enqueue';
 import { createSelectBuilder } from '../../../../utils/create-select-builder';
 import { createMockResponse } from '../../../../utils/create-mock-response';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 vi.mock('../../../../../src/notifications/enqueue', () => ({
   enqueueNotification: vi.fn(),
@@ -43,17 +44,10 @@ describe('SubmissionsService', () => {
     vi.clearAllMocks();
     tableResponses = new Map();
 
-    txMock = {
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-    };
-
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
     dbMock = {
-      transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
+      ...mocks.dbMock,
       select: vi
         .fn()
         .mockImplementation((selector?: any) => createSelectBuilder(tableResponses, selector)),

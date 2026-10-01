@@ -142,7 +142,7 @@ describe('service DTO schemas', () => {
 
   describe('toServiceDto', () => {
     it('maps Document row to ServiceResponse DTO', () => {
-      const mockRow = {
+      const mockService = {
         id: 'service-1',
         workspaceId: 'ws-1',
         title: 'My Service',
@@ -151,7 +151,7 @@ describe('service DTO schemas', () => {
         updatedAt: new Date('2026-07-12T00:00:00.000Z'),
       };
 
-      const result = toServiceDto(mockRow as unknown as Document);
+      const result = toServiceDto(mockService as unknown as Document);
 
       expect(result).toEqual({
         id: 'service-1',
@@ -164,7 +164,7 @@ describe('service DTO schemas', () => {
     });
 
     it('throws Error if workspaceId is null', () => {
-      const mockRow = {
+      const mockServiceError = {
         id: 'service-1',
         workspaceId: null,
         title: 'My Service',
@@ -172,7 +172,7 @@ describe('service DTO schemas', () => {
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
       };
 
-      expect(() => toServiceDto(mockRow as unknown as Document)).toThrow(
+      expect(() => toServiceDto(mockServiceError as unknown as Document)).toThrow(
         'service document has no workspace',
       );
     });
@@ -180,7 +180,7 @@ describe('service DTO schemas', () => {
 
   describe('toServiceVersionDto', () => {
     it('maps DocumentVersion row to ServiceVersionResponse DTO', () => {
-      const mockRow = {
+      const mockServiceVersionPublished = {
         id: 'version-1',
         documentId: 'service-1',
         version: 1,
@@ -191,7 +191,7 @@ describe('service DTO schemas', () => {
         archivedAt: null,
       };
 
-      const result = toServiceVersionDto(mockRow as unknown as DocumentVersion);
+      const result = toServiceVersionDto(mockServiceVersionPublished as unknown as DocumentVersion);
 
       expect(result).toEqual({
         id: 'version-1',
@@ -206,7 +206,7 @@ describe('service DTO schemas', () => {
     });
 
     it('maps null publishedAt and defined archivedAt correctly', () => {
-      const mockRow = {
+      const mockServiceVersionArchived = {
         id: 'version-1',
         documentId: 'service-1',
         version: 1,
@@ -217,7 +217,7 @@ describe('service DTO schemas', () => {
         archivedAt: new Date('2026-07-12T02:00:00.000Z'),
       };
 
-      const result = toServiceVersionDto(mockRow as unknown as DocumentVersion);
+      const result = toServiceVersionDto(mockServiceVersionArchived as unknown as DocumentVersion);
 
       expect(result).toEqual({
         id: 'version-1',

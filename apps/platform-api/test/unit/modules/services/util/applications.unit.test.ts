@@ -13,6 +13,7 @@ import {
 import { documents, documentVersions, documentReferences } from '@repo/database';
 import { createMockQuery } from '../../../../utils/create-mock-query';
 import { VALID_UUID_1, VALID_UUID_2 } from '../../../../utils/fixtures';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('applications utility tests', () => {
   describe('structureFromDefinition', () => {
@@ -109,9 +110,8 @@ describe('applications utility tests', () => {
     let dbMock: any;
 
     beforeEach(() => {
-      dbMock = Object.assign(Promise.resolve([]), {
-        select: vi.fn().mockImplementation(() => createMockQuery([])),
-      });
+      const mocks = createMockDb();
+      dbMock = mocks.dbMockQuery;
     });
 
     it('resolves an existing application successfully', async () => {

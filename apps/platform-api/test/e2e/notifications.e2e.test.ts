@@ -8,7 +8,7 @@ import { AppModule } from '../../src/app.module';
 import { seedUser } from '../utils/test-helpers';
 import { UUID, ORIGIN } from '../utils/fixtures';
 
-describe('platform notifications proxy (e2e)', () => {
+describe('Notifications E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

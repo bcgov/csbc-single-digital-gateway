@@ -25,7 +25,7 @@ import { UUID } from '../utils/fixtures';
 
 const base = `/v1/services/${UUID}/versions/${UUID}`;
 
-describe('service references (e2e)', () => {
+describe('Service References E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

@@ -23,7 +23,7 @@ const authOptions = {
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
 
-describe('admin-document-types (e2e)', () => {
+describe('Admin Document Types E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

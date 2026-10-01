@@ -8,30 +8,17 @@ import {
 import { FormsService } from '../../../../../src/modules/forms/services/forms.service';
 import { documents, documentVersions } from '@repo/database';
 import { createMockDoc, createMockFormVersion } from '../../../../utils/test-helpers';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('FormsService', () => {
   let service: FormsService;
-  let dbMock: any;
   let txMock: any;
+  let dbMock: any;
 
   beforeEach(() => {
-    txMock = {
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    };
-
-    dbMock = {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      innerJoin: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      limit: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-    };
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     service = new FormsService(dbMock);
   });

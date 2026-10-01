@@ -9,6 +9,8 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DocumentTypesModule } from '../../src/modules/document-types/document-types.module';
+import { UUID } from '../utils/fixtures';
+import { seedUser } from '../utils/test-helpers';
 
 // Covers auth (401) + role (403) + validation (400) — the paths before any query (the test DB is
 // unreachable). Real lifecycle behaviour is verified against live Postgres in integration.
@@ -22,9 +24,8 @@ const authOptions = {
   publicPaths: [],
   config: {} as unknown as NonNullable<AuthModuleOptions['config']>,
 } satisfies AuthModuleOptions;
-import { seedUser } from '../utils/test-helpers';
 
-describe('document-types (e2e)', () => {
+describe('Document Types E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -58,30 +59,31 @@ describe('document-types (e2e)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('401s admin + staff endpoints without a session', async () => {
-    expect((await http().get('/v1/admin/document-types')).status).toBe(401);
+  it('401s document-types catalog endpoints without a session', async () => {
+    // GET /v1/document-types (list)
     expect((await http().get('/v1/document-types')).status).toBe(401);
+    // GET /v1/document-types/:id (get)
+    expect((await http().get(`/v1/document-types/${UUID}`)).status).toBe(401);
+    // GET /v1/document-types/:id/versions/:versionId (getVersion)
+    expect((await http().get(`/v1/document-types/${UUID}/versions/${UUID}`)).status).toBe(401);
   });
 
-  it('403s admin endpoints for a non-admin (staff) session when fetching document types', async () => {
-    expect(
-      (
-        await http()
-          .get('/v1/admin/document-types')
-          .set('x-test-user', seedUser(['staff']))
-      ).status,
-    ).toBe(403);
-  });
+  it('404s unmapped mutation routes on document-types for authenticated staff (read-only catalog)', async () => {
+    const staff = seedUser(['staff']);
 
-  it('has no create-document-type endpoint (types are seeded only)', async () => {
-    // POST /v1/admin/document-types is removed: an admin gets 404 (no matching route), not 201/400.
+    // Document types catalog is read-only for staff — mutations should not have registered route handlers
     expect(
-      (
-        await http()
-          .post('/v1/admin/document-types')
-          .set('x-test-user', seedUser(['admin']))
-          .send({ name: 'X', kind: 'basic-form', definition: {} })
-      ).status,
+      (await http().post('/v1/document-types').set('x-test-user', staff).send({})).status,
+    ).toBe(404);
+    expect(
+      (await http().put(`/v1/document-types/${UUID}`).set('x-test-user', staff).send({})).status,
+    ).toBe(404);
+    expect(
+      (await http().delete(`/v1/document-types/${UUID}`).set('x-test-user', staff)).status,
+    ).toBe(404);
+    expect(
+      (await http().post(`/v1/document-types/${UUID}/versions`).set('x-test-user', staff).send({}))
+        .status,
     ).toBe(404);
   });
 });

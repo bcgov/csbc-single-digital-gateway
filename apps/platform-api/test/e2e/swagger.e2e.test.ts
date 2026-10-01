@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { setupSwagger } from '../../src/swagger';
 
-describe('swagger docs (e2e)', () => {
+describe('Swagger E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

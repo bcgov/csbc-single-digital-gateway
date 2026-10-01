@@ -26,7 +26,7 @@ const authOptions = {
 } satisfies AuthModuleOptions;
 import { seedUser } from '../utils/test-helpers';
 
-describe('workspaces (e2e)', () => {
+describe('Workspaces E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

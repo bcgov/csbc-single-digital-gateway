@@ -1,10 +1,16 @@
 import { vi } from 'vitest';
+import { createMockQuery } from './create-mock-query';
 
 /**
  * Creates a mock Drizzle database instance with query mocking capabilities.
  *
- * @returns An object containing the mock database instance (`builderMock`), a query mock setup function
- * (`mockResponse`), and a transaction mock (`txMock`).
+ * @returns An object containing:
+ * - `txMock`: A mock Drizzle transaction object.
+ * - `dbMock`: A mock Drizzle database instance that also includes a transaction mock.
+ * - `builderMock`: A mock Drizzle query builder instance that also includes a transaction mock.
+ * - `mockResponse`: A query mock setup function.
+ * - `txMockQuery`: A mock Drizzle query builder instance that also includes a transaction mock.
+ * - `dbMockQuery`: A mock Drizzle query builder instance that also includes a transaction mock.
  *
  * @example
  * ```typescript
@@ -21,7 +27,7 @@ export const createMockDb = () => {
   /**
    * A mock Drizzle transaction object.
    */
-  const txMock: any = {
+  const txMock: any = Object.assign(Promise.resolve([]), {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
@@ -30,17 +36,15 @@ export const createMockDb = () => {
     set: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
     returning: vi.fn(),
-    innerJoin: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    onConflictDoNothing: vi.fn().mockReturnThis(),
-  };
+  });
 
   /**
    * A mock Drizzle database instance.
    */
   const dbMock: any = {
-    transaction: vi.fn(async (cb: any) => cb(txMock)),
+    transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
     select: vi.fn().mockReturnThis(),
     selectDistinct: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
@@ -53,6 +57,7 @@ export const createMockDb = () => {
     returning: vi.fn(),
     innerJoin: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
     onConflictDoNothing: vi.fn().mockReturnThis(),
   };
 
@@ -150,5 +155,19 @@ export const createMockDb = () => {
     mocks.queries.push({ table, action, resolve });
   };
 
-  return { txMock, dbMock, builderMock, mockResponse };
+  const txMockQuery = { ...txMock, select: vi.fn().mockImplementation(() => createMockQuery([])) };
+
+  const dbMockQuery = Object.assign(Promise.resolve([]), {
+    transaction: vi.fn().mockImplementation((cb) => cb(txMockQuery)),
+    select: vi.fn().mockImplementation(() => createMockQuery([])),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockReturnThis(),
+    returning: vi.fn(),
+    where: vi.fn().mockReturnThis(),
+  });
+
+  return { txMock, dbMock, builderMock, mockResponse, txMockQuery, dbMockQuery };
 };

@@ -26,7 +26,7 @@ import { UUID } from '../utils/fixtures';
 
 const BASE = `/v1/workspaces/${UUID}/default-agreements`;
 
-describe('workspace default agreements (e2e)', () => {
+describe('Workspace Default Agreements E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

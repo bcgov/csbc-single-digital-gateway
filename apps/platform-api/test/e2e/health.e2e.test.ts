@@ -4,7 +4,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 
-describe('platform-api health (e2e)', () => {
+describe('Health Check E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

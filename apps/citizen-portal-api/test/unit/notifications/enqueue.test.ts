@@ -15,7 +15,7 @@ describe('enqueueNotification unit tests', () => {
       insert: mockInsert,
     } as any;
 
-    const mockRow = {
+    const mockNotification = {
       idempotencyKey: 'key-123',
       userId: 'user-456',
       type: 'email',
@@ -25,10 +25,10 @@ describe('enqueueNotification unit tests', () => {
       email: 'test@example.com',
     };
 
-    await enqueueNotification(mockTx, mockRow);
+    await enqueueNotification(mockTx, mockNotification);
 
     expect(mockInsert).toHaveBeenCalledWith(notificationOutbox);
-    expect(mockValues).toHaveBeenCalledWith(mockRow);
+    expect(mockValues).toHaveBeenCalledWith(mockNotification);
     expect(mockOnConflictDoNothing).toHaveBeenCalledWith({
       target: notificationOutbox.idempotencyKey,
     });

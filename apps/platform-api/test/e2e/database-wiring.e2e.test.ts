@@ -7,7 +7,7 @@ import { AppModule } from '../../src/app.module';
 
 // DATABASE_URL is provided by test/setup.ts; createDatabase() is lazy, so no real Postgres
 // is needed — a socket is only opened on the first query.
-describe('platform-api database wiring (e2e)', () => {
+describe('Database Wiring E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

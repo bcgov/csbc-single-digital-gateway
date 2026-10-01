@@ -8,6 +8,7 @@ import {
 import { WorkspacesService } from '../../../../../src/modules/workspaces/services/workspaces.service';
 import { workspaces, workspaceMembers } from '@repo/database';
 import { createMockQuery } from '../../../../utils/create-mock-query';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 vi.mock('drizzle-orm', async (importOriginal) => {
   const original = await importOriginal<typeof import('drizzle-orm')>();
@@ -30,27 +31,9 @@ describe('WorkspacesService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    txMock = Object.assign(Promise.resolve([]), {
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-    });
-
-    dbMock = Object.assign(Promise.resolve([]), {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-    });
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     service = new WorkspacesService(dbMock);
   });

@@ -26,7 +26,7 @@ import { UUID } from '../utils/fixtures';
 
 const AGR = `/v1/services/${UUID}/versions/${UUID}/agreements`;
 
-describe('service agreement refs (e2e)', () => {
+describe('Service Agreement Refs E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

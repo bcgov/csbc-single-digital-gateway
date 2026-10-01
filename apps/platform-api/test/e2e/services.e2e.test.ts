@@ -25,7 +25,7 @@ const authOptions = {
 import { seedUser } from '../utils/test-helpers';
 import { UUID } from '../utils/fixtures';
 
-describe('services (e2e)', () => {
+describe('Services E2E Test Suite', () => {
   let app: INestApplication;
 
   beforeAll(async () => {

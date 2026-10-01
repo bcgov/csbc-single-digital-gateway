@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { ServicesV1Controller } from '../../../../../src/modules/services/controllers/services-v1.controller';
 import type { AuthUser } from '@repo/nestjs/auth';
 import type {
@@ -7,6 +7,10 @@ import type {
   ListServicesQueryDto,
   UpdateVersionDataDto,
 } from '../../../../../src/modules/services/dtos/service.dtos';
+import {
+  createMockService,
+  createMockServiceVersions,
+} from '../../../../utils/create-mock-services';
 
 describe('ServicesV1Controller', () => {
   let controller: ServicesV1Controller;
@@ -24,25 +28,8 @@ describe('ServicesV1Controller', () => {
   };
 
   beforeEach(() => {
-    servicesServiceMock = {
-      list: vi.fn(),
-      create: vi.fn(),
-      getServiceDefinition: vi.fn(),
-      listForms: vi.fn(),
-      get: vi.fn(),
-      remove: vi.fn(),
-      archive: vi.fn(),
-      reactivate: vi.fn(),
-    };
-
-    serviceVersionsServiceMock = {
-      updateDraft: vi.fn(),
-      publish: vi.fn(),
-      archive: vi.fn(),
-      addVersion: vi.fn(),
-      discardVersion: vi.fn(),
-    };
-
+    servicesServiceMock = createMockService();
+    serviceVersionsServiceMock = createMockServiceVersions();
     controller = new ServicesV1Controller(servicesServiceMock, serviceVersionsServiceMock);
   });
 

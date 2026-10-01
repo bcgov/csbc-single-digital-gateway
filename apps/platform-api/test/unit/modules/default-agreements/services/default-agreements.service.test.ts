@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { DefaultAgreementsService } from '../../../../../src/modules/default-agreements/services/default-agreements.service';
 import { createMockQuery } from '../../../../utils/create-mock-query';
+import { mockCreatedAt } from '../../../../utils/fixtures';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('DefaultAgreementsService', () => {
   let service: DefaultAgreementsService;
@@ -15,14 +17,8 @@ describe('DefaultAgreementsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    dbMock = {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      delete: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-    };
+    const mocks = createMockDb();
+    dbMock = mocks.dbMock;
 
     service = new DefaultAgreementsService(dbMock);
   });
@@ -35,7 +31,6 @@ describe('DefaultAgreementsService', () => {
     });
 
     it('returns mapped default agreements if caller is a member', async () => {
-      const mockCreatedAt = new Date('2026-07-28T00:00:00.000Z');
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'member' }])) // requireMember check
         .mockImplementationOnce(() =>
@@ -142,7 +137,6 @@ describe('DefaultAgreementsService', () => {
     });
 
     it('adds and returns a default agreement successfully if all checks pass', async () => {
-      const mockCreatedAt = new Date('2026-07-28T00:00:00.000Z');
       dbMock.select
         .mockImplementationOnce(() => createMockQuery([{ role: 'admin' }])) // requireAdmin
         .mockImplementationOnce(() =>

@@ -8,6 +8,7 @@ import {
 import { ServiceAgreementsService } from '../../../../../src/modules/service-agreements/services/service-agreements.service';
 import { createMockQuery } from '../../../../utils/create-mock-query';
 import { createMockDoc, createMockVersion } from '../../../../utils/test-helpers';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 describe('ServiceAgreementsService', () => {
   let service: ServiceAgreementsService;
@@ -22,27 +23,9 @@ describe('ServiceAgreementsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    txMock = {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-    };
-
-    dbMock = {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      selectDistinct: vi.fn().mockImplementation(() => createMockQuery([])),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
-    };
+    const mocks = createMockDb();
+    txMock = mocks.txMock;
+    dbMock = mocks.dbMock;
 
     agreementTypeMock = {
       resolve: vi.fn().mockResolvedValue({

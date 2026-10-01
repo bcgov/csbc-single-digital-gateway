@@ -3,6 +3,7 @@ import { OutboxRelayService } from '../../../src/notifications/outbox-relay.serv
 import { M2mTokenClient } from '../../../src/notifications/m2m-token.client';
 import { notificationOutbox } from '@repo/database';
 import { createMockQuery } from '../../utils/create-mock-query';
+import { createMockDb } from '../../utils/create-db-mock';
 
 describe('OutboxRelayService', () => {
   let service: OutboxRelayService;
@@ -15,16 +16,9 @@ describe('OutboxRelayService', () => {
     vi.stubGlobal('fetch', vi.fn());
     vi.useFakeTimers();
 
-    txMock = {
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-    };
-
-    dbMock = {
-      transaction: vi.fn().mockImplementation(async (cb) => cb(txMock)),
-    };
+    const mocks = createMockDb();
+    txMock = mocks.txMockQuery;
+    dbMock = mocks.dbMockQuery;
 
     configMock = {
       get: vi.fn().mockImplementation((key) => {
@@ -154,7 +148,7 @@ describe('OutboxRelayService', () => {
     });
 
     it('claims due rows and delivers them successfully', async () => {
-      const mockRow = {
+      const mockOutboxNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
         userId: 'user-1',
@@ -165,7 +159,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockOutboxNotification]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const fetchResponse = { ok: true, status: 200 };
@@ -196,7 +190,7 @@ describe('OutboxRelayService', () => {
     });
 
     it('handles 401 response and invalidates token client cache', async () => {
-      const mockRow = {
+      const mockOutboxErrorNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
         userId: 'user-1',
@@ -207,7 +201,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockOutboxErrorNotification]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const invalidateSpy = vi.spyOn(M2mTokenClient.prototype, 'invalidate');
@@ -222,7 +216,7 @@ describe('OutboxRelayService', () => {
     });
 
     it('marks row as terminal failed when attempts exceed limit', async () => {
-      const mockRow = {
+      const mockOutboxMaxAttemptsNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
         userId: 'user-1',
@@ -233,7 +227,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 2, // will become 3 (exceeding/reaching limit of 3)
       };
-      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockOutboxMaxAttemptsNotification]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const fetchResponse = { ok: false, status: 500 };
@@ -251,7 +245,7 @@ describe('OutboxRelayService', () => {
     });
 
     it('claims due rows with payload and delivers them successfully', async () => {
-      const mockRow = {
+      const mockOutboxPayloadNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
         userId: 'user-1',
@@ -262,7 +256,7 @@ describe('OutboxRelayService', () => {
         email: 'user@example.com',
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockOutboxPayloadNotification]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       const fetchResponse = { ok: true, status: 200 };
@@ -286,7 +280,7 @@ describe('OutboxRelayService', () => {
     });
 
     it('handles non-Error delivery failures in deliverOne', async () => {
-      const mockRow = {
+      const mockNonErrNotification = {
         id: 'outbox-1',
         idempotencyKey: 'key-1',
         userId: 'user-1',
@@ -297,7 +291,7 @@ describe('OutboxRelayService', () => {
         email: null,
         attempts: 0,
       };
-      txMock.select.mockImplementation(() => createMockQuery([mockRow]));
+      txMock.select.mockImplementation(() => createMockQuery([mockNonErrNotification]));
 
       vi.spyOn(M2mTokenClient.prototype, 'getToken').mockResolvedValue('mock-token');
       vi.mocked(fetch).mockRejectedValue('Raw string fetch error');

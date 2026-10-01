@@ -10,6 +10,7 @@ import { reactivateServiceTx } from '../../../../../src/modules/services/util/ve
 import { documents, documentVersions } from '@repo/database';
 import { createMockQuery } from '../../../../utils/create-mock-query';
 import { createMockDoc } from '../../../../utils/test-helpers';
+import { createMockDb } from '../../../../utils/create-db-mock';
 
 vi.mock('../../../../../src/modules/services/util/applications', () => ({
   insertApplication: vi.fn(),
@@ -42,26 +43,9 @@ describe('ServicesService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    txMock = Object.assign(Promise.resolve([]), {
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      delete: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-    });
-
-    dbMock = Object.assign(Promise.resolve([]), {
-      transaction: vi.fn().mockImplementation((cb) => cb(txMock)),
-      select: vi.fn().mockImplementation(() => createMockQuery([])),
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
-      where: vi.fn().mockReturnThis(),
-    });
+    const mocks = createMockDb();
+    txMock = mocks.txMockQuery;
+    dbMock = mocks.dbMockQuery;
 
     serviceTypeResolverMock = {
       resolve: vi.fn(),
