@@ -3,6 +3,7 @@ import type { AddTarget } from './canvas-graph';
 import type { ConnectSource } from './connect-edits';
 import type { PendingDelete } from './delete-gate';
 import type { Uischema } from './document-types';
+import { updateElement, type ElementPatch } from './element-edits';
 import { addAfter, addBefore, addBetween, type NodeKind } from './node-edits';
 
 /**
@@ -22,6 +23,8 @@ export interface CanvasActions {
   startConnect: (source: ConnectSource) => void;
   /** Whether a + may offer Connection: only on a Funnel's flow (doc 235 rule 2). */
   canConnect: boolean;
+  /** Applies a studio renderer's edit to the element with that id (doc 236 rule 36). */
+  edit: (id: string, patch: ElementPatch) => void;
 }
 
 export const CanvasActionsContext = createContext<CanvasActions | null>(null);
@@ -38,7 +41,14 @@ export function useEditActions(
   onChange: (uischema: Uischema) => void,
   /** Given while a page is focused: adding from its + also leaves the page. */
   unfocus: (() => void) | undefined,
-  { remove, editCondition, focus, inspect, startConnect, canConnect }: Omit<CanvasActions, 'add'>,
+  {
+    remove,
+    editCondition,
+    focus,
+    inspect,
+    startConnect,
+    canConnect,
+  }: Omit<CanvasActions, 'add' | 'edit'>,
 ): CanvasActions {
   return useMemo(
     () => ({
@@ -52,6 +62,11 @@ export function useEditActions(
       inspect,
       startConnect,
       canConnect,
+      edit: (id, patch) => {
+        const next = updateElement(uischema, id, patch);
+        // A patch that changes nothing is not an edit.
+        if (next !== uischema) onChange(next);
+      },
     }),
     [uischema, onChange, unfocus, remove, editCondition, focus, inspect, startConnect, canConnect],
   );

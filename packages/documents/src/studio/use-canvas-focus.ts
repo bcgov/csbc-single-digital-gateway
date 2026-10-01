@@ -13,7 +13,6 @@ import {
 import type { Uischema } from './document-types';
 import { idOf } from './element-ids';
 import { flowRect, focusRect, type FocusFrame } from './focus-view';
-import { pageFields } from './form-focus';
 import { formsOf } from './funnel-model';
 
 /** The focus machinery behind DocumentCanvas (doc 233): the frame, and the camera's zooms in and out. */
@@ -58,10 +57,7 @@ export function useFocusFrame(
   }, [leaving]);
   const pageId = focusedId ?? leaving;
   const form = formsOf(uischema).find((f) => pageId !== null && idOf(f) === pageId);
-  const fields = useMemo(
-    () => (form === undefined ? [] : pageFields(form, schema)),
-    [form, schema],
-  );
+  const page = useMemo(() => (form === undefined ? null : { form, schema }), [form, schema]);
   const keepsTrailing =
     focusedId !== null && uischema['type'] === 'Form' && idOf(uischema) === focusedId;
   return useMemo(
@@ -69,10 +65,10 @@ export function useFocusFrame(
       id: focusedId,
       settled: focusedId !== null && focusedId === settledId,
       leaving,
-      fields,
+      page,
       keepsTrailing,
     }),
-    [focusedId, settledId, leaving, fields, keepsTrailing],
+    [focusedId, settledId, leaving, page, keepsTrailing],
   );
 }
 

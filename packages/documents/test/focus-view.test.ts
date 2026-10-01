@@ -30,12 +30,14 @@ const edges: AddEdge[] = [
     data: { add: { kind: 'between', edgeId: 'e1' }, sourceName: 'A' },
   },
 ];
+// The focused Form's page (doc 236 rule 34): the node carries the SAME object the frame does.
+const formPage = { form: { id: 'A', type: 'Form', elements: [] }, schema: {} };
 const frame = (
   id: string | null,
   settled = false,
   leaving: string | null = null,
   keepsTrailing = false,
-) => ({ id, settled, leaving, fields: ['Age'], keepsTrailing });
+) => ({ id, settled, leaving, page: formPage, keepsTrailing });
 
 describe('focusNodes', () => {
   it("grows the focused Form into its page in place, centred on its card's centre", () => {
@@ -46,7 +48,8 @@ describe('focusNodes', () => {
       x: NODE_WIDTH / 2 - PAGE_WIDTH / 2,
       y: CARD_HEIGHT / 2 - PAGE_HEIGHT / 2,
     });
-    expect(a!.data).toMatchObject({ focused: true, fields: ['Age'] });
+    expect(a!.data).toMatchObject({ focused: true });
+    expect(a!.data['page']).toBe(formPage);
     expect(a!.className).toMatch(/transition-\[transform,opacity\]/);
   });
 
@@ -74,7 +77,8 @@ describe('focusNodes', () => {
     const [a, b] = focusNodes(nodes, frame(null, false, 'A'));
 
     expect(a!.position).toEqual({ x: 0, y: 0 });
-    expect(a!.data).toMatchObject({ closing: true, fields: ['Age'] });
+    expect(a!.data).toMatchObject({ closing: true });
+    expect(a!.data['page']).toBe(formPage);
     expect(a!.data['focused']).toBeUndefined();
     expect(a!.className).not.toMatch(/fade/);
     expect(b!.className).toMatch(/document-studio-fade-in/);

@@ -9,3 +9,12 @@ if (globalThis.ResizeObserver === undefined) {
     disconnect(): void {}
   };
 }
+
+// jsdom has no pointer capture, and gridstack's pointerdown handler (dd-touch) releases it on every press inside a
+// draggable grid item — an uncaught TypeError in any test that presses one. No layout means nothing to capture.
+for (const method of ['setPointerCapture', 'releasePointerCapture'] as const) {
+  if (typeof Element.prototype[method] !== 'function') Element.prototype[method] = () => {};
+}
+if (typeof Element.prototype.hasPointerCapture !== 'function') {
+  Element.prototype.hasPointerCapture = () => false;
+}

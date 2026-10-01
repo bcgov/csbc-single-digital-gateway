@@ -39,16 +39,22 @@ export interface NodeMarks {
   floating: boolean;
 }
 
+/** What a Form's page renders (doc 236 rule 34): the Form element itself, and the schema its Controls point into. */
+export interface FormPage {
+  form: Uischema;
+  schema: Record<string, unknown>;
+}
+
 export interface FormNodeData extends NodeMarks, Record<string, unknown> {
   formId: string;
   label: string | null;
-  /** Set by the focus view (doc 233): this Form is drawn as its page, listing `fields`. */
+  /** Set by the focus view (doc 233): this Form is drawn as its page, rendering `page`. */
   focused?: boolean;
   /** The page has finished growing: it is now as tall as its content (doc 233 rule 11). */
   open?: boolean;
   /** Back (doc 233): the card again, with its page fading out over it as it shrinks. */
   closing?: boolean;
-  fields?: string[];
+  page?: FormPage | null;
 }
 
 export interface ConditionNodeData extends NodeMarks, Record<string, unknown> {

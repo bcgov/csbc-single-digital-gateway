@@ -7,6 +7,24 @@
   ],
   "type": "module",
   "exports": {
+    "./renderers/default": {
+      "types": "./dist/renderers-default.d.ts",
+      "development": "./src/renderers-default.ts",
+      "import": "./dist/renderers-default.js",
+      "require": "./dist/renderers-default.cjs"
+    },
+    "./renderers/studio": {
+      "types": "./dist/renderers-studio.d.ts",
+      "development": "./src/renderers-studio.ts",
+      "import": "./dist/renderers-studio.js",
+      "require": "./dist/renderers-studio.cjs"
+    },
+    "./renderers/ui": {
+      "types": "./dist/renderers-ui.d.ts",
+      "development": "./src/renderers-ui.ts",
+      "import": "./dist/renderers-ui.js",
+      "require": "./dist/renderers-ui.cjs"
+    },
     "./studio": {
       "types": "./dist/studio.d.ts",
       "development": "./src/studio.ts",
@@ -29,11 +47,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@jsonforms/core": "3.8.0",
+    "@jsonforms/react": "3.8.0",
     "@mdi/js": "7.4.47",
     "@mdi/react": "1.6.1",
     "@repo/forms": "*",
     "@repo/ui": "*",
     "@xyflow/react": "12.11.3",
+    "gridstack": "13.2.0",
     "nanoid": "^3.3.17"
   },
   "devDependencies": {

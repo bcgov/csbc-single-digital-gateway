@@ -1,8 +1,10 @@
 /*
  * @repo/documents stylesheet — import once from the consuming app's CSS entry:
  *   @import '@repo/documents/styles.css';
- * Without it, the Document Studio canvas renders with no xyflow styles, silently.
+ * Without it, the Document Studio canvas renders with no xyflow styles, and studio layouts (doc 236) with no gridstack
+ * positioning, silently.
  */
+@import 'gridstack/dist/gridstack.css';
 @import '@xyflow/react/dist/style.css';
 
 /*
@@ -19,4 +21,32 @@
   to {
     opacity: 0;
   }
+}
+
+/*
+ * Studio layouts (doc 236 rule 16): gridstack clips item content (`overflow: auto`), which would cut off the outline a
+ * selected or hovered element draws outside its box.
+ */
+.grid-stack[data-slot='studio-vertical-layout'] > .grid-stack-item > .grid-stack-item-content {
+  overflow: visible;
+}
+
+/*
+ * While an item is dragged (doc 236 rule 23b) the cursor is the default pointer, never an inline-editable Heading's text
+ * cursor. gridstack gives the dragged item `pointer-events: none`, so the cursor comes from whatever is beneath it —
+ * often another Heading — and marks the grid `grid-stack-dragging` for the drag. Unlayered, so it beats `cursor-text`.
+ */
+.grid-stack[data-slot='studio-vertical-layout'].grid-stack-dragging,
+.grid-stack[data-slot='studio-vertical-layout'].grid-stack-dragging * {
+  cursor: default;
+}
+
+/*
+ * No outer padding on a studio layout (doc 236 rule 27b): gridstack insets every item's content by its margin on all
+ * four sides, so the grid's edges carried half a gap that the fillable CSS grid does not. gridstack sets the margins as
+ * variables on the grid itself, so it pulls itself out by exactly them — only the gaps BETWEEN items remain.
+ */
+.grid-stack[data-slot='studio-vertical-layout'] {
+  margin: calc(-1 * var(--gs-item-margin-top)) calc(-1 * var(--gs-item-margin-right))
+    calc(-1 * var(--gs-item-margin-bottom)) calc(-1 * var(--gs-item-margin-left));
 }

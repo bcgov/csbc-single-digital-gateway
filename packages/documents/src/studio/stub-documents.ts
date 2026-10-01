@@ -14,6 +14,14 @@ const APPLICATION_CONTENT: DocumentContent = {
     properties: {
       age: { type: 'integer', title: 'Age' },
       resident: { type: 'boolean', title: 'BC resident' },
+      // Doc 237's boolean controls, so a Checkbox and a Switch can be seen with and without a description.
+      consent: {
+        type: 'boolean',
+        title: 'I agree to the terms',
+        description: 'You can withdraw your consent at any time.',
+      },
+      updates: { type: 'boolean', title: 'Email me about my application' },
+      reminders: { type: 'boolean', title: 'Send reminders' },
       region: {
         type: 'string',
         title: 'Region',
@@ -36,9 +44,23 @@ const APPLICATION_CONTENT: DocumentContent = {
           type: 'Form',
           label: 'Eligibility',
           elements: [
+            {
+              id: 'stubHdg1',
+              type: 'Heading',
+              options: { text: 'Check you can apply', level: 2 },
+            },
             control('stubAge1', 'age'),
             control('stubRes1', 'resident'),
             control('stubReg1', 'region'),
+            control('stubCns1', 'consent'),
+            {
+              ...control('stubUpd1', 'updates'),
+              options: {
+                component: 'switch',
+                description: 'We only email when something changes.',
+              },
+            },
+            { ...control('stubRem1', 'reminders'), options: { component: 'switch' } },
           ],
         },
         { id: 'stubDetl', type: 'Form', label: 'Details', elements: [control('stubNam1', 'name')] },

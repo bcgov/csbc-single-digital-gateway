@@ -15,6 +15,7 @@ const formNode = (container: HTMLElement, label: string) =>
   formNodes(container).find((node) => node.textContent?.includes(label))!;
 const palette = () => screen.queryByRole('region', { name: 'Palette' });
 const page = () => screen.queryByRole('article', { name: /page$/ });
+const wrapperOf = (el: HTMLElement) => el.closest('[data-slot="studio-element"]')!;
 
 function open(documentId: string) {
   const user = userEvent.setup();
@@ -80,12 +81,90 @@ describe('DocumentStudio focus', () => {
     // The SAME node becomes the page — no second canvas — and the rest fades out, then leaves the canvas.
     const details = await screen.findByRole('article', { name: 'Details page' });
     expect(details.closest('.react-flow__node')).toHaveAttribute('data-id', 'stubDetl');
-    expect(within(details).getByRole('listitem')).toHaveTextContent('Full name');
+    // Doc 236: the page renders the Form's elements through the studio renderers — a Control as its placeholder.
+    expect(within(details).getByText('Full name')).toHaveAttribute(
+      'data-slot',
+      'studio-placeholder',
+    );
     await waitFor(() => expect(formNodes(container)).toHaveLength(1));
     expect(container.querySelector('.react-flow__edge')).toBeNull();
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
     const path = within(slot(container, 'document-studio-footer')!).getByRole('navigation');
     expect(within(path).getByText('Details')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('edits a Heading in place on an open page and writes it into the Form (doc 236 rules 35-36)', async () => {
+    const { container } = open('stub-application');
+    await screen.findByRole('button', { name: 'Delete Eligibility' });
+    fireEvent.doubleClick(formNode(container, 'Eligibility'));
+    const eligibility = await screen.findByRole('article', { name: 'Eligibility page' });
+    const heading = () => within(eligibility).getByRole('heading', { level: 2 });
+    expect(heading()).toHaveTextContent('Check you can apply');
+    // The title is the studio Form renderer's (doc 236 rule 41), not the page's own.
+    expect(within(eligibility).getByRole('heading', { level: 1 })).toHaveAttribute(
+      'data-slot',
+      'form-title',
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    // Only an OPEN page is editable: wait until one click selects the Heading and starts editing it.
+    await waitFor(() => {
+      fireEvent.click(heading());
+      expect(heading()).toHaveAttribute('contenteditable', 'plaintext-only');
+    });
+    expect(heading().closest('[data-slot="studio-element"]')).toHaveAttribute('data-selected', '');
+    heading().textContent = 'Who can apply';
+    fireEvent.keyDown(heading(), { key: 'Enter' });
+
+    await waitFor(() => expect(heading()).toHaveTextContent('Who can apply'));
+    expect(heading()).not.toHaveAttribute('contenteditable');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('renames a Form from its page title, and the page and its crumb follow (doc 236 rule 42b)', async () => {
+    const { container } = open('stub-application');
+    await screen.findByRole('button', { name: 'Delete Eligibility' });
+    fireEvent.doubleClick(formNode(container, 'Eligibility'));
+    const eligibility = await screen.findByRole('article', { name: 'Eligibility page' });
+    const title = () => within(eligibility).getByRole('heading', { level: 1 });
+    await waitFor(() => {
+      fireEvent.click(title());
+      expect(title()).toHaveAttribute('contenteditable', 'plaintext-only');
+    });
+    title().textContent = 'Who can apply';
+    fireEvent.keyDown(title(), { key: 'Enter' });
+
+    expect(await screen.findByRole('article', { name: 'Who can apply page' })).toBe(eligibility);
+    expect(title()).toHaveTextContent('Who can apply');
+    const path = within(slot(container, 'document-studio-footer')!).getByRole('navigation');
+    expect(within(path).getByText('Who can apply')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('clears the page selection on a click on the canvas pane or the page whitespace (doc 236 rule 35b)', async () => {
+    const { container } = open('stub-application');
+    await screen.findByRole('button', { name: 'Delete Eligibility' });
+    fireEvent.doubleClick(formNode(container, 'Eligibility'));
+    const eligibility = await screen.findByRole('article', { name: 'Eligibility page' });
+    const heading = () => within(eligibility).getByRole('heading', { level: 2 });
+    const select = () =>
+      waitFor(() => {
+        fireEvent.click(heading());
+        expect(wrapperOf(heading())).toHaveAttribute('data-selected', '');
+      });
+
+    await select();
+    fireEvent.click(container.querySelector('.react-flow__pane')!);
+    expect(wrapperOf(heading())).not.toHaveAttribute('data-selected');
+
+    await select();
+    fireEvent.click(eligibility);
+    expect(wrapperOf(heading())).not.toHaveAttribute('data-selected');
+
+    // Clicking another element moves the selection to it rather than clearing it.
+    await select();
+    fireEvent.click(within(eligibility).getByText('Age'));
+    expect(wrapperOf(heading())).not.toHaveAttribute('data-selected');
+    expect(wrapperOf(within(eligibility).getByText('Age'))).toHaveAttribute('data-selected', '');
   });
 
   it('keeps focus — and the focused Form selected by default — when Escape, the empty canvas or the root crumb clear the selection', async () => {

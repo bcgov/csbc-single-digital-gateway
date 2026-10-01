@@ -115,8 +115,11 @@ const CONNECT_CLASS = {
   dimmed: 'cursor-not-allowed opacity-40',
 } as const;
 
-/** The selection ring, offset so a background-coloured gap separates it from a coloured border. */
-const SELECTED_CLASS = 'ring-2 ring-ring ring-offset-2 ring-offset-background';
+/**
+ * The selection ring, offset so a background-coloured gap separates it from a coloured border. Studio page elements
+ * draw the same ring (doc 236 rule 16, `SELECTED_RING` in renderers/studio/studio-element.tsx — a test pins the match).
+ */
+export const SELECTED_CLASS = 'ring-2 ring-ring ring-offset-2 ring-offset-background';
 
 /**
  * One half of a split border: a 2px frame laid exactly over the card's own border. Absolute insets measure from the

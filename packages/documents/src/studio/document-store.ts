@@ -51,8 +51,12 @@ export interface DocumentStoreOptions {
   key?: string;
 }
 
-/** Versioned: bump it when `DocumentContent` changes shape, so stale browser data is ignored, not misread. */
-const DEFAULT_KEY = 'repo-documents:stub-store:v2';
+/**
+ * Versioned: bump it when `DocumentContent` changes shape, so stale browser data is ignored, not misread — or when a
+ * stub document changes and must replace a stored copy (v3: doc 236's Eligibility Heading; v4: doc 237's
+ * boolean controls).
+ */
+const DEFAULT_KEY = 'repo-documents:stub-store:v4';
 
 export function createDocumentStore({
   storage = null,

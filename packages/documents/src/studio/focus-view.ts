@@ -1,5 +1,5 @@
 import type { Rect } from '@xyflow/react';
-import { endIdOf, NODE_WIDTH, type AddEdge, type CanvasNode } from './canvas-graph';
+import { endIdOf, NODE_WIDTH, type AddEdge, type CanvasNode, type FormPage } from './canvas-graph';
 import { FADE_IN, FADE_IN_AFTER, MOTION } from './canvas-zoom';
 
 /** The focused Form's page (doc 233 rule 4). */
@@ -20,8 +20,8 @@ export interface FocusFrame {
    * otherwise. While it is set, everything else is fading back in.
    */
   leaving: string | null;
-  /** The focused (or leaving) Form's fields, for its page. */
-  fields: readonly string[];
+  /** The focused (or leaving) Form and the document schema, for its page (doc 236 rule 34). */
+  page: FormPage | null;
   /**
    * The focused Form is the variant's ROOT (doc 233 rule 9): its page keeps its trailing + below it, since there is
    * no flow to go Back to — the + is how the author leaves the page.
@@ -61,7 +61,7 @@ export function focusNodes(nodes: CanvasNode[], frame: FocusFrame): CanvasNode[]
       ...node,
       className: MOVES,
       position: { x, y },
-      data: { ...node.data, focused: true, open: frame.settled, fields: [...frame.fields] },
+      data: { ...node.data, focused: true, open: frame.settled, page: frame.page },
     };
   });
 }
@@ -77,7 +77,7 @@ function backNode(node: CanvasNode, frame: FocusFrame): CanvasNode {
   return {
     ...node,
     className: MOVES,
-    data: { ...node.data, closing: true, fields: [...frame.fields] },
+    data: { ...node.data, closing: true, page: frame.page },
   };
 }
 
