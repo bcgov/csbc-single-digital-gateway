@@ -4,8 +4,12 @@
 /* @repo/forms ships gridstack's layout CSS — without it grids render unpositioned, silently. */
 @import '@repo/forms/styles.css';
 
+/* @repo/documents ships xyflow's canvas CSS for the Document Studio spike. */
+@import '@repo/documents/styles.css';
+
 /* Generate utilities for this app's source and the consumed @repo/ui components. */
 @source '../**/*.{ts,tsx,html}';
 @source '../../../packages/ui/src/**/*.{ts,tsx}';
 @source '../../../packages/react/src/**/*.{ts,tsx}';
 @source '../../../packages/forms/src/**/*.{ts,tsx}';
+@source '../../../packages/documents/src/**/*.{ts,tsx}';

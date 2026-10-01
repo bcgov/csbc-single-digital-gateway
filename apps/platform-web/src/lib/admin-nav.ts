@@ -7,6 +7,7 @@ import {
   FileType,
   LayoutDashboard,
   PencilRuler,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -49,6 +50,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     to: '/admin/studio',
     icon: PencilRuler,
     subtitle: 'Author and preview forms in the form studio.',
+  },
+  {
+    key: 'document-studio',
+    label: 'Document Studio',
+    to: '/admin/document-studio',
+    icon: Workflow,
+    subtitle: 'Spike: author documents on a canvas.',
   },
 ];
 

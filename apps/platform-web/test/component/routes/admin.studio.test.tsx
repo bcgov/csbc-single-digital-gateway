@@ -28,7 +28,7 @@ describe('Admin Studio Route', () => {
     mockAuth(adminUser);
     renderApp('/admin');
 
-    const link = await screen.findByRole('link', { name: /studio/i }, { timeout: 32000 });
+    const link = await screen.findByRole('link', { name: /^studio$/i }, { timeout: 32000 });
     expect(link).toHaveAttribute('href', '/admin/studio');
   });
 

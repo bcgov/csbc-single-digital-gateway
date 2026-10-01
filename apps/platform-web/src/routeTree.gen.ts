@@ -19,6 +19,7 @@ import { Route as AppSlugRouteImport } from './routes/app.$slug'
 import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
 import { Route as AdminServiceAgreementsRouteImport } from './routes/admin.service-agreements'
+import { Route as AdminDocumentStudioRouteImport } from './routes/admin.document-studio'
 import { Route as AppSlugIndexRouteImport } from './routes/app.$slug.index'
 import { Route as AdminTemplatesIndexRouteImport } from './routes/admin.templates.index'
 import { Route as AdminServiceAgreementsIndexRouteImport } from './routes/admin.service-agreements.index'
@@ -97,6 +98,11 @@ const AdminStudioRoute = AdminStudioRouteImport.update({
 const AdminServiceAgreementsRoute = AdminServiceAgreementsRouteImport.update({
   id: '/service-agreements',
   path: '/service-agreements',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDocumentStudioRoute = AdminDocumentStudioRouteImport.update({
+  id: '/document-studio',
+  path: '/document-studio',
   getParentRoute: () => AdminRoute,
 } as any)
 const AppSlugIndexRoute = AppSlugIndexRouteImport.update({
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/admin/document-studio': typeof AdminDocumentStudioRoute
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
   '/admin/templates': typeof AdminTemplatesRouteWithChildren
@@ -301,6 +308,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/document-studio': typeof AdminDocumentStudioRoute
   '/admin/studio': typeof AdminStudioRoute
   '/app/account': typeof AppAccountRoute
   '/admin': typeof AdminIndexRoute
@@ -334,6 +342,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/admin/document-studio': typeof AdminDocumentStudioRoute
   '/admin/service-agreements': typeof AdminServiceAgreementsRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
   '/admin/templates': typeof AdminTemplatesRouteWithChildren
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/admin/document-studio'
     | '/admin/service-agreements'
     | '/admin/studio'
     | '/admin/templates'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/document-studio'
     | '/admin/studio'
     | '/app/account'
     | '/admin'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/admin/document-studio'
     | '/admin/service-agreements'
     | '/admin/studio'
     | '/admin/templates'
@@ -561,6 +573,13 @@ declare module '@tanstack/react-router' {
       path: '/service-agreements'
       fullPath: '/admin/service-agreements'
       preLoaderRoute: typeof AdminServiceAgreementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/document-studio': {
+      id: '/admin/document-studio'
+      path: '/document-studio'
+      fullPath: '/admin/document-studio'
+      preLoaderRoute: typeof AdminDocumentStudioRouteImport
       parentRoute: typeof AdminRoute
     }
     '/app/$slug/': {
@@ -802,6 +821,7 @@ const AdminTemplatesRouteWithChildren = AdminTemplatesRoute._addFileChildren(
 )
 
 interface AdminRouteChildren {
+  AdminDocumentStudioRoute: typeof AdminDocumentStudioRoute
   AdminServiceAgreementsRoute: typeof AdminServiceAgreementsRouteWithChildren
   AdminStudioRoute: typeof AdminStudioRoute
   AdminTemplatesRoute: typeof AdminTemplatesRouteWithChildren
@@ -809,6 +829,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminDocumentStudioRoute: AdminDocumentStudioRoute,
   AdminServiceAgreementsRoute: AdminServiceAgreementsRouteWithChildren,
   AdminStudioRoute: AdminStudioRoute,
   AdminTemplatesRoute: AdminTemplatesRouteWithChildren,

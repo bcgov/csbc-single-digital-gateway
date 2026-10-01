@@ -1,0 +1,6 @@
+/*
+ * @repo/documents stylesheet — import once from the consuming app's CSS entry:
+ *   @import '@repo/documents/styles.css';
+ * Without it, the Document Studio canvas renders with no xyflow styles, silently.
+ */
+@import '@xyflow/react/dist/style.css';
