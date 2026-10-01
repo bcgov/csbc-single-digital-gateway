@@ -19,7 +19,8 @@ function renderLayout(uischema: Record<string, unknown>) {
 }
 
 describe('renderers/default (doc 236)', () => {
-  it('spreads every ui category', () => {
+  it("spreads every ui category — its controls are exactly ui's boolean controls", () => {
+    expect(defaults.controlRenderers).toEqual(ui.controlRenderers);
     for (const key of [
       'cells',
       'contentRenderers',

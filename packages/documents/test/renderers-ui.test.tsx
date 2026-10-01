@@ -34,6 +34,8 @@ describe('renderers/ui (doc 236)', () => {
       expect(Array.isArray(ui[key]), key).toBe(true);
     }
     expect(ui.contentRenderers).toHaveLength(1);
+    // Checkbox and Switch live in ui (doc 237 rule 0); default and studio get them by spreading.
+    expect(ui.controlRenderers).toHaveLength(2);
     expect(ui.renderers).toEqual([
       ...ui.contentRenderers,
       ...ui.controlRenderers,
