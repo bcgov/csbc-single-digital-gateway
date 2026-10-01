@@ -25,6 +25,8 @@ export interface CanvasActions {
   canConnect: boolean;
   /** Applies a studio renderer's edit to the element with that id (doc 236 rule 36). */
   edit: (id: string, patch: ElementPatch) => void;
+  /** Places a palette item in a layout on the page (doc 238 rule 14). */
+  insert: (layoutId: string, index: number, itemId: string) => void;
 }
 
 export const CanvasActionsContext = createContext<CanvasActions | null>(null);
@@ -48,6 +50,7 @@ export function useEditActions(
     inspect,
     startConnect,
     canConnect,
+    insert,
   }: Omit<CanvasActions, 'add' | 'edit'>,
 ): CanvasActions {
   return useMemo(
@@ -67,8 +70,20 @@ export function useEditActions(
         // A patch that changes nothing is not an edit.
         if (next !== uischema) onChange(next);
       },
+      insert,
     }),
-    [uischema, onChange, unfocus, remove, editCondition, focus, inspect, startConnect, canConnect],
+    [
+      uischema,
+      onChange,
+      unfocus,
+      remove,
+      editCondition,
+      focus,
+      inspect,
+      startConnect,
+      canConnect,
+      insert,
+    ],
   );
 }
 

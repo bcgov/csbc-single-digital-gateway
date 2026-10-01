@@ -16,7 +16,10 @@ function Harness() {
     elements: ['a', 'b', 'c', 'd', 'e'].map(h),
   });
   return (
-    <StudioEditorProvider update={(id, patch) => setDoc((d) => updateElement(d, id, patch))}>
+    <StudioEditorProvider
+      update={(id, patch) => setDoc((d) => updateElement(d, id, patch))}
+      insert={() => {}}
+    >
       <output data-testid="order">
         {(doc['elements'] as { id: string }[]).map((e) => e.id).join('')}
       </output>

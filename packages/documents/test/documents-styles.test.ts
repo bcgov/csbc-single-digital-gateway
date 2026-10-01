@@ -27,9 +27,13 @@ describe('@repo/documents styles.css (doc 236)', () => {
     );
   });
 
-  it('pulls a studio layout out by its gridstack margins, so it has no outer padding (rule 27b)', () => {
+  it("pulls only a Form's ROOT layout out by its gridstack margins (rule 27b)", () => {
     expect(css).toContain(
-      `${grid} {\n  margin: calc(-1 * var(--gs-item-margin-top)) calc(-1 * var(--gs-item-margin-right))\n    calc(-1 * var(--gs-item-margin-bottom)) calc(-1 * var(--gs-item-margin-left));\n}`,
+      `[data-slot='form'] > ${grid} {\n  margin: calc(-1 * var(--gs-item-margin-top)) calc(-1 * var(--gs-item-margin-right))\n    calc(-1 * var(--gs-item-margin-bottom)) calc(-1 * var(--gs-item-margin-left));\n}`,
     );
+  });
+
+  it('never pulls a nested layout outwards — its edges would draw outside its selection ring', () => {
+    expect(css).not.toMatch(/^\.grid-stack\[data-slot='studio-vertical-layout'\] \{/m);
   });
 });

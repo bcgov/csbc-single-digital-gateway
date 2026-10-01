@@ -105,7 +105,8 @@ function borderOf({ floating, invalid, start, end }: NodeMarks): string {
 /** A page's size: `PAGE_WIDTH` × `PAGE_HEIGHT` (focus-view.ts), then its content's height; literal for Tailwind. */
 const PAGE_SIZE = {
   growing: 'w-[768px] h-[994px]',
-  open: 'w-[768px] h-auto min-h-[994px]',
+  // A column, so the page body fills the whole page — the Form's drop zone reaches its foot (doc 238 rule 13b).
+  open: 'w-[768px] h-auto min-h-[994px] flex flex-col',
 } as const;
 
 /** Connect mode: a pickable node invites the click; a dimmed one refuses it (doc 235 rule 7). */

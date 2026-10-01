@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import type { DeleteChoices } from './delete-gate';
 import { DocumentCanvas } from './document-canvas';
 import { DocumentInspector } from './document-inspector';
@@ -9,6 +9,8 @@ import { DocumentStudioHeader } from './document-studio-header';
 import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
+import { insertItem } from './palette-insert';
+import { defaultPalette, uniqueItems, type PaletteResolver } from './palette-items';
 import { SelectionBreadcrumbs } from './selection-breadcrumbs';
 import { selectionPath, type PathSegment } from './selection-path';
 import { browserDocumentStore } from './stub-documents';
@@ -25,6 +27,11 @@ export interface DocumentStudioProps {
   store?: DocumentStore | undefined;
   /** Called after every save with the saved version — e.g. to put a new document's ids in the URL. */
   onSaved?: ((ref: DocumentRef) => void) | undefined;
+  /**
+   * What the Palette offers, decided from the open document's type, kind and content (doc 238 rule 1). Absent = every
+   * studio renderer (`defaultPalette`). Its identity is a re-run signal: pass a stable function.
+   */
+  palette?: PaletteResolver | undefined;
   className?: string | undefined;
 }
 
@@ -32,9 +39,33 @@ export interface DocumentStudioProps {
  * Document Studio shell: a 36px header and footer around a flex-filling content area. The host sizes the
  * studio; it fills whatever box it is given.
  */
-export function DocumentStudio({ store, className, ...props }: DocumentStudioProps) {
+export function DocumentStudio({ store, className, palette, ...props }: DocumentStudioProps) {
   const studio = useDocumentStudio({ ...props, store: store ?? browserDocumentStore() });
   const { draft } = studio;
+  const items = useMemo(
+    () =>
+      draft === null
+        ? []
+        : uniqueItems(
+            (palette ?? defaultPalette)({
+              type: draft.type,
+              kind: draft.kind,
+              content: draft.content,
+            }),
+          ),
+    [palette, draft],
+  );
+  const { setContent } = studio;
+  // A palette item placed on the page (doc 238 rules 14-16): created fresh, then applied with its schema properties.
+  const insert = useCallback(
+    (layoutId: string, index: number, itemId: string) => {
+      const item = items.find((candidate) => candidate.id === itemId);
+      if (draft === null || item === undefined) return;
+      const next = insertItem(draft.content, layoutId, index, item.create());
+      if (next !== draft.content) setContent(next);
+    },
+    [items, draft, setContent],
+  );
   const [dialogOpen, setDialogOpen] = useState(
     props.documentId === undefined && (props.kind === undefined || props.type === undefined),
   );
@@ -105,11 +136,17 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
               onRememberDelete={(kind, choice) =>
                 setDeleteChoices((choices) => ({ ...choices, [kind]: choice }))
               }
+              onInsert={insert}
             />
             {focusedId !== null && (
               <DocumentPalette
                 open={expanded === 'palette'}
                 onOpenChange={(open) => setExpanded(open ? 'palette' : null)}
+                items={items}
+                // Click, Enter or Space appends to the end of the focused Form (doc 238 rule 16).
+                onAppend={(itemId) => {
+                  if (focusedId !== null) insert(focusedId, Infinity, itemId);
+                }}
               />
             )}
             <DocumentInspector

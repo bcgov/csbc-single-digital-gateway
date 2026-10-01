@@ -10,6 +10,7 @@ export function renderStudioRenderers(
   { editable = true, schema = { type: 'object' } }: { editable?: boolean; schema?: object } = {},
 ) {
   const update = vi.fn<(id: string, patch: ElementPatch) => void>();
+  const insert = vi.fn<(layoutId: string, index: number, itemId: string) => void>();
   const form = (
     <JsonForms
       schema={schema}
@@ -21,9 +22,15 @@ export function renderStudioRenderers(
     />
   );
   const view = render(
-    editable ? <StudioEditorProvider update={update}>{form}</StudioEditorProvider> : form,
+    editable ? (
+      <StudioEditorProvider update={update} insert={insert}>
+        {form}
+      </StudioEditorProvider>
+    ) : (
+      form
+    ),
   );
-  return { ...view, update };
+  return { ...view, update, insert };
 }
 
 export const studioHeading = (

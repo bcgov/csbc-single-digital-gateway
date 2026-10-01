@@ -1,5 +1,6 @@
 import { GridStack, type GridItemHTMLElement } from 'gridstack';
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { retargetDropTarget } from './grid-drop-target';
 
 /** The row unit item heights are counted in; heights follow content, so it only sets their granularity. */
 const CELL_HEIGHT = 4;
@@ -17,6 +18,15 @@ export interface VerticalGridOptions {
   editable: boolean;
   /** The item keys ordered by row, after a drag. */
   onReorder: (orderedKeys: string[]) => void;
+  /** A palette item dropped in at `index` (doc 238 rule 12). */
+  onDropItem: (index: number, itemId: string) => void;
+  /** The least number of rows the grid keeps — an empty grid stays a drop zone (doc 238 rule 17). */
+  minRow: number;
+  /**
+   * Where the grid listens for drops (doc 238 rule 13): an element around it — a root Form's section — or, absent,
+   * the grid itself, never the enclosing item gridstack would choose.
+   */
+  dropZone?: ((grid: HTMLElement) => HTMLElement | null) | undefined;
   /**
    * Each item's measured height in rows, by key — written here, owned by the caller so it outlives the grid. The caller
    * renders the NEXT grid's items at these heights, so a remount after a drop starts with every item in place.
@@ -34,6 +44,15 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
   const grid = useRef<GridStack | null>(null);
   const onReorder = useRef(options.onReorder);
   onReorder.current = options.onReorder;
+  const onDropItem = useRef(options.onDropItem);
+  onDropItem.current = options.onDropItem;
+  const dropZone = useRef(options.dropZone);
+  dropZone.current = options.dropZone;
+  const { minRow } = options;
+  const retarget = (instance: GridStack | null) => {
+    if (instance !== null)
+      retargetDropTarget(instance, dropZone.current?.(instance.el) ?? instance.el);
+  };
   const heights = options.heights;
 
   useLayoutEffect(() => {
@@ -48,7 +67,8 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
         // came out a row short and clipped. `fitItem` sizes them from unscaled layout instead (rule 28).
         sizeToContent: false,
         disableResize: true,
-        acceptWidgets: false,
+        acceptWidgets: acceptsFor(editable),
+        minRow,
         staticGrid: !editable,
         draggable: { cancel: DRAG_CANCEL },
         // Off until the first fit: a new grid (one per order, rule 30) must never animate into shape. A drop remounts
@@ -59,9 +79,21 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
     );
     if (instance === null) return;
     grid.current = instance;
+    retarget(instance);
     for (const item of itemsOf(el)) fitItem(instance, item, heights);
     // On only once the fitted layout has been painted, so neighbours still slide aside during a drag.
     const animateLater = requestAnimationFrame(() => instance.setAnimation(true));
+    instance.on('dropped', (_event, _previous, node) => {
+      const item = node.el;
+      const itemId = item?.getAttribute('data-palette-item') ?? null;
+      // Its row: how many of the grid's other items sit above where it landed.
+      const index = instance.engine.nodes.filter(
+        (other) => other !== node && (other.y ?? 0) < (node.y ?? 0),
+      ).length;
+      // gridstack added its drag helper as a widget; React owns this grid's items (forms trap 189-5).
+      if (item !== undefined) instance.removeWidget(item, true, false);
+      if (itemId !== null) onDropItem.current(index, itemId);
+    });
     instance.on('change', () => {
       const ordered = instance.engine.nodes
         .toSorted((a, b) => (a.y ?? 0) - (b.y ?? 0))
@@ -88,6 +120,9 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
 
   useLayoutEffect(() => {
     grid.current?.setStatic(!editable);
+    grid.current?.updateOptions({ acceptWidgets: acceptsFor(editable) });
+    // Both build a fresh droppable on the enclosing item again.
+    retarget(grid.current);
   }, [editable]);
 
   // An item's height follows its content (rule 28) — including an inline edit that wraps a line.
@@ -121,6 +156,11 @@ function fitItem(grid: GridStack, item: GridItemHTMLElement, heights: Map<string
   if (key !== null) heights.set(key, rows);
   if (item.gridstackNode !== undefined && item.gridstackNode.h !== rows)
     grid.update(item, { h: rows });
+}
+
+/** An editable grid takes drags from the palette only — never items from another grid (doc 238 rule 11). */
+function acceptsFor(editable: boolean): false | ((el: Element) => boolean) {
+  return editable ? (el) => el.hasAttribute('data-palette-item') : false;
 }
 
 function itemsOf(el: HTMLElement): GridItemHTMLElement[] {

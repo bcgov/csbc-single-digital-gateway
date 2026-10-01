@@ -24,6 +24,8 @@ export function StudioHeadingRenderer({ uischema, visible }: LayoutProps) {
       level={level}
       size={size}
       slot="heading-element"
+      // Inset inside its frame like a studio control's body (doc 236 rule 22b, doc 237 rule 13b).
+      className="p-2"
       editLabel="Heading text"
       editable={editor !== null && element !== null}
       onCommit={(next) => {

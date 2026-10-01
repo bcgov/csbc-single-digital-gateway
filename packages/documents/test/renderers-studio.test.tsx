@@ -171,14 +171,16 @@ describe('renderers/studio (doc 236)', () => {
       ).toEqual(['a', 'b']);
     });
 
-    it('shows a muted Untitled form title, and No fields yet for a Form with no elements', () => {
+    it('shows an Untitled form title, and an empty Form as its drop zone (doc 238 rule 17)', () => {
       const { container } = renderStudioRenderers(form([]));
       const title = container.querySelector('[data-slot="form-title"]')!;
       expect(title).toHaveTextContent('Untitled form');
       expect(title).toHaveClass('text-placeholder');
       expect(title).not.toHaveClass('text-muted-foreground');
-      expect(container).toHaveTextContent('No fields yet');
-      expect(container.querySelector('[data-slot="studio-vertical-layout"]')).toBeNull();
+      expect(container).toHaveTextContent('Drag items here');
+      expect(container.querySelector('[data-slot="studio-vertical-layout"]')).toHaveAttribute(
+        'data-empty',
+      );
     });
 
     it("writes a reorder back to the Form's own elements", () => {
@@ -256,5 +258,49 @@ describe('studio selection ring (rule 16)', () => {
     expect(SELECTED_RING.split(' ')).toEqual(
       SELECTED_CLASS.split(' ').map((cls) => `data-[selected]:${cls}`),
     );
+  });
+});
+
+describe('studio element frame (doc 236 rule 16b)', () => {
+  it('frames every wrapped element with a dashed outline, solid on hover, none while selected', () => {
+    const { container } = renderStudioRenderers({
+      id: 'form',
+      type: 'Form',
+      elements: [
+        studioHeading('h1', 'Hello'),
+        { id: 'c1', type: 'Control', scope: '#/properties/x' },
+      ],
+    });
+    for (const id of ['h1', 'c1']) {
+      expect(container.querySelector(`[data-element-id="${id}"]`), id).toHaveClass(
+        'outline-dashed',
+        'outline-border',
+        'hover:outline-solid',
+        'data-[selected]:outline-none',
+      );
+      // Square: neither the frame nor the selection ring is rounded.
+      expect(container.querySelector(`[data-element-id="${id}"]`)!.className, id).not.toMatch(
+        /\brounded/,
+      );
+    }
+  });
+
+  it('draws no frame view-only', () => {
+    const { container } = renderStudioRenderers(
+      { id: 'form', type: 'Form', elements: [studioHeading('h1', 'Hello')] },
+      { editable: false },
+    );
+    expect(container.querySelector('[data-element-id="h1"]')).not.toHaveClass('outline-dashed');
+  });
+
+  it('gives a placeholder no border of its own — the wrapper frames it', () => {
+    const { container } = renderStudioRenderers({
+      id: 'form',
+      type: 'Form',
+      elements: [{ id: 'c1', type: 'Control', scope: '#/properties/x' }],
+    });
+    const placeholder = container.querySelector('[data-slot="studio-placeholder"]')!;
+    expect(placeholder).not.toHaveClass('border');
+    expect(placeholder).not.toHaveClass('border-dashed');
   });
 });

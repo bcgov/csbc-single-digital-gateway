@@ -12,7 +12,8 @@ export function PlaceholderRenderer({ uischema, schema }: LayoutProps) {
   return (
     <div
       data-slot="studio-placeholder"
-      className="rounded-md border border-dashed border-border px-3 py-2 text-sm"
+      // No border of its own: the StudioElement wrapper frames every element (doc 236 rule 16b).
+      className="px-3 py-2 text-sm"
     >
       {placeholderName(uischema, schema)}
     </div>

@@ -112,4 +112,11 @@ describe('Studio Heading inline editing (doc 236)', () => {
     expect(heading).not.toHaveAttribute('contenteditable');
     expect(heading).toHaveTextContent('Apply now');
   });
+
+  it('is padded inside its frame, viewing and editing', () => {
+    const { heading } = startEditing();
+    expect(heading()).toHaveClass('p-2');
+    fireEvent.keyDown(heading(), { key: 'Escape' });
+    expect(heading()).toHaveClass('p-2');
+  });
 });

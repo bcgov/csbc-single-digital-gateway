@@ -17,3 +17,12 @@ export {
   type DocumentType,
 } from './document-types';
 export { STUB_DOCUMENTS } from './stub-documents';
+export {
+  DEFAULT_PALETTE_ITEMS,
+  defaultPalette,
+  type PaletteContext,
+  type PaletteCreation,
+  type PaletteItem,
+  type PaletteResolver,
+} from './palette-items';
+export { insertItem } from './palette-insert';

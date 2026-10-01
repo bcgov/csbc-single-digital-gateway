@@ -8,6 +8,11 @@ import { useStudioEditor } from './studio-editor';
 import { STUDIO_INTERACTIVE } from './studio-element';
 import { useVerticalGrid } from './use-vertical-grid';
 
+/** An empty grid keeps 12 rows (48px) so it can still take a drop (doc 238 rule 17). */
+const EMPTY_ROWS = 12;
+/** An empty ROOT grid's frame; a nested layout's wrapper already frames it (doc 238 rule 17). */
+const EMPTY_FRAME = 'rounded-md border border-dashed border-border';
+
 /** Outranks the spread default VerticalLayout (doc 236 rule 26). */
 export const studioVerticalLayoutTester = rankWith(2, uiTypeIs('VerticalLayout'));
 
@@ -19,8 +24,16 @@ export function StudioVerticalGrid({
   layoutId,
   elements,
   gap,
+  dropZone,
+  framedWhenEmpty = false,
   ...dispatch
-}: VerticalBodyProps & { layoutId: string | undefined }) {
+}: VerticalBodyProps & {
+  /** Draw the empty drop zone's own dashed frame — only a root grid, which no wrapper frames. */
+  framedWhenEmpty?: boolean;
+  layoutId: string | undefined;
+  /** Where to listen for drops, if not the grid itself (doc 238 rule 13b). */
+  dropZone?: ((grid: HTMLElement) => HTMLElement | null) | undefined;
+}) {
   const editor = useStudioEditor();
   const [el, setEl] = useState<HTMLDivElement | null>(null);
   const keys = elements.map(elementKey);
@@ -37,7 +50,13 @@ export function StudioVerticalGrid({
       const next = reorderElements(elements, ordered);
       if (next !== elements) editor.update(layoutId, { elements: next });
     },
+    onDropItem: (index, itemId) => {
+      if (editor !== null && layoutId !== undefined) editor.insert(layoutId, index, itemId);
+    },
+    minRow: elements.length === 0 ? EMPTY_ROWS : 0,
+    dropZone,
   });
+  const empty = elements.length === 0;
   return (
     <div
       // A new order is a new grid (rule 30): see useVerticalGrid.
@@ -45,8 +64,18 @@ export function StudioVerticalGrid({
       ref={setEl}
       data-slot="studio-vertical-layout"
       data-gap={gap}
-      className={`grid-stack ${editor === null ? '' : STUDIO_INTERACTIVE}`}
+      data-empty={empty ? '' : undefined}
+      className={`grid-stack ${editor === null ? '' : STUDIO_INTERACTIVE} ${empty && framedWhenEmpty ? EMPTY_FRAME : ''}`}
     >
+      {empty && (
+        // A drop zone, not an item: gridstack only manages `.grid-stack-item` children (doc 238 rule 17).
+        <p
+          data-slot="studio-layout-empty"
+          className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-placeholder"
+        >
+          {editor === null ? 'No fields yet' : 'Drag items here'}
+        </p>
+      )}
       {elements.map((child, index) => (
         <div
           key={keys[index]}

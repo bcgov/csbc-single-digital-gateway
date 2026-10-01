@@ -30,9 +30,13 @@ export function useStudioElement(): StudioElementState | null {
  */
 export const STUDIO_INTERACTIVE = 'nodrag nopan nokey pointer-events-auto';
 
-/** A faint outline on hover, offset clear of the content. */
-const HOVER_OUTLINE =
-  'rounded-sm outline-offset-4 hover:outline hover:outline-1 hover:outline-border';
+/**
+ * Every wrapped element's frame (doc 236 rule 16b): a dashed outline by default, solid on hover, offset clear of the
+ * content, and none while selected — the ring replaces it. An outline, not a border, so framing never moves anything.
+ */
+const ELEMENT_FRAME =
+  // Square corners: the dashed frame and the selection ring both follow the wrapper's (none).
+  'outline outline-1 outline-dashed outline-border outline-offset-4 hover:outline-solid data-[selected]:outline-none';
 
 /**
  * The selected element's ring — the canvas nodes' own selection ring (`SELECTED_CLASS` in studio/node-parts.tsx),
@@ -94,7 +98,7 @@ export function StudioElement({
                 }
           }
           className={
-            editor === null ? undefined : `${STUDIO_INTERACTIVE} ${HOVER_OUTLINE} ${SELECTED_RING}`
+            editor === null ? undefined : `${STUDIO_INTERACTIVE} ${ELEMENT_FRAME} ${SELECTED_RING}`
           }
         >
           {children}

@@ -10,6 +10,8 @@ import {
 import type { FormPage } from './canvas-graph';
 import { FADE_IN, FADE_OUT } from './canvas-zoom';
 
+const NO_INSERT = () => {};
+
 /** The page draws no answers: one stable object, so JSONForms is never handed new data. */
 const NO_DATA = {};
 
@@ -25,6 +27,7 @@ export function FormPageBody({
   open = false,
   closing = false,
   onEdit,
+  onInsert = NO_INSERT,
 }: {
   label: string;
   page: FormPage | null;
@@ -33,15 +36,23 @@ export function FormPageBody({
   closing?: boolean;
   /** Applies a renderer's edit; only an open page edits, so nothing drags while the node animates. */
   onEdit?: (id: string, patch: ElementPatch) => void;
+  /** Places a palette item dropped on one of the page's grids (doc 238). */
+  onInsert?: (layoutId: string, index: number, itemId: string) => void;
 }) {
-  const layout = open && !closing ? 'relative' : 'absolute inset-0 overflow-hidden';
+  const layout = open && !closing ? 'relative flex-1' : 'absolute inset-0 overflow-hidden';
   return (
     <article
       aria-label={`${label} page`}
       aria-hidden={closing || undefined}
       className={`pointer-events-none flex flex-col gap-6 rounded-md bg-background p-12 ${layout} ${closing ? FADE_OUT : FADE_IN}`}
     >
-      {page !== null && <PageContent page={page} onEdit={open && !closing ? onEdit : undefined} />}
+      {page !== null && (
+        <PageContent
+          page={page}
+          onEdit={open && !closing ? onEdit : undefined}
+          onInsert={onInsert}
+        />
+      )}
     </article>
   );
 }
@@ -50,9 +61,11 @@ export function FormPageBody({
 function PageContent({
   page,
   onEdit,
+  onInsert,
 }: {
   page: FormPage;
   onEdit: ((id: string, patch: ElementPatch) => void) | undefined;
+  onInsert: (layoutId: string, index: number, itemId: string) => void;
 }) {
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
   const form = (
@@ -68,7 +81,7 @@ function PageContent({
   return onEdit === undefined ? (
     form
   ) : (
-    <StudioEditorProvider update={onEdit}>
+    <StudioEditorProvider update={onEdit} insert={onInsert}>
       <DeselectOnBackground />
       {form}
     </StudioEditorProvider>

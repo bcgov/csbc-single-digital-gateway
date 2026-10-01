@@ -45,6 +45,7 @@ const NODE_TYPES = { form: FormNode, condition: ConditionNode, end: EndNode, lea
 const EDGE_TYPES = { add: AddEdge };
 const NO_EDGES: AddEdgeType[] = [];
 const NO_INSPECT = () => {};
+const NO_INSERT = () => {};
 const ASK_EVERY_TIME: DeleteChoices = {};
 
 export interface DocumentCanvasProps {
@@ -69,6 +70,8 @@ export interface DocumentCanvasProps {
   deleteChoices?: DeleteChoices | undefined;
   /** A delete was confirmed with "Don't ask me again" ticked: remember that choice for the kind. */
   onRememberDelete?: ((kind: 'form' | 'condition', choice: DeleteChoice) => void) | undefined;
+  /** Places a palette item in a layout on a focused page (doc 238 rule 14); absent = nothing can be placed. */
+  onInsert?: ((layoutId: string, index: number, itemId: string) => void) | undefined;
 }
 
 /**
@@ -88,6 +91,7 @@ export function DocumentCanvas({
   onInspect,
   deleteChoices = ASK_EVERY_TIME,
   onRememberDelete,
+  onInsert,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
   const graph = useMemo(() => canvasGraph(uischema, schema), [uischema, schema]);
@@ -136,6 +140,7 @@ export function DocumentCanvas({
     startConnect: connectMode.start,
     // Connecting needs other nodes on the flow: never on a page, never from a lone Form (doc 235 rule 2).
     canConnect: focusedId === null && uischema['type'] === 'Funnel',
+    insert: onInsert ?? NO_INSERT,
   });
 
   return (

@@ -42,11 +42,12 @@
 }
 
 /*
- * No outer padding on a studio layout (doc 236 rule 27b): gridstack insets every item's content by its margin on all
- * four sides, so the grid's edges carried half a gap that the fillable CSS grid does not. gridstack sets the margins as
- * variables on the grid itself, so it pulls itself out by exactly them — only the gaps BETWEEN items remain.
+ * No outer padding on a Form's ROOT layout (doc 236 rule 27b): gridstack insets every item's content by its margin on
+ * all four sides, so the grid's edges carried half a gap. gridstack sets the margins as variables on the grid itself,
+ * so it pulls itself out by exactly them — only the gaps BETWEEN items remain. Only the Form's own grid: a nested
+ * layout pulled outwards would draw its edges outside its wrapper's selection ring.
  */
-.grid-stack[data-slot='studio-vertical-layout'] {
+[data-slot='form'] > .grid-stack[data-slot='studio-vertical-layout'] {
   margin: calc(-1 * var(--gs-item-margin-top)) calc(-1 * var(--gs-item-margin-right))
     calc(-1 * var(--gs-item-margin-bottom)) calc(-1 * var(--gs-item-margin-left));
 }
