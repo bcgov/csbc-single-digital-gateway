@@ -1,5 +1,5 @@
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
-import { AddMenu } from './add-menu';
+import { AddBeforeButton, AddMenu } from './add-menu';
 import { useCanvasActions } from './canvas-actions';
 import type { AddEdge as AddEdgeType } from './canvas-graph';
 
@@ -15,8 +15,8 @@ const TONES = {
 /**
  * Every edge on the canvas. It carries the + (`AddMenu`): at the midpoint of a persisted edge, which it splits, and at
  * the END of a trailing edge, which adds after the free output. An edge leaving a Condition also shows its branch —
- * the row's clauses, or "Otherwise" — directly above its +; the default path is dashed. A floating edge is orange,
- * an edge after an unset branch red.
+ * the row's clauses, or "Default" — directly above its +; the default path is dashed. A floating edge is orange,
+ * an edge after an unset branch red. A headless Condition's LEADING edge is red with a Form-only + at its top.
  */
 export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgeProps<AddEdgeType>) {
   const { add } = useCanvasActions();
@@ -28,6 +28,20 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
     borderRadius: 8,
   });
   if (data === undefined) return <BaseEdge id={id} path={path} />;
+  if (data.add.kind === 'leading') {
+    return (
+      <>
+        <BaseEdge id={id} path={path} style={{ stroke: TONES.invalid.stroke, strokeWidth: 2 }} />
+        <EdgeLabelRenderer>
+          <AddBeforeButton
+            targetName={data.sourceName}
+            onAdd={() => add(data.add, 'form')}
+            style={{ transform: `translate(-50%, -50%) translate(${sourceX}px, ${sourceY}px)` }}
+          />
+        </EdgeLabelRenderer>
+      </>
+    );
+  }
   const trailing = data.add.kind === 'trailing';
   const [x, y] = trailing ? [targetX, targetY] : [midX, midY];
   // A floating edge (not reachable from the start) is orange, and wins over an unset branch's red.

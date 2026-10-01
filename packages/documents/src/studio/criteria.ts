@@ -48,7 +48,7 @@ export const OPERATOR_LABELS: Readonly<Record<Operator, string>> = {
 };
 
 /** What the default output is called, on the canvas and in the dialog. */
-export const DEFAULT_LABEL = 'Otherwise';
+export const DEFAULT_LABEL = 'Default';
 
 const VALUELESS = new Set<Operator>(['isEmpty', 'isNotEmpty', 'isTrue', 'isFalse']);
 const LIST_VALUED = new Set<Operator>(['in', 'notIn']);

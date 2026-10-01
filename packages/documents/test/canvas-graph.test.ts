@@ -82,7 +82,7 @@ describe('canvasGraph', () => {
     expect(labels).toEqual([
       ['Age is at least 18', undefined],
       ['Condition 2 (not set)', undefined],
-      ['Otherwise', true],
+      ['Default', true],
     ]);
     expect(graph.edges.at(-1)!.data?.add).toEqual({ kind: 'trailing', output: { source: 'c1' } });
   });

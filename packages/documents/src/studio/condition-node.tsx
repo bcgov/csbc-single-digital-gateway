@@ -34,7 +34,7 @@ export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
           <span className="block text-xs text-muted-foreground">Condition</span>
           <span className="block truncate text-sm font-medium">{name}</span>
           <span className="block text-xs text-muted-foreground">
-            {branches} {branches === 1 ? 'branch' : 'branches'} + otherwise
+            {branches} {branches === 1 ? 'branch' : 'branches'} + default
           </span>
         </span>
       </button>

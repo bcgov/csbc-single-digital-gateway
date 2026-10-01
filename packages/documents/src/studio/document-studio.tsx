@@ -1,11 +1,13 @@
 import { useState, type ReactNode } from 'react';
-import { ContentJsonPanel } from './content-json-panel';
 import { DocumentCanvas } from './document-canvas';
+import { DocumentInspector } from './document-inspector';
 import type { DocumentRef, DocumentStore } from './document-store';
 import { DocumentStudioEmpty } from './document-studio-empty';
 import { DocumentStudioHeader } from './document-studio-header';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
+import { SelectionBreadcrumbs } from './selection-breadcrumbs';
+import { selectionPath, type PathSegment } from './selection-path';
 import { browserDocumentStore } from './stub-documents';
 import { useDocumentStudio, type StudioStatus } from './use-document-studio';
 
@@ -33,6 +35,9 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
   const [dialogOpen, setDialogOpen] = useState(
     props.documentId === undefined && (props.kind === undefined || props.type === undefined),
   );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Derived, so a deleted Form or another document simply stops being selected (doc 232 rule 5).
+  const path = draft === null ? null : selectionPath(draft.content.variants.default, selectedId);
 
   return (
     <div
@@ -56,12 +61,14 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
               uischema={draft.content.variants.default}
               schema={draft.content.schema}
               onChange={(uischema) => studio.setContent(withVariant(draft.content, uischema))}
+              selectedId={path === null ? null : selectedId}
+              onSelect={setSelectedId}
             />
-            <ContentJsonPanel content={draft.content} />
+            <DocumentInspector content={draft.content} />
           </>
         )}
       </main>
-      <StudioFooter saveError={studio.saveError} />
+      <StudioFooter path={path} onSelect={setSelectedId} saveError={studio.saveError} />
       <NewDocumentDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -87,14 +94,23 @@ function StatusMessage({ children }: { children: ReactNode }) {
   );
 }
 
-function StudioFooter({ saveError }: { saveError: string | null }) {
+function StudioFooter({
+  path,
+  onSelect,
+  saveError,
+}: {
+  path: PathSegment[] | null;
+  onSelect: (formId: string | null) => void;
+  saveError: string | null;
+}) {
   return (
     <footer
       data-slot="document-studio-footer"
-      className="flex h-9 shrink-0 items-center border-t border-border px-2 text-xs"
+      className="flex h-9 shrink-0 items-center gap-2 border-t border-border px-2 text-xs"
     >
+      {path !== null && <SelectionBreadcrumbs segments={path} onSelect={onSelect} />}
       {saveError !== null && (
-        <span role="alert" className="text-destructive">
+        <span role="alert" className="ml-auto text-destructive">
           {saveError}
         </span>
       )}

@@ -27,11 +27,14 @@ export interface NewDocumentDialogProps {
   onCreate: (kind: DocumentKind, type: DocumentType) => void;
 }
 
+/** The type chosen when the host preselects none. */
+const DEFAULT_TYPE: DocumentType = 'services.service';
+
 function isDocumentType(value: unknown): value is DocumentType {
   return (DOCUMENT_TYPES as readonly unknown[]).includes(value);
 }
 
-/** Choose a new document's type (choice cards) and whether it is a template. */
+/** Choose a new document's type (choice cards, Service unless the host preselects one) and whether it is a template. */
 export function NewDocumentDialog({
   open,
   onOpenChange,
@@ -40,7 +43,7 @@ export function NewDocumentDialog({
   onCreate,
 }: NewDocumentDialogProps) {
   const id = useId();
-  const [chosenType, setChosenType] = useState<DocumentType | undefined>(type);
+  const [chosenType, setChosenType] = useState<DocumentType | undefined>(type ?? DEFAULT_TYPE);
   const [template, setTemplate] = useState(kind === 'template');
 
   return (

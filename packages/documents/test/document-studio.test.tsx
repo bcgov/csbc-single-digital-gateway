@@ -70,7 +70,8 @@ describe('DocumentStudio', () => {
     expect(
       within(dialog).getByRole('switch', { name: 'This document is a template' }),
     ).not.toBeChecked();
-    expect(within(dialog).getByRole('button', { name: 'Create document' })).toBeDisabled();
+    expect(within(dialog).getByRole('radio', { name: /^Service(?! Agreement)/ })).toBeChecked();
+    expect(within(dialog).getByRole('button', { name: 'Create document' })).toBeEnabled();
     const header = slot(container, 'document-studio-header') as HTMLElement;
     expect(header).toBeEmptyDOMElement();
 

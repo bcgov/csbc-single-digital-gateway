@@ -118,6 +118,25 @@ export function addBetween(uischema: Uischema, edgeId: string, kind: NodeKind): 
   });
 }
 
+/**
+ * Adds a Form BEFORE `nodeId` — the + above a headless Condition — and connects it in. The Form becomes the Funnel's
+ * start when the node was the start (or there was none), so the flow begins at a Form again.
+ */
+export function addBefore(uischema: Uischema, nodeId: string): Uischema {
+  const exists =
+    formsOf(uischema).some((f) => idOf(f) === nodeId) ||
+    conditionsOf(uischema).some((c) => c.id === nodeId);
+  if (uischema['type'] !== 'Funnel' || !exists) return uischema;
+  const form = newForm();
+  const id = idOf(form)!;
+  const next = withFunnel(uischema, {
+    elements: [...elementsOf(uischema), form],
+    edges: [...edgesOf(uischema), edgeFrom({ source: id }, nodeId)],
+  });
+  const start = startOf(uischema);
+  return start === undefined || start === nodeId ? withStart(next, id) : next;
+}
+
 /** `edge` pointed at `target` instead, keeping its id and the output it leaves by. */
 function retargeted(edge: FunnelEdge, target: string): FunnelEdge {
   return { id: edge.id, ...outputOf(edge), target };

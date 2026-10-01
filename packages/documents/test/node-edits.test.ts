@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { Uischema } from '../src/studio/document-types';
 import { idOf } from '../src/studio/element-ids';
 import { conditionsOf, edgesOf, startOf, withStart } from '../src/studio/funnel-model';
-import { addAfter, addBetween, newForm, removeNode } from '../src/studio/node-edits';
+import { addAfter, addBefore, addBetween, newForm, removeNode } from '../src/studio/node-edits';
 import {
   condition,
   edge,
@@ -202,5 +203,31 @@ describe('removeNode', () => {
     expect(startOf(removeNode(chain, 'b'))).toBe('a');
     const loose = withStart(funnel([form('a'), form('b'), form('c')], [edge('e1', 'b', 'c')]), 'a');
     expect('start' in (removeNode(loose, 'a')['options'] as object)).toBe(false);
+  });
+});
+
+/** c1 heads the Funnel and nothing leads into it. */
+const headless = () =>
+  withStart(funnel([form('x')], [edge('e1', 'c1', 'x')], [condition('c1', [row('r1')])]), 'c1');
+
+describe('addBefore', () => {
+  it('adds a Form leading into the node, and makes it the start when the node was', () => {
+    const next = addBefore(headless(), 'c1');
+    const added = idOf((next['elements'] as Uischema[]).at(-1)!)!;
+
+    expect(edgesOf(next).map((e) => `${e.source}>${e.target}`)).toEqual(['c1>x', `${added}>c1`]);
+    expect(startOf(next)).toBe(added);
+  });
+
+  it('keeps a start that names another node', () => {
+    const variant = withStart(headless(), 'x');
+    expect(startOf(addBefore(variant, 'c1'))).toBe('x');
+  });
+
+  it('changes nothing for an unknown node or a Form root', () => {
+    const variant = headless();
+    expect(addBefore(variant, 'gone')).toBe(variant);
+    const root = form('a');
+    expect(addBefore(root, 'a')).toBe(root);
   });
 });

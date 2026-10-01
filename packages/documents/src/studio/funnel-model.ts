@@ -142,6 +142,31 @@ export function ensureContentStart(content: DocumentContent): DocumentContent {
   return { ...content, variants: Object.fromEntries(entries) as DocumentContent['variants'] };
 }
 
+/**
+ * The persisted edges the canvas can draw: both ends are drawn nodes; a Form output carries no handle and a
+ * Condition's names one of its rows (or none, for the default); the first edge per output wins.
+ */
+export function drawnEdges(
+  edges: FunnelEdge[],
+  names: ReadonlyMap<string, string>,
+  conditions: FunnelCondition[],
+): FunnelEdge[] {
+  const rowsOf = new Map(conditions.map((c) => [c.id, new Set(c.options.rows.map((r) => r.id))]));
+  const taken = new Set<string>();
+  return edges.filter((e) => {
+    if (!names.has(e.source) || !names.has(e.target)) return false;
+    const rows = rowsOf.get(e.source);
+    const valid =
+      rows === undefined
+        ? e.sourceHandle === undefined
+        : e.sourceHandle === undefined || rows.has(e.sourceHandle);
+    const key = `${e.source}\u0000${e.sourceHandle ?? ''}`;
+    if (!valid || taken.has(key)) return false;
+    taken.add(key);
+    return true;
+  });
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

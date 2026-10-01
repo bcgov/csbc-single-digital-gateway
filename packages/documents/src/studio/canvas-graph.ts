@@ -7,6 +7,7 @@ import { idOf } from './element-ids';
 import {
   conditionsOf,
   DEFAULT_HANDLE,
+  drawnEdges,
   edgesOf,
   formsOf,
   startOf,
@@ -20,6 +21,8 @@ import { upstreamFields } from './upstream-fields';
 export const NODE_WIDTH = 240;
 /** How far above the next rank a trailing edge stops. */
 const TRAILING_SHORTFALL = 40;
+/** How far above a headless Condition its leading edge starts. */
+const LEADING_LENGTH = 40;
 
 /**
  * How a node is marked. `first`: nothing connects into it, so it draws no input handle. In a Funnel only, `start` (the
@@ -47,14 +50,18 @@ export interface ConditionNodeData extends NodeMarks, Record<string, unknown> {
   outputs: string[];
 }
 
-/** What a + on this edge does: split the persisted edge, or add after the free output the edge trails from. */
+/**
+ * What a + on this edge does: split the persisted edge, add after the free output the edge trails from, or add a
+ * Form BEFORE a headless Condition (the leading edge above it — Form only).
+ */
 export type AddTarget =
   | { kind: 'between'; edgeId: string }
-  | { kind: 'trailing'; output: NodeOutput };
+  | { kind: 'trailing'; output: NodeOutput }
+  | { kind: 'leading'; nodeId: string };
 
 export interface AddEdgeData extends Record<string, unknown> {
   add: AddTarget;
-  /** Names the + buttons: "after <source>". */
+  /** Names the + buttons: "after <source>" — or, on a leading edge, "before <target>". */
   sourceName: string;
   /** The branch this edge leaves a Condition by, drawn on the edge; `isDefault` for its default path. */
   branchLabel?: string;
@@ -68,7 +75,9 @@ export interface AddEdgeData extends Record<string, unknown> {
 export type FormNode = Node<FormNodeData, 'form'>;
 export type ConditionNode = Node<ConditionNodeData, 'condition'>;
 export type EndNode = Node<Record<string, never>, 'end'>;
-export type CanvasNode = FormNode | ConditionNode | EndNode;
+/** Where a headless Condition's leading edge starts: an invisible point above it. */
+export type LeadNode = Node<Record<string, never>, 'lead'>;
+export type CanvasNode = FormNode | ConditionNode | EndNode | LeadNode;
 export type AddEdge = Edge<AddEdgeData, 'add'>;
 
 export type CanvasGraph =
@@ -116,21 +125,34 @@ export function canvasGraph(uischema: Uischema, schema: Record<string, unknown> 
   const connected = connect(outputs, edges, names);
   const invalid = markUnsetBranches(conditions, connected.edges);
   const funnel = uischema['type'] === 'Funnel';
+  const formIds = new Set(forms.map((f) => idOf(f)!));
   const start = startOf(uischema);
+  // Only a Form starts a flow, and a flow with no start has no end either (doc 232 rule 13).
+  const started = funnel && start !== undefined && formIds.has(start);
   const targeted = new Set(edges.map((e) => e.target));
   const sourced = new Set(edges.map((e) => e.source));
   const reachable = reachableFrom(start, edges);
+  const headless = funnel ? conditions.filter((c) => !targeted.has(c.id)).map((c) => c.id) : [];
+  // A Condition nothing leads into has nothing to branch on: the whole flow is in error (rule 14).
+  const broken = headless.length > 0;
   const marks = (id: string): NodeMarks => ({
-    first: !targeted.has(id),
-    start: funnel && id === start,
-    end: funnel && reachable.has(id) && !sourced.has(id),
-    invalid: invalid.has(id),
-    floating: funnel && !reachable.has(id),
+    first: !targeted.has(id) && !headless.includes(id),
+    start: started && id === start,
+    end: started && formIds.has(id) && reachable.has(id) && !sourced.has(id),
+    invalid: broken || invalid.has(id),
+    floating: !broken && funnel && !reachable.has(id),
   });
-  if (funnel) {
-    for (const e of connected.edges) if (!reachable.has(e.source) && e.data) e.data.floating = true;
+  const leading = headless.map((id) => leadingEdge(id, names.get(id)!));
+  for (const e of connected.edges) {
+    if (e.data === undefined) continue;
+    if (broken) e.data.invalid = true;
+    else if (funnel && !reachable.has(e.source)) e.data.floating = true;
   }
-  const slots = layeredLayout([...names.keys(), ...connected.endIds], connected.children);
+  const leadChildren = leading.map((e): [string, string[]] => [e.source, [e.target]]);
+  const slots = layeredLayout(
+    [...names.keys(), ...connected.endIds, ...leading.map((e) => e.source)],
+    new Map([...connected.children, ...leadChildren]),
+  );
   const at = (id: string, width: number) => ({
     x: slots.get(id)!.x - width / 2,
     y: slots.get(id)!.rank * RANK_HEIGHT,
@@ -150,8 +172,24 @@ export function canvasGraph(uischema: Uischema, schema: Record<string, unknown> 
       const position = { x, y: y - TRAILING_SHORTFALL };
       return { id, type: 'end', position, data: {}, selectable: false };
     }),
+    ...leading.map(({ source, target }): LeadNode => {
+      const below = slots.get(target)!;
+      const position = { x: below.x, y: below.rank * RANK_HEIGHT - LEADING_LENGTH };
+      return { id: source, type: 'lead', position, data: {}, selectable: false };
+    }),
   ];
-  return { kind: 'graph', nodes, edges: connected.edges };
+  return { kind: 'graph', nodes, edges: [...connected.edges, ...leading] };
+}
+
+/** The red edge from an invisible point above a headless Condition into it, carrying a Form-only + at its top. */
+function leadingEdge(conditionId: string, name: string): AddEdge {
+  return {
+    id: `leading:${conditionId}`,
+    type: 'add',
+    source: `lead:${conditionId}`,
+    target: conditionId,
+    data: { add: { kind: 'leading', nodeId: conditionId }, sourceName: name, invalid: true },
+  };
 }
 
 /**
@@ -222,31 +260,6 @@ function conditionOutputs(
       isDefault: true,
     },
   ];
-}
-
-/**
- * The persisted edges the canvas can draw: both ends are drawn nodes; a Form output carries no handle and a
- * Condition's names one of its rows (or none, for the default); the first edge per output wins.
- */
-function drawnEdges(
-  edges: FunnelEdge[],
-  names: ReadonlyMap<string, string>,
-  conditions: FunnelCondition[],
-): FunnelEdge[] {
-  const rowsOf = new Map(conditions.map((c) => [c.id, new Set(c.options.rows.map((r) => r.id))]));
-  const taken = new Set<string>();
-  return edges.filter((e) => {
-    if (!names.has(e.source) || !names.has(e.target)) return false;
-    const rows = rowsOf.get(e.source);
-    const valid =
-      rows === undefined
-        ? e.sourceHandle === undefined
-        : e.sourceHandle === undefined || rows.has(e.sourceHandle);
-    const key = `${e.source}\u0000${e.sourceHandle ?? ''}`;
-    if (!valid || taken.has(key)) return false;
-    taken.add(key);
-    return true;
-  });
 }
 
 function toEdge(

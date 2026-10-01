@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
-import { ContentJsonPanel } from '../src/studio/content-json-panel';
 import { DocumentCanvas } from '../src/studio/document-canvas';
 import type { Uischema } from '../src/studio/document-types';
 import { condition, control, edge, form, funnel, row } from './funnel-fixtures';
@@ -68,12 +67,12 @@ describe('DocumentCanvas', () => {
     expect(links()).toEqual([`A>${added}`, `${added}>B`]);
   });
 
-  it("draws each branch's condition on its edge, and the default path as Otherwise", async () => {
+  it("draws each branch's condition on its edge, and the default path as Default", async () => {
     const { container } = render(<Harness initial={withCondition()} />);
     await screen.findByRole('button', { name: 'Edit Eligible?' });
 
     const labels = [...container.querySelectorAll('[data-slot="document-studio-branch-label"]')];
-    expect(labels.map((l) => l.textContent)).toEqual(['Condition 1 (not set)', 'Otherwise']);
+    expect(labels.map((l) => l.textContent)).toEqual(['Condition 1 (not set)', 'Default']);
   });
 
   it('edits a Condition in its dialog, offering only upstream fields; Save adds a Form per new branch', async () => {
@@ -168,15 +167,27 @@ describe('DocumentCanvas', () => {
     expect(uischemaOf()).toEqual({});
     expect(screen.getByRole('button', { name: 'Add a form to get started' })).toBeInTheDocument();
   });
-});
 
-describe('ContentJsonPanel', () => {
-  it('shows the content pretty-printed', () => {
-    const content = { schema: { type: 'object' }, variants: { default: form('A') } };
-    render(<ContentJsonPanel content={content} />);
+  it('turns the flow red when its first Form is deleted from before a Condition, and the + above it fixes that', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness initial={withCondition()} />);
+    const red = () =>
+      [...container.querySelectorAll('[data-slot$="-node"][data-invalid]')].filter((n) =>
+        /form-node|condition-node/.test(n.getAttribute('data-slot') ?? ''),
+      ).length;
 
+    await user.click(await screen.findByRole('button', { name: 'Delete A' }));
+    const before = await screen.findByRole('button', { name: 'Add form before Eligible?' });
+    expect(red()).toBe(3);
+    expect(container.querySelector('[data-slot="document-studio-start-badge"]')).toBeNull();
+    expect(container.querySelector('[data-slot="document-studio-end-badge"]')).toBeNull();
+
+    await user.click(before);
+
+    const added = (uischemaOf()['elements'] as Uischema[]).at(-1)!['id'];
+    expect(links()).toContain(`${added}>c1`);
     expect(
-      screen.getByRole('region', { name: 'Content JSON' }).querySelector('pre')?.textContent,
-    ).toBe(JSON.stringify(content, null, 2));
+      screen.queryByRole('button', { name: 'Add form before Eligible?' }),
+    ).not.toBeInTheDocument();
   });
 });

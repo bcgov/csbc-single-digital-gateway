@@ -32,18 +32,21 @@ export function NodeDeleteButton({ nodeId, name }: { nodeId: string; name: strin
 }
 
 /**
- * A node's card, marked in a Funnel by a 2px outline: orange when not reachable from the start, red when downstream
+ * A node's card, marked in a Funnel by the colour of its 2px border: orange when not reachable from the start, red when downstream
  * of an unset branch, else green for the start,
  * black for an end, and split — green on the left, black on the right — for a node that is both. Start / End badges
  * sit above its left and right corners at the same inset, raised clear of the delete button on the corner.
  */
 export function NodeFrame({
   marks,
+  selected = false,
   slot,
   className,
   children,
 }: {
   marks: NodeMarks;
+  /** The studio's selection (doc 232): an offset ring OUTSIDE the border, so it never merges with a state mark. */
+  selected?: boolean;
   slot: string;
   className: string;
   children: ReactNode;
@@ -56,17 +59,18 @@ export function NodeFrame({
       data-end={marks.end || undefined}
       data-invalid={marks.invalid || undefined}
       data-floating={marks.floating || undefined}
-      className={`relative w-60 rounded-md border border-border bg-background shadow-xs ${outlineOf(marks)} ${className}`}
+      data-selected={selected || undefined}
+      className={`relative w-60 rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
     >
       {split && (
         <>
           <span
             aria-hidden
-            className={`${HALF_CLASS} -left-0.5 right-1/2 rounded-l-[8px] border-r-0 border-success-border`}
+            className={`${HALF_CLASS} -left-0.5 right-1/2 rounded-l-md border-r-0 border-success-border`}
           />
           <span
             aria-hidden
-            className={`${HALF_CLASS} -right-0.5 left-1/2 rounded-r-[8px] border-l-0 border-foreground`}
+            className={`${HALF_CLASS} -right-0.5 left-1/2 rounded-r-md border-l-0 border-foreground`}
           />
         </>
       )}
@@ -91,16 +95,25 @@ export function NodeFrame({
   );
 }
 
-/** The single-colour outline; a split one is drawn by two half frames instead, since an outline has one colour. */
-function outlineOf({ floating, invalid, start, end }: NodeMarks): string {
-  if (floating) return 'outline-2 outline-warning-border';
-  if (invalid) return 'outline-2 outline-danger-border';
-  if (start && end) return '';
-  if (start) return 'outline-2 outline-success-border';
-  return end ? 'outline-2 outline-foreground' : '';
+/**
+ * The border's colour. Its width is always 2px, so a mark appearing never shifts the card. A split start-and-end
+ * border keeps the neutral colour underneath the two half frames that cover it.
+ */
+function borderOf({ floating, invalid, start, end }: NodeMarks): string {
+  if (floating) return 'border-warning-border';
+  if (invalid) return 'border-danger-border';
+  if (start && end) return 'border-border';
+  if (start) return 'border-success-border';
+  return end ? 'border-foreground' : 'border-border';
 }
 
-/** One half of a split outline: a 2px frame just outside the card's border, where an outline would draw. */
+/** The selection ring, offset so a background-coloured gap separates it from a coloured border. */
+const SELECTED_CLASS = 'ring-2 ring-ring ring-offset-2 ring-offset-background';
+
+/**
+ * One half of a split border: a 2px frame laid exactly over the card's own border. Absolute insets measure from the
+ * padding box, so `-0.5` (2px) reaches the border's outer edge.
+ */
 const HALF_CLASS = 'pointer-events-none absolute -inset-y-0.5 border-2';
 
 /** `mb-3` keeps the badge's bottom above the delete button, which overhangs the corner by 10px. */

@@ -60,3 +60,30 @@ const ACTION_CLASS =
   'flex h-full shrink-0 items-center rounded-full whitespace-nowrap hover:text-foreground focus-visible:text-foreground focus-visible:outline-none';
 const LABEL_CLASS =
   'text-xs opacity-0 transition-opacity duration-150 group-focus-within/add:opacity-100 group-hover/add:opacity-100';
+
+/** The + at the top of a headless Condition's leading edge: adds a Form before it, and nothing else. */
+export function AddBeforeButton({
+  targetName,
+  onAdd,
+  style,
+}: {
+  targetName: string;
+  onAdd: () => void;
+  style: CSSProperties;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Add form before ${targetName}`}
+      data-slot="document-studio-add-before"
+      style={style}
+      className="nodrag nopan pointer-events-auto absolute flex size-6 items-center justify-center rounded-full border border-danger-border bg-background text-danger shadow-xs hover:border-ring hover:text-foreground"
+      onClick={(event) => {
+        event.currentTarget.blur();
+        onAdd();
+      }}
+    >
+      <Icon path={mdiPlus} size="14px" />
+    </button>
+  );
+}
