@@ -1,10 +1,10 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StudioPanel } from '../src/studio/studio-panel';
 
-function Harness({ initial = false }: { initial?: boolean }) {
+function Harness({ initial = false, revealKey }: { initial?: boolean; revealKey?: number }) {
   const [open, setOpen] = useState(initial);
   return (
     <StudioPanel
@@ -17,6 +17,7 @@ function Harness({ initial = false }: { initial?: boolean }) {
       open={open}
       onOpenChange={setOpen}
       slot="panel"
+      revealKey={revealKey}
     >
       <p>body</p>
     </StudioPanel>
@@ -80,5 +81,38 @@ describe('StudioPanel', () => {
     await user.keyboard('{Escape}');
 
     expect(slot(container, 'panel-expanded')).toBeNull();
+  });
+
+  describe('reveal (doc 234 rule 7)', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('does nothing on mount, whatever the key', () => {
+      const { container } = render(<Harness revealKey={3} />);
+
+      expect(slot(container, 'panel-expanded')).toBeNull();
+      expect(document.body).toHaveFocus();
+    });
+
+    it('opens a collapsed panel expanded and focuses it when the key changes', async () => {
+      // jsdom lays nothing out: the docked panel has no client rects, as when it is display:none.
+      const { container, rerender } = render(<Harness revealKey={0} />);
+
+      rerender(<Harness revealKey={1} />);
+
+      const expanded = slot(container, 'panel-expanded');
+      expect(expanded).not.toBeNull();
+      await waitFor(() => expect(expanded).toHaveFocus());
+    });
+
+    it('focuses a docked panel in place, never opening the expanded one', async () => {
+      const { container, rerender } = render(<Harness revealKey={0} />);
+      const docked = slot(container, 'panel')!;
+      vi.spyOn(docked, 'getClientRects').mockReturnValue([new DOMRect(0, 0, 320, 400)] as never);
+
+      rerender(<Harness revealKey={1} />);
+
+      await waitFor(() => expect(docked).toHaveFocus());
+      expect(slot(container, 'panel-expanded')).toBeNull();
+    });
   });
 });

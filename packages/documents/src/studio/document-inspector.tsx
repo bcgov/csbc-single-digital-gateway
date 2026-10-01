@@ -24,6 +24,8 @@ export interface DocumentInspectorProps {
   /** Whether the collapsed inspector is open, expanded (doc 233 rule 14). */
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Bumped to reveal the inspector (doc 234 rule 7) — see `StudioPanel`'s `revealKey`. */
+  revealKey?: number | undefined;
 }
 
 /**
@@ -31,7 +33,12 @@ export interface DocumentInspectorProps {
  * Settings ("Inspector") and JSON ("Schema") views; the header is titled by the view. It collapses to a cog below the
  * canvas breakpoint (doc 233 rule 14); the view is held here, so the docked and expanded forms share it.
  */
-export function DocumentInspector({ content, open, onOpenChange }: DocumentInspectorProps) {
+export function DocumentInspector({
+  content,
+  open,
+  onOpenChange,
+  revealKey,
+}: DocumentInspectorProps) {
   const [view, setView] = useState<InspectorView>('settings');
   return (
     <StudioPanel
@@ -42,6 +49,7 @@ export function DocumentInspector({ content, open, onOpenChange }: DocumentInspe
       width="w-80"
       open={open}
       onOpenChange={onOpenChange}
+      revealKey={revealKey}
       slot="document-studio-inspector"
       actions={
         <ToggleGroup

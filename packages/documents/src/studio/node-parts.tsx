@@ -1,9 +1,6 @@
-import { mdiDeleteOutline } from '@mdi/js';
-import { Icon } from '@mdi/react';
 import { Handle, Position } from '@xyflow/react';
 import type { ReactNode } from 'react';
 import type { NodeMarks } from './canvas-graph';
-import { useCanvasActions } from './canvas-actions';
 import { MOTION } from './canvas-zoom';
 
 /** xyflow's stylesheet is unlayered and beats Tailwind's layered utilities, hence the important modifier. */
@@ -16,27 +13,12 @@ export function InputHandle({ show }: { show: boolean }) {
   ) : null;
 }
 
-/** The round delete button on a node's top-right corner. */
-export function NodeDeleteButton({ nodeId, name }: { nodeId: string; name: string }) {
-  const { remove } = useCanvasActions();
-  return (
-    <button
-      type="button"
-      aria-label={`Delete ${name}`}
-      data-slot="document-studio-delete-node"
-      className="nodrag nopan absolute -top-2.5 -right-2.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-xs hover:text-destructive"
-      onClick={() => remove(nodeId)}
-    >
-      <Icon path={mdiDeleteOutline} size="12px" />
-    </button>
-  );
-}
-
 /**
  * A node's card, marked in a Funnel by the colour of its 2px border: orange when not reachable from the start, red when downstream
  * of an unset branch, else green for the start,
  * black for an end, and split — green on the left, black on the right — for a node that is both. Start / End badges
- * sit above its left and right corners at the same inset, raised clear of the delete button on the corner.
+ * sit above its left and right corners at the same inset. The card is the `group/node` its action row (doc 234)
+ * answers to.
  */
 export function NodeFrame({
   marks,
@@ -69,7 +51,7 @@ export function NodeFrame({
       data-invalid={marks.invalid || undefined}
       data-floating={marks.floating || undefined}
       data-selected={selected || undefined}
-      className={`relative ${page === undefined ? 'w-60' : PAGE_SIZE[page]} transition-[width,height] [interpolate-size:allow-keywords] ${MOTION} rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
+      className={`group/node relative ${page === undefined ? 'w-60' : PAGE_SIZE[page]} transition-[width,height] [interpolate-size:allow-keywords] ${MOTION} rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
     >
       {split && (
         <>
@@ -131,6 +113,6 @@ const SELECTED_CLASS = 'ring-2 ring-ring ring-offset-2 ring-offset-background';
  */
 const HALF_CLASS = 'pointer-events-none absolute -inset-y-0.5 border-2';
 
-/** `mb-3` keeps the badge's bottom above the delete button, which overhangs the corner by 10px. */
+/** Raised just clear of the card's border. */
 const BADGE_CLASS =
-  'absolute bottom-full mb-3 rounded-sm px-1.5 py-px text-[10px] font-medium text-background';
+  'absolute bottom-full mb-1 rounded-sm px-1.5 py-px text-[10px] font-medium text-background';

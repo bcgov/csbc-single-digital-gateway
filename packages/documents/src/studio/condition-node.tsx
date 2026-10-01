@@ -4,15 +4,16 @@ import { Handle, Position, useUpdateNodeInternals, type NodeProps } from '@xyflo
 import { useEffect } from 'react';
 import { useCanvasActions } from './canvas-actions';
 import type { ConditionNode as ConditionNodeType } from './canvas-graph';
-import { HIDDEN_HANDLE, InputHandle, NodeDeleteButton, NodeFrame } from './node-parts';
+import { NodeActions } from './node-actions';
+import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
 
 /**
  * A Condition on the canvas: one input, and one output per branch plus the default, spread along its bottom edge in
- * that order. The card body opens the condition dialog. xyflow caches handle positions, so it is told whenever the
+ * that order. The card body opens the condition dialog, as its Edit action does (doc 234 rule 6). xyflow caches handle positions, so it is told whenever the
  * set of outputs changes.
  */
 export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
-  const { editCondition } = useCanvasActions();
+  const { editCondition, remove } = useCanvasActions();
   const updateNodeInternals = useUpdateNodeInternals();
   const outputsKey = data.outputs.join('|');
   useEffect(() => updateNodeInternals(id), [id, outputsKey, updateNodeInternals]);
@@ -22,10 +23,9 @@ export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
   return (
     <NodeFrame marks={data} slot="document-studio-condition-node" className="text-sm">
       <InputHandle show={!data.first} />
-      <NodeDeleteButton nodeId={data.conditionId} name={name} />
       <button
         type="button"
-        aria-label={`Edit ${name}`}
+        aria-label={`Open ${name}`}
         className="nodrag nopan flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-muted/50"
         onClick={() => editCondition(data.conditionId)}
       >
@@ -38,6 +38,11 @@ export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
           </span>
         </span>
       </button>
+      <NodeActions
+        name={name}
+        onEdit={() => editCondition(data.conditionId)}
+        onDelete={() => remove({ id: data.conditionId, kind: 'condition', name })}
+      />
       {data.outputs.map((handle, i) => (
         <Handle
           key={handle}

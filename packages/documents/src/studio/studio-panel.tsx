@@ -1,7 +1,7 @@
 import { mdiClose } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 /**
  * Which of the three forms a panel takes, by the CANVAS's width (doc 233 rule 14) — a container query on the
@@ -36,6 +36,11 @@ export interface StudioPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   slot: string;
+  /**
+   * Bump to REVEAL the panel (doc 234 rule 7): docked, it takes focus; collapsed, it opens expanded and takes focus.
+   * The value on mount reveals nothing.
+   */
+  revealKey?: number | undefined;
   /** Extra classes for the docked panel, e.g. a fade-in. */
   className?: string;
   children: ReactNode;
@@ -57,16 +62,20 @@ export function StudioPanel({
   open,
   onOpenChange,
   slot,
+  revealKey,
   className = '',
   children,
 }: StudioPanelProps) {
   const name = label.toLowerCase();
+  const { docked, expanded } = useReveal(revealKey, open, onOpenChange);
   return (
     <>
       <section
+        ref={docked}
+        tabIndex={-1}
         aria-label={label}
         data-slot={slot}
-        className={`absolute top-3 ${CORNER[side]} z-10 max-h-[calc(100%-1.5rem)] ${width} ${FRAME} ${AT.docked} ${className}`}
+        className={`absolute top-3 outline-none ${CORNER[side]} z-10 max-h-[calc(100%-1.5rem)] ${width} ${FRAME} ${AT.docked} ${className}`}
       >
         <PanelHeading title={title} actions={actions} />
         {children}
@@ -84,9 +93,11 @@ export function StudioPanel({
       </Button>
       {open && (
         <section
+          ref={expanded}
+          tabIndex={-1}
           aria-label={label}
           data-slot={`${slot}-expanded`}
-          className={`absolute inset-3 z-30 ${FRAME} ${AT.expanded}`}
+          className={`absolute inset-3 outline-none z-30 ${FRAME} ${AT.expanded}`}
           onKeyDown={(event) => {
             if (event.key === 'Escape') onOpenChange(false);
           }}
@@ -112,6 +123,44 @@ export function StudioPanel({
       )}
     </>
   );
+}
+
+/**
+ * Reveals the panel whenever `revealKey` changes. Which form it is in is read from the DOM: the docked section has no
+ * client rects while `display: none` (below the breakpoint). jsdom lays nothing out, so there it is always collapsed.
+ */
+function useReveal(
+  revealKey: number | undefined,
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+) {
+  const docked = useRef<HTMLElement | null>(null);
+  const expanded = useRef<HTMLElement | null>(null);
+  const seen = useRef(revealKey);
+  const focusOnOpen = useRef(false);
+  const openChange = useRef(onOpenChange);
+  openChange.current = onOpenChange;
+
+  useEffect(() => {
+    if (revealKey === seen.current) return;
+    seen.current = revealKey;
+    if ((docked.current?.getClientRects().length ?? 0) > 0) {
+      docked.current?.focus();
+    } else if (expanded.current !== null) {
+      expanded.current.focus();
+    } else {
+      focusOnOpen.current = true;
+      openChange.current(true);
+    }
+  }, [revealKey]);
+
+  useEffect(() => {
+    if (!open || !focusOnOpen.current) return;
+    focusOnOpen.current = false;
+    expanded.current?.focus();
+  }, [open]);
+
+  return { docked, expanded };
 }
 
 function PanelHeading({ title, actions }: { title: string; actions?: ReactNode }) {

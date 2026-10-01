@@ -4,14 +4,17 @@ import type {
   FormNode as FormNodeType,
   LeadNode as LeadNodeType,
 } from './canvas-graph';
+import { useCanvasActions } from './canvas-actions';
 import { FormPageBody } from './form-page';
-import { HIDDEN_HANDLE, InputHandle, NodeDeleteButton, NodeFrame } from './node-parts';
+import { NodeActions } from './node-actions';
+import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
 
 /**
- * One Form on the canvas: a card with a delete button, an input unless it is first, and one output below — or, while
- * focused (doc 233), the same node grown into the Form's page.
+ * One Form on the canvas: a card with its actions (Edit, Inspect, Delete — doc 234), an input unless it is first, and
+ * one output below — or, while focused (doc 233), the same node grown into the Form's page, which has no actions.
  */
 export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
+  const { remove, focus, inspect } = useCanvasActions();
   const label = data.label ?? 'Untitled form';
   const focused = data.focused === true;
   return (
@@ -30,7 +33,13 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
         <FormPageBody label={label} fields={data.fields ?? []} open={data.open === true} />
       ) : (
         <>
-          <NodeDeleteButton nodeId={data.formId} name={label} />
+          <NodeActions
+            name={label}
+            shown={selected}
+            onEdit={() => focus(data.formId)}
+            onInspect={() => inspect(data.formId)}
+            onDelete={() => remove({ id: data.formId, kind: 'form', name: label })}
+          />
           <p className="text-xs text-muted-foreground">Form</p>
           <p className="truncate text-sm font-medium">{label}</p>
           {data.closing === true && (

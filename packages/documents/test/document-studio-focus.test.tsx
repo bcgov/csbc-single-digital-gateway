@@ -27,6 +27,14 @@ function open(documentId: string) {
   return { user, ...view };
 }
 
+/** Deletes a node through the delete gate (doc 234 rule 8): Delete, then confirm. */
+async function deleteNode(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(await screen.findByRole('button', { name: `Delete ${name}` }));
+  await user.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+  );
+}
+
 // Node bodies and the pane take fireEvent, not user-event: see document-studio-selection.test.tsx.
 describe('DocumentStudio focus', () => {
   it('opens a top-level Form focused: its node drawn as a page with its + below, the badges kept, no Back', async () => {
@@ -146,7 +154,7 @@ describe('DocumentStudio focus', () => {
     await screen.findByRole('button', { name: 'Delete Details' });
     expect(page()).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Delete Details' }));
+    await deleteNode(user, 'Details');
 
     expect(await screen.findByRole('article', { name: 'Eligibility page' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();

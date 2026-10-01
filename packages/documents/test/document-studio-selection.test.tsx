@@ -19,6 +19,14 @@ async function renderApplication() {
   return { user, ...view };
 }
 
+/** Deletes a node through the delete gate (doc 234 rule 8): Delete, then confirm. */
+async function deleteNode(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(await screen.findByRole('button', { name: `Delete ${name}` }));
+  await user.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+  );
+}
+
 const formNode = (container: HTMLElement, label: string) =>
   [...container.querySelectorAll<HTMLElement>('[data-slot="document-studio-form-node"]')].find(
     (node) => node.textContent?.includes(label),
@@ -138,7 +146,7 @@ describe('DocumentStudio selection', () => {
     const { user, container } = await renderApplication();
     fireEvent.click(formNode(container, 'Details'));
 
-    await user.click(screen.getByRole('button', { name: 'Delete Details' }));
+    await deleteNode(user, 'Details');
 
     // Deleting Details collapses the Funnel to Eligibility, which is then focused (doc 233 rules 6, 10).
     await waitFor(() => expect(pathNav(container)).toHaveTextContent('Eligibility'));

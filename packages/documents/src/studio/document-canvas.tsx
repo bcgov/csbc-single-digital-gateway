@@ -8,9 +8,9 @@ import {
   useNodesState,
   type Viewport,
 } from '@xyflow/react';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { AddEdge } from './add-edge';
-import { CanvasActionsContext, type CanvasActions } from './canvas-actions';
+import { CanvasActionsContext, useEditActions } from './canvas-actions';
 import { fitNow, MIN_ZOOM, type Zoomable } from './canvas-zoom';
 import { focusEdges, focusNodes, focusRect, scrollExtent, type FocusFrame } from './focus-view';
 import {
@@ -25,23 +25,24 @@ import {
 import {
   canvasGraph,
   type AddEdge as AddEdgeType,
-  type AddTarget,
   type CanvasGraph,
   type CanvasNode,
 } from './canvas-graph';
 import { ConditionDialog } from './condition-dialog';
 import { updateCondition } from './condition-edits';
 import { ConditionNode } from './condition-node';
+import { useDeleteGate } from './delete-gate';
 import type { Uischema } from './document-types';
 import { EndNode, FormNode, LeadNode } from './form-node';
 import { conditionsOf } from './funnel-model';
-import { addAfter, addBefore, addBetween, newForm, removeNode, type NodeKind } from './node-edits';
+import { newForm, removeNode } from './node-edits';
 import { upstreamFields } from './upstream-fields';
 
 /** Module-level so xyflow sees a stable identity and never remounts every node or edge. */
 const NODE_TYPES = { form: FormNode, condition: ConditionNode, end: EndNode, lead: LeadNode };
 const EDGE_TYPES = { add: AddEdge };
 const NO_EDGES: AddEdgeType[] = [];
+const NO_INSPECT = () => {};
 
 export interface DocumentCanvasProps {
   /** The variant being edited. */
@@ -55,10 +56,16 @@ export interface DocumentCanvasProps {
   onSelect?: ((formId: string | null) => void) | undefined;
   /** The Form zoomed in on (doc 233) — drawn alone, as a page — or `null` for the flow. */
   focusedId?: string | null | undefined;
-  /** A Form node was double-clicked: the zoom onto it has begun. */
+  /** A Form node was double-clicked, or its Edit used (doc 234): the zoom onto it has begun. */
   onFocus?: ((formId: string) => void) | undefined;
   /** A + on the focused page was used (doc 233 rule 9): leave the page, zooming out to the flow it now heads. */
   onUnfocus?: (() => void) | undefined;
+  /** A Form's Inspect was used (doc 234 rule 7): select it and reveal the inspector. */
+  onInspect?: ((formId: string) => void) | undefined;
+  /** Whether a delete asks first (doc 234 rules 8-9); default true. */
+  askBeforeDelete?: boolean | undefined;
+  /** A delete was confirmed with "Don't ask me again" ticked. */
+  onStopAsking?: (() => void) | undefined;
 }
 
 /**
@@ -75,6 +82,9 @@ export function DocumentCanvas({
   focusedId = null,
   onFocus,
   onUnfocus,
+  onInspect,
+  askBeforeDelete = true,
+  onStopAsking,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
   const graph = useMemo(() => canvasGraph(uischema, schema), [uischema, schema]);
@@ -99,7 +109,26 @@ export function DocumentCanvas({
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = conditionsOf(uischema).find((c) => c.id === editingId) ?? null;
   const unfocus = focusedId === null ? undefined : onUnfocus;
-  const actions = useEditActions(uischema, onChange, setEditingId, unfocus);
+  const focusForm = useCallback(
+    (formId: string) => {
+      if (focusedId !== null) return;
+      // Remembered so Back can return the camera exactly here; the zoom itself is useZoomInOnFocus's.
+      before.current = instance.current?.getViewport() ?? null;
+      onFocus?.(formId);
+    },
+    [focusedId, onFocus],
+  );
+  const removeNow = useCallback(
+    (nodeId: string) => onChange(removeNode(uischema, nodeId)),
+    [uischema, onChange],
+  );
+  const { request: remove, gate } = useDeleteGate(askBeforeDelete, removeNow, onStopAsking);
+  const actions = useEditActions(uischema, onChange, unfocus, {
+    remove,
+    editCondition: setEditingId,
+    focus: focusForm,
+    inspect: onInspect ?? NO_INSPECT,
+  });
 
   return (
     <CanvasActionsContext value={actions}>
@@ -129,10 +158,7 @@ export function DocumentCanvas({
           }}
           onPaneClick={() => onSelect?.(null)}
           onNodeDoubleClick={(_, node) => {
-            if (focusedId !== null || node.type !== 'form') return;
-            // Remembered so Back can return the camera exactly here; the zoom itself is useZoomInOnFocus's.
-            before.current = instance.current?.getViewport() ?? null;
-            onFocus?.(node.id);
+            if (node.type === 'form') focusForm(node.id);
           }}
           onInit={(flow) => {
             instance.current = flow;
@@ -174,6 +200,7 @@ export function DocumentCanvas({
           setEditingId(null);
         }}
       />
+      {gate}
     </CanvasActionsContext>
   );
 }
@@ -246,32 +273,4 @@ function CanvasOverlay({ graph, onAddForm }: { graph: CanvasGraph; onAddForm: ()
     );
   }
   return null;
-}
-
-/** What the nodes and edges can do: every edit goes through a pure function and out through `onChange`. */
-function useEditActions(
-  uischema: Uischema,
-  onChange: (uischema: Uischema) => void,
-  editCondition: (conditionId: string) => void,
-  /** Given while a page is focused: adding from its + also leaves the page. */
-  unfocus: (() => void) | undefined,
-): CanvasActions {
-  return useMemo(
-    () => ({
-      add: (target, kind) => {
-        onChange(added(uischema, target, kind));
-        unfocus?.();
-      },
-      remove: (nodeId) => onChange(removeNode(uischema, nodeId)),
-      editCondition,
-    }),
-    [uischema, onChange, editCondition, unfocus],
-  );
-}
-
-/** The variant with a node added where a + asked; a leading + only ever adds a Form. */
-function added(uischema: Uischema, target: AddTarget, kind: NodeKind): Uischema {
-  if (target.kind === 'between') return addBetween(uischema, target.edgeId, kind);
-  if (target.kind === 'trailing') return addAfter(uischema, target.output, kind);
-  return addBefore(uischema, target.nodeId);
 }

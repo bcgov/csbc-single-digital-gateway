@@ -40,6 +40,9 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Which collapsed panel is open, expanded — one at a time (doc 233 rule 14).
   const [expanded, setExpanded] = useState<'palette' | 'inspector' | null>(null);
+  // Doc 234: Inspect bumps this to reveal the inspector; "Don't ask me again" lasts for this mount (rule 9).
+  const [inspectorReveal, setInspectorReveal] = useState(0);
+  const [askBeforeDelete, setAskBeforeDelete] = useState(true);
   const variant = draft?.content.variants.default ?? null;
   const [focus, setFocus] = useDocumentFocus(
     draft?.ref?.documentId ?? (draft === null ? null : NEW),
@@ -92,6 +95,12 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
                 setSelectedId(formId);
               }}
               onUnfocus={() => setFocus(null)}
+              onInspect={(formId) => {
+                setSelectedId(formId);
+                setInspectorReveal((n) => n + 1);
+              }}
+              askBeforeDelete={askBeforeDelete}
+              onStopAsking={() => setAskBeforeDelete(false)}
             />
             {focusedId !== null && (
               <DocumentPalette
@@ -103,6 +112,7 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
               content={draft.content}
               open={expanded === 'inspector'}
               onOpenChange={(open) => setExpanded(open ? 'inspector' : null)}
+              revealKey={inspectorReveal}
             />
           </>
         )}

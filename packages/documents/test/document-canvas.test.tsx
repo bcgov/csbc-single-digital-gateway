@@ -42,6 +42,14 @@ const withCondition = () =>
     [condition('c1', [row('r1', 'Condition 1')], 'Eligible?')],
   );
 
+/** Deletes a node through the delete gate (doc 234 rule 8): Delete, then confirm. */
+async function deleteNode(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(await screen.findByRole('button', { name: `Delete ${name}` }));
+  await user.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+  );
+}
+
 describe('DocumentCanvas', () => {
   it('adds a Form or a Condition from the + after a lone Form', async () => {
     const user = userEvent.setup();
@@ -130,7 +138,7 @@ describe('DocumentCanvas', () => {
     const user = userEvent.setup();
     render(<Harness initial={withCondition()} />);
 
-    await user.click(await screen.findByRole('button', { name: 'Delete Eligible?' }));
+    await deleteNode(user, 'Eligible?');
 
     expect(links()).toEqual(['A>B']);
   });
@@ -161,7 +169,7 @@ describe('DocumentCanvas', () => {
     const user = userEvent.setup();
     render(<Harness initial={form('A')} />);
 
-    await user.click(await screen.findByRole('button', { name: 'Delete A' }));
+    await deleteNode(user, 'A');
     await act(async () => {});
 
     expect(uischemaOf()).toEqual({});
@@ -176,7 +184,7 @@ describe('DocumentCanvas', () => {
         /form-node|condition-node/.test(n.getAttribute('data-slot') ?? ''),
       ).length;
 
-    await user.click(await screen.findByRole('button', { name: 'Delete A' }));
+    await deleteNode(user, 'A');
     const before = await screen.findByRole('button', { name: 'Add form before Eligible?' });
     expect(red()).toBe(3);
     expect(container.querySelector('[data-slot="document-studio-start-badge"]')).toBeNull();
