@@ -4,6 +4,7 @@ import { Handle, Position } from '@xyflow/react';
 import type { ReactNode } from 'react';
 import type { NodeMarks } from './canvas-graph';
 import { useCanvasActions } from './canvas-actions';
+import { MOTION } from './canvas-zoom';
 
 /** xyflow's stylesheet is unlayered and beats Tailwind's layered utilities, hence the important modifier. */
 export const HIDDEN_HANDLE = 'opacity-0!';
@@ -40,6 +41,7 @@ export function NodeDeleteButton({ nodeId, name }: { nodeId: string; name: strin
 export function NodeFrame({
   marks,
   selected = false,
+  page,
   slot,
   className,
   children,
@@ -47,6 +49,13 @@ export function NodeFrame({
   marks: NodeMarks;
   /** The studio's selection (doc 232): an offset ring OUTSIDE the border, so it never merges with a state mark. */
   selected?: boolean;
+  /**
+   * Drawn as a focused Form's page (doc 233): `growing` while the card grows to the page's first screen (a fixed
+   * 994px, so the camera fits a known size), then `open` — as tall as its content, never shorter. A card that can
+   * become a page has a fixed height (Form cards are `h-14`); `interpolate-size` lets height animate to and from
+   * `auto` (Chromium; elsewhere those steps jump).
+   */
+  page?: 'growing' | 'open' | undefined;
   slot: string;
   className: string;
   children: ReactNode;
@@ -60,7 +69,7 @@ export function NodeFrame({
       data-invalid={marks.invalid || undefined}
       data-floating={marks.floating || undefined}
       data-selected={selected || undefined}
-      className={`relative w-60 rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
+      className={`relative ${page === undefined ? 'w-60' : PAGE_SIZE[page]} transition-[width,height] [interpolate-size:allow-keywords] ${MOTION} rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
     >
       {split && (
         <>
@@ -106,6 +115,12 @@ function borderOf({ floating, invalid, start, end }: NodeMarks): string {
   if (start) return 'border-success-border';
   return end ? 'border-foreground' : 'border-border';
 }
+
+/** A page's size: `PAGE_WIDTH` × `PAGE_HEIGHT` (focus-view.ts), then its content's height; literal for Tailwind. */
+const PAGE_SIZE = {
+  growing: 'w-[768px] h-[994px]',
+  open: 'w-[768px] h-auto min-h-[994px]',
+} as const;
 
 /** The selection ring, offset so a background-coloured gap separates it from a coloured border. */
 const SELECTED_CLASS = 'ring-2 ring-ring ring-offset-2 ring-offset-background';

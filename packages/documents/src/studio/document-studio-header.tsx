@@ -1,3 +1,5 @@
+import { mdiArrowLeft } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { DOCUMENT_TYPE_INFO, type DocumentKind, type DocumentType } from './document-types';
@@ -8,6 +10,8 @@ export interface DocumentStudioHeaderProps {
   canSave: boolean;
   saving: boolean;
   onSave: () => void;
+  /** Given while a Form is focused (doc 233 rule 5): a Back button replaces the Type / Template badges. */
+  onBack?: (() => void) | undefined;
 }
 
 /**
@@ -19,6 +23,7 @@ export function DocumentStudioHeader({
   canSave,
   saving,
   onSave,
+  onBack,
 }: DocumentStudioHeaderProps) {
   return (
     <header
@@ -27,13 +32,22 @@ export function DocumentStudioHeader({
     >
       {document !== null && (
         <>
-          <Badge color="green" data-slot="document-studio-type">
-            Type: {DOCUMENT_TYPE_INFO[document.type].label}
-          </Badge>
-          {document.kind === 'template' && (
-            <Badge color="grey" data-slot="document-studio-template">
-              Template
-            </Badge>
+          {onBack !== undefined ? (
+            <Button size="xs" variant="ghost" data-slot="document-studio-back" onClick={onBack}>
+              <Icon path={mdiArrowLeft} size="14px" />
+              Back
+            </Button>
+          ) : (
+            <>
+              <Badge color="green" data-slot="document-studio-type">
+                Type: {DOCUMENT_TYPE_INFO[document.type].label}
+              </Badge>
+              {document.kind === 'template' && (
+                <Badge color="grey" data-slot="document-studio-template">
+                  Template
+                </Badge>
+              )}
+            </>
           )}
           <Button size="xs" className="ml-auto" disabled={!canSave || saving} onClick={onSave}>
             {saving ? 'Saving…' : 'Save'}

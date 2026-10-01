@@ -2,6 +2,10 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { createDocumentStore, DocumentStudio, STUB_DOCUMENTS } from '../src/studio';
+import { useXyflowJsdom } from './xyflow-jsdom';
+
+// A focused page is a measured xyflow node; until measured it is hidden from role queries.
+useXyflowJsdom();
 
 const slot = (container: HTMLElement, name: string) =>
   container.querySelector(`[data-slot="${name}"]`);
@@ -125,6 +129,8 @@ describe('DocumentStudio', () => {
 
     expect(screen.getByText('Loading document…')).toBeInTheDocument();
     await waitFor(() => expect(container.querySelector('.react-flow')).toBeInTheDocument());
+    // Its Form root opens focused (doc 233) — with no Back: a root page keeps the badges.
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
     expect(screen.getByText('Type: Service Agreement')).toBeInTheDocument();
     expect(screen.getByText('Template')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
@@ -167,25 +173,22 @@ describe('DocumentStudio', () => {
     expect(
       screen.queryByRole('button', { name: 'Add a form to get started' }),
     ).not.toBeInTheDocument();
-    await waitFor(() =>
-      expect(slot(container, 'document-studio-form-node')).toHaveTextContent('Untitled form'),
-    );
+    // The new Form root is focused by default (doc 233 rule 2): drawn as a page, not a node.
+    expect(await screen.findByRole('article', { name: 'Untitled form page' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    // Saving a new document gives it an id, which is not opening another one: focus is kept.
+    expect(screen.getByRole('article', { name: 'Untitled form page' })).toBeInTheDocument();
     const { documentId } = onSaved.mock.calls[0]![0];
     expect((await store.load(documentId))?.content.variants).toEqual({
       default: { id: expect.stringMatching(/^[\w-]{8}$/), type: 'Form', elements: [] },
     });
   });
 
-  it("draws an opened document's Form root, with no add button", async () => {
-    const { container } = render(
-      <DocumentStudio documentId="stub-agreement-template" store={seededStore()} />,
-    );
+  it("draws an opened document's Form root as a focused page, with no add button", async () => {
+    render(<DocumentStudio documentId="stub-agreement-template" store={seededStore()} />);
 
-    await waitFor(() =>
-      expect(slot(container, 'document-studio-form-node')).toHaveTextContent('Terms of use'),
-    );
+    expect(await screen.findByRole('article', { name: 'Terms of use page' })).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Add a form to get started' }),
     ).not.toBeInTheDocument();

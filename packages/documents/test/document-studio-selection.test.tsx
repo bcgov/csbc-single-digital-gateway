@@ -134,14 +134,15 @@ describe('DocumentStudio selection', () => {
     expect(pathNav(container)).not.toBeInTheDocument();
   });
 
-  it('drops the path when the selected Form is deleted', async () => {
+  it('drops the path to a deleted Form — here to the Form left behind, focused and so selected by default', async () => {
     const { user, container } = await renderApplication();
     fireEvent.click(formNode(container, 'Details'));
 
     await user.click(screen.getByRole('button', { name: 'Delete Details' }));
 
-    await waitFor(() => expect(pathNav(container)).not.toBeInTheDocument());
-    expect(selectedNodes(container)).toHaveLength(0);
+    // Deleting Details collapses the Funnel to Eligibility, which is then focused (doc 233 rules 6, 10).
+    await waitFor(() => expect(pathNav(container)).toHaveTextContent('Eligibility'));
+    expect(pathNav(container)).not.toHaveTextContent('Details');
   });
 
   it('does not select a Condition: its card still opens the condition dialog', async () => {

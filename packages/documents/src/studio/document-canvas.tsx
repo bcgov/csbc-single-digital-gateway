@@ -1,10 +1,27 @@
 import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
-import { Background, ReactFlow, useNodesState } from '@xyflow/react';
-import { useMemo, useState } from 'react';
+import {
+  Background,
+  PanOnScrollMode,
+  ReactFlow,
+  useNodesState,
+  type Viewport,
+} from '@xyflow/react';
+import { useMemo, useRef, useState } from 'react';
 import { AddEdge } from './add-edge';
 import { CanvasActionsContext, type CanvasActions } from './canvas-actions';
+import { fitNow, MIN_ZOOM, type Zoomable } from './canvas-zoom';
+import { focusEdges, focusNodes, focusRect, scrollExtent, type FocusFrame } from './focus-view';
+import {
+  focusedCard,
+  moving,
+  PAGE_PADDING,
+  useFocusFrame,
+  useKeepPageFitted,
+  useZoomInOnFocus,
+  useZoomOutOnBack,
+} from './use-canvas-focus';
 import {
   canvasGraph,
   type AddEdge as AddEdgeType,
@@ -36,26 +53,60 @@ export interface DocumentCanvasProps {
   selectedId?: string | null | undefined;
   /** A Form node was clicked (its id), or the empty canvas / Escape cleared the selection (`null`). */
   onSelect?: ((formId: string | null) => void) | undefined;
+  /** The Form zoomed in on (doc 233) — drawn alone, as a page — or `null` for the flow. */
+  focusedId?: string | null | undefined;
+  /** A Form node was double-clicked: the zoom onto it has begun. */
+  onFocus?: ((formId: string) => void) | undefined;
+  /** A + on the focused page was used (doc 233 rule 9): leave the page, zooming out to the flow it now heads. */
+  onUnfocus?: (() => void) | undefined;
 }
 
-/** The studio canvas: the variant's Forms and Conditions as nodes, or an offer to add the first form. */
+/**
+ * The studio canvas: the variant's Forms and Conditions as nodes, or an offer to add the first form. Focusing a Form
+ * (doc 233) grows THAT node into its page while everything else fades away and the viewport follows it; Back shrinks
+ * it into the flow again.
+ */
 export function DocumentCanvas({
   uischema,
   schema,
   onChange,
   selectedId = null,
   onSelect,
+  focusedId = null,
+  onFocus,
+  onUnfocus,
 }: DocumentCanvasProps) {
+  const instance = useRef<Zoomable | null>(null);
   const graph = useMemo(() => canvasGraph(uischema, schema), [uischema, schema]);
-  const [nodes, onNodesChange] = useGraphNodes(graph, selectedId);
+  const frame = useFocusFrame(uischema, schema, focusedId);
+  const [nodes, onNodesChange] = useGraphNodes(graph, selectedId, frame);
+  const edges = useMemo(
+    () => focusEdges(graph.kind === 'graph' ? graph.edges : NO_EDGES, frame),
+    [graph, frame],
+  );
+  const before = useRef<Viewport | null>(null);
+  const [fitsFlowOnMount] = useState(focusedId === null);
+  const extent = useScrollExtent(graph, nodes, frame);
+  const canvas = useRef<HTMLDivElement | null>(null);
+  const settledCard = frame.settled ? focusedCard(graph, frame.id) : undefined;
+  const fitBounds = useMemo(
+    () => (settledCard === undefined ? undefined : focusRect(settledCard, frame.keepsTrailing)),
+    [settledCard, frame.keepsTrailing],
+  );
+  useKeepPageFitted(canvas, instance, fitBounds);
+  useZoomInOnFocus(focusedId, frame.keepsTrailing, graph, instance);
+  useZoomOutOnBack(focusedId, nodes, instance, before);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = conditionsOf(uischema).find((c) => c.id === editingId) ?? null;
-  const actions = useEditActions(uischema, onChange, setEditingId);
+  const unfocus = focusedId === null ? undefined : onUnfocus;
+  const actions = useEditActions(uischema, onChange, setEditingId, unfocus);
 
   return (
     <CanvasActionsContext value={actions}>
       <div
+        ref={canvas}
         data-slot="document-studio-canvas"
+        data-focused={focusedId === null ? undefined : ''}
         className="relative min-h-0 flex-1"
         onKeyDown={(event) => {
           if (event.key === 'Escape') onSelect?.(null);
@@ -65,7 +116,7 @@ export function DocumentCanvas({
         <ReactFlow
           className="bg-gray-10!"
           nodes={nodes}
-          edges={graph.kind === 'graph' ? graph.edges : NO_EDGES}
+          edges={edges}
           onNodesChange={onNodesChange}
           nodeTypes={NODE_TYPES}
           edgeTypes={EDGE_TYPES}
@@ -77,13 +128,42 @@ export function DocumentCanvas({
             if (node.type === 'form') onSelect?.(node.id);
           }}
           onPaneClick={() => onSelect?.(null)}
+          onNodeDoubleClick={(_, node) => {
+            if (focusedId !== null || node.type !== 'form') return;
+            // Remembered so Back can return the camera exactly here; the zoom itself is useZoomInOnFocus's.
+            before.current = instance.current?.getViewport() ?? null;
+            onFocus?.(node.id);
+          }}
+          onInit={(flow) => {
+            instance.current = flow;
+            // A page open from the start is fitted to its first screen, as a double-click would — not to its whole
+            // content height, which is what ReactFlow's own fitView would show.
+            const card = focusedCard(graph, focusedId);
+            if (card !== undefined)
+              fitNow(flow, focusRect(card, frame.keepsTrailing), PAGE_PADDING);
+          }}
+          zoomOnDoubleClick={false}
+          // Focused, the page reads like a document (doc 233 rule 12): no drag-pan or zoom; the wheel scrolls it
+          // up and down, bounded by the page once it has settled.
+          {...(focusedId !== null && FOCUSED_VIEWPORT)}
+          {...(extent !== undefined && { translateExtent: extent })}
+          minZoom={MIN_ZOOM}
           deleteKeyCode={null}
-          fitView
+          fitView={fitsFlowOnMount}
           proOptions={{ hideAttribution: true }}
         >
           <Background />
         </ReactFlow>
         <CanvasOverlay graph={graph} onAddForm={() => onChange(newForm())} />
+        {/* While a Form grows or shrinks, nothing may reach the canvas: any press (a third click, a drag, a wheel)
+            interrupts d3's camera transition mid-way and strands the view at its in-between zoom (doc 233 rule 8). */}
+        {moving(frame) && (
+          <div
+            aria-hidden
+            data-slot="document-studio-canvas-shield"
+            className="absolute inset-0 z-20"
+          />
+        )}
       </div>
       <ConditionDialog
         condition={editing}
@@ -98,12 +178,32 @@ export function DocumentCanvas({
   );
 }
 
+/** The viewport while a page is focused: scroll vertically, at the wheel's own speed; never drag-pan or zoom. */
+const FOCUSED_VIEWPORT = {
+  panOnDrag: false,
+  zoomOnScroll: false,
+  zoomOnPinch: false,
+  panOnScroll: true,
+  panOnScrollMode: PanOnScrollMode.Vertical,
+  panOnScrollSpeed: 1,
+} as const;
+
+/** How far a settled page scrolls; `undefined` (unbounded) for the flow, and while a page grows or shrinks. */
+function useScrollExtent(graph: CanvasGraph, nodes: CanvasNode[], frame: FocusFrame) {
+  const card = frame.settled ? focusedCard(graph, frame.id) : undefined;
+  const height = nodes.find((node) => node.id === frame.id)?.measured?.height;
+  return useMemo(
+    () => (card === undefined ? undefined : scrollExtent(card, height, frame.keepsTrailing)),
+    [card, height, frame.keepsTrailing],
+  );
+}
+
 /**
  * The graph's nodes, held in state: xyflow stores its node measurements through onNodesChange, so nodes cannot be
  * a derived prop. They are re-seeded whenever the graph changes (React's "adjust state while rendering" pattern).
  * The selected node is flagged on the way out, so selecting never re-seeds (and re-measures) the graph.
  */
-function useGraphNodes(graph: CanvasGraph, selectedId: string | null) {
+function useGraphNodes(graph: CanvasGraph, selectedId: string | null, frame: FocusFrame) {
   const derived = graph.kind === 'graph' ? graph.nodes : [];
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(derived);
   const [seeded, setSeeded] = useState(graph);
@@ -112,8 +212,12 @@ function useGraphNodes(graph: CanvasGraph, selectedId: string | null) {
     setNodes(derived);
   }
   const shown = useMemo(
-    () => nodes.map((node) => (node.id === selectedId ? { ...node, selected: true } : node)),
-    [nodes, selectedId],
+    () =>
+      focusNodes(
+        nodes.map((node) => (node.id === selectedId ? { ...node, selected: true } : node)),
+        frame,
+      ),
+    [nodes, selectedId, frame],
   );
   return [shown, onNodesChange] as const;
 }
@@ -149,14 +253,19 @@ function useEditActions(
   uischema: Uischema,
   onChange: (uischema: Uischema) => void,
   editCondition: (conditionId: string) => void,
+  /** Given while a page is focused: adding from its + also leaves the page. */
+  unfocus: (() => void) | undefined,
 ): CanvasActions {
   return useMemo(
     () => ({
-      add: (target, kind) => onChange(added(uischema, target, kind)),
+      add: (target, kind) => {
+        onChange(added(uischema, target, kind));
+        unfocus?.();
+      },
       remove: (nodeId) => onChange(removeNode(uischema, nodeId)),
       editCondition,
     }),
-    [uischema, onChange, editCondition],
+    [uischema, onChange, editCondition, unfocus],
   );
 }
 

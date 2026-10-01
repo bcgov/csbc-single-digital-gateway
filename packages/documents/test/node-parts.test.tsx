@@ -44,4 +44,23 @@ describe('NodeFrame', () => {
     expect(card).toHaveClass('border-success-border', 'ring-2', 'ring-ring', 'ring-offset-2');
     expect(frame({ start: true })).not.toHaveClass('ring-2');
   });
+
+  it('grows to a fixed first screen, then opens to its content height, never shorter', () => {
+    const { container } = render(
+      <>
+        <NodeFrame marks={NONE} page="growing" slot="growing" className="">
+          page
+        </NodeFrame>
+        <NodeFrame marks={NONE} page="open" slot="open" className="">
+          page
+        </NodeFrame>
+      </>,
+    );
+
+    expect(container.querySelector('[data-slot="growing"]')).toHaveClass('w-[768px]', 'h-[994px]');
+    expect(container.querySelector('[data-slot="open"]')).toHaveClass('h-auto', 'min-h-[994px]');
+    expect(container.querySelector('[data-slot="open"]')).toHaveClass(
+      '[interpolate-size:allow-keywords]',
+    );
+  });
 });

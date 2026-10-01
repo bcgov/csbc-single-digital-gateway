@@ -144,15 +144,18 @@ function retargeted(edge: FunnelEdge, target: string): FunnelEdge {
 
 /**
  * Removes a node and its edges, bridging what led INTO it onward so a path keeps flowing: a Form's incoming outputs
- * connect to its target; a Condition's connect to its DEFAULT target (its branch Forms stay, unconnected), and the
- * Funnel's start follows the same way. A lone
- * `Form` root empties the variant; a Funnel left with one Form and no Conditions is unwrapped to that Form.
+ * connect to its target; a Condition's connect to its DEFAULT target, and the Funnel's start follows the same way. A
+ * Condition takes its BRANCHES with it — every node reachable only through its row outputs (`branchOnly`) — rather
+ * than leaving them orphaned. A lone `Form` root empties the variant; a Funnel left with one Form and no Conditions is
+ * unwrapped to that Form.
  */
 export function removeNode(uischema: Uischema, id: string): Uischema {
   if (uischema['type'] === 'Form') return idOf(uischema) === id ? {} : uischema;
   if (uischema['type'] !== 'Funnel') return uischema;
-  const elements = elementsOf(uischema).filter((el) => !(isForm(el) && idOf(el) === id));
-  const conditions = conditionsOf(uischema).filter((c) => c.id !== id);
+  const removed = new Set([id, ...branchOnly(uischema, id)]);
+  const isRemoved = (el: unknown) => isForm(el) && removed.has(idOf(el) ?? '');
+  const elements = elementsOf(uischema).filter((el) => !isRemoved(el));
+  const conditions = conditionsOf(uischema).filter((c) => !removed.has(c.id));
   if (
     elements.length === elementsOf(uischema).length &&
     conditions.length === conditionsOf(uischema).length
@@ -161,12 +164,12 @@ export function removeNode(uischema: Uischema, id: string): Uischema {
   }
   const edges = edgesOf(uischema);
   const onward = edges.find((e) => e.source === id && e.sourceHandle === undefined)?.target;
-  const kept = edges.filter((e) => e.source !== id && e.target !== id);
+  const kept = edges.filter((e) => !removed.has(e.source) && !removed.has(e.target));
   const bridges =
     onward === undefined
       ? []
       : edges
-          .filter((e) => e.target === id)
+          .filter((e) => e.target === id && !removed.has(e.source))
           .map(outputOf)
           .filter((output) => !kept.some((e) => leaves(e, output)))
           .map((output) => edgeFrom(output, onward));
@@ -178,4 +181,41 @@ export function removeNode(uischema: Uischema, id: string): Uischema {
   // Deleting the start moves it onward — to a Form's target, or a Condition's default target — never to whichever
   // node happens to be left unconnected.
   return startOf(uischema) === id ? withStart(next, onward) : next;
+}
+
+/**
+ * The nodes a Condition's BRANCHES own: everything reachable from its row outputs that nothing else still leads to —
+ * a node on a branch that the default path, or any node outside the branches, also reaches is kept. Empty for a
+ * Form (or an unknown id).
+ */
+function branchOnly(uischema: Uischema, conditionId: string): Set<string> {
+  if (!conditionsOf(uischema).some((c) => c.id === conditionId)) return new Set();
+  const edges = edgesOf(uischema);
+  const reach = (roots: Iterable<string>, skip: ReadonlySet<string>) => {
+    const seen = new Set<string>();
+    const pending = [...roots];
+    while (pending.length > 0) {
+      const node = pending.pop()!;
+      if (seen.has(node) || skip.has(node)) continue;
+      seen.add(node);
+      for (const e of edges) if (e.source === node) pending.push(e.target);
+    }
+    return seen;
+  };
+  const self = new Set([conditionId]);
+  const branches = reach(
+    edges
+      .filter((e) => e.source === conditionId && e.sourceHandle !== undefined)
+      .map((e) => e.target),
+    self,
+  );
+  const outside = [
+    ...formsOf(uischema).flatMap((f) => idOf(f) ?? []),
+    ...conditionsOf(uischema).map((c) => c.id),
+  ].filter((node) => node !== conditionId && !branches.has(node));
+  const onward = edges.find(
+    (e) => e.source === conditionId && e.sourceHandle === undefined,
+  )?.target;
+  const keptReach = reach([...outside, ...(onward === undefined ? [] : [onward])], self);
+  return new Set([...branches].filter((node) => !keptReach.has(node)));
 }

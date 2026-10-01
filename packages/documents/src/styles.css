@@ -4,3 +4,19 @@
  * Without it, the Document Studio canvas renders with no xyflow styles, silently.
  */
 @import '@xyflow/react/dist/style.css';
+
+/*
+ * Document Studio focus fades (doc 233). OPACITY ONLY: tw-animate's `animate-in` also animates `transform`, which is
+ * how xyflow positions a node, so on a node it throws the node to the canvas origin for the animation's length.
+ */
+@keyframes document-studio-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes document-studio-fade-out {
+  to {
+    opacity: 0;
+  }
+}

@@ -41,6 +41,13 @@ export interface NodeMarks {
 export interface FormNodeData extends NodeMarks, Record<string, unknown> {
   formId: string;
   label: string | null;
+  /** Set by the focus view (doc 233): this Form is drawn as its page, listing `fields`. */
+  focused?: boolean;
+  /** The page has finished growing: it is now as tall as its content (doc 233 rule 11). */
+  open?: boolean;
+  /** Back (doc 233): the card again, with its page fading out over it as it shrinks. */
+  closing?: boolean;
+  fields?: string[];
 }
 
 export interface ConditionNodeData extends NodeMarks, Record<string, unknown> {
@@ -48,6 +55,11 @@ export interface ConditionNodeData extends NodeMarks, Record<string, unknown> {
   label: string | null;
   /** Canvas handle ids of its outputs, left to right: each row's id, then `DEFAULT_HANDLE`. */
   outputs: string[];
+}
+
+/** The invisible end node a free output's trailing edge (and its +) leads to. */
+export function endIdOf(source: string, handle?: string): string {
+  return `end:${source}:${handle ?? 'out'}`;
 }
 
 /**
@@ -70,6 +82,10 @@ export interface AddEdgeData extends Record<string, unknown> {
   invalid?: boolean;
   /** Leaves a node that is not reachable from the Funnel's start. */
   floating?: boolean;
+  /** Fading out while a Form grows into its page (doc 233): the edge's label and + fade with it. */
+  fading?: boolean;
+  /** Fading back in after Back (doc 233) — with the flow, or once the page is a card again — label and + with it. */
+  appearing?: 'with-flow' | 'after-page';
 }
 
 export type FormNode = Node<FormNodeData, 'form'>;
@@ -209,7 +225,7 @@ function connect(
       const persisted = edges.find(
         (e) => e.source === source && e.sourceHandle === output.output.sourceHandle,
       );
-      const target = persisted?.target ?? `end:${source}:${output.handle ?? 'out'}`;
+      const target = persisted?.target ?? endIdOf(source, output.handle);
       if (persisted === undefined) endIds.push(target);
       drawn.push(toEdge(output, target, persisted, names.get(source)!));
       return target;

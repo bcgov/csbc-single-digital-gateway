@@ -1,6 +1,7 @@
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
 import { AddBeforeButton, AddMenu } from './add-menu';
 import { useCanvasActions } from './canvas-actions';
+import { FADE_IN, FADE_IN_AFTER, MOTION } from './canvas-zoom';
 import type { AddEdge as AddEdgeType } from './canvas-graph';
 
 /** How a marked edge and its label are coloured. Inline strokes: xyflow's unlayered stylesheet beats Tailwind. */
@@ -45,6 +46,15 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
   const trailing = data.add.kind === 'trailing';
   const [x, y] = trailing ? [targetX, targetY] : [midX, midY];
   // A floating edge (not reachable from the start) is orange, and wins over an unset branch's red.
+  // Labels and the + live outside the edge's own element, so they fade with it by hand (doc 233).
+  const fade =
+    data.fading === true
+      ? `pointer-events-none! opacity-0 transition-opacity ${MOTION}`
+      : data.appearing === 'with-flow'
+        ? FADE_IN
+        : data.appearing === 'after-page'
+          ? FADE_IN_AFTER
+          : '';
   const tone = data.floating === true ? 'floating' : data.invalid === true ? 'invalid' : undefined;
 
   return (
@@ -62,7 +72,7 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
           <span
             data-slot="document-studio-branch-label"
             title={data.branchLabel}
-            className={`pointer-events-none absolute max-w-40 truncate rounded-sm px-1.5 py-px text-[10px] ${
+            className={`pointer-events-none absolute max-w-40 truncate rounded-sm px-1.5 py-px text-[10px] ${fade} ${
               tone !== undefined
                 ? TONES[tone].label
                 : data.isDefault === true
@@ -83,6 +93,7 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
               : `${data.sourceName} (${data.branchLabel})`
           }
           onAdd={(kind) => add(data.add, kind)}
+          className={fade}
           style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
         />
       </EdgeLabelRenderer>

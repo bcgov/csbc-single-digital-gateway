@@ -12,10 +12,12 @@ export function AddMenu({
   sourceName,
   onAdd,
   style,
+  className = '',
 }: {
   sourceName: string;
   onAdd: (kind: NodeKind) => void;
   style: CSSProperties;
+  className?: string;
 }) {
   // Focus would otherwise stay inside the pill after a pointer press, holding it open over the new node.
   const choose = (event: MouseEvent<HTMLButtonElement>, kind: NodeKind) => {
@@ -28,7 +30,7 @@ export function AddMenu({
       aria-label={`Add after ${sourceName}`}
       data-slot="document-studio-add-menu"
       style={style}
-      className="group/add nodrag nopan pointer-events-auto absolute flex h-6 w-6 items-center overflow-hidden rounded-full border border-border bg-background text-muted-foreground shadow-xs transition-[width] duration-150 focus-within:w-[9.375rem] focus-within:border-ring hover:w-[9.375rem] hover:border-ring"
+      className={`group/add nodrag nopan pointer-events-auto absolute flex h-6 w-6 items-center overflow-hidden rounded-full border border-border bg-background text-muted-foreground shadow-xs transition-[width] duration-150 focus-within:w-[9.375rem] focus-within:border-ring hover:w-[9.375rem] hover:border-ring ${className}`}
     >
       <button
         type="button"

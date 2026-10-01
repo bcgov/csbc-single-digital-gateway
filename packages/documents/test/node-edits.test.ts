@@ -134,7 +134,7 @@ describe('removeNode', () => {
     expect(links(removeNode(start, 'b'))).toEqual(['a>c1', 'c1>a2', 'c1[r1]>c']);
   });
 
-  it("bridges a removed Condition's inputs to its default target; its branch Forms stay unconnected", () => {
+  it("bridges a removed Condition's inputs to its default target, and deletes its branch Forms with it", () => {
     const start = funnel(
       [form('a'), form('b'), form('x')],
       [edge('e0', 'a', 'c1'), edge('e1', 'c1', 'x', 'r1'), edge('e2', 'c1', 'b')],
@@ -143,8 +143,47 @@ describe('removeNode', () => {
     const next = removeNode(start, 'c1');
 
     expect(conditionsOf(next)).toEqual([]);
-    expect(formIds(next)).toEqual(['a', 'b', 'x']);
+    expect(formIds(next)).toEqual(['a', 'b']);
     expect(links(next)).toEqual(['a>b']);
+  });
+
+  it("deletes everything only a branch reaches — its chain and any Condition nested in it — keeping the default's path", () => {
+    const start = funnel(
+      [form('a'), form('x'), form('y'), form('z'), form('b'), form('m')],
+      [
+        edge('e0', 'a', 'c1'),
+        edge('e1', 'c1', 'x', 'r1'),
+        edge('e2', 'x', 'y'),
+        edge('e3', 'y', 'c2'),
+        edge('e4', 'c2', 'z', 'r2'),
+        edge('e5', 'c2', 'm'),
+        edge('e6', 'c1', 'b'),
+      ],
+      [condition('c1', [row('r1')]), condition('c2', [row('r2')])],
+    );
+    const next = removeNode(start, 'c1');
+
+    expect(conditionsOf(next)).toEqual([]);
+    expect(formIds(next)).toEqual(['a', 'b']);
+    expect(links(next)).toEqual(['a>b']);
+  });
+
+  it('keeps a branch node that something outside the branches also leads to', () => {
+    const start = funnel(
+      [form('a'), form('x'), form('b'), form('shared')],
+      [
+        edge('e0', 'a', 'c1'),
+        edge('e1', 'c1', 'x', 'r1'),
+        edge('e2', 'x', 'shared'),
+        edge('e3', 'c1', 'b'),
+        edge('e4', 'b', 'shared'),
+      ],
+      [condition('c1', [row('r1')])],
+    );
+    const next = removeNode(start, 'c1');
+
+    expect(formIds(next)).toEqual(['a', 'b', 'shared']);
+    expect(links(next)).toEqual(['b>shared', 'a>b']);
   });
 
   it('removes a Condition with no default target without bridging anything', () => {

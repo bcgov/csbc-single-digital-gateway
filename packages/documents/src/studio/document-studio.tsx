@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { DocumentCanvas } from './document-canvas';
 import { DocumentInspector } from './document-inspector';
+import { DocumentPalette } from './document-palette';
 import type { DocumentRef, DocumentStore } from './document-store';
 import { DocumentStudioEmpty } from './document-studio-empty';
 import { DocumentStudioHeader } from './document-studio-header';
+import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
 import { SelectionBreadcrumbs } from './selection-breadcrumbs';
@@ -36,8 +38,21 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
     props.documentId === undefined && (props.kind === undefined || props.type === undefined),
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // Derived, so a deleted Form or another document simply stops being selected (doc 232 rule 5).
-  const path = draft === null ? null : selectionPath(draft.content.variants.default, selectedId);
+  // Which collapsed panel is open, expanded — one at a time (doc 233 rule 14).
+  const [expanded, setExpanded] = useState<'palette' | 'inspector' | null>(null);
+  const variant = draft?.content.variants.default ?? null;
+  const [focus, setFocus] = useDocumentFocus(
+    draft?.ref?.documentId ?? (draft === null ? null : NEW),
+    variant?.['type'],
+  );
+  const focusedId = variant === null ? null : resolveFocus(variant, focus);
+  // Derived, so a deleted Form or another document simply stops being selected (doc 232 rule 5). With nothing
+  // selected, a focused Form is selected by default (doc 233 rule 6).
+  const path =
+    variant === null
+      ? null
+      : (selectionPath(variant, selectedId) ?? selectionPath(variant, focusedId));
+  const shownSelection = path?.at(-1)?.id ?? null;
 
   return (
     <div
@@ -49,8 +64,16 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
         canSave={studio.dirty}
         saving={studio.saving}
         onSave={() => void studio.save()}
+        // A root Form's page has no flow to go Back to: its trailing + is the way out (doc 233 rule 9).
+        onBack={
+          focusedId === null || variant?.['type'] === 'Form' ? undefined : () => setFocus(null)
+        }
       />
-      <main data-slot="document-studio-center" className="relative flex min-h-0 flex-1 flex-col">
+      {/* `@container/canvas`: the floating panels collapse by the canvas's width, not the window's (doc 233 rule 14). */}
+      <main
+        data-slot="document-studio-center"
+        className="@container/canvas relative flex min-h-0 flex-1 flex-col"
+      >
         {draft === null ? (
           (STATUS_VIEWS[studio.status] ?? (
             <DocumentStudioEmpty onNewDocument={() => setDialogOpen(true)} />
@@ -61,10 +84,26 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
               uischema={draft.content.variants.default}
               schema={draft.content.schema}
               onChange={(uischema) => studio.setContent(withVariant(draft.content, uischema))}
-              selectedId={path === null ? null : selectedId}
+              selectedId={shownSelection}
               onSelect={setSelectedId}
+              focusedId={focusedId}
+              onFocus={(formId) => {
+                setFocus(formId);
+                setSelectedId(formId);
+              }}
+              onUnfocus={() => setFocus(null)}
             />
-            <DocumentInspector content={draft.content} />
+            {focusedId !== null && (
+              <DocumentPalette
+                open={expanded === 'palette'}
+                onOpenChange={(open) => setExpanded(open ? 'palette' : null)}
+              />
+            )}
+            <DocumentInspector
+              content={draft.content}
+              open={expanded === 'inspector'}
+              onOpenChange={(open) => setExpanded(open ? 'inspector' : null)}
+            />
           </>
         )}
       </main>
@@ -78,6 +117,29 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
       />
     </div>
   );
+}
+
+/** The key of a document not saved yet. */
+const NEW = '\u0000new';
+
+/**
+ * Focus, reset to `'default'` whenever another document opens (doc 233 rule 2) — but not when a new document is first
+ * saved, which only gives the SAME document its id — and when the root turns from a Funnel into a Form (rule 10).
+ */
+function useDocumentFocus(documentKey: string | null, rootType: unknown) {
+  const [focus, setFocus] = useState<FocusState>('default');
+  const [openFor, setOpenFor] = useState(documentKey);
+  const [rootWas, setRootWas] = useState(rootType);
+  if (openFor !== documentKey) {
+    setOpenFor(documentKey);
+    if (openFor !== NEW) setFocus('default');
+  }
+  if (rootWas !== rootType) {
+    setRootWas(rootType);
+    // A Funnel left with one Form (a delete unwraps it) becomes a Form root: focus that Form, as if just opened (rule 10).
+    if (rootWas === 'Funnel' && rootType === 'Form') setFocus('default');
+  }
+  return [focus, setFocus] as const;
 }
 
 /** What the content area shows, without a document, for statuses other than `new`. */

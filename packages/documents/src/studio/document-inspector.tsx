@@ -3,6 +3,7 @@ import { Icon } from '@mdi/react';
 import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
 import { useState } from 'react';
 import type { DocumentContent } from './document-types';
+import { StudioPanel } from './studio-panel';
 
 const VIEWS = ['settings', 'json'] as const;
 type InspectorView = (typeof VIEWS)[number];
@@ -20,22 +21,29 @@ const TOGGLE_CLASSES =
 
 export interface DocumentInspectorProps {
   content: DocumentContent;
+  /** Whether the collapsed inspector is open, expanded (doc 233 rule 14). */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 /**
  * The floating inspector over the canvas (doc 232 rules 9-12): always shown with a document, selection or not, with
- * Settings ("Inspector") and JSON ("Schema") views; the header is titled by the view.
+ * Settings ("Inspector") and JSON ("Schema") views; the header is titled by the view. It collapses to a cog below the
+ * canvas breakpoint (doc 233 rule 14); the view is held here, so the docked and expanded forms share it.
  */
-export function DocumentInspector({ content }: DocumentInspectorProps) {
+export function DocumentInspector({ content, open, onOpenChange }: DocumentInspectorProps) {
   const [view, setView] = useState<InspectorView>('settings');
   return (
-    <section
-      aria-label="Inspector"
-      data-slot="document-studio-inspector"
-      className="absolute top-3 right-3 z-10 flex max-h-[calc(100%-1.5rem)] w-80 flex-col overflow-hidden rounded-md border border-border bg-background shadow-md"
-    >
-      <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border pr-1.5 pl-3">
-        <h2 className="min-w-0 flex-1 truncate text-xs font-medium">{VIEW_INFO[view].title}</h2>
+    <StudioPanel
+      label="Inspector"
+      title={VIEW_INFO[view].title}
+      icon={mdiCog}
+      side="right"
+      width="w-80"
+      open={open}
+      onOpenChange={onOpenChange}
+      slot="document-studio-inspector"
+      actions={
         <ToggleGroup
           variant="outline"
           size="sm"
@@ -59,7 +67,8 @@ export function DocumentInspector({ content }: DocumentInspectorProps) {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </header>
+      }
+    >
       {view === 'json' ? (
         <pre className="min-h-0 flex-1 overflow-auto p-3 font-mono text-xs">
           {JSON.stringify(content, null, 2)}
@@ -70,6 +79,6 @@ export function DocumentInspector({ content }: DocumentInspectorProps) {
           className="min-h-0 flex-1 overflow-auto p-3"
         />
       )}
-    </section>
+    </StudioPanel>
   );
 }

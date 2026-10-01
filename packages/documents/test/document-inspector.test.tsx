@@ -8,7 +8,7 @@ const content = { schema: { type: 'object' }, variants: { default: form('A') } }
 
 describe('DocumentInspector', () => {
   it('floats a panel titled Inspector, with Settings pressed before JSON', () => {
-    render(<DocumentInspector content={content} />);
+    render(<DocumentInspector content={content} open={false} onOpenChange={() => {}} />);
     const panel = screen.getByRole('region', { name: 'Inspector' });
     const settings = screen.getByRole('button', { name: 'Settings' });
     const json = screen.getByRole('button', { name: 'JSON' });
@@ -23,7 +23,7 @@ describe('DocumentInspector', () => {
 
   it('titles the JSON view Schema and shows the whole content, staying there when JSON is pressed again', async () => {
     const user = userEvent.setup();
-    render(<DocumentInspector content={content} />);
+    render(<DocumentInspector content={content} open={false} onOpenChange={() => {}} />);
     const json = screen.getByRole('button', { name: 'JSON' });
 
     await user.click(json);
