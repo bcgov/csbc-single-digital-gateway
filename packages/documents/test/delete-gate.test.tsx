@@ -13,7 +13,7 @@ function renderGate(pending: PendingDelete | null) {
 const FORM: PendingDelete = { id: 'A', kind: 'form', name: 'Details' };
 const CONDITION: PendingDelete = { id: 'c1', kind: 'condition', name: 'Eligible?' };
 
-describe('DeleteGate (doc 234 rules 8-9)', () => {
+describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
   it('is closed with nothing pending', () => {
     renderGate(null);
 
@@ -29,13 +29,53 @@ describe('DeleteGate (doc 234 rules 8-9)', () => {
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
-  it('says what goes with a Condition: its criteria and the steps only its branches lead to', async () => {
+  it('asks a Condition delete whether its branch steps go too: Entire subtree, Condition only, Cancel, stacked', async () => {
     renderGate(CONDITION);
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete condition?' });
     expect(dialog).toHaveTextContent(
-      '"Eligible?", its criteria and any steps only its branches lead to will be removed.',
+      'Choose whether the steps only its branches lead to are deleted with "Eligible?" or stay on the canvas, unconnected.',
     );
+    expect(
+      within(dialog)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Entire subtree', 'Condition only', 'Cancel']);
+    const footer = dialog.querySelector('[data-slot="alert-dialog-footer"]');
+    expect(footer).toHaveClass('flex-col', 'sm:flex-col');
+    expect(within(dialog).getByRole('button', { name: 'Entire subtree' })).toHaveClass(
+      'text-destructive',
+      'w-full',
+    );
+    expect(within(dialog).getByRole('button', { name: 'Condition only' })).toHaveClass(
+      'bg-primary',
+      'w-full',
+    );
+    expect(within(dialog).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['Condition only', 'node'],
+    ['Entire subtree', 'subtree'],
+  ])('confirms a Condition delete from %s', async (button, choice) => {
+    const { user, onConfirm } = renderGate(CONDITION);
+
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: button }),
+    );
+
+    expect(onConfirm).toHaveBeenCalledWith(choice, false);
+  });
+
+  it('remembers the Condition button pressed when "Remember my preference" is ticked', async () => {
+    const { user, onConfirm } = renderGate(CONDITION);
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).queryByRole('checkbox', { name: "Don't ask me again" })).toBeNull();
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Remember my preference' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Condition only' }));
+
+    expect(onConfirm).toHaveBeenCalledWith('node', true);
   });
 
   it('confirms with "Don\'t ask me again" unticked by default', async () => {
@@ -45,7 +85,7 @@ describe('DeleteGate (doc 234 rules 8-9)', () => {
     expect(within(dialog).getByRole('checkbox', { name: "Don't ask me again" })).not.toBeChecked();
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
-    expect(onConfirm).toHaveBeenCalledWith(false);
+    expect(onConfirm).toHaveBeenCalledWith('node', false);
     expect(onCancel).not.toHaveBeenCalled();
   });
 
@@ -56,7 +96,7 @@ describe('DeleteGate (doc 234 rules 8-9)', () => {
     await user.click(within(dialog).getByRole('checkbox', { name: "Don't ask me again" }));
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
-    expect(onConfirm).toHaveBeenCalledWith(true);
+    expect(onConfirm).toHaveBeenCalledWith('node', true);
   });
 
   it('cancels from Cancel and from Escape, confirming nothing', async () => {
@@ -84,7 +124,7 @@ describe('DeleteGate (doc 234 rules 8-9)', () => {
     expect(
       within(await screen.findByRole('alertdialog', { name: 'Delete condition?' })).getByRole(
         'checkbox',
-        { name: "Don't ask me again" },
+        { name: 'Remember my preference' },
       ),
     ).not.toBeChecked();
   });

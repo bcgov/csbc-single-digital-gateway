@@ -28,6 +28,12 @@ const actionsOf = (node: HTMLElement) =>
   node.querySelector<HTMLElement>('[data-slot="document-studio-node-actions"]');
 const gate = () => screen.queryByRole('alertdialog');
 
+/** Adds through a + (doc 235): open its panel, then choose the option. */
+async function addFrom(user: ReturnType<typeof userEvent.setup>, plus: string, option: string) {
+  await user.click(await screen.findByRole('button', { name: plus }));
+  await user.click(await screen.findByRole('menuitem', { name: option }));
+}
+
 describe('DocumentStudio node actions (doc 234)', () => {
   it('gives a Form Edit, Inspect and Delete, its card the hover group, and no corner delete (rules 1, 3)', async () => {
     const { container } = await renderApplication();
@@ -54,7 +60,7 @@ describe('DocumentStudio node actions (doc 234)', () => {
 
   it('gives a Condition Edit and Delete; Edit opens its dialog, and so does its card, now named Open (rules 3, 6)', async () => {
     const { user } = await renderApplication();
-    await user.click(screen.getByRole('button', { name: 'Add condition after Eligibility' }));
+    await addFrom(user, 'Add after Eligibility', 'Condition');
     const card = await screen.findByRole('button', { name: 'Open Untitled condition' });
     const node = card.closest<HTMLElement>('[data-slot="document-studio-condition-node"]')!;
 
@@ -102,7 +108,7 @@ describe('DocumentStudio node actions (doc 234)', () => {
 
   it('asks before a delete: Cancel keeps the Form, Delete removes it (rule 8)', async () => {
     const { user, container } = await renderApplication();
-    await user.click(screen.getByRole('button', { name: 'Add form after Details' }));
+    await addFrom(user, 'Add after Details', 'Form');
     await waitFor(() => expect(formNodes(container)).toHaveLength(3));
 
     await user.click(screen.getByRole('button', { name: 'Delete Details' }));
@@ -125,8 +131,8 @@ describe('DocumentStudio node actions (doc 234)', () => {
 
   it('stops asking for the rest of the mount once "Don\'t ask me again" is confirmed (rule 9)', async () => {
     const { user, container } = await renderApplication();
-    await user.click(screen.getByRole('button', { name: 'Add form after Details' }));
-    await user.click(await screen.findByRole('button', { name: 'Add form after Untitled form' }));
+    await addFrom(user, 'Add after Details', 'Form');
+    await addFrom(user, 'Add after Untitled form', 'Form');
     await waitFor(() => expect(formNodes(container)).toHaveLength(4));
 
     await user.click(screen.getByRole('button', { name: 'Delete Details' }));

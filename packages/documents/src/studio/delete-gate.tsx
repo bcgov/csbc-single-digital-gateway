@@ -19,25 +19,36 @@ export interface PendingDelete {
   name: string;
 }
 
+/**
+ * How a delete went (doc 235 rule 13): `node` removes the node alone — a Form, or a Condition whose branches stay,
+ * floating; `subtree` takes a Condition's branch-only nodes with it.
+ */
+export type DeleteChoice = 'node' | 'subtree';
+
+/** The choices "Don't ask me again" remembered, one per kind — one object rather than a flag each. */
+export interface DeleteChoices {
+  form?: 'node';
+  condition?: DeleteChoice;
+}
+
 interface DeleteGateProps {
   pending: PendingDelete | null;
-  onConfirm: (dontAskAgain: boolean) => void;
+  onConfirm: (choice: DeleteChoice, dontAskAgain: boolean) => void;
   onCancel: () => void;
 }
 
 const TITLE = { form: 'Delete form?', condition: 'Delete condition?' } as const;
 
-/** What goes with the node. A Condition takes what only its branches lead to (`removeNode`'s `branchOnly`). */
 function descriptionFor({ kind, name }: PendingDelete): string {
   return kind === 'form'
     ? `"${name}" will be removed from the document.`
-    : `"${name}", its criteria and any steps only its branches lead to will be removed.`;
+    : `Choose whether the steps only its branches lead to are deleted with "${name}" or stay on the canvas, unconnected.`;
 }
 
 /**
- * Confirms a node delete (doc 234 rules 8-9), as Form Studio's delete confirmation does. Open while a delete is
- * pending; "Don't ask me again" starts unticked every time it opens and only counts when the delete is confirmed.
- * Cancel, Escape or the backdrop remove nothing.
+ * Confirms a node delete (doc 234 rules 8-9), as Form Studio's delete confirmation does. A Form asks Cancel / Delete;
+ * a Condition stacks Entire subtree / Condition only / Cancel (doc 235 rule 12). "Don't ask me again" starts unticked
+ * every time it opens and only counts when a delete is confirmed. Cancel, Escape or the backdrop remove nothing.
  */
 export function DeleteGate({ pending, onConfirm, onCancel }: DeleteGateProps) {
   const [dontAskAgain, setDontAskAgain] = useState(false);
@@ -75,33 +86,59 @@ export function DeleteGate({ pending, onConfirm, onCancel }: DeleteGateProps) {
             onCheckedChange={(checked) => setDontAskAgain(checked)}
           />
           <Label id={labelId} htmlFor={checkboxId}>
-            {"Don't ask me again"}
+            {shown?.kind === 'condition' ? 'Remember my preference' : "Don't ask me again"}
           </Label>
         </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={() => onConfirm(dontAskAgain)}>
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
+        {shown?.kind === 'condition' ? (
+          // Three choices are too wide for one row: stacked full width, the most destructive first (doc 235 rule 12).
+          <AlertDialogFooter className="flex-col sm:flex-col group-data-[size=sm]/alert-dialog-content:flex">
+            <AlertDialogAction
+              variant="destructive"
+              className="w-full"
+              onClick={() => onConfirm('subtree', dontAskAgain)}
+            >
+              Entire subtree
+            </AlertDialogAction>
+            <AlertDialogAction className="w-full" onClick={() => onConfirm('node', dontAskAgain)}>
+              Condition only
+            </AlertDialogAction>
+            <AlertDialogCancel variant="ghost" className="w-full">
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        ) : (
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => onConfirm('node', dontAskAgain)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
 /**
- * The gate's state for a canvas: `request` either removes at once (the author stopped asking) or holds the delete
- * until the dialog answers.
+ * The gate's state for a canvas: `request` applies the choice remembered for the node's kind at once, or holds the
+ * delete until the dialog answers. `remove` deletes with a choice; `onRemember` records one for a kind.
  */
 export function useDeleteGate(
-  askBeforeDelete: boolean,
-  remove: (nodeId: string) => void,
-  onStopAsking: (() => void) | undefined,
+  choices: DeleteChoices,
+  remove: (nodeId: string, choice: DeleteChoice) => void,
+  onRemember: ((kind: PendingDelete['kind'], choice: DeleteChoice) => void) | undefined,
 ) {
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const request = useCallback(
-    (target: PendingDelete) => (askBeforeDelete ? setPending(target) : remove(target.id)),
-    [askBeforeDelete, remove],
+    (target: PendingDelete) => {
+      const remembered = choices[target.kind];
+      if (remembered === undefined) setPending(target);
+      else remove(target.id, remembered);
+    },
+    [choices, remove],
   );
   return {
     request,
@@ -109,9 +146,11 @@ export function useDeleteGate(
       <DeleteGate
         pending={pending}
         onCancel={() => setPending(null)}
-        onConfirm={(dontAskAgain) => {
-          if (pending !== null) remove(pending.id);
-          if (dontAskAgain) onStopAsking?.();
+        onConfirm={(choice, dontAskAgain) => {
+          if (pending !== null) {
+            remove(pending.id, choice);
+            if (dontAskAgain) onRemember?.(pending.kind, choice);
+          }
           setPending(null);
         }}
       />

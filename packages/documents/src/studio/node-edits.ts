@@ -145,14 +145,18 @@ function retargeted(edge: FunnelEdge, target: string): FunnelEdge {
 /**
  * Removes a node and its edges, bridging what led INTO it onward so a path keeps flowing: a Form's incoming outputs
  * connect to its target; a Condition's connect to its DEFAULT target, and the Funnel's start follows the same way. A
- * Condition takes its BRANCHES with it — every node reachable only through its row outputs (`branchOnly`) — rather
- * than leaving them orphaned. A lone `Form` root empties the variant; a Funnel left with one Form and no Conditions is
- * unwrapped to that Form.
+ * Condition takes its BRANCHES with it — every node reachable only through its row outputs (`branchOnly`) — unless
+ * `subtree` is false (doc 235 rule 12), which leaves them floating, to be reconnected. A lone `Form` root empties the
+ * variant; a Funnel left with one Form and no Conditions is unwrapped to that Form.
  */
-export function removeNode(uischema: Uischema, id: string): Uischema {
+export function removeNode(
+  uischema: Uischema,
+  id: string,
+  { subtree = true }: { subtree?: boolean } = {},
+): Uischema {
   if (uischema['type'] === 'Form') return idOf(uischema) === id ? {} : uischema;
   if (uischema['type'] !== 'Funnel') return uischema;
-  const removed = new Set([id, ...branchOnly(uischema, id)]);
+  const removed = new Set([id, ...(subtree ? branchOnly(uischema, id) : [])]);
   const isRemoved = (el: unknown) => isForm(el) && removed.has(idOf(el) ?? '');
   const elements = elementsOf(uischema).filter((el) => !isRemoved(el));
   const conditions = conditionsOf(uischema).filter((c) => !removed.has(c.id));

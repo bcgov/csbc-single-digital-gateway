@@ -15,13 +15,14 @@ import {
   type FunnelEdge,
   type NodeOutput,
 } from './funnel-model';
+import { leadingEdge, toEdge } from './graph-edges';
 import { upstreamFields } from './upstream-fields';
 
 /** A Form or Condition node's width; the layout works in centres, xyflow in top-left corners. */
 export const NODE_WIDTH = 240;
 /** How far above the next rank a trailing edge stops. */
 const TRAILING_SHORTFALL = 40;
-/** How far above a headless Condition its leading edge starts. */
+/** How far above a headless Condition (or an orphaned Form) its leading edge starts. */
 const LEADING_LENGTH = 40;
 
 /**
@@ -64,12 +65,14 @@ export function endIdOf(source: string, handle?: string): string {
 
 /**
  * What a + on this edge does: split the persisted edge, add after the free output the edge trails from, or add a
- * Form BEFORE a headless Condition (the leading edge above it — Form only).
+ * Form BEFORE a headless Condition (the leading edge above it), or connect into an ORPHANED Form — one nothing leads
+ * into that is not the start (doc 235 rule 10b; Connection only).
  */
 export type AddTarget =
   | { kind: 'between'; edgeId: string }
   | { kind: 'trailing'; output: NodeOutput }
-  | { kind: 'leading'; nodeId: string };
+  | { kind: 'leading'; nodeId: string }
+  | { kind: 'orphan'; nodeId: string };
 
 export interface AddEdgeData extends Record<string, unknown> {
   add: AddTarget;
@@ -102,7 +105,7 @@ export type CanvasGraph =
   | { kind: 'unsupported'; type: unknown };
 
 /** One output of a drawn node, with what the canvas shows for it. */
-interface DrawnOutput {
+export interface DrawnOutput {
   output: NodeOutput;
   handle?: string;
   branchLabel?: string;
@@ -151,14 +154,20 @@ export function canvasGraph(uischema: Uischema, schema: Record<string, unknown> 
   const headless = funnel ? conditions.filter((c) => !targeted.has(c.id)).map((c) => c.id) : [];
   // A Condition nothing leads into has nothing to branch on: the whole flow is in error (rule 14).
   const broken = headless.length > 0;
+  // A Form nothing leads into, other than the start, can only be reached once something connects into it.
+  const orphans = started ? [...formIds].filter((id) => !targeted.has(id) && id !== start) : [];
+  const leads = new Set([...headless, ...orphans]);
   const marks = (id: string): NodeMarks => ({
-    first: !targeted.has(id) && !headless.includes(id),
+    first: !targeted.has(id) && !leads.has(id),
     start: started && id === start,
     end: started && formIds.has(id) && reachable.has(id) && !sourced.has(id),
     invalid: broken || invalid.has(id),
     floating: !broken && funnel && !reachable.has(id),
   });
-  const leading = headless.map((id) => leadingEdge(id, names.get(id)!));
+  const leading = [
+    ...headless.map((id) => leadingEdge({ kind: 'leading', nodeId: id }, names.get(id)!)),
+    ...orphans.map((id) => leadingEdge({ kind: 'orphan', nodeId: id }, names.get(id)!)),
+  ];
   for (const e of connected.edges) {
     if (e.data === undefined) continue;
     if (broken) e.data.invalid = true;
@@ -195,17 +204,6 @@ export function canvasGraph(uischema: Uischema, schema: Record<string, unknown> 
     }),
   ];
   return { kind: 'graph', nodes, edges: [...connected.edges, ...leading] };
-}
-
-/** The red edge from an invisible point above a headless Condition into it, carrying a Form-only + at its top. */
-function leadingEdge(conditionId: string, name: string): AddEdge {
-  return {
-    id: `leading:${conditionId}`,
-    type: 'add',
-    source: `lead:${conditionId}`,
-    target: conditionId,
-    data: { add: { kind: 'leading', nodeId: conditionId }, sourceName: name, invalid: true },
-  };
 }
 
 /**
@@ -276,31 +274,6 @@ function conditionOutputs(
       isDefault: true,
     },
   ];
-}
-
-function toEdge(
-  drawn: DrawnOutput,
-  target: string,
-  persisted: FunnelEdge | undefined,
-  sourceName: string,
-): AddEdge {
-  const { output, handle, branchLabel, isDefault } = drawn;
-  return {
-    id: persisted?.id ?? `trailing:${output.source}:${handle ?? 'out'}`,
-    type: 'add',
-    source: output.source,
-    ...(handle !== undefined && { sourceHandle: handle }),
-    target,
-    data: {
-      add:
-        persisted === undefined
-          ? { kind: 'trailing', output }
-          : { kind: 'between', edgeId: persisted.id },
-      sourceName,
-      ...(branchLabel !== undefined && { branchLabel }),
-      ...(isDefault === true && { isDefault }),
-    },
-  };
 }
 
 const labelOf = (form: Uischema): string | null =>

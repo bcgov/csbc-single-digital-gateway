@@ -147,6 +147,39 @@ describe('removeNode', () => {
     expect(links(next)).toEqual(['a>b']);
   });
 
+  it('removes only the Condition when asked, leaving its branch nodes and their own edges floating (doc 235 rule 12)', () => {
+    const start = funnel(
+      [form('a'), form('x'), form('y'), form('b')],
+      [
+        edge('e0', 'a', 'c1'),
+        edge('e1', 'c1', 'x', 'r1'),
+        edge('e2', 'x', 'y'),
+        edge('e3', 'c1', 'b'),
+      ],
+      [condition('c1', [row('r1')])],
+    );
+    const next = removeNode(start, 'c1', { subtree: false });
+
+    expect(conditionsOf(next)).toEqual([]);
+    expect(formIds(next)).toEqual(['a', 'x', 'y', 'b']);
+    expect(links(next)).toEqual(['x>y', 'a>b']);
+  });
+
+  it('removes the entire subtree with { subtree: true }, as by default (doc 235 rule 12)', () => {
+    const start = funnel(
+      [form('a'), form('x'), form('b')],
+      [edge('e0', 'a', 'c1'), edge('e1', 'c1', 'x', 'r1'), edge('e2', 'c1', 'b')],
+      [condition('c1', [row('r1')])],
+    );
+
+    // Bridged edges get fresh ids, so the two results are compared by forms and links.
+    const explicit = removeNode(start, 'c1', { subtree: true });
+    const byDefault = removeNode(start, 'c1');
+    expect(formIds(explicit)).toEqual(['a', 'b']);
+    expect(formIds(byDefault)).toEqual(['a', 'b']);
+    expect(links(explicit)).toEqual(links(byDefault));
+  });
+
   it("deletes everything only a branch reaches — its chain and any Condition nested in it — keeping the default's path", () => {
     const start = funnel(
       [form('a'), form('x'), form('y'), form('z'), form('b'), form('m')],

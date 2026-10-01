@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import type { DeleteChoices } from './delete-gate';
 import { DocumentCanvas } from './document-canvas';
 import { DocumentInspector } from './document-inspector';
 import { DocumentPalette } from './document-palette';
@@ -40,9 +41,10 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Which collapsed panel is open, expanded — one at a time (doc 233 rule 14).
   const [expanded, setExpanded] = useState<'palette' | 'inspector' | null>(null);
-  // Doc 234: Inspect bumps this to reveal the inspector; "Don't ask me again" lasts for this mount (rule 9).
+  // Doc 234: Inspect bumps this to reveal the inspector. "Don't ask me again" lasts for this mount, remembered per
+  // kind (doc 235 rule 13).
   const [inspectorReveal, setInspectorReveal] = useState(0);
-  const [askBeforeDelete, setAskBeforeDelete] = useState(true);
+  const [deleteChoices, setDeleteChoices] = useState<DeleteChoices>({});
   const variant = draft?.content.variants.default ?? null;
   const [focus, setFocus] = useDocumentFocus(
     draft?.ref?.documentId ?? (draft === null ? null : NEW),
@@ -99,8 +101,10 @@ export function DocumentStudio({ store, className, ...props }: DocumentStudioPro
                 setSelectedId(formId);
                 setInspectorReveal((n) => n + 1);
               }}
-              askBeforeDelete={askBeforeDelete}
-              onStopAsking={() => setAskBeforeDelete(false)}
+              deleteChoices={deleteChoices}
+              onRememberDelete={(kind, choice) =>
+                setDeleteChoices((choices) => ({ ...choices, [kind]: choice }))
+              }
             />
             {focusedId !== null && (
               <DocumentPalette

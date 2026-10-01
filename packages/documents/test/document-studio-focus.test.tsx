@@ -35,6 +35,12 @@ async function deleteNode(user: ReturnType<typeof userEvent.setup>, name: string
   );
 }
 
+/** Adds through a + (doc 235): open its panel, then choose the option. */
+async function addFrom(user: ReturnType<typeof userEvent.setup>, plus: string, option: string) {
+  await user.click(await screen.findByRole('button', { name: plus }));
+  await user.click(await screen.findByRole('menuitem', { name: option }));
+}
+
 // Node bodies and the pane take fireEvent, not user-event: see document-studio-selection.test.tsx.
 describe('DocumentStudio focus', () => {
   it('opens a top-level Form focused: its node drawn as a page with its + below, the badges kept, no Back', async () => {
@@ -47,7 +53,7 @@ describe('DocumentStudio focus', () => {
     expect(slot(container, 'document-studio-type')).not.toBeNull();
     expect(formNodes(container)).toHaveLength(1);
     expect(
-      await screen.findByRole('group', { name: 'Add after Terms of use' }),
+      await screen.findByRole('button', { name: 'Add after Terms of use' }),
     ).toBeInTheDocument();
   });
 
@@ -55,7 +61,7 @@ describe('DocumentStudio focus', () => {
     const { user, container } = open('stub-agreement-template');
     await screen.findByRole('article', { name: 'Terms of use page' });
 
-    await user.click(await screen.findByRole('button', { name: 'Add form after Terms of use' }));
+    await addFrom(user, 'Add after Terms of use', 'Form');
 
     await waitFor(() => expect(formNodes(container)).toHaveLength(2));
     expect(page()).not.toBeInTheDocument();
@@ -123,7 +129,7 @@ describe('DocumentStudio focus', () => {
 
   it('ignores a double-click on a Condition', async () => {
     const { user, container } = open('stub-application');
-    await user.click(await screen.findByRole('button', { name: 'Add condition after Details' }));
+    await addFrom(user, 'Add after Details', 'Condition');
     await screen.findByRole('button', { name: 'Edit Untitled condition' });
 
     fireEvent.doubleClick(
@@ -158,7 +164,9 @@ describe('DocumentStudio focus', () => {
 
     expect(await screen.findByRole('article', { name: 'Eligibility page' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
-    expect(await screen.findByRole('group', { name: 'Add after Eligibility' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Add after Eligibility' }),
+    ).toBeInTheDocument();
   });
 
   it('locks drag-pan in focus, and gives it back to the flow', async () => {

@@ -7,6 +7,7 @@ import type {
 import { useCanvasActions } from './canvas-actions';
 import { FormPageBody } from './form-page';
 import { NodeActions } from './node-actions';
+import { useNodeConnect } from './use-connect-mode';
 import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
 
 /**
@@ -15,6 +16,7 @@ import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
  */
 export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
   const { remove, focus, inspect } = useCanvasActions();
+  const { mark } = useNodeConnect(data.formId);
   const label = data.label ?? 'Untitled form';
   const focused = data.focused === true;
   return (
@@ -24,6 +26,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
       // A page is selected by default (doc 233 rule 6) and alone on the canvas: a ring would only frame it.
       selected={selected && !focused}
       page={focused ? (data.open === true ? 'open' : 'growing') : undefined}
+      connect={mark}
       slot="document-studio-form-node"
       // A fixed card height (CARD_HEIGHT), so it transitions to the page's height instead of jumping.
       className={focused ? 'text-sm' : 'h-14 px-3 py-2 text-sm'}

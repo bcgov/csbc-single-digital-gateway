@@ -42,12 +42,22 @@ const withCondition = () =>
     [condition('c1', [row('r1', 'Condition 1')], 'Eligible?')],
   );
 
-/** Deletes a node through the delete gate (doc 234 rule 8): Delete, then confirm. */
-async function deleteNode(user: ReturnType<typeof userEvent.setup>, name: string) {
+/** Deletes a node through the delete gate (doc 234 rule 8): Delete, then confirm — a Condition with `confirm`. */
+async function deleteNode(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+  confirm = 'Delete',
+) {
   await user.click(await screen.findByRole('button', { name: `Delete ${name}` }));
   await user.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: confirm }),
   );
+}
+
+/** Adds through a + (doc 235): open its panel, then choose the option. */
+async function addFrom(user: ReturnType<typeof userEvent.setup>, plus: string, option: string) {
+  await user.click(await screen.findByRole('button', { name: plus }));
+  await user.click(await screen.findByRole('menuitem', { name: option }));
 }
 
 describe('DocumentCanvas', () => {
@@ -55,7 +65,7 @@ describe('DocumentCanvas', () => {
     const user = userEvent.setup();
     render(<Harness initial={form('A')} />);
 
-    await user.click(await screen.findByRole('button', { name: 'Add condition after A' }));
+    await addFrom(user, 'Add after A', 'Condition');
 
     const variant = uischemaOf() as { type: string; options: { conditions: { id: string }[] } };
     expect(variant.type).toBe('Funnel');
@@ -69,7 +79,7 @@ describe('DocumentCanvas', () => {
     const user = userEvent.setup();
     render(<Harness initial={funnel([form('A'), form('B')], [edge('e1', 'A', 'B')])} />);
 
-    await user.click(await screen.findByRole('button', { name: 'Add form after A' }));
+    await addFrom(user, 'Add after A', 'Form');
 
     const added = (uischemaOf()['elements'] as Uischema[])[1]!['id'];
     expect(links()).toEqual([`A>${added}`, `${added}>B`]);
@@ -138,7 +148,7 @@ describe('DocumentCanvas', () => {
     const user = userEvent.setup();
     render(<Harness initial={withCondition()} />);
 
-    await deleteNode(user, 'Eligible?');
+    await deleteNode(user, 'Eligible?', 'Entire subtree');
 
     expect(links()).toEqual(['A>B']);
   });
@@ -158,7 +168,7 @@ describe('DocumentCanvas', () => {
   // initialises, silently dropping every trailing edge and its +. Pin the real size instead.
   it('gives end nodes a real size, or xyflow never draws a trailing edge', async () => {
     const { container } = render(<Harness initial={form('A')} />);
-    await screen.findByRole('button', { name: 'Add form after A' });
+    await screen.findByRole('button', { name: 'Add after A' });
 
     expect(container.querySelector('[data-slot="document-studio-end-node"]')).toHaveClass(
       'size-px',
@@ -185,17 +195,15 @@ describe('DocumentCanvas', () => {
       ).length;
 
     await deleteNode(user, 'A');
-    const before = await screen.findByRole('button', { name: 'Add form before Eligible?' });
+    await screen.findByRole('button', { name: 'Add before Eligible?' });
     expect(red()).toBe(3);
     expect(container.querySelector('[data-slot="document-studio-start-badge"]')).toBeNull();
     expect(container.querySelector('[data-slot="document-studio-end-badge"]')).toBeNull();
 
-    await user.click(before);
+    await addFrom(user, 'Add before Eligible?', 'Form');
 
     const added = (uischemaOf()['elements'] as Uischema[]).at(-1)!['id'];
     expect(links()).toContain(`${added}>c1`);
-    expect(
-      screen.queryByRole('button', { name: 'Add form before Eligible?' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add before Eligible?' })).not.toBeInTheDocument();
   });
 });

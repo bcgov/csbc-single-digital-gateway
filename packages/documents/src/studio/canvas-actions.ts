@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from 'react';
 import type { AddTarget } from './canvas-graph';
+import type { ConnectSource } from './connect-edits';
 import type { PendingDelete } from './delete-gate';
 import type { Uischema } from './document-types';
 import { addAfter, addBefore, addBetween, type NodeKind } from './node-edits';
@@ -17,6 +18,10 @@ export interface CanvasActions {
   focus: (formId: string) => void;
   /** Selects a Form and reveals the inspector (doc 234 rule 7). */
   inspect: (formId: string) => void;
+  /** Enters connect mode for a free output, or into a headless Condition (doc 235 rule 5). */
+  startConnect: (source: ConnectSource) => void;
+  /** Whether a + may offer Connection: only on a Funnel's flow (doc 235 rule 2). */
+  canConnect: boolean;
 }
 
 export const CanvasActionsContext = createContext<CanvasActions | null>(null);
@@ -33,7 +38,7 @@ export function useEditActions(
   onChange: (uischema: Uischema) => void,
   /** Given while a page is focused: adding from its + also leaves the page. */
   unfocus: (() => void) | undefined,
-  { remove, editCondition, focus, inspect }: Omit<CanvasActions, 'add'>,
+  { remove, editCondition, focus, inspect, startConnect, canConnect }: Omit<CanvasActions, 'add'>,
 ): CanvasActions {
   return useMemo(
     () => ({
@@ -45,14 +50,18 @@ export function useEditActions(
       editCondition,
       focus,
       inspect,
+      startConnect,
+      canConnect,
     }),
-    [uischema, onChange, unfocus, remove, editCondition, focus, inspect],
+    [uischema, onChange, unfocus, remove, editCondition, focus, inspect, startConnect, canConnect],
   );
 }
 
-/** The variant with a node added where a + asked; a leading + only ever adds a Form. */
+/** The variant with a node added where a + asked; a leading + only ever adds a Form, an orphan's nothing. */
 function added(uischema: Uischema, target: AddTarget, kind: NodeKind): Uischema {
   if (target.kind === 'between') return addBetween(uischema, target.edgeId, kind);
   if (target.kind === 'trailing') return addAfter(uischema, target.output, kind);
+  // An orphan's + only connects (doc 235 rule 10b): it never adds.
+  if (target.kind === 'orphan') return uischema;
   return addBefore(uischema, target.nodeId);
 }

@@ -1,10 +1,18 @@
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
-import { AddBeforeButton, AddMenu } from './add-menu';
+import { AddPanel, type AddOption } from './add-panel';
 import { useCanvasActions } from './canvas-actions';
 import { FADE_IN, FADE_IN_AFTER, MOTION } from './canvas-zoom';
-import type { AddEdge as AddEdgeType } from './canvas-graph';
+import type { AddEdge as AddEdgeType, AddTarget } from './canvas-graph';
 
 /** How a marked edge and its label are coloured. Inline strokes: xyflow's unlayered stylesheet beats Tailwind. */
+/** Each + kind's options, in order (doc 235 rule 2). */
+const OPTIONS: Readonly<Record<AddTarget['kind'], readonly AddOption[]>> = Object.freeze({
+  trailing: Object.freeze(['connection', 'condition', 'form'] as const),
+  between: Object.freeze(['condition', 'form'] as const),
+  leading: Object.freeze(['form', 'connection'] as const),
+  orphan: Object.freeze(['connection'] as const),
+});
+
 const TONES = {
   floating: {
     stroke: 'var(--color-warning-border)',
@@ -14,13 +22,14 @@ const TONES = {
 } as const;
 
 /**
- * Every edge on the canvas. It carries the + (`AddMenu`): at the midpoint of a persisted edge, which it splits, and at
- * the END of a trailing edge, which adds after the free output. An edge leaving a Condition also shows its branch —
- * the row's clauses, or "Default" — directly above its +; the default path is dashed. A floating edge is orange,
- * an edge after an unset branch red. A headless Condition's LEADING edge is red with a Form-only + at its top.
+ * Every edge on the canvas. It carries the + (`AddPanel`, doc 235): at the midpoint of a persisted edge, which it
+ * splits, and at the END of a trailing edge, which adds after — or connects — the free output. An edge leaving a
+ * Condition also shows its branch — the row's clauses, or "Default" — directly above its +; the default path is
+ * dashed. A floating edge is orange, an edge after an unset branch red. A headless Condition's LEADING edge is red,
+ * with a + at its top that adds a Form before it or connects a node into it.
  */
 export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgeProps<AddEdgeType>) {
-  const { add } = useCanvasActions();
+  const { add, startConnect, canConnect } = useCanvasActions();
   const [path, midX, midY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -29,21 +38,31 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
     borderRadius: 8,
   });
   if (data === undefined) return <BaseEdge id={id} path={path} />;
-  if (data.add.kind === 'leading') {
+  const target = data.add;
+  const options = OPTIONS[target.kind].filter((o) => canConnect || o !== 'connection');
+  const choose = (option: AddOption) => {
+    if (option !== 'connection') add(target, option);
+    else if (target.kind === 'trailing') startConnect({ kind: 'output', output: target.output });
+    else if (target.kind !== 'between') startConnect({ kind: 'into', nodeId: target.nodeId });
+  };
+  if (target.kind === 'leading' || target.kind === 'orphan') {
+    const tone = target.kind === 'leading' ? 'invalid' : 'floating';
     return (
       <>
-        <BaseEdge id={id} path={path} style={{ stroke: TONES.invalid.stroke, strokeWidth: 2 }} />
+        <BaseEdge id={id} path={path} style={{ stroke: TONES[tone].stroke, strokeWidth: 2 }} />
         <EdgeLabelRenderer>
-          <AddBeforeButton
-            targetName={data.sourceName}
-            onAdd={() => add(data.add, 'form')}
+          <AddPanel
+            label={`Add before ${data.sourceName}`}
+            options={options}
+            onChoose={choose}
+            tone={tone === 'invalid' ? 'danger' : 'warning'}
             style={{ transform: `translate(-50%, -50%) translate(${sourceX}px, ${sourceY}px)` }}
           />
         </EdgeLabelRenderer>
       </>
     );
   }
-  const trailing = data.add.kind === 'trailing';
+  const trailing = target.kind === 'trailing';
   const [x, y] = trailing ? [targetX, targetY] : [midX, midY];
   // A floating edge (not reachable from the start) is orange, and wins over an unset branch's red.
   // Labels and the + live outside the edge's own element, so they fade with it by hand (doc 233).
@@ -86,13 +105,14 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
             {data.branchLabel}
           </span>
         )}
-        <AddMenu
-          sourceName={
+        <AddPanel
+          label={`Add after ${
             data.branchLabel === undefined
               ? data.sourceName
               : `${data.sourceName} (${data.branchLabel})`
-          }
-          onAdd={(kind) => add(data.add, kind)}
+          }`}
+          options={options}
+          onChoose={choose}
           className={fade}
           style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
         />

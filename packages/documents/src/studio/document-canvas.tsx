@@ -31,18 +31,21 @@ import {
 import { ConditionDialog } from './condition-dialog';
 import { updateCondition } from './condition-edits';
 import { ConditionNode } from './condition-node';
-import { useDeleteGate } from './delete-gate';
+import { ConnectPrompt } from './connect-overlay';
+import { useDeleteGate, type DeleteChoice, type DeleteChoices } from './delete-gate';
 import type { Uischema } from './document-types';
 import { EndNode, FormNode, LeadNode } from './form-node';
 import { conditionsOf } from './funnel-model';
 import { newForm, removeNode } from './node-edits';
 import { upstreamFields } from './upstream-fields';
+import { ConnectViewContext, useConnectMode } from './use-connect-mode';
 
 /** Module-level so xyflow sees a stable identity and never remounts every node or edge. */
 const NODE_TYPES = { form: FormNode, condition: ConditionNode, end: EndNode, lead: LeadNode };
 const EDGE_TYPES = { add: AddEdge };
 const NO_EDGES: AddEdgeType[] = [];
 const NO_INSPECT = () => {};
+const ASK_EVERY_TIME: DeleteChoices = {};
 
 export interface DocumentCanvasProps {
   /** The variant being edited. */
@@ -62,10 +65,10 @@ export interface DocumentCanvasProps {
   onUnfocus?: (() => void) | undefined;
   /** A Form's Inspect was used (doc 234 rule 7): select it and reveal the inspector. */
   onInspect?: ((formId: string) => void) | undefined;
-  /** Whether a delete asks first (doc 234 rules 8-9); default true. */
-  askBeforeDelete?: boolean | undefined;
-  /** A delete was confirmed with "Don't ask me again" ticked. */
-  onStopAsking?: (() => void) | undefined;
+  /** Deletes that no longer ask, by kind (doc 235 rule 13); default: every delete asks. */
+  deleteChoices?: DeleteChoices | undefined;
+  /** A delete was confirmed with "Don't ask me again" ticked: remember that choice for the kind. */
+  onRememberDelete?: ((kind: 'form' | 'condition', choice: DeleteChoice) => void) | undefined;
 }
 
 /**
@@ -83,8 +86,8 @@ export function DocumentCanvas({
   onFocus,
   onUnfocus,
   onInspect,
-  askBeforeDelete = true,
-  onStopAsking,
+  deleteChoices = ASK_EVERY_TIME,
+  onRememberDelete,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
   const graph = useMemo(() => canvasGraph(uischema, schema), [uischema, schema]);
@@ -119,15 +122,20 @@ export function DocumentCanvas({
     [focusedId, onFocus],
   );
   const removeNow = useCallback(
-    (nodeId: string) => onChange(removeNode(uischema, nodeId)),
+    (nodeId: string, choice: DeleteChoice) =>
+      onChange(removeNode(uischema, nodeId, { subtree: choice === 'subtree' })),
     [uischema, onChange],
   );
-  const { request: remove, gate } = useDeleteGate(askBeforeDelete, removeNow, onStopAsking);
+  const { request: remove, gate } = useDeleteGate(deleteChoices, removeNow, onRememberDelete);
+  const connectMode = useConnectMode(uischema, graph, onChange);
   const actions = useEditActions(uischema, onChange, unfocus, {
     remove,
     editCondition: setEditingId,
     focus: focusForm,
     inspect: onInspect ?? NO_INSPECT,
+    startConnect: connectMode.start,
+    // Connecting needs other nodes on the flow: never on a page, never from a lone Form (doc 235 rule 2).
+    canConnect: focusedId === null && uischema['type'] === 'Funnel',
   });
 
   return (
@@ -136,51 +144,62 @@ export function DocumentCanvas({
         ref={canvas}
         data-slot="document-studio-canvas"
         data-focused={focusedId === null ? undefined : ''}
-        className="relative min-h-0 flex-1"
+        data-connecting={connectMode.connecting ? '' : undefined}
+        className={`relative min-h-0 flex-1 ${connectMode.canvasClass}`}
+        onClickCapture={connectMode.onClickCapture}
         onKeyDown={(event) => {
           if (event.key === 'Escape') onSelect?.(null);
         }}
       >
         {/* xyflow's stylesheet is unlayered and beats Tailwind's layered utilities, hence the important modifier. */}
-        <ReactFlow
-          className="bg-gray-10!"
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          // Selection is the studio's (doc 232), not xyflow's: only Form nodes select, by click.
-          elementsSelectable={false}
-          onNodeClick={(_, node) => {
-            if (node.type === 'form') onSelect?.(node.id);
-          }}
-          onPaneClick={() => onSelect?.(null)}
-          onNodeDoubleClick={(_, node) => {
-            if (node.type === 'form') focusForm(node.id);
-          }}
-          onInit={(flow) => {
-            instance.current = flow;
-            // A page open from the start is fitted to its first screen, as a double-click would — not to its whole
-            // content height, which is what ReactFlow's own fitView would show.
-            const card = focusedCard(graph, focusedId);
-            if (card !== undefined)
-              fitNow(flow, focusRect(card, frame.keepsTrailing), PAGE_PADDING);
-          }}
-          zoomOnDoubleClick={false}
-          // Focused, the page reads like a document (doc 233 rule 12): no drag-pan or zoom; the wheel scrolls it
-          // up and down, bounded by the page once it has settled.
-          {...(focusedId !== null && FOCUSED_VIEWPORT)}
-          {...(extent !== undefined && { translateExtent: extent })}
-          minZoom={MIN_ZOOM}
-          deleteKeyCode={null}
-          fitView={fitsFlowOnMount}
-          proOptions={{ hideAttribution: true }}
+        <ConnectViewContext
+          value={
+            connectMode.view === null
+              ? null
+              : { view: connectMode.view, chooseOutput: connectMode.chooseOutput }
+          }
         >
-          <Background />
-        </ReactFlow>
+          <ReactFlow
+            className="bg-gray-10!"
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            // Selection is the studio's (doc 232), not xyflow's: only Form nodes select, by click.
+            elementsSelectable={false}
+            onNodeClick={(_, node) => {
+              if (node.type === 'form') onSelect?.(node.id);
+            }}
+            onPaneClick={() => onSelect?.(null)}
+            onNodeDoubleClick={(_, node) => {
+              if (node.type === 'form') focusForm(node.id);
+            }}
+            onInit={(flow) => {
+              instance.current = flow;
+              // A page open from the start is fitted to its first screen, as a double-click would — not to its whole
+              // content height, which is what ReactFlow's own fitView would show.
+              const card = focusedCard(graph, focusedId);
+              if (card !== undefined)
+                fitNow(flow, focusRect(card, frame.keepsTrailing), PAGE_PADDING);
+            }}
+            zoomOnDoubleClick={false}
+            // Focused, the page reads like a document (doc 233 rule 12): no drag-pan or zoom; the wheel scrolls it
+            // up and down, bounded by the page once it has settled.
+            {...(focusedId !== null && FOCUSED_VIEWPORT)}
+            {...(extent !== undefined && { translateExtent: extent })}
+            minZoom={MIN_ZOOM}
+            deleteKeyCode={null}
+            fitView={fitsFlowOnMount}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background />
+          </ReactFlow>
+        </ConnectViewContext>
         <CanvasOverlay graph={graph} onAddForm={() => onChange(newForm())} />
+        {connectMode.connecting && <ConnectPrompt />}
         {/* While a Form grows or shrinks, nothing may reach the canvas: any press (a third click, a drag, a wheel)
             interrupts d3's camera transition mid-way and strands the view at its in-between zoom (doc 233 rule 8). */}
         {moving(frame) && (

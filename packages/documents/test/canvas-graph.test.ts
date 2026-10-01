@@ -130,7 +130,7 @@ describe('canvasGraph', () => {
     );
     const marks = Object.fromEntries(
       graphOf(canvasGraph(variant))
-        .nodes.filter((n) => n.type !== 'end')
+        .nodes.filter((n) => n.type === 'form' || n.type === 'condition')
         .map((n) => [n.id, [n.data['start'], n.data['end']]]),
     );
 
@@ -149,7 +149,7 @@ describe('canvasGraph', () => {
     );
     const marks = Object.fromEntries(
       graphOf(canvasGraph(variant))
-        .nodes.filter((n) => n.type !== 'end')
+        .nodes.filter((n) => n.type === 'form' || n.type === 'condition')
         .map((n) => [n.id, [n.data['start'], n.data['end']]]),
     );
 
@@ -175,7 +175,30 @@ describe('canvasGraph', () => {
         .filter((e) => e.data?.floating === true)
         .map((e) => e.id)
         .toSorted(),
-    ).toEqual(['e2', 'trailing:f2:out']);
+    ).toEqual(['e2', 'leading:f1', 'trailing:f2:out']);
+  });
+
+  it('gives an orphaned Form — nothing leads into it, not the start — an orange leading + that connects (doc 235 rule 10b)', () => {
+    const variant = withStart(
+      funnel([form('a'), form('b'), form('f1')], [edge('e1', 'a', 'b')]),
+      'a',
+    );
+    const graph = graphOf(canvasGraph(variant));
+    const leading = graph.edges.filter((e) => e.id.startsWith('leading:'));
+
+    expect(leading.map((e) => [e.target, e.data?.add, e.data?.floating, e.data?.invalid])).toEqual([
+      ['f1', { kind: 'orphan', nodeId: 'f1' }, true, undefined],
+    ]);
+    expect(graph.nodes.find((n) => n.id === 'lead:f1')?.type).toBe('lead');
+    // The orphan draws an input handle for its leading edge; the start, which nothing leads into either, does not.
+    expect(graph.nodes.find((n) => n.id === 'f1')?.data['first']).toBe(false);
+    expect(graph.nodes.find((n) => n.id === 'a')?.data['first']).toBe(true);
+  });
+
+  it('gives no Form an orphan + when the Funnel names no start', () => {
+    const graph = graphOf(canvasGraph(funnel([form('a'), form('b')], [])));
+
+    expect(graph.edges.filter((e) => e.id.startsWith('leading:'))).toEqual([]);
   });
 
   it('never marks anything floating outside a Funnel', () => {

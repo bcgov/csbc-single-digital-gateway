@@ -27,6 +27,12 @@ async function deleteNode(user: ReturnType<typeof userEvent.setup>, name: string
   );
 }
 
+/** Adds through a + (doc 235): open its panel, then choose the option. */
+async function addFrom(user: ReturnType<typeof userEvent.setup>, plus: string, option: string) {
+  await user.click(await screen.findByRole('button', { name: plus }));
+  await user.click(await screen.findByRole('menuitem', { name: option }));
+}
+
 const formNode = (container: HTMLElement, label: string) =>
   [...container.querySelectorAll<HTMLElement>('[data-slot="document-studio-form-node"]')].find(
     (node) => node.textContent?.includes(label),
@@ -70,9 +76,7 @@ describe('DocumentStudio selection', () => {
 
   it('names a Condition and the branch taken without making it clickable, and selects an earlier Form from its crumb', async () => {
     const { user, container } = await renderApplication();
-    await user.click(
-      await screen.findByRole('button', { name: 'Add condition after Eligibility' }),
-    );
+    await addFrom(user, 'Add after Eligibility', 'Condition');
     await screen.findByRole('button', { name: 'Edit Untitled condition' });
 
     fireEvent.click(formNode(container, 'Details'));
@@ -156,7 +160,7 @@ describe('DocumentStudio selection', () => {
   it('does not select a Condition: its card still opens the condition dialog', async () => {
     const { user, container } = await renderApplication();
 
-    await user.click(await screen.findByRole('button', { name: 'Add condition after Details' }));
+    await addFrom(user, 'Add after Details', 'Condition');
     await user.click(await screen.findByRole('button', { name: 'Edit Untitled condition' }));
 
     expect(await screen.findByRole('dialog', { name: 'Edit condition' })).toBeInTheDocument();

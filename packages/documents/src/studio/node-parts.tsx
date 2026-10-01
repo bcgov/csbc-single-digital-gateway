@@ -24,6 +24,7 @@ export function NodeFrame({
   marks,
   selected = false,
   page,
+  connect,
   slot,
   className,
   children,
@@ -38,6 +39,8 @@ export function NodeFrame({
    * `auto` (Chromium; elsewhere those steps jump).
    */
   page?: 'growing' | 'open' | undefined;
+  /** Connect mode (doc 235 rule 7): may this node be picked, or is it dimmed? */
+  connect?: 'pickable' | 'dimmed' | undefined;
   slot: string;
   className: string;
   children: ReactNode;
@@ -51,7 +54,8 @@ export function NodeFrame({
       data-invalid={marks.invalid || undefined}
       data-floating={marks.floating || undefined}
       data-selected={selected || undefined}
-      className={`group/node relative ${page === undefined ? 'w-60' : PAGE_SIZE[page]} transition-[width,height] [interpolate-size:allow-keywords] ${MOTION} rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
+      data-connect={connect}
+      className={`group/node relative ${connect === undefined ? '' : CONNECT_CLASS[connect]} ${page === undefined ? 'w-60' : PAGE_SIZE[page]} transition-[width,height] [interpolate-size:allow-keywords] ${MOTION} rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
     >
       {split && (
         <>
@@ -102,6 +106,13 @@ function borderOf({ floating, invalid, start, end }: NodeMarks): string {
 const PAGE_SIZE = {
   growing: 'w-[768px] h-[994px]',
   open: 'w-[768px] h-auto min-h-[994px]',
+} as const;
+
+/** Connect mode: a pickable node invites the click; a dimmed one refuses it (doc 235 rule 7). */
+const CONNECT_CLASS = {
+  pickable:
+    'cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-background',
+  dimmed: 'cursor-not-allowed opacity-40',
 } as const;
 
 /** The selection ring, offset so a background-coloured gap separates it from a coloured border. */

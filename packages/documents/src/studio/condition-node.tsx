@@ -4,7 +4,9 @@ import { Handle, Position, useUpdateNodeInternals, type NodeProps } from '@xyflo
 import { useEffect } from 'react';
 import { useCanvasActions } from './canvas-actions';
 import type { ConditionNode as ConditionNodeType } from './canvas-graph';
+import { OutputChooser } from './connect-overlay';
 import { NodeActions } from './node-actions';
+import { useNodeConnect } from './use-connect-mode';
 import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
 
 /**
@@ -17,11 +19,17 @@ export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
   const updateNodeInternals = useUpdateNodeInternals();
   const outputsKey = data.outputs.join('|');
   useEffect(() => updateNodeInternals(id), [id, outputsKey, updateNodeInternals]);
+  const { mark, choosing, chooseOutput } = useNodeConnect(data.conditionId);
   const name = data.label ?? 'Untitled condition';
   const branches = data.outputs.length - 1;
 
   return (
-    <NodeFrame marks={data} slot="document-studio-condition-node" className="text-sm">
+    <NodeFrame
+      marks={data}
+      connect={mark}
+      slot="document-studio-condition-node"
+      className="text-sm"
+    >
       <InputHandle show={!data.first} />
       <button
         type="button"
@@ -43,6 +51,7 @@ export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
         onEdit={() => editCondition(data.conditionId)}
         onDelete={() => remove({ id: data.conditionId, kind: 'condition', name })}
       />
+      {choosing !== null && <OutputChooser outputs={choosing} onChoose={chooseOutput} />}
       {data.outputs.map((handle, i) => (
         <Handle
           key={handle}
