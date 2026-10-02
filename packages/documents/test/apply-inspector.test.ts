@@ -156,3 +156,24 @@ describe('rich Form description writes (doc 251 rule 7)', () => {
     expect(edit(written, 'F', { formDescription: 'plain string' })).toBe(written);
   });
 });
+
+describe('Must be checked writes (doc 253 rules 2-4)', () => {
+  it('on writes const true and required; off removes both', () => {
+    const c = content([control('b')], { b: { type: 'boolean', title: 'Agree' } });
+    const on = edit(c, 'c-b', { mustBeChecked: true });
+    expect(property(on, 'b')).toEqual({ type: 'boolean', title: 'Agree', const: true });
+    expect(on.schema['required']).toEqual(['b']);
+
+    const off = edit(on, 'c-b', { mustBeChecked: false });
+    expect(property(off, 'b')).toEqual({ type: 'boolean', title: 'Agree' });
+    expect('required' in off.schema).toBe(false);
+
+    // A boolean only in `required` reads off; toggling it on then off leaves it optional (rule 4).
+    const legacy = content([control('b')], { b: { type: 'boolean' } }, ['b']);
+    expect(edit(legacy, 'c-b', {})).toBe(legacy);
+    const cycled = edit(edit(legacy, 'c-b', { mustBeChecked: true }), 'c-b', {
+      mustBeChecked: false,
+    });
+    expect('required' in cycled.schema).toBe(false);
+  });
+});

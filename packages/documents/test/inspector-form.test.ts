@@ -52,7 +52,7 @@ describe('inspectorForm (doc 249 fields table)', () => {
     expect(layoutOf(formFor(root, 'v').uischema)).toEqual([['Appearance', ['Spacing']]]);
   });
 
-  it('builds Label, Description, Required for every control kind', () => {
+  it('builds Label, Description, Required for every control kind (Must be checked for booleans, doc 253)', () => {
     const schemas = {
       b: { type: 'boolean' },
       s: { type: 'string' },
@@ -63,7 +63,8 @@ describe('inspectorForm (doc 249 fields table)', () => {
     const root = page(...Object.keys(schemas).map((key) => control(key)));
     for (const key of Object.keys(schemas)) {
       const [general] = layoutOf(formFor(root, `c-${key}`, schemas).uischema);
-      expect(general, key).toEqual(['General', ['Label', 'Description', 'Required']]);
+      const presence = key === 'b' ? 'Must be checked' : 'Required';
+      expect(general, key).toEqual(['General', ['Label', 'Description', presence]]);
     }
   });
 
@@ -180,5 +181,30 @@ describe('rich Form description field (doc 251 rule 7)', () => {
       formFor({ ...page(), options: { description: rich } }, 'F').data['formDescription'],
     ).toBe(rich);
     expect('formDescription' in formFor(page(), 'F').data).toBe(false);
+  });
+});
+
+describe('Must be checked (doc 253 rules 1, 4)', () => {
+  it('replaces Required for booleans, reading const true', () => {
+    const root = page(
+      control('b'),
+      { ...control('s'), options: { component: 'switch' } },
+      control('t'),
+    );
+    const schemas = {
+      b: { type: 'boolean', const: true },
+      s: { type: 'boolean' },
+      t: { type: 'string' },
+    };
+    for (const id of ['c-b', 'c-s']) {
+      const [general] = layoutOf(formFor(root, id, schemas).uischema);
+      expect(general, id).toEqual(['General', ['Label', 'Description', 'Must be checked']]);
+    }
+    expect(formFor(root, 'c-b', schemas).data['mustBeChecked']).toBe(true);
+    expect(formFor(root, 'c-s', schemas).data['mustBeChecked']).toBe(false);
+    expect(layoutOf(formFor(root, 'c-t', schemas).uischema)[0]).toEqual([
+      'General',
+      ['Label', 'Description', 'Required'],
+    ]);
   });
 });

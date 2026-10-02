@@ -2,6 +2,7 @@ import { Icon } from '@mdi/react';
 import { Input } from '@repo/ui/input';
 import { GridStack } from 'gridstack';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { FoldableSection } from './foldable-section';
 import type { PaletteItem } from './palette-items';
 
 /** The drop preview a dragged item shows: 10 rows (40px) — a one-row preview draws nothing (doc 238 rule 10). */
@@ -27,9 +28,11 @@ export function PaletteList({
   const groups = grouped(shown);
   const list = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
-  const itemEls = () => [
-    ...(list.current?.querySelectorAll<HTMLElement>('[data-palette-item]') ?? []),
-  ];
+  // The items an arrow key can reach: a folded group's stay mounted (for gridstack) but are skipped.
+  const itemEls = () =>
+    [...(list.current?.querySelectorAll<HTMLElement>('[data-palette-item]') ?? [])].filter(
+      (el) => el.closest('[hidden]') === null,
+    );
   // Arrow keys move through the shown items in list order; ↑ from the first returns to the search (doc 238 rule 8b).
   const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
@@ -78,12 +81,19 @@ export function PaletteList({
           <p className="text-sm text-muted-foreground">No matches</p>
         ) : (
           groups.map(([group, members]) => (
-            <section key={group} aria-label={group} className="flex flex-col gap-1">
-              <h3 className="text-xs font-semibold text-muted-foreground">{group}</h3>
+            // Foldable like the inspector's sections (doc 252 rule 10); a search shows every match.
+            <FoldableSection
+              key={group}
+              name={group}
+              forceOpen={query.trim() !== ''}
+              className="flex flex-col gap-1"
+              headingClassName="text-xs font-semibold text-muted-foreground"
+              rowsClassName="flex flex-col gap-1"
+            >
               {members.map((item) => (
                 <PaletteItemRow key={item.id} item={item} onAppend={onAppend} />
               ))}
-            </section>
+            </FoldableSection>
           ))
         )}
       </div>

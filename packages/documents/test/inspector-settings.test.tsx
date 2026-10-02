@@ -42,8 +42,8 @@ function Harness({
 }
 
 const sections = () =>
-  [...document.querySelectorAll('[data-slot="inspector-section"]')].map(
-    (s) => s.querySelector('[data-slot="field-legend"]')?.textContent,
+  [...document.querySelectorAll('[data-slot="foldable-section"]')].map(
+    (s) => s.querySelector('[data-slot="foldable-section-heading"]')?.textContent,
   );
 
 describe('InspectorSettings (doc 249)', () => {

@@ -28,6 +28,7 @@ const CONTROL_KINDS: TargetKind[] = [
   'rich-text',
 ];
 const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
+const BOOLEAN_KINDS: TargetKind[] = ['checkbox', 'switch'];
 
 /**
  * Display-as variants per family, the default first (doc 249 rule 7): the default's `component` is what the palette
@@ -102,6 +103,26 @@ function readDescription(t: InspectorTarget): unknown {
     : keyword(t, 'description');
 }
 
+/**
+ * Doc 253 rules 2-3: on, the answer must be `true` (`const`) and present (`required`, which refuses an untouched box);
+ * off removes both.
+ */
+function writeMustBeChecked(
+  content: DocumentContent,
+  t: InspectorTarget,
+  value: unknown,
+): DocumentContent {
+  const on = value === true;
+  return setRequired(
+    updateProperty(content, keyOf(t), { const: on ? true : undefined }),
+    keyOf(t),
+    on,
+  );
+}
+
+/** The inspector's booleans: the small switch (doc 252 rule 1). */
+const SMALL_SWITCH = Object.freeze({ component: 'switch', size: 'sm' });
+
 /** Doc 249's fields for Controls bound to a schema property. */
 export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
   keywordField('label', 'General', 'Label', CONTROL_KINDS, 'title', STRING),
@@ -119,11 +140,22 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'required',
     section: 'General',
     label: 'Required',
-    applies: isKind(...CONTROL_KINDS),
+    // A boolean is always answered — `false` is an answer — so it gets Must be checked instead (doc 253 rule 1).
+    applies: isKind(...CONTROL_KINDS.filter((kind) => !BOOLEAN_KINDS.includes(kind))),
     schema: () => BOOLEAN,
-    options: { component: 'switch' },
+    options: SMALL_SWITCH,
     read: (t) => t.property?.required === true,
     write: (content, t, value) => setRequired(content, keyOf(t), value === true),
+  },
+  {
+    key: 'mustBeChecked',
+    section: 'General',
+    label: 'Must be checked',
+    applies: isKind(...BOOLEAN_KINDS),
+    schema: () => BOOLEAN,
+    options: SMALL_SWITCH,
+    read: (t) => keyword(t, 'const') === true,
+    write: writeMustBeChecked,
   },
   keywordField('minLength', 'Validation', 'Minimum length', TEXT_KINDS, 'minLength', WHOLE_NUMBER),
   keywordField('maxLength', 'Validation', 'Maximum length', TEXT_KINDS, 'maxLength', WHOLE_NUMBER),
@@ -133,7 +165,7 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     label: 'Whole numbers only',
     applies: isKind('number'),
     schema: () => BOOLEAN,
-    options: { component: 'switch' },
+    options: SMALL_SWITCH,
     read: (t) => keyword(t, 'type') === 'integer',
     write: (content, t, value) =>
       updateProperty(content, keyOf(t), { type: value === true ? 'integer' : 'number' }),

@@ -188,3 +188,30 @@ describe('boolean controls (doc 237)', () => {
     });
   });
 });
+
+describe('a must-be-checked boolean (doc 253 rule 5)', () => {
+  it('still renders as a plain Checkbox', async () => {
+    const mustCheck = { type: 'object', properties: { agree: { type: 'boolean', const: true } } };
+    const ranks = defaults.renderers
+      .map((r) =>
+        r.tester(
+          { type: 'Control', scope: '#/properties/agree' } as never,
+          mustCheck as never,
+          { rootSchema: mustCheck, config: {} } as never,
+        ),
+      )
+      .toSorted((a, b) => b - a);
+    expect(ranks[0]).toBe(1);
+    const { container } = render(
+      <JsonForms
+        schema={mustCheck}
+        uischema={{ type: 'Control', scope: '#/properties/agree', label: 'Agree' } as never}
+        data={{ agree: true }}
+        renderers={defaults.renderers}
+        cells={defaults.cells}
+      />,
+    );
+    expect(container.querySelector('[data-slot="boolean-field"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="checkbox"]')).not.toBeNull();
+  });
+});

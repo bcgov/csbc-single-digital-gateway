@@ -3,6 +3,7 @@ import { Icon } from '@mdi/react';
 import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
 import { useState } from 'react';
 import type { DocumentContent } from './document-types';
+import { FoldsProvider } from './foldable-section';
 import { InspectorSettings } from './inspector/inspector-settings';
 import type { TargetInputs } from './inspector/inspector-target';
 import { StudioPanel } from './studio-panel';
@@ -92,15 +93,17 @@ export function DocumentInspector({
       ) : (
         <div
           data-slot="document-studio-inspector-settings"
-          className="min-h-0 flex-1 overflow-auto p-3"
+          className="min-h-0 flex-1 overflow-auto p-2"
         >
-          <InspectorSettings
-            content={content}
-            pageSelectedId={pageSelectedId}
-            focusedId={focusedId}
-            formId={formId}
-            onContentChange={onContentChange}
-          />
+          <FoldsProvider>
+            <InspectorSettings
+              content={content}
+              pageSelectedId={pageSelectedId}
+              focusedId={focusedId}
+              formId={formId}
+              onContentChange={onContentChange}
+            />
+          </FoldsProvider>
         </div>
       )}
     </StudioPanel>

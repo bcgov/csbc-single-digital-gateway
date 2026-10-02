@@ -32,7 +32,7 @@ export function InspectorSettings({
   );
   if (target === null) return <Message>Nothing to inspect.</Message>;
   return (
-    <div data-slot="inspector-settings" className="flex flex-col gap-4">
+    <div data-slot="inspector-settings" className="flex flex-col gap-2">
       <TargetLine target={target} />
       {/* Keyed by the element: another selection remounts the form, typing never does (rule 16). */}
       <TargetForm
@@ -54,7 +54,7 @@ function TargetLine({ target }: { target: InspectorTarget }) {
     shared > 1 ? `shared by ${shared} fields` : undefined,
   ];
   return (
-    <p data-slot="inspector-target" className="truncate text-sm font-medium">
+    <p data-slot="inspector-target" className="truncate text-xs font-medium">
       {parts.filter((part) => part !== undefined).join(' · ')}
     </p>
   );
@@ -156,5 +156,5 @@ function errorMessages(target: InspectorTarget, errors: readonly ErrorObject[]):
 }
 
 function Message({ children }: { children: string }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
+  return <p className="text-xs text-muted-foreground">{children}</p>;
 }

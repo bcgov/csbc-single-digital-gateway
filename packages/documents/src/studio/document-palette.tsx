@@ -2,6 +2,7 @@ import { mdiPalette } from '@mdi/js';
 import { useState } from 'react';
 import { FADE_IN } from './canvas-zoom';
 import type { PaletteItem } from './palette-items';
+import { FoldsProvider } from './foldable-section';
 import { PaletteList } from './palette-list';
 import { StudioPanel } from './studio-panel';
 
@@ -36,7 +37,9 @@ export function DocumentPalette({
       className={FADE_IN}
     >
       <div data-slot="document-studio-palette-content" className="min-h-0 flex-1 overflow-auto p-3">
-        <PaletteList items={items} query={query} onQueryChange={setQuery} onAppend={onAppend} />
+        <FoldsProvider>
+          <PaletteList items={items} query={query} onQueryChange={setQuery} onAppend={onAppend} />
+        </FoldsProvider>
       </div>
     </StudioPanel>
   );

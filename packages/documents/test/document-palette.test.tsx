@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { GridStack } from 'gridstack';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { FoldsProvider } from '../src/studio/foldable-section';
 import { DEFAULT_PALETTE_ITEMS, type PaletteItem } from '../src/studio/palette-items';
 import { PaletteList } from '../src/studio/palette-list';
 
@@ -35,10 +36,10 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Content',
       'Fields',
     ]);
+    // Each group's heading is its fold button (doc 252 rule 10); the items follow it.
+    expect(within(groups[2]!).getAllByRole('button')[0]).toHaveAttribute('aria-expanded', 'true');
     expect(
-      within(groups[2]!)
-        .getAllByRole('button')
-        .map((b) => b.textContent),
+      [...groups[2]!.querySelectorAll('[data-palette-item]')].map((b) => b.textContent),
     ).toEqual([
       'Checkbox',
       'Switch',
@@ -184,5 +185,54 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     search().focus();
     fireEvent.keyDown(search(), { key: 'ArrowDown' });
     expect(search()).toHaveFocus();
+  });
+});
+
+function Folding() {
+  return (
+    <FoldsProvider>
+      <Harness />
+    </FoldsProvider>
+  );
+}
+
+const groupHeading = (name: string) =>
+  within(screen.getByRole('region', { name })).getAllByRole('button')[0]!;
+
+describe('foldable palette groups (doc 252 rule 10)', () => {
+  it('folds a group to its heading, keeping its items mounted for gridstack but out of reach', () => {
+    render(<Folding />);
+    const content = groupHeading('Content');
+    expect(content).toHaveClass('w-full', 'justify-between');
+    expect(content.lastElementChild?.tagName).toBe('svg');
+
+    fireEvent.click(content);
+    expect(content).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'Heading' })).toBeNull();
+    // Still mounted (gridstack made them draggable once), only hidden.
+    expect(
+      document.querySelector('[data-palette-item="heading"]')?.closest('[hidden]'),
+    ).not.toBeNull();
+
+    // ↓ from Vertical layout skips the folded Content group.
+    search().focus();
+    fireEvent.keyDown(search(), { key: 'ArrowDown' });
+    fireEvent.keyDown(itemNamed('Vertical layout'), { key: 'ArrowDown' });
+    expect(itemNamed('Checkbox')).toHaveFocus();
+
+    fireEvent.click(content);
+    expect(itemNamed('Heading')).toBeInTheDocument();
+  });
+
+  it('shows every matching group open while searching, then restores the folds', () => {
+    render(<Folding />);
+    fireEvent.click(groupHeading('Fields'));
+    fireEvent.change(search(), { target: { value: 'text' } });
+    expect(groupHeading('Fields')).toHaveAttribute('aria-expanded', 'true');
+    expect(groupHeading('Fields')).toBeDisabled();
+    expect(itemNamed('Text area')).toBeInTheDocument();
+
+    fireEvent.change(search(), { target: { value: '' } });
+    expect(groupHeading('Fields')).toHaveAttribute('aria-expanded', 'false');
   });
 });
