@@ -48,7 +48,7 @@ function descriptionFor({ kind, name }: PendingDelete): string {
   if (kind === 'element') return `"${name}" will be removed from the form.`;
   return kind === 'form'
     ? `"${name}" will be removed from the document.`
-    : `All branches deletes "${name}" and the steps on its branches. Condition only deletes just "${name}" and keeps those steps on the canvas, unconnected.`;
+    : `Do you want to delete all branches or only the condition itself?`;
 }
 
 /**

@@ -44,7 +44,7 @@ describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete condition?' });
     expect(dialog).toHaveTextContent(
-      'All branches deletes "Eligible?" and the steps on its branches. Condition only deletes just "Eligible?" and keeps those steps on the canvas, unconnected.',
+      'Do you want to delete all branches or only the condition itself?',
     );
     expect(
       within(dialog)
