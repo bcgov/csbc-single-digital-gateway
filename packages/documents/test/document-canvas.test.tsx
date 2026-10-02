@@ -148,7 +148,7 @@ describe('DocumentCanvas', () => {
     const user = userEvent.setup();
     render(<Harness initial={withCondition()} />);
 
-    await deleteNode(user, 'Eligible?', 'Entire subtree');
+    await deleteNode(user, 'Eligible?', 'All conditions');
 
     expect(links()).toEqual(['A>B']);
   });

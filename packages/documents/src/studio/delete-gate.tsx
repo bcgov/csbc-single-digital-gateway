@@ -53,7 +53,7 @@ function descriptionFor({ kind, name }: PendingDelete): string {
 
 /**
  * Confirms a node delete (doc 234 rules 8-9), as Form Studio's delete confirmation does. A Form asks Cancel / Delete;
- * a Condition stacks Entire subtree / Condition only / Cancel (doc 235 rule 12). "Don't ask me again" starts unticked
+ * a Condition stacks All conditions / Condition only / Cancel (doc 235 rule 12). "Don't ask me again" starts unticked
  * every time it opens and only counts when a delete is confirmed. Cancel, Escape or the backdrop remove nothing.
  */
 export function DeleteGate({ pending, onConfirm, onCancel }: DeleteGateProps) {
@@ -103,7 +103,7 @@ export function DeleteGate({ pending, onConfirm, onCancel }: DeleteGateProps) {
               className="w-full"
               onClick={() => onConfirm('subtree', dontAskAgain)}
             >
-              Entire subtree
+              All conditions
             </AlertDialogAction>
             <AlertDialogAction className="w-full" onClick={() => onConfirm('node', dontAskAgain)}>
               Condition only

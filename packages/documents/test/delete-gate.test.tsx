@@ -39,7 +39,7 @@ describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
-  it('asks a Condition delete whether its branch steps go too: Entire subtree, Condition only, Cancel, stacked', async () => {
+  it('asks a Condition delete whether its branch steps go too: All conditions, Condition only, Cancel, stacked', async () => {
     renderGate(CONDITION);
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete condition?' });
@@ -50,10 +50,10 @@ describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
       within(dialog)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Entire subtree', 'Condition only', 'Cancel']);
+    ).toEqual(['All conditions', 'Condition only', 'Cancel']);
     const footer = dialog.querySelector('[data-slot="alert-dialog-footer"]');
     expect(footer).toHaveClass('flex-col', 'sm:flex-col');
-    expect(within(dialog).getByRole('button', { name: 'Entire subtree' })).toHaveClass(
+    expect(within(dialog).getByRole('button', { name: 'All conditions' })).toHaveClass(
       'text-destructive',
       'w-full',
     );
@@ -66,7 +66,7 @@ describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
 
   it.each([
     ['Condition only', 'node'],
-    ['Entire subtree', 'subtree'],
+    ['All conditions', 'subtree'],
   ])('confirms a Condition delete from %s', async (button, choice) => {
     const { user, onConfirm } = renderGate(CONDITION);
 

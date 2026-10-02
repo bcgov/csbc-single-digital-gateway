@@ -269,14 +269,14 @@ describe('DocumentCanvas connections (doc 235)', () => {
       expect(links(current())).toEqual(['A>B']);
     });
 
-    it('removes the branch nodes from Entire subtree', async () => {
+    it('removes the branch nodes from All conditions', async () => {
       const user = userEvent.setup();
       render(<Harness initial={withCondition()} />);
 
       await user.click(await screen.findByRole('button', { name: 'Delete Eligible?' }));
       await user.click(
         within(await screen.findByRole('alertdialog')).getByRole('button', {
-          name: 'Entire subtree',
+          name: 'All conditions',
         }),
       );
 
