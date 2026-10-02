@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from 'react';
 import type { AddTarget } from './canvas-graph';
-import type { ConnectSource } from './connect-edits';
+import { canConnectFrom, type ConnectSource } from './connect-edits';
 import type { PendingDelete } from './delete-gate';
 import type { Uischema } from './document-types';
 import { updateElement, type ElementPatch } from './element-edits';
@@ -24,6 +24,8 @@ export interface CanvasActions {
   startConnect: (source: ConnectSource) => void;
   /** Whether a + may offer Connection: only on a Funnel's flow (doc 235 rule 2). */
   canConnect: boolean;
+  /** Whether that +'s Connection has any node to pick; listed but disabled when not (doc 235 rule 2b). */
+  connectable: (target: AddTarget) => boolean;
   /** Applies a studio renderer's edit to the element with that id (doc 236 rule 36). */
   edit: (id: string, patch: ElementPatch) => void;
   /** Places a palette item in a layout on the page (doc 238 rule 14). */
@@ -60,7 +62,7 @@ export function useEditActions(
     insert,
     canRemoveElement,
     selectElement,
-  }: Omit<CanvasActions, 'add' | 'edit' | 'move'>,
+  }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable'>,
 ): CanvasActions {
   return useMemo(
     () => ({
@@ -74,6 +76,7 @@ export function useEditActions(
       inspect,
       startConnect,
       canConnect,
+      connectable: (target) => canConnectFrom(uischema, target),
       edit: (id, patch) => {
         const next = updateElement(uischema, id, patch);
         // A patch that changes nothing is not an edit.

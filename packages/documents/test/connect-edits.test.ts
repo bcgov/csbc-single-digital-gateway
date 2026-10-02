@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { connect, connectTargets, freeOutputs } from '../src/studio/connect-edits';
+import { canConnectFrom, connect, connectTargets, freeOutputs } from '../src/studio/connect-edits';
 import { condition, edge, form, funnel, links, row } from './funnel-fixtures';
 
 /** a → b → c, and a floating f; c1 headless with rows r1, r2 (r1 set to x) and a free default. */
@@ -81,5 +81,31 @@ describe('connect (doc 235 rule 9)', () => {
     const start = flow();
 
     expect(connect(start, output, target)).toBe(start);
+  });
+});
+
+describe('canConnectFrom (doc 235 rule 2b)', () => {
+  it("is true when the +'s connection would have a pickable node", () => {
+    expect(canConnectFrom(flow(), { kind: 'trailing', output: { source: 'c' } })).toBe(true);
+    expect(canConnectFrom(flow(), { kind: 'leading', nodeId: 'c1' })).toBe(true);
+  });
+
+  it('is false when every other node is upstream of the output — any link would close a loop', () => {
+    const pair = funnel([form('a'), form('b')], [edge('e1', 'a', 'b')]);
+    expect(canConnectFrom(pair, { kind: 'trailing', output: { source: 'b' } })).toBe(false);
+  });
+
+  it('is false into a node no free output can reach without a loop', () => {
+    // c1 is headless; the only node with a free output is x, which c1 itself reaches.
+    const onlyDownstream = funnel(
+      [form('x')],
+      [edge('e1', 'c1', 'x', 'r1')],
+      [condition('c1', [row('r1')], 'Eligible?')],
+    );
+    expect(canConnectFrom(onlyDownstream, { kind: 'leading', nodeId: 'c1' })).toBe(false);
+  });
+
+  it('is false for a + that never connects (mid-edge)', () => {
+    expect(canConnectFrom(flow(), { kind: 'between', edgeId: 'e1' })).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import type { AddTarget } from './canvas-graph';
 import type { Uischema } from './document-types';
 import { idOf } from './element-ids';
 import {
@@ -56,6 +57,20 @@ export function connectTargets(
       .map((id) => [id, freeOutputs(uischema, id)] as const)
       .filter(([, outputs]) => outputs.length > 0),
   );
+}
+
+/** The connection a + would start (doc 235 rule 5): a trailing + connects its output, a leading or orphan + connects
+ * INTO its node; a mid-edge + never connects. */
+export function connectSourceOf(target: AddTarget): ConnectSource | null {
+  if (target.kind === 'trailing') return { kind: 'output', output: target.output };
+  if (target.kind === 'between') return null;
+  return { kind: 'into', nodeId: target.nodeId };
+}
+
+/** Whether that connection would have any node to pick (doc 235 rule 2b) — the same `connectTargets` connect mode uses. */
+export function canConnectFrom(uischema: Uischema, target: AddTarget): boolean {
+  const source = connectSourceOf(target);
+  return source !== null && connectTargets(uischema, source).size > 0;
 }
 
 /**

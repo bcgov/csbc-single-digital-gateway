@@ -337,3 +337,29 @@ describe('DocumentCanvas connections (doc 235)', () => {
     });
   });
 });
+
+describe('Connection with nothing to connect to (doc 235 rule 2b)', () => {
+  it('is listed disabled, and choosing it never enters connect mode', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <Harness initial={funnel([form('a'), form('b')], [edge('e1', 'a', 'b')])} />,
+    );
+    await user.click(await screen.findByRole('button', { name: 'Add after b' }));
+    const connection = screen.getByRole('menuitem', { name: 'Connection' });
+    expect(connection).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('menuitem', { name: 'Form' })).not.toHaveAttribute('aria-disabled');
+
+    await user.click(connection);
+    expect(connecting(container)).toBe(false);
+    expect(prompt()).toBeNull();
+  });
+
+  it('stays enabled where a node can be picked', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={chain()} />);
+    await user.click(await screen.findByRole('button', { name: 'Add after b' }));
+    expect(screen.getByRole('menuitem', { name: 'Connection' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
+  });
+});

@@ -21,10 +21,15 @@ const OPTION_INFO: Readonly<Record<AddOption, { label: string; icon: string }>> 
 
 const HEADING = 'What do you want to add?';
 
+/** Why a disabled option does nothing (doc 235 rule 2b): only Connection is ever disabled. */
+const DISABLED_HINT = 'Nothing to connect to';
+
 interface AddPanelProps {
   /** The +'s accessible name, e.g. "Add after Details". */
   label: string;
   options: readonly AddOption[];
+  /** Options listed but not choosable (doc 235 rule 2b): marked `aria-disabled`, still reachable by the arrow keys. */
+  disabled?: readonly AddOption[];
   onChoose: (option: AddOption) => void;
   /** xyflow's position for the +, on the OUTER wrapper only. */
   style: CSSProperties;
@@ -41,6 +46,7 @@ interface AddPanelProps {
 export function AddPanel({
   label,
   options,
+  disabled = [],
   onChoose,
   style,
   tone = 'default',
@@ -106,29 +112,36 @@ export function AddPanel({
           <p id={headingId} className="px-2 pt-1 pb-1.5 text-xs text-muted-foreground">
             {HEADING}
           </p>
-          {options.map((option, i) => (
-            <button
-              key={option}
-              ref={(el) => {
-                items.current[i] = el;
-              }}
-              type="button"
-              role="menuitem"
-              tabIndex={-1}
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted"
-              onClick={() => {
-                close(false);
-                onChoose(option);
-              }}
-            >
-              <Icon
-                path={OPTION_INFO[option].icon}
-                size="16px"
-                className="shrink-0 text-muted-foreground"
-              />
-              {OPTION_INFO[option].label}
-            </button>
-          ))}
+          {options.map((option, i) => {
+            const off = disabled.includes(option);
+            return (
+              <button
+                key={option}
+                ref={(el) => {
+                  items.current[i] = el;
+                }}
+                type="button"
+                role="menuitem"
+                tabIndex={-1}
+                aria-disabled={off || undefined}
+                title={off ? DISABLED_HINT : undefined}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-transparent"
+                onClick={() => {
+                  // Disabled: keeps the panel open, so the author sees why nothing happened.
+                  if (off) return;
+                  close(false);
+                  onChoose(option);
+                }}
+              >
+                <Icon
+                  path={OPTION_INFO[option].icon}
+                  size="16px"
+                  className="shrink-0 text-muted-foreground"
+                />
+                {OPTION_INFO[option].label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

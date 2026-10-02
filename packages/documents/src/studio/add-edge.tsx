@@ -1,6 +1,7 @@
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
 import { AddPanel, type AddOption } from './add-panel';
 import { useCanvasActions } from './canvas-actions';
+import { connectSourceOf } from './connect-edits';
 import { FADE_IN, FADE_IN_AFTER, MOTION } from './canvas-zoom';
 import type { AddEdge as AddEdgeType, AddTarget } from './canvas-graph';
 
@@ -12,6 +13,9 @@ const OPTIONS: Readonly<Record<AddTarget['kind'], readonly AddOption[]>> = Objec
   leading: Object.freeze(['form', 'connection'] as const),
   orphan: Object.freeze(['connection'] as const),
 });
+
+const NO_CONNECTION: readonly AddOption[] = Object.freeze(['connection'] as const);
+const NONE: readonly AddOption[] = Object.freeze([]);
 
 const TONES = {
   floating: {
@@ -29,7 +33,7 @@ const TONES = {
  * with a + at its top that adds a Form before it or connects a node into it.
  */
 export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgeProps<AddEdgeType>) {
-  const { add, startConnect, canConnect } = useCanvasActions();
+  const { add, startConnect, canConnect, connectable } = useCanvasActions();
   const [path, midX, midY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -40,10 +44,13 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
   if (data === undefined) return <BaseEdge id={id} path={path} />;
   const target = data.add;
   const options = OPTIONS[target.kind].filter((o) => canConnect || o !== 'connection');
+  // Listed but disabled when connect mode would have nothing to pick (doc 235 rule 2b).
+  const disabled: readonly AddOption[] =
+    options.includes('connection') && !connectable(target) ? NO_CONNECTION : NONE;
   const choose = (option: AddOption) => {
+    const source = connectSourceOf(target);
     if (option !== 'connection') add(target, option);
-    else if (target.kind === 'trailing') startConnect({ kind: 'output', output: target.output });
-    else if (target.kind !== 'between') startConnect({ kind: 'into', nodeId: target.nodeId });
+    else if (source !== null) startConnect(source);
   };
   if (target.kind === 'leading' || target.kind === 'orphan') {
     const tone = target.kind === 'leading' ? 'invalid' : 'floating';
@@ -54,6 +61,7 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
           <AddPanel
             label={`Add before ${data.sourceName}`}
             options={options}
+            disabled={disabled}
             onChoose={choose}
             tone={tone === 'invalid' ? 'danger' : 'warning'}
             style={{ transform: `translate(-50%, -50%) translate(${sourceX}px, ${sourceY}px)` }}
@@ -112,6 +120,7 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
               : `${data.sourceName} (${data.branchLabel})`
           }`}
           options={options}
+          disabled={disabled}
           onChoose={choose}
           className={fade}
           style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}

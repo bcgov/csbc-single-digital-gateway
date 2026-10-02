@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { AddPanel, menuShift, type AddOption } from '../src/studio/add-panel';
 
-function renderPanel(options: readonly AddOption[]) {
+function renderPanel(options: readonly AddOption[], disabled: readonly AddOption[] = []) {
   const onChoose = vi.fn();
   render(
     <>
@@ -12,6 +12,7 @@ function renderPanel(options: readonly AddOption[]) {
         label="Add after Details"
         options={options}
         onChoose={onChoose}
+        disabled={disabled}
         style={{ transform: 'translate(10px, 20px)' }}
       />
       <button type="button">Elsewhere</button>
@@ -119,6 +120,35 @@ describe('AddPanel (doc 235 rules 1-4)', () => {
 
     expect(menu()).not.toBeInTheDocument();
     expect(onChoose).not.toHaveBeenCalled();
+  });
+});
+
+describe('AddPanel disabled options (doc 235 rule 2b)', () => {
+  it('lists a disabled option, marked and hinted, that does nothing and keeps the panel open', async () => {
+    const { user, onChoose, trigger } = renderPanel(
+      ['connection', 'condition', 'form'],
+      ['connection'],
+    );
+    await user.click(trigger);
+    const connection = screen.getByRole('menuitem', { name: 'Connection' });
+    expect(connection).toHaveAttribute('aria-disabled', 'true');
+    expect(connection).toHaveAttribute('title', 'Nothing to connect to');
+    expect(screen.getByRole('menuitem', { name: 'Form' })).not.toHaveAttribute('aria-disabled');
+
+    await user.click(connection);
+    expect(onChoose).not.toHaveBeenCalled();
+    expect(menu()).toBeInTheDocument();
+    connection.focus();
+    await user.keyboard('{Enter}');
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it('keeps a disabled option reachable by the arrow keys', async () => {
+    const { user, trigger } = renderPanel(['connection', 'condition', 'form'], ['connection']);
+    await user.click(trigger);
+    expect(screen.getByRole('menuitem', { name: 'Connection' })).toHaveFocus();
+    await user.keyboard('{ArrowDown}{ArrowUp}');
+    expect(screen.getByRole('menuitem', { name: 'Connection' })).toHaveFocus();
   });
 });
 
