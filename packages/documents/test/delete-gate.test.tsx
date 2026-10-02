@@ -39,21 +39,21 @@ describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
-  it('asks a Condition delete whether its branch steps go too: All conditions, Condition only, Cancel, stacked', async () => {
+  it('asks a Condition delete whether its branch steps go too: All branches, Condition only, Cancel, stacked', async () => {
     renderGate(CONDITION);
 
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete condition?' });
     expect(dialog).toHaveTextContent(
-      'Choose whether the steps only its branches lead to are deleted with "Eligible?" or stay on the canvas, unconnected.',
+      'All branches deletes "Eligible?" and the steps on its branches. Condition only deletes just "Eligible?" and keeps those steps on the canvas, unconnected.',
     );
     expect(
       within(dialog)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['All conditions', 'Condition only', 'Cancel']);
+    ).toEqual(['All branches', 'Condition only', 'Cancel']);
     const footer = dialog.querySelector('[data-slot="alert-dialog-footer"]');
     expect(footer).toHaveClass('flex-col', 'sm:flex-col');
-    expect(within(dialog).getByRole('button', { name: 'All conditions' })).toHaveClass(
+    expect(within(dialog).getByRole('button', { name: 'All branches' })).toHaveClass(
       'text-destructive',
       'w-full',
     );
@@ -66,7 +66,7 @@ describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
 
   it.each([
     ['Condition only', 'node'],
-    ['All conditions', 'subtree'],
+    ['All branches', 'subtree'],
   ])('confirms a Condition delete from %s', async (button, choice) => {
     const { user, onConfirm } = renderGate(CONDITION);
 

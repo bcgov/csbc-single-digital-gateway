@@ -48,12 +48,12 @@ function descriptionFor({ kind, name }: PendingDelete): string {
   if (kind === 'element') return `"${name}" will be removed from the form.`;
   return kind === 'form'
     ? `"${name}" will be removed from the document.`
-    : `Choose whether the steps only its branches lead to are deleted with "${name}" or stay on the canvas, unconnected.`;
+    : `All branches deletes "${name}" and the steps on its branches. Condition only deletes just "${name}" and keeps those steps on the canvas, unconnected.`;
 }
 
 /**
  * Confirms a node delete (doc 234 rules 8-9), as Form Studio's delete confirmation does. A Form asks Cancel / Delete;
- * a Condition stacks All conditions / Condition only / Cancel (doc 235 rule 12). "Don't ask me again" starts unticked
+ * a Condition stacks All branches / Condition only / Cancel (doc 235 rule 12). "Don't ask me again" starts unticked
  * every time it opens and only counts when a delete is confirmed. Cancel, Escape or the backdrop remove nothing.
  */
 export function DeleteGate({ pending, onConfirm, onCancel }: DeleteGateProps) {
@@ -103,7 +103,7 @@ export function DeleteGate({ pending, onConfirm, onCancel }: DeleteGateProps) {
               className="w-full"
               onClick={() => onConfirm('subtree', dontAskAgain)}
             >
-              All conditions
+              All branches
             </AlertDialogAction>
             <AlertDialogAction className="w-full" onClick={() => onConfirm('node', dontAskAgain)}>
               Condition only
