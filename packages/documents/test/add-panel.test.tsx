@@ -2,7 +2,7 @@ import { mdiArrowRight, mdiFileDocumentOutline, mdiSourceBranch } from '@mdi/js'
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { AddPanel, type AddOption } from '../src/studio/add-panel';
+import { AddPanel, menuShift, type AddOption } from '../src/studio/add-panel';
 
 function renderPanel(options: readonly AddOption[]) {
   const onChoose = vi.fn();
@@ -119,5 +119,26 @@ describe('AddPanel (doc 235 rules 1-4)', () => {
 
     expect(menu()).not.toBeInTheDocument();
     expect(onChoose).not.toHaveBeenCalled();
+  });
+});
+
+describe('menuShift (doc 241 rule 4b)', () => {
+  // A + centred at screen y 900 in a canvas spanning 100..1000, a 160px menu at zoom 0.5 (80px on screen).
+  it('leaves a menu that fits where it is, centred on its +', () => {
+    expect(menuShift({ centre: 500, height: 160, zoom: 0.5 }, { top: 100, bottom: 1000 })).toBe(0);
+  });
+
+  it('slides a menu that would cross the canvas bottom up, in flow units, keeping a margin', () => {
+    // Bottom on screen 900 + 40 = 940; it may reach 1000 - 8 = 992, so it fits.
+    expect(menuShift({ centre: 900, height: 160, zoom: 0.5 }, { top: 100, bottom: 1000 })).toBe(0);
+    // Bottom on screen 980 + 40 = 1020: 28px too low → 56 flow units up.
+    expect(menuShift({ centre: 980, height: 160, zoom: 0.5 }, { top: 100, bottom: 1000 })).toBe(
+      -56,
+    );
+  });
+
+  it('slides a menu that would cross the canvas top down', () => {
+    // Top on screen 120 - 40 = 80: 28px too high (top + 8 = 108) → 56 flow units down.
+    expect(menuShift({ centre: 120, height: 160, zoom: 0.5 }, { top: 100, bottom: 1000 })).toBe(56);
   });
 });

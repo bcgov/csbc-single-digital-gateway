@@ -33,10 +33,9 @@ export function NodeFrame({
   /** The studio's selection (doc 232): an offset ring OUTSIDE the border, so it never merges with a state mark. */
   selected?: boolean;
   /**
-   * Drawn as a focused Form's page (doc 233): `growing` while the card grows to the page's first screen (a fixed
-   * 994px, so the camera fits a known size), then `open` — as tall as its content, never shorter. A card that can
-   * become a page has a fixed height (Form cards are `h-14`); `interpolate-size` lets height animate to and from
-   * `auto` (Chromium; elsewhere those steps jump).
+   * Drawn as a focused Form's page (doc 233): `growing` while the card grows into it, then `open`. Both are the same
+   * fixed size (doc 241 rule 1) — the content scrolls inside the page — so a card, with its fixed `h-14`, always
+   * transitions between two lengths.
    */
   page?: 'growing' | 'open' | undefined;
   /** Connect mode (doc 235 rule 7): may this node be picked, or is it dimmed? */
@@ -55,7 +54,7 @@ export function NodeFrame({
       data-floating={marks.floating || undefined}
       data-selected={selected || undefined}
       data-connect={connect}
-      className={`group/node relative ${connect === undefined ? '' : CONNECT_CLASS[connect]} ${page === undefined ? 'w-60' : PAGE_SIZE[page]} transition-[width,height] [interpolate-size:allow-keywords] ${MOTION} rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
+      className={`group/node relative ${connect === undefined ? '' : CONNECT_CLASS[connect]} ${page === undefined ? 'w-60' : PAGE_SIZE[page]} transition-[width,height] ${MOTION} rounded-md border-2 bg-background shadow-xs ${borderOf(marks)} ${selected ? SELECTED_CLASS : ''} ${className}`}
     >
       {split && (
         <>
@@ -102,11 +101,10 @@ function borderOf({ floating, invalid, start, end }: NodeMarks): string {
   return end ? 'border-foreground' : 'border-border';
 }
 
-/** A page's size: `PAGE_WIDTH` × `PAGE_HEIGHT` (focus-view.ts), then its content's height; literal for Tailwind. */
+/** A page's size: `PAGE_WIDTH` × `PAGE_HEIGHT` (focus-view.ts), growing and open alike; literal for Tailwind. */
 const PAGE_SIZE = {
   growing: 'w-[768px] h-[994px]',
-  // A column, so the page body fills the whole page — the Form's drop zone reaches its foot (doc 238 rule 13b).
-  open: 'w-[768px] h-auto min-h-[994px] flex flex-col',
+  open: 'w-[768px] h-[994px]',
 } as const;
 
 /** Connect mode: a pickable node invites the click; a dimmed one refuses it (doc 235 rule 7). */

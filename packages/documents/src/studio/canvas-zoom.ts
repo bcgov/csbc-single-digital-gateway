@@ -22,6 +22,12 @@ export const FADE_IN =
 export const FADE_OUT =
   'animate-[document-studio-fade-out_300ms_cubic-bezier(0.65,0,0.35,1)_both] motion-reduce:animate-none';
 /**
+ * Back: the page body fades out LATE (doc 241 rule 7) — opaque while the node shrinks, gone over the last 120ms of the
+ * shared 300ms (delay + duration = ZOOM_MS) — so the page gives way to its card only once it is card-sized.
+ */
+export const FADE_OUT_LATE =
+  'animate-[document-studio-fade-out_120ms_ease-in_180ms_both] motion-reduce:animate-none';
+/**
  * Back: a quick fade-in that waits out the shrink (its delay is the shared duration — keep it in step with ZOOM_MS), for what must not be seen until the
  * page is a card again. `both` holds it invisible through the delay.
  */
@@ -79,20 +85,16 @@ export const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 2;
 
 /**
- * The viewport that fits `bounds` into a `width` × `height` canvas — xyflow's own fit, so a resize lands exactly where
- * a fresh zoom-in would (doc 233 rule 15) — except that whatever flow y sat at the top of `current` stays at the top,
- * so a resize never undoes the author's scroll. A narrower canvas shrinks the page; a wider one grows it.
+ * The viewport that fits `bounds` into a `width` × `height` canvas, centred — xyflow's own fit, so a resize lands
+ * exactly where a fresh zoom-in would (doc 241 rule 5). A narrower canvas shrinks the page; a wider one grows it.
  */
-export function refitViewport(
-  current: Viewport,
+export function fitViewport(
   bounds: Rect,
   width: number,
   height: number,
   padding: number,
 ): Viewport {
-  const fitted = getViewportForBounds(bounds, width, height, MIN_ZOOM, MAX_ZOOM, padding);
-  const topY = -current.y / current.zoom;
-  return { x: fitted.x, y: -topY * fitted.zoom, zoom: fitted.zoom };
+  return getViewportForBounds(bounds, width, height, MIN_ZOOM, MAX_ZOOM, padding);
 }
 
 /** Puts the camera on `viewport` at once. */

@@ -1,6 +1,14 @@
 import { mdiArrowRight, mdiFileDocumentOutline, mdiPlus, mdiSourceBranch } from '@mdi/js';
 import { Icon } from '@mdi/react';
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react';
 
 /** What a + can add (doc 235 rule 2). */
 export type AddOption = 'connection' | 'condition' | 'form';
@@ -42,8 +50,10 @@ export function AddPanel({
   const wrapper = useRef<HTMLDivElement | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
+  const menu = useRef<HTMLDivElement | null>(null);
   const headingId = useId();
   useCloseOnOutsidePress(open, wrapper, () => setOpen(false));
+  const shift = useMenuShift(open, trigger, menu);
   useEffect(() => {
     if (open) items.current[0]?.focus();
   }, [open]);
@@ -86,9 +96,11 @@ export function AddPanel({
       </button>
       {open && (
         <div
+          ref={menu}
           role="menu"
           aria-labelledby={headingId}
-          className="absolute top-1/2 left-1/2 w-48 -translate-x-1/2 -translate-y-1/2 animate-in rounded-md border border-border bg-background p-1 shadow-md duration-150 fade-in-0 zoom-in-75 motion-reduce:animate-none"
+          style={{ top: `calc(50% + ${shift}px)` }}
+          className="absolute left-1/2 w-48 -translate-x-1/2 -translate-y-1/2 animate-in rounded-md border border-border bg-background p-1 shadow-md duration-150 fade-in-0 zoom-in-75 motion-reduce:animate-none"
           onKeyDown={onKeyDown}
         >
           <p id={headingId} className="px-2 pt-1 pb-1.5 text-xs text-muted-foreground">
@@ -121,6 +133,45 @@ export function AddPanel({
       )}
     </div>
   );
+}
+
+/** Screen-space room a menu keeps from the canvas's top and bottom edges. */
+const EDGE_MARGIN = 8;
+
+/**
+ * How far (in flow units) to slide a + menu off its centre so it stays inside the canvas (doc 241 rule 4b): xyflow
+ * clips the canvas, so a menu centred on a + near the bottom — a root page's trailing + — was cut off under the
+ * studio footer. `centre` is the +'s screen y, `height` the menu's unscaled height, `zoom` the canvas zoom.
+ */
+export function menuShift(
+  menu: { centre: number; height: number; zoom: number },
+  canvas: { top: number; bottom: number },
+): number {
+  const half = (menu.height / 2) * menu.zoom;
+  const below = menu.centre + half - (canvas.bottom - EDGE_MARGIN);
+  if (below > 0) return -below / menu.zoom;
+  const above = canvas.top + EDGE_MARGIN - (menu.centre - half);
+  return above > 0 ? above / menu.zoom : 0;
+}
+
+/** The open menu's `menuShift`, measured from the + (never animated, unlike the menu) before the menu paints. */
+function useMenuShift(
+  open: boolean,
+  trigger: { readonly current: HTMLElement | null },
+  menu: { readonly current: HTMLElement | null },
+): number {
+  const [shift, setShift] = useState(0);
+  useLayoutEffect(() => {
+    const button = trigger.current;
+    const canvas = button?.closest('[data-slot="document-studio-canvas"]');
+    if (!open || button == null || canvas == null || menu.current === null) return setShift(0);
+    const plus = button.getBoundingClientRect();
+    const zoom = button.offsetHeight > 0 ? plus.height / button.offsetHeight : 1;
+    const bounds = canvas.getBoundingClientRect();
+    const centre = plus.top + plus.height / 2;
+    setShift(menuShift({ centre, height: menu.current.offsetHeight, zoom }, bounds));
+  }, [open, trigger, menu]);
+  return shift;
 }
 
 const TONE = {

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest';
 import { createDocumentStore, DocumentStudio, STUB_DOCUMENTS } from '../src/studio';
 import { DEFAULT_PALETTE_ITEMS, type PaletteResolver } from '../src/studio/palette-items';
+import { dropFrom, type Grid } from './grid-move';
 import { useXyflowJsdom } from './xyflow-jsdom';
 
 useXyflowJsdom();
@@ -83,5 +84,80 @@ describe('DocumentStudio palette (doc 238)', () => {
       const last = items.at(-1)!;
       expect(last.querySelector('[data-slot="heading-element"]')).toHaveTextContent('Heading');
     });
+  });
+});
+
+describe('DocumentStudio element delete (doc 242)', () => {
+  it('deletes a Control through the gate, leaving the rest of the page', async () => {
+    const { page } = await openEligibility();
+    // Only an OPEN page is editable, so its elements offer actions once it has settled.
+    const actions = await waitFor(() => {
+      const row = page.querySelector<HTMLElement>(
+        '[data-element-id="stubCns1"] > [data-slot="studio-element-actions"]',
+      );
+      expect(row).not.toBeNull();
+      return row!;
+    });
+    const button = within(actions).getByRole('button', { name: /^Delete / });
+
+    fireEvent.click(button);
+    const dialog = await screen.findByRole('alertdialog', { name: 'Delete element?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() =>
+      expect(page.querySelector('[data-element-id="stubCns1"]')).not.toBeInTheDocument(),
+    );
+    // Only the deleted element goes; the schema clean-up itself is pinned in element-remove.test.ts.
+    expect(page.querySelector('[data-element-id="stubAge1"]')).toBeInTheDocument();
+  });
+
+  it('keeps the element when the gate is cancelled', async () => {
+    const { page } = await openEligibility();
+    fireEvent.click(
+      await within(page).findByRole('button', { name: 'Delete Check you can apply' }),
+    );
+    const dialog = await screen.findByRole('alertdialog', { name: 'Delete element?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(page.querySelector('[data-element-id="stubHdg1"]')).toBeInTheDocument();
+  });
+});
+
+describe('DocumentStudio element move (doc 243)', () => {
+  it('moves a page element into a nested layout and back out', async () => {
+    const { page, palette } = await openEligibility();
+    fireEvent.click(within(palette).getByRole('button', { name: /Vertical layout/ }));
+    const innerGrid = () =>
+      page.querySelector<Grid>(
+        '[data-element-type="VerticalLayout"] [data-slot="studio-vertical-layout"]',
+      );
+    await waitFor(() => expect(innerGrid()).not.toBeNull());
+    // Only an OPEN page moves: wait until its grids accept another grid's items.
+    const rootGrid = page.querySelector<Grid>('[data-slot="studio-vertical-layout"]')!;
+    const consent = () =>
+      page
+        .querySelector<HTMLElement>('[data-element-id="stubCns1"]')!
+        .closest<HTMLElement>('.grid-stack-item')!;
+    await waitFor(() => {
+      const accepts = innerGrid()!.gridstack.opts.acceptWidgets;
+      expect(typeof accepts === 'function' && accepts(consent())).toBe(true);
+    });
+
+    dropFrom(rootGrid, innerGrid()!, consent() as never, 0);
+    await waitFor(() =>
+      expect(innerGrid()!.querySelector('[data-element-id="stubCns1"]')).toBeInTheDocument(),
+    );
+    expect(page.querySelector('[data-element-id="stubCns1"]')).toHaveAttribute('data-selected');
+
+    const root = page.querySelector<Grid>('[data-slot="studio-vertical-layout"]')!;
+    dropFrom(innerGrid()!, root, consent() as never, 0);
+    await waitFor(() =>
+      expect(innerGrid()!.querySelector('[data-element-id="stubCns1"]')).not.toBeInTheDocument(),
+    );
+    // Back at the top of the page — the root grid is a NEW grid after the move (doc 236 rule 30).
+    const rootNow = page.querySelector<Grid>('[data-slot="studio-vertical-layout"]')!;
+    expect(rootNow).not.toBe(root);
+    expect(rootNow.querySelector(':scope > .grid-stack-item')).toBe(consent());
   });
 });

@@ -11,6 +11,7 @@ function renderGate(pending: PendingDelete | null) {
 }
 
 const FORM: PendingDelete = { id: 'A', kind: 'form', name: 'Details' };
+const ELEMENT: PendingDelete = { id: 'e1', kind: 'element', name: 'Age' };
 const CONDITION: PendingDelete = { id: 'c1', kind: 'condition', name: 'Eligible?' };
 
 describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
@@ -18,6 +19,15 @@ describe('DeleteGate (doc 234 rules 8-9, doc 235 rules 11-13)', () => {
     renderGate(null);
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('asks before deleting a page element, naming it (doc 242 rule 4)', async () => {
+    const { user, onConfirm } = renderGate(ELEMENT);
+
+    const dialog = await screen.findByRole('alertdialog', { name: 'Delete element?' });
+    expect(dialog).toHaveTextContent('"Age" will be removed from the form.');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(onConfirm).toHaveBeenCalledWith('node', false);
   });
 
   it('asks before deleting a Form, naming it', async () => {

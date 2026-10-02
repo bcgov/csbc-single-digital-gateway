@@ -51,3 +51,25 @@
   margin: calc(-1 * var(--gs-item-margin-top)) calc(-1 * var(--gs-item-margin-right))
     calc(-1 * var(--gs-item-margin-bottom)) calc(-1 * var(--gs-item-margin-left));
 }
+
+/*
+ * A dragged studio item (doc 243 rule 12b). The grab offset clamp puts the item's TOP on the cursor so gridstack's maths
+ * follows the cursor; its content is translated back up by the grab distance, so the field stays where it was grabbed.
+ * gridstack measures the item's own box, which a child's translate never moves.
+ */
+.grid-stack[data-slot='studio-vertical-layout']
+  > .grid-stack-item.ui-draggable-dragging
+  > .grid-stack-item-content {
+  translate: 0 var(--gs-grab-offset, 0px);
+}
+
+/*
+ * Nothing inside a dragged item takes the pointer (doc 243 bug B1). gridstack gives the item `pointer-events: none`, but
+ * studio wrappers opt back in with `pointer-events-auto`, so the pointer landed on the item being dragged and the grid
+ * beneath never saw `mouseenter` — only a field's padding (no opt-in) let a drag through. Unlayered and important, so it
+ * beats the layered utility.
+ */
+.grid-stack-item.ui-draggable-dragging,
+.grid-stack-item.ui-draggable-dragging * {
+  pointer-events: none !important;
+}

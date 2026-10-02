@@ -28,7 +28,13 @@ export function insertItem(
   };
 }
 
-function spliced(node: Uischema, layoutId: string, index: number, element: Uischema): Uischema {
+/** `node` with `element` spliced into the `elements` of the element whose id is `layoutId` (any depth), clamped. */
+export function spliced(
+  node: Uischema,
+  layoutId: string,
+  index: number,
+  element: Uischema,
+): Uischema {
   const elements = node['elements'];
   if (idOf(node) === layoutId && Array.isArray(elements)) {
     const at = Math.min(Math.max(index, 0), elements.length);

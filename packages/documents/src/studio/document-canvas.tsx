@@ -1,18 +1,12 @@
 import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
-import {
-  Background,
-  PanOnScrollMode,
-  ReactFlow,
-  useNodesState,
-  type Viewport,
-} from '@xyflow/react';
+import { Background, ReactFlow, useNodesState, type Viewport } from '@xyflow/react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { AddEdge } from './add-edge';
 import { CanvasActionsContext, useEditActions } from './canvas-actions';
 import { fitNow, MIN_ZOOM, type Zoomable } from './canvas-zoom';
-import { focusEdges, focusNodes, focusRect, scrollExtent, type FocusFrame } from './focus-view';
+import { focusEdges, focusNodes, focusRect, type FocusFrame } from './focus-view';
 import {
   focusedCard,
   moving,
@@ -32,7 +26,12 @@ import { ConditionDialog } from './condition-dialog';
 import { updateCondition } from './condition-edits';
 import { ConditionNode } from './condition-node';
 import { ConnectPrompt } from './connect-overlay';
-import { useDeleteGate, type DeleteChoice, type DeleteChoices } from './delete-gate';
+import {
+  useDeleteGate,
+  type DeleteChoice,
+  type DeleteChoices,
+  type PendingDelete,
+} from './delete-gate';
 import type { Uischema } from './document-types';
 import { EndNode, FormNode, LeadNode } from './form-node';
 import { conditionsOf } from './funnel-model';
@@ -69,9 +68,11 @@ export interface DocumentCanvasProps {
   /** Deletes that no longer ask, by kind (doc 235 rule 13); default: every delete asks. */
   deleteChoices?: DeleteChoices | undefined;
   /** A delete was confirmed with "Don't ask me again" ticked: remember that choice for the kind. */
-  onRememberDelete?: ((kind: 'form' | 'condition', choice: DeleteChoice) => void) | undefined;
+  onRememberDelete?: ((kind: PendingDelete['kind'], choice: DeleteChoice) => void) | undefined;
   /** Places a palette item in a layout on a focused page (doc 238 rule 14); absent = nothing can be placed. */
   onInsert?: ((layoutId: string, index: number, itemId: string) => void) | undefined;
+  /** Deletes an element from a focused page, confirmed by the delete gate (doc 242); absent = no element deletes. */
+  onRemoveElement?: ((elementId: string) => void) | undefined;
 }
 
 /**
@@ -92,6 +93,7 @@ export function DocumentCanvas({
   deleteChoices = ASK_EVERY_TIME,
   onRememberDelete,
   onInsert,
+  onRemoveElement,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
   const graph = useMemo(() => canvasGraph(uischema, schema), [uischema, schema]);
@@ -103,7 +105,6 @@ export function DocumentCanvas({
   );
   const before = useRef<Viewport | null>(null);
   const [fitsFlowOnMount] = useState(focusedId === null);
-  const extent = useScrollExtent(graph, nodes, frame);
   const canvas = useRef<HTMLDivElement | null>(null);
   const settledCard = frame.settled ? focusedCard(graph, frame.id) : undefined;
   const fitBounds = useMemo(
@@ -126,9 +127,12 @@ export function DocumentCanvas({
     [focusedId, onFocus],
   );
   const removeNow = useCallback(
-    (nodeId: string, choice: DeleteChoice) =>
-      onChange(removeNode(uischema, nodeId, { subtree: choice === 'subtree' })),
-    [uischema, onChange],
+    (target: PendingDelete, choice: DeleteChoice) => {
+      // A page element changes the schema too, so the studio applies it to the whole content (doc 242 rule 5).
+      if (target.kind === 'element') onRemoveElement?.(target.id);
+      else onChange(removeNode(uischema, target.id, { subtree: choice === 'subtree' }));
+    },
+    [uischema, onChange, onRemoveElement],
   );
   const { request: remove, gate } = useDeleteGate(deleteChoices, removeNow, onRememberDelete);
   const connectMode = useConnectMode(uischema, graph, onChange);
@@ -141,6 +145,7 @@ export function DocumentCanvas({
     // Connecting needs other nodes on the flow: never on a page, never from a lone Form (doc 235 rule 2).
     canConnect: focusedId === null && uischema['type'] === 'Funnel',
     insert: onInsert ?? NO_INSERT,
+    canRemoveElement: onRemoveElement !== undefined,
   });
 
   return (
@@ -191,10 +196,8 @@ export function DocumentCanvas({
                 fitNow(flow, focusRect(card, frame.keepsTrailing), PAGE_PADDING);
             }}
             zoomOnDoubleClick={false}
-            // Focused, the page reads like a document (doc 233 rule 12): no drag-pan or zoom; the wheel scrolls it
-            // up and down, bounded by the page once it has settled.
+            // Focused, the canvas holds still (doc 241 rule 3): the page scrolls inside itself.
             {...(focusedId !== null && FOCUSED_VIEWPORT)}
-            {...(extent !== undefined && { translateExtent: extent })}
             minZoom={MIN_ZOOM}
             deleteKeyCode={null}
             fitView={fitsFlowOnMount}
@@ -229,25 +232,13 @@ export function DocumentCanvas({
   );
 }
 
-/** The viewport while a page is focused: scroll vertically, at the wheel's own speed; never drag-pan or zoom. */
+/** The viewport while a page is focused: no drag-pan, wheel-pan or zoom — the wheel belongs to the page (doc 241). */
 const FOCUSED_VIEWPORT = {
   panOnDrag: false,
+  panOnScroll: false,
   zoomOnScroll: false,
   zoomOnPinch: false,
-  panOnScroll: true,
-  panOnScrollMode: PanOnScrollMode.Vertical,
-  panOnScrollSpeed: 1,
 } as const;
-
-/** How far a settled page scrolls; `undefined` (unbounded) for the flow, and while a page grows or shrinks. */
-function useScrollExtent(graph: CanvasGraph, nodes: CanvasNode[], frame: FocusFrame) {
-  const card = frame.settled ? focusedCard(graph, frame.id) : undefined;
-  const height = nodes.find((node) => node.id === frame.id)?.measured?.height;
-  return useMemo(
-    () => (card === undefined ? undefined : scrollExtent(card, height, frame.keepsTrailing)),
-    [card, height, frame.keepsTrailing],
-  );
-}
 
 /**
  * The graph's nodes, held in state: xyflow stores its node measurements through onNodesChange, so nodes cannot be

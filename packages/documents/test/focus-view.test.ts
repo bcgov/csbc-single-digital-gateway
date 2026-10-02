@@ -6,7 +6,6 @@ import {
   flowRect,
   focusEdges,
   focusRect,
-  scrollExtent,
   focusNodes,
   PAGE_HEIGHT,
   PAGE_WIDTH,
@@ -183,11 +182,11 @@ describe('a root page keeps its trailing +', () => {
     data: { add: { kind: 'trailing', output: { source: 'R' } }, sourceName: 'R' },
   };
 
-  it('keeps the + below a page that has grown taller than its first screen', () => {
+  it('keeps the + below the fixed page, whatever the page measured (doc 241 rule 4)', () => {
     const tall = { ...root, measured: { width: 768, height: 2400 } };
     const [, moved] = focusNodes([tall, end], frame('R', true, null, true));
 
-    expect(moved!.position.y).toBe(pageRect(root).y + 2400 + 32);
+    expect(moved!.position.y).toBe(pageRect(root).y + PAGE_HEIGHT + 32);
   });
 
   it('moves the end node just below the page and keeps it shown once settled', () => {
@@ -213,28 +212,11 @@ describe('a root page keeps its trailing +', () => {
 });
 
 describe('focusRect', () => {
-  it("fits a page — and, for a root page, its trailing + below, the button's whole circle", () => {
+  it("fits a page — and, for a root page, its trailing +'s whole circle with room below it (doc 241 rule 4)", () => {
     const card = formAt('A', 0, 0);
     const page = pageRect(card);
 
     expect(focusRect(card, false)).toEqual(page);
-    expect(focusRect(card, true)).toEqual({ ...page, height: page.height + 32 + 12 });
-  });
-});
-
-describe('scrollExtent', () => {
-  const card = formAt('A', 0, 0);
-  const page = pageRect(card);
-
-  it('scrolls an open page from its top to its grown bottom, with a margin', () => {
-    expect(scrollExtent(card, 2400, false)).toEqual([
-      [page.x - 64, page.y - 64],
-      [page.x + page.width + 64, page.y + 2400 + 64],
-    ]);
-  });
-
-  it('never scrolls less than the first screen, and reaches a root page’s + below it', () => {
-    expect(scrollExtent(card, 300, false)[1][1]).toBe(page.y + page.height + 64);
-    expect(scrollExtent(card, undefined, true)[1][1]).toBe(page.y + page.height + 32 + 24 + 64);
+    expect(focusRect(card, true)).toEqual({ ...page, height: page.height + 32 + 12 + 24 });
   });
 });

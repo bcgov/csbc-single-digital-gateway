@@ -47,10 +47,9 @@ export function focusNodes(nodes: CanvasNode[], frame: FocusFrame): CanvasNode[]
   return nodes.map((node): CanvasNode => {
     if (frame.id === null) return backNode(node, frame);
     if (card !== undefined && keepsTrailing(frame) && node.id === endIdOf(frame.id)) {
-      // The root page's + sits just below the page — as tall as it has grown — where its trailing edge now ends.
+      // The root page's + sits just below the page (a fixed size, doc 241 rule 1), where its trailing edge now ends.
       const page = pageRect(card);
-      const height = Math.max(page.height, card.measured?.height ?? 0);
-      const position = { x: node.position.x, y: page.y + height + TRAILING_GAP };
+      const position = { x: node.position.x, y: page.y + page.height + TRAILING_GAP };
       return { ...node, className: MOVES, position };
     }
     if (node.id !== frame.id || node.type !== 'form') {
@@ -131,36 +130,17 @@ export function pageRect(card: CanvasNode): Rect {
 
 /** Half the + button's 24px circle, which centres on the trailing edge's end. */
 const PLUS_RADIUS = 12;
+/** Room the camera leaves under a root page's +, so it never sits on the canvas's bottom edge (doc 241 rule 4). */
+const TRAILING_ROOM = 24;
 
 /**
- * What the camera fits for a focused Form: its page — and, for a root page, the trailing + below it too, so the way
- * out is always on screen.
+ * What the camera fits for a focused Form: its page — and, for a root page, the trailing + below it with room beneath,
+ * so the way out is always on screen.
  */
 export function focusRect(card: CanvasNode, withTrailing: boolean): Rect {
   const page = pageRect(card);
-  return withTrailing ? { ...page, height: page.height + TRAILING_GAP + PLUS_RADIUS } : page;
-}
-
-/** Scroll room around an open page, in flow units. */
-const SCROLL_MARGIN = 64;
-
-/**
- * How far a focused page scrolls (doc 233 rule 12): the page as tall as it has grown — plus a root page's + — and a
- * margin. Applied as xyflow's `translateExtent`, so wheel scrolling stops at the page's top and bottom; an extent
- * narrower than the view is centred by d3.
- */
-export function scrollExtent(
-  card: CanvasNode,
-  measuredHeight: number | undefined,
-  withTrailing: boolean,
-): [[number, number], [number, number]] {
-  const page = pageRect(card);
-  const height = Math.max(page.height, measuredHeight ?? 0);
-  const trailing = withTrailing ? TRAILING_GAP + PLUS_RADIUS * 2 : 0;
-  return [
-    [page.x - SCROLL_MARGIN, page.y - SCROLL_MARGIN],
-    [page.x + page.width + SCROLL_MARGIN, page.y + height + trailing + SCROLL_MARGIN],
-  ];
+  if (!withTrailing) return page;
+  return { ...page, height: page.height + TRAILING_GAP + PLUS_RADIUS + TRAILING_ROOM };
 }
 
 /**

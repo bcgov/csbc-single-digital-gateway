@@ -36,4 +36,17 @@ describe('@repo/documents styles.css (doc 236)', () => {
   it('never pulls a nested layout outwards — its edges would draw outside its selection ring', () => {
     expect(css).not.toMatch(/^\.grid-stack\[data-slot='studio-vertical-layout'\] \{/m);
   });
+
+  it("translates a dragged item's content back up by the grab distance (doc 243 rule 12b)", () => {
+    expect(css).toContain(
+      `${grid}\n  > .grid-stack-item.ui-draggable-dragging\n  > .grid-stack-item-content {\n  translate: 0 var(--gs-grab-offset, 0px);\n}`,
+    );
+  });
+
+  it('lets nothing inside a dragged item take the pointer, beating pointer-events-auto (doc 243 bug B1)', () => {
+    expect(css).toContain(
+      '.grid-stack-item.ui-draggable-dragging,\n.grid-stack-item.ui-draggable-dragging * {\n  pointer-events: none !important;\n}',
+    );
+    expect(css).not.toMatch(/@layer[^{]*\{[^}]*ui-draggable-dragging/);
+  });
 });

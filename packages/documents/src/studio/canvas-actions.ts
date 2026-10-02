@@ -4,6 +4,7 @@ import type { ConnectSource } from './connect-edits';
 import type { PendingDelete } from './delete-gate';
 import type { Uischema } from './document-types';
 import { updateElement, type ElementPatch } from './element-edits';
+import { moveElement } from './element-move';
 import { addAfter, addBefore, addBetween, type NodeKind } from './node-edits';
 
 /**
@@ -27,6 +28,10 @@ export interface CanvasActions {
   edit: (id: string, patch: ElementPatch) => void;
   /** Places a palette item in a layout on the page (doc 238 rule 14). */
   insert: (layoutId: string, index: number, itemId: string) => void;
+  /** Moves a page element into a layout at an index (doc 243): a uischema-only edit, like `edit`. */
+  move: (id: string, layoutId: string, index: number) => void;
+  /** Whether page elements offer Delete (doc 242): the host can apply an element delete. */
+  canRemoveElement: boolean;
 }
 
 export const CanvasActionsContext = createContext<CanvasActions | null>(null);
@@ -51,7 +56,8 @@ export function useEditActions(
     startConnect,
     canConnect,
     insert,
-  }: Omit<CanvasActions, 'add' | 'edit'>,
+    canRemoveElement,
+  }: Omit<CanvasActions, 'add' | 'edit' | 'move'>,
 ): CanvasActions {
   return useMemo(
     () => ({
@@ -71,6 +77,12 @@ export function useEditActions(
         if (next !== uischema) onChange(next);
       },
       insert,
+      move: (id, layoutId, index) => {
+        const next = moveElement(uischema, id, layoutId, index);
+        // A refused move, or one to where the element already is, is not an edit.
+        if (next !== uischema) onChange(next);
+      },
+      canRemoveElement,
     }),
     [
       uischema,
@@ -83,6 +95,7 @@ export function useEditActions(
       startConnect,
       canConnect,
       insert,
+      canRemoveElement,
     ],
   );
 }

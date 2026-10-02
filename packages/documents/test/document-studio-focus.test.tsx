@@ -206,6 +206,27 @@ describe('DocumentStudio focus', () => {
     expect(screen.getByText('Type: Application Method')).toBeInTheDocument();
   });
 
+  it('scrolls an open page inside itself, and shrinks that same page on Back, fading it late (doc 241)', async () => {
+    const { user, container } = open('stub-application');
+    await screen.findByRole('button', { name: 'Delete Details' });
+    fireEvent.doubleClick(formNode(container, 'Details'));
+    const details = await screen.findByRole('article', { name: 'Details page' });
+
+    // Open: the page body is the scroller, and the canvas's wheel handling stays out of it.
+    await waitFor(() => expect(details).toHaveClass('overflow-y-auto', 'nowheel'));
+    expect(details).not.toHaveClass('pointer-events-none');
+    details.scrollTop = 120;
+
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+
+    // The SAME element closes over the card — its scroll kept — and fades only once the node is small.
+    const closing = container.querySelector<HTMLElement>('article[aria-label="Details page"]');
+    expect(closing).toBe(details);
+    expect(closing!.scrollTop).toBe(120);
+    expect(closing).toHaveClass('overflow-hidden');
+    expect(closing!.className).toMatch(/document-studio-fade-out_120ms[^ ]*_180ms/);
+  });
+
   it('ignores a double-click on a Condition', async () => {
     const { user, container } = open('stub-application');
     await addFrom(user, 'Add after Details', 'Condition');

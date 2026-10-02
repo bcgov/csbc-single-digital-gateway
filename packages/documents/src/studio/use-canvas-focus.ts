@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CanvasGraph, CanvasNode } from './canvas-graph';
 import {
   backDuration,
-  refitViewport,
+  fitViewport,
   setViewportNow,
   zoomDuration,
   zoomToBounds,
@@ -130,10 +130,9 @@ export function focusedCard(graph: CanvasGraph, focusedId: string | null): Canva
 }
 
 /**
- * While a page is open, re-fits it to the canvas on every resize (doc 233 rule 15): xyflow keeps the viewport's
- * top-left and zoom fixed on a resize, so the page slid sideways and overflowed a narrower canvas. Now it shrinks and
- * grows with the canvas, centred, keeping the author's scroll position. Not while the page grows or shrinks — the
- * camera is moving then.
+ * While a page is open, re-fits it to the canvas on every resize (doc 233 rule 15, doc 241 rule 5): xyflow keeps the
+ * viewport's top-left and zoom fixed on a resize, so the page slid sideways and overflowed a narrower canvas. Now it
+ * shrinks and grows with the canvas, centred. Not while the page grows or shrinks — the camera is moving then.
  */
 export function useKeepPageFitted(
   canvas: { readonly current: HTMLElement | null },
@@ -148,15 +147,7 @@ export function useKeepPageFitted(
       const next = `${element.clientWidth}x${element.clientHeight}`;
       if (next === size) return;
       size = next;
-      const current = instance.current?.getViewport();
-      if (current === undefined) return;
-      const viewport = refitViewport(
-        current,
-        bounds,
-        element.clientWidth,
-        element.clientHeight,
-        PAGE_PADDING,
-      );
+      const viewport = fitViewport(bounds, element.clientWidth, element.clientHeight, PAGE_PADDING);
       setViewportNow(instance.current, viewport);
     });
     observer.observe(element);

@@ -45,7 +45,7 @@ describe('NodeFrame', () => {
     expect(frame({ start: true })).not.toHaveClass('ring-2');
   });
 
-  it('grows to a fixed first screen, then opens to its content height, never shorter', () => {
+  it('is a fixed-size page both growing and open — the content scrolls inside it (doc 241 rule 1)', () => {
     const { container } = render(
       <>
         <NodeFrame marks={NONE} page="growing" slot="growing" className="">
@@ -58,9 +58,7 @@ describe('NodeFrame', () => {
     );
 
     expect(container.querySelector('[data-slot="growing"]')).toHaveClass('w-[768px]', 'h-[994px]');
-    expect(container.querySelector('[data-slot="open"]')).toHaveClass('h-auto', 'min-h-[994px]');
-    expect(container.querySelector('[data-slot="open"]')).toHaveClass(
-      '[interpolate-size:allow-keywords]',
-    );
+    expect(container.querySelector('[data-slot="open"]')).toHaveClass('w-[768px]', 'h-[994px]');
+    expect(container.querySelector('[data-slot="open"]')).not.toHaveClass('h-auto');
   });
 });

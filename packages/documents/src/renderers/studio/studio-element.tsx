@@ -6,6 +6,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
+import { ElementActions, elementName } from './element-actions';
 import { idOf } from './element-order';
 import { useStudioEditor } from './studio-editor';
 
@@ -51,10 +52,13 @@ export const SELECTED_RING =
  */
 export function StudioElement({
   uischema,
+  schema,
   inert = false,
   children: content,
 }: {
   uischema: UISchemaElement;
+  /** The schema JSONForms dispatched with: names a Control on its actions by its property's title (doc 242 rule 2). */
+  schema?: unknown;
   /**
    * Draw the element but never let it be used (doc 237 rule 13): a control is authored here, not filled in. Inert
    * content is skipped by hit-testing and focus, so a click anywhere on it lands on the wrapper and only selects.
@@ -98,10 +102,18 @@ export function StudioElement({
                 }
           }
           className={
-            editor === null ? undefined : `${STUDIO_INTERACTIVE} ${ELEMENT_FRAME} ${SELECTED_RING}`
+            editor === null
+              ? undefined
+              : `relative ${STUDIO_INTERACTIVE} ${ELEMENT_FRAME} ${SELECTED_RING}`
           }
         >
           {children}
+          {editor?.remove !== undefined && (
+            <ElementActions
+              name={elementName(uischema, schema)}
+              onDelete={() => editor.remove?.(id, elementName(uischema, schema))}
+            />
+          )}
         </div>
       </ElementContext.Provider>
     </DepthContext.Provider>
@@ -114,9 +126,9 @@ export function withStudioElement(
   { inert = false }: { inert?: boolean } = {},
 ): JsonFormsRendererRegistryEntry {
   const Renderer = entry.renderer as ComponentType<{ uischema: UISchemaElement }>;
-  function Wrapped(props: { uischema: UISchemaElement }) {
+  function Wrapped(props: { uischema: UISchemaElement; schema?: unknown }) {
     return (
-      <StudioElement uischema={props.uischema} inert={inert}>
+      <StudioElement uischema={props.uischema} schema={props.schema} inert={inert}>
         {createElement(Renderer, props)}
       </StudioElement>
     );

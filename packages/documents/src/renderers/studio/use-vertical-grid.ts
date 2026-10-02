@@ -1,6 +1,9 @@
-import { GridStack, type GridItemHTMLElement } from 'gridstack';
+import { GridStack, type GridItemHTMLElement, type GridStackNode } from 'gridstack';
+import { DDManager } from 'gridstack/dist/dd-manager';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { retargetDropTarget } from './grid-drop-target';
+import { installGrabOffsetClamp } from './grid-grab-offset';
+import { GridNestEngine } from './grid-nest-engine';
 
 /** The row unit item heights are counted in; heights follow content, so it only sets their granularity. */
 const CELL_HEIGHT = 4;
@@ -20,6 +23,10 @@ export interface VerticalGridOptions {
   onReorder: (orderedKeys: string[]) => void;
   /** A palette item dropped in at `index` (doc 238 rule 12). */
   onDropItem: (index: number, itemId: string) => void;
+  /** Another grid's item, the element with id `elementId`, dropped in at `index` (doc 243 rule 7). */
+  onMoveItem: (index: number, elementId: string) => void;
+  /** Whether items may arrive from other grids — the editor can move (doc 243 rule 5). */
+  acceptMoves: boolean;
   /** The least number of rows the grid keeps — an empty grid stays a drop zone (doc 238 rule 17). */
   minRow: number;
   /**
@@ -46,6 +53,11 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
   onReorder.current = options.onReorder;
   const onDropItem = useRef(options.onDropItem);
   onDropItem.current = options.onDropItem;
+  const onMoveItem = useRef(options.onMoveItem);
+  onMoveItem.current = options.onMoveItem;
+  // Read by `acceptWidgets` through a ref, so a change never rebuilds the grid's options.
+  const acceptMoves = useRef(options.acceptMoves);
+  acceptMoves.current = options.acceptMoves;
   const dropZone = useRef(options.dropZone);
   dropZone.current = options.dropZone;
   const { minRow } = options;
@@ -57,6 +69,9 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
 
   useLayoutEffect(() => {
     if (el === null) return;
+    // Doc 243 rule 12b: the helper's top follows the cursor, so gridstack places an item at the cursor's row — in
+    // any grid it enters — and GridNestEngine can read the cursor as the drag rect's top edge.
+    installGrabOffsetClamp();
     const instance = GridStack.init(
       {
         column: 1,
@@ -67,13 +82,15 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
         // came out a row short and clipped. `fitItem` sizes them from unscaled layout instead (rule 28).
         sizeToContent: false,
         disableResize: true,
-        acceptWidgets: acceptsFor(editable),
+        acceptWidgets: acceptsFor(editable, el, acceptMoves),
         minRow,
         staticGrid: !editable,
         draggable: { cancel: DRAG_CANCEL },
         // Off until the first fit: a new grid (one per order, rule 30) must never animate into shape. A drop remounts
         // the grid, and animating it in read as every item below the drop re-laying out.
         animate: false,
+        // A nested layout never moves out from under the cursor before the cursor reaches it (doc 243 bug B1).
+        engineClass: GridNestEngine,
       },
       el,
     );
@@ -83,18 +100,15 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
     for (const item of itemsOf(el)) fitItem(instance, item, heights);
     // On only once the fitted layout has been painted, so neighbours still slide aside during a drag.
     const animateLater = requestAnimationFrame(() => instance.setAnimation(true));
-    instance.on('dropped', (_event, _previous, node) => {
-      const item = node.el;
-      const itemId = item?.getAttribute('data-palette-item') ?? null;
-      // Its row: how many of the grid's other items sit above where it landed.
-      const index = instance.engine.nodes.filter(
-        (other) => other !== node && (other.y ?? 0) < (node.y ?? 0),
-      ).length;
-      // gridstack added its drag helper as a widget; React owns this grid's items (forms trap 189-5).
-      if (item !== undefined) instance.removeWidget(item, true, false);
-      if (itemId !== null) onDropItem.current(index, itemId);
-    });
+    instance.on('dropped', (_event, previous: GridStackNode | undefined, node) =>
+      handleDrop(instance, previous, node, {
+        onDropItem: onDropItem.current,
+        onMoveItem: onMoveItem.current,
+      }),
+    );
     instance.on('change', () => {
+      // Never mid-drag (doc 243 rule 9b): a write remounts this grid under the live drag (doc 236 rule 30).
+      if (dragInProgress()) return;
       const ordered = instance.engine.nodes
         .toSorted((a, b) => (a.y ?? 0) - (b.y ?? 0))
         .flatMap((node) => (typeof node.id === 'string' ? [node.id] : []));
@@ -120,7 +134,7 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
 
   useLayoutEffect(() => {
     grid.current?.setStatic(!editable);
-    grid.current?.updateOptions({ acceptWidgets: acceptsFor(editable) });
+    grid.current?.updateOptions({ acceptWidgets: acceptsFor(editable, el, acceptMoves) });
     // Both build a fresh droppable on the enclosing item again.
     retarget(grid.current);
   }, [editable]);
@@ -130,15 +144,51 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
     const instance = grid.current;
     if (instance === null || el === null) return;
     const items = itemsOf(el);
+    let reanimate = 0;
     const observer = new ResizeObserver(() => {
+      // Snapped, never animated (doc 243 rule 15): a layout settling to new content — a move into a layout two levels
+      // down, which remounts it but not the layout around it — rippled up the page as an animated relayout.
+      // Animation is only for neighbours sliding aside mid-drag; it comes back one frame later.
+      const animated = instance.opts.animate === true;
+      if (animated) instance.setAnimation(false);
       for (const item of items) fitItem(instance, item, heights);
+      if (!animated) return;
+      cancelAnimationFrame(reanimate);
+      reanimate = requestAnimationFrame(() => instance.setAnimation(true));
     });
     for (const item of items) {
       const child = item.querySelector(':scope > .grid-stack-item-content > *');
       if (child !== null) observer.observe(child);
     }
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(reanimate);
+      observer.disconnect();
+    };
   }, [el]);
+}
+
+/**
+ * A drop (doc 238 rule 12, doc 243 rule 7): a palette item is inserted, a node from ANOTHER grid moved; a palette drag
+ * has no source grid. The index is the row: how many of the grid's other items sit above where it landed.
+ */
+function handleDrop(
+  grid: GridStack,
+  previous: GridStackNode | undefined,
+  node: GridStackNode,
+  { onDropItem, onMoveItem }: Pick<VerticalGridOptions, 'onDropItem' | 'onMoveItem'>,
+): void {
+  const item = node.el;
+  const itemId = item?.getAttribute('data-palette-item') ?? null;
+  const movedId =
+    previous?.grid !== undefined && previous.grid !== grid ? authoredId(previous) : null;
+  const index = grid.engine.nodes.filter(
+    (other) => other !== node && (other.y ?? 0) < (node.y ?? 0),
+  ).length;
+  // gridstack added its drag helper — or, for a move, the source's own item — as a widget. React owns both grids'
+  // items, and both remount on the new order (doc 236 rule 30), so the DOM gridstack moved is dropped.
+  if (item !== undefined) grid.removeWidget(item, true, false);
+  if (itemId !== null) onDropItem(index, itemId);
+  else if (movedId !== null) onMoveItem(index, movedId);
 }
 
 /**
@@ -158,9 +208,40 @@ function fitItem(grid: GridStack, item: GridItemHTMLElement, heights: Map<string
     grid.update(item, { h: rows });
 }
 
-/** An editable grid takes drags from the palette only — never items from another grid (doc 238 rule 11). */
-function acceptsFor(editable: boolean): false | ((el: Element) => boolean) {
-  return editable ? (el) => el.hasAttribute('data-palette-item') : false;
+/**
+ * What an editable grid takes (doc 238 rule 11, doc 243 rules 5-6): a palette item, and — when the editor can move —
+ * another grid's item that has an authored id and does not contain this grid (a layout never drops into itself or a
+ * descendant). It must refuse everything `moveElement` would: gridstack moves the DOM before `dropped`, so a drop
+ * refused only at write-back leaves a ghost item.
+ */
+function acceptsFor(
+  editable: boolean,
+  grid: HTMLElement | null,
+  acceptMoves: { readonly current: boolean },
+): false | ((el: Element) => boolean) {
+  if (!editable) return false;
+  return (el) => {
+    if (el.hasAttribute('data-palette-item')) return true;
+    if (!acceptMoves.current || !el.classList.contains('grid-stack-item')) return false;
+    const node = (el as GridItemHTMLElement).gridstackNode;
+    return node !== undefined && authoredId(node) !== null && !el.contains(grid);
+  };
+}
+
+/**
+ * Whether a drag is still MOVING (doc 243 rule 9b). gridstack fires `change` mid-drag — e.g. from `update()` when a
+ * layout grows as the item enters it — and a reorder write then remounts the grid under the drag, which throws on every
+ * mouse move after (`opts` of a destroyed grid) and strands the drop. `_mouseUp` clears `dragging` BEFORE the source
+ * grid's stop handler fires its final `change`, so the reorder at drag end is still written. gridstack 13.2.0.
+ */
+function dragInProgress(): boolean {
+  const drag = DDManager.dragElement as { dragging?: boolean } | undefined;
+  return drag?.dragging === true;
+}
+
+/** A node's element id — never `elementKey`'s `#<index>` fallback for an element without one. */
+function authoredId(node: GridStackNode): string | null {
+  return typeof node.id === 'string' && node.id !== '' && !node.id.startsWith('#') ? node.id : null;
 }
 
 function itemsOf(el: HTMLElement): GridItemHTMLElement[] {

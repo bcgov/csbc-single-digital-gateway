@@ -9,6 +9,7 @@ import { DocumentStudioHeader } from './document-studio-header';
 import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
+import { removeElement } from './element-remove';
 import { insertItem } from './palette-insert';
 import { defaultPalette, uniqueItems, type PaletteResolver } from './palette-items';
 import { SelectionBreadcrumbs } from './selection-breadcrumbs';
@@ -65,6 +66,15 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
       if (next !== draft.content) setContent(next);
     },
     [items, draft, setContent],
+  );
+  // A page element deleted through the gate (doc 242): removed with any schema property only it bound.
+  const removeEl = useCallback(
+    (elementId: string) => {
+      if (draft === null) return;
+      const next = removeElement(draft.content, elementId);
+      if (next !== draft.content) setContent(next);
+    },
+    [draft, setContent],
   );
   const [dialogOpen, setDialogOpen] = useState(
     props.documentId === undefined && (props.kind === undefined || props.type === undefined),
@@ -137,6 +147,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
                 setDeleteChoices((choices) => ({ ...choices, [kind]: choice }))
               }
               onInsert={insert}
+              onRemoveElement={removeEl}
             />
             {focusedId !== null && (
               <DocumentPalette

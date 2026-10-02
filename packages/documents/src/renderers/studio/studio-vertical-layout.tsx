@@ -1,6 +1,6 @@
 import { rankWith, uiTypeIs, type Layout, type LayoutProps } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
-import { useRef, useState } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import { GAP_REM, layoutGap } from '../default/layout-gap';
 import { ChildDispatch, elementKey, type VerticalBodyProps } from '../default/vertical-layout';
 import { idOf, reorderElements } from './element-order';
@@ -12,6 +12,13 @@ import { useVerticalGrid } from './use-vertical-grid';
 const EMPTY_ROWS = 12;
 /** An empty ROOT grid's frame; a nested layout's wrapper already frames it (doc 238 rule 17). */
 const EMPTY_FRAME = 'rounded-md border border-dashed border-border';
+
+/**
+ * Measured item heights in rows, by element id, SHARED by every grid on a page (doc 243 rule 14): the outermost grid
+ * owns the map and its nested grids use it. A moved element arrives in a grid that never measured it, and a per-grid
+ * cache drew it one row tall — and its layout too short in the parent — until both grew while gridstack animated.
+ */
+const GridHeightsContext = createContext<Map<string, number> | null>(null);
 
 /** Outranks the spread default VerticalLayout (doc 236 rule 26). */
 export const studioVerticalLayoutTester = rankWith(2, uiTypeIs('VerticalLayout'));
@@ -37,8 +44,11 @@ export function StudioVerticalGrid({
   const editor = useStudioEditor();
   const [el, setEl] = useState<HTMLDivElement | null>(null);
   const keys = elements.map(elementKey);
-  // Measured heights outlive each per-order grid, so the next one is rendered already laid out (rule 30b).
-  const heights = useRef(new Map<string, number>()).current;
+  // Measured heights outlive each per-order grid, so the next one is rendered already laid out (rule 30b) — and are
+  // shared with every grid on the page, so a moved element arrives laid out too (doc 243 rule 14).
+  const shared = useContext(GridHeightsContext);
+  const own = useRef(new Map<string, number>()).current;
+  const heights = shared ?? own;
   const rows = keys.map((key) => heights.get(key) ?? 1);
   const tops = rows.map((_, index) => rows.slice(0, index).reduce((sum, h) => sum + h, 0));
   useVerticalGrid(el, {
@@ -46,13 +56,21 @@ export function StudioVerticalGrid({
     gapRem: GAP_REM[gap],
     editable: editor !== null && layoutId !== undefined,
     onReorder: (ordered) => {
-      if (editor === null || layoutId === undefined) return;
+      // An item that left or arrived from another grid is a move, written once by the target (doc 243 rule 9).
+      if (editor === null || layoutId === undefined || !sameKeys(ordered, keys)) return;
       const next = reorderElements(elements, ordered);
       if (next !== elements) editor.update(layoutId, { elements: next });
     },
     onDropItem: (index, itemId) => {
       if (editor !== null && layoutId !== undefined) editor.insert(layoutId, index, itemId);
     },
+    onMoveItem: (index, elementId) => {
+      if (editor?.move === undefined || layoutId === undefined) return;
+      editor.move(elementId, layoutId, index);
+      // The moved element is selected (doc 243 rule 8).
+      editor.select(elementId);
+    },
+    acceptMoves: editor?.move !== undefined,
     minRow: elements.length === 0 ? EMPTY_ROWS : 0,
     dropZone,
   });
@@ -76,21 +94,23 @@ export function StudioVerticalGrid({
           {editor === null ? 'No fields yet' : 'Drag items here'}
         </p>
       )}
-      {elements.map((child, index) => (
-        <div
-          key={keys[index]}
-          className="grid-stack-item"
-          gs-id={keys[index]}
-          gs-x="0"
-          gs-y={String(tops[index])}
-          gs-w="1"
-          gs-h={String(rows[index])}
-        >
-          <div className="grid-stack-item-content">
-            <ChildDispatch child={child} {...dispatch} />
+      <GridHeightsContext.Provider value={heights}>
+        {elements.map((child, index) => (
+          <div
+            key={keys[index]}
+            className="grid-stack-item"
+            gs-id={keys[index]}
+            gs-x="0"
+            gs-y={String(tops[index])}
+            gs-w="1"
+            gs-h={String(rows[index])}
+          >
+            <div className="grid-stack-item-content">
+              <ChildDispatch child={child} {...dispatch} />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </GridHeightsContext.Provider>
     </div>
   );
 }
@@ -115,3 +135,10 @@ export const studioVerticalLayoutEntry = {
   tester: studioVerticalLayoutTester,
   renderer: withJsonFormsLayoutProps(StudioVerticalLayoutRenderer),
 };
+
+/** Whether a grid's node ids are exactly the keys it rendered — nothing left it, nothing arrived. */
+function sameKeys(ordered: readonly string[], keys: readonly string[]): boolean {
+  if (ordered.length !== keys.length) return false;
+  const rendered = new Set(keys);
+  return ordered.every((key) => rendered.has(key));
+}

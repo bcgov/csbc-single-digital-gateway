@@ -18,28 +18,52 @@ export interface StudioEditor {
    * item's id, carried by the drag source; the host resolves and creates it.
    */
   insert: (layoutId: string, index: number, itemId: string) => void;
+  /**
+   * Asks the host to delete the element with that id, `name` as the author knows it (doc 242). Absent: elements offer
+   * no Delete.
+   */
+  remove?: ((id: string, name: string) => void) | undefined;
+  /**
+   * Moves the element with that id into the layout `layoutId` at `index` (doc 243). Absent: grids accept palette items
+   * only, never another grid's.
+   */
+  move?: ((id: string, layoutId: string, index: number) => void) | undefined;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
 
 const StudioEditorContext = createContext<StudioEditor | null>(null);
 
-/** Makes the studio renderers below it editable; `update` is the host's, the selection is owned here. */
+/**
+ * Makes the studio renderers below it editable; `update` is the host's, the selection is owned here. `enabled={false}`
+ * provides `null` — view-only — WITHOUT changing the tree, so a host toggling editability never remounts what is below
+ * (doc 241 rule 6: a closing page keeps its scroll).
+ */
 export function StudioEditorProvider({
   update,
   insert,
+  remove,
+  move,
+  enabled = true,
   children,
 }: {
   update: StudioEditor['update'];
   insert: StudioEditor['insert'];
+  remove?: StudioEditor['remove'];
+  move?: StudioEditor['move'];
+  enabled?: boolean;
   children: ReactNode;
 }) {
   const [selectedId, select] = useState<string | null>(null);
   const editor = useMemo(
-    () => ({ update, insert, selectedId, select }),
-    [update, insert, selectedId],
+    () => ({ update, insert, remove, move, selectedId, select }),
+    [update, insert, remove, move, selectedId],
   );
-  return <StudioEditorContext.Provider value={editor}>{children}</StudioEditorContext.Provider>;
+  return (
+    <StudioEditorContext.Provider value={enabled ? editor : null}>
+      {children}
+    </StudioEditorContext.Provider>
+  );
 }
 
 /** The editor, or `null` outside a provider — which means view-only (rule 12). */

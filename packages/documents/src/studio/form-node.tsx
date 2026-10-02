@@ -15,7 +15,7 @@ import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
  * one output below — or, while focused (doc 233), the same node grown into the Form's page, which has no actions.
  */
 export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
-  const { remove, focus, inspect, edit, insert } = useCanvasActions();
+  const { remove, focus, inspect, edit, insert, move, canRemoveElement } = useCanvasActions();
   const { mark } = useNodeConnect(data.formId);
   const label = data.label ?? 'Untitled form';
   const focused = data.focused === true;
@@ -32,15 +32,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
       className={focused ? 'text-sm' : 'h-14 px-3 py-2 text-sm'}
     >
       <InputHandle show={!data.first} />
-      {focused ? (
-        <FormPageBody
-          label={label}
-          page={data.page ?? null}
-          open={data.open === true}
-          onEdit={edit}
-          onInsert={insert}
-        />
-      ) : (
+      {!focused && (
         <>
           <NodeActions
             name={label}
@@ -51,8 +43,22 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
           />
           <p className="text-xs text-muted-foreground">Form</p>
           <p className="truncate text-sm font-medium">{label}</p>
-          {data.closing === true && <FormPageBody label={label} page={data.page ?? null} closing />}
         </>
+      )}
+      {/* One slot for the page body, focused or closing: Back keeps the SAME element, scroll and all (doc 241 rule 6). */}
+      {(focused || data.closing === true) && (
+        <FormPageBody
+          label={label}
+          page={data.page ?? null}
+          open={focused && data.open === true}
+          closing={!focused}
+          onEdit={edit}
+          onInsert={insert}
+          onMove={move}
+          {...(canRemoveElement && {
+            onRemove: (id: string, name: string) => remove({ id, kind: 'element', name }),
+          })}
+        />
       )}
       <Handle
         type="source"

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  refitViewport,
+  fitViewport,
   ease,
   zoomToBounds,
   zoomToViewport,
@@ -43,16 +43,14 @@ describe('canvas zoom', () => {
     expect(() => zoomToViewport(null, { x: 0, y: 0, zoom: 1 })).not.toThrow();
   });
 
-  it('re-fits a page to a resized canvas — shrinking, growing and centring it — keeping the scroll position', () => {
+  it('re-fits a page to a resized canvas — shrinking, growing and centring it on both axes (doc 241 rule 5)', () => {
     const page = { x: 0, y: 0, width: 768, height: 994 };
-    const scrolled = { x: 0, y: -100, zoom: 0.5 }; // flow y 200 at the top of the view
-    const narrow = refitViewport(scrolled, page, 600, 2000, 0);
-    const wide = refitViewport(scrolled, page, 1200, 2000, 0);
+    const narrow = fitViewport(page, 600, 2000, 0);
+    const wide = fitViewport(page, 1200, 2000, 0);
 
     expect(narrow.zoom).toBeCloseTo(600 / 768);
     expect(wide.zoom).toBeCloseTo(1200 / 768);
-    expect(narrow.x).toBeCloseTo(0); // centred: the page fills the width exactly
-    expect(-narrow.y / narrow.zoom).toBeCloseTo(200);
-    expect(-wide.y / wide.zoom).toBeCloseTo(200);
+    expect(narrow.x).toBeCloseTo(0); // the page fills the width exactly
+    expect(narrow.y).toBeCloseTo((2000 - 994 * narrow.zoom) / 2);
   });
 });

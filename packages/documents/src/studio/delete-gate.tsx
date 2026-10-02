@@ -12,10 +12,10 @@ import { Checkbox } from '@repo/ui/checkbox';
 import { Label } from '@repo/ui/label';
 import { useCallback, useId, useState } from 'react';
 
-/** A node whose delete waits on the gate: its id, what it is, and the name the dialog shows. */
+/** A node — or a page element (doc 242) — whose delete waits on the gate: its id, what it is, and its name. */
 export interface PendingDelete {
   id: string;
-  kind: 'form' | 'condition';
+  kind: 'form' | 'condition' | 'element';
   name: string;
 }
 
@@ -28,6 +28,7 @@ export type DeleteChoice = 'node' | 'subtree';
 /** The choices "Don't ask me again" remembered, one per kind — one object rather than a flag each. */
 export interface DeleteChoices {
   form?: 'node';
+  element?: 'node';
   condition?: DeleteChoice;
 }
 
@@ -37,9 +38,14 @@ interface DeleteGateProps {
   onCancel: () => void;
 }
 
-const TITLE = { form: 'Delete form?', condition: 'Delete condition?' } as const;
+const TITLE = {
+  form: 'Delete form?',
+  condition: 'Delete condition?',
+  element: 'Delete element?',
+} as const;
 
 function descriptionFor({ kind, name }: PendingDelete): string {
+  if (kind === 'element') return `"${name}" will be removed from the form.`;
   return kind === 'form'
     ? `"${name}" will be removed from the document.`
     : `Choose whether the steps only its branches lead to are deleted with "${name}" or stay on the canvas, unconnected.`;
@@ -128,7 +134,7 @@ export function DeleteGate({ pending, onConfirm, onCancel }: DeleteGateProps) {
  */
 export function useDeleteGate(
   choices: DeleteChoices,
-  remove: (nodeId: string, choice: DeleteChoice) => void,
+  remove: (target: PendingDelete, choice: DeleteChoice) => void,
   onRemember: ((kind: PendingDelete['kind'], choice: DeleteChoice) => void) | undefined,
 ) {
   const [pending, setPending] = useState<PendingDelete | null>(null);
@@ -136,7 +142,7 @@ export function useDeleteGate(
     (target: PendingDelete) => {
       const remembered = choices[target.kind];
       if (remembered === undefined) setPending(target);
-      else remove(target.id, remembered);
+      else remove(target, remembered);
     },
     [choices, remove],
   );
@@ -148,7 +154,7 @@ export function useDeleteGate(
         onCancel={() => setPending(null)}
         onConfirm={(choice, dontAskAgain) => {
           if (pending !== null) {
-            remove(pending.id, choice);
+            remove(pending, choice);
             if (dontAskAgain) onRemember?.(pending.kind, choice);
           }
           setPending(null);
