@@ -19,6 +19,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['switch', 'Switch', 'Fields'],
       ['text', 'Text', 'Fields'],
       ['textarea', 'Text area', 'Fields'],
+      ['number', 'Number', 'Fields'],
       ['select', 'Select', 'Fields'],
       ['radio-group', 'Radio group', 'Fields'],
       ['multi-select', 'Multi-select', 'Fields'],
@@ -147,5 +148,15 @@ describe('palette items (doc 238 rules 1-4)', () => {
       expect(b.properties![bKey!]!['items']).not.toBe(a.properties![key!]!['items']);
       expect(byId(id).icon).toMatch(/^M/);
     }
+  });
+
+  it('creates a Number Control over a new nanoid(8) number property (doc 248 rule 12)', () => {
+    const a = byId('number').create();
+    const [key] = Object.keys(a.properties!);
+    expect(key).toMatch(/^[\w-]{8}$/);
+    expect(a.element).toMatchObject({ type: 'Control', scope: `#/properties/${key}` });
+    expect(a.element['options']).toBeUndefined();
+    expect(a.properties![key!]).toEqual({ type: 'number', title: 'Untitled number' });
+    expect(byId('number').icon).toMatch(/^M/);
   });
 });

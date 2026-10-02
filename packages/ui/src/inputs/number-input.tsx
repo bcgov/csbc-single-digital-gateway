@@ -6,7 +6,12 @@ import { cn } from '@ui/lib/utils';
 /** The props that belong on the native `<input>` rather than on `NumberField.Root`. */
 type NumberInputElementProps = Pick<
   React.ComponentProps<'input'>,
-  'placeholder' | 'aria-label' | 'aria-labelledby' | 'aria-describedby' | 'aria-invalid'
+  | 'placeholder'
+  | 'aria-label'
+  | 'aria-labelledby'
+  | 'aria-describedby'
+  | 'aria-invalid'
+  | 'aria-required'
 >;
 
 type NumberInputProps = Omit<NumberField.Root.Props, 'className'> &
@@ -29,6 +34,7 @@ function NumberInput({
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
+  'aria-required': ariaRequired,
   ...props
 }: NumberInputProps) {
   return (
@@ -40,6 +46,7 @@ function NumberInput({
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
+        aria-required={ariaRequired}
         className={cn(
           'w-full min-w-0 rounded-md border border-input bg-input-background px-3 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 read-only:cursor-default read-only:caret-transparent read-only:select-none read-only:bg-input/50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40',
           className,

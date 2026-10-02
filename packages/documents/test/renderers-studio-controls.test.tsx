@@ -12,8 +12,9 @@ const page = (elements: unknown[]) => ({ id: 'form', type: 'Form', label: 'Page'
 
 describe('studio boolean controls (doc 237 rules 13-15)', () => {
   it('wraps every default control entry, keeping its tester', () => {
-    // Checkbox, Switch, Input, Textarea, the single (doc 244) and multiple choice (doc 245).
-    expect(defaults.controlRenderers).toHaveLength(6);
+    // Checkbox, Switch, Input, Textarea, the single (doc 244) and multiple choice (doc 245),
+    // and the number input (doc 248).
+    expect(defaults.controlRenderers).toHaveLength(7);
     expect(studio.controlRenderers).toHaveLength(defaults.controlRenderers.length);
     studio.controlRenderers.forEach((entry, i) => {
       expect(entry.tester).toBe(defaults.controlRenderers[i]!.tester);

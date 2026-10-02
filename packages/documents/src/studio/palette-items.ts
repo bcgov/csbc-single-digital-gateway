@@ -5,6 +5,7 @@ import {
   mdiFormDropdown,
   mdiFormTextbox,
   mdiMinus,
+  mdiNumeric,
   mdiRadioboxMarked,
   mdiSelectMultiple,
   mdiTextBoxOutline,
@@ -50,7 +51,7 @@ export type PaletteResolver = (context: PaletteContext) => PaletteItem[];
  * keywords (a choice's `oneOf`, doc 244 rule 18).
  */
 function newControl(
-  type: 'array' | 'boolean' | 'string',
+  type: 'array' | 'boolean' | 'number' | 'string',
   title: string,
   options?: Record<string, unknown>,
   extra?: Record<string, unknown>,
@@ -153,6 +154,14 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Fields',
     keywords: ['string', 'paragraph', 'multiline'],
     create: () => newControl('string', 'Untitled text area', { component: 'textarea' }),
+  },
+  {
+    id: 'number',
+    label: 'Number',
+    icon: mdiNumeric,
+    group: 'Fields',
+    keywords: ['number', 'numeric', 'amount', 'integer'],
+    create: () => newControl('number', 'Untitled number'),
   },
   {
     id: 'select',
