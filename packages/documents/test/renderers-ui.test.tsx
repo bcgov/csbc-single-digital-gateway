@@ -35,9 +35,9 @@ describe('renderers/ui (doc 236)', () => {
     }
     // Heading and Separator (doc 240).
     expect(ui.contentRenderers).toHaveLength(2);
-    // Checkbox, Switch (doc 237 rule 0), Input, Textarea (doc 239) and the single choice (doc 244) live in ui;
-    // default and studio spread them.
-    expect(ui.controlRenderers).toHaveLength(5);
+    // Checkbox, Switch (doc 237 rule 0), Input, Textarea (doc 239), the single choice (doc 244) and the
+    // multiple choice (doc 245) live in ui; default and studio spread them.
+    expect(ui.controlRenderers).toHaveLength(6);
     expect(ui.renderers).toEqual([
       ...ui.contentRenderers,
       ...ui.controlRenderers,

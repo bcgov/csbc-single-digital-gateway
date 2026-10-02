@@ -39,7 +39,16 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       within(groups[2]!)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Checkbox', 'Switch', 'Text', 'Text area', 'Select', 'Radio group']);
+    ).toEqual([
+      'Checkbox',
+      'Switch',
+      'Text',
+      'Text area',
+      'Select',
+      'Radio group',
+      'Multi-select',
+      'Checkbox group',
+    ]);
   });
 
   it('keeps the search input compact', () => {
@@ -117,13 +126,23 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     expect(itemNamed('Separator')).toHaveFocus();
     fireEvent.keyDown(itemNamed('Separator'), { key: 'ArrowDown' });
     expect(itemNamed('Checkbox')).toHaveFocus();
-    for (const name of ['Checkbox', 'Switch', 'Text', 'Text area', 'Select', 'Radio group']) {
-      fireEvent.keyDown(itemNamed(name), { key: 'ArrowDown' });
-    }
-    expect(itemNamed('Radio group')).toHaveFocus();
-    fireEvent.keyDown(itemNamed('Radio group'), { key: 'ArrowUp' });
-    expect(itemNamed('Select')).toHaveFocus();
+    const fields = [
+      'Checkbox',
+      'Switch',
+      'Text',
+      'Text area',
+      'Select',
+      'Radio group',
+      'Multi-select',
+      'Checkbox group',
+    ];
+    for (const name of fields) fireEvent.keyDown(itemNamed(name), { key: 'ArrowDown' });
+    expect(itemNamed('Checkbox group')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Checkbox group'), { key: 'ArrowUp' });
+    expect(itemNamed('Multi-select')).toHaveFocus();
     for (const name of [
+      'Multi-select',
+      'Radio group',
       'Select',
       'Text area',
       'Text',

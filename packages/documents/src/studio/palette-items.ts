@@ -1,10 +1,12 @@
 import {
   mdiCheckboxMarkedOutline,
+  mdiCheckboxMultipleMarkedOutline,
   mdiFormatHeaderPound,
   mdiFormDropdown,
   mdiFormTextbox,
   mdiMinus,
   mdiRadioboxMarked,
+  mdiSelectMultiple,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
   mdiViewSequentialOutline,
@@ -48,7 +50,7 @@ export type PaletteResolver = (context: PaletteContext) => PaletteItem[];
  * keywords (a choice's `oneOf`, doc 244 rule 18).
  */
 function newControl(
-  type: 'boolean' | 'string',
+  type: 'array' | 'boolean' | 'string',
   title: string,
   options?: Record<string, unknown>,
   extra?: Record<string, unknown>,
@@ -74,6 +76,19 @@ function newChoice(component: 'select' | 'radio-group', title: string): PaletteC
     {
       oneOf: [{ const: 'option-1', title: 'Option 1' }],
     },
+  );
+}
+
+/** An array choice Control starting with one option (doc 245 rule 15) — fresh `items` on every call. */
+function newMultiChoice(
+  component: 'multi-select' | 'checkbox-group',
+  title: string,
+): PaletteCreation {
+  return newControl(
+    'array',
+    title,
+    { component },
+    { uniqueItems: true, items: { oneOf: [{ const: 'option-1', title: 'Option 1' }] } },
   );
 }
 
@@ -154,6 +169,22 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Fields',
     keywords: ['choice', 'radio', 'options'],
     create: () => newChoice('radio-group', 'Untitled radio group'),
+  },
+  {
+    id: 'multi-select',
+    label: 'Multi-select',
+    icon: mdiSelectMultiple,
+    group: 'Fields',
+    keywords: ['choice', 'multiple', 'combobox', 'tags', 'options'],
+    create: () => newMultiChoice('multi-select', 'Untitled multi-select'),
+  },
+  {
+    id: 'checkbox-group',
+    label: 'Checkbox group',
+    icon: mdiCheckboxMultipleMarkedOutline,
+    group: 'Fields',
+    keywords: ['choice', 'multiple', 'checkboxes', 'options'],
+    create: () => newMultiChoice('checkbox-group', 'Untitled checkbox group'),
   },
 ];
 

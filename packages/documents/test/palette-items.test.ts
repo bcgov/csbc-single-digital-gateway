@@ -21,6 +21,8 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['textarea', 'Text area', 'Fields'],
       ['select', 'Select', 'Fields'],
       ['radio-group', 'Radio group', 'Fields'],
+      ['multi-select', 'Multi-select', 'Fields'],
+      ['checkbox-group', 'Checkbox group', 'Fields'],
     ]);
     for (const item of DEFAULT_PALETTE_ITEMS) expect(item.icon).toMatch(/^M/);
   });
@@ -117,6 +119,32 @@ describe('palette items (doc 238 rules 1-4)', () => {
       const [bKey] = Object.keys(b.properties!);
       expect(bKey).not.toBe(key);
       expect(b.properties![bKey!]!['oneOf']).not.toBe(a.properties![key!]!['oneOf']);
+      expect(byId(id).icon).toMatch(/^M/);
+    }
+  });
+
+  it('creates Multi-select and Checkbox group Controls over a new one-option array choice (doc 245 rule 15)', () => {
+    for (const [id, title] of [
+      ['multi-select', 'Untitled multi-select'],
+      ['checkbox-group', 'Untitled checkbox group'],
+    ] as const) {
+      const a = byId(id).create();
+      const [key] = Object.keys(a.properties!);
+      expect(key).toMatch(/^[\w-]{8}$/);
+      expect(a.element).toMatchObject({
+        type: 'Control',
+        scope: `#/properties/${key}`,
+        options: { component: id },
+      });
+      expect(a.properties![key!]).toEqual({
+        type: 'array',
+        title,
+        uniqueItems: true,
+        items: { oneOf: [{ const: 'option-1', title: 'Option 1' }] },
+      });
+      const b = byId(id).create();
+      const [bKey] = Object.keys(b.properties!);
+      expect(b.properties![bKey!]!['items']).not.toBe(a.properties![key!]!['items']);
       expect(byId(id).icon).toMatch(/^M/);
     }
   });
