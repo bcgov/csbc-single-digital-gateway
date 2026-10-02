@@ -51,7 +51,7 @@ export function MultiSelectChoice({
         <ComboboxValue>
           {(current: ChoiceOption[]) =>
             current.map((option) => (
-              <ComboboxChip key={option.value} removeLabel={`Remove ${option.label}`}>
+              <ComboboxChip key={String(option.value)} removeLabel={`Remove ${option.label}`}>
                 {option.label}
               </ComboboxChip>
             ))
@@ -74,7 +74,7 @@ export function MultiSelectChoice({
         <ComboboxEmpty>No options found.</ComboboxEmpty>
         <ComboboxList>
           {(option: ChoiceOption) => (
-            <ComboboxItem key={option.value} value={option}>
+            <ComboboxItem key={String(option.value)} value={option}>
               <span className="flex flex-col">
                 <span>{option.label}</span>
                 {option.description !== undefined && (

@@ -25,8 +25,16 @@ const schema = {
         { const: 'pro', title: 'Pro' },
       ],
     },
-    // Ajv refuses an empty oneOf outright, so the not-a-choice case is a numeric const.
-    numeric: { type: 'string', title: 'Numeric', oneOf: [{ const: 1 }] },
+    // Ajv refuses an empty oneOf outright, so the not-a-choice case is a type its consts contradict (doc 246).
+    contradicted: { type: 'string', title: 'Contradicted', oneOf: [{ const: 1 }] },
+    size: {
+      type: 'integer',
+      title: 'Size',
+      oneOf: [
+        { const: 1, title: 'Small' },
+        { const: 2, title: 'Medium' },
+      ],
+    },
   },
   required: ['plan'],
 };
@@ -90,7 +98,7 @@ describe('single-choice controls (doc 244)', () => {
     });
 
     it('matches nothing for a choice schema that is not one', () => {
-      expect(ranksFor(control('numeric'))[0]).toBeLessThan(1);
+      expect(ranksFor(control('contradicted'))[0]).toBeLessThan(1);
     });
   });
 
@@ -196,6 +204,33 @@ describe('single-choice controls (doc 244)', () => {
       const { lastData } = renderControl(control('region', RADIOS));
       await user.click(screen.getByText('Coast'));
       await waitFor(() => expect(lastData()).toEqual({ region: 'coast' }));
+    });
+  });
+
+  describe('numeric choices (doc 246 rules 5-6)', () => {
+    it('shows the numeric selection, never a string look-alike', () => {
+      const a = renderControl(control('size'), { size: 2 });
+      expect(screen.getByRole('combobox', { name: 'Size' })).toHaveValue('Medium');
+      a.unmount();
+      renderControl(control('size'), { size: '2' });
+      expect(screen.getByRole('combobox', { name: 'Size' })).toHaveValue('');
+    });
+
+    it('writes a number from the Select', async () => {
+      const user = userEvent.setup();
+      const { lastData } = renderControl(control('size'));
+      await user.click(screen.getByRole('combobox', { name: 'Size' }));
+      const listbox = await screen.findByRole('listbox');
+      await user.click(within(listbox).getByRole('option', { name: 'Small' }));
+      await waitFor(() => expect(lastData()).toEqual({ size: 1 }));
+    });
+
+    it('checks numeric data and writes a number from the Radio group', async () => {
+      const user = userEvent.setup();
+      const { lastData } = renderControl(control('size', RADIOS), { size: 1 });
+      expect(screen.getByRole('radio', { name: 'Small' })).toHaveAttribute('aria-checked', 'true');
+      await user.click(screen.getByText('Medium'));
+      await waitFor(() => expect(lastData()).toEqual({ size: 2 }));
     });
   });
 });

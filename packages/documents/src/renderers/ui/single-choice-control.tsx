@@ -24,7 +24,7 @@ export interface ChoiceControlSlot extends ChoiceWiring {
   /** The option whose value is the data, else `null` (rule 6). */
   selected: ChoiceOption | null;
   /** Writes a const, or `undefined` for a cleared Select (rule 7). */
-  onValueChange: (value: string | undefined) => void;
+  onValueChange: (value: string | number | undefined) => void;
 }
 
 /** `'radio-group'` → Radio group; absent, `'select'` or anything else → Select (rule 2). */
@@ -39,7 +39,7 @@ export function SingleChoiceControl(props: ControlProps) {
   const options = useMemo(() => choiceOptions(schema) ?? [], [schema]);
   const component = choiceComponent(uischema);
   const selected = options.find((option) => option.value === data) ?? null;
-  const onValueChange = (value: string | undefined) => handleChange(path, value);
+  const onValueChange = (value: string | number | undefined) => handleChange(path, value);
   return (
     <ChoiceField props={props} component={component}>
       {(wiring) => {

@@ -23,13 +23,13 @@ export function RadioGroupChoice({
       {...(labelId !== undefined && { 'aria-labelledby': labelId })}
       value={selected?.value ?? null}
       disabled={disabled}
-      onValueChange={(value) => onValueChange(value as string)}
+      onValueChange={(value) => onValueChange(value as string | number)}
     >
       {options.map((option, index) => {
         const itemId = `${id}-option-${index}`;
         const descriptionId = `${itemId}-description`;
         return (
-          <Field key={option.value} orientation="horizontal">
+          <Field key={String(option.value)} orientation="horizontal">
             <RadioGroupItem
               id={itemId}
               value={option.value}

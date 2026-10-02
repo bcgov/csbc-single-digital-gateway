@@ -22,8 +22,24 @@ const schema = {
   properties: {
     regions: { ...choices('Regions'), description: 'Pick any' },
     picked: choices('Picked'),
-    // Ajv refuses an empty oneOf, so the not-a-choice case is a numeric const.
-    numeric: { type: 'array', title: 'Numeric', items: { oneOf: [{ const: 1 }] } },
+    // Ajv refuses an empty oneOf, so the not-a-choice case is a declared type its consts contradict (doc 246).
+    contradicted: {
+      type: 'array',
+      title: 'Contradicted',
+      items: { type: 'string', oneOf: [{ const: 1 }] },
+    },
+    sizes: {
+      type: 'array',
+      title: 'Sizes',
+      items: {
+        type: 'integer',
+        oneOf: [
+          { const: 1, title: 'Small' },
+          { const: 2, title: 'Medium' },
+          { const: 3, title: 'Large' },
+        ],
+      },
+    },
   },
   required: ['picked'],
 };
@@ -90,7 +106,7 @@ describe('multi-choice controls (doc 245)', () => {
     });
 
     it('matches nothing for an array that is not a choice', () => {
-      expect(ranksFor(control('numeric'))[0]).toBeLessThan(1);
+      expect(ranksFor(control('contradicted'))[0]).toBeLessThan(1);
     });
   });
 
@@ -190,6 +206,26 @@ describe('multi-choice controls (doc 245)', () => {
       fireEvent.click(screen.getByText('North'));
       fireEvent.click(screen.getByText('Coast'));
       await waitFor(() => expect(lastData()).toEqual({}));
+    });
+  });
+
+  describe('numeric choices (doc 246 rules 5-7)', () => {
+    it('ticks numeric data and writes NUMBERS from the checkbox group, never strings', async () => {
+      const { lastData } = renderControl(control('sizes', BOXES), { sizes: [3, '1'] });
+      const boxes = within(screen.getByRole('group', { name: 'Sizes' })).getAllByRole('checkbox');
+      expect(boxes.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true']);
+      fireEvent.click(screen.getByText('Small'));
+      await waitFor(() => expect(lastData()).toEqual({ sizes: [1, 3] }));
+    });
+
+    it('shows numeric chips and writes numbers from the multi-select', async () => {
+      const user = userEvent.setup();
+      const { field, lastData } = renderControl(control('sizes'), { sizes: [2] });
+      expect(chips(field()!)).toEqual(['Medium']);
+      await user.click(screen.getByRole('combobox', { name: 'Sizes' }));
+      const listbox = await screen.findByRole('listbox');
+      await user.click(within(listbox).getByRole('option', { name: 'Small' }));
+      await waitFor(() => expect(lastData()).toEqual({ sizes: [1, 2] }));
     });
   });
 });

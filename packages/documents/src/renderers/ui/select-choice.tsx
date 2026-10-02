@@ -48,7 +48,7 @@ export function SelectChoice({
         <ComboboxEmpty>No options found.</ComboboxEmpty>
         <ComboboxList>
           {(option: ChoiceOption) => (
-            <ComboboxItem key={option.value} value={option}>
+            <ComboboxItem key={String(option.value)} value={option}>
               <span className="flex flex-col">
                 <span>{option.label}</span>
                 {option.description !== undefined && (

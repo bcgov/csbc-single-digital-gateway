@@ -30,7 +30,7 @@ export interface MultiChoiceControlSlot extends ChoiceWiring {
   /** The options the data chooses, in authoring order (rule 5). */
   chosen: ChoiceOption[];
   /** Writes the picked consts in authoring order, or `undefined` for none (rule 6). */
-  onValuesChange: (values: readonly string[]) => void;
+  onValuesChange: (values: readonly (string | number)[]) => void;
 }
 
 /** `'checkbox-group'` → Checkbox group; absent, `'multi-select'` or anything else → Multi-select (rule 2). */
@@ -45,7 +45,7 @@ export function MultiChoiceControl(props: ControlProps) {
   const options = useMemo(() => multiChoiceOptions(schema) ?? [], [schema]);
   const component = multiChoiceComponent(uischema);
   const chosen = chosenOptions(options, data);
-  const onValuesChange = (values: readonly string[]) =>
+  const onValuesChange = (values: readonly (string | number)[]) =>
     handleChange(path, storedChoices(options, values));
   return (
     <ChoiceField props={props} component={component}>
