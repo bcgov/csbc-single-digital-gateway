@@ -12,12 +12,21 @@ export function renderStudioRenderers(
     schema = { type: 'object' },
     removable = false,
     movable = false,
-  }: { editable?: boolean; schema?: object; removable?: boolean; movable?: boolean } = {},
+    copyable = false,
+  }: {
+    editable?: boolean;
+    schema?: object;
+    removable?: boolean;
+    movable?: boolean;
+    copyable?: boolean;
+  } = {},
 ) {
   const update = vi.fn<(id: string, patch: ElementPatch) => void>();
   const insert = vi.fn<(layoutId: string, index: number, itemId: string) => void>();
   const remove = vi.fn<(id: string, name: string) => void>();
   const move = vi.fn<(id: string, layoutId: string, index: number) => void>();
+  // Answers like the host: the copy's id (doc 254 rule 6).
+  const copy = vi.fn<(id: string) => string | undefined>((id) => `${id}-copy`);
   const form = (
     <JsonForms
       schema={schema}
@@ -35,6 +44,7 @@ export function renderStudioRenderers(
         insert={insert}
         {...(removable && { remove })}
         {...(movable && { move })}
+        {...(copyable && { copy })}
       >
         {form}
       </StudioEditorProvider>
@@ -42,7 +52,7 @@ export function renderStudioRenderers(
       form
     ),
   );
-  return { ...view, update, insert, remove, move };
+  return { ...view, update, insert, remove, move, copy };
 }
 
 export const studioHeading = (

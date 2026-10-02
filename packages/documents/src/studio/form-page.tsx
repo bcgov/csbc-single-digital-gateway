@@ -32,6 +32,7 @@ export function FormPageBody({
   onInsert = NO_INSERT,
   onRemove,
   onMove,
+  onCopy,
   onSelectionChange,
 }: {
   label: string;
@@ -47,6 +48,8 @@ export function FormPageBody({
   onRemove?: ((id: string, name: string) => void) | undefined;
   /** Moves a page element into another layout (doc 243); only an open page edits, so only it moves. */
   onMove?: ((id: string, layoutId: string, index: number) => void) | undefined;
+  /** Copies a page element, returning the copy's id (doc 254 rule 6); only an open page copies. */
+  onCopy?: ((id: string) => string | undefined) | undefined;
   /** Told when a page element is selected or deselected (doc 238 rule 16b). */
   onSelectionChange?: ((id: string | null) => void) | undefined;
 }) {
@@ -65,6 +68,7 @@ export function FormPageBody({
           onInsert={onInsert}
           onRemove={onRemove}
           onMove={onMove}
+          onCopy={open && !closing ? onCopy : undefined}
           onSelectionChange={onSelectionChange}
         />
       )}
@@ -79,6 +83,7 @@ function PageContent({
   onInsert,
   onRemove,
   onMove,
+  onCopy,
   onSelectionChange,
 }: {
   page: FormPage;
@@ -86,6 +91,7 @@ function PageContent({
   onInsert: (layoutId: string, index: number, itemId: string) => void;
   onRemove: ((id: string, name: string) => void) | undefined;
   onMove: ((id: string, layoutId: string, index: number) => void) | undefined;
+  onCopy: ((id: string) => string | undefined) | undefined;
   onSelectionChange: ((id: string | null) => void) | undefined;
 }) {
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
@@ -107,6 +113,7 @@ function PageContent({
       insert={onInsert}
       remove={onRemove}
       move={onMove}
+      copy={onCopy}
       onSelectionChange={onSelectionChange}
       enabled={onEdit !== undefined}
     >

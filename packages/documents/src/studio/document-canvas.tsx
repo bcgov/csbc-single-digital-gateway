@@ -74,6 +74,8 @@ export interface DocumentCanvasProps {
   onInsert?: ((layoutId: string, index: number, itemId: string) => void) | undefined;
   /** Deletes an element from a focused page, confirmed by the delete gate (doc 242); absent = no element deletes. */
   onRemoveElement?: ((elementId: string) => void) | undefined;
+  /** Copies a page element, returning the copy's id (doc 254 rule 6); absent: no Copy. */
+  onCopyElement?: ((elementId: string) => string | undefined) | undefined;
   /** Told when an element on the focused page is selected or deselected (doc 238 rule 16b). */
   onPageSelect?: ((elementId: string | null) => void) | undefined;
 }
@@ -97,6 +99,7 @@ export function DocumentCanvas({
   onRememberDelete,
   onInsert,
   onRemoveElement,
+  onCopyElement,
   onPageSelect,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
@@ -151,6 +154,7 @@ export function DocumentCanvas({
     insert: onInsert ?? NO_INSERT,
     canRemoveElement: onRemoveElement !== undefined,
     selectElement: onPageSelect ?? NO_SELECT,
+    copy: onCopyElement,
   });
 
   return (

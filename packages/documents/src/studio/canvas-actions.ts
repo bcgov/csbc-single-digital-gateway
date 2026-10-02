@@ -32,6 +32,8 @@ export interface CanvasActions {
   insert: (layoutId: string, index: number, itemId: string) => void;
   /** Moves a page element into a layout at an index (doc 243): a uischema-only edit, like `edit`. */
   move: (id: string, layoutId: string, index: number) => void;
+  /** Copies a page element, returning the copy's id (doc 254 rule 6); absent: elements offer no Copy. */
+  copy?: ((elementId: string) => string | undefined) | undefined;
   /** Whether page elements offer Delete (doc 242): the host can apply an element delete. */
   canRemoveElement: boolean;
   /** Reports the focused page's element selection to the host (doc 238 rule 16b). */
@@ -62,6 +64,7 @@ export function useEditActions(
     insert,
     canRemoveElement,
     selectElement,
+    copy,
   }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable'>,
 ): CanvasActions {
   return useMemo(
@@ -90,6 +93,7 @@ export function useEditActions(
       },
       canRemoveElement,
       selectElement,
+      copy,
     }),
     [
       uischema,
@@ -104,6 +108,7 @@ export function useEditActions(
       insert,
       canRemoveElement,
       selectElement,
+      copy,
     ],
   );
 }

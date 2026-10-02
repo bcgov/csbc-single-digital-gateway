@@ -47,3 +47,27 @@ describe('studio element actions (doc 242 rules 1-3)', () => {
     expect(screen.queryByRole('button', { name: /^Delete/ })).not.toBeInTheDocument();
   });
 });
+
+describe('studio element Copy (doc 254 rule 6)', () => {
+  it('offers Copy before Delete when the host can copy, and asks the host to copy that element', () => {
+    const { copy } = renderStudioRenderers(PAGE, {
+      schema: SCHEMA,
+      removable: true,
+      copyable: true,
+    });
+    const row = screen.getByRole('button', { name: 'Copy Your age' }).closest('[role="group"]')!;
+    expect(
+      within(row as HTMLElement)
+        .getAllByRole('button')
+        .map((b) => b.getAttribute('aria-label')),
+    ).toEqual(['Copy Your age', 'Delete Your age']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Your age' }));
+    expect(copy).toHaveBeenCalledWith('c1');
+  });
+
+  it('offers no Copy when the host cannot copy', () => {
+    renderStudioRenderers(PAGE, { schema: SCHEMA, removable: true });
+    expect(screen.queryByRole('button', { name: /^Copy / })).toBeNull();
+  });
+});

@@ -28,6 +28,11 @@ export interface StudioEditor {
    * only, never another grid's.
    */
   move?: ((id: string, layoutId: string, index: number) => void) | undefined;
+  /**
+   * Inserts a copy of the element with that id right after it, returning the copy's id (doc 254 rule 6). Absent:
+   * elements offer no Copy.
+   */
+  copy?: ((id: string) => string | undefined) | undefined;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
@@ -44,6 +49,7 @@ export function StudioEditorProvider({
   insert,
   remove,
   move,
+  copy,
   onSelectionChange,
   enabled = true,
   children,
@@ -52,6 +58,7 @@ export function StudioEditorProvider({
   insert: StudioEditor['insert'];
   remove?: StudioEditor['remove'];
   move?: StudioEditor['move'];
+  copy?: StudioEditor['copy'];
   /**
    * Told every time the selection changes (doc 238 rule 16b) — the provider still owns it. Held in a ref, so an inline
    * arrow is safe.
@@ -71,8 +78,8 @@ export function StudioEditorProvider({
     [],
   );
   const editor = useMemo(
-    () => ({ update, insert, remove, move, selectedId, select }),
-    [update, insert, remove, move, selectedId, select],
+    () => ({ update, insert, remove, move, copy, selectedId, select }),
+    [update, insert, remove, move, copy, selectedId, select],
   );
   return (
     <StudioEditorContext.Provider value={enabled ? editor : null}>

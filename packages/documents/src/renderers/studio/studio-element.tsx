@@ -32,6 +32,12 @@ export function useStudioElement(): StudioElementState | null {
 export const STUDIO_INTERACTIVE = 'nodrag nopan nokey pointer-events-auto';
 
 /**
+ * Every studio element's inset inside its frame (doc 254 rule 7): roomy enough that the 24px action bar below the
+ * element reads as belonging to it. One constant, so a control's body, a Heading, Rich content and a Separator agree.
+ */
+export const ELEMENT_INSET = 'p-4';
+
+/**
  * Every wrapped element's frame (doc 236 rule 16b): a dashed outline by default, dashed blue on hover, offset clear of the
  * content, and none while selected — the ring replaces it. An outline, not a border, so framing never moves anything.
  */
@@ -68,7 +74,7 @@ export function StudioElement({
 }) {
   const children = inert ? (
     // Padded, so the selection ring and hover outline sit clear of the control (doc 237 rule 13b).
-    <div data-slot="studio-element-body" inert className="p-2">
+    <div data-slot="studio-element-body" inert className={ELEMENT_INSET}>
       {content}
     </div>
   ) : (
@@ -108,10 +114,19 @@ export function StudioElement({
           }
         >
           {children}
-          {editor?.remove !== undefined && (
+          {editor !== null && (editor.remove !== undefined || editor.copy !== undefined) && (
             <ElementActions
               name={elementName(uischema, schema)}
-              onDelete={() => editor.remove?.(id, elementName(uischema, schema))}
+              {...(editor.copy !== undefined && {
+                // The copy is selected, like a moved element (doc 254 rule 6).
+                onCopy: () => {
+                  const copyId = editor.copy?.(id);
+                  if (copyId !== undefined) editor.select(copyId);
+                },
+              })}
+              {...(editor.remove !== undefined && {
+                onDelete: () => editor.remove?.(id, elementName(uischema, schema)),
+              })}
             />
           )}
         </div>

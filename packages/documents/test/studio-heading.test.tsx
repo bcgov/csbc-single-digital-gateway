@@ -115,8 +115,8 @@ describe('Studio Heading inline editing (doc 236)', () => {
 
   it('is padded inside its frame, viewing and editing', () => {
     const { heading } = startEditing();
-    expect(heading()).toHaveClass('p-2');
+    expect(heading()).toHaveClass('p-4');
     fireEvent.keyDown(heading(), { key: 'Escape' });
-    expect(heading()).toHaveClass('p-2');
+    expect(heading()).toHaveClass('p-4');
   });
 });

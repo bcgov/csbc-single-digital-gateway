@@ -10,6 +10,7 @@ import { DocumentStudioHeader, type StudioMode } from './document-studio-header'
 import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
+import { copyElement } from './element-copy';
 import { removeElement } from './element-remove';
 import { findById } from './element-ids';
 import { appendTarget, insertItem } from './palette-insert';
@@ -75,6 +76,17 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
       if (draft === null) return;
       const next = removeElement(draft.content, elementId);
       if (next !== draft.content) setContent(next);
+    },
+    [draft, setContent],
+  );
+  // A page element copied from its action bar (doc 254 rule 6): the copy's id comes back so the page selects it.
+  const copyEl = useCallback(
+    (elementId: string) => {
+      if (draft === null) return undefined;
+      const result = copyElement(draft.content, elementId);
+      if (result === undefined) return undefined;
+      setContent(result.content);
+      return result.copyId;
     },
     [draft, setContent],
   );
@@ -155,6 +167,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               }
               onInsert={insert}
               onRemoveElement={removeEl}
+              onCopyElement={copyEl}
               onPageSelect={setPageSelectedId}
             />
             {focusedId !== null && (

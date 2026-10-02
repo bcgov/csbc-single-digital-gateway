@@ -3,7 +3,7 @@ import { withJsonFormsLayoutProps } from '@jsonforms/react';
 import { DEFAULT_HEADING_LEVEL, headingOptions } from '../ui/heading-options';
 import { InlineEditableHeading } from './inline-heading';
 import { useStudioEditor } from './studio-editor';
-import { useStudioElement } from './studio-element';
+import { ELEMENT_INSET, useStudioElement } from './studio-element';
 
 /** Outranks the spread ui Heading (doc 236 rule 21). */
 export const studioHeadingTester = rankWith(2, uiTypeIs('Heading'));
@@ -25,7 +25,7 @@ export function StudioHeadingRenderer({ uischema, visible }: LayoutProps) {
       size={size}
       slot="heading-element"
       // Inset inside its frame like a studio control's body (doc 236 rule 22b, doc 237 rule 13b).
-      className="p-2"
+      className={ELEMENT_INSET}
       editLabel="Heading text"
       editable={editor !== null && element !== null}
       onCommit={(next) => {

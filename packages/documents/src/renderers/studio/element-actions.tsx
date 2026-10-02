@@ -1,32 +1,37 @@
 import type { UISchemaElement } from '@jsonforms/core';
-import { mdiDeleteOutline } from '@mdi/js';
-import { Icon } from '@mdi/react';
+import { mdiContentCopy, mdiDeleteOutline } from '@mdi/js';
+import { ActionBar, ActionBarButton } from './action-bar';
 
 /**
- * A studio element's action row (doc 242 rule 1): square icon buttons just below its bottom-right corner, the canvas
- * node actions' look (doc 234). Shown while the element itself is hovered, the row is focused, or the element is selected;
- * otherwise transparent and ignoring the pointer, but still named. The top padding bridges the gap to the element.
- * A click never reaches the element, so it does not also select it (rule 3).
+ * A studio element's action row (doc 242 rule 1, doc 254): the shared action bar below its bottom-right. Shown while the
+ * element itself is hovered, the row is focused, or the element is selected; otherwise transparent and ignoring the
+ * pointer, but still named. A click never reaches the element, so it does not also select it (rule 3).
  */
-export function ElementActions({ name, onDelete }: { name: string; onDelete: () => void }) {
+export function ElementActions({
+  name,
+  onCopy,
+  onDelete,
+}: {
+  name: string;
+  /** Absent: no Copy (the host cannot copy). */
+  onCopy?: (() => void) | undefined;
+  /** Absent: no Delete (the host cannot delete). */
+  onDelete?: (() => void) | undefined;
+}) {
   return (
-    <div
-      data-slot="studio-element-actions"
-      className={`absolute top-full right-0 z-10 flex gap-0.5 pt-1.5 ${VISIBILITY}`}
-    >
-      <button
-        type="button"
-        aria-label={`Delete ${name}`}
-        title={`Delete ${name}`}
-        className="flex size-4 items-center justify-center rounded-sm border border-border bg-background text-muted-foreground shadow-xs hover:text-destructive"
-        onClick={(event) => {
-          event.stopPropagation();
-          onDelete();
-        }}
-      >
-        <Icon path={mdiDeleteOutline} size="12px" />
-      </button>
-    </div>
+    <ActionBar slot="studio-element-actions" label="Element actions" className={VISIBILITY}>
+      {onCopy !== undefined && (
+        <ActionBarButton label={`Copy ${name}`} icon={mdiContentCopy} onClick={onCopy} />
+      )}
+      {onDelete !== undefined && (
+        <ActionBarButton
+          label={`Delete ${name}`}
+          icon={mdiDeleteOutline}
+          destructive
+          onClick={onDelete}
+        />
+      )}
+    </ActionBar>
   );
 }
 

@@ -25,7 +25,8 @@ describe('NodeActions (doc 234)', () => {
     ]);
     expect(buttons.map(iconOf)).toEqual([mdiTextBoxEditOutline, mdiCogOutline, mdiDeleteOutline]);
     for (const button of buttons)
-      expect(button).toHaveClass('nodrag', 'nopan', 'size-4', 'rounded-sm');
+      // The shared action bar's 24px ghost buttons (doc 254 rule 1).
+      expect(button).toHaveClass('nodrag', 'nopan', 'size-6');
 
     const user = userEvent.setup();
     const [edit, inspect, remove] = buttons;
@@ -50,14 +51,9 @@ describe('NodeActions (doc 234)', () => {
   it('sits outside the card below its right edge, padded so the pointer can cross to it (rule 1)', () => {
     const { container } = render(<NodeActions name="A" onEdit={vi.fn()} onDelete={vi.fn()} />);
 
-    expect(row(container)).toHaveClass(
-      'absolute',
-      'top-full',
-      'right-0',
-      'pt-0.5',
-      'gap-0.5',
-      'flex',
-    );
+    // 8px clear of the card (doc 254 rule 2); the buttons are joined in the bar's group.
+    expect(row(container)).toHaveClass('absolute', 'top-full', 'right-0', 'pt-2');
+    expect(row(container).querySelector('[data-slot="button-group"]')).not.toBeNull();
   });
 
   it('is hidden until the node is hovered or focused within, and stays named while hidden (rule 2)', () => {

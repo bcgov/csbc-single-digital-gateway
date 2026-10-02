@@ -1,0 +1,101 @@
+import { nanoid } from 'nanoid';
+import {
+  DEFAULT_VARIANT,
+  withVariant,
+  type DocumentContent,
+  type Uischema,
+} from './document-types';
+import { idOf, newId } from './element-ids';
+
+/** A Control bound to a top-level schema property (doc 242 rule 6's binding). */
+const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
+
+/** What a copy produced: the new content, and the copy's id so the studio can select it. */
+export interface CopyResult {
+  content: DocumentContent;
+  copyId: string;
+}
+
+/**
+ * `content` with a copy of the element `id` inserted right after it, in the same layout (doc 254 rule 6). Every copied
+ * element gets a new id, and every copied Control a NEW property — a `nanoid(8)` key holding a copy of the original's
+ * schema, required when the original is — so the copy is its own field, not a second view of the same answer. Controls
+ * in the copied subtree that shared a property share the new one. `undefined` for an unknown id or the root.
+ */
+export function copyElement(content: DocumentContent, id: string): CopyResult | undefined {
+  const variant = content.variants[DEFAULT_VARIANT];
+  const keys = new Map<string, string>();
+  let copyId: string | undefined;
+  const next = withCopy(variant, id, (element) => {
+    const copy = cloned(element, keys);
+    copyId = idOf(copy);
+    return copy;
+  });
+  if (next === variant || copyId === undefined) return undefined;
+  return {
+    content: { ...withVariant(content, next), schema: withKeys(content.schema, keys) },
+    copyId,
+  };
+}
+
+/** `node` with `copy(child)` inserted after the child whose id is `id`, at any depth; the same node when none is. */
+function withCopy(node: Uischema, id: string, copy: (element: Uischema) => Uischema): Uischema {
+  const elements = node['elements'];
+  if (!Array.isArray(elements)) return node;
+  const at = elements.findIndex((child) => isRecord(child) && idOf(child) === id);
+  if (at !== -1) {
+    const original = elements[at] as Uischema;
+    return {
+      ...node,
+      elements: [...elements.slice(0, at + 1), copy(original), ...elements.slice(at + 1)],
+    };
+  }
+  const next = elements.map((child) => (isRecord(child) ? withCopy(child, id, copy) : child));
+  return next.some((child, i) => child !== elements[i]) ? { ...node, elements: next } : node;
+}
+
+/** A deep copy with new ids, and Controls re-keyed through `keys` (old property key → new). */
+function cloned(element: Uischema, keys: Map<string, string>): Uischema {
+  const copy: Uischema = { ...structuredClone(element), id: newId() };
+  const scope = copy['scope'];
+  const key = typeof scope === 'string' ? PROPERTY_SCOPE.exec(scope)?.[1] : undefined;
+  if (copy['type'] === 'Control' && key !== undefined) {
+    const fresh = keys.get(key) ?? nanoid(8);
+    keys.set(key, fresh);
+    copy['scope'] = `#/properties/${fresh}`;
+  }
+  const elements = copy['elements'];
+  if (Array.isArray(elements)) {
+    copy['elements'] = elements.map((child: unknown) =>
+      isRecord(child) ? cloned(child, keys) : child,
+    );
+  }
+  return copy;
+}
+
+/** `schema` with each re-keyed property copied under its new key, required when the original is. */
+function withKeys(
+  schema: Record<string, unknown>,
+  keys: ReadonlyMap<string, string>,
+): Record<string, unknown> {
+  const properties = isRecord(schema['properties']) ? schema['properties'] : {};
+  const added = [...keys].filter(([old]) => isRecord(properties[old]));
+  if (added.length === 0) return schema;
+  const required = Array.isArray(schema['required'])
+    ? (schema['required'] as unknown[])
+    : undefined;
+  const newlyRequired = added.filter(([old]) => required?.includes(old)).map(([, fresh]) => fresh);
+  return {
+    ...schema,
+    properties: {
+      ...properties,
+      ...Object.fromEntries(added.map(([old, fresh]) => [fresh, structuredClone(properties[old])])),
+    },
+    ...(required !== undefined &&
+      newlyRequired.length > 0 && { required: [...required, ...newlyRequired] }),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

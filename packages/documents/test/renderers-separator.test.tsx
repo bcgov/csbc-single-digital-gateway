@@ -62,7 +62,7 @@ describe('Separator (doc 240)', () => {
     });
     const wrapper = container.querySelector<HTMLElement>('[data-element-id="s1"]')!;
     const element = wrapper.querySelector('[data-slot="separator-element"]')!;
-    expect(element).toHaveClass('p-2');
+    expect(element).toHaveClass('p-4');
     expect(wrapper.querySelector('[inert]')).toBeNull();
     fireEvent.click(element);
     expect(wrapper).toHaveAttribute('data-selected', '');
@@ -70,6 +70,6 @@ describe('Separator (doc 240)', () => {
 
   it('draws the ui Separator unpadded', () => {
     const { container } = renderUi(separator);
-    expect(container.querySelector('[data-slot="separator-element"]')).not.toHaveClass('p-2');
+    expect(container.querySelector('[data-slot="separator-element"]')).not.toHaveClass('p-4');
   });
 });

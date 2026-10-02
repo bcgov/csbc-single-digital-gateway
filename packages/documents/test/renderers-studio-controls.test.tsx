@@ -32,7 +32,8 @@ describe('studio boolean controls (doc 237 rules 13-15)', () => {
       const body = wrapper.querySelector('[data-slot="studio-element-body"]')!;
       expect(body).toHaveAttribute('inert');
       // Room between the wrapper's ring and the control (rule 13b).
-      expect(body).toHaveClass('p-2');
+      // ELEMENT_INSET (doc 254 rule 7).
+      expect(body).toHaveClass('p-4');
       expect(body.querySelector('[data-slot="boolean-field"]')).not.toBeNull();
       fireEvent.click(wrapper);
       expect(wrapper).toHaveAttribute('data-selected', '');
