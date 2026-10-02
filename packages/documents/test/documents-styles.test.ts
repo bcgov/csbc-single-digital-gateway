@@ -49,4 +49,17 @@ describe('@repo/documents styles.css (doc 236)', () => {
     );
     expect(css).not.toMatch(/@layer[^{]*\{[^}]*ui-draggable-dragging/);
   });
+
+  // Bug (doc 236 B3, found by hand): gridstack's `.grid-stack-animate .grid-stack-item` is a DESCENDANT selector, so an
+  // animating root grid transitioned a remounted NESTED grid's brand-new items from `top: 0` — they slid down from the
+  // top of their layout on every insert.
+  it("animates only a grid's OWN items, never a nested grid's", () => {
+    expect(css).toContain(`${grid} .grid-stack-item {\n  transition: none;\n}`);
+    expect(css).toContain(
+      ".grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item {\n  transition:",
+    );
+    expect(css).toContain(
+      ".grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item.ui-draggable-dragging,",
+    );
+  });
 });

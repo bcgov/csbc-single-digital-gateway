@@ -32,6 +32,29 @@
 }
 
 /*
+ * Only a grid's OWN items animate (doc 236 bug B3). gridstack's `.grid-stack-animate .grid-stack-item` is a DESCENDANT
+ * selector: an animating root grid transitioned a remounted nested grid's brand-new items from `top: 0`, so every item
+ * slid down from the top of its layout after an insert. Higher specificity than gridstack's rules, so it wins.
+ */
+.grid-stack[data-slot='studio-vertical-layout'] .grid-stack-item {
+  transition: none;
+}
+
+.grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item {
+  transition:
+    left 0.3s,
+    right 0.3s,
+    top 0.3s,
+    height 0.3s,
+    width 0.3s;
+}
+
+.grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item.ui-draggable-dragging,
+.grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item.grid-stack-placeholder {
+  transition: none;
+}
+
+/*
  * While an item is dragged (doc 236 rule 23b) the cursor is the default pointer, never an inline-editable Heading's text
  * cursor. gridstack gives the dragged item `pointer-events: none`, so the cursor comes from whatever is beneath it —
  * often another Heading — and marks the grid `grid-stack-dragging` for the drag. Unlayered, so it beats `cursor-text`.
