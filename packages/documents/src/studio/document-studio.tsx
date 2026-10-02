@@ -5,7 +5,8 @@ import { DocumentInspector } from './document-inspector';
 import { DocumentPalette } from './document-palette';
 import type { DocumentRef, DocumentStore } from './document-store';
 import { DocumentStudioEmpty } from './document-studio-empty';
-import { DocumentStudioHeader } from './document-studio-header';
+import { DocumentPreview } from './document-preview';
+import { DocumentStudioHeader, type StudioMode } from './document-studio-header';
 import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
@@ -90,10 +91,9 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
   const [inspectorReveal, setInspectorReveal] = useState(0);
   const [deleteChoices, setDeleteChoices] = useState<DeleteChoices>({});
   const variant = draft?.content.variants.default ?? null;
-  const [focus, setFocus] = useDocumentFocus(
-    draft?.ref?.documentId ?? (draft === null ? null : NEW),
-    variant?.['type'],
-  );
+  const documentKey = draft?.ref?.documentId ?? (draft === null ? null : NEW);
+  const [focus, setFocus] = useDocumentFocus(documentKey, variant?.['type']);
+  const [mode, setMode] = useStudioMode(documentKey);
   const focusedId = variant === null ? null : resolveFocus(variant, focus);
   // Derived, so a deleted Form or another document simply stops being selected (doc 232 rule 5). With nothing
   // selected, a focused Form is selected by default (doc 233 rule 6).
@@ -110,6 +110,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
     >
       <DocumentStudioHeader
         document={draft}
+        mode={mode}
+        onModeChange={setMode}
         canSave={studio.dirty}
         saving={studio.saving}
         onSave={() => void studio.save()}
@@ -127,6 +129,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
           (STATUS_VIEWS[studio.status] ?? (
             <DocumentStudioEmpty onNewDocument={() => setDialogOpen(true)} />
           ))
+        ) : mode === 'preview' ? (
+          <DocumentPreview content={draft.content} focusedId={focusedId} />
         ) : (
           <>
             <DocumentCanvas
@@ -179,7 +183,12 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
           </>
         )}
       </main>
-      <StudioFooter path={path} onSelect={setSelectedId} saveError={studio.saveError} />
+      <StudioFooter
+        // Preview selects nothing, so it shows no breadcrumbs (doc 247 rule 12).
+        path={mode === 'preview' ? null : path}
+        onSelect={setSelectedId}
+        saveError={studio.saveError}
+      />
       <NewDocumentDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -212,6 +221,20 @@ function useDocumentFocus(documentKey: string | null, rootType: unknown) {
     if (rootWas === 'Funnel' && rootType === 'Form') setFocus('default');
   }
   return [focus, setFocus] as const;
+}
+
+/**
+ * Edit | Preview (doc 247 rule 4): a document opens in Edit, and opening another resets to it — but not when a new
+ * document is first saved, which only gives the SAME document its id.
+ */
+function useStudioMode(documentKey: string | null) {
+  const [mode, setMode] = useState<StudioMode>('edit');
+  const [openFor, setOpenFor] = useState(documentKey);
+  if (openFor !== documentKey) {
+    setOpenFor(documentKey);
+    if (openFor !== NEW) setMode('edit');
+  }
+  return [mode, setMode] as const;
 }
 
 /** What the content area shows, without a document, for statuses other than `new`. */
