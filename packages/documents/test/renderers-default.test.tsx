@@ -3,6 +3,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import * as defaults from '../src/renderers/default/index';
 import * as ui from '../src/renderers/ui/index';
+import { renderStudioRenderers } from './render-studio-renderers';
 
 const heading = (id: string, text: string) => ({ id, type: 'Heading', options: { text } });
 
@@ -145,5 +146,40 @@ describe('renderers/default (doc 236)', () => {
       expect(ranks[0]).toBe(1);
       expect(ranks[1]).toBeLessThan(1);
     });
+  });
+});
+
+describe('Form description (doc 249 rule 17)', () => {
+  const formWith = (description: unknown) => ({
+    id: 'f',
+    type: 'Form',
+    label: 'About you',
+    options: { description },
+    elements: [heading('a', 'First')],
+  });
+
+  it('renders a non-blank options.description under the title, trimmed', () => {
+    const { container } = renderLayout(formWith('  Tell us who you are. '));
+    const title = container.querySelector('[data-slot="form-title"]')!;
+    const description = container.querySelector('[data-slot="form-description"]')!;
+    expect(description).toHaveTextContent(/^Tell us who you are\.$/);
+    expect(title.nextElementSibling).toBe(description);
+    expect(description.nextElementSibling).toHaveAttribute('data-slot', 'vertical-layout');
+  });
+
+  it('renders no description for a blank or non-string value', () => {
+    for (const value of ['   ', 42, null]) {
+      const { container, unmount } = renderLayout(formWith(value));
+      expect(container.querySelector('[data-slot="form-description"]'), String(value)).toBeNull();
+      unmount();
+    }
+  });
+
+  it('shows the description as text under the studio Form title', () => {
+    const { container } = renderStudioRenderers(formWith('Tell us.'));
+    const description = container.querySelector('[data-slot="form-description"]')!;
+    expect(description).toHaveTextContent('Tell us.');
+    expect(description.previousElementSibling).toHaveAttribute('data-slot', 'form-title');
+    expect(description.querySelector('input, textarea, [contenteditable]')).toBeNull();
   });
 });

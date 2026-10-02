@@ -1,0 +1,180 @@
+import { DEFAULT_ROWS } from '../../renderers/ui/string-options';
+import type { DocumentContent } from '../document-types';
+import {
+  absentIf,
+  BOOLEAN,
+  choice,
+  isKind,
+  NUMBER,
+  optionOf,
+  patchElement,
+  STRING,
+  WHOLE_NUMBER,
+  type InspectorField,
+} from './inspector-field';
+import type { InspectorTarget, TargetKind } from './inspector-target';
+import { setRequired, updateProperty } from './schema-edits';
+
+const CONTROL_KINDS: TargetKind[] = [
+  'checkbox',
+  'switch',
+  'text',
+  'textarea',
+  'number',
+  'select',
+  'radio-group',
+  'multi-select',
+  'checkbox-group',
+];
+const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
+
+/**
+ * Display-as variants per family, the default first (doc 249 rule 7): the default's `component` is what the palette
+ * writes — absent for Checkbox and Text.
+ */
+const FAMILIES: ReadonlyArray<ReadonlyArray<readonly [TargetKind, string, string | undefined]>> = [
+  [
+    ['checkbox', 'Checkbox', undefined],
+    ['switch', 'Switch', 'switch'],
+  ],
+  [
+    ['text', 'Text', undefined],
+    ['textarea', 'Text area', 'textarea'],
+  ],
+  [
+    ['select', 'Select', 'select'],
+    ['radio-group', 'Radio group', 'radio-group'],
+  ],
+  [
+    ['multi-select', 'Multi-select', 'multi-select'],
+    ['checkbox-group', 'Checkbox group', 'checkbox-group'],
+  ],
+];
+
+const familyOf = (kind: TargetKind) =>
+  FAMILIES.find((family) => family.some(([k]) => k === kind)) ?? [];
+
+/** The bound property's key — every control field applies only with one. */
+const keyOf = (t: InspectorTarget) => t.property?.key ?? '';
+const keyword = (t: InspectorTarget, name: string) => t.property?.schema[name];
+
+/** A field over one schema keyword of the bound property. */
+function keywordField(
+  key: string,
+  section: InspectorField['section'],
+  label: string,
+  kinds: TargetKind[],
+  name: string,
+  schema: Record<string, unknown>,
+): InspectorField {
+  return {
+    key,
+    section,
+    label,
+    applies: isKind(...kinds),
+    schema: () => schema,
+    read: (t) => keyword(t, name),
+    write: (content, t, value) => updateProperty(content, keyOf(t), { [name]: absentIf(value) }),
+  };
+}
+
+/** Rule 9: the description goes to the property, and a Control override that would hide it is removed. */
+function writeDescription(
+  content: DocumentContent,
+  t: InspectorTarget,
+  value: unknown,
+): DocumentContent {
+  const next = updateProperty(content, keyOf(t), { description: absentIf(value) });
+  return optionOf(t, 'description') === undefined
+    ? next
+    : patchElement(next, t, { options: { description: undefined } });
+}
+
+/**
+ * The description the control shows — its override when non-blank, else the property's (`controlDescription`) — but
+ * UNTRIMMED: a read that trims would hand JSONForms back a different value and eat the space just typed.
+ */
+function readDescription(t: InspectorTarget): unknown {
+  const override = optionOf(t, 'description');
+  return typeof override === 'string' && override.trim() !== ''
+    ? override
+    : keyword(t, 'description');
+}
+
+/** Doc 249's fields for Controls bound to a schema property. */
+export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
+  keywordField('label', 'General', 'Label', CONTROL_KINDS, 'title', STRING),
+  {
+    key: 'description',
+    section: 'General',
+    label: 'Description',
+    applies: isKind(...CONTROL_KINDS),
+    schema: () => STRING,
+    options: { component: 'textarea' },
+    read: readDescription,
+    write: writeDescription,
+  },
+  {
+    key: 'required',
+    section: 'General',
+    label: 'Required',
+    applies: isKind(...CONTROL_KINDS),
+    schema: () => BOOLEAN,
+    options: { component: 'switch' },
+    read: (t) => t.property?.required === true,
+    write: (content, t, value) => setRequired(content, keyOf(t), value === true),
+  },
+  keywordField('minLength', 'Validation', 'Minimum length', TEXT_KINDS, 'minLength', WHOLE_NUMBER),
+  keywordField('maxLength', 'Validation', 'Maximum length', TEXT_KINDS, 'maxLength', WHOLE_NUMBER),
+  {
+    key: 'integer',
+    section: 'Validation',
+    label: 'Whole numbers only',
+    applies: isKind('number'),
+    schema: () => BOOLEAN,
+    options: { component: 'switch' },
+    read: (t) => keyword(t, 'type') === 'integer',
+    write: (content, t, value) =>
+      updateProperty(content, keyOf(t), { type: value === true ? 'integer' : 'number' }),
+  },
+  keywordField('minimum', 'Validation', 'Minimum', ['number'], 'minimum', NUMBER),
+  keywordField('maximum', 'Validation', 'Maximum', ['number'], 'maximum', NUMBER),
+  // Ajv refuses a `multipleOf` that is not above zero (rule 8).
+  keywordField('step', 'Validation', 'Step', ['number'], 'multipleOf', {
+    type: 'number',
+    exclusiveMinimum: 0,
+  }),
+  {
+    key: 'component',
+    section: 'Appearance',
+    label: 'Display as',
+    applies: isKind(...CONTROL_KINDS.filter((kind) => kind !== 'number')),
+    schema: (t) => choice(familyOf(t.kind).map(([kind, title]) => [kind, title] as const)),
+    required: true,
+    read: (t) => t.kind,
+    write: (content, t, value) => {
+      const component = familyOf(t.kind).find(([kind]) => kind === value)?.[2];
+      return patchElement(content, t, { options: { component } });
+    },
+  },
+  {
+    key: 'placeholder',
+    section: 'Appearance',
+    label: 'Placeholder',
+    applies: isKind('text', 'textarea', 'number'),
+    schema: () => STRING,
+    read: (t) => optionOf(t, 'placeholder'),
+    write: (content, t, value) =>
+      patchElement(content, t, { options: { placeholder: absentIf(value) } }),
+  },
+  {
+    key: 'rows',
+    section: 'Appearance',
+    label: 'Rows',
+    applies: isKind('textarea'),
+    schema: () => ({ type: 'integer', minimum: 2, maximum: 20 }),
+    read: (t) => optionOf(t, 'rows') ?? DEFAULT_ROWS,
+    write: (content, t, value) =>
+      patchElement(content, t, { options: { rows: absentIf(value, DEFAULT_ROWS) } }),
+  },
+]);

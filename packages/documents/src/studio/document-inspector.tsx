@@ -3,6 +3,8 @@ import { Icon } from '@mdi/react';
 import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
 import { useState } from 'react';
 import type { DocumentContent } from './document-types';
+import { InspectorSettings } from './inspector/inspector-settings';
+import type { TargetInputs } from './inspector/inspector-target';
 import { StudioPanel } from './studio-panel';
 
 const VIEWS = ['settings', 'json'] as const;
@@ -19,8 +21,10 @@ const VIEW_INFO: Readonly<Record<InspectorView, { title: string; label: string; 
 const TOGGLE_CLASSES =
   'size-6 min-w-6 px-0 group-data-[spacing=0]/toggle-group:px-0 text-gray-70 aria-pressed:text-foreground';
 
-export interface DocumentInspectorProps {
+export interface DocumentInspectorProps extends TargetInputs {
   content: DocumentContent;
+  /** Applies a Settings edit (doc 249). */
+  onContentChange: (content: DocumentContent) => void;
   /** Whether the collapsed inspector is open, expanded (doc 233 rule 14). */
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,11 +34,15 @@ export interface DocumentInspectorProps {
 
 /**
  * The floating inspector over the canvas (doc 232 rules 9-12): always shown with a document, selection or not, with
- * Settings ("Inspector") and JSON ("Schema") views; the header is titled by the view. It collapses to a cog below the
+ * Settings ("Inspector", the inspected element's properties — doc 249) and JSON ("Schema") views; the header is titled by the view. It collapses to a cog below the
  * canvas breakpoint (doc 233 rule 14); the view is held here, so the docked and expanded forms share it.
  */
 export function DocumentInspector({
   content,
+  onContentChange,
+  pageSelectedId,
+  focusedId,
+  formId,
   open,
   onOpenChange,
   revealKey,
@@ -85,7 +93,15 @@ export function DocumentInspector({
         <div
           data-slot="document-studio-inspector-settings"
           className="min-h-0 flex-1 overflow-auto p-3"
-        />
+        >
+          <InspectorSettings
+            content={content}
+            pageSelectedId={pageSelectedId}
+            focusedId={focusedId}
+            formId={formId}
+            onContentChange={onContentChange}
+          />
+        </div>
       )}
     </StudioPanel>
   );

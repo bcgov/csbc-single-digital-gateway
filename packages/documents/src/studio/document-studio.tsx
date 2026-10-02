@@ -176,6 +176,10 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
             )}
             <DocumentInspector
               content={draft.content}
+              onContentChange={setContent}
+              pageSelectedId={pageSelectedId}
+              focusedId={focusedId}
+              formId={shownSelection}
               open={expanded === 'inspector'}
               onOpenChange={(open) => setExpanded(open ? 'inspector' : null)}
               revealKey={inspectorReveal}

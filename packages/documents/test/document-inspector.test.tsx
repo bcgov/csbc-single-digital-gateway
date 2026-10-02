@@ -5,10 +5,13 @@ import { DocumentInspector } from '../src/studio/document-inspector';
 import { form } from './funnel-fixtures';
 
 const content = { schema: { type: 'object' }, variants: { default: form('A') } };
+const target = { onContentChange: () => {}, pageSelectedId: null, focusedId: null, formId: null };
 
 describe('DocumentInspector', () => {
   it('floats a panel titled Inspector, with Settings pressed before JSON', () => {
-    render(<DocumentInspector content={content} open={false} onOpenChange={() => {}} />);
+    render(
+      <DocumentInspector content={content} {...target} open={false} onOpenChange={() => {}} />,
+    );
     const panel = screen.getByRole('region', { name: 'Inspector' });
     const settings = screen.getByRole('button', { name: 'Settings' });
     const json = screen.getByRole('button', { name: 'JSON' });
@@ -23,7 +26,9 @@ describe('DocumentInspector', () => {
 
   it('titles the JSON view Schema and shows the whole content, staying there when JSON is pressed again', async () => {
     const user = userEvent.setup();
-    render(<DocumentInspector content={content} open={false} onOpenChange={() => {}} />);
+    render(
+      <DocumentInspector content={content} {...target} open={false} onOpenChange={() => {}} />,
+    );
     const json = screen.getByRole('button', { name: 'JSON' });
 
     await user.click(json);

@@ -1,6 +1,6 @@
 import { rankWith, uiTypeIs, type Layout, type LayoutProps } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
-import { formTitle } from '../default/form-renderer';
+import { FormDescription, formDescription, formTitle } from '../default/form-renderer';
 import { layoutGap } from '../default/layout-gap';
 import { idOf } from './element-order';
 import { FORM_DROP_ZONE_SLOT } from './grid-drop-target';
@@ -24,6 +24,7 @@ export function StudioFormRenderer({ uischema, visible, ...props }: LayoutProps)
   const editor = useStudioEditor();
   if (!visible) return null;
   const title = formTitle(uischema);
+  const description = formDescription(uischema);
   const elements = (uischema as Layout).elements ?? [];
   const id = idOf(uischema);
   return (
@@ -49,6 +50,8 @@ export function StudioFormRenderer({ uischema, visible, ...props }: LayoutProps)
           editor.update(id, { label: next === '' ? undefined : next });
         }}
       />
+      {/* Edited in the inspector, never in place (doc 249 rule 17). */}
+      {description !== undefined && <FormDescription>{description}</FormDescription>}
       {/* Always the grid — empty, it is the Form's drop zone (doc 238 rule 17). */}
       <StudioVerticalGrid
         layoutId={idOf(uischema)}
