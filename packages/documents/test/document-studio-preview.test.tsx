@@ -33,6 +33,14 @@ describe('DocumentStudio preview (doc 247)', () => {
       expect(header().firstElementChild).toBe(group);
       expect(toggle('Edit')).toHaveAttribute('aria-pressed', 'true');
       expect(toggle('Preview')).toHaveAttribute('aria-pressed', 'false');
+      // The pressed item is BC Gov blue (rule 1c), replacing the Toggle's muted pressed fill.
+      for (const name of ['Edit', 'Preview'] as const) {
+        expect(toggle(name)).toHaveClass(
+          'aria-pressed:bg-bcgov-blue',
+          'aria-pressed:text-primary-foreground',
+        );
+        expect(toggle(name)).not.toHaveClass('aria-pressed:bg-muted');
+      }
     });
 
     it('draws no toggle before a document is open', () => {
@@ -55,8 +63,16 @@ describe('DocumentStudio preview (doc 247)', () => {
       const { user } = await open();
       fireEvent.doubleClick(formNode('Eligibility'));
       await screen.findByRole('article', { name: 'Eligibility page' });
-      expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+      // Back leads, left of the toggle (rule 1b).
+      const back = screen.getByRole('button', { name: 'Back' });
+      expect(header().firstElementChild).toBe(back);
+      const group = slot('document-studio-mode');
+      expect(back.nextElementSibling).toBe(group);
       await user.click(toggle('Preview'));
+      expect(slot('document-studio-mode')).toBe(group);
+      // With Back gone, the toggle leads again — the SAME element, never remounted, so it keeps focus.
+      expect(header().firstElementChild).toBe(slot('document-studio-mode'));
+      expect(toggle('Preview')).toHaveFocus();
       expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
       expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
       expect(slot('document-studio-type')).not.toBeNull();

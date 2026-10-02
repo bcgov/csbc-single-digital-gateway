@@ -21,9 +21,10 @@ export interface DocumentStudioHeaderProps {
 }
 
 /**
- * The studio's 36px header: the Edit | Preview toggle, then what the document is, Save at the far right. Every
- * control needs a document, so none render until one is open — the bar alone keeps the layout steady. Back and Save
- * belong to editing, so Preview draws neither (doc 247 rule 3).
+ * The studio's 36px header: Back when a Form is focused, the Edit | Preview toggle, then what the document is, Save
+ * at the far right. Every control needs a document, so none render until one is open — the bar alone keeps the
+ * layout steady. Back and Save belong to editing, so Preview draws neither; when Back shows it leads, left of the
+ * toggle (doc 247 rules 1, 3).
  */
 export function DocumentStudioHeader({
   document,
@@ -35,6 +36,7 @@ export function DocumentStudioHeader({
   onBack,
 }: DocumentStudioHeaderProps) {
   const editing = mode === 'edit';
+  const showBack = editing && onBack !== undefined;
   return (
     <header
       data-slot="document-studio-header"
@@ -42,13 +44,15 @@ export function DocumentStudioHeader({
     >
       {document !== null && (
         <>
-          <ModeToggle mode={mode} onModeChange={onModeChange} />
-          {editing && onBack !== undefined ? (
+          {showBack && (
             <Button size="xs" variant="ghost" data-slot="document-studio-back" onClick={onBack}>
               <Icon path={mdiArrowLeft} size="14px" />
               Back
             </Button>
-          ) : (
+          )}
+          {/* One position in every state, so the toggle never remounts (and keeps focus) as Back comes and goes. */}
+          <ModeToggle mode={mode} onModeChange={onModeChange} />
+          {!showBack && (
             <>
               <Badge color="green" data-slot="document-studio-type">
                 Type: {DOCUMENT_TYPE_INFO[document.type].label}
@@ -70,6 +74,10 @@ export function DocumentStudioHeader({
     </header>
   );
 }
+
+/** The pressed mode is BC Gov blue, on hover too (doc 247 rule 1c); `cn` merges it over the Toggle's muted fill. */
+const PRESSED =
+  'aria-pressed:border-bcgov-blue aria-pressed:bg-bcgov-blue aria-pressed:text-primary-foreground aria-pressed:hover:bg-bcgov-blue aria-pressed:hover:text-primary-foreground';
 
 /**
  * Edit | Preview (doc 247 rules 1-2). Exactly one item is pressed: pressing the pressed one makes Base UI report an
@@ -95,8 +103,12 @@ function ModeToggle({
         if (next === 'edit' || next === 'preview') onModeChange(next);
       }}
     >
-      <ToggleGroupItem value="edit">Edit</ToggleGroupItem>
-      <ToggleGroupItem value="preview">Preview</ToggleGroupItem>
+      <ToggleGroupItem value="edit" className={PRESSED}>
+        Edit
+      </ToggleGroupItem>
+      <ToggleGroupItem value="preview" className={PRESSED}>
+        Preview
+      </ToggleGroupItem>
     </ToggleGroup>
   );
 }
