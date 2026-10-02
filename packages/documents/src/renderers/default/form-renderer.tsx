@@ -14,10 +14,18 @@ export function formTitle(uischema: unknown): string | undefined {
   return typeof label === 'string' && label.trim() !== '' ? label.trim() : undefined;
 }
 
-/** The title's heading (rule 41). The studio draws the same heading, editable (rule 42b). */
+/**
+ * The title's heading (rule 41), ruled off from the page by a 2px BC Gov gold bottom border (rule 41b). The studio
+ * draws its own editable heading (rule 42b), without the rule.
+ */
 export function FormTitle({ children }: { children: ReactNode }) {
   return (
-    <Heading data-slot="form-title" level={1} size={1} className="font-semibold">
+    <Heading
+      data-slot="form-title"
+      level={1}
+      size={1}
+      className="border-b-2 border-bcgov-gold pb-2 font-semibold"
+    >
       {children}
     </Heading>
   );

@@ -101,6 +101,8 @@ describe('renderers/default (doc 236)', () => {
       expect(title.tagName).toBe('H1');
       expect(title).toHaveTextContent('Eligibility');
       expect(title).toHaveClass('text-h1', 'font-semibold');
+      // A 2px BC Gov gold rule under the title (doc 236 rule 41b).
+      expect(title).toHaveClass('border-b-2', 'border-bcgov-gold', 'pb-2');
       const body = form.querySelector('[data-slot="vertical-layout"]')!;
       expect(body).toHaveAttribute('data-gap', 'sm');
       expect(
