@@ -44,6 +44,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Switch',
       'Text',
       'Text area',
+      'Rich text',
       'Number',
       'Select',
       'Radio group',
@@ -126,12 +127,15 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     fireEvent.keyDown(itemNamed('Heading'), { key: 'ArrowDown' });
     expect(itemNamed('Separator')).toHaveFocus();
     fireEvent.keyDown(itemNamed('Separator'), { key: 'ArrowDown' });
+    expect(itemNamed('Rich content')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Rich content'), { key: 'ArrowDown' });
     expect(itemNamed('Checkbox')).toHaveFocus();
     const fields = [
       'Checkbox',
       'Switch',
       'Text',
       'Text area',
+      'Rich text',
       'Number',
       'Select',
       'Radio group',
@@ -147,10 +151,12 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Radio group',
       'Select',
       'Number',
+      'Rich text',
       'Text area',
       'Text',
       'Switch',
       'Checkbox',
+      'Rich content',
       'Separator',
       'Heading',
       'Vertical layout',

@@ -18,3 +18,13 @@ for (const method of ['setPointerCapture', 'releasePointerCapture'] as const) {
 if (typeof Element.prototype.hasPointerCapture !== 'function') {
   Element.prototype.hasPointerCapture = () => false;
 }
+
+// jsdom's Range has no geometry, and Lexical scrolls a FOCUSED editor's caret into view after every update — an
+// uncaught TypeError in any test that focuses a rich text editor (doc 250). No layout means an empty rect.
+for (const method of ['getBoundingClientRect', 'getClientRects'] as const) {
+  if (typeof Range.prototype[method] !== 'function') {
+    Range.prototype[method] = (
+      method === 'getBoundingClientRect' ? () => new DOMRect() : () => [] as unknown as DOMRectList
+    ) as never;
+  }
+}

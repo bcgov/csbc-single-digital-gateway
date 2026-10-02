@@ -42,6 +42,7 @@ const TYPE_NAMES: Readonly<Record<string, string>> = Object.freeze({
   HorizontalLayout: 'Horizontal layout',
   Heading: 'Heading',
   Separator: 'Separator',
+  RichContent: 'Rich content',
   Control: 'Field',
 });
 

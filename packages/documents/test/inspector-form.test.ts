@@ -151,3 +151,17 @@ describe('inspectorForm (doc 249 fields table)', () => {
     }
   });
 });
+
+describe('rich fields (doc 250 rule 18)', () => {
+  it('gives rich text Label, Description, Required and Placeholder, and rich content nothing', () => {
+    const root = page(control('bio'), { id: 'rc', type: 'RichContent' });
+    const schemas = { bio: { type: 'object', required: ['root'], title: 'Bio' } };
+    expect(layoutOf(formFor(root, 'c-bio', schemas).uischema)).toEqual([
+      ['General', ['Label', 'Description', 'Required']],
+      ['Appearance', ['Placeholder']],
+    ]);
+    const richContent = formFor(root, 'rc', schemas);
+    expect(richContent.empty).toBe(true);
+    expect(richContent.uischema['elements']).toEqual([]);
+  });
+});

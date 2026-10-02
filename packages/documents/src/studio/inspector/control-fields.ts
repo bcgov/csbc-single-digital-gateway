@@ -25,6 +25,7 @@ const CONTROL_KINDS: TargetKind[] = [
   'radio-group',
   'multi-select',
   'checkbox-group',
+  'rich-text',
 ];
 const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
 
@@ -148,7 +149,8 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'component',
     section: 'Appearance',
     label: 'Display as',
-    applies: isKind(...CONTROL_KINDS.filter((kind) => kind !== 'number')),
+    // A number and a rich text field have one presentation each.
+    applies: isKind(...CONTROL_KINDS.filter((kind) => kind !== 'number' && kind !== 'rich-text')),
     schema: (t) => choice(familyOf(t.kind).map(([kind, title]) => [kind, title] as const)),
     required: true,
     read: (t) => t.kind,
@@ -161,7 +163,7 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'placeholder',
     section: 'Appearance',
     label: 'Placeholder',
-    applies: isKind('text', 'textarea', 'number'),
+    applies: isKind('text', 'textarea', 'number', 'rich-text'),
     schema: () => STRING,
     read: (t) => optionOf(t, 'placeholder'),
     write: (content, t, value) =>

@@ -135,3 +135,20 @@ describe('inspectorTarget (doc 249 rules 1-6)', () => {
     });
   });
 });
+
+describe('rich kinds (doc 250 rule 17)', () => {
+  it('classifies a rich text Control and a RichContent element', () => {
+    const rich = { id: 'rc', type: 'RichContent' };
+    const c = content(form('F', 'F', [control('bio'), rich]), {
+      bio: { type: 'object', required: ['root'], title: 'Bio' },
+    });
+    const at = (id: string) =>
+      inspectorTarget(c, { pageSelectedId: id, focusedId: 'F', formId: 'F' });
+    expect(at('c-bio')).toMatchObject({ kind: 'rich-text', name: 'Bio' });
+    expect(at('rc')).toMatchObject({ kind: 'rich-content', name: undefined });
+    const plainObject = content(form('F', 'F', [control('o')]), { o: { type: 'object' } });
+    expect(
+      inspectorTarget(plainObject, { pageSelectedId: 'c-o', focusedId: 'F', formId: 'F' })?.kind,
+    ).toBe('unknown');
+  });
+});

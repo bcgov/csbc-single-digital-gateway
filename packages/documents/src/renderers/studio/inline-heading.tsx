@@ -122,7 +122,7 @@ export function InlineEditableHeading({
   );
 }
 
-interface Point {
+export interface Point {
   x: number;
   y: number;
 }
@@ -130,7 +130,7 @@ interface Point {
 /** A press that travelled further than this before its click was a drag, not a click. */
 const DRAG_DISTANCE = 4;
 
-function dragged(from: Point | null, to: { clientX: number; clientY: number }): boolean {
+export function dragged(from: Point | null, to: { clientX: number; clientY: number }): boolean {
   return from !== null && Math.hypot(to.clientX - from.x, to.clientY - from.y) > DRAG_DISTANCE;
 }
 

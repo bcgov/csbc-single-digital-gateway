@@ -5,6 +5,8 @@ import { headingEntry } from './heading-renderer';
 import { inputControlEntry } from './input-control';
 import { multiChoiceControlEntry } from './multi-choice-control';
 import { numberInputControlEntry } from './number-input-control';
+import { richContentEntry } from './rich-content-renderer';
+import { richTextControlEntry } from './rich-text-control';
 import { separatorEntry } from './separator-renderer';
 import { singleChoiceControlEntry } from './single-choice-control';
 import { switchControlEntry } from './switch-control';
@@ -14,12 +16,16 @@ export type { RendererSet } from '../renderer-set';
 export { headingOptions, type HeadingOptions } from './heading-options';
 
 export const cells: RendererSet['cells'] = [];
-export const contentRenderers: RendererSet['contentRenderers'] = [headingEntry, separatorEntry];
+export const contentRenderers: RendererSet['contentRenderers'] = [
+  headingEntry,
+  separatorEntry,
+  richContentEntry,
+];
 /**
  * The boolean controls (doc 237) — a Checkbox, or a Switch for `options.component: 'switch'` — and the string controls
  * (doc 239) — an Input, or a Textarea for `options.component: 'textarea'` — and the single choice (doc 244) — a
  * Select, or a Radio group for `options.component: 'radio-group'` — and the multiple choice (doc 245) — a
- * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248).
+ * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248) — and the rich text field (doc 250).
  */
 export const controlRenderers: RendererSet['controlRenderers'] = [
   checkboxControlEntry,
@@ -29,6 +35,7 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   singleChoiceControlEntry,
   multiChoiceControlEntry,
   numberInputControlEntry,
+  richTextControlEntry,
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];
 export const renderers = renderersOf({

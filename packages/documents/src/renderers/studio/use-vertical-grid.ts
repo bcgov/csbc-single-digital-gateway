@@ -12,7 +12,12 @@ const CELL_HEIGHT = 4;
  * Elements gridstack's drag must never start from (rule 29). Its default list only matches `contenteditable="true"`,
  * so an inline-editing Heading (`plaintext-only`) would start a drag on every press.
  */
-const DRAG_CANCEL = 'input,textarea,button,select,option,[contenteditable],.ui-resizable-handle';
+/**
+ * What a press may never drag from (doc 250 rule 13). `[contenteditable]` alone also matches `contenteditable="false"`,
+ * which a read-only `RichTextView` renders — so rich content could not be dragged by its text.
+ */
+export const DRAG_CANCEL =
+  'input,textarea,button,select,option,[contenteditable]:not([contenteditable="false"]),.ui-resizable-handle';
 
 export interface VerticalGridOptions {
   /** The authored gap in rem; gridstack's margin is half of it (rule 27). */

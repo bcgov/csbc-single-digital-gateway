@@ -2,12 +2,14 @@ import {
   mdiCheckboxMarkedOutline,
   mdiCheckboxMultipleMarkedOutline,
   mdiFormatHeaderPound,
+  mdiFormatParagraph,
   mdiFormDropdown,
   mdiFormTextbox,
   mdiMinus,
   mdiNumeric,
   mdiRadioboxMarked,
   mdiSelectMultiple,
+  mdiTextBoxEditOutline,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
   mdiViewSequentialOutline,
@@ -51,7 +53,7 @@ export type PaletteResolver = (context: PaletteContext) => PaletteItem[];
  * keywords (a choice's `oneOf`, doc 244 rule 18).
  */
 function newControl(
-  type: 'array' | 'boolean' | 'number' | 'string',
+  type: 'array' | 'boolean' | 'number' | 'object' | 'string',
   title: string,
   options?: Record<string, unknown>,
   extra?: Record<string, unknown>,
@@ -124,6 +126,15 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     create: () => ({ element: { id: newId(), type: 'Separator' } }),
   },
   {
+    id: 'rich-content',
+    label: 'Rich content',
+    icon: mdiFormatParagraph,
+    group: 'Content',
+    keywords: ['paragraph', 'text', 'formatted', 'body'],
+    // No content: the studio shows its grey placeholder, edited in place (doc 250 rule 15).
+    create: () => ({ element: { id: newId(), type: 'RichContent' } }),
+  },
+  {
     id: 'checkbox',
     label: 'Checkbox',
     icon: mdiCheckboxMarkedOutline,
@@ -154,6 +165,15 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Fields',
     keywords: ['string', 'paragraph', 'multiline'],
     create: () => newControl('string', 'Untitled text area', { component: 'textarea' }),
+  },
+  {
+    id: 'rich-text',
+    label: 'Rich text',
+    icon: mdiTextBoxEditOutline,
+    group: 'Fields',
+    keywords: ['formatted', 'paragraph', 'editor'],
+    // A rich text property requires its `root` (doc 250 rules 1, 16).
+    create: () => newControl('object', 'Untitled rich text', undefined, { required: ['root'] }),
   },
   {
     id: 'number',

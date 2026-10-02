@@ -15,10 +15,12 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['vertical-layout', 'Vertical layout', 'Layout'],
       ['heading', 'Heading', 'Content'],
       ['separator', 'Separator', 'Content'],
+      ['rich-content', 'Rich content', 'Content'],
       ['checkbox', 'Checkbox', 'Fields'],
       ['switch', 'Switch', 'Fields'],
       ['text', 'Text', 'Fields'],
       ['textarea', 'Text area', 'Fields'],
+      ['rich-text', 'Rich text', 'Fields'],
       ['number', 'Number', 'Fields'],
       ['select', 'Select', 'Fields'],
       ['radio-group', 'Radio group', 'Fields'],
@@ -158,5 +160,34 @@ describe('palette items (doc 238 rules 1-4)', () => {
     expect(a.element['options']).toBeUndefined();
     expect(a.properties![key!]).toEqual({ type: 'number', title: 'Untitled number' });
     expect(byId('number').icon).toMatch(/^M/);
+  });
+});
+
+describe('rich palette items (doc 250 rules 15-16)', () => {
+  it('lists Rich content after Separator and Rich text after Text area', () => {
+    const ids = DEFAULT_PALETTE_ITEMS.map((item) => item.id);
+    expect(ids.indexOf('rich-content')).toBe(ids.indexOf('separator') + 1);
+    expect(ids.indexOf('rich-text')).toBe(ids.indexOf('textarea') + 1);
+    expect(byId('rich-content').keywords).toEqual(['paragraph', 'text', 'formatted', 'body']);
+    expect(byId('rich-text').keywords).toEqual(['formatted', 'paragraph', 'editor']);
+  });
+
+  it('creates an empty RichContent and a rich text Control over a new required-root property', () => {
+    const content = byId('rich-content').create();
+    expect(Object.keys(content.element)).toEqual(['id', 'type']);
+    expect(content.element['type']).toBe('RichContent');
+    expect(content.properties).toBeUndefined();
+
+    const field = byId('rich-text').create();
+    const [key] = Object.keys(field.properties!);
+    expect(key).toMatch(/^[\w-]{8}$/);
+    expect(field.element).toMatchObject({ type: 'Control', scope: `#/properties/${key}` });
+    expect(field.element['options']).toBeUndefined();
+    expect(field.properties![key!]).toEqual({
+      type: 'object',
+      title: 'Untitled rich text',
+      required: ['root'],
+    });
+    expect(byId('rich-text').create().element['id']).not.toBe(field.element['id']);
   });
 });

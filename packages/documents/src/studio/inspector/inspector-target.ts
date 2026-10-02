@@ -1,5 +1,6 @@
 import { isPlainNumber } from '../../renderers/ui/number-options';
 import { isMultiChoice, isSingleChoice } from '../../renderers/ui/choice-options';
+import { isRichTextProperty } from '../../renderers/ui/rich-text-value';
 import { isPlainString } from '../../renderers/ui/string-options';
 import type { DocumentContent, Uischema } from '../document-types';
 import { findById, idOf } from '../element-ids';
@@ -20,6 +21,8 @@ export type TargetKind =
   | 'radio-group'
   | 'multi-select'
   | 'checkbox-group'
+  | 'rich-text'
+  | 'rich-content'
   | 'unknown';
 
 /** Each kind as the target line names it (rule 5). */
@@ -38,6 +41,8 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   'radio-group': 'Radio group',
   'multi-select': 'Multi-select',
   'checkbox-group': 'Checkbox group',
+  'rich-text': 'Rich text',
+  'rich-content': 'Rich content',
   unknown: 'Element',
 });
 
@@ -139,6 +144,7 @@ const LAYOUT_KINDS: Readonly<Record<string, TargetKind>> = Object.freeze({
   Heading: 'heading',
   VerticalLayout: 'vertical-layout',
   Separator: 'separator',
+  RichContent: 'rich-content',
 });
 
 /** Rule 4: element types by name; Controls through the renderers' own predicates, then `options.component`. */
@@ -148,6 +154,7 @@ function kindOf(element: Uischema, property: BoundProperty | undefined): TargetK
   if (property === undefined) return 'unknown';
   const component = recordOf(element['options'])?.['component'];
   const { schema } = property;
+  if (isRichTextProperty(schema)) return 'rich-text';
   if (schema['type'] === 'boolean') return component === 'switch' ? 'switch' : 'checkbox';
   if (isPlainString(schema)) return component === 'textarea' ? 'textarea' : 'text';
   if (isPlainNumber(schema)) return 'number';
