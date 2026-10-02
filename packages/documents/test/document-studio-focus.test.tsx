@@ -81,11 +81,11 @@ describe('DocumentStudio focus', () => {
     // The SAME node becomes the page — no second canvas — and the rest fades out, then leaves the canvas.
     const details = await screen.findByRole('article', { name: 'Details page' });
     expect(details.closest('.react-flow__node')).toHaveAttribute('data-id', 'stubDetl');
-    // Doc 236: the page renders the Form's elements through the studio renderers — a Control as its placeholder.
-    expect(within(details).getByText('Full name')).toHaveAttribute(
-      'data-slot',
-      'studio-placeholder',
-    );
+    // Doc 236: the page renders the Form's elements through the studio renderers — a string Control as its Input
+    // (doc 239), drawn inert.
+    expect(
+      within(details).getByText('Full name').closest('[data-slot="text-field"]'),
+    ).toHaveAttribute('data-component', 'input');
     await waitFor(() => expect(formNodes(container)).toHaveLength(1));
     expect(container.querySelector('.react-flow__edge')).toBeNull();
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();

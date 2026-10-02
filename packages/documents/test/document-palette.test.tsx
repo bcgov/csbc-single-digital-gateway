@@ -39,7 +39,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       within(groups[2]!)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Checkbox', 'Switch']);
+    ).toEqual(['Checkbox', 'Switch', 'Text', 'Text area']);
   });
 
   it('keeps the search input compact', () => {
@@ -71,7 +71,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     fireEvent.change(search(), { target: { value: 'banner' } });
     expect(itemIds()).toEqual(['title']);
     fireEvent.change(search(), { target: { value: '  ' } });
-    expect(itemIds()).toHaveLength(5);
+    expect(itemIds()).toHaveLength(DEFAULT_PALETTE_ITEMS.length + 1);
   });
 
   it('says No matches when nothing matches', () => {
@@ -115,12 +115,13 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     // Across groups, in list order, stopping at the last.
     fireEvent.keyDown(itemNamed('Heading'), { key: 'ArrowDown' });
     expect(itemNamed('Checkbox')).toHaveFocus();
-    fireEvent.keyDown(itemNamed('Checkbox'), { key: 'ArrowDown' });
-    fireEvent.keyDown(itemNamed('Switch'), { key: 'ArrowDown' });
-    expect(itemNamed('Switch')).toHaveFocus();
-    fireEvent.keyDown(itemNamed('Switch'), { key: 'ArrowUp' });
-    expect(itemNamed('Checkbox')).toHaveFocus();
-    for (const name of ['Checkbox', 'Heading', 'Vertical layout']) {
+    for (const name of ['Checkbox', 'Switch', 'Text', 'Text area']) {
+      fireEvent.keyDown(itemNamed(name), { key: 'ArrowDown' });
+    }
+    expect(itemNamed('Text area')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Text area'), { key: 'ArrowUp' });
+    expect(itemNamed('Text')).toHaveFocus();
+    for (const name of ['Text', 'Switch', 'Checkbox', 'Heading', 'Vertical layout']) {
       fireEvent.keyDown(itemNamed(name), { key: 'ArrowUp' });
     }
     expect(search()).toHaveFocus();

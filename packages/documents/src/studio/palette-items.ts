@@ -1,6 +1,8 @@
 import {
   mdiCheckboxMarkedOutline,
   mdiFormatHeaderPound,
+  mdiFormTextbox,
+  mdiTextBoxOutline,
   mdiToggleSwitchOutline,
   mdiViewSequentialOutline,
 } from '@mdi/js';
@@ -38,8 +40,12 @@ export interface PaletteContext {
 
 export type PaletteResolver = (context: PaletteContext) => PaletteItem[];
 
-/** A boolean Control over a new `nanoid(8)` property (doc 238 rule 3). */
-function booleanControl(title: string, options?: Record<string, unknown>): PaletteCreation {
+/** A Control over a new `nanoid(8)` property of `type` (doc 238 rule 3, doc 239 rule 13). */
+function newControl(
+  type: 'boolean' | 'string',
+  title: string,
+  options?: Record<string, unknown>,
+): PaletteCreation {
   const key = nanoid(8);
   return {
     element: {
@@ -48,7 +54,7 @@ function booleanControl(title: string, options?: Record<string, unknown>): Palet
       scope: `#/properties/${key}`,
       ...(options !== undefined && { options }),
     },
-    properties: { [key]: { type: 'boolean', title } },
+    properties: { [key]: { type, title } },
   };
 }
 
@@ -80,7 +86,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     icon: mdiCheckboxMarkedOutline,
     group: 'Fields',
     keywords: ['boolean', 'yes', 'no'],
-    create: () => booleanControl('Untitled checkbox'),
+    create: () => newControl('boolean', 'Untitled checkbox'),
   },
   {
     id: 'switch',
@@ -88,7 +94,23 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     icon: mdiToggleSwitchOutline,
     group: 'Fields',
     keywords: ['boolean', 'toggle', 'on', 'off'],
-    create: () => booleanControl('Untitled switch', { component: 'switch' }),
+    create: () => newControl('boolean', 'Untitled switch', { component: 'switch' }),
+  },
+  {
+    id: 'text',
+    label: 'Text',
+    icon: mdiFormTextbox,
+    group: 'Fields',
+    keywords: ['string', 'input', 'text'],
+    create: () => newControl('string', 'Untitled text'),
+  },
+  {
+    id: 'textarea',
+    label: 'Text area',
+    icon: mdiTextBoxOutline,
+    group: 'Fields',
+    keywords: ['string', 'paragraph', 'multiline'],
+    create: () => newControl('string', 'Untitled text area', { component: 'textarea' }),
   },
 ];
 

@@ -16,6 +16,8 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['heading', 'Heading', 'Content'],
       ['checkbox', 'Checkbox', 'Fields'],
       ['switch', 'Switch', 'Fields'],
+      ['text', 'Text', 'Fields'],
+      ['textarea', 'Text area', 'Fields'],
     ]);
     for (const item of DEFAULT_PALETTE_ITEMS) expect(item.icon).toMatch(/^M/);
   });
@@ -67,5 +69,18 @@ describe('palette items (doc 238 rules 1-4)', () => {
     const a: PaletteItem = { ...byId('heading'), label: 'First' };
     const b: PaletteItem = { ...byId('heading'), label: 'Second' };
     expect(uniqueItems([a, b, byId('switch')]).map((i) => i.label)).toEqual(['First', 'Switch']);
+  });
+
+  it('creates Text and Text area Controls over new nanoid(8) string properties (doc 239 rule 13)', () => {
+    const text = byId('text').create();
+    const [key] = Object.keys(text.properties!);
+    expect(key).toMatch(/^[\w-]{8}$/);
+    expect(text.element).toMatchObject({ type: 'Control', scope: `#/properties/${key}` });
+    expect(text.element['options']).toBeUndefined();
+    expect(text.properties![key!]).toEqual({ type: 'string', title: 'Untitled text' });
+    const area = byId('textarea').create();
+    const [areaKey] = Object.keys(area.properties!);
+    expect(area.element).toMatchObject({ options: { component: 'textarea' } });
+    expect(area.properties![areaKey!]).toEqual({ type: 'string', title: 'Untitled text area' });
   });
 });

@@ -114,7 +114,8 @@ describe('renderers/studio (doc 236)', () => {
   it('renders a placeholder naming a Control by label, schema title or scope key, and other elements by type', () => {
     const schema = {
       type: 'object',
-      properties: { age: { type: 'integer', title: 'Age' }, name: { type: 'string' } },
+      // No renderer takes an integer or a number yet, so these stay placeholders.
+      properties: { age: { type: 'integer', title: 'Age' }, name: { type: 'number' } },
     };
     const { container } = renderStudioRenderers(
       page([

@@ -33,7 +33,7 @@ describe('DocumentStudio palette (doc 238)', () => {
     const { palette } = await openEligibility();
     expect(
       [...palette.querySelectorAll('[data-palette-item]')].map((el) => el.textContent),
-    ).toEqual(['Vertical layout', 'Heading', 'Checkbox', 'Switch']);
+    ).toEqual(['Vertical layout', 'Heading', 'Checkbox', 'Switch', 'Text', 'Text area']);
   });
 
   it("calls the host's resolver with the document's type, kind and content", async () => {
