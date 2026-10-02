@@ -33,7 +33,8 @@ describe('renderers/ui (doc 236)', () => {
     ] as const) {
       expect(Array.isArray(ui[key]), key).toBe(true);
     }
-    expect(ui.contentRenderers).toHaveLength(1);
+    // Heading and Separator (doc 240).
+    expect(ui.contentRenderers).toHaveLength(2);
     // Checkbox, Switch (doc 237 rule 0), Input and Textarea (doc 239) live in ui; default and studio spread them.
     expect(ui.controlRenderers).toHaveLength(4);
     expect(ui.renderers).toEqual([

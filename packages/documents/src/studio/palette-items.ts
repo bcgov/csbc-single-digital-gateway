@@ -2,6 +2,7 @@ import {
   mdiCheckboxMarkedOutline,
   mdiFormatHeaderPound,
   mdiFormTextbox,
+  mdiMinus,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
   mdiViewSequentialOutline,
@@ -79,6 +80,14 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     keywords: ['title', 'text'],
     // No text: the studio shows its grey placeholder, edited in place.
     create: () => ({ element: { id: newId(), type: 'Heading', options: { level: 2 } } }),
+  },
+  {
+    id: 'separator',
+    label: 'Separator',
+    icon: mdiMinus,
+    group: 'Content',
+    keywords: ['divider', 'rule', 'line'],
+    create: () => ({ element: { id: newId(), type: 'Separator' } }),
   },
   {
     id: 'checkbox',

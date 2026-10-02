@@ -4,6 +4,7 @@ import { renderersOf } from '../renderer-set';
 import { placeholderEntry } from './placeholder-renderer';
 import { studioFormEntry } from './studio-form';
 import { studioHeadingEntry } from './studio-heading';
+import { studioSeparatorEntry } from './studio-separator';
 import { withStudioElement } from './studio-element';
 import { studioVerticalLayoutEntry } from './studio-vertical-layout';
 
@@ -24,6 +25,7 @@ export const cells: RendererSet['cells'] = [...defaults.cells];
 export const contentRenderers: RendererSet['contentRenderers'] = [
   ...defaults.contentRenderers,
   studioHeadingEntry,
+  studioSeparatorEntry,
   placeholderEntry,
 ].map((entry) => withStudioElement(entry));
 /** Controls are drawn but inert: a click selects, never fills in (doc 237 rule 13). */

@@ -14,6 +14,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
     expect(DEFAULT_PALETTE_ITEMS.map((i) => [i.id, i.label, i.group])).toEqual([
       ['vertical-layout', 'Vertical layout', 'Layout'],
       ['heading', 'Heading', 'Content'],
+      ['separator', 'Separator', 'Content'],
       ['checkbox', 'Checkbox', 'Fields'],
       ['switch', 'Switch', 'Fields'],
       ['text', 'Text', 'Fields'],
@@ -82,5 +83,13 @@ describe('palette items (doc 238 rules 1-4)', () => {
     const [areaKey] = Object.keys(area.properties!);
     expect(area.element).toMatchObject({ options: { component: 'textarea' } });
     expect(area.properties![areaKey!]).toEqual({ type: 'string', title: 'Untitled text area' });
+  });
+
+  it('creates a Separator element with a fresh id (doc 240 rule 5)', () => {
+    const a = byId('separator').create();
+    expect(a.element).toEqual({ id: expect.stringMatching(/^[\w-]{8}$/), type: 'Separator' });
+    expect(a.properties).toBeUndefined();
+    expect(byId('separator').create().element['id']).not.toBe(a.element['id']);
+    expect(byId('separator').icon).toMatch(/^M/);
   });
 });

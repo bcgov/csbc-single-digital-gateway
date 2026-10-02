@@ -114,6 +114,8 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     expect(itemNamed('Heading')).toHaveFocus();
     // Across groups, in list order, stopping at the last.
     fireEvent.keyDown(itemNamed('Heading'), { key: 'ArrowDown' });
+    expect(itemNamed('Separator')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Separator'), { key: 'ArrowDown' });
     expect(itemNamed('Checkbox')).toHaveFocus();
     for (const name of ['Checkbox', 'Switch', 'Text', 'Text area']) {
       fireEvent.keyDown(itemNamed(name), { key: 'ArrowDown' });
@@ -121,7 +123,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     expect(itemNamed('Text area')).toHaveFocus();
     fireEvent.keyDown(itemNamed('Text area'), { key: 'ArrowUp' });
     expect(itemNamed('Text')).toHaveFocus();
-    for (const name of ['Text', 'Switch', 'Checkbox', 'Heading', 'Vertical layout']) {
+    for (const name of ['Text', 'Switch', 'Checkbox', 'Separator', 'Heading', 'Vertical layout']) {
       fireEvent.keyDown(itemNamed(name), { key: 'ArrowUp' });
     }
     expect(search()).toHaveFocus();
