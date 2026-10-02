@@ -264,7 +264,7 @@ describe('studio selection ring (rule 16)', () => {
 });
 
 describe('studio element frame (doc 236 rule 16b)', () => {
-  it('frames every wrapped element with a dashed outline, solid on hover, none while selected', () => {
+  it('frames every wrapped element with a dashed outline, dashed blue on hover, none while selected', () => {
     const { container } = renderStudioRenderers({
       id: 'form',
       type: 'Form',
@@ -277,8 +277,13 @@ describe('studio element frame (doc 236 rule 16b)', () => {
       expect(container.querySelector(`[data-element-id="${id}"]`), id).toHaveClass(
         'outline-dashed',
         'outline-border',
-        'hover:outline-solid',
+        // Hover keeps the dash and turns it blue: the selection ring's own colour (`ring`, the design system's active
+        // border).
+        'hover:outline-ring',
         'data-[selected]:outline-none',
+      );
+      expect(container.querySelector(`[data-element-id="${id}"]`), id).not.toHaveClass(
+        'hover:outline-solid',
       );
       // Square: neither the frame nor the selection ring is rounded.
       expect(container.querySelector(`[data-element-id="${id}"]`)!.className, id).not.toMatch(

@@ -32,12 +32,12 @@ export function useStudioElement(): StudioElementState | null {
 export const STUDIO_INTERACTIVE = 'nodrag nopan nokey pointer-events-auto';
 
 /**
- * Every wrapped element's frame (doc 236 rule 16b): a dashed outline by default, solid on hover, offset clear of the
+ * Every wrapped element's frame (doc 236 rule 16b): a dashed outline by default, dashed blue on hover, offset clear of the
  * content, and none while selected — the ring replaces it. An outline, not a border, so framing never moves anything.
  */
 const ELEMENT_FRAME =
   // Square corners: the dashed frame and the selection ring both follow the wrapper's (none).
-  'outline outline-1 outline-dashed outline-border outline-offset-4 hover:outline-solid data-[selected]:outline-none';
+  'outline outline-1 outline-dashed outline-border outline-offset-4 hover:outline-ring data-[selected]:outline-none';
 
 /**
  * The selected element's ring — the canvas nodes' own selection ring (`SELECTED_CLASS` in studio/node-parts.tsx),
