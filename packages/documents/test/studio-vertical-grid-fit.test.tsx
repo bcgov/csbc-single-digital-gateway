@@ -10,6 +10,13 @@ import { renderStudioRenderers, studioHeading } from './render-studio-renderers'
 /** Every ResizeObserver callback the studio grids register, so a test can report a content resize. */
 const observed: ResizeObserverCallback[] = [];
 const original = globalThis.ResizeObserver;
+/** Waits `n` animation frames, one after another. */
+const frames = (n: number): Promise<void> =>
+  n === 0
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => requestAnimationFrame(() => resolve())).then(() =>
+        frames(n - 1),
+      );
 const offsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')!;
 
 afterEach(() => {
@@ -41,7 +48,7 @@ describe('studio grid fit to content (doc 243 rule 15)', () => {
     });
     // Let the grids' init frame turn their animation on.
     await act(async () => {
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await frames(2);
     });
     const root = container.querySelector('[data-slot="studio-vertical-layout"]') as HTMLElement & {
       gridstack: GridStack;
@@ -62,10 +69,30 @@ describe('studio grid fit to content (doc 243 rule 15)', () => {
     expect(animatedAtUpdate.every((animated) => !animated)).toBe(true);
 
     await act(async () => {
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await frames(2);
     });
     expect(root).toHaveClass('grid-stack-animate');
     const item = root.querySelector<GridItemHTMLElement>(':scope > [gs-id="outer"]');
     expect(item).not.toBeNull();
+  });
+
+  // Found by hand (doc 236 bug B3): a palette insert remounts the grid with the NEW item one row tall; fitting it moves
+  // the items below, and a single frame's wait could add the animation class before the corrected layout was painted —
+  // everything below the new item slid down into place. Two frames: the final positions paint without animation first.
+  it('turns animation on only after two frames, so a new grid paints its fitted layout first', async () => {
+    const { container } = renderStudioRenderers({
+      id: 'form',
+      type: 'Form',
+      elements: [studioHeading('a', 'A')],
+    });
+    const root = container.querySelector('[data-slot="studio-vertical-layout"]')!;
+    await act(async () => {
+      await frames(1);
+    });
+    expect(root).not.toHaveClass('grid-stack-animate');
+    await act(async () => {
+      await frames(1);
+    });
+    expect(root).toHaveClass('grid-stack-animate');
   });
 });

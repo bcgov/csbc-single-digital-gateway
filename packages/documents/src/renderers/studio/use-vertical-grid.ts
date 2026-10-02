@@ -99,7 +99,7 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
     retarget(instance);
     for (const item of itemsOf(el)) fitItem(instance, item, heights);
     // On only once the fitted layout has been painted, so neighbours still slide aside during a drag.
-    const animateLater = requestAnimationFrame(() => instance.setAnimation(true));
+    const cancelAnimate = afterPaint(() => instance.setAnimation(true));
     instance.on('dropped', (_event, previous: GridStackNode | undefined, node) =>
       handleDrop(instance, previous, node, {
         onDropItem: onDropItem.current,
@@ -115,7 +115,7 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
       onReorder.current(ordered);
     });
     return () => {
-      cancelAnimationFrame(animateLater);
+      cancelAnimate();
       grid.current = null;
       unlinkFromParentGrid(instance);
       instance.offAll();
@@ -144,7 +144,7 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
     const instance = grid.current;
     if (instance === null || el === null) return;
     const items = itemsOf(el);
-    let reanimate = 0;
+    let cancelReanimate = () => {};
     const observer = new ResizeObserver(() => {
       // Snapped, never animated (doc 243 rule 15): a layout settling to new content — a move into a layout two levels
       // down, which remounts it but not the layout around it — rippled up the page as an animated relayout.
@@ -153,15 +153,15 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
       if (animated) instance.setAnimation(false);
       for (const item of items) fitItem(instance, item, heights);
       if (!animated) return;
-      cancelAnimationFrame(reanimate);
-      reanimate = requestAnimationFrame(() => instance.setAnimation(true));
+      cancelReanimate();
+      cancelReanimate = afterPaint(() => instance.setAnimation(true));
     });
     for (const item of items) {
       const child = item.querySelector(':scope > .grid-stack-item-content > *');
       if (child !== null) observer.observe(child);
     }
     return () => {
-      cancelAnimationFrame(reanimate);
+      cancelReanimate();
       observer.disconnect();
     };
   }, [el]);
@@ -189,6 +189,19 @@ function handleDrop(
   if (item !== undefined) grid.removeWidget(item, true, false);
   if (itemId !== null) onDropItem(index, itemId);
   else if (movedId !== null) onMoveItem(index, movedId);
+}
+
+/**
+ * Runs `run` once the current layout has been PAINTED (doc 236 bug B3) — two frames, not one: a frame requested from a
+ * layout effect can fire before that frame's paint, and a grid that turned its animation on there transitioned from the
+ * layout `fitItem`'s measuring forced — a new item one row tall — so everything below it slid into place. Returns a
+ * cancel.
+ */
+function afterPaint(run: () => void): () => void {
+  let frame = requestAnimationFrame(() => {
+    frame = requestAnimationFrame(run);
+  });
+  return () => cancelAnimationFrame(frame);
 }
 
 /**
