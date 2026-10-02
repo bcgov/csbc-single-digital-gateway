@@ -1,7 +1,14 @@
 import { rankWith, uiTypeIs, type Layout, type LayoutProps } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
 import { Heading } from '@repo/ui/heading';
+import { RichTextView } from '@repo/ui/rich-text-view';
 import type { ReactNode } from 'react';
+import {
+  plainRichText,
+  richTextHasText,
+  richTextValue,
+  type RichTextState,
+} from '../ui/rich-text-value';
 import { layoutGap } from './layout-gap';
 import { VerticalStack } from './vertical-layout';
 
@@ -14,45 +21,74 @@ export function formTitle(uischema: unknown): string | undefined {
   return typeof label === 'string' && label.trim() !== '' ? label.trim() : undefined;
 }
 
-/** A Form's description: its `options.description` when a non-blank string, trimmed (doc 249 rule 17). */
-export function formDescription(uischema: unknown): string | undefined {
+/** A Form's description (doc 251 rule 1): rich content, or a legacy string. */
+export type FormDescriptionValue = { rich: RichTextState } | { text: string };
+
+/**
+ * A Form's `options.description` (doc 251 rule 1): a usable rich state with text, or a non-blank legacy string
+ * (trimmed); anything else is no description.
+ */
+export function formDescription(uischema: unknown): FormDescriptionValue | undefined {
   const options = (uischema as Record<string, unknown>)['options'];
-  const description =
+  const raw =
     typeof options === 'object' && options !== null
       ? (options as Record<string, unknown>)['description']
       : undefined;
-  return typeof description === 'string' && description.trim() !== ''
-    ? description.trim()
-    : undefined;
+  const rich = richTextValue(raw);
+  if (rich !== undefined) return richTextHasText(rich) ? { rich } : undefined;
+  return typeof raw === 'string' && raw.trim() !== '' ? { text: raw.trim() } : undefined;
 }
 
-/** The description under a Form's title (doc 249 rule 17), in the default and studio Forms alike. */
-export function FormDescription({ children }: { children: string }) {
+/** The description as an editor state — a legacy string as one paragraph (doc 251 rule 4). */
+export function descriptionState(
+  description: FormDescriptionValue | undefined,
+): RichTextState | undefined {
+  if (description === undefined) return undefined;
+  return 'rich' in description ? description.rich : plainRichText(description.text);
+}
+
+/** The description under a Form's title (doc 251 rule 2), muted; legacy text renders as one paragraph. */
+export function FormDescription({ value }: { value: FormDescriptionValue }) {
   return (
-    <p data-slot="form-description" className="-mt-3 text-muted-foreground">
-      {children}
-    </p>
+    <div data-slot="form-description" className="text-muted-foreground">
+      <RichTextView value={descriptionState(value) ?? null} />
+    </div>
   );
 }
 
-/**
- * The title's heading (rule 41), ruled off from the page by a 2px BC Gov gold bottom border (rule 41b). The studio
- * draws its own editable heading (rule 42b), without the rule.
- */
+/** The title's heading (rule 41). The studio draws its own editable heading (rule 42b). */
 export function FormTitle({ children }: { children: ReactNode }) {
   return (
-    <Heading
-      data-slot="form-title"
-      level={1}
-      size={1}
-      className="border-b-2 border-bcgov-gold pb-2 font-semibold"
-    >
+    <Heading data-slot="form-title" level={1} size={1} className="font-semibold">
       {children}
     </Heading>
   );
 }
 
-/** A Form: its title, then its elements laid out as a VerticalLayout (doc 236 rules 39-44). */
+/**
+ * The title, then the description, ruled off from the page by ONE 2px BC Gov gold bottom border (doc 236 rule 41b,
+ * doc 251 rule 2b) — the description sits above the line, with its title. Nothing when the Form has neither.
+ */
+export function FormHeader({
+  title,
+  description,
+}: {
+  title: string | undefined;
+  description: FormDescriptionValue | undefined;
+}) {
+  if (title === undefined && description === undefined) return null;
+  return (
+    <header
+      data-slot="form-header"
+      className="flex flex-col gap-2 border-b-2 border-bcgov-gold pb-2"
+    >
+      {title !== undefined && <FormTitle>{title}</FormTitle>}
+      {description !== undefined && <FormDescription value={description} />}
+    </header>
+  );
+}
+
+/** A Form: its header (title and description), then its elements laid out as a VerticalLayout (doc 236 rules 39-44). */
 export function FormRenderer({
   uischema,
   visible,
@@ -71,8 +107,7 @@ export function FormRenderer({
       {...(title !== undefined && { 'aria-label': title })}
       className="flex flex-col gap-6"
     >
-      {title !== undefined && <FormTitle>{title}</FormTitle>}
-      {description !== undefined && <FormDescription>{description}</FormDescription>}
+      <FormHeader title={title} description={description} />
       <VerticalStack
         elements={(uischema as Layout).elements ?? []}
         gap={layoutGap(uischema.options)}

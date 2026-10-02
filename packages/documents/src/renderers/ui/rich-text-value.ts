@@ -27,6 +27,29 @@ export function richTextHasText(state: RichTextState | undefined): boolean {
   return state !== undefined && hasText(state.root);
 }
 
+/** `text` as a state of one paragraph holding one text node (doc 251 rule 4) — how a legacy string is edited. */
+export function plainRichText(text: string): RichTextState {
+  const node = { detail: 0, format: 0, mode: 'normal', style: '', text, type: 'text', version: 1 };
+  const paragraph = {
+    children: [node],
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    type: 'paragraph',
+    version: 1,
+  };
+  return {
+    root: {
+      children: [paragraph],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  } as unknown as RichTextState;
+}
+
 function hasText(node: unknown): boolean {
   const record = recordOf(node);
   if (record === undefined) return false;

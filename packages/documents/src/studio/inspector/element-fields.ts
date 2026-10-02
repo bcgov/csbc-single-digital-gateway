@@ -1,3 +1,4 @@
+import { descriptionState, formDescription } from '../../renderers/default/form-renderer';
 import { DEFAULT_GAP } from '../../renderers/default/layout-gap';
 import { DEFAULT_HEADING_LEVEL } from '../../renderers/ui/heading-options';
 import {
@@ -6,6 +7,7 @@ import {
   isKind,
   optionOf,
   patchElement,
+  RICH_TEXT,
   STRING,
   type InspectorField,
 } from './inspector-field';
@@ -37,11 +39,10 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     section: 'General',
     label: 'Description',
     applies: isKind('form'),
-    schema: () => STRING,
-    options: { component: 'textarea' },
-    read: (t) => optionOf(t, 'description'),
-    write: (content, t, value) =>
-      patchElement(content, t, { options: { description: absentIf(value) } }),
+    // Rich text (doc 251 rule 7): the inspector draws doc 250's Rich text control; a legacy string reads as a paragraph.
+    schema: () => RICH_TEXT,
+    read: (t) => descriptionState(formDescription(t.element)),
+    write: (content, t, value) => patchElement(content, t, { options: { description: value } }),
   },
   {
     key: 'headingText',

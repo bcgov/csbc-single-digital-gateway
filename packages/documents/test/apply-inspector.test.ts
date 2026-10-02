@@ -5,6 +5,7 @@ import { applyInspector } from '../src/studio/inspector/apply-inspector';
 import { inspectorForm } from '../src/studio/inspector/inspector-form';
 import { inspectorTarget } from '../src/studio/inspector/inspector-target';
 import { control, form } from './funnel-fixtures';
+import { richText } from './rich-text-fixtures';
 
 const content = (
   elements: Uischema[],
@@ -36,10 +37,12 @@ describe('applyInspector (doc 249 rules 7-15)', () => {
   });
 
   it('writes a Form title and description into the uischema', () => {
-    const next = edit(content([]), 'F', { formTitle: 'About you', formDescription: 'Tell us.' });
+    // The description is rich text (doc 251 rule 7).
+    const description = richText('Tell us.');
+    const next = edit(content([]), 'F', { formTitle: 'About you', formDescription: description });
     expect(next.variants.default).toMatchObject({
       label: 'About you',
-      options: { description: 'Tell us.' },
+      options: { description },
     });
   });
 
@@ -131,5 +134,25 @@ describe('applyInspector (doc 249 rules 7-15)', () => {
       maxLength: 5,
       title: 'T',
     });
+  });
+});
+
+describe('rich Form description writes (doc 251 rule 7)', () => {
+  it('writes a rich state, removes the key for no text, and leaves an untouched legacy string alone', () => {
+    const legacy: DocumentContent = {
+      schema: { type: 'object', properties: {} },
+      variants: { default: { ...form('F', 'Page'), options: { description: 'Old text' } } },
+    };
+    expect(edit(legacy, 'F', {})).toBe(legacy);
+    expect(edit(legacy, 'F', { formTitle: 'New' }).variants.default['options']).toEqual({
+      description: 'Old text',
+    });
+    const rich = richText('New text');
+    const written = edit(legacy, 'F', { formDescription: rich });
+    expect(written.variants.default['options']).toEqual({ description: rich });
+    expect(edit(written, 'F', { formDescription: undefined }).variants.default['options']).toEqual(
+      {},
+    );
+    expect(edit(written, 'F', { formDescription: 'plain string' })).toBe(written);
   });
 });

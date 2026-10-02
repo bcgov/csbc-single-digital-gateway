@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DocumentContent, Uischema } from '../src/studio/document-types';
 import { inspectorForm } from '../src/studio/inspector/inspector-form';
 import { inspectorTarget } from '../src/studio/inspector/inspector-target';
+import { plainRichText } from '../src/renderers/ui/rich-text-value';
 import { control, form, funnel } from './funnel-fixtures';
+import { richText } from './rich-text-fixtures';
 
 const content = (root: Uischema, properties: Record<string, unknown> = {}): DocumentContent => ({
   schema: { type: 'object', properties },
@@ -163,5 +165,20 @@ describe('rich fields (doc 250 rule 18)', () => {
     const richContent = formFor(root, 'rc', schemas);
     expect(richContent.empty).toBe(true);
     expect(richContent.uischema['elements']).toEqual([]);
+  });
+});
+
+describe('rich Form description field (doc 251 rule 7)', () => {
+  it('is a rich text field reading a legacy string as one paragraph', () => {
+    const legacy = { ...page(), options: { description: '  Old text ' } };
+    const view = formFor(legacy, 'F');
+    const properties = view.schema['properties'] as Record<string, unknown>;
+    expect(properties['formDescription']).toEqual({ type: 'object', required: ['root'] });
+    expect(view.data['formDescription']).toEqual(plainRichText('Old text'));
+    const rich = richText('Rich');
+    expect(
+      formFor({ ...page(), options: { description: rich } }, 'F').data['formDescription'],
+    ).toBe(rich);
+    expect('formDescription' in formFor(page(), 'F').data).toBe(false);
   });
 });

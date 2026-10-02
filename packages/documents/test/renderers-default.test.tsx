@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import * as defaults from '../src/renderers/default/index';
 import * as ui from '../src/renderers/ui/index';
 import { renderStudioRenderers } from './render-studio-renderers';
+import { emptyRichText, richText } from './rich-text-fixtures';
 
 const heading = (id: string, text: string) => ({ id, type: 'Heading', options: { text } });
 
@@ -102,8 +103,11 @@ describe('renderers/default (doc 236)', () => {
       expect(title.tagName).toBe('H1');
       expect(title).toHaveTextContent('Eligibility');
       expect(title).toHaveClass('text-h1', 'font-semibold');
-      // A 2px BC Gov gold rule under the title (doc 236 rule 41b).
-      expect(title).toHaveClass('border-b-2', 'border-bcgov-gold', 'pb-2');
+      // A 2px BC Gov gold rule under the header that holds the title (doc 236 rule 41b, doc 251 rule 2b).
+      const header = form.querySelector('[data-slot="form-header"]')!;
+      expect(header).toHaveClass('border-b-2', 'border-bcgov-gold', 'pb-2');
+      expect(title.parentElement).toBe(header);
+      expect(title).not.toHaveClass('border-b-2');
       const body = form.querySelector('[data-slot="vertical-layout"]')!;
       expect(body).toHaveAttribute('data-gap', 'sm');
       expect(
@@ -164,7 +168,12 @@ describe('Form description (doc 249 rule 17)', () => {
     const description = container.querySelector('[data-slot="form-description"]')!;
     expect(description).toHaveTextContent(/^Tell us who you are\.$/);
     expect(title.nextElementSibling).toBe(description);
-    expect(description.nextElementSibling).toHaveAttribute('data-slot', 'vertical-layout');
+    // Above the gold line, with the title (doc 251 rule 2b).
+    const header = description.parentElement!;
+    expect(header).toHaveAttribute('data-slot', 'form-header');
+    expect(header).toHaveClass('border-b-2', 'border-bcgov-gold');
+    expect(description.nextElementSibling).toBeNull();
+    expect(header.nextElementSibling).toHaveAttribute('data-slot', 'vertical-layout');
   });
 
   it('renders no description for a blank or non-string value', () => {
@@ -180,6 +189,50 @@ describe('Form description (doc 249 rule 17)', () => {
     const description = container.querySelector('[data-slot="form-description"]')!;
     expect(description).toHaveTextContent('Tell us.');
     expect(description.previousElementSibling).toHaveAttribute('data-slot', 'form-title');
-    expect(description.querySelector('input, textarea, [contenteditable]')).toBeNull();
+    // Edited in place on a click (doc 251), never an open editor until then.
+    expect(description.querySelector('input, textarea, [contenteditable="true"]')).toBeNull();
+  });
+});
+
+const richForm = (description: unknown) => ({
+  id: 'f',
+  type: 'Form',
+  label: 'About you',
+  options: { description },
+  elements: [],
+});
+
+describe('rich Form description (doc 251 rules 1-2)', () => {
+  it('renders a rich description through RichTextView under the title, muted', () => {
+    const { container } = renderLayout(richForm(richText('Tell us **who** you are.')));
+    const description = container.querySelector('[data-slot="form-description"]')!;
+    expect(description).toHaveTextContent('Tell us **who** you are.');
+    expect(description).toHaveClass('text-muted-foreground');
+    expect(description.querySelector('[data-slot="rich-text-view"]')).not.toBeNull();
+    expect(description.previousElementSibling).toHaveAttribute('data-slot', 'form-title');
+  });
+
+  it('rules off a description-only Form under its description, and draws no header with neither', () => {
+    const { container, unmount } = renderLayout({
+      ...richForm(richText('Only this')),
+      label: undefined,
+    });
+    const header = container.querySelector('[data-slot="form-header"]')!;
+    expect(header).toHaveTextContent('Only this');
+    expect(header.querySelector('[data-slot="form-title"]')).toBeNull();
+    unmount();
+    const bare = renderLayout({ id: 'f', type: 'Form', elements: [] });
+    expect(bare.container.querySelector('[data-slot="form-header"]')).toBeNull();
+  });
+
+  it('renders nothing for an empty state, a malformed value or a blank string', () => {
+    for (const value of [emptyRichText(), { root: 'x' }, '   ', {}]) {
+      const { container, unmount } = renderLayout(richForm(value));
+      expect(
+        container.querySelector('[data-slot="form-description"]'),
+        JSON.stringify(value),
+      ).toBeNull();
+      unmount();
+    }
   });
 });

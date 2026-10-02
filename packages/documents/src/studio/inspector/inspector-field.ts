@@ -28,6 +28,8 @@ export interface InspectorField {
 export const STRING = Object.freeze({ type: 'string' });
 export const BOOLEAN = Object.freeze({ type: 'boolean' });
 export const NUMBER = Object.freeze({ type: 'number' });
+/** A rich text value (doc 250 rule 1): the inspector draws the Rich text control for it. */
+export const RICH_TEXT = Object.freeze({ type: 'object', required: ['root'] });
 /** A length: whole, never negative — Ajv refuses anything else in the document schema. */
 export const WHOLE_NUMBER = Object.freeze({ type: 'integer', minimum: 0 });
 
