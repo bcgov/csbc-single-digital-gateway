@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
 /** What a studio renderer may change on one element (doc 236 rule 11). It never carries a `type`. */
 export interface ElementPatch {
@@ -44,6 +44,7 @@ export function StudioEditorProvider({
   insert,
   remove,
   move,
+  onSelectionChange,
   enabled = true,
   children,
 }: {
@@ -51,13 +52,27 @@ export function StudioEditorProvider({
   insert: StudioEditor['insert'];
   remove?: StudioEditor['remove'];
   move?: StudioEditor['move'];
+  /**
+   * Told every time the selection changes (doc 238 rule 16b) — the provider still owns it. Held in a ref, so an inline
+   * arrow is safe.
+   */
+  onSelectionChange?: ((id: string | null) => void) | undefined;
   enabled?: boolean;
   children: ReactNode;
 }) {
-  const [selectedId, select] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const report = useRef(onSelectionChange);
+  report.current = onSelectionChange;
+  const select = useMemo(
+    () => (id: string | null) => {
+      setSelectedId(id);
+      report.current?.(id);
+    },
+    [],
+  );
   const editor = useMemo(
     () => ({ update, insert, remove, move, selectedId, select }),
-    [update, insert, remove, move, selectedId],
+    [update, insert, remove, move, selectedId, select],
   );
   return (
     <StudioEditorContext.Provider value={enabled ? editor : null}>

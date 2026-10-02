@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentContent } from '../src/studio/document-types';
-import { insertItem } from '../src/studio/palette-insert';
+import { appendTarget, insertItem } from '../src/studio/palette-insert';
 
 const heading = { id: 'h1', type: 'Heading', options: { text: 'Hi' } };
 const content = (): DocumentContent => ({
@@ -60,5 +60,37 @@ describe('insertItem (doc 238 rule 15)', () => {
       insertItem(before, 'form', 0, { ...created, properties: { age: { type: 'boolean' } } }),
     ).toBe(before);
     expect(insertItem(before, 'missing', 0, created)).toBe(before);
+  });
+});
+
+describe('appendTarget (doc 238 rule 16)', () => {
+  const form = {
+    id: 'form',
+    type: 'Form',
+    elements: [
+      heading,
+      {
+        id: 'v1',
+        type: 'VerticalLayout',
+        elements: [{ id: 'c1', type: 'Control', scope: '#/properties/a' }],
+      },
+      { id: 'v2', type: 'VerticalLayout', elements: [] },
+    ],
+  };
+
+  it('targets the end of a selected nested layout', () => {
+    expect(appendTarget(form, 'v1')).toEqual({ layoutId: 'v1', index: Infinity });
+    expect(appendTarget(form, 'v2')).toEqual({ layoutId: 'v2', index: Infinity });
+  });
+
+  it('targets right after a selected element that is not a layout, in its own layout', () => {
+    expect(appendTarget(form, 'h1')).toEqual({ layoutId: 'form', index: 1 });
+    expect(appendTarget(form, 'c1')).toEqual({ layoutId: 'v1', index: 1 });
+  });
+
+  it('targets the end of the Form with nothing selected, the Form selected, or a stale selection', () => {
+    expect(appendTarget(form, null)).toEqual({ layoutId: 'form', index: Infinity });
+    expect(appendTarget(form, 'form')).toEqual({ layoutId: 'form', index: Infinity });
+    expect(appendTarget(form, 'elsewhere')).toEqual({ layoutId: 'form', index: Infinity });
   });
 });

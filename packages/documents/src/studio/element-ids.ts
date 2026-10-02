@@ -14,6 +14,22 @@ export function idOf(element: Uischema): string | undefined {
   return typeof id === 'string' && id !== '' ? id : undefined;
 }
 
+/** The element whose id is `id` at or below `node` (through `elements`, any depth), else `undefined`. */
+export function findById(node: Uischema, id: string): Uischema | undefined {
+  if (idOf(node) === id) return node;
+  const elements = node['elements'];
+  if (!Array.isArray(elements)) return undefined;
+  for (const child of elements) {
+    const found = isElement(child) ? findById(child, id) : undefined;
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
+function isElement(value: unknown): value is Uischema {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /** `element` with `options` merged over its own — never mutates it. */
 export function withOptions(element: Uischema, options: Record<string, unknown>): Uischema {
   const current = element['options'];

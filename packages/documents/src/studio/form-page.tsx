@@ -32,6 +32,7 @@ export function FormPageBody({
   onInsert = NO_INSERT,
   onRemove,
   onMove,
+  onSelectionChange,
 }: {
   label: string;
   page: FormPage | null;
@@ -46,6 +47,8 @@ export function FormPageBody({
   onRemove?: ((id: string, name: string) => void) | undefined;
   /** Moves a page element into another layout (doc 243); only an open page edits, so only it moves. */
   onMove?: ((id: string, layoutId: string, index: number) => void) | undefined;
+  /** Told when a page element is selected or deselected (doc 238 rule 16b). */
+  onSelectionChange?: ((id: string | null) => void) | undefined;
 }) {
   const scrolls = open && !closing;
   const layout = scrolls ? 'nowheel overflow-y-auto' : 'pointer-events-none overflow-hidden';
@@ -62,6 +65,7 @@ export function FormPageBody({
           onInsert={onInsert}
           onRemove={onRemove}
           onMove={onMove}
+          onSelectionChange={onSelectionChange}
         />
       )}
     </article>
@@ -75,12 +79,14 @@ function PageContent({
   onInsert,
   onRemove,
   onMove,
+  onSelectionChange,
 }: {
   page: FormPage;
   onEdit: ((id: string, patch: ElementPatch) => void) | undefined;
   onInsert: (layoutId: string, index: number, itemId: string) => void;
   onRemove: ((id: string, name: string) => void) | undefined;
   onMove: ((id: string, layoutId: string, index: number) => void) | undefined;
+  onSelectionChange: ((id: string | null) => void) | undefined;
 }) {
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
   const form = (
@@ -101,6 +107,7 @@ function PageContent({
       insert={onInsert}
       remove={onRemove}
       move={onMove}
+      onSelectionChange={onSelectionChange}
       enabled={onEdit !== undefined}
     >
       <DeselectOnBackground />

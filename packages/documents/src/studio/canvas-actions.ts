@@ -32,6 +32,8 @@ export interface CanvasActions {
   move: (id: string, layoutId: string, index: number) => void;
   /** Whether page elements offer Delete (doc 242): the host can apply an element delete. */
   canRemoveElement: boolean;
+  /** Reports the focused page's element selection to the host (doc 238 rule 16b). */
+  selectElement: (elementId: string | null) => void;
 }
 
 export const CanvasActionsContext = createContext<CanvasActions | null>(null);
@@ -57,6 +59,7 @@ export function useEditActions(
     canConnect,
     insert,
     canRemoveElement,
+    selectElement,
   }: Omit<CanvasActions, 'add' | 'edit' | 'move'>,
 ): CanvasActions {
   return useMemo(
@@ -83,6 +86,7 @@ export function useEditActions(
         if (next !== uischema) onChange(next);
       },
       canRemoveElement,
+      selectElement,
     }),
     [
       uischema,
@@ -96,6 +100,7 @@ export function useEditActions(
       canConnect,
       insert,
       canRemoveElement,
+      selectElement,
     ],
   );
 }

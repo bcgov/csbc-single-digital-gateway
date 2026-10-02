@@ -1,5 +1,5 @@
 import type { Uischema } from './document-types';
-import { idOf } from './element-ids';
+import { findById, idOf } from './element-ids';
 import { without } from './element-remove';
 import { spliced } from './palette-insert';
 
@@ -26,17 +26,6 @@ export function moveElement(
   const at = Math.min(Math.max(index, 0), elements.length);
   if (indexIn(findById(uischema, toLayoutId), id) === at) return uischema;
   return spliced(rest, toLayoutId, at, moved);
-}
-
-function findById(node: Uischema, id: string): Uischema | undefined {
-  if (idOf(node) === id) return node;
-  const elements = node['elements'];
-  if (!Array.isArray(elements)) return undefined;
-  for (const child of elements) {
-    const found = isRecord(child) ? findById(child, id) : undefined;
-    if (found !== undefined) return found;
-  }
-  return undefined;
 }
 
 /** Where the child with id `id` sits in `layout`'s own `elements`, or -1. */

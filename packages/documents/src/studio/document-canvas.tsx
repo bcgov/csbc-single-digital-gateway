@@ -45,6 +45,7 @@ const EDGE_TYPES = { add: AddEdge };
 const NO_EDGES: AddEdgeType[] = [];
 const NO_INSPECT = () => {};
 const NO_INSERT = () => {};
+const NO_SELECT = () => {};
 const ASK_EVERY_TIME: DeleteChoices = {};
 
 export interface DocumentCanvasProps {
@@ -73,6 +74,8 @@ export interface DocumentCanvasProps {
   onInsert?: ((layoutId: string, index: number, itemId: string) => void) | undefined;
   /** Deletes an element from a focused page, confirmed by the delete gate (doc 242); absent = no element deletes. */
   onRemoveElement?: ((elementId: string) => void) | undefined;
+  /** Told when an element on the focused page is selected or deselected (doc 238 rule 16b). */
+  onPageSelect?: ((elementId: string | null) => void) | undefined;
 }
 
 /**
@@ -94,6 +97,7 @@ export function DocumentCanvas({
   onRememberDelete,
   onInsert,
   onRemoveElement,
+  onPageSelect,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
   const graph = useMemo(() => canvasGraph(uischema, schema), [uischema, schema]);
@@ -146,6 +150,7 @@ export function DocumentCanvas({
     canConnect: focusedId === null && uischema['type'] === 'Funnel',
     insert: onInsert ?? NO_INSERT,
     canRemoveElement: onRemoveElement !== undefined,
+    selectElement: onPageSelect ?? NO_SELECT,
   });
 
   return (

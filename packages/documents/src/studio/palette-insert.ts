@@ -1,6 +1,6 @@
 import type { DocumentContent, Uischema } from './document-types';
 import { DEFAULT_VARIANT, withVariant } from './document-types';
-import { idOf } from './element-ids';
+import { findById, idOf } from './element-ids';
 import type { PaletteCreation } from './palette-items';
 
 /**
@@ -26,6 +26,46 @@ export function insertItem(
     ...withElement,
     schema: { ...content.schema, properties: { ...current, ...added } },
   };
+}
+
+/** Where a clicked palette item goes (doc 238 rule 16): a layout and the index in its `elements`. */
+export interface AppendTarget {
+  layoutId: string;
+  index: number;
+}
+
+/**
+ * Where a palette click places its item in `form`, by the page selection (doc 238 rule 16): the end of a selected
+ * layout (an element with `elements`, other than the Form); right after a selected element that is not a layout, in its
+ * own layout; the end of the Form with nothing selected, the Form selected, or an id not inside it.
+ */
+export function appendTarget(form: Uischema, selectedId: string | null): AppendTarget {
+  const formId = idOf(form) ?? '';
+  const end = { layoutId: formId, index: Infinity };
+  if (selectedId === null || selectedId === formId) return end;
+  const selected = findById(form, selectedId);
+  if (selected === undefined) return end;
+  if (Array.isArray(selected['elements'])) return { layoutId: selectedId, index: Infinity };
+  const parent = parentOf(form, selectedId);
+  const parentId = parent === undefined ? undefined : idOf(parent);
+  if (parent === undefined || parentId === undefined) return end;
+  const siblings = parent['elements'] as unknown[];
+  return {
+    layoutId: parentId,
+    index: siblings.findIndex((c) => isRecord(c) && idOf(c) === selectedId) + 1,
+  };
+}
+
+/** The element whose `elements` directly hold the element with id `id`. */
+function parentOf(node: Uischema, id: string): Uischema | undefined {
+  const elements = node['elements'];
+  if (!Array.isArray(elements)) return undefined;
+  if (elements.some((child: unknown) => isRecord(child) && idOf(child) === id)) return node;
+  for (const child of elements) {
+    const found = isRecord(child) ? parentOf(child, id) : undefined;
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
 
 /** `node` with `element` spliced into the `elements` of the element whose id is `layoutId` (any depth), clamped. */

@@ -10,7 +10,8 @@ import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
 import { removeElement } from './element-remove';
-import { insertItem } from './palette-insert';
+import { findById } from './element-ids';
+import { appendTarget, insertItem } from './palette-insert';
 import { defaultPalette, uniqueItems, type PaletteResolver } from './palette-items';
 import { SelectionBreadcrumbs } from './selection-breadcrumbs';
 import { selectionPath, type PathSegment } from './selection-path';
@@ -80,6 +81,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
     props.documentId === undefined && (props.kind === undefined || props.type === undefined),
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The focused page's element selection, for a palette click (doc 238 rule 16b). Stale ids are tolerated.
+  const [pageSelectedId, setPageSelectedId] = useState<string | null>(null);
   // Which collapsed panel is open, expanded — one at a time (doc 233 rule 14).
   const [expanded, setExpanded] = useState<'palette' | 'inspector' | null>(null);
   // Doc 234: Inspect bumps this to reveal the inspector. "Don't ask me again" lasts for this mount, remembered per
@@ -148,15 +151,22 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               }
               onInsert={insert}
               onRemoveElement={removeEl}
+              onPageSelect={setPageSelectedId}
             />
             {focusedId !== null && (
               <DocumentPalette
                 open={expanded === 'palette'}
                 onOpenChange={(open) => setExpanded(open ? 'palette' : null)}
                 items={items}
-                // Click, Enter or Space appends to the end of the focused Form (doc 238 rule 16).
+                // Click, Enter or Space places by the page selection (doc 238 rule 16).
                 onAppend={(itemId) => {
-                  if (focusedId !== null) insert(focusedId, Infinity, itemId);
+                  const form =
+                    focusedId === null || variant === null
+                      ? undefined
+                      : findById(variant, focusedId);
+                  if (form === undefined) return;
+                  const { layoutId, index } = appendTarget(form, pageSelectedId);
+                  insert(layoutId, index, itemId);
                 }}
               />
             )}

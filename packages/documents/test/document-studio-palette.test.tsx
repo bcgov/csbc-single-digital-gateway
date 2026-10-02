@@ -87,6 +87,36 @@ describe('DocumentStudio palette (doc 238)', () => {
   });
 });
 
+describe('DocumentStudio palette click by page selection (doc 238 rule 16)', () => {
+  it('puts a clicked item inside a selected nested layout, and right after a selected field', async () => {
+    const { page, palette } = await openEligibility();
+    fireEvent.click(within(palette).getByRole('button', { name: /Vertical layout/ }));
+    const layout = await waitFor(() => {
+      const found = page.querySelector<HTMLElement>('[data-element-type="VerticalLayout"]');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    // Only an OPEN page selects: wait until a click marks the layout selected.
+    await waitFor(() => {
+      fireEvent.click(layout);
+      expect(layout).toHaveAttribute('data-selected');
+    });
+    fireEvent.click(within(palette).getByRole('button', { name: 'Checkbox' }));
+    await waitFor(() =>
+      expect(layout.querySelector('[data-slot="boolean-field"]')).toBeInTheDocument(),
+    );
+
+    fireEvent.click(page.querySelector('[data-element-id="stubHdg1"]')!);
+    fireEvent.click(within(palette).getByRole('button', { name: 'Heading' }));
+    await waitFor(() => {
+      const root = page.querySelector('[data-slot="studio-vertical-layout"]')!;
+      const items = [...root.querySelectorAll(':scope > [gs-id]')];
+      expect(items[0]!.getAttribute('gs-id')).toBe('stubHdg1');
+      expect(items[1]!.querySelector('[data-slot="heading-element"]')).toHaveTextContent('Heading');
+    });
+  });
+});
+
 describe('DocumentStudio element delete (doc 242)', () => {
   it('deletes a Control through the gate, leaving the rest of the page', async () => {
     const { page } = await openEligibility();
