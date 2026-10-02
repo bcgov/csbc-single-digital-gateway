@@ -4,6 +4,7 @@ import { checkboxControlEntry } from './checkbox-control';
 import { headingEntry } from './heading-renderer';
 import { inputControlEntry } from './input-control';
 import { separatorEntry } from './separator-renderer';
+import { singleChoiceControlEntry } from './single-choice-control';
 import { switchControlEntry } from './switch-control';
 import { textareaControlEntry } from './textarea-control';
 
@@ -14,13 +15,15 @@ export const cells: RendererSet['cells'] = [];
 export const contentRenderers: RendererSet['contentRenderers'] = [headingEntry, separatorEntry];
 /**
  * The boolean controls (doc 237) — a Checkbox, or a Switch for `options.component: 'switch'` — and the string controls
- * (doc 239) — an Input, or a Textarea for `options.component: 'textarea'`.
+ * (doc 239) — an Input, or a Textarea for `options.component: 'textarea'` — and the single choice (doc 244) — a
+ * Select, or a Radio group for `options.component: 'radio-group'`.
  */
 export const controlRenderers: RendererSet['controlRenderers'] = [
   checkboxControlEntry,
   switchControlEntry,
   inputControlEntry,
   textareaControlEntry,
+  singleChoiceControlEntry,
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];
 export const renderers = renderersOf({

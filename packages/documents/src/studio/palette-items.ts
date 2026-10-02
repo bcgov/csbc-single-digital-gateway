@@ -1,8 +1,10 @@
 import {
   mdiCheckboxMarkedOutline,
   mdiFormatHeaderPound,
+  mdiFormDropdown,
   mdiFormTextbox,
   mdiMinus,
+  mdiRadioboxMarked,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
   mdiViewSequentialOutline,
@@ -41,11 +43,15 @@ export interface PaletteContext {
 
 export type PaletteResolver = (context: PaletteContext) => PaletteItem[];
 
-/** A Control over a new `nanoid(8)` property of `type` (doc 238 rule 3, doc 239 rule 13). */
+/**
+ * A Control over a new `nanoid(8)` property of `type` (doc 238 rule 3, doc 239 rule 13), with any `extra` schema
+ * keywords (a choice's `oneOf`, doc 244 rule 18).
+ */
 function newControl(
   type: 'boolean' | 'string',
   title: string,
   options?: Record<string, unknown>,
+  extra?: Record<string, unknown>,
 ): PaletteCreation {
   const key = nanoid(8);
   return {
@@ -55,8 +61,20 @@ function newControl(
       scope: `#/properties/${key}`,
       ...(options !== undefined && { options }),
     },
-    properties: { [key]: { type, title } },
+    properties: { [key]: { type, title, ...extra } },
   };
+}
+
+/** A string choice Control starting with one option (doc 244 rule 18) — a fresh `oneOf` on every call. */
+function newChoice(component: 'select' | 'radio-group', title: string): PaletteCreation {
+  return newControl(
+    'string',
+    title,
+    { component },
+    {
+      oneOf: [{ const: 'option-1', title: 'Option 1' }],
+    },
+  );
 }
 
 /**
@@ -120,6 +138,22 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Fields',
     keywords: ['string', 'paragraph', 'multiline'],
     create: () => newControl('string', 'Untitled text area', { component: 'textarea' }),
+  },
+  {
+    id: 'select',
+    label: 'Select',
+    icon: mdiFormDropdown,
+    group: 'Fields',
+    keywords: ['choice', 'dropdown', 'combobox', 'options'],
+    create: () => newChoice('select', 'Untitled select'),
+  },
+  {
+    id: 'radio-group',
+    label: 'Radio group',
+    icon: mdiRadioboxMarked,
+    group: 'Fields',
+    keywords: ['choice', 'radio', 'options'],
+    create: () => newChoice('radio-group', 'Untitled radio group'),
   },
 ];
 

@@ -19,6 +19,8 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['switch', 'Switch', 'Fields'],
       ['text', 'Text', 'Fields'],
       ['textarea', 'Text area', 'Fields'],
+      ['select', 'Select', 'Fields'],
+      ['radio-group', 'Radio group', 'Fields'],
     ]);
     for (const item of DEFAULT_PALETTE_ITEMS) expect(item.icon).toMatch(/^M/);
   });
@@ -91,5 +93,31 @@ describe('palette items (doc 238 rules 1-4)', () => {
     expect(a.properties).toBeUndefined();
     expect(byId('separator').create().element['id']).not.toBe(a.element['id']);
     expect(byId('separator').icon).toMatch(/^M/);
+  });
+
+  it('creates Select and Radio group Controls over a new one-option string choice (doc 244 rule 18)', () => {
+    for (const [id, component, title] of [
+      ['select', 'select', 'Untitled select'],
+      ['radio-group', 'radio-group', 'Untitled radio group'],
+    ] as const) {
+      const a = byId(id).create();
+      const [key] = Object.keys(a.properties!);
+      expect(key).toMatch(/^[\w-]{8}$/);
+      expect(a.element).toMatchObject({
+        type: 'Control',
+        scope: `#/properties/${key}`,
+        options: { component },
+      });
+      expect(a.properties![key!]).toEqual({
+        type: 'string',
+        title,
+        oneOf: [{ const: 'option-1', title: 'Option 1' }],
+      });
+      const b = byId(id).create();
+      const [bKey] = Object.keys(b.properties!);
+      expect(bKey).not.toBe(key);
+      expect(b.properties![bKey!]!['oneOf']).not.toBe(a.properties![key!]!['oneOf']);
+      expect(byId(id).icon).toMatch(/^M/);
+    }
   });
 });

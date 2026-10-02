@@ -2,6 +2,8 @@ import { JsonForms } from '@jsonforms/react';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import * as ui from '../src/renderers/ui/index';
+import { inputControlTester } from '../src/renderers/ui/input-control';
+import { textareaControlTester } from '../src/renderers/ui/textarea-control';
 
 const baseSchema = {
   type: 'object',
@@ -73,8 +75,15 @@ describe('string controls (doc 239)', () => {
       expect(within(area.field()).getByRole('textbox').tagName).toBe('TEXTAREA');
     });
 
-    it('leaves choice strings (oneOf) to another renderer', () => {
-      expect(ranksFor(control('region'))[0]).toBeLessThan(1);
+    it('leaves choice strings (oneOf) to the single-choice renderer (doc 244)', () => {
+      const string = [inputControlTester, textareaControlTester];
+      for (const options of [{}, { component: 'textarea' }]) {
+        for (const tester of string) {
+          expect(
+            tester(control('region', options) as never, baseSchema as never, ctx),
+          ).toBeLessThan(1);
+        }
+      }
     });
   });
 

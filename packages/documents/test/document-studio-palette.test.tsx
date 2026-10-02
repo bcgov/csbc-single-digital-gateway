@@ -42,6 +42,8 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Switch',
       'Text',
       'Text area',
+      'Select',
+      'Radio group',
     ]);
   });
 
