@@ -15,8 +15,18 @@ import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
  * one output below — or, while focused (doc 233), the same node grown into the Form's page, which has no actions.
  */
 export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
-  const { remove, focus, inspect, edit, insert, move, canRemoveElement, selectElement, copy } =
-    useCanvasActions();
+  const {
+    remove,
+    focus,
+    inspect,
+    edit,
+    insert,
+    move,
+    canRemoveElement,
+    selectElement,
+    copy,
+    editOptions,
+  } = useCanvasActions();
   const { mark } = useNodeConnect(data.formId);
   const label = data.label ?? 'Untitled form';
   const focused = data.focused === true;
@@ -58,6 +68,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
           onMove={move}
           onSelectionChange={selectElement}
           onCopy={copy}
+          onEditOptions={editOptions}
           {...(canRemoveElement && {
             onRemove: (id: string, name: string) => remove({ id, kind: 'element', name }),
           })}

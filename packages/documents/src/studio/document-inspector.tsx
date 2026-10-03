@@ -26,6 +26,8 @@ export interface DocumentInspectorProps extends TargetInputs {
   content: DocumentContent;
   /** Applies a Settings edit (doc 249). */
   onContentChange: (content: DocumentContent) => void;
+  /** Opens the options editor for a choice field (doc 255 rule 2). */
+  onEditOptions?: ((elementId: string) => void) | undefined;
   /** Whether the collapsed inspector is open, expanded (doc 233 rule 14). */
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,6 +43,7 @@ export interface DocumentInspectorProps extends TargetInputs {
 export function DocumentInspector({
   content,
   onContentChange,
+  onEditOptions,
   pageSelectedId,
   focusedId,
   formId,
@@ -102,6 +105,7 @@ export function DocumentInspector({
               focusedId={focusedId}
               formId={formId}
               onContentChange={onContentChange}
+              onEditOptions={onEditOptions}
             />
           </FoldsProvider>
         </div>

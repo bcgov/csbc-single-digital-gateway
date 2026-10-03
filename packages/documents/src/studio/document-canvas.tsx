@@ -76,6 +76,8 @@ export interface DocumentCanvasProps {
   onRemoveElement?: ((elementId: string) => void) | undefined;
   /** Copies a page element, returning the copy's id (doc 254 rule 6); absent: no Copy. */
   onCopyElement?: ((elementId: string) => string | undefined) | undefined;
+  /** Opens the options editor for a page choice field (doc 255 rule 3); absent: no Edit options. */
+  onEditOptions?: ((elementId: string) => void) | undefined;
   /** Told when an element on the focused page is selected or deselected (doc 238 rule 16b). */
   onPageSelect?: ((elementId: string | null) => void) | undefined;
 }
@@ -100,6 +102,7 @@ export function DocumentCanvas({
   onInsert,
   onRemoveElement,
   onCopyElement,
+  onEditOptions,
   onPageSelect,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
@@ -155,6 +158,7 @@ export function DocumentCanvas({
     canRemoveElement: onRemoveElement !== undefined,
     selectElement: onPageSelect ?? NO_SELECT,
     copy: onCopyElement,
+    editOptions: onEditOptions,
   });
 
   return (

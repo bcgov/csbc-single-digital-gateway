@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DocumentContent } from '../document-types';
 import { applyInspector } from './apply-inspector';
 import { fieldsFor, inspectorForm, type InspectorForm } from './inspector-form';
+import { InspectorOptions } from '../options/inspector-options';
+import { optionsTargetOf } from '../options/options-target';
 import { INSPECTOR_RENDERERS } from './inspector-renderers';
 import {
   inspectorTarget,
@@ -16,6 +18,8 @@ export interface InspectorSettingsProps extends TargetInputs {
   content: DocumentContent;
   /** Called with the edited content — never on mount, never for an edit that changes nothing (doc 249 rule 13). */
   onContentChange: (content: DocumentContent) => void;
+  /** Opens the options editor for a choice field (doc 255 rule 2); absent: no Options section. */
+  onEditOptions?: ((elementId: string) => void) | undefined;
 }
 
 /** The inspector's Settings view (doc 249): the inspected element's target line and its editable properties. */
@@ -25,12 +29,14 @@ export function InspectorSettings({
   focusedId,
   formId,
   onContentChange,
+  onEditOptions,
 }: InspectorSettingsProps) {
   const target = useMemo(
     () => inspectorTarget(content, { pageSelectedId, focusedId, formId }),
     [content, pageSelectedId, focusedId, formId],
   );
   if (target === null) return <Message>Nothing to inspect.</Message>;
+  const options = onEditOptions === undefined ? undefined : optionsTargetOf(target);
   return (
     <div data-slot="inspector-settings" className="flex flex-col gap-2">
       <TargetLine target={target} />
@@ -41,6 +47,9 @@ export function InspectorSettings({
         content={content}
         onContentChange={onContentChange}
       />
+      {options !== undefined && (
+        <InspectorOptions target={options} onEdit={() => onEditOptions?.(options.elementId)} />
+      )}
     </div>
   );
 }

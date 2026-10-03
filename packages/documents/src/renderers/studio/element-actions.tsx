@@ -1,5 +1,5 @@
 import type { UISchemaElement } from '@jsonforms/core';
-import { mdiContentCopy, mdiDeleteOutline } from '@mdi/js';
+import { mdiContentCopy, mdiDeleteOutline, mdiFormatListBulleted } from '@mdi/js';
 import { ActionBar, ActionBarButton } from './action-bar';
 
 /**
@@ -9,10 +9,13 @@ import { ActionBar, ActionBarButton } from './action-bar';
  */
 export function ElementActions({
   name,
+  onEditOptions,
   onCopy,
   onDelete,
 }: {
   name: string;
+  /** A choice field's Edit options (doc 255 rule 3); absent for anything else. */
+  onEditOptions?: (() => void) | undefined;
   /** Absent: no Copy (the host cannot copy). */
   onCopy?: (() => void) | undefined;
   /** Absent: no Delete (the host cannot delete). */
@@ -20,6 +23,13 @@ export function ElementActions({
 }) {
   return (
     <ActionBar slot="studio-element-actions" label="Element actions" className={VISIBILITY}>
+      {onEditOptions !== undefined && (
+        <ActionBarButton
+          label={`Edit options for ${name}`}
+          icon={mdiFormatListBulleted}
+          onClick={onEditOptions}
+        />
+      )}
       {onCopy !== undefined && (
         <ActionBarButton label={`Copy ${name}`} icon={mdiContentCopy} onClick={onCopy} />
       )}

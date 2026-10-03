@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { DeleteChoices } from './delete-gate';
 import { DocumentCanvas } from './document-canvas';
 import { DocumentInspector } from './document-inspector';
@@ -11,14 +11,15 @@ import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
 import { copyElement } from './element-copy';
+import { useOptionsEditor } from './options/use-options-editor';
 import { removeElement } from './element-remove';
 import { findById } from './element-ids';
 import { appendTarget, insertItem } from './palette-insert';
 import { defaultPalette, uniqueItems, type PaletteResolver } from './palette-items';
-import { SelectionBreadcrumbs } from './selection-breadcrumbs';
-import { selectionPath, type PathSegment } from './selection-path';
+import { selectionPath } from './selection-path';
+import { STATUS_VIEWS, StudioFooter } from './studio-footer';
 import { browserDocumentStore } from './stub-documents';
-import { useDocumentStudio, type StudioStatus } from './use-document-studio';
+import { useDocumentStudio } from './use-document-studio';
 
 export interface DocumentStudioProps {
   /** Open this document — its latest version unless `versionId` names one. Absent = a new document. */
@@ -114,6 +115,13 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
       ? null
       : (selectionPath(variant, selectedId) ?? selectionPath(variant, focusedId));
   const shownSelection = path?.at(-1)?.id ?? null;
+  // The choice field whose options are being edited, and its dialog (doc 255).
+  const options = useOptionsEditor({
+    content: draft?.content ?? null,
+    focusedId,
+    formId: shownSelection,
+    onContentChange: setContent,
+  });
 
   return (
     <div
@@ -168,6 +176,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onInsert={insert}
               onRemoveElement={removeEl}
               onCopyElement={copyEl}
+              onEditOptions={options.open}
               onPageSelect={setPageSelectedId}
             />
             {focusedId !== null && (
@@ -196,7 +205,9 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               open={expanded === 'inspector'}
               onOpenChange={(open) => setExpanded(open ? 'inspector' : null)}
               revealKey={inspectorReveal}
+              onEditOptions={options.open}
             />
+            {options.dialog}
           </>
         )}
       </main>
@@ -252,42 +263,4 @@ function useStudioMode(documentKey: string | null) {
     if (openFor !== NEW) setMode('edit');
   }
   return [mode, setMode] as const;
-}
-
-/** What the content area shows, without a document, for statuses other than `new`. */
-const STATUS_VIEWS: Partial<Record<StudioStatus, ReactNode>> = {
-  loading: <StatusMessage>Loading document…</StatusMessage>,
-  'not-found': <StatusMessage>Document not found.</StatusMessage>,
-};
-
-function StatusMessage({ children }: { children: ReactNode }) {
-  return (
-    <p className="m-auto text-sm text-muted-foreground" data-slot="document-studio-status">
-      {children}
-    </p>
-  );
-}
-
-function StudioFooter({
-  path,
-  onSelect,
-  saveError,
-}: {
-  path: PathSegment[] | null;
-  onSelect: (formId: string | null) => void;
-  saveError: string | null;
-}) {
-  return (
-    <footer
-      data-slot="document-studio-footer"
-      className="flex h-9 shrink-0 items-center gap-2 border-t border-border px-2 text-xs"
-    >
-      {path !== null && <SelectionBreadcrumbs segments={path} onSelect={onSelect} />}
-      {saveError !== null && (
-        <span role="alert" className="ml-auto text-destructive">
-          {saveError}
-        </span>
-      )}
-    </footer>
-  );
 }

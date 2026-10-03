@@ -33,6 +33,8 @@ export interface StudioEditor {
    * elements offer no Copy.
    */
   copy?: ((id: string) => string | undefined) | undefined;
+  /** Opens the options editor for the choice field with that id (doc 255 rule 3). Absent: no Edit options. */
+  editOptions?: ((id: string) => void) | undefined;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
@@ -50,6 +52,7 @@ export function StudioEditorProvider({
   remove,
   move,
   copy,
+  editOptions,
   onSelectionChange,
   enabled = true,
   children,
@@ -59,6 +62,7 @@ export function StudioEditorProvider({
   remove?: StudioEditor['remove'];
   move?: StudioEditor['move'];
   copy?: StudioEditor['copy'];
+  editOptions?: StudioEditor['editOptions'];
   /**
    * Told every time the selection changes (doc 238 rule 16b) — the provider still owns it. Held in a ref, so an inline
    * arrow is safe.
@@ -78,8 +82,8 @@ export function StudioEditorProvider({
     [],
   );
   const editor = useMemo(
-    () => ({ update, insert, remove, move, copy, selectedId, select }),
-    [update, insert, remove, move, copy, selectedId, select],
+    () => ({ update, insert, remove, move, copy, editOptions, selectedId, select }),
+    [update, insert, remove, move, copy, editOptions, selectedId, select],
   );
   return (
     <StudioEditorContext.Provider value={enabled ? editor : null}>

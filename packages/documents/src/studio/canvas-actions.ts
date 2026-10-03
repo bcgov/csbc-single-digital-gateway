@@ -34,6 +34,8 @@ export interface CanvasActions {
   move: (id: string, layoutId: string, index: number) => void;
   /** Copies a page element, returning the copy's id (doc 254 rule 6); absent: elements offer no Copy. */
   copy?: ((elementId: string) => string | undefined) | undefined;
+  /** Opens the options editor for a page choice field (doc 255 rule 3); absent: no Edit options. */
+  editOptions?: ((elementId: string) => void) | undefined;
   /** Whether page elements offer Delete (doc 242): the host can apply an element delete. */
   canRemoveElement: boolean;
   /** Reports the focused page's element selection to the host (doc 238 rule 16b). */
@@ -65,6 +67,7 @@ export function useEditActions(
     canRemoveElement,
     selectElement,
     copy,
+    editOptions,
   }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable'>,
 ): CanvasActions {
   return useMemo(
@@ -94,6 +97,7 @@ export function useEditActions(
       canRemoveElement,
       selectElement,
       copy,
+      editOptions,
     }),
     [
       uischema,
@@ -109,6 +113,7 @@ export function useEditActions(
       canRemoveElement,
       selectElement,
       copy,
+      editOptions,
     ],
   );
 }

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { ElementActions, elementName } from './element-actions';
 import { idOf } from './element-order';
+import { isMultiChoice, isSingleChoice } from '../ui/choice-options';
 import { useStudioEditor } from './studio-editor';
 
 /** How many StudioElements enclose this point: 0 is the root, which renders bare (doc 236 rule 17). */
@@ -91,6 +92,11 @@ export function StudioElement({
     );
   }
   const selected = editor?.selectedId === id;
+  // A choice field opens its options editor from a double-click and its action bar (doc 255 rule 3).
+  const openOptions =
+    editor?.editOptions !== undefined && isChoiceControl(uischema, schema)
+      ? () => editor.editOptions?.(id)
+      : undefined;
   return (
     <DepthContext.Provider value={depth + 1}>
       <ElementContext.Provider value={{ id, selected }}>
@@ -107,6 +113,14 @@ export function StudioElement({
                   editor.select(id);
                 }
           }
+          onDoubleClick={
+            openOptions === undefined
+              ? undefined
+              : (event) => {
+                  event.stopPropagation();
+                  openOptions();
+                }
+          }
           className={
             editor === null
               ? undefined
@@ -114,21 +128,25 @@ export function StudioElement({
           }
         >
           {children}
-          {editor !== null && (editor.remove !== undefined || editor.copy !== undefined) && (
-            <ElementActions
-              name={elementName(uischema, schema)}
-              {...(editor.copy !== undefined && {
-                // The copy is selected, like a moved element (doc 254 rule 6).
-                onCopy: () => {
-                  const copyId = editor.copy?.(id);
-                  if (copyId !== undefined) editor.select(copyId);
-                },
-              })}
-              {...(editor.remove !== undefined && {
-                onDelete: () => editor.remove?.(id, elementName(uischema, schema)),
-              })}
-            />
-          )}
+          {editor !== null &&
+            (editor.remove !== undefined ||
+              editor.copy !== undefined ||
+              openOptions !== undefined) && (
+              <ElementActions
+                name={elementName(uischema, schema)}
+                {...(openOptions !== undefined && { onEditOptions: openOptions })}
+                {...(editor.copy !== undefined && {
+                  // The copy is selected, like a moved element (doc 254 rule 6).
+                  onCopy: () => {
+                    const copyId = editor.copy?.(id);
+                    if (copyId !== undefined) editor.select(copyId);
+                  },
+                })}
+                {...(editor.remove !== undefined && {
+                  onDelete: () => editor.remove?.(id, elementName(uischema, schema)),
+                })}
+              />
+            )}
         </div>
       </ElementContext.Provider>
     </DepthContext.Provider>
@@ -149,4 +167,20 @@ export function withStudioElement(
     );
   }
   return { tester: entry.tester, renderer: Wrapped };
+}
+
+const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
+
+/** Whether `uischema` is a Control over a single or multiple choice property of `schema` (doc 255 rule 1). */
+function isChoiceControl(uischema: UISchemaElement, schema: unknown): boolean {
+  const scope = (uischema as { scope?: unknown }).scope;
+  const key =
+    uischema.type === 'Control' && typeof scope === 'string'
+      ? PROPERTY_SCOPE.exec(scope)?.[1]
+      : undefined;
+  if (key === undefined) return false;
+  const property = (schema as { properties?: Record<string, unknown> } | undefined)?.properties?.[
+    key
+  ];
+  return isSingleChoice(property) || isMultiChoice(property);
 }

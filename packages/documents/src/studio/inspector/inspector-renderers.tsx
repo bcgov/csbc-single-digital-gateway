@@ -24,16 +24,18 @@ function Children({ uischema, schema, path, enabled, renderers, cells }: LayoutP
   ));
 }
 
+/** An inspector section's classes (doc 252 rules 5-7), shared with the Options section drawn outside the form (doc 255). */
+export const SECTION_CLASSES = Object.freeze({
+  className: 'flex flex-col gap-1 border-t border-border pt-2 first:border-t-0 first:pt-0',
+  headingClassName: 'text-[11px] font-bold tracking-wide text-muted-foreground uppercase',
+  rowsClassName: 'flex flex-col gap-1',
+});
+
 /** A `Group`: one headed, foldable inspector section (doc 252 rules 6-8), ruled off from the one above it. */
 function SectionLayout(props: LayoutProps) {
   if (!props.visible) return null;
   return (
-    <FoldableSection
-      name={typeof props.label === 'string' ? props.label : ''}
-      className="flex flex-col gap-1 border-t border-border pt-2 first:border-t-0 first:pt-0"
-      headingClassName="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
-      rowsClassName="flex flex-col gap-1"
-    >
+    <FoldableSection name={typeof props.label === 'string' ? props.label : ''} {...SECTION_CLASSES}>
       <Children {...props} />
     </FoldableSection>
   );

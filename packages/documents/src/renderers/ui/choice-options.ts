@@ -78,7 +78,7 @@ export function multiChoiceOptions(schema: unknown): ChoiceOption[] | undefined 
  * match, never guessed — else inferred from the first const: a string → `'string'`, a finite number → `'number'`
  * (never `'integer'`).
  */
-function itemsChoiceType(items: Record<string, unknown>): ChoiceType | undefined {
+export function itemsChoiceType(items: Record<string, unknown>): ChoiceType | undefined {
   const declared = items['type'];
   if (declared !== undefined) return isChoiceType(declared) ? declared : undefined;
   const entries = items['oneOf'];
