@@ -44,7 +44,36 @@ export function cursorRect(rect: DragRect): DragRect {
  * rect back to where the drag started, so neighbours the item already covered at the start are never re-displaced.
  * Re-verify against gridstack's `moveNode` / `directionCollideCoverage` on upgrade.
  */
+/**
+ * The row an ARRIVAL takes (doc 260 bug B3): gridstack inserts an item entering a grid at the cursor's row and pushes
+ * whatever it collides with DOWN. When that row falls in a neighbour's lower half — the cursor just leaving a nested
+ * layout below or beside its bottom — the neighbour was pushed under the cursor, the cursor entered it, the arrival
+ * left this grid, the neighbour sprang back, the cursor left it… every mouse move: the layouts vibrated. In a
+ * neighbour's lower half the arrival goes AFTER it; in its upper half before it (the neighbour moves away from the
+ * cursor) — the same midpoint rule `directionCollideCoverage` applies to a drag already in this grid.
+ */
+export function arrivalRow(nodes: readonly GridStackNode[], node: GridStackNode): number {
+  const y = node.y ?? 0;
+  const hit = nodes.find(
+    (other) => other !== node && y >= (other.y ?? 0) && y < (other.y ?? 0) + (other.h ?? 1),
+  );
+  if (hit === undefined) return y;
+  const [top, h] = [hit.y ?? 0, hit.h ?? 1];
+  return y >= top + h / 2 ? top + h : top;
+}
+
 export class GridNestEngine extends GridStackEngine {
+  /** An arrival never pushes a neighbour under the cursor (bug B3). */
+  override addNode(
+    node: GridStackNode,
+    triggerAddEvent?: boolean,
+    after?: GridStackNode,
+  ): GridStackNode {
+    const { _isExternal: external, _temporaryRemoved: entering } = node as EnteringNode;
+    if (external === true || entering === true) node.y = arrivalRow(this.nodes, node);
+    return super.addNode(node, triggerAddEvent, after);
+  }
+
   /** An item entering from another grid is as tall here as it is on screen (bug B2). */
   override nodeBoundFix(node: GridStackNode, resizing?: boolean): GridStackEngine {
     const { _isExternal: external, _temporaryRemoved: entering } = node as EnteringNode;

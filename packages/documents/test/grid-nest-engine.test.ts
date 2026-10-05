@@ -1,7 +1,12 @@
 import { GridStackEngine, type GridStackMoveOpts, type GridStackNode } from 'gridstack';
 import { describe, expect, it } from 'vitest';
 import { DDManager } from 'gridstack/dist/dd-manager';
-import { arrivingRows, cursorRect, GridNestEngine } from '../src/renderers/studio/grid-nest-engine';
+import {
+  arrivalRow,
+  arrivingRows,
+  cursorRect,
+  GridNestEngine,
+} from '../src/renderers/studio/grid-nest-engine';
 import { renderStudioRenderers, studioHeading } from './render-studio-renderers';
 
 // Doc 243 rule 12b / bug B1: gridstack displaced neighbours by the dragged item's EDGES, so a TALL item grabbed in its
@@ -128,5 +133,42 @@ describe('an item arriving from another grid (doc 260 bug B2)', () => {
     } finally {
       delete (DDManager as { dragElement?: unknown }).dragElement;
     }
+  });
+});
+
+/** A page: a field (rows 0-20) above a nested layout (rows 20-50), added as a real grid adds them. */
+function bugB3Page() {
+  const engine = new GridNestEngine({ column: 1, float: false });
+  engine.addNode({ id: 'field', x: 0, y: 0, w: 1, h: 20 });
+  engine.addNode({ id: 'layout', x: 0, y: 20, w: 1, h: 30 });
+  return engine;
+}
+const arrivingAt = (y: number) =>
+  ({ id: 'new', x: 0, y, w: 1, h: 10, _temporaryRemoved: true }) as GridStackNode;
+const rowsById = (engine: GridNestEngine) =>
+  Object.fromEntries(engine.nodes.map((n) => [n.id, n.y]));
+
+describe('an arrival never pushes a neighbour under the cursor (doc 260 bug B3)', () => {
+  it("lands after a neighbour whose lower half the cursor's row is in — the layout stays put", () => {
+    const engine = bugB3Page();
+    expect(arrivalRow(engine.nodes, arrivingAt(40))).toBe(50);
+    engine.addNode(arrivingAt(40));
+    expect(rowsById(engine)).toEqual({ field: 0, layout: 20, new: 50 });
+  });
+
+  it("lands before a neighbour whose upper half the cursor's row is in — the layout moves AWAY from the cursor", () => {
+    const engine = bugB3Page();
+    expect(arrivalRow(engine.nodes, arrivingAt(25))).toBe(20);
+    engine.addNode(arrivingAt(25));
+    expect(rowsById(engine)).toEqual({ field: 0, layout: 30, new: 20 });
+  });
+
+  it("keeps the cursor's row when it lands on no neighbour, and leaves the grid's own items alone", () => {
+    const engine = bugB3Page();
+    expect(arrivalRow(engine.nodes, arrivingAt(60))).toBe(60);
+    const own = { id: 'own', x: 0, y: 40, w: 1, h: 5 } as GridStackNode;
+    engine.addNode(own);
+    // Not an arrival: gridstack's own placement, which pushes as it always has.
+    expect(own.y).not.toBe(50);
   });
 });
