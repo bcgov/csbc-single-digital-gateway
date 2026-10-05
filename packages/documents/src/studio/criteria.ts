@@ -5,7 +5,7 @@ import type { Clause, ConditionRow, Operator } from '@repo/forms';
  * `renderers/xyflow/criteria.ts` and `condition-rows.ts`, which that package does not export. Stored values keep
  * its `Operator` union, so a Funnel's conditions stay evaluable by `@repo/forms/runner`.
  */
-export type FieldKind = 'text' | 'number' | 'choice' | 'boolean';
+export type FieldKind = 'text' | 'number' | 'choice' | 'multi' | 'boolean';
 
 export interface FieldOption {
   value: string | number;
@@ -24,6 +24,8 @@ export const OPERATORS_BY_KIND: Readonly<Record<FieldKind, readonly Operator[]>>
   text: ['equals', 'notEquals', 'contains', 'startsWith', 'endsWith', 'isEmpty', 'isNotEmpty'],
   number: ['equals', 'notEquals', 'gt', 'gte', 'lt', 'lte', 'isEmpty', 'isNotEmpty'],
   choice: ['equals', 'notEquals', 'in', 'notIn', 'isEmpty', 'isNotEmpty'],
+  // A multiple choice's answer is a list (doc 256 rule 4): only rules offer it — Funnel Conditions never see this kind.
+  multi: ['includes', 'notIncludes', 'isEmpty', 'isNotEmpty'],
   boolean: ['isTrue', 'isFalse'],
 };
 
@@ -61,7 +63,7 @@ export function startingValue(field: CriterionField, operator: Operator): Clause
   if (!needsValue(operator)) return undefined;
   if (takesList(operator)) return [];
   if (field.kind === 'number') return 0;
-  if (field.kind === 'choice') return field.options?.[0]?.value ?? '';
+  if (field.kind === 'choice' || field.kind === 'multi') return field.options?.[0]?.value ?? '';
   return '';
 }
 

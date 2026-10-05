@@ -5,6 +5,7 @@ import type { DocumentContent } from '../document-types';
 import { applyInspector } from './apply-inspector';
 import { fieldsFor, inspectorForm, type InspectorForm } from './inspector-form';
 import { InspectorOptions } from '../options/inspector-options';
+import { InspectorRule } from '../rules/inspector-rule';
 import { optionsTargetOf } from '../options/options-target';
 import { INSPECTOR_RENDERERS } from './inspector-renderers';
 import {
@@ -20,6 +21,8 @@ export interface InspectorSettingsProps extends TargetInputs {
   onContentChange: (content: DocumentContent) => void;
   /** Opens the options editor for a choice field (doc 255 rule 2); absent: no Options section. */
   onEditOptions?: ((elementId: string) => void) | undefined;
+  /** Opens the rule dialog for a page element (doc 256 rule 13); absent: no Rule section. */
+  onEditRule?: ((elementId: string) => void) | undefined;
 }
 
 /** The inspector's Settings view (doc 249): the inspected element's target line and its editable properties. */
@@ -30,6 +33,7 @@ export function InspectorSettings({
   formId,
   onContentChange,
   onEditOptions,
+  onEditRule,
 }: InspectorSettingsProps) {
   const target = useMemo(
     () => inspectorTarget(content, { pageSelectedId, focusedId, formId }),
@@ -47,6 +51,14 @@ export function InspectorSettings({
         content={content}
         onContentChange={onContentChange}
       />
+      {/* Rules belong to page elements, never the Form or Funnel root (doc 256 rule 13). */}
+      {onEditRule !== undefined && target.kind !== 'form' && target.kind !== 'funnel' && (
+        <InspectorRule
+          content={content}
+          elementId={target.id}
+          onEdit={() => onEditRule(target.id)}
+        />
+      )}
       {options !== undefined && (
         <InspectorOptions target={options} onEdit={() => onEditOptions?.(options.elementId)} />
       )}

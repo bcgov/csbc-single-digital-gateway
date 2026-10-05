@@ -13,12 +13,15 @@ export function renderStudioRenderers(
     removable = false,
     movable = false,
     copyable = false,
+    ruleProblems,
   }: {
     editable?: boolean;
     schema?: object;
     removable?: boolean;
     movable?: boolean;
     copyable?: boolean;
+    /** Gives the editor the rule ports (doc 256): Rules opens `editRule`, and this decides the error state. */
+    ruleProblems?: (id: string) => string[];
   } = {},
 ) {
   const update = vi.fn<(id: string, patch: ElementPatch) => void>();
@@ -27,6 +30,7 @@ export function renderStudioRenderers(
   const move = vi.fn<(id: string, layoutId: string, index: number) => void>();
   // Answers like the host: the copy's id (doc 254 rule 6).
   const copy = vi.fn<(id: string) => string | undefined>((id) => `${id}-copy`);
+  const editRule = vi.fn<(id: string) => void>();
   const form = (
     <JsonForms
       schema={schema}
@@ -45,6 +49,7 @@ export function renderStudioRenderers(
         {...(removable && { remove })}
         {...(movable && { move })}
         {...(copyable && { copy })}
+        {...(ruleProblems !== undefined && { editRule, ruleProblems })}
       >
         {form}
       </StudioEditorProvider>
@@ -52,7 +57,7 @@ export function renderStudioRenderers(
       form
     ),
   );
-  return { ...view, update, insert, remove, move, copy };
+  return { ...view, update, insert, remove, move, copy, editRule };
 }
 
 export const studioHeading = (

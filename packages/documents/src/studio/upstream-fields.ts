@@ -32,7 +32,7 @@ export function upstreamFields(
 }
 
 /** Every node that reaches `nodeId` along the variant's edges, not counting `nodeId` itself. */
-function ancestorsOf(uischema: Uischema, nodeId: string): Set<string> {
+export function ancestorsOf(uischema: Uischema, nodeId: string): Set<string> {
   const edges = edgesOf(uischema);
   const seen = new Set<string>();
   const pending = [nodeId];
@@ -48,7 +48,7 @@ function ancestorsOf(uischema: Uischema, nodeId: string): Set<string> {
   return seen;
 }
 
-function controlsIn(element: Uischema): Uischema[] {
+export function controlsIn(element: Uischema): Uischema[] {
   const found: Uischema[] = [];
   for (const child of elementsOf(element)) {
     if (!isRecord(child)) continue;
@@ -58,7 +58,7 @@ function controlsIn(element: Uischema): Uischema[] {
   return found;
 }
 
-function fieldOf(
+export function fieldOf(
   key: string,
   property: Record<string, unknown>,
   control: Uischema,

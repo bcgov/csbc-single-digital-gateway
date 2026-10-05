@@ -8,6 +8,8 @@ export interface ElementPatch {
   elements?: unknown[];
   /** Sets the element's top-level `label`; `undefined` removes it. Absent key = untouched. */
   label?: string | undefined;
+  /** Sets the element's JSONForms `rule` (doc 256); `undefined` removes it. Absent key = untouched. */
+  rule?: Record<string, unknown> | undefined;
 }
 
 /** The studio edit port (doc 236 rules 11-12): edits by element id, plus the studio's local selection. */
@@ -35,6 +37,10 @@ export interface StudioEditor {
   copy?: ((id: string) => string | undefined) | undefined;
   /** Opens the options editor for the choice field with that id (doc 255 rule 3). Absent: no Edit options. */
   editOptions?: ((id: string) => void) | undefined;
+  /** Opens the rule dialog for the element with that id (doc 256 rule 9). Absent: no Rules action. */
+  editRule?: ((id: string) => void) | undefined;
+  /** The fields an element's rule tests that it may not (doc 256 rule 5); absent: never in error. */
+  ruleProblems?: ((id: string) => string[]) | undefined;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
@@ -53,6 +59,8 @@ export function StudioEditorProvider({
   move,
   copy,
   editOptions,
+  editRule,
+  ruleProblems,
   onSelectionChange,
   enabled = true,
   children,
@@ -63,6 +71,8 @@ export function StudioEditorProvider({
   move?: StudioEditor['move'];
   copy?: StudioEditor['copy'];
   editOptions?: StudioEditor['editOptions'];
+  editRule?: StudioEditor['editRule'];
+  ruleProblems?: StudioEditor['ruleProblems'];
   /**
    * Told every time the selection changes (doc 238 rule 16b) — the provider still owns it. Held in a ref, so an inline
    * arrow is safe.
@@ -82,8 +92,19 @@ export function StudioEditorProvider({
     [],
   );
   const editor = useMemo(
-    () => ({ update, insert, remove, move, copy, editOptions, selectedId, select }),
-    [update, insert, remove, move, copy, editOptions, selectedId, select],
+    () => ({
+      update,
+      insert,
+      remove,
+      move,
+      copy,
+      editOptions,
+      editRule,
+      ruleProblems,
+      selectedId,
+      select,
+    }),
+    [update, insert, remove, move, copy, editOptions, editRule, ruleProblems, selectedId, select],
   );
   return (
     <StudioEditorContext.Provider value={enabled ? editor : null}>

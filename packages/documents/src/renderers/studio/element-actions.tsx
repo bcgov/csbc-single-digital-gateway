@@ -1,5 +1,5 @@
 import type { UISchemaElement } from '@jsonforms/core';
-import { mdiContentCopy, mdiDeleteOutline, mdiFormatListBulleted } from '@mdi/js';
+import { mdiContentCopy, mdiDeleteOutline, mdiFormatListBulleted, mdiSourceBranch } from '@mdi/js';
 import { ActionBar, ActionBarButton } from './action-bar';
 
 /**
@@ -9,11 +9,17 @@ import { ActionBar, ActionBarButton } from './action-bar';
  */
 export function ElementActions({
   name,
+  onEditRule,
+  hasRule = false,
   onEditOptions,
   onCopy,
   onDelete,
 }: {
   name: string;
+  /** Opens the element's rule dialog (doc 256 rule 9); absent: no Rules action. */
+  onEditRule?: (() => void) | undefined;
+  /** The element has a rule: Rules is drawn pressed. */
+  hasRule?: boolean;
   /** A choice field's Edit options (doc 255 rule 3); absent for anything else. */
   onEditOptions?: (() => void) | undefined;
   /** Absent: no Copy (the host cannot copy). */
@@ -23,6 +29,14 @@ export function ElementActions({
 }) {
   return (
     <ActionBar slot="studio-element-actions" label="Element actions" className={VISIBILITY}>
+      {onEditRule !== undefined && (
+        <ActionBarButton
+          label={`Rules for ${name}`}
+          icon={mdiSourceBranch}
+          pressed={hasRule}
+          onClick={onEditRule}
+        />
+      )}
       {onEditOptions !== undefined && (
         <ActionBarButton
           label={`Edit options for ${name}`}

@@ -12,6 +12,7 @@ import { withVariant, type DocumentKind, type DocumentType } from './document-ty
 import { NewDocumentDialog } from './new-document-dialog';
 import { copyElement } from './element-copy';
 import { useOptionsEditor } from './options/use-options-editor';
+import { useRuleEditor } from './rules/use-rule-editor';
 import { removeElement } from './element-remove';
 import { findById } from './element-ids';
 import { appendTarget, insertItem } from './palette-insert';
@@ -116,6 +117,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
       : (selectionPath(variant, selectedId) ?? selectionPath(variant, focusedId));
   const shownSelection = path?.at(-1)?.id ?? null;
   // The choice field whose options are being edited, and its dialog (doc 255).
+  // The rule dialog, and the problem check the canvas and inspector draw the error state from (doc 256).
+  const rules = useRuleEditor({ content: draft?.content ?? null, onContentChange: setContent });
   const options = useOptionsEditor({
     content: draft?.content ?? null,
     focusedId,
@@ -177,6 +180,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onRemoveElement={removeEl}
               onCopyElement={copyEl}
               onEditOptions={options.open}
+              onEditRule={rules.open}
+              ruleProblems={rules.problems}
               onPageSelect={setPageSelectedId}
             />
             {focusedId !== null && (
@@ -206,8 +211,10 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onOpenChange={(open) => setExpanded(open ? 'inspector' : null)}
               revealKey={inspectorReveal}
               onEditOptions={options.open}
+              onEditRule={rules.open}
             />
             {options.dialog}
+            {rules.dialog}
           </>
         )}
       </main>

@@ -28,6 +28,10 @@ function patched(element: Uischema, patch: ElementPatch): Uischema {
     // An existing key keeps its place: the studio's dirty check compares documents as JSON text.
     next = patch.label === undefined ? rest : { ...next, label: patch.label };
   }
+  if ('rule' in patch) {
+    const { rule: _previous, ...rest } = next;
+    next = patch.rule === undefined ? rest : { ...next, rule: patch.rule };
+  }
   if (options !== undefined) {
     const merged: Record<string, unknown> = {
       ...(isRecord(element['options']) ? element['options'] : {}),

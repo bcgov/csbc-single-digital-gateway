@@ -9,6 +9,7 @@ import {
 import { ElementActions, elementName } from './element-actions';
 import { idOf } from './element-order';
 import { isMultiChoice, isSingleChoice } from '../ui/choice-options';
+import { RuleBadge, ruleOf } from './rule-badge';
 import { useStudioEditor } from './studio-editor';
 
 /** How many StudioElements enclose this point: 0 is the root, which renders bare (doc 236 rule 17). */
@@ -43,8 +44,9 @@ export const ELEMENT_INSET = 'p-4';
  * content, and none while selected — the ring replaces it. An outline, not a border, so framing never moves anything.
  */
 const ELEMENT_FRAME =
-  // Square corners: the dashed frame and the selection ring both follow the wrapper's (none).
-  'outline outline-1 outline-dashed outline-border outline-offset-4 hover:outline-ring data-[selected]:outline-none';
+  // Square corners: the dashed frame and the selection ring both follow the wrapper's (none). A rule in error draws the
+  // frame solid in the warning colour (doc 256 rule 6), selected or not.
+  'outline outline-1 outline-dashed outline-border outline-offset-4 hover:outline-ring data-[selected]:outline-none data-[rule-error]:outline-2 data-[rule-error]:outline-solid data-[rule-error]:outline-warning-border data-[rule-error]:hover:outline-warning-border';
 
 /**
  * The selected element's ring — the canvas nodes' own selection ring (`SELECTED_CLASS` in studio/node-parts.tsx),
@@ -92,6 +94,9 @@ export function StudioElement({
     );
   }
   const selected = editor?.selectedId === id;
+  // Doc 256: the element's rule (moved aside on the canvas), and whether it tests a field it may not.
+  const rule = ruleOf(uischema);
+  const inError = rule !== undefined && (editor?.ruleProblems?.(id).length ?? 0) > 0;
   // A choice field opens its options editor from a double-click and its action bar (doc 255 rule 3).
   const openOptions =
     editor?.editOptions !== undefined && isChoiceControl(uischema, schema)
@@ -105,6 +110,7 @@ export function StudioElement({
           data-element-id={id}
           data-element-type={uischema.type}
           data-selected={selected ? '' : undefined}
+          data-rule-error={inError ? '' : undefined}
           onClick={
             editor === null
               ? undefined
@@ -128,12 +134,16 @@ export function StudioElement({
           }
         >
           {children}
+          {rule !== undefined && <RuleBadge rule={rule} inError={inError} />}
           {editor !== null &&
             (editor.remove !== undefined ||
               editor.copy !== undefined ||
+              editor.editRule !== undefined ||
               openOptions !== undefined) && (
               <ElementActions
                 name={elementName(uischema, schema)}
+                hasRule={rule !== undefined}
+                {...(editor.editRule !== undefined && { onEditRule: () => editor.editRule?.(id) })}
                 {...(openOptions !== undefined && { onEditOptions: openOptions })}
                 {...(editor.copy !== undefined && {
                   // The copy is selected, like a moved element (doc 254 rule 6).

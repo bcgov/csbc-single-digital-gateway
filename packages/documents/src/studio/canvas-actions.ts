@@ -5,6 +5,7 @@ import type { PendingDelete } from './delete-gate';
 import type { Uischema } from './document-types';
 import { updateElement, type ElementPatch } from './element-edits';
 import { moveElement } from './element-move';
+import { restoreRules } from './rules/strip-rules';
 import { addAfter, addBefore, addBetween, type NodeKind } from './node-edits';
 
 /**
@@ -36,6 +37,10 @@ export interface CanvasActions {
   copy?: ((elementId: string) => string | undefined) | undefined;
   /** Opens the options editor for a page choice field (doc 255 rule 3); absent: no Edit options. */
   editOptions?: ((elementId: string) => void) | undefined;
+  /** Opens the rule dialog for a page element (doc 256 rule 9); absent: no Rules action. */
+  editRule?: ((elementId: string) => void) | undefined;
+  /** The fields a page element's rule may not test (doc 256 rule 5); absent: never in error. */
+  ruleProblems?: ((elementId: string) => string[]) | undefined;
   /** Whether page elements offer Delete (doc 242): the host can apply an element delete. */
   canRemoveElement: boolean;
   /** Reports the focused page's element selection to the host (doc 238 rule 16b). */
@@ -68,6 +73,8 @@ export function useEditActions(
     selectElement,
     copy,
     editOptions,
+    editRule,
+    ruleProblems,
   }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable'>,
 ): CanvasActions {
   return useMemo(
@@ -84,7 +91,12 @@ export function useEditActions(
       canConnect,
       connectable: (target) => canConnectFrom(uischema, target),
       edit: (id, patch) => {
-        const next = updateElement(uischema, id, patch);
+        // A layout's reorder writes back the canvas's elements, whose rules were moved aside (doc 256 bug).
+        const restored =
+          patch.elements === undefined
+            ? patch
+            : { ...patch, elements: patch.elements.map(restoreRules) };
+        const next = updateElement(uischema, id, restored);
         // A patch that changes nothing is not an edit.
         if (next !== uischema) onChange(next);
       },
@@ -98,6 +110,8 @@ export function useEditActions(
       selectElement,
       copy,
       editOptions,
+      editRule,
+      ruleProblems,
     }),
     [
       uischema,
@@ -114,6 +128,8 @@ export function useEditActions(
       selectElement,
       copy,
       editOptions,
+      editRule,
+      ruleProblems,
     ],
   );
 }

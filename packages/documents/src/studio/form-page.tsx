@@ -1,5 +1,5 @@
 import { JsonForms } from '@jsonforms/react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   cells,
   renderers,
@@ -9,6 +9,7 @@ import {
 } from '../renderers/studio/index';
 import type { FormPage } from './canvas-graph';
 import { FADE_IN, FADE_OUT_LATE } from './canvas-zoom';
+import { stripRules } from './rules/strip-rules';
 
 const NO_INSERT = () => {};
 const NO_EDIT = () => {};
@@ -34,6 +35,8 @@ export function FormPageBody({
   onMove,
   onCopy,
   onEditOptions,
+  onEditRule,
+  ruleProblems,
   onSelectionChange,
 }: {
   label: string;
@@ -53,6 +56,10 @@ export function FormPageBody({
   onCopy?: ((id: string) => string | undefined) | undefined;
   /** Opens the options editor for a choice field (doc 255 rule 3); only an open page edits. */
   onEditOptions?: ((id: string) => void) | undefined;
+  /** Opens the rule dialog for a page element (doc 256 rule 9); only an open page edits. */
+  onEditRule?: ((id: string) => void) | undefined;
+  /** The fields a page element's rule may not test (doc 256 rule 5): the error state shows on any page. */
+  ruleProblems?: ((id: string) => string[]) | undefined;
   /** Told when a page element is selected or deselected (doc 238 rule 16b). */
   onSelectionChange?: ((id: string | null) => void) | undefined;
 }) {
@@ -73,6 +80,8 @@ export function FormPageBody({
           onMove={onMove}
           onCopy={open && !closing ? onCopy : undefined}
           onEditOptions={open && !closing ? onEditOptions : undefined}
+          onEditRule={open && !closing ? onEditRule : undefined}
+          ruleProblems={ruleProblems}
           onSelectionChange={onSelectionChange}
         />
       )}
@@ -89,6 +98,8 @@ function PageContent({
   onMove,
   onCopy,
   onEditOptions,
+  onEditRule,
+  ruleProblems,
   onSelectionChange,
 }: {
   page: FormPage;
@@ -98,13 +109,17 @@ function PageContent({
   onMove: ((id: string, layoutId: string, index: number) => void) | undefined;
   onCopy: ((id: string) => string | undefined) | undefined;
   onEditOptions: ((id: string) => void) | undefined;
+  onEditRule: ((id: string) => void) | undefined;
+  ruleProblems: ((id: string) => string[]) | undefined;
   onSelectionChange: ((id: string | null) => void) | undefined;
 }) {
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
+  // The canvas ignores rules (doc 256 rule 7): with no answers, a rule would hide or disable the element being authored.
+  const canvasForm = useMemo(() => stripRules(page.form), [page.form]);
   const form = (
     <JsonForms
       schema={page.schema}
-      uischema={page.form as never}
+      uischema={canvasForm as never}
       data={NO_DATA}
       renderers={renderers}
       cells={cells}
@@ -121,6 +136,8 @@ function PageContent({
       move={onMove}
       copy={onCopy}
       editOptions={onEditOptions}
+      editRule={onEditRule}
+      ruleProblems={ruleProblems}
       onSelectionChange={onSelectionChange}
       enabled={onEdit !== undefined}
     >

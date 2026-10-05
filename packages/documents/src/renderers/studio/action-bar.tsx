@@ -56,7 +56,16 @@ export interface ActionBarButtonProps {
   destructive?: boolean;
   /** Extra classes, e.g. xyflow's `nodrag nopan` on a canvas node. */
   className?: string;
+  /**
+   * Drawn PRESSED — white on BC Gov blue, `aria-pressed` — when what it opens is set (doc 256 rule 9: an element with a
+   * rule). Absent: an ordinary action, with no pressed state at all.
+   */
+  pressed?: boolean;
 }
+
+/** The pressed look (doc 256 rule 9), the studio header's pressed mode colours (doc 247). */
+const PRESSED =
+  'bg-bcgov-blue text-primary-foreground hover:bg-bcgov-blue hover:text-primary-foreground';
 
 /** One action: a ghost `icon-xs` button whose click never reaches the element or node beneath (rule 5). */
 export function ActionBarButton({
@@ -65,6 +74,7 @@ export function ActionBarButton({
   onClick,
   destructive = false,
   className = '',
+  pressed,
 }: ActionBarButtonProps) {
   return (
     <Button
@@ -73,7 +83,8 @@ export function ActionBarButton({
       size="icon-xs"
       aria-label={label}
       title={label}
-      className={`${destructive ? 'text-destructive' : ''} ${className}`.trim()}
+      {...(pressed !== undefined && { 'aria-pressed': pressed })}
+      className={`${destructive ? 'text-destructive' : ''} ${pressed === true ? PRESSED : ''} ${className}`.trim()}
       onClick={(event) => {
         event.stopPropagation();
         onClick();

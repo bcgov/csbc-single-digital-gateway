@@ -98,7 +98,8 @@ function ValueControl({
       </fieldset>
     );
   }
-  if (field.kind === 'choice') {
+  // A multiple choice's includes / does not include test ONE option (doc 256 rule 4), picked like a single choice's.
+  if (field.kind === 'choice' || field.kind === 'multi') {
     return (
       <NativeSelect
         aria-label="Value"
