@@ -182,6 +182,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onEditOptions={options.open}
               onEditRule={rules.open}
               ruleProblems={rules.problems}
+              canAddRule={rules.canAdd}
               onPageSelect={setPageSelectedId}
             />
             {focusedId !== null && (

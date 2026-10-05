@@ -2,6 +2,9 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { mdiContentCopy, mdiDeleteOutline, mdiFormatListBulleted, mdiSourceBranch } from '@mdi/js';
 import { ActionBar, ActionBarButton } from './action-bar';
 
+/** Why Rules is disabled (doc 256 rule 9b); the inspector says the same. */
+export const NO_RULE_SOURCES = 'Add a field above this element to give it a rule';
+
 /**
  * A studio element's action row (doc 242 rule 1, doc 254): the shared action bar below its bottom-right. Shown while the
  * element itself is hovered, the row is focused, or the element is selected; otherwise transparent and ignoring the
@@ -11,6 +14,7 @@ export function ElementActions({
   name,
   onEditRule,
   hasRule = false,
+  ruleDisabled = false,
   onEditOptions,
   onCopy,
   onDelete,
@@ -20,6 +24,8 @@ export function ElementActions({
   onEditRule?: (() => void) | undefined;
   /** The element has a rule: Rules is drawn pressed. */
   hasRule?: boolean;
+  /** No field above the element to test (doc 256 rule 9b): Rules is shown but disabled. */
+  ruleDisabled?: boolean;
   /** A choice field's Edit options (doc 255 rule 3); absent for anything else. */
   onEditOptions?: (() => void) | undefined;
   /** Absent: no Copy (the host cannot copy). */
@@ -34,6 +40,8 @@ export function ElementActions({
           label={`Rules for ${name}`}
           icon={mdiSourceBranch}
           pressed={hasRule}
+          disabled={ruleDisabled}
+          {...(ruleDisabled && { title: NO_RULE_SOURCES })}
           onClick={onEditRule}
         />
       )}

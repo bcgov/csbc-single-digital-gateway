@@ -75,6 +75,32 @@ describe('DocumentStudio rules (doc 256 rules 9-13)', () => {
     expect(within(section).queryByRole('alert')).toBeNull();
   });
 
+  it('disables Rules and Add rule on an element with no field above it (rule 9b)', async () => {
+    const { container, page } = await openPage([REGION, NAME]);
+    const region = await select(page, 'cReg');
+    expect(within(region).getByRole('button', { name: 'Rules for Region' })).toBeDisabled();
+    const section = inspector(container).getByRole('region', { name: 'Rule' });
+    expect(within(section).getByRole('button', { name: 'Add rule' })).toBeDisabled();
+    expect(
+      within(section).getByText('Add a field above this element to give it a rule.'),
+    ).toBeInTheDocument();
+
+    const name = await select(page, 'cNam');
+    expect(within(name).getByRole('button', { name: 'Rules for Name' })).toBeEnabled();
+    const nameSection = inspector(container).getByRole('region', { name: 'Rule' });
+    expect(within(nameSection).getByRole('button', { name: 'Add rule' })).toBeEnabled();
+    expect(nameSection.querySelector('[data-slot="inspector-rule-unavailable"]')).toBeNull();
+  });
+
+  it('keeps an existing rule editable with no field above it (rule 9b)', async () => {
+    const tested = { ...RULE, condition: { ...RULE.condition, scope: '#/properties/name' } };
+    const { container, page } = await openPage([{ ...REGION, rule: tested }, NAME]);
+    const region = await select(page, 'cReg');
+    expect(within(region).getByRole('button', { name: 'Rules for Region' })).toBeEnabled();
+    const section = inspector(container).getByRole('region', { name: 'Rule' });
+    expect(within(section).getByRole('button', { name: 'Edit rule' })).toBeEnabled();
+  });
+
   it('adds a rule from the action bar, and Preview applies it', async () => {
     const user = userEvent.setup();
     const { page } = await openPage([REGION, NAME]);

@@ -28,6 +28,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
     editOptions,
     editRule,
     ruleProblems,
+    canAddRule,
   } = useCanvasActions();
   const { mark } = useNodeConnect(data.formId);
   const label = data.label ?? 'Untitled form';
@@ -73,6 +74,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
           onEditOptions={editOptions}
           onEditRule={editRule}
           ruleProblems={ruleProblems}
+          canAddRule={canAddRule}
           {...(canRemoveElement && {
             onRemove: (id: string, name: string) => remove({ id, kind: 'element', name }),
           })}

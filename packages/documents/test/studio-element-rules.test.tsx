@@ -46,6 +46,33 @@ describe('studio element rules (doc 256 rules 6-9)', () => {
     expect(editRule).toHaveBeenCalledWith('c-name');
   });
 
+  it('disables Rules on an element with no field above it, unless it already has a rule (rule 9b)', () => {
+    const { container, editRule } = renderStudioRenderers(stripRules(page(false)), {
+      schema: SCHEMA,
+      ruleProblems: () => [],
+      canAddRule: (id) => id !== 'c-region',
+    });
+    const region = within(element(container, 'c-region')).getByRole('button', {
+      name: 'Rules for Region',
+    });
+    expect(region).toBeDisabled();
+    expect(region).toHaveAttribute('title', 'Add a field above this element to give it a rule');
+    fireEvent.click(region);
+    expect(editRule).not.toHaveBeenCalled();
+    expect(
+      within(element(container, 'c-name')).getByRole('button', { name: 'Rules for Name' }),
+    ).toBeEnabled();
+
+    const withRule = renderStudioRenderers(stripRules(page(true)), {
+      schema: SCHEMA,
+      ruleProblems: () => [],
+      canAddRule: () => false,
+    });
+    expect(
+      within(element(withRule.container, 'c-name')).getByRole('button', { name: 'Rules for Name' }),
+    ).toBeEnabled();
+  });
+
   it('pins a white-on-blue branch badge on an element with a rule', () => {
     const { container } = renderStudioRenderers(stripRules(page(true)), {
       schema: SCHEMA,

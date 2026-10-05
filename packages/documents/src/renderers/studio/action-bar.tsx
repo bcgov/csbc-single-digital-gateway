@@ -61,6 +61,10 @@ export interface ActionBarButtonProps {
    * rule). Absent: an ordinary action, with no pressed state at all.
    */
   pressed?: boolean;
+  /** Shown but unusable (doc 256 rule 9b). */
+  disabled?: boolean;
+  /** The tooltip, when it should say more than `label` (e.g. why it is disabled). */
+  title?: string;
 }
 
 /** The pressed look (doc 256 rule 9), the studio header's pressed mode colours (doc 247). */
@@ -75,6 +79,8 @@ export function ActionBarButton({
   destructive = false,
   className = '',
   pressed,
+  disabled = false,
+  title = label,
 }: ActionBarButtonProps) {
   return (
     <Button
@@ -82,7 +88,8 @@ export function ActionBarButton({
       variant="ghost"
       size="icon-xs"
       aria-label={label}
-      title={label}
+      title={title}
+      disabled={disabled}
       {...(pressed !== undefined && { 'aria-pressed': pressed })}
       className={`${destructive ? 'text-destructive' : ''} ${pressed === true ? PRESSED : ''} ${className}`.trim()}
       onClick={(event) => {

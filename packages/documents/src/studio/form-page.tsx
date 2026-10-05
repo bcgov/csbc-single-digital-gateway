@@ -37,6 +37,7 @@ export function FormPageBody({
   onEditOptions,
   onEditRule,
   ruleProblems,
+  canAddRule,
   onSelectionChange,
 }: {
   label: string;
@@ -60,6 +61,8 @@ export function FormPageBody({
   onEditRule?: ((id: string) => void) | undefined;
   /** The fields a page element's rule may not test (doc 256 rule 5): the error state shows on any page. */
   ruleProblems?: ((id: string) => string[]) | undefined;
+  /** Whether a page element has any field above it to test (doc 256 rule 9b); absent: always. */
+  canAddRule?: ((id: string) => boolean) | undefined;
   /** Told when a page element is selected or deselected (doc 238 rule 16b). */
   onSelectionChange?: ((id: string | null) => void) | undefined;
 }) {
@@ -82,6 +85,7 @@ export function FormPageBody({
           onEditOptions={open && !closing ? onEditOptions : undefined}
           onEditRule={open && !closing ? onEditRule : undefined}
           ruleProblems={ruleProblems}
+          canAddRule={canAddRule}
           onSelectionChange={onSelectionChange}
         />
       )}
@@ -100,6 +104,7 @@ function PageContent({
   onEditOptions,
   onEditRule,
   ruleProblems,
+  canAddRule,
   onSelectionChange,
 }: {
   page: FormPage;
@@ -111,6 +116,7 @@ function PageContent({
   onEditOptions: ((id: string) => void) | undefined;
   onEditRule: ((id: string) => void) | undefined;
   ruleProblems: ((id: string) => string[]) | undefined;
+  canAddRule: ((id: string) => boolean) | undefined;
   onSelectionChange: ((id: string | null) => void) | undefined;
 }) {
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
@@ -138,6 +144,7 @@ function PageContent({
       editOptions={onEditOptions}
       editRule={onEditRule}
       ruleProblems={ruleProblems}
+      canAddRule={canAddRule}
       onSelectionChange={onSelectionChange}
       enabled={onEdit !== undefined}
     >

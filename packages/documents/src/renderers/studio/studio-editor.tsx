@@ -41,6 +41,8 @@ export interface StudioEditor {
   editRule?: ((id: string) => void) | undefined;
   /** The fields an element's rule tests that it may not (doc 256 rule 5); absent: never in error. */
   ruleProblems?: ((id: string) => string[]) | undefined;
+  /** Whether an element has any field above it a rule could test (doc 256 rule 9b); absent: always. */
+  canAddRule?: ((id: string) => boolean) | undefined;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
@@ -61,6 +63,7 @@ export function StudioEditorProvider({
   editOptions,
   editRule,
   ruleProblems,
+  canAddRule,
   onSelectionChange,
   enabled = true,
   children,
@@ -73,6 +76,7 @@ export function StudioEditorProvider({
   editOptions?: StudioEditor['editOptions'];
   editRule?: StudioEditor['editRule'];
   ruleProblems?: StudioEditor['ruleProblems'];
+  canAddRule?: StudioEditor['canAddRule'];
   /**
    * Told every time the selection changes (doc 238 rule 16b) — the provider still owns it. Held in a ref, so an inline
    * arrow is safe.
@@ -101,10 +105,23 @@ export function StudioEditorProvider({
       editOptions,
       editRule,
       ruleProblems,
+      canAddRule,
       selectedId,
       select,
     }),
-    [update, insert, remove, move, copy, editOptions, editRule, ruleProblems, selectedId, select],
+    [
+      update,
+      insert,
+      remove,
+      move,
+      copy,
+      editOptions,
+      editRule,
+      ruleProblems,
+      canAddRule,
+      selectedId,
+      select,
+    ],
   );
   return (
     <StudioEditorContext.Provider value={enabled ? editor : null}>

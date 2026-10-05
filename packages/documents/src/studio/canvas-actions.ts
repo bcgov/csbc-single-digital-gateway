@@ -41,6 +41,8 @@ export interface CanvasActions {
   editRule?: ((elementId: string) => void) | undefined;
   /** The fields a page element's rule may not test (doc 256 rule 5); absent: never in error. */
   ruleProblems?: ((elementId: string) => string[]) | undefined;
+  /** Whether a page element has any field above it a rule could test (doc 256 rule 9b); absent: always. */
+  canAddRule?: ((elementId: string) => boolean) | undefined;
   /** Whether page elements offer Delete (doc 242): the host can apply an element delete. */
   canRemoveElement: boolean;
   /** Reports the focused page's element selection to the host (doc 238 rule 16b). */
@@ -75,6 +77,7 @@ export function useEditActions(
     editOptions,
     editRule,
     ruleProblems,
+    canAddRule,
   }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable'>,
 ): CanvasActions {
   return useMemo(
@@ -112,6 +115,7 @@ export function useEditActions(
       editOptions,
       editRule,
       ruleProblems,
+      canAddRule,
     }),
     [
       uischema,
@@ -130,6 +134,7 @@ export function useEditActions(
       editOptions,
       editRule,
       ruleProblems,
+      canAddRule,
     ],
   );
 }

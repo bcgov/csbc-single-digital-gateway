@@ -82,6 +82,8 @@ export interface DocumentCanvasProps {
   onEditRule?: ((elementId: string) => void) | undefined;
   /** The fields a page element's rule may not test (doc 256 rule 5). */
   ruleProblems?: ((elementId: string) => string[]) | undefined;
+  /** Whether a page element has any field above it a rule could test (doc 256 rule 9b). */
+  canAddRule?: ((elementId: string) => boolean) | undefined;
   /** Told when an element on the focused page is selected or deselected (doc 238 rule 16b). */
   onPageSelect?: ((elementId: string | null) => void) | undefined;
 }
@@ -109,6 +111,7 @@ export function DocumentCanvas({
   onEditOptions,
   onEditRule,
   ruleProblems,
+  canAddRule,
   onPageSelect,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
@@ -167,6 +170,7 @@ export function DocumentCanvas({
     editOptions: onEditOptions,
     editRule: onEditRule,
     ruleProblems,
+    canAddRule,
   });
 
   return (

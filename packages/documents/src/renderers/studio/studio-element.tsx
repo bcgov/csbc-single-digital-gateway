@@ -143,6 +143,8 @@ export function StudioElement({
               <ElementActions
                 name={elementName(uischema, schema)}
                 hasRule={rule !== undefined}
+                // Doc 256 rule 9b: nothing above to test — but an existing rule stays editable.
+                ruleDisabled={rule === undefined && editor.canAddRule?.(id) === false}
                 {...(editor.editRule !== undefined && { onEditRule: () => editor.editRule?.(id) })}
                 {...(openOptions !== undefined && { onEditOptions: openOptions })}
                 {...(editor.copy !== undefined && {

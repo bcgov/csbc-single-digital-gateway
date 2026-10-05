@@ -8,6 +8,7 @@ import { readRule } from './rule-compile';
 import { EFFECT_LABELS } from './rule-dialog';
 import { ruleProblems } from './rule-problems';
 import { ruleSources } from './rule-sources';
+import { NO_RULE_SOURCES } from '../../renderers/studio/element-actions';
 
 /** Rule 13: the rule in words — `Show when all of: Region equals North; Age is at least 18`. */
 export function ruleSummary(rule: unknown, fields: readonly CriterionField[]): string {
@@ -44,8 +45,11 @@ export function InspectorRule({
     return typeof title === 'string' && title !== '' ? title : key;
   };
   const names = problems.map(nameOf);
+  const sources = ruleSources(content, elementId);
+  // Rule 9b: with no field above to test there is nothing to add — an existing rule stays editable.
+  const unavailable = rule === undefined && sources.length === 0;
   const fields = [
-    ...ruleSources(content, elementId),
+    ...sources,
     ...problems.map((key): CriterionField => ({ key, label: nameOf(key), kind: 'text' })),
   ];
   return (
@@ -62,7 +66,18 @@ export function InspectorRule({
           This rule tests a field that comes after it: {names.join(', ')}.
         </p>
       )}
-      <Button size="sm" variant="outline" className="mt-1 h-7 w-full text-xs" onClick={onEdit}>
+      {unavailable && (
+        <p data-slot="inspector-rule-unavailable" className="text-xs text-muted-foreground">
+          {NO_RULE_SOURCES}.
+        </p>
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        className="mt-1 h-7 w-full text-xs"
+        disabled={unavailable}
+        onClick={onEdit}
+      >
         {rule === undefined ? 'Add rule' : 'Edit rule'}
       </Button>
     </FoldableSection>

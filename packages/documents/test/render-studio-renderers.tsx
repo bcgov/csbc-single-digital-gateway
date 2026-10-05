@@ -14,6 +14,7 @@ export function renderStudioRenderers(
     movable = false,
     copyable = false,
     ruleProblems,
+    canAddRule,
   }: {
     editable?: boolean;
     schema?: object;
@@ -22,6 +23,8 @@ export function renderStudioRenderers(
     copyable?: boolean;
     /** Gives the editor the rule ports (doc 256): Rules opens `editRule`, and this decides the error state. */
     ruleProblems?: (id: string) => string[];
+    /** Whether an element has a field above it to test (doc 256 rule 9b); absent: always. */
+    canAddRule?: (id: string) => boolean;
   } = {},
 ) {
   const update = vi.fn<(id: string, patch: ElementPatch) => void>();
@@ -50,6 +53,7 @@ export function renderStudioRenderers(
         {...(movable && { move })}
         {...(copyable && { copy })}
         {...(ruleProblems !== undefined && { editRule, ruleProblems })}
+        {...(canAddRule !== undefined && { canAddRule })}
       >
         {form}
       </StudioEditorProvider>

@@ -37,6 +37,11 @@ export function useRuleEditor({
     (id: string) => (content === null ? [] : ruleProblems(content, id)),
     [content],
   );
+  // Doc 256 rule 9b: a rule needs a field to test, so with no source above an element there is nothing to add.
+  const canAdd = useCallback(
+    (id: string) => content !== null && ruleSources(content, id).length > 0,
+    [content],
+  );
   const dialog = (
     <RuleDialog
       target={target}
@@ -53,5 +58,5 @@ export function useRuleEditor({
       }}
     />
   );
-  return { open: setElementId, dialog, problems };
+  return { open: setElementId, dialog, problems, canAdd };
 }
