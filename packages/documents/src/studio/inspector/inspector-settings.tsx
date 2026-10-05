@@ -7,6 +7,7 @@ import { fieldsFor, inspectorForm, type InspectorForm } from './inspector-form';
 import { InspectorOptions } from '../options/inspector-options';
 import { InspectorRule } from '../rules/inspector-rule';
 import { optionsTargetOf } from '../options/options-target';
+import { InspectorCapabilities } from '../capabilities/inspector-capabilities';
 import { INSPECTOR_RENDERERS } from './inspector-renderers';
 import { InspectorHeader } from './property-key';
 import { keyProblem, renamePropertyKey } from './property-rename';
@@ -25,6 +26,8 @@ export interface InspectorSettingsProps extends TargetInputs {
   onEditOptions?: ((elementId: string) => void) | undefined;
   /** Opens the rule dialog for a page element (doc 256 rule 13); absent: no Rule section. */
   onEditRule?: ((elementId: string) => void) | undefined;
+  /** The document is a template: show the Implementation Rules section (doc 258 rule 1). */
+  templateRules?: boolean;
 }
 
 /** The inspector's Settings view (doc 249): the inspected element's header (doc 257) and its editable properties. */
@@ -36,6 +39,7 @@ export function InspectorSettings({
   onContentChange,
   onEditOptions,
   onEditRule,
+  templateRules = false,
 }: InspectorSettingsProps) {
   const target = useMemo(
     () => inspectorTarget(content, { pageSelectedId, focusedId, formId }),
@@ -74,6 +78,14 @@ export function InspectorSettings({
       )}
       {options !== undefined && (
         <InspectorOptions target={options} onEdit={() => onEditOptions?.(options.elementId)} />
+      )}
+      {/* Last, on templates only, for every element with an id — the roots included (doc 258 rules 1-2). */}
+      {templateRules && target.id !== '' && (
+        <InspectorCapabilities
+          content={content}
+          target={target}
+          onContentChange={onContentChange}
+        />
       )}
     </div>
   );

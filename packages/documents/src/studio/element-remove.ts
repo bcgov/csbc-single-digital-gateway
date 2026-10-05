@@ -1,5 +1,6 @@
 import type { DocumentContent, Uischema } from './document-types';
 import { DEFAULT_VARIANT, withVariant } from './document-types';
+import { withCapabilities, withoutEntries } from './capabilities/capability-edits';
 import { idOf } from './element-ids';
 
 /** A Control bound to a top-level schema property: the only binding a delete cleans up (doc 242 rule 6). */
@@ -15,7 +16,12 @@ export function removeElement(content: DocumentContent, id: string): DocumentCon
   const removed: Uischema[] = [];
   const next = without(variant, id, removed);
   if (next === variant) return content;
-  const withoutElement = withVariant(content, next);
+  // Doc 258 rule 11: the removed subtree's Implementation Rules go with it.
+  const pruned = withoutEntries(content.capabilities, removed.flatMap(subtreeIds));
+  const withoutElement =
+    pruned === content.capabilities
+      ? withVariant(content, next)
+      : withCapabilities(withVariant(content, next), pruned);
   const stillBound = boundScopes(Object.values(withoutElement.variants));
   const orphaned = removed
     .flatMap(controlScopes)
@@ -42,6 +48,14 @@ export function without(node: Uischema, id: string, removed: Uischema[]): Uische
   );
   const changed = kept.length !== elements.length || children.some((c, i) => c !== kept[i]);
   return changed ? { ...node, elements: children } : node;
+}
+
+/** Every element id at or below `node`. */
+function subtreeIds(node: Uischema): string[] {
+  const own = idOf(node);
+  const elements = node['elements'];
+  const below = Array.isArray(elements) ? elements.filter(isRecord).flatMap(subtreeIds) : [];
+  return own === undefined ? below : [own, ...below];
 }
 
 /** Every Control scope at or below `node`. */

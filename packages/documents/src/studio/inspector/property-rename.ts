@@ -36,7 +36,8 @@ export function renamePropertyKey(
       renameInRoot(uischema, from, key),
     ]),
   ) as DocumentContent['variants'];
-  return { schema: renameInSchema(content.schema, properties, from, key), variants };
+  // Spread, so a key this does not know about (doc 258's `capabilities`) survives the rename.
+  return { ...content, schema: renameInSchema(content.schema, properties, from, key), variants };
 }
 
 function renameInSchema(

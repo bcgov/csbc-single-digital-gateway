@@ -213,6 +213,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               revealKey={inspectorReveal}
               onEditOptions={options.open}
               onEditRule={rules.open}
+              templateRules={draft.kind === 'template'}
             />
             {options.dialog}
             {rules.dialog}

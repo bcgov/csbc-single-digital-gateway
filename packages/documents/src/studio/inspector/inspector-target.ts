@@ -62,6 +62,8 @@ export interface InspectorTarget {
   kind: TargetKind;
   /** The element as the author knows it (rule 5); `undefined` for a Separator or an unknown element. */
   name: string | undefined;
+  /** Whether it is the variant's root, which can never be deleted or moved (doc 258 rule 3). */
+  root: boolean;
   property?: BoundProperty;
 }
 
@@ -85,7 +87,8 @@ export function inspectorTarget(
 ): InspectorTarget | null {
   const root = content.variants.default;
   if (typeof root['type'] !== 'string') return null;
-  return targetOf(content, pickElement(root, inputs) ?? root);
+  const element = pickElement(root, inputs) ?? root;
+  return targetOf(content, element, element === root);
 }
 
 function pickElement(root: Uischema, { pageSelectedId, focusedId, formId }: TargetInputs) {
@@ -97,7 +100,7 @@ function pickElement(root: Uischema, { pageSelectedId, focusedId, formId }: Targ
   return formId === null ? undefined : findById(root, formId);
 }
 
-function targetOf(content: DocumentContent, element: Uischema): InspectorTarget {
+function targetOf(content: DocumentContent, element: Uischema, root: boolean): InspectorTarget {
   const id = idOf(element) ?? '';
   const property = element['type'] === 'Control' ? boundProperty(content, element) : undefined;
   const kind = kindOf(element, property);
@@ -106,6 +109,7 @@ function targetOf(content: DocumentContent, element: Uischema): InspectorTarget 
     element,
     kind,
     name: nameOf(element, kind, property),
+    root,
     ...(property !== undefined && { property }),
   };
 }

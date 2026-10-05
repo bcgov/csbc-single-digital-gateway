@@ -1,3 +1,4 @@
+import type { CapabilityMap } from './capabilities/capability-types';
 /**
  * The document vocabulary the studio works in. Restated here rather than imported from `@repo/database`
  * so the package stays browser-only; the values mirror `DOCUMENT_TYPES` and must be kept in step with it.
@@ -42,6 +43,8 @@ export type Uischema = Record<string, unknown>;
 export interface DocumentContent {
   schema: Record<string, unknown>;
   variants: { default: Uischema } & Record<string, Uischema>;
+  /** A TEMPLATE's Implementation Rules (doc 258); absent = everything granted. */
+  capabilities?: CapabilityMap;
 }
 
 export const DEFAULT_VARIANT = 'default';
@@ -67,6 +70,7 @@ export function withVariant(
 export function contentChanged(a: DocumentContent, b: DocumentContent): boolean {
   return (
     JSON.stringify(a.schema) !== JSON.stringify(b.schema) ||
-    JSON.stringify(a.variants) !== JSON.stringify(b.variants)
+    JSON.stringify(a.variants) !== JSON.stringify(b.variants) ||
+    JSON.stringify(a.capabilities ?? null) !== JSON.stringify(b.capabilities ?? null)
   );
 }

@@ -30,6 +30,8 @@ export interface DocumentInspectorProps extends TargetInputs {
   onEditOptions?: ((elementId: string) => void) | undefined;
   /** Opens the rule dialog for a page element (doc 256 rule 13). */
   onEditRule?: ((elementId: string) => void) | undefined;
+  /** The document is a template: show its Implementation Rules (doc 258 rule 1). */
+  templateRules?: boolean;
   /** Whether the collapsed inspector is open, expanded (doc 233 rule 14). */
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +49,7 @@ export function DocumentInspector({
   onContentChange,
   onEditOptions,
   onEditRule,
+  templateRules = false,
   pageSelectedId,
   focusedId,
   formId,
@@ -110,6 +113,7 @@ export function DocumentInspector({
               onContentChange={onContentChange}
               onEditOptions={onEditOptions}
               onEditRule={onEditRule}
+              templateRules={templateRules}
             />
           </FoldsProvider>
         </div>

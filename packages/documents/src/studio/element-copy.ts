@@ -5,6 +5,7 @@ import {
   type DocumentContent,
   type Uischema,
 } from './document-types';
+import { carriedEntries, withCapabilities } from './capabilities/capability-edits';
 import { idOf, newId } from './element-ids';
 
 /** A Control bound to a top-level schema property (doc 242 rule 6's binding). */
@@ -25,15 +26,20 @@ export interface CopyResult {
 export function copyElement(content: DocumentContent, id: string): CopyResult | undefined {
   const variant = content.variants[DEFAULT_VARIANT];
   const keys = new Map<string, string>();
+  const ids = new Map<string, string>();
   let copyId: string | undefined;
   const next = withCopy(variant, id, (element) => {
-    const copy = cloned(element, keys);
+    const copy = cloned(element, keys, ids);
     copyId = idOf(copy);
     return copy;
   });
   if (next === variant || copyId === undefined) return undefined;
+  const copied = { ...withVariant(content, next), schema: withKeys(content.schema, keys) };
+  // Doc 258 rule 12: a copied element keeps its Implementation Rules under its new id.
+  const capabilities = carriedEntries(content.capabilities, ids);
   return {
-    content: { ...withVariant(content, next), schema: withKeys(content.schema, keys) },
+    content:
+      capabilities === content.capabilities ? copied : withCapabilities(copied, capabilities),
     copyId,
   };
 }
@@ -54,9 +60,11 @@ function withCopy(node: Uischema, id: string, copy: (element: Uischema) => Uisch
   return next.some((child, i) => child !== elements[i]) ? { ...node, elements: next } : node;
 }
 
-/** A deep copy with new ids, and Controls re-keyed through `keys` (old property key → new). */
-function cloned(element: Uischema, keys: Map<string, string>): Uischema {
+/** A deep copy with new ids (old → new recorded in `ids`), and Controls re-keyed through `keys` (old key → new). */
+function cloned(element: Uischema, keys: Map<string, string>, ids: Map<string, string>): Uischema {
   const copy: Uischema = { ...structuredClone(element), id: newId() };
+  const old = idOf(element);
+  if (old !== undefined) ids.set(old, copy['id'] as string);
   const scope = copy['scope'];
   const key = typeof scope === 'string' ? PROPERTY_SCOPE.exec(scope)?.[1] : undefined;
   if (copy['type'] === 'Control' && key !== undefined) {
@@ -67,7 +75,7 @@ function cloned(element: Uischema, keys: Map<string, string>): Uischema {
   const elements = copy['elements'];
   if (Array.isArray(elements)) {
     copy['elements'] = elements.map((child: unknown) =>
-      isRecord(child) ? cloned(child, keys) : child,
+      isRecord(child) ? cloned(child, keys, ids) : child,
     );
   }
   return copy;
