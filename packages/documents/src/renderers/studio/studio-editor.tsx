@@ -1,4 +1,5 @@
 import type { Governance } from '../../studio/capabilities/governance';
+import type { GridDrop } from '../default/grid-placement';
 import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
 /** What a studio renderer may change on one element (doc 236 rule 11). It never carries a `type`. */
@@ -18,9 +19,10 @@ export interface StudioEditor {
   update: (id: string, patch: ElementPatch) => void;
   /**
    * Places the palette item `itemId` in the layout `layoutId` at `index` (doc 238 rule 14). Renderers only ever see the
-   * item's id, carried by the drag source; the host resolves and creates it.
+   * item's id, carried by the drag source; the host resolves and creates it. Into a Grid, `cell` is where it was
+   * dropped — with the items moved out of its way — and `index` is ignored (doc 260 rule 19).
    */
-  insert: (layoutId: string, index: number, itemId: string) => void;
+  insert: (layoutId: string, index: number, itemId: string, cell?: GridDrop) => void;
   /**
    * Asks the host to delete the element with that id, `name` as the author knows it (doc 242). Absent: elements offer
    * no Delete.
@@ -28,9 +30,9 @@ export interface StudioEditor {
   remove?: ((id: string, name: string) => void) | undefined;
   /**
    * Moves the element with that id into the layout `layoutId` at `index` (doc 243). Absent: grids accept palette items
-   * only, never another grid's.
+   * only, never another grid's. Into a Grid, `cell` is the cell it was dropped on (doc 260 rule 21).
    */
-  move?: ((id: string, layoutId: string, index: number) => void) | undefined;
+  move?: ((id: string, layoutId: string, index: number, cell?: GridDrop) => void) | undefined;
   /**
    * Inserts a copy of the element with that id right after it, returning the copy's id (doc 254 rule 6). Absent:
    * elements offer no Copy.

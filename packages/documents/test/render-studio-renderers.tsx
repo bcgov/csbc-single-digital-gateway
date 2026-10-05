@@ -3,6 +3,7 @@ import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import * as studio from '../src/renderers/studio/index';
 import { StudioEditorProvider, type ElementPatch } from '../src/renderers/studio/index';
+import type { GridCell } from '../src/renderers/default/grid-placement';
 import type { Governance } from '../src/studio/capabilities/governance';
 
 /** Renders `uischema` through the studio set; `editable` wraps it in a provider whose `update` is a spy. */
@@ -32,9 +33,10 @@ export function renderStudioRenderers(
   } = {},
 ) {
   const update = vi.fn<(id: string, patch: ElementPatch) => void>();
-  const insert = vi.fn<(layoutId: string, index: number, itemId: string) => void>();
+  const insert =
+    vi.fn<(layoutId: string, index: number, itemId: string, cell?: GridCell) => void>();
   const remove = vi.fn<(id: string, name: string) => void>();
-  const move = vi.fn<(id: string, layoutId: string, index: number) => void>();
+  const move = vi.fn<(id: string, layoutId: string, index: number, cell?: GridCell) => void>();
   // Answers like the host: the copy's id (doc 254 rule 6).
   const copy = vi.fn<(id: string) => string | undefined>((id) => `${id}-copy`);
   const editRule = vi.fn<(id: string) => void>();

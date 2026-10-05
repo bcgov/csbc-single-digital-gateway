@@ -123,6 +123,8 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     fireEvent.keyDown(search(), { key: 'ArrowDown' });
     expect(itemNamed('Vertical layout')).toHaveFocus();
     fireEvent.keyDown(itemNamed('Vertical layout'), { key: 'ArrowDown' });
+    expect(itemNamed('Grid')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Grid'), { key: 'ArrowDown' });
     expect(itemNamed('Heading')).toHaveFocus();
     // Across groups, in list order, stopping at the last.
     fireEvent.keyDown(itemNamed('Heading'), { key: 'ArrowDown' });
@@ -160,6 +162,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Rich content',
       'Separator',
       'Heading',
+      'Grid',
       'Vertical layout',
     ]) {
       fireEvent.keyDown(itemNamed(name), { key: 'ArrowUp' });
@@ -214,10 +217,11 @@ describe('foldable palette groups (doc 252 rule 10)', () => {
       document.querySelector('[data-palette-item="heading"]')?.closest('[hidden]'),
     ).not.toBeNull();
 
-    // ↓ from Vertical layout skips the folded Content group.
+    // ↓ from the last Layout item (Grid, doc 260) skips the folded Content group.
     search().focus();
     fireEvent.keyDown(search(), { key: 'ArrowDown' });
     fireEvent.keyDown(itemNamed('Vertical layout'), { key: 'ArrowDown' });
+    fireEvent.keyDown(itemNamed('Grid'), { key: 'ArrowDown' });
     expect(itemNamed('Checkbox')).toHaveFocus();
 
     fireEvent.click(content);

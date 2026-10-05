@@ -1,4 +1,5 @@
 import type { Governance } from './capabilities/governance';
+import type { GridDrop } from '../renderers/default/grid-placement';
 import { createContext, useContext, useMemo } from 'react';
 import type { AddTarget } from './canvas-graph';
 import { canConnectFrom, type ConnectSource } from './connect-edits';
@@ -6,6 +7,7 @@ import type { PendingDelete } from './delete-gate';
 import type { Uischema } from './document-types';
 import { updateElement, type ElementPatch } from './element-edits';
 import { moveElement } from './element-move';
+import { withoutDisplaced } from './grid-edits';
 import { restoreRules } from './rules/strip-rules';
 import { addAfter, addBefore, addBetween, type NodeKind } from './node-edits';
 
@@ -33,9 +35,9 @@ export interface CanvasActions {
   /** Applies a studio renderer's edit to the element with that id (doc 236 rule 36). */
   edit: (id: string, patch: ElementPatch) => void;
   /** Places a palette item in a layout on the page (doc 238 rule 14). */
-  insert: (layoutId: string, index: number, itemId: string) => void;
+  insert: (layoutId: string, index: number, itemId: string, cell?: GridDrop) => void;
   /** Moves a page element into a layout at an index (doc 243): a uischema-only edit, like `edit`. */
-  move: (id: string, layoutId: string, index: number) => void;
+  move: (id: string, layoutId: string, index: number, cell?: GridDrop) => void;
   /** Copies a page element, returning the copy's id (doc 254 rule 6); absent: elements offer no Copy. */
   copy?: ((elementId: string) => string | undefined) | undefined;
   /** Opens the options editor for a page choice field (doc 255 rule 3); absent: no Edit options. */
@@ -115,10 +117,12 @@ export function useEditActions(
         if (next !== uischema) onChange(next);
       },
       insert,
-      move: (id, layoutId, index) => {
+      move: (id, layoutId, index, cell) => {
         // Backstop (doc 259 rule 11): only where the element, its source and the target all allow.
         if (governance !== undefined && !governance.canMove(id, layoutId)) return;
-        const next = moveElement(uischema, id, layoutId, index);
+        // Doc 260 rule 19: moving items out of the arrival's way is a reorder the template may forbid.
+        const drop = governance?.canReorder(layoutId) === false ? withoutDisplaced(cell) : cell;
+        const next = moveElement(uischema, id, layoutId, index, drop);
         // A refused move, or one to where the element already is, is not an edit.
         if (next !== uischema) onChange(next);
       },

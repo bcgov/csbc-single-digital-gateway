@@ -7,6 +7,8 @@ import {
 } from './document-types';
 import { carriedEntries, withCapabilities } from './capabilities/capability-edits';
 import { idOf, newId } from './element-ids';
+import { withGridItem } from '../renderers/studio/grid-order';
+import { cellAfter, gridLanding, isGrid } from './grid-edits';
 
 /** A Control bound to a top-level schema property (doc 242 rule 6's binding). */
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
@@ -22,6 +24,9 @@ export interface CopyResult {
  * element gets a new id, and every copied Control a NEW property — a `nanoid(8)` key holding a copy of the original's
  * schema, required when the original is — so the copy is its own field, not a second view of the same answer. Controls
  * in the copied subtree that shared a property share the new one. `undefined` for an unknown id or the root.
+ *
+ * A Grid child's copy takes the first free cell after it (doc 260 rule 22), one cell in size; with no free cell there is
+ * no copy (`undefined`).
  */
 export function copyElement(content: DocumentContent, id: string): CopyResult | undefined {
   const variant = content.variants[DEFAULT_VARIANT];
@@ -51,6 +56,16 @@ function withCopy(node: Uischema, id: string, copy: (element: Uischema) => Uisch
   const at = elements.findIndex((child) => isRecord(child) && idOf(child) === id);
   if (at !== -1) {
     const original = elements[at] as Uischema;
+    if (isGrid(node)) {
+      const after = cellAfter(node, id);
+      const landing = after === undefined ? undefined : gridLanding(node, after);
+      if (landing === undefined) return node;
+      const placed = withGridItem(copy(original), { ...landing.cell, w: 1, h: 1 });
+      return {
+        ...node,
+        elements: [...elements.slice(0, landing.index), placed, ...elements.slice(landing.index)],
+      };
+    }
     return {
       ...node,
       elements: [...elements.slice(0, at + 1), copy(original), ...elements.slice(at + 1)],

@@ -13,6 +13,7 @@ import {
   type ElementAction,
 } from './element-actions';
 import { LockBadge } from './lock-badge';
+import { NO_FREE_CELL, ParentGridFullContext } from './grid-full-context';
 import { LOCKED } from '../../studio/capabilities/governance';
 import type { StudioEditor } from './studio-editor';
 import { idOf } from './element-order';
@@ -93,6 +94,7 @@ export function StudioElement({
   );
   const depth = useContext(DepthContext);
   const editor = useStudioEditor();
+  const gridFull = useContext(ParentGridFullContext);
   const id = idOf(uischema);
   if (depth === 0 || id === undefined) {
     return (
@@ -157,7 +159,7 @@ export function StudioElement({
               <ElementActions
                 name={elementName(uischema, schema)}
                 hasRule={rule !== undefined}
-                disabled={disabledActions(editor, id, rule !== undefined)}
+                disabled={disabledActions(editor, id, rule !== undefined, gridFull)}
                 {...(editor.editRule !== undefined && { onEditRule: () => editor.editRule?.(id) })}
                 {...(openOptions !== undefined && { onEditOptions: openOptions })}
                 {...(editor.copy !== undefined && {
@@ -189,6 +191,7 @@ function disabledActions(
   editor: StudioEditor,
   id: string,
   hasRule: boolean,
+  gridFull: boolean,
 ): Partial<Record<ElementAction, string>> {
   const governance = editor.governance;
   const entries: [ElementAction, string | undefined][] = [
@@ -198,7 +201,8 @@ function disabledActions(
         (!hasRule && editor.canAddRule?.(id) === false ? NO_RULE_SOURCES : undefined),
     ],
     ['options', locked(governance?.canEdit(id, 'options'))],
-    ['copy', locked(governance?.canCopy(id))],
+    // A full Grid has no cell for the copy (doc 260 rule 22).
+    ['copy', locked(governance?.canCopy(id)) ?? (gridFull ? NO_FREE_CELL : undefined)],
     ['delete', locked(governance?.canRemove(id))],
   ];
   return Object.fromEntries(entries.filter(([, reason]) => reason !== undefined));

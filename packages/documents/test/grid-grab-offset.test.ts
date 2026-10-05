@@ -34,10 +34,16 @@ describe('clampGrabOffset', () => {
     expect(clampGrabOffset(grabbedInTheMiddle(), 0).offsetTop).toBe(0);
   });
 
-  it('leaves every other field — the horizontal offset included — untouched, and never mutates its input', () => {
+  it('leaves every other field untouched, and never mutates its input', () => {
     const offset = grabbedInTheMiddle();
-    expect(clampGrabOffset(offset, 100)).toEqual({ ...offset, offsetTop: -100 });
+    expect(clampGrabOffset(offset, 100)).toEqual({ ...offset, offsetTop: -100, offsetX: 0 });
     expect(offset.offsetTop).toBe(-145);
+    expect(offset.offsetX).toBe(-30);
+  });
+
+  // Doc 260 rule 12 (supersedes doc 243's "horizontal left alone"): a Grid lands a drop in the cell under the cursor.
+  it("also removes the horizontal grab distance, keeping the transform's x correction", () => {
+    expect(clampGrabOffset(grabbedInTheMiddle(), 100, 40).offsetX).toBe(-40);
   });
 });
 

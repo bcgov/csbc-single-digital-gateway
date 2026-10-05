@@ -178,13 +178,13 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
                       ? undefined
                       : findById(variant, focusedId);
                   if (form === undefined) return;
-                  const { layoutId, index } = appendTarget(form, pageSelectedId);
+                  const { layoutId, index, cell } = appendTarget(form, pageSelectedId);
                   // Doc 259 rule 10: say why nothing happened, rather than silently ignoring the click.
                   if (governance !== undefined && !governance.canAdd(layoutId)) {
                     toast.info(LOCKED);
                     return;
                   }
-                  insert(layoutId, index, itemId);
+                  insert(layoutId, index, itemId, cell);
                 }}
               />
             )}

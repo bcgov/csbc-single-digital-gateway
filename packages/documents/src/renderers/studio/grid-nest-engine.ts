@@ -1,4 +1,23 @@
 import { GridStackEngine, type GridStackMoveOpts, type GridStackNode } from 'gridstack';
+import { DDManager } from 'gridstack/dist/dd-manager';
+
+/** The row unit a vertical layout counts item heights in, in px (doc 236 rule 28). */
+export const VERTICAL_CELL_HEIGHT = 4;
+
+/** A node with the gridstack drag flags the engine reads (not in gridstack's public types). */
+type EnteringNode = GridStackNode & { _isExternal?: boolean; _temporaryRemoved?: boolean };
+
+/**
+ * How many rows an item dragged in from ANOTHER grid takes here (doc 260 bug B2): its laid-out height in this grid's
+ * rows. gridstack keeps the source's `h`, in the source's units — a Grid item is 1-2 rows of its own, so it arrived 4-8px
+ * tall, and gridstack's placeholder (inset by the margin on every side) drew nothing: no drop indicator. `offsetHeight`,
+ * not the bounding rect, so xyflow's zoom does not scale it. `undefined` for a palette item, which carries its own size.
+ */
+export function arrivingRows(dragged: HTMLElement | undefined): number | undefined {
+  if (dragged === undefined || dragged.hasAttribute('data-palette-item')) return undefined;
+  if (!dragged.classList.contains('grid-stack-item')) return undefined;
+  return Math.max(1, Math.ceil(dragged.offsetHeight / VERTICAL_CELL_HEIGHT));
+}
 
 /** The drag rect gridstack hands its engine: the dragged item's box in grid pixels. */
 type DragRect = NonNullable<GridStackMoveOpts['rect']>;
@@ -26,6 +45,17 @@ export function cursorRect(rect: DragRect): DragRect {
  * Re-verify against gridstack's `moveNode` / `directionCollideCoverage` on upgrade.
  */
 export class GridNestEngine extends GridStackEngine {
+  /** An item entering from another grid is as tall here as it is on screen (bug B2). */
+  override nodeBoundFix(node: GridStackNode, resizing?: boolean): GridStackEngine {
+    const { _isExternal: external, _temporaryRemoved: entering } = node as EnteringNode;
+    if (external === true && entering === true) {
+      const drag = DDManager.dragElement as { el?: HTMLElement } | undefined;
+      const rows = arrivingRows(drag?.el);
+      if (rows !== undefined) node.h = rows;
+    }
+    return super.nodeBoundFix(node, resizing);
+  }
+
   protected override directionCollideCoverage(
     node: GridStackNode,
     o: GridStackMoveOpts,

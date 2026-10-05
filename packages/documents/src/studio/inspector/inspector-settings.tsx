@@ -4,6 +4,7 @@ import type { ErrorObject } from 'ajv';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DocumentContent } from '../document-types';
 import { applyInspector } from './apply-inspector';
+import { useGridShrinkGate } from './grid-shrink-dialog';
 import { fieldsFor, inspectorForm, type InspectorForm } from './inspector-form';
 import { InspectorOptions } from '../options/inspector-options';
 import { InspectorRule } from '../rules/inspector-rule';
@@ -116,7 +117,7 @@ function TargetForm({
 }) {
   const view = useMemo(() => inspectorForm(target, governance), [target, governance]);
   const own = useRef<DocumentContent | null>(null);
-  const props = useFormProps(view, content, own.current);
+  const { props, reset } = useFormProps(view, content, own.current);
   // JSONForms emits after a debounce, so the handler reads the LATEST content and target — and nothing once this
   // instance is gone, or an old selection's last emit would be applied over the new one.
   const latest = useRef({ target, content, onContentChange, governance, mounted: true });
@@ -129,10 +130,20 @@ function TargetForm({
     };
   }, []);
   const [errors, setErrors] = useState<string[]>([]);
+  const apply = (values: Record<string, unknown>) => {
+    const current = latest.current;
+    const next = applyInspector(current.content, current.target, values, current.governance);
+    if (next === current.content) return;
+    own.current = next;
+    current.onContentChange(next);
+  };
+  // Doc 260 rules 25-26: a Grid resize that deletes elements waits for the author; a locked one is refused.
+  const shrinkGate = useGridShrinkGate(apply, reset);
   if (view.empty) return <Message>No properties to edit.</Message>;
   return (
     <>
       <JsonForms
+        key={props.nonce}
         schema={props.schema}
         uischema={props.uischema as never}
         data={props.data}
@@ -142,24 +153,24 @@ function TargetForm({
           if (!current.mounted) return;
           const messages = errorMessages(current.target, found ?? []);
           setErrors((shown) => (shown.join('\n') === messages.join('\n') ? shown : messages));
-          const next = applyInspector(
+          shrinkGate.write(
             current.content,
             current.target,
             data as Record<string, unknown>,
             current.governance,
           );
-          if (next === current.content) return;
-          own.current = next;
-          current.onContentChange(next);
         }}
       />
-      {errors.length > 0 && (
+      {(errors.length > 0 || shrinkGate.refused !== null) && (
         <ul role="alert" data-slot="inspector-errors" className="text-xs text-destructive">
-          {errors.map((message) => (
-            <li key={message}>{message}</li>
-          ))}
+          {[...errors, ...(shrinkGate.refused === null ? [] : [shrinkGate.refused])].map(
+            (message) => (
+              <li key={message}>{message}</li>
+            ),
+          )}
         </ul>
       )}
+      {shrinkGate.dialog}
     </>
   );
 }
@@ -171,8 +182,10 @@ function TargetForm({
  * replaced when the content changed elsewhere (a canvas edit, the other panel) or the field set changed.
  */
 function useFormProps(view: InspectorForm, content: DocumentContent, own: DocumentContent | null) {
-  const [props, setProps] = useState({ ...view, content });
-  if (props.content === content) return props;
+  const [props, setProps] = useState({ ...view, content, nonce: 0 });
+  // Doc 260 rule 25: a refused or cancelled value goes back to what the document holds — a fresh form, remounted.
+  const reset = () => setProps({ ...view, content, nonce: props.nonce + 1 });
+  if (props.content === content) return { props, reset };
   const reshaped = structure(props) !== structure(view);
   const next = {
     schema: reshaped ? view.schema : props.schema,
@@ -180,9 +193,10 @@ function useFormProps(view: InspectorForm, content: DocumentContent, own: Docume
     data: reshaped || content !== own ? view.data : props.data,
     empty: view.empty,
     content,
+    nonce: props.nonce,
   };
   setProps(next);
-  return next;
+  return { props: next, reset };
 }
 
 /** A form's field set, as text: what decides whether JSONForms must be given a new schema and uischema. */

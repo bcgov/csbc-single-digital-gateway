@@ -12,11 +12,13 @@ import {
   mdiTextBoxEditOutline,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
+  mdiViewGridOutline,
   mdiViewSequentialOutline,
 } from '@mdi/js';
 import { nanoid } from 'nanoid';
 import type { DocumentContent, DocumentKind, DocumentType, Uischema } from './document-types';
 import { newId } from './element-ids';
+import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS } from '../renderers/default/grid-placement';
 
 /** What placing an item adds (doc 238): the uischema element, and the schema properties it needs (a control's). */
 export interface PaletteCreation {
@@ -107,6 +109,22 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Layout',
     keywords: ['stack', 'column', 'group'],
     create: () => ({ element: { id: newId(), type: 'VerticalLayout', elements: [] } }),
+  },
+  {
+    id: 'grid',
+    label: 'Grid',
+    icon: mdiViewGridOutline,
+    group: 'Layout',
+    keywords: ['columns', 'rows', 'table', 'cells'],
+    // Doc 260 rule 28: a 2×2 grid, written out so the inspector and template rules see its size.
+    create: () => ({
+      element: {
+        id: newId(),
+        type: 'Grid',
+        elements: [],
+        options: { columns: DEFAULT_GRID_COLUMNS, rows: DEFAULT_GRID_ROWS },
+      },
+    }),
   },
   {
     id: 'heading',

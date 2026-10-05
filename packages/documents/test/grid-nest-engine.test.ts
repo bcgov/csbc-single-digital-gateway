@@ -1,6 +1,7 @@
 import { GridStackEngine, type GridStackMoveOpts, type GridStackNode } from 'gridstack';
 import { describe, expect, it } from 'vitest';
-import { cursorRect, GridNestEngine } from '../src/renderers/studio/grid-nest-engine';
+import { DDManager } from 'gridstack/dist/dd-manager';
+import { arrivingRows, cursorRect, GridNestEngine } from '../src/renderers/studio/grid-nest-engine';
 import { renderStudioRenderers, studioHeading } from './render-studio-renderers';
 
 // Doc 243 rule 12b / bug B1: gridstack displaced neighbours by the dragged item's EDGES, so a TALL item grabbed in its
@@ -86,5 +87,46 @@ describe('GridNestEngine coverage from the cursor (doc 243 rule 12b, bug B1)', (
     })[];
     expect(grids).toHaveLength(2);
     for (const grid of grids) expect(grid.gridstack.engine).toBeInstanceOf(GridNestEngine);
+  });
+});
+
+/** A dragged element with the layout height a browser would give it. */
+function item(height: number, attributes: Record<string, string> = {}) {
+  const el = document.createElement('div');
+  el.className = 'grid-stack-item';
+  for (const [name, value] of Object.entries(attributes)) el.setAttribute(name, value);
+  Object.defineProperty(el, 'offsetHeight', { value: height });
+  return el;
+}
+
+describe('an item arriving from another grid (doc 260 bug B2)', () => {
+  it('is as tall in rows as it is laid out — a Grid item is not 1 row of 4px', () => {
+    expect(arrivingRows(item(77))).toBe(20);
+    expect(arrivingRows(item(2))).toBe(1);
+    // A palette item carries its own drag-in size; anything not an item is left alone.
+    expect(arrivingRows(item(77, { 'data-palette-item': 'heading' }))).toBeUndefined();
+    expect(arrivingRows(document.createElement('div'))).toBeUndefined();
+  });
+
+  it('sizes the entering node while gridstack places it, so its placeholder shows', () => {
+    const engine = new GridNestEngine({ column: 1, float: false });
+    (DDManager as { dragElement?: unknown }).dragElement = { el: item(77) };
+    try {
+      const entering = {
+        x: 0,
+        y: 0,
+        w: 1,
+        h: 1,
+        _isExternal: true,
+        _temporaryRemoved: true,
+      } as GridStackNode;
+      engine.nodeBoundFix(entering);
+      expect(entering.h).toBe(20);
+      const own = { x: 0, y: 0, w: 1, h: 3 } as GridStackNode;
+      engine.nodeBoundFix(own);
+      expect(own.h).toBe(3);
+    } finally {
+      delete (DDManager as { dragElement?: unknown }).dragElement;
+    }
   });
 });

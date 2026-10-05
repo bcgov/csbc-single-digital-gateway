@@ -6,6 +6,7 @@ import { ChildDispatch, elementKey, type VerticalBodyProps } from '../default/ve
 import { idOf, reorderElements } from './element-order';
 import { useInStudio, useStudioEditor } from './studio-editor';
 import { STUDIO_INTERACTIVE } from './studio-element';
+import { ParentGridFullContext } from './grid-full-context';
 import { useVerticalGrid } from './use-vertical-grid';
 
 /** An empty grid keeps 12 rows (48px) so it can still take a drop (doc 238 rule 17). */
@@ -101,25 +102,28 @@ export function StudioVerticalGrid({
         </p>
       )}
       <GridHeightsContext.Provider value={heights}>
-        {elements.map((child, index) => (
-          <div
-            key={keys[index]}
-            className="grid-stack-item"
-            gs-id={keys[index]}
-            gs-x="0"
-            gs-y={String(tops[index])}
-            gs-w="1"
-            gs-h={String(rows[index])}
-            // Doc 259 rule 11: an element the template fixes in place cannot be dragged.
-            {...(editor?.governance?.canDrag(keys[index] ?? '') === false && {
-              'gs-no-move': 'true',
-            })}
-          >
-            <div className="grid-stack-item-content">
-              <ChildDispatch child={child} {...dispatch} />
+        {/* Its children sit in THIS layout, never an outer Grid (doc 260 rule 22). */}
+        <ParentGridFullContext.Provider value={false}>
+          {elements.map((child, index) => (
+            <div
+              key={keys[index]}
+              className="grid-stack-item"
+              gs-id={keys[index]}
+              gs-x="0"
+              gs-y={String(tops[index])}
+              gs-w="1"
+              gs-h={String(rows[index])}
+              // Doc 259 rule 11: an element the template fixes in place cannot be dragged.
+              {...(editor?.governance?.canDrag(keys[index] ?? '') === false && {
+                'gs-no-move': 'true',
+              })}
+            >
+              <div className="grid-stack-item-content">
+                <ChildDispatch child={child} {...dispatch} />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </ParentGridFullContext.Provider>
       </GridHeightsContext.Provider>
     </div>
   );

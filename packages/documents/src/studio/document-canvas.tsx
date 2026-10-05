@@ -1,4 +1,5 @@
 import { mayRemoveNode, type Governance } from './capabilities/governance';
+import type { GridDrop } from '../renderers/default/grid-placement';
 import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
@@ -72,7 +73,9 @@ export interface DocumentCanvasProps {
   /** A delete was confirmed with "Don't ask me again" ticked: remember that choice for the kind. */
   onRememberDelete?: ((kind: PendingDelete['kind'], choice: DeleteChoice) => void) | undefined;
   /** Places a palette item in a layout on a focused page (doc 238 rule 14); absent = nothing can be placed. */
-  onInsert?: ((layoutId: string, index: number, itemId: string) => void) | undefined;
+  onInsert?:
+    | ((layoutId: string, index: number, itemId: string, cell?: GridDrop) => void)
+    | undefined;
   /** Deletes an element from a focused page, confirmed by the delete gate (doc 242); absent = no element deletes. */
   onRemoveElement?: ((elementId: string) => void) | undefined;
   /** Copies a page element, returning the copy's id (doc 254 rule 6); absent: no Copy. */

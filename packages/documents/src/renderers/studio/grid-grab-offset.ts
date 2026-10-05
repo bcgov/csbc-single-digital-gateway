@@ -17,17 +17,23 @@ import { DDDraggable } from 'gridstack/dist/dd-draggable';
 //   the cursor by the canvas's screen offset. The clamp is `-yOffset` — exactly the cursor.
 // - The item's CONTENT is translated back up by the grab distance (`--gs-grab-offset`, styles.css), so the field stays
 //   where it was grabbed. gridstack measures the item's own box, which a child's translate never moves.
+//
+// Doc 260 rule 12 extends it to the HORIZONTAL offset: a Grid lands a drop in the cell under the cursor, which needs the
+// item's LEFT on the cursor too (`--gs-grab-offset-x` translates the content back). A one-column grid is unaffected —
+// every item there is at `x` 0.
 
 /** Marks our wrapper of `DDDraggable.prototype._getDragOffset`. */
 export const GRAB_OFFSET_CLAMP = Symbol.for('@repo/documents/grab-offset-clamp');
 
-/** The custom property the dragged item's content is translated by (styles.css). */
+/** The custom properties the dragged item's content is translated by (styles.css): vertically, horizontally. */
 export const GRAB_OFFSET_VAR = '--gs-grab-offset';
+export const GRAB_OFFSET_X_VAR = '--gs-grab-offset-x';
 
 /** What `_getDragOffset` returns: the grabbed element's box, and the cursor's offset into it. */
 export interface GrabOffset {
   x: number;
   top: number;
+  /** `-event.clientX + targetOffset.left - transform.xOffset`. */
   offsetX: number;
   /** `-event.clientY + targetOffset.top - transform.yOffset`. */
   offsetTop: number;
@@ -35,23 +41,25 @@ export interface GrabOffset {
   height: number;
 }
 
-/** The drag's transform reference: `yOffset` is the transformed container's screen top, `yScale` screen → CSS px. */
+/** The drag's transform reference: the transformed container's screen top-left, and screen → CSS px scales. */
 interface DragTransform {
+  xOffset: number;
   yOffset: number;
+  xScale: number;
   yScale: number;
 }
 
 /**
- * The grab offset with its VERTICAL grab distance removed but the transform correction kept, so `_dragFollow` puts the
- * item's top exactly on the cursor. The HORIZONTAL offset is left alone: nested layouts stack vertically, so only the
- * vertical disagreement decides which grid claims a drag.
+ * The grab offset with its grab distance removed but the transform correction kept, so `_dragFollow` puts the item's
+ * top-left exactly on the cursor (doc 243 rule 12b vertically, doc 260 rule 12 horizontally).
  */
-export const clampGrabOffset = (offset: GrabOffset, yOffset: number): GrabOffset => ({
+export const clampGrabOffset = (offset: GrabOffset, yOffset: number, xOffset = 0): GrabOffset => ({
   ...offset,
   offsetTop: 0 - yOffset, // never -0
+  offsetX: 0 - xOffset,
 });
 
-/** How far the content is translated back up: the grab distance on screen, in the item's CSS pixels. */
+/** How far the content is translated back: the grab distance on screen (either axis), in the item's CSS pixels. */
 export const grabTranslate = (clientY: number, itemTop: number, yScale: number): string =>
   `${-(clientY - itemTop) * yScale}px`;
 
@@ -79,12 +87,16 @@ export function installGrabOffsetClamp(): void {
   const clamped: ClampedGetDragOffset = function _getDragOffset(this, event, el, parent) {
     const offset = inner.call(this, event, el, parent);
     const { dragTransform } = this as unknown as { dragTransform?: DragTransform };
-    const transform = dragTransform ?? { yOffset: 0, yScale: 1 };
+    const transform = { xOffset: 0, yOffset: 0, xScale: 1, yScale: 1, ...dragTransform };
+    const box = el.getBoundingClientRect();
+    el.style.setProperty(GRAB_OFFSET_VAR, grabTranslate(event.clientY, box.top, transform.yScale));
     el.style.setProperty(
-      GRAB_OFFSET_VAR,
-      grabTranslate(event.clientY, el.getBoundingClientRect().top, transform.yScale),
+      GRAB_OFFSET_X_VAR,
+      grabTranslate(event.clientX, box.left, transform.xScale),
     );
-    return clampGrabOffset(offset, parent === undefined ? 0 : transform.yOffset);
+    return parent === undefined
+      ? clampGrabOffset(offset, 0)
+      : clampGrabOffset(offset, transform.yOffset, transform.xOffset);
   };
   clamped[GRAB_OFFSET_CLAMP] = true;
   prototype._getDragOffset = clamped;

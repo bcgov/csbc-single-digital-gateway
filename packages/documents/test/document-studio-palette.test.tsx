@@ -36,6 +36,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       [...palette.querySelectorAll('[data-palette-item]')].map((el) => el.textContent),
     ).toEqual([
       'Vertical layout',
+      'Grid',
       'Heading',
       'Separator',
       'Rich content',
@@ -53,7 +54,9 @@ describe('DocumentStudio palette (doc 238)', () => {
   });
 
   it("calls the host's resolver with the document's type, kind and content", async () => {
-    const resolver = vi.fn<PaletteResolver>(() => [DEFAULT_PALETTE_ITEMS[1]!]);
+    const resolver = vi.fn<PaletteResolver>(() => [
+      DEFAULT_PALETTE_ITEMS.find((item) => item.id === 'heading')!,
+    ]);
     const { palette } = await openEligibility(resolver);
     expect(resolver).toHaveBeenCalledWith(
       expect.objectContaining({

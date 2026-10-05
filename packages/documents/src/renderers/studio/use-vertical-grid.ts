@@ -4,10 +4,10 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import { retargetDropTarget } from './grid-drop-target';
 import { installGrabOffsetClamp } from './grid-grab-offset';
 import type { DropSource } from '../../studio/capabilities/governance';
-import { GridNestEngine } from './grid-nest-engine';
+import { GridNestEngine, VERTICAL_CELL_HEIGHT } from './grid-nest-engine';
 
 /** The row unit item heights are counted in; heights follow content, so it only sets their granularity. */
-const CELL_HEIGHT = 4;
+const CELL_HEIGHT = VERTICAL_CELL_HEIGHT;
 
 /**
  * Elements gridstack's drag must never start from (rule 29). Its default list only matches `contenteditable="true"`,
@@ -106,6 +106,9 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
     );
     if (instance === null) return;
     grid.current = instance;
+    // Doc 260 bug B1: a grid initialised inside a live grid's item is linked as its sub-grid, and gridstack 13.2.0 then
+    // dispatches the sub-grid's `change` on the OUTERMOST grid — a nested layout's reorders were never written.
+    unlinkFromParentGrid(instance);
     retarget(instance);
     for (const item of itemsOf(el)) fitItem(instance, item, heights);
     // On only once the fitted layout has been painted, so neighbours still slide aside during a drag.
@@ -209,7 +212,7 @@ function handleDrop(
  * layout `fitItem`'s measuring forced — a new item one row tall — so everything below it slid into place. Returns a
  * cancel.
  */
-function afterPaint(run: () => void): () => void {
+export function afterPaint(run: () => void): () => void {
   let frame = requestAnimationFrame(() => {
     frame = requestAnimationFrame(run);
   });
@@ -239,7 +242,7 @@ function fitItem(grid: GridStack, item: GridItemHTMLElement, heights: Map<string
  * descendant). It must refuse everything `moveElement` would: gridstack moves the DOM before `dropped`, so a drop
  * refused only at write-back leaves a ghost item.
  */
-function acceptsFor(
+export function acceptsFor(
   editable: boolean,
   grid: HTMLElement | null,
   acceptMoves: { readonly current: boolean },
@@ -263,17 +266,17 @@ function acceptsFor(
  * mouse move after (`opts` of a destroyed grid) and strands the drop. `_mouseUp` clears `dragging` BEFORE the source
  * grid's stop handler fires its final `change`, so the reorder at drag end is still written. gridstack 13.2.0.
  */
-function dragInProgress(): boolean {
+export function dragInProgress(): boolean {
   const drag = DDManager.dragElement as { dragging?: boolean } | undefined;
   return drag?.dragging === true;
 }
 
 /** A node's element id — never `elementKey`'s `#<index>` fallback for an element without one. */
-function authoredId(node: GridStackNode): string | null {
+export function authoredId(node: GridStackNode): string | null {
   return typeof node.id === 'string' && node.id !== '' && !node.id.startsWith('#') ? node.id : null;
 }
 
-function itemsOf(el: HTMLElement): GridItemHTMLElement[] {
+export function itemsOf(el: HTMLElement): GridItemHTMLElement[] {
   return [...el.querySelectorAll<GridItemHTMLElement>(':scope > .grid-stack-item')];
 }
 
@@ -282,7 +285,7 @@ function itemsOf(el: HTMLElement): GridItemHTMLElement[] {
  * first, whose destroy() deletes its `opts`, and the inner destroy() then reads them and throws (CLAUDE.md feature-180
  * trap) — so a nested grid is made a plain top-level grid before it is destroyed.
  */
-function unlinkFromParentGrid(grid: GridStack): void {
+export function unlinkFromParentGrid(grid: GridStack): void {
   const parent = grid.parentGridNode;
   if (parent === undefined) return;
   delete parent.subGrid;

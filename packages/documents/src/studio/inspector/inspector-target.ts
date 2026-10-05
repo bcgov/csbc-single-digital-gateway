@@ -11,6 +11,7 @@ export type TargetKind =
   | 'form'
   | 'heading'
   | 'vertical-layout'
+  | 'grid'
   | 'separator'
   | 'checkbox'
   | 'switch'
@@ -31,6 +32,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   form: 'Form',
   heading: 'Heading',
   'vertical-layout': 'Vertical layout',
+  grid: 'Grid',
   separator: 'Separator',
   checkbox: 'Checkbox',
   switch: 'Switch',
@@ -64,6 +66,8 @@ export interface InspectorTarget {
   name: string | undefined;
   /** Whether it is the variant's root, which can never be deleted or moved (doc 258 rule 3). */
   root: boolean;
+  /** Whether it sits DIRECTLY in a Grid, so it has a placement to align (doc 260 rule 33). */
+  inGrid: boolean;
   property?: BoundProperty;
 }
 
@@ -88,7 +92,9 @@ export function inspectorTarget(
   const root = content.variants.default;
   if (typeof root['type'] !== 'string') return null;
   const element = pickElement(root, inputs) ?? root;
-  return targetOf(content, element, element === root);
+  const id = idOf(element);
+  const inGrid = id !== undefined && parentOf(root, id)?.['type'] === 'Grid';
+  return targetOf(content, element, element === root, inGrid);
 }
 
 function pickElement(root: Uischema, { pageSelectedId, focusedId, formId }: TargetInputs) {
@@ -100,7 +106,12 @@ function pickElement(root: Uischema, { pageSelectedId, focusedId, formId }: Targ
   return formId === null ? undefined : findById(root, formId);
 }
 
-function targetOf(content: DocumentContent, element: Uischema, root: boolean): InspectorTarget {
+function targetOf(
+  content: DocumentContent,
+  element: Uischema,
+  root: boolean,
+  inGrid: boolean,
+): InspectorTarget {
   const id = idOf(element) ?? '';
   const property = element['type'] === 'Control' ? boundProperty(content, element) : undefined;
   const kind = kindOf(element, property);
@@ -110,8 +121,23 @@ function targetOf(content: DocumentContent, element: Uischema, root: boolean): I
     kind,
     name: nameOf(element, kind, property),
     root,
+    inGrid,
     ...(property !== undefined && { property }),
   };
+}
+
+/** The element whose `elements` directly hold the element with id `id`. */
+export function parentOf(node: Uischema, id: string): Uischema | undefined {
+  const elements = node['elements'];
+  if (!Array.isArray(elements)) return undefined;
+  for (const child of elements) {
+    const record = recordOf(child);
+    if (record === undefined) continue;
+    if (idOf(record) === id) return node;
+    const found = parentOf(record, id);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
 
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
@@ -147,6 +173,7 @@ const LAYOUT_KINDS: Readonly<Record<string, TargetKind>> = Object.freeze({
   Form: 'form',
   Heading: 'heading',
   VerticalLayout: 'vertical-layout',
+  Grid: 'grid',
   Separator: 'separator',
   RichContent: 'rich-content',
 });

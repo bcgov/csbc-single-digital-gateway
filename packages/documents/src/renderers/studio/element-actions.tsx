@@ -92,6 +92,7 @@ const VISIBILITY =
 
 const TYPE_NAMES: Readonly<Record<string, string>> = Object.freeze({
   VerticalLayout: 'Vertical layout',
+  Grid: 'Grid',
   HorizontalLayout: 'Horizontal layout',
   Heading: 'Heading',
   Separator: 'Separator',

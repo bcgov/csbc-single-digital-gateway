@@ -11,6 +11,7 @@ import {
   STRING,
   type InspectorField,
 } from './inspector-field';
+import { GRID_FIELDS } from './grid-fields';
 
 const LEVELS = [1, 2, 3, 4, 5, 6].map((n) => [n, `Heading ${n}`] as const);
 const GAPS = [
@@ -30,7 +31,7 @@ const labelField = (key: string, label: string, kind: 'funnel' | 'form'): Inspec
     patchElement(content, t, { label: absentIf(value) as string | undefined }),
 });
 
-/** Doc 249's fields for elements that are not Controls: Funnel, Form, Heading, VerticalLayout. */
+/** Doc 249's fields for elements that are not Controls: Funnel, Form, Heading, VerticalLayout, Grid (doc 260). */
 export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
   labelField('funnelName', 'Name', 'funnel'),
   labelField('formTitle', 'Title', 'form'),
@@ -75,11 +76,13 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     read: (t) => optionOf(t, 'size'),
     write: (content, t, value) => patchElement(content, t, { options: { size: absentIf(value) } }),
   },
+  // A Grid's Columns and Rows, ahead of its Spacing (doc 260 rule 24).
+  ...GRID_FIELDS,
   {
     key: 'gap',
     section: 'Appearance',
     label: 'Spacing',
-    applies: isKind('form', 'vertical-layout'),
+    applies: isKind('form', 'vertical-layout', 'grid'),
     schema: () => choice(GAPS),
     required: true,
     read: (t) => optionOf(t, 'gap') ?? DEFAULT_GAP,

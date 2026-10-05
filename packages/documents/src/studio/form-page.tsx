@@ -1,4 +1,5 @@
 import type { Governance } from './capabilities/governance';
+import type { GridDrop } from '../renderers/default/grid-placement';
 import { JsonForms } from '@jsonforms/react';
 import { useEffect, useMemo } from 'react';
 import {
@@ -50,11 +51,11 @@ export function FormPageBody({
   /** Applies a renderer's edit; only an open page edits, so nothing drags while the node animates. */
   onEdit?: (id: string, patch: ElementPatch) => void;
   /** Places a palette item dropped on one of the page's grids (doc 238). */
-  onInsert?: (layoutId: string, index: number, itemId: string) => void;
+  onInsert?: (layoutId: string, index: number, itemId: string, cell?: GridDrop) => void;
   /** Asks to delete a page element (doc 242); absent = elements offer no Delete. */
   onRemove?: ((id: string, name: string) => void) | undefined;
   /** Moves a page element into another layout (doc 243); only an open page edits, so only it moves. */
-  onMove?: ((id: string, layoutId: string, index: number) => void) | undefined;
+  onMove?: ((id: string, layoutId: string, index: number, cell?: GridDrop) => void) | undefined;
   /** Copies a page element, returning the copy's id (doc 254 rule 6); only an open page copies. */
   onCopy?: ((id: string) => string | undefined) | undefined;
   /** Opens the options editor for a choice field (doc 255 rule 3); only an open page edits. */
@@ -115,9 +116,9 @@ function PageContent({
 }: {
   page: FormPage;
   onEdit: ((id: string, patch: ElementPatch) => void) | undefined;
-  onInsert: (layoutId: string, index: number, itemId: string) => void;
+  onInsert: (layoutId: string, index: number, itemId: string, cell?: GridDrop) => void;
   onRemove: ((id: string, name: string) => void) | undefined;
-  onMove: ((id: string, layoutId: string, index: number) => void) | undefined;
+  onMove: ((id: string, layoutId: string, index: number, cell?: GridDrop) => void) | undefined;
   onCopy: ((id: string) => string | undefined) | undefined;
   onEditOptions: ((id: string) => void) | undefined;
   onEditRule: ((id: string) => void) | undefined;

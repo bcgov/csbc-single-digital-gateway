@@ -31,8 +31,8 @@ describe('renderers/default (doc 236)', () => {
     ] as const) {
       for (const entry of ui[key]) expect(defaults[key], key).toContain(entry);
     }
-    // VerticalLayout and Form (doc 236 rule 39).
-    expect(defaults.layoutRenderers.length).toBe(ui.layoutRenderers.length + 2);
+    // VerticalLayout and Form (doc 236 rule 39), Grid (doc 260 rule 7).
+    expect(defaults.layoutRenderers.length).toBe(ui.layoutRenderers.length + 3);
   });
 
   it('renders a VerticalLayout as a one-column grid with children in elements order', () => {

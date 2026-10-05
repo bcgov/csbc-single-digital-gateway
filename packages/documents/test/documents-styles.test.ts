@@ -37,9 +37,12 @@ describe('@repo/documents styles.css (doc 236)', () => {
     expect(css).not.toMatch(/^\.grid-stack\[data-slot='studio-vertical-layout'\] \{/m);
   });
 
-  it("translates a dragged item's content back up by the grab distance (doc 243 rule 12b)", () => {
+  it("translates a dragged item's content back by the grab distance, both axes (doc 243 rule 12b, doc 260 rule 12)", () => {
     expect(css).toContain(
-      `${grid}\n  > .grid-stack-item.ui-draggable-dragging\n  > .grid-stack-item-content {\n  translate: 0 var(--gs-grab-offset, 0px);\n}`,
+      `${grid}\n  > .grid-stack-item.ui-draggable-dragging\n  > .grid-stack-item-content {\n  translate: var(--gs-grab-offset-x, 0px) var(--gs-grab-offset, 0px);\n}`,
+    );
+    expect(css).toContain(
+      `.grid-stack[data-slot='studio-grid']\n  > .grid-stack-item.ui-draggable-dragging\n  > .grid-stack-item-content {\n  translate: var(--gs-grab-offset-x, 0px) var(--gs-grab-offset, 0px);\n}`,
     );
   });
 
@@ -61,5 +64,52 @@ describe('@repo/documents styles.css (doc 236)', () => {
     expect(css).toContain(
       ".grid-stack-animate[data-slot='studio-vertical-layout'] > .grid-stack-item.ui-draggable-dragging,",
     );
+  });
+  it("draws a Grid child's corner handles as brackets that never take the pointer (doc 260 rule 10b)", () => {
+    expect(css).toContain(
+      `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-handle::after {`,
+    );
+    expect(css).toMatch(/ui-resizable-handle::after \{[^}]*pointer-events: none;[^}]*\}/);
+    for (const corner of ['nw', 'ne', 'se', 'sw'])
+      expect(css).toContain(
+        `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-${corner}::after {`,
+      );
+    expect(css).toContain(
+      `.grid-stack[data-slot='studio-grid'] > .grid-stack-item:hover > .ui-resizable-handle::after,`,
+    );
+  });
+
+  it("starts every Grid handle AT the element's frame, 4px out, and never beyond it (rule 10b)", () => {
+    const handles = [...css.matchAll(/> \.ui-resizable-(?:n|e|s|w|ne|nw|se|sw) \{[^}]*\}/g)].map(
+      (m) => m[0],
+    );
+    expect(handles.length).toBeGreaterThan(0);
+    // Outward offsets are exactly the frame's 4px; nothing reaches further into the gap around the child.
+    for (const rule of handles) {
+      for (const [, offset] of rule.matchAll(/- (\d+)px\)/g)) expect(offset).toBe('4');
+    }
+    expect(css).toContain(
+      `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-nw {\n  top: calc(var(--gs-item-margin-top) - 4px);`,
+    );
+  });
+  it("stretches a Grid child's frame to its cell with min-height, so content can still grow the row (doc 260 rule 9b)", () => {
+    expect(css).toMatch(/\[data-slot='studio-element'\] \{\n  min-height: 100%;/);
+    // Rule 32: its content aligned inside it, by the item's resolved alignment.
+    expect(css).toContain('justify-content: var(--grid-align-y, flex-start);');
+    expect(css).toContain('align-items: var(--grid-align-x, stretch);');
+  });
+  it("grows a Grid's placeholder to an element's frame, 4px outside its content box (doc 260 rule 17d)", () => {
+    expect(css).toContain('top: calc(var(--gs-item-margin-top) - 4px);');
+    expect(css).toContain(
+      ".grid-stack[data-slot='studio-grid'] > .grid-stack-placeholder > .placeholder-content {",
+    );
+  });
+  it("lets a Grid child's edges resize without drawing them — only its corners show brackets (doc 260 rule 10b)", () => {
+    for (const edge of ['n', 'e', 's', 'w'])
+      expect(css).toContain(
+        `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-${edge}`,
+      );
+    // The only borders drawn are the corners'.
+    expect(css).not.toMatch(/ui-resizable-[nesw] \{[^}]*border/);
   });
 });

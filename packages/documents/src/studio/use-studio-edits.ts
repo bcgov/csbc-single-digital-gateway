@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { GridDrop } from '../renderers/default/grid-placement';
 import { governanceOf } from './capabilities/governance';
 import type { CapabilityMap } from './capabilities/capability-types';
 import type { DocumentStore, DocumentSummary } from './document-store';
 import type { DocumentContent } from './document-types';
 import { copyElement } from './element-copy';
 import { removeElement } from './element-remove';
+import { withoutDisplaced } from './grid-edits';
 import { insertItem } from './palette-insert';
 import type { PaletteItem } from './palette-items';
 import type { StudioDraft } from './use-document-studio';
@@ -26,12 +28,14 @@ export function useStudioEdits(
   );
   // A palette item placed on the page (doc 238 rules 14-16): created fresh, then applied with its schema properties.
   const insert = useCallback(
-    (layoutId: string, index: number, itemId: string) => {
+    (layoutId: string, index: number, itemId: string, cell?: GridDrop) => {
       const item = items.find((candidate) => candidate.id === itemId);
       if (draft === null || item === undefined) return;
       // Backstop (doc 259 rule 10): a layout the template locks takes nothing new.
       if (governance !== undefined && !governance.canAdd(layoutId)) return;
-      const next = insertItem(draft.content, layoutId, index, item.create());
+      // Doc 260 rule 19: moving items out of the arrival's way is a reorder the template may forbid.
+      const drop = governance?.canReorder(layoutId) === false ? withoutDisplaced(cell) : cell;
+      const next = insertItem(draft.content, layoutId, index, item.create(), drop);
       if (next !== draft.content) setContent(next);
     },
     [items, draft, setContent, governance],

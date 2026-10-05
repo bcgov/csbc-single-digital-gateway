@@ -13,6 +13,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
   it('lists every placeable studio renderer, in order, grouped', () => {
     expect(DEFAULT_PALETTE_ITEMS.map((i) => [i.id, i.label, i.group])).toEqual([
       ['vertical-layout', 'Vertical layout', 'Layout'],
+      ['grid', 'Grid', 'Layout'],
       ['heading', 'Heading', 'Content'],
       ['separator', 'Separator', 'Content'],
       ['rich-content', 'Rich content', 'Content'],

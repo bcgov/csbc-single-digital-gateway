@@ -1,25 +1,43 @@
 import type { DocumentContent, Uischema } from './document-types';
 import { DEFAULT_VARIANT, withVariant } from './document-types';
 import { findById, idOf } from './element-ids';
+import type { GridCell, GridDrop } from '../renderers/default/grid-placement';
+import { withGridItem } from '../renderers/studio/grid-order';
+import { cellAfter, gridLanding, isGrid, withDisplaced } from './grid-edits';
 import type { PaletteCreation } from './palette-items';
 
 /**
  * `content` with a placed item (doc 238 rule 15): its element spliced into the `elements` of the element whose id is
  * `layoutId` (any depth, default variant) at `index` clamped to the list, and its schema properties added. The SAME
  * content when the layout is unknown or a property key already exists — an insert never overwrites a field.
+ *
+ * Into a Grid (doc 260 rule 19) the element takes `cell` — or, with none asked, the first free cell — at its reading
+ * order index, `index` ignored; the SAME content when that cell is taken or the Grid is full.
  */
 export function insertItem(
   content: DocumentContent,
   layoutId: string,
   index: number,
   creation: PaletteCreation,
+  cell?: GridDrop,
 ): DocumentContent {
   const current = isRecord(content.schema['properties']) ? content.schema['properties'] : {};
   const added = creation.properties ?? {};
   if (Object.keys(added).some((key) => Object.hasOwn(current, key))) return content;
-  const variant = content.variants[DEFAULT_VARIANT];
-  const next = spliced(variant, layoutId, index, creation.element);
-  if (next === variant) return content;
+  const original = content.variants[DEFAULT_VARIANT];
+  // Doc 260 rule 19: the items moved out of the arrival's way, then the arrival — one edit.
+  const variant = withDisplaced(original, layoutId, cell?.displaced);
+  const layout = findById(variant, layoutId);
+  let { element } = creation;
+  let at = index;
+  if (layout !== undefined && isGrid(layout)) {
+    const landing = gridLanding(layout, cell === undefined ? undefined : { x: cell.x, y: cell.y });
+    if (landing === undefined) return content;
+    element = withGridItem(element, { ...landing.cell, w: 1, h: 1 });
+    at = landing.index;
+  }
+  const next = spliced(variant, layoutId, at, element);
+  if (next === original) return content;
   const withElement = withVariant(content, next);
   if (Object.keys(added).length === 0) return withElement;
   return {
@@ -32,6 +50,8 @@ export function insertItem(
 export interface AppendTarget {
   layoutId: string;
   index: number;
+  /** Into a Grid, the cell (doc 260 rule 19); absent: the Grid's first free cell. */
+  cell?: GridCell;
 }
 
 /**
@@ -49,6 +69,11 @@ export function appendTarget(form: Uischema, selectedId: string | null): AppendT
   const parent = parentOf(form, selectedId);
   const parentId = parent === undefined ? undefined : idOf(parent);
   if (parent === undefined || parentId === undefined) return end;
+  if (isGrid(parent)) {
+    // After a Grid child: the next free cell (doc 260 rule 19). A full Grid has none, so the insert takes nothing.
+    const cell = cellAfter(parent, selectedId);
+    return { layoutId: parentId, index: Infinity, ...(cell !== undefined && { cell }) };
+  }
   const siblings = parent['elements'] as unknown[];
   return {
     layoutId: parentId,
