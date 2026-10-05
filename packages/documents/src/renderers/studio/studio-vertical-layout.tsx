@@ -4,7 +4,7 @@ import { createContext, useContext, useRef, useState } from 'react';
 import { GAP_REM, layoutGap } from '../default/layout-gap';
 import { ChildDispatch, elementKey, type VerticalBodyProps } from '../default/vertical-layout';
 import { idOf, reorderElements } from './element-order';
-import { useStudioEditor } from './studio-editor';
+import { useInStudio, useStudioEditor } from './studio-editor';
 import { STUDIO_INTERACTIVE } from './studio-element';
 import { useVerticalGrid } from './use-vertical-grid';
 
@@ -42,6 +42,7 @@ export function StudioVerticalGrid({
   dropZone?: ((grid: HTMLElement) => HTMLElement | null) | undefined;
 }) {
   const editor = useStudioEditor();
+  const inStudio = useInStudio();
   const [el, setEl] = useState<HTMLDivElement | null>(null);
   const keys = elements.map(elementKey);
   // Measured heights outlive each per-order grid, so the next one is rendered already laid out (rule 30b) — and are
@@ -95,7 +96,8 @@ export function StudioVerticalGrid({
           data-slot="studio-layout-empty"
           className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-placeholder"
         >
-          {editor === null ? 'No fields yet' : 'Drag items here'}
+          {/* Worded by the studio's PRESENCE, not editability: a page opening has no editor yet (doc 238 bug B1). */}
+          {inStudio ? 'Drag items here' : 'No fields yet'}
         </p>
       )}
       <GridHeightsContext.Provider value={heights}>

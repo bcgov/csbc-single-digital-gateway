@@ -1,6 +1,9 @@
-import { act } from '@testing-library/react';
+import { JsonForms } from '@jsonforms/react';
+import { act, render } from '@testing-library/react';
 import type { GridItemHTMLElement, GridStack, GridStackNode } from 'gridstack';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import * as studio from '../src/renderers/studio/index';
+import { StudioEditorProvider } from '../src/renderers/studio/index';
 import { renderStudioRenderers, studioHeading } from './render-studio-renderers';
 
 type Grid = HTMLElement & { gridstack: GridStack };
@@ -95,6 +98,21 @@ describe('studio grid drag-in (doc 238 rules 11-13, 17)', () => {
     const viewOnly = renderStudioRenderers(form([]), { editable: false });
     expect(viewOnly.container).toHaveTextContent('No fields yet');
     expect(gridOf(viewOnly.container)).toHaveAttribute('data-empty');
+    viewOnly.unmount();
+    // Bug B1: a page opening renders inside a DISABLED provider — it already says Drag items here, so nothing flashes.
+    const opening = render(
+      <StudioEditorProvider update={vi.fn()} insert={vi.fn()} enabled={false}>
+        <JsonForms
+          schema={{ type: 'object' }}
+          uischema={form([]) as never}
+          data={{}}
+          renderers={studio.renderers}
+          cells={studio.cells}
+        />
+      </StudioEditorProvider>,
+    );
+    expect(opening.container).toHaveTextContent('Drag items here');
+    expect(opening.container).not.toHaveTextContent('No fields yet');
   });
 
   // Ported from @repo/forms (its doc 190): gridstack listens on the ENCLOSING ITEM, so a nested grid claimed its parent

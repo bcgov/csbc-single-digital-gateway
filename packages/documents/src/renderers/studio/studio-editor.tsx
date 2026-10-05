@@ -53,6 +53,13 @@ export interface StudioEditor {
 const StudioEditorContext = createContext<StudioEditor | null>(null);
 
 /**
+ * Whether a studio editor provider is present at all — even DISABLED. A page renders with a disabled provider while it
+ * zooms open (doc 241 rule 6), so `useStudioEditor()` is `null` then; anything that words itself for the studio (the
+ * empty drop zone, doc 238 bug B1) asks this instead, or it flashes the view-only wording first.
+ */
+const StudioPresenceContext = createContext(false);
+
+/**
  * Makes the studio renderers below it editable; `update` is the host's, the selection is owned here. `enabled={false}`
  * provides `null` — view-only — WITHOUT changing the tree, so a host toggling editability never remounts what is below
  * (doc 241 rule 6: a closing page keeps its scroll).
@@ -131,15 +138,22 @@ export function StudioEditorProvider({
     ],
   );
   return (
-    <StudioEditorContext.Provider value={enabled ? editor : null}>
-      {children}
-    </StudioEditorContext.Provider>
+    <StudioPresenceContext.Provider value={true}>
+      <StudioEditorContext.Provider value={enabled ? editor : null}>
+        {children}
+      </StudioEditorContext.Provider>
+    </StudioPresenceContext.Provider>
   );
 }
 
 /** Whether the pinned template lets the element's setting `key` change (doc 259 rule 14); ungoverned: always. */
 export function mayEdit(editor: StudioEditor, id: string, key: string): boolean {
   return editor.governance?.canEdit(id, key) !== false;
+}
+
+/** Whether this renders inside the studio, editable or not yet — `false` only with no provider at all. */
+export function useInStudio(): boolean {
+  return useContext(StudioPresenceContext);
 }
 
 /** The editor, or `null` outside a provider — which means view-only (rule 12). */
