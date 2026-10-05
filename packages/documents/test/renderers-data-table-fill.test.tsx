@@ -103,9 +103,9 @@ describe('data table fill — default renderer (doc 264 rules 1-7)', () => {
     it('appends an empty row from Add row', async () => {
       const user = userEvent.setup();
       const { lastPeople } = renderFill();
-      expect(screen.getByRole('cell', { name: 'No rows yet.' })).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Add row' }));
-      await waitFor(() => expect(lastPeople()).toEqual([{}]));
+      // Doc 266 rule 2: an empty table shows one blank, unwritten row instead of an empty message.
+      expect(screen.getByRole('textbox', { name: 'Name, row 1' })).toHaveValue('');
+      expect(screen.queryByRole('cell', { name: 'No rows yet.' })).not.toBeInTheDocument();
       await user.type(screen.getByRole('textbox', { name: 'Name, row 1' }), 'Cy');
       await waitFor(() => expect(lastPeople()).toEqual([{ name: 'Cy' }]));
       await user.click(screen.getByRole('button', { name: 'Add row' }));
@@ -120,12 +120,14 @@ describe('data table fill — default renderer (doc 264 rules 1-7)', () => {
       await user.click(screen.getByRole('button', { name: 'Delete row 1' }));
       // JSONForms drops a key written as `undefined`: the data has no `people` at all.
       await waitFor(() => expect(onChange.mock.calls.at(-1)?.[0]).toEqual({}));
-      expect(screen.getByRole('cell', { name: 'No rows yet.' })).toBeInTheDocument();
+      // The blank row shows again, with nothing to delete (doc 266 rules 2-3).
+      expect(screen.getByRole('textbox', { name: 'Name, row 1' })).toHaveValue('');
+      expect(screen.queryByRole('button', { name: 'Delete row 1' })).not.toBeInTheDocument();
     });
   });
 
   describe('layout (rule 4)', () => {
-    it('shows every row without pagination or sorting and No rows yet. when empty', () => {
+    it('shows every row without pagination or sorting', () => {
       const people = Array.from({ length: 13 }, (_, i) => ({ name: `P${i + 1}` }));
       const { container } = renderFill({ people });
       expect(screen.getAllByRole('textbox', { name: /^Name, row/ })).toHaveLength(13);

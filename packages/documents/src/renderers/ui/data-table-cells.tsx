@@ -5,6 +5,7 @@ import { Checkbox } from '@repo/ui/checkbox';
 import type { DataTableColumnDef } from '@repo/ui/data-table';
 import { Input } from '@repo/ui/input';
 import { useEffect, useRef, useState } from 'react';
+import type { ArrayOptions } from './array-options';
 import { formatCell, type TableColumn } from './object-array';
 
 type Row = Record<string, unknown>;
@@ -12,14 +13,19 @@ type Row = Record<string, unknown>;
 /** Where a fillable table's edits go: the whole next array, or `undefined` for no rows (doc 264 rules 2-3). */
 export type WriteRows = (rows: Row[] | undefined) => void;
 
-/** `rows` with row `index`'s `key` set — an `undefined` value REMOVES the key (rule 2). */
+/**
+ * `rows` with row `index`'s `key` set — an `undefined` value REMOVES the key (doc 264 rule 2). An index past the
+ * written rows is a shown blank row (doc 266 rule 2): the rows are first padded up to it with `{}`.
+ */
 export function withCell(rows: readonly Row[], index: number, key: string, value: unknown): Row[] {
-  return rows.map((row, i) => {
-    if (i !== index) return row;
-    if (value !== undefined) return { ...row, [key]: value };
-    const { [key]: _removed, ...rest } = row;
-    return rest;
-  });
+  const padded =
+    index < rows.length
+      ? rows
+      : [...rows, ...Array.from({ length: index + 1 - rows.length }, (): Row => ({}))];
+  const next = [...padded];
+  const { [key]: _removed, ...rest } = padded[index] ?? {};
+  next[index] = value === undefined ? rest : { ...rest, [key]: value };
+  return next;
 }
 
 /** `rows` without row `index`; none left is `undefined`, never `[]` (rule 3). */
@@ -28,9 +34,9 @@ export function withoutRow(rows: readonly Row[], index: number): Row[] | undefin
   return next.length === 0 ? undefined : next;
 }
 
-/** What a fillable table's cells read at the moment they write: the latest rows and the writer. */
+/** What a fillable table's cells read at the moment they write: the latest written rows, options and writer. */
 export interface FillSource {
-  current: { rows: readonly Row[]; write: WriteRows };
+  current: { rows: readonly Row[]; options: ArrayOptions; write: WriteRows };
 }
 
 /**
@@ -41,6 +47,7 @@ export interface FillSource {
 export function fillColumns(
   columns: readonly TableColumn[],
   source: FillSource,
+  deleteRows: boolean,
 ): DataTableColumnDef<Row>[] {
   const write: WriteRows = (next) => source.current.write(next);
   const cellColumns = columns.map(
@@ -60,6 +67,7 @@ export function fillColumns(
       ),
     }),
   );
+  if (!deleteRows) return cellColumns;
   return [
     ...cellColumns,
     {
@@ -67,17 +75,23 @@ export function fillColumns(
       enableSorting: false,
       enableHiding: false,
       header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          aria-label={`Delete row ${row.index + 1}`}
-          onClick={() => write(withoutRow(source.current.rows, row.index))}
-        >
-          <Icon path={mdiDeleteOutline} size="0.875rem" aria-hidden />
-        </Button>
-      ),
+      // Only a WRITTEN row deletes, and never below the minimum (doc 266 rule 3); a shown blank row has nothing to delete.
+      cell: ({ row }) => {
+        const { rows, options } = source.current;
+        if (row.index >= rows.length) return null;
+        return (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Delete row ${row.index + 1}`}
+            disabled={rows.length <= options.minRows}
+            onClick={() => write(withoutRow(source.current.rows, row.index))}
+          >
+            <Icon path={mdiDeleteOutline} size="0.875rem" aria-hidden />
+          </Button>
+        );
+      },
     },
   ];
 }

@@ -6,6 +6,7 @@ import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
 import { useCallback, useMemo, useRef } from 'react';
+import { arrayOptions, shownRowCount } from './array-options';
 import { fillColumns, type FillSource, type WriteRows } from './data-table-cells';
 import { DataTableField } from './data-table-field';
 import {
@@ -17,9 +18,6 @@ import {
 } from './object-array';
 
 type Row = Record<string, unknown>;
-
-/** Rows per page before the table paginates (doc 263 rule 16). */
-export const DATA_TABLE_PAGE_SIZE = 10;
 
 /**
  * Any Control over an object array (doc 263 rules 13-14): its only presentation, so absent, `'data-table'` and an
@@ -48,12 +46,20 @@ export function rowColumn(
 }
 
 /**
- * An object array (doc 263 rules 15-16, doc 264 rules 1-7): enabled, applicants fill its cells and add / delete rows;
- * disabled, the read-only table — sortable, paginated, never writing.
+ * An object array (doc 263 rules 15-16, docs 264, 266): enabled, applicants fill its cells — at least one row shows —
+ * and add / delete rows within the authored limits; disabled, the read-only table — sortable, paginated, never writing.
  */
 export function DataTableControl(props: ControlProps) {
-  const { data, schema, enabled, handleChange, path } = props;
+  const { data, schema, uischema, enabled, handleChange, path } = props;
   const rows = useMemo(() => tableRows(data), [data]);
+  const options = useMemo(() => arrayOptions(schema, uischema), [schema, uischema]);
+  const shown = useMemo(
+    () => [
+      ...rows,
+      ...Array.from({ length: shownRowCount(rows.length, options) - rows.length }, () => ({})),
+    ],
+    [rows, options],
+  );
   const shape = useMemo(() => tableColumns(schema), [schema]);
   const readOnlyColumns = useMemo(
     () =>
@@ -65,32 +71,38 @@ export function DataTableControl(props: ControlProps) {
     [shape],
   );
   const write = useCallback<WriteRows>((next) => handleChange(path, next), [handleChange, path]);
-  const source = useRef<FillSource['current']>({ rows, write });
-  source.current = { rows, write };
-  const fillable = useMemo(() => fillColumns(shape, source), [shape]);
+  const source = useRef<FillSource['current']>({ rows, options, write });
+  source.current = { rows, options, write };
+  const fillable = useMemo(
+    () => fillColumns(shape, source, options.deleteRows),
+    [shape, options.deleteRows],
+  );
+  const full = options.maxRows !== undefined && shown.length >= options.maxRows;
   return (
     <DataTableField props={props}>
       {(wiring) =>
         enabled ? (
           <div className="flex flex-col items-start gap-2">
-            <DataTable
-              {...wiring}
-              className="w-full"
-              columns={fillable}
-              data={rows}
-              emptyMessage="No rows yet."
-            />
-            <Button type="button" variant="outline" size="sm" onClick={() => write([...rows, {}])}>
-              <Icon path={mdiPlus} size="0.875rem" aria-hidden />
-              Add row
-            </Button>
+            <DataTable {...wiring} className="w-full" columns={fillable} data={shown} />
+            {options.addRows && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={full}
+                onClick={() => write([...shown, {}])}
+              >
+                <Icon path={mdiPlus} size="0.875rem" aria-hidden />
+                {options.addLabel}
+              </Button>
+            )}
           </div>
         ) : (
           <DataTable
             {...wiring}
             columns={readOnlyColumns}
             data={rows}
-            pageSize={DATA_TABLE_PAGE_SIZE}
+            pageSize={options.pageSize}
             emptyMessage="No rows."
           />
         )

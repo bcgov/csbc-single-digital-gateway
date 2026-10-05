@@ -1,5 +1,6 @@
 import type { Governance } from '../capabilities/governance';
 import { CONTROL_FIELDS } from './control-fields';
+import { DATA_TABLE_FIELDS } from './data-table-fields';
 import { ELEMENT_FIELDS } from './element-fields';
 import { LAYOUT_CHILD_FIELDS } from './layout-child-fields';
 import { INSPECTOR_SECTIONS, schemaLocked, type InspectorField } from './inspector-field';
@@ -9,6 +10,7 @@ import type { InspectorTarget } from './inspector-target';
 export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   ...ELEMENT_FIELDS,
   ...CONTROL_FIELDS,
+  ...DATA_TABLE_FIELDS,
   ...LAYOUT_CHILD_FIELDS,
 ]);
 
