@@ -58,6 +58,14 @@ function renderTable({
   return { ...view, update, lastOptions };
 }
 
+const expectReadOnly = () => {
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: /Add|Delete|Column options/ }),
+  ).not.toBeInTheDocument();
+  expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Fee', 'Amount']);
+};
+
 const input = (name: string) => screen.getByRole('textbox', { name }) as HTMLInputElement;
 
 describe('Table — studio renderer (doc 265 rules 4-10)', () => {
@@ -123,17 +131,6 @@ describe('Table — studio renderer (doc 265 rules 4-10)', () => {
   });
 
   describe('read-only', () => {
-    const expectReadOnly = () => {
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: /Add|Delete|Column options/ }),
-      ).not.toBeInTheDocument();
-      expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
-        'Fee',
-        'Amount',
-      ]);
-    };
-
     it('renders the read-only table without an editor or when the template locks content', () => {
       const { unmount } = renderTable({ editable: false });
       expectReadOnly();
