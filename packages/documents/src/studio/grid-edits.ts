@@ -9,6 +9,7 @@ import {
   type GridDrop,
   type GridRect,
 } from '../renderers/default/grid-placement';
+import { makeRoom } from '../renderers/studio/grid-cell-engine';
 import { placedElements, withGridItem } from '../renderers/studio/grid-order';
 import {
   DEFAULT_VARIANT,
@@ -151,7 +152,12 @@ export function resizeGrid(
   return withVariant(cleaned, resized);
 }
 
-function replaceById(node: Uischema, id: string, replace: (node: Uischema) => Uischema): Uischema {
+/** `node` with the element `id` (at any depth, or `node` itself) replaced by `replace(it)`. */
+export function replaceById(
+  node: Uischema,
+  id: string,
+  replace: (node: Uischema) => Uischema,
+): Uischema {
   if (idOf(node) === id) return replace(node);
   const elements = node['elements'];
   if (!Array.isArray(elements)) return node;
@@ -167,4 +173,51 @@ function isRecord(value: unknown): value is Uischema {
 
 function recordOf(value: unknown): Record<string, unknown> | undefined {
   return isRecord(value) ? value : undefined;
+}
+
+/**
+ * `grid` with the child `childId` widened or narrowed to `w` from its column (doc 261 rule 20b) — the neighbours it now
+ * covers moved out of the way by the drag-resize's own `makeRoom` (rule 10), in one edit. The SAME grid when refused.
+ */
+export function resizeGridChild(grid: Uischema, childId: string, w: number): Uischema {
+  const rects = widthRects(grid, childId, w);
+  if (rects === undefined) return grid;
+  const elements = placedElements(grid, rects);
+  return elements === grid['elements'] ? grid : { ...grid, elements: [...elements] };
+}
+
+/** The widest a Grid child can be from its column with its neighbours moved out of the way (doc 261 rule 20b). */
+export function maxGridWidth(grid: Uischema, childId: string): number {
+  const placement = gridPlacement(grid);
+  const item = placement.items.find((candidate) => candidate.key === childId);
+  if (item === undefined) return 1;
+  for (let w = placement.columns - item.x; w > item.w; w--)
+    if (widthRects(grid, childId, w) !== undefined) return w;
+  return item.w;
+}
+
+/** Every rectangle that changes when `childId` becomes `w` wide, or `undefined` when there is no room. */
+function widthRects(grid: Uischema, childId: string, w: number): Map<string, GridRect> | undefined {
+  const placement = gridPlacement(grid);
+  const nodes = placement.items.map(({ key, x, y, w: width, h }) => ({
+    id: key,
+    x,
+    y,
+    w: width,
+    h,
+  }));
+  const node = nodes.find((candidate) => candidate.id === childId);
+  if (node === undefined || w < 1 || node.x + w > placement.columns) return undefined;
+  const target = { x: node.x, y: node.y, w, h: node.h };
+  const collided = nodes.filter((other) => other !== node && rectsOverlap(target, other));
+  const room = makeRoom(nodes, node, target, collided, placement.columns, placement.effectiveRows);
+  if (room === undefined) return undefined;
+  const rects = new Map<string, GridRect>([[childId, target]]);
+  for (const [other, cell] of room)
+    rects.set(String(other.id), { x: cell.x, y: cell.y, w: other.w ?? 1, h: other.h ?? 1 });
+  return rects;
+}
+
+function rectsOverlap(a: GridRect, b: GridRect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }

@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest';
 // jsdom evaluates no cursor or overflow, so the stylesheet's studio rules are pinned by their text.
 // Prettier rewrites attribute quotes to single quotes (CLAUDE.md, feature 193).
 const css = readFileSync(resolve(import.meta.dirname, '../src/styles.css'), 'utf8');
+/** The stylesheet with whitespace collapsed — Prettier wraps a long selector across lines wherever it likes. */
+const flat = css.replace(/\s+/g, ' ');
+/** The selector every Grid and row rule starts with (doc 260 rule 14, doc 261 rule 7). */
+const CELLS = ".grid-stack:is([data-slot='studio-grid'], [data-slot='studio-row'])";
 const grid = ".grid-stack[data-slot='studio-vertical-layout']";
 
 describe('@repo/documents styles.css (doc 236)', () => {
@@ -41,8 +45,8 @@ describe('@repo/documents styles.css (doc 236)', () => {
     expect(css).toContain(
       `${grid}\n  > .grid-stack-item.ui-draggable-dragging\n  > .grid-stack-item-content {\n  translate: var(--gs-grab-offset-x, 0px) var(--gs-grab-offset, 0px);\n}`,
     );
-    expect(css).toContain(
-      `.grid-stack[data-slot='studio-grid']\n  > .grid-stack-item.ui-draggable-dragging\n  > .grid-stack-item-content {\n  translate: var(--gs-grab-offset-x, 0px) var(--gs-grab-offset, 0px);\n}`,
+    expect(flat).toContain(
+      `${CELLS} > .grid-stack-item.ui-draggable-dragging > .grid-stack-item-content { translate: var(--gs-grab-offset-x, 0px) var(--gs-grab-offset, 0px); }`,
     );
   });
 
@@ -66,17 +70,11 @@ describe('@repo/documents styles.css (doc 236)', () => {
     );
   });
   it("draws a Grid child's corner handles as brackets that never take the pointer (doc 260 rule 10b)", () => {
-    expect(css).toContain(
-      `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-handle::after {`,
-    );
+    expect(flat).toContain(`${CELLS} > .grid-stack-item > .ui-resizable-handle::after {`);
     expect(css).toMatch(/ui-resizable-handle::after \{[^}]*pointer-events: none;[^}]*\}/);
     for (const corner of ['nw', 'ne', 'se', 'sw'])
-      expect(css).toContain(
-        `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-${corner}::after {`,
-      );
-    expect(css).toContain(
-      `.grid-stack[data-slot='studio-grid'] > .grid-stack-item:hover > .ui-resizable-handle::after,`,
-    );
+      expect(flat).toContain(`${CELLS} > .grid-stack-item > .ui-resizable-${corner}::after {`);
+    expect(flat).toContain(`${CELLS} > .grid-stack-item:hover > .ui-resizable-handle::after,`);
   });
 
   it("starts every Grid handle AT the element's frame, 4px out, and never beyond it (rule 10b)", () => {
@@ -88,8 +86,8 @@ describe('@repo/documents styles.css (doc 236)', () => {
     for (const rule of handles) {
       for (const [, offset] of rule.matchAll(/- (\d+)px\)/g)) expect(offset).toBe('4');
     }
-    expect(css).toContain(
-      `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-nw {\n  top: calc(var(--gs-item-margin-top) - 4px);`,
+    expect(flat).toContain(
+      `${CELLS} > .grid-stack-item > .ui-resizable-nw { top: calc(var(--gs-item-margin-top) - 4px);`,
     );
   });
   it("stretches a Grid child's frame to its cell with min-height, so content can still grow the row (doc 260 rule 9b)", () => {
@@ -100,15 +98,11 @@ describe('@repo/documents styles.css (doc 236)', () => {
   });
   it("grows a Grid's placeholder to an element's frame, 4px outside its content box (doc 260 rule 17d)", () => {
     expect(css).toContain('top: calc(var(--gs-item-margin-top) - 4px);');
-    expect(css).toContain(
-      ".grid-stack[data-slot='studio-grid'] > .grid-stack-placeholder > .placeholder-content {",
-    );
+    expect(flat).toContain(`${CELLS} > .grid-stack-placeholder > .placeholder-content {`);
   });
   it("lets a Grid child's edges resize without drawing them — only its corners show brackets (doc 260 rule 10b)", () => {
     for (const edge of ['n', 'e', 's', 'w'])
-      expect(css).toContain(
-        `.grid-stack[data-slot='studio-grid'] > .grid-stack-item > .ui-resizable-${edge}`,
-      );
+      expect(flat).toContain(`${CELLS} > .grid-stack-item > .ui-resizable-${edge}`);
     // The only borders drawn are the corners'.
     expect(css).not.toMatch(/ui-resizable-[nesw] \{[^}]*border/);
   });

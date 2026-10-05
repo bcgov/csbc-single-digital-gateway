@@ -103,7 +103,7 @@ export function StudioVerticalGrid({
       )}
       <GridHeightsContext.Provider value={heights}>
         {/* Its children sit in THIS layout, never an outer Grid (doc 260 rule 22). */}
-        <ParentGridFullContext.Provider value={false}>
+        <ParentGridFullContext.Provider value={null}>
           {elements.map((child, index) => (
             <div
               key={keys[index]}

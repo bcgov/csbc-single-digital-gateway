@@ -12,6 +12,7 @@ import {
   mdiTextBoxEditOutline,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
+  mdiViewColumnOutline,
   mdiViewGridOutline,
   mdiViewSequentialOutline,
 } from '@mdi/js';
@@ -109,6 +110,15 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Layout',
     keywords: ['stack', 'column', 'group'],
     create: () => ({ element: { id: newId(), type: 'VerticalLayout', elements: [] } }),
+  },
+  {
+    id: 'horizontal-layout',
+    label: 'Horizontal layout',
+    icon: mdiViewColumnOutline,
+    group: 'Layout',
+    keywords: ['row', 'columns', 'side by side', 'inline'],
+    // Doc 261 rule 21: every setting at its default — 12 columns, Flex, Top.
+    create: () => ({ element: { id: newId(), type: 'HorizontalLayout', elements: [] } }),
   },
   {
     id: 'grid',

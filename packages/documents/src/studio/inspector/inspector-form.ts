@@ -1,7 +1,7 @@
 import type { Governance } from '../capabilities/governance';
 import { CONTROL_FIELDS } from './control-fields';
 import { ELEMENT_FIELDS } from './element-fields';
-import { GRID_CHILD_FIELDS } from './grid-fields';
+import { LAYOUT_CHILD_FIELDS } from './layout-child-fields';
 import { INSPECTOR_SECTIONS, type InspectorField } from './inspector-field';
 import type { InspectorTarget } from './inspector-target';
 
@@ -9,7 +9,7 @@ import type { InspectorTarget } from './inspector-target';
 export const INSPECTOR_FIELDS: readonly InspectorField[] = Object.freeze([
   ...ELEMENT_FIELDS,
   ...CONTROL_FIELDS,
-  ...GRID_CHILD_FIELDS,
+  ...LAYOUT_CHILD_FIELDS,
 ]);
 
 /** The fields that apply to `target`. */

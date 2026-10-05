@@ -18,12 +18,12 @@ const WIDE_ITEM =
   '@min-[40rem]/grid-layout:[grid-column:var(--grid-column)] @min-[40rem]/grid-layout:[grid-row:var(--grid-row)]';
 
 /** Each child's resolved alignment in its cell (doc 260 rule 31) — literal classes, so Tailwind sees each one. */
-const ALIGN_SELF: Readonly<Record<GridAlign, string>> = Object.freeze({
+export const ALIGN_SELF: Readonly<Record<GridAlign, string>> = Object.freeze({
   start: 'self-start',
   center: 'self-center',
   end: 'self-end',
 });
-const JUSTIFY_SELF: Readonly<Record<GridJustify, string>> = Object.freeze({
+export const JUSTIFY_SELF: Readonly<Record<GridJustify, string>> = Object.freeze({
   start: 'justify-self-start',
   center: 'justify-self-center',
   end: 'justify-self-end',

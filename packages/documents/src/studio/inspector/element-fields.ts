@@ -12,6 +12,7 @@ import {
   type InspectorField,
 } from './inspector-field';
 import { GRID_FIELDS } from './grid-fields';
+import { ROW_FIELDS } from './row-fields';
 
 const LEVELS = [1, 2, 3, 4, 5, 6].map((n) => [n, `Heading ${n}`] as const);
 const GAPS = [
@@ -78,11 +79,13 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
   },
   // A Grid's Columns and Rows, ahead of its Spacing (doc 260 rule 24).
   ...GRID_FIELDS,
+  // A HorizontalLayout's Columns, Distribution and Vertical alignment (doc 261 rule 19).
+  ...ROW_FIELDS,
   {
     key: 'gap',
     section: 'Appearance',
     label: 'Spacing',
-    applies: isKind('form', 'vertical-layout', 'grid'),
+    applies: isKind('form', 'vertical-layout', 'grid', 'horizontal-layout'),
     schema: () => choice(GAPS),
     required: true,
     read: (t) => optionOf(t, 'gap') ?? DEFAULT_GAP,

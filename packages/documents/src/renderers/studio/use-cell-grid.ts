@@ -1,4 +1,9 @@
-import { GridStack, type GridItemHTMLElement, type GridStackNode } from 'gridstack';
+import {
+  GridStack,
+  type GridItemHTMLElement,
+  type GridStackEngine,
+  type GridStackNode,
+} from 'gridstack';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { DropSource } from '../../studio/capabilities/governance';
 import type { GridDrop, GridRect } from '../default/grid-placement';
@@ -19,6 +24,9 @@ import {
 /** An item gridstack is moving: dragged or resized. */
 const MOVING = '.ui-draggable-dragging, .ui-resizable-resizing';
 const MOVING_ATTRIBUTES = ['class', 'gs-x', 'gs-y', 'gs-w', 'gs-h'];
+
+/** A Grid child resizes from every edge and corner (doc 260 rule 10b). */
+const ALL_HANDLES = 'n,ne,e,se,s,sw,w,nw';
 
 /** The least row height in px: an empty cell must still be big enough to drop on (doc 260 rule 9). */
 export const MIN_CELL_PX = 64;
@@ -57,6 +65,12 @@ export interface CellGridOptions {
   /** Another grid's element dropped (rule 21), likewise. */
   onMoveItem: (drop: GridDrop, elementId: string) => void;
   accepts: false | ((el: Element) => boolean);
+  /** The engine — a Grid's cells by default; a HorizontalLayout passes its row engine (doc 261 rule 9). */
+  engineClass?: typeof GridStackEngine;
+  /** The resize handles — every edge and corner by default; a row's are `e,w` (doc 261 rule 8). */
+  handles?: string;
+  /** Configures the engine gridstack built — a row tells its engine the Distribution (doc 261 rule 9). */
+  configureEngine?: (engine: GridStackEngine) => void;
 }
 
 /**
@@ -76,7 +90,13 @@ export function useCellGrid(el: HTMLElement | null, options: CellGridOptions): v
   useLayoutEffect(() => {
     if (el === null) return;
     installGrabOffsetClamp();
-    const { columns, rows, cellHeight } = latest.current;
+    const {
+      columns,
+      rows,
+      cellHeight,
+      engineClass = GridCellEngine,
+      handles = ALL_HANDLES,
+    } = latest.current;
     const instance = GridStack.init(
       {
         column: columns,
@@ -84,10 +104,10 @@ export function useCellGrid(el: HTMLElement | null, options: CellGridOptions): v
         margin: `${gapRem / 2}rem`,
         float: true,
         sizeToContent: false,
-        // Doc 260 rule 10b: every edge and corner resizes; only the corners are drawn, as brackets on the element's
-        // frame (styles.css) — shown on hover or selection by CSS. gridstack derives each handle's hover auto-hide from `alwaysShowResizeHandle`
-        // (a `resizable.autoHide` is overwritten), so it must be on for a selected element's brackets to show.
-        resizable: { handles: 'n,ne,e,se,s,sw,w,nw' },
+        // Doc 260 rule 10b: the handles are drawn on the element's frame (styles.css) and shown on hover or selection by
+        // CSS. gridstack derives each handle's hover auto-hide from `alwaysShowResizeHandle` (a `resizable.autoHide` is
+        // overwritten), so it must be on for a selected element's handles to show.
+        resizable: { handles },
         alwaysShowResizeHandle: true,
         acceptWidgets: acceptWidgets(editable),
         minRow: rows,
@@ -95,12 +115,13 @@ export function useCellGrid(el: HTMLElement | null, options: CellGridOptions): v
         staticGrid: !editable,
         draggable: { cancel: DRAG_CANCEL },
         animate: false,
-        engineClass: GridCellEngine,
+        engineClass,
       },
       el,
     );
     if (instance === null) return;
     grid.current = instance;
+    latest.current.configureEngine?.(instance.engine);
     // Bug B1 (doc 260 rule 13b): a grid initialised inside a live grid's item is linked as its sub-grid, and gridstack
     // 13.2.0 then dispatches the sub-grid's `change` on the OUTERMOST grid (`_triggerEvent` walks `parentGridNode`) — so
     // a Grid never heard its own moves and resizes, and nothing was written. Unlinked at once, it hears them itself.

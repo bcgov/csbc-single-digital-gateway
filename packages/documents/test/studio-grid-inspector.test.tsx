@@ -226,9 +226,9 @@ describe('Grid in the inspector and palette (doc 260 rules 24-28)', () => {
   });
 
   describe('palette (rule 28)', () => {
-    it('lists Grid in the Layout group after Vertical layout', () => {
+    it('lists Grid in the Layout group after Horizontal layout (doc 261 rule 21)', () => {
       const ids = DEFAULT_PALETTE_ITEMS.map((item) => item.id);
-      expect(ids.indexOf('grid')).toBe(ids.indexOf('vertical-layout') + 1);
+      expect(ids.indexOf('grid')).toBe(ids.indexOf('horizontal-layout') + 1);
       const grid = DEFAULT_PALETTE_ITEMS.find((item) => item.id === 'grid')!;
       expect(grid.group).toBe('Layout');
       expect(grid.label).toBe('Grid');

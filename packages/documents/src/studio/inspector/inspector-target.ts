@@ -12,6 +12,7 @@ export type TargetKind =
   | 'heading'
   | 'vertical-layout'
   | 'grid'
+  | 'horizontal-layout'
   | 'separator'
   | 'checkbox'
   | 'switch'
@@ -33,6 +34,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   heading: 'Heading',
   'vertical-layout': 'Vertical layout',
   grid: 'Grid',
+  'horizontal-layout': 'Horizontal layout',
   separator: 'Separator',
   checkbox: 'Checkbox',
   switch: 'Switch',
@@ -68,6 +70,10 @@ export interface InspectorTarget {
   root: boolean;
   /** Whether it sits DIRECTLY in a Grid, so it has a placement to align (doc 260 rule 33). */
   inGrid: boolean;
+  /** Whether it sits DIRECTLY in a HorizontalLayout (doc 261 rule 20). */
+  inRow: boolean;
+  /** The layout it sits directly in; `undefined` for the root. */
+  parent?: Uischema;
   property?: BoundProperty;
 }
 
@@ -93,8 +99,8 @@ export function inspectorTarget(
   if (typeof root['type'] !== 'string') return null;
   const element = pickElement(root, inputs) ?? root;
   const id = idOf(element);
-  const inGrid = id !== undefined && parentOf(root, id)?.['type'] === 'Grid';
-  return targetOf(content, element, element === root, inGrid);
+  const parent = id === undefined ? undefined : parentOf(root, id);
+  return targetOf(content, element, element === root, parent);
 }
 
 function pickElement(root: Uischema, { pageSelectedId, focusedId, formId }: TargetInputs) {
@@ -110,7 +116,7 @@ function targetOf(
   content: DocumentContent,
   element: Uischema,
   root: boolean,
-  inGrid: boolean,
+  parent: Uischema | undefined,
 ): InspectorTarget {
   const id = idOf(element) ?? '';
   const property = element['type'] === 'Control' ? boundProperty(content, element) : undefined;
@@ -121,7 +127,9 @@ function targetOf(
     kind,
     name: nameOf(element, kind, property),
     root,
-    inGrid,
+    inGrid: parent?.['type'] === 'Grid',
+    inRow: parent?.['type'] === 'HorizontalLayout',
+    ...(parent !== undefined && { parent }),
     ...(property !== undefined && { property }),
   };
 }
@@ -174,6 +182,7 @@ const LAYOUT_KINDS: Readonly<Record<string, TargetKind>> = Object.freeze({
   Heading: 'heading',
   VerticalLayout: 'vertical-layout',
   Grid: 'grid',
+  HorizontalLayout: 'horizontal-layout',
   Separator: 'separator',
   RichContent: 'rich-content',
 });

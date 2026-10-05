@@ -6,7 +6,7 @@ import { freeCells, gridPlacement } from '../default/grid-placement';
 import { GAP_REM, layoutGap } from '../default/layout-gap';
 import { ChildDispatch, type VerticalBodyProps } from '../default/vertical-layout';
 import { GridCells } from './grid-cells';
-import { ParentGridFullContext } from './grid-full-context';
+import { NO_FREE_CELL, ParentGridFullContext } from './grid-full-context';
 import { placedElements } from './grid-order';
 import { idOf } from './element-order';
 import { useInStudio, useStudioEditor } from './studio-editor';
@@ -15,7 +15,7 @@ import { useActiveDrag } from './use-active-drag';
 import { cellGridAccepts, MIN_CELL_PX, useCellGrid } from './use-cell-grid';
 
 /** An alignment as a flex box aligns: the frame's content is a flex column (rule 32). */
-const FLEX: Readonly<Record<GridJustify, string>> = Object.freeze({
+export const FLEX: Readonly<Record<GridJustify, string>> = Object.freeze({
   start: 'flex-start',
   center: 'center',
   end: 'flex-end',
@@ -120,7 +120,7 @@ export function StudioGrid({
           {inStudio ? 'Drag items here' : 'No fields yet'}
         </p>
       )}
-      <ParentGridFullContext.Provider value={!hasFreeCell}>
+      <ParentGridFullContext.Provider value={hasFreeCell ? null : NO_FREE_CELL}>
         {placement.items.map((item) => {
           const child = elements[item.index];
           const locked = editor?.governance?.canDrag(item.key) === false;

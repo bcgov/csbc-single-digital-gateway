@@ -13,7 +13,7 @@ import {
   type ElementAction,
 } from './element-actions';
 import { LockBadge } from './lock-badge';
-import { NO_FREE_CELL, ParentGridFullContext } from './grid-full-context';
+import { ParentGridFullContext } from './grid-full-context';
 import { LOCKED } from '../../studio/capabilities/governance';
 import type { StudioEditor } from './studio-editor';
 import { idOf } from './element-order';
@@ -191,7 +191,7 @@ function disabledActions(
   editor: StudioEditor,
   id: string,
   hasRule: boolean,
-  gridFull: boolean,
+  gridFull: string | null,
 ): Partial<Record<ElementAction, string>> {
   const governance = editor.governance;
   const entries: [ElementAction, string | undefined][] = [
@@ -202,7 +202,7 @@ function disabledActions(
     ],
     ['options', locked(governance?.canEdit(id, 'options'))],
     // A full Grid has no cell for the copy (doc 260 rule 22).
-    ['copy', locked(governance?.canCopy(id)) ?? (gridFull ? NO_FREE_CELL : undefined)],
+    ['copy', locked(governance?.canCopy(id)) ?? gridFull ?? undefined],
     ['delete', locked(governance?.canRemove(id))],
   ];
   return Object.fromEntries(entries.filter(([, reason]) => reason !== undefined));

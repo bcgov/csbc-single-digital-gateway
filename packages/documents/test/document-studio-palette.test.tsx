@@ -36,6 +36,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       [...palette.querySelectorAll('[data-palette-item]')].map((el) => el.textContent),
     ).toEqual([
       'Vertical layout',
+      'Horizontal layout',
       'Grid',
       'Heading',
       'Separator',

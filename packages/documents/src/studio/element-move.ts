@@ -3,7 +3,8 @@ import { findById, idOf } from './element-ids';
 import { without } from './element-remove';
 import type { GridDrop } from '../renderers/default/grid-placement';
 import { withGridItem } from '../renderers/studio/grid-order';
-import { gridLanding, isGrid, withDisplaced } from './grid-edits';
+import { gridLanding, isGrid, replaceById, withDisplaced } from './grid-edits';
+import { isRow, landInRow } from './row-edits';
 import { spliced } from './palette-insert';
 
 /**
@@ -41,6 +42,11 @@ export function moveElement(
     if (landing === undefined) return uischema;
     const placed = withGridItem(moved, { ...landing.cell, w: 1, h: 1 });
     return spliced(room, toLayoutId, landing.index, placed);
+  }
+  if (isRow(target)) {
+    // Doc 261 rule 16: in at the arrival width (keeping its alignment, never a Grid's cell), the others re-fitted.
+    const landed = landInRow(target, index, moved);
+    return landed === undefined ? uischema : replaceById(rest, toLayoutId, () => landed);
   }
   const at = Math.min(Math.max(index, 0), elements.length);
   if (indexIn(findById(uischema, toLayoutId), id) === at) return uischema;

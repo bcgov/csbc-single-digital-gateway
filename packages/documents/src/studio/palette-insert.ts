@@ -3,7 +3,8 @@ import { DEFAULT_VARIANT, withVariant } from './document-types';
 import { findById, idOf } from './element-ids';
 import type { GridCell, GridDrop } from '../renderers/default/grid-placement';
 import { withGridItem } from '../renderers/studio/grid-order';
-import { cellAfter, gridLanding, isGrid, withDisplaced } from './grid-edits';
+import { cellAfter, gridLanding, isGrid, replaceById, withDisplaced } from './grid-edits';
+import { isRow, landInRow } from './row-edits';
 import type { PaletteCreation } from './palette-items';
 
 /**
@@ -36,7 +37,13 @@ export function insertItem(
     element = withGridItem(element, { ...landing.cell, w: 1, h: 1 });
     at = landing.index;
   }
-  const next = spliced(variant, layoutId, at, element);
+  let next: Uischema;
+  if (layout !== undefined && isRow(layout)) {
+    // Doc 261 rule 16: the arrival at its width, the row's others re-fitted around it — one edit.
+    const landed = landInRow(layout, index, element);
+    if (landed === undefined) return content;
+    next = replaceById(variant, layoutId, () => landed);
+  } else next = spliced(variant, layoutId, at, element);
   if (next === original) return content;
   const withElement = withVariant(content, next);
   if (Object.keys(added).length === 0) return withElement;

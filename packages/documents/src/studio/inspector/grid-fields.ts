@@ -1,8 +1,6 @@
 import {
   DEFAULT_GRID_ALIGN,
   DEFAULT_GRID_JUSTIFY,
-  gridItemOption,
-  gridPlacement,
   gridSize,
   MAX_GRID_COLUMNS,
   MAX_GRID_ROWS,
@@ -12,7 +10,6 @@ import type { Governance } from '../capabilities/governance';
 import type { DocumentContent } from '../document-types';
 import { findById } from '../element-ids';
 import { gridResizeLosses, resizeGrid } from '../grid-edits';
-import { parentOf, recordOf } from './inspector-target';
 import {
   absentIf,
   choice,
@@ -36,12 +33,12 @@ const sizeField = (key: 'columns' | 'rows', label: string, max: number): Inspect
     Number.isInteger(value) ? resizeGrid(content, t.id, { [key]: value as number }) : content,
 });
 
-const VERTICAL = [
+export const VERTICAL = [
   ['start', 'Top'],
   ['center', 'Middle'],
   ['end', 'Bottom'],
 ] as const;
-const HORIZONTAL = [
+export const HORIZONTAL = [
   ['start', 'Left'],
   ['center', 'Center'],
   ['end', 'Right'],
@@ -66,45 +63,12 @@ const gridAlignField = (
     patchElement(content, t, { options: { [key]: absentIf(value, fallback) } }),
 });
 
-/** A Grid child's own alignment (rules 29, 33), in its `gridItem`: empty means the Grid's. */
-const childAlignField = (
-  key: 'alignSelf' | 'justifySelf',
-  label: string,
-  choices: ReadonlyArray<readonly [string, string]>,
-): InspectorField => ({
-  key,
-  section: 'Appearance',
-  label,
-  applies: (t) => t.inGrid,
-  schema: () => choice(choices),
-  options: { description: "Empty: the grid's." },
-  read: (t) => recordOf(optionOf(t, 'gridItem'))?.[key],
-  write: (content, t, value) => {
-    // The child's placement as drawn, so a child authored without one never moves (rule 2).
-    const grid = parentOf(content.variants.default, t.id);
-    const placed =
-      grid === undefined ? undefined : gridPlacement(grid).items.find((i) => i.key === t.id);
-    const { [key]: _old, ...current } = recordOf(optionOf(t, 'gridItem')) ?? {};
-    const rest = placed === undefined ? current : { ...current, ...gridItemOption(placed) };
-    const own = absentIf(value);
-    return patchElement(content, t, {
-      options: { gridItem: own === undefined ? rest : { ...rest, [key]: own } },
-    });
-  },
-});
-
 /** Doc 260 rules 24, 33: a Grid's size and its children's default alignment, in Appearance ahead of Spacing. */
 export const GRID_FIELDS: readonly InspectorField[] = Object.freeze([
   sizeField('columns', 'Columns', MAX_GRID_COLUMNS),
   sizeField('rows', 'Rows', MAX_GRID_ROWS),
   gridAlignField('alignItems', 'Vertical alignment', VERTICAL, DEFAULT_GRID_ALIGN),
   gridAlignField('justifyItems', 'Horizontal alignment', HORIZONTAL, DEFAULT_GRID_JUSTIFY),
-]);
-
-/** Doc 260 rule 33: a Grid child's own alignment — last in Appearance, after the element's own settings. */
-export const GRID_CHILD_FIELDS: readonly InspectorField[] = Object.freeze([
-  childAlignField('alignSelf', 'Vertical alignment', VERTICAL),
-  childAlignField('justifySelf', 'Horizontal alignment', HORIZONTAL),
 ]);
 
 /** What a Grid resize from the inspector's values would delete (rule 25). */

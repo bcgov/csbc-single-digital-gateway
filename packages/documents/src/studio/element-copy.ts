@@ -9,6 +9,7 @@ import { carriedEntries, withCapabilities } from './capabilities/capability-edit
 import { idOf, newId } from './element-ids';
 import { withGridItem } from '../renderers/studio/grid-order';
 import { cellAfter, gridLanding, isGrid } from './grid-edits';
+import { copyInRow, isRow, rowHasRoom } from './row-edits';
 
 /** A Control bound to a top-level schema property (doc 242 rule 6's binding). */
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
@@ -25,8 +26,8 @@ export interface CopyResult {
  * schema, required when the original is — so the copy is its own field, not a second view of the same answer. Controls
  * in the copied subtree that shared a property share the new one. `undefined` for an unknown id or the root.
  *
- * A Grid child's copy takes the first free cell after it (doc 260 rule 22), one cell in size; with no free cell there is
- * no copy (`undefined`).
+ * A Grid child's copy takes the first free cell after it (doc 260 rule 22), one cell in size; a row child's lands right
+ * after it at its width (doc 261 rule 18). With no room there is no copy (`undefined`).
  */
 export function copyElement(content: DocumentContent, id: string): CopyResult | undefined {
   const variant = content.variants[DEFAULT_VARIANT];
@@ -65,6 +66,11 @@ function withCopy(node: Uischema, id: string, copy: (element: Uischema) => Uisch
         ...node,
         elements: [...elements.slice(0, landing.index), placed, ...elements.slice(landing.index)],
       };
+    }
+    if (isRow(node)) {
+      // Doc 261 rule 18: right after it at its width, the others re-fitted; asked first, so a refusal makes no copy.
+      if (!rowHasRoom(node)) return node;
+      return copyInRow(node, at, copy(original)) ?? node;
     }
     return {
       ...node,
