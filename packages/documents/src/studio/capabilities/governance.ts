@@ -56,6 +56,8 @@ const OPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   // A Table's in-place edits are its Content (doc 265 rule 8).
   headers: 'content',
   rows: 'content',
+  // A Table column's alignment, set from its canvas menu (doc 267 rule 7).
+  align: 'content',
 });
 
 /** The setting a `label` is on each element type: a Funnel's name, a Form's title, else a field's label. */

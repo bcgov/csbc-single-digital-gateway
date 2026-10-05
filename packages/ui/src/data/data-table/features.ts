@@ -12,11 +12,16 @@ import {
   sortFn_text,
   tableFeatures,
 } from '@tanstack/react-table';
+import type { DataTableAlign } from './presentation';
 
 /** What a column may tell the table's own controls about itself. */
 export interface DataTableColumnMeta {
   /** The column's name in the view options menu; absent: its id. */
   title?: string;
+  /** Its header and cells' text alignment (doc 267 rule 2); absent: left. */
+  align?: DataTableAlign;
+  /** Its body cells are row headers, `<th scope="row">` (doc 267 rule 2). */
+  rowHeader?: boolean;
 }
 
 /**

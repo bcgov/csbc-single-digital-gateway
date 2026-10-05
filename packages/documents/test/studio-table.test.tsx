@@ -162,7 +162,15 @@ describe('Table — studio renderer (doc 265 rules 4-10)', () => {
       })!;
       expect(target.kind).toBe('table');
       expect(target.name).toBeUndefined();
-      expect(fieldsFor(target)).toEqual([]);
+      // Doc 267 rule 8 (superseding doc 265 rule 9's none): the presentation fields.
+      expect(fieldsFor(target).map((field) => field.key)).toEqual([
+        'caption',
+        'header',
+        'rowHeaders',
+        'striped',
+        'bordered',
+        'compact',
+      ]);
       expect(settingChoices(target)).toContainEqual({ const: 'content', title: 'Content' });
     });
 

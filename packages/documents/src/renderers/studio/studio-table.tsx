@@ -10,16 +10,22 @@ import {
   addRow,
   removeRow,
   setCell,
+  contentOptions,
   tableContent,
+  tableDisplay,
   type TableContent,
+  type TableDisplay,
 } from '../ui/table-content';
-import { TableRenderer } from '../ui/table-renderer';
+import { columnMeta, displayProps, TableRenderer } from '../ui/table-renderer';
 import { InlineTextInput } from './inline-text-input';
 import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
 import { TableHeaderEditor } from './table-header-editor';
 
 type Row = string[];
+
+/** Display defaults for building a column's meta from just the flags the editor reads. */
+const TABLE_DISPLAY_DEFAULTS: TableDisplay = tableDisplay(undefined);
 type Write = (content: TableContent) => void;
 
 /** Outranks the spread ui Table (doc 265 rule 4). */
@@ -35,6 +41,7 @@ export function StudioTableRenderer(props: LayoutProps) {
   const element = useStudioElement();
   const options = (props.uischema as { options?: unknown }).options;
   const content = useMemo(() => tableContent(options), [options]);
+  const display = useMemo(() => tableDisplay(options), [options]);
   const editable = editor !== null && element !== null && mayEdit(editor, element.id, 'content');
   // Cells read the latest content and editor through a ref: columns rebuilt per edit would remount every input.
   const latest = useRef({ content, write: (_: TableContent) => {} });
@@ -42,19 +49,30 @@ export function StudioTableRenderer(props: LayoutProps) {
     content,
     write: (next) => {
       if (editor !== null && element !== null)
-        editor.update(element.id, { options: { headers: next.headers, rows: next.rows } });
+        editor.update(element.id, { options: contentOptions(next) });
     },
   };
+  // Rebuilt only when what a column DRAWS changes — keyed by a string, since `content.align` is a new array per edit and
+  // rebuilt columns remount the cell the author just tabbed into.
+  const alignKey = content.align.join();
+  const { rowHeaders, showHeader } = display;
   const columns = useMemo(
-    () => editColumns(content.headers.length, latest),
-    [content.headers.length],
+    () => editColumns(content.headers.length, { rowHeaders, showHeader }, latest),
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- alignKey stands in for content.align, read via `latest`.
+    [content.headers.length, alignKey, rowHeaders, showHeader],
   );
   if (!editable) return <TableRenderer {...props} />;
   if (!props.visible) return null;
   const write: Write = (next) => latest.current.write(next);
   return (
     <div data-slot="table-content" className={`${ELEMENT_INSET} flex flex-col items-start gap-2`}>
-      <DataTable className="w-full" columns={columns} data={content.rows} emptyMessage="No rows." />
+      <DataTable
+        {...displayProps(display)}
+        className="w-full"
+        columns={columns}
+        data={content.rows}
+        emptyMessage="No rows."
+      />
       <Button
         variant="outline"
         size="sm"
@@ -71,6 +89,7 @@ export function StudioTableRenderer(props: LayoutProps) {
 /** One editable column per header, a Delete row column, and an Add column header (rule 5). */
 function editColumns(
   count: number,
+  shown: Pick<TableDisplay, 'rowHeaders' | 'showHeader'>,
   latest: { current: { content: TableContent; write: Write } },
 ): DataTableColumnDef<Row>[] {
   const write: Write = (next) => latest.current.write(next);
@@ -80,8 +99,15 @@ function editColumns(
       id: String(index),
       accessorFn: (row) => row[index] ?? '',
       enableSorting: false,
+      meta: columnMeta(latest.current.content, { ...TABLE_DISPLAY_DEFAULTS, ...shown }, index),
+      // The header row always shows here, carrying the column controls; hidden, it is muted (doc 267 rule 6).
       header: () => (
-        <TableHeaderEditor index={index} content={latest.current.content} onChange={write} />
+        <div
+          className={shown.showHeader ? undefined : 'opacity-50'}
+          title={shown.showHeader ? undefined : 'Header row hidden'}
+        >
+          <TableHeaderEditor index={index} content={latest.current.content} onChange={write} />
+        </div>
       ),
       cell: ({ row, getValue }) => (
         <InlineTextInput

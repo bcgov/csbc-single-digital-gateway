@@ -1,7 +1,48 @@
-/** A Table element's authored content (doc 265): headers, and rows of text cells as long as the headers. */
+/** A column's alignment (doc 267 rule 5). */
+export type Align = 'left' | 'center' | 'right';
+
+/**
+ * A Table element's authored content (doc 265): headers, rows of text cells as long as the headers, and each column's
+ * alignment (doc 267).
+ */
 export interface TableContent {
   headers: string[];
   rows: string[][];
+  align: Align[];
+}
+
+/** How a Table is drawn (doc 267 rule 4). */
+export interface TableDisplay {
+  caption: string | undefined;
+  showHeader: boolean;
+  rowHeaders: boolean;
+  striped: boolean;
+  bordered: boolean;
+  compact: boolean;
+}
+
+/** A Table's display options from its `options` (rule 4); a wrong-typed value is the default. */
+export function tableDisplay(options: unknown): TableDisplay {
+  const record = recordOf(options);
+  const caption = record?.['caption'];
+  return {
+    caption: typeof caption === 'string' && caption.trim() !== '' ? caption.trim() : undefined,
+    showHeader: record?.['header'] !== false,
+    rowHeaders: record?.['rowHeaders'] === true,
+    striped: record?.['striped'] === true,
+    bordered: record?.['bordered'] === true,
+    compact: record?.['compact'] === true,
+  };
+}
+
+/** `align` as stored (rule 5): absent when every column is left. */
+export function alignOption(align: readonly Align[]): Align[] | undefined {
+  return align.every((a) => a === 'left') ? undefined : [...align];
+}
+
+/** The `options` an edit writes: all three content keys, so the canvas sends one patch (doc 267 rule 7). */
+export function contentOptions(content: TableContent): Record<string, unknown> {
+  return { headers: content.headers, rows: content.rows, align: alignOption(content.align) };
 }
 
 /**
@@ -16,7 +57,16 @@ export function tableContent(options: unknown): TableContent {
         Array.isArray(row) ? [headers.map((_, i) => textOf(row[i]))] : [],
       )
     : [];
-  return { headers, rows };
+  const align = Array.isArray(record?.['align']) ? (record['align'] as unknown[]) : [];
+  return { headers, rows, align: headers.map((_, i) => alignOf(align[i])) };
+}
+
+const alignOf = (value: unknown): Align =>
+  value === 'center' || value === 'right' ? value : 'left';
+
+/** Column `index` aligned `align` (rule 5). */
+export function setAlign(content: TableContent, index: number, align: Align): TableContent {
+  return { ...content, align: content.align.map((a, i) => (i === index ? align : a)) };
 }
 
 /** Rule 2's pure edits: each returns NEW content and leaves its input untouched. */
@@ -46,6 +96,7 @@ export function addColumn(content: TableContent): TableContent {
   return {
     headers: [...content.headers, `Column ${n}`],
     rows: content.rows.map((cells) => [...cells, '']),
+    align: [...content.align, 'left'],
   };
 }
 
@@ -56,6 +107,7 @@ export function removeColumn(content: TableContent, index: number): TableContent
   return {
     headers: content.headers.filter(keep),
     rows: content.rows.map((cells) => cells.filter(keep)),
+    align: content.align.filter((_, i) => i !== index),
   };
 }
 
@@ -67,7 +119,11 @@ export function moveColumn(content: TableContent, index: number, to: number): Ta
     next.splice(target, 0, list[index]!);
     return next;
   };
-  return { headers: move(content.headers), rows: content.rows.map(move) };
+  return {
+    headers: move(content.headers),
+    rows: content.rows.map(move),
+    align: move(content.align),
+  };
 }
 
 export function addRow(content: TableContent): TableContent {
