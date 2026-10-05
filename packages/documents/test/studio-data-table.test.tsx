@@ -81,6 +81,12 @@ function renderTable({
   return { ...view, editColumns, element };
 }
 
+const columnsOf = (content: DocumentContent) =>
+  Object.keys(
+    (content.schema['properties'] as Record<string, { items: { properties: object } }>)['people']!
+      .items.properties,
+  );
+
 const nameInputs = () => screen.queryAllByRole('textbox', { name: 'Column name' });
 
 describe('studio data table (doc 263 rules 18-24, 27-31)', () => {
@@ -228,13 +234,6 @@ describe('studio data table (doc 263 rules 18-24, 27-31)', () => {
   });
 
   describe('host backstop (rules 27-28)', () => {
-    const columnsOf = (content: DocumentContent) =>
-      Object.keys(
-        (content.schema['properties'] as Record<string, { items: { properties: object } }>)[
-          'people'
-        ]!.items.properties,
-      );
-
     it('applies a column edit to the bound property through setContent', () => {
       const next = canvasColumnEdit(CONTENT, 'default', undefined, 't', {
         kind: 'move',
