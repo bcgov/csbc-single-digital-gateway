@@ -2,7 +2,7 @@ import { isPlainNumber } from '../../renderers/ui/number-options';
 import { isMultiChoice, isSingleChoice } from '../../renderers/ui/choice-options';
 import { isRichTextProperty } from '../../renderers/ui/rich-text-value';
 import { isPlainString } from '../../renderers/ui/string-options';
-import type { DocumentContent, Uischema } from '../document-types';
+import { DEFAULT_VARIANT, variantOf, type DocumentContent, type Uischema } from '../document-types';
 import { findById, idOf } from '../element-ids';
 
 /** What an inspected element is (doc 249 rule 4). */
@@ -62,6 +62,8 @@ export interface BoundProperty {
 export interface InspectorTarget {
   /** The element's id — the inspector form is keyed by it (rule 16). */
   id: string;
+  /** The variant it is in (doc 262): where its writes go, and whether schema settings are editable. */
+  variant: string;
   element: Uischema;
   kind: TargetKind;
   /** The element as the author knows it (rule 5); `undefined` for a Separator or an unknown element. */
@@ -94,13 +96,14 @@ export interface TargetInputs {
 export function inspectorTarget(
   content: DocumentContent,
   inputs: TargetInputs,
+  variant: string = DEFAULT_VARIANT,
 ): InspectorTarget | null {
-  const root = content.variants.default;
+  const root = variantOf(content, variant);
   if (typeof root['type'] !== 'string') return null;
   const element = pickElement(root, inputs) ?? root;
   const id = idOf(element);
   const parent = id === undefined ? undefined : parentOf(root, id);
-  return targetOf(content, element, element === root, parent);
+  return targetOf(content, variant, element, element === root, parent);
 }
 
 function pickElement(root: Uischema, { pageSelectedId, focusedId, formId }: TargetInputs) {
@@ -114,15 +117,18 @@ function pickElement(root: Uischema, { pageSelectedId, focusedId, formId }: Targ
 
 function targetOf(
   content: DocumentContent,
+  variant: string,
   element: Uischema,
   root: boolean,
   parent: Uischema | undefined,
 ): InspectorTarget {
   const id = idOf(element) ?? '';
-  const property = element['type'] === 'Control' ? boundProperty(content, element) : undefined;
+  const property =
+    element['type'] === 'Control' ? boundProperty(content, variant, element) : undefined;
   const kind = kindOf(element, property);
   return {
     id,
+    variant,
     element,
     kind,
     name: nameOf(element, kind, property),
@@ -151,7 +157,11 @@ export function parentOf(node: Uischema, id: string): Uischema | undefined {
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
 
 /** The property a Control's scope names, when the schema has it. */
-function boundProperty(content: DocumentContent, control: Uischema): BoundProperty | undefined {
+function boundProperty(
+  content: DocumentContent,
+  variant: string,
+  control: Uischema,
+): BoundProperty | undefined {
   const scope = control['scope'];
   const key = typeof scope === 'string' ? PROPERTY_SCOPE.exec(scope)?.[1] : undefined;
   const properties = recordOf(content.schema['properties']);
@@ -162,7 +172,7 @@ function boundProperty(content: DocumentContent, control: Uischema): BoundProper
     key,
     schema,
     required: Array.isArray(required) && required.includes(key),
-    shared: countBinding(content.variants.default, scope as string),
+    shared: countBinding(variantOf(content, variant), scope as string),
   };
 }
 

@@ -1,16 +1,19 @@
 import type { DocumentContent, Uischema } from './document-types';
-import { DEFAULT_VARIANT, withVariant } from './document-types';
+import { DEFAULT_VARIANT, variantOf, withVariant } from './document-types';
 import { findById, idOf } from './element-ids';
 import type { GridCell, GridDrop } from '../renderers/default/grid-placement';
 import { withGridItem } from '../renderers/studio/grid-order';
 import { cellAfter, gridLanding, isGrid, replaceById, withDisplaced } from './grid-edits';
 import { isRow, landInRow } from './row-edits';
 import type { PaletteCreation } from './palette-items';
+import { boundKeys, keyOfScope } from './variants/variant-bindings';
 
 /**
  * `content` with a placed item (doc 238 rule 15): its element spliced into the `elements` of the element whose id is
- * `layoutId` (any depth, default variant) at `index` clamped to the list, and its schema properties added. The SAME
- * content when the layout is unknown or a property key already exists — an insert never overwrites a field.
+ * `layoutId` (any depth, in `variantName` — default unless named) at `index` clamped to the list, and its schema
+ * properties added. The SAME content when the layout is unknown or a property key already exists — an insert never
+ * overwrites a field — and, outside default (doc 262 rule 13b), for a creation that adds properties or a Control over a
+ * field the variant already shows.
  *
  * Into a Grid (doc 260 rule 19) the element takes `cell` — or, with none asked, the first free cell — at its reading
  * order index, `index` ignored; the SAME content when that cell is taken or the Grid is full.
@@ -21,11 +24,13 @@ export function insertItem(
   index: number,
   creation: PaletteCreation,
   cell?: GridDrop,
+  variantName: string = DEFAULT_VARIANT,
 ): DocumentContent {
   const current = isRecord(content.schema['properties']) ? content.schema['properties'] : {};
   const added = creation.properties ?? {};
   if (Object.keys(added).some((key) => Object.hasOwn(current, key))) return content;
-  const original = content.variants[DEFAULT_VARIANT];
+  const original = variantOf(content, variantName);
+  if (variantName !== DEFAULT_VARIANT && !mayPlaceInVariant(original, creation)) return content;
   // Doc 260 rule 19: the items moved out of the arrival's way, then the arrival — one edit.
   const variant = withDisplaced(original, layoutId, cell?.displaced);
   const layout = findById(variant, layoutId);
@@ -45,12 +50,25 @@ export function insertItem(
     next = replaceById(variant, layoutId, () => landed);
   } else next = spliced(variant, layoutId, at, element);
   if (next === original) return content;
-  const withElement = withVariant(content, next);
+  const withElement = withVariant(content, next, variantName);
   if (Object.keys(added).length === 0) return withElement;
   return {
     ...withElement,
     schema: { ...content.schema, properties: { ...current, ...added } },
   };
+}
+
+/**
+ * Doc 262 rule 13b: outside default an insert adds no schema property, and a Control only over a field default shows
+ * that the variant does not show yet — each field once per variant.
+ */
+function mayPlaceInVariant(variant: Uischema, creation: PaletteCreation): boolean {
+  if (Object.keys(creation.properties ?? {}).length > 0) return false;
+  const placed = new Set(boundKeys(variant));
+  return (
+    boundKeys(creation.element).every((key) => !placed.has(key)) &&
+    (creation.element['type'] !== 'Control' || keyOfScope(creation.element['scope']) !== undefined)
+  );
 }
 
 /** Where a clicked palette item goes (doc 238 rule 16): a layout and the index in its `elements`. */

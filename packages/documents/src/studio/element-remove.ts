@@ -1,5 +1,5 @@
 import type { DocumentContent, Uischema } from './document-types';
-import { DEFAULT_VARIANT, withVariant } from './document-types';
+import { DEFAULT_VARIANT, variantOf, withVariant } from './document-types';
 import { withCapabilities, withoutEntries } from './capabilities/capability-edits';
 import { idOf } from './element-ids';
 
@@ -7,12 +7,16 @@ import { idOf } from './element-ids';
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
 
 /**
- * `content` without the element whose id is `id` (doc 242 rules 5-6): removed with its subtree from the default
- * variant at any depth — never the root — and every top-level property a removed Control bound deleted from the
+ * `content` without the element whose id is `id` (doc 242 rules 5-6): removed with its subtree from `variantName`
+ * (doc 262; default unless named) at any depth — never the root — and every top-level property a removed Control bound deleted from the
  * schema (and `required`) once no Control in any variant references it. The SAME content for an unknown id.
  */
-export function removeElement(content: DocumentContent, id: string): DocumentContent {
-  const variant = content.variants[DEFAULT_VARIANT];
+export function removeElement(
+  content: DocumentContent,
+  id: string,
+  variantName: string = DEFAULT_VARIANT,
+): DocumentContent {
+  const variant = variantOf(content, variantName);
   const removed: Uischema[] = [];
   const next = without(variant, id, removed);
   if (next === variant) return content;
@@ -20,8 +24,8 @@ export function removeElement(content: DocumentContent, id: string): DocumentCon
   const pruned = withoutEntries(content.capabilities, removed.flatMap(subtreeIds));
   const withoutElement =
     pruned === content.capabilities
-      ? withVariant(content, next)
-      : withCapabilities(withVariant(content, next), pruned);
+      ? withVariant(content, next, variantName)
+      : withCapabilities(withVariant(content, next, variantName), pruned);
   const stillBound = boundScopes(Object.values(withoutElement.variants));
   const orphaned = removed
     .flatMap(controlScopes)

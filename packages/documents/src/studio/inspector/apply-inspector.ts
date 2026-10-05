@@ -1,7 +1,7 @@
 import type { Governance } from '../capabilities/governance';
 import { createAjv } from '@jsonforms/core';
 import type { DocumentContent } from '../document-types';
-import type { InspectorField } from './inspector-field';
+import { schemaLocked, type InspectorField } from './inspector-field';
 import { fieldsFor } from './inspector-form';
 import type { InspectorTarget } from './inspector-target';
 import { sameValue } from './schema-edits';
@@ -28,6 +28,8 @@ export function applyInspector(
   for (const field of fieldsFor(target)) {
     // Backstop (doc 259 rule 15): a setting the pinned template locks is never written.
     if (governance?.canEdit(target.id, field.key) === false) continue;
+    // Backstop (doc 262 rule 13e): outside default the schema is never written.
+    if (schemaLocked(field, target)) continue;
     const value = values[field.key];
     if (sameValue(value, field.read(target)) || !accepts(field, target, value)) continue;
     next = field.write(next, target, value);

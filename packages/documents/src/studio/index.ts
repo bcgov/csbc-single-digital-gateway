@@ -28,3 +28,8 @@ export {
   type PaletteResolver,
 } from './palette-items';
 export { insertItem } from './palette-insert';
+export {
+  variantProblems,
+  type MissingField,
+  type VariantProblem,
+} from './variants/variant-problems';

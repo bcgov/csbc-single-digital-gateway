@@ -1,7 +1,7 @@
 import { LOCKED } from '../capabilities/governance';
 import { Button } from '@repo/ui/button';
 import { clauseSummary, type CriterionField } from '../criteria';
-import type { DocumentContent } from '../document-types';
+import { DEFAULT_VARIANT, variantOf, type DocumentContent } from '../document-types';
 import { findById } from '../element-ids';
 import { FoldableSection } from '../foldable-section';
 import { SECTION_CLASSES } from '../inspector/inspector-renderers';
@@ -31,15 +31,18 @@ export function InspectorRule({
   elementId,
   locked = false,
   onEdit,
+  variant = DEFAULT_VARIANT,
 }: {
   content: DocumentContent;
   elementId: string;
+  /** The variant being edited (doc 262 rule 14). */
+  variant?: string;
   /** The pinned template locks the Rule (doc 259 rule 17): Add / Edit rule disabled. */
   locked?: boolean;
   onEdit: () => void;
 }) {
-  const rule = findById(content.variants.default, elementId)?.['rule'];
-  const problems = ruleProblems(content, elementId);
+  const rule = findById(variantOf(content, variant), elementId)?.['rule'];
+  const problems = ruleProblems(content, elementId, variant);
   // A field the rule may not test is still named by its title — in the summary and in the warning.
   const properties = content.schema['properties'] as
     | Record<string, { title?: unknown }>
@@ -49,7 +52,7 @@ export function InspectorRule({
     return typeof title === 'string' && title !== '' ? title : key;
   };
   const names = problems.map(nameOf);
-  const sources = ruleSources(content, elementId);
+  const sources = ruleSources(content, elementId, variant);
   // Rule 9b: with no field above to test there is nothing to add — an existing rule stays editable.
   const unavailable = rule === undefined && sources.length === 0;
   const fields = [

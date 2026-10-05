@@ -1,4 +1,4 @@
-import { withVariant, type DocumentContent } from '../document-types';
+import { DEFAULT_VARIANT, variantOf, withVariant, type DocumentContent } from '../document-types';
 import { updateElement, type ElementPatch } from '../element-edits';
 import type { InspectorTarget, TargetKind } from './inspector-target';
 
@@ -23,6 +23,16 @@ export interface InspectorField {
   options?: Record<string, unknown>;
   /** The inspector form requires a value (a select that always has one, so it offers no Clear). */
   required?: boolean;
+  /** It writes the schema, which only the default variant edits (doc 262 rule 13e): read-only elsewhere. */
+  schemaLevel?: boolean;
+}
+
+/** Whether the target is in the default variant — the only one that edits the schema (doc 262 rule 13). */
+export const inDefault = (target: InspectorTarget): boolean => target.variant === DEFAULT_VARIANT;
+
+/** Whether `field` is read-only on `target` because it writes the schema outside default (doc 262 rule 13e). */
+export function schemaLocked(field: InspectorField, target: InspectorTarget): boolean {
+  return field.schemaLevel === true && !inDefault(target);
 }
 
 export const STRING = Object.freeze({ type: 'string' });
@@ -53,9 +63,9 @@ export function patchElement(
   target: InspectorTarget,
   patch: ElementPatch,
 ): DocumentContent {
-  const root = content.variants.default;
+  const root = variantOf(content, target.variant);
   const next = updateElement(root, target.id, patch);
-  return next === root ? content : withVariant(content, next);
+  return next === root ? content : withVariant(content, next, target.variant);
 }
 
 /** The target element's `options[name]`. */

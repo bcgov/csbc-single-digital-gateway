@@ -2,7 +2,7 @@ import type { Governance } from '../capabilities/governance';
 import { CONTROL_FIELDS } from './control-fields';
 import { ELEMENT_FIELDS } from './element-fields';
 import { LAYOUT_CHILD_FIELDS } from './layout-child-fields';
-import { INSPECTOR_SECTIONS, type InspectorField } from './inspector-field';
+import { INSPECTOR_SECTIONS, schemaLocked, type InspectorField } from './inspector-field';
 import type { InspectorTarget } from './inspector-target';
 
 /** Every inspector field, in display order within a section. */
@@ -31,8 +31,10 @@ export interface InspectorForm {
  * Appearance — an empty one dropped) and the current values; an empty value is an absent key.
  */
 export function inspectorForm(target: InspectorTarget, governance?: Governance): InspectorForm {
-  // Doc 259 rule 15: a setting the pinned template locks renders read-only.
-  const locked = (field: InspectorField) => governance?.canEdit(target.id, field.key) === false;
+  // Doc 259 rule 15: a setting the pinned template locks renders read-only — and doc 262 rule 13e: so does a schema
+  // setting outside the default variant.
+  const locked = (field: InspectorField) =>
+    governance?.canEdit(target.id, field.key) === false || schemaLocked(field, target);
   const fields = fieldsFor(target);
   const required = fields.filter((field) => field.required === true).map((field) => field.key);
   const data: Record<string, unknown> = {};

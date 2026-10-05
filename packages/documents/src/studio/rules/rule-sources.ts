@@ -1,6 +1,6 @@
 import { multiChoiceOptions } from '../../renderers/ui/choice-options';
 import type { CriterionField, FieldKind } from '../criteria';
-import type { DocumentContent, Uischema } from '../document-types';
+import { DEFAULT_VARIANT, variantOf, type DocumentContent, type Uischema } from '../document-types';
 import { findById, idOf } from '../element-ids';
 import { formsOf } from '../funnel-model';
 import { ancestorsOf, controlsIn, fieldOf } from '../upstream-fields';
@@ -13,10 +13,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 /**
  * Doc 256 rule 4: the fields a rule on `elementId` may test — every Control in a Form UPSTREAM of its Form in a Funnel
  * (earlier pages first), then the Controls BEFORE it in its own Form in document order, never the element itself or
- * anything inside it. A key is offered once (its first Control). The nearest source above the element is LAST.
+ * anything inside it. A key is offered once (its first Control). The nearest source above the element is LAST. Read
+ * from `variant` — the one being edited (doc 262 rule 14).
  */
-export function ruleSources(content: DocumentContent, elementId: string): CriterionField[] {
-  const root = content.variants.default;
+export function ruleSources(
+  content: DocumentContent,
+  elementId: string,
+  variant: string = DEFAULT_VARIANT,
+): CriterionField[] {
+  const root = variantOf(content, variant);
   const form = formOf(root, elementId);
   if (form === undefined) return [];
   const properties = isRecord(content.schema['properties']) ? content.schema['properties'] : {};

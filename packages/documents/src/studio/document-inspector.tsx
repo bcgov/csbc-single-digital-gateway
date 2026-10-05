@@ -40,6 +40,8 @@ export interface DocumentInspectorProps extends TargetInputs {
   onOpenChange: (open: boolean) => void;
   /** Bumped to reveal the inspector (doc 234 rule 7) — see `StudioPanel`'s `revealKey`. */
   revealKey?: number | undefined;
+  /** The variant being edited (doc 262 rule 3). */
+  variant?: string;
 }
 
 /**
@@ -60,6 +62,7 @@ export function DocumentInspector({
   open,
   onOpenChange,
   revealKey,
+  variant,
 }: DocumentInspectorProps) {
   const [view, setView] = useState<InspectorView>('settings');
   return (
@@ -119,6 +122,7 @@ export function DocumentInspector({
               onEditRule={onEditRule}
               templateRules={templateRules}
               governance={governance}
+              {...(variant !== undefined && { variant })}
             />
           </FoldsProvider>
         </div>

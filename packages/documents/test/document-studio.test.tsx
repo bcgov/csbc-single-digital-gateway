@@ -13,18 +13,21 @@ const slot = (container: HTMLElement, name: string) =>
 const seededStore = () => createDocumentStore({ seed: STUB_DOCUMENTS });
 
 describe('DocumentStudio', () => {
-  it('stacks a 36px bordered header, a flex-filling centre and a 36px bordered footer', () => {
+  it('stacks a 36px bordered header, the variant tabs, a flex-filling centre and a 36px bordered footer', () => {
     const { container } = render(
       <DocumentStudio kind="document" type="services.service" store={seededStore()} />,
     );
     const root = slot(container, 'document-studio');
     const header = slot(container, 'document-studio-header');
+    // Doc 262 rule 1: the variant tabs sit inside the studio, between the header and the canvas.
+    const variants = slot(container, 'document-studio-variants');
     const center = slot(container, 'document-studio-center');
     const footer = slot(container, 'document-studio-footer');
 
     expect(root).toHaveClass('flex', 'flex-col');
-    expect([...(root?.children ?? [])]).toEqual([header, center, footer]);
+    expect([...(root?.children ?? [])]).toEqual([header, variants, center, footer]);
     expect(header).toHaveClass('h-9', 'shrink-0', 'border-b', 'border-border');
+    expect(variants).toHaveClass('h-8', 'shrink-0', 'border-b', 'border-border');
     expect(center).toHaveClass('flex-1', 'min-h-0');
     expect(footer).toHaveClass('h-9', 'shrink-0', 'border-t', 'border-border');
   });

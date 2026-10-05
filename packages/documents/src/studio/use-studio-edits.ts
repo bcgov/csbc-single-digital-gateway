@@ -3,7 +3,7 @@ import type { GridDrop } from '../renderers/default/grid-placement';
 import { governanceOf } from './capabilities/governance';
 import type { CapabilityMap } from './capabilities/capability-types';
 import type { DocumentStore, DocumentSummary } from './document-store';
-import type { DocumentContent } from './document-types';
+import { DEFAULT_VARIANT, type DocumentContent } from './document-types';
 import { copyElement } from './element-copy';
 import { removeElement } from './element-remove';
 import { withoutDisplaced } from './grid-edits';
@@ -20,11 +20,12 @@ export function useStudioEdits(
   items: readonly PaletteItem[],
   capabilities: CapabilityMap | undefined,
   setContent: (content: DocumentContent) => void,
+  variant: string = DEFAULT_VARIANT,
 ) {
-  // Doc 259: the pinned template's rules over the document being edited; `undefined` = ungoverned.
+  // Doc 259: the pinned template's rules over the variant being edited (doc 262 rule 17); `undefined` = ungoverned.
   const governance = useMemo(
-    () => (draft === null ? undefined : governanceOf(draft.content, capabilities)),
-    [draft, capabilities],
+    () => (draft === null ? undefined : governanceOf(draft.content, capabilities, variant)),
+    [draft, capabilities, variant],
   );
   // A palette item placed on the page (doc 238 rules 14-16): created fresh, then applied with its schema properties.
   const insert = useCallback(
@@ -35,30 +36,30 @@ export function useStudioEdits(
       if (governance !== undefined && !governance.canAdd(layoutId)) return;
       // Doc 260 rule 19: moving items out of the arrival's way is a reorder the template may forbid.
       const drop = governance?.canReorder(layoutId) === false ? withoutDisplaced(cell) : cell;
-      const next = insertItem(draft.content, layoutId, index, item.create(), drop);
+      const next = insertItem(draft.content, layoutId, index, item.create(), drop, variant);
       if (next !== draft.content) setContent(next);
     },
-    [items, draft, setContent, governance],
+    [items, draft, setContent, governance, variant],
   );
   // A page element deleted through the gate (doc 242): removed with any schema property only it bound.
   const removeEl = useCallback(
     (elementId: string) => {
       if (draft === null || governance?.canRemove(elementId) === false) return;
-      const next = removeElement(draft.content, elementId);
+      const next = removeElement(draft.content, elementId, variant);
       if (next !== draft.content) setContent(next);
     },
-    [draft, setContent, governance],
+    [draft, setContent, governance, variant],
   );
   // A page element copied from its action bar (doc 254 rule 6): the copy's id comes back so the page selects it.
   const copyEl = useCallback(
     (elementId: string) => {
       if (draft === null || governance?.canCopy(elementId) === false) return undefined;
-      const result = copyElement(draft.content, elementId);
+      const result = copyElement(draft.content, elementId, variant);
       if (result === undefined) return undefined;
       setContent(result.content);
       return result.copyId;
     },
-    [draft, setContent, governance],
+    [draft, setContent, governance, variant],
   );
   return { governance, insert, removeEl, copyEl };
 }

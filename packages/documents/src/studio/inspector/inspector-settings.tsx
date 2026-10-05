@@ -2,10 +2,11 @@ import type { Governance } from '../capabilities/governance';
 import { JsonForms } from '@jsonforms/react';
 import type { ErrorObject } from 'ajv';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { DocumentContent } from '../document-types';
+import { DEFAULT_VARIANT, type DocumentContent } from '../document-types';
 import { applyInspector } from './apply-inspector';
 import { useGridShrinkGate } from './grid-shrink-dialog';
 import { fieldsFor, inspectorForm, type InspectorForm } from './inspector-form';
+import { inDefault, schemaLocked } from './inspector-field';
 import { InspectorOptions } from '../options/inspector-options';
 import { InspectorRule } from '../rules/inspector-rule';
 import { optionsTargetOf } from '../options/options-target';
@@ -32,6 +33,8 @@ export interface InspectorSettingsProps extends TargetInputs {
   templateRules?: boolean;
   /** The pinned template's rules (doc 259 rules 15-18); absent: ungoverned. */
   governance?: Governance | undefined;
+  /** The variant being edited (doc 262); outside default the schema settings are read-only. */
+  variant?: string;
 }
 
 /** The inspector's Settings view (doc 249): the inspected element's header (doc 257) and its editable properties. */
@@ -45,20 +48,25 @@ export function InspectorSettings({
   onEditRule,
   templateRules = false,
   governance,
+  variant = DEFAULT_VARIANT,
 }: InspectorSettingsProps) {
   const target = useMemo(
-    () => inspectorTarget(content, { pageSelectedId, focusedId, formId }),
-    [content, pageSelectedId, focusedId, formId],
+    () => inspectorTarget(content, { pageSelectedId, focusedId, formId }, variant),
+    [content, pageSelectedId, focusedId, formId, variant],
   );
   if (target === null) return <Message>Nothing to inspect.</Message>;
   const options = onEditOptions === undefined ? undefined : optionsTargetOf(target);
   const locked = (key: string) => governance?.canEdit(target.id, key) === false;
+  // Doc 262 rule 13e: the key and the options are the schema's, which only the default variant edits.
+  const schemaReadOnly = !inDefault(target);
+  const showsSchemaNote =
+    schemaReadOnly && fieldsFor(target).some((field) => schemaLocked(field, target));
   return (
     <div data-slot="inspector-settings" className="flex flex-col gap-2">
       <InspectorHeader
         kind={KIND_NAMES[target.kind]}
         property={target.property}
-        renameLocked={locked('key')}
+        renameLocked={locked('key') || schemaReadOnly}
         problem={(next) =>
           target.property === undefined ? undefined : keyProblem(content, target.property.key, next)
         }
@@ -68,6 +76,11 @@ export function InspectorSettings({
           if (renamed !== content) onContentChange(renamed);
         }}
       />
+      {showsSchemaNote && (
+        <p data-slot="inspector-schema-note" className="text-xs text-muted-foreground">
+          Edit on the Default variant to change this field’s key, validation or options.
+        </p>
+      )}
       {/* Keyed by the element: another selection remounts the form, typing never does (rule 16). */}
       <TargetForm
         key={target.id}
@@ -81,6 +94,7 @@ export function InspectorSettings({
         <InspectorRule
           content={content}
           elementId={target.id}
+          variant={target.variant}
           locked={locked('rule')}
           onEdit={() => onEditRule(target.id)}
         />
@@ -88,7 +102,7 @@ export function InspectorSettings({
       {options !== undefined && (
         <InspectorOptions
           target={options}
-          locked={locked('options')}
+          locked={locked('options') || schemaReadOnly}
           onEdit={() => onEditOptions?.(options.elementId)}
         />
       )}

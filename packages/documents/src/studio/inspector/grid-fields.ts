@@ -7,7 +7,7 @@ import {
 } from '../../renderers/default/grid-placement';
 import { elementName } from '../../renderers/studio/element-actions';
 import type { Governance } from '../capabilities/governance';
-import type { DocumentContent } from '../document-types';
+import { variantOf, type DocumentContent } from '../document-types';
 import { findById } from '../element-ids';
 import { gridResizeLosses, resizeGrid } from '../grid-edits';
 import {
@@ -30,7 +30,9 @@ const sizeField = (key: 'columns' | 'rows', label: string, max: number): Inspect
   read: (t) => gridSize(t.element['options'])[key],
   // Only a whole size is written (rule 25): a cleared field is still being typed in.
   write: (content, t, value) =>
-    Number.isInteger(value) ? resizeGrid(content, t.id, { [key]: value as number }) : content,
+    Number.isInteger(value)
+      ? resizeGrid(content, t.id, { [key]: value as number }, t.variant)
+      : content,
 });
 
 export const VERTICAL = [
@@ -95,9 +97,9 @@ export function gridShrinkPlan(
       return Number.isInteger(value) && (value as number) >= 1 ? [[key, value as number]] : [];
     }),
   );
-  const ids = gridResizeLosses(content, target.id, size);
+  const ids = gridResizeLosses(content, target.id, size, target.variant);
   if (ids.length === 0) return undefined;
-  const root = content.variants.default;
+  const root = variantOf(content, target.variant);
   const names = ids.map((id) => {
     const element = findById(root, id);
     return element === undefined ? id : elementName(element as never, content.schema);

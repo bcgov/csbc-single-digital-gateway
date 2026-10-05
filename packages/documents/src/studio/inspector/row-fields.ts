@@ -5,7 +5,7 @@ import {
 } from '../../renderers/default/row-placement';
 import { DEFAULT_GRID_ALIGN } from '../../renderers/default/grid-placement';
 import { idOf } from '../element-ids';
-import { withVariant } from '../document-types';
+import { variantOf, withVariant } from '../document-types';
 import { replaceById } from '../grid-edits';
 import { resizeRow } from '../row-edits';
 import { VERTICAL } from './grid-fields';
@@ -52,7 +52,8 @@ export const ROW_FIELDS: readonly InspectorField[] = Object.freeze([
         ? content
         : withVariant(
             content,
-            replaceById(content.variants.default, id, () => next),
+            replaceById(variantOf(content, t.variant), id, () => next),
+            t.variant,
           );
     },
   },

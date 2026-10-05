@@ -1,13 +1,15 @@
 import { JsonForms } from '@jsonforms/react';
 import { useMemo, useState } from 'react';
 import * as defaults from '../renderers/default/index';
-import type { DocumentContent } from './document-types';
+import { DEFAULT_VARIANT, variantOf, type DocumentContent } from './document-types';
 import { previewUischema } from './preview-uischema';
 
 export interface DocumentPreviewProps {
   content: DocumentContent;
   /** The focused Form, previewed alone (doc 247 rule 6). */
   focusedId: string | null;
+  /** The variant previewed (doc 262 rule 3); default unless named. */
+  variant?: string;
 }
 
 /**
@@ -15,8 +17,12 @@ export interface DocumentPreviewProps {
  * scrolling, centred 768px page. Its data is this component's own state, so each mount — each switch to Preview —
  * starts empty, and nothing typed here reaches the document.
  */
-export function DocumentPreview({ content, focusedId }: DocumentPreviewProps) {
-  const variant = content.variants.default;
+export function DocumentPreview({
+  content,
+  focusedId,
+  variant: name = DEFAULT_VARIANT,
+}: DocumentPreviewProps) {
+  const variant = variantOf(content, name);
   const uischema = useMemo(() => previewUischema(variant, focusedId), [variant, focusedId]);
   const [data, setData] = useState<unknown>({});
   return (

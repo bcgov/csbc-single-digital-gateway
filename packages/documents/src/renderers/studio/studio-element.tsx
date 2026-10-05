@@ -20,6 +20,8 @@ import { idOf } from './element-order';
 import { isMultiChoice, isSingleChoice } from '../ui/choice-options';
 import { RuleBadge, ruleOf } from './rule-badge';
 import { useStudioEditor } from './studio-editor';
+import { FIELD_COPY_REASON, useStudioVariant } from '../../studio/variants/variant-context';
+import { holdsControl } from '../../studio/variants/variant-bindings';
 
 /** How many StudioElements enclose this point: 0 is the root, which renders bare (doc 236 rule 17). */
 const DepthContext = createContext(0);
@@ -95,6 +97,9 @@ export function StudioElement({
   const depth = useContext(DepthContext);
   const editor = useStudioEditor();
   const gridFull = useContext(ParentGridFullContext);
+  // Doc 262 rule 13: outside default a field (or a layout holding one) can be neither copied nor given new options.
+  const variantField =
+    !useStudioVariant().isDefault && holdsControl(uischema as unknown as Record<string, unknown>);
   const id = idOf(uischema);
   if (depth === 0 || id === undefined) {
     return (
@@ -159,7 +164,7 @@ export function StudioElement({
               <ElementActions
                 name={elementName(uischema, schema)}
                 hasRule={rule !== undefined}
-                disabled={disabledActions(editor, id, rule !== undefined, gridFull)}
+                disabled={disabledActions(editor, id, rule !== undefined, gridFull, variantField)}
                 {...(editor.editRule !== undefined && { onEditRule: () => editor.editRule?.(id) })}
                 {...(openOptions !== undefined && { onEditOptions: openOptions })}
                 {...(editor.copy !== undefined && {
@@ -180,6 +185,9 @@ export function StudioElement({
   );
 }
 
+/** Why a field's options can't be edited outside the default variant (doc 262 rule 13e). */
+const SCHEMA_ON_DEFAULT = 'Edit options on the Default variant';
+
 /** A template lock's reason, when the governance answered `false`. */
 const locked = (allowed: boolean | undefined) => (allowed === false ? LOCKED : undefined);
 
@@ -192,6 +200,7 @@ function disabledActions(
   id: string,
   hasRule: boolean,
   gridFull: string | null,
+  variantField: boolean,
 ): Partial<Record<ElementAction, string>> {
   const governance = editor.governance;
   const entries: [ElementAction, string | undefined][] = [
@@ -200,9 +209,19 @@ function disabledActions(
       locked(governance?.canEdit(id, 'rule')) ??
         (!hasRule && editor.canAddRule?.(id) === false ? NO_RULE_SOURCES : undefined),
     ],
-    ['options', locked(governance?.canEdit(id, 'options'))],
-    // A full Grid has no cell for the copy (doc 260 rule 22).
-    ['copy', locked(governance?.canCopy(id)) ?? gridFull ?? undefined],
+    // Doc 262 rule 13e: a field's options are the schema's, edited on the default variant only.
+    [
+      'options',
+      locked(governance?.canEdit(id, 'options')) ?? (variantField ? SCHEMA_ON_DEFAULT : undefined),
+    ],
+    // A full Grid has no cell for the copy (doc 260 rule 22); a variant shows each field once (doc 262 rule 13c).
+    [
+      'copy',
+      locked(governance?.canCopy(id)) ??
+        (variantField ? FIELD_COPY_REASON : undefined) ??
+        gridFull ??
+        undefined,
+    ],
     ['delete', locked(governance?.canRemove(id))],
   ];
   return Object.fromEntries(entries.filter(([, reason]) => reason !== undefined));

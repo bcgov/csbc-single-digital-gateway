@@ -13,6 +13,7 @@ import { makeRoom } from '../renderers/studio/grid-cell-engine';
 import { placedElements, withGridItem } from '../renderers/studio/grid-order';
 import {
   DEFAULT_VARIANT,
+  variantOf,
   withVariant,
   type DocumentContent,
   type Uischema,
@@ -121,8 +122,9 @@ export function gridResizeLosses(
   content: DocumentContent,
   gridId: string,
   size: Partial<{ columns: number; rows: number }>,
+  variant: string = DEFAULT_VARIANT,
 ): string[] {
-  const grid = findById(content.variants[DEFAULT_VARIANT], gridId);
+  const grid = findById(variantOf(content, variant), gridId);
   if (grid === undefined || !isGrid(grid)) return [];
   return shrinkGrid(grid, { ...gridSize(grid['options']), ...size }).removed;
 }
@@ -135,21 +137,22 @@ export function resizeGrid(
   content: DocumentContent,
   gridId: string,
   size: Partial<{ columns: number; rows: number }>,
+  variant: string = DEFAULT_VARIANT,
 ): DocumentContent {
-  const root = content.variants[DEFAULT_VARIANT];
+  const root = variantOf(content, variant);
   const grid = findById(root, gridId);
   if (grid === undefined || !isGrid(grid)) return content;
   const shrink = shrinkGrid(grid, { ...gridSize(grid['options']), ...size });
   // Removed through the content-wide delete first, so their bindings and rules are cleaned up.
-  const cleaned = shrink.removed.reduce(removeElement, content);
-  const resized = replaceById(cleaned.variants[DEFAULT_VARIANT], gridId, (current) => ({
+  const cleaned = shrink.removed.reduce((c, id) => removeElement(c, id, variant), content);
+  const resized = replaceById(variantOf(cleaned, variant), gridId, (current) => ({
     ...current,
     options: shrink.grid['options'],
     elements: (shrink.grid['elements'] as unknown[]).filter(
       (child) => !isRecord(child) || !shrink.removed.includes(idOf(child) ?? ''),
     ),
   }));
-  return withVariant(cleaned, resized);
+  return withVariant(cleaned, resized, variant);
 }
 
 /** `node` with the element `id` (at any depth, or `node` itself) replaced by `replace(it)`. */

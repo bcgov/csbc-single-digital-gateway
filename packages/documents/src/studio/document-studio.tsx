@@ -8,7 +8,13 @@ import { DocumentStudioEmpty } from './document-studio-empty';
 import { DocumentPreview } from './document-preview';
 import { DocumentStudioHeader, type StudioMode } from './document-studio-header';
 import { resolveFocus, type FocusState } from './form-focus';
-import { withVariant, type DocumentKind, type DocumentType } from './document-types';
+import {
+  DEFAULT_VARIANT,
+  variantOf,
+  withVariant,
+  type DocumentKind,
+  type DocumentType,
+} from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
 import { toast } from '@repo/ui/sonner';
 import { LOCKED } from './capabilities/governance';
@@ -22,6 +28,10 @@ import { STATUS_VIEWS, StudioFooter } from './studio-footer';
 import { browserDocumentStore } from './stub-documents';
 import { useDocumentStudio } from './use-document-studio';
 import { useStudioEdits, useTemplates } from './use-studio-edits';
+import { useActiveVariant } from './variants/use-active-variant';
+import { StudioVariantContext } from './variants/variant-context';
+import { variantPalette } from './variants/variant-fields';
+import { VariantTabs } from './variants/variant-tabs';
 
 export interface DocumentStudioProps {
   /** Open this document — its latest version unless `versionId` names one. Absent = a new document. */
@@ -49,42 +59,59 @@ export interface DocumentStudioProps {
 export function DocumentStudio({ store, className, palette, ...props }: DocumentStudioProps) {
   const resolvedStore = store ?? browserDocumentStore();
   const studio = useDocumentStudio({ ...props, store: resolvedStore });
-  const { draft } = studio;
+  const { draft, setContent } = studio;
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The focused page's element selection, for a palette click (doc 238 rule 16b). Stale ids are tolerated.
+  const [pageSelectedId, setPageSelectedId] = useState<string | null>(null);
+  const documentKey = draft?.ref?.documentId ?? (draft === null ? null : NEW);
+  // Doc 262: the variant being edited — switching focuses it afresh, with nothing selected (rule 3).
+  const { active, tabs } = useActiveVariant({
+    content: draft?.content ?? null,
+    documentKey,
+    isNew: (key) => key === NEW,
+    manage: draft?.template === undefined,
+    setContent,
+    onSwitch: () => {
+      setFocus('default');
+      setSelectedId(null);
+      setPageSelectedId(null);
+    },
+  });
   const items = useMemo(
     () =>
       draft === null
         ? []
-        : uniqueItems(
-            (palette ?? defaultPalette)({
-              type: draft.type,
-              kind: draft.kind,
-              content: draft.content,
-            }),
+        : variantPalette(
+            uniqueItems(
+              (palette ?? defaultPalette)({
+                type: draft.type,
+                kind: draft.kind,
+                content: draft.content,
+              }),
+            ),
+            draft.content,
+            active,
           ),
-    [palette, draft],
+    [palette, draft, active],
   );
-  const { setContent } = studio;
   const { governance, insert, removeEl, copyEl } = useStudioEdits(
     draft,
     items,
     studio.governing?.capabilities,
     setContent,
+    active,
   );
   const [dialogOpen, setDialogOpen] = useState(
     props.documentId === undefined && (props.kind === undefined || props.type === undefined),
   );
   const templates = useTemplates(resolvedStore, dialogOpen);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  // The focused page's element selection, for a palette click (doc 238 rule 16b). Stale ids are tolerated.
-  const [pageSelectedId, setPageSelectedId] = useState<string | null>(null);
   // Which collapsed panel is open, expanded — one at a time (doc 233 rule 14).
   const [expanded, setExpanded] = useState<'palette' | 'inspector' | null>(null);
   // Doc 234: Inspect bumps this to reveal the inspector. "Don't ask me again" lasts for this mount, remembered per
   // kind (doc 235 rule 13).
   const [inspectorReveal, setInspectorReveal] = useState(0);
   const [deleteChoices, setDeleteChoices] = useState<DeleteChoices>({});
-  const variant = draft?.content.variants.default ?? null;
-  const documentKey = draft?.ref?.documentId ?? (draft === null ? null : NEW);
+  const variant = draft === null ? null : variantOf(draft.content, active);
   const [focus, setFocus] = useDocumentFocus(documentKey, variant?.['type']);
   const [mode, setMode] = useStudioMode(documentKey);
   const focusedId = variant === null ? null : resolveFocus(variant, focus);
@@ -97,7 +124,11 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
   const shownSelection = path?.at(-1)?.id ?? null;
   // The choice field whose options are being edited, and its dialog (doc 255).
   // The rule dialog, and the problem check the canvas and inspector draw the error state from (doc 256).
-  const rules = useRuleEditor({ content: draft?.content ?? null, onContentChange: setContent });
+  const rules = useRuleEditor({
+    content: draft?.content ?? null,
+    onContentChange: setContent,
+    variant: active,
+  });
   const options = useOptionsEditor({
     content: draft?.content ?? null,
     focusedId,
@@ -123,6 +154,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
           focusedId === null || variant?.['type'] === 'Form' ? undefined : () => setFocus(null)
         }
       />
+      {tabs !== null && <VariantTabs {...tabs} />}
       {/* `@container/canvas`: the floating panels collapse by the canvas's width, not the window's (doc 233 rule 14). */}
       <main
         data-slot="document-studio-center"
@@ -133,13 +165,15 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
             <DocumentStudioEmpty onNewDocument={() => setDialogOpen(true)} />
           ))
         ) : mode === 'preview' ? (
-          <DocumentPreview content={draft.content} focusedId={focusedId} />
+          <DocumentPreview content={draft.content} focusedId={focusedId} variant={active} />
         ) : (
-          <>
+          <StudioVariantContext.Provider
+            value={{ name: active, isDefault: active === DEFAULT_VARIANT }}
+          >
             <DocumentCanvas
-              uischema={draft.content.variants.default}
+              uischema={variantOf(draft.content, active)}
               schema={draft.content.schema}
-              onChange={(uischema) => studio.setContent(withVariant(draft.content, uischema))}
+              onChange={(uischema) => setContent(withVariant(draft.content, uischema, active))}
               selectedId={shownSelection}
               onSelect={setSelectedId}
               focusedId={focusedId}
@@ -201,10 +235,11 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onEditRule={rules.open}
               templateRules={draft.kind === 'template'}
               governance={governance}
+              variant={active}
             />
             {options.dialog}
             {rules.dialog}
-          </>
+          </StudioVariantContext.Provider>
         )}
       </main>
       <StudioFooter

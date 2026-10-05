@@ -57,6 +57,11 @@ export function blankContent(): DocumentContent {
   };
 }
 
+/** `variant`'s uischema (doc 262); `{}` — a variant nobody has started — when there is none by that name. */
+export function variantOf(content: DocumentContent, variant: string = DEFAULT_VARIANT): Uischema {
+  return Object.hasOwn(content.variants, variant) ? (content.variants[variant] ?? {}) : {};
+}
+
 /** `content` with `variant`'s uischema replaced — `content` itself is left untouched. */
 export function withVariant(
   content: DocumentContent,

@@ -1,7 +1,7 @@
 import { gridItemOption, gridPlacement } from '../../renderers/default/grid-placement';
 import { rowPlacement } from '../../renderers/default/row-placement';
 import { idOf } from '../element-ids';
-import { withVariant, type DocumentContent, type Uischema } from '../document-types';
+import { variantOf, withVariant, type DocumentContent, type Uischema } from '../document-types';
 import { maxGridWidth, replaceById, resizeGridChild } from '../grid-edits';
 import { maxRowWidth, resizeRowChild } from '../row-edits';
 import { HORIZONTAL, VERTICAL } from './grid-fields';
@@ -36,7 +36,8 @@ function withParent(
   if (parentId === undefined || layout === t.parent) return content;
   return withVariant(
     content,
-    replaceById(content.variants.default, parentId, () => layout),
+    replaceById(variantOf(content, t.variant), parentId, () => layout),
+    t.variant,
   );
 }
 

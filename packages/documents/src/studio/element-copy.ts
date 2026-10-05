@@ -1,15 +1,17 @@
 import { nanoid } from 'nanoid';
 import {
   DEFAULT_VARIANT,
+  variantOf,
   withVariant,
   type DocumentContent,
   type Uischema,
 } from './document-types';
 import { carriedEntries, withCapabilities } from './capabilities/capability-edits';
-import { idOf, newId } from './element-ids';
+import { findById, idOf, newId } from './element-ids';
 import { withGridItem } from '../renderers/studio/grid-order';
 import { cellAfter, gridLanding, isGrid } from './grid-edits';
 import { copyInRow, isRow, rowHasRoom } from './row-edits';
+import { holdsControl } from './variants/variant-bindings';
 
 /** A Control bound to a top-level schema property (doc 242 rule 6's binding). */
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
@@ -28,9 +30,20 @@ export interface CopyResult {
  *
  * A Grid child's copy takes the first free cell after it (doc 260 rule 22), one cell in size; a row child's lands right
  * after it at its width (doc 261 rule 18). With no room there is no copy (`undefined`).
+ *
+ * Copies within `variantName` (default unless named). Outside default (doc 262 rule 13c) an element that is or holds a
+ * Control is never copied — a variant adds no field and shows each once — so there is no copy (`undefined`).
  */
-export function copyElement(content: DocumentContent, id: string): CopyResult | undefined {
-  const variant = content.variants[DEFAULT_VARIANT];
+export function copyElement(
+  content: DocumentContent,
+  id: string,
+  variantName: string = DEFAULT_VARIANT,
+): CopyResult | undefined {
+  const variant = variantOf(content, variantName);
+  if (variantName !== DEFAULT_VARIANT) {
+    const element = findById(variant, id);
+    if (element === undefined || holdsControl(element)) return undefined;
+  }
   const keys = new Map<string, string>();
   const ids = new Map<string, string>();
   let copyId: string | undefined;
@@ -40,7 +53,10 @@ export function copyElement(content: DocumentContent, id: string): CopyResult | 
     return copy;
   });
   if (next === variant || copyId === undefined) return undefined;
-  const copied = { ...withVariant(content, next), schema: withKeys(content.schema, keys) };
+  const copied = {
+    ...withVariant(content, next, variantName),
+    schema: withKeys(content.schema, keys),
+  };
   // Doc 258 rule 12: a copied element keeps its Implementation Rules under its new id.
   const capabilities = carriedEntries(content.capabilities, ids);
   return {

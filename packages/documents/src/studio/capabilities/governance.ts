@@ -1,4 +1,4 @@
-import type { DocumentContent, Uischema } from '../document-types';
+import { DEFAULT_VARIANT, variantOf, type DocumentContent, type Uischema } from '../document-types';
 import { idOf } from '../element-ids';
 import {
   capabilityFor,
@@ -78,13 +78,14 @@ function indexOf(root: Uischema) {
   return { elements, parents };
 }
 
-/** The pinned template's rules over `content`, or `undefined` when there are none. */
+/** The pinned template's rules over `variant` of `content` (doc 262 rule 17), or `undefined` when there are none. */
 export function governanceOf(
   content: DocumentContent,
   capabilities: CapabilityMap | undefined,
+  variant: string = DEFAULT_VARIANT,
 ): Governance | undefined {
   if (capabilities === undefined) return undefined;
-  const root = content.variants.default;
+  const root = variantOf(content, variant);
   const { elements, parents } = indexOf(root);
   const own = (id: string) => {
     const element = elements.get(id);

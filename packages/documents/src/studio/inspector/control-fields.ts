@@ -4,6 +4,7 @@ import {
   absentIf,
   BOOLEAN,
   choice,
+  inDefault,
   isKind,
   NUMBER,
   optionOf,
@@ -77,8 +78,31 @@ function keywordField(
     schema: () => schema,
     read: (t) => keyword(t, name),
     write: (content, t, value) => updateProperty(content, keyOf(t), { [name]: absentIf(value) }),
+    schemaLevel: true,
   };
 }
+
+/**
+ * The Label (doc 249): the property's `title` in default. Outside it (doc 262 rule 13f) the Control's own `label`
+ * overrides the title instead, so a variant rewords a field without touching the schema; cleared, the title shows again.
+ */
+const labelField: InspectorField = {
+  key: 'label',
+  section: 'General',
+  label: 'Label',
+  applies: isKind(...CONTROL_KINDS),
+  schema: () => STRING,
+  read: (t) => {
+    const override = t.element['label'];
+    return !inDefault(t) && typeof override === 'string' && override.trim() !== ''
+      ? override
+      : keyword(t, 'title');
+  },
+  write: (content, t, value) =>
+    inDefault(t)
+      ? updateProperty(content, keyOf(t), { title: absentIf(value) })
+      : patchElement(content, t, { label: absentIf(value) as string | undefined }),
+};
 
 /** Rule 9: the description goes to the property, and a Control override that would hide it is removed. */
 function writeDescription(
@@ -86,6 +110,8 @@ function writeDescription(
   t: InspectorTarget,
   value: unknown,
 ): DocumentContent {
+  // Doc 262 rule 13f: outside default the override IS the description, and clearing it shows the property's again.
+  if (!inDefault(t)) return patchElement(content, t, { options: { description: absentIf(value) } });
   const next = updateProperty(content, keyOf(t), { description: absentIf(value) });
   return optionOf(t, 'description') === undefined
     ? next
@@ -125,7 +151,7 @@ const SMALL_SWITCH = Object.freeze({ component: 'switch', size: 'sm' });
 
 /** Doc 249's fields for Controls bound to a schema property. */
 export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
-  keywordField('label', 'General', 'Label', CONTROL_KINDS, 'title', STRING),
+  labelField,
   {
     key: 'description',
     section: 'General',
@@ -146,6 +172,7 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     options: SMALL_SWITCH,
     read: (t) => t.property?.required === true,
     write: (content, t, value) => setRequired(content, keyOf(t), value === true),
+    schemaLevel: true,
   },
   {
     key: 'mustBeChecked',
@@ -156,6 +183,7 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     options: SMALL_SWITCH,
     read: (t) => keyword(t, 'const') === true,
     write: writeMustBeChecked,
+    schemaLevel: true,
   },
   keywordField('minLength', 'Validation', 'Minimum length', TEXT_KINDS, 'minLength', WHOLE_NUMBER),
   keywordField('maxLength', 'Validation', 'Maximum length', TEXT_KINDS, 'maxLength', WHOLE_NUMBER),
@@ -169,6 +197,7 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     read: (t) => keyword(t, 'type') === 'integer',
     write: (content, t, value) =>
       updateProperty(content, keyOf(t), { type: value === true ? 'integer' : 'number' }),
+    schemaLevel: true,
   },
   keywordField('minimum', 'Validation', 'Minimum', ['number'], 'minimum', NUMBER),
   keywordField('maximum', 'Validation', 'Maximum', ['number'], 'maximum', NUMBER),
