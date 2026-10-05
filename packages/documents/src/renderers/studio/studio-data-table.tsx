@@ -7,6 +7,7 @@ import { DataTable, type DataTableColumnDef } from '@repo/ui/data-table';
 import { useMemo, useRef } from 'react';
 import { useStudioVariant } from '../../studio/variants/variant-context';
 import { rowColumn } from '../ui/data-table-control';
+import { Cell } from '../ui/data-table-cells';
 import { DataTableField } from '../ui/data-table-field';
 import {
   COLUMN_TYPE_NAMES,
@@ -31,8 +32,9 @@ export const studioDataTableTester = rankWith(
   ),
 );
 
-/** The canvas has no answers (`data={}`): one placeholder row naming each column's type (rule 24). */
+/** The canvas has no answers (`data={}`): one preview row of each column's inert input (doc 269, was rule 24). */
 const PLACEHOLDER_ROWS: Row[] = [{}];
+const NO_CHANGE = () => {};
 
 /**
  * An object array the author shapes in place (doc 263 rules 18-24): its columns' names, types, order and number. Only
@@ -100,7 +102,18 @@ function studioColumns(
         : column.title,
     ),
     enableSorting: false,
-    cell: () => <span className="text-muted-foreground">{COLUMN_TYPE_NAMES[column.type]}</span>,
+    // The applicant's own input, drawn inert (doc 269): the canvas has no answers, and a click must only select.
+    cell: () => (
+      <div inert data-slot="column-preview">
+        <Cell
+          column={column}
+          value={undefined}
+          label={`${column.title}, preview`}
+          placeholder={COLUMN_TYPE_NAMES[column.type]}
+          onChange={NO_CHANGE}
+        />
+      </div>
+    ),
   }));
   if (!editable) return defs;
   return [

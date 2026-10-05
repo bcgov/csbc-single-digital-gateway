@@ -99,22 +99,29 @@ export function fillColumns(
 
 const CELL_INPUT = 'h-8 px-2 py-1 text-xs';
 
-function Cell({
+/**
+ * One cell's input by column type (doc 264 rule 1, doc 268 rule 3). Exported for the studio's inert preview row
+ * (doc 269), which passes the type's name as `placeholder` for the text and number inputs.
+ */
+export function Cell({
   column,
   value,
   label,
   onChange,
+  placeholder,
 }: {
   column: TableColumn;
   value: unknown;
   label: string;
   onChange: (value: unknown) => void;
+  placeholder?: string;
 }) {
   switch (column.type) {
     case 'string':
       return (
         <Input
           aria-label={label}
+          placeholder={placeholder}
           className={CELL_INPUT}
           value={typeof value === 'string' ? value : ''}
           // An emptied cell removes its key: Ajv counts '' as present (rule 2).
@@ -126,6 +133,7 @@ function Cell({
       return (
         <NumberCell
           label={label}
+          placeholder={placeholder}
           value={value}
           integer={column.type === 'integer'}
           onChange={onChange}
@@ -168,11 +176,13 @@ function Cell({
  */
 function NumberCell({
   label,
+  placeholder,
   value,
   integer,
   onChange,
 }: {
   label: string;
+  placeholder: string | undefined;
   value: unknown;
   integer: boolean;
   onChange: (value: unknown) => void;
@@ -189,6 +199,7 @@ function NumberCell({
       type="number"
       step={integer ? 1 : 'any'}
       aria-label={label}
+      placeholder={placeholder}
       className={CELL_INPUT}
       value={draft}
       onChange={(event) => {

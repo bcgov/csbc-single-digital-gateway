@@ -183,7 +183,9 @@ describe('studio data table (doc 263 rules 18-24, 27-31)', () => {
     it('selects the element on click and is not inert', async () => {
       const user = userEvent.setup();
       const { element } = renderTable();
-      expect(element().querySelector('[inert]')).toBeNull();
+      // The element is not inert — its headers take clicks; only the preview inputs are (doc 269).
+      expect(element().querySelector('[data-slot="studio-element-body"][inert]')).toBeNull();
+      expect(nameInputs()[0]!.closest('[inert]')).toBeNull();
       expect(element()).not.toHaveAttribute('data-selected');
       await user.click(within(element()).getAllByRole('cell')[0]!);
       expect(element()).toHaveAttribute('data-selected');
@@ -221,15 +223,20 @@ describe('studio data table (doc 263 rules 18-24, 27-31)', () => {
     });
   });
 
-  describe('placeholder row (rule 24)', () => {
-    it('shows each column type name in one muted row', () => {
-      renderTable({ port: false });
+  describe('preview row (doc 269, superseding rule 24)', () => {
+    it("draws each column's own input, inert, with the type as placeholder", () => {
+      const { container } = renderTable({ port: false });
       const body = screen.getAllByRole('rowgroup')[1]!;
-      const rows = within(body).getAllByRole('row');
-      expect(rows).toHaveLength(1);
-      const cells = within(rows[0]!).getAllByRole('cell');
-      expect(cells.map((cell) => cell.textContent)).toEqual(['Text', 'Number']);
-      expect(cells[0]!.firstElementChild).toHaveClass('text-muted-foreground');
+      expect(within(body).getAllByRole('row')).toHaveLength(1);
+      const previews = [...container.querySelectorAll('[data-slot="column-preview"]')];
+      expect(previews).toHaveLength(2);
+      for (const preview of previews) expect(preview).toHaveAttribute('inert');
+      const text = previews[0]!.querySelector('input')!;
+      expect(text).toHaveAttribute('aria-label', 'First, preview');
+      expect(text).toHaveAttribute('placeholder', 'Text');
+      const number = previews[1]!.querySelector('input')!;
+      expect(number).toHaveAttribute('type', 'number');
+      expect(number).toHaveAttribute('placeholder', 'Number');
     });
   });
 
