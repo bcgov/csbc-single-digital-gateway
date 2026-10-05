@@ -49,8 +49,10 @@ const sections = () =>
 describe('InspectorSettings (doc 249)', () => {
   it('shows the target line and the fields as labelled controls in headed sections', () => {
     render(<Harness selected="c-name" />);
-    expect(document.querySelector('[data-slot="inspector-target"]')).toHaveTextContent(
-      'Text · Name · shared by 2 fields',
+    expect(document.querySelector('[data-slot="inspector-kind"]')).toHaveTextContent(/^Text$/);
+    expect(document.querySelector('[data-slot="property-key"]')).toHaveTextContent(/^name$/);
+    expect(document.querySelector('[data-slot="inspector-shared"]')).toHaveTextContent(
+      'Shared by 2 fields',
     );
     expect(sections()).toEqual(['General', 'Validation', 'Appearance']);
     expect(screen.getByRole('textbox', { name: 'Label' })).toHaveValue('Name');
@@ -71,9 +73,10 @@ describe('InspectorSettings (doc 249)', () => {
     expect(screen.getByText('Nothing to inspect.')).toBeInTheDocument();
     unmount();
     render(<Harness selected="s" />);
-    expect(document.querySelector('[data-slot="inspector-target"]')).toHaveTextContent(
+    expect(document.querySelector('[data-slot="inspector-header"]')).toHaveTextContent(
       /^Separator$/,
     );
+    expect(document.querySelector('[data-slot="property-key"]')).toBeNull();
     expect(screen.getByText('No properties to edit.')).toBeInTheDocument();
   });
 
@@ -107,9 +110,7 @@ describe('InspectorSettings (doc 249)', () => {
     expect(screen.getByRole('textbox', { name: 'Label' })).toBe(label);
     expect(label).toHaveFocus();
     expect(label).toHaveValue('Full name ');
-    expect(document.querySelector('[data-slot="inspector-target"]')).toHaveTextContent(
-      'Text · Full name',
-    );
+    expect(document.querySelector('[data-slot="inspector-header"]')).toHaveTextContent(/^Text$/);
   });
 
   it('shows the field error and does not write an invalid value', async () => {

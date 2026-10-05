@@ -11,8 +11,12 @@ const formNode = (container: HTMLElement, label: string) =>
   )!;
 
 /** The docked inspector's target line. */
-const targetLine = (container: HTMLElement) =>
-  container.querySelector('[data-slot="document-studio-inspector"] [data-slot="inspector-target"]');
+const kind = (container: HTMLElement) =>
+  container.querySelector('[data-slot="document-studio-inspector"] [data-slot="inspector-kind"]');
+const propertyKey = (container: HTMLElement) =>
+  container.querySelector('[data-slot="document-studio-inspector"] [data-slot="property-key"]');
+const title = (container: HTMLElement) =>
+  within(docked(container)).queryByRole('textbox', { name: 'Title' });
 
 const docked = (container: HTMLElement) =>
   container.querySelector<HTMLElement>('[data-slot="document-studio-inspector"]')!;
@@ -41,16 +45,19 @@ async function selectOnPage(page: HTMLElement, id: string) {
 describe('DocumentStudio inspector (doc 249)', () => {
   it('inspects the root Funnel with nothing selected and no Form focused', async () => {
     const { container } = await openApplication();
-    expect(targetLine(container)).toHaveTextContent(/^Funnel · Funnel$/);
+    expect(kind(container)).toHaveTextContent(/^Funnel$/);
+    expect(propertyKey(container)).toBeNull();
     expect(within(docked(container)).getByRole('textbox', { name: 'Name' })).toHaveValue('');
   });
 
   it('inspects a selected Form and a focused Form', async () => {
     const { container } = await openApplication();
     fireEvent.click(formNode(container, 'Details'));
-    await waitFor(() => expect(targetLine(container)).toHaveTextContent('Form · Details'));
+    await waitFor(() => expect(title(container)).toHaveValue('Details'));
+    expect(kind(container)).toHaveTextContent(/^Form$/);
     await focusEligibility(container);
-    await waitFor(() => expect(targetLine(container)).toHaveTextContent('Form · Eligibility'));
+    await waitFor(() => expect(title(container)).toHaveValue('Eligibility'));
+    expect(kind(container)).toHaveTextContent(/^Form$/);
     expect(within(docked(container)).getByRole('textbox', { name: 'Title' })).toHaveValue(
       'Eligibility',
     );
@@ -60,13 +67,15 @@ describe('DocumentStudio inspector (doc 249)', () => {
     const { container } = await openApplication();
     const page = await focusEligibility(container);
     await selectOnPage(page, 'stubCns1');
-    expect(targetLine(container)).toHaveTextContent('Checkbox · I agree to the terms');
+    expect(kind(container)).toHaveTextContent(/^Checkbox$/);
+    expect(propertyKey(container)).toHaveTextContent(/^consent$/);
 
     fireEvent.click(within(page).getByRole('button', { name: 'Delete I agree to the terms' }));
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete element?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => expect(targetLine(container)).toHaveTextContent('Form · Eligibility'));
+    await waitFor(() => expect(kind(container)).toHaveTextContent(/^Form$/));
+    expect(title(container)).toHaveValue('Eligibility');
   });
 
   it('renaming a control in the inspector updates the page and marks the studio dirty', async () => {
@@ -81,7 +90,8 @@ describe('DocumentStudio inspector (doc 249)', () => {
     await waitFor(() =>
       expect(page.querySelector('[data-element-id="stubAge1"]')).toHaveTextContent('Your age'),
     );
-    expect(targetLine(container)).toHaveTextContent('Number · Your age');
+    expect(kind(container)).toHaveTextContent(/^Number$/);
+    expect(propertyKey(container)).toHaveTextContent(/^age$/);
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 });

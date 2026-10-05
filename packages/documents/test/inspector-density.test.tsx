@@ -162,9 +162,7 @@ describe('collapsible inspector sections (doc 252 rules 7-8)', () => {
     render(<Harness initial="c-n" />);
     await user.click(heading('Appearance'));
     fireEvent.click(screen.getByRole('button', { name: 'pick bio' }));
-    expect(document.querySelector('[data-slot="inspector-target"]')).toHaveTextContent(
-      'Text area · Bio',
-    );
+    expect(document.querySelector('[data-slot="inspector-kind"]')).toHaveTextContent(/^Text area$/);
     expect(heading('Appearance')).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('textbox', { name: 'Placeholder' })).toBeNull();
     expect(heading('General')).toHaveAttribute('aria-expanded', 'true');

@@ -8,6 +8,8 @@ import { InspectorOptions } from '../options/inspector-options';
 import { InspectorRule } from '../rules/inspector-rule';
 import { optionsTargetOf } from '../options/options-target';
 import { INSPECTOR_RENDERERS } from './inspector-renderers';
+import { InspectorHeader } from './property-key';
+import { keyProblem, renamePropertyKey } from './property-rename';
 import {
   inspectorTarget,
   KIND_NAMES,
@@ -25,7 +27,7 @@ export interface InspectorSettingsProps extends TargetInputs {
   onEditRule?: ((elementId: string) => void) | undefined;
 }
 
-/** The inspector's Settings view (doc 249): the inspected element's target line and its editable properties. */
+/** The inspector's Settings view (doc 249): the inspected element's header (doc 257) and its editable properties. */
 export function InspectorSettings({
   content,
   pageSelectedId,
@@ -43,7 +45,18 @@ export function InspectorSettings({
   const options = onEditOptions === undefined ? undefined : optionsTargetOf(target);
   return (
     <div data-slot="inspector-settings" className="flex flex-col gap-2">
-      <TargetLine target={target} />
+      <InspectorHeader
+        kind={KIND_NAMES[target.kind]}
+        property={target.property}
+        problem={(next) =>
+          target.property === undefined ? undefined : keyProblem(content, target.property.key, next)
+        }
+        onRename={(next) => {
+          if (target.property === undefined) return;
+          const renamed = renamePropertyKey(content, target.property.key, next);
+          if (renamed !== content) onContentChange(renamed);
+        }}
+      />
       {/* Keyed by the element: another selection remounts the form, typing never does (rule 16). */}
       <TargetForm
         key={target.id}
@@ -63,21 +76,6 @@ export function InspectorSettings({
         <InspectorOptions target={options} onEdit={() => onEditOptions?.(options.elementId)} />
       )}
     </div>
-  );
-}
-
-/** Rule 5 and 10: kind, name and how many fields share the property. */
-function TargetLine({ target }: { target: InspectorTarget }) {
-  const shared = target.property?.shared ?? 0;
-  const parts = [
-    KIND_NAMES[target.kind],
-    target.name,
-    shared > 1 ? `shared by ${shared} fields` : undefined,
-  ];
-  return (
-    <p data-slot="inspector-target" className="truncate text-xs font-medium">
-      {parts.filter((part) => part !== undefined).join(' · ')}
-    </p>
   );
 }
 
