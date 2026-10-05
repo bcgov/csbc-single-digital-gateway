@@ -6,6 +6,7 @@ import type { DataTableColumnDef } from '@repo/ui/data-table';
 import { Input } from '@repo/ui/input';
 import { useEffect, useRef, useState } from 'react';
 import type { ArrayOptions } from './array-options';
+import { MultiSelectCell, SelectCell } from './choice-cells';
 import { formatCell, type TableColumn } from './object-array';
 
 type Row = Record<string, unknown>;
@@ -138,8 +139,26 @@ function Cell({
           onCheckedChange={(checked) => onChange(checked)}
         />
       );
+    case 'choice':
+      return (
+        <SelectCell
+          label={label}
+          options={column.options ?? []}
+          value={value}
+          onChange={onChange}
+        />
+      );
+    case 'multi-choice':
+      return (
+        <MultiSelectCell
+          label={label}
+          options={column.options ?? []}
+          value={value}
+          onChange={onChange}
+        />
+      );
     default:
-      return formatCell(value);
+      return formatCell(value, column.options);
   }
 }
 

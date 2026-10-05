@@ -1,6 +1,11 @@
 import { nanoid } from 'nanoid';
-import type { ColumnEdit } from '../renderers/studio/column-edit';
-import { columnKeyProblem, isObjectArray } from '../renderers/ui/object-array';
+import type { ColumnEdit, ColumnOptionEntry } from '../renderers/studio/column-edit';
+import { isMultiChoice, isSingleChoice, itemsChoiceType } from '../renderers/ui/choice-options';
+import {
+  columnKeyProblem,
+  isObjectArray,
+  type AuthoredColumnType,
+} from '../renderers/ui/object-array';
 import type { Governance } from './capabilities/governance';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent } from './document-types';
 import { findById } from './element-ids';
@@ -73,6 +78,10 @@ function editedItems(
       return removed(items, columns, edit.key);
     case 'rekey':
       return rekeyed(items, columns, edit.key, edit.to);
+    case 'options': {
+      const next = withOptions(column, edit.entries);
+      return next === undefined ? undefined : withColumn(items, columns, edit.key, next);
+    }
   }
 }
 
@@ -84,14 +93,55 @@ function newColumn(columns: Columns): Record<string, unknown> {
   return { type: 'string', title: `Column ${n}` };
 }
 
-/** Only type, title and description survive: a stale `minimum` must not make the schema invalid. */
-function retyped(column: Record<string, unknown>, type: string): Record<string, unknown> {
+/** A new choice column's options (doc 268 rule 4) — fresh objects per call, never shared between columns. */
+const starterOptions = () => [
+  { const: 'option-1', title: 'Option 1' },
+  { const: 'option-2', title: 'Option 2' },
+];
+
+/** A choice column's options as authored — `oneOf` for a Select, `items.oneOf` for a Multi-select — and their type. */
+function choiceOf(
+  column: Record<string, unknown>,
+): { type: unknown; oneOf: unknown[] } | undefined {
+  if (isSingleChoice(column)) return { type: column['type'], oneOf: column['oneOf'] as unknown[] };
+  if (!isMultiChoice(column)) return undefined;
+  const items = recordOf(column['items'])!;
+  return { type: itemsChoiceType(items), oneOf: items['oneOf'] as unknown[] };
+}
+
+/**
+ * Only type, title and description survive: a stale `minimum` must not make the schema invalid. Retyped to a choice
+ * (doc 268 rule 4), a column keeps the options it already has — Select ↔ Multi-select — else starts with two.
+ */
+function retyped(
+  column: Record<string, unknown>,
+  type: AuthoredColumnType,
+): Record<string, unknown> {
   const { title, description } = column;
-  return {
-    type,
+  const kept = {
     ...(title !== undefined && { title }),
     ...(description !== undefined && { description }),
   };
+  if (type !== 'choice' && type !== 'multi-choice') return { type, ...kept };
+  const existing = choiceOf(column);
+  const choice = existing ?? {
+    type: 'string',
+    oneOf: starterOptions(),
+  };
+  return type === 'choice'
+    ? { type: choice.type, oneOf: choice.oneOf, ...kept }
+    : { type: 'array', items: { type: choice.type, oneOf: choice.oneOf }, ...kept };
+}
+
+/** The column with its options replaced (doc 268 rule 5), every other keyword kept; not a choice: refused. */
+function withOptions(
+  column: Record<string, unknown>,
+  entries: readonly ColumnOptionEntry[],
+): Record<string, unknown> | undefined {
+  const oneOf = [...entries];
+  if (isSingleChoice(column)) return { ...column, oneOf };
+  if (isMultiChoice(column)) return { ...column, items: { ...recordOf(column['items']), oneOf } };
+  return undefined;
 }
 
 function withColumn(

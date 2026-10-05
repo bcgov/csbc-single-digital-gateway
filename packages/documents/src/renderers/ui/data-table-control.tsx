@@ -41,7 +41,7 @@ export function rowColumn(
     accessorFn: (row) => row[column.key],
     header,
     meta: { title: column.title },
-    cell: ({ getValue }) => formatCell(getValue()),
+    cell: ({ getValue }) => formatCell(getValue(), column.options),
   };
 }
 

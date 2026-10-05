@@ -3,6 +3,7 @@ import {
   mdiArrowRight,
   mdiDeleteOutline,
   mdiDotsVertical,
+  mdiFormatListBulleted,
   mdiKeyVariant,
 } from '@mdi/js';
 import { Icon } from '@mdi/react';
@@ -27,6 +28,7 @@ import {
 } from '../ui/object-array';
 import type { ColumnEdit } from './column-edit';
 import { ColumnKeyDialog } from './column-key-dialog';
+import { ColumnOptionsDialog } from './column-options-dialog';
 import { InlineTextInput } from './inline-text-input';
 import { STUDIO_INTERACTIVE } from './studio-element';
 
@@ -43,6 +45,7 @@ export function ColumnHeaderEditor({
   count,
   onEdit,
   keyProblem,
+  elementId,
 }: {
   column: TableColumn;
   index: number;
@@ -50,11 +53,23 @@ export function ColumnHeaderEditor({
   onEdit: (edit: ColumnEdit) => void;
   /** Why the column can't take a data key (doc 264 rule 10). */
   keyProblem: (from: string, to: string) => string | undefined;
+  /** The table element's id: names the column to the Options dialog. */
+  elementId: string;
 }) {
   const { key, title, type } = column;
   const [rekeying, setRekeying] = useState(false);
+  const [editingOptions, setEditingOptions] = useState(false);
+  const choice = type === 'choice' || type === 'multi-choice';
   return (
     <div data-slot="column-header-editor" className="flex items-center gap-1">
+      {editingOptions && (
+        <ColumnOptionsDialog
+          elementId={elementId}
+          column={column}
+          onSave={(entries) => onEdit({ kind: 'options', key, entries })}
+          onClose={() => setEditingOptions(false)}
+        />
+      )}
       {rekeying && (
         <ColumnKeyDialog
           title={title}
@@ -103,6 +118,12 @@ export function ColumnHeaderEditor({
             </DropdownMenuRadioGroup>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
+          {choice && (
+            <DropdownMenuItem onClick={() => setEditingOptions(true)}>
+              <Icon path={mdiFormatListBulleted} size="0.875rem" aria-hidden />
+              Edit options…
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => setRekeying(true)}>
             <Icon path={mdiKeyVariant} size="0.875rem" aria-hidden />
             Change data key…

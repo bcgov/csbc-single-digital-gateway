@@ -62,8 +62,9 @@ export function StudioDataTable(props: ControlProps) {
         editable,
         (edit) => sendRef.current?.(edit),
         (from, to) => columnKeyProblem(props.schema, from, to),
+        element?.id ?? '',
       ),
-    [props.schema, editable, sendRef],
+    [props.schema, editable, sendRef, element?.id],
   );
   return (
     <div className={ELEMENT_INSET}>
@@ -80,6 +81,7 @@ function studioColumns(
   editable: boolean,
   send: (edit: ColumnEdit) => void,
   keyProblem: (from: string, to: string) => string | undefined,
+  elementId: string,
 ): DataTableColumnDef<Row>[] {
   const defs = columns.map((column, index) => ({
     ...rowColumn(
@@ -92,6 +94,7 @@ function studioColumns(
               count={columns.length}
               onEdit={send}
               keyProblem={keyProblem}
+              elementId={elementId}
             />
           )
         : column.title,
