@@ -21,7 +21,7 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableViewOptions } from './data-table-view-options';
 import { dataTableFeatures, type DataTableFeatures } from './data-table/features';
-import { alignClass, tableStyleClass } from './data-table/presentation';
+import { alignClass, pinClass, tableStyleClass } from './data-table/presentation';
 import { selectionColumn } from './data-table/selection-column';
 
 export type { DataTableColumnMeta, DataTableFeatures } from './data-table/features';
@@ -119,7 +119,10 @@ export function DataTable<TData extends RowData>({
                   {group.headers.map((header) => (
                     <TableHead
                       key={header.id}
-                      className={alignClass(header.column.columnDef.meta?.align)}
+                      className={cn(
+                        alignClass(header.column.columnDef.meta?.align),
+                        pinClass(header.column.columnDef.meta?.pin),
+                      )}
                     >
                       {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
@@ -172,11 +175,15 @@ function DataTableRows<TData extends RowData>({
             const meta = cell.column.columnDef.meta;
             const content = <table.FlexRender cell={cell} />;
             return meta?.rowHeader === true ? (
-              <TableHead key={cell.id} scope="row" className={alignClass(meta.align)}>
+              <TableHead
+                key={cell.id}
+                scope="row"
+                className={cn(alignClass(meta.align), pinClass(meta.pin))}
+              >
                 {content}
               </TableHead>
             ) : (
-              <TableCell key={cell.id} className={alignClass(meta?.align)}>
+              <TableCell key={cell.id} className={cn(alignClass(meta?.align), pinClass(meta?.pin))}>
                 {content}
               </TableCell>
             );

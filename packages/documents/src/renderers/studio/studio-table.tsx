@@ -18,6 +18,7 @@ import {
 } from '../ui/table-content';
 import { columnMeta, displayProps, TableRenderer } from '../ui/table-renderer';
 import { InlineTextInput } from './inline-text-input';
+import { revealTableEnd } from './reveal-end';
 import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
 import { TableHeaderEditor } from './table-header-editor';
@@ -110,13 +111,16 @@ function editColumns(
         </div>
       ),
       cell: ({ row, getValue }) => (
-        <InlineTextInput
-          value={String(getValue() ?? '')}
-          label={`Row ${row.index + 1}, column ${index + 1}`}
-          allowBlank
-          className="w-full"
-          onCommit={(text) => write(setCell(latest.current.content, row.index, index, text))}
-        />
+        // A column never squeezes below this: past it the columns scroll under the pinned actions (doc 270).
+        <div className="min-w-28">
+          <InlineTextInput
+            value={String(getValue() ?? '')}
+            label={`Row ${row.index + 1}, column ${index + 1}`}
+            allowBlank
+            className="w-full"
+            onCommit={(text) => write(setCell(latest.current.content, row.index, index, text))}
+          />
+        </div>
       ),
     }),
   );
@@ -126,13 +130,18 @@ function editColumns(
       id: '__actions',
       enableSorting: false,
       enableHiding: false,
+      // Pinned right: Add column and each Delete row stay in reach while the columns scroll (doc 270).
+      meta: { pin: 'right' },
       header: () => (
         <Button
           variant="ghost"
           size="icon-xs"
           className={STUDIO_INTERACTIVE}
           aria-label="Add column"
-          onClick={() => write(addColumn(latest.current.content))}
+          onClick={(event) => {
+            write(addColumn(latest.current.content));
+            revealTableEnd(event.currentTarget);
+          }}
         >
           <Icon path={mdiPlus} size="0.875rem" aria-hidden />
         </Button>

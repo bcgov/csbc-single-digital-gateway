@@ -22,6 +22,8 @@ export interface DataTableColumnMeta {
   align?: DataTableAlign;
   /** Its body cells are row headers, `<th scope="row">` (doc 267 rule 2). */
   rowHeader?: boolean;
+  /** Pinned to the right edge while the other columns scroll horizontally (doc 270). */
+  pin?: 'right';
 }
 
 /**

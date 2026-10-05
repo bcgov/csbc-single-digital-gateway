@@ -28,3 +28,7 @@ for (const method of ['getBoundingClientRect', 'getClientRects'] as const) {
     ) as never;
   }
 }
+
+// jsdom has no Element.scrollTo, and a studio table's Add column scrolls its table to the end a frame later (doc 270)
+// — an uncaught TypeError after any test that adds a column. No layout means nothing to scroll.
+if (typeof Element.prototype.scrollTo !== 'function') Element.prototype.scrollTo = () => {};

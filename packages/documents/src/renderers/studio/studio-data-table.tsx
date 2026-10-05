@@ -18,6 +18,7 @@ import {
 } from '../ui/object-array';
 import type { ColumnEdit } from './column-edit';
 import { ColumnHeaderEditor } from './column-header-editor';
+import { revealTableEnd } from './reveal-end';
 import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
 
@@ -35,6 +36,8 @@ export const studioDataTableTester = rankWith(
 /** The canvas has no answers (`data={}`): one preview row of each column's inert input (doc 269, was rule 24). */
 const PLACEHOLDER_ROWS: Row[] = [{}];
 const NO_CHANGE = () => {};
+/** A column never squeezes below this: past it the columns scroll under the pinned Add column (doc 270). */
+const COLUMN_MIN_WIDTH = 'min-w-32';
 
 /**
  * An object array the author shapes in place (doc 263 rules 18-24): its columns' names, types, order and number. Only
@@ -104,7 +107,7 @@ function studioColumns(
     enableSorting: false,
     // The applicant's own input, drawn inert (doc 269): the canvas has no answers, and a click must only select.
     cell: () => (
-      <div inert data-slot="column-preview">
+      <div inert data-slot="column-preview" className={COLUMN_MIN_WIDTH}>
         <Cell
           column={column}
           value={undefined}
@@ -122,13 +125,18 @@ function studioColumns(
       id: '__add-column',
       enableSorting: false,
       enableHiding: false,
+      // Pinned right: Add column stays in reach while the columns scroll under it (doc 270).
+      meta: { pin: 'right' },
       header: () => (
         <Button
           variant="ghost"
           size="icon-xs"
           className={STUDIO_INTERACTIVE}
           aria-label="Add column"
-          onClick={() => send({ kind: 'add' })}
+          onClick={(event) => {
+            send({ kind: 'add' });
+            revealTableEnd(event.currentTarget);
+          }}
         >
           <Icon path={mdiPlus} size="0.875rem" aria-hidden />
         </Button>

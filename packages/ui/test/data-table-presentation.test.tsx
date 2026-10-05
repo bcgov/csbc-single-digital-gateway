@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { DataTable, type DataTableColumnDef } from '@ui/data/data-table';
-import { alignClass, tableStyleClass } from '@ui/data/data-table/presentation';
+import { alignClass, pinClass, tableStyleClass } from '@ui/data/data-table/presentation';
 
 type Fee = { name: string; amount: string };
 const FEES: Fee[] = [
@@ -46,6 +46,22 @@ describe('DataTable presentation (doc 267 rules 1-3)', () => {
     expect(tableEl().className).toContain(tableStyleClass({ striped: true }));
     expect(tableEl().className).toContain('[&_td]:border');
     expect(tableEl().className).toContain('[&_td]:py-1');
+  });
+
+  it('pins a meta.pin column to the right edge, header and cells (doc 270)', () => {
+    const pinned: DataTableColumnDef<Fee>[] = [
+      ...columns,
+      { id: 'actions', header: 'Actions', cell: () => 'x', meta: { pin: 'right' } },
+    ];
+    render(<DataTable columns={pinned} data={FEES} />);
+    const header = screen.getByRole('columnheader', { name: 'Actions' });
+    expect(header).toHaveClass('sticky', 'right-0', 'bg-background', 'w-px');
+    for (const cell of screen.getAllByRole('cell', { name: 'x' }))
+      expect(cell).toHaveClass('sticky', 'right-0');
+    expect(screen.getByRole('columnheader', { name: 'Amount' })).not.toHaveClass('sticky');
+    // The table sits in the scrolling container, so the unpinned columns scroll under the pinned one.
+    expect(tableEl().closest('[data-slot="table-container"]')).toHaveClass('overflow-x-auto');
+    expect(pinClass(undefined)).toBeUndefined();
   });
 
   it('maps alignments to classes, left being none', () => {
