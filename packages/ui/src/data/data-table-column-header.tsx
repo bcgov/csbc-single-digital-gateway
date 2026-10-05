@@ -61,7 +61,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
           <span>{title}</span>
           <Icon path={icon} size="0.875rem" aria-hidden />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" className="text-xs">
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
             <Icon path={mdiArrowUp} size="0.875rem" aria-hidden />
             Ascending

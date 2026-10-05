@@ -30,9 +30,9 @@ export function DataTableViewOptions<TData extends RowData>({
         <Icon path={mdiTuneVariant} size="1rem" aria-hidden />
         View
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuContent align="end" className="w-40 text-xs">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs">Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {columns.map((column) => (
             <DropdownMenuCheckboxItem

@@ -50,7 +50,7 @@ export function TableHeaderEditor({
         >
           <Icon path={mdiDotsVertical} size="0.875rem" aria-hidden />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-40 text-xs">
           <DropdownMenuItem
             disabled={index === 0}
             onClick={() => onChange(moveColumn(content, index, index - 1))}

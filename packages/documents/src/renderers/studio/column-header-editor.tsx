@@ -85,9 +85,9 @@ export function ColumnHeaderEditor({
         >
           <Icon path={mdiDotsVertical} size="0.875rem" aria-hidden />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuContent align="end" className="w-44 text-xs">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Type</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs">Type</DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={type}
               onValueChange={(next) => {
