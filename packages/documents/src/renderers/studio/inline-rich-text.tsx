@@ -6,7 +6,10 @@ import { dragged, type Point } from './inline-heading';
 import { STUDIO_INTERACTIVE } from './studio-element';
 
 export interface InlineRichTextProps {
-  /** The stored content; without text, editable shows `placeholder` and view-only shows nothing. */
+  /**
+   * The stored content; without text, `placeholder` shows editable or not — like the inline heading's — so the page
+   * does not shift when an opening page turns editable (doc 251 bug B1).
+   */
   value: RichTextState | undefined;
   placeholder: string;
   /** Names the editor. */
@@ -80,7 +83,6 @@ export function InlineRichText({
     );
   }
   const empty = !richTextHasText(value);
-  if (empty && !editable) return null;
   return (
     <div
       data-slot={slot}

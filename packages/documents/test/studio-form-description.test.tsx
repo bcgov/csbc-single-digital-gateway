@@ -73,9 +73,14 @@ describe('studio Form description (doc 251 rules 3-6, 8)', () => {
     );
   });
 
-  it('renders the description read-only, and no placeholder, without an editor provider', () => {
+  it('renders the description read-only without an editor provider', () => {
+    // The placeholder stays, so a page opening into edit mode does not shift its content down (bug B1).
     const empty = renderStudioRenderers(formWith(), { editable: false });
-    expect(descriptionOf(empty.container)).toBeNull();
+    const placeholder = descriptionOf(empty.container)!;
+    expect(placeholder).toHaveTextContent(/^Description$/);
+    fireEvent.click(placeholder);
+    expect(placeholder).not.toHaveAttribute('data-editing');
+    expect(placeholder).not.toHaveClass('cursor-text');
     empty.unmount();
     const { container } = renderStudioRenderers(formWith(richText('Read me')), { editable: false });
     const description = descriptionOf(container)!;
