@@ -13,12 +13,13 @@ const page = (elements: unknown[]) => ({ id: 'form', type: 'Form', label: 'Page'
 describe('studio boolean controls (doc 237 rules 13-15)', () => {
   it('wraps every default control entry, keeping its tester', () => {
     // Checkbox, Switch, Input, Textarea, the single (doc 244) and multiple choice (doc 245),
-    // and the number input (doc 248).
-    expect(defaults.controlRenderers).toHaveLength(8);
-    expect(studio.controlRenderers).toHaveLength(defaults.controlRenderers.length);
-    studio.controlRenderers.forEach((entry, i) => {
-      expect(entry.tester).toBe(defaults.controlRenderers[i]!.tester);
-      expect(entry.renderer).not.toBe(defaults.controlRenderers[i]!.renderer);
+    // the number input (doc 248), the rich text field (doc 250) and the data table (doc 263).
+    expect(defaults.controlRenderers).toHaveLength(9);
+    // Plus the studio data table, which outranks its default (doc 263 rule 18).
+    expect(studio.controlRenderers).toHaveLength(defaults.controlRenderers.length + 1);
+    defaults.controlRenderers.forEach((entry, i) => {
+      expect(studio.controlRenderers[i]!.tester).toBe(entry.tester);
+      expect(studio.controlRenderers[i]!.renderer).not.toBe(entry.renderer);
     });
   });
 

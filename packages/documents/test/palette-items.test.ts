@@ -28,6 +28,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['radio-group', 'Radio group', 'Fields'],
       ['multi-select', 'Multi-select', 'Fields'],
       ['checkbox-group', 'Checkbox group', 'Fields'],
+      ['data-table', 'Data table', 'Fields'],
     ]);
     for (const item of DEFAULT_PALETTE_ITEMS) expect(item.icon).toMatch(/^M/);
   });

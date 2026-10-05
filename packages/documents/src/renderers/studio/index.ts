@@ -2,6 +2,7 @@ import * as defaults from '../default/index';
 import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { placeholderEntry } from './placeholder-renderer';
+import { studioDataTableEntry } from './studio-data-table';
 import { studioFormEntry } from './studio-form';
 import { studioHeadingEntry } from './studio-heading';
 import { studioRichContentEntry } from './studio-rich-content';
@@ -18,6 +19,7 @@ export {
   type ElementPatch,
   type StudioEditor,
 } from './studio-editor';
+export type { ColumnEdit } from './column-edit';
 export { useStudioElement, type StudioElementState } from './studio-element';
 
 /**
@@ -32,10 +34,14 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
   studioRichContentEntry,
   placeholderEntry,
 ].map((entry) => withStudioElement(entry));
-/** Controls are drawn but inert: a click selects, never fills in (doc 237 rule 13). */
-export const controlRenderers: RendererSet['controlRenderers'] = defaults.controlRenderers.map(
-  (entry) => withStudioElement(entry, { inert: true }),
-);
+/**
+ * Controls are drawn but inert: a click selects, never fills in (doc 237 rule 13). The data table outranks its default
+ * and is NOT inert — its column headers are edited in place (doc 263 rule 18).
+ */
+export const controlRenderers: RendererSet['controlRenderers'] = [
+  ...defaults.controlRenderers.map((entry) => withStudioElement(entry, { inert: true })),
+  withStudioElement(studioDataTableEntry),
+];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [
   ...defaults.layoutRenderers,
   studioVerticalLayoutEntry,

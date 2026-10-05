@@ -1,5 +1,6 @@
 import { isPlainNumber } from '../../renderers/ui/number-options';
 import { isMultiChoice, isSingleChoice } from '../../renderers/ui/choice-options';
+import { isObjectArray } from '../../renderers/ui/object-array';
 import { isRichTextProperty } from '../../renderers/ui/rich-text-value';
 import { isPlainString } from '../../renderers/ui/string-options';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent, type Uischema } from '../document-types';
@@ -24,6 +25,7 @@ export type TargetKind =
   | 'multi-select'
   | 'checkbox-group'
   | 'rich-text'
+  | 'data-table'
   | 'rich-content'
   | 'unknown';
 
@@ -46,6 +48,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   'multi-select': 'Multi-select',
   'checkbox-group': 'Checkbox group',
   'rich-text': 'Rich text',
+  'data-table': 'Data table',
   'rich-content': 'Rich content',
   unknown: 'Element',
 });
@@ -205,6 +208,7 @@ function kindOf(element: Uischema, property: BoundProperty | undefined): TargetK
   const component = recordOf(element['options'])?.['component'];
   const { schema } = property;
   if (isRichTextProperty(schema)) return 'rich-text';
+  if (isObjectArray(schema)) return 'data-table';
   if (schema['type'] === 'boolean') return component === 'switch' ? 'switch' : 'checkbox';
   if (isPlainString(schema)) return component === 'textarea' ? 'textarea' : 'text';
   if (isPlainNumber(schema)) return 'number';

@@ -1,5 +1,6 @@
 import { mayRemoveNode, type Governance } from './capabilities/governance';
 import type { GridDrop } from '../renderers/default/grid-placement';
+import type { ColumnEdit } from '../renderers/studio/column-edit';
 import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
@@ -82,6 +83,8 @@ export interface DocumentCanvasProps {
   onCopyElement?: ((elementId: string) => string | undefined) | undefined;
   /** Opens the options editor for a page choice field (doc 255 rule 3); absent: no Edit options. */
   onEditOptions?: ((elementId: string) => void) | undefined;
+  /** Edits a page object array's columns (doc 263 rule 27); absent: the studio table is never editable. */
+  onEditColumns?: ((elementId: string, edit: ColumnEdit) => void) | undefined;
   /** Opens the rule dialog for a page element (doc 256 rule 9); absent: no Rules action. */
   onEditRule?: ((elementId: string) => void) | undefined;
   /** The fields a page element's rule may not test (doc 256 rule 5). */
@@ -115,6 +118,7 @@ export function DocumentCanvas({
   onRemoveElement,
   onCopyElement,
   onEditOptions,
+  onEditColumns,
   onEditRule,
   ruleProblems,
   canAddRule,
@@ -177,6 +181,7 @@ export function DocumentCanvas({
     selectElement: onPageSelect ?? NO_SELECT,
     copy: onCopyElement,
     editOptions: onEditOptions,
+    editColumns: onEditColumns,
     editRule: onEditRule,
     ruleProblems,
     canAddRule,

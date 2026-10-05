@@ -1,7 +1,7 @@
 // Regenerates the per-component public API from the component sources:
 //   - src/components/ui/*.tsx (shadcn primitives), src/brand/*.tsx (brand marks),
 //     src/inputs/*.tsx (non-shadcn inputs), src/layout/*.tsx (layout primitives) and
-//     src/typography/*.tsx (typography primitives)
+//     src/typography/*.tsx (typography primitives) and src/data/*.tsx (data display composites)
 //   - a flat re-export file  src/<name>.ts          (one Vite/dts entry per component)
 //   - the barrel             src/index.ts
 //   - the package.json "exports" map               (one subpath per component, plus a raw
@@ -25,6 +25,9 @@ const layoutDir = resolve(root, 'src/layout');
 // code must stay out of src/components/ui, whose lint override relaxes the vendored-shadcn rules.
 // Same top-level-*.tsx-only rule as src/inputs and src/layout.
 const typographyDir = resolve(root, 'src/typography');
+// Hand-written data display composites (e.g. DataTable, doc 263) — same reason and same
+// top-level-*.tsx-only rule as src/layout; helpers live in src/data/<name>/.
+const dataDir = resolve(root, 'src/data');
 
 const tsxNames = (dir) =>
   existsSync(dir)
@@ -39,12 +42,14 @@ const brandNames = tsxNames(brandDir);
 const inputNames = tsxNames(inputsDir);
 const layoutNames = tsxNames(layoutDir);
 const typographyNames = tsxNames(typographyDir);
+const dataNames = tsxNames(dataDir);
 const sourceDir = new Map([
   ...uiNames.map((n) => [n, 'components/ui']),
   ...brandNames.map((n) => [n, 'brand']),
   ...inputNames.map((n) => [n, 'inputs']),
   ...layoutNames.map((n) => [n, 'layout']),
   ...typographyNames.map((n) => [n, 'typography']),
+  ...dataNames.map((n) => [n, 'data']),
 ]);
 const names = [
   ...uiNames,
@@ -52,6 +57,7 @@ const names = [
   ...inputNames,
   ...layoutNames,
   ...typographyNames,
+  ...dataNames,
 ].toSorted();
 
 // Raw brand assets shipped verbatim (icon.svg, logo.svg) — exported as URLs.

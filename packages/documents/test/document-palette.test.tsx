@@ -51,6 +51,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Radio group',
       'Multi-select',
       'Checkbox group',
+      'Data table',
     ]);
   });
 
@@ -146,12 +147,14 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Radio group',
       'Multi-select',
       'Checkbox group',
+      'Data table',
     ];
     for (const name of fields) fireEvent.keyDown(itemNamed(name), { key: 'ArrowDown' });
+    expect(itemNamed('Data table')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Data table'), { key: 'ArrowUp' });
     expect(itemNamed('Checkbox group')).toHaveFocus();
-    fireEvent.keyDown(itemNamed('Checkbox group'), { key: 'ArrowUp' });
-    expect(itemNamed('Multi-select')).toHaveFocus();
     for (const name of [
+      'Checkbox group',
       'Multi-select',
       'Radio group',
       'Select',

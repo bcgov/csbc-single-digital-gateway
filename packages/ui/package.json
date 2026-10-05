@@ -139,6 +139,30 @@
       "import": "./dist/context-menu.js",
       "require": "./dist/context-menu.cjs"
     },
+    "./data-table": {
+      "types": "./dist/data-table.d.ts",
+      "development": "./src/data-table.ts",
+      "import": "./dist/data-table.js",
+      "require": "./dist/data-table.cjs"
+    },
+    "./data-table-column-header": {
+      "types": "./dist/data-table-column-header.d.ts",
+      "development": "./src/data-table-column-header.ts",
+      "import": "./dist/data-table-column-header.js",
+      "require": "./dist/data-table-column-header.cjs"
+    },
+    "./data-table-pagination": {
+      "types": "./dist/data-table-pagination.d.ts",
+      "development": "./src/data-table-pagination.ts",
+      "import": "./dist/data-table-pagination.js",
+      "require": "./dist/data-table-pagination.cjs"
+    },
+    "./data-table-view-options": {
+      "types": "./dist/data-table-view-options.d.ts",
+      "development": "./src/data-table-view-options.ts",
+      "import": "./dist/data-table-view-options.js",
+      "require": "./dist/data-table-view-options.cjs"
+    },
     "./date-picker": {
       "types": "./dist/date-picker.d.ts",
       "development": "./src/date-picker.ts",
@@ -500,6 +524,7 @@
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
     "@monaco-editor/react": "^4.7.0",
+    "@tanstack/react-table": "^9.2.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

@@ -1,5 +1,6 @@
 import type { Governance } from '../../studio/capabilities/governance';
 import type { GridDrop } from '../default/grid-placement';
+import type { ColumnEdit } from './column-edit';
 import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
 /** What a studio renderer may change on one element (doc 236 rule 11). It never carries a `type`. */
@@ -40,6 +41,11 @@ export interface StudioEditor {
   copy?: ((id: string) => string | undefined) | undefined;
   /** Opens the options editor for the choice field with that id (doc 255 rule 3). Absent: no Edit options. */
   editOptions?: ((id: string) => void) | undefined;
+  /**
+   * Edits the columns of the object array with that id (doc 263 rule 27) — a schema write the host gates by variant and
+   * template. Absent: the studio data table is never editable.
+   */
+  editColumns?: ((id: string, edit: ColumnEdit) => void) | undefined;
   /** Opens the rule dialog for the element with that id (doc 256 rule 9). Absent: no Rules action. */
   editRule?: ((id: string) => void) | undefined;
   /** The fields an element's rule tests that it may not (doc 256 rule 5); absent: never in error. */
@@ -73,6 +79,7 @@ export function StudioEditorProvider({
   move,
   copy,
   editOptions,
+  editColumns,
   editRule,
   ruleProblems,
   canAddRule,
@@ -87,6 +94,7 @@ export function StudioEditorProvider({
   move?: StudioEditor['move'];
   copy?: StudioEditor['copy'];
   editOptions?: StudioEditor['editOptions'];
+  editColumns?: StudioEditor['editColumns'];
   editRule?: StudioEditor['editRule'];
   ruleProblems?: StudioEditor['ruleProblems'];
   canAddRule?: StudioEditor['canAddRule'];
@@ -117,6 +125,7 @@ export function StudioEditorProvider({
       move,
       copy,
       editOptions,
+      editColumns,
       editRule,
       ruleProblems,
       canAddRule,
@@ -131,6 +140,7 @@ export function StudioEditorProvider({
       move,
       copy,
       editOptions,
+      editColumns,
       editRule,
       ruleProblems,
       canAddRule,

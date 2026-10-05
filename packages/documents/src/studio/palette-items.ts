@@ -9,6 +9,7 @@ import {
   mdiNumeric,
   mdiRadioboxMarked,
   mdiSelectMultiple,
+  mdiTable,
   mdiTextBoxEditOutline,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
@@ -242,6 +243,21 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Fields',
     keywords: ['choice', 'multiple', 'checkboxes', 'options'],
     create: () => newMultiChoice('checkbox-group', 'Untitled checkbox group'),
+  },
+  {
+    id: 'data-table',
+    label: 'Data table',
+    icon: mdiTable,
+    group: 'Fields',
+    keywords: ['table', 'rows', 'columns', 'list', 'repeat'],
+    // An object array with one Text column, its key as fresh as the property's (doc 263 rule 31).
+    create: () =>
+      newControl('array', 'Untitled data table', undefined, {
+        items: {
+          type: 'object',
+          properties: { [nanoid(8)]: { type: 'string', title: 'Column 1' } },
+        },
+      }),
   },
 ];
 

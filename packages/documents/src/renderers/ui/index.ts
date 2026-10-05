@@ -1,6 +1,7 @@
 import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { checkboxControlEntry } from './checkbox-control';
+import { dataTableControlEntry } from './data-table-control';
 import { headingEntry } from './heading-renderer';
 import { inputControlEntry } from './input-control';
 import { multiChoiceControlEntry } from './multi-choice-control';
@@ -25,7 +26,8 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
  * The boolean controls (doc 237) — a Checkbox, or a Switch for `options.component: 'switch'` — and the string controls
  * (doc 239) — an Input, or a Textarea for `options.component: 'textarea'` — and the single choice (doc 244) — a
  * Select, or a Radio group for `options.component: 'radio-group'` — and the multiple choice (doc 245) — a
- * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248) — and the rich text field (doc 250).
+ * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248) — and the rich text field (doc 250) —
+ * and the object array's read-only data table (doc 263).
  */
 export const controlRenderers: RendererSet['controlRenderers'] = [
   checkboxControlEntry,
@@ -36,6 +38,7 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   multiChoiceControlEntry,
   numberInputControlEntry,
   richTextControlEntry,
+  dataTableControlEntry,
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];
 export const renderers = renderersOf({

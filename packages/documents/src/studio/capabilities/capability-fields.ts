@@ -60,7 +60,7 @@ const isCascadeScope = (value: unknown): value is CascadeScope =>
 
 /**
  * Every setting an implementation could be allowed to change (doc 258 rule 3, doc 259 rule 19): the element's own
- * inspector fields, then the edits that are not fields — its Data key, choice Options, Content and Rule.
+ * inspector fields, then the edits that are not fields — its Data key, choice Options, Content, Columns and Rule.
  */
 export function settingChoices(target: InspectorTarget): { const: string; title: string }[] {
   return [
@@ -68,6 +68,8 @@ export function settingChoices(target: InspectorTarget): { const: string; title:
     ...(target.property !== undefined ? [{ const: 'key', title: 'Data key' }] : []),
     ...(optionsTargetOf(target) !== undefined ? [{ const: 'options', title: 'Options' }] : []),
     ...(target.kind === 'rich-content' ? [{ const: 'content', title: 'Content' }] : []),
+    // The data table's columns, edited in place on the canvas (doc 263 rule 30).
+    ...(target.kind === 'data-table' ? [{ const: 'columns', title: 'Columns' }] : []),
     // The root is never a rule's element (doc 256 rule 13).
     ...(target.root ? [] : [{ const: 'rule', title: 'Rule' }]),
   ];

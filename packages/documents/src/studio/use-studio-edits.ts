@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GridDrop } from '../renderers/default/grid-placement';
+import type { ColumnEdit } from '../renderers/studio/column-edit';
 import { governanceOf } from './capabilities/governance';
 import type { CapabilityMap } from './capabilities/capability-types';
+import { canvasColumnEdit } from './column-edits';
 import type { DocumentStore, DocumentSummary } from './document-store';
 import { DEFAULT_VARIANT, type DocumentContent } from './document-types';
 import { copyElement } from './element-copy';
@@ -12,7 +14,7 @@ import type { PaletteItem } from './palette-items';
 import type { StudioDraft } from './use-document-studio';
 
 /**
- * The studio's content-wide element edits — palette insert, delete, copy — each refused when the pinned template forbids
+ * The studio's content-wide element edits — palette insert, delete, copy, a data table's columns — each refused when the pinned template forbids
  * it (doc 259 backstops), and the governance they and the canvas ask.
  */
 export function useStudioEdits(
@@ -61,7 +63,16 @@ export function useStudioEdits(
     },
     [draft, setContent, governance, variant],
   );
-  return { governance, insert, removeEl, copyEl };
+  // A data table's columns edited in place (doc 263 rules 27-28): refused outside default or when the template locks them.
+  const editColumns = useCallback(
+    (elementId: string, edit: ColumnEdit) => {
+      if (draft === null) return;
+      const next = canvasColumnEdit(draft.content, variant, governance, elementId, edit);
+      if (next !== draft.content) setContent(next);
+    },
+    [draft, setContent, governance, variant],
+  );
+  return { governance, insert, removeEl, copyEl, editColumns };
 }
 
 /** Every stored template, refreshed each time the New document dialog opens (doc 259 rule 1). */

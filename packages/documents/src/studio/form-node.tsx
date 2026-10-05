@@ -27,6 +27,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
     selectElement,
     copy,
     editOptions,
+    editColumns,
     editRule,
     ruleProblems,
     canAddRule,
@@ -81,6 +82,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
           onSelectionChange={selectElement}
           onCopy={copy}
           onEditOptions={editOptions}
+          onEditColumns={editColumns}
           onEditRule={editRule}
           ruleProblems={ruleProblems}
           canAddRule={canAddRule}

@@ -94,7 +94,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
           ),
     [palette, draft, active],
   );
-  const { governance, insert, removeEl, copyEl } = useStudioEdits(
+  const { governance, insert, removeEl, copyEl, editColumns } = useStudioEdits(
     draft,
     items,
     studio.governing?.capabilities,
@@ -194,6 +194,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onRemoveElement={removeEl}
               onCopyElement={copyEl}
               onEditOptions={options.open}
+              onEditColumns={editColumns}
               onEditRule={rules.open}
               ruleProblems={rules.problems}
               canAddRule={rules.canAdd}

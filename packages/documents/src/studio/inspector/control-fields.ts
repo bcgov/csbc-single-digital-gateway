@@ -27,9 +27,11 @@ const CONTROL_KINDS: TargetKind[] = [
   'multi-select',
   'checkbox-group',
   'rich-text',
+  'data-table',
 ];
 const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
 const BOOLEAN_KINDS: TargetKind[] = ['checkbox', 'switch'];
+const SINGLE_PRESENTATION: TargetKind[] = ['number', 'rich-text', 'data-table'];
 
 /**
  * Display-as variants per family, the default first (doc 249 rule 7): the default's `component` is what the palette
@@ -210,8 +212,8 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'component',
     section: 'Appearance',
     label: 'Display as',
-    // A number and a rich text field have one presentation each.
-    applies: isKind(...CONTROL_KINDS.filter((kind) => kind !== 'number' && kind !== 'rich-text')),
+    // A number, a rich text field and a data table have one presentation each.
+    applies: isKind(...CONTROL_KINDS.filter((kind) => !SINGLE_PRESENTATION.includes(kind))),
     schema: (t) => choice(familyOf(t.kind).map(([kind, title]) => [kind, title] as const)),
     required: true,
     read: (t) => t.kind,

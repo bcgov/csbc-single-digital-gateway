@@ -51,6 +51,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Radio group',
       'Multi-select',
       'Checkbox group',
+      'Data table',
     ]);
   });
 
