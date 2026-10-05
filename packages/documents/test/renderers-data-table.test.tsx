@@ -39,7 +39,12 @@ const PEOPLE = [
   { name: 'Cy', age: 12 },
 ];
 
-function renderControl(uischema: Record<string, unknown>, data: Record<string, unknown> = {}) {
+/** Read-only by default: these are doc 263's display rules, which doc 264 rule 5 keeps for a disabled table. */
+function renderControl(
+  uischema: Record<string, unknown>,
+  data: Record<string, unknown> = {},
+  { readonly = true }: { readonly?: boolean } = {},
+) {
   const onChange = vi.fn<(data: Record<string, unknown>) => void>();
   const view = render(
     <JsonForms
@@ -49,6 +54,7 @@ function renderControl(uischema: Record<string, unknown>, data: Record<string, u
       renderers={defaults.renderers}
       cells={defaults.cells}
       onChange={({ data: next }) => onChange(next as Record<string, unknown>)}
+      readonly={readonly}
     />,
   );
   const field = () => view.container.querySelector<HTMLElement>('[data-slot="data-table-field"]');
@@ -75,7 +81,7 @@ const bodyCells = () =>
         .map((cell) => cell.textContent),
     );
 
-describe('data table control — default renderer (doc 263 rules 13-17)', () => {
+describe('data table control — default renderer, read-only (doc 263 rules 13-17, doc 264 rule 5)', () => {
   describe('dispatch', () => {
     it('draws a DataTable for an object array with no component, data-table, or an unknown component', () => {
       for (const options of [{}, { component: 'data-table' }, { component: 'carousel' }]) {

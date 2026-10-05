@@ -27,6 +27,7 @@ export type TargetKind =
   | 'rich-text'
   | 'data-table'
   | 'rich-content'
+  | 'table'
   | 'unknown';
 
 /** Each kind as the target line names it (rule 5). */
@@ -50,6 +51,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   'rich-text': 'Rich text',
   'data-table': 'Data table',
   'rich-content': 'Rich content',
+  table: 'Table',
   unknown: 'Element',
 });
 
@@ -198,6 +200,7 @@ const LAYOUT_KINDS: Readonly<Record<string, TargetKind>> = Object.freeze({
   HorizontalLayout: 'horizontal-layout',
   Separator: 'separator',
   RichContent: 'rich-content',
+  Table: 'table',
 });
 
 /** Rule 4: element types by name; Controls through the renderers' own predicates, then `options.component`. */

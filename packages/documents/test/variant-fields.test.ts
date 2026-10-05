@@ -101,6 +101,7 @@ describe('variantFieldItems (doc 262 rule 13a)', () => {
       'heading',
       'separator',
       'rich-content',
+      'table',
       'field:colour',
       'field:agree',
     ]);

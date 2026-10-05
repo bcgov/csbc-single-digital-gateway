@@ -33,8 +33,8 @@ describe('renderers/ui (doc 236)', () => {
     ] as const) {
       expect(Array.isArray(ui[key]), key).toBe(true);
     }
-    // Heading, Separator (doc 240) and Rich content (doc 250).
-    expect(ui.contentRenderers).toHaveLength(3);
+    // Heading, Separator (doc 240), Rich content (doc 250) and Table (doc 265).
+    expect(ui.contentRenderers).toHaveLength(4);
     // Checkbox, Switch (doc 237 rule 0), Input, Textarea (doc 239), the single choice (doc 244), the
     // multiple choice (doc 245), the number input (doc 248), the rich text field (doc 250) and the data table (doc 263)
     // live in ui; default and studio spread them.

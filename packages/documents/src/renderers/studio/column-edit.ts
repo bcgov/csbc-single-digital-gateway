@@ -9,4 +9,6 @@ export type ColumnEdit =
   | { kind: 'rename'; key: string; title: string }
   | { kind: 'retype'; key: string; type: AuthoredColumnType }
   | { kind: 'move'; key: string; to: number }
-  | { kind: 'remove'; key: string };
+  | { kind: 'remove'; key: string }
+  /** Changes a column's data key (doc 264 rule 9). */
+  | { kind: 'rekey'; key: string; to: string };

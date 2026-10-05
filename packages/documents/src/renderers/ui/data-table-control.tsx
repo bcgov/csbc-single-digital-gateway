@@ -2,7 +2,11 @@ import { and, rankWith, schemaMatches, uiTypeIs, type ControlProps } from '@json
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { DataTable, type DataTableColumnDef } from '@repo/ui/data-table';
 import { DataTableColumnHeader } from '@repo/ui/data-table-column-header';
-import { useMemo } from 'react';
+import { mdiPlus } from '@mdi/js';
+import { Icon } from '@mdi/react';
+import { Button } from '@repo/ui/button';
+import { useCallback, useMemo, useRef } from 'react';
+import { fillColumns, type FillSource, type WriteRows } from './data-table-cells';
 import { DataTableField } from './data-table-field';
 import {
   formatCell,
@@ -43,30 +47,54 @@ export function rowColumn(
   };
 }
 
-/** The read-only object array (rules 15-17): sortable headers, paginated rows; it never writes. */
+/**
+ * An object array (doc 263 rules 15-16, doc 264 rules 1-7): enabled, applicants fill its cells and add / delete rows;
+ * disabled, the read-only table — sortable, paginated, never writing.
+ */
 export function DataTableControl(props: ControlProps) {
-  const { data, schema } = props;
-  const columns = useMemo(
+  const { data, schema, enabled, handleChange, path } = props;
+  const rows = useMemo(() => tableRows(data), [data]);
+  const shape = useMemo(() => tableColumns(schema), [schema]);
+  const readOnlyColumns = useMemo(
     () =>
-      tableColumns(schema).map((column) =>
+      shape.map((column) =>
         rowColumn(column, ({ column: c }) => (
           <DataTableColumnHeader column={c} title={column.title} />
         )),
       ),
-    [schema],
+    [shape],
   );
-  const rows = useMemo(() => tableRows(data), [data]);
+  const write = useCallback<WriteRows>((next) => handleChange(path, next), [handleChange, path]);
+  const source = useRef<FillSource['current']>({ rows, write });
+  source.current = { rows, write };
+  const fillable = useMemo(() => fillColumns(shape, source), [shape]);
   return (
     <DataTableField props={props}>
-      {(wiring) => (
-        <DataTable
-          {...wiring}
-          columns={columns}
-          data={rows}
-          pageSize={DATA_TABLE_PAGE_SIZE}
-          emptyMessage="No rows."
-        />
-      )}
+      {(wiring) =>
+        enabled ? (
+          <div className="flex flex-col items-start gap-2">
+            <DataTable
+              {...wiring}
+              className="w-full"
+              columns={fillable}
+              data={rows}
+              emptyMessage="No rows yet."
+            />
+            <Button type="button" variant="outline" size="sm" onClick={() => write([...rows, {}])}>
+              <Icon path={mdiPlus} size="0.875rem" aria-hidden />
+              Add row
+            </Button>
+          </div>
+        ) : (
+          <DataTable
+            {...wiring}
+            columns={readOnlyColumns}
+            data={rows}
+            pageSize={DATA_TABLE_PAGE_SIZE}
+            emptyMessage="No rows."
+          />
+        )
+      }
     </DataTableField>
   );
 }

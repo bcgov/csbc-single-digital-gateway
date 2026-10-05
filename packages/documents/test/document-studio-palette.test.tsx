@@ -41,6 +41,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Heading',
       'Separator',
       'Rich content',
+      'Table',
       'Checkbox',
       'Switch',
       'Text',

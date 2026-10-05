@@ -11,6 +11,7 @@ import { richTextControlEntry } from './rich-text-control';
 import { separatorEntry } from './separator-renderer';
 import { singleChoiceControlEntry } from './single-choice-control';
 import { switchControlEntry } from './switch-control';
+import { tableEntry } from './table-renderer';
 import { textareaControlEntry } from './textarea-control';
 
 export type { RendererSet } from '../renderer-set';
@@ -21,6 +22,7 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
   headingEntry,
   separatorEntry,
   richContentEntry,
+  tableEntry,
 ];
 /**
  * The boolean controls (doc 237) — a Checkbox, or a Switch for `options.component: 'switch'` — and the string controls

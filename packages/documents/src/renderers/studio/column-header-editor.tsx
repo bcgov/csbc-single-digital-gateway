@@ -1,4 +1,10 @@
-import { mdiArrowLeft, mdiArrowRight, mdiDeleteOutline, mdiDotsVertical } from '@mdi/js';
+import {
+  mdiArrowLeft,
+  mdiArrowRight,
+  mdiDeleteOutline,
+  mdiDotsVertical,
+  mdiKeyVariant,
+} from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
 import {
@@ -12,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   COLUMN_TYPE_NAMES,
   COLUMN_TYPES,
@@ -20,6 +26,8 @@ import {
   type TableColumn,
 } from '../ui/object-array';
 import type { ColumnEdit } from './column-edit';
+import { ColumnKeyDialog } from './column-key-dialog';
+import { InlineTextInput } from './inline-text-input';
 import { STUDIO_INTERACTIVE } from './studio-element';
 
 const isAuthoredType = (value: unknown): value is AuthoredColumnType =>
@@ -34,18 +42,35 @@ export function ColumnHeaderEditor({
   index,
   count,
   onEdit,
+  keyProblem,
 }: {
   column: TableColumn;
   index: number;
   count: number;
   onEdit: (edit: ColumnEdit) => void;
+  /** Why the column can't take a data key (doc 264 rule 10). */
+  keyProblem: (from: string, to: string) => string | undefined;
 }) {
   const { key, title, type } = column;
+  const [rekeying, setRekeying] = useState(false);
   return (
     <div data-slot="column-header-editor" className="flex items-center gap-1">
-      <ColumnNameInput
-        title={title}
-        onRename={(next) => onEdit({ kind: 'rename', key, title: next })}
+      {rekeying && (
+        <ColumnKeyDialog
+          title={title}
+          columnKey={key}
+          problem={(to) => keyProblem(key, to)}
+          onSave={(to) => {
+            onEdit({ kind: 'rekey', key, to });
+            setRekeying(false);
+          }}
+          onClose={() => setRekeying(false)}
+        />
+      )}
+      <InlineTextInput
+        value={title}
+        label="Column name"
+        onCommit={(next) => onEdit({ kind: 'rename', key, title: next })}
       />
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -78,6 +103,10 @@ export function ColumnHeaderEditor({
             </DropdownMenuRadioGroup>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setRekeying(true)}>
+            <Icon path={mdiKeyVariant} size="0.875rem" aria-hidden />
+            Change data key…
+          </DropdownMenuItem>
           <DropdownMenuItem
             disabled={index === 0}
             onClick={() => onEdit({ kind: 'move', key, to: index - 1 })}
@@ -104,48 +133,5 @@ export function ColumnHeaderEditor({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
-}
-
-/**
- * The column's name, edited in place (rule 21): commits a changed, non-blank name on blur or Enter; Escape or a blank
- * name restores it. Follows a changed title only while it does not have focus, so the author's typing is never reset.
- */
-function ColumnNameInput({
-  title,
-  onRename,
-}: {
-  title: string;
-  onRename: (title: string) => void;
-}) {
-  const [draft, setDraft] = useState(title);
-  const input = useRef<HTMLInputElement>(null);
-  const cancelled = useRef(false);
-  useEffect(() => {
-    if (document.activeElement !== input.current) setDraft(title);
-  }, [title]);
-  const commit = () => {
-    const next = draft.trim();
-    if (cancelled.current || next === '' || next === title) setDraft(title);
-    else onRename(next);
-    cancelled.current = false;
-  };
-  return (
-    <input
-      ref={input}
-      aria-label="Column name"
-      value={draft}
-      size={Math.max(draft.length, 4)}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') input.current?.blur();
-        if (event.key === 'Escape') {
-          cancelled.current = true;
-          input.current?.blur();
-        }
-      }}
-      className={`${STUDIO_INTERACTIVE} min-w-0 rounded-sm bg-transparent px-1 py-0.5 font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring`}
-    />
   );
 }

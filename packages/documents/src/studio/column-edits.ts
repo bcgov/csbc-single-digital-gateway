@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { ColumnEdit } from '../renderers/studio/column-edit';
-import { isObjectArray } from '../renderers/ui/object-array';
+import { columnKeyProblem, isObjectArray } from '../renderers/ui/object-array';
 import type { Governance } from './capabilities/governance';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent } from './document-types';
 import { findById } from './element-ids';
@@ -71,6 +71,8 @@ function editedItems(
       return { ...items, properties: moved(columns, edit.key, edit.to) };
     case 'remove':
       return removed(items, columns, edit.key);
+    case 'rekey':
+      return rekeyed(items, columns, edit.key, edit.to);
   }
 }
 
@@ -123,5 +125,31 @@ function removed(
     ...others,
     properties: rest,
     ...(kept !== undefined && kept.length > 0 && { required: kept }),
+  };
+}
+
+/**
+ * The column renamed to `to` in place — order kept — with its `required` entry (doc 264 rules 9-11); refused when
+ * unchanged or invalid. Nothing else references a column key, so nothing cascades.
+ */
+function rekeyed(
+  items: Record<string, unknown>,
+  columns: Columns,
+  key: string,
+  to: string,
+): Record<string, unknown> | undefined {
+  const next = to.trim();
+  if (next === key || columnKeyProblem({ type: 'array', items }, key, next) !== undefined)
+    return undefined;
+  const properties = Object.fromEntries(
+    Object.entries(columns).map(([k, column]) => [k === key ? next : k, column]),
+  );
+  const { required } = items;
+  return {
+    ...items,
+    properties,
+    ...(Array.isArray(required) && {
+      required: required.map((k: unknown) => (k === key ? next : k)),
+    }),
   };
 }

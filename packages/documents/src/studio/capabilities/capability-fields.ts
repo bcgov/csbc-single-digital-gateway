@@ -67,7 +67,9 @@ export function settingChoices(target: InspectorTarget): { const: string; title:
     ...fieldsFor(target).map((field) => ({ const: field.key, title: field.label })),
     ...(target.property !== undefined ? [{ const: 'key', title: 'Data key' }] : []),
     ...(optionsTargetOf(target) !== undefined ? [{ const: 'options', title: 'Options' }] : []),
-    ...(target.kind === 'rich-content' ? [{ const: 'content', title: 'Content' }] : []),
+    ...(target.kind === 'rich-content' || target.kind === 'table'
+      ? [{ const: 'content', title: 'Content' }]
+      : []),
     // The data table's columns, edited in place on the canvas (doc 263 rule 30).
     ...(target.kind === 'data-table' ? [{ const: 'columns', title: 'Columns' }] : []),
     // The root is never a rule's element (doc 256 rule 13).

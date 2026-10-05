@@ -75,6 +75,23 @@ export function formatCell(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/** Doc 257's key alphabet: every generated `nanoid(8)` key already matches. */
+const KEY_ALPHABET = /^[A-Za-z0-9_-]+$/;
+
+/**
+ * Why the column `from` cannot take the data key `to` (doc 264 rule 10) — doc 257's rule against the COLUMN set — or
+ * `undefined` when it can, including when it is unchanged.
+ */
+export function columnKeyProblem(schema: unknown, from: string, to: string): string | undefined {
+  const key = to.trim();
+  if (key === '') return 'A key is required.';
+  if (!KEY_ALPHABET.test(key)) return 'Use letters, numbers, _ or -.';
+  if (key === '__proto__') return `${key} is reserved.`;
+  if (key !== from && tableColumns(schema).some((column) => column.key === key))
+    return `${key} is already used.`;
+  return undefined;
+}
+
 function columnType(type: unknown): ColumnType {
   return type === 'string' || type === 'number' || type === 'integer' || type === 'boolean'
     ? type

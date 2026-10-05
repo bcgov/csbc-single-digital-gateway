@@ -53,6 +53,9 @@ const OPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   text: 'headingText',
   description: 'formDescription',
   content: 'content',
+  // A Table's in-place edits are its Content (doc 265 rule 8).
+  headers: 'content',
+  rows: 'content',
 });
 
 /** The setting a `label` is on each element type: a Funnel's name, a Form's title, else a field's label. */

@@ -7,6 +7,7 @@ import { studioFormEntry } from './studio-form';
 import { studioHeadingEntry } from './studio-heading';
 import { studioRichContentEntry } from './studio-rich-content';
 import { studioSeparatorEntry } from './studio-separator';
+import { studioTableEntry } from './studio-table';
 import { withStudioElement } from './studio-element';
 import { studioGridEntry } from './studio-grid';
 import { studioHorizontalLayoutEntry } from './studio-horizontal-layout';
@@ -32,6 +33,7 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
   studioHeadingEntry,
   studioSeparatorEntry,
   studioRichContentEntry,
+  studioTableEntry,
   placeholderEntry,
 ].map((entry) => withStudioElement(entry));
 /**

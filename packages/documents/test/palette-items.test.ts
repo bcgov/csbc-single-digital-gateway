@@ -18,6 +18,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['heading', 'Heading', 'Content'],
       ['separator', 'Separator', 'Content'],
       ['rich-content', 'Rich content', 'Content'],
+      ['table', 'Table', 'Content'],
       ['checkbox', 'Checkbox', 'Fields'],
       ['switch', 'Switch', 'Fields'],
       ['text', 'Text', 'Fields'],

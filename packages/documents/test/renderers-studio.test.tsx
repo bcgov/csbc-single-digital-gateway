@@ -30,8 +30,8 @@ const formTitleOf = (container: HTMLElement) =>
 
 describe('renderers/studio (doc 236)', () => {
   it('wraps every spread default entry in StudioElement and outranks Heading and VerticalLayout', () => {
-    // Its own Heading, Separator (doc 240), Rich content (doc 250) and the placeholder.
-    expect(studio.contentRenderers).toHaveLength(defaults.contentRenderers.length + 4);
+    // Its own Heading, Separator (doc 240), Rich content (doc 250), Table (doc 265) and the placeholder.
+    expect(studio.contentRenderers).toHaveLength(defaults.contentRenderers.length + 5);
     // Its own VerticalLayout, Form, Grid (doc 260 rule 8) and HorizontalLayout (doc 261 rule 7) outrank the defaults.
     expect(studio.layoutRenderers).toHaveLength(defaults.layoutRenderers.length + 4);
     // Wrapped: same testers, different renderer components.

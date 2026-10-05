@@ -201,6 +201,7 @@ describe('DocumentStudio variants (doc 262)', () => {
       'Heading',
       'Separator',
       'Rich content',
+      'Table',
       'Email',
       'Note',
     ]);

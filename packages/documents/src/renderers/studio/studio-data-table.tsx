@@ -10,6 +10,7 @@ import { rowColumn } from '../ui/data-table-control';
 import { DataTableField } from '../ui/data-table-field';
 import {
   COLUMN_TYPE_NAMES,
+  columnKeyProblem,
   isObjectArray,
   tableColumns,
   type TableColumn,
@@ -55,7 +56,13 @@ export function StudioDataTable(props: ControlProps) {
   const sendRef = useRef(send);
   sendRef.current = send;
   const columns = useMemo(
-    () => studioColumns(tableColumns(props.schema), editable, (edit) => sendRef.current?.(edit)),
+    () =>
+      studioColumns(
+        tableColumns(props.schema),
+        editable,
+        (edit) => sendRef.current?.(edit),
+        (from, to) => columnKeyProblem(props.schema, from, to),
+      ),
     [props.schema, editable, sendRef],
   );
   return (
@@ -72,6 +79,7 @@ function studioColumns(
   columns: TableColumn[],
   editable: boolean,
   send: (edit: ColumnEdit) => void,
+  keyProblem: (from: string, to: string) => string | undefined,
 ): DataTableColumnDef<Row>[] {
   const defs = columns.map((column, index) => ({
     ...rowColumn(
@@ -83,6 +91,7 @@ function studioColumns(
               index={index}
               count={columns.length}
               onEdit={send}
+              keyProblem={keyProblem}
             />
           )
         : column.title,

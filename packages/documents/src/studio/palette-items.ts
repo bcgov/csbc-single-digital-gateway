@@ -10,6 +10,7 @@ import {
   mdiRadioboxMarked,
   mdiSelectMultiple,
   mdiTable,
+  mdiTableLarge,
   mdiTextBoxEditOutline,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
@@ -162,6 +163,21 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     keywords: ['paragraph', 'text', 'formatted', 'body'],
     // No content: the studio shows its grey placeholder, edited in place (doc 250 rule 15).
     create: () => ({ element: { id: newId(), type: 'RichContent' } }),
+  },
+  {
+    id: 'table',
+    label: 'Table',
+    icon: mdiTableLarge,
+    group: 'Content',
+    keywords: ['grid', 'rows', 'columns', 'static'],
+    // Authored content, no schema property: placeable in every variant (doc 265 rule 10).
+    create: () => ({
+      element: {
+        id: newId(),
+        type: 'Table',
+        options: { headers: ['Column 1', 'Column 2'], rows: [['', '']] },
+      },
+    }),
   },
   {
     id: 'checkbox',
