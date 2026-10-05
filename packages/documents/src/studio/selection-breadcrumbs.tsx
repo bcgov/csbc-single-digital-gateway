@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { Fragment, type ReactNode } from 'react';
-import type { PathSegment } from './selection-path';
+import type { PathSegment, SegmentKind } from './selection-path';
 
 /** Paths longer than this collapse to root › ⋯ › parent › current, as Form Studio's do (doc 186 rule 16). */
 const MAX_SEGMENTS = 4;
@@ -24,8 +24,11 @@ const LABEL_CLASS = 'block max-w-40 truncate';
 
 interface SelectionBreadcrumbsProps {
   segments: readonly PathSegment[];
-  /** A Form crumb selects its Form; the root crumb clears the selection (`null`). Conditions select nothing. */
-  onSelect: (formId: string | null) => void;
+  /**
+   * A Form crumb selects its Form; an element crumb its element on the page; the root crumb clears the selection
+   * (`null`). Conditions select nothing.
+   */
+  onSelect: (id: string | null, kind?: SegmentKind) => void;
 }
 
 /**
@@ -95,7 +98,7 @@ function Crumb({
           render={<button type="button" />}
           title={segment.label}
           className={className}
-          onClick={() => onSelect(segment.kind === 'form' ? segment.id : null)}
+          onClick={() => select(segment, onSelect)}
         >
           {content}
         </BreadcrumbLink>
@@ -155,7 +158,7 @@ function HiddenCrumbs({
               <DropdownMenuItem
                 key={segment.id}
                 title={segment.label}
-                onClick={() => onSelect(segment.kind === 'form' ? segment.id : null)}
+                onClick={() => select(segment, onSelect)}
               >
                 <span className={LABEL_CLASS}>{segment.label}</span>
               </DropdownMenuItem>
@@ -165,4 +168,10 @@ function HiddenCrumbs({
       </DropdownMenu>
     </BreadcrumbItem>
   );
+}
+
+/** What clicking a crumb selects: a Form or page element by id, else (the root) nothing. */
+function select(segment: PathSegment, onSelect: SelectionBreadcrumbsProps['onSelect']) {
+  if (segment.kind === 'form' || segment.kind === 'element') onSelect(segment.id, segment.kind);
+  else onSelect(null);
 }

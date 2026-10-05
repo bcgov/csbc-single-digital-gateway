@@ -1,3 +1,4 @@
+import { propertyAt, refOfScope } from '../../studio/property-ref';
 import type { UISchemaElement } from '@jsonforms/core';
 import { mdiContentCopy, mdiDeleteOutline, mdiFormatListBulleted, mdiSourceBranch } from '@mdi/js';
 import { ActionBar, ActionBarButton } from './action-bar';
@@ -109,15 +110,16 @@ export function elementName(uischema: UISchemaElement, schema: unknown): string 
   if (typeof element.label === 'string' && element.label !== '') return element.label;
   const text = element.options?.['text'];
   if (typeof text === 'string' && text !== '') return text;
-  const key =
-    typeof element.scope === 'string'
-      ? /^#\/properties\/([^/]+)$/.exec(element.scope)?.[1]
-      : undefined;
-  if (key !== undefined) {
-    const properties = (schema as { properties?: Record<string, { title?: unknown }> } | undefined)
-      ?.properties;
-    const title = properties?.[key]?.title;
-    return typeof title === 'string' && title !== '' ? title : key;
+  // A page field's or a record item field's property (doc 271): its title, else its key.
+  const ref = refOfScope(element.scope);
+  if (ref !== undefined) {
+    const property = isRecord(schema) ? propertyAt(schema, ref) : undefined;
+    const title = property?.['title'];
+    return typeof title === 'string' && title !== '' ? title : ref.key;
   }
   return TYPE_NAMES[uischema.type] ?? uischema.type;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

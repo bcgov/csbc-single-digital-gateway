@@ -1,6 +1,7 @@
 import { DEFAULT_LABEL } from './criteria';
 import type { Uischema } from './document-types';
-import { idOf } from './element-ids';
+import { elementName } from '../renderers/studio/element-actions';
+import { findById, idOf } from './element-ids';
 import {
   conditionsOf,
   edgesOf,
@@ -11,8 +12,11 @@ import {
   type FunnelEdge,
 } from './funnel-model';
 
-/** What a crumb names: the Funnel root, a Form (selectable), or a Condition passed through (never selectable). */
-export type SegmentKind = 'funnel' | 'form' | 'condition';
+/**
+ * What a crumb names: the Funnel root, a Form (selectable), a Condition passed through (never selectable), or an
+ * element on the focused page — a layout on the way down, or the selected element itself (selectable).
+ */
+export type SegmentKind = 'funnel' | 'form' | 'condition' | 'element';
 
 /** One crumb of the footer's selection path. */
 export interface PathSegment {
@@ -121,4 +125,46 @@ function formSegment(id: string, form: Uischema): PathSegment {
 function labelOf(element: { label?: unknown }, fallback: string): string {
   const label = element.label;
   return typeof label === 'string' && label !== '' ? label : fallback;
+}
+
+/**
+ * The footer path extended into the focused page: after the flow `path` (which must end at the focused Form), every
+ * element from the Form's child down to the page selection, each named as the author knows it. The flow path alone
+ * when nothing on the page is selected, the page is not the one the path ends at, or the selection is not on it.
+ */
+export function withPagePath(
+  path: PathSegment[] | null,
+  variant: Uischema | null,
+  schema: Record<string, unknown>,
+  focusedId: string | null,
+  pageSelectedId: string | null,
+): PathSegment[] | null {
+  if (path === null || variant === null || focusedId === null || pageSelectedId === null)
+    return path;
+  if (path.at(-1)?.id !== focusedId) return path;
+  const form = findById(variant, focusedId);
+  const chain = form === undefined ? undefined : chainTo(form, pageSelectedId);
+  if (chain === undefined || chain.length === 0) return path;
+  return [
+    ...path,
+    ...chain.map((element) => ({
+      id: idOf(element) ?? '',
+      label: elementName(element as never, schema),
+      kind: 'element' as const,
+    })),
+  ];
+}
+
+/** The elements below `node` down to (and including) the one with id `id`, outermost first; `undefined` if absent. */
+function chainTo(node: Uischema, id: string): Uischema[] | undefined {
+  const elements = node['elements'];
+  if (!Array.isArray(elements)) return undefined;
+  for (const child of elements) {
+    if (typeof child !== 'object' || child === null || Array.isArray(child)) continue;
+    const element = child as Uischema;
+    if (idOf(element) === id) return [element];
+    const below = chainTo(element, id);
+    if (below !== undefined) return [element, ...below];
+  }
+  return undefined;
 }

@@ -45,6 +45,7 @@ export function FormPageBody({
   canAddRule,
   governance,
   onSelectionChange,
+  selectedId,
 }: {
   label: string;
   page: FormPage | null;
@@ -77,6 +78,8 @@ export function FormPageBody({
   governance?: Governance | undefined;
   /** Told when a page element is selected or deselected (doc 238 rule 16b). */
   onSelectionChange?: ((id: string | null) => void) | undefined;
+  /** The page selection as the host holds it (the footer's crumbs); absent: the page owns it. */
+  selectedId?: string | null | undefined;
 }) {
   const scrolls = open && !closing;
   const layout = scrolls ? 'nowheel overflow-y-auto' : 'pointer-events-none overflow-hidden';
@@ -102,6 +105,7 @@ export function FormPageBody({
           canAddRule={canAddRule}
           governance={governance}
           onSelectionChange={onSelectionChange}
+          selectedId={selectedId}
         />
       )}
     </article>
@@ -124,6 +128,7 @@ function PageContent({
   canAddRule,
   governance,
   onSelectionChange,
+  selectedId,
 }: {
   page: FormPage;
   onEdit: ((id: string, patch: ElementPatch) => void) | undefined;
@@ -139,6 +144,7 @@ function PageContent({
   canAddRule: ((id: string) => boolean) | undefined;
   governance: Governance | undefined;
   onSelectionChange: ((id: string | null) => void) | undefined;
+  selectedId: string | null | undefined;
 }) {
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
   // The canvas ignores rules (doc 256 rule 7): with no answers, a rule would hide or disable the element being authored.
@@ -170,6 +176,7 @@ function PageContent({
       canAddRule={canAddRule}
       governance={governance}
       onSelectionChange={onSelectionChange}
+      selectedId={selectedId}
       enabled={onEdit !== undefined}
     >
       <DeselectOnBackground />

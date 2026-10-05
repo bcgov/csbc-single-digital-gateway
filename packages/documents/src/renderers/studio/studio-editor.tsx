@@ -91,6 +91,7 @@ export function StudioEditorProvider({
   canAddRule,
   governance,
   onSelectionChange,
+  selectedId: controlled,
   enabled = true,
   children,
 }: {
@@ -111,10 +112,16 @@ export function StudioEditorProvider({
    * arrow is safe.
    */
   onSelectionChange?: ((id: string | null) => void) | undefined;
+  /**
+   * The selection, when the host drives it too (the footer's element crumbs select on the page). Absent: the provider
+   * alone owns it. Either way every change is reported through `onSelectionChange`.
+   */
+  selectedId?: string | null | undefined;
   enabled?: boolean;
   children: ReactNode;
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [own, setSelectedId] = useState<string | null>(null);
+  const selectedId = controlled === undefined ? own : controlled;
   const report = useRef(onSelectionChange);
   report.current = onSelectionChange;
   const select = useMemo(

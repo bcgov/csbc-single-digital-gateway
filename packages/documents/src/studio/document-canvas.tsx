@@ -101,6 +101,8 @@ export interface DocumentCanvasProps {
   governance?: Governance | undefined;
   /** Told when an element on the focused page is selected or deselected (doc 238 rule 16b). */
   onPageSelect?: ((elementId: string | null) => void) | undefined;
+  /** The focused page's selection as the host holds it; absent: the page owns it alone. */
+  pageSelectedId?: string | null | undefined;
 }
 
 /**
@@ -132,6 +134,7 @@ export function DocumentCanvas({
   canAddRule,
   governance,
   onPageSelect,
+  pageSelectedId,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
   const graph = useMemo(() => canvasGraph(uischema, schema), [uischema, schema]);
@@ -187,6 +190,7 @@ export function DocumentCanvas({
     insert: onInsert ?? NO_INSERT,
     canRemoveElement: onRemoveElement !== undefined,
     selectElement: onPageSelect ?? NO_SELECT,
+    pageSelectedId,
     copy: onCopyElement,
     editOptions: onEditOptions,
     editColumns: onEditColumns,

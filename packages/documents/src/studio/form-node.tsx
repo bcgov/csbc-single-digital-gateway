@@ -25,6 +25,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
     move,
     canRemoveElement,
     selectElement,
+    pageSelectedId,
     copy,
     editOptions,
     editColumns,
@@ -81,6 +82,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
           onInsert={insert}
           onMove={move}
           onSelectionChange={selectElement}
+          selectedId={pageSelectedId}
           onCopy={copy}
           onEditOptions={editOptions}
           onEditColumns={editColumns}

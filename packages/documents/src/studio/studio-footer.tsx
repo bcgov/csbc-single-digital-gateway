@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { SelectionBreadcrumbs } from './selection-breadcrumbs';
-import type { PathSegment } from './selection-path';
+import type { PathSegment, SegmentKind } from './selection-path';
 import type { StudioStatus } from './use-document-studio';
 
 /** What the content area shows, without a document, for statuses other than `new`. */
@@ -23,7 +23,7 @@ export function StudioFooter({
   saveError,
 }: {
   path: PathSegment[] | null;
-  onSelect: (formId: string | null) => void;
+  onSelect: (id: string | null, kind?: SegmentKind) => void;
   saveError: string | null;
 }) {
   return (

@@ -59,6 +59,8 @@ export interface CanvasActions {
   canRemoveElement: boolean;
   /** Reports the focused page's element selection to the host (doc 238 rule 16b). */
   selectElement: (elementId: string | null) => void;
+  /** The focused page's element selection as the host holds it — the footer's crumbs can set it. */
+  pageSelectedId?: string | null | undefined;
 }
 
 export const CanvasActionsContext = createContext<CanvasActions | null>(null);
@@ -85,6 +87,7 @@ export function useEditActions(
     insert,
     canRemoveElement,
     selectElement,
+    pageSelectedId,
     copy,
     editOptions,
     editColumns,
@@ -148,6 +151,7 @@ export function useEditActions(
       },
       canRemoveElement,
       selectElement,
+      pageSelectedId,
       copy,
       editOptions,
       editColumns,
@@ -170,6 +174,7 @@ export function useEditActions(
       insert,
       canRemoveElement,
       selectElement,
+      pageSelectedId,
       copy,
       editOptions,
       editColumns,

@@ -23,10 +23,10 @@ import { useRuleEditor } from './rules/use-rule-editor';
 import { findById } from './element-ids';
 import { appendTarget } from './palette-insert';
 import { defaultPalette, uniqueItems, type PaletteResolver } from './palette-items';
-import { selectionPath } from './selection-path';
 import { STATUS_VIEWS, StudioFooter } from './studio-footer';
 import { browserDocumentStore } from './stub-documents';
 import { useDocumentStudio } from './use-document-studio';
+import { selectionPaths, useStudioSelection } from './use-studio-selection';
 import { useStudioEdits, useTemplates } from './use-studio-edits';
 import { useActiveVariant } from './variants/use-active-variant';
 import { StudioVariantContext } from './variants/variant-context';
@@ -60,9 +60,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
   const resolvedStore = store ?? browserDocumentStore();
   const studio = useDocumentStudio({ ...props, store: resolvedStore });
   const { draft, setContent } = studio;
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  // The focused page's element selection, for a palette click (doc 238 rule 16b). Stale ids are tolerated.
-  const [pageSelectedId, setPageSelectedId] = useState<string | null>(null);
+  const { selectedId, setSelectedId, pageSelectedId, setPageSelectedId, selectCrumb } =
+    useStudioSelection();
   const documentKey = draft?.ref?.documentId ?? (draft === null ? null : NEW);
   // Doc 262: the variant being edited — switching focuses it afresh, with nothing selected (rule 3).
   const { active, tabs } = useActiveVariant({
@@ -115,13 +114,13 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
   const [focus, setFocus] = useDocumentFocus(documentKey, variant?.['type']);
   const [mode, setMode] = useStudioMode(documentKey);
   const focusedId = variant === null ? null : resolveFocus(variant, focus);
-  // Derived, so a deleted Form or another document simply stops being selected (doc 232 rule 5). With nothing
-  // selected, a focused Form is selected by default (doc 233 rule 6).
-  const path =
-    variant === null
-      ? null
-      : (selectionPath(variant, selectedId) ?? selectionPath(variant, focusedId));
-  const shownSelection = path?.at(-1)?.id ?? null;
+  const { shownSelection, footerPath } = selectionPaths(
+    variant,
+    draft?.content.schema ?? {},
+    focusedId,
+    selectedId,
+    pageSelectedId,
+  );
   // The choice field whose options are being edited, and its dialog (doc 255).
   // The rule dialog, and the problem check the canvas and inspector draw the error state from (doc 256).
   const rules = useRuleEditor({
@@ -201,6 +200,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               canAddRule={rules.canAdd}
               governance={governance}
               onPageSelect={setPageSelectedId}
+              pageSelectedId={pageSelectedId}
             />
             {focusedId !== null && (
               <DocumentPalette
@@ -246,8 +246,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
       </main>
       <StudioFooter
         // Preview selects nothing, so it shows no breadcrumbs (doc 247 rule 12).
-        path={mode === 'preview' ? null : path}
-        onSelect={setSelectedId}
+        path={mode === 'preview' ? null : footerPath}
+        onSelect={selectCrumb}
         saveError={studio.saveError}
       />
       <NewDocumentDialog
