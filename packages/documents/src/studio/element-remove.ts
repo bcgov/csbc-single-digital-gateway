@@ -2,6 +2,7 @@ import type { DocumentContent, Uischema } from './document-types';
 import { DEFAULT_VARIANT, variantOf, withVariant } from './document-types';
 import { withCapabilities, withoutEntries } from './capabilities/capability-edits';
 import { idOf } from './element-ids';
+import { refOfScope, withOwner, type ItemRef } from './property-ref';
 
 /** A Control bound to a top-level schema property: the only binding a delete cleans up (doc 242 rule 6). */
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
@@ -27,13 +28,19 @@ export function removeElement(
       ? withVariant(content, next, variantName)
       : withCapabilities(withVariant(content, next, variantName), pruned);
   const stillBound = boundScopes(Object.values(withoutElement.variants));
-  const orphaned = removed
-    .flatMap(controlScopes)
+  const removedScopes = removed.flatMap(controlScopes);
+  const orphaned = removedScopes
     .map((scope) => PROPERTY_SCOPE.exec(scope)?.[1])
     .filter((key): key is string => key !== undefined && !isReferenced(key, stillBound));
-  return orphaned.length === 0
-    ? withoutElement
-    : { ...withoutElement, schema: withoutProperties(content.schema, orphaned) };
+  // Doc 271 rule 12: an item field's property goes once no Control in any variant binds its full scope.
+  const orphanedItems = removedScopes
+    .filter((scope) => !stillBound.includes(scope))
+    .map(refOfScope)
+    .filter((ref): ref is ItemRef => ref?.array !== undefined && !orphaned.includes(ref.array));
+  let schema = orphaned.length === 0 ? content.schema : withoutProperties(content.schema, orphaned);
+  for (const ref of orphanedItems)
+    schema = withOwner(schema, ref, (items) => withoutProperties(items, [ref.key]));
+  return schema === content.schema ? withoutElement : { ...withoutElement, schema };
 }
 
 /** `node` with the child whose id is `id` removed at any depth, collected into `removed`; the root is never a child. */

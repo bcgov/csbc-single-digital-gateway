@@ -3,6 +3,7 @@ import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { placeholderEntry } from './placeholder-renderer';
 import { studioDataTableEntry } from './studio-data-table';
+import { studioRecordEntry } from './studio-record';
 import { studioFormEntry } from './studio-form';
 import { studioHeadingEntry } from './studio-heading';
 import { studioRichContentEntry } from './studio-rich-content';
@@ -43,6 +44,8 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
 export const controlRenderers: RendererSet['controlRenderers'] = [
   ...defaults.controlRenderers.map((entry) => withStudioElement(entry, { inert: true })),
   withStudioElement(studioDataTableEntry),
+  // The record holds an editable layout, so it is not inert either (doc 271 rule 9).
+  withStudioElement(studioRecordEntry),
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [
   ...defaults.layoutRenderers,

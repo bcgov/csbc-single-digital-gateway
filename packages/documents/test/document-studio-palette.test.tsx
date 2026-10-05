@@ -53,6 +53,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Multi-select',
       'Checkbox group',
       'Data table',
+      'Record',
     ]);
   });
 

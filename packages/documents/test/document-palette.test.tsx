@@ -34,7 +34,8 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual([
       'Layout',
       'Content',
-      'Fields',
+      'Basic fields',
+      'Record fields',
     ]);
     // Each group's heading is its fold button (doc 252 rule 10); the items follow it.
     expect(within(groups[2]!).getAllByRole('button')[0]).toHaveAttribute('aria-expanded', 'true');
@@ -51,8 +52,11 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Radio group',
       'Multi-select',
       'Checkbox group',
-      'Data table',
     ]);
+    // Doc 271 rule 18: the object-array presentations in their own section.
+    expect(
+      [...groups[3]!.querySelectorAll('[data-palette-item]')].map((b) => b.textContent),
+    ).toEqual(['Data table', 'Record']);
   });
 
   it('keeps the search input compact', () => {
@@ -79,7 +83,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     fireEvent.change(search(), { target: { value: '  SWI ' } });
     expect(itemIds()).toEqual(['switch']);
     expect(screen.getAllByRole('region').map((g) => g.getAttribute('aria-label'))).toEqual([
-      'Fields',
+      'Basic fields',
     ]);
     fireEvent.change(search(), { target: { value: 'banner' } });
     expect(itemIds()).toEqual(['title']);
@@ -150,12 +154,14 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Multi-select',
       'Checkbox group',
       'Data table',
+      'Record',
     ];
     for (const name of fields) fireEvent.keyDown(itemNamed(name), { key: 'ArrowDown' });
+    expect(itemNamed('Record')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Record'), { key: 'ArrowUp' });
     expect(itemNamed('Data table')).toHaveFocus();
-    fireEvent.keyDown(itemNamed('Data table'), { key: 'ArrowUp' });
-    expect(itemNamed('Checkbox group')).toHaveFocus();
     for (const name of [
+      'Data table',
       'Checkbox group',
       'Multi-select',
       'Radio group',
@@ -240,13 +246,13 @@ describe('foldable palette groups (doc 252 rule 10)', () => {
 
   it('shows every matching group open while searching, then restores the folds', () => {
     render(<Folding />);
-    fireEvent.click(groupHeading('Fields'));
+    fireEvent.click(groupHeading('Basic fields'));
     fireEvent.change(search(), { target: { value: 'text' } });
-    expect(groupHeading('Fields')).toHaveAttribute('aria-expanded', 'true');
-    expect(groupHeading('Fields')).toBeDisabled();
+    expect(groupHeading('Basic fields')).toHaveAttribute('aria-expanded', 'true');
+    expect(groupHeading('Basic fields')).toBeDisabled();
     expect(itemNamed('Text area')).toBeInTheDocument();
 
     fireEvent.change(search(), { target: { value: '' } });
-    expect(groupHeading('Fields')).toHaveAttribute('aria-expanded', 'false');
+    expect(groupHeading('Basic fields')).toHaveAttribute('aria-expanded', 'false');
   });
 });

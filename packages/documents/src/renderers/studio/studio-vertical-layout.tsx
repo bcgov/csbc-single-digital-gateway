@@ -4,7 +4,7 @@ import { createContext, useContext, useRef, useState } from 'react';
 import { GAP_REM, layoutGap } from '../default/layout-gap';
 import { ChildDispatch, elementKey, type VerticalBodyProps } from '../default/vertical-layout';
 import { idOf, reorderElements } from './element-order';
-import { useInStudio, useStudioEditor } from './studio-editor';
+import { dropCheck, useInStudio, useStudioEditor } from './studio-editor';
 import { STUDIO_INTERACTIVE } from './studio-element';
 import { ParentGridFullContext } from './grid-full-context';
 import { useVerticalGrid } from './use-vertical-grid';
@@ -73,10 +73,7 @@ export function StudioVerticalGrid({
       editor.select(elementId);
     },
     acceptMoves: editor?.move !== undefined,
-    mayDrop:
-      editor?.governance === undefined || layoutId === undefined
-        ? undefined
-        : (source) => editor.governance?.mayDrop(layoutId, source) ?? true,
+    mayDrop: dropCheck(editor, layoutId),
     minRow: elements.length === 0 ? EMPTY_ROWS : 0,
     dropZone,
   });

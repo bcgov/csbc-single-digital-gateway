@@ -68,11 +68,18 @@ export function InspectorSettings({
         property={target.property}
         renameLocked={locked('key') || schemaReadOnly}
         problem={(next) =>
-          target.property === undefined ? undefined : keyProblem(content, target.property.key, next)
+          target.property === undefined
+            ? undefined
+            : keyProblem(content, target.property.key, next, target.property.array)
         }
         onRename={(next) => {
           if (target.property === undefined) return;
-          const renamed = renamePropertyKey(content, target.property.key, next);
+          const renamed = renamePropertyKey(
+            content,
+            target.property.key,
+            next,
+            target.property.array,
+          );
           if (renamed !== content) onContentChange(renamed);
         }}
       />

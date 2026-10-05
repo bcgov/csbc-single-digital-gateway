@@ -52,7 +52,7 @@ describe('variantFieldItems (doc 262 rule 13a)', () => {
   it("lists one Fields item per property default binds and the variant does not, in default's reading order", () => {
     const items = variantFieldItems(content(), 'Mobile');
     expect(items.map((item) => item.id)).toEqual(['field:colour', 'field:agree']);
-    expect(items.every((item) => item.group === 'Fields')).toBe(true);
+    expect(items.every((item) => item.group === 'Basic fields')).toBe(true);
     // An empty variant is offered every field default shows — never one default does not.
     expect(variantFieldItems(content(), 'Blank').map((item) => item.id)).toEqual([
       'field:colour',

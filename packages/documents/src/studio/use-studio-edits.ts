@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GridDrop } from '../renderers/default/grid-placement';
 import type { ColumnEdit } from '../renderers/studio/column-edit';
-import { governanceOf } from './capabilities/governance';
+import { governanceOf, type DropSource } from './capabilities/governance';
 import type { CapabilityMap } from './capabilities/capability-types';
 import { canvasColumnEdit } from './column-edits';
+import { mayDropIn } from './record-drop';
+import { moveAcross } from './record-move';
 import type { DocumentStore, DocumentSummary } from './document-store';
 import { DEFAULT_VARIANT, type DocumentContent } from './document-types';
 import { copyElement } from './element-copy';
@@ -72,7 +74,22 @@ export function useStudioEdits(
     },
     [draft, setContent, governance, variant],
   );
-  return { governance, insert, removeEl, copyEl, editColumns };
+  // A page element moved — across a record's boundary its properties go with it (doc 271 rule 14).
+  const moveEl = useCallback(
+    (elementId: string, layoutId: string, index: number, cell?: GridDrop) => {
+      if (draft === null) return;
+      const next = moveAcross(draft.content, elementId, layoutId, index, cell, variant);
+      if (next !== draft.content) setContent(next);
+    },
+    [draft, setContent, variant],
+  );
+  // Whether a layout may take a drop by the document's own rules (doc 271 rule 15) — asked before gridstack takes it.
+  const accepts = useCallback(
+    (layoutId: string, source: DropSource) =>
+      draft === null || mayDropIn(draft.content, items, layoutId, source, variant),
+    [draft, items, variant],
+  );
+  return { governance, insert, removeEl, copyEl, editColumns, moveEl, accepts };
 }
 
 /** Every stored template, refreshed each time the New document dialog opens (doc 259 rule 1). */

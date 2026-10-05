@@ -1,4 +1,4 @@
-import type { Governance } from '../../studio/capabilities/governance';
+import type { DropSource, Governance } from '../../studio/capabilities/governance';
 import type { GridDrop } from '../default/grid-placement';
 import type { ColumnEdit } from './column-edit';
 import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -48,6 +48,11 @@ export interface StudioEditor {
   editColumns?: ((id: string, edit: ColumnEdit) => void) | undefined;
   /** Opens the rule dialog for the element with that id (doc 256 rule 9). Absent: no Rules action. */
   editRule?: ((id: string) => void) | undefined;
+  /**
+   * Whether the layout `layoutId` may take that drop, by the document's own rules — records refuse nesting and unsafe
+   * moves (doc 271 rule 15). Asked BEFORE gridstack takes the drop. Absent: every drop the template allows.
+   */
+  accepts?: ((layoutId: string, source: DropSource) => boolean) | undefined;
   /** The fields an element's rule tests that it may not (doc 256 rule 5); absent: never in error. */
   ruleProblems?: ((id: string) => string[]) | undefined;
   /** Whether an element has any field above it a rule could test (doc 256 rule 9b); absent: always. */
@@ -81,6 +86,7 @@ export function StudioEditorProvider({
   editOptions,
   editColumns,
   editRule,
+  accepts,
   ruleProblems,
   canAddRule,
   governance,
@@ -96,6 +102,7 @@ export function StudioEditorProvider({
   editOptions?: StudioEditor['editOptions'];
   editColumns?: StudioEditor['editColumns'];
   editRule?: StudioEditor['editRule'];
+  accepts?: StudioEditor['accepts'];
   ruleProblems?: StudioEditor['ruleProblems'];
   canAddRule?: StudioEditor['canAddRule'];
   governance?: StudioEditor['governance'];
@@ -127,6 +134,7 @@ export function StudioEditorProvider({
       editOptions,
       editColumns,
       editRule,
+      accepts,
       ruleProblems,
       canAddRule,
       governance,
@@ -142,6 +150,7 @@ export function StudioEditorProvider({
       editOptions,
       editColumns,
       editRule,
+      accepts,
       ruleProblems,
       canAddRule,
       governance,
@@ -156,6 +165,21 @@ export function StudioEditorProvider({
       </StudioEditorContext.Provider>
     </StudioPresenceContext.Provider>
   );
+}
+
+/**
+ * A layout's drop check (doc 259 rules 10-11, doc 271 rule 15): the template's rules, then the document's own. `undefined`
+ * when neither has anything to say.
+ */
+export function dropCheck(
+  editor: StudioEditor | null,
+  layoutId: string | undefined,
+): ((source: DropSource) => boolean) | undefined {
+  if (editor === null || layoutId === undefined) return undefined;
+  const { governance, accepts } = editor;
+  if (governance === undefined && accepts === undefined) return undefined;
+  return (source) =>
+    (governance?.mayDrop(layoutId, source) ?? true) && (accepts?.(layoutId, source) ?? true);
 }
 
 /** Whether the pinned template lets the element's setting `key` change (doc 259 rule 14); ungoverned: always. */

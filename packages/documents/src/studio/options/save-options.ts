@@ -1,5 +1,6 @@
 import type { DocumentContent } from '../document-types';
 import { updateProperty } from '../inspector/schema-edits';
+import { propertyAt } from '../property-ref';
 import { cascadeClauses } from './option-cascade';
 import type { SavedEntry } from './option-draft';
 import type { OptionsTarget } from './options-target';
@@ -16,14 +17,12 @@ export function saveOptions(
   renames: ReadonlyMap<string | number, string | number>,
 ): DocumentContent {
   const oneOf = entries.map((entry) => ({ ...entry }));
-  const properties = content.schema['properties'] as
-    | Record<string, Record<string, unknown>>
-    | undefined;
-  const property = properties?.[target.propertyKey];
+  const ref = target.ref ?? { key: target.propertyKey };
+  const property = propertyAt(content.schema, ref);
   const patch = target.multiple
     ? { items: { ...(property?.['items'] as Record<string, unknown> | undefined), oneOf } }
     : { oneOf };
-  const withOptions = updateProperty(content, target.propertyKey, patch);
+  const withOptions = updateProperty(content, ref, patch);
   const variants = Object.entries(withOptions.variants).map(
     ([name, root]) => [name, cascadeClauses(root, target.propertyKey, renames)] as const,
   );

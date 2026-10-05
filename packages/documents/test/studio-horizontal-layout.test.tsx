@@ -199,7 +199,7 @@ describe('studio HorizontalLayout renderer (doc 261 rules 7-16)', () => {
       palette.setAttribute('data-palette-item', 'heading');
       const accepts = rowOf(container).gridstack.opts.acceptWidgets as (el: Element) => boolean;
       expect(accepts(palette)).toBe(false);
-      expect(asked).toContainEqual(['r', { palette: true }]);
+      expect(asked).toContainEqual(['r', expect.objectContaining({ palette: true })]);
     });
   });
 });

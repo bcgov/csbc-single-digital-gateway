@@ -6,13 +6,16 @@ import {
   type ChoiceType,
 } from '../../renderers/ui/choice-options';
 import type { InspectorTarget } from '../inspector/inspector-target';
-import { KIND_NAMES } from '../inspector/inspector-target';
+import type { PropertyRef } from '../property-ref';
+import { KIND_NAMES, refOf } from '../inspector/inspector-target';
 
 /** The field whose options are being edited (doc 255 rule 1). */
 export interface OptionsTarget {
   readonly elementId: string;
   /** The bound property key — what a Condition clause's `field` holds (rule 11). */
   readonly propertyKey: string;
+  /** Where the options are written — a record item field's property (doc 271 rule 16); absent: the root key. */
+  readonly ref?: PropertyRef;
   /** The field's label, for the dialog's subline. */
   readonly label: string;
   /** What the author placed: Select, Radio group, Multi-select, Checkbox group. */
@@ -49,6 +52,7 @@ export function optionsTargetOf(target: InspectorTarget | null): OptionsTarget |
   return {
     elementId: target.id,
     propertyKey: property.key,
+    ref: refOf(property),
     label: target.name ?? property.key,
     fieldName: KIND_NAMES[target.kind],
     multiple,

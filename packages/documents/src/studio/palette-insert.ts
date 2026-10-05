@@ -7,6 +7,8 @@ import { cellAfter, gridLanding, isGrid, replaceById, withDisplaced } from './gr
 import { isRow, landInRow } from './row-edits';
 import type { PaletteCreation } from './palette-items';
 import { boundKeys, keyOfScope } from './variants/variant-bindings';
+import { ownerOf, withOwner } from './property-ref';
+import { intoRecord, recordArrayOf } from './record-scope';
 
 /**
  * `content` with a placed item (doc 238 rule 15): its element spliced into the `elements` of the element whose id is
@@ -26,15 +28,21 @@ export function insertItem(
   cell?: GridDrop,
   variantName: string = DEFAULT_VARIANT,
 ): DocumentContent {
-  const current = isRecord(content.schema['properties']) ? content.schema['properties'] : {};
-  const added = creation.properties ?? {};
-  if (Object.keys(added).some((key) => Object.hasOwn(current, key))) return content;
   const original = variantOf(content, variantName);
-  if (variantName !== DEFAULT_VARIANT && !mayPlaceInVariant(original, creation)) return content;
+  // Doc 271 rule 11: into a record's item form, fields become ITEM properties with item scopes.
+  const array = recordArrayOf(original, layoutId);
+  const placed = array === undefined ? creation : intoRecord(creation, array);
+  if (placed === undefined) return content;
+  const owner =
+    (array === undefined ? content.schema : ownerOf(content.schema, { array, key: '' })) ?? {};
+  const current = isRecord(owner['properties']) ? owner['properties'] : {};
+  const added = placed.properties ?? {};
+  if (Object.keys(added).some((key) => Object.hasOwn(current, key))) return content;
+  if (variantName !== DEFAULT_VARIANT && !mayPlaceInVariant(original, placed)) return content;
   // Doc 260 rule 19: the items moved out of the arrival's way, then the arrival — one edit.
   const variant = withDisplaced(original, layoutId, cell?.displaced);
   const layout = findById(variant, layoutId);
-  let { element } = creation;
+  let { element } = placed;
   let at = index;
   if (layout !== undefined && isGrid(layout)) {
     const landing = gridLanding(layout, cell === undefined ? undefined : { x: cell.x, y: cell.y });
@@ -52,10 +60,14 @@ export function insertItem(
   if (next === original) return content;
   const withElement = withVariant(content, next, variantName);
   if (Object.keys(added).length === 0) return withElement;
-  return {
-    ...withElement,
-    schema: { ...content.schema, properties: { ...current, ...added } },
-  };
+  const schema =
+    array === undefined
+      ? { ...content.schema, properties: { ...current, ...added } }
+      : withOwner(content.schema, { array, key: '' }, (items) => ({
+          ...items,
+          properties: { ...current, ...added },
+        }));
+  return { ...withElement, schema };
 }
 
 /**

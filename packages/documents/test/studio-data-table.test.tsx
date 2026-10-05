@@ -288,7 +288,7 @@ describe('studio data table (doc 263 rules 18-24, 27-31)', () => {
 
     it('creates a fresh Data table palette item with one Column 1 text column', () => {
       const item = DEFAULT_PALETTE_ITEMS.find((candidate) => candidate.id === 'data-table')!;
-      expect(item).toMatchObject({ label: 'Data table', group: 'Fields' });
+      expect(item).toMatchObject({ label: 'Data table', group: 'Record fields' });
       const [a, b] = [item.create(), item.create()];
       const [keyA] = Object.keys(a.properties!);
       const [keyB] = Object.keys(b.properties!);

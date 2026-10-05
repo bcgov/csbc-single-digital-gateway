@@ -333,7 +333,7 @@ describe('studio Grid renderer (doc 260 rules 8-20)', () => {
       });
       const accepts = gridOf(container).gridstack.opts.acceptWidgets as (el: Element) => boolean;
       expect(accepts(paletteItem())).toBe(false);
-      expect(asked).toContainEqual(['g', { palette: true }]);
+      expect(asked).toContainEqual(['g', expect.objectContaining({ palette: true })]);
     });
   });
 });

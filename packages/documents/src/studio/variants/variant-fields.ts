@@ -1,12 +1,14 @@
 import { mdiFormTextbox } from '@mdi/js';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent, type Uischema } from '../document-types';
-import { newId } from '../element-ids';
+import { newId, withFreshIds } from '../element-ids';
+import { isObjectArray } from '../../renderers/ui/object-array';
+import { RECORD_FIELDS_GROUP } from '../record-palette-items';
 import { DEFAULT_PALETTE_ITEMS, type PaletteItem } from '../palette-items';
 import { boundKeys, controlsOf, isRecord, keyOfScope, scopeOf } from './variant-bindings';
 import { titleOf } from './variant-problems';
 
 /** The palette group a variant's fields list under — the default palette's own (doc 262 rule 13a). */
-export const FIELDS_GROUP = 'Fields';
+export const FIELDS_GROUP = 'Basic fields';
 
 /**
  * The palette for `variant` (doc 262 rule 13a). Default keeps `items` as resolved. Elsewhere every item whose creation
@@ -40,11 +42,15 @@ export function variantFieldItems(content: DocumentContent, variant: string): Pa
     .map(([key, control]) => {
       const property = properties[key] as Record<string, unknown>;
       const options = placedOptions(control['options']);
+      // A record brings default's item form (doc 271 rule 1), every element under a fresh id.
+      const elements = Array.isArray(control['elements'])
+        ? (control['elements'] as unknown[]).filter(isRecord)
+        : undefined;
       return {
         id: `field:${key}`,
         label: titleOf(property, key),
         icon: iconFor(property, options),
-        group: FIELDS_GROUP,
+        group: isObjectArray(property) ? RECORD_FIELDS_GROUP : FIELDS_GROUP,
         keywords: [key],
         create: () => ({
           element: {
@@ -52,6 +58,7 @@ export function variantFieldItems(content: DocumentContent, variant: string): Pa
             type: 'Control',
             scope: scopeOf(key),
             ...(options !== undefined && { options: structuredClone(options) }),
+            ...(elements !== undefined && { elements: elements.map(withFreshIds) }),
           },
         }),
       };

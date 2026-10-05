@@ -14,7 +14,8 @@ import type { CapabilityMap } from './capability-types';
 // pinned template's Implementation Rules; `undefined` (no rules) means ungoverned: everything allowed.
 
 /** What a drop brings into a layout: a new palette item, or an element moved from another layout. */
-export type DropSource = { palette: true } | { elementId: string };
+/** What a drag brings: a palette item (its id, when the drag carries one — doc 271 rule 15) or a moved element. */
+export type DropSource = { palette: true; itemId?: string } | { elementId: string };
 
 export interface Governance {
   /** A new child may be added to the layout (palette, Funnel add). */

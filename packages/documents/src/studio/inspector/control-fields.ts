@@ -13,7 +13,8 @@ import {
   WHOLE_NUMBER,
   type InspectorField,
 } from './inspector-field';
-import type { InspectorTarget, TargetKind } from './inspector-target';
+import type { PropertyRef } from '../property-ref';
+import { refOf, type InspectorTarget, type TargetKind } from './inspector-target';
 import { setRequired, updateProperty } from './schema-edits';
 
 const CONTROL_KINDS: TargetKind[] = [
@@ -28,10 +29,16 @@ const CONTROL_KINDS: TargetKind[] = [
   'checkbox-group',
   'rich-text',
   'data-table',
+  'record',
 ];
 const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
 const BOOLEAN_KINDS: TargetKind[] = ['checkbox', 'switch'];
-const SINGLE_PRESENTATION: ReadonlySet<TargetKind> = new Set(['number', 'rich-text', 'data-table']);
+const SINGLE_PRESENTATION: ReadonlySet<TargetKind> = new Set([
+  'number',
+  'rich-text',
+  'data-table',
+  'record',
+]);
 
 /**
  * Display-as variants per family, the default first (doc 249 rule 7): the default's `component` is what the palette
@@ -60,7 +67,9 @@ const familyOf = (kind: TargetKind) =>
   FAMILIES.find((family) => family.some(([k]) => k === kind)) ?? [];
 
 /** The bound property's key — every control field applies only with one. */
-const keyOf = (t: InspectorTarget) => t.property?.key ?? '';
+/** The bound property's reference — a page key, or a record item field's (doc 271). */
+const keyOf = (t: InspectorTarget): PropertyRef =>
+  t.property === undefined ? { key: '' } : refOf(t.property);
 const keyword = (t: InspectorTarget, name: string) => t.property?.schema[name];
 
 /** A field over one schema keyword of the bound property. */

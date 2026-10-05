@@ -1,4 +1,5 @@
 import {
+  DEFAULT_ADD_ITEM_LABEL,
   DEFAULT_ADD_LABEL,
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -13,14 +14,19 @@ import {
   WHOLE_NUMBER,
   type InspectorField,
 } from './inspector-field';
-import type { InspectorTarget } from './inspector-target';
+import type { PropertyRef } from '../property-ref';
+import { refOf, type InspectorTarget } from './inspector-target';
 import { updateProperty } from './schema-edits';
 
 // Doc 266 rules 7-9: the options the object-array table reads, for the `data-table` kind only.
 
 const applies = isKind('data-table');
+/** A record shares the row options (doc 271 rule 17), but has no pages and calls its rows items. */
+const appliesToArrays = isKind('data-table', 'record');
 const SMALL_SWITCH = Object.freeze({ component: 'switch', size: 'sm' });
-const keyOf = (t: InspectorTarget) => t.property?.key ?? '';
+/** The bound property's reference — a page key, or a record item field's (doc 271). */
+const keyOf = (t: InspectorTarget): PropertyRef =>
+  t.property === undefined ? { key: '' } : refOf(t.property);
 
 /** A row-count keyword on the property — the schema, so default-variant only (doc 262). Cleared removes it. */
 function rowLimit(key: string, label: string, keyword: 'minItems' | 'maxItems'): InspectorField {
@@ -28,7 +34,7 @@ function rowLimit(key: string, label: string, keyword: 'minItems' | 'maxItems'):
     key,
     section: 'Validation',
     label,
-    applies,
+    applies: appliesToArrays,
     schema: () => WHOLE_NUMBER,
     read: (t) => t.property?.schema[keyword],
     write: (content, t, value) => updateProperty(content, keyOf(t), { [keyword]: absentIf(value) }),
@@ -42,7 +48,7 @@ function allowRows(key: string, label: string, option: 'addRows' | 'deleteRows')
     key,
     section: 'Appearance',
     label,
-    applies,
+    applies: appliesToArrays,
     schema: () => BOOLEAN,
     options: SMALL_SWITCH,
     read: (t) => optionOf(t, option) !== false,
@@ -51,27 +57,38 @@ function allowRows(key: string, label: string, option: 'addRows' | 'deleteRows')
   };
 }
 
+/** The Add button's label (doc 266 rule 8, doc 271 rule 17): blank or the default writes nothing. */
+function addLabelField(
+  key: string,
+  label: string,
+  kind: 'data-table' | 'record',
+  fallback: string,
+): InspectorField {
+  return {
+    key,
+    section: 'Appearance',
+    label,
+    applies: isKind(kind),
+    schema: () => STRING,
+    options: { placeholder: fallback },
+    // Never normalised on read: a trimmed read would eat the space just typed (doc 249).
+    read: (t) => optionOf(t, 'addLabel'),
+    write: (content, t, value) => {
+      const text = absentIf(value);
+      return patchElement(content, t, {
+        options: { addLabel: text === fallback ? undefined : text },
+      });
+    },
+  };
+}
+
 export const DATA_TABLE_FIELDS: readonly InspectorField[] = Object.freeze([
   rowLimit('minRows', 'Minimum rows', 'minItems'),
   rowLimit('maxRows', 'Maximum rows', 'maxItems'),
   allowRows('addRows', 'Allow adding rows', 'addRows'),
   allowRows('deleteRows', 'Allow deleting rows', 'deleteRows'),
-  {
-    key: 'addLabel',
-    section: 'Appearance',
-    label: 'Add row label',
-    applies,
-    schema: () => STRING,
-    options: { placeholder: DEFAULT_ADD_LABEL },
-    // Never normalised on read: a trimmed read would eat the space just typed (doc 249).
-    read: (t) => optionOf(t, 'addLabel'),
-    write: (content, t, value) => {
-      const label = absentIf(value);
-      return patchElement(content, t, {
-        options: { addLabel: label === DEFAULT_ADD_LABEL ? undefined : label },
-      });
-    },
-  },
+  addLabelField('addLabel', 'Add row label', 'data-table', DEFAULT_ADD_LABEL),
+  addLabelField('addItemLabel', 'Add item label', 'record', DEFAULT_ADD_ITEM_LABEL),
   {
     key: 'pageSize',
     section: 'Appearance',

@@ -12,9 +12,7 @@ import { withGridItem } from '../renderers/studio/grid-order';
 import { cellAfter, gridLanding, isGrid } from './grid-edits';
 import { copyInRow, isRow, rowHasRoom } from './row-edits';
 import { holdsControl } from './variants/variant-bindings';
-
-/** A Control bound to a top-level schema property (doc 242 rule 6's binding). */
-const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
+import { refOfScope, scopeOf, withOwner, type PropertyRef } from './property-ref';
 
 /** What a copy produced: the new content, and the copy's id so the studio can select it. */
 export interface CopyResult {
@@ -103,12 +101,8 @@ function cloned(element: Uischema, keys: Map<string, string>, ids: Map<string, s
   const old = idOf(element);
   if (old !== undefined) ids.set(old, copy['id'] as string);
   const scope = copy['scope'];
-  const key = typeof scope === 'string' ? PROPERTY_SCOPE.exec(scope)?.[1] : undefined;
-  if (copy['type'] === 'Control' && key !== undefined) {
-    const fresh = keys.get(key) ?? nanoid(8);
-    keys.set(key, fresh);
-    copy['scope'] = `#/properties/${fresh}`;
-  }
+  const ref = copy['type'] === 'Control' ? refOfScope(scope) : undefined;
+  if (ref !== undefined) copy['scope'] = scopeOf(rekeyed(ref, keys));
   const elements = copy['elements'];
   if (Array.isArray(elements)) {
     copy['elements'] = elements.map((child: unknown) =>
@@ -118,8 +112,44 @@ function cloned(element: Uischema, keys: Map<string, string>, ids: Map<string, s
   return copy;
 }
 
-/** `schema` with each re-keyed property copied under its new key, required when the original is. */
+/**
+ * A copied Control's new property reference (doc 254 rule 6, doc 271 rule 13). A page field gets a fresh key. An item
+ * field inside a record copied WITH it keeps its key under the record's new array; one copied alone gets a fresh key
+ * in the same array. Recorded in `keys` as `key` (page) or `array/key` (item), so shared properties share the copy.
+ */
+function rekeyed(ref: PropertyRef, keys: Map<string, string>): PropertyRef {
+  if (ref.array === undefined) {
+    const fresh = keys.get(ref.key) ?? nanoid(8);
+    keys.set(ref.key, fresh);
+    return { key: fresh };
+  }
+  const array = keys.get(ref.array);
+  if (array !== undefined) return { array, key: ref.key };
+  const id = `${ref.array}/${ref.key}`;
+  const fresh = keys.get(id) ?? nanoid(8);
+  keys.set(id, fresh);
+  return { array: ref.array, key: fresh };
+}
+
+/**
+ * `schema` with each re-keyed property copied under its new key, required when the original is — a page property at
+ * the root, an item property (`array/key`) in its array's `items` (doc 271 rule 13).
+ */
 function withKeys(
+  schema: Record<string, unknown>,
+  keys: ReadonlyMap<string, string>,
+): Record<string, unknown> {
+  const items = [...keys].filter(([old]) => old.includes('/'));
+  let next = withRootKeys(schema, new Map([...keys].filter(([old]) => !old.includes('/'))));
+  for (const [old, fresh] of items) {
+    const [array, key] = old.split('/') as [string, string];
+    next = withOwner(next, { array, key }, (owner) => withRootKeys(owner, new Map([[key, fresh]])));
+  }
+  return next;
+}
+
+/** `schema` (an object schema: the root, or an array's `items`) with each re-keyed property copied in place. */
+function withRootKeys(
   schema: Record<string, unknown>,
   keys: ReadonlyMap<string, string>,
 ): Record<string, unknown> {

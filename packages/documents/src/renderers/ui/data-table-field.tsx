@@ -18,9 +18,12 @@ export interface DataTableWiring {
 export function DataTableField({
   props,
   children,
+  component = 'data-table',
 }: {
   props: ControlProps;
   children: (wiring: DataTableWiring) => ReactNode;
+  /** The presentation it holds, as `data-component` (doc 271: a record shares the shell). */
+  component?: 'data-table' | 'record';
 }) {
   const { path, id, label, required, uischema, schema, visible } = props;
   if (!visible) return null;
@@ -33,7 +36,7 @@ export function DataTableField({
     ...(label === '' && { 'aria-label': path.split('.').at(-1) ?? path }),
   });
   return (
-    <Field data-slot="data-table-field" data-component="data-table">
+    <Field data-slot="data-table-field" data-component={component}>
       {label !== '' && (
         <FieldLabel id={labelId}>
           {label}

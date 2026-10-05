@@ -26,6 +26,17 @@ export function findById(node: Uischema, id: string): Uischema | undefined {
   return undefined;
 }
 
+/** A deep copy of `node` with a NEW id on it and on every element under `elements` (any depth). */
+export function withFreshIds(node: Uischema): Uischema {
+  const copy: Uischema = { ...structuredClone(node), id: newId() };
+  const elements = copy['elements'];
+  if (Array.isArray(elements))
+    copy['elements'] = elements.map((child: unknown) =>
+      isElement(child) ? withFreshIds(child) : child,
+    );
+  return copy;
+}
+
 function isElement(value: unknown): value is Uischema {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

@@ -1,4 +1,4 @@
-import type { Governance } from './capabilities/governance';
+import type { DropSource, Governance } from './capabilities/governance';
 import type { GridDrop } from '../renderers/default/grid-placement';
 import type { ColumnEdit } from '../renderers/studio/column-edit';
 import { createContext, useContext, useMemo } from 'react';
@@ -45,6 +45,8 @@ export interface CanvasActions {
   editOptions?: ((elementId: string) => void) | undefined;
   /** Edits a page object array's columns (doc 263 rule 27); absent: the studio table is never editable. */
   editColumns?: ((elementId: string, edit: ColumnEdit) => void) | undefined;
+  /** Whether a layout may take a drop, by the document's own rules (doc 271 rule 15); absent: all. */
+  accepts?: ((layoutId: string, source: DropSource) => boolean) | undefined;
   /** Opens the rule dialog for a page element (doc 256 rule 9); absent: no Rules action. */
   editRule?: ((elementId: string) => void) | undefined;
   /** The fields a page element's rule may not test (doc 256 rule 5); absent: never in error. */
@@ -86,11 +88,21 @@ export function useEditActions(
     copy,
     editOptions,
     editColumns,
+    accepts,
+    moveContent,
     editRule,
     ruleProblems,
     canAddRule,
     governance,
-  }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable' | 'canAddNode'>,
+  }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable' | 'canAddNode'> & {
+    /**
+     * The host's content-level move (doc 271 rule 14): a field crossing into or out of a record moves its property too,
+     * which a uischema-only move cannot. Absent: the uischema move.
+     */
+    moveContent?:
+      | ((id: string, layoutId: string, index: number, cell?: GridDrop) => void)
+      | undefined;
+  },
 ): CanvasActions {
   return useMemo(
     () => ({
@@ -126,6 +138,10 @@ export function useEditActions(
         if (governance !== undefined && !governance.canMove(id, layoutId)) return;
         // Doc 260 rule 19: moving items out of the arrival's way is a reorder the template may forbid.
         const drop = governance?.canReorder(layoutId) === false ? withoutDisplaced(cell) : cell;
+        if (moveContent !== undefined) {
+          moveContent(id, layoutId, index, drop);
+          return;
+        }
         const next = moveElement(uischema, id, layoutId, index, drop);
         // A refused move, or one to where the element already is, is not an edit.
         if (next !== uischema) onChange(next);
@@ -135,6 +151,7 @@ export function useEditActions(
       copy,
       editOptions,
       editColumns,
+      accepts,
       editRule,
       ruleProblems,
       canAddRule,
@@ -156,6 +173,8 @@ export function useEditActions(
       copy,
       editOptions,
       editColumns,
+      accepts,
+      moveContent,
       editRule,
       ruleProblems,
       canAddRule,

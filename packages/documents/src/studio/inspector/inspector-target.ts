@@ -5,6 +5,7 @@ import { isRichTextProperty } from '../../renderers/ui/rich-text-value';
 import { isPlainString } from '../../renderers/ui/string-options';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent, type Uischema } from '../document-types';
 import { findById, idOf } from '../element-ids';
+import { propertyAt, refOfScope, requiredAt, scopeOf, type PropertyRef } from '../property-ref';
 
 /** What an inspected element is (doc 249 rule 4). */
 export type TargetKind =
@@ -26,6 +27,7 @@ export type TargetKind =
   | 'checkbox-group'
   | 'rich-text'
   | 'data-table'
+  | 'record'
   | 'rich-content'
   | 'table'
   | 'unknown';
@@ -50,6 +52,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   'checkbox-group': 'Checkbox group',
   'rich-text': 'Rich text',
   'data-table': 'Data table',
+  record: 'Record',
   'rich-content': 'Rich content',
   table: 'Table',
   unknown: 'Element',
@@ -58,6 +61,8 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
 /** The schema property a Control binds (`#/properties/<key>`). */
 export interface BoundProperty {
   key: string;
+  /** Set for a record item field (doc 271): its property is `items.properties.<key>` of this array property. */
+  array?: string;
   schema: Record<string, unknown>;
   required: boolean;
   /** How many Controls in the variant bind this property (rule 10). */
@@ -159,26 +164,29 @@ export function parentOf(node: Uischema, id: string): Uischema | undefined {
   return undefined;
 }
 
-const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
-
-/** The property a Control's scope names, when the schema has it. */
+/** The property a Control's scope names — a page field's, or a record item field's (doc 271) — when the schema has it. */
 function boundProperty(
   content: DocumentContent,
   variant: string,
   control: Uischema,
 ): BoundProperty | undefined {
-  const scope = control['scope'];
-  const key = typeof scope === 'string' ? PROPERTY_SCOPE.exec(scope)?.[1] : undefined;
-  const properties = recordOf(content.schema['properties']);
-  const schema = key === undefined ? undefined : recordOf(properties?.[key]);
-  if (key === undefined || schema === undefined) return undefined;
-  const required = content.schema['required'];
+  const ref = refOfScope(control['scope']);
+  const schema = ref === undefined ? undefined : propertyAt(content.schema, ref);
+  if (ref === undefined || schema === undefined) return undefined;
   return {
-    key,
+    key: ref.key,
+    ...(ref.array !== undefined && { array: ref.array }),
     schema,
-    required: Array.isArray(required) && required.includes(key),
-    shared: countBinding(variantOf(content, variant), scope as string),
+    required: requiredAt(content.schema, ref),
+    shared: countBinding(variantOf(content, variant), scopeOf(ref)),
   };
+}
+
+/** The property reference a target's writes go to (doc 271). */
+export function refOf(property: BoundProperty): PropertyRef {
+  return property.array === undefined
+    ? { key: property.key }
+    : { array: property.array, key: property.key };
 }
 
 function countBinding(node: Uischema, scope: string): number {
@@ -211,7 +219,7 @@ function kindOf(element: Uischema, property: BoundProperty | undefined): TargetK
   const component = recordOf(element['options'])?.['component'];
   const { schema } = property;
   if (isRichTextProperty(schema)) return 'rich-text';
-  if (isObjectArray(schema)) return 'data-table';
+  if (isObjectArray(schema)) return component === 'record' ? 'record' : 'data-table';
   if (schema['type'] === 'boolean') return component === 'switch' ? 'switch' : 'checkbox';
   if (isPlainString(schema)) return component === 'textarea' ? 'textarea' : 'text';
   if (isPlainNumber(schema)) return 'number';

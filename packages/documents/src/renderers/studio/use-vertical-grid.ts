@@ -252,7 +252,12 @@ export function acceptsFor(
   // Doc 259 rules 10-11: the template's rules decide HERE too, for the same ghost-item reason.
   const permits = (source: DropSource) => mayDrop.current?.(source) ?? true;
   return (el) => {
-    if (el.hasAttribute('data-palette-item')) return permits({ palette: true });
+    if (el.hasAttribute('data-palette-item')) {
+      const itemId = el.getAttribute('data-palette-item');
+      return permits(
+        itemId === null || itemId === '' ? { palette: true } : { palette: true, itemId },
+      );
+    }
     if (!acceptMoves.current || !el.classList.contains('grid-stack-item')) return false;
     const node = (el as GridItemHTMLElement).gridstackNode;
     const id = node === undefined ? null : authoredId(node);

@@ -1,17 +1,28 @@
 import type { DocumentContent, Uischema } from '../document-types';
 import { conditionsOf, withFunnel, type FunnelCondition } from '../funnel-model';
+import { ownerOf, propertyAt, scopeOf, withOwner } from '../property-ref';
 import { recordOf } from './inspector-target';
 
 /** The nanoid alphabet: every generated key is already valid (doc 257 rule 10). */
 const KEY_ALPHABET = /^[A-Za-z0-9_-]+$/;
 
-/** Why `to` cannot replace `from` (rule 10), or `undefined` when it can — including when it is unchanged. */
-export function keyProblem(content: DocumentContent, from: string, to: string): string | undefined {
+/**
+ * Why `to` cannot replace `from` (rule 10), or `undefined` when it can — including when it is unchanged. A record
+ * item field (`array` given, doc 271 rule 16) must be unique among its array's `items.properties` instead.
+ */
+export function keyProblem(
+  content: DocumentContent,
+  from: string,
+  to: string,
+  array?: string,
+): string | undefined {
   const key = to.trim();
   if (key === '') return 'A key is required.';
   if (!KEY_ALPHABET.test(key)) return 'Use letters, numbers, _ or -.';
   if (key === '__proto__') return `${key} is reserved.`;
-  if (key !== from && Object.hasOwn(recordOf(content.schema['properties']) ?? {}, key))
+  const owner =
+    array === undefined ? content.schema : ownerOf(content.schema, { array, key: from });
+  if (key !== from && Object.hasOwn(recordOf(owner?.['properties']) ?? {}, key))
     return `${key} is already used.`;
   return undefined;
 }
@@ -25,7 +36,9 @@ export function renamePropertyKey(
   content: DocumentContent,
   from: string,
   to: string,
+  array?: string,
 ): DocumentContent {
+  if (array !== undefined) return renameItemKey(content, array, from, to);
   const key = to.trim();
   const properties = recordOf(content.schema['properties']);
   if (key === from || properties === undefined || !Object.hasOwn(properties, from)) return content;
@@ -134,4 +147,44 @@ function renameInCondition(condition: FunnelCondition, from: string, to: string)
     };
   });
   return changed ? { ...condition, options: { ...condition.options, rows } } : condition;
+}
+
+/**
+ * Doc 271 rule 16: a record item field's key renamed — in its array's `items.properties` (order kept) and
+ * `items.required`, and every Control bound to its full scope in every variant. Item fields are never rule or
+ * Condition sources, so nothing else names them. The SAME content when unchanged, unknown or invalid.
+ */
+function renameItemKey(
+  content: DocumentContent,
+  array: string,
+  from: string,
+  to: string,
+): DocumentContent {
+  const key = to.trim();
+  const ref = { array, key: from };
+  if (key === from || propertyAt(content.schema, ref) === undefined) return content;
+  if (keyProblem(content, from, key, array) !== undefined) return content;
+  const schema = withOwner(content.schema, ref, (owner) =>
+    renameInSchema(owner, recordOf(owner['properties'])!, from, key),
+  );
+  const [oldScope, newScope] = [scopeOf(ref), scopeOf({ array, key })];
+  const variants = Object.fromEntries(
+    Object.entries(content.variants).map(([name, root]) => [
+      name,
+      rescoped(root, oldScope, newScope),
+    ]),
+  ) as DocumentContent['variants'];
+  return { ...content, schema, variants };
+}
+
+/** `node` with every Control scoped `from` rescoped `to`, at any depth; the same object when none is. */
+export function rescoped(node: Uischema, from: string, to: string): Uischema {
+  const own = node['type'] === 'Control' && node['scope'] === from ? { ...node, scope: to } : node;
+  const elements = own['elements'];
+  if (!Array.isArray(elements)) return own;
+  const children = elements.map((child: unknown) => {
+    const record = recordOf(child);
+    return record === undefined ? child : rescoped(record, from, to);
+  });
+  return children.some((child, i) => child !== elements[i]) ? { ...own, elements: children } : own;
 }

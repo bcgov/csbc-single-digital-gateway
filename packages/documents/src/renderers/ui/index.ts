@@ -7,6 +7,7 @@ import { inputControlEntry } from './input-control';
 import { multiChoiceControlEntry } from './multi-choice-control';
 import { numberInputControlEntry } from './number-input-control';
 import { richContentEntry } from './rich-content-renderer';
+import { recordControlEntry } from './record-control';
 import { richTextControlEntry } from './rich-text-control';
 import { separatorEntry } from './separator-renderer';
 import { singleChoiceControlEntry } from './single-choice-control';
@@ -29,7 +30,7 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
  * (doc 239) — an Input, or a Textarea for `options.component: 'textarea'` — and the single choice (doc 244) — a
  * Select, or a Radio group for `options.component: 'radio-group'` — and the multiple choice (doc 245) — a
  * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248) — and the rich text field (doc 250) —
- * and the object array's read-only data table (doc 263).
+ * and the object array's data table (doc 263) — or its record (doc 271).
  */
 export const controlRenderers: RendererSet['controlRenderers'] = [
   checkboxControlEntry,
@@ -41,6 +42,7 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   numberInputControlEntry,
   richTextControlEntry,
   dataTableControlEntry,
+  recordControlEntry,
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];
 export const renderers = renderersOf({

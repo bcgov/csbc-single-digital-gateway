@@ -94,7 +94,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
           ),
     [palette, draft, active],
   );
-  const { governance, insert, removeEl, copyEl, editColumns } = useStudioEdits(
+  const { governance, insert, removeEl, copyEl, editColumns, moveEl, accepts } = useStudioEdits(
     draft,
     items,
     studio.governing?.capabilities,
@@ -135,7 +135,6 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
     formId: shownSelection,
     onContentChange: setContent,
   });
-
   return (
     <div
       data-slot="document-studio"
@@ -195,6 +194,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onCopyElement={copyEl}
               onEditOptions={options.open}
               onEditColumns={editColumns}
+              onMoveElement={moveEl}
+              accepts={accepts}
               onEditRule={rules.open}
               ruleProblems={rules.problems}
               canAddRule={rules.canAdd}

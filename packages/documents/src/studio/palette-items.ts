@@ -9,7 +9,6 @@ import {
   mdiNumeric,
   mdiRadioboxMarked,
   mdiSelectMultiple,
-  mdiTable,
   mdiTableLarge,
   mdiTextBoxEditOutline,
   mdiTextBoxOutline,
@@ -21,6 +20,7 @@ import {
 import { nanoid } from 'nanoid';
 import type { DocumentContent, DocumentKind, DocumentType, Uischema } from './document-types';
 import { newId } from './element-ids';
+import { RECORD_FIELD_ITEMS } from './record-palette-items';
 import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS } from '../renderers/default/grid-placement';
 
 /** What placing an item adds (doc 238): the uischema element, and the schema properties it needs (a control's). */
@@ -183,7 +183,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'checkbox',
     label: 'Checkbox',
     icon: mdiCheckboxMarkedOutline,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['boolean', 'yes', 'no'],
     create: () => newControl('boolean', 'Untitled checkbox'),
   },
@@ -191,7 +191,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'switch',
     label: 'Switch',
     icon: mdiToggleSwitchOutline,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['boolean', 'toggle', 'on', 'off'],
     create: () => newControl('boolean', 'Untitled switch', { component: 'switch' }),
   },
@@ -199,7 +199,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'text',
     label: 'Text',
     icon: mdiFormTextbox,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['string', 'input', 'text'],
     create: () => newControl('string', 'Untitled text'),
   },
@@ -207,7 +207,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'textarea',
     label: 'Text area',
     icon: mdiTextBoxOutline,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['string', 'paragraph', 'multiline'],
     create: () => newControl('string', 'Untitled text area', { component: 'textarea' }),
   },
@@ -215,7 +215,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'rich-text',
     label: 'Rich text',
     icon: mdiTextBoxEditOutline,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['formatted', 'paragraph', 'editor'],
     // A rich text property requires its `root` (doc 250 rules 1, 16).
     create: () => newControl('object', 'Untitled rich text', undefined, { required: ['root'] }),
@@ -224,7 +224,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'number',
     label: 'Number',
     icon: mdiNumeric,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['number', 'numeric', 'amount', 'integer'],
     create: () => newControl('number', 'Untitled number'),
   },
@@ -232,7 +232,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'select',
     label: 'Select',
     icon: mdiFormDropdown,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['choice', 'dropdown', 'combobox', 'options'],
     create: () => newChoice('select', 'Untitled select'),
   },
@@ -240,7 +240,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'radio-group',
     label: 'Radio group',
     icon: mdiRadioboxMarked,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['choice', 'radio', 'options'],
     create: () => newChoice('radio-group', 'Untitled radio group'),
   },
@@ -248,7 +248,7 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'multi-select',
     label: 'Multi-select',
     icon: mdiSelectMultiple,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['choice', 'multiple', 'combobox', 'tags', 'options'],
     create: () => newMultiChoice('multi-select', 'Untitled multi-select'),
   },
@@ -256,25 +256,11 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     id: 'checkbox-group',
     label: 'Checkbox group',
     icon: mdiCheckboxMultipleMarkedOutline,
-    group: 'Fields',
+    group: 'Basic fields',
     keywords: ['choice', 'multiple', 'checkboxes', 'options'],
     create: () => newMultiChoice('checkbox-group', 'Untitled checkbox group'),
   },
-  {
-    id: 'data-table',
-    label: 'Data table',
-    icon: mdiTable,
-    group: 'Fields',
-    keywords: ['table', 'rows', 'columns', 'list', 'repeat'],
-    // An object array with one Text column, its key as fresh as the property's (doc 263 rule 31).
-    create: () =>
-      newControl('array', 'Untitled data table', undefined, {
-        items: {
-          type: 'object',
-          properties: { [nanoid(8)]: { type: 'string', title: 'Column 1' } },
-        },
-      }),
-  },
+  ...RECORD_FIELD_ITEMS,
 ];
 
 /** The palette when the host chooses none: every default item, whatever the document (rule 1). */

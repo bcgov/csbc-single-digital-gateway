@@ -11,7 +11,7 @@ import { NO_ROOM_IN_ROW, ParentGridFullContext } from './grid-full-context';
 import { GridRowEngine } from './grid-row-engine';
 import { idOf } from './element-order';
 import { FLEX } from './studio-grid';
-import { useInStudio, useStudioEditor } from './studio-editor';
+import { dropCheck, useInStudio, useStudioEditor } from './studio-editor';
 import { STUDIO_INTERACTIVE } from './studio-element';
 import { cellGridAccepts, MIN_CELL_PX, useCellGrid } from './use-cell-grid';
 
@@ -60,9 +60,7 @@ export function StudioHorizontalLayout({
     editable,
     el,
     editor?.move !== undefined,
-    editor?.governance === undefined || layoutId === undefined
-      ? undefined
-      : (source) => editor.governance?.mayDrop(layoutId, source) ?? true,
+    dropCheck(editor, layoutId),
     hasRoom,
   );
   useCellGrid(el, {

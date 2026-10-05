@@ -1,4 +1,4 @@
-import { mayRemoveNode, type Governance } from './capabilities/governance';
+import { mayRemoveNode, type DropSource, type Governance } from './capabilities/governance';
 import type { GridDrop } from '../renderers/default/grid-placement';
 import type { ColumnEdit } from '../renderers/studio/column-edit';
 import { mdiPlus } from '@mdi/js';
@@ -85,6 +85,12 @@ export interface DocumentCanvasProps {
   onEditOptions?: ((elementId: string) => void) | undefined;
   /** Edits a page object array's columns (doc 263 rule 27); absent: the studio table is never editable. */
   onEditColumns?: ((elementId: string, edit: ColumnEdit) => void) | undefined;
+  /** Whether a page layout may take a drop, by the document's rules (doc 271 rule 15). */
+  accepts?: ((layoutId: string, source: DropSource) => boolean) | undefined;
+  /** The host's content-level move of a page element (doc 271 rule 14); absent: the uischema-only move. */
+  onMoveElement?:
+    | ((id: string, layoutId: string, index: number, cell?: GridDrop) => void)
+    | undefined;
   /** Opens the rule dialog for a page element (doc 256 rule 9); absent: no Rules action. */
   onEditRule?: ((elementId: string) => void) | undefined;
   /** The fields a page element's rule may not test (doc 256 rule 5). */
@@ -119,6 +125,8 @@ export function DocumentCanvas({
   onCopyElement,
   onEditOptions,
   onEditColumns,
+  accepts,
+  onMoveElement,
   onEditRule,
   ruleProblems,
   canAddRule,
@@ -182,6 +190,8 @@ export function DocumentCanvas({
     copy: onCopyElement,
     editOptions: onEditOptions,
     editColumns: onEditColumns,
+    accepts,
+    moveContent: onMoveElement,
     editRule: onEditRule,
     ruleProblems,
     canAddRule,

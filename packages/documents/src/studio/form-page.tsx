@@ -1,4 +1,4 @@
-import type { Governance } from './capabilities/governance';
+import type { DropSource, Governance } from './capabilities/governance';
 import type { GridDrop } from '../renderers/default/grid-placement';
 import type { ColumnEdit } from '../renderers/studio/column-edit';
 import { JsonForms } from '@jsonforms/react';
@@ -39,6 +39,7 @@ export function FormPageBody({
   onCopy,
   onEditOptions,
   onEditColumns,
+  accepts,
   onEditRule,
   ruleProblems,
   canAddRule,
@@ -64,6 +65,8 @@ export function FormPageBody({
   onEditOptions?: ((id: string) => void) | undefined;
   /** Edits an object array's columns (doc 263 rule 27); only an open page edits. */
   onEditColumns?: ((id: string, edit: ColumnEdit) => void) | undefined;
+  /** Whether a page layout may take a drop (doc 271 rule 15). */
+  accepts?: ((layoutId: string, source: DropSource) => boolean) | undefined;
   /** Opens the rule dialog for a page element (doc 256 rule 9); only an open page edits. */
   onEditRule?: ((id: string) => void) | undefined;
   /** The fields a page element's rule may not test (doc 256 rule 5): the error state shows on any page. */
@@ -93,6 +96,7 @@ export function FormPageBody({
           onCopy={open && !closing ? onCopy : undefined}
           onEditOptions={open && !closing ? onEditOptions : undefined}
           onEditColumns={open && !closing ? onEditColumns : undefined}
+          accepts={accepts}
           onEditRule={open && !closing ? onEditRule : undefined}
           ruleProblems={ruleProblems}
           canAddRule={canAddRule}
@@ -114,6 +118,7 @@ function PageContent({
   onCopy,
   onEditOptions,
   onEditColumns,
+  accepts,
   onEditRule,
   ruleProblems,
   canAddRule,
@@ -128,6 +133,7 @@ function PageContent({
   onCopy: ((id: string) => string | undefined) | undefined;
   onEditOptions: ((id: string) => void) | undefined;
   onEditColumns: ((id: string, edit: ColumnEdit) => void) | undefined;
+  accepts: ((layoutId: string, source: DropSource) => boolean) | undefined;
   onEditRule: ((id: string) => void) | undefined;
   ruleProblems: ((id: string) => string[]) | undefined;
   canAddRule: ((id: string) => boolean) | undefined;
@@ -158,6 +164,7 @@ function PageContent({
       copy={onCopy}
       editOptions={onEditOptions}
       editColumns={onEditColumns}
+      accepts={accepts}
       editRule={onEditRule}
       ruleProblems={ruleProblems}
       canAddRule={canAddRule}
