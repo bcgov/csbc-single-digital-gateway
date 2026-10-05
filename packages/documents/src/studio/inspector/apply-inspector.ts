@@ -1,3 +1,4 @@
+import type { Governance } from '../capabilities/governance';
 import { createAjv } from '@jsonforms/core';
 import type { DocumentContent } from '../document-types';
 import type { InspectorField } from './inspector-field';
@@ -21,9 +22,12 @@ export function applyInspector(
   content: DocumentContent,
   target: InspectorTarget,
   values: Record<string, unknown>,
+  governance?: Governance,
 ): DocumentContent {
   let next = content;
   for (const field of fieldsFor(target)) {
+    // Backstop (doc 259 rule 15): a setting the pinned template locks is never written.
+    if (governance?.canEdit(target.id, field.key) === false) continue;
     const value = values[field.key];
     if (sameValue(value, field.read(target)) || !accepts(field, target, value)) continue;
     next = field.write(next, target, value);

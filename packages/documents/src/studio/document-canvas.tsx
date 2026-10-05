@@ -1,3 +1,4 @@
+import { mayRemoveNode, type Governance } from './capabilities/governance';
 import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
@@ -84,6 +85,8 @@ export interface DocumentCanvasProps {
   ruleProblems?: ((elementId: string) => string[]) | undefined;
   /** Whether a page element has any field above it a rule could test (doc 256 rule 9b). */
   canAddRule?: ((elementId: string) => boolean) | undefined;
+  /** The pinned template's rules (doc 259); absent: ungoverned. */
+  governance?: Governance | undefined;
   /** Told when an element on the focused page is selected or deselected (doc 238 rule 16b). */
   onPageSelect?: ((elementId: string | null) => void) | undefined;
 }
@@ -112,6 +115,7 @@ export function DocumentCanvas({
   onEditRule,
   ruleProblems,
   canAddRule,
+  governance,
   onPageSelect,
 }: DocumentCanvasProps) {
   const instance = useRef<Zoomable | null>(null);
@@ -149,9 +153,11 @@ export function DocumentCanvas({
     (target: PendingDelete, choice: DeleteChoice) => {
       // A page element changes the schema too, so the studio applies it to the whole content (doc 242 rule 5).
       if (target.kind === 'element') onRemoveElement?.(target.id);
-      else onChange(removeNode(uischema, target.id, { subtree: choice === 'subtree' }));
+      // Backstop (doc 259 rule 12): a node delete rewires connections, and a Form must itself be removable.
+      else if (governance === undefined || mayRemoveNode(governance, target))
+        onChange(removeNode(uischema, target.id, { subtree: choice === 'subtree' }));
     },
-    [uischema, onChange, onRemoveElement],
+    [uischema, onChange, onRemoveElement, governance],
   );
   const { request: remove, gate } = useDeleteGate(deleteChoices, removeNow, onRememberDelete);
   const connectMode = useConnectMode(uischema, graph, onChange);
@@ -171,6 +177,7 @@ export function DocumentCanvas({
     editRule: onEditRule,
     ruleProblems,
     canAddRule,
+    governance,
   });
 
   return (

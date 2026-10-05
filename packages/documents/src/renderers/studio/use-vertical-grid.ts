@@ -3,6 +3,7 @@ import { DDManager } from 'gridstack/dist/dd-manager';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { retargetDropTarget } from './grid-drop-target';
 import { installGrabOffsetClamp } from './grid-grab-offset';
+import type { DropSource } from '../../studio/capabilities/governance';
 import { GridNestEngine } from './grid-nest-engine';
 
 /** The row unit item heights are counted in; heights follow content, so it only sets their granularity. */
@@ -32,6 +33,8 @@ export interface VerticalGridOptions {
   onMoveItem: (index: number, elementId: string) => void;
   /** Whether items may arrive from other grids — the editor can move (doc 243 rule 5). */
   acceptMoves: boolean;
+  /** Whether the template lets this drop in (doc 259 rules 10-11); absent: every drop the grid takes. */
+  mayDrop?: ((source: DropSource) => boolean) | undefined;
   /** The least number of rows the grid keeps — an empty grid stays a drop zone (doc 238 rule 17). */
   minRow: number;
   /**
@@ -63,6 +66,8 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
   // Read by `acceptWidgets` through a ref, so a change never rebuilds the grid's options.
   const acceptMoves = useRef(options.acceptMoves);
   acceptMoves.current = options.acceptMoves;
+  const mayDrop = useRef(options.mayDrop);
+  mayDrop.current = options.mayDrop;
   const dropZone = useRef(options.dropZone);
   dropZone.current = options.dropZone;
   const { minRow } = options;
@@ -87,7 +92,7 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
         // came out a row short and clipped. `fitItem` sizes them from unscaled layout instead (rule 28).
         sizeToContent: false,
         disableResize: true,
-        acceptWidgets: acceptsFor(editable, el, acceptMoves),
+        acceptWidgets: acceptsFor(editable, el, acceptMoves, mayDrop),
         minRow,
         staticGrid: !editable,
         draggable: { cancel: DRAG_CANCEL },
@@ -139,7 +144,9 @@ export function useVerticalGrid(el: HTMLElement | null, options: VerticalGridOpt
 
   useLayoutEffect(() => {
     grid.current?.setStatic(!editable);
-    grid.current?.updateOptions({ acceptWidgets: acceptsFor(editable, el, acceptMoves) });
+    grid.current?.updateOptions({
+      acceptWidgets: acceptsFor(editable, el, acceptMoves, mayDrop),
+    });
     // Both build a fresh droppable on the enclosing item again.
     retarget(grid.current);
   }, [editable]);
@@ -236,13 +243,17 @@ function acceptsFor(
   editable: boolean,
   grid: HTMLElement | null,
   acceptMoves: { readonly current: boolean },
+  mayDrop: { readonly current: ((source: DropSource) => boolean) | undefined },
 ): false | ((el: Element) => boolean) {
   if (!editable) return false;
+  // Doc 259 rules 10-11: the template's rules decide HERE too, for the same ghost-item reason.
+  const permits = (source: DropSource) => mayDrop.current?.(source) ?? true;
   return (el) => {
-    if (el.hasAttribute('data-palette-item')) return true;
+    if (el.hasAttribute('data-palette-item')) return permits({ palette: true });
     if (!acceptMoves.current || !el.classList.contains('grid-stack-item')) return false;
     const node = (el as GridItemHTMLElement).gridstackNode;
-    return node !== undefined && authoredId(node) !== null && !el.contains(grid);
+    const id = node === undefined ? null : authoredId(node);
+    return id !== null && !el.contains(grid) && permits({ elementId: id });
   };
 }
 

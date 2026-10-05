@@ -1,3 +1,4 @@
+import { LOCKED } from '../capabilities/governance';
 import { Button } from '@repo/ui/button';
 import { clauseSummary, type CriterionField } from '../criteria';
 import type { DocumentContent } from '../document-types';
@@ -28,10 +29,13 @@ export function ruleSummary(rule: unknown, fields: readonly CriterionField[]): s
 export function InspectorRule({
   content,
   elementId,
+  locked = false,
   onEdit,
 }: {
   content: DocumentContent;
   elementId: string;
+  /** The pinned template locks the Rule (doc 259 rule 17): Add / Edit rule disabled. */
+  locked?: boolean;
   onEdit: () => void;
 }) {
   const rule = findById(content.variants.default, elementId)?.['rule'];
@@ -66,7 +70,12 @@ export function InspectorRule({
           This rule tests a field that comes after it: {names.join(', ')}.
         </p>
       )}
-      {unavailable && (
+      {locked && (
+        <p data-slot="inspector-rule-locked" className="text-xs text-muted-foreground">
+          {LOCKED}.
+        </p>
+      )}
+      {!locked && unavailable && (
         <p data-slot="inspector-rule-unavailable" className="text-xs text-muted-foreground">
           {NO_RULE_SOURCES}.
         </p>
@@ -75,7 +84,7 @@ export function InspectorRule({
         size="sm"
         variant="outline"
         className="mt-1 h-7 w-full text-xs"
-        disabled={unavailable}
+        disabled={locked || unavailable}
         onClick={onEdit}
       >
         {rule === undefined ? 'Add rule' : 'Edit rule'}

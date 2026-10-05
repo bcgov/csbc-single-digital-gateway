@@ -1,3 +1,4 @@
+import type { Governance } from '../../studio/capabilities/governance';
 import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
 /** What a studio renderer may change on one element (doc 236 rule 11). It never carries a `type`. */
@@ -43,6 +44,8 @@ export interface StudioEditor {
   ruleProblems?: ((id: string) => string[]) | undefined;
   /** Whether an element has any field above it a rule could test (doc 256 rule 9b); absent: always. */
   canAddRule?: ((id: string) => boolean) | undefined;
+  /** The pinned template's rules (doc 259); absent: ungoverned, everything allowed. */
+  governance?: Governance | undefined;
   selectedId: string | null;
   select: (id: string | null) => void;
 }
@@ -64,6 +67,7 @@ export function StudioEditorProvider({
   editRule,
   ruleProblems,
   canAddRule,
+  governance,
   onSelectionChange,
   enabled = true,
   children,
@@ -77,6 +81,7 @@ export function StudioEditorProvider({
   editRule?: StudioEditor['editRule'];
   ruleProblems?: StudioEditor['ruleProblems'];
   canAddRule?: StudioEditor['canAddRule'];
+  governance?: StudioEditor['governance'];
   /**
    * Told every time the selection changes (doc 238 rule 16b) — the provider still owns it. Held in a ref, so an inline
    * arrow is safe.
@@ -106,6 +111,7 @@ export function StudioEditorProvider({
       editRule,
       ruleProblems,
       canAddRule,
+      governance,
       selectedId,
       select,
     }),
@@ -119,6 +125,7 @@ export function StudioEditorProvider({
       editRule,
       ruleProblems,
       canAddRule,
+      governance,
       selectedId,
       select,
     ],
@@ -128,6 +135,11 @@ export function StudioEditorProvider({
       {children}
     </StudioEditorContext.Provider>
   );
+}
+
+/** Whether the pinned template lets the element's setting `key` change (doc 259 rule 14); ungoverned: always. */
+export function mayEdit(editor: StudioEditor, id: string, key: string): boolean {
+  return editor.governance?.canEdit(id, key) !== false;
 }
 
 /** The editor, or `null` outside a provider — which means view-only (rule 12). */

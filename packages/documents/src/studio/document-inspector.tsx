@@ -1,3 +1,4 @@
+import type { Governance } from './capabilities/governance';
 import { mdiCodeJson, mdiCog } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { ToggleGroup, ToggleGroupItem } from '@repo/ui/toggle-group';
@@ -32,6 +33,8 @@ export interface DocumentInspectorProps extends TargetInputs {
   onEditRule?: ((elementId: string) => void) | undefined;
   /** The document is a template: show its Implementation Rules (doc 258 rule 1). */
   templateRules?: boolean;
+  /** The pinned template's rules (doc 259); absent: ungoverned. */
+  governance?: Governance | undefined;
   /** Whether the collapsed inspector is open, expanded (doc 233 rule 14). */
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -50,6 +53,7 @@ export function DocumentInspector({
   onEditOptions,
   onEditRule,
   templateRules = false,
+  governance,
   pageSelectedId,
   focusedId,
   formId,
@@ -114,6 +118,7 @@ export function DocumentInspector({
               onEditOptions={onEditOptions}
               onEditRule={onEditRule}
               templateRules={templateRules}
+              governance={governance}
             />
           </FoldsProvider>
         </div>

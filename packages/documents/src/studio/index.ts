@@ -3,6 +3,8 @@ export {
   createDocumentStore,
   type DocumentRef,
   type DocumentStore,
+  type DocumentSummary,
+  type TemplateRef,
   type DocumentStoreOptions,
   type LoadedDocument,
   type StoredDocument,

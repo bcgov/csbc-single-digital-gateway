@@ -1,3 +1,4 @@
+import type { Governance } from './capabilities/governance';
 import { JsonForms } from '@jsonforms/react';
 import { useEffect, useMemo } from 'react';
 import {
@@ -38,6 +39,7 @@ export function FormPageBody({
   onEditRule,
   ruleProblems,
   canAddRule,
+  governance,
   onSelectionChange,
 }: {
   label: string;
@@ -63,6 +65,8 @@ export function FormPageBody({
   ruleProblems?: ((id: string) => string[]) | undefined;
   /** Whether a page element has any field above it to test (doc 256 rule 9b); absent: always. */
   canAddRule?: ((id: string) => boolean) | undefined;
+  /** The pinned template's rules (doc 259); absent: ungoverned. */
+  governance?: Governance | undefined;
   /** Told when a page element is selected or deselected (doc 238 rule 16b). */
   onSelectionChange?: ((id: string | null) => void) | undefined;
 }) {
@@ -86,6 +90,7 @@ export function FormPageBody({
           onEditRule={open && !closing ? onEditRule : undefined}
           ruleProblems={ruleProblems}
           canAddRule={canAddRule}
+          governance={governance}
           onSelectionChange={onSelectionChange}
         />
       )}
@@ -105,6 +110,7 @@ function PageContent({
   onEditRule,
   ruleProblems,
   canAddRule,
+  governance,
   onSelectionChange,
 }: {
   page: FormPage;
@@ -117,6 +123,7 @@ function PageContent({
   onEditRule: ((id: string) => void) | undefined;
   ruleProblems: ((id: string) => string[]) | undefined;
   canAddRule: ((id: string) => boolean) | undefined;
+  governance: Governance | undefined;
   onSelectionChange: ((id: string | null) => void) | undefined;
 }) {
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
@@ -145,6 +152,7 @@ function PageContent({
       editRule={onEditRule}
       ruleProblems={ruleProblems}
       canAddRule={canAddRule}
+      governance={governance}
       onSelectionChange={onSelectionChange}
       enabled={onEdit !== undefined}
     >

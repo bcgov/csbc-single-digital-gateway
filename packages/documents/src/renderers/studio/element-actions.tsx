@@ -2,6 +2,13 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { mdiContentCopy, mdiDeleteOutline, mdiFormatListBulleted, mdiSourceBranch } from '@mdi/js';
 import { ActionBar, ActionBarButton } from './action-bar';
 
+/** The action-bar actions an element may have disabled. */
+export type ElementAction = 'rule' | 'options' | 'copy' | 'delete';
+
+/** A disabled action's props: disabled, with its reason as the tooltip; nothing for an enabled one. */
+const lock = (reason: string | undefined) =>
+  reason === undefined ? {} : { disabled: true, title: reason };
+
 /** Why Rules is disabled (doc 256 rule 9b); the inspector says the same. */
 export const NO_RULE_SOURCES = 'Add a field above this element to give it a rule';
 
@@ -14,7 +21,7 @@ export function ElementActions({
   name,
   onEditRule,
   hasRule = false,
-  ruleDisabled = false,
+  disabled = {},
   onEditOptions,
   onCopy,
   onDelete,
@@ -24,8 +31,11 @@ export function ElementActions({
   onEditRule?: (() => void) | undefined;
   /** The element has a rule: Rules is drawn pressed. */
   hasRule?: boolean;
-  /** No field above the element to test (doc 256 rule 9b): Rules is shown but disabled. */
-  ruleDisabled?: boolean;
+  /**
+   * Actions shown but disabled, each with the reason as its tooltip — no field above to test (doc 256 rule 9b), or
+   * locked by the template (doc 259 rule 8).
+   */
+  disabled?: Partial<Record<ElementAction, string>>;
   /** A choice field's Edit options (doc 255 rule 3); absent for anything else. */
   onEditOptions?: (() => void) | undefined;
   /** Absent: no Copy (the host cannot copy). */
@@ -40,8 +50,7 @@ export function ElementActions({
           label={`Rules for ${name}`}
           icon={mdiSourceBranch}
           pressed={hasRule}
-          disabled={ruleDisabled}
-          {...(ruleDisabled && { title: NO_RULE_SOURCES })}
+          {...lock(disabled.rule)}
           onClick={onEditRule}
         />
       )}
@@ -49,17 +58,24 @@ export function ElementActions({
         <ActionBarButton
           label={`Edit options for ${name}`}
           icon={mdiFormatListBulleted}
+          {...lock(disabled.options)}
           onClick={onEditOptions}
         />
       )}
       {onCopy !== undefined && (
-        <ActionBarButton label={`Copy ${name}`} icon={mdiContentCopy} onClick={onCopy} />
+        <ActionBarButton
+          label={`Copy ${name}`}
+          icon={mdiContentCopy}
+          {...lock(disabled.copy)}
+          onClick={onCopy}
+        />
       )}
       {onDelete !== undefined && (
         <ActionBarButton
           label={`Delete ${name}`}
           icon={mdiDeleteOutline}
           destructive
+          {...lock(disabled.delete)}
           onClick={onDelete}
         />
       )}

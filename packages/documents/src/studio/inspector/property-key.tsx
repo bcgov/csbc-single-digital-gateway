@@ -1,4 +1,5 @@
 import { toast } from '@repo/ui/sonner';
+import { LOCKED } from '../capabilities/governance';
 import {
   useEffect,
   useId,
@@ -21,13 +22,21 @@ export interface InspectorHeaderProps {
   problem: (next: string) => string | undefined;
   /** A valid, changed key (rule 12). */
   onRename: (next: string) => void;
+  /** The pinned template locks the Data key (doc 259 rule 16): it still copies, but never opens for editing. */
+  renameLocked?: boolean;
 }
 
 /**
  * The inspector's header (doc 257 rules 1-4): the kind, then — for a bound Control — a "Data key" row with its property
  * key as a code chip on the right (click copies, double click renames inline), any rename error and the shared note.
  */
-export function InspectorHeader({ kind, property, problem, onRename }: InspectorHeaderProps) {
+export function InspectorHeader({
+  kind,
+  property,
+  problem,
+  onRename,
+  renameLocked = false,
+}: InspectorHeaderProps) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const errorId = useId();
@@ -66,7 +75,10 @@ export function InspectorHeader({ kind, property, problem, onRename }: Inspector
               onCancel={close}
             />
           ) : (
-            <KeyChip value={property.key} onEdit={() => setEditing(true)} />
+            <KeyChip
+              value={property.key}
+              {...(!renameLocked && { onEdit: () => setEditing(true) })}
+            />
           )}
         </div>
       )}
@@ -85,7 +97,7 @@ export function InspectorHeader({ kind, property, problem, onRename }: Inspector
 }
 
 /** Rules 3 and 5-7: the key as code; a click copies once the double-click window passes, a double click edits. */
-function KeyChip({ value, onEdit }: { value: string; onEdit: () => void }) {
+function KeyChip({ value, onEdit }: { value: string; onEdit?: (() => void) | undefined }) {
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(pending.current), []);
   const copy = () => copyKey(value);
@@ -100,15 +112,21 @@ function KeyChip({ value, onEdit }: { value: string; onEdit: () => void }) {
       type="button"
       data-slot="property-key"
       aria-label={`Data key ${value}`}
-      title={`${value} — click to copy, double-click to rename`}
+      title={
+        onEdit === undefined
+          ? `${value} — click to copy. ${LOCKED}.`
+          : `${value} — click to copy, double-click to rename`
+      }
       className="min-w-0 cursor-pointer truncate rounded bg-muted px-1 font-mono text-xs hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       onClick={onClick}
       onDoubleClick={() => {
         clearTimeout(pending.current);
-        onEdit();
+        // Locked: a double click is just a (single) copy.
+        if (onEdit === undefined) copy();
+        else onEdit();
       }}
       onKeyDown={(event: KeyboardEvent) => {
-        if (event.key !== 'F2') return;
+        if (event.key !== 'F2' || onEdit === undefined) return;
         event.preventDefault();
         clearTimeout(pending.current);
         onEdit();

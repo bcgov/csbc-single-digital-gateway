@@ -1,3 +1,4 @@
+import type { Governance } from './capabilities/governance';
 import { createContext, useContext, useMemo } from 'react';
 import type { AddTarget } from './canvas-graph';
 import { canConnectFrom, type ConnectSource } from './connect-edits';
@@ -25,6 +26,8 @@ export interface CanvasActions {
   startConnect: (source: ConnectSource) => void;
   /** Whether a + may offer Connection: only on a Funnel's flow (doc 235 rule 2). */
   canConnect: boolean;
+  /** Whether a + may add a node — the template may lock the Funnel's connections or children (doc 259 rule 13). */
+  canAddNode: boolean;
   /** Whether that +'s Connection has any node to pick; listed but disabled when not (doc 235 rule 2b). */
   connectable: (target: AddTarget) => boolean;
   /** Applies a studio renderer's edit to the element with that id (doc 236 rule 36). */
@@ -43,6 +46,8 @@ export interface CanvasActions {
   ruleProblems?: ((elementId: string) => string[]) | undefined;
   /** Whether a page element has any field above it a rule could test (doc 256 rule 9b); absent: always. */
   canAddRule?: ((elementId: string) => boolean) | undefined;
+  /** The pinned template's rules (doc 259); absent: ungoverned. */
+  governance?: Governance | undefined;
   /** Whether page elements offer Delete (doc 242): the host can apply an element delete. */
   canRemoveElement: boolean;
   /** Reports the focused page's element selection to the host (doc 238 rule 16b). */
@@ -78,11 +83,14 @@ export function useEditActions(
     editRule,
     ruleProblems,
     canAddRule,
-  }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable'>,
+    governance,
+  }: Omit<CanvasActions, 'add' | 'edit' | 'move' | 'connectable' | 'canAddNode'>,
 ): CanvasActions {
   return useMemo(
     () => ({
       add: (target, kind) => {
+        // Backstop (doc 259 rule 13): adding a node changes the Funnel's connections and its children.
+        if (governance !== undefined && !mayAddNode(governance, uischema)) return;
         onChange(added(uischema, target, kind));
         unfocus?.();
       },
@@ -91,9 +99,12 @@ export function useEditActions(
       focus,
       inspect,
       startConnect,
-      canConnect,
+      canConnect: canConnect && governance?.canChangeConnections() !== false,
+      canAddNode: governance === undefined || mayAddNode(governance, uischema),
       connectable: (target) => canConnectFrom(uischema, target),
       edit: (id, patch) => {
+        // Backstop (doc 259 rules 11, 14): a reorder or inline edit the template locks is not applied.
+        if (governance !== undefined && !governance.canPatch(id, patch)) return;
         // A layout's reorder writes back the canvas's elements, whose rules were moved aside (doc 256 bug).
         const restored =
           patch.elements === undefined
@@ -105,6 +116,8 @@ export function useEditActions(
       },
       insert,
       move: (id, layoutId, index) => {
+        // Backstop (doc 259 rule 11): only where the element, its source and the target all allow.
+        if (governance !== undefined && !governance.canMove(id, layoutId)) return;
         const next = moveElement(uischema, id, layoutId, index);
         // A refused move, or one to where the element already is, is not an edit.
         if (next !== uischema) onChange(next);
@@ -116,6 +129,7 @@ export function useEditActions(
       editRule,
       ruleProblems,
       canAddRule,
+      governance,
     }),
     [
       uischema,
@@ -135,8 +149,15 @@ export function useEditActions(
       editRule,
       ruleProblems,
       canAddRule,
+      governance,
     ],
   );
+}
+
+/** Whether a node may be added to the root: connections change, and the root takes a new child (doc 259 rule 13). */
+export function mayAddNode(governance: Governance, root: Uischema): boolean {
+  const id = root['id'];
+  return governance.canChangeConnections() && typeof id === 'string' && governance.canAdd(id);
 }
 
 /** The variant with a node added where a + asked; a leading + only ever adds a Form, an orphan's nothing. */

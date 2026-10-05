@@ -33,7 +33,7 @@ const TONES = {
  * with a + at its top that adds a Form before it or connects a node into it.
  */
 export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgeProps<AddEdgeType>) {
-  const { add, startConnect, canConnect, connectable } = useCanvasActions();
+  const { add, startConnect, canConnect, connectable, canAddNode } = useCanvasActions();
   const [path, midX, midY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -45,8 +45,13 @@ export function AddEdge({ id, data, sourceX, sourceY, targetX, targetY }: EdgePr
   const target = data.add;
   const options = OPTIONS[target.kind].filter((o) => canConnect || o !== 'connection');
   // Listed but disabled when connect mode would have nothing to pick (doc 235 rule 2b).
-  const disabled: readonly AddOption[] =
-    options.includes('connection') && !connectable(target) ? NO_CONNECTION : NONE;
+  const noConnection = options.includes('connection') && !connectable(target);
+  // Doc 259 rule 13: a template that locks the Funnel leaves every add listed but disabled.
+  const disabled: readonly AddOption[] = !canAddNode
+    ? options.filter((o) => o !== 'connection' || noConnection)
+    : noConnection
+      ? NO_CONNECTION
+      : NONE;
   const choose = (option: AddOption) => {
     const source = connectSourceOf(target);
     if (option !== 'connection') add(target, option);

@@ -3,6 +3,7 @@ import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import * as studio from '../src/renderers/studio/index';
 import { StudioEditorProvider, type ElementPatch } from '../src/renderers/studio/index';
+import type { Governance } from '../src/studio/capabilities/governance';
 
 /** Renders `uischema` through the studio set; `editable` wraps it in a provider whose `update` is a spy. */
 export function renderStudioRenderers(
@@ -15,6 +16,7 @@ export function renderStudioRenderers(
     copyable = false,
     ruleProblems,
     canAddRule,
+    governance,
   }: {
     editable?: boolean;
     schema?: object;
@@ -25,6 +27,8 @@ export function renderStudioRenderers(
     ruleProblems?: (id: string) => string[];
     /** Whether an element has a field above it to test (doc 256 rule 9b); absent: always. */
     canAddRule?: (id: string) => boolean;
+    /** The template's rules governing the page (doc 259); absent: ungoverned. */
+    governance?: Governance;
   } = {},
 ) {
   const update = vi.fn<(id: string, patch: ElementPatch) => void>();
@@ -54,6 +58,7 @@ export function renderStudioRenderers(
         {...(copyable && { copy })}
         {...(ruleProblems !== undefined && { editRule, ruleProblems })}
         {...(canAddRule !== undefined && { canAddRule })}
+        {...(governance !== undefined && { governance })}
       >
         {form}
       </StudioEditorProvider>

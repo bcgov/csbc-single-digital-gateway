@@ -1,4 +1,5 @@
 import { createDocumentStore, type DocumentStore, type StoredDocument } from './document-store';
+import type { CapabilityMap } from './capabilities/capability-types';
 import type { DocumentContent } from './document-types';
 
 const control = (id: string, key: string) => ({
@@ -6,6 +7,38 @@ const control = (id: string, key: string) => ({
   type: 'Control',
   scope: `#/properties/${key}`,
 });
+
+/** The agreement template's content (doc 259): an intro, the acceptance a service must keep, and a signature. */
+const AGREEMENT_CONTENT: DocumentContent = {
+  schema: {
+    type: 'object',
+    properties: {
+      accept: { type: 'boolean', title: 'I accept the terms of use' },
+      signature: { type: 'string', title: 'Full name' },
+    },
+    required: ['accept'],
+  },
+  variants: {
+    default: {
+      id: 'stubAgr1',
+      type: 'Form',
+      label: 'Terms of use',
+      elements: [
+        { id: 'stubAgrH', type: 'Heading', options: { text: 'About these terms', level: 2 } },
+        control('stubAgrAcc', 'accept'),
+        control('stubAgrSig', 'signature'),
+      ],
+    },
+  },
+};
+
+/** Its Implementation Rules (doc 258): the heading and the acceptance are fixed; only the acceptance's wording may change. */
+const AGREEMENT_RULES: CapabilityMap = {
+  elements: {
+    stubAgrH: { edit: 'none', remove: false },
+    stubAgrAcc: { edit: ['label', 'description'], remove: false, move: false },
+  },
+};
 
 /** A two-Form Funnel with fields of every kind a condition can test, so conditions have something to branch on. */
 const APPLICATION_CONTENT: DocumentContent = {
@@ -125,19 +158,20 @@ export const STUB_DOCUMENTS: StoredDocument[] = [
       {
         id: 'stub-agreement-template-v1',
         versionNumber: 1,
-        content: {
-          schema: { type: 'object', properties: {} },
-          variants: {
-            default: {
-              id: 'stubAgr1',
-              type: 'Form',
-              label: 'Terms of use',
-              elements: [],
-            },
-          },
-        },
+        content: { ...AGREEMENT_CONTENT, capabilities: AGREEMENT_RULES },
       },
     ],
+  },
+  {
+    // Doc 259: a document made from the template above — its pinned version's rules lock the studio.
+    id: 'stub-agreement',
+    kind: 'document',
+    type: 'services.service-agreement',
+    template: {
+      templateId: 'stub-agreement-template',
+      templateVersionId: 'stub-agreement-template-v1',
+    },
+    versions: [{ id: 'stub-agreement-v1', versionNumber: 1, content: AGREEMENT_CONTENT }],
   },
   {
     id: 'stub-application',

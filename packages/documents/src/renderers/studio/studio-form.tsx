@@ -6,7 +6,7 @@ import { idOf } from './element-order';
 import { FORM_DROP_ZONE_SLOT } from './grid-drop-target';
 import { InlineEditableHeading } from './inline-heading';
 import { InlineRichText } from './inline-rich-text';
-import { useStudioEditor } from './studio-editor';
+import { mayEdit, useStudioEditor } from './studio-editor';
 import { StudioVerticalGrid } from './studio-vertical-layout';
 
 /** A root Form's grid listens on the Form's section (doc 238 rule 13b). */
@@ -45,7 +45,7 @@ export function StudioFormRenderer({ uischema, visible, ...props }: LayoutProps)
         className="font-semibold"
         slot="form-title"
         editLabel="Form title"
-        editable={editor !== null && id !== undefined}
+        editable={editor !== null && id !== undefined && mayEdit(editor, id, 'formTitle')}
         onCommit={(next) => {
           if (editor === null || id === undefined) return;
           editor.update(id, { label: next === '' ? undefined : next });
@@ -58,7 +58,7 @@ export function StudioFormRenderer({ uischema, visible, ...props }: LayoutProps)
         label="Form description"
         slot="form-description"
         className="-mt-3 text-muted-foreground"
-        editable={editor !== null && id !== undefined}
+        editable={editor !== null && id !== undefined && mayEdit(editor, id, 'formDescription')}
         onChange={(next) => {
           if (editor !== null && id !== undefined)
             editor.update(id, { options: { description: next } });

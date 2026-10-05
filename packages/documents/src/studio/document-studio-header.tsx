@@ -16,6 +16,8 @@ export interface DocumentStudioHeaderProps {
   canSave: boolean;
   saving: boolean;
   onSave: () => void;
+  /** The governing template's name (doc 259 rule 6): a "Based on" badge after the type. */
+  basedOn?: string | undefined;
   /** Given while a Form is focused (doc 233 rule 5): a Back button replaces the Type / Template badges. */
   onBack?: (() => void) | undefined;
 }
@@ -33,6 +35,7 @@ export function DocumentStudioHeader({
   canSave,
   saving,
   onSave,
+  basedOn,
   onBack,
 }: DocumentStudioHeaderProps) {
   const editing = mode === 'edit';
@@ -60,6 +63,11 @@ export function DocumentStudioHeader({
               {document.kind === 'template' && (
                 <Badge color="grey" data-slot="document-studio-template">
                   Template
+                </Badge>
+              )}
+              {basedOn !== undefined && (
+                <Badge color="grey" data-slot="document-studio-based-on">
+                  Based on {basedOn}
                 </Badge>
               )}
             </>

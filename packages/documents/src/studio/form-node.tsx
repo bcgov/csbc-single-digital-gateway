@@ -1,3 +1,4 @@
+import { LOCKED, mayRemoveNode } from './capabilities/governance';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type {
   EndNode as EndNodeType,
@@ -29,6 +30,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
     editRule,
     ruleProblems,
     canAddRule,
+    governance,
   } = useCanvasActions();
   const { mark } = useNodeConnect(data.formId);
   const label = data.label ?? 'Untitled form';
@@ -54,6 +56,13 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
             onEdit={() => focus(data.formId)}
             onInspect={() => inspect(data.formId)}
             onDelete={() => remove({ id: data.formId, kind: 'form', name: label })}
+            // Doc 259 rule 12: deleting a node rewires the Funnel, and the Form must itself be removable.
+            deleteLocked={
+              governance !== undefined &&
+              !mayRemoveNode(governance, { kind: 'form', id: data.formId })
+                ? LOCKED
+                : undefined
+            }
           />
           <p className="text-xs text-muted-foreground">Form</p>
           <p className="truncate text-sm font-medium">{label}</p>
@@ -75,6 +84,7 @@ export function FormNode({ data, selected }: NodeProps<FormNodeType>) {
           onEditRule={editRule}
           ruleProblems={ruleProblems}
           canAddRule={canAddRule}
+          governance={governance}
           {...(canRemoveElement && {
             onRemove: (id: string, name: string) => remove({ id, kind: 'element', name }),
           })}

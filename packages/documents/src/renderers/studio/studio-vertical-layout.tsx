@@ -71,6 +71,10 @@ export function StudioVerticalGrid({
       editor.select(elementId);
     },
     acceptMoves: editor?.move !== undefined,
+    mayDrop:
+      editor?.governance === undefined || layoutId === undefined
+        ? undefined
+        : (source) => editor.governance?.mayDrop(layoutId, source) ?? true,
     minRow: elements.length === 0 ? EMPTY_ROWS : 0,
     dropZone,
   });
@@ -104,6 +108,10 @@ export function StudioVerticalGrid({
             gs-y={String(tops[index])}
             gs-w="1"
             gs-h={String(rows[index])}
+            // Doc 259 rule 11: an element the template fixes in place cannot be dragged.
+            {...(editor?.governance?.canDrag(keys[index] ?? '') === false && {
+              'gs-no-move': 'true',
+            })}
           >
             <div className="grid-stack-item-content">
               <ChildDispatch child={child} {...dispatch} />

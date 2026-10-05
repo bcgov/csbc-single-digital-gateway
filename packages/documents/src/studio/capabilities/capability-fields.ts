@@ -1,4 +1,5 @@
 import { fieldsFor } from '../inspector/inspector-form';
+import { optionsTargetOf } from '../options/options-target';
 import type { InspectorTarget } from '../inspector/inspector-target';
 import {
   CASCADING_KEYS,
@@ -57,7 +58,22 @@ const CASCADE_SCOPE = {
 const isCascadeScope = (value: unknown): value is CascadeScope =>
   value === 'descendants' || value === 'children' || value === 'self';
 
-const hasSettings = (target: InspectorTarget) => fieldsFor(target).length > 0;
+/**
+ * Every setting an implementation could be allowed to change (doc 258 rule 3, doc 259 rule 19): the element's own
+ * inspector fields, then the edits that are not fields — its Data key, choice Options, Content and Rule.
+ */
+export function settingChoices(target: InspectorTarget): { const: string; title: string }[] {
+  return [
+    ...fieldsFor(target).map((field) => ({ const: field.key, title: field.label })),
+    ...(target.property !== undefined ? [{ const: 'key', title: 'Data key' }] : []),
+    ...(optionsTargetOf(target) !== undefined ? [{ const: 'options', title: 'Options' }] : []),
+    ...(target.kind === 'rich-content' ? [{ const: 'content', title: 'Content' }] : []),
+    // The root is never a rule's element (doc 256 rule 13).
+    ...(target.root ? [] : [{ const: 'rule', title: 'Rule' }]),
+  ];
+}
+
+const hasSettings = (target: InspectorTarget) => settingChoices(target).length > 0;
 const isPageElement = (target: InspectorTarget) => !target.root;
 const isContainer = (target: InspectorTarget) => holdsChildren(target.element);
 
@@ -104,10 +120,7 @@ export const CAPABILITY_FIELDS: readonly CapabilityField[] = Object.freeze([
     applies: hasSettings,
     schema: (target) => ({
       type: 'array',
-      items: {
-        type: 'string',
-        oneOf: fieldsFor(target).map((field) => ({ const: field.key, title: field.label })),
-      },
+      items: { type: 'string', oneOf: settingChoices(target) },
     }),
     rule: { effect: 'SHOW', condition: { scope: '#/properties/edit', schema: { const: 'some' } } },
     read: (entry) => (Array.isArray(entry?.edit) ? entry.edit : []),

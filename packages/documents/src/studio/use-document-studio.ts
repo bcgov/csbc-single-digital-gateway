@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { DocumentRef, DocumentStore } from './document-store';
+import type { CapabilityMap } from './capabilities/capability-types';
+import type { DocumentRef, DocumentStore, LoadedDocument, TemplateRef } from './document-store';
 import { ensureContentIds } from './element-ids';
 import { ensureContentStart } from './funnel-model';
 import {
@@ -17,6 +18,14 @@ export interface StudioDraft {
   content: DocumentContent;
   baseline: DocumentContent | null;
   ref: DocumentRef | null;
+  /** The template version this document was created from (doc 259): its rules govern the studio. */
+  template?: TemplateRef;
+}
+
+/** The pinned template's rules, and its name for the header (doc 259 rules 5-6). */
+export interface GoverningTemplate {
+  name: string;
+  capabilities: CapabilityMap | undefined;
 }
 
 export type StudioStatus = 'new' | 'loading' | 'ready' | 'not-found';
@@ -32,6 +41,63 @@ export interface UseDocumentStudioOptions {
 
 function newDraft(kind: DocumentKind, type: DocumentType): StudioDraft {
   return { kind, type, content: blankContent(), baseline: null, ref: null };
+}
+
+/**
+ * A new document copied from a template version (doc 259 rule 2): its schema and variants with their element ids KEPT
+ * (the rules are keyed by them), never its own rules; pinned to that version.
+ */
+function draftFrom(type: DocumentType, template: LoadedDocument): StudioDraft {
+  const { schema, variants } = structuredClone(template.content);
+  return {
+    kind: 'document',
+    type,
+    content: { schema, variants },
+    baseline: null,
+    ref: null,
+    template: { templateId: template.documentId, templateVersionId: template.versionId },
+  };
+}
+
+/** The root label a template is listed and named by (doc 259 rule 6). */
+export function templateName(content: DocumentContent): string {
+  const label = content.variants.default['label'];
+  return typeof label === 'string' && label.trim() !== '' ? label.trim() : 'Untitled';
+}
+
+/**
+ * Loads the PINNED template version whenever the draft's template changes (doc 259 rule 5). A failed load leaves the
+ * studio ungoverned and is logged, never silent.
+ */
+function useGoverningTemplate(store: DocumentStore, template: TemplateRef | undefined) {
+  const [governing, setGoverning] = useState<GoverningTemplate | null>(null);
+  const templateId = template?.templateId;
+  const versionId = template?.templateVersionId;
+  useEffect(() => {
+    setGoverning(null);
+    if (templateId === undefined || versionId === undefined) return;
+    let cancelled = false;
+    store.load(templateId, versionId).then(
+      (loaded) => {
+        if (cancelled) return;
+        if (loaded === null) {
+          console.error(`[documents] template ${templateId} version ${versionId} not found`);
+          return;
+        }
+        setGoverning({
+          name: templateName(loaded.content),
+          capabilities: loaded.content.capabilities,
+        });
+      },
+      (error: unknown) => {
+        console.error(`[documents] could not load template ${templateId}`, error);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [store, templateId, versionId]);
+  return governing;
 }
 
 /** Whether `ref` is what the host is asking for, so a host echoing a just-saved ref causes no reload. */
@@ -115,9 +181,31 @@ export function useDocumentStudio(options: UseDocumentStudioOptions) {
 
   useOpenDocument({ documentId, versionId, kind, type, store }, draftRef, setDraft, setStatus);
 
-  const start = useCallback((nextKind: DocumentKind, nextType: DocumentType) => {
-    setDraft(newDraft(nextKind, nextType));
-  }, []);
+  /** A new document — blank, or (doc 259 rule 2) copied from the latest version of the template `fromTemplate`. */
+  const start = useCallback(
+    (nextKind: DocumentKind, nextType: DocumentType, fromTemplate?: string) => {
+      if (fromTemplate === undefined || nextKind === 'template') {
+        setDraft(newDraft(nextKind, nextType));
+        return;
+      }
+      store.load(fromTemplate).then(
+        (template) => {
+          if (template === null) {
+            console.error(`[documents] template ${fromTemplate} not found; starting blank`);
+            setDraft(newDraft(nextKind, nextType));
+            return;
+          }
+          setDraft(draftFrom(nextType, template));
+        },
+        (error: unknown) => {
+          console.error(`[documents] could not load template ${fromTemplate}`, error);
+          setDraft(newDraft(nextKind, nextType));
+        },
+      );
+    },
+    [store],
+  );
+  const governing = useGoverningTemplate(store, draft?.template);
 
   const setContent = useCallback((content: DocumentContent) => {
     setDraft((current) => (current === null ? current : { ...current, content }));
@@ -147,5 +235,5 @@ export function useDocumentStudio(options: UseDocumentStudioOptions) {
   const dirty =
     draft !== null && (draft.baseline === null || contentChanged(draft.content, draft.baseline));
 
-  return { status, draft, dirty, saving, saveError, start, setContent, save };
+  return { status, draft, dirty, saving, saveError, start, setContent, save, governing };
 }

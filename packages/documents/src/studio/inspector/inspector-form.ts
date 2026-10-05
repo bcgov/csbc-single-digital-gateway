@@ -1,3 +1,4 @@
+import type { Governance } from '../capabilities/governance';
 import { CONTROL_FIELDS } from './control-fields';
 import { ELEMENT_FIELDS } from './element-fields';
 import { INSPECTOR_SECTIONS, type InspectorField } from './inspector-field';
@@ -27,7 +28,9 @@ export interface InspectorForm {
  * The target's applying fields as one object schema, a VerticalLayout of headed `Group`s (General, Validation,
  * Appearance — an empty one dropped) and the current values; an empty value is an absent key.
  */
-export function inspectorForm(target: InspectorTarget): InspectorForm {
+export function inspectorForm(target: InspectorTarget, governance?: Governance): InspectorForm {
+  // Doc 259 rule 15: a setting the pinned template locks renders read-only.
+  const locked = (field: InspectorField) => governance?.canEdit(target.id, field.key) === false;
   const fields = fieldsFor(target);
   const required = fields.filter((field) => field.required === true).map((field) => field.key);
   const data: Record<string, unknown> = {};
@@ -46,7 +49,9 @@ export function inspectorForm(target: InspectorTarget): InspectorForm {
       elements: INSPECTOR_SECTIONS.map((section) => ({
         type: 'Group',
         label: section,
-        elements: fields.filter((field) => field.section === section).map(controlOf),
+        elements: fields
+          .filter((field) => field.section === section)
+          .map((field) => controlOf(field, locked(field))),
       })).filter((group) => group.elements.length > 0),
     },
     data,
@@ -54,11 +59,12 @@ export function inspectorForm(target: InspectorTarget): InspectorForm {
   };
 }
 
-function controlOf(field: InspectorField): Record<string, unknown> {
+function controlOf(field: InspectorField, readonly: boolean): Record<string, unknown> {
+  const options = readonly ? { ...field.options, readonly: true } : field.options;
   return {
     type: 'Control',
     scope: `#/properties/${field.key}`,
     label: field.label,
-    ...(field.options !== undefined && { options: field.options }),
+    ...(options !== undefined && { options }),
   };
 }

@@ -10,6 +10,9 @@ interface NodeActionsProps {
   /** Absent for a Condition, which has nothing to inspect yet. */
   onInspect?: (() => void) | undefined;
   onDelete: () => void;
+  /** Why Edit / Delete are shown but disabled (doc 259 rules 12-13); absent: enabled. */
+  editLocked?: string | undefined;
+  deleteLocked?: string | undefined;
 }
 
 /**
@@ -23,6 +26,8 @@ export function NodeActions({
   onEdit,
   onInspect,
   onDelete,
+  editLocked,
+  deleteLocked,
 }: NodeActionsProps) {
   return (
     <ActionBar
@@ -35,6 +40,7 @@ export function NodeActions({
         label={`Edit ${name}`}
         icon={mdiTextBoxEditOutline}
         className={CANVAS}
+        {...(editLocked !== undefined && { disabled: true, title: editLocked })}
         onClick={onEdit}
       />
       {onInspect !== undefined && (
@@ -50,6 +56,7 @@ export function NodeActions({
         icon={mdiDeleteOutline}
         destructive
         className={CANVAS}
+        {...(deleteLocked !== undefined && { disabled: true, title: deleteLocked })}
         onClick={onDelete}
       />
     </ActionBar>

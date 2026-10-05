@@ -2,7 +2,7 @@ import { rankWith, uiTypeIs, type LayoutProps } from '@jsonforms/core';
 import { withJsonFormsLayoutProps } from '@jsonforms/react';
 import { richContentOf } from '../ui/rich-content-renderer';
 import { InlineRichText } from './inline-rich-text';
-import { useStudioEditor } from './studio-editor';
+import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, useStudioElement } from './studio-element';
 
 /** Outranks the spread ui Rich content (doc 250 rule 7). */
@@ -20,7 +20,7 @@ export function StudioRichContentRenderer({ uischema, visible }: LayoutProps) {
       label="Rich content"
       slot="rich-content"
       className={ELEMENT_INSET}
-      editable={editor !== null && element !== null}
+      editable={editor !== null && element !== null && mayEdit(editor, element.id, 'content')}
       onChange={(content) => {
         if (editor !== null && element !== null)
           editor.update(element.id, { options: { content } });

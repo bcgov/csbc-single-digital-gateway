@@ -1,3 +1,4 @@
+import type { Governance } from '../capabilities/governance';
 import { JsonForms } from '@jsonforms/react';
 import type { ErrorObject } from 'ajv';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -28,6 +29,8 @@ export interface InspectorSettingsProps extends TargetInputs {
   onEditRule?: ((elementId: string) => void) | undefined;
   /** The document is a template: show the Implementation Rules section (doc 258 rule 1). */
   templateRules?: boolean;
+  /** The pinned template's rules (doc 259 rules 15-18); absent: ungoverned. */
+  governance?: Governance | undefined;
 }
 
 /** The inspector's Settings view (doc 249): the inspected element's header (doc 257) and its editable properties. */
@@ -40,6 +43,7 @@ export function InspectorSettings({
   onEditOptions,
   onEditRule,
   templateRules = false,
+  governance,
 }: InspectorSettingsProps) {
   const target = useMemo(
     () => inspectorTarget(content, { pageSelectedId, focusedId, formId }),
@@ -47,11 +51,13 @@ export function InspectorSettings({
   );
   if (target === null) return <Message>Nothing to inspect.</Message>;
   const options = onEditOptions === undefined ? undefined : optionsTargetOf(target);
+  const locked = (key: string) => governance?.canEdit(target.id, key) === false;
   return (
     <div data-slot="inspector-settings" className="flex flex-col gap-2">
       <InspectorHeader
         kind={KIND_NAMES[target.kind]}
         property={target.property}
+        renameLocked={locked('key')}
         problem={(next) =>
           target.property === undefined ? undefined : keyProblem(content, target.property.key, next)
         }
@@ -67,17 +73,23 @@ export function InspectorSettings({
         target={target}
         content={content}
         onContentChange={onContentChange}
+        governance={governance}
       />
       {/* Rules belong to page elements, never the Form or Funnel root (doc 256 rule 13). */}
       {onEditRule !== undefined && target.kind !== 'form' && target.kind !== 'funnel' && (
         <InspectorRule
           content={content}
           elementId={target.id}
+          locked={locked('rule')}
           onEdit={() => onEditRule(target.id)}
         />
       )}
       {options !== undefined && (
-        <InspectorOptions target={options} onEdit={() => onEditOptions?.(options.elementId)} />
+        <InspectorOptions
+          target={options}
+          locked={locked('options')}
+          onEdit={() => onEditOptions?.(options.elementId)}
+        />
       )}
       {/* Last, on templates only, for every element with an id — the roots included (doc 258 rules 1-2). */}
       {templateRules && target.id !== '' && (
@@ -95,18 +107,20 @@ function TargetForm({
   target,
   content,
   onContentChange,
+  governance,
 }: {
   target: InspectorTarget;
   content: DocumentContent;
   onContentChange: (content: DocumentContent) => void;
+  governance: Governance | undefined;
 }) {
-  const view = useMemo(() => inspectorForm(target), [target]);
+  const view = useMemo(() => inspectorForm(target, governance), [target, governance]);
   const own = useRef<DocumentContent | null>(null);
   const props = useFormProps(view, content, own.current);
   // JSONForms emits after a debounce, so the handler reads the LATEST content and target — and nothing once this
   // instance is gone, or an old selection's last emit would be applied over the new one.
-  const latest = useRef({ target, content, onContentChange, mounted: true });
-  latest.current = { target, content, onContentChange, mounted: true };
+  const latest = useRef({ target, content, onContentChange, governance, mounted: true });
+  latest.current = { target, content, onContentChange, governance, mounted: true };
   useEffect(() => {
     const current = latest;
     current.current.mounted = true;
@@ -132,6 +146,7 @@ function TargetForm({
             current.content,
             current.target,
             data as Record<string, unknown>,
+            current.governance,
           );
           if (next === current.content) return;
           own.current = next;

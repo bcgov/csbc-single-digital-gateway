@@ -1,3 +1,4 @@
+import { LOCKED } from './capabilities/governance';
 import { mdiRhombusOutline } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Handle, Position, useUpdateNodeInternals, type NodeProps } from '@xyflow/react';
@@ -15,7 +16,9 @@ import { HIDDEN_HANDLE, InputHandle, NodeFrame } from './node-parts';
  * set of outputs changes.
  */
 export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
-  const { editCondition, remove } = useCanvasActions();
+  const { editCondition, remove, governance } = useCanvasActions();
+  // Doc 259 rule 13: a Condition IS connections — locked with them.
+  const locked = governance?.canChangeConnections() === false ? LOCKED : undefined;
   const updateNodeInternals = useUpdateNodeInternals();
   const outputsKey = data.outputs.join('|');
   useEffect(() => updateNodeInternals(id), [id, outputsKey, updateNodeInternals]);
@@ -35,7 +38,10 @@ export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
         type="button"
         aria-label={`Open ${name}`}
         className="nodrag nopan flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-muted/50"
-        onClick={() => editCondition(data.conditionId)}
+        {...(locked !== undefined && { title: locked })}
+        onClick={() => {
+          if (locked === undefined) editCondition(data.conditionId);
+        }}
       >
         <Icon path={mdiRhombusOutline} size="16px" className="shrink-0 text-muted-foreground" />
         <span className="min-w-0">
@@ -50,6 +56,8 @@ export function ConditionNode({ id, data }: NodeProps<ConditionNodeType>) {
         name={name}
         onEdit={() => editCondition(data.conditionId)}
         onDelete={() => remove({ id: data.conditionId, kind: 'condition', name })}
+        editLocked={locked}
+        deleteLocked={locked}
       />
       {choosing !== null && <OutputChooser outputs={choosing} onChoose={chooseOutput} />}
       {data.outputs.map((handle, i) => (

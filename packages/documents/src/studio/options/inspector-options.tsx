@@ -1,3 +1,4 @@
+import { LOCKED } from '../capabilities/governance';
 import { Button } from '@repo/ui/button';
 import { FoldableSection } from '../foldable-section';
 import { SECTION_CLASSES } from '../inspector/inspector-renderers';
@@ -13,9 +14,12 @@ const countLabel = (count: number) => `${count} ${count === 1 ? 'option' : 'opti
 
 export function InspectorOptions({
   target,
+  locked = false,
   onEdit,
 }: {
   target: OptionsTarget;
+  /** The pinned template locks the Options (doc 259 rule 18): Edit options disabled. */
+  locked?: boolean;
   onEdit: () => void;
 }) {
   const { options } = target;
@@ -47,7 +51,13 @@ export function InspectorOptions({
           <li className="bg-gray-10 px-2 py-1 text-xs text-muted-foreground">+{overflow} more</li>
         )}
       </ul>
-      <Button size="sm" className="mt-1 h-7 w-full text-xs" onClick={onEdit}>
+      <Button
+        size="sm"
+        className="mt-1 h-7 w-full text-xs"
+        disabled={locked}
+        {...(locked && { title: LOCKED })}
+        onClick={onEdit}
+      >
         Edit options
       </Button>
     </FoldableSection>

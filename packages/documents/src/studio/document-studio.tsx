@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { DeleteChoices } from './delete-gate';
 import { DocumentCanvas } from './document-canvas';
 import { DocumentInspector } from './document-inspector';
@@ -10,17 +10,18 @@ import { DocumentStudioHeader, type StudioMode } from './document-studio-header'
 import { resolveFocus, type FocusState } from './form-focus';
 import { withVariant, type DocumentKind, type DocumentType } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
-import { copyElement } from './element-copy';
+import { toast } from '@repo/ui/sonner';
+import { LOCKED } from './capabilities/governance';
 import { useOptionsEditor } from './options/use-options-editor';
 import { useRuleEditor } from './rules/use-rule-editor';
-import { removeElement } from './element-remove';
 import { findById } from './element-ids';
-import { appendTarget, insertItem } from './palette-insert';
+import { appendTarget } from './palette-insert';
 import { defaultPalette, uniqueItems, type PaletteResolver } from './palette-items';
 import { selectionPath } from './selection-path';
 import { STATUS_VIEWS, StudioFooter } from './studio-footer';
 import { browserDocumentStore } from './stub-documents';
 import { useDocumentStudio } from './use-document-studio';
+import { useStudioEdits, useTemplates } from './use-studio-edits';
 
 export interface DocumentStudioProps {
   /** Open this document — its latest version unless `versionId` names one. Absent = a new document. */
@@ -46,7 +47,8 @@ export interface DocumentStudioProps {
  * studio; it fills whatever box it is given.
  */
 export function DocumentStudio({ store, className, palette, ...props }: DocumentStudioProps) {
-  const studio = useDocumentStudio({ ...props, store: store ?? browserDocumentStore() });
+  const resolvedStore = store ?? browserDocumentStore();
+  const studio = useDocumentStudio({ ...props, store: resolvedStore });
   const { draft } = studio;
   const items = useMemo(
     () =>
@@ -62,39 +64,16 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
     [palette, draft],
   );
   const { setContent } = studio;
-  // A palette item placed on the page (doc 238 rules 14-16): created fresh, then applied with its schema properties.
-  const insert = useCallback(
-    (layoutId: string, index: number, itemId: string) => {
-      const item = items.find((candidate) => candidate.id === itemId);
-      if (draft === null || item === undefined) return;
-      const next = insertItem(draft.content, layoutId, index, item.create());
-      if (next !== draft.content) setContent(next);
-    },
-    [items, draft, setContent],
-  );
-  // A page element deleted through the gate (doc 242): removed with any schema property only it bound.
-  const removeEl = useCallback(
-    (elementId: string) => {
-      if (draft === null) return;
-      const next = removeElement(draft.content, elementId);
-      if (next !== draft.content) setContent(next);
-    },
-    [draft, setContent],
-  );
-  // A page element copied from its action bar (doc 254 rule 6): the copy's id comes back so the page selects it.
-  const copyEl = useCallback(
-    (elementId: string) => {
-      if (draft === null) return undefined;
-      const result = copyElement(draft.content, elementId);
-      if (result === undefined) return undefined;
-      setContent(result.content);
-      return result.copyId;
-    },
-    [draft, setContent],
+  const { governance, insert, removeEl, copyEl } = useStudioEdits(
+    draft,
+    items,
+    studio.governing?.capabilities,
+    setContent,
   );
   const [dialogOpen, setDialogOpen] = useState(
     props.documentId === undefined && (props.kind === undefined || props.type === undefined),
   );
+  const templates = useTemplates(resolvedStore, dialogOpen);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The focused page's element selection, for a palette click (doc 238 rule 16b). Stale ids are tolerated.
   const [pageSelectedId, setPageSelectedId] = useState<string | null>(null);
@@ -138,6 +117,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
         canSave={studio.dirty}
         saving={studio.saving}
         onSave={() => void studio.save()}
+        basedOn={studio.governing?.name}
         // A root Form's page has no flow to go Back to: its trailing + is the way out (doc 233 rule 9).
         onBack={
           focusedId === null || variant?.['type'] === 'Form' ? undefined : () => setFocus(null)
@@ -183,6 +163,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onEditRule={rules.open}
               ruleProblems={rules.problems}
               canAddRule={rules.canAdd}
+              governance={governance}
               onPageSelect={setPageSelectedId}
             />
             {focusedId !== null && (
@@ -198,6 +179,11 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
                       : findById(variant, focusedId);
                   if (form === undefined) return;
                   const { layoutId, index } = appendTarget(form, pageSelectedId);
+                  // Doc 259 rule 10: say why nothing happened, rather than silently ignoring the click.
+                  if (governance !== undefined && !governance.canAdd(layoutId)) {
+                    toast.info(LOCKED);
+                    return;
+                  }
                   insert(layoutId, index, itemId);
                 }}
               />
@@ -214,6 +200,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
               onEditOptions={options.open}
               onEditRule={rules.open}
               templateRules={draft.kind === 'template'}
+              governance={governance}
             />
             {options.dialog}
             {rules.dialog}
@@ -231,6 +218,7 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
         onOpenChange={setDialogOpen}
         kind={props.kind}
         type={props.type}
+        templates={templates}
         onCreate={studio.start}
       />
     </div>

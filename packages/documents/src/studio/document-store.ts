@@ -8,12 +8,15 @@ import type { DocumentContent, DocumentKind, DocumentType } from './document-typ
 export interface DocumentStore {
   /** The document with one version: `versionId`'s, else the latest. `null` when either is unknown. */
   load(documentId: string, versionId?: string): Promise<LoadedDocument | null>;
-  /** Creates a document with a first version holding `content`. */
+  /** Creates a document with a first version holding `content`, pinned to `template` when it was made from one. */
   create(input: {
     kind: DocumentKind;
     type: DocumentType;
     content: DocumentContent;
+    template?: TemplateRef | undefined;
   }): Promise<DocumentRef>;
+  /** Every document matching `filter`, summarised by its latest version (doc 259 — the Start from list). */
+  list(filter?: { kind?: DocumentKind; type?: DocumentType }): Promise<DocumentSummary[]>;
   /** Replaces a version's content. */
   save(ref: DocumentRef, content: DocumentContent): Promise<void>;
 }
@@ -23,11 +26,28 @@ export interface DocumentRef {
   versionId: string;
 }
 
+/** The template version a document was created from (doc 259 rule 2): pinned, never changed by a save. */
+export interface TemplateRef {
+  templateId: string;
+  templateVersionId: string;
+}
+
+export interface DocumentSummary {
+  id: string;
+  kind: DocumentKind;
+  type: DocumentType;
+  /** The latest version's root label, else `Untitled`. */
+  name: string;
+  versionId: string;
+  versionNumber: number;
+}
+
 export interface LoadedDocument extends DocumentRef {
   kind: DocumentKind;
   type: DocumentType;
   versionNumber: number;
   content: DocumentContent;
+  template?: TemplateRef;
 }
 
 export interface StoredVersion {
@@ -40,6 +60,7 @@ export interface StoredDocument {
   id: string;
   kind: DocumentKind;
   type: DocumentType;
+  template?: TemplateRef;
   versions: StoredVersion[];
 }
 
@@ -54,9 +75,9 @@ export interface DocumentStoreOptions {
 /**
  * Versioned: bump it when `DocumentContent` changes shape, so stale browser data is ignored, not misread — or when a
  * stub document changes and must replace a stored copy (v3: doc 236's Eligibility Heading; v4: doc 237's
- * boolean controls).
+ * boolean controls; v5: doc 259's governed agreement template and its implementation).
  */
-const DEFAULT_KEY = 'repo-documents:stub-store:v4';
+const DEFAULT_KEY = 'repo-documents:stub-store:v5';
 
 export function createDocumentStore({
   storage = null,
@@ -83,18 +104,30 @@ export function createDocumentStore({
         type: doc.type,
         versionNumber: version.versionNumber,
         content: structuredClone(version.content),
+        ...(doc.template !== undefined && { template: { ...doc.template } }),
       });
     },
-    create({ kind, type, content }) {
+    create({ kind, type, content, template }) {
       const ref = { documentId: crypto.randomUUID(), versionId: crypto.randomUUID() };
       documents.set(ref.documentId, {
         id: ref.documentId,
         kind,
         type,
+        ...(template !== undefined && { template: { ...template } }),
         versions: [{ id: ref.versionId, versionNumber: 1, content: structuredClone(content) }],
       });
       persist();
       return Promise.resolve(ref);
+    },
+    list(filter = {}) {
+      const summaries = [...documents.values()]
+        .filter((doc) => filter.kind === undefined || doc.kind === filter.kind)
+        .filter((doc) => filter.type === undefined || doc.type === filter.type)
+        .flatMap((doc) => {
+          const latest = pickVersion(doc, undefined);
+          return latest === undefined ? [] : [summaryOf(doc, latest)];
+        });
+      return Promise.resolve(summaries);
     },
     save({ documentId, versionId }, content) {
       const version = documents.get(documentId)?.versions.find((v) => v.id === versionId);
@@ -105,6 +138,18 @@ export function createDocumentStore({
       persist();
       return Promise.resolve();
     },
+  };
+}
+
+function summaryOf(doc: StoredDocument, version: StoredVersion): DocumentSummary {
+  const label = version.content.variants.default['label'];
+  return {
+    id: doc.id,
+    kind: doc.kind,
+    type: doc.type,
+    name: typeof label === 'string' && label.trim() !== '' ? label.trim() : 'Untitled',
+    versionId: version.id,
+    versionNumber: version.versionNumber,
   };
 }
 

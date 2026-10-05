@@ -6,7 +6,15 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import { ElementActions, elementName } from './element-actions';
+import {
+  ElementActions,
+  elementName,
+  NO_RULE_SOURCES,
+  type ElementAction,
+} from './element-actions';
+import { LockBadge } from './lock-badge';
+import { LOCKED } from '../../studio/capabilities/governance';
+import type { StudioEditor } from './studio-editor';
 import { idOf } from './element-order';
 import { isMultiChoice, isSingleChoice } from '../ui/choice-options';
 import { RuleBadge, ruleOf } from './rule-badge';
@@ -97,10 +105,15 @@ export function StudioElement({
   // Doc 256: the element's rule (moved aside on the canvas), and whether it tests a field it may not.
   const rule = ruleOf(uischema);
   const inError = rule !== undefined && (editor?.ruleProblems?.(id).length ?? 0) > 0;
-  // A choice field opens its options editor from a double-click and its action bar (doc 255 rule 3).
+  // Doc 259 rule 9: what the pinned template forbids this element itself.
+  const restrictions = editor?.governance?.restrictions(id) ?? [];
+  // A choice field opens its options editor from a double-click and its action bar (doc 255 rule 3) — unless the template
+  // locks its options (doc 259 rule 18).
   const openOptions =
     editor?.editOptions !== undefined && isChoiceControl(uischema, schema)
-      ? () => editor.editOptions?.(id)
+      ? () => {
+          if (editor.governance?.canEdit(id, 'options') !== false) editor.editOptions?.(id);
+        }
       : undefined;
   return (
     <DepthContext.Provider value={depth + 1}>
@@ -135,6 +148,7 @@ export function StudioElement({
         >
           {children}
           {rule !== undefined && <RuleBadge rule={rule} inError={inError} />}
+          {restrictions.length > 0 && <LockBadge restrictions={restrictions} />}
           {editor !== null &&
             (editor.remove !== undefined ||
               editor.copy !== undefined ||
@@ -143,8 +157,7 @@ export function StudioElement({
               <ElementActions
                 name={elementName(uischema, schema)}
                 hasRule={rule !== undefined}
-                // Doc 256 rule 9b: nothing above to test — but an existing rule stays editable.
-                ruleDisabled={rule === undefined && editor.canAddRule?.(id) === false}
+                disabled={disabledActions(editor, id, rule !== undefined)}
                 {...(editor.editRule !== undefined && { onEditRule: () => editor.editRule?.(id) })}
                 {...(openOptions !== undefined && { onEditOptions: openOptions })}
                 {...(editor.copy !== undefined && {
@@ -163,6 +176,32 @@ export function StudioElement({
       </ElementContext.Provider>
     </DepthContext.Provider>
   );
+}
+
+/** A template lock's reason, when the governance answered `false`. */
+const locked = (allowed: boolean | undefined) => (allowed === false ? LOCKED : undefined);
+
+/**
+ * The element's actions that are shown but disabled, with why (doc 256 rule 9b, doc 259 rules 8, 12, 17-18). A template
+ * lock outranks "nothing above to test"; an existing rule stays editable when it merely has no sources.
+ */
+function disabledActions(
+  editor: StudioEditor,
+  id: string,
+  hasRule: boolean,
+): Partial<Record<ElementAction, string>> {
+  const governance = editor.governance;
+  const entries: [ElementAction, string | undefined][] = [
+    [
+      'rule',
+      locked(governance?.canEdit(id, 'rule')) ??
+        (!hasRule && editor.canAddRule?.(id) === false ? NO_RULE_SOURCES : undefined),
+    ],
+    ['options', locked(governance?.canEdit(id, 'options'))],
+    ['copy', locked(governance?.canCopy(id))],
+    ['delete', locked(governance?.canRemove(id))],
+  ];
+  return Object.fromEntries(entries.filter(([, reason]) => reason !== undefined));
 }
 
 /** `entry` with its renderer drawn inside a StudioElement — `inert` for controls; the tester is kept (rule 15). */

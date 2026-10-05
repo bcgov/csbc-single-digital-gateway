@@ -20,6 +20,13 @@ const keys = (view: ReturnType<typeof capabilityForm>) =>
   Object.keys(view.schema['properties'] as object);
 const groups = (view: ReturnType<typeof capabilityForm>) =>
   (view.uischema['elements'] as { label: string }[]).map((g) => g.label);
+const choicesOf = (view: ReturnType<typeof capabilityForm>) =>
+  (
+    view.schema['properties'] as Record<
+      string,
+      { items: { oneOf: { const: string; title: string }[] } }
+    >
+  )['editFields']!.items.oneOf;
 const values = (t: InspectorTarget, map?: CapabilityMap) => capabilityForm(t, map).data;
 
 describe('capabilityForm (doc 258 rules 3-5)', () => {
@@ -77,8 +84,35 @@ describe('capabilityForm (doc 258 rules 3-5)', () => {
     expect(keys(view)).toContain('edges');
   });
 
-  it('a Separator has no editable settings: no edit / editFields', () => {
-    expect(keys(capabilityForm(target('s'), undefined))).toEqual(['remove', 'move']);
+  it('a Separator’s only editable setting is its Rule (doc 259 rule 19)', () => {
+    const view = capabilityForm(target('s'), undefined);
+    expect(keys(view)).toEqual(['edit', 'editFields', 'remove', 'move']);
+    expect(choicesOf(view)).toEqual([{ const: 'rule', title: 'Rule' }]);
+  });
+
+  it('Which settings adds Data key and Rule for a field, Options for a choice, Content for rich content (rule 19)', () => {
+    expect(choicesOf(capabilityForm(target('c-a'), undefined)).slice(-2)).toEqual([
+      { const: 'key', title: 'Data key' },
+      { const: 'rule', title: 'Rule' },
+    ]);
+    const choice: DocumentContent = {
+      schema: {
+        type: 'object',
+        properties: { c: { type: 'string', title: 'C', oneOf: [{ const: 'x', title: 'X' }] } },
+      },
+      variants: { default: form('F', 'Page', [control('c'), { id: 'r', type: 'RichContent' }]) },
+    };
+    expect(
+      choicesOf(capabilityForm(target('c-c', choice), undefined)).map((c) => c.const),
+    ).toContain('options');
+    expect(choicesOf(capabilityForm(target('r', choice), undefined)).map((c) => c.const)).toEqual([
+      'content',
+      'rule',
+    ]);
+    // The root is never a rule's element, and has no data key.
+    const root = choicesOf(capabilityForm(target(null), undefined)).map((c) => c.const);
+    expect(root).not.toContain('rule');
+    expect(root).not.toContain('key');
   });
 
   it('reads the authored entry', () => {
