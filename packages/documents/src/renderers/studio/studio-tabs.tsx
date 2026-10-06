@@ -1,36 +1,31 @@
 import { rankWith, uiTypeIs, type LayoutProps, type UISchemaElement } from '@jsonforms/core';
 import { JsonFormsDispatch, withJsonFormsLayoutProps } from '@jsonforms/react';
-import { mdiDotsVertical, mdiPencilOutline, mdiPlus, mdiDeleteOutline } from '@mdi/js';
+import { mdiDotsHorizontal, mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
-import { useEffect, useMemo, useState } from 'react';
-import { holdsId, newTab, tabsOf, tabsVariant, type TabsVariant } from '../ui/tabs-model';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { holdsId, newTab, tabsOf, tabsVariant } from '../ui/tabs-model';
 import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
 import { TabNameDialog } from './tab-name-dialog';
 import { releaseTabStrip, STUDIO_TABS_SLOT, TAB_STRIP_SLOT } from './tab-strip-hold';
 import { setActiveTab } from './active-tabs';
 import { useDragHover } from './use-drag-hover';
+import { useStripDrop } from './use-strip-drop';
 
 /** Outranks the default Tabs (doc 272 rule 4). */
 export const studioTabsTester = rankWith(2, uiTypeIs('Tabs'));
 
-/** The strip and its triggers per variant (doc 272 rule 9), drawn like `@repo/ui`'s TabsList. */
-const STRIP: Record<TabsVariant, string> = {
-  default: 'flex flex-wrap items-center gap-1 rounded-lg bg-muted p-0.5',
-  line: 'flex flex-wrap items-center gap-1 border-b border-border',
-};
-const TRIGGER: Record<TabsVariant, string> = {
-  default:
-    'rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground data-[active]:bg-background data-[active]:text-foreground data-[active]:shadow-xs',
-  line: '-mb-px border-b-2 border-transparent px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground data-[active]:border-foreground data-[active]:text-foreground',
-};
+/** A tab a drag rests on (doc 272 rule 6c): tinted and ringed until it opens, a second later. */
+const DRAG_OVER =
+  'data-[drag-over]:bg-primary/10 data-[drag-over]:text-foreground data-[drag-over]:ring-2 data-[drag-over]:ring-ring/60';
 
 /**
  * A Tabs authored on the canvas (doc 272 rules 4-6): a strip of triggers, the active tab's menu (Rename…, Delete),
@@ -51,6 +46,21 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
     if (tabsKey !== undefined && active !== undefined) setActiveTab(tabsKey, active.id);
   }, [tabsKey, active]);
   const hover = useDragHover(setActiveId);
+  // Doc 272 rule 6d: a drag released on the strip lands at the end of the tab under the pointer (else the shown tab).
+  const strip = useRef<HTMLDivElement>(null);
+  useStripDrop(
+    strip,
+    () => active?.id,
+    (tabId, drop) => {
+      if (editor === null) return;
+      setActiveId(tabId);
+      if ('itemId' in drop) editor.insert(tabId, Infinity, drop.itemId);
+      else {
+        editor.move?.(drop.elementId, tabId, Infinity);
+        editor.select(drop.elementId);
+      }
+    },
+  );
   // Doc 272 rule 4: selecting anything inside another tab — on the canvas or from the breadcrumb — opens it.
   const selectedId = editor?.selectedId ?? null;
   useEffect(() => {
@@ -71,50 +81,46 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
       onMouseLeave={(event) => releaseTabStrip(event.nativeEvent)}
       className={`${ELEMENT_INSET} flex flex-col gap-2`}
     >
-      <div
-        role="tablist"
-        aria-label="Tabs"
-        data-slot={TAB_STRIP_SLOT}
-        data-variant={variant}
-        className={STRIP[variant]}
-      >
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={tab.id === active?.id}
-            data-active={tab.id === active?.id ? '' : undefined}
-            className={`${STUDIO_INTERACTIVE} ${TRIGGER[variant]}`}
-            // Selecting a tab selects its content layout — its inspector holds the Tab label — not the whole Tabs.
-            onClick={(event) => {
-              event.stopPropagation();
-              setActiveId(tab.id);
-              editor?.select(tab.id);
-            }}
-            onPointerEnter={() => hover.onPointerEnter(tab.id)}
-            onPointerLeave={hover.onPointerLeave}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* The variant tab bar's own pieces and sizes (doc 272 rule 4b): @repo/ui Tabs, a size-6 menu, an xs button. */}
+      <div ref={strip} data-slot={TAB_STRIP_SLOT} className="flex min-w-0 items-center gap-1">
+        <Tabs
+          value={active?.id ?? null}
+          onValueChange={(value: unknown) => {
+            if (typeof value === 'string') setActiveId(value);
+          }}
+          className="min-w-0"
+        >
+          <TabsList variant={variant} aria-label="Tabs" className="max-w-full overflow-x-auto">
+            {tabs.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                data-tab-id={tab.id}
+                data-drag-over={hover.armed === tab.id ? '' : undefined}
+                className={`${STUDIO_INTERACTIVE} ${DRAG_OVER}`}
+                // Selecting a tab selects its content layout — its inspector holds the Tab label — not the Tabs.
+                onClick={(event) => {
+                  event.stopPropagation();
+                  editor?.select(tab.id);
+                }}
+                onPointerEnter={() => hover.onPointerEnter(tab.id)}
+                onPointerLeave={hover.onPointerLeave}
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         {editor !== null && active !== undefined && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  className={STUDIO_INTERACTIVE}
-                  aria-label={`Tab options for ${active.label}`}
-                />
-              }
+              aria-label={`Tab options for ${active.label}`}
+              className={`${STUDIO_INTERACTIVE} flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground`}
             >
-              <Icon path={mdiDotsVertical} size="0.875rem" aria-hidden />
+              <Icon path={mdiDotsHorizontal} size="16px" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40 text-xs">
+            <DropdownMenuContent align="start" className="w-auto text-xs">
               <DropdownMenuItem disabled={!canRename} onClick={() => setRenaming(true)}>
-                <Icon path={mdiPencilOutline} size="0.875rem" aria-hidden />
                 Rename…
               </DropdownMenuItem>
               {tabs.length > 1 && editor.remove !== undefined && (
@@ -122,8 +128,7 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
                   variant="destructive"
                   onClick={() => editor.remove?.(active.id, active.label)}
                 >
-                  <Icon path={mdiDeleteOutline} size="0.875rem" aria-hidden />
-                  Delete
+                  Delete…
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -141,7 +146,7 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
               setActiveId(tab['id'] as string);
             }}
           >
-            <Icon path={mdiPlus} size="0.875rem" aria-hidden />
+            <Icon path={mdiPlus} size="14px" />
             Add tab
           </Button>
         )}

@@ -78,7 +78,7 @@ describe('Tabs — studio (doc 272 rules 4-8)', () => {
     await user.type(input, 'Applicant{Enter}');
     expect(update).toHaveBeenLastCalledWith('a', { label: 'Applicant' });
     await user.click(screen.getByRole('button', { name: 'Tab options for Person' }));
-    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete…' }));
     expect(remove).toHaveBeenCalledWith('a', 'Person');
   });
 
@@ -91,7 +91,7 @@ describe('Tabs — studio (doc 272 rules 4-8)', () => {
     renderStudioRenderers(single, { schema: SCHEMA, removable: true });
     await user.click(screen.getByRole('button', { name: 'Tab options for Person' }));
     expect(await screen.findByRole('menuitem', { name: 'Rename…' })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Delete…' })).not.toBeInTheDocument();
   });
 
   it('opens a tab after a drag rests on it for a second, never outside a drag or after leaving', () => {
@@ -183,5 +183,59 @@ describe('a palette click with a Tabs selected (doc 272 rule 10)', () => {
     expect(activeTabOf('T')).toBe('a');
     fireEvent.click(screen.getByRole('tab', { name: 'Address' }));
     expect(activeTabOf('T')).toBe('b');
+  });
+});
+
+/** A mouseup released on the element `id`. */
+const up = (id: string) =>
+  document.getElementById(id)!.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+describe('drag affordances on the strip (doc 272 rules 6c-6d)', () => {
+  it('arms the tab a drag rests on, until it opens or the pointer leaves', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useDragHover(vi.fn(), () => true));
+    expect(result.current.armed).toBeNull();
+    act(() => result.current.onPointerEnter('b'));
+    expect(result.current.armed).toBe('b');
+    act(() => result.current.onPointerLeave());
+    expect(result.current.armed).toBeNull();
+    act(() => result.current.onPointerEnter('b'));
+    act(() => vi.advanceTimersByTime(DRAG_HOVER_MS));
+    expect(result.current.armed).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('lands a drag released on a tab at the end of that tab, else the shown tab', async () => {
+    const { DDManager } = await import('gridstack/dist/dd-manager');
+    const { useStripDrop } = await import('../src/renderers/studio/use-strip-drop');
+    document.body.innerHTML =
+      '<div id="strip"><button data-tab-id="b" id="b">B</button><span id="gap"></span></div><div id="away"></div>';
+    const strip = { current: document.getElementById('strip') };
+    const land = vi.fn();
+    renderHook(() => useStripDrop(strip, () => 'a', land));
+    const item = Object.assign(document.createElement('div'), { gridstackNode: { id: 'f' } });
+    vi.useFakeTimers();
+    Object.assign(DDManager, { dragElement: { dragging: true, el: item } });
+    up('b');
+    expect(land).not.toHaveBeenCalled(); // only after gridstack's own drop
+    act(() => vi.advanceTimersByTime(0));
+    expect(land).toHaveBeenLastCalledWith('b', { elementId: 'f' });
+    up('gap');
+    act(() => vi.advanceTimersByTime(0));
+    expect(land).toHaveBeenLastCalledWith('a', { elementId: 'f' });
+    up('away');
+    act(() => vi.advanceTimersByTime(0));
+    expect(land).toHaveBeenCalledTimes(2);
+    const palette = document.createElement('div');
+    palette.setAttribute('data-palette-item', 'text');
+    Object.assign(DDManager, { dragElement: { dragging: true, el: palette } });
+    up('b');
+    act(() => vi.advanceTimersByTime(0));
+    expect(land).toHaveBeenLastCalledWith('b', { itemId: 'text' });
+    delete (DDManager as { dragElement?: unknown }).dragElement;
+    up('b');
+    act(() => vi.advanceTimersByTime(0));
+    expect(land).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
   });
 });
