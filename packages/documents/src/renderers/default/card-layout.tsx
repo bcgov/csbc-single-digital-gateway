@@ -61,7 +61,7 @@ export function SlotDispatch({
   props: Pick<LayoutProps, 'schema' | 'path' | 'enabled' | 'renderers' | 'cells'>;
 }) {
   return (
-    <div className="w-full">
+    <div data-slot="card-slot" className="w-full">
       <JsonFormsDispatch
         uischema={layout as unknown as UISchemaElement}
         schema={props.schema}

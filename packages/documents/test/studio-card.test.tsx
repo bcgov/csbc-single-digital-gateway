@@ -41,6 +41,12 @@ describe('Card — studio (doc 273 rules 5-7)', () => {
     expect(content).toHaveAttribute('data-element-type', 'VerticalLayout');
     expect(inCard(container, 'card-content')).toContainElement(content as HTMLElement);
     expect(inCard(container, 'card-footer')).toContainElement(footer as HTMLElement);
+    // Doc 273 B1: the Card holds a drag between its slots, and each slot's grid has a floor height.
+    expect(
+      container.querySelector('[data-element-id="C"] > [data-slot="studio-card"]'),
+    ).not.toBeNull();
+    expect(content.parentElement).toHaveAttribute('data-slot', 'card-slot');
+    expect(footer.parentElement).toHaveAttribute('data-slot', 'card-slot');
     // The empty footer is a drop zone in the studio.
     expect(within(footer as HTMLElement).getByText('Drag items here')).toBeInTheDocument();
   });

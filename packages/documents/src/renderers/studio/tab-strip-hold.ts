@@ -1,8 +1,12 @@
 import { DDManager } from 'gridstack/dist/dd-manager';
 
-/** The `data-slot`s the hold reads: a studio Tabs and its strip of triggers (doc 272 rule 6b). */
+/** The `data-slot`s the hold reads: a studio Tabs and its strip of triggers (doc 272 rule 6b), a studio Card (doc 273). */
 export const STUDIO_TABS_SLOT = 'studio-tabs';
 export const TAB_STRIP_SLOT = 'tab-strip';
+export const STUDIO_CARD_SLOT = 'studio-card';
+
+/** The containers that hold a drag in their own grids: the nearest one around a grid decides. */
+const HOLDING = `[data-slot="${STUDIO_TABS_SLOT}"], [data-slot="${STUDIO_CARD_SLOT}"]`;
 
 /** gridstack's private leave handler (gridstack 13.2.0 — re-verify on upgrade), named once. */
 const LEAVE = '_mouseLeave';
@@ -37,11 +41,13 @@ export function holdOverTabStrip(droppable: unknown): void {
   holding.add(target);
 }
 
-/** Whether `to` is inside the NEAREST studio Tabs holding `grid` (outside the grid itself — that is no leave). */
+/** Whether `to` is inside the NEAREST studio Tabs or Card holding `grid` (outside the grid itself — that is no leave). */
 function insideOwnTabs(grid: HTMLElement, to: EventTarget | null): boolean {
   if (!(to instanceof Element)) return false;
-  const tabs = grid.closest(`[data-slot="${STUDIO_TABS_SLOT}"]`);
-  return tabs !== null && tabs.contains(to) && !grid.contains(to);
+  // Doc 273 B1: a Card holds too — leaving its footer grid for its content crossed the gap between them, the page grid
+  // took the drag there and drew its drop zone under the Card.
+  const holder = grid.closest(HOLDING);
+  return holder !== null && holder.contains(to) && !grid.contains(to);
 }
 
 /**

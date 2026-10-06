@@ -65,4 +65,23 @@ describe('tab strip hold (doc 272 rule 6b)', () => {
     releaseTabStrip(leaveTo(outside));
     expect(leave).toHaveBeenCalledTimes(1);
   });
+
+  it("holds a card slot's drag anywhere inside its own Card — the gap between the slots too (doc 273 B1)", () => {
+    document.body.innerHTML = `
+      <div data-slot="page">
+        <div data-slot="studio-card">
+          <div id="content"></div>
+          <div id="between"></div>
+          <div id="footer"></div>
+        </div>
+        <div id="below"></div>
+      </div>`;
+    const leave = vi.fn();
+    const droppable = { el: $('footer'), [LEAVE]: leave };
+    holdOverTabStrip(droppable);
+    droppable[LEAVE](leaveTo($('between')));
+    expect(leave).not.toHaveBeenCalled();
+    droppable[LEAVE](leaveTo($('below')));
+    expect(leave).toHaveBeenCalledTimes(1);
+  });
 });

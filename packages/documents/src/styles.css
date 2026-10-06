@@ -121,6 +121,14 @@
 }
 
 /*
+ * Every card slot's grid keeps a floor height (doc 273 B1): a slot whose only item was dragged out collapsed to nothing,
+ * so the drag could never come back to it and fell through to the page grid under the Card.
+ */
+[data-slot='card-slot'] > [data-slot='studio-element'] > [data-slot='studio-vertical-layout'] {
+  min-height: 4rem;
+}
+
+/*
  * Studio Grids (doc 260 rule 14), the same treatment as studio layouts above under their own slot: content may draw its
  * outline outside its box; only a grid's own items animate; the default cursor while dragging. A Grid's cells keep
  * their content at the top, and the resize handle sits inside the item's margin.

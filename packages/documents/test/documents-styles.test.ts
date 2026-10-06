@@ -116,4 +116,10 @@ describe('@repo/documents styles.css (doc 236)', () => {
       "[data-slot='studio-tabs'] [role='tabpanel'] > [data-slot='studio-element'] > [data-slot='studio-vertical-layout'] { min-height: 8rem; }",
     );
   });
+
+  it("gives a card slot's grid a floor height, so it never collapses when its only item is dragged out (doc 273 B1)", () => {
+    expect(flat).toContain(
+      "[data-slot='card-slot'] > [data-slot='studio-element'] > [data-slot='studio-vertical-layout'] { min-height: 4rem; }",
+    );
+  });
 });

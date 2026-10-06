@@ -74,7 +74,12 @@ export class GridNestEngine extends GridStackEngine {
     return super.addNode(node, triggerAddEvent, after);
   }
 
-  /** An item entering from another grid is as tall here as it is on screen (bug B2). */
+  /**
+   * An item entering from another grid is as tall here as it is on screen (bug B2), and already at its arrival row
+   * (doc 273 B2): gridstack's dropover calls this, WRITES the placeholder, and only then `addNode` — placing it only in
+   * `addNode` drew the placeholder at the cursor's row, inside the neighbour the drag had just left (a Card), until the
+   * next layout update moved it.
+   */
   override nodeBoundFix(node: GridStackNode, resizing?: boolean): GridStackEngine {
     const { _isExternal: external, _temporaryRemoved: entering } = node as EnteringNode;
     if (external === true && entering === true) {
@@ -82,7 +87,9 @@ export class GridNestEngine extends GridStackEngine {
       const rows = arrivingRows(drag?.el);
       if (rows !== undefined) node.h = rows;
     }
-    return super.nodeBoundFix(node, resizing);
+    const fixed = super.nodeBoundFix(node, resizing);
+    if (entering === true) node.y = arrivalRow(this.nodes, node);
+    return fixed;
   }
 
   protected override directionCollideCoverage(

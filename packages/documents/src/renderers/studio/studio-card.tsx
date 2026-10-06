@@ -7,6 +7,7 @@ import { cardDescription, cardSlots, cardTitle } from '../ui/card-model';
 import { CardSlotContext } from './card-slot';
 import { InlineEditableText } from './inline-text';
 import { mayEdit, useStudioEditor } from './studio-editor';
+import { releaseTabStrip, STUDIO_CARD_SLOT } from './tab-strip-hold';
 import { useStudioElement } from './studio-element';
 
 /** Outranks the default Card (doc 273 rule 5). */
@@ -25,7 +26,12 @@ export function StudioCard({ uischema, visible, ...props }: LayoutProps) {
   const { content, footer } = cardSlots(uischema);
   // A p-2 inset, not ELEMENT_INSET's p-4: the Card's own ring and padding already sit it clear of its frame (requested).
   return (
-    <div className="p-2">
+    <div
+      data-slot={STUDIO_CARD_SLOT}
+      // Doc 273 B1: a drag held inside the Card leaves its slot's grid once it leaves the Card.
+      onMouseLeave={(event) => releaseTabStrip(event.nativeEvent)}
+      className="p-2"
+    >
       <CardFrame element={uischema}>
         <CardHeader>
           <InlineEditableText

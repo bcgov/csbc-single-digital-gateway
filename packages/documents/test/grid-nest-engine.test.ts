@@ -163,6 +163,22 @@ describe('an arrival never pushes a neighbour under the cursor (doc 260 bug B3)'
     expect(rowsById(engine)).toEqual({ field: 0, layout: 30, new: 20 });
   });
 
+  it('places the arrival at that row before gridstack draws its placeholder (doc 273 B2)', () => {
+    // gridstack's dropover runs nodeBoundFix, WRITES the placeholder, and only then calls addNode: correcting the row
+    // only in addNode drew the placeholder at the cursor's row — inside the Card the drag had just left — for a frame.
+    const engine = bugB3Page();
+    const entering = arrivingAt(40);
+    engine.nodeBoundFix(entering);
+    expect(entering.y).toBe(50);
+    const upper = arrivingAt(25);
+    engine.nodeBoundFix(upper);
+    expect(upper.y).toBe(20);
+    // A node already in the grid keeps its row: only arrivals are placed.
+    const own = { id: 'own', x: 0, y: 40, w: 1, h: 5 } as GridStackNode;
+    engine.nodeBoundFix(own);
+    expect(own.y).toBe(40);
+  });
+
   it("keeps the cursor's row when it lands on no neighbour, and leaves the grid's own items alone", () => {
     const engine = bugB3Page();
     expect(arrivalRow(engine.nodes, arrivingAt(60))).toBe(60);
