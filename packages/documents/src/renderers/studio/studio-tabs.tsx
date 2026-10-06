@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { holdsId, newTab, tabsOf, tabsVariant } from '../ui/tabs-model';
+import { holdsId, newTab, tabsOf } from '../ui/tabs-model';
 import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
 import { TabNameDialog } from './tab-name-dialog';
@@ -36,7 +36,6 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
   const editor = useStudioEditor();
   const element = useStudioElement();
   const tabs = useMemo(() => tabsOf(uischema), [uischema]);
-  const variant = tabsVariant(uischema);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
@@ -90,11 +89,7 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
           }}
           className="min-w-0"
         >
-          <TabsList
-            variant={variant}
-            aria-label="Tabs"
-            className="max-w-full gap-0.5 overflow-x-auto"
-          >
+          <TabsList variant="line" aria-label="Tabs" className="max-w-full gap-0.5 overflow-x-auto">
             {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}

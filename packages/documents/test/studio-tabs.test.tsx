@@ -136,30 +136,19 @@ describe('Tabs — studio (doc 272 rules 4-8)', () => {
   });
 });
 
-describe('Tabs variant (doc 272 rule 9)', () => {
-  it('offers Default / Line in the Tabs inspector and writes options.variant only for Line', async () => {
-    const { applyInspector } = await import('../src/studio/inspector/apply-inspector');
-    const { inspectorForm } = await import('../src/studio/inspector/inspector-form');
+describe('Tabs look (doc 272 rule 9)', () => {
+  it('offers no Variant in the Tabs inspector', () => {
     const content = { schema: SCHEMA, variants: { default: PAGE } } as DocumentContent;
     const target = inspectorTarget(content, { pageSelectedId: 'T', focusedId: 'F', formId: 'F' })!;
-    const data = inspectorForm(target).data;
-    expect(data['tabsVariant']).toBe('default');
-    const line = applyInspector(content, target, { ...data, tabsVariant: 'line' });
-    const tabs = (line.variants['default'] as { elements: Record<string, unknown>[] }).elements[0]!;
-    expect(tabs['options']).toEqual({ variant: 'line' });
-    const lineTarget = inspectorTarget(line, { pageSelectedId: 'T', focusedId: 'F', formId: 'F' })!;
-    const back = applyInspector(line, lineTarget, {
-      ...inspectorForm(lineTarget).data,
-      tabsVariant: 'default',
-    });
-    expect(
-      (back.variants['default'] as { elements: Record<string, unknown>[] }).elements[0]!['options'],
-    ).toEqual({});
+    expect(fieldsFor(target).map((f) => f.key)).not.toContain('tabsVariant');
   });
 
-  it('draws the studio strip in the chosen variant', () => {
-    const line = { ...PAGE, elements: [{ ...PAGE.elements[0]!, options: { variant: 'line' } }] };
-    renderStudioRenderers(line, { schema: SCHEMA });
+  it('always draws the studio strip as Line, ignoring any authored options.variant', () => {
+    const authored = {
+      ...PAGE,
+      elements: [{ ...PAGE.elements[0]!, options: { variant: 'default' } }],
+    };
+    renderStudioRenderers(authored, { schema: SCHEMA });
     expect(screen.getByRole('tablist', { name: 'Tabs' })).toHaveAttribute('data-variant', 'line');
   });
 });

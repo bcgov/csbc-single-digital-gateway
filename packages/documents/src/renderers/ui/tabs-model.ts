@@ -2,15 +2,6 @@ import { nanoid } from 'nanoid';
 
 type Uischema = Record<string, unknown>;
 
-/** How a Tabs' strip is drawn (doc 272 rule 9): `@repo/ui` TabsList's variants. */
-export type TabsVariant = 'default' | 'line';
-
-/** A Tabs' `options.variant`, `'default'` unless it is `'line'`. */
-export function tabsVariant(element: unknown): TabsVariant {
-  const options = (element as { options?: { variant?: unknown } } | undefined)?.options;
-  return options?.variant === 'line' ? 'line' : 'default';
-}
-
 /** One tab of a Tabs element (doc 272 rule 1): its VerticalLayout and the name its trigger shows. */
 export interface TabEntry {
   id: string;

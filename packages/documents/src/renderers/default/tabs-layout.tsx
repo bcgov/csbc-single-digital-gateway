@@ -2,7 +2,7 @@ import { rankWith, uiTypeIs, type LayoutProps, type UISchemaElement } from '@jso
 import { JsonFormsDispatch, useJsonForms, withJsonFormsLayoutProps } from '@jsonforms/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { useMemo } from 'react';
-import { tabsOf, tabsVariant } from '../ui/tabs-model';
+import { tabsOf } from '../ui/tabs-model';
 import { hasErrorIn, tabDataPaths, type ValidationError } from './tab-errors';
 
 /** `{ type: 'Tabs' }` at the base rank (doc 272 rule 2); the studio's outranks it. */
@@ -26,7 +26,8 @@ export function TabsLayout({
   if (!visible || tabs.length === 0) return null;
   return (
     <Tabs data-slot="tabs-layout" defaultValue={tabs[0]!.id} className="flex flex-col gap-3">
-      <TabsList variant={tabsVariant(uischema)} className="gap-0.5">
+      {/* Always Line (doc 272 rule 9): an authored `options.variant` is ignored. */}
+      <TabsList variant="line" className="gap-0.5">
         {tabs.map((tab) => {
           const invalid = hasErrorIn(errors, tabDataPaths(tab.layout));
           return (

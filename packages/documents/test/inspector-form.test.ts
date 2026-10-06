@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentContent, Uischema } from '../src/studio/document-types';
-import { inspectorForm } from '../src/studio/inspector/inspector-form';
+import { fieldsFor, inspectorForm } from '../src/studio/inspector/inspector-form';
 import { inspectorTarget } from '../src/studio/inspector/inspector-target';
 import { plainRichText } from '../src/renderers/ui/rich-text-value';
 import { control, form, funnel } from './funnel-fixtures';
@@ -32,8 +32,10 @@ function layoutOf(uischema: Record<string, unknown>) {
 const page = (...elements: Uischema[]) => form('F', 'Page', elements);
 
 describe('inspectorForm (doc 249 fields table)', () => {
-  it('builds Name for a Funnel and Title, Description, Spacing for a Form', () => {
-    expect(layoutOf(formFor(funnel([], []), null).uischema)).toEqual([['General', ['Name']]]);
+  it('builds Name, Description for a Funnel and Title, Description, Spacing for a Form', () => {
+    expect(layoutOf(formFor(funnel([], []), null).uischema)).toEqual([
+      ['General', ['Name', 'Description']],
+    ]);
     expect(layoutOf(formFor(page(), 'F').uischema)).toEqual([
       ['General', ['Title', 'Description']],
       ['Appearance', ['Spacing']],
@@ -206,5 +208,35 @@ describe('Must be checked (doc 253 rules 1, 4)', () => {
       'General',
       ['Label', 'Description', 'Required'],
     ]);
+  });
+});
+
+describe('a Funnel description', () => {
+  it('is a textarea over options.description; blank removes it', async () => {
+    const { applyInspector } = await import('../src/studio/inspector/apply-inspector');
+    const root = funnel([], []);
+    const doc = content(root);
+    const targetIn = (c: DocumentContent) =>
+      inspectorTarget(c, { pageSelectedId: null, focusedId: null, formId: null })!;
+    const built = inspectorForm(targetIn(doc));
+    const properties = built.schema['properties'] as Record<string, Record<string, unknown>>;
+    expect(properties['funnelDescription']).toEqual({ type: 'string' });
+    expect(fieldsFor(targetIn(doc)).find((f) => f.key === 'funnelDescription')?.options).toEqual({
+      component: 'textarea',
+    });
+    const written = applyInspector(doc, targetIn(doc), {
+      ...built.data,
+      funnelDescription: 'How to apply',
+    });
+    const optionsOf = (c: DocumentContent) =>
+      c.variants['default']!['options'] as Record<string, unknown>;
+    // A Funnel's options also hold its edges and conditions, which the write leaves alone.
+    expect(optionsOf(written)).toEqual({ ...optionsOf(doc), description: 'How to apply' });
+    expect(inspectorForm(targetIn(written)).data['funnelDescription']).toBe('How to apply');
+    const cleared = applyInspector(written, targetIn(written), {
+      ...inspectorForm(targetIn(written)).data,
+      funnelDescription: '',
+    });
+    expect(optionsOf(cleared)).toEqual(optionsOf(doc));
   });
 });

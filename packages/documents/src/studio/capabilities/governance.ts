@@ -69,9 +69,14 @@ const LABEL_KEYS: Readonly<Record<string, string>> = Object.freeze({
 });
 const labelKeyOf = (type: unknown) => (typeof type === 'string' && LABEL_KEYS[type]) || 'label';
 
-/** The setting an inline option edit is: a Card's description is its own (doc 273 rule 10), else `OPTION_KEYS`. */
+/** The setting an inline option edit is: a Card's or Funnel's description is its own (doc 273 rule 10), else `OPTION_KEYS`. */
+const DESCRIPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  Card: 'cardDescription',
+  Funnel: 'funnelDescription',
+});
 const optionKeyOf = (type: unknown, key: string) =>
-  type === 'Card' && key === 'description' ? 'cardDescription' : (OPTION_KEYS[key] ?? key);
+  (key === 'description' && typeof type === 'string' && DESCRIPTION_KEYS[type]) ||
+  (OPTION_KEYS[key] ?? key);
 
 /** Every element by id, with its parent (the root has none). */
 function indexOf(root: Uischema) {

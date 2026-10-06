@@ -61,12 +61,15 @@ describe('Tabs — default renderer (doc 272 rules 2-3)', () => {
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Address' })).toBeInTheDocument());
   });
 
-  it('passes the authored variant to the tab list', () => {
-    const line = { ...FORM, elements: [{ ...FORM.elements[0]!, options: { variant: 'line' } }] };
+  it('always draws the Line tab list, ignoring any authored options.variant (doc 272 rule 9)', () => {
+    const authored = {
+      ...FORM,
+      elements: [{ ...FORM.elements[0]!, options: { variant: 'default' } }],
+    };
     render(
       <JsonForms
         schema={SCHEMA}
-        uischema={line as never}
+        uischema={authored as never}
         data={{}}
         renderers={defaults.renderers}
         cells={defaults.cells}

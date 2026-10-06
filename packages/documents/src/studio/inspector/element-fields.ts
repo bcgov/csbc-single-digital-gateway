@@ -33,9 +33,21 @@ const labelField = (key: string, label: string, kind: 'funnel' | 'form'): Inspec
     patchElement(content, t, { label: absentIf(value) as string | undefined }),
 });
 
-/** Doc 249's fields for elements that are not Controls: Funnel, Form, Heading, VerticalLayout, Grid (doc 260). */
+/** Doc 249's fields for elements that are not Controls: Funnel (Name, Description), Form, Heading, VerticalLayout, Grid (doc 260). */
 export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
   labelField('funnelName', 'Name', 'funnel'),
+  {
+    key: 'funnelDescription',
+    section: 'General',
+    label: 'Description',
+    applies: isKind('funnel'),
+    // Plain text, unlike a Form's rich description: the Funnel has no canvas surface to format it on.
+    schema: () => STRING,
+    options: { component: 'textarea' },
+    read: (t) => optionOf(t, 'description'),
+    write: (content, t, value) =>
+      patchElement(content, t, { options: { description: absentIf(value) } }),
+  },
   labelField('formTitle', 'Title', 'form'),
   {
     key: 'formDescription',
