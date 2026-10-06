@@ -109,6 +109,18 @@
 }
 
 /*
+ * Every tab's grid keeps a floor height (doc 272 rule 6f): an empty tab — or one whose only item is being dragged out —
+ * otherwise shrank to its empty-zone row and was hard to drop into after a hover-switch. A stylesheet `min-height`
+ * beats the inline `height` gridstack sets on an unlinked grid, and gridstack's own check reads it.
+ */
+[data-slot='studio-tabs']
+  [role='tabpanel']
+  > [data-slot='studio-element']
+  > [data-slot='studio-vertical-layout'] {
+  min-height: 8rem;
+}
+
+/*
  * Studio Grids (doc 260 rule 14), the same treatment as studio layouts above under their own slot: content may draw its
  * outline outside its box; only a grid's own items animate; the default cursor while dragging. A Grid's cells keep
  * their content at the top, and the resize handle sits inside the item's margin.
