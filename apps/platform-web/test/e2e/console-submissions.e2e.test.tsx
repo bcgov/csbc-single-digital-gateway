@@ -1,10 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, renderApp } from '../support/render-app';
-
-const ISO = '2026-06-01T00:00:00.000Z';
-const workspace = { id: 'w1', slug: 'riverton', name: 'Riverton', role: 'admin', createdAt: ISO };
+import { authedUser, jsonResponse, renderApp } from '../support/render-app';
+import { adminWorkspace, ISO } from '../support/fixtures';
 
 const summary = {
   id: 'sub1',
@@ -35,13 +33,6 @@ const detail = {
   reviews: [] as Array<Record<string, unknown>>,
 };
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 /** Stateful BFF mock: a review POST flips the submission to approved on subsequent reads. */
 function mockSubmissions() {
   let reviewed = false;
@@ -56,18 +47,18 @@ function mockSubmissions() {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/auth/me')) return json(authedUser);
-    if (url.includes('/v1/workspaces/by-slug/riverton')) return json(workspace);
+    if (url.includes('/auth/me')) return jsonResponse(authedUser);
+    if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
     if (url.includes('/v1/submissions/sub1/review') && method === 'POST') {
       reviewed = true;
-      return json(approved);
+      return jsonResponse(approved);
     }
-    if (url.endsWith('/v1/submissions/sub1')) return json(reviewed ? approved : detail);
+    if (url.endsWith('/v1/submissions/sub1')) return jsonResponse(reviewed ? approved : detail);
     if (url.includes('/v1/submissions')) {
       const items = [
         reviewed ? { ...summary, status: 'approved', statusLabel: 'Approved' } : summary,
       ];
-      return json({ items, total: items.length, limit: 20, offset: 0 });
+      return jsonResponse({ items, total: items.length, limit: 20, offset: 0 });
     }
     return new Response(null, { status: 404 });
   });

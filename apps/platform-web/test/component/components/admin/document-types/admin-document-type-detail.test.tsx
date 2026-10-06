@@ -1,7 +1,8 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderApp } from '../../../../support/render-app';
+import { jsonResponse, renderApp } from '../../../../support/render-app';
+import { adminUser, ISO } from '../../../../support/fixtures';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 vi.mock('@monaco-editor/react', () => ({
@@ -36,13 +37,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ISO = '2026-06-01T00:00:00.000Z';
-const adminUser = {
-  id: 'u1',
-  roles: ['admin'],
-  claims: { sub: 'u1', name: 'Maya Reyes', email: 'maya.reyes@riverton.gov' },
-};
-
 interface Version {
   id: string;
   typeId: string;
@@ -68,33 +62,29 @@ const defWithSchema = (title: string) => ({
   },
 });
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<typeof vi.fn> } {
+function mockAdminDocumentTypeDetailBff(initial: Entry[]): {
+  store: Entry[];
+  fetchMock: ReturnType<typeof vi.fn>;
+} {
   const store: Entry[] = structuredClone(initial);
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
     if (url.includes('/auth/me')) {
-      return json(adminUser);
+      return jsonResponse(adminUser);
     }
     if (url.includes('/v1/admin/document-types')) {
       const rest = url.split('/v1/admin/document-types')[1]?.split('?')[0] ?? '';
       const segs = rest.split('/').filter(Boolean);
       if (segs.length === 0) {
-        return json({ items: store });
+        return jsonResponse({ items: store });
       }
       const entry = store.find((e) => e.type.id === decodeURIComponent(segs[0]!));
       if (!entry) {
         return new Response(null, { status: 404 });
       }
       if (segs.length === 1 && method === 'GET') {
-        return json(entry);
+        return jsonResponse(entry);
       }
       if (segs[1] === 'versions') {
         if (segs.length === 2 && method === 'POST') {
@@ -113,7 +103,7 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
             archivedAt: null,
           };
           entry.versions.push(newVersion);
-          return json(newVersion);
+          return jsonResponse(newVersion);
         }
         if (segs.length === 3) {
           const versionId = decodeURIComponent(segs[2]!);
@@ -126,7 +116,7 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
               ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
               : { definition: {} };
             version.definition = body.definition;
-            return json(version);
+            return jsonResponse(version);
           }
         }
         if (segs.length === 4) {
@@ -144,7 +134,7 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
             }
             version.status = 'published';
             version.publishedAt = ISO;
-            return json(version);
+            return jsonResponse(version);
           }
         }
       }
@@ -201,7 +191,7 @@ const draftLatestEntry: Entry = {
 
 describe('AdminDocumentTypeDetail', () => {
   it('renders the heading, version dropdown, and seeded definition editor', async () => {
-    mockApi([publishedEntry]);
+    mockAdminDocumentTypeDetailBff([publishedEntry]);
     renderApp('/admin/document-types/dt-1');
 
     expect(
@@ -216,7 +206,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('shows New version (only) on a non-draft latest version', async () => {
-    mockApi([publishedEntry]);
+    mockAdminDocumentTypeDetailBff([publishedEntry]);
     renderApp('/admin/document-types/dt-1');
 
     expect(
@@ -227,7 +217,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('shows Save draft + Publish (not New version) when the latest version is a draft', async () => {
-    mockApi([draftLatestEntry]);
+    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
 
     // v2 (draft) is selected by default.
@@ -240,7 +230,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('switches the selected version via the dropdown and returns via Go to current', async () => {
-    mockApi([draftLatestEntry]);
+    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -264,7 +254,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('saves the draft definition via PATCH', async () => {
-    const { fetchMock } = mockApi([draftLatestEntry]);
+    const { fetchMock } = mockAdminDocumentTypeDetailBff([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -291,7 +281,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('shows an error when the draft definition is not valid JSON on save', async () => {
-    mockApi([draftLatestEntry]);
+    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -305,7 +295,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('publishes the selected draft version', async () => {
-    const { fetchMock } = mockApi([draftLatestEntry]);
+    const { fetchMock } = mockAdminDocumentTypeDetailBff([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -330,7 +320,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('creates a new version from the latest published version', async () => {
-    const { fetchMock } = mockApi([publishedEntry]);
+    const { fetchMock } = mockAdminDocumentTypeDetailBff([publishedEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -350,7 +340,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('renders the live preview and toggles between interactive and read-only, and ignores deselect', async () => {
-    mockApi([draftLatestEntry]);
+    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -380,7 +370,7 @@ describe('AdminDocumentTypeDetail', () => {
       },
       versions: [],
     };
-    const { fetchMock } = mockApi([emptyEntry]);
+    const { fetchMock } = mockAdminDocumentTypeDetailBff([emptyEntry]);
     renderApp('/admin/document-types/dt-empty');
     const user = userEvent.setup();
 
@@ -405,7 +395,7 @@ describe('AdminDocumentTypeDetail', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/auth/me')) {
-        return json(adminUser);
+        return jsonResponse(adminUser);
       }
       return new Response(null, { status: 404 });
     });

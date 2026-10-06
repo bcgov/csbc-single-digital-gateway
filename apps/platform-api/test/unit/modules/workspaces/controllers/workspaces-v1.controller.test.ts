@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { WorkspacesV1Controller } from '../../../../../src/modules/workspaces/controllers/workspaces-v1.controller';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateWorkspaceDto,
   ListWorkspacesQueryDto,
@@ -11,20 +10,11 @@ import type {
   TransferOwnershipDto,
   UpdateWorkspaceDto,
 } from '../../../../../src/modules/workspaces/dtos/workspace.dtos';
+import { mockUser } from '../../../../utils/fixtures';
 
 describe('WorkspacesV1Controller', () => {
   let controller: WorkspacesV1Controller;
   let workspacesServiceMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-1',
-    roles: ['staff'],
-    claims: {
-      sub: 'user-1-sub',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-  };
 
   beforeEach(() => {
     workspacesServiceMock = {

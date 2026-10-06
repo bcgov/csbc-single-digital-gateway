@@ -42,7 +42,7 @@ describe('CommandPalette Component Test Suite', () => {
     expect(within(dialog).getByText('Account')).toBeInTheDocument();
   });
 
-  it('renders nothing when open is false', () => {
+  it('renders nothing when open is false for the command palette component', () => {
     render(<CommandPalette open={false} onOpenChange={vi.fn()} slug="riverton" />);
 
     // Check that elements from the dialog are not in the document

@@ -1,8 +1,14 @@
 import { configure, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, stubLocationAssign } from '../../support/render-app';
+import {
+  authedUser as nonAdminUser,
+  mockAuth,
+  renderApp,
+  stubLocationAssign,
+} from '../../support/render-app';
 import { Route } from '@/routes/admin';
+import { adminUser } from '../../support/fixtures';
 
 configure({ asyncUtilTimeout: 16000 });
 
@@ -10,16 +16,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const adminUser = { ...authedUser, roles: ['admin'] };
-const nonAdminUser = { ...authedUser, roles: ['staff'] };
-
-describe('Admin Route Integration', () => {
-  it('verifies route has a valid component definition', () => {
+describe('Admin Route Integration Test Suite', () => {
+  it('verifies route has a valid component definition for admin route', () => {
     expect(Route.options.component).toBeDefined();
   });
 
   describe('beforeLoad auth guard branches', () => {
-    it('redirects anonymous users to the BFF login URL and encodes the return path', async () => {
+    it('redirects anonymous users to the BFF login URL and encodes the return path for the admin route', async () => {
       const { replace, restore } = stubLocationAssign();
       mockAuth(null);
       renderApp('/admin');

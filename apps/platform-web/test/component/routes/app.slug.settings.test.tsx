@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { authedUser, mockAuth, renderApp } from '../../support/render-app';
+import { adminWorkspace } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -26,17 +27,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
 describe('App Slug Settings Route', () => {
   it('renders the settings page correctly for an admin', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/riverton/settings');
 
     // Wait for General settings card title to render

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { FormRunner } from '../src/form-runner';
 
-function Harness({
+function FormRunnerMirror({
   kind,
   definition,
   onSubmit,
@@ -70,7 +70,7 @@ describe('FormRunner — basic', () => {
   it('blocks submit until required fields are valid, then submits the data', async () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
-    render(<Harness kind="basic-form" definition={basicDefinition} onSubmit={onSubmit} />);
+    render(<FormRunnerMirror kind="basic-form" definition={basicDefinition} onSubmit={onSubmit} />);
 
     const submit = screen.getByRole('button', { name: 'Submit' });
     await waitFor(() => expect(submit).toBeDisabled()); // required `name` missing
@@ -88,7 +88,11 @@ describe('FormRunner — multi-stage', () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
     render(
-      <Harness kind="multi-stage-form" definition={multiStageDefinition} onSubmit={onSubmit} />,
+      <FormRunnerMirror
+        kind="multi-stage-form"
+        definition={multiStageDefinition}
+        onSubmit={onSubmit}
+      />,
     );
 
     expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();

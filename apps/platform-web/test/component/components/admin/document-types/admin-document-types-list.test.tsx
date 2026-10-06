@@ -1,17 +1,11 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderApp } from '../../../../support/render-app';
+import { jsonResponse, renderApp } from '../../../../support/render-app';
+import { adminUser, ISO } from '../../../../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-06-01T00:00:00.000Z';
-const adminUser = {
-  id: 'u1',
-  roles: ['admin'],
-  claims: { sub: 'u1', name: 'Maya Reyes', email: 'maya.reyes@riverton.gov' },
-};
 
 interface Version {
   id: string;
@@ -29,21 +23,14 @@ interface Entry {
   versions: Version[];
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockApi(items: Entry[]): ReturnType<typeof vi.fn> {
+function mockAdminDocumentTypesListBff(items: Entry[]): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes('/auth/me')) {
-      return json(adminUser);
+      return jsonResponse(adminUser);
     }
     if (url.includes('/v1/admin/document-types')) {
-      return json({ items });
+      return jsonResponse({ items });
     }
     return new Response(null, { status: 404 });
   });
@@ -53,7 +40,7 @@ function mockApi(items: Entry[]): ReturnType<typeof vi.fn> {
 
 describe('AdminDocumentTypesList', () => {
   it('renders empty state when there are no document types', async () => {
-    mockApi([]);
+    mockAdminDocumentTypesListBff([]);
     renderApp('/admin/document-types');
 
     expect(
@@ -143,7 +130,7 @@ describe('AdminDocumentTypesList', () => {
       },
     ];
 
-    mockApi(entries);
+    mockAdminDocumentTypesListBff(entries);
     renderApp('/admin/document-types');
 
     // 1. Verify list elements render

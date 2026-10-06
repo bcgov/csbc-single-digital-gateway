@@ -1,6 +1,8 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { renderApp } from '../../support/render-app';
+import { createMockMembersListBff } from '../../support/create-mock-members-list-bff';
+import { addMembers } from '../../support/testHelpers';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -26,54 +28,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
 const mockMembersList = {
-  items: [
-    {
-      id: 'mem-123',
-      userId: 'u-123',
-      displayName: 'Alice Smith',
-      email: 'alice@riverton.gov',
-      role: 'member',
-      status: 'active',
-      isOwner: false,
-      joinedAt: '2026-06-05T00:00:00.000Z',
-    },
-  ],
+  items: addMembers(),
 };
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function withMembers(base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    if (url.includes('/v1/workspaces/w1/members')) {
-      return json(mockMembersList);
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
 
 describe('App Slug Team Index Route', () => {
   it('renders the team list queue correctly', async () => {
-    withMembers(mockAuth(authedUser, { workspaces: [riverton] }));
+    createMockMembersListBff(mockMembersList);
     renderApp('/app/riverton/team/');
 
     // Wait for the Team section to render (Settings/Team sub-nav tab).
@@ -93,8 +54,8 @@ describe('App Slug Team Index Route', () => {
     expect(screen.getByText('Status')).toBeInTheDocument();
 
     // Verify team member row details are correctly loaded asynchronously
-    expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
-    expect(screen.getByText('alice@riverton.gov')).toBeInTheDocument();
+    expect(await screen.findByText('Maya Reyes')).toBeInTheDocument();
+    expect(screen.getByText('maya@riverton.gov')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
   });
 });

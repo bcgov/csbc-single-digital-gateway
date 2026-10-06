@@ -1,12 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  authedUser,
-  mockAuth,
-  renderApp,
-  type WorkspaceLike,
-} from '../../../../support/render-app';
+import { authedUser, jsonResponse, mockAuth, renderApp } from '../../../../support/render-app';
 import { ConsoleAgreementsList } from '@/components/console/service-agreements/console-agreements-pages';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -30,6 +25,7 @@ import '@/routes/app.$slug.service-agreements';
 import '@/routes/app.$slug.service-agreements.index';
 import '@/routes/app.$slug.service-agreements.new';
 import '@/routes/app.$slug.service-agreements.$id';
+import { adminWorkspace, ISO, serviceAgreementsDetailResponse } from '../../../../support/fixtures';
 
 vi.mock('@repo/react/jsonforms', () => ({
   JsonForms: vi.fn(({ data, readonly, onChange }: any) => (
@@ -52,82 +48,32 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ISO = '2026-07-07T00:00:00.000Z';
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: ISO,
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 const mockAgreement = {
-  id: 'a1',
+  id: 'g1',
   workspaceId: 'w1',
-  title: 'Workspace TOS',
+  title: 'Global Privacy Policy',
   kind: 'service-agreement',
   createdAt: ISO,
   status: 'published',
   isGlobal: false,
 };
 
-const detailResponse = {
-  agreement: {
-    id: 'a1',
-    workspaceId: 'w1',
-    title: 'Workspace TOS',
-    kind: 'service-agreement',
-    createdAt: ISO,
-  },
-  versions: [
-    {
-      id: 'v1',
-      version: 1,
-      status: 'draft',
-      data: {
-        title: 'Workspace TOS',
-        body: 'Workspace agreement content.',
-      },
-      createdAt: ISO,
-      publishedAt: null,
-      archivedAt: null,
-    },
-  ],
-  definition: {
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-      },
-    },
-    uischema: {},
-  },
-  services: [],
-};
-
-function setupMocks() {
-  const base = mockAuth(authedUser, { workspaces: [riverton] });
+function mockConsoleAgreementsPagesBff() {
+  const base = mockAuth(authedUser, { workspaces: [adminWorkspace] });
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
 
     // Default agreements for workspace
     if (url.includes('/default-agreements')) {
-      return json({ items: [] });
+      return jsonResponse({ items: [] });
     }
 
     // List of agreements for workspace
     if (url.includes('/v1/service-agreements')) {
       if (method === 'POST') {
         const body = init?.body ? JSON.parse(String(init.body)) : {};
-        return json({
+        return jsonResponse({
           agreement: {
             id: 'a2',
             title: body.data?.title || 'Untitled',
@@ -139,10 +85,13 @@ function setupMocks() {
       }
 
       if (url.includes('/v1/service-agreements/a1') || url.includes('/v1/service-agreements/a2')) {
-        return json(detailResponse);
+        return jsonResponse({
+          ...serviceAgreementsDetailResponse,
+          agreement: { ...serviceAgreementsDetailResponse.agreement, workspaceId: 'w1' },
+        });
       }
 
-      return json({ items: [mockAgreement] });
+      return jsonResponse({ items: [mockAgreement] });
     }
 
     return (base as any)(input, init);
@@ -153,19 +102,23 @@ function setupMocks() {
 
 describe('Console Agreements  Component Test Suite', () => {
   it('renders ConsoleAgreementsList (agreements list + workspace defaults panel)', async () => {
-    setupMocks();
+    mockConsoleAgreementsPagesBff();
     renderApp('/app/riverton/service-agreements');
 
     // 1. Verify workspace agreements list renders
-    expect(await screen.findByText('Workspace TOS', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText('Global Privacy Policy', {}, { timeout: 10000 }),
+    ).toBeInTheDocument();
   });
 
   it('renders ConsoleAgreementsNew (Agreements list + New agreement modal)', async () => {
-    const fetchMock = setupMocks();
+    const fetchMock = mockConsoleAgreementsPagesBff();
     renderApp('/app/riverton/service-agreements/new');
 
     // 1. Verify view loads (agreements list renders behind the modal)
-    expect(await screen.findByText('Workspace TOS', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText('Global Privacy Policy', {}, { timeout: 10000 }),
+    ).toBeInTheDocument();
 
     // 2. Verify modal dialog is open
     const modal = await screen.findByRole('dialog', { name: /new service agreement/i });
@@ -189,17 +142,17 @@ describe('Console Agreements  Component Test Suite', () => {
   });
 
   it('renders ConsoleAgreementDetail page', async () => {
-    setupMocks();
-    renderApp('/app/riverton/service-agreements/a1');
+    mockConsoleAgreementsPagesBff();
+    renderApp('/app/riverton/service-agreements/g1');
 
     // Wait for the auth/me query to load and editable elements to render
     expect(
       await screen.findByRole('button', { name: /publish/i }, { timeout: 10000 }),
     ).toBeInTheDocument();
 
-    expect(screen.getByRole('heading', { name: 'Workspace TOS' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Global Privacy Policy' })).toBeInTheDocument();
     const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
-    expect(titleInput.value).toBe('Workspace TOS');
+    expect(titleInput.value).toBe('Global Privacy Policy');
   });
 
   it('covers useWorkspaceScope loading state (undefined workspace)', () => {

@@ -1,12 +1,13 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderApp } from '../../../../support/render-app';
+import { jsonResponse, renderApp } from '../../../../support/render-app';
 
 import '@/routes/admin';
 import '@/routes/admin.document-types';
 import '@/routes/admin.document-types.index';
 import '@/routes/admin.document-types.$id';
+import { adminUser, ISO } from '../../../../support/fixtures';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 vi.mock('@monaco-editor/react', () => ({
@@ -25,13 +26,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ISO = '2026-06-01T00:00:00.000Z';
-const adminUser = {
-  id: 'u1',
-  roles: ['admin'],
-  claims: { sub: 'u1', name: 'Maya Reyes', email: 'maya.reyes@riverton.gov' },
-};
-
 interface Version {
   id: string;
   typeId: string;
@@ -48,33 +42,29 @@ interface Entry {
   versions: Version[];
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<typeof vi.fn> } {
+function mockAdminDocumentTypesBff(initial: Entry[]): {
+  store: Entry[];
+  fetchMock: ReturnType<typeof vi.fn>;
+} {
   const store: Entry[] = structuredClone(initial);
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
     if (url.includes('/auth/me')) {
-      return json(adminUser);
+      return jsonResponse(adminUser);
     }
     if (url.includes('/v1/admin/document-types')) {
       const rest = url.split('/v1/admin/document-types')[1]?.split('?')[0] ?? '';
       const segs = rest.split('/').filter(Boolean);
       if (segs.length === 0) {
-        return json({ items: store });
+        return jsonResponse({ items: store });
       }
       const entry = store.find((e) => e.type.id === decodeURIComponent(segs[0]!));
       if (!entry) {
         return new Response(null, { status: 404 });
       }
       if (segs.length === 1) {
-        return json(entry);
+        return jsonResponse(entry);
       }
       const version = entry.versions.find((v) => v.id === decodeURIComponent(segs[2] ?? ''));
       if (version && method === 'POST' && segs[3] === 'publish') {
@@ -86,7 +76,7 @@ function mockApi(initial: Entry[]): { store: Entry[]; fetchMock: ReturnType<type
         }
         version.status = 'published';
         version.publishedAt = ISO;
-        return json(version);
+        return jsonResponse(version);
       }
       return new Response(null, { status: 404 });
     }
@@ -114,7 +104,7 @@ const basicEntry: Entry = {
 
 describe('admin document types', () => {
   it('lists document types with status', async () => {
-    mockApi([basicEntry]);
+    mockAdminDocumentTypesBff([basicEntry]);
     renderApp('/admin/document-types');
 
     expect(
@@ -124,7 +114,7 @@ describe('admin document types', () => {
   });
 
   it('does not offer a create-document-type action', async () => {
-    mockApi([basicEntry]);
+    mockAdminDocumentTypesBff([basicEntry]);
     renderApp('/admin/document-types');
 
     await screen.findByRole('link', { name: 'Basic Form' });
@@ -136,7 +126,7 @@ describe('admin document types', () => {
       ...basicEntry,
       versions: [{ ...basicEntry.versions[0]!, status: 'draft', publishedAt: null }],
     };
-    const { fetchMock } = mockApi([draftEntry]);
+    const { fetchMock } = mockAdminDocumentTypesBff([draftEntry]);
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 

@@ -39,7 +39,7 @@ describe('Service Agreements Page Test Suite', () => {
       );
     });
 
-    it('prompts an anonymous visitor to log in', async () => {
+    it('prompts an anonymous visitor to log in on service agreements page', async () => {
       createMockBff({ me: new Response(null, { status: 401 }) });
       await renderPage({ path: '/account/service-agreements' });
       expect(

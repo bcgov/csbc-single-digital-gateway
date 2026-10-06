@@ -1,20 +1,17 @@
 import {
   GeoDataProvider,
-  type GeoCountryOption,
   type GeoData,
   type GeoStateOption,
 } from '@repo/react/jsonforms-renderers';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-
 import { FieldPreview, previewNodeForType } from '@/components/form-builder/field-card';
+import { COUNTRIES } from './support/fixtures';
 
-const COUNTRIES: GeoCountryOption[] = [
-  { id: 39, name: 'Canada', iso2: 'CA', hasStates: true, hasPostal: true },
-];
-const STATES: Record<number, GeoStateOption[]> = {
+export const STATES: Record<number, GeoStateOption[]> = {
   39: [{ id: 3, name: 'British Columbia', type: 'province', iso2: 'BC' }],
 };
+
 const geo: GeoData = {
   useCountries: () => ({ data: COUNTRIES, isLoading: false }),
   useStates: (id) => ({

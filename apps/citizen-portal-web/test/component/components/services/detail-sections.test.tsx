@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -127,6 +127,75 @@ describe('OnThisPageLayout', () => {
     );
     expect(screen.queryByRole('navigation', { name: /on this page/i })).not.toBeInTheDocument();
     expect(screen.getByText('content')).toBeInTheDocument();
+  });
+
+  it('renders only children when items is undefined', () => {
+    render(
+      <OnThisPageLayout items={undefined}>
+        <div>undefined items content</div>
+      </OnThisPageLayout>,
+    );
+    expect(screen.queryByRole('navigation', { name: /on this page/i })).not.toBeInTheDocument();
+    expect(screen.getByText('undefined items content')).toBeInTheDocument();
+  });
+
+  it('tracks and updates active section when elements intersect or exit the viewport', () => {
+    let callback: IntersectionObserverCallback | null = null;
+    const observeMock = vi.fn();
+    const disconnectMock = vi.fn();
+
+    class MockIntersectionObserver {
+      constructor(cb: IntersectionObserverCallback) {
+        callback = cb;
+      }
+      observe = observeMock;
+      unobserve = vi.fn();
+      disconnect = disconnectMock;
+    }
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+
+    const targetElement = document.createElement('div');
+    targetElement.id = DETAIL_SECTIONS[0].id;
+    document.body.appendChild(targetElement);
+
+    const { unmount } = render(
+      <OnThisPageLayout items={DETAIL_SECTIONS}>
+        <div>content</div>
+      </OnThisPageLayout>,
+    );
+
+    expect(observeMock).toHaveBeenCalledWith(targetElement);
+
+    const link = screen.getByRole('link', { name: DETAIL_SECTIONS[0].label });
+    expect(link).not.toHaveAttribute('aria-current');
+
+    // Trigger non-intersecting entry (branch: entry.isIntersecting === false)
+    act(() => {
+      callback?.(
+        [{ isIntersecting: false, target: targetElement } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(screen.getByRole('link', { name: DETAIL_SECTIONS[0].label })).not.toHaveAttribute(
+      'aria-current',
+    );
+
+    // Trigger intersecting entry (branch: entry.isIntersecting === true)
+    act(() => {
+      callback?.(
+        [{ isIntersecting: true, target: targetElement } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(screen.getByRole('link', { name: DETAIL_SECTIONS[0].label })).toHaveAttribute(
+      'aria-current',
+      'location',
+    );
+
+    unmount();
+    expect(disconnectMock).toHaveBeenCalled();
+    targetElement.remove();
+    vi.unstubAllGlobals();
   });
 });
 

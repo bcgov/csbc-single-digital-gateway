@@ -98,7 +98,7 @@ describe('Citizen Application Page', () => {
   });
 
   it('handles draft response with missing data property', async () => {
-    createMockBff({ options: { hasNoData: true } });
+    createMockBff({ applicationsOptions: { hasNoData: true } });
     await renderApply();
 
     expect(
@@ -193,7 +193,7 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('cancels pending autosave timer on submit', async () => {
+  it('cancels pending autosave timer when submitting an application', async () => {
     let resolvePost!: (value: Response) => void;
     const postPromise = new Promise<Response>((resolve) => {
       resolvePost = resolve;
@@ -319,8 +319,10 @@ describe('Citizen Application Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('handles 422 submission error and triggers consent gate refetch', async () => {
-    const fetchMock = createMockBff({ options: { submissionUnprocessed: true } });
+  it('handles 422 submission error, autosaves answers, and triggers consent gate refetch', async () => {
+    const fetchMock = createMockBff({
+      applicationsOptions: { submissionUnprocessed: true },
+    });
     const user = userEvent.setup();
     await renderApply();
 
@@ -330,6 +332,13 @@ describe('Citizen Application Page', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Submit application' }));
 
+    // Verify PATCH was called to save the answers upon 422
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/me/applications/sub1'),
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+
+    // Verify /agreements was re-fetched
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/agreements'),
       expect.any(Object),

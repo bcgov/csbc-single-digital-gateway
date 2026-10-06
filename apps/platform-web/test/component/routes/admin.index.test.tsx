@@ -1,13 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp } from '../../support/render-app';
+import { mockAuth, renderApp } from '../../support/render-app';
 import { AdminOverview } from '@/components/admin/pages/admin-overview';
+import { adminUser } from '../../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const adminUser = { ...authedUser, roles: ['admin'] };
 
 describe('Admin Index Route', () => {
   it('renders the admin overview set up alert message', async () => {
@@ -23,7 +22,7 @@ describe('Admin Index Route', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the layout component directly without crashing', () => {
+  it('renders the layout component directly without crashing for the admin overview page component', () => {
     const { container } = render(<AdminOverview />);
     expect(container).toBeDefined();
   });

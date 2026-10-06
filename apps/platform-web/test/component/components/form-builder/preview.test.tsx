@@ -116,7 +116,7 @@ describe('Preview Component Test Suite', () => {
     expect(screen.queryByRole('heading')).not.toBeInTheDocument();
   });
 
-  it('updates form runner data on onChange triggers', async () => {
+  it('updates form runner data on onChange triggers for the preview component', async () => {
     const user = userEvent.setup();
     render(<Preview definition={mockDefinition as any} />);
 

@@ -55,8 +55,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
 }));
 
 import { ServiceSidebar } from '@/components/console/services/service-sidebar';
-
-const group = (label: string) => ({ type: 'Group', label, elements: [] });
+import { group } from '../../../../support/testHelpers';
 
 const UISCHEMA = {
   type: 'VerticalLayout',

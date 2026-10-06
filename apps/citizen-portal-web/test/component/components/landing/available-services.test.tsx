@@ -34,7 +34,7 @@ describe('AvailableServices Component', () => {
     },
   ];
 
-  it('renders loading skeleton when loading is true', () => {
+  it('renders loading skeleton for available services when loading is true', () => {
     const { container } = render(<AvailableServices services={mockServices} loading={true} />);
 
     // Renders skeletons

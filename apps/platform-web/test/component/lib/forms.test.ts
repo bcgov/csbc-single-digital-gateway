@@ -1,18 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { formQueryOptions, updateFormSchema } from '@/lib/forms';
+import { createMockResponse } from '../../support/create-mock-response';
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
   BFF_ORIGIN: 'http://bff-test',
 }));
-
-const mockResponse = (status: number, data: any, okState = true) => {
-  return {
-    ok: okState,
-    status,
-    json: () => Promise.resolve(data),
-  } as Response;
-};
 
 describe('Forms Unit Test Suite', () => {
   const mockFetch = vi.fn();
@@ -24,7 +17,7 @@ describe('Forms Unit Test Suite', () => {
 
   it('queries form details with query options', async () => {
     mockFetch.mockResolvedValue(
-      mockResponse(200, {
+      createMockResponse(200, {
         form: { id: 'frm-1', title: 'Application Form' },
         version: { id: 'v-1' },
       }),
@@ -41,7 +34,7 @@ describe('Forms Unit Test Suite', () => {
   });
 
   it('updates form schema definition and optional title', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { id: 'v-1', schema: { type: 'object' } }));
+    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'v-1', schema: { type: 'object' } }));
 
     const updateInput = {
       definition: { schema: { type: 'object' }, uischema: {} },
@@ -60,7 +53,7 @@ describe('Forms Unit Test Suite', () => {
 
   it('handles error message body on failed responses', async () => {
     mockFetch.mockResolvedValue(
-      mockResponse(400, { message: 'Invalid JSON Schema payload' }, false),
+      createMockResponse(400, { message: 'Invalid JSON Schema payload' }, false),
     );
 
     const options = formQueryOptions('frm-1');
@@ -70,7 +63,7 @@ describe('Forms Unit Test Suite', () => {
   });
 
   it('falls back to default HTTP status text message on failure without body details', async () => {
-    mockFetch.mockResolvedValue(mockResponse(500, null, false));
+    mockFetch.mockResolvedValue(createMockResponse(500, null, false));
 
     const options = formQueryOptions('frm-1');
     await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(

@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { authedUser, jsonResponse, mockAuth, renderApp } from '../../support/render-app';
+import { adminWorkspace, mockFormTypes } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -26,53 +27,19 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
-const mockFormTypes = {
-  items: [
-    {
-      type: {
-        id: 'type-basic',
-        name: 'Basic Form',
-        kind: 'basic-form',
-      },
-    },
-    {
-      type: {
-        id: 'type-multistage',
-        name: 'Multi-stage Form',
-        kind: 'multi-stage-form',
-      },
-    },
-  ],
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function withServicesAndDocumentTypes(base: ReturnType<typeof mockAuth>) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('/v1/document-types')) {
-      return json(mockFormTypes);
+      return jsonResponse(mockFormTypes);
     }
     if (url.includes('/v1/services/s1')) {
       if (url.endsWith('/references')) {
-        return json({
+        return jsonResponse({
           items: [],
         });
       }
-      return json({
+      return jsonResponse({
         service: {
           id: 's1',
           workspaceId: 'w1',
@@ -110,7 +77,7 @@ function withServicesAndDocumentTypes(base: ReturnType<typeof mockAuth>) {
 
 describe('App Slug Services ID Versions VersionID Application Methods New Route', () => {
   it('renders the services detail page with the new application method modal open', async () => {
-    withServicesAndDocumentTypes(mockAuth(authedUser, { workspaces: [riverton] }));
+    withServicesAndDocumentTypes(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/services/s1/old/edit/versions/sv1/application-methods/new');
 
     // Breadcrumb page title (will be aria-hidden/inert when dialog is open)

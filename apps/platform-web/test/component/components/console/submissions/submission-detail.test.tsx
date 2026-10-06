@@ -5,12 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SubmissionDetail } from '@/components/console/submissions/submission-detail';
 import { reviewSubmission } from '@/lib/submissions';
 import type { SubmissionDetail as SubmissionDetailData } from '@/lib/submissions';
-
-const mockParams = { slug: 'riverton', id: 'sub-123' };
+import { mockBasicSubmission } from '../../../../support/fixtures';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
-  useParams: () => mockParams,
+  useParams: () => ({ slug: 'riverton', id: 'sub-123' }),
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;
     if (params) {
@@ -62,28 +61,6 @@ vi.mock('@/lib/submissions', async (importOriginal) => {
     }),
   };
 });
-
-const mockBasicSubmission: SubmissionDetailData = {
-  id: 'sub-123',
-  serviceId: 'srv-123',
-  serviceTitle: 'Parking Permits',
-  formId: 'form-123',
-  formTitle: 'Application Form',
-  applicantName: 'Test User',
-  applicantEmail: 'test@example.com',
-  status: 'pending',
-  statusLabel: 'Pending Review',
-  reference: 'REF-0001',
-  submittedAt: '2026-07-15T00:00:00Z',
-  updatedAt: '2026-07-15T00:00:00Z',
-  kind: 'basic-form',
-  structure: {
-    schema: { type: 'object', properties: { parkingType: { type: 'string' } } },
-    uischema: { type: 'VerticalLayout', elements: [] },
-  },
-  data: { parkingType: 'Residential' },
-  reviews: [],
-};
 
 const mockMultiStageSubmission: SubmissionDetailData = {
   id: 'sub-456',

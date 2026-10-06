@@ -27,7 +27,7 @@ const DEV_PAGES: { path: string; component?: string }[] = [
 ];
 
 describe.each(DEV_PAGES)('a11y: $path', ({ path, component }) => {
-  it('has no unjustified axe violations', async () => {
+  it(`has no unjustified axe violations for path ${path}`, async () => {
     const { container } = await renderRoute(path);
     // "Developer reference" is DevPageLayout's own header label — unlike an <h1>, page content
     // never duplicates it, so it's a reliable "the route has rendered" signal on every /dev page.

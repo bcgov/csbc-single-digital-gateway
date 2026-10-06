@@ -33,7 +33,7 @@ describe('Stage Preview Component Test Suite', () => {
     expect(screen.getByText('Data: {}')).toBeInTheDocument();
   });
 
-  it('updates form runner data on onChange triggers', async () => {
+  it('updates form runner data on onChange triggers for the stage preview component', async () => {
     const user = userEvent.setup();
     render(<StagePreview definition={mockDefinition} />);
 

@@ -55,6 +55,7 @@ import {
   discardServiceVersion,
   deleteService,
   archiveService,
+  type ServiceReference,
 } from '@/lib/services';
 
 const mockNavigate = vi.fn();
@@ -182,11 +183,12 @@ vi.mock('@/lib/services', async (importOriginal) => {
     hasSubmissions: false,
   };
 
-  const mockReferences = [
+  const defaultReferences: ServiceReference[] = [
     {
       id: 'ref1',
       relation: 'application_form',
       position: 0,
+      url: null,
       label: 'Standard application',
       targetDocumentId: 'doc1',
       targetVersionId: 'v-doc1',
@@ -215,7 +217,7 @@ vi.mock('@/lib/services', async (importOriginal) => {
     }),
     serviceReferencesQueryOptions: (id: string, versionId: string) => ({
       queryKey: ['services', 'detail', id, 'references', versionId],
-      queryFn: () => Promise.resolve(mockReferencesOverride ?? mockReferences),
+      queryFn: () => Promise.resolve(mockReferencesOverride ?? defaultReferences),
     }),
   };
 });
@@ -281,11 +283,12 @@ const mockServiceDetailResponse = {
   hasSubmissions: false,
 };
 
-const mockReferences = [
+const mockServiceReferences: ServiceReference[] = [
   {
     id: 'ref1',
     relation: 'application_form',
     position: 0,
+    url: null,
     label: 'Standard application',
     targetDocumentId: 'doc1',
     targetVersionId: 'v-doc1',
@@ -301,6 +304,7 @@ const mockReferences = [
     id: 'ref-external',
     relation: 'external_application',
     position: 1,
+    url: null,
     label: 'External site',
     targetDocumentId: 'doc-external',
     targetVersionId: 'v-external',
@@ -334,7 +338,7 @@ function renderServiceDetail(props: {
   );
   queryClient.setQueryData(
     ['services', 'detail', props.id ?? 'srv-123', 'references', props.versionId ?? 'v2'],
-    mockReferencesOverride ?? mockReferences,
+    mockReferencesOverride ?? mockServiceReferences,
   );
 
   return render(
@@ -486,7 +490,7 @@ describe('ServiceDetail Component Test Suite', () => {
       queryClient.setQueryData(['services', 'detail', 'srv-123'], mockSinglePublishedDetail);
       queryClient.setQueryData(
         ['services', 'detail', 'srv-123', 'references', 'v1'],
-        mockReferences,
+        mockServiceReferences,
       );
 
       return render(
@@ -528,7 +532,10 @@ describe('ServiceDetail Component Test Suite', () => {
     });
 
     queryClient.setQueryData(['services', 'detail', 'srv-123'], mockServiceDetailResponse);
-    queryClient.setQueryData(['services', 'detail', 'srv-123', 'references', 'v2'], mockReferences);
+    queryClient.setQueryData(
+      ['services', 'detail', 'srv-123', 'references', 'v2'],
+      mockServiceReferences,
+    );
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -659,7 +666,10 @@ describe('ServiceDetail Component Test Suite', () => {
     };
 
     queryClient.setQueryData(['services', 'detail', 'srv-123'], mockSinglePublishedDetail);
-    queryClient.setQueryData(['services', 'detail', 'srv-123', 'references', 'v1'], mockReferences);
+    queryClient.setQueryData(
+      ['services', 'detail', 'srv-123', 'references', 'v1'],
+      mockServiceReferences,
+    );
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -792,7 +802,10 @@ describe('ServiceDetail Component Test Suite', () => {
     };
 
     queryClient.setQueryData(['services', 'detail', 'srv-123'], customResponse);
-    queryClient.setQueryData(['services', 'detail', 'srv-123', 'references', 'v2'], mockReferences);
+    queryClient.setQueryData(
+      ['services', 'detail', 'srv-123', 'references', 'v2'],
+      mockServiceReferences,
+    );
 
     render(
       <QueryClientProvider client={queryClient}>

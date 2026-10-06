@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { authedUser, jsonResponse, mockAuth, renderApp } from '../../support/render-app';
+import { adminWorkspace } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -26,26 +27,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function withWorkspace(base: ReturnType<typeof mockAuth>) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return json(riverton);
+      return jsonResponse(adminWorkspace);
     }
     return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
       input,
@@ -57,8 +43,8 @@ function withWorkspace(base: ReturnType<typeof mockAuth>) {
 }
 
 describe('App Slug Layout Route', () => {
-  it('renders the child route inside the Outlet when workspace is found', async () => {
-    withWorkspace(mockAuth(authedUser, { workspaces: [riverton] }));
+  it('renders the child route inside the Outlet for app slug layout route when workspace is found', async () => {
+    withWorkspace(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/');
 
     // Verify child overview page content renders through the Outlet

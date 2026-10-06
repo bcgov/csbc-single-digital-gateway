@@ -52,7 +52,7 @@ describe('CreateWorkspaceModal Component Test Suite', () => {
     });
   });
 
-  it('renders nothing when open is false', () => {
+  it('renders nothing when open is false for the create workspace modal component', () => {
     renderModal(queryClient, { open: false });
     expect(screen.queryByRole('heading', { name: 'Create workspace' })).not.toBeInTheDocument();
   });

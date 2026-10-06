@@ -55,7 +55,7 @@ describe('Inspector Component Test Suite', () => {
     expect(handleChangeForm).toHaveBeenCalledWith({ description: 'Please answer accurately.!' });
   });
 
-  it('flags an empty form title as required', () => {
+  it('flags an empty form title as required for the inspector component', () => {
     render(
       <Inspector
         node={null}

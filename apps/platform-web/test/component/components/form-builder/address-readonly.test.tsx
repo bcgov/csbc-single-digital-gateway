@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-
 import { AddressDefaultsEditor } from '@/components/form-builder/address-defaults-editor';
 import {
   createField,
@@ -12,10 +11,7 @@ import {
   type ControlNode,
   type FormModel,
 } from '@/components/form-builder/model';
-
-// Feature 170 — the two read-only switches and the flat-model ⇄ nested-wire translation.
-// Kept in its own file rather than appended to model-codec.test.ts (1322 lines) / inspector.test.tsx
-// (886 lines), both already well past the 300-line gate.
+import { COUNTRIES as GEO_COUNTRIES } from '../../../support/fixtures';
 
 const addressNode = (patch: Partial<ControlNode> = {}): ControlNode => ({
   ...createField('address'),
@@ -125,11 +121,10 @@ describe('Address codec — parse locks back onto the flat model (rules 2, 5)', 
 
 // ── Inspector switches ───────────────────────────────────────────────────────────────────────────
 
-const COUNTRIES = [
-  { id: 39, name: 'Canada', iso2: 'CA', hasStates: true, hasPostal: true },
+const COUNTRIES = GEO_COUNTRIES.concat([
   { id: 233, name: 'United States', iso2: 'US', hasStates: true, hasPostal: true },
   { id: 75, name: 'France', iso2: 'FR', hasStates: false, hasPostal: true },
-];
+]);
 const STATES = [{ id: 3, name: 'British Columbia', type: 'province', iso2: 'BC' }];
 
 function renderEditor(node: ControlNode, queryOverrides?: (client: QueryClient) => void) {

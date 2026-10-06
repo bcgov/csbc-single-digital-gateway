@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { renderApp } from '../../support/render-app';
+import { createMockSubmissionsBff } from '../../support/create-mock-submissions-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -26,14 +27,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
 const mockSubmissionsList = {
   items: [
     {
@@ -52,31 +45,9 @@ const mockSubmissionsList = {
   ],
 };
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function withSubmissions(base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    if (url.includes('/v1/submissions')) {
-      return json(mockSubmissionsList);
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('App Slug Submissions Index Route', () => {
   it('renders the submissions list queue correctly', async () => {
-    withSubmissions(mockAuth(authedUser, { workspaces: [riverton] }));
+    createMockSubmissionsBff(mockSubmissionsList);
     renderApp('/app/riverton/submissions/');
 
     // Wait for the tab buttons to be rendered

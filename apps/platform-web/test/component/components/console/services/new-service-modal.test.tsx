@@ -40,13 +40,14 @@ vi.mock('@repo/ui/dialog', () => {
 });
 
 const mockNavigate = vi.fn();
-const mockParams = { slug: 'riverton' };
 const mockOnOpenChange = vi.fn();
 
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,
-  useParams: () => mockParams,
+  useParams: () => {
+    'riverton';
+  },
   Link: ({ children, to, className }: any) => (
     <a href={to} className={className}>
       {children}

@@ -8,19 +8,12 @@ import {
   publishVersion,
   archiveVersion,
 } from '@/lib/document-types';
+import { createMockResponse } from '../../support/create-mock-response';
 
 // Mock BFF origin
 vi.mock('@/lib/bff', () => ({
   BFF_ORIGIN: 'http://bff-test',
 }));
-
-const mockResponse = (status: number, data: any, okState = true) => {
-  return {
-    ok: okState,
-    status,
-    json: () => Promise.resolve(data),
-  } as Response;
-};
 
 describe('Document Types Unit Test Suite', () => {
   const mockFetch = vi.fn();
@@ -32,7 +25,7 @@ describe('Document Types Unit Test Suite', () => {
 
   it('queries all document types with query options', async () => {
     mockFetch.mockResolvedValue(
-      mockResponse(200, { items: [{ type: { id: 'dt-1', name: 'Form A' }, versions: [] }] }),
+      createMockResponse(200, { items: [{ type: { id: 'dt-1', name: 'Form A' }, versions: [] }] }),
     );
 
     const options = adminDocumentTypesQueryOptions();
@@ -48,7 +41,7 @@ describe('Document Types Unit Test Suite', () => {
 
   it('queries a single document type by id', async () => {
     mockFetch.mockResolvedValue(
-      mockResponse(200, { type: { id: 'dt-1', name: 'Form A' }, versions: [] }),
+      createMockResponse(200, { type: { id: 'dt-1', name: 'Form A' }, versions: [] }),
     );
 
     const options = adminDocumentTypeQueryOptions('dt-1');
@@ -64,7 +57,7 @@ describe('Document Types Unit Test Suite', () => {
   it('handles API error bodies from envelope messages (single and array)', async () => {
     // Test case 1: Single string message
     mockFetch.mockResolvedValue(
-      mockResponse(400, { message: 'Database validation failed' }, false),
+      createMockResponse(400, { message: 'Database validation failed' }, false),
     );
 
     const options = adminDocumentTypeQueryOptions('dt-1');
@@ -74,7 +67,7 @@ describe('Document Types Unit Test Suite', () => {
 
     // Test case 2: Array of messages
     mockFetch.mockResolvedValue(
-      mockResponse(400, { message: ['Name is required', 'Kind is invalid'] }, false),
+      createMockResponse(400, { message: ['Name is required', 'Kind is invalid'] }, false),
     );
 
     await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toContain(
@@ -82,7 +75,7 @@ describe('Document Types Unit Test Suite', () => {
     );
 
     // Test case 3: Neither string nor array
-    mockFetch.mockResolvedValue(mockResponse(400, { message: { code: 'INVALID' } }, false));
+    mockFetch.mockResolvedValue(createMockResponse(400, { message: { code: 'INVALID' } }, false));
 
     await expect((options.queryFn as any)().catch((e: any) => e.message)).resolves.toBe(
       'Request failed: 400',
@@ -90,7 +83,7 @@ describe('Document Types Unit Test Suite', () => {
   });
 
   it('sends POST to add a version', async () => {
-    mockFetch.mockResolvedValue(mockResponse(201, { id: 'ver-2', version: 2 }));
+    mockFetch.mockResolvedValue(createMockResponse(201, { id: 'ver-2', version: 2 }));
 
     const res = await addVersion('dt-1', { schema: {} });
     expect(mockFetch).toHaveBeenCalledWith(
@@ -106,7 +99,7 @@ describe('Document Types Unit Test Suite', () => {
   });
 
   it('sends PATCH to edit a draft version', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', version: 1 }));
+    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'ver-1', version: 1 }));
 
     const res = await editDraft('dt-1', 'ver-1', { schema: { title: 'Updated' } });
     expect(mockFetch).toHaveBeenCalledWith(
@@ -122,7 +115,7 @@ describe('Document Types Unit Test Suite', () => {
   });
 
   it('sends DELETE to delete a draft version', async () => {
-    mockFetch.mockResolvedValue(mockResponse(204, null));
+    mockFetch.mockResolvedValue(createMockResponse(204, null));
 
     await deleteDraft('dt-1', 'ver-1');
     expect(mockFetch).toHaveBeenCalledWith(
@@ -135,7 +128,7 @@ describe('Document Types Unit Test Suite', () => {
   });
 
   it('throws error when deleteDraft request fails', async () => {
-    mockFetch.mockResolvedValue(mockResponse(500, null, false));
+    mockFetch.mockResolvedValue(createMockResponse(500, null, false));
 
     await expect(deleteDraft('dt-1', 'ver-1').catch((e: any) => e.message)).resolves.toContain(
       'Request failed: 500',
@@ -143,7 +136,7 @@ describe('Document Types Unit Test Suite', () => {
   });
 
   it('sends POST requests to publish and archive versions', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', status: 'published' }));
+    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'ver-1', status: 'published' }));
 
     // Publish
     const pub = await publishVersion('dt-1', 'ver-1');
@@ -157,7 +150,7 @@ describe('Document Types Unit Test Suite', () => {
     expect(pub.status).toBe('published');
 
     // Archive
-    mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', status: 'archived' }));
+    mockFetch.mockResolvedValue(createMockResponse(200, { id: 'ver-1', status: 'archived' }));
     const arch = await archiveVersion('dt-1', 'ver-1');
     expect(mockFetch).toHaveBeenCalledWith(
       'http://bff-test/v1/admin/document-types/dt-1/versions/ver-1/archive',

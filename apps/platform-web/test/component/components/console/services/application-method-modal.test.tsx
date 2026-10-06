@@ -1,7 +1,8 @@
 import { screen, waitFor, configure } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, renderApp } from '../../../../support/render-app';
+import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
+import { adminWorkspace, mockFormTypes } from '../../../../support/fixtures';
 
 vi.mock('@repo/ui/button', () => {
   return {
@@ -19,35 +20,6 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-06-01T00:00:00.000Z';
-
-const mockWorkspace = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
-  createdAt: ISO,
-};
-
-const mockFormTypes = {
-  items: [
-    {
-      type: {
-        id: 'type-basic',
-        name: 'Basic Form',
-        kind: 'basic-form',
-      },
-    },
-    {
-      type: {
-        id: 'type-multistage',
-        name: 'Multi-stage Form',
-        kind: 'multi-stage-form',
-      },
-    },
-  ],
-};
 
 const mockBasicReference = {
   id: 'ref-basic-123',
@@ -77,14 +49,7 @@ const mockMultistageReference = {
   hasSubmissions: false,
 };
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockApi({
+function mockApplicationMethodModalBff({
   onCreateForm,
   onCreateExternal,
 }: {
@@ -96,16 +61,16 @@ function mockApi({
     const method = (init?.method ?? 'GET').toUpperCase();
 
     if (url.includes('/auth/me')) {
-      return json(authedUser);
+      return jsonResponse(authedUser);
     }
     if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return json(mockWorkspace);
+      return jsonResponse(adminWorkspace);
     }
     if (url.includes('/v1/workspaces')) {
-      return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
+      return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
     }
     if (url.includes('/v1/document-types')) {
-      return json(mockFormTypes);
+      return jsonResponse(mockFormTypes);
     }
     if (url.includes('/v1/services/srv-123/versions/v-456/forms') && method === 'POST') {
       const body = JSON.parse(String(init?.body));
@@ -113,9 +78,9 @@ function mockApi({
         onCreateForm(body);
       }
       if (body.typeId === 'type-basic') {
-        return json(mockBasicReference);
+        return jsonResponse(mockBasicReference);
       }
-      return json(mockMultistageReference);
+      return jsonResponse(mockMultistageReference);
     }
     if (
       url.includes('/v1/services/srv-123/versions/v-456/external-applications') &&
@@ -125,7 +90,7 @@ function mockApi({
       if (onCreateExternal) {
         onCreateExternal(body);
       }
-      return json({
+      return jsonResponse({
         id: 'ref-external-123',
         relation: 'external_application',
         position: 0,
@@ -147,7 +112,7 @@ function mockApi({
 
 describe('Application Method Modal Component Test Suite', () => {
   it('renders the modal with basic, multi-stage options and coming-soon external link', async () => {
-    mockApi();
+    mockApplicationMethodModalBff();
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
 
@@ -177,7 +142,7 @@ describe('Application Method Modal Component Test Suite', () => {
 
   it('creates basic form and navigates to the edit page successfully', async () => {
     let createdBody: any = null;
-    mockApi({
+    mockApplicationMethodModalBff({
       onCreateForm: (body) => {
         createdBody = body;
       },
@@ -222,7 +187,7 @@ describe('Application Method Modal Component Test Suite', () => {
 
   it('creates multi-stage form and navigates to the edit page successfully', async () => {
     let createdBody: any = null;
-    mockApi({
+    mockApplicationMethodModalBff({
       onCreateForm: (body) => {
         createdBody = body;
       },
@@ -266,7 +231,7 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('closes the modal and navigates back to service details when dismissed', async () => {
-    mockApi();
+    mockApplicationMethodModalBff();
 
     const user = userEvent.setup();
     const { router } = renderApp(
@@ -298,7 +263,7 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('shows error message when form creation fails', async () => {
-    const fetchMock = mockApi();
+    const fetchMock = mockApplicationMethodModalBff();
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -308,11 +273,11 @@ describe('Application Method Modal Component Test Suite', () => {
           headers: { 'content-type': 'application/json' },
         });
       }
-      if (url.includes('/auth/me')) return json(authedUser);
-      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
       if (url.includes('/v1/workspaces'))
-        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
-      if (url.includes('/v1/document-types')) return json(mockFormTypes);
+        return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
+      if (url.includes('/v1/document-types')) return jsonResponse(mockFormTypes);
       return new Response(null, { status: 404 });
     });
 
@@ -328,16 +293,16 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('shows error message when form type is unavailable', async () => {
-    const fetchMock = mockApi();
+    const fetchMock = mockApplicationMethodModalBff();
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/v1/document-types')) {
-        return json({ items: [] });
+        return jsonResponse({ items: [] });
       }
-      if (url.includes('/auth/me')) return json(authedUser);
-      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
       if (url.includes('/v1/workspaces'))
-        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
+        return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
       return new Response(null, { status: 404 });
     });
 
@@ -358,18 +323,18 @@ describe('Application Method Modal Component Test Suite', () => {
       resolveCreate = resolve;
     });
 
-    const fetchMock = mockApi();
+    const fetchMock = mockApplicationMethodModalBff();
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
       if (url.includes('/v1/services/srv-123/versions/v-456/forms') && method === 'POST') {
         return createPromise;
       }
-      if (url.includes('/auth/me')) return json(authedUser);
-      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
       if (url.includes('/v1/workspaces'))
-        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
-      if (url.includes('/v1/document-types')) return json(mockFormTypes);
+        return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
+      if (url.includes('/v1/document-types')) return jsonResponse(mockFormTypes);
       return new Response(null, { status: 404 });
     });
 
@@ -397,12 +362,12 @@ describe('Application Method Modal Component Test Suite', () => {
     expect(navigateSpy).not.toHaveBeenCalled();
 
     // Resolve the creation to clean up
-    resolveCreate(json(mockBasicReference));
+    resolveCreate(jsonResponse(mockBasicReference));
   });
 
   it('creates external link and navigates back to service details page successfully', async () => {
     let createdBody: any = null;
-    mockApi({
+    mockApplicationMethodModalBff({
       onCreateExternal: (body) => {
         createdBody = body;
       },
@@ -456,7 +421,7 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('allows cancelling from external link step and returning to choose step', async () => {
-    mockApi();
+    mockApplicationMethodModalBff();
 
     const user = userEvent.setup();
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/new');
@@ -475,7 +440,7 @@ describe('Application Method Modal Component Test Suite', () => {
   });
 
   it('shows error message when external link creation fails', async () => {
-    const fetchMock = mockApi();
+    const fetchMock = mockApplicationMethodModalBff();
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -488,11 +453,11 @@ describe('Application Method Modal Component Test Suite', () => {
           headers: { 'content-type': 'application/json' },
         });
       }
-      if (url.includes('/auth/me')) return json(authedUser);
-      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
       if (url.includes('/v1/workspaces'))
-        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
-      if (url.includes('/v1/document-types')) return json(mockFormTypes);
+        return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
+      if (url.includes('/v1/document-types')) return jsonResponse(mockFormTypes);
       return new Response(null, { status: 404 });
     });
 
@@ -521,7 +486,7 @@ describe('Application Method Modal Component Test Suite', () => {
       resolveCreate = resolve;
     });
 
-    const fetchMock = mockApi();
+    const fetchMock = mockApplicationMethodModalBff();
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -531,11 +496,11 @@ describe('Application Method Modal Component Test Suite', () => {
       ) {
         return createPromise;
       }
-      if (url.includes('/auth/me')) return json(authedUser);
-      if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspace);
+      if (url.includes('/auth/me')) return jsonResponse(authedUser);
+      if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
       if (url.includes('/v1/workspaces'))
-        return json({ items: [mockWorkspace], total: 1, limit: 100, offset: 0 });
-      if (url.includes('/v1/document-types')) return json(mockFormTypes);
+        return jsonResponse({ items: [adminWorkspace], total: 1, limit: 100, offset: 0 });
+      if (url.includes('/v1/document-types')) return jsonResponse(mockFormTypes);
       return new Response(null, { status: 404 });
     });
 
@@ -567,6 +532,6 @@ describe('Application Method Modal Component Test Suite', () => {
     expect(screen.getByRole('heading', { name: 'External link' })).toBeInTheDocument();
 
     // Resolve the creation to clean up
-    resolveCreate(json({}));
+    resolveCreate(jsonResponse({}));
   });
 });

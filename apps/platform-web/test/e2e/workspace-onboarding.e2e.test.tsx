@@ -1,19 +1,12 @@
 import { screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
+import { authedUser, mockAuth, renderApp } from '../support/render-app';
+import { adminWorkspace } from '../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
 
 describe('Workspace Selection Integration Test Suite', () => {
   it('shows an empty state with a Create workspace action when the user has no workspace', async () => {
@@ -40,7 +33,7 @@ describe('Workspace Selection Integration Test Suite', () => {
   });
 
   it('does not auto-redirect when the user has a workspace — it lists them to choose', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     const { router } = renderApp('/app');
 
     const link = await screen.findByRole('link', { name: /riverton/i }, { timeout: 32000 });

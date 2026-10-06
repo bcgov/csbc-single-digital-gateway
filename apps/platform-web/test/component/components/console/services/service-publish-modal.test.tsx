@@ -31,7 +31,7 @@ function renderPublishModal(props: {
 }
 
 describe('ServicePublishModal Component Test Suite', () => {
-  it('renders nothing when open is false', () => {
+  it('renders nothing when open is false for the service publish modal component', () => {
     renderPublishModal({ open: false, applications: [] });
     expect(screen.queryByRole('heading', { name: 'Publish service?' })).not.toBeInTheDocument();
   });

@@ -22,7 +22,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const mockUser = {
+const mockStaffUser = {
   id: 'u-123',
   roles: ['staff'],
   claims: {
@@ -44,7 +44,7 @@ describe('AccountPage Component Test Suite', () => {
   });
 
   it('renders user details when user data is loaded', () => {
-    vi.mocked(useAuth).mockReturnValue({ data: mockUser } as any);
+    vi.mocked(useAuth).mockReturnValue({ data: mockStaffUser } as any);
 
     render(<AccountPage />);
 

@@ -1,8 +1,10 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { authedUser, jsonResponse, mockAuth, renderApp } from '../../support/render-app';
 import { Route as teamLayoutRoute } from '@/routes/app.$slug.team';
+import { adminWorkspace } from '../../support/fixtures';
+import { addMembers } from '../../support/testHelpers';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -28,26 +30,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function withEmptyMembers(base: ReturnType<typeof mockAuth>) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('/v1/workspaces/w1/members')) {
-      return json({
+      return jsonResponse({
         items: [],
       });
     }
@@ -60,17 +47,7 @@ function withEmptyMembers(base: ReturnType<typeof mockAuth>) {
   return fetchMock;
 }
 
-const mockMembersList = [
-  {
-    id: 'm1',
-    userId: 'u1',
-    role: 'admin',
-    status: 'active',
-    displayName: 'Alice Cooper',
-    email: 'alice@example.com',
-    isOwner: true,
-    joinedAt: '2026-06-01T00:00:00.000Z',
-  },
+const mockMembersList = addMembers([
   {
     id: 'm2',
     userId: 'u2',
@@ -81,13 +58,13 @@ const mockMembersList = [
     isOwner: false,
     joinedAt: '2026-06-02T00:00:00.000Z',
   },
-];
+]);
 
 function withMembers(base: ReturnType<typeof mockAuth>, membersList: any[] = mockMembersList) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('/v1/workspaces/w1/members')) {
-      return json({
+      return jsonResponse({
         items: membersList,
       });
     }
@@ -101,8 +78,8 @@ function withMembers(base: ReturnType<typeof mockAuth>, membersList: any[] = moc
 }
 
 describe('App Slug Team Layout Route', () => {
-  it('renders the child route inside the Outlet', async () => {
-    withEmptyMembers(mockAuth(authedUser, { workspaces: [riverton] }));
+  it('renders the child route inside the Outlet for app slug team layout route', async () => {
+    withEmptyMembers(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/team/');
 
     // Verify child team index page content renders through the Outlet (Team sub-nav tab).
@@ -112,11 +89,11 @@ describe('App Slug Team Layout Route', () => {
   });
 
   it('renders team list table correctly with all roles, statuses, and fallback labels', async () => {
-    withMembers(mockAuth(authedUser, { workspaces: [riverton] }));
+    withMembers(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/team/');
 
-    expect(await screen.findByText('Alice Cooper', {}, { timeout: 32000 })).toBeInTheDocument();
-    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+    expect(await screen.findByText('Maya Reyes', {}, { timeout: 32000 })).toBeInTheDocument();
+    expect(screen.getByText('maya@riverton.gov')).toBeInTheDocument();
     expect(screen.getByText('Admin')).toBeInTheDocument();
     expect(screen.getByText('Owner')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
@@ -129,7 +106,7 @@ describe('App Slug Team Layout Route', () => {
 
   it('navigates to member profile when clicking a member row', async () => {
     const user = userEvent.setup();
-    withMembers(mockAuth(authedUser, { workspaces: [riverton] }));
+    withMembers(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     const { router } = renderApp('/app/riverton/team/');
 
     const rowElement = await screen.findByText('Bob Smith', {}, { timeout: 32000 });
@@ -140,7 +117,7 @@ describe('App Slug Team Layout Route', () => {
 
   it('opens AddMemberModal when clicking Add member as admin', async () => {
     const user = userEvent.setup();
-    withMembers(mockAuth(authedUser, { workspaces: [riverton] }));
+    withMembers(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/team/');
 
     const addMemberBtn = await screen.findByRole(

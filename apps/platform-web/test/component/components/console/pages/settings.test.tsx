@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { authedUser, mockAuth, renderApp } from '../../../../support/render-app';
 import { SettingsPage } from '@/components/console/pages/settings';
+import { ISO, adminWorkspace } from '../../../../support/fixtures';
 
 let mockSlug: string | undefined = 'riverton';
 
@@ -23,16 +24,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-06-01T00:00:00.000Z';
-
-const adminWorkspace = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
-  createdAt: ISO,
-};
 
 const memberWorkspace = {
   id: 'w1',

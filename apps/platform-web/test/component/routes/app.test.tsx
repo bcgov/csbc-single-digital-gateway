@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 describe('App Layout Route', () => {
-  it('redirects anonymous users to the BFF login URL and encodes the return path', async () => {
+  it('redirects anonymous users to the BFF login URL and encodes the return path for the app layout route', async () => {
     const { replace, restore } = stubLocationAssign();
     mockAuth(null);
     renderApp('/app');

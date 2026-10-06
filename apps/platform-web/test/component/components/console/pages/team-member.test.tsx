@@ -2,42 +2,23 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Workspace } from '@/lib/workspaces';
-import { authedUser, renderApp } from '../../../../support/render-app';
+import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
+import { adminWorkspace, ISO } from '../../../../support/fixtures';
+import { addMembers } from '../../../../support/testHelpers';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ISO = '2026-06-01T00:00:00.000Z';
-const mockWorkspaceAdmin = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
-  ownerId: 'u1', // Maya Reyes (authedUser is u1)
-  createdAt: ISO,
-};
+const mockWorkspaceAdmin = adminWorkspace as Workspace;
 
 const mockWorkspaceMember = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
+  ...adminWorkspace,
   role: 'member' as const,
   ownerId: 'u2', // Sam Lee
-  createdAt: ISO,
 };
 
-const membersList = [
-  {
-    id: 'm1',
-    userId: 'u1',
-    role: 'admin' as const,
-    status: 'active' as const,
-    displayName: 'Maya Reyes',
-    email: 'maya@riverton.gov',
-    isOwner: true,
-    joinedAt: ISO,
-  },
+const membersList = addMembers([
   {
     id: 'm2',
     userId: 'u2',
@@ -58,18 +39,11 @@ const membersList = [
     isOwner: false,
     joinedAt: ISO,
   },
-];
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
+]);
 
 function mockTeamMemberApi(
   workspace: Workspace = mockWorkspaceAdmin,
-  members = membersList,
+  members: any[] = membersList,
   currentUser = authedUser,
 ) {
   const clonedWorkspace: Workspace = JSON.parse(JSON.stringify(workspace));
@@ -80,15 +54,15 @@ function mockTeamMemberApi(
     const method = (init?.method ?? 'GET').toUpperCase();
 
     if (url.includes('/auth/me')) {
-      return json(currentUser);
+      return jsonResponse(currentUser);
     }
     if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return json(clonedWorkspace);
+      return jsonResponse(clonedWorkspace);
     }
     if (url.includes('/v1/workspaces/w1/members')) {
       const segs = url.split('/v1/workspaces/w1/members')[1]?.split('/').filter(Boolean) ?? [];
       if (segs.length === 0) {
-        return json({ items: clonedMembers });
+        return jsonResponse({ items: clonedMembers });
       }
       const memberId = decodeURIComponent(segs[0]!);
       const memberIdx = clonedMembers.findIndex((m) => m.id === memberId);
@@ -103,12 +77,12 @@ function mockTeamMemberApi(
         };
         const updated = { ...targetMember, ...body } as any;
         clonedMembers[memberIdx] = updated;
-        return json(updated);
+        return jsonResponse(updated);
       }
-      return json(targetMember);
+      return jsonResponse(targetMember);
     }
     if (url.includes('/v1/workspaces')) {
-      return json({ items: [clonedWorkspace], total: 1, limit: 100, offset: 0 });
+      return jsonResponse({ items: [clonedWorkspace], total: 1, limit: 100, offset: 0 });
     }
     if (url.includes('/v1/workspaces/w1/transfer-ownership') && method === 'POST') {
       const body = JSON.parse(String(init?.body)) as { userId?: string; newOwnerId?: string };
@@ -120,7 +94,7 @@ function mockTeamMemberApi(
         const newOwner = clonedMembers.find((m) => m.userId === newOwnerId);
         if (newOwner) newOwner.isOwner = true;
       }
-      return json(clonedWorkspace);
+      return jsonResponse(clonedWorkspace);
     }
     return new Response(null, { status: 404 });
   });
@@ -132,25 +106,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const workspace = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
-  ownerId: 'u1', // the viewer (authedUser.id) owns this workspace
-  createdAt: ISO,
-};
-const members = [
-  {
-    id: 'm1',
-    userId: 'u1',
-    role: 'admin' as const,
-    status: 'active' as const,
-    displayName: 'Maya Reyes',
-    email: 'maya@riverton.gov',
-    isOwner: true,
-    joinedAt: ISO,
-  },
+const members = addMembers([
   {
     id: 'm2',
     userId: 'u2',
@@ -161,20 +117,20 @@ const members = [
     isOwner: false,
     joinedAt: ISO,
   },
-];
+]);
 
-function mockTeamFetch(options: { user?: typeof authedUser; role?: 'admin' | 'member' } = {}) {
+function mockTeamMemberBff(options: { user?: typeof authedUser; role?: 'admin' | 'member' } = {}) {
   const user = options.user ?? authedUser;
-  const ws = { ...workspace, role: options.role ?? 'admin' };
+  const ws = { ...adminWorkspace, role: options.role ?? 'admin' };
   const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
     const url = String(input);
-    if (url.includes('/auth/me')) return json(user);
+    if (url.includes('/auth/me')) return jsonResponse(user);
     if (url.includes('/auth/logout')) return new Response(null, { status: 200 });
-    if (url.includes('/transfer-ownership')) return json({ ...ws, ownerId: 'u2' });
-    if (url.includes('/v1/workspaces/by-slug/')) return json(ws);
-    if (/\/v1\/workspaces\/[^/]+\/members/.test(url)) return json({ items: members });
+    if (url.includes('/transfer-ownership')) return jsonResponse({ ...ws, ownerId: 'u2' });
+    if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
+    if (/\/v1\/workspaces\/[^/]+\/members/.test(url)) return jsonResponse({ items: members });
     if (url.includes('/v1/workspaces')) {
-      return json({ items: [ws], total: 1, limit: 100, offset: 0 });
+      return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
     }
     return new Response(null, { status: 404 });
   });
@@ -189,8 +145,9 @@ describe('MemberProfilePage Component Test Suite', () => {
         async (input: RequestInfo | URL) =>
           new Promise<any>((resolve) => {
             const url = String(input);
-            if (url.includes('/auth/me')) resolve(json(authedUser));
-            if (url.includes('/v1/workspaces/by-slug/riverton')) resolve(json(mockWorkspaceAdmin));
+            if (url.includes('/auth/me')) resolve(jsonResponse(authedUser));
+            if (url.includes('/v1/workspaces/by-slug/riverton'))
+              resolve(jsonResponse(mockWorkspaceAdmin));
             // Do not resolve members
           }),
       );
@@ -373,15 +330,16 @@ describe('MemberProfilePage Component Test Suite', () => {
     it('shows error message if saving changes fails', async () => {
       const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
         const url = String(input);
-        if (url.includes('/auth/me')) return json(authedUser);
-        if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspaceAdmin);
+        if (url.includes('/auth/me')) return jsonResponse(authedUser);
+        if (url.includes('/v1/workspaces/by-slug/riverton'))
+          return jsonResponse(mockWorkspaceAdmin);
         if (url.includes('/v1/workspaces/w1/members')) {
           const segs = url.split('/v1/workspaces/w1/members')[1]?.split('/').filter(Boolean) ?? [];
-          if (segs.length === 0) return json({ items: membersList });
+          if (segs.length === 0) return jsonResponse({ items: membersList });
           if ((_init?.method ?? 'GET').toUpperCase() === 'PATCH') {
-            return json({ message: 'Update failed' }, 500);
+            return jsonResponse({ message: 'Update failed' }, 500);
           }
-          return json(membersList.find((m) => m.id === segs[0]));
+          return jsonResponse(membersList.find((m) => m.id === segs[0]));
         }
         return new Response(null, { status: 404 });
       });
@@ -404,15 +362,16 @@ describe('MemberProfilePage Component Test Suite', () => {
     it('shows error message if transferring ownership fails', async () => {
       const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
         const url = String(input);
-        if (url.includes('/auth/me')) return json(authedUser);
-        if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspaceAdmin);
+        if (url.includes('/auth/me')) return jsonResponse(authedUser);
+        if (url.includes('/v1/workspaces/by-slug/riverton'))
+          return jsonResponse(mockWorkspaceAdmin);
         if (url.includes('/v1/workspaces/w1/members')) {
           const segs = url.split('/v1/workspaces/w1/members')[1]?.split('/').filter(Boolean) ?? [];
-          if (segs.length === 0) return json({ items: membersList });
-          return json(membersList.find((m) => m.id === segs[0]));
+          if (segs.length === 0) return jsonResponse({ items: membersList });
+          return jsonResponse(membersList.find((m) => m.id === segs[0]));
         }
         if (url.includes('/v1/workspaces/w1/transfer-ownership')) {
-          return json({ message: 'Transfer failed' }, 500);
+          return jsonResponse({ message: 'Transfer failed' }, 500);
         }
         return new Response(null, { status: 404 });
       });
@@ -518,14 +477,14 @@ describe('MemberProfilePage Component Test Suite', () => {
       const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes('/auth/me')) {
-          return json(authedUser);
+          return jsonResponse(authedUser);
         }
         if (url.includes('/v1/workspaces/by-slug/riverton')) {
           // Return workspace without ID
-          return json({ slug: 'riverton', name: 'Riverton', role: 'admin' });
+          return jsonResponse({ slug: 'riverton', name: 'Riverton', role: 'admin' });
         }
         if (url.includes('/v1/workspaces/w1/members')) {
-          return json({ items: [] });
+          return jsonResponse({ items: [] });
         }
         return new Response(null, { status: 404 });
       });
@@ -549,16 +508,17 @@ describe('MemberProfilePage Component Test Suite', () => {
       const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         const method = (init?.method ?? 'GET').toUpperCase();
-        if (url.includes('/auth/me')) return json(authedUser);
-        if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspaceAdmin);
+        if (url.includes('/auth/me')) return jsonResponse(authedUser);
+        if (url.includes('/v1/workspaces/by-slug/riverton'))
+          return jsonResponse(mockWorkspaceAdmin);
         if (url.includes('/v1/workspaces/w1/members/m2') && method === 'PATCH') {
           return savePromise;
         }
         if (url.includes('/v1/workspaces/w1/members')) {
-          return json({ items: membersList });
+          return jsonResponse({ items: membersList });
         }
         if (url.includes('/v1/workspaces')) {
-          return json({ items: [mockWorkspaceAdmin], total: 1, limit: 100, offset: 0 });
+          return jsonResponse({ items: [mockWorkspaceAdmin], total: 1, limit: 100, offset: 0 });
         }
         return new Response(null, { status: 404 });
       });
@@ -579,7 +539,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       });
 
       // Resolve the promise
-      resolveSavePromise(json({ ...membersList[1], role: 'admin' }));
+      resolveSavePromise(jsonResponse({ ...membersList[1], role: 'admin' }));
 
       await waitFor(() => {
         expect(saveBtn.querySelector('[data-slot="spinner"]')).not.toBeInTheDocument();
@@ -596,16 +556,17 @@ describe('MemberProfilePage Component Test Suite', () => {
       const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         const method = (init?.method ?? 'GET').toUpperCase();
-        if (url.includes('/auth/me')) return json(authedUser);
-        if (url.includes('/v1/workspaces/by-slug/riverton')) return json(mockWorkspaceAdmin);
+        if (url.includes('/auth/me')) return jsonResponse(authedUser);
+        if (url.includes('/v1/workspaces/by-slug/riverton'))
+          return jsonResponse(mockWorkspaceAdmin);
         if (url.includes('/v1/workspaces/w1/transfer-ownership') && method === 'POST') {
           return transferPromise;
         }
         if (url.includes('/v1/workspaces/w1/members')) {
-          return json({ items: membersList });
+          return jsonResponse({ items: membersList });
         }
         if (url.includes('/v1/workspaces')) {
-          return json({ items: [mockWorkspaceAdmin], total: 1, limit: 100, offset: 0 });
+          return jsonResponse({ items: [mockWorkspaceAdmin], total: 1, limit: 100, offset: 0 });
         }
         return new Response(null, { status: 404 });
       });
@@ -625,7 +586,7 @@ describe('MemberProfilePage Component Test Suite', () => {
       });
 
       // Resolve transfer
-      resolveTransferPromise(json({ ...mockWorkspaceAdmin, ownerId: 'u2' }));
+      resolveTransferPromise(jsonResponse({ ...mockWorkspaceAdmin, ownerId: 'u2' }));
 
       await waitFor(() => {
         expect(confirmBtn.querySelector('[data-slot="spinner"]')).not.toBeInTheDocument();
@@ -635,7 +596,7 @@ describe('MemberProfilePage Component Test Suite', () => {
 
   describe('member profile — workspace owner', () => {
     it('locks the role/status controls and explains it on the owner profile', async () => {
-      mockTeamFetch();
+      mockTeamMemberBff();
       renderApp('/app/riverton/team/m1');
 
       // First mount compiles the code-split team route — allow extra time (3rd arg waitForOptions).
@@ -654,7 +615,7 @@ describe('MemberProfilePage Component Test Suite', () => {
     });
 
     it('lets the owner transfer ownership to another active member', async () => {
-      const fetchMock = mockTeamFetch();
+      const fetchMock = mockTeamMemberBff();
       const user = userEvent.setup();
       renderApp('/app/riverton/team/m2');
 
@@ -682,7 +643,7 @@ describe('MemberProfilePage Component Test Suite', () => {
 
     it('shows a regular member another member’s role/status read-only (no form)', async () => {
       const viewer = { ...authedUser, id: 'u3' }; // a plain member, not an admin or the owner
-      mockTeamFetch({ user: viewer, role: 'member' });
+      mockTeamMemberBff({ user: viewer, role: 'member' });
       renderApp('/app/riverton/team/m2');
 
       expect(

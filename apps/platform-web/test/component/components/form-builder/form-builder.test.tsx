@@ -5,6 +5,7 @@ import { FormBuilder } from '@/components/form-builder/form-builder';
 import type { FormDefinition } from '@/lib/services';
 import { within } from '@testing-library/react';
 import { useState } from 'react';
+import { EMPTY } from '../../../support/fixtures';
 
 // Mock dnd-kit context
 vi.mock('@dnd-kit/react', async (importOriginal) => {
@@ -223,13 +224,9 @@ vi.mock('@/components/form-builder/preview', () => ({
     <div data-testid="mock-preview">Preview: {JSON.stringify(definition.schema.properties)}</div>
   ),
 }));
-const EMPTY: { schema: Record<string, unknown>; uischema: Record<string, unknown> } = {
-  schema: { type: 'object', properties: {}, required: [] },
-  uischema: { type: 'VerticalLayout', elements: [] },
-};
 
 /** Controlled host so tests can observe the emitted definition. */
-function Harness({ initial = EMPTY }: { initial?: typeof EMPTY }) {
+function FormBuilderMirror({ initial = EMPTY }: { initial?: typeof EMPTY }) {
   const [value, setValue] = useState(initial);
   return (
     <>
@@ -657,21 +654,21 @@ describe('FormBuilder Component Test Suite', () => {
   });
 
   it('renders the three columns: palette, canvas, inspector', () => {
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     expect(screen.getByRole('region', { name: /palette/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /canvas/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /inspector/i })).toBeInTheDocument();
   });
 
   it('shows form settings in the inspector when nothing is selected', () => {
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const inspector = screen.getByRole('region', { name: /inspector/i });
     expect(within(inspector).getByText(/form settings/i)).toBeInTheDocument();
   });
 
   it('filters palette items via the search box', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
     await user.type(within(palette).getByRole('textbox', { name: 'Search components' }), 'numb');
     expect(within(palette).getByRole('button', { name: /number/i })).toBeInTheDocument();
@@ -680,7 +677,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('adds a field to the canvas (click-to-add) and emits a control + property', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
     await user.click(within(palette).getByRole('button', { name: /^text$/i }));
     const after = dump();
@@ -691,7 +688,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('edits the form title on the canvas, writing schema.title', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const canvas = screen.getByRole('region', { name: /canvas/i });
     const title = within(canvas).getByRole('textbox', { name: /^title$/i });
     await user.type(title, 'Apply now');
@@ -700,7 +697,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('selecting a field shows its config in the inspector and edits its label', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
     await user.click(within(palette).getByRole('button', { name: /^text$/i }));
     const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -716,7 +713,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('toggling required updates schema.required', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
     await user.click(within(palette).getByRole('button', { name: /^text$/i }));
     const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -732,7 +729,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('clears the selected field when focusing the form Title', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
     await user.click(within(palette).getByRole('button', { name: /^text$/i }));
     const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -746,7 +743,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('selects a layout container and shows section settings in the inspector', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
     await user.click(within(palette).getByRole('button', { name: /^group$/i }));
     const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -757,7 +754,7 @@ describe('FormBuilder Component Test Suite', () => {
 
   it('deletes a field from the canvas', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<FormBuilderMirror />);
     const palette = screen.getByRole('region', { name: /palette/i });
     await user.click(within(palette).getByRole('button', { name: /^text$/i }));
     const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -768,7 +765,7 @@ describe('FormBuilder Component Test Suite', () => {
   describe('display fields (inline editing)', () => {
     it('edits a heading inline on the canvas, writing a Label element (no property)', async () => {
       const user = userEvent.setup();
-      render(<Harness />);
+      render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
       await user.click(within(palette).getByRole('button', { name: /^heading$/i }));
       const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -787,7 +784,7 @@ describe('FormBuilder Component Test Suite', () => {
 
     it('selecting a heading shows its settings in the inspector and switches level', async () => {
       const user = userEvent.setup();
-      render(<Harness />);
+      render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
       await user.click(within(palette).getByRole('button', { name: /^heading$/i }));
       const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -801,7 +798,7 @@ describe('FormBuilder Component Test Suite', () => {
 
     it('edits a paragraph inline on the canvas', async () => {
       const user = userEvent.setup();
-      render(<Harness />);
+      render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
       await user.click(within(palette).getByRole('button', { name: /^paragraph$/i }));
       const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -817,7 +814,7 @@ describe('FormBuilder Component Test Suite', () => {
 
     it('sets paragraph alignment via the inspector', async () => {
       const user = userEvent.setup();
-      render(<Harness />);
+      render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
       await user.click(within(palette).getByRole('button', { name: /^paragraph$/i }));
       const canvas = screen.getByRole('region', { name: /canvas/i });
@@ -829,7 +826,7 @@ describe('FormBuilder Component Test Suite', () => {
 
     it('renders a rich-text editor inline on the canvas for a rich-text display field', async () => {
       const user = userEvent.setup();
-      render(<Harness />);
+      render(<FormBuilderMirror />);
       const palette = screen.getByRole('region', { name: /palette/i });
       // Two "Rich text" palette items: the data-collecting control (Rich text group) then the
       // display field (Display group). The second is the display one.

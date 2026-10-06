@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { authedUser, mockAuth, renderApp } from '../../support/render-app';
+import { adminWorkspace } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -38,17 +39,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
 describe('App Index Route (Workspace Selection)', () => {
   it('lists the workspaces without redirecting when at least one exists', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     const { router } = renderApp('/app/');
 
     const link = await screen.findByRole('link', { name: /riverton/i }, { timeout: 32000 });

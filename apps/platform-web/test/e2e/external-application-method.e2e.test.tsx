@@ -14,19 +14,12 @@ import {
   isHttpsUrl,
 } from '@/components/console/services/external-application-form';
 import type { ServiceReference } from '@/lib/services';
+import { ISO } from '../support/fixtures';
+import { jsonResponse } from '../support/render-app';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-07-14T00:00:00.000Z';
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
 
 const externalRef: ServiceReference = {
   id: 'ref-ext',
@@ -146,7 +139,9 @@ describe('External Application Method Integration Test Suite', () => {
     });
 
     it('edits an external method via the dialog (prefilled) and PATCHes external-applications', async () => {
-      const fetchMock = vi.fn(async () => json({ ...externalRef, url: 'https://gov.uk/new' }));
+      const fetchMock = vi.fn(async () =>
+        jsonResponse({ ...externalRef, url: 'https://gov.uk/new' }),
+      );
       globalThis.fetch = fetchMock as unknown as typeof fetch;
       renderMethods([externalRef]);
       await screen.findByText('Apply on GOV.UK');

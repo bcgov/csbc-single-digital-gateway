@@ -2,22 +2,12 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { MyNotificationsV1Controller } from '../../../../../src/modules/notifications/controllers/my-notifications-v1.controller';
 import { NotificationsProxyService } from '../../../../../src/modules/notifications/services/notifications-proxy.service';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type { Request, Response } from 'express';
+import { citizenUser } from '../../../../utils/fixtures';
 
 describe('MyNotificationsV1Controller', () => {
   let controller: MyNotificationsV1Controller;
   let proxyMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-123',
-    roles: ['citizen'],
-    claims: {
-      sub: 'user-123-sub',
-      email: 'citizen@example.com',
-      name: 'Jane Citizen',
-    },
-  };
 
   beforeEach(async () => {
     proxyMock = {
@@ -43,11 +33,11 @@ describe('MyNotificationsV1Controller', () => {
       const mockResult = { items: [], total: 0 };
       proxyMock.request.mockResolvedValue(mockResult);
 
-      const result = await controller.list(mockUser, { limit: 10, offset: 0 });
+      const result = await controller.list(citizenUser, { limit: 10, offset: 0 });
 
       expect(proxyMock.request).toHaveBeenCalledWith(
         'GET',
-        `/v1/recipients/${mockUser.id}/notifications?limit=10&offset=0`,
+        `/v1/recipients/${citizenUser.id}/notifications?limit=10&offset=0`,
       );
       expect(result).toEqual(mockResult);
     });
@@ -59,10 +49,10 @@ describe('MyNotificationsV1Controller', () => {
       const res = {} as Response;
       proxyMock.pipeStream.mockResolvedValue(undefined);
 
-      await controller.stream(mockUser, req, res);
+      await controller.stream(citizenUser, req, res);
 
       expect(proxyMock.pipeStream).toHaveBeenCalledWith(
-        `/v1/recipients/${mockUser.id}/notifications/stream`,
+        `/v1/recipients/${citizenUser.id}/notifications/stream`,
         req,
         res,
       );
@@ -74,11 +64,11 @@ describe('MyNotificationsV1Controller', () => {
       const mockCount = { count: 5 };
       proxyMock.request.mockResolvedValue(mockCount);
 
-      const result = await controller.unreadCount(mockUser);
+      const result = await controller.unreadCount(citizenUser);
 
       expect(proxyMock.request).toHaveBeenCalledWith(
         'GET',
-        `/v1/recipients/${mockUser.id}/notifications/unread-count`,
+        `/v1/recipients/${citizenUser.id}/notifications/unread-count`,
       );
       expect(result).toEqual(mockCount);
     });
@@ -89,11 +79,11 @@ describe('MyNotificationsV1Controller', () => {
       const mockResult = { success: true };
       proxyMock.request.mockResolvedValue(mockResult);
 
-      const result = await controller.readAll(mockUser);
+      const result = await controller.readAll(citizenUser);
 
       expect(proxyMock.request).toHaveBeenCalledWith(
         'POST',
-        `/v1/recipients/${mockUser.id}/notifications/read-all`,
+        `/v1/recipients/${citizenUser.id}/notifications/read-all`,
       );
       expect(result).toEqual(mockResult);
     });
@@ -104,11 +94,11 @@ describe('MyNotificationsV1Controller', () => {
       const mockItem = { id: 'delivery-123', read: true };
       proxyMock.request.mockResolvedValue(mockItem);
 
-      const result = await controller.markRead(mockUser, 'delivery-123');
+      const result = await controller.markRead(citizenUser, 'delivery-123');
 
       expect(proxyMock.request).toHaveBeenCalledWith(
         'POST',
-        `/v1/recipients/${mockUser.id}/notifications/delivery-123/read`,
+        `/v1/recipients/${citizenUser.id}/notifications/delivery-123/read`,
       );
       expect(result).toEqual(mockItem);
     });
@@ -119,11 +109,11 @@ describe('MyNotificationsV1Controller', () => {
       const mockPrefs = { email: true };
       proxyMock.request.mockResolvedValue(mockPrefs);
 
-      const result = await controller.preferences(mockUser);
+      const result = await controller.preferences(citizenUser);
 
       expect(proxyMock.request).toHaveBeenCalledWith(
         'GET',
-        `/v1/recipients/${mockUser.id}/preferences`,
+        `/v1/recipients/${citizenUser.id}/preferences`,
       );
       expect(result).toEqual(mockPrefs);
     });
@@ -139,11 +129,11 @@ describe('MyNotificationsV1Controller', () => {
       };
       proxyMock.request.mockResolvedValue(mockPrefs);
 
-      const result = await controller.updatePreferences(mockUser, body);
+      const result = await controller.updatePreferences(citizenUser, body);
 
       expect(proxyMock.request).toHaveBeenCalledWith(
         'PUT',
-        `/v1/recipients/${mockUser.id}/preferences`,
+        `/v1/recipients/${citizenUser.id}/preferences`,
         body,
       );
       expect(result).toEqual(mockPrefs);

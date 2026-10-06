@@ -26,7 +26,7 @@ afterEach(() => {
   state.isIntegrationTest = false;
 });
 
-const definition = {
+const serviceDefinition = {
   schema: {
     type: 'object',
     required: ['title'],
@@ -51,11 +51,13 @@ const definition = {
 };
 
 /** Mirrors service-detail: owns formData and feeds it back, so an editor feedback loop would throw. */
-function Harness({ initial = { title: 'Birth certificate' } as Record<string, unknown> }) {
+function ServiceDetailMirror({
+  initial = { title: 'Birth certificate' } as Record<string, unknown>,
+}) {
   const [formData, setFormData] = useState<Record<string, unknown>>(initial);
   return (
     <>
-      <ServiceEditor definition={definition} data={formData} onChange={setFormData} />
+      <ServiceEditor definition={serviceDefinition} data={formData} onChange={setFormData} />
       <pre data-testid="state">{JSON.stringify(formData)}</pre>
     </>
   );
@@ -144,7 +146,7 @@ describe('ServiceEditor Component Test Suite', () => {
     });
 
     it('renders the contact-methods section outside the title/about card', async () => {
-      const { container } = render(<Harness />);
+      const { container } = render(<ServiceDetailMirror />);
       const titleField = await screen.findByRole('textbox', { name: /title/i }, { timeout: 10000 });
       const addButton = screen.getByRole('button', { name: /add contact method/i });
 
@@ -156,7 +158,7 @@ describe('ServiceEditor Component Test Suite', () => {
 
     it('adds a contact method while preserving other fields (no feedback loop)', async () => {
       const user = userEvent.setup();
-      render(<Harness />);
+      render(<ServiceDetailMirror />);
       await screen.findByRole('button', { name: /add contact method/i }, { timeout: 10000 });
 
       await user.click(screen.getByRole('button', { name: /add contact method/i }));

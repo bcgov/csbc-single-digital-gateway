@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { Route as rootRoute } from '@/routes/__root';
 
 describe('Root Route', () => {
-  it('renders the child route inside the Outlet', async () => {
+  it('renders the child route inside the Outlet for root route', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     // Create a simple child route to test that Outlet renders children

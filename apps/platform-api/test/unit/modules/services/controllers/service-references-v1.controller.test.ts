@@ -1,26 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ServiceReferencesV1Controller } from '../../../../../src/modules/services/controllers/service-references-v1.controller';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   AddReferenceDto,
   CreateReferencedFormDto,
 } from '../../../../../src/modules/services/dtos/reference.dtos';
 import { createMockList } from '../../../../utils/test-helpers';
+import { mockUser } from '../../../../utils/fixtures';
 
 describe('ServiceReferencesV1Controller', () => {
   let controller: ServiceReferencesV1Controller;
   let referencesServiceMock: any;
   let agreementRefsServiceMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-1',
-    roles: ['staff'],
-    claims: {
-      sub: 'user-1-sub',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-  };
 
   beforeEach(() => {
     referencesServiceMock = {

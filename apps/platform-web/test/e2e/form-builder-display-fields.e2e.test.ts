@@ -6,12 +6,10 @@ import {
   parseModel,
   serializeModel,
   type ContainerNode,
-  type ControlNode,
   type DisplayNode,
   type FormModel,
 } from '@/components/form-builder/model';
-
-const ctrl = (key: string): ControlNode => ({ ...createField('text'), key, label: key });
+import { ctrl } from '../support/testHelpers';
 
 const model = (fields: FormModel['fields']): FormModel => ({
   title: '',

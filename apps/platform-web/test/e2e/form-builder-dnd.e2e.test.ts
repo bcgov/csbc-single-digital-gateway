@@ -7,26 +7,8 @@ import {
   controlId,
   groupId,
 } from '@/components/form-builder/dnd';
-import {
-  createField,
-  type ContainerNode,
-  type ControlNode,
-  type FormModel,
-} from '@/components/form-builder/model';
-
-const ctrl = (key: string): ControlNode => ({ ...createField('text'), key, label: key });
-const container = (children: ControlNode[] = []): ContainerNode => ({
-  kind: 'container',
-  layout: 'group',
-  children,
-});
-const rootKeys = (m: FormModel) => m.fields.map((f) => (f.kind === 'control' ? f.key : 'GROUP'));
-const childKeys = (m: FormModel, i: number) => {
-  const f = m.fields[i];
-  return f && f.kind === 'container'
-    ? f.children.map((c) => (c.kind === 'control' ? c.key : ''))
-    : [];
-};
+import { type FormModel } from '@/components/form-builder/model';
+import { ctrl, container, rootKeys, childKeys } from '../support/testHelpers';
 
 describe('Form Builder Dnd Integration Test Suite', () => {
   it('buildRecord maps root controls + container children into groups', () => {

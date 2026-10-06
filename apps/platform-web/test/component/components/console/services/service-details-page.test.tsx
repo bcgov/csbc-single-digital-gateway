@@ -64,9 +64,9 @@ vi.mock('@repo/react/jsonforms', () => ({
 vi.mock('@repo/react/jsonforms-renderers-display', () => ({ displayRenderers: [] }));
 
 import { ServiceDetailsPage } from '@/components/console/services/service-details-page';
+import { group } from '../../../../support/testHelpers';
 
 const control = (scope: string) => ({ type: 'Control', scope });
-const group = (label: string, elements: unknown[] = []) => ({ type: 'Group', label, elements });
 
 const UISCHEMA = {
   type: 'VerticalLayout',

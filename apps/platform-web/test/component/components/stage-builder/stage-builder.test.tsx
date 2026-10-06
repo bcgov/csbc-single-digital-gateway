@@ -93,7 +93,7 @@ vi.mock('@/components/stage-builder/stage-preview', () => ({
 }));
 
 // @xyflow/react is jsdom-hostile (measures the DOM) — keep this to render-safety, not interactions.
-function Harness() {
+function StageBuilderMirror() {
   const [value, setValue] = useState<MultiStageDefinition>(emptyDefinition());
   return <StageBuilder value={value} onChange={setValue} />;
 }
@@ -496,7 +496,7 @@ describe('StageBuilder Component Test Suite', () => {
 
   describe('StageBuilder (render-safety)', () => {
     it('renders the canvas toolbar + form panel without crashing', () => {
-      render(<Harness />);
+      render(<StageBuilderMirror />);
       expect(screen.getByRole('button', { name: /add stage/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/form name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();

@@ -1,25 +1,16 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, renderApp } from '../../../../support/render-app';
+import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
+import { PREFS } from '../../../../support/fixtures';
 
-const PREFS = {
-  userId: 'u1',
-  email: 'maya.reyes@riverton.gov',
-  channels: [
-    { channel: 'in_app', enabled: true },
-    { channel: 'email', enabled: false },
-  ],
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockBff(
+/**
+ * Mocks the notification settings BFF requests.
+ *
+ * @param options Options to configure the mock.
+ * @returns Array of PUT requests to verify the BFF was called.
+ */
+function mockNotificationSettingsBff(
   options: {
     getError?: boolean;
     putError?: boolean;
@@ -33,11 +24,11 @@ function mockBff(
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
 
-    if (url.includes('/auth/me')) return json(authedUser);
-    if (url.includes('/notifications/unread-count')) return json({ count: 0 });
+    if (url.includes('/auth/me')) return jsonResponse(authedUser);
+    if (url.includes('/notifications/unread-count')) return jsonResponse({ count: 0 });
     if (url.includes('/v1/me/notifications'))
-      return json({ items: [], total: 0, limit: 20, offset: 0 });
-    if (url.includes('/v1/workspaces')) return json([]);
+      return jsonResponse({ items: [], total: 0, limit: 20, offset: 0 });
+    if (url.includes('/v1/workspaces')) return jsonResponse([]);
 
     if (url.includes('/notification-preferences')) {
       if (method === 'PUT') {
@@ -49,7 +40,7 @@ function mockBff(
         }
         const bodyStr = init?.body ? String(init.body) : '';
         puts.push(bodyStr);
-        return json({ ...PREFS, ...(bodyStr ? JSON.parse(bodyStr) : {}) });
+        return jsonResponse({ ...PREFS, ...(bodyStr ? JSON.parse(bodyStr) : {}) });
       }
 
       if (options.delayGet) {
@@ -59,9 +50,9 @@ function mockBff(
         return new Response(null, { status: 500 });
       }
       if (options.nullEmail) {
-        return json({ ...PREFS, email: null });
+        return jsonResponse({ ...PREFS, email: null });
       }
-      return json(PREFS);
+      return jsonResponse(PREFS);
     }
 
     return new Response(null, { status: 404 });
@@ -78,7 +69,7 @@ afterEach(() => {
 describe('Notification Settings Component Test Suite', () => {
   it('renders seeded toggles and saves changes through the platform BFF', async () => {
     const user = userEvent.setup();
-    const puts = mockBff();
+    const puts = mockNotificationSettingsBff();
     renderApp('/app/account');
 
     // Wait for form to load
@@ -106,7 +97,7 @@ describe('Notification Settings Component Test Suite', () => {
 
   it('allows modifying contact email and trims whitespace', async () => {
     const user = userEvent.setup();
-    const puts = mockBff();
+    const puts = mockNotificationSettingsBff();
     renderApp('/app/account');
 
     // Wait for form to load
@@ -135,7 +126,7 @@ describe('Notification Settings Component Test Suite', () => {
 
   it('allows clearing contact email (sets it to null)', async () => {
     const user = userEvent.setup();
-    const puts = mockBff();
+    const puts = mockNotificationSettingsBff();
     renderApp('/app/account');
 
     // Wait for form to load
@@ -159,7 +150,7 @@ describe('Notification Settings Component Test Suite', () => {
   });
 
   it('renders skeleton loader when preferences query is loading', async () => {
-    mockBff({ delayGet: true });
+    mockNotificationSettingsBff({ delayGet: true });
     renderApp('/app/account');
 
     // Loader is active initially, wait for it
@@ -172,7 +163,7 @@ describe('Notification Settings Component Test Suite', () => {
   });
 
   it('renders error card when preferences query fails', async () => {
-    mockBff({ getError: true });
+    mockNotificationSettingsBff({ getError: true });
     renderApp('/app/account');
 
     expect(
@@ -186,7 +177,7 @@ describe('Notification Settings Component Test Suite', () => {
 
   it('displays API error alert when saving preferences fails', async () => {
     const user = userEvent.setup();
-    mockBff({ putError: true });
+    mockNotificationSettingsBff({ putError: true });
     renderApp('/app/account');
 
     // Wait for form to load
@@ -205,7 +196,7 @@ describe('Notification Settings Component Test Suite', () => {
 
   it('disables save button and displays loading text while save is in progress', async () => {
     const user = userEvent.setup();
-    mockBff({ delayPut: true });
+    mockNotificationSettingsBff({ delayPut: true });
     renderApp('/app/account');
 
     // Wait for form to load
@@ -228,7 +219,7 @@ describe('Notification Settings Component Test Suite', () => {
   });
 
   it('handles null contact email state on mount', async () => {
-    mockBff({ nullEmail: true });
+    mockNotificationSettingsBff({ nullEmail: true });
     renderApp('/app/account');
 
     // Wait for form to load

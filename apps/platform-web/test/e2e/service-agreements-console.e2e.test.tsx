@@ -1,27 +1,16 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
+import { authedUser, jsonResponse, mockAuth, renderApp } from '../support/render-app';
+import {
+  adminWorkspace,
+  globalAgreement as globalAgreementFixture,
+  ISO,
+} from '../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-07-07T00:00:00.000Z';
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: ISO,
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
 
 const workspaceAgreement = {
   id: 'a1',
@@ -35,14 +24,9 @@ const workspaceAgreement = {
 };
 
 const globalAgreement = {
-  id: 'g1',
-  workspaceId: null,
+  ...globalAgreementFixture,
   title: 'Privacy policy',
-  kind: 'service-agreement',
-  createdAt: ISO,
   updatedAt: ISO,
-  status: 'published',
-  isGlobal: true,
 };
 
 /** Wrap the shared auth/workspace mock with the /v1/service-agreements list endpoint. */
@@ -53,12 +37,12 @@ function withAgreements(base: ReturnType<typeof mockAuth>) {
     // workspace scope (feature 150); the admin scope (no workspaceId) is global-only.
     if (url.includes('/v1/service-agreements/page')) {
       const items = url.includes('workspaceId=') ? [workspaceAgreement] : [globalAgreement];
-      return json({ items, total: items.length, limit: 20, offset: 0 });
+      return jsonResponse({ items, total: items.length, limit: 20, offset: 0 });
     }
     if (url.includes('/v1/service-agreements')) {
       // The unpaginated picker endpoint: workspace + global (staff) or global only (admin).
       const hasWorkspace = url.includes('workspaceId=');
-      return json({
+      return jsonResponse({
         items: hasWorkspace ? [workspaceAgreement, globalAgreement] : [globalAgreement],
       });
     }
@@ -75,7 +59,7 @@ function withAgreements(base: ReturnType<typeof mockAuth>) {
 
 describe('Service Agreements Console Integration Test Suite', () => {
   it('opens the New agreement modal (title + description) at /new', async () => {
-    withAgreements(mockAuth(authedUser, { workspaces: [riverton] }));
+    withAgreements(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/service-agreements/new');
     const modal = await screen.findByRole(
       'dialog',
@@ -88,7 +72,7 @@ describe('Service Agreements Console Integration Test Suite', () => {
   });
 
   it('drives the paginated browse API from the search + sort controls', async () => {
-    const fetchMock = withAgreements(mockAuth(authedUser, { workspaces: [riverton] }));
+    const fetchMock = withAgreements(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/service-agreements/');
     await screen.findByRole('link', { name: 'Terms of service' }, { timeout: 32000 });
     const user = userEvent.setup();
@@ -109,7 +93,7 @@ describe('Service Agreements Console Integration Test Suite', () => {
 
   it('admin surface lists global agreements only', async () => {
     const admin = { ...authedUser, roles: ['admin'] };
-    withAgreements(mockAuth(admin, { workspaces: [riverton] }));
+    withAgreements(mockAuth(admin, { workspaces: [adminWorkspace] }));
     renderApp('/admin/service-agreements/');
     expect(
       await screen.findByRole('link', { name: 'Privacy policy' }, { timeout: 32000 }),

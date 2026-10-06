@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgreementsList } from '@/components/console/service-agreements/agreements-list';
-import type { AgreementScope } from '@/components/console/service-agreements/scope';
+import { adminScope, workspaceScope } from '../../../../support/fixtures';
 
 const mockNavigate = vi.fn();
 const mockUseSearch = vi.fn(() => ({}));
@@ -42,9 +42,6 @@ afterEach(() => {
   mockItems = [];
   mockUseSearch.mockReturnValue({});
 });
-
-const workspaceScope: AgreementScope = { kind: 'workspace', slug: 'riverton', workspaceId: 'w1' };
-const adminScope: AgreementScope = { kind: 'admin' };
 
 describe('AgreementsList Component Test Suite', () => {
   it('renders workspace scope empty state and navigates to new agreement page', async () => {
@@ -136,7 +133,7 @@ describe('AgreementsList Component Test Suite', () => {
     expect(link).toHaveAttribute('href', '/admin/service-agreements/1');
   });
 
-  it('renders no matches empty state when search term returns no results', () => {
+  it('renders no matches empty state when search term returns no results for the agreements list component', () => {
     mockItems = [];
     mockUseSearch.mockReturnValue({ q: 'nonexistent' });
     render(<AgreementsList scope={workspaceScope} />);

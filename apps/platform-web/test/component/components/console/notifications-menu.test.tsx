@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationsMenu } from '@/components/console/notifications-menu';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { authedUser, renderApp } from '../../../support/render-app';
+import { authedUser, jsonResponse, renderApp } from '../../../support/render-app';
+import { FEED, workspace } from '../../../support/fixtures';
 
 const mockNavigate = vi.fn();
 const sse = vi.hoisted(() => ({
@@ -140,59 +141,26 @@ vi.mock('@repo/react/notification-center', async (importOriginal) => {
   };
 });
 
-const ISO = '2026-06-01T00:00:00.000Z';
-const workspace = { id: 'w1', slug: 'riverton', name: 'Riverton', role: 'admin', createdAt: ISO };
-
-const FEED = {
-  items: [
-    {
-      deliveryId: 'd-staff',
-      notificationId: 'n-staff',
-      type: 'submission.received',
-      title: 'New application received',
-      body: 'Application 20260710-AB12 for Income Assistance was submitted and is ready for review.',
-      payload: { submissionId: 'sub1', workspaceSlug: 'riverton' },
-      createdAt: new Date().toISOString(),
-      readAt: null,
-    },
-    {
-      deliveryId: 'd-plain',
-      notificationId: 'n-plain',
-      type: 'demo.announcement',
-      title: 'No destination here',
-      body: null,
-      payload: null,
-      createdAt: new Date().toISOString(),
-      readAt: new Date().toISOString(),
-    },
-  ],
-  total: 2,
-  limit: 20,
-  offset: 0,
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockBff() {
+/**
+ * Mocks the BFF requests for the NotificationsMenu component.
+ * @returns An array of strings representing the fetch calls.
+ */
+function mockNotificationMenuBff(): string[] {
   const calls: string[] = [];
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     calls.push(`${init?.method ?? 'GET'} ${url}`);
-    if (url.includes('/auth/me')) return json(authedUser);
-    if (url.includes('/v1/workspaces/by-slug/riverton')) return json(workspace);
-    if (url.includes('/v1/workspaces')) return json([workspace]);
-    if (url.includes('/notifications/unread-count')) return json({ count: 1 });
-    if (url.includes('/read-all')) return json({ updated: 1 });
-    if (url.includes('/read')) return json({ ...FEED.items[0], readAt: new Date().toISOString() });
-    if (url.includes('/v1/me/notifications')) return json(FEED);
+    if (url.includes('/auth/me')) return jsonResponse(authedUser);
+    if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(workspace);
+    if (url.includes('/v1/workspaces')) return jsonResponse([workspace]);
+    if (url.includes('/notifications/unread-count')) return jsonResponse({ count: 1 });
+    if (url.includes('/read-all')) return jsonResponse({ updated: 1 });
+    if (url.includes('/read'))
+      return jsonResponse({ ...FEED.items[0], readAt: new Date().toISOString() });
+    if (url.includes('/v1/me/notifications')) return jsonResponse(FEED);
     if (url.includes('/v1/submissions/sub1')) return new Response(null, { status: 404 });
-    if (url.includes('/v1/submissions')) return json({ items: [] });
-    if (url.includes('/v1/services')) return json({ items: [] });
+    if (url.includes('/v1/submissions')) return jsonResponse({ items: [] });
+    if (url.includes('/v1/services')) return jsonResponse({ items: [] });
     return new Response(null, { status: 404 });
   }) as unknown as typeof fetch;
   return calls;
@@ -310,8 +278,9 @@ describe('NotificationsMenu Component Test Suite', () => {
     afterEach(() => {
       sse.isIntegrationTest = false;
     });
+
     it('shows the unread badge for a signed-in staff member', async () => {
-      mockBff();
+      mockNotificationMenuBff();
       renderApp('/app/riverton');
       expect(
         await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 }),
@@ -319,7 +288,7 @@ describe('NotificationsMenu Component Test Suite', () => {
     });
 
     it('invalidates the submission family on a realtime notification event', async () => {
-      mockBff();
+      mockNotificationMenuBff();
       const { queryClient } = renderApp('/app/riverton');
       await screen.findByRole('button', { name: 'Notifications — 1 unread' }, { timeout: 32000 });
       const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
@@ -332,7 +301,7 @@ describe('NotificationsMenu Component Test Suite', () => {
 
     it('navigates to the workspace review page for a staff payload and marks it read', async () => {
       const user = userEvent.setup();
-      const calls = mockBff();
+      const calls = mockNotificationMenuBff();
       const { router } = renderApp('/app/riverton');
       const bell = await screen.findByRole(
         'button',
@@ -355,7 +324,7 @@ describe('NotificationsMenu Component Test Suite', () => {
 
     it('does not navigate for a payload-less notification', async () => {
       const user = userEvent.setup();
-      mockBff();
+      mockNotificationMenuBff();
       const { router } = renderApp('/app/riverton');
       const bell = await screen.findByRole(
         'button',

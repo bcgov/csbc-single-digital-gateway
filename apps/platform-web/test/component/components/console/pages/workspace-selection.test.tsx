@@ -41,7 +41,7 @@ describe('WorkspaceSelectionPage Component Test Suite', () => {
   });
 
   it('opens the create workspace modal when clicking New Workspace in header (L43)', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app');
 
     const newBtn = await screen.findByRole(
@@ -70,7 +70,7 @@ describe('WorkspaceSelectionPage Component Test Suite', () => {
         email: '',
       },
     };
-    mockAuth(userWithoutName, { workspaces: [riverton] });
+    mockAuth(userWithoutName, { workspaces: [adminWorkspace] });
     renderApp('/app');
 
     await screen.findByRole('link', { name: /riverton/i }, { timeout: 32000 });
@@ -121,7 +121,7 @@ describe('WorkspaceSelectionPage Component Test Suite', () => {
       },
     });
     queryClient.setQueryData(['auth', 'me'], authedUser);
-    queryClient.setQueryData(['workspaces'], [riverton]);
+    queryClient.setQueryData(['workspaces'], [adminWorkspace]);
 
     const splitSpy = vi.spyOn(String.prototype, 'split').mockReturnValueOnce([] as any);
     render(

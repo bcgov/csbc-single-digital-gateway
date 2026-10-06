@@ -7,8 +7,10 @@ import {
   createRoute,
   createRootRoute,
 } from '@tanstack/react-router';
-import { authedUser, mockAuth, renderApp } from '../../support/render-app';
+import { mockAuth, renderApp } from '../../support/render-app';
 import { Route } from '@/routes/admin.document-types';
+import { createMockDocumentTypesBff } from '../../support/create-mock-document-types-bff';
+import { adminUser } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -34,37 +36,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const adminUser = { ...authedUser, roles: ['admin'] };
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockDocumentTypes(items: any[], base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    if (url.includes('/v1/admin/document-types')) {
-      return json({ items });
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
-describe('Admin Document Types Layout Route Integration', () => {
-  it('verifies route has a valid component definition', () => {
+describe('Admin Document Types Layout Route Integration Test Suite', () => {
+  it('verifies route has a valid component definition for admin document types layout route', () => {
     expect(Route.options.component).toBeDefined();
   });
 
   it('renders child routes correctly inside the DocumentTypesLayout Outlet', async () => {
-    mockDocumentTypes([], mockAuth(adminUser));
+    createMockDocumentTypesBff({ items: [] }, mockAuth(adminUser));
     renderApp('/admin/document-types');
 
     // Asserts that index route content within the layout Outlet mounts successfully
@@ -73,7 +51,7 @@ describe('Admin Document Types Layout Route Integration', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the layout component directly without crashing', () => {
+  it('renders the layout component directly without crashing for the admin document types layout route', () => {
     const Component = Route.options.component;
     if (Component) {
       const rootRoute = createRootRoute();

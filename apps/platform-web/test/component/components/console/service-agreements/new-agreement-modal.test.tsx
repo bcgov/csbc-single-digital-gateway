@@ -2,9 +2,9 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NewAgreementModal } from '@/components/console/service-agreements/new-agreement-modal';
-import type { AgreementScope } from '@/components/console/service-agreements/scope';
 import { createAgreement } from '@/lib/service-agreements';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { adminScope, workspaceScope } from '../../../../support/fixtures';
 
 const mockNavigate = vi.fn();
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
@@ -47,9 +47,6 @@ afterEach(() => {
   vi.clearAllMocks();
   queryClient.clear();
 });
-
-const workspaceScope: AgreementScope = { kind: 'workspace', slug: 'riverton', workspaceId: 'w1' };
-const adminScope: AgreementScope = { kind: 'admin' };
 
 describe('NewAgreementModal Component Test Suite', () => {
   it('renders workspace scope, submits creation payload, and navigates to the detail page on success', async () => {

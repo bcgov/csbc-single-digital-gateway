@@ -2,42 +2,26 @@ import { screen, within, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Workspace } from '@/lib/workspaces';
-import { authedUser, renderApp } from '../../../../support/render-app';
+import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
+import { ISO, adminWorkspace } from '../../../../support/fixtures';
+import { addMembers } from '../../../../support/testHelpers';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ISO = '2026-06-01T00:00:00.000Z';
 const mockWorkspaceAdmin = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
+  ...adminWorkspace,
   ownerId: 'u1',
-  createdAt: ISO,
 };
 
 const mockWorkspaceMember = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
+  ...adminWorkspace,
   role: 'member' as const,
   ownerId: 'u2',
-  createdAt: ISO,
 };
 
-const membersList = [
-  {
-    id: 'm1',
-    userId: 'u1',
-    role: 'admin' as const,
-    status: 'active' as const,
-    displayName: 'Maya Reyes',
-    email: 'maya@riverton.gov',
-    isOwner: true,
-    joinedAt: ISO,
-  },
+const membersList = addMembers([
   {
     id: 'm2',
     userId: 'u2',
@@ -58,32 +42,25 @@ const membersList = [
     isOwner: false,
     joinedAt: ISO,
   },
-];
+]);
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockTeamApi(workspace: Workspace = mockWorkspaceAdmin, members = membersList) {
+function mockTeamApi(workspace: Workspace = mockWorkspaceAdmin, members: any[] = membersList) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes('/auth/me')) {
-      return json(authedUser);
+      return jsonResponse(authedUser);
     }
     if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return json(workspace);
+      return jsonResponse(workspace);
     }
     if (url.includes('/members')) {
-      return json({ items: members });
+      return jsonResponse({ items: members });
     }
     if (url.includes('/v1/workspaces')) {
-      return json({ items: [workspace], total: 1, limit: 100, offset: 0 });
+      return jsonResponse({ items: [workspace], total: 1, limit: 100, offset: 0 });
     }
     if (url.includes('/addable-staff')) {
-      return json({ items: [] });
+      return jsonResponse({ items: [] });
     }
     return new Response(null, { status: 404 });
   });
@@ -192,7 +169,7 @@ describe('TeamPage Component Test Suite', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('handles workspace with missing/null id gracefully', async () => {
+  it('handles workspace with missing/null id gracefully for the team page component', async () => {
     const mockWorkspaceNoId = {
       id: null as any,
       slug: 'riverton',
@@ -207,7 +184,7 @@ describe('TeamPage Component Test Suite', () => {
     expect(await screen.findByPlaceholderText('Search name or email…')).toBeInTheDocument();
   });
 
-  it('renders no matches empty state when search term returns no results', async () => {
+  it('renders no matches empty state when search term returns no results for the team page component', async () => {
     mockTeamApi(mockWorkspaceAdmin, []);
     renderApp('/app/riverton/team?q=nonexistent');
 
@@ -245,6 +222,6 @@ describe('TeamPage Component Test Suite', () => {
       expect(row).toHaveAttribute('data-pending', '');
     });
 
-    resolveRefetch(json({ items: membersList }));
+    resolveRefetch(jsonResponse({ items: membersList }));
   });
 });

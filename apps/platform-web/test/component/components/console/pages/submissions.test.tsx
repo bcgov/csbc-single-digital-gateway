@@ -1,20 +1,12 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, renderApp } from '../../../../support/render-app';
+import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
+import { ISO, adminWorkspace } from '../../../../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
-
-const ISO = '2026-06-01T00:00:00.000Z';
-const mockWorkspace = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
-  createdAt: ISO,
-};
 
 const submissionsList = [
   {
@@ -47,25 +39,18 @@ const submissionsList = [
   },
 ];
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockSubmissionsApi(submissions: any[] = submissionsList, workspace: any = mockWorkspace) {
+function mockSubmissionsApi(submissions: any[] = submissionsList, workspace: any = adminWorkspace) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
 
     if (url.includes('/auth/me')) {
-      return json(authedUser);
+      return jsonResponse(authedUser);
     }
     if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return json(workspace);
+      return jsonResponse(workspace);
     }
     if (url.includes('/v1/workspaces')) {
-      return json({ items: [workspace], total: 1, limit: 100, offset: 0 });
+      return jsonResponse({ items: [workspace], total: 1, limit: 100, offset: 0 });
     }
     if (url.includes('/v1/submissions')) {
       const searchParams = new URL(url, 'http://x').searchParams;
@@ -73,7 +58,7 @@ function mockSubmissionsApi(submissions: any[] = submissionsList, workspace: any
       const filtered = statusParam
         ? submissions.filter((s) => s.status === statusParam)
         : submissions;
-      return json({ items: filtered });
+      return jsonResponse({ items: filtered });
     }
     return new Response(null, { status: 404 });
   });
@@ -88,9 +73,9 @@ describe('SubmissionsPage Component Test Suite', () => {
         new Promise<any>((resolve) => {
           const url = String(input);
           if (url.includes('/auth/me')) {
-            resolve(json(authedUser));
+            resolve(jsonResponse(authedUser));
           } else if (url.includes('/v1/workspaces/by-slug/riverton')) {
-            resolve(json(mockWorkspace));
+            resolve(jsonResponse(adminWorkspace));
           }
           // Do not resolve submissions list to keep it loading
         }),
@@ -270,7 +255,7 @@ describe('SubmissionsPage Component Test Suite', () => {
         new Promise<any>((resolve) => {
           const url = String(input);
           if (url.includes('/auth/me')) {
-            resolve(json(authedUser));
+            resolve(jsonResponse(authedUser));
           }
         }),
     );
@@ -294,14 +279,14 @@ describe('SubmissionsPage Component Test Suite', () => {
     expect(allTab).toHaveAttribute('data-active');
   });
 
-  it('renders no matches empty state when search term returns no results', async () => {
+  it('renders no matches empty state when search term returns no results for the submissions page component', async () => {
     mockSubmissionsApi([]);
     renderApp('/app/riverton/submissions?q=nonexistent');
 
     expect(await screen.findByText('No submissions match “nonexistent”.')).toBeInTheDocument();
   });
 
-  it('handles workspace with missing/null id gracefully', async () => {
+  it('handles workspace with missing/null id gracefully for the submissions page component', async () => {
     const mockWorkspaceNoId = {
       id: null as any,
       slug: 'riverton',

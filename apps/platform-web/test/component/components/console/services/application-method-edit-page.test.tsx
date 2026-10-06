@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, renderApp } from '../../../../support/render-app';
+import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
+import { adminWorkspace, ISO } from '../../../../support/fixtures';
 
 const originalFetch = globalThis.fetch;
 
@@ -38,16 +39,6 @@ afterEach(() => {
   vi.restoreAllMocks();
   mockFormQueryState = null;
 });
-
-const ISO = '2026-06-01T00:00:00.000Z';
-
-const mockWorkspace = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin' as const,
-  createdAt: ISO,
-};
 
 const mockServiceDetail = {
   service: {
@@ -194,15 +185,8 @@ const mockMultiStageFormPublished = {
   },
 };
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockApi({
-  workspace = mockWorkspace,
+function mockApplicationMethodEditPageBff({
+  workspace = adminWorkspace,
   service = mockServiceDetail,
   form = mockBasicFormDraft,
   onSaveForm,
@@ -217,23 +201,23 @@ function mockApi({
     const method = (init?.method ?? 'GET').toUpperCase();
 
     if (url.includes('/auth/me')) {
-      return json(authedUser);
+      return jsonResponse(authedUser);
     }
     if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return json(workspace);
+      return jsonResponse(workspace);
     }
     if (url.includes('/v1/workspaces')) {
-      return json({ items: [workspace], total: 1, limit: 100, offset: 0 });
+      return jsonResponse({ items: [workspace], total: 1, limit: 100, offset: 0 });
     }
     if (url.includes('/v1/services/srv-123')) {
-      return json(service);
+      return jsonResponse(service);
     }
     if (url.includes('/v1/forms/am-789/versions/v-1') && method === 'PATCH') {
       const body = JSON.parse(String(init?.body));
       if (onSaveForm) {
         onSaveForm(body);
       }
-      return json({
+      return jsonResponse({
         id: 'v-1',
         documentId: 'am-789',
         version: 1,
@@ -243,7 +227,7 @@ function mockApi({
       });
     }
     if (url.includes('/v1/forms/am-789')) {
-      return json(form);
+      return jsonResponse(form);
     }
     return new Response(null, { status: 404 });
   });
@@ -253,7 +237,7 @@ function mockApi({
 
 describe('Application Method Edit Page Component Test Suite', () => {
   it('renders loading spinner when loading form data', async () => {
-    mockApi({
+    mockApplicationMethodEditPageBff({
       form: mockBasicFormDraft,
     });
 
@@ -278,7 +262,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
 
   it('renders draft basic-form layout and edits title successfully', async () => {
     let savedBody: any = null;
-    mockApi({
+    mockApplicationMethodEditPageBff({
       form: mockBasicFormDraft,
       onSaveForm: (body) => {
         savedBody = body;
@@ -331,7 +315,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('renders published basic-form layout as read-only preview', async () => {
-    mockApi({ form: mockBasicFormPublished });
+    mockApplicationMethodEditPageBff({ form: mockBasicFormPublished });
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
@@ -349,7 +333,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
 
   it('renders draft multi-stage-form layout and edits definition successfully', async () => {
     let savedBody: any = null;
-    mockApi({
+    mockApplicationMethodEditPageBff({
       form: mockMultiStageFormDraft,
       onSaveForm: (body) => {
         savedBody = body;
@@ -396,7 +380,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('renders published multi-stage-form layout as read-only stage outline', async () => {
-    mockApi({ form: mockMultiStageFormPublished });
+    mockApplicationMethodEditPageBff({ form: mockMultiStageFormPublished });
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
@@ -451,7 +435,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApi({ form: mockBasicFormNoTitleDraft });
+    mockApplicationMethodEditPageBff({ form: mockBasicFormNoTitleDraft });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     const canvas = await screen.findByRole('region', { name: /canvas/i }, { timeout: 32000 });
@@ -488,7 +472,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApi({ form: mockBasicFormNoTitlePublished });
+    mockApplicationMethodEditPageBff({ form: mockBasicFormNoTitlePublished });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     expect(
@@ -536,7 +520,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApi({ form: mockMultiStageFormNoTitleDraft });
+    mockApplicationMethodEditPageBff({ form: mockMultiStageFormNoTitleDraft });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     const nameInput = await screen.findByLabelText(/form name/i, undefined, { timeout: 32000 });
@@ -580,7 +564,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApi({ form: mockMultiStageFormNoTitlePublished });
+    mockApplicationMethodEditPageBff({ form: mockMultiStageFormNoTitlePublished });
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
     expect(
@@ -593,7 +577,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('shows error message when form save fails', async () => {
-    mockApi({
+    mockApplicationMethodEditPageBff({
       form: mockBasicFormDraft,
     });
 
@@ -624,7 +608,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
   });
 
   it('shows spinner when saving form', async () => {
-    mockApi({
+    mockApplicationMethodEditPageBff({
       form: mockBasicFormDraft,
     });
 
@@ -655,7 +639,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
     expect(saveButton.querySelector('[data-slot="spinner"]')).toBeInTheDocument();
 
     resolveSave!(
-      json({
+      jsonResponse({
         id: 'v-1',
         documentId: 'am-789',
         version: 1,
@@ -701,7 +685,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApi({ form: mockBasicFormPublishedWithDesc });
+    mockApplicationMethodEditPageBff({ form: mockBasicFormPublishedWithDesc });
 
     renderApp('/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789');
 
@@ -714,7 +698,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
 
   it('falls back to form title when saving draft multi-stage-form with an empty/whitespace name', async () => {
     let savedBody: any = null;
-    mockApi({
+    mockApplicationMethodEditPageBff({
       form: mockMultiStageFormDraft,
       onSaveForm: (body) => {
         savedBody = body;
@@ -767,7 +751,7 @@ describe('Application Method Edit Page Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockApi({ form: mockBasicFormEmptyTitlePublished });
+    mockApplicationMethodEditPageBff({ form: mockBasicFormEmptyTitlePublished });
     const { container } = renderApp(
       '/app/riverton/services/srv-123/old/edit/versions/v-456/application-methods/am-789',
     );

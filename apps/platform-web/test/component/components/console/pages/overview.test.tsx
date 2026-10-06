@@ -4,13 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OverviewPage } from '@/components/console/pages/overview';
 import type { ServiceSummary } from '@/lib/services';
+import { service } from '../../../../support/testHelpers';
 
 const mockNavigate = vi.fn();
-const mockParams = { slug: 'riverton' };
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
   useNavigate: () => mockNavigate,
-  useParams: () => mockParams,
+  useParams: () => ({ slug: 'riverton' }),
   Link: ({ to, params, children, ...props }: any) => {
     let href = to;
     if (params) {
@@ -34,20 +34,6 @@ vi.mock('@/components/console/services/new-service-modal', () => ({
 afterEach(() => {
   vi.restoreAllMocks();
   mockNavigate.mockClear();
-});
-
-const service = (over: Partial<ServiceSummary>): ServiceSummary => ({
-  id: 'srv-1',
-  workspaceId: 'w1',
-  title: 'Parking Permits',
-  description: '',
-  status: 'published',
-  versionCount: 2,
-  hasSubmissions: true,
-  latestPublished: true,
-  createdAt: '2026-07-15T00:00:00Z',
-  updatedAt: '2026-07-15T12:30:00Z',
-  ...over,
 });
 
 /** Seed the workspace-by-slug + recently-updated (limit 3) queries and render the page. */

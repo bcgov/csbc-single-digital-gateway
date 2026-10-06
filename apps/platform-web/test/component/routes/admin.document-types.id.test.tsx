@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp } from '../../support/render-app';
+import { jsonResponse, mockAuth, renderApp } from '../../support/render-app';
 import { Route } from '@/routes/admin.document-types.$id';
+import { adminUser } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -48,8 +49,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const adminUser = { ...authedUser, roles: ['admin'] };
-
 const mockDocumentType = {
   type: {
     id: 'dt-1',
@@ -72,13 +71,6 @@ const mockDocumentType = {
   ],
 } as const;
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function withDocumentType(base: ReturnType<typeof mockAuth>, docTypeData: any = mockDocumentType) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -87,7 +79,7 @@ function withDocumentType(base: ReturnType<typeof mockAuth>, docTypeData: any = 
     if (url.includes('/v1/admin/document-types/dt-1')) {
       if (url.endsWith('/versions')) {
         if (method === 'POST') {
-          return json(
+          return jsonResponse(
             {
               id: 'ver-3',
               version: 3,
@@ -100,7 +92,7 @@ function withDocumentType(base: ReturnType<typeof mockAuth>, docTypeData: any = 
       }
       if (url.includes('/versions/ver-2')) {
         if (method === 'PATCH') {
-          return json({
+          return jsonResponse({
             id: 'ver-2',
             version: 2,
             status: 'draft',
@@ -108,7 +100,7 @@ function withDocumentType(base: ReturnType<typeof mockAuth>, docTypeData: any = 
           });
         }
       }
-      return json(docTypeData);
+      return jsonResponse(docTypeData);
     }
 
     return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
@@ -121,7 +113,7 @@ function withDocumentType(base: ReturnType<typeof mockAuth>, docTypeData: any = 
 }
 
 describe('Admin Document Type ID Route Integration Test Suite', () => {
-  it('verifies route has a valid component definition', () => {
+  it('verifies route has a valid component definition for admin document type id route', () => {
     expect(Route.options.component).toBeDefined();
   });
 

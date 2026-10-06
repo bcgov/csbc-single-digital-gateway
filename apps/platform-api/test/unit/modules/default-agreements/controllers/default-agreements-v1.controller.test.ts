@@ -1,21 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { DefaultAgreementsV1Controller } from '../../../../../src/modules/default-agreements/controllers/default-agreements-v1.controller';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type { AddDefaultAgreementDto } from '../../../../../src/modules/default-agreements/dtos/default-agreement.dtos';
+import { mockUser } from '../../../../utils/fixtures';
 
 describe('DefaultAgreementsV1Controller', () => {
   let controller: DefaultAgreementsV1Controller;
   let serviceMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-1',
-    roles: ['staff'],
-    claims: {
-      sub: 'user-1-sub',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-  };
 
   beforeEach(() => {
     serviceMock = {

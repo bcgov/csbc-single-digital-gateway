@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { loginUrl, loginUrlFor, getMe, logout, displayName } from '@/lib/bff';
+import { adminUser } from '../../support/fixtures';
 
 // loginUrlFor carries the current in-app path across the OIDC round-trip so the user lands back
 // where they started (feature 67). The path is URL-encoded into a `returnTo` query param.
@@ -55,20 +56,14 @@ describe('getMe', () => {
   });
 
   it('returns AuthUser object on successful response', async () => {
-    const mockUser = {
-      id: 'usr-1',
-      roles: ['user'],
-      claims: { sub: 'usr-1', name: 'Alice' },
-    };
-
     globalThis.fetch = vi.fn().mockResolvedValue({
       status: 200,
       ok: true,
-      json: async () => mockUser,
+      json: async () => adminUser,
     } as Response);
 
     const user = await getMe();
-    expect(user).toEqual(mockUser);
+    expect(user).toEqual(adminUser);
   });
 
   it('returns null on 401 unauthorized status', async () => {

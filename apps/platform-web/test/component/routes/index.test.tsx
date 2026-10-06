@@ -29,8 +29,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Index Route Integration', () => {
-  it('verifies route has a valid component definition', () => {
+describe('Index Route Integration Test Suite', () => {
+  it('verifies route has a valid component definition for index route', () => {
     expect(Route.options.component).toBeDefined();
   });
 

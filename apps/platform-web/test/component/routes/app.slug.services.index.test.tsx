@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { renderApp } from '../../support/render-app';
+import { createMockServicesBff } from '../../support/create-mock-services-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -26,53 +27,24 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function withServices(base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    if (url.includes('/v1/services')) {
-      return json({
-        items: [
-          {
-            id: 's1',
-            workspaceId: 'w1',
-            title: 'Permit application',
-            description: '',
-            status: 'draft',
-            versionCount: 1,
-            hasSubmissions: false,
-            latestPublished: false,
-            createdAt: '2026-06-01T00:00:00.000Z',
-          },
-        ],
-      });
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('App Slug Services Index Route', () => {
   it('renders the services list page correctly', async () => {
-    withServices(mockAuth(authedUser, { workspaces: [riverton] }));
+    const servicesJson = {
+      items: [
+        {
+          id: 's1',
+          workspaceId: 'w1',
+          title: 'Permit application',
+          description: '',
+          status: 'draft',
+          versionCount: 1,
+          hasSubmissions: false,
+          latestPublished: false,
+          createdAt: '2026-06-01T00:00:00.000Z',
+        },
+      ],
+    };
+    createMockServicesBff(servicesJson);
     renderApp('/app/riverton/services/');
 
     // Verify page header and layout

@@ -83,7 +83,7 @@ describe('Citizen Application Detail Page', () => {
     ).toBeInTheDocument();
   });
 
-  it('prompts anonymous visitors to log in', async () => {
+  it('prompts anonymous visitors to log in on application detail page', async () => {
     createMockBff({ me: new Response(null, { status: 401 }) });
     await renderApp();
     expect(

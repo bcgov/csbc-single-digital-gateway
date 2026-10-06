@@ -43,7 +43,7 @@ describe('Canvas Component Test Suite', () => {
     expect(descTextarea).toHaveValue('Please answer these questions honestly.');
   });
 
-  it('flags an empty form title as required', () => {
+  it('flags an empty form title as required for the canvas component', () => {
     render(
       <Canvas
         model={{ title: '', description: '', fields: [] }}

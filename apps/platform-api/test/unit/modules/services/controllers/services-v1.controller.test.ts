@@ -1,6 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { ServicesV1Controller } from '../../../../../src/modules/services/controllers/services-v1.controller';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   CreateServiceDto,
   ListServicesPageQueryDto,
@@ -11,21 +10,12 @@ import {
   createMockService,
   createMockServiceVersions,
 } from '../../../../utils/create-mock-services';
+import { mockUser } from '../../../../utils/fixtures';
 
 describe('ServicesV1Controller', () => {
   let controller: ServicesV1Controller;
   let servicesServiceMock: any;
   let serviceVersionsServiceMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-1',
-    roles: ['staff'],
-    claims: {
-      sub: 'user-1-sub',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-  };
 
   beforeEach(() => {
     servicesServiceMock = createMockService();

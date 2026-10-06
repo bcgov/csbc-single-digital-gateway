@@ -20,7 +20,12 @@ export function renderApp(initialPath = '/app') {
   return { queryClient, router, ...utils };
 }
 
-function jsonResponse(body: unknown, status = 200): Response {
+/**
+ * Returns a JSON response with the given body and status.
+ * @param body The body of the response.
+ * @returns A JSON response.
+ */
+export function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json' },
@@ -80,6 +85,7 @@ export interface WorkspaceLike {
   slug: string;
   name: string;
   role: 'admin' | 'member';
+  ownerId?: string;
   createdAt: string;
 }
 

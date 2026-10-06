@@ -1,24 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { SubmissionsV1Controller } from '../../../../../src/modules/submissions/controllers/submissions-v1.controller';
-import type { AuthUser } from '@repo/nestjs/auth';
 import type {
   ListSubmissionsQueryDto,
   ReviewSubmissionDto,
 } from '../../../../../src/modules/submissions/dtos/submission.dtos';
+import { mockUser } from '../../../../utils/fixtures';
 
 describe('SubmissionsV1Controller', () => {
   let controller: SubmissionsV1Controller;
   let submissionsServiceMock: any;
-
-  const mockUser: AuthUser = {
-    id: 'user-1',
-    roles: ['staff'],
-    claims: {
-      sub: 'user-1-sub',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-  };
 
   beforeEach(() => {
     submissionsServiceMock = {

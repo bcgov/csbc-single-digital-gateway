@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../support/render-app';
+import { authedUser, mockAuth, renderApp } from '../support/render-app';
 import '@/routes/app';
 import '@/routes/app.$slug';
 import '@/routes/app.$slug.index';
@@ -10,22 +10,15 @@ import '@/routes/app.$slug.team';
 import '@/routes/app.$slug.shared-resources';
 import '@/routes/app.$slug.settings';
 import '@/routes/app.account';
+import { adminWorkspace } from '../support/fixtures';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
 /** Mount the console scoped to the `riverton` workspace at the given section path. */
 function renderScoped(path: string) {
-  mockAuth(authedUser, { workspaces: [riverton] });
+  mockAuth(authedUser, { workspaces: [adminWorkspace] });
   return renderApp(path);
 }
 
@@ -79,7 +72,7 @@ describe('Console Routes Integration Test Suite', () => {
   });
 
   it('renders the user-scoped Account page prefilled with the signed-in user at /app/account', async () => {
-    mockAuth(authedUser, { workspaces: [riverton] });
+    mockAuth(authedUser, { workspaces: [adminWorkspace] });
     renderApp('/app/account');
     expect(
       await screen.findByDisplayValue('Maya Reyes', undefined, { timeout: 32000 }),

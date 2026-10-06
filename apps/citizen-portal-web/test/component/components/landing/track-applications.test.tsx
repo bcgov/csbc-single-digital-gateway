@@ -41,7 +41,7 @@ describe('TrackApplications Component', () => {
     },
   ];
 
-  it('renders loading skeleton when loading is true', () => {
+  it('renders loading skeleton for track applications when loading is true', () => {
     const { container } = render(
       <TrackApplications applications={mockApplications} loading={true} />,
     );

@@ -1326,9 +1326,7 @@ describe('Model Codec Component Test Suite', () => {
   });
 });
 
-// ── Feature 171: accordion group field ──────────────────────────────────────────────────────────
-
-const accordionNode = (overrides: Partial<ControlNode> = {}): ControlNode => ({
+const accordionNodeControl = (overrides: Partial<ControlNode> = {}): ControlNode => ({
   kind: 'control',
   fieldType: 'accordiongroup',
   key: 'faq',
@@ -1360,7 +1358,7 @@ const optionsOf = (definition: FormDefinition): Record<string, unknown> =>
 
 describe('Accordion group codec (feature 171)', () => {
   it('serializes an array property whose items carry id, title and an object description', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode())));
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl())));
     expect(prop.type).toBe('array');
     expect(prop.items).toEqual({
       type: 'object',
@@ -1376,8 +1374,8 @@ describe('Accordion group codec (feature 171)', () => {
   it('emits per-item completeness even when the field itself is optional', () => {
     // Rule 13: "required" on the FIELD governs how many items; items.required governs what an item
     // must contain. An optional group may be empty, but any item in it must be filled in.
-    const optional = propOf(serializeModel(modelWith(accordionNode({ required: false }))));
-    const required = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+    const optional = propOf(serializeModel(modelWith(accordionNodeControl({ required: false }))));
+    const required = propOf(serializeModel(modelWith(accordionNodeControl({ required: true }))));
     for (const prop of [optional, required]) {
       expect((prop.items as Record<string, unknown>).required).toEqual(['title', 'description']);
     }
@@ -1387,7 +1385,7 @@ describe('Accordion group codec (feature 171)', () => {
 
   it('requires a non-whitespace character in the item title', () => {
     // `required` alone passes on the '' the control writes on add; minLength: 1 would pass ' '.
-    const items = propOf(serializeModel(modelWith(accordionNode()))).items as Record<
+    const items = propOf(serializeModel(modelWith(accordionNodeControl()))).items as Record<
       string,
       unknown
     >;
@@ -1396,35 +1394,41 @@ describe('Accordion group codec (feature 171)', () => {
   });
 
   it('emits options.format = "accordion-group" on the uischema element', () => {
-    expect(optionsOf(serializeModel(modelWith(accordionNode()))).format).toBe('accordion-group');
+    expect(optionsOf(serializeModel(modelWith(accordionNodeControl()))).format).toBe(
+      'accordion-group',
+    );
   });
 
   it('emits options.itemLabel only when the author set a noun', () => {
-    expect(optionsOf(serializeModel(modelWith(accordionNode()))).itemLabel).toBeUndefined();
+    expect(optionsOf(serializeModel(modelWith(accordionNodeControl()))).itemLabel).toBeUndefined();
     expect(
-      optionsOf(serializeModel(modelWith(accordionNode({ itemLabel: 'question' })))).itemLabel,
+      optionsOf(serializeModel(modelWith(accordionNodeControl({ itemLabel: 'question' }))))
+        .itemLabel,
     ).toBe('question');
   });
 
   it('emits options.defaultOpen only when it is not "none"', () => {
-    expect(optionsOf(serializeModel(modelWith(accordionNode()))).defaultOpen).toBeUndefined();
     expect(
-      optionsOf(serializeModel(modelWith(accordionNode({ defaultOpen: 'first' })))).defaultOpen,
+      optionsOf(serializeModel(modelWith(accordionNodeControl()))).defaultOpen,
+    ).toBeUndefined();
+    expect(
+      optionsOf(serializeModel(modelWith(accordionNodeControl({ defaultOpen: 'first' }))))
+        .defaultOpen,
     ).toBe('first');
   });
 
   it('emits minItems: 1 when the field is required', () => {
-    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+    const definition = serializeModel(modelWith(accordionNodeControl({ required: true })));
     expect(propOf(definition).minItems).toBe(1);
     expect(definition.schema.required).toContain('faq');
   });
 
   it('omits minItems when the field is not required', () => {
-    expect(propOf(serializeModel(modelWith(accordionNode()))).minItems).toBeUndefined();
+    expect(propOf(serializeModel(modelWith(accordionNodeControl()))).minItems).toBeUndefined();
   });
 
   it('does not read minItems back into the model on parse (it is derived from required)', () => {
-    const definition = serializeModel(modelWith(accordionNode({ required: true })));
+    const definition = serializeModel(modelWith(accordionNodeControl({ required: true })));
     const node = parseModel(definition).fields[0] as ControlNode;
     expect(node.required).toBe(true);
     expect(node.options).toEqual({});
@@ -1455,7 +1459,7 @@ describe('Accordion group codec (feature 171)', () => {
     // parseControl's drop-list runs for ALL field types (memory `address-readonly-locks`) —
     // a synthesized option left in leaks into node.options and breaks the round-trip.
     const definition = serializeModel(
-      modelWith(accordionNode({ itemLabel: 'question', defaultOpen: 'all' })),
+      modelWith(accordionNodeControl({ itemLabel: 'question', defaultOpen: 'all' })),
     );
     const node = parseModel(definition).fields[0] as ControlNode;
     expect(node.options).toEqual({});
@@ -1464,35 +1468,37 @@ describe('Accordion group codec (feature 171)', () => {
   });
 
   it('defaults itemLabel and defaultOpen to definite values when the options are absent', () => {
-    const definition = serializeModel(modelWith(accordionNode()));
+    const definition = serializeModel(modelWith(accordionNodeControl()));
     const node = parseModel(definition).fields[0] as ControlNode;
     expect(node.itemLabel).toBe('item');
     expect(node.defaultOpen).toBe('none');
   });
 
   it('emits an author-set minimum in place of the required default', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true, minItems: 3 }))));
+    const prop = propOf(
+      serializeModel(modelWith(accordionNodeControl({ required: true, minItems: 3 }))),
+    );
     expect(prop.minItems).toBe(3);
   });
 
   it('emits an author-set maximum', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode({ maxItems: 4 }))));
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl({ maxItems: 4 }))));
     expect(prop.maxItems).toBe(4);
   });
 
   it('falls back to minItems 1 for a required field with no authored minimum', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode({ required: true }))));
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl({ required: true }))));
     expect(prop.minItems).toBe(1);
   });
 
   it('emits neither bound when the field is optional and unbounded', () => {
-    const prop = propOf(serializeModel(modelWith(accordionNode())));
+    const prop = propOf(serializeModel(modelWith(accordionNodeControl())));
     expect(prop.minItems).toBeUndefined();
     expect(prop.maxItems).toBeUndefined();
   });
 
   it('round-trips the authored bounds', () => {
-    const original = accordionNode({ required: true, minItems: 2, maxItems: 5 });
+    const original = accordionNodeControl({ required: true, minItems: 2, maxItems: 5 });
     const parsed = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
     expect(parsed.minItems).toBe(2);
     expect(parsed.maxItems).toBe(5);
@@ -1503,7 +1509,7 @@ describe('Accordion group codec (feature 171)', () => {
     // A required field emits minItems: 1, which reads back as an explicit minimum. No information
     // is lost or invented: a minimum of 1 and "required" mean the same thing (invariant 1), so the
     // parsed node is equivalent, and a second round trip is a fixed point.
-    const original = accordionNode({
+    const original = accordionNodeControl({
       required: true,
       itemLabel: 'question',
       defaultOpen: 'first',
@@ -1517,7 +1523,7 @@ describe('Accordion group codec (feature 171)', () => {
   });
 
   it('round-trips an optional, unbounded node exactly', () => {
-    const original = accordionNode({ itemLabel: 'question', defaultOpen: 'first' });
+    const original = accordionNodeControl({ itemLabel: 'question', defaultOpen: 'first' });
     const node = parseModel(serializeModel(modelWith(original))).fields[0] as ControlNode;
     expect(node).toEqual(original);
   });

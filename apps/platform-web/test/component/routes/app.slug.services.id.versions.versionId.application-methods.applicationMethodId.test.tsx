@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp, type WorkspaceLike } from '../../support/render-app';
+import { authedUser, jsonResponse, mockAuth, renderApp } from '../../support/render-app';
+import { adminWorkspace } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -26,29 +27,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const riverton: WorkspaceLike = {
-  id: 'w1',
-  slug: 'riverton',
-  name: 'Riverton',
-  role: 'admin',
-  createdAt: '2026-06-01T00:00:00.000Z',
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
 function withFormEditor(base: ReturnType<typeof mockAuth>) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('/v1/document-types')) {
-      return json({ items: [] });
+      return jsonResponse({ items: [] });
     }
     if (url.includes('/v1/services/s1')) {
-      return json({
+      return jsonResponse({
         service: {
           id: 's1',
           workspaceId: 'w1',
@@ -76,7 +62,7 @@ function withFormEditor(base: ReturnType<typeof mockAuth>) {
       });
     }
     if (url.includes('/v1/forms/f1')) {
-      return json({
+      return jsonResponse({
         form: {
           id: 'f1',
           workspaceId: 'w1',
@@ -117,7 +103,7 @@ function withFormEditor(base: ReturnType<typeof mockAuth>) {
 
 describe('App Slug Services ID Versions VersionID Application Methods ApplicationMethodID Route', () => {
   it('renders the application method editing page correctly', async () => {
-    withFormEditor(mockAuth(authedUser, { workspaces: [riverton] }));
+    withFormEditor(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
     renderApp('/app/riverton/services/s1/old/edit/versions/sv1/application-methods/f1');
 
     // Should display the sidebar with layout regions: canvas, palette, inspector

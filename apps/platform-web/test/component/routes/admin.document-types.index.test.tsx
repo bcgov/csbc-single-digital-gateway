@@ -1,7 +1,9 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, mockAuth, renderApp } from '../../support/render-app';
+import { mockAuth, renderApp } from '../../support/render-app';
 import { Route } from '@/routes/admin.document-types.index';
+import { createMockDocumentTypesBff } from '../../support/create-mock-document-types-bff';
+import { adminUser } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -27,37 +29,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const adminUser = { ...authedUser, roles: ['admin'] };
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-function mockDocumentTypes(items: any[], base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    if (url.includes('/v1/admin/document-types')) {
-      return json({ items });
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('Admin Document Types Index Route Integration Test Suite', () => {
-  it('verifies route has a valid component definition', () => {
+  it('verifies route has a valid component definition for admin document types index route', () => {
     expect(Route.options.component).toBeDefined();
   });
 
   it('renders empty state when no document types exist', async () => {
-    mockDocumentTypes([], mockAuth(adminUser));
+    createMockDocumentTypesBff({ items: [] }, mockAuth(adminUser));
     renderApp('/admin/document-types');
 
     expect(
@@ -83,8 +61,7 @@ describe('Admin Document Types Index Route Integration Test Suite', () => {
         versions: [{ id: 'v4', version: 1, status: 'archived' as const }],
       },
     ];
-
-    mockDocumentTypes(mockData, mockAuth(adminUser));
+    createMockDocumentTypesBff({ items: mockData }, mockAuth(adminUser));
     renderApp('/admin/document-types');
 
     expect(await screen.findByText('Document A', {}, { timeout: 8000 })).toBeInTheDocument();
@@ -120,8 +97,7 @@ describe('Admin Document Types Index Route Integration Test Suite', () => {
         versions: [],
       },
     ];
-
-    mockDocumentTypes(mockData, mockAuth(adminUser));
+    createMockDocumentTypesBff({ items: mockData }, mockAuth(adminUser));
     renderApp('/admin/document-types');
 
     expect(
