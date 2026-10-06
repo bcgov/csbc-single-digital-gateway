@@ -3,6 +3,7 @@ import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { cardLayoutEntry } from './card-layout';
 import { formEntry } from './form-renderer';
+import { funnelEntry } from './funnel/funnel-renderer';
 import { gridLayoutEntry } from './grid-layout';
 import { horizontalLayoutEntry } from './horizontal-layout';
 import { tabsLayoutEntry } from './tabs-layout';
@@ -24,6 +25,8 @@ export const layoutRenderers: RendererSet['layoutRenderers'] = [
   horizontalLayoutEntry,
   tabsLayoutEntry,
   cardLayoutEntry,
+  // Doc 274: a Funnel filled one Form at a time.
+  funnelEntry,
 ];
 export const renderers = renderersOf({
   cells,

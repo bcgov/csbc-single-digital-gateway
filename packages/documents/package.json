@@ -25,6 +25,12 @@
       "import": "./dist/renderers-ui.js",
       "require": "./dist/renderers-ui.cjs"
     },
+    "./runner": {
+      "types": "./dist/runner.d.ts",
+      "development": "./src/runner.ts",
+      "import": "./dist/runner.js",
+      "require": "./dist/runner.cjs"
+    },
     "./studio": {
       "types": "./dist/studio.d.ts",
       "development": "./src/studio.ts",

@@ -1,4 +1,5 @@
-import type { CriterionField, FieldKind, FieldOption } from './criteria';
+import { choicesOf, fieldKindOf } from '../renderers/default/funnel/clause-vocabulary';
+import type { CriterionField } from './criteria';
 import type { Uischema } from './document-types';
 import { idOf } from './element-ids';
 import { edgesOf, elementsOf, formsOf } from './funnel-model';
@@ -69,39 +70,9 @@ export function fieldOf(
       : typeof property['title'] === 'string'
         ? property['title']
         : key;
-  const options = choicesOf(property);
-  if (options !== undefined) return { key, label, kind: 'choice', options };
-  const kind = KIND_BY_TYPE[String(property['type'])];
+  const kind = fieldKindOf(property);
+  if (kind === 'choice') return { key, label, kind, options: choicesOf(property) ?? [] };
   return kind === undefined ? undefined : { key, label, kind };
-}
-
-const KIND_BY_TYPE: Record<string, FieldKind> = {
-  string: 'text',
-  number: 'number',
-  integer: 'number',
-  boolean: 'boolean',
-};
-
-/** A property's choices: `oneOf` consts (titled) or an `enum`; `undefined` when it is not a choice. */
-function choicesOf(property: Record<string, unknown>): FieldOption[] | undefined {
-  const { oneOf, enum: values } = property;
-  if (Array.isArray(oneOf) && oneOf.length > 0) {
-    const options = oneOf.flatMap((entry): FieldOption[] => {
-      if (!isRecord(entry)) return [];
-      const value = entry['const'];
-      if (typeof value !== 'string' && typeof value !== 'number') return [];
-      return [
-        { value, label: typeof entry['title'] === 'string' ? entry['title'] : String(value) },
-      ];
-    });
-    return options.length > 0 ? options : undefined;
-  }
-  if (Array.isArray(values) && values.length > 0) {
-    return values
-      .filter((v): v is string | number => typeof v === 'string' || typeof v === 'number')
-      .map((value) => ({ value, label: String(value) }));
-  }
-  return undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,6 +1,7 @@
 import { JsonForms } from '@jsonforms/react';
 import { useMemo, useState } from 'react';
 import * as defaults from '../renderers/default/index';
+import { DocumentRunner } from '../runner/index';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent } from './document-types';
 import { previewUischema } from './preview-uischema';
 
@@ -13,9 +14,11 @@ export interface DocumentPreviewProps {
 }
 
 /**
- * Preview mode's content area (doc 247 rules 6-11): the document filled in through the default renderers, on a
- * scrolling, centred 768px page. Its data is this component's own state, so each mount — each switch to Preview —
- * starts empty, and nothing typed here reaches the document.
+ * Preview mode's content area (doc 247 rules 6-11, doc 274 rules 33, 38). The ROOT — a Form or a Funnel — runs in
+ * `DocumentRunner`, filling the whole area with its action bar (and, for a Funnel, the step rail). A FOCUSED Form is
+ * a quick look at one page: plain `<JsonForms>` in a scrolling column, no action bar. A Form spans the full width and
+ * insets its own content. The data is this component's own state, so each switch to Preview starts empty, and nothing
+ * typed here reaches the document.
  */
 export function DocumentPreview({
   content,
@@ -25,13 +28,19 @@ export function DocumentPreview({
   const variant = variantOf(content, name);
   const uischema = useMemo(() => previewUischema(variant, focusedId), [variant, focusedId]);
   const [data, setData] = useState<unknown>({});
+  if (uischema === variant)
+    return (
+      <div data-slot="document-preview" className="flex min-h-0 flex-1 flex-col">
+        <DocumentRunner schema={content.schema} uischema={variant} data={data} onChange={setData} />
+      </div>
+    );
   return (
     <div data-slot="document-preview" className="min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto w-full max-w-3xl px-6 py-8">
+      <div className="w-full">
         {uischema === null ? (
           <p
             data-slot="document-preview-empty"
-            className="py-12 text-center text-sm text-muted-foreground"
+            className="px-6 py-12 text-center text-sm text-muted-foreground"
           >
             Nothing to preview yet.
           </p>

@@ -1,33 +1,20 @@
 import type { Clause, ConditionRow, Operator } from '@repo/forms';
+import {
+  needsValue,
+  OPERATORS_BY_KIND,
+  takesList,
+  type CriterionField,
+} from '../renderers/default/funnel/clause-vocabulary';
 
-/**
- * The clause vocabulary a Condition branch is authored in — a compact port of `@repo/forms`'
- * `renderers/xyflow/criteria.ts` and `condition-rows.ts`, which that package does not export. Stored values keep
- * its `Operator` union, so a Funnel's conditions stay evaluable by `@repo/forms/runner`.
- */
-export type FieldKind = 'text' | 'number' | 'choice' | 'multi' | 'boolean';
-
-export interface FieldOption {
-  value: string | number;
-  label: string;
-}
-
-/** A field a clause may test: a top-level schema property shown by a Control upstream of the Condition. */
-export interface CriterionField {
-  key: string;
-  label: string;
-  kind: FieldKind;
-  options?: FieldOption[];
-}
-
-export const OPERATORS_BY_KIND: Readonly<Record<FieldKind, readonly Operator[]>> = {
-  text: ['equals', 'notEquals', 'contains', 'startsWith', 'endsWith', 'isEmpty', 'isNotEmpty'],
-  number: ['equals', 'notEquals', 'gt', 'gte', 'lt', 'lte', 'isEmpty', 'isNotEmpty'],
-  choice: ['equals', 'notEquals', 'in', 'notIn', 'isEmpty', 'isNotEmpty'],
-  // A multiple choice's answer is a list (doc 256 rule 4): only rules offer it — Funnel Conditions never see this kind.
-  multi: ['includes', 'notIncludes', 'isEmpty', 'isNotEmpty'],
-  boolean: ['isTrue', 'isFalse'],
-};
+// The vocabulary itself is shared with the Funnel renderer, which matches clauses at fill time (doc 274 rule 5).
+export {
+  needsValue,
+  OPERATORS_BY_KIND,
+  takesList,
+  type CriterionField,
+  type FieldKind,
+  type FieldOption,
+} from '../renderers/default/funnel/clause-vocabulary';
 
 export const OPERATOR_LABELS: Readonly<Record<Operator, string>> = {
   equals: 'equals',
@@ -51,12 +38,6 @@ export const OPERATOR_LABELS: Readonly<Record<Operator, string>> = {
 
 /** What the default output is called, on the canvas and in the dialog. */
 export const DEFAULT_LABEL = 'Default';
-
-const VALUELESS = new Set<Operator>(['isEmpty', 'isNotEmpty', 'isTrue', 'isFalse']);
-const LIST_VALUED = new Set<Operator>(['in', 'notIn']);
-
-export const needsValue = (operator: Operator): boolean => !VALUELESS.has(operator);
-export const takesList = (operator: Operator): boolean => LIST_VALUED.has(operator);
 
 /** The value a clause starts with for `operator` on `field`: none, an empty list, or a sensible scalar. */
 export function startingValue(field: CriterionField, operator: Operator): Clause['value'] {

@@ -152,7 +152,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
           focusedId === null || variant?.['type'] === 'Form' ? undefined : () => setFocus(null)
         }
       />
-      {tabs !== null && <VariantTabs {...tabs} />}
+      {/* Preview edits nothing: the tabs still switch the variant previewed, but New / Rename / Delete are hidden (doc 274 rule 41). */}
+      {tabs !== null && <VariantTabs {...tabs} manage={tabs.manage && mode !== 'preview'} />}
       {/* `@container/canvas`: the floating panels collapse by the canvas's width, not the window's (doc 233 rule 14). */}
       <main
         data-slot="document-studio-center"

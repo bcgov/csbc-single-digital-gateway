@@ -12,16 +12,13 @@ const funnel = {
   },
 };
 
-describe('previewUischema (doc 247 rules 6-8)', () => {
+describe('previewUischema (doc 247 rules 6-8, doc 274 rule 32)', () => {
   it('previews the focused Form alone', () => {
     expect(previewUischema(funnel, 'b')).toBe(funnel.elements[1]);
   });
 
-  it("stacks a Funnel's Forms in elements order in a VerticalLayout, ignoring conditions and edges", () => {
-    const preview = previewUischema(funnel, null);
-    expect(preview).toEqual({ type: 'VerticalLayout', elements: funnel.elements });
-    expect(preview?.['elements']).not.toBe(funnel.elements);
-    expect(JSON.stringify(preview)).not.toContain('Condition');
+  it('previews an unfocused Funnel as the Funnel itself, for the Funnel renderer to route', () => {
+    expect(previewUischema(funnel, null)).toBe(funnel);
   });
 
   it('previews a Form root as itself, focused or not', () => {
@@ -30,11 +27,8 @@ describe('previewUischema (doc 247 rules 6-8)', () => {
     expect(previewUischema(root, 'r')).toBe(root);
   });
 
-  it('falls back to every Form when the focused id is not a Form', () => {
-    expect(previewUischema(funnel, 'gone')).toEqual({
-      type: 'VerticalLayout',
-      elements: funnel.elements,
-    });
+  it('falls back to the Funnel when the focused id is not a Form', () => {
+    expect(previewUischema(funnel, 'gone')).toBe(funnel);
   });
 
   it('has nothing to preview without Forms', () => {

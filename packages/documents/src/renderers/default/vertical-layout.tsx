@@ -23,15 +23,17 @@ export interface VerticalBodyProps {
   enabled: boolean;
   renderers?: JsonFormsRendererRegistryEntry[] | undefined;
   cells?: JsonFormsCellRendererRegistryEntry[] | undefined;
+  /** Extra classes on the grid — a Form's content inset (doc 274 rule 40). */
+  className?: string;
 }
 
 /** A one-column CSS grid of `elements`, in order (doc 236 rules 8-10). */
-export function VerticalStack({ elements, gap, ...dispatch }: VerticalBodyProps) {
+export function VerticalStack({ elements, gap, className, ...dispatch }: VerticalBodyProps) {
   return (
     <div
       data-slot="vertical-layout"
       data-gap={gap}
-      className={`grid grid-cols-1 ${GAP_CLASS[gap]}`}
+      className={`grid grid-cols-1 ${GAP_CLASS[gap]}${className === undefined ? '' : ` ${className}`}`}
     >
       {elements.map((child, index) => (
         <ChildDispatch key={elementKey(child, index)} child={child} {...dispatch} />

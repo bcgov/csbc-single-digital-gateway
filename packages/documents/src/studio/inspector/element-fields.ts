@@ -3,11 +3,13 @@ import { DEFAULT_GAP } from '../../renderers/default/layout-gap';
 import { DEFAULT_HEADING_LEVEL } from '../../renderers/ui/heading-options';
 import {
   absentIf,
+  BOOLEAN,
   choice,
   isKind,
   optionOf,
   patchElement,
   RICH_TEXT,
+  SMALL_SWITCH,
   STRING,
   type InspectorField,
 } from './inspector-field';
@@ -47,6 +49,18 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     read: (t) => optionOf(t, 'description'),
     write: (content, t, value) =>
       patchElement(content, t, { options: { description: absentIf(value) } }),
+  },
+  {
+    // Doc 274 rule 31: on by default, so on writes nothing and off writes `false`.
+    key: 'showSummaryPage',
+    section: 'General',
+    label: 'Show summary page',
+    applies: isKind('funnel'),
+    schema: () => BOOLEAN,
+    options: SMALL_SWITCH,
+    read: (t) => optionOf(t, 'showSummaryPage') !== false,
+    write: (content, t, value) =>
+      patchElement(content, t, { options: { showSummaryPage: absentIf(value, true) } }),
   },
   labelField('formTitle', 'Title', 'form'),
   {

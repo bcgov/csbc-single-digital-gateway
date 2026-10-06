@@ -32,9 +32,9 @@ function layoutOf(uischema: Record<string, unknown>) {
 const page = (...elements: Uischema[]) => form('F', 'Page', elements);
 
 describe('inspectorForm (doc 249 fields table)', () => {
-  it('builds Name, Description for a Funnel and Title, Description, Spacing for a Form', () => {
+  it('builds Name, Description, Show summary page for a Funnel and Title, Description, Spacing for a Form', () => {
     expect(layoutOf(formFor(funnel([], []), null).uischema)).toEqual([
-      ['General', ['Name', 'Description']],
+      ['General', ['Name', 'Description', 'Show summary page']],
     ]);
     expect(layoutOf(formFor(page(), 'F').uischema)).toEqual([
       ['General', ['Title', 'Description']],
@@ -238,5 +238,30 @@ describe('a Funnel description', () => {
       funnelDescription: '',
     });
     expect(optionsOf(cleared)).toEqual(optionsOf(doc));
+  });
+});
+
+const rootTarget = (c: DocumentContent) =>
+  inspectorTarget(c, { pageSelectedId: null, focusedId: null, formId: null })!;
+const rootOptions = (c: DocumentContent) =>
+  c.variants['default']!['options'] as Record<string, unknown>;
+
+describe('a Funnel summary page (doc 274 rule 31)', () => {
+  it('is a small switch, on by default; off writes false and on removes the key', async () => {
+    const { applyInspector } = await import('../src/studio/inspector/apply-inspector');
+    const doc = content(funnel([], []));
+    const field = fieldsFor(rootTarget(doc)).find((f) => f.key === 'showSummaryPage');
+    expect(field).toMatchObject({ label: 'Show summary page', section: 'General' });
+    expect(field?.options).toEqual({ component: 'switch', size: 'sm' });
+    const built = inspectorForm(rootTarget(doc));
+    expect(built.data['showSummaryPage']).toBe(true);
+    const off = applyInspector(doc, rootTarget(doc), { ...built.data, showSummaryPage: false });
+    expect(rootOptions(off)).toEqual({ ...rootOptions(doc), showSummaryPage: false });
+    expect(inspectorForm(rootTarget(off)).data['showSummaryPage']).toBe(false);
+    const on = applyInspector(off, rootTarget(off), {
+      ...inspectorForm(rootTarget(off)).data,
+      showSummaryPage: true,
+    });
+    expect(rootOptions(on)).toEqual(rootOptions(doc));
   });
 });

@@ -83,7 +83,7 @@ describe('DocumentStudio preview (doc 247)', () => {
   });
 
   describe('content (rules 5-12)', () => {
-    it('replaces canvas, palette, inspector and breadcrumbs with the fillable Forms of a Funnel', async () => {
+    it('replaces canvas, palette, inspector and breadcrumbs with the Funnel renderer', async () => {
       const { user } = await open();
       await user.click(toggle('Preview'));
       expect(preview()).not.toBeNull();
@@ -91,10 +91,14 @@ describe('DocumentStudio preview (doc 247)', () => {
       expect(screen.queryByRole('region', { name: 'Palette' })).toBeNull();
       expect(screen.queryByRole('region', { name: 'Inspector' })).toBeNull();
       expect(slot('document-studio-footer')!.querySelector('nav')).toBeNull();
+      // Doc 274: one Form at a time, with the step rail and the action bar.
+      expect(preview()!.querySelector('[data-slot="funnel"]')).not.toBeNull();
       const forms = [...preview()!.querySelectorAll('[data-slot="form"]')];
-      expect(forms.map((f) => f.getAttribute('aria-label'))).toEqual(['Eligibility', 'Details']);
+      expect(forms.map((f) => f.getAttribute('aria-label'))).toEqual(['Eligibility']);
+      expect(screen.getByRole('navigation', { name: 'Steps' })).toBeInTheDocument();
       // Real, enabled controls — not the studio's inert ones.
       expect(preview()!.querySelector('[inert]')).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Next' }));
       expect(screen.getByRole('textbox', { name: 'Full name' })).toBeEnabled();
     });
 
@@ -112,19 +116,61 @@ describe('DocumentStudio preview (doc 247)', () => {
     it('starts with fresh data every time Preview is entered', async () => {
       const { user } = await open();
       await user.click(toggle('Preview'));
+      await user.click(screen.getByRole('button', { name: 'Next' }));
       const name = screen.getByRole('textbox', { name: 'Full name' });
       fireEvent.change(name, { target: { value: 'Ada' } });
       await waitFor(() => expect(name).toHaveValue('Ada'));
       await user.click(toggle('Edit'));
       await user.click(toggle('Preview'));
+      // The runner restarts at the start (doc 274 rule 34).
+      expect(screen.queryByRole('textbox', { name: 'Full name' })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Next' }));
       expect(screen.getByRole('textbox', { name: 'Full name' })).toHaveValue('');
     });
 
-    it('lays out a scrolling, centred 768px page', async () => {
+    it('runs a root Form with the action bar, but previews a focused Form without one (doc 274 rule 38)', async () => {
+      const { user, rerender } = await open();
+      fireEvent.doubleClick(formNode('Details'));
+      await screen.findByRole('article', { name: 'Details page' });
+      await user.click(toggle('Preview'));
+      expect(slot('runner-actions')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+      rerender(<DocumentStudio documentId="stub-agreement-template" store={store()} />);
+      await screen.findByRole('article', { name: 'Terms of use page' });
+      await user.click(toggle('Preview'));
+      expect(slot('document-runner')).not.toBeNull();
+      expect(slot('runner-actions')).not.toBeNull();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+    });
+
+    it('lays out a focused Form full width in a scrolling column, its content inset (doc 274 rule 40)', async () => {
       const { user } = await open();
+      fireEvent.doubleClick(formNode('Details'));
+      await screen.findByRole('article', { name: 'Details page' });
       await user.click(toggle('Preview'));
       expect(preview()).toHaveClass('overflow-y-auto');
-      expect(preview()!.querySelector('.max-w-3xl')).not.toBeNull();
+      expect(preview()!.querySelector('.max-w-3xl')).toBeNull();
+      const form = preview()!.querySelector('[data-slot="form"]')!;
+      expect(form).toHaveClass('w-full');
+      expect(form).not.toHaveClass('px-6');
+      expect(form.querySelector('[data-slot="form-header"]')).toHaveClass('px-6');
+      expect(form.querySelector(':scope > [data-slot="vertical-layout"]')).toHaveClass(
+        'mx-auto',
+        'max-w-[980px]',
+        'px-10',
+        'py-8',
+      );
+    });
+
+    it('gives a Funnel the whole content area, its Form full width (doc 274 rules 33, 40)', async () => {
+      const { user } = await open();
+      await user.click(toggle('Preview'));
+      expect(preview()).not.toHaveClass('overflow-y-auto');
+      expect(preview()!.querySelector('.max-w-3xl')).toBeNull();
+      expect(
+        preview()!.querySelector('[data-slot="funnel-content"] [data-slot="form"]'),
+      ).toHaveClass('w-full');
     });
 
     it('says there is nothing to preview for a document without Forms', async () => {
@@ -134,6 +180,18 @@ describe('DocumentStudio preview (doc 247)', () => {
       await user.click(toggle('Preview'));
       expect(slot('document-preview-empty')).toHaveTextContent('Nothing to preview yet.');
       expect(preview()!.querySelector('[data-slot="form"]')).toBeNull();
+    });
+  });
+
+  describe('variants (doc 274 rule 41)', () => {
+    it('hides New variant in Preview, keeping the variant tabs', async () => {
+      const { user } = await open();
+      expect(slot('variant-new')).not.toBeNull();
+      await user.click(toggle('Preview'));
+      expect(slot('variant-new')).toBeNull();
+      expect(screen.getByRole('tablist', { name: 'Variants' })).toBeInTheDocument();
+      await user.click(toggle('Edit'));
+      expect(slot('variant-new')).not.toBeNull();
     });
   });
 

@@ -72,15 +72,18 @@ export function FormTitle({ children }: { children: ReactNode }) {
 export function FormHeader({
   title,
   description,
+  className,
 }: {
   title: string | undefined;
   description: FormDescriptionValue | undefined;
+  /** Extra classes — the fillable Form's heading inset (doc 274 rule 40); the studio passes none. */
+  className?: string;
 }) {
   if (title === undefined && description === undefined) return null;
   return (
     <header
       data-slot="form-header"
-      className="flex flex-col gap-2 border-b-2 border-bcgov-gold pb-2"
+      className={`flex flex-col gap-2 border-b-2 border-bcgov-gold pb-2${className === undefined ? '' : ` ${className}`}`}
     >
       {title !== undefined && <FormTitle>{title}</FormTitle>}
       {description !== undefined && <FormDescription value={description} />}
@@ -105,10 +108,13 @@ export function FormRenderer({
     <section
       data-slot="form"
       {...(title !== undefined && { 'aria-label': title })}
-      className="flex flex-col gap-6"
+      // Full width of its container with NO padding of its own: the heading area is inset, the content more so, and the
+      // gold rule under the heading runs edge to edge (doc 274 rule 40).
+      className="flex w-full flex-col"
     >
-      <FormHeader title={title} description={description} />
+      <FormHeader title={title} description={description} className="px-6 pt-6 pb-3" />
       <VerticalStack
+        className="mx-auto w-full max-w-[980px] px-10 py-8"
         elements={(uischema as Layout).elements ?? []}
         gap={layoutGap(uischema.options)}
         schema={schema}
