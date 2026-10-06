@@ -106,4 +106,8 @@ describe('@repo/documents styles.css (doc 236)', () => {
     // The only borders drawn are the corners'.
     expect(css).not.toMatch(/ui-resizable-[nesw] \{[^}]*border/);
   });
+
+  it('keeps a dragged item visible when the tab it lives in is hidden (doc 272 rule 6e)', () => {
+    expect(flat).toContain('.grid-stack-item.ui-draggable-dragging { visibility: visible; }');
+  });
 });

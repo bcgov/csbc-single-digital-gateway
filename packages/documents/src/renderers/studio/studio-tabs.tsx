@@ -90,7 +90,11 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
           }}
           className="min-w-0"
         >
-          <TabsList variant={variant} aria-label="Tabs" className="max-w-full overflow-x-auto">
+          <TabsList
+            variant={variant}
+            aria-label="Tabs"
+            className="max-w-full gap-0.5 overflow-x-auto"
+          >
             {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}

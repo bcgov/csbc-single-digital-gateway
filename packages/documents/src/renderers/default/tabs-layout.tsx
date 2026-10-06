@@ -26,7 +26,7 @@ export function TabsLayout({
   if (!visible || tabs.length === 0) return null;
   return (
     <Tabs data-slot="tabs-layout" defaultValue={tabs[0]!.id} className="flex flex-col gap-3">
-      <TabsList variant={tabsVariant(uischema)}>
+      <TabsList variant={tabsVariant(uischema)} className="gap-0.5">
         {tabs.map((tab) => {
           const invalid = hasErrorIn(errors, tabDataPaths(tab.layout));
           return (

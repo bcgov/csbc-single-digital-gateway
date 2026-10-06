@@ -99,6 +99,16 @@
 }
 
 /*
+ * A dragged item stays visible when the hover-switch hides the tab it came from (doc 272 rule 6e). Every tab panel stays
+ * mounted, an inactive one `visibility: hidden` — and gridstack drags the REAL item, which lives in that panel, so it
+ * vanished from the cursor until the drag went back over its own tab. `visibility` is the one hiding property a
+ * descendant can override; its own content inherits it back.
+ */
+.grid-stack-item.ui-draggable-dragging {
+  visibility: visible;
+}
+
+/*
  * Studio Grids (doc 260 rule 14), the same treatment as studio layouts above under their own slot: content may draw its
  * outline outside its box; only a grid's own items animate; the default cursor while dragging. A Grid's cells keep
  * their content at the top, and the resize handle sits inside the item's margin.
