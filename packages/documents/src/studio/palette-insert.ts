@@ -9,6 +9,8 @@ import type { PaletteCreation } from './palette-items';
 import { boundKeys, keyOfScope } from './variants/variant-bindings';
 import { ownerOf, withOwner } from './property-ref';
 import { intoRecord, recordArrayOf } from './record-scope';
+import { activeTabOf } from '../renderers/studio/active-tabs';
+import { tabsOf } from '../renderers/ui/tabs-model';
 
 /**
  * `content` with a placed item (doc 238 rule 15): its element spliced into the `elements` of the element whose id is
@@ -102,6 +104,12 @@ export function appendTarget(form: Uischema, selectedId: string | null): AppendT
   if (selectedId === null || selectedId === formId) return end;
   const selected = findById(form, selectedId);
   if (selected === undefined) return end;
+  // Doc 272 rule 10: a selected Tabs takes it into the tab it shows (else its first tab), never as a Tabs child.
+  if (selected['type'] === 'Tabs') {
+    const tabs = tabsOf(selected);
+    const shown = tabs.find((tab) => tab.id === activeTabOf(selectedId)) ?? tabs[0];
+    return shown === undefined ? end : { layoutId: shown.id, index: Infinity };
+  }
   if (Array.isArray(selected['elements'])) return { layoutId: selectedId, index: Infinity };
   const parent = parentOf(form, selectedId);
   const parentId = parent === undefined ? undefined : idOf(parent);

@@ -15,6 +15,7 @@ import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
 import { TabNameDialog } from './tab-name-dialog';
 import { releaseTabStrip, STUDIO_TABS_SLOT, TAB_STRIP_SLOT } from './tab-strip-hold';
+import { setActiveTab } from './active-tabs';
 import { useDragHover } from './use-drag-hover';
 
 /** Outranks the default Tabs (doc 272 rule 4). */
@@ -44,6 +45,11 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
   const [activeId, setActiveId] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
+  // Doc 272 rule 10: a palette click with this Tabs selected lands in the tab it shows.
+  const tabsKey = element?.id;
+  useEffect(() => {
+    if (tabsKey !== undefined && active !== undefined) setActiveTab(tabsKey, active.id);
+  }, [tabsKey, active]);
   const hover = useDragHover(setActiveId);
   // Doc 272 rule 4: selecting anything inside another tab — on the canvas or from the breadcrumb — opens it.
   const selectedId = editor?.selectedId ?? null;

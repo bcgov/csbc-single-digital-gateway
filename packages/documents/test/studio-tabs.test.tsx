@@ -163,3 +163,25 @@ describe('Tabs variant (doc 272 rule 9)', () => {
     expect(screen.getByRole('tablist', { name: 'Tabs' })).toHaveAttribute('data-variant', 'line');
   });
 });
+
+describe('a palette click with a Tabs selected (doc 272 rule 10)', () => {
+  it('lands at the end of the tab the Tabs shows, else its first tab', async () => {
+    const { appendTarget } = await import('../src/studio/palette-insert');
+    const { setActiveTab } = await import('../src/renderers/studio/active-tabs');
+    const form = { ...PAGE, elements: [{ ...PAGE.elements[0]!, id: 'T-click' }] };
+    expect(appendTarget(form, 'T-click')).toEqual({ layoutId: 'a', index: Infinity });
+    setActiveTab('T-click', 'b');
+    expect(appendTarget(form, 'T-click')).toEqual({ layoutId: 'b', index: Infinity });
+    // A stale record falls back to the first tab.
+    setActiveTab('T-click', 'gone');
+    expect(appendTarget(form, 'T-click')).toEqual({ layoutId: 'a', index: Infinity });
+  });
+
+  it('records the tab the studio Tabs shows', async () => {
+    const { activeTabOf } = await import('../src/renderers/studio/active-tabs');
+    renderStudioRenderers(PAGE, { schema: SCHEMA });
+    expect(activeTabOf('T')).toBe('a');
+    fireEvent.click(screen.getByRole('tab', { name: 'Address' }));
+    expect(activeTabOf('T')).toBe('b');
+  });
+});
