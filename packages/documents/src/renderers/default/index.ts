@@ -4,6 +4,7 @@ import { renderersOf } from '../renderer-set';
 import { formEntry } from './form-renderer';
 import { gridLayoutEntry } from './grid-layout';
 import { horizontalLayoutEntry } from './horizontal-layout';
+import { tabsLayoutEntry } from './tabs-layout';
 import { verticalLayoutEntry } from './vertical-layout';
 
 export type { RendererSet } from '../renderer-set';
@@ -20,6 +21,7 @@ export const layoutRenderers: RendererSet['layoutRenderers'] = [
   formEntry,
   gridLayoutEntry,
   horizontalLayoutEntry,
+  tabsLayoutEntry,
 ];
 export const renderers = renderersOf({
   cells,

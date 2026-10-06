@@ -1,4 +1,5 @@
 import type { GridStack } from 'gridstack';
+import { holdOverTabStrip } from './tab-strip-hold';
 
 /** The part of gridstack's private `DDDroppable` this module touches (`eventEl` is declared `protected`). */
 interface DroppableTarget {
@@ -31,7 +32,10 @@ export function retargetDropTarget(
   const el = grid?.el as DroppableHost | undefined;
   const droppable = el?.ddElement?.ddDroppable as DroppableTarget | undefined;
   const to = target ?? el;
-  if (!el || !to || !droppable || droppable.eventEl === to) return;
+  if (!el || !to || !droppable) return;
+  // Doc 272 rule 6b: before any (re-)enable binds the leave listener.
+  holdOverTabStrip(droppable);
+  if (droppable.eventEl === to) return;
   if (droppable.disabled === true) {
     droppable.eventEl = to;
     return;

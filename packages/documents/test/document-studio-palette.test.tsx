@@ -38,6 +38,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Vertical layout',
       'Horizontal layout',
       'Grid',
+      'Tabs',
       'Heading',
       'Separator',
       'Rich content',

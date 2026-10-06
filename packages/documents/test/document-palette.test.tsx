@@ -132,6 +132,8 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     fireEvent.keyDown(itemNamed('Horizontal layout'), { key: 'ArrowDown' });
     expect(itemNamed('Grid')).toHaveFocus();
     fireEvent.keyDown(itemNamed('Grid'), { key: 'ArrowDown' });
+    expect(itemNamed('Tabs')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Tabs'), { key: 'ArrowDown' });
     expect(itemNamed('Heading')).toHaveFocus();
     // Across groups, in list order, stopping at the last.
     fireEvent.keyDown(itemNamed('Heading'), { key: 'ArrowDown' });
@@ -176,6 +178,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Rich content',
       'Separator',
       'Heading',
+      'Tabs',
       'Grid',
       'Horizontal layout',
       'Vertical layout',
@@ -238,6 +241,7 @@ describe('foldable palette groups (doc 252 rule 10)', () => {
     fireEvent.keyDown(itemNamed('Vertical layout'), { key: 'ArrowDown' });
     fireEvent.keyDown(itemNamed('Horizontal layout'), { key: 'ArrowDown' });
     fireEvent.keyDown(itemNamed('Grid'), { key: 'ArrowDown' });
+    fireEvent.keyDown(itemNamed('Tabs'), { key: 'ArrowDown' });
     expect(itemNamed('Checkbox')).toHaveFocus();
 
     fireEvent.click(content);

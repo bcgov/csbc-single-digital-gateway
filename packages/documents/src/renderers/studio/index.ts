@@ -12,6 +12,7 @@ import { studioTableEntry } from './studio-table';
 import { withStudioElement } from './studio-element';
 import { studioGridEntry } from './studio-grid';
 import { studioHorizontalLayoutEntry } from './studio-horizontal-layout';
+import { studioTabsEntry } from './studio-tabs';
 import { studioVerticalLayoutEntry } from './studio-vertical-layout';
 
 export type { RendererSet } from '../renderer-set';
@@ -53,6 +54,7 @@ export const layoutRenderers: RendererSet['layoutRenderers'] = [
   studioFormEntry,
   studioGridEntry,
   studioHorizontalLayoutEntry,
+  studioTabsEntry,
 ].map((entry) => withStudioElement(entry));
 export const renderers = renderersOf({
   cells,

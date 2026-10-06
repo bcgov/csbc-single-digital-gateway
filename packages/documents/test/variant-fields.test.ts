@@ -98,6 +98,7 @@ describe('variantFieldItems (doc 262 rule 13a)', () => {
       'vertical-layout',
       'horizontal-layout',
       'grid',
+      'tabs',
       'heading',
       'separator',
       'rich-content',

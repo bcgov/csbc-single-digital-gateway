@@ -14,12 +14,14 @@ import {
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
   mdiViewColumnOutline,
+  mdiTab,
   mdiViewGridOutline,
   mdiViewSequentialOutline,
 } from '@mdi/js';
 import { nanoid } from 'nanoid';
 import type { DocumentContent, DocumentKind, DocumentType, Uischema } from './document-types';
 import { newId } from './element-ids';
+import { starterTabs } from '../renderers/ui/tabs-model';
 import { RECORD_FIELD_ITEMS } from './record-palette-items';
 import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS } from '../renderers/default/grid-placement';
 
@@ -136,6 +138,17 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
         elements: [],
         options: { columns: DEFAULT_GRID_COLUMNS, rows: DEFAULT_GRID_ROWS },
       },
+    }),
+  },
+  {
+    id: 'tabs',
+    label: 'Tabs',
+    icon: mdiTab,
+    group: 'Layout',
+    keywords: ['tabs', 'pages', 'sections'],
+    // Doc 272 rule 8: two empty tabs, each a labelled VerticalLayout.
+    create: () => ({
+      element: { id: newId(), type: 'Tabs', elements: starterTabs() },
     }),
   },
   {
