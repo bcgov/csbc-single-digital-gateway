@@ -52,7 +52,8 @@ export interface ServiceAgreementVersion {
  */
 export interface AgreementDefinition {
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  /** Doc 275: the template's uischemas by variant name; `default` is always present. */
+  variants: Record<string, Record<string, unknown>>;
   /** Doc 220/221: what a consuming document's owner may do. Absent means the template governs nothing. */
   capabilities?: Record<string, unknown>;
 }

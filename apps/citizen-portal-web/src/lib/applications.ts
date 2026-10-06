@@ -7,7 +7,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
 import type { ApplicationStatus } from '@/lib/catalog';
 
-/** The form to render for an application: its kind + structure (`{schema,uischema}` or `{stages,…}`). */
+/** The form to render for an application: its kind + structure, `{ schema, variants }` (doc 275). */
 export interface ApplicationFormToFill {
   serviceId: string;
   formId: string;

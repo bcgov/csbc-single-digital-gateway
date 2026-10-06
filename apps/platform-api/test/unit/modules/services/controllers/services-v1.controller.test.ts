@@ -77,7 +77,7 @@ describe('ServicesV1Controller', () => {
 
   describe('getDefinition', () => {
     it('returns the service type schema definition', () => {
-      const mockDef = { schema: { type: 'object' }, uischema: {} };
+      const mockDef = { schema: { type: 'object' }, variants: { default: {} } };
       servicesServiceMock.getServiceDefinition.mockReturnValue(mockDef);
 
       const result = controller.getDefinition({ templateId: 'tpl-1' });
@@ -135,7 +135,7 @@ describe('ServicesV1Controller', () => {
       const body: UpdateVersionContentDto = {
         content: {
           schema: { type: 'object', properties: {} },
-          uischema: { type: 'Service', elements: [], label: 'Updated' },
+          variants: { default: { type: 'Form', elements: [], label: 'Updated' } },
         },
       };
       const mockResult = { id: 'version-1', content: body.content };

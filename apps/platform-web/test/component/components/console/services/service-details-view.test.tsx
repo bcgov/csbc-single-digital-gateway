@@ -10,8 +10,8 @@ import {
 
 // Doc 229 — the service Details section, read-only.
 
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../../../support/mock-forms')).formRunnerMock(),
+vi.mock('@repo/documents/runner', async () =>
+  (await import('../../../../support/mock-documents')).documentRunnerMock(),
 );
 
 afterEach(() => {
@@ -30,7 +30,7 @@ const riverton: WorkspaceLike = {
 type Status = 'draft' | 'published' | 'archived';
 const content = (label: string) => ({
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Service', label, elements: [] },
+  variants: { default: { type: 'Form', label, elements: [] } },
 });
 const version = (n: number, status: Status, body: unknown = content(`v${String(n)} content`)) => ({
   id: `sv${String(n)}`,
@@ -62,7 +62,7 @@ function withService(versions: ReturnType<typeof version>[]) {
       return json({
         service: { id: 's1', workspaceId: 'w1', title: 'Permit application', createdAt: ISO },
         versions,
-        definition: { schema: {}, uischema: {} },
+        definition: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
         definitions: {},
         hasSubmissions: false,
       });
@@ -75,7 +75,7 @@ function withService(versions: ReturnType<typeof version>[]) {
   globalThis.fetch = fetchMock as unknown as typeof fetch;
 }
 
-const runner = async () => screen.findByTestId('form-runner', undefined, { timeout: 32000 });
+const runner = async () => screen.findByTestId('document-runner', undefined, { timeout: 32000 });
 
 describe('ServiceDetailsView (doc 229)', () => {
   it('never shows the placeholder note, even while the service loads', async () => {
@@ -131,7 +131,7 @@ describe('ServiceDetailsView (doc 229)', () => {
       'href',
       '/app/riverton/services/s1/details',
     );
-    expect(screen.queryByTestId('form-runner')).toBeNull();
+    expect(screen.queryByTestId('document-runner')).toBeNull();
   });
 
   it('says so when the service has no versions', async () => {
@@ -141,17 +141,17 @@ describe('ServiceDetailsView (doc 229)', () => {
     expect(
       await screen.findByText('This service has no versions yet.', undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId('form-runner')).toBeNull();
+    expect(screen.queryByTestId('document-runner')).toBeNull();
   });
 
-  it('shows an alert for content that is not a form document', async () => {
+  it('shows an alert for content that is not a document', async () => {
     withService([version(1, 'published', { title: 'a pre-studio row' })]);
     renderApp('/app/riverton/services/s1/details');
 
     expect(await screen.findByRole('alert', undefined, { timeout: 32000 })).toHaveTextContent(
-      'isn’t a form document',
+      'isn’t a document the studio can open',
     );
-    expect(screen.queryByTestId('form-runner')).toBeNull();
+    expect(screen.queryByTestId('document-runner')).toBeNull();
   });
 
   it('navigates to a version picked from the header', async () => {
@@ -162,7 +162,9 @@ describe('ServiceDetailsView (doc 229)', () => {
     await userEvent.click(screen.getByRole('button', { name: /version v2/i }));
     await userEvent.click(await screen.findByRole('menuitem', { name: /v1/ }));
 
-    await waitFor(() => expect(screen.getByTestId('form-runner')).toHaveTextContent('v1 content'));
+    await waitFor(() =>
+      expect(screen.getByTestId('document-runner')).toHaveTextContent('v1 content'),
+    );
     // `renderApp` routes through memory history, so the permalink shows in what it rendered, not in
     // `window.location`: v1's own status and picker label.
     expect(screen.getByText('archived')).toBeInTheDocument();

@@ -18,7 +18,7 @@ import {
 const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
 const CONTENT = {
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Service', elements: [], label: 'Waste permit' },
+  variants: { default: { type: 'Form', elements: [], label: 'Waste permit' } },
 };
 
 describe('service DTO schemas (feature 217)', () => {
@@ -58,7 +58,7 @@ describe('service DTO schemas (feature 217)', () => {
   });
 
   describe('updateVersionContentSchema', () => {
-    it('accepts a StudioDocument content', () => {
+    it('accepts a DocumentContent content', () => {
       expect(updateVersionContentSchema.parse({ content: CONTENT })).toEqual({ content: CONTENT });
     });
 
@@ -155,8 +155,8 @@ describe('service DTO schemas (feature 217)', () => {
         serviceDetailSchema.parse({
           service,
           versions: [version],
-          definition: { schema: {}, uischema: {} },
-          definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
+          definition: { schema: {}, variants: { default: {} } },
+          definitions: { [VALID_UUID]: { schema: {}, variants: { default: {} } } },
           hasSubmissions: false,
           // Doc 230: what may be deleted, and why not.
           deletable: { service: true, versionIds: [] },
@@ -165,10 +165,12 @@ describe('service DTO schemas (feature 217)', () => {
     });
 
     it('keeps the definition envelope opaque', () => {
-      expect(definitionSchema.parse({ schema: { a: 1 }, uischema: { b: 2 } })).toEqual({
-        schema: { a: 1 },
-        uischema: { b: 2 },
-      });
+      expect(definitionSchema.parse({ schema: { a: 1 }, variants: { default: { b: 2 } } })).toEqual(
+        {
+          schema: { a: 1 },
+          variants: { default: { b: 2 } },
+        },
+      );
     });
   });
 

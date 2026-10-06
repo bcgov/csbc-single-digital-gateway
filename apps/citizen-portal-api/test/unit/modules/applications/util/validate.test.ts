@@ -15,16 +15,16 @@ const basic = {
 };
 
 /**
- * Feature 217: a staged application is a `Flow` ROOT inside ONE `{ schema, uischema }` document,
- * so there is ONE schema covering every stage's fields — not a schema per page.
+ * Doc 275: a routed application is a `Funnel` ROOT inside a `{ schema, variants }` document, so there
+ * is ONE schema covering every Form's fields (and every variant's) — not a schema per page.
  */
-const flow = {
+const funnel = {
   schema: {
     type: 'object',
     required: ['a'],
     properties: { a: { type: 'string' }, b: { type: 'boolean' } },
   },
-  uischema: { type: 'Flow', elements: [] },
+  variants: { default: { type: 'Funnel', elements: [] } },
 };
 
 const mockValidate = () => false;
@@ -97,11 +97,11 @@ describe('validate utils', () => {
     });
   });
 
-  describe('validateSubmission - staged (Flow) form', () => {
+  describe('validateSubmission - routed (Funnel) form', () => {
     it("validates every stage's fields against the document's single schema", () => {
-      expect(validateSubmission(flow, { a: 'x', b: true }).valid).toBe(true);
+      expect(validateSubmission(funnel, { a: 'x', b: true }).valid).toBe(true);
       // `a` is required; `b` must be boolean.
-      expect(validateSubmission(flow, { b: 'nope' }).valid).toBe(false);
+      expect(validateSubmission(funnel, { b: 'nope' }).valid).toBe(false);
     });
 
     it('validates successfully when the data matches the whole document schema', () => {
@@ -114,7 +114,7 @@ describe('validate utils', () => {
             email: { type: 'string', format: 'email' },
           },
         },
-        uischema: { type: 'Flow', elements: [] },
+        variants: { default: { type: 'Funnel', elements: [] } },
       };
 
       const result = validateSubmission(structure, { name: 'Alice', email: 'alice@example.com' });
@@ -131,7 +131,7 @@ describe('validate utils', () => {
             email: { type: 'string', format: 'email' },
           },
         },
-        uischema: { type: 'Flow', elements: [] },
+        variants: { default: { type: 'Funnel', elements: [] } },
       };
 
       const result = validateSubmission(structure, { name: 123, email: 'invalid-email' });
@@ -199,35 +199,36 @@ describe('validate utils', () => {
 
   describe('decimal-places constraints (feature 155)', () => {
     const basicForm = {
-      uischema: {
-        type: 'VerticalLayout',
-        elements: [
-          { type: 'Control', scope: '#/properties/price', options: { decimals: 2 } },
-          { type: 'Control', scope: '#/properties/note' },
-          {
-            type: 'Group',
-            elements: [{ type: 'Control', scope: '#/properties/rate', options: { decimals: 3 } }],
-          },
-        ],
+      schema: {},
+      variants: {
+        default: {
+          type: 'VerticalLayout',
+          elements: [
+            { type: 'Control', scope: '#/properties/price', options: { decimals: 2 } },
+            { type: 'Control', scope: '#/properties/note' },
+            {
+              type: 'Group',
+              elements: [{ type: 'Control', scope: '#/properties/rate', options: { decimals: 3 } }],
+            },
+          ],
+        },
       },
     };
 
-    const flowForm = {
-      uischema: {
-        type: 'Flow',
-        elements: [
-          {
-            type: 'Stage',
-            elements: [
-              {
-                type: 'Form',
-                elements: [
-                  { type: 'Control', scope: '#/properties/amount', options: { decimals: 1 } },
-                ],
-              },
-            ],
-          },
-        ],
+    const funnelForm = {
+      schema: {},
+      variants: {
+        default: {
+          type: 'Funnel',
+          elements: [
+            {
+              type: 'Form',
+              elements: [
+                { type: 'Control', scope: '#/properties/amount', options: { decimals: 1 } },
+              ],
+            },
+          ],
+        },
       },
     };
 
@@ -242,8 +243,28 @@ describe('validate utils', () => {
       expect(constraints).toHaveLength(2);
     });
 
-    it("collects decimal constraints from a Flow's nested stages", () => {
-      expect(collectDecimalConstraints(flowForm)).toEqual([{ key: 'amount', maxDecimals: 1 }]);
+    it("collects decimal constraints from a Funnel's nested Forms", () => {
+      expect(collectDecimalConstraints(funnelForm)).toEqual([{ key: 'amount', maxDecimals: 1 }]);
+    });
+
+    it('collects decimal constraints from a non-default variant too (doc 275)', () => {
+      const structure = {
+        schema: {},
+        variants: {
+          default: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/note' }] },
+          detailed: {
+            type: 'Form',
+            elements: [{ type: 'Control', scope: '#/properties/fee', options: { decimals: 2 } }],
+          },
+        },
+      };
+      expect(collectDecimalConstraints(structure)).toEqual([{ key: 'fee', maxDecimals: 2 }]);
+    });
+
+    it('collects nothing from a structure without variants (the old uischema shape)', () => {
+      expect(
+        collectDecimalConstraints({ schema: {}, uischema: basicForm.variants.default }),
+      ).toEqual([]);
     });
 
     it('flags a value with too many decimal places', () => {

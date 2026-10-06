@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { Spinner } from '@repo/ui/spinner';
-import type { StudioDocument } from '@repo/forms';
+import type { DocumentContent } from '@repo/documents/content';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, Pencil } from 'lucide-react';
@@ -23,9 +23,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { AgreementDeleteButton } from './agreement-delete-button';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
-import { VersionContent } from '@/components/console/version-content';
-import type { CapabilityMap } from '@repo/forms';
-import { sameStudioDocument, studioDocumentOf } from '@/lib/studio-content';
+import { VersionContent, type GoverningTemplate } from '@/components/console/version-content';
+import { documentContentOf, sameDocumentContent } from '@/lib/studio-content';
 import { useAuth } from '@/lib/auth';
 import { useSetPageChrome } from '@/lib/page-chrome';
 import {
@@ -65,10 +64,11 @@ function AgreementBody({
   const latest = versions[versions.length - 1];
   const [selectedId, setSelectedId] = useState(latest?.id ?? '');
   const selected = versions.find((v) => v.id === selectedId) ?? latest;
-  const governing =
-    selected?.templateVersionId === null || selected?.templateVersionId === undefined
+  const governing = governingOf(
+    selected?.templateVersionId == null
       ? undefined
-      : (detail.definitions[selected.templateVersionId]?.capabilities as CapabilityMap | undefined);
+      : detail.definitions[selected.templateVersionId],
+  );
 
   /**
    * Doc 218 rule 1: the document the studio last reported. `null` until it mounts and emits its
@@ -78,7 +78,7 @@ function AgreementBody({
    * This replaces the old `contentText`/`baseline` JSON-text pair: the content is a form document
    * now, authored as one, so there is no text to reseed and no parse that can fail.
    */
-  const [live, setLive] = useState<StudioDocument | null>(null);
+  const [live, setLive] = useState<DocumentContent | null>(null);
   /** An action waiting on the discard confirmation (rule 19). Stored as a thunk, hence the extra arrow. */
   const [pending, setPending] = useState<(() => void) | null>(null);
 
@@ -87,21 +87,20 @@ function AgreementBody({
    * render. After a save the refetch makes it equal to `live` again, which is what turns Save back
    * off and Publish back on.
    */
-  const stored = studioDocumentOf(selected?.content);
+  const stored = documentContentOf(selected?.content);
   /**
    * Rule 12: what the studio is SEEDED with — pinned to the version id, deliberately NOT to the
    * query data.
    *
-   * `useStudioDocument` re-seeds on a REFERENTIAL change of `schema`/`uischema`, so handing it the
-   * refetched objects after a save clears its element ids and the author's selection. `key` alone
-   * does not prevent that: it only stops one version's document leaking into another. Both are
-   * needed, and they are not the same guard.
+   * The studio seeds once per mount (doc 276) and `key` remounts it per version; pinning the seed to
+   * the version id as well means a refetch after a save never hands a re-render a new content
+   * identity. Both guards stay.
    */
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the version id IS the identity of its content here.
   const seed = useMemo(() => stored, [selected?.id]);
   // Doc 221: the same order-insensitive comparison the template page needs — the server's zod parse
   // reorders keys, so a plain JSON.stringify left this page dirty forever after a successful save.
-  const dirty = live !== null && !sameStudioDocument(live, stored);
+  const dirty = live !== null && !sameDocumentContent(live, stored);
   // Rule 20 (feature 177): read at block time through a ref, because a boolean captured at render can
   // still read stale `true` in the continuation after an awaited save.
   const dirtyRef = useRef(dirty);
@@ -110,7 +109,7 @@ function AgreementBody({
    * Doc 225 B1: a deleted agreement has NOTHING to save, so the guard must not ask.
    *
    * Deleting makes the page dirty by itself: the refetch empties it, `stored` becomes `null`, and
-   * `sameStudioDocument` reports any document against `null` as changed — so the navigation away
+   * `sameDocumentContent` reports any document against `null` as changed — so the navigation away
    * from a delete was blocked by a prompt offering to save the thing just deleted.
    *
    * A REF, set synchronously before navigating, for the same reason `isDirty` is a function at all
@@ -134,7 +133,7 @@ function AgreementBody({
     queryClient.invalidateQueries({ queryKey: ['service-agreements', 'detail', id] });
 
   const save = useMutation({
-    mutationFn: (document: StudioDocument) => {
+    mutationFn: (document: DocumentContent) => {
       if (selected === undefined) {
         throw new Error('No version selected');
       }
@@ -318,6 +317,8 @@ function AgreementBody({
         <VersionContent
           key={selected?.id}
           document={seed}
+          kind="document"
+          type="services.service-agreement"
           editable={editable}
           onDocumentChange={setLive}
           // Doc 221: the template THIS version is pinned to (doc 217), looked up in `definitions` —
@@ -365,4 +366,21 @@ function VersionPicker({
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+/**
+ * Doc 276: the template a version is PINNED to, as the studio shows it — its name (the default variant's label) and its
+ * rules. `undefined` = ungoverned: no pinned template, or one that authored no rules.
+ */
+function governingOf(
+  definition:
+    | { variants: Record<string, Record<string, unknown>>; capabilities?: unknown }
+    | undefined,
+): GoverningTemplate | undefined {
+  if (definition?.capabilities === undefined) return undefined;
+  const label = definition.variants['default']?.['label'];
+  return {
+    name: typeof label === 'string' && label.trim() !== '' ? label.trim() : 'Template',
+    capabilities: definition.capabilities as GoverningTemplate['capabilities'],
+  };
 }

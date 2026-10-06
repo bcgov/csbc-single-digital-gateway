@@ -20,6 +20,10 @@ export interface DocumentStudioHeaderProps {
   basedOn?: string | undefined;
   /** Given while a Form is focused (doc 233 rule 5): a Back button replaces the Type / Template badges. */
   onBack?: (() => void) | undefined;
+  /** False when the host saves (doc 276): no Save button. */
+  hasSave?: boolean | undefined;
+  /** Doc 276: a read-only studio is locked to Preview, so it draws no Edit | Preview toggle. */
+  readOnly?: boolean | undefined;
 }
 
 /**
@@ -37,6 +41,8 @@ export function DocumentStudioHeader({
   onSave,
   basedOn,
   onBack,
+  hasSave = true,
+  readOnly = false,
 }: DocumentStudioHeaderProps) {
   const editing = mode === 'edit';
   const showBack = editing && onBack !== undefined;
@@ -54,7 +60,7 @@ export function DocumentStudioHeader({
             </Button>
           )}
           {/* One position in every state, so the toggle never remounts (and keeps focus) as Back comes and goes. */}
-          <ModeToggle mode={mode} onModeChange={onModeChange} />
+          {!readOnly && <ModeToggle mode={mode} onModeChange={onModeChange} />}
           {!showBack && (
             <>
               <Badge color="green" data-slot="document-studio-type">
@@ -72,7 +78,7 @@ export function DocumentStudioHeader({
               )}
             </>
           )}
-          {editing && (
+          {editing && hasSave && (
             <Button size="xs" className="ml-auto" disabled={!canSave || saving} onClick={onSave}>
               {saving ? 'Saving…' : 'Save'}
             </Button>

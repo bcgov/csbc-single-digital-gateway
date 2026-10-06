@@ -239,7 +239,14 @@ describe('SubmissionsService', () => {
         },
       ]); // toSummary (latestVersion)
       addMockResponse(submissionVersions, [{ data: { name: 'Jane' } }]); // get (latestVersion data)
-      addMockResponse(documentVersions, [{ content: { schema: { type: 'object' } } }]); // get (content)
+      addMockResponse(documentVersions, [
+        {
+          content: {
+            schema: { type: 'object' },
+            variants: { default: { type: 'Form', elements: [] } },
+          },
+        },
+      ]); // get (content)
       addMockResponse(reviews, [
         {
           id: 'review-1',
@@ -264,11 +271,13 @@ describe('SubmissionsService', () => {
         submittedAt: '2026-07-28T00:00:00.000Z',
         updatedAt: '2026-07-28T00:00:00.000Z',
         structure: {
-          // normalizeContent passes a present schema through verbatim; it only defaults an absent one.
+          // normalizeContent passes well-formed content through verbatim; it only defaults a malformed one.
           schema: { type: 'object' },
-          uischema: {
-            type: 'Form',
-            elements: [],
+          variants: {
+            default: {
+              type: 'Form',
+              elements: [],
+            },
           },
         },
         data: { name: 'Jane' },
@@ -502,7 +511,7 @@ describe('SubmissionsService', () => {
       expect(result.data).toEqual({});
       expect(result.structure).toEqual({
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'Form', elements: [] },
+        variants: { default: { type: 'Form', elements: [] } },
       });
     });
 

@@ -8,8 +8,8 @@ import { z } from 'zod';
  * Feature 217: the public form-to-fill read is gone (it resolved a form through the service's
  * `application_form` references), and so is every "owning service" field — a submission's document
  * is the FORM, and the service was only ever reachable through a reference. `kind` is gone too:
- * a form is one `{ schema, uischema }` document, and a staged application is a `Flow` root inside
- * its uischema.
+ * a form is one `{ schema, variants }` document (doc 275), and a routed application is a `Funnel` root inside
+ * each variant.
  */
 
 // ── Submission status (mirrors submission_versions.status) ────────────────────────────────────────
@@ -71,7 +71,7 @@ export const applicationDetailSchema = z.object({
   formId: z.string(),
   formVersionId: z.string(),
   formTitle: z.string().nullable(),
-  /** The authored document to render `data` against: `{ schema, uischema }`. */
+  /** The authored document to render `data` against: `{ schema, variants }` (doc 275). */
   structure: z.record(z.string(), z.unknown()),
   data: z.record(z.string(), z.unknown()),
   /** The latest reviewer note (from `reviews.reason`), surfaced for rejected / action-needed. */

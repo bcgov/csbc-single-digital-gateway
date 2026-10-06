@@ -117,7 +117,7 @@ describe('schema — document_versions (feature 217: one content blob)', () => {
   });
 
   it('generates title and description from content, both nullable', () => {
-    // `content` with no `uischema.label` generates NULL, and `->>` over a JSON OBJECT yields NULL
+    // `content` with no `variants.default.label` generates NULL (doc 275), and `->>` over a JSON OBJECT yields NULL
     // too — a rich (Lexical) description leaves `description` NULL. Marking either notNull would
     // break every such document.
     const byName = new Map(cfg(schema.documentVersions).columns.map((c) => [c.name, c]));
@@ -307,5 +307,21 @@ describe('schema — notification_outbox (transactional outbox)', () => {
     expect(nextAttempt?.hasDefault).toBe(true);
     expect(byName.get('delivered_at')?.notNull).toBe(false);
     expect(byName.has('updated_at')).toBe(true);
+  });
+});
+
+describe('blankContentFor (doc 275)', () => {
+  it('starts every type as a default-variant Form, labelled where the title column reads', async () => {
+    const { blankContentFor } = await import('../src/seed-data/blank-documents');
+    const { DOCUMENT_TYPES } = await import('../src/schema/documents');
+    for (const type of DOCUMENT_TYPES) {
+      const content = blankContentFor(type);
+      expect(content).not.toHaveProperty('uischema');
+      expect(content.variants.default).toMatchObject({ type: 'Form', elements: [] });
+      expect(typeof content.variants.default['label']).toBe('string');
+      expect(content.variants.default['id']).toMatch(/^[\w-]{8}$/);
+    }
+    // A fresh copy each call.
+    expect(blankContentFor(DOCUMENT_TYPES[0]!)).not.toBe(blankContentFor(DOCUMENT_TYPES[0]!));
   });
 });

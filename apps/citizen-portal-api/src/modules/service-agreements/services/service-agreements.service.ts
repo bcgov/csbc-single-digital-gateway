@@ -16,11 +16,12 @@ const asData = (data: unknown): Record<string, unknown> =>
 
 /**
  * The authored options on an agreement's root element. Feature 217: an agreement is AUTHORED, so
- * the approve/reject labels its author chose are options on its `uischema` root rather than values
+ * the approve/reject labels its author chose are options on its DEFAULT variant's root (doc 275) rather than values
  * filled into a `data` blob.
  */
 const rootOptions = (content: unknown): Record<string, unknown> =>
-  (asData(asData(content)['uischema'])['options'] as Record<string, unknown>) ?? {};
+  (asData(asData(asData(content)['variants'])['default'])['options'] as Record<string, unknown>) ??
+  {};
 
 /**
  * The citizen's service-agreement consent history (feature 139) — read-only over the append-only

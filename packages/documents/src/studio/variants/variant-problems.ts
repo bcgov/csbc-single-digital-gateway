@@ -1,6 +1,5 @@
-import type { DocumentContent } from '../document-types';
+import { variantNames, type DocumentContent } from '../document-types';
 import { boundKeys, isRecord } from './variant-bindings';
-import { variantNames } from './variant-edits';
 
 /** A required field a variant does not show. */
 export interface MissingField {

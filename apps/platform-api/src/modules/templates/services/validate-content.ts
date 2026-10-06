@@ -1,34 +1,57 @@
 import { BadRequestException } from '@nestjs/common';
 import type { Document } from '@repo/database';
+import { type DocumentContent, variantProblems } from '@repo/documents/content';
 import { z } from 'zod';
 import {
-  type StudioDocumentInput,
+  type DocumentContentInput,
   allowedRootsFor,
-  studioDocumentSchema,
+  documentContentSchema,
 } from '../dtos/template.dtos';
 
 /**
- * Validate a document's `content` against its type (throws 400). Shared by every authored
- * document — templates, services and service agreements alike.
+ * Validate a document's `content` against its type (throws 400). Shared by every authored document — templates,
+ * services and service agreements alike.
  *
- * Feature 217 replaced four per-kind `definition` schemas with one `StudioDocument` shape plus a
- * check on the uischema ROOT: `@repo/forms` root-only boundaries differ per type (a `Service`, a
- * `Form`, or a `Flow`), and everything below the root is opaque JSON validated by the studio's own
- * metaschema, not here.
+ * One `DocumentContent` shape (doc 275) plus a check on each variant's ROOT: every variant's root must be one the type
+ * allows, and all must share the default's — a variant is another presentation of the same document, never a different
+ * kind of one. Everything below the root is opaque JSON validated by the studio.
  */
-export function validateContent(document: Document, content: unknown): StudioDocumentInput {
-  const result = studioDocumentSchema.safeParse(content);
+export function validateContent(document: Document, content: unknown): DocumentContentInput {
+  const result = documentContentSchema.safeParse(content);
   if (!result.success) {
     throw new BadRequestException(z.prettifyError(result.error));
   }
   const roots = allowedRootsFor(document.type);
-  const root = result.data.uischema.type;
-  if (!roots.includes(root)) {
-    throw new BadRequestException(
-      `A "${document.type}" document's uischema root must be ${roots
-        .map((r) => `"${r}"`)
-        .join(' or ')}, not "${root}"`,
-    );
+  const defaultRoot = result.data.variants['default']?.type;
+  for (const [name, uischema] of Object.entries(result.data.variants)) {
+    if (!roots.includes(uischema.type)) {
+      throw new BadRequestException(
+        `A "${document.type}" document's root must be ${roots
+          .map((r) => `"${r}"`)
+          .join(' or ')}, not "${uischema.type}" (variant "${name}")`,
+      );
+    }
+    if (uischema.type !== defaultRoot) {
+      throw new BadRequestException(
+        `Variant "${name}" has a "${uischema.type}" root; every variant must match the default's "${defaultRoot}"`,
+      );
+    }
   }
   return result.data;
+}
+
+/**
+ * Refuse to publish content a citizen could not complete (doc 275, doc 262 rule 16): every variant must show a Control
+ * for every required property. Saving such a draft is fine — an author works one variant at a time.
+ */
+export function assertPublishable(content: DocumentContentInput): void {
+  // The validated shape is a DocumentContent whose capability map zod typed more loosely.
+  const problems = variantProblems(content as unknown as DocumentContent);
+  if (problems.length === 0) return;
+  const detail = problems
+    .map(
+      ({ variant, missing }) => `"${variant}" is missing ${missing.map((m) => m.title).join(', ')}`,
+    )
+    .join('; ');
+  throw new BadRequestException(`Every variant must show every required field: ${detail}`);
 }

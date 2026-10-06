@@ -39,7 +39,7 @@ export interface ReviewEntry {
 }
 
 export interface SubmissionDetail extends SubmissionSummary {
-  /** The authored document the answers were given on: `{ schema, uischema }`. */
+  /** The authored document the answers were given on: `{ schema, variants }` (doc 275). */
   structure: Record<string, unknown>;
   data: Record<string, unknown>;
   reviews: ReviewEntry[];

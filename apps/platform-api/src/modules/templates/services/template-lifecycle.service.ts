@@ -6,6 +6,7 @@ import {
   documentVersions,
   documents,
 } from '@repo/database';
+import { withDefaultLabel } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, count, eq, inArray } from 'drizzle-orm';
 import {
@@ -32,7 +33,8 @@ export class TemplateLifecycleService {
   /** A GLOBAL template of `type` with a DRAFT v1 of the type's blank content, titled `title`. */
   async create(input: CreateTemplateInput): Promise<TemplateWithVersions> {
     const blank = blankContentFor(input.type);
-    const content = { schema: blank.schema, uischema: { ...blank.uischema, label: input.title } };
+    // Doc 275: the name is the default variant's label, which the version's title is generated from.
+    const content = withDefaultLabel(blank, input.title);
     return this.db.transaction(async (tx) => {
       const template = firstOrThrow(
         await tx.insert(documents).values({ type: input.type, kind: 'template' }).returning(),

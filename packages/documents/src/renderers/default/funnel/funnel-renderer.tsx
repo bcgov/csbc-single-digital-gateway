@@ -55,7 +55,7 @@ export function FunnelRenderer({ uischema, schema, path, visible, renderers, cel
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <FunnelContent runner={runner} dispatch={dispatch} />
-        <FunnelBar runner={runner} host={host} />
+        {host.actions && <FunnelBar runner={runner} host={host} />}
       </div>
       <SubmissionPreview
         open={host.previewing}
@@ -105,7 +105,7 @@ function FunnelBar({
       canGoBack={runner.canGoBack}
       atEnd={runner.atEnd}
       blocked={runner.blocked}
-      submitBlocked={runner.submitBlocked}
+      submitBlocked={runner.submitBlocked || host.disabled}
       busy={host.busy}
       canSaveDraft={host.canSaveDraft}
       onBack={runner.back}

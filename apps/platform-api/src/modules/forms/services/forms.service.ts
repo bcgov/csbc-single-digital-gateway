@@ -7,6 +7,7 @@ import {
   workspaceMembers,
   DOCUMENT_TYPE,
 } from '@repo/database';
+import { withDefaultLabel } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { TemplateResolver } from '../../templates/services/template.resolver';
@@ -24,7 +25,7 @@ import {
 /**
  * Application-method documents (feature 217). A "form" is a `documents` row with
  * `type = DOCUMENT_TYPE.applicationMethod`; the caller no longer picks a type id, because the three old form
- * kinds collapsed into one type whose flavour lives in `content.uischema`'s root element.
+ * kinds collapsed into one type whose flavour lives in the root of `content.variants` (a `Form` or a `Funnel`).
  */
 @Injectable()
 export class FormsService {
@@ -42,10 +43,9 @@ export class FormsService {
     );
     // An explicit content still has to satisfy the type's allowed roots; an omitted one starts
     // from the template with the requested title stamped into the label the title column reads.
-    const content = input.content ?? {
-      schema: template.schema,
-      uischema: { ...template.uischema, label: input.title },
-    };
+    const content =
+      input.content ??
+      withDefaultLabel({ schema: template.schema, variants: template.variants }, input.title);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)

@@ -1,5 +1,6 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
+import { documentContentOf } from '@repo/documents/content';
 
 // `strict: false` — JSONForms schemas carry presentation keywords Ajv's strict mode would reject.
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -86,9 +87,7 @@ export function collectAddressPostals(
   structure: Record<string, unknown>,
   data: unknown,
 ): AddressPostalEntry[] {
-  const uischemas: Array<Record<string, unknown> | undefined> = [
-    structure['uischema'] as Record<string, unknown> | undefined,
-  ];
+  const uischemas = variantUischemas(structure);
   const record = asRecord(data) ?? {};
   const keys = [...new Set(uischemas.flatMap(addressKeysFromUischema))];
   return keys.flatMap((key): AddressPostalEntry[] => {
@@ -182,9 +181,7 @@ function decimalConstraintsFromUischema(
 
 /** Every number field with a decimal-places limit in the form (one uischema tree, walked fully). */
 export function collectDecimalConstraints(structure: Record<string, unknown>): DecimalConstraint[] {
-  const uischemas: Array<Record<string, unknown> | undefined> = [
-    structure['uischema'] as Record<string, unknown> | undefined,
-  ];
+  const uischemas = variantUischemas(structure);
   const byKey = new Map<string, DecimalConstraint>();
   for (const c of uischemas.flatMap(decimalConstraintsFromUischema)) {
     byKey.set(c.key, c);
@@ -226,18 +223,21 @@ export interface AddressLockConstraint {
 }
 
 /**
- * The (schema, uischema) pair of a form. Feature 217: always exactly one — a Flow's stages are
- * nested `elements` inside the single uischema, and every collector below recurses into those.
+ * The (schema, uischema) pairs of a form — one per VARIANT (doc 275), all over the one schema. A Funnel's Forms are
+ * nested `elements` inside each variant, and every collector below recurses into those. A field shown only in some
+ * variants is still validated: the answers are shared, so a value is checked whichever variant collected it.
  */
 function schemaUischemaPairs(
   structure: Record<string, unknown>,
 ): Array<{ schema: Record<string, unknown>; uischema: Record<string, unknown> | undefined }> {
-  return [
-    {
-      schema: (structure['schema'] as Record<string, unknown> | undefined) ?? {},
-      uischema: structure['uischema'] as Record<string, unknown> | undefined,
-    },
-  ];
+  const schema = (structure['schema'] as Record<string, unknown> | undefined) ?? {};
+  return variantUischemas(structure).map((uischema) => ({ schema, uischema }));
+}
+
+/** Every variant's uischema of a `{ schema, variants }` structure (doc 275); none when it has no variants. */
+function variantUischemas(structure: Record<string, unknown>): Record<string, unknown>[] {
+  const content = documentContentOf(structure);
+  return content === null ? [] : Object.values(content.variants);
 }
 
 /** Recursively collect every address control's key + its per-sub-field option bag. */

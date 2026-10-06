@@ -101,6 +101,68 @@ describe('DocumentRunner (doc 274 rules 35-39)', () => {
     });
   });
 
+  describe('disabled and actions (doc 276)', () => {
+    it('draws a disabled Form read-only, unvalidated, with Save draft and Submit refused', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <DocumentRunner
+          schema={SCHEMA}
+          uischema={FORM}
+          data={{}}
+          onChange={() => {}}
+          onSubmit={onSubmit}
+          onSaveDraft={vi.fn()}
+          disabled
+        />,
+      );
+      const name = screen.getByRole('textbox', { name: /^Name/ });
+      expect(name).toBeDisabled();
+      expect(button('Save draft')).toBeDisabled();
+      expect(button('Submit')).toBeDisabled();
+    });
+
+    it('lets a disabled Funnel be stepped through, but never submitted', async () => {
+      const user = userEvent.setup();
+      const off = {
+        ...FUNNEL,
+        options: { ...(FUNNEL['options'] as object), showSummaryPage: false },
+      };
+      render(
+        <DocumentRunner schema={SCHEMA} uischema={off} data={{}} onChange={() => {}} disabled />,
+      );
+      // Nothing validates, so the blank required Name does not hold Next back.
+      await user.click(button('Next'));
+      expect(screen.getByRole('textbox', { name: 'Note' })).toBeDisabled();
+      expect(button('Submit')).toBeDisabled();
+      expect(button('Save draft')).toBeDisabled();
+    });
+
+    it('draws no action bar with actions={false}, for a Form and a Funnel', () => {
+      const { unmount } = render(
+        <DocumentRunner
+          schema={SCHEMA}
+          uischema={FORM}
+          data={{}}
+          onChange={() => {}}
+          actions={false}
+        />,
+      );
+      expect(document.querySelector('[data-slot="runner-actions"]')).toBeNull();
+      unmount();
+      render(
+        <DocumentRunner
+          schema={SCHEMA}
+          uischema={FUNNEL}
+          data={{}}
+          onChange={() => {}}
+          actions={false}
+        />,
+      );
+      expect(screen.getByRole('navigation', { name: 'Steps' })).toBeInTheDocument();
+      expect(document.querySelector('[data-slot="runner-actions"]')).toBeNull();
+    });
+  });
+
   it('says so for a root that is neither a Form nor a Funnel (rule 39)', () => {
     render(<Harness uischema={{ type: 'VerticalLayout', elements: [] }} />);
     expect(screen.getByRole('alert')).toHaveTextContent(ROOT_MESSAGE);

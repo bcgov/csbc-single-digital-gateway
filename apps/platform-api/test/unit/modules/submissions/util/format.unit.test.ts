@@ -38,12 +38,15 @@ describe('format utility tests', () => {
   });
 
   describe('normalizeContent', () => {
-    // Feature 217: `content` IS `{ schema, uischema }`, so there is no per-kind branch any more —
-    // a multi-stage form is a `Flow` root inside `uischema`, not a different top-level object.
-    it("returns the content's schema and uischema unchanged", () => {
+    // Doc 275: `content` IS `{ schema, variants }`, so there is no per-kind branch any more —
+    // a routed application is a `Funnel` root inside each variant, not a different top-level object.
+    it("returns the content's schema and variants unchanged", () => {
       const input = {
         schema: { type: 'object', properties: { field: { type: 'string' } } },
-        uischema: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/field' }] },
+        variants: {
+          default: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/field' }] },
+          mobile: { type: 'Form', elements: [] },
+        },
       };
 
       expect(normalizeContent(input)).toEqual(input);
@@ -52,20 +55,31 @@ describe('format utility tests', () => {
     it('defaults an empty content to an empty object schema and an empty Form', () => {
       expect(normalizeContent({})).toEqual({
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'Form', elements: [] },
+        variants: { default: { type: 'Form', elements: [] } },
       });
     });
 
-    it('keeps a Flow root as-is rather than coercing it', () => {
-      const input = { schema: {}, uischema: { type: 'Flow', elements: [] } };
-
-      expect(normalizeContent(input).uischema).toEqual({ type: 'Flow', elements: [] });
+    it('degrades the old top-level uischema shape to an empty Form rather than throwing', () => {
+      expect(
+        normalizeContent({ schema: { type: 'object' }, uischema: { type: 'Form', elements: [] } }),
+      ).toEqual({
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', elements: [] } },
+      });
     });
 
-    it('ignores keys that are not schema or uischema', () => {
+    it('keeps a Funnel root as-is rather than coercing it', () => {
+      const input = { schema: {}, variants: { default: { type: 'Funnel', elements: [] } } };
+
+      expect(normalizeContent(input)['variants']).toEqual({
+        default: { type: 'Funnel', elements: [] },
+      });
+    });
+
+    it('ignores keys that are not schema or variants', () => {
       const result = normalizeContent({ schema: { type: 'object' }, stages: [{ id: 's1' }] });
 
-      expect(Object.keys(result).toSorted()).toEqual(['schema', 'uischema']);
+      expect(Object.keys(result).toSorted()).toEqual(['schema', 'variants']);
     });
   });
 });

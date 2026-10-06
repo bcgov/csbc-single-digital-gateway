@@ -3,7 +3,7 @@ import { type Database, type Document, documentVersions, documents } from '@repo
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, sql } from 'drizzle-orm';
 import { type TemplateVersionResponse, toTemplateVersionDto } from '../dtos/template.dtos';
-import { validateContent } from './validate-content';
+import { assertPublishable, validateContent } from './validate-content';
 
 /**
  * The version lifecycle for TEMPLATES (feature 217), carried over from the old
@@ -57,7 +57,7 @@ export class TemplateVersionsService {
    * inside the transaction.
    */
   async publish(id: string, versionId: string): Promise<TemplateVersionResponse> {
-    await this.requireTemplate(id);
+    const template = await this.requireTemplate(id);
     return this.db.transaction(async (tx) => {
       const rows = await tx
         .select()
@@ -71,6 +71,7 @@ export class TemplateVersionsService {
       if (version.status !== 'draft') {
         throw new ConflictException('Only draft versions can be published');
       }
+      assertPublishable(validateContent(template, version.content));
       await tx
         .update(documentVersions)
         .set({ archivedAt: sql`now()` })

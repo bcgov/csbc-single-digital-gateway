@@ -9,13 +9,10 @@ import '@/routes/admin.document-types.index';
 import '@/routes/admin.document-types.$id';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
-// Doc 218: the detail page opens a version's content in the studio or a disabled runner, neither of which runs in
-// jsdom — see `test/support/mock-forms.tsx`.
-vi.mock('@repo/forms/studio', async () =>
-  (await import('../../../../support/mock-forms')).formStudioMock(),
-);
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../../../support/mock-forms')).formRunnerMock(),
+// Docs 218, 276: the detail page opens a version's content in the Document Studio, which does not run in
+// jsdom — see `test/support/mock-documents.tsx`.
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
 );
 
 afterEach(() => {
@@ -120,7 +117,10 @@ const basicEntry: Entry = {
       status: 'published',
       title: 'Basic Form',
       description: null,
-      content: { uischema: { type: 'Form', label: 'Basic Form', elements: [] } },
+      content: {
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', label: 'Basic Form', elements: [] } },
+      },
       createdAt: ISO,
       publishedAt: ISO,
       archivedAt: null,

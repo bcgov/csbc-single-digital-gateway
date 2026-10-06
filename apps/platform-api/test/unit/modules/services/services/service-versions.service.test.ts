@@ -11,7 +11,7 @@ vi.mock('../../../../../src/modules/services/util/version-copy', () => ({
 
 /**
  * Feature 217. A draft save writes ONE `content` — no `data`, no title sync onto the document row
- * (the title is GENERATED from `content.uischema.label`), and no reconciled application
+ * (the title is GENERATED from `content.variants.default.label`, doc 275), and no reconciled application
  * references. Publish validates the content's SHAPE; it no longer validates filled values against
  * the template's JSON schema (a service has no values), and no longer gates on
  * "≥ 1 application method", which needed `document_references`.
@@ -30,13 +30,13 @@ const mockQuery = (resolvedValue: unknown) => {
 
 const CONTENT = {
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Service', elements: [], label: 'Waste permit' },
+  variants: { default: { type: 'Form', elements: [], label: 'Waste permit' } },
 };
 const TEMPLATE = {
   templateId: 'template-1',
   templateVersionId: 'template-version-1',
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Service', elements: [] },
+  variants: { default: { type: 'Form', elements: [] } },
 };
 const SERVICE_DOC = {
   id: 'service-1',
@@ -135,16 +135,32 @@ describe('ServiceVersionsService', () => {
       expect(dbMock.set.mock.calls[0][0]).not.toHaveProperty('title');
     });
 
-    it('rejects a content whose root is not a Service', async () => {
+    it.each(['Service', 'Flow'])(
+      'rejects a %s root — a service is a Form or a Funnel (doc 275)',
+      async (root) => {
+        dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+
+        await expect(
+          service.updateDraft('user-1', 'service-1', 'version-1', {
+            content: {
+              schema: { type: 'object', properties: {} },
+              variants: { default: { type: root, elements: [] } },
+            },
+          }),
+        ).rejects.toThrow(BadRequestException);
+      },
+    );
+
+    it('rejects content with no default variant', async () => {
       dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
 
       await expect(
         service.updateDraft('user-1', 'service-1', 'version-1', {
           content: {
             schema: { type: 'object', properties: {} },
-            uischema: { type: 'Form', elements: [] },
+            variants: { mobile: { type: 'Form', elements: [] } },
           },
-        }),
+        } as never),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -187,7 +203,7 @@ describe('ServiceVersionsService', () => {
           draftVersion({
             content: {
               schema: { type: 'object', properties: {} },
-              uischema: { type: 'Form', elements: [] },
+              variants: { default: { type: 'Service', elements: [] } },
             },
           }),
         ]),
@@ -236,7 +252,13 @@ describe('ServiceVersionsService', () => {
   describe('staff answers in content.data (doc 230)', () => {
     const FORM = {
       schema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
-      uischema: { type: 'Service', elements: [], label: 'Waste permit' },
+      variants: {
+        default: {
+          type: 'Form',
+          label: 'Waste permit',
+          elements: [{ type: 'Control', scope: '#/properties/name' }],
+        },
+      },
     };
 
     it('stores the answers sent with the document', async () => {
@@ -281,6 +303,20 @@ describe('ServiceVersionsService', () => {
       await expect(service.publish('user-1', 'service-1', 'version-1')).resolves.toMatchObject({
         status: 'published',
       });
+    });
+
+    it('refuses to publish when a variant does not show a required field (doc 275)', async () => {
+      const content = {
+        ...FORM,
+        variants: { ...FORM.variants, mobile: { type: 'Form', elements: [] } },
+        data: { name: 'Acme' },
+      };
+      txMock.select.mockReturnValueOnce(mockQuery([draftVersion({ content })]));
+
+      const attempt = service.publish('user-1', 'service-1', 'version-1');
+      await expect(attempt).rejects.toBeInstanceOf(BadRequestException);
+      await expect(attempt).rejects.toThrow('"mobile" is missing name');
+      expect(txMock.update).not.toHaveBeenCalled();
     });
   });
 
@@ -369,7 +405,7 @@ describe('ServiceVersionsService', () => {
 
       const values = txMock.values.mock.calls[0][0];
       expect(values.versionNumber).toBe(1);
-      expect(values.content).toEqual({ schema: TEMPLATE.schema, uischema: TEMPLATE.uischema });
+      expect(values.content).toEqual({ schema: TEMPLATE.schema, variants: TEMPLATE.variants });
     });
 
     it('throws if the insert returns no row', async () => {

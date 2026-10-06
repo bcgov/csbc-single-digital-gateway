@@ -13,42 +13,43 @@ const US_REGEX = '^\\d{5}(-\\d{4})?$';
 const regexFor = (country: string): string | null =>
   ({ Canada: CA_REGEX, 'United States': US_REGEX })[country] ?? null;
 
+/**
+ * Doc 275: a structure is `{ schema, variants }` — every variant's uischema is walked over the one
+ * schema. A routed application is a `Funnel` ROOT inside a variant, its Forms nested `elements`.
+ */
 const basicStructure = {
-  uischema: {
-    type: 'VerticalLayout',
-    elements: [
-      { type: 'Control', scope: '#/properties/home', options: { format: 'address' } },
-      { type: 'Control', scope: '#/properties/name' },
-    ],
+  schema: { type: 'object', properties: {} },
+  variants: {
+    default: {
+      type: 'Form',
+      elements: [
+        { type: 'Control', scope: '#/properties/home', options: { format: 'address' } },
+        { type: 'Control', scope: '#/properties/name' },
+      ],
+    },
   },
 };
 
-/**
- * Feature 217: a staged application is a `Flow` ROOT inside the single uischema — Stages and Forms
- * are nested `elements`, not a separate `{ stages: [{ pages }] }` object with its own uischemas.
- * The collector walks the whole tree, so a control several layouts deep is still found.
- */
-const flowStructure = {
-  uischema: {
-    type: 'Flow',
-    elements: [
-      {
-        type: 'Stage',
-        elements: [
-          {
-            type: 'Form',
-            elements: [
-              {
-                type: 'Group',
-                elements: [
-                  { type: 'Control', scope: '#/properties/work', options: { format: 'address' } },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
+/** The collector walks the whole tree, so a control several layouts deep is still found. */
+const funnelStructure = {
+  schema: { type: 'object', properties: {} },
+  variants: {
+    default: {
+      type: 'Funnel',
+      elements: [
+        {
+          type: 'Form',
+          elements: [
+            {
+              type: 'VerticalLayout',
+              elements: [
+                { type: 'Control', scope: '#/properties/work', options: { format: 'address' } },
+              ],
+            },
+          ],
+        },
+      ],
+    },
   },
 };
 
@@ -61,11 +62,38 @@ describe('collectAddressPostals', () => {
     expect(entries).toEqual([{ key: 'home', country: 'Canada', postal: 'V8W 1A1' }]);
   });
 
-  it('recurses into the nested layouts of a Flow', () => {
-    const entries = collectAddressPostals(flowStructure, {
+  it('recurses into the nested layouts of a Funnel', () => {
+    const entries = collectAddressPostals(funnelStructure, {
       work: { country: 'United States', postal_code: '90210' },
     });
     expect(entries).toEqual([{ key: 'work', country: 'United States', postal: '90210' }]);
+  });
+
+  it('collects an address shown only in a non-default variant', () => {
+    const structure = {
+      schema: { type: 'object', properties: {} },
+      variants: {
+        default: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/name' }] },
+        mailing: {
+          type: 'Form',
+          elements: [
+            { type: 'Control', scope: '#/properties/mail', options: { format: 'address' } },
+          ],
+        },
+      },
+    };
+    const entries = collectAddressPostals(structure, {
+      mail: { country: 'Canada', postal_code: 'V8W 1A1' },
+    });
+    expect(entries).toEqual([{ key: 'mail', country: 'Canada', postal: 'V8W 1A1' }]);
+  });
+
+  it('collects nothing from a structure without variants (the old uischema shape)', () => {
+    const entries = collectAddressPostals(
+      { schema: {}, uischema: basicStructure.variants.default },
+      { home: { country: 'Canada', postal_code: 'V8W 1A1' } },
+    );
+    expect(entries).toEqual([]);
   });
 
   it('skips addresses with an empty postal or missing country', () => {

@@ -9,7 +9,7 @@ import { InjectDatabase } from '@repo/nestjs/database';
 import { and, eq, sql } from 'drizzle-orm';
 import { answerErrors } from '../util/validate-answers';
 import { TemplateResolver } from '../../templates/services/template.resolver';
-import { validateContent } from '../../templates/services/validate-content';
+import { assertPublishable, validateContent } from '../../templates/services/validate-content';
 import { assertWithinCapabilities } from '../../templates/services/capability-guard';
 import {
   type ServiceVersionResponse,
@@ -90,6 +90,7 @@ export class ServiceVersionsService {
         throw new ConflictException('Only draft versions can be published');
       }
       const document = validateContent(service, version.content);
+      assertPublishable(document);
       // Doc 230: never publish answers the service's own form rejects.
       const problems = answerErrors(document.schema, storedAnswers(version.content) ?? {});
       if (problems.length > 0) {
@@ -154,7 +155,7 @@ export class ServiceVersionsService {
           templateId: template.templateId,
           templateVersionId: template.templateVersionId,
           versionNumber: next,
-          content: latest?.content ?? { schema: template.schema, uischema: template.uischema },
+          content: latest?.content ?? { schema: template.schema, variants: template.variants },
         })
         .returning();
       return toServiceVersionDto(this.orThrow(inserted[0]));

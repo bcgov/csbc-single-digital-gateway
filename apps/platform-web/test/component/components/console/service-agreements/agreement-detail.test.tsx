@@ -49,13 +49,10 @@ import '@/routes/app.$slug.service-agreements.$id';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea (feature 217: the agreement editor
 // is a JSON content editor now, not a JSONForms form).
-// Doc 218: the page opens a version's content in the Form Studio (editable) or a disabled FormRunner (otherwise).
-// jsdom can run neither — see `test/support/mock-forms.tsx`.
-vi.mock('@repo/forms/studio', async () =>
-  (await import('../../../../support/mock-forms')).formStudioMock(),
-);
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../../../support/mock-forms')).formRunnerMock(),
+// Docs 218, 276: the page opens a version's content in the Document Studio — editable, or read-only otherwise.
+// jsdom cannot run it — see `test/support/mock-documents.tsx`.
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
 );
 
 afterEach(() => {
@@ -94,11 +91,13 @@ const initialDetailResponse = {
       description: null,
       content: {
         schema: {},
-        uischema: {
-          type: 'Form',
-          label: 'Global Privacy Policy V1',
-          elements: [],
-          options: { body: 'V1 published agreement content.' },
+        variants: {
+          default: {
+            type: 'Form',
+            label: 'Global Privacy Policy V1',
+            elements: [],
+            options: { body: 'V1 published agreement content.' },
+          },
         },
       },
       createdAt: ISO,
@@ -114,11 +113,13 @@ const initialDetailResponse = {
       description: null,
       content: {
         schema: {},
-        uischema: {
-          type: 'Form',
-          label: 'Global Privacy Policy V2 Draft',
-          elements: [],
-          options: { body: 'V2 draft agreement content.' },
+        variants: {
+          default: {
+            type: 'Form',
+            label: 'Global Privacy Policy V2 Draft',
+            elements: [],
+            options: { body: 'V2 draft agreement content.' },
+          },
         },
       },
       createdAt: ISO,
@@ -126,16 +127,8 @@ const initialDetailResponse = {
       archivedAt: null,
     },
   ],
-  definition: {
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        body: { type: 'string' },
-      },
-    },
-    uischema: {},
-  },
+  // Doc 221: each version's template, by `templateVersionId`. These versions pin none, so nothing governs them.
+  definitions: {},
 };
 
 const riverton: WorkspaceLike = {
@@ -228,9 +221,14 @@ describe('AgreementDetail Component Test Suite', () => {
     // Check default picker is on version 2 (the latest one)
     expect(screen.getByText(/Version v2/)).toBeInTheDocument();
 
-    // v2 is a draft, so it opens in the studio, holding that version's document.
+    // v2 is a draft, so it opens in the studio, editable, holding that version's document.
     const studio = screen.getByLabelText('document') as HTMLTextAreaElement;
     expect(studio.value).toContain('Global Privacy Policy V2 Draft');
+    expect(studio).toHaveAttribute('data-readonly', 'false');
+    expect(studio).toHaveAttribute('data-kind', 'document');
+    expect(studio).toHaveAttribute('data-type', 'services.service-agreement');
+    // No pinned template → ungoverned.
+    expect(studio).not.toHaveAttribute('data-governed-by');
 
     // 2. Switch to version 1 using picker
     const pickerButton = screen.getByRole('button', { name: /Version v2/i });
@@ -239,12 +237,57 @@ describe('AgreementDetail Component Test Suite', () => {
     const v1Item = await screen.findByRole('menuitem', { name: /v1/i });
     await userEvent.click(v1Item);
 
-    // v1 is published, so it is READ in a disabled runner rather than authored (doc 218 rules 5-9).
+    // v1 is published, so it is READ in a read-only studio rather than authored (doc 218 rules 5-9, doc 276).
     expect(await screen.findByText(/Version v1/, {}, { timeout: 10000 })).toBeInTheDocument();
-    const runner = await screen.findByTestId('form-runner');
-    expect(runner).toHaveAttribute('data-disabled', 'true');
-    expect(runner).toHaveTextContent('Global Privacy Policy V1');
-    expect(screen.queryByLabelText('document')).toBeNull();
+    await waitFor(() =>
+      expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true'),
+    );
+    const shown = screen.getByTestId('document-studio') as HTMLTextAreaElement;
+    expect(shown.value).toContain('Global Privacy Policy V1');
+    expect(shown.value).not.toContain('V2 Draft');
+  });
+
+  it('hands the studio the template a version is pinned to (doc 221, doc 276)', async () => {
+    const governedResponse = {
+      ...initialDetailResponse,
+      versions: [
+        initialDetailResponse.versions[0],
+        { ...initialDetailResponse.versions[1], templateVersionId: 'tv-1' },
+      ],
+      definitions: {
+        'tv-1': {
+          schema: {},
+          variants: { default: { type: 'Form', label: 'Standard agreement', elements: [] } },
+          capabilities: { elements: { h1: { edit: 'none' } } },
+        },
+      },
+    };
+    setupMocks(governedResponse);
+    renderApp('/admin/service-agreements/g1');
+
+    const studio = await screen.findByTestId('document-studio', undefined, { timeout: 10000 });
+    expect(studio).toHaveAttribute('data-readonly', 'false');
+    expect(studio).toHaveAttribute('data-governed-by', 'Standard agreement');
+  });
+
+  it('leaves a version ungoverned when its template has no rules', async () => {
+    setupMocks({
+      ...initialDetailResponse,
+      versions: [
+        initialDetailResponse.versions[0],
+        { ...initialDetailResponse.versions[1], templateVersionId: 'tv-1' },
+      ],
+      definitions: {
+        'tv-1': {
+          schema: {},
+          variants: { default: { type: 'Form', label: 'Standard agreement', elements: [] } },
+        },
+      },
+    });
+    renderApp('/admin/service-agreements/g1');
+
+    const studio = await screen.findByTestId('document-studio', undefined, { timeout: 10000 });
+    expect(studio).not.toHaveAttribute('data-governed-by');
   });
 
   it('allows editing and saving a draft version', async () => {
@@ -266,7 +309,9 @@ describe('AgreementDetail Component Test Suite', () => {
     // Feature 217: a save writes the whole authored content, not a filled `data` bag.
     const updated = {
       schema: {},
-      uischema: { type: 'Form', label: 'Global Privacy Policy V2 Updated', elements: [] },
+      variants: {
+        default: { type: 'Form', label: 'Global Privacy Policy V2 Updated', elements: [] },
+      },
     };
     fireEvent.change(editor, { target: { value: JSON.stringify(updated, null, 2) } });
     await waitFor(() => expect(saveBtn).not.toBeDisabled());
@@ -419,7 +464,12 @@ describe('AgreementDetail Component Test Suite', () => {
 
     // Make the editor dirty.
     fireEvent.change(screen.getByLabelText('document'), {
-      target: { value: JSON.stringify({ schema: {}, uischema: { type: 'Form', elements: [] } }) },
+      target: {
+        value: JSON.stringify({
+          schema: {},
+          variants: { default: { type: 'Form', elements: [] } },
+        }),
+      },
     });
     await waitFor(() => expect(saveBtn).not.toBeDisabled());
 
@@ -451,7 +501,7 @@ describe('AgreementDetail Component Test Suite', () => {
         {
           ...initialDetailResponse.versions[1],
           title: null,
-          content: { schema: {}, uischema: { type: 'Form', elements: [] } },
+          content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
         },
       ],
     };
@@ -493,7 +543,7 @@ describe('AgreementDetail Component Test Suite', () => {
     );
     expect(saveOpt).toBeDefined();
 
-    await saveOpt.mutationFn({ schema: {}, uischema: { type: 'Form', elements: [] } });
+    await saveOpt.mutationFn({ schema: {}, variants: { default: { type: 'Form', elements: [] } } });
     expect(patchUrl).toContain('/v1/service-agreements/g1/versions/v2');
   });
 

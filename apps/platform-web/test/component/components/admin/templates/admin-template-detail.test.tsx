@@ -3,12 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
 
-// jsdom cannot run gridstack or xyflow — see `test/support/mock-forms.tsx` for what these stubs do and why.
-vi.mock('@repo/forms/studio', async () =>
-  (await import('../../../../support/mock-forms')).formStudioMock(),
-);
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../../../support/mock-forms')).formRunnerMock(),
+// jsdom cannot run gridstack or xyflow — see `test/support/mock-documents.tsx` for what these stubs do and why.
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
 );
 
 // Feature 217: the live JSONForms preview beside the editor is gone with the `@repo/react`
@@ -50,10 +47,16 @@ interface Entry {
   versions: Version[];
 }
 
-/** A template's content — a `@repo/forms` StudioDocument, whose root label becomes the title. */
+/** A template's content — a `@repo/documents` DocumentContent, whose default variant's root label becomes the title. */
 const contentWithLabel = (label: string) => ({
   schema: { type: 'object', properties: { title: { type: 'string', title: label } } },
-  uischema: { type: 'Form', label, elements: [] },
+  variants: { default: { type: 'Form', label, elements: [] } },
+});
+
+/** The same content with its default variant's root relabelled — an author's edit. */
+const renamed = (label: string) => ({
+  ...contentWithLabel(label),
+  variants: { default: { type: 'Form', label: 'Renamed', elements: [] } },
 });
 
 function json(body: unknown, status = 200): Response {
@@ -213,7 +216,7 @@ const draftLatestEntry: Entry = {
 };
 
 describe('AdminTemplateDetail (doc 218)', () => {
-  it('renders the heading, version dropdown, and a DISABLED runner for a published version', async () => {
+  it('renders the heading, version dropdown, and a READ-ONLY studio for a published version', async () => {
     mockApi([publishedEntry]);
     renderApp('/admin/templates/dt-1');
 
@@ -224,11 +227,13 @@ describe('AdminTemplateDetail (doc 218)', () => {
     expect(screen.getByText('published')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /version v1/i })).toBeInTheDocument();
 
-    // Rules 5-9: a published version is READ, not authored — so the runner, disabled, over that version's uischema.
-    const runner = screen.getByTestId('form-runner');
-    expect(runner).toHaveAttribute('data-disabled', 'true');
-    expect(runner).toHaveTextContent(JSON.stringify(contentWithLabel('v1').uischema));
-    expect(screen.queryByTestId('form-studio')).toBeNull();
+    // Rules 5-9 (doc 276): a published version is READ, not authored — so the studio, locked to Preview, over that
+    // version's content.
+    const studio = screen.getByTestId('document-studio');
+    expect(studio).toHaveAttribute('data-readonly', 'true');
+    expect(studio).toHaveAttribute('data-kind', 'template');
+    expect(studio).toHaveAttribute('data-type', 'services.service-application-method');
+    expect(JSON.parse((studio as HTMLTextAreaElement).value)).toMatchObject(contentWithLabel('v1'));
   });
 
   it('shows New version (only) on a non-draft latest version', async () => {
@@ -242,7 +247,7 @@ describe('AdminTemplateDetail (doc 218)', () => {
     expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
   });
 
-  it('opens a draft in the Form Studio, with Save draft + Publish and no New version', async () => {
+  it('opens a draft in the Document Studio, editable, with Save draft + Publish and no New version', async () => {
     mockApi([draftLatestEntry]);
     renderApp('/admin/templates/dt-1');
 
@@ -252,8 +257,14 @@ describe('AdminTemplateDetail (doc 218)', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Publish' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'New version' })).not.toBeInTheDocument();
-    expect(screen.getByTestId('form-studio')).toBeInTheDocument();
-    expect(screen.queryByTestId('form-runner')).toBeNull();
+    const studio = screen.getByTestId('document-studio');
+    expect(studio).toHaveAttribute('data-readonly', 'false');
+    // A template is ungoverned: it authors its rules in its own content, seeded `{}` so it can grow one.
+    expect(studio).not.toHaveAttribute('data-governed-by');
+    expect(JSON.parse((studio as HTMLTextAreaElement).value)).toEqual({
+      ...contentWithLabel('v2'),
+      capabilities: {},
+    });
   });
 
   it("starts clean: the studio's baseline emit is not an edit (rule 2)", async () => {
@@ -263,7 +274,7 @@ describe('AdminTemplateDetail (doc 218)', () => {
     // The studio reports its document on mount. If the page counted that as a change, Save draft would be live and
     // Publish dead before the author had touched anything.
     const save = await screen.findByRole('button', { name: 'Save draft' }, { timeout: 32000 });
-    await screen.findByTestId('form-studio');
+    await screen.findByTestId('document-studio');
     await waitFor(() => expect(save).toBeDisabled());
     expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled();
   });
@@ -273,14 +284,18 @@ describe('AdminTemplateDetail (doc 218)', () => {
     renderApp('/admin/templates/dt-1');
     const user = userEvent.setup();
 
-    await screen.findByTestId('form-studio', undefined, { timeout: 32000 });
+    expect(
+      await screen.findByTestId('document-studio', undefined, { timeout: 32000 }),
+    ).toHaveAttribute('data-readonly', 'false');
 
     await user.click(await screen.findByRole('button', { name: /version v2/i }));
     await user.click(await screen.findByRole('menuitem', { name: /v1/i }));
 
-    const runner = await screen.findByTestId('form-runner');
-    expect(runner).toHaveTextContent(JSON.stringify(contentWithLabel('v1').uischema));
-    expect(screen.queryByTestId('form-studio')).toBeNull();
+    await waitFor(() =>
+      expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true'),
+    );
+    const shown = screen.getByTestId('document-studio') as HTMLTextAreaElement;
+    expect(JSON.parse(shown.value)).toMatchObject(contentWithLabel('v1'));
     expect(screen.getByRole('button', { name: 'Go to current' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument();
   });
@@ -293,10 +308,7 @@ describe('AdminTemplateDetail (doc 218)', () => {
     const studio = await screen.findByLabelText('document', undefined, { timeout: 32000 });
     const saveButton = screen.getByRole('button', { name: 'Save draft' });
 
-    const edited = {
-      ...contentWithLabel('v2'),
-      uischema: { type: 'Form', label: 'Renamed', elements: [] },
-    };
+    const edited = renamed('v2');
     fireEvent.change(studio, { target: { value: JSON.stringify(edited) } });
 
     await waitFor(() => expect(saveButton).toBeEnabled());
@@ -319,10 +331,7 @@ describe('AdminTemplateDetail (doc 218)', () => {
     const user = userEvent.setup();
 
     const studio = await screen.findByLabelText('document', undefined, { timeout: 32000 });
-    const edited = {
-      ...contentWithLabel('v2'),
-      uischema: { type: 'Form', label: 'Renamed', elements: [] },
-    };
+    const edited = renamed('v2');
     fireEvent.change(studio, { target: { value: JSON.stringify(edited) } });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled());
 
@@ -331,11 +340,14 @@ describe('AdminTemplateDetail (doc 218)', () => {
 
     // A version switch is not a navigation, so `UnsavedChangesGuard` never sees it — this is the page's own ask.
     expect(await screen.findByText('Discard unsaved changes?')).toBeInTheDocument();
-    expect(screen.queryByTestId('form-runner')).toBeNull();
+    // Still on the editable draft: the switch waits for the answer.
+    expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'false');
 
     await user.click(screen.getByRole('button', { name: 'Keep editing' }));
     await waitFor(() => expect(screen.queryByText('Discard unsaved changes?')).toBeNull());
-    expect(screen.getByTestId('form-studio')).toBeInTheDocument();
+    expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'false');
+    // The edit is still held: nothing was discarded.
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled();
   });
 
   it('switches version once the discard is confirmed', async () => {
@@ -344,10 +356,7 @@ describe('AdminTemplateDetail (doc 218)', () => {
     const user = userEvent.setup();
 
     const studio = await screen.findByLabelText('document', undefined, { timeout: 32000 });
-    const edited = {
-      ...contentWithLabel('v2'),
-      uischema: { type: 'Form', label: 'Renamed', elements: [] },
-    };
+    const edited = renamed('v2');
     fireEvent.change(studio, { target: { value: JSON.stringify(edited) } });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled());
 
@@ -355,9 +364,11 @@ describe('AdminTemplateDetail (doc 218)', () => {
     await user.click(await screen.findByRole('menuitem', { name: /v1/i }));
     await user.click(await screen.findByRole('button', { name: 'Discard changes' }));
 
-    expect(await screen.findByTestId('form-runner')).toHaveTextContent(
-      JSON.stringify(contentWithLabel('v1').uischema),
+    await waitFor(() =>
+      expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true'),
     );
+    const shown = screen.getByTestId('document-studio') as HTMLTextAreaElement;
+    expect(JSON.parse(shown.value)).toMatchObject(contentWithLabel('v1'));
   });
 
   it('publishes the selected draft version', async () => {
@@ -404,7 +415,7 @@ describe('AdminTemplateDetail (doc 218)', () => {
     });
   });
 
-  it('refuses to open content that is not a form document (rule 13)', async () => {
+  it('refuses to open content that is not a document (rule 13)', async () => {
     const broken: Entry = {
       ...publishedEntry,
       versions: [{ ...publishedEntry.versions[0]!, content: { stages: [], edges: [] } }],
@@ -413,10 +424,9 @@ describe('AdminTemplateDetail (doc 218)', () => {
     renderApp('/admin/templates/dt-1');
 
     expect(await screen.findByRole('alert', undefined, { timeout: 32000 })).toHaveTextContent(
-      /isn’t a form document/,
+      /isn’t a document the studio can open/,
     );
-    expect(screen.queryByTestId('form-studio')).toBeNull();
-    expect(screen.queryByTestId('form-runner')).toBeNull();
+    expect(screen.queryByTestId('document-studio')).toBeNull();
   });
 
   it('renders nothing when the template is not found', async () => {

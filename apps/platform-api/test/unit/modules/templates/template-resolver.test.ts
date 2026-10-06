@@ -9,7 +9,7 @@ const row = (templateId: string) => ({
   templateVersionId: `${templateId}-published`,
   content: {
     schema: { type: 'object', properties: {} },
-    uischema: { type: 'Service', label: templateId, elements: [] },
+    variants: { default: { type: 'Form', label: templateId, elements: [] } },
   },
 });
 
@@ -39,7 +39,7 @@ describe('TemplateResolver (doc 228)', () => {
         templateId: 'tpl-2',
         templateVersionId: 'tpl-2-published',
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'Service', label: 'tpl-2', elements: [] },
+        variants: { default: { type: 'Form', label: 'tpl-2', elements: [] } },
       });
       expect(where).toHaveBeenCalledTimes(1);
     });

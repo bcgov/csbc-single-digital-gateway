@@ -48,35 +48,48 @@ describe('format utils', () => {
   });
 
   describe('normalizeContent', () => {
-    // Feature 217: `content` IS `{ schema, uischema }`, so there is no per-kind branch left —
-    // a staged application is a `Flow` root inside `uischema`, not a different top-level object.
-    it('passes a present schema and uischema through verbatim', () => {
+    // Doc 275: `content` IS `{ schema, variants }` (a `@repo/documents` DocumentContent), so there is no
+    // per-kind branch left — a routed application is a `Funnel` root inside each variant.
+    it('passes a present schema and variants through verbatim', () => {
       const content = {
         schema: { type: 'object', properties: { name: { type: 'string' } } },
-        uischema: { type: 'Flow', elements: [{ type: 'Stage', elements: [] }] },
+        variants: {
+          default: { type: 'Funnel', elements: [{ type: 'Form', elements: [] }] },
+          short: { type: 'Form', elements: [] },
+        },
       };
 
       expect(normalizeContent(content)).toEqual(content);
     });
 
-    it('defaults an empty content to an empty object schema and an empty Form', () => {
+    it('defaults an empty content to an empty object schema and an empty Form default variant', () => {
       expect(normalizeContent({})).toEqual({
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'Form', elements: [] },
+        variants: { default: { type: 'Form', elements: [] } },
       });
     });
 
-    it('defaults only the half that is missing', () => {
-      expect(normalizeContent({ schema: { type: 'object', properties: { a: {} } } })).toEqual({
-        schema: { type: 'object', properties: { a: {} } },
-        uischema: { type: 'Form', elements: [] },
-      });
+    it('falls back whole when either half is missing, including the old { schema, uischema } shape', () => {
+      const fallback = {
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', elements: [] } },
+      };
+
+      expect(normalizeContent({ schema: { type: 'object', properties: { a: {} } } })).toEqual(
+        fallback,
+      );
+      expect(
+        normalizeContent({
+          schema: { type: 'object', properties: { a: {} } },
+          uischema: { type: 'Form', elements: [] },
+        }),
+      ).toEqual(fallback);
     });
 
-    it('ignores keys that are neither schema nor uischema', () => {
+    it('ignores keys that are neither schema nor variants', () => {
       const result = normalizeContent({ stages: [{ id: 's1' }] });
 
-      expect(Object.keys(result).toSorted()).toEqual(['schema', 'uischema']);
+      expect(Object.keys(result).toSorted()).toEqual(['schema', 'variants']);
     });
   });
 });

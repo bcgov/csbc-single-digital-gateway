@@ -10,14 +10,11 @@ import '@/routes/admin.service-agreements.index';
 import '@/routes/admin.service-agreements.new';
 import '@/routes/admin.service-agreements.$id';
 
-// Doc 218: the detail page opens a version's content in the studio or a disabled runner — see
-// `test/support/mock-forms.tsx`. Without the stubs the real runner also draws the document's title, so this
+// Docs 218, 276: the detail page opens a version's content in the Document Studio — see
+// `test/support/mock-documents.tsx`. Without the stub the real studio also draws the document's title, so this
 // file's `getByText('Global Privacy Policy')` matches the page heading AND the form title.
-vi.mock('@repo/forms/studio', async () =>
-  (await import('../../../../support/mock-forms')).formStudioMock(),
-);
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../../../support/mock-forms')).formRunnerMock(),
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
 );
 
 afterEach(() => {
@@ -66,11 +63,13 @@ const detailResponse = {
       description: null,
       content: {
         schema: {},
-        uischema: {
-          type: 'Form',
-          label: 'Global Privacy Policy',
-          elements: [],
-          options: { body: 'This is the draft agreement content.' },
+        variants: {
+          default: {
+            type: 'Form',
+            label: 'Global Privacy Policy',
+            elements: [],
+            options: { body: 'This is the draft agreement content.' },
+          },
         },
       },
       createdAt: ISO,
@@ -78,16 +77,8 @@ const detailResponse = {
       archivedAt: null,
     },
   ],
-  definition: {
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        body: { type: 'string' },
-      },
-    },
-    uischema: {},
-  },
+  // Doc 221: each version's template, by `templateVersionId`; this version pins none.
+  definitions: {},
   services: [],
 };
 
@@ -128,7 +119,10 @@ function setupMocks() {
           status: 'draft',
           title: body.title,
           description: null,
-          content: { schema: {}, uischema: { type: 'Form', label: body.title, elements: [] } },
+          content: {
+            schema: {},
+            variants: { default: { type: 'Form', label: body.title, elements: [] } },
+          },
           createdAt: ISO,
           publishedAt: null,
           archivedAt: null,

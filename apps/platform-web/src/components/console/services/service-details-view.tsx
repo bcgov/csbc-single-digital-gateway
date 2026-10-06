@@ -1,4 +1,5 @@
-import { FormRunner } from '@repo/forms/runner';
+import { variantOf } from '@repo/documents/content';
+import { DocumentRunner } from '@repo/documents/runner';
 import { Badge } from '@repo/ui/badge';
 import { buttonVariants } from '@repo/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +9,7 @@ import { VersionDropdown } from '@/components/common/version-dropdown';
 import { ServiceConsolePage } from '@/components/console/services/service-console-page';
 import { answersOf } from '@/lib/service-answers';
 import { selectServiceVersion, serviceQueryOptions } from '@/lib/services';
-import { studioDocumentOf } from '@/lib/studio-content';
+import { documentContentOf } from '@/lib/studio-content';
 
 /** A read-only runner takes `onChange` all the same (doc 218 rule 9); it can never call it. */
 const noop = () => {};
@@ -16,8 +17,8 @@ const noop = () => {};
 /**
  * Doc 229 — the service console's Details section: a version's content, READ-ONLY.
  *
- * Nothing is authored or answered here, so the document is drawn by the disabled `FormRunner` (doc 218 — the same
- * view the admin template page gives a published template) with `actions={false}`: no action bar, because every
+ * Nothing is authored or answered here, so the document's default variant is drawn by a disabled `DocumentRunner`
+ * (doc 276) with `actions={false}`: no action bar, because every
  * button on it could only ever be disabled.
  *
  * Which version: the permalink's, otherwise `selectServiceVersion`'s current one — latest published, else latest —
@@ -72,7 +73,7 @@ export function ServiceDetailsView({
     );
   }
 
-  const document = studioDocumentOf(selected.content);
+  const document = documentContentOf(selected.content);
   const header = [
     <Badge key="status" color="grey">
       {selected.status}
@@ -106,20 +107,21 @@ export function ServiceDetailsView({
       {document === null ? (
         // The same words `VersionContent` uses (doc 218 rule 13): a row that predates the studio can hold anything.
         <p role="alert" className="text-sm text-muted-foreground">
-          This version’s content isn’t a form document, so it can’t be opened here.
+          This version’s content isn’t a document the studio can open.
         </p>
       ) : (
         <div
           data-slot="service-details-content"
           className="rounded-xl border border-border bg-card"
         >
-          <FormRunner
+          <DocumentRunner
             // Rule 6: a new version starts the runner fresh — its position belongs to the document it was showing.
             key={selected.id}
             disabled
             actions={false}
             schema={document.schema}
-            uischema={document.uischema}
+            // Doc 276: staff see the DEFAULT variant.
+            uischema={variantOf(document)}
             // Doc 230 rule 9: the staff's answers, shown read-only.
             data={answersOf(selected.content)}
             onChange={noop}

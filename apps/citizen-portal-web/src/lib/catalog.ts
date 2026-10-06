@@ -29,7 +29,8 @@ export interface CatalogServiceDetail extends CatalogService {
   versionNumber: number;
   publishedAt: string | null;
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  /** Doc 275: the uischemas by variant name; `default` is always present. */
+  variants: Record<string, Record<string, unknown>>;
 }
 
 /** A historical service version (published or archived) + the document to render. */
@@ -40,7 +41,8 @@ export interface CatalogServiceVersion {
   status: 'published' | 'archived';
   title: string | null;
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  /** Doc 275: the uischemas by variant name; `default` is always present. */
+  variants: Record<string, Record<string, unknown>>;
   createdAt: string;
   publishedAt: string | null;
   archivedAt: string | null;

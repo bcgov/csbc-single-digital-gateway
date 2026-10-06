@@ -1,4 +1,5 @@
 import type { SubmissionStatus } from '../dtos/application.dtos';
+import { documentContentOf } from '@repo/documents/content';
 
 /** Human-facing label for a submission status (matches the citizen UI badges). */
 const STATUS_LABELS: Record<SubmissionStatus, string> = {
@@ -29,19 +30,13 @@ export function applicationReference(submissionId: string, createdAt: Date): str
  * Coerce a document version's stored `content` JSONB into the structure the renderer needs,
  * defaulting either half when absent.
  *
- * Feature 217: `content` IS `{ schema, uischema }` (a `@repo/forms` StudioDocument), so there is no
- * per-kind shape to branch on — a staged application is a `Flow` root inside `uischema`, not a
- * different top-level object.
+ * Doc 275: `content` IS `{ schema, variants }` (a `@repo/documents` DocumentContent), so there is no per-kind shape
+ * to branch on — a routed application is a `Funnel` root inside each variant, not a different top-level object.
  */
 export function normalizeContent(content: Record<string, unknown>): Record<string, unknown> {
+  const parsed = documentContentOf(content);
   return {
-    schema: (content['schema'] as Record<string, unknown> | undefined) ?? {
-      type: 'object',
-      properties: {},
-    },
-    uischema: (content['uischema'] as Record<string, unknown> | undefined) ?? {
-      type: 'Form',
-      elements: [],
-    },
+    schema: parsed?.schema ?? { type: 'object', properties: {} },
+    variants: parsed?.variants ?? { default: { type: 'Form', elements: [] } },
   };
 }

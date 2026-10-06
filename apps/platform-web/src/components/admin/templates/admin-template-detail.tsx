@@ -1,4 +1,4 @@
-import type { StudioDocument } from '@repo/forms';
+import type { DocumentContent } from '@repo/documents/content';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { ButtonGroup } from '@repo/ui/button-group';
@@ -11,7 +11,7 @@ import { DocumentDeleteButton } from '@/components/common/document-delete-button
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { VersionContent } from '@/components/console/version-content';
-import { sameStudioDocument, studioDocumentOf } from '@/lib/studio-content';
+import { documentContentOf, sameDocumentContent } from '@/lib/studio-content';
 import {
   addVersion,
   adminTemplateQueryOptions,
@@ -26,11 +26,10 @@ import {
 /**
  * Admin Template detail — a version dropdown + lifecycle actions in the header, over the version's content.
  *
- * Doc 218: the content is authored in the **Form Studio** for a draft and read in a **disabled FormRunner** for a
- * published or archived version. The Monaco JSON editor this replaced could produce payloads the API rejects — its
- * root-type rule (service → `Service`, application method → `Form|Flow`, service agreement → `Form`) is the real
- * contract, and the studio can only build roots that satisfy it. Raw JSON is still reachable, in the studio's own
- * code panel (doc 191).
+ * Doc 276: the content is authored in the **Document Studio** for a draft and shown READ-ONLY (the studio locked to
+ * Preview) for a published or archived version. The page owns saving, publishing and versions; the studio is
+ * host-controlled and only reports what the author changes. The API's root rule (every variant a `Form` or a `Funnel`,
+ * all matching the default) is the real contract, and the studio only builds roots that satisfy it.
  */
 /**
  * Doc 220: this page is the TEMPLATE surface, so every document it opens has authorable permissions.
@@ -44,7 +43,7 @@ const deletableRest = ({ reason, versionIds }: TemplateDeletable) => ({
   ...(reason === undefined ? {} : { reason }),
 });
 
-const seededContent = (document: StudioDocument | null): StudioDocument | null =>
+const seededContent = (document: DocumentContent | null): DocumentContent | null =>
   document === null ? null : { ...document, capabilities: document.capabilities ?? {} };
 
 export function AdminTemplateDetail() {
@@ -64,7 +63,7 @@ export function AdminTemplateDetail() {
    * reset on every version change so a stale document from the previous version can never read as an edit to this
    * one — the remount alone would leave one render showing the wrong pairing.
    */
-  const [live, setLive] = useState<StudioDocument | null>(null);
+  const [live, setLive] = useState<DocumentContent | null>(null);
   /** An action waiting on the discard confirmation (rule 19). Stored as a thunk, hence the extra arrow. */
   const [pending, setPending] = useState<(() => void) | null>(null);
 
@@ -72,17 +71,16 @@ export function AdminTemplateDetail() {
    * Rule 11: what `dirty` compares against — the content as the server now holds it, rebuilt every render. After a
    * save the refetch makes it equal to `live` again, which is what turns Save draft back off and Publish back on.
    */
-  const stored = studioDocumentOf(selected?.content);
+  const stored = documentContentOf(selected?.content);
   /**
    * Rule 12: what the studio is SEEDED with — pinned to the version id, deliberately NOT to the query data.
    *
-   * `useStudioDocument` re-seeds on a REFERENTIAL change of `schema`/`uischema`, so handing it the refetched
-   * objects after a save clears its element ids and the author's selection. `key` alone does not prevent that: it
-   * only stops one version's document leaking into another. Both are needed, and they are not the same guard.
+   * The studio seeds once per mount (doc 276), and `key` remounts it per version; pinning the seed to the version
+   * id as well means a refetch after a save never hands a re-render a new content identity. Both guards stay.
    */
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the version id IS the identity of its content here.
   const seed = useMemo(() => seededContent(stored), [selected?.id]);
-  const dirty = live !== null && !sameStudioDocument(live, stored);
+  const dirty = live !== null && !sameDocumentContent(live, stored);
   // Rule 20 (feature 177): the guard reads `when` at block time through a ref, because a boolean captured at render
   // can still read stale `true` in the continuation after an awaited save.
   const dirtyRef = useRef(dirty);
@@ -104,7 +102,7 @@ export function AdminTemplateDetail() {
   const confirmed = (action: () => void) => (dirty ? setPending(() => action) : action());
 
   const save = useMutation({
-    mutationFn: (document: StudioDocument) => {
+    mutationFn: (document: DocumentContent) => {
       if (selected === undefined) {
         throw new Error('No version selected.');
       }
@@ -265,13 +263,13 @@ export function AdminTemplateDetail() {
       >
         <VersionContent
           key={selected?.id}
+          // Doc 220: this page IS the template surface — `seededContent` gives every template a capability map
+          // (`?? {}`), so one that has never had a rule can still grow one.
           document={seed}
+          kind="template"
+          type={data.template.type}
           editable={isDraft}
           onDocumentChange={setLive}
-          // Doc 220: this page IS the template surface, so its documents always have authorable
-          // permissions. `?? {}` is what lets a template that has never had a rule grow one — a
-          // non-empty map could not express "a template with nothing written yet".
-          capabilities={seed?.capabilities ?? {}}
         />
       </div>
     </div>

@@ -28,8 +28,8 @@ export const TEMPLATE_SERVICE_AGREEMENT_V1_ID = '00000000-0000-4000-8000-0000000
 
 /**
  * Seed runner — idempotent (fixed ids + `onConflictDoNothing`). Inserts one GLOBAL template
- * document per `document_type`, each with a DRAFT version 1 holding a blank `@repo/forms`
- * document (doc 227). An admin authors and publishes each before staff can create documents of
+ * document per `document_type`, each with a DRAFT version 1 holding a blank `@repo/documents`
+ * content, `{ schema, variants }` (docs 227, 275). An admin authors and publishes each before staff can create documents of
  * that type. `onConflictDoNothing` means an ALREADY-seeded database keeps whatever it has.
  *
  * `workspaceId` is omitted, so each template is global (available in every workspace).

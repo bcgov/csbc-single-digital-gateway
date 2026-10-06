@@ -13,6 +13,7 @@ import {
   workspaceMembers,
   DOCUMENT_TYPE,
 } from '@repo/database';
+import { documentContentOf, variantOf } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, eq } from 'drizzle-orm';
 import type { DefaultAgreementResponse } from '../dtos/default-agreement.dtos';
@@ -22,11 +23,14 @@ const AGREEMENT_TYPE = DOCUMENT_TYPE.serviceAgreement;
 /**
  * Whether an agreement is optional for the citizen. Feature 217: this used to be
  * `document_versions.data.isOptional`, a value filled against the agreement type's schema. An
- * agreement is now AUTHORED, so the flag is an option on its root element.
+ * agreement is now AUTHORED, so the flag is an option on its root element — the DEFAULT variant's (doc 275).
  */
 function isOptionalFrom(content: Record<string, unknown> | null | undefined): boolean {
-  const uischema = content?.uischema as { options?: Record<string, unknown> } | undefined;
-  return uischema?.options?.isOptional === true;
+  const parsed = documentContentOf(content);
+  const options = parsed === null ? undefined : variantOf(parsed)['options'];
+  return typeof options === 'object' && options !== null && 'isOptional' in options
+    ? (options as Record<string, unknown>)['isOptional'] === true
+    : false;
 }
 
 /**

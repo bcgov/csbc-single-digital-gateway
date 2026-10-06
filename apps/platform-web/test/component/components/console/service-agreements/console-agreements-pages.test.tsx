@@ -33,13 +33,10 @@ import '@/routes/app.$slug.service-agreements.$id';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea (feature 217: the agreement editor
 // is a JSON content editor now, not a JSONForms form).
-// Doc 218: the detail page opens a version's content in the studio or a disabled runner — see
-// `test/support/mock-forms.tsx`.
-vi.mock('@repo/forms/studio', async () =>
-  (await import('../../../../support/mock-forms')).formStudioMock(),
-);
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../../../support/mock-forms')).formRunnerMock(),
+// Docs 218, 276: the detail page opens a version's content in the Document Studio — see
+// `test/support/mock-documents.tsx`.
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
 );
 
 afterEach(() => {
@@ -92,11 +89,13 @@ const detailResponse = {
       description: null,
       content: {
         schema: {},
-        uischema: {
-          type: 'Form',
-          label: 'Workspace TOS',
-          elements: [],
-          options: { body: 'Workspace agreement content.' },
+        variants: {
+          default: {
+            type: 'Form',
+            label: 'Workspace TOS',
+            elements: [],
+            options: { body: 'Workspace agreement content.' },
+          },
         },
       },
       createdAt: ISO,
@@ -104,15 +103,8 @@ const detailResponse = {
       archivedAt: null,
     },
   ],
-  definition: {
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-      },
-    },
-    uischema: {},
-  },
+  // Doc 221: each version's template, by `templateVersionId`; this version pins none.
+  definitions: {},
   services: [],
 };
 

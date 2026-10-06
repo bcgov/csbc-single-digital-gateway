@@ -24,13 +24,10 @@ vi.mock('@/lib/bff', () => {
   };
 });
 
-// Doc 218: the page opens a version's content in the Form Studio (draft) or a disabled FormRunner (otherwise).
-// jsdom can run neither — see `test/support/mock-forms.tsx` for what these stubs do and why.
-vi.mock('@repo/forms/studio', async () =>
-  (await import('../../support/mock-forms')).formStudioMock(),
-);
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../support/mock-forms')).formRunnerMock(),
+// Docs 218, 276: the page opens a version's content in the Document Studio — editable for a draft, read-only
+// otherwise. jsdom cannot run it — see `test/support/mock-documents.tsx` for what these stubs do and why.
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../support/mock-documents')).documentStudioMock(),
 );
 
 afterEach(() => {
@@ -58,7 +55,7 @@ const mockTemplate = {
       title: 'Passport Application Form',
       content: {
         schema: { type: 'object' },
-        uischema: { type: 'Form', label: 'v1', elements: [] },
+        variants: { default: { type: 'Form', label: 'v1', elements: [] } },
       },
     },
     {
@@ -68,7 +65,7 @@ const mockTemplate = {
       title: 'Passport Application Form',
       content: {
         schema: { type: 'string' },
-        uischema: { type: 'Form', label: 'v2', elements: [] },
+        variants: { default: { type: 'Form', label: 'v2', elements: [] } },
       },
     },
   ],
@@ -95,7 +92,10 @@ function withTemplate(base: ReturnType<typeof mockAuth>, templateData: any = moc
               versionNumber: 3,
               status: 'draft',
               title: 'Passport Application Form',
-              content: { schema: { type: 'string' }, uischema: { type: 'Form', elements: [] } },
+              content: {
+                schema: { type: 'string' },
+                variants: { default: { type: 'Form', elements: [] } },
+              },
             },
             201,
           );
@@ -151,17 +151,26 @@ describe('Admin Template ID Route Integration Test Suite', () => {
     const user = userEvent.setup();
 
     // Default selected version is the latest (v2, a draft) — authored, so the studio.
-    const studio = await screen.findByTestId('form-studio', undefined, { timeout: 32000 });
-    expect(studio).toHaveValue(JSON.stringify(mockTemplate.versions[1].content));
+    const studio = await screen.findByTestId('document-studio', undefined, { timeout: 32000 });
+    expect(studio).toHaveAttribute('data-readonly', 'false');
+    // A template seeds `capabilities ?? {}` into its content so a rule can be added.
+    expect(JSON.parse((studio as HTMLTextAreaElement).value)).toEqual({
+      ...mockTemplate.versions[1].content,
+      capabilities: {},
+    });
 
-    // Select v1 from the dropdown → published, so a DISABLED runner instead (doc 218 rules 5-9).
+    // Select v1 from the dropdown → published, so the studio READ-ONLY instead (doc 218 rules 5-9, doc 276).
     await user.click(screen.getByRole('button', { name: /version v2/i }));
     await user.click(await screen.findByRole('menuitem', { name: /v1/i }));
 
-    const runner = await screen.findByTestId('form-runner');
-    expect(runner).toHaveAttribute('data-disabled', 'true');
-    expect(runner).toHaveTextContent(JSON.stringify(mockTemplate.versions[0].content.uischema));
-    expect(screen.queryByTestId('form-studio')).toBeNull();
+    await waitFor(() =>
+      expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true'),
+    );
+    const shown = screen.getByTestId('document-studio') as HTMLTextAreaElement;
+    expect(JSON.parse(shown.value)).toEqual({
+      ...mockTemplate.versions[0].content,
+      capabilities: {},
+    });
   });
 
   it('triggers a PATCH request to save the content of a draft version', async () => {
@@ -169,10 +178,10 @@ describe('Admin Template ID Route Integration Test Suite', () => {
     renderApp('/admin/templates/dt-1');
 
     const user = userEvent.setup();
-    const studio = await screen.findByTestId('form-studio', undefined, { timeout: 32000 });
+    const studio = await screen.findByTestId('document-studio', undefined, { timeout: 32000 });
     const newContent = {
       schema: { type: 'boolean' },
-      uischema: { type: 'Form', label: 'Renamed', elements: [] },
+      variants: { default: { type: 'Form', label: 'Renamed', elements: [] } },
     };
 
     fireEvent.change(studio, { target: { value: JSON.stringify(newContent) } });
@@ -202,7 +211,10 @@ describe('Admin Template ID Route Integration Test Suite', () => {
           versionNumber: 3,
           status: 'archived',
           title: 'Passport Application Form',
-          content: { schema: { type: 'number' }, uischema: { type: 'Form', elements: [] } },
+          content: {
+            schema: { type: 'number' },
+            variants: { default: { type: 'Form', elements: [] } },
+          },
         },
       ],
     };
@@ -218,7 +230,7 @@ describe('Admin Template ID Route Integration Test Suite', () => {
     expect(await screen.findByRole('menuitem', { name: /v3/i })).toHaveTextContent('archived');
   });
 
-  it('refuses to open a version whose content is not a form document (rule 13)', async () => {
+  it('refuses to open a version whose content is not a document (rule 13)', async () => {
     withTemplate(mockAuth(adminUser), {
       ...mockTemplate,
       versions: [{ ...mockTemplate.versions[1], content: { stages: [], edges: [] } }],
@@ -227,8 +239,8 @@ describe('Admin Template ID Route Integration Test Suite', () => {
 
     // The old free-form JSON editor could store anything; this is where such a row stops.
     expect(await screen.findByRole('alert', undefined, { timeout: 32000 })).toHaveTextContent(
-      /isn’t a form document/,
+      /isn’t a document the studio can open/,
     );
-    expect(screen.queryByTestId('form-studio')).toBeNull();
+    expect(screen.queryByTestId('document-studio')).toBeNull();
   });
 });

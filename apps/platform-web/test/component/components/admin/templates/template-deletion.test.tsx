@@ -5,11 +5,8 @@ import { renderApp } from '../../../../support/render-app';
 
 // Doc 227 — delete a template or one of its versions from the detail page.
 
-vi.mock('@repo/forms/studio', async () =>
-  (await import('../../../../support/mock-forms')).formStudioMock(),
-);
-vi.mock('@repo/forms/runner', async () =>
-  (await import('../../../../support/mock-forms')).formRunnerMock(),
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
 );
 
 afterEach(() => {
@@ -35,7 +32,7 @@ const version = (n: number, status: 'draft' | 'published' | 'archived') => ({
   description: null,
   content: {
     schema: { type: 'object', properties: {} },
-    uischema: { type: 'Service', label: 'Health service', elements: [] },
+    variants: { default: { type: 'Form', label: 'Health service', elements: [] } },
   },
   createdAt: ISO,
   publishedAt: status === 'draft' ? null : ISO,
@@ -154,12 +151,12 @@ describe('template deletion (doc 227)', () => {
     renderApp('/admin/templates/tpl-1');
 
     // Edit the draft, so the page is dirty and the guard would normally block leaving.
-    const studio = await screen.findByTestId('form-studio', undefined, { timeout: 32000 });
+    const studio = await screen.findByTestId('document-studio', undefined, { timeout: 32000 });
     fireEvent.change(studio, {
       target: {
         value: JSON.stringify({
           schema: { type: 'object', properties: {} },
-          uischema: { type: 'Service', label: 'Edited', elements: [] },
+          variants: { default: { type: 'Form', label: 'Edited', elements: [] } },
         }),
       },
     });

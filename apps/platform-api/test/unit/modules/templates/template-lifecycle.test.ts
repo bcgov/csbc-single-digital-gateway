@@ -37,7 +37,10 @@ const versionRow = (over: Record<string, unknown> = {}) => ({
   status: 'draft',
   title: 'Health service',
   description: null,
-  content: { schema: {}, uischema: { type: 'Service', label: 'Health service', elements: [] } },
+  content: {
+    schema: {},
+    variants: { default: { type: 'Form', label: 'Health service', elements: [] } },
+  },
   createdAt: NOW,
   updatedAt: NOW,
   publishedAt: null,
@@ -80,10 +83,10 @@ describe('template lifecycle (doc 227)', () => {
       const version = txMock.values.mock.calls[1][0];
       expect(version).toMatchObject({ documentId: 'tpl-1', versionNumber: 1 });
       expect(version).not.toHaveProperty('publishedAt');
-      expect(version.content.uischema).toEqual({
-        type: 'Service',
-        label: 'Health service',
-        elements: [],
+      // Doc 275: a DocumentContent — the label lives on the DEFAULT variant, which the title reads.
+      expect(Object.keys(version.content).toSorted()).toEqual(['schema', 'variants']);
+      expect(version.content.variants).toEqual({
+        default: { id: 'tmplSvc1', type: 'Form', label: 'Health service', elements: [] },
       });
       expect(result.template).toMatchObject({ id: 'tpl-1', workspaceId: null });
       expect(result.versions.map((v) => v.status)).toEqual(['draft']);

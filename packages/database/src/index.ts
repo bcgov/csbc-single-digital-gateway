@@ -8,7 +8,7 @@ export * as schema from './schema';
 export { createDatabase } from './client';
 export type { CreateDatabaseOptions, Database } from './client';
 
-export { blankContentFor } from './seed-data/blank-documents';
+export { blankContentFor, type BlankContent } from './seed-data/blank-documents';
 
 export { resolvePgSsl } from './ssl';
 export type { PgSslOptions } from './ssl';

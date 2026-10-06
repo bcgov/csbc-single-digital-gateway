@@ -1,49 +1,26 @@
-import type { CapabilityMap, StudioDocument } from '@repo/forms';
-import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
+import { documentContentOf as narrow, type DocumentContent } from '@repo/documents/content';
 
 /**
- * Narrows a document version's stored `content` to a `@repo/forms` `StudioDocument` (doc 218 rule 13).
+ * Narrows a document version's stored `content` to a `@repo/documents` `DocumentContent` (docs 218 rule 13, 275).
  *
- * Since feature 217 a version's whole payload is one `content` jsonb that the API validates as
- * `{schema, uischema}`. But the column is `Record<string, unknown>` to the client, and rows written
- * before this feature came from a free-form JSON editor that could store anything — so this is the
- * boundary where an unusable row becomes a notice rather than half a document spread into a
- * component's props.
- *
- * Deliberately shallow: it checks that both halves are present and are objects, and leaves the rest
- * to the studio, which already reports a bad root itself (`studio-canvas.tsx`, doc 200 rule 4). A
- * deeper check here would be a second, drifting copy of the element metaschema.
+ * A version's whole payload is one `content` jsonb that the API validates as `{ schema, variants }`. But the column
+ * is `Record<string, unknown>` to the client, and a row written in the old `{ schema, uischema }` shape (or by hand)
+ * could hold anything — so this is the boundary where an unusable row becomes a notice rather than half a document
+ * spread into a component's props. Shallow on purpose: the shared narrowing checks the halves are objects and carries
+ * `capabilities` through; the studio reports a bad root itself.
  */
-export function studioDocumentOf(
+export function documentContentOf(
   content: Record<string, unknown> | undefined,
-): StudioDocument | null {
-  if (content === undefined) {
-    return null;
-  }
-  const { schema, uischema, capabilities } = content;
-  if (!isPlainObject(schema) || !isPlainObject(uischema)) {
-    return null;
-  }
-  // Doc 220: a TEMPLATE version also stores a capability map. Carried through as shallowly as the
-  // other two halves — the API validates its shape on the way in, and `capabilityFor` tolerates a
-  // malformed one by falling back to the level below, so a second check here would only drift.
-  return {
-    schema: schema as JsonSchema,
-    uischema: uischema as unknown as UISchemaElement,
-    ...(isPlainObject(capabilities) ? { capabilities: capabilities as CapabilityMap } : {}),
-  };
+): DocumentContent | null {
+  return content === undefined ? null : narrow(content);
 }
-
-/** An array is an object to `typeof`, and neither half of a studio document may be one. */
-const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
  * A deterministic serialisation: every object's keys in sorted order, all the way down.
  *
  * `JSON.stringify` preserves INSERTION order, which makes it the wrong tool for asking "is this the
  * same document?". The server's zod schemas rebuild an object with their declared keys first and the
- * `catchall` remainder after — `uiSchemaSchema` is `{type, elements}` + catchall, so a root the
+ * `catchall` remainder after — `uiSchemaSchema` is `{type, elements}` + catchall, so a variant root the
  * studio holds as `type,label,elements,id` comes back as `type,elements,label,id`. Identical content,
  * different string.
  */
@@ -74,9 +51,9 @@ export function stable(value: unknown): unknown {
  * fetch mocks hand back the same object shapes the studio produces rather than the ones the server
  * really returns.
  */
-export function sameStudioDocument(a: StudioDocument | null, b: StudioDocument | null): boolean {
+export function sameDocumentContent(a: DocumentContent | null, b: DocumentContent | null): boolean {
   if (a === null || b === null) return a === b;
-  const comparable = (document: StudioDocument) => {
+  const comparable = (document: DocumentContent) => {
     const { capabilities, ...halves } = document;
     const governed = capabilities !== undefined && Object.keys(capabilities).length > 0;
     return stable(governed ? { ...halves, capabilities } : halves);

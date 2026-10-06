@@ -39,7 +39,7 @@ export function insertItem(
   const owner =
     (array === undefined ? content.schema : ownerOf(content.schema, { array, key: '' })) ?? {};
   const current = isRecord(owner['properties']) ? owner['properties'] : {};
-  const added = placed.properties ?? {};
+  const added = requiredByDefault(placed.properties ?? {});
   if (Object.keys(added).some((key) => Object.hasOwn(current, key))) return content;
   if (variantName !== DEFAULT_VARIANT && !mayPlaceInVariant(original, placed)) return content;
   // Doc 260 rule 19: the items moved out of the arrival's way, then the arrival — one edit.
@@ -63,14 +63,41 @@ export function insertItem(
   if (next === original) return content;
   const withElement = withVariant(content, next, variantName);
   if (Object.keys(added).length === 0) return withElement;
+  // Doc 277: a placed field starts REQUIRED (listed in its owner's `required`).
+  const required = [...requiredOf(owner), ...Object.keys(added)];
   const schema =
     array === undefined
-      ? { ...content.schema, properties: { ...current, ...added } }
+      ? { ...content.schema, properties: { ...current, ...added }, required }
       : withOwner(content.schema, { array, key: '' }, (items) => ({
           ...items,
           properties: { ...current, ...added },
+          required,
         }));
   return { ...withElement, schema };
+}
+
+/**
+ * Doc 277: what a placed field's properties become — every one required, and a boolean "must be checked" (`const:
+ * true`, exactly what the inspector's Must be checked writes), since `false` is an answer and `required` alone would
+ * never stop a blank checkbox. The author switches either off in the inspector.
+ */
+function requiredByDefault(
+  properties: Record<string, Record<string, unknown>>,
+): Record<string, Record<string, unknown>> {
+  return Object.fromEntries(
+    Object.entries(properties).map(([key, property]) => [
+      key,
+      property['type'] === 'boolean' ? { ...property, const: true } : property,
+    ]),
+  );
+}
+
+/** An owner schema's `required` keys; anything that is not a list of strings counts as none. */
+function requiredOf(owner: Record<string, unknown>): string[] {
+  const required = owner['required'];
+  return Array.isArray(required)
+    ? required.filter((key): key is string => typeof key === 'string')
+    : [];
 }
 
 /**

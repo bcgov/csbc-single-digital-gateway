@@ -58,7 +58,7 @@ describe('ServicesService', () => {
         templateId: 'template-1',
         templateVersionId: 'template-version-1',
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'Service', elements: [] },
+        variants: { default: { type: 'Form', elements: [] } },
       }),
       contentForVersion: vi.fn(),
       // Feature 174: the READ path resolves templates per version, never via forCreate().
@@ -92,7 +92,7 @@ describe('ServicesService', () => {
         status: 'draft',
         title: 'New Service',
         description: null,
-        content: { schema: {}, uischema: { type: 'Service', elements: [] } },
+        content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
         createdAt: new Date('2026-07-12T00:00:00.000Z'),
         updatedAt: new Date('2026-07-12T00:00:00.000Z'),
         publishedAt: null,
@@ -108,6 +108,11 @@ describe('ServicesService', () => {
       expect(dbMock.transaction).toHaveBeenCalledTimes(1);
       expect(txMock.insert).toHaveBeenNthCalledWith(1, documents);
       expect(txMock.insert).toHaveBeenNthCalledWith(2, documentVersions);
+      // Doc 275: the template's schema and variants, the title on the DEFAULT variant's label.
+      expect(txMock.values.mock.calls[1][0].content).toEqual({
+        schema: { type: 'object', properties: {} },
+        variants: { default: { type: 'Form', elements: [], label: 'New Service' } },
+      });
 
       expect(result).toEqual({
         service: expect.objectContaining({ id: 'service-doc-1' }),
@@ -144,7 +149,7 @@ describe('ServicesService', () => {
     it('returns the schema definition of the resolved service type', async () => {
       templatesMock.forCreate.mockResolvedValue({
         schema: { type: 'object' },
-        uischema: { type: 'Service' },
+        variants: { default: { type: 'Form' } },
       });
 
       const result = await service.getServiceDefinition('tpl-1');
@@ -153,7 +158,7 @@ describe('ServicesService', () => {
       expect(templatesMock.forCreate).toHaveBeenCalledWith('services.service', 'tpl-1');
       expect(result).toEqual({
         schema: { type: 'object' },
-        uischema: { type: 'Service' },
+        variants: { default: { type: 'Form' } },
       });
     });
   });
@@ -367,7 +372,7 @@ describe('ServicesService', () => {
               status: 'draft',
               title: 'Service Title',
               description: null,
-              content: { schema: {}, uischema: { type: 'Service', elements: [] } },
+              content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
               createdAt: new Date('2026-07-12T00:00:00.000Z'),
               updatedAt: new Date('2026-07-12T00:00:00.000Z'),
               publishedAt: null,
@@ -379,7 +384,7 @@ describe('ServicesService', () => {
         .mockReturnValueOnce(mockQuery([{ n: 0 }]));
 
       templatesMock.contentsForVersions.mockResolvedValue({
-        'template-version-1': { schema: { type: 'object' }, uischema: {} },
+        'template-version-1': { schema: { type: 'object' }, variants: { default: {} } },
       });
 
       const result = await service.get('user-1', 'service-1');
@@ -473,7 +478,7 @@ const versionRow = (over: Record<string, unknown>) => ({
   status: 'draft',
   title: 'Service Title',
   description: null,
-  content: { schema: {}, uischema: { type: 'Service', elements: [] } },
+  content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
   createdAt: new Date('2026-07-12T00:00:00.000Z'),
   updatedAt: new Date('2026-07-12T00:00:00.000Z'),
   publishedAt: null,
@@ -519,14 +524,17 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
   it('should resolve the definition from the selected version type_version_id', async () => {
     arrange([versionRow({ templateVersionId: 'tv-new', publishedAt: new Date() })]);
     templatesMock.contentsForVersions.mockResolvedValue({
-      'tv-new': { schema: { marker: 'new' }, uischema: {} },
+      'tv-new': { schema: { marker: 'new' }, variants: { default: {} } },
     });
 
     const result = await service.get('user-1', 'service-1');
 
     expect(templatesMock.contentsForVersions).toHaveBeenCalledWith(['tv-new']);
     expect(result.definition.schema).toEqual({ marker: 'new' });
-    expect(result.definitions['tv-new']).toEqual({ schema: { marker: 'new' }, uischema: {} });
+    expect(result.definitions['tv-new']).toEqual({
+      schema: { marker: 'new' },
+      variants: { default: {} },
+    });
   });
 
   it('should return the OLD template for a version pinned to an older type version', async () => {
@@ -543,8 +551,8 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
       versionRow({ id: 'v2', versionNumber: 2, templateVersionId: 'tv-new' }),
     ]);
     templatesMock.contentsForVersions.mockResolvedValue({
-      'tv-old': { schema: { marker: 'old' }, uischema: {} },
-      'tv-new': { schema: { marker: 'new' }, uischema: {} },
+      'tv-old': { schema: { marker: 'old' }, variants: { default: {} } },
+      'tv-new': { schema: { marker: 'new' }, variants: { default: {} } },
     });
 
     const result = await service.get('user-1', 'service-1');
@@ -559,7 +567,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
   it('should not call forCreate() (currently-published) on the read path', async () => {
     arrange([versionRow({})]);
     templatesMock.contentsForVersions.mockResolvedValue({
-      'type-version-1': { schema: {}, uischema: {} },
+      'type-version-1': { schema: {}, variants: { default: {} } },
     });
 
     await service.get('user-1', 'service-1');
@@ -573,8 +581,8 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
       versionRow({ id: 'v2', versionNumber: 2, templateVersionId: 'tv-new' }),
     ]);
     templatesMock.contentsForVersions.mockResolvedValue({
-      'tv-old': { schema: { marker: 'old' }, uischema: {} },
-      'tv-new': { schema: { marker: 'new' }, uischema: {} },
+      'tv-old': { schema: { marker: 'old' }, variants: { default: {} } },
+      'tv-new': { schema: { marker: 'new' }, variants: { default: {} } },
     });
 
     const result = await service.get('user-1', 'service-1');
@@ -587,7 +595,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
 
     const result = await service.get('user-1', 'service-1');
 
-    expect(result.definition).toEqual({ schema: {}, uischema: {} });
+    expect(result.definition).toEqual({ schema: {}, variants: { default: {} } });
     expect(result.definitions).toEqual({});
   });
 
@@ -597,7 +605,7 @@ describe('ServicesService.get — per-version definition (feature 174)', () => {
 
     const result = await service.get('user-1', 'service-1');
 
-    expect(result.definition).toEqual({ schema: {}, uischema: {} });
+    expect(result.definition).toEqual({ schema: {}, variants: { default: {} } });
   });
 
   it('should still use forCreate() on the create path (a new service binds to a published template)', () => {

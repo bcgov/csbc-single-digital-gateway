@@ -8,31 +8,33 @@ import { contentSchemas } from '../../../../../src/modules/catalog/util/format';
  * version content.
  */
 describe('contentSchemas', () => {
-  it('splits a content into its schema and uischema', () => {
+  it('splits a content into its schema and variants', () => {
     const content = {
       schema: { type: 'object', properties: { name: { type: 'string' } } },
-      uischema: { type: 'Service', elements: [] },
+      variants: { default: { type: 'Form', elements: [] }, brief: { type: 'Form', elements: [] } },
     };
 
     expect(contentSchemas(content)).toEqual(content);
   });
 
-  it('defaults either half to an empty object when absent', () => {
-    expect(contentSchemas({})).toEqual({ schema: {}, uischema: {} });
-    expect(contentSchemas({ schema: { type: 'object' } })).toEqual({
-      schema: { type: 'object' },
-      uischema: {},
-    });
+  it('falls back to an empty schema and an empty default variant when either half is absent', () => {
+    const empty = { schema: {}, variants: { default: {} } };
+    expect(contentSchemas({})).toEqual(empty);
+    expect(contentSchemas({ schema: { type: 'object' } })).toEqual(empty);
+    // Doc 275: the old `{ schema, uischema }` shape is no longer read.
+    expect(contentSchemas({ schema: { type: 'object' }, uischema: { type: 'Form' } })).toEqual(
+      empty,
+    );
   });
 
   it('tolerates null and undefined rather than throwing', () => {
-    expect(contentSchemas(null)).toEqual({ schema: {}, uischema: {} });
-    expect(contentSchemas(undefined)).toEqual({ schema: {}, uischema: {} });
+    expect(contentSchemas(null)).toEqual({ schema: {}, variants: { default: {} } });
+    expect(contentSchemas(undefined)).toEqual({ schema: {}, variants: { default: {} } });
   });
 
-  it('ignores keys that are neither schema nor uischema', () => {
-    const result = contentSchemas({ schema: {}, uischema: {}, data: { title: 'x' } });
+  it('ignores keys that are neither schema nor variants', () => {
+    const result = contentSchemas({ schema: {}, variants: { default: {} }, data: { title: 'x' } });
 
-    expect(Object.keys(result).toSorted()).toEqual(['schema', 'uischema']);
+    expect(Object.keys(result).toSorted()).toEqual(['schema', 'variants']);
   });
 });

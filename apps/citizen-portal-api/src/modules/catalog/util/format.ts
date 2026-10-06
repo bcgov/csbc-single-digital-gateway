@@ -1,5 +1,7 @@
+import { documentContentOf } from '@repo/documents/content';
+
 /**
- * Split a document version's `content` JSONB into the `{ schema, uischema }` a renderer needs.
+ * Split a document version's `content` JSONB into the `{ schema, variants }` a renderer needs (doc 275).
  *
  * Feature 217: this used to split the bound document-TYPE version's `definition`, with the filled
  * values living separately in `data`. A service is authored now, so its own version content is
@@ -7,11 +9,8 @@
  */
 export function contentSchemas(content: unknown): {
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  variants: Record<string, Record<string, unknown>>;
 } {
-  const value = (content ?? {}) as { schema?: unknown; uischema?: unknown };
-  return {
-    schema: (value.schema as Record<string, unknown> | undefined) ?? {},
-    uischema: (value.uischema as Record<string, unknown> | undefined) ?? {},
-  };
+  const parsed = documentContentOf(content);
+  return { schema: parsed?.schema ?? {}, variants: parsed?.variants ?? { default: {} } };
 }

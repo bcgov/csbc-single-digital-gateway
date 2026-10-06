@@ -14,12 +14,16 @@ import type { DocumentTypeValue } from '../dtos/template.dtos';
  */
 export interface TemplateContent {
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  /** Doc 275: the uischemas by variant name; `default` is always present (possibly `{}`). */
+  variants: { default: Record<string, unknown> } & Record<string, Record<string, unknown>>;
   capabilities?: Record<string, unknown>;
 }
 
 /** An unknown template version. No `capabilities` key: an unknown template governs NOTHING. */
-const EMPTY_CONTENT: TemplateContent = { schema: {}, uischema: {} };
+const EMPTY_CONTENT: TemplateContent = { schema: {}, variants: { default: {} } };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
  * Split a `document_versions.content` JSONB into the parts a renderer needs, tolerating nulls.
@@ -29,20 +33,17 @@ const EMPTY_CONTENT: TemplateContent = { schema: {}, uischema: {} };
  * same silent-drop shape doc 220 found in zod's `z.object`.
  */
 export function toContent(content: unknown): TemplateContent {
-  const value = (content ?? {}) as {
-    schema?: unknown;
-    uischema?: unknown;
-    capabilities?: unknown;
-  };
-  const capabilities =
-    typeof value.capabilities === 'object' &&
-    value.capabilities !== null &&
-    !Array.isArray(value.capabilities)
-      ? (value.capabilities as Record<string, unknown>)
-      : undefined;
+  const value = isRecord(content) ? content : {};
+  const capabilities = isRecord(value['capabilities']) ? value['capabilities'] : undefined;
+  // Doc 275: every well-formed variant, and always a `default` — `{}` when the content has none.
+  const variants = Object.fromEntries(
+    Object.entries(isRecord(value['variants']) ? value['variants'] : {}).filter(([, uischema]) =>
+      isRecord(uischema),
+    ),
+  ) as Record<string, Record<string, unknown>>;
   return {
-    schema: (value.schema as Record<string, unknown> | undefined) ?? {},
-    uischema: (value.uischema as Record<string, unknown> | undefined) ?? {},
+    schema: isRecord(value['schema']) ? value['schema'] : {},
+    variants: { ...variants, default: variants['default'] ?? {} },
     // `exactOptionalPropertyTypes`: an absent map must be an absent KEY, never an explicit undefined.
     ...(capabilities === undefined ? {} : { capabilities }),
   };
@@ -53,7 +54,7 @@ export interface ResolvedTemplate {
   /** The template's currently-published version — new document versions bind to it. */
   templateVersionId: string;
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  variants: TemplateContent['variants'];
 }
 
 /** How a refusal names a type — the API's own words, matching the console's labels (doc 226). */
@@ -158,10 +159,13 @@ export class TemplateResolver {
     missing: () => Error,
   ): ResolvedTemplate {
     if (row === undefined) throw missing();
+    const { schema, variants } = toContent(row.content);
+    // Never the capabilities: a document copies a template's schema and variants, not its rules.
     return {
       templateId: row.templateId,
       templateVersionId: row.templateVersionId,
-      ...toContent(row.content),
+      schema,
+      variants,
     };
   }
 
@@ -187,7 +191,7 @@ export class TemplateResolver {
   }
 
   /**
-   * The `{ schema, uischema }` bound to a SPECIFIC template version (feature 174, carried forward).
+   * The `{ schema, variants, capabilities? }` bound to a SPECIFIC template version (feature 174, carried forward).
    *
    * This is the correct resolution for every READ path: a document version is pinned to its
    * template version by `document_versions.template_version_id`, so it must render against the

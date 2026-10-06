@@ -55,20 +55,22 @@ export const documentVersions = pgTable(
     // set revision = revision + 1; zero rows updated means someone else saved first.
     revision: integer('revision').notNull().default(1),
 
-    // The whole payload: a `@repo/forms` StudioDocument, `{ schema, uischema }`.
+    // The whole payload: a `@repo/documents` DocumentContent, `{ schema, variants: { default, … }, capabilities? }`
+    // (doc 275).
     content: jsonb('content').$type<Record<string, unknown>>().notNull(),
 
     // Derived from content; update content to change them.
     //
-    // NULLABLE on purpose: content with no `uischema.label` generates NULL. And `->>` over a JSON
-    // OBJECT yields NULL too — @repo/forms types `options.description` as a Lexical object, so a
+    // Read from the DEFAULT variant (doc 275). NULLABLE on purpose: content with no `variants.default.label` generates NULL. And `->>` over a JSON
+    // OBJECT yields NULL too — a Form's `options.description` is a Lexical object, so a
     // rich description leaves `description` NULL. Read this column as "the plain-text description
     // when there is one", which is narrower than the old `documents.description` text column.
     title: text('title').generatedAlwaysAs(
-      (): SQL => sql`${documentVersions.content} -> 'uischema' ->> 'label'`,
+      (): SQL => sql`${documentVersions.content} -> 'variants' -> 'default' ->> 'label'`,
     ),
     description: text('description').generatedAlwaysAs(
-      (): SQL => sql`${documentVersions.content} -> 'uischema' -> 'options' ->> 'description'`,
+      (): SQL =>
+        sql`${documentVersions.content} -> 'variants' -> 'default' -> 'options' ->> 'description'`,
     ),
 
     // Derived from published_at / archived_at; set those to change it. archived wins over

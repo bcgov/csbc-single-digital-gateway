@@ -272,7 +272,15 @@ describe('ApplicationsService Unit Test Suite', () => {
       // Feature 217: one lookup — the form VERSION's generated title + its content. There is no
       // owning service to resolve, and no `kind`.
       mockResponse(
-        [{ title: 'Form Title', content: { schema: { type: 'object' } } }],
+        [
+          {
+            title: 'Form Title',
+            content: {
+              schema: { type: 'object' },
+              variants: { default: { type: 'Form', elements: [] } },
+            },
+          },
+        ],
         documentVersions,
         'select',
       );
@@ -291,7 +299,7 @@ describe('ApplicationsService Unit Test Suite', () => {
         structure: {
           // normalizeContent passes a present schema through verbatim.
           schema: { type: 'object' },
-          uischema: { type: 'Form', elements: [] },
+          variants: { default: { type: 'Form', elements: [] } },
         },
         data: { field: 'value' },
         reviewReason: null,
@@ -334,7 +342,7 @@ describe('ApplicationsService Unit Test Suite', () => {
         formTitle: null, // no version row → no generated title
         structure: {
           schema: { type: 'object', properties: {} },
-          uischema: { type: 'Form', elements: [] },
+          variants: { default: { type: 'Form', elements: [] } },
         },
         data: { field: 'value' },
         reviewReason: 'Some reason',
@@ -483,6 +491,9 @@ describe('ApplicationsService Unit Test Suite', () => {
             properties: { age: { type: 'number' } },
             required: ['age'],
           },
+          // Doc 275: content without a default variant is malformed and falls back to an empty
+          // document, which would validate anything — so the fixture carries one.
+          variants: { default: { type: 'Form', elements: [] } },
         },
       };
 

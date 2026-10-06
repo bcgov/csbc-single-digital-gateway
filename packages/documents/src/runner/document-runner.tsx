@@ -31,6 +31,16 @@ export interface DocumentRunnerProps {
   readonly onSubmit?: AnswersHandler;
   /** Without one, Save draft renders disabled (rule 37). */
   readonly onSaveDraft?: AnswersHandler;
+  /**
+   * Doc 276: a document nobody may fill — a published template, or a staff view of a published service. Controls draw
+   * read-only (JSONForms `readonly`), nothing validates (a blank document would otherwise paint every required field
+   * red), Save draft and Submit are refused, and a Funnel's navigation stays free.
+   */
+  readonly disabled?: boolean;
+  /** Doc 276: `false` draws no action bar. */
+  readonly actions?: boolean;
+  /** Doc 276: whether the answers validate, after every change. Never called while `disabled` (nothing validates). */
+  onValidityChange?(valid: boolean): void;
 }
 
 export function DocumentRunner({
@@ -40,10 +50,15 @@ export function DocumentRunner({
   onChange,
   onSubmit,
   onSaveDraft,
+  disabled = false,
+  actions = true,
+  onValidityChange,
 }: DocumentRunnerProps) {
   const port: DocumentRunnerPort = {
     ...(onSubmit !== undefined && { onSubmit }),
     ...(onSaveDraft !== undefined && { onSaveDraft }),
+    disabled,
+    actions,
   };
   // `null` until JSONForms reports its first validation: not yet known is not valid.
   const [errors, setErrors] = useState<readonly FunnelError[] | null>(null);
@@ -61,8 +76,10 @@ export function DocumentRunner({
       data={data}
       renderers={defaults.renderers}
       cells={defaults.cells}
+      {...(disabled && { readonly: true, validationMode: 'NoValidation' as const })}
       onChange={({ data: next, errors: nextErrors }) => {
         setErrors(nextErrors ?? []);
+        if (!disabled) onValidityChange?.((nextErrors ?? []).length === 0);
         onChange(next);
       }}
     />
@@ -100,16 +117,18 @@ function FormPage({
       <div data-slot="runner-content" className="min-h-0 flex-1 overflow-y-auto">
         {children}
       </div>
-      <RunnerActions
-        hasBack={false}
-        atEnd
-        // A Form root is its own page, so ANY error blocks Submit.
-        submitBlocked={errors === null || errors.length > 0}
-        busy={host.busy}
-        canSaveDraft={host.canSaveDraft}
-        onSaveDraft={host.saveDraft}
-        onSubmit={host.finish}
-      />
+      {host.actions && (
+        <RunnerActions
+          hasBack={false}
+          atEnd
+          // A Form root is its own page, so ANY error blocks Submit; a disabled one refuses it outright.
+          submitBlocked={host.disabled || errors === null || errors.length > 0}
+          busy={host.busy}
+          canSaveDraft={host.canSaveDraft}
+          onSaveDraft={host.saveDraft}
+          onSubmit={host.finish}
+        />
+      )}
       <SubmissionPreview open={host.previewing} onOpenChange={host.setPreviewing} data={data} />
     </>
   );

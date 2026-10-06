@@ -31,11 +31,11 @@ const TEMPLATE = {
   templateId: 'template-1',
   templateVersionId: 'template-version-1',
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Form', elements: [] },
+  variants: { default: { type: 'Form', elements: [] } },
 };
 const CONTENT = {
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Form', elements: [], label: 'Terms' },
+  variants: { default: { type: 'Form', elements: [], label: 'Terms' } },
 };
 
 const agreementDoc = (over: Record<string, unknown> = {}) => ({
@@ -115,7 +115,7 @@ describe('ServiceAgreementsService', () => {
       contentsForVersions: vi.fn().mockResolvedValue({
         [TEMPLATE.templateVersionId]: {
           schema: TEMPLATE.schema,
-          uischema: TEMPLATE.uischema,
+          variants: TEMPLATE.variants,
         },
       }),
     };
@@ -169,7 +169,11 @@ describe('ServiceAgreementsService', () => {
       await service.create(mockUserActor, { workspaceId: mockWorkspaceId, title: 'Terms' });
 
       const values = txMock.values.mock.calls[1][0];
-      expect(values.content.uischema.label).toBe('Terms');
+      // Doc 275: a copy of the template's schema and variants, the label on the DEFAULT variant.
+      expect(values.content).toEqual({
+        schema: TEMPLATE.schema,
+        variants: { default: { type: 'Form', elements: [], label: 'Terms' } },
+      });
       expect(values.templateVersionId).toBe(TEMPLATE.templateVersionId);
       expect(values.versionNumber).toBe(1);
     });
@@ -304,7 +308,7 @@ describe('ServiceAgreementsService', () => {
       expect(result.versions).toHaveLength(1);
       // Doc 221: keyed by the PINNED template version, never a single currently-published template.
       expect(result.definitions).toEqual({
-        [TEMPLATE.templateVersionId]: { schema: TEMPLATE.schema, uischema: TEMPLATE.uischema },
+        [TEMPLATE.templateVersionId]: { schema: TEMPLATE.schema, variants: TEMPLATE.variants },
       });
       expect(templatesMock.contentsForVersions).toHaveBeenCalledWith([TEMPLATE.templateVersionId]);
       expect(templatesMock.forCreate).not.toHaveBeenCalled();
@@ -359,7 +363,7 @@ describe('ServiceAgreementsService', () => {
         service.updateDraft(mockAdminActor, 'agreement-1', 'version-1', {
           content: {
             schema: { type: 'object', properties: {} },
-            uischema: { type: 'Service', elements: [] },
+            variants: { default: { type: 'Service', elements: [] } },
           },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -409,7 +413,7 @@ describe('ServiceAgreementsService', () => {
 
       const values = txMock.values.mock.calls[0][0];
       expect(values.versionNumber).toBe(1);
-      expect(values.content).toEqual({ schema: TEMPLATE.schema, uischema: TEMPLATE.uischema });
+      expect(values.content).toEqual({ schema: TEMPLATE.schema, variants: TEMPLATE.variants });
     });
   });
 
@@ -422,7 +426,7 @@ describe('ServiceAgreementsService', () => {
             agreementVersion({
               content: {
                 schema: { type: 'object', properties: {} },
-                uischema: { type: 'Service', elements: [] },
+                variants: { default: { type: 'Service', elements: [] } },
               },
             }),
           ]),
@@ -431,6 +435,34 @@ describe('ServiceAgreementsService', () => {
       await expect(service.publish(mockAdminActor, 'agreement-1', 'version-1')).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it('refuses to publish when a variant does not show a required field (doc 275)', async () => {
+      const control = { type: 'Control', scope: '#/properties/consent' };
+      dbMock.select
+        .mockImplementationOnce(() => mockQuery([agreementDoc()]))
+        .mockImplementationOnce(() =>
+          mockQuery([
+            agreementVersion({
+              content: {
+                schema: {
+                  type: 'object',
+                  properties: { consent: { type: 'boolean', title: 'I agree' } },
+                  required: ['consent'],
+                },
+                variants: {
+                  default: { type: 'Form', elements: [control] },
+                  short: { type: 'Form', elements: [] },
+                },
+              },
+            }),
+          ]),
+        );
+
+      await expect(service.publish(mockAdminActor, 'agreement-1', 'version-1')).rejects.toThrow(
+        '"short" is missing I agree',
+      );
+      expect(dbMock.transaction).not.toHaveBeenCalled();
     });
 
     it('archives the currently-published version BEFORE promoting the draft', async () => {

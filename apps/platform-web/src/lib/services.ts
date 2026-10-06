@@ -8,17 +8,17 @@
  * `document_references`: the forms catalog, the reference and agreement-ref endpoints, and the
  * `applications` half of create and draft-save.
  */
-import type { StudioDocument } from '@repo/forms';
+import type { DocumentContent } from '@repo/documents/content';
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
 import type { Paginated, SortOrder } from '@/lib/list-search';
 
 export type VersionStatus = 'draft' | 'published' | 'archived';
 
-/** The `{ schema, uischema }` a renderer needs. */
+/** The `{ schema, variants }` a renderer needs (doc 275). */
 export interface FormDefinition {
   schema: Record<string, unknown>;
-  uischema: Record<string, unknown>;
+  variants: Record<string, Record<string, unknown>>;
   /**
    * Doc 221: on a TEMPLATE definition, what a consuming document's owner may do. Absent = the template
    * governs nothing. The service edit page (doc 230) hands it to the studio as `governedBy`.
@@ -174,7 +174,7 @@ export function selectServiceVersion(
 /**
  * The template the selected version was authored under (feature 174) — looked up by the version's
  * `templateVersionId`, so a version predating a template reshape renders against its OWN schema and
- * uischema. Falls back to the detail's current `definition`, then to empty.
+ * variants. Falls back to the detail's current `definition`, then to empty.
  */
 export function definitionForServiceVersion(
   detail: ServiceDetail | undefined,
@@ -232,7 +232,7 @@ export function createService(input: {
 export function updateDraft(
   id: string,
   versionId: string,
-  input: { content: StudioDocument & { data?: Record<string, unknown> } },
+  input: { content: DocumentContent & { data?: Record<string, unknown> } },
 ): Promise<ServiceVersion> {
   return send(
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}`,

@@ -1,4 +1,5 @@
-import { FormRunner } from '@repo/forms/runner';
+import { variantOf } from '@repo/documents/content';
+import { DocumentRunner } from '@repo/documents/runner';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Spinner } from '@repo/ui/spinner';
@@ -20,14 +21,14 @@ import {
   serviceQueryOptions,
   updateDraft,
 } from '@/lib/services';
-import { studioDocumentOf } from '@/lib/studio-content';
+import { documentContentOf } from '@/lib/studio-content';
 
 const SERVICE_NOUN = { full: 'service', short: 'service' } as const;
 const noop = () => {};
 
 /**
- * Doc 230 — staff author a service version by FILLING its form: the version's own schema and uischema in a
- * `FormRunner`, with the answers saved in `content.data`. The header is the agreement detail page's, and the
+ * Doc 230 — staff author a service version by FILLING its form: the version's own schema and DEFAULT variant in a
+ * `DocumentRunner` (doc 276), with the answers saved in `content.data`. The header is the agreement detail page's, and the
  * URL rather than local state decides which version is open.
  *
  * Gates on the query so the runner mounts WITH its answers, never seeded empty and then replaced.
@@ -80,7 +81,7 @@ function EditorBody({
   const { versions } = detail;
   const latest = versions.at(-1);
   const selected = versions.find((version) => version.id === versionId) ?? latest;
-  const document = studioDocumentOf(selected?.content);
+  const document = documentContentOf(selected?.content);
   const editable = selected?.status === 'draft';
 
   /** Rule 5: what the answers are compared with — the server's, rebuilt every render, so a save cleans. */
@@ -239,7 +240,7 @@ function EditorBody({
       ) : null}
       {document === null ? (
         <p role="alert" className="text-sm text-muted-foreground">
-          This version’s content isn’t a form document, so it can’t be opened here.
+          This version’s content isn’t a document the studio can open.
         </p>
       ) : (
         <div
@@ -248,11 +249,11 @@ function EditorBody({
         >
           {/* Rule 2: fillable for a draft, the same runner read-only otherwise. The header owns Save and
               Publish, so the runner's own action bar is left out. */}
-          <FormRunner
+          <DocumentRunner
             actions={false}
             disabled={!editable}
             schema={document.schema}
-            uischema={document.uischema}
+            uischema={variantOf(document)}
             data={editable ? answers : stored}
             onChange={editable ? setAnswers : noop}
             onValidityChange={setValid}

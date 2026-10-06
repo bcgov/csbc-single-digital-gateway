@@ -10,6 +10,10 @@ export type AnswersHandler = (answers: Record<string, unknown>) => void | Promis
 export interface DocumentRunnerPort {
   readonly onSubmit?: AnswersHandler;
   readonly onSaveDraft?: AnswersHandler;
+  /** Doc 276: nobody may fill this document — Save draft and Submit are refused; navigation stays free. */
+  readonly disabled?: boolean;
+  /** Doc 276: `false` draws no action bar at all (a read-only page). */
+  readonly actions?: boolean;
 }
 
 const DocumentRunnerContext = createContext<DocumentRunnerPort | null>(null);
@@ -25,6 +29,10 @@ export function useDocumentRunner(): DocumentRunnerPort | null {
 export interface HostActions {
   readonly busy: boolean;
   readonly canSaveDraft: boolean;
+  /** Doc 276: Save draft and Submit are refused whatever the answers. */
+  readonly disabled: boolean;
+  /** Doc 276: whether to draw the action bar. */
+  readonly actions: boolean;
   /** The payload dialog — Submit's fallback when the host has no `onSubmit` (rule 18). */
   readonly previewing: boolean;
   setPreviewing(open: boolean): void;
@@ -54,7 +62,9 @@ export function useHostActions(port: DocumentRunnerPort | null, data: unknown): 
   };
   return {
     busy,
-    canSaveDraft: port?.onSaveDraft !== undefined,
+    canSaveDraft: port?.disabled !== true && port?.onSaveDraft !== undefined,
+    disabled: port?.disabled === true,
+    actions: port?.actions !== false,
     previewing,
     setPreviewing,
     saveDraft: () => run(port?.onSaveDraft),

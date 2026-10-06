@@ -47,11 +47,31 @@ describe('insertItem (doc 238 rule 15)', () => {
       element: { id: 'c1', type: 'Control', scope: '#/properties/abc12345' },
       properties: { abc12345: { type: 'boolean', title: 'Untitled checkbox' } },
     });
+    // Doc 277: a placed checkbox must be checked — `const: true` and required, as the inspector writes it.
     expect(next.schema['properties']).toEqual({
       age: { type: 'integer' },
-      abc12345: { type: 'boolean', title: 'Untitled checkbox' },
+      abc12345: { type: 'boolean', title: 'Untitled checkbox', const: true },
     });
+    expect(next.schema['required']).toEqual(['abc12345']);
     expect(before.schema['properties']).not.toHaveProperty('abc12345');
+  });
+
+  it('makes a placed field required, keeping what was already required (doc 277)', () => {
+    const before: DocumentContent = {
+      ...content(),
+      schema: { ...content().schema, required: ['age'] },
+    };
+    const next = insertItem(before, 'form', Infinity, {
+      element: { id: 'c1', type: 'Control', scope: '#/properties/t1' },
+      properties: { t1: { type: 'string', title: 'Untitled text' } },
+    });
+    expect(next.schema['required']).toEqual(['age', 't1']);
+    expect(next.schema['properties']).toMatchObject({
+      t1: { type: 'string', title: 'Untitled text' },
+    });
+    expect((next.schema['properties'] as Record<string, object>)['t1']).not.toHaveProperty('const');
+    // A placed element with no field adds no required entry.
+    expect(insertItem(before, 'form', 0, created).schema['required']).toEqual(['age']);
   });
 
   it('refuses a property key that already exists, and an unknown layout, returning the same content', () => {

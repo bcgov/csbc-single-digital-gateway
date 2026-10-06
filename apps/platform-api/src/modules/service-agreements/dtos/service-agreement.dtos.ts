@@ -2,7 +2,7 @@ import { DOCUMENT_TYPE } from '@repo/database';
 import type { Document, DocumentVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
+import { documentContentSchema } from '../../templates/dtos/template.dtos';
 
 /**
  * Feature 217. A service agreement is a `documents` row with `type = 'services.service-agreement'` whose
@@ -15,7 +15,7 @@ import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 
 /**
  * Create an agreement. `workspaceId` present → a workspace-scoped (staff) agreement; absent →
- * a global (admin) agreement. `title` is stamped into the copied template's `uischema.label`,
+ * a global (admin) agreement. `title` is stamped into the copied template's default variant `label`,
  * which is what the GENERATED title column reads.
  */
 export const createServiceAgreementSchema = z.object({
@@ -28,7 +28,7 @@ export class CreateServiceAgreementDto extends createZodDto(createServiceAgreeme
 export type CreateServiceAgreementInput = z.infer<typeof createServiceAgreementSchema>;
 
 /** Edit a draft version's content. */
-export const updateServiceAgreementSchema = z.object({ content: studioDocumentSchema });
+export const updateServiceAgreementSchema = z.object({ content: documentContentSchema });
 export class UpdateServiceAgreementDto extends createZodDto(updateServiceAgreementSchema) {}
 export type UpdateServiceAgreementInput = z.infer<typeof updateServiceAgreementSchema>;
 
@@ -102,7 +102,7 @@ export type ServiceAgreementWithVersion = z.infer<typeof serviceAgreementWithVer
 
 export const agreementDefinitionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
   /** Doc 220/221: what a consuming document's owner may do. Absent means the template governs nothing. */
   capabilities: z.record(z.string(), z.unknown()).optional(),
 });

@@ -85,7 +85,7 @@ describe('ServiceAgreementsV1Controller', () => {
       const body: UpdateServiceAgreementDto = {
         content: {
           schema: { type: 'object', properties: {} },
-          uischema: { type: 'Form', elements: [], label: 'New Title' },
+          variants: { default: { type: 'Form', elements: [], label: 'New Title' } },
         },
       };
       const mockResult = { id: 'version-123', version: 1 };

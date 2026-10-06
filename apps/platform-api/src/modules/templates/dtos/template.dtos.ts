@@ -49,39 +49,45 @@ export const capabilityMapSchema = z.strictObject({
 });
 
 /**
- * The halves `@repo/forms` opens and hands back (`StudioDocument`).
+ * A version's content (doc 275): a `@repo/documents` `DocumentContent` — ONE schema and the uischemas that present it,
+ * `variants`, keyed by name; `default` is mandatory and is the one shown unless another is asked for. Top-level
+ * `uischema` is gone: `z.object` STRIPS unknown keys, so an old `{ schema, uischema }` body fails here (no `variants`)
+ * rather than saving half a document.
  *
- * `capabilities` is OPTIONAL and present only on a TEMPLATE. It MUST be listed here: `z.object`
- * STRIPS unknown keys, so before doc 220 a capability map reaching this schema was silently deleted
- * on every save — no error, no warning, the map simply gone. It is VALIDATED rather than passed
- * through because feature 222 enforces against it: a malformed map is a governance hole, not untidy
- * data, unlike the uischema internals whose authority is the studio's own metaschema.
+ * `capabilities` is OPTIONAL and present only on a TEMPLATE. It MUST be listed here: `z.object` STRIPS unknown keys,
+ * so before doc 220 a capability map reaching this schema was silently deleted on every save. It is VALIDATED rather
+ * than passed through because feature 222 enforces against it: a malformed map is a governance hole.
  */
-export const studioDocumentSchema = z.object({
+export const documentContentSchema = z.object({
   schema: jsonSchemaSchema,
-  uischema: uiSchemaSchema,
+  variants: z
+    .record(z.string(), uiSchemaSchema)
+    .refine((variants) => Object.hasOwn(variants, 'default'), {
+      message: 'variants must include "default"',
+    }),
   capabilities: capabilityMapSchema.optional(),
 });
-export type StudioDocumentInput = z.infer<typeof studioDocumentSchema>;
+export type DocumentContentInput = z.infer<typeof documentContentSchema>;
 
 /**
- * Which `uischema` root a document of each type may have. These are `@repo/forms` root-only
- * boundaries: `Service` (doc 215) for a service, `Form` (doc 192) or `Flow` for a way to apply.
- * This is the one place the API knows about element types — everything below it is opaque JSON.
+ * Which root a document of each type may have, in EVERY variant (doc 275). These are `@repo/documents` root-only
+ * boundaries: a `Form`, or a `Funnel` of Forms — for every type. Kept per type so a type can narrow later. This is the
+ * one place the API knows about element types — everything below it is opaque JSON.
  */
-const ROOTS_BY_TYPE: Record<DocumentTypeValue, readonly string[]> = {
-  [DOCUMENT_TYPE.service]: ['Service'],
-  [DOCUMENT_TYPE.applicationMethod]: ['Form', 'Flow'],
-  [DOCUMENT_TYPE.serviceAgreement]: ['Form'],
-};
+const FORM_OR_FUNNEL: readonly string[] = Object.freeze(['Form', 'Funnel']);
+const ROOTS_BY_TYPE: Readonly<Record<DocumentTypeValue, readonly string[]>> = Object.freeze({
+  [DOCUMENT_TYPE.service]: FORM_OR_FUNNEL,
+  [DOCUMENT_TYPE.applicationMethod]: FORM_OR_FUNNEL,
+  [DOCUMENT_TYPE.serviceAgreement]: FORM_OR_FUNNEL,
+});
 
-/** The allowed `uischema.type` values for a document type. */
+/** The allowed root `type` values for a document type. */
 export function allowedRootsFor(type: DocumentTypeValue): readonly string[] {
   return ROOTS_BY_TYPE[type];
 }
 
 /** Add or edit a version — `content` is validated against the document's type in the service. */
-export const versionContentSchema = z.object({ content: studioDocumentSchema });
+export const versionContentSchema = z.object({ content: documentContentSchema });
 export class VersionContentDto extends createZodDto(versionContentSchema) {}
 export type VersionContentInput = z.infer<typeof versionContentSchema>;
 

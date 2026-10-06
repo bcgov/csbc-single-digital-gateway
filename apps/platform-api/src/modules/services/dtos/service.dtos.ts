@@ -1,14 +1,14 @@
 import type { Document, DocumentVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
+import { documentContentSchema } from '../../templates/dtos/template.dtos';
 
 /**
  * Feature 217. A service is a `documents` row with `type = 'services.service'`, `kind = 'document'`, whose
- * version payload is one `content` (a `@repo/forms` StudioDocument). The old split — a seeded
+ * version payload is one `content` (a `@repo/documents` DocumentContent, doc 275). The old split — a seeded
  * Service *type* carrying the template, and `data` carrying values filled against it — is gone: a
  * service is AUTHORED, the way a form is, and its `title` / `description` are GENERATED from
- * `content.uischema`.
+ * the default variant (`content.variants.default`).
  *
  * Also gone with `document_references`: `applications` / `applicationOrder` on create and update,
  * and the forms catalog. Linking a service to its ways to apply is a later feature.
@@ -17,7 +17,7 @@ import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────
 
 /**
- * Create a service. `title` is stamped into the copied template's `uischema.label`, which is what
+ * Create a service. `title` is stamped into the copied template's default variant `label`, which is what
  * the GENERATED `document_versions.title` column reads — there is no separate title column to
  * keep in sync.
  */
@@ -59,7 +59,7 @@ export type ListServicesPageQuery = z.infer<typeof listServicesPageQuerySchema>;
  * Doc 230: a service version's content also carries the staff's ANSWERS to its form, `data`. Only here —
  * templates, agreements and forms keep the plain document. Absent `data` keeps the stored answers.
  */
-export const serviceContentSchema = studioDocumentSchema.extend({
+export const serviceContentSchema = documentContentSchema.extend({
   data: z.record(z.string(), z.unknown()).optional(),
 });
 export const updateVersionContentSchema = z.object({ content: serviceContentSchema });
@@ -135,7 +135,7 @@ export type ServiceWithVersions = z.infer<typeof serviceWithVersionsSchema>;
  */
 export const definitionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
   capabilities: z.record(z.string(), z.unknown()).optional(),
 });
 export class DefinitionDto extends createZodDto(definitionSchema) {}

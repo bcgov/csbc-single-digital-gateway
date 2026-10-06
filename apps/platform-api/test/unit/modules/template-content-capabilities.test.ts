@@ -2,14 +2,14 @@ import type { Document } from '@repo/database';
 import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import {
-  studioDocumentSchema,
+  documentContentSchema,
   versionContentSchema,
 } from '../../../src/modules/templates/dtos/template.dtos';
 import { validateContent } from '../../../src/modules/templates/services/validate-content';
 
 // Doc 220 — the API must ACCEPT and VALIDATE a template version's capability map.
 //
-// THE TRAP this file exists for: `studioDocumentSchema` was a plain `z.object({schema, uischema})`,
+// THE TRAP this file exists for: the content schema was a plain `z.object({schema, uischema})`,
 // and zod STRIPS unknown keys by default. `validateContent` returns `result.data`, so a
 // `capabilities` key was silently DELETED on every save — no error, no warning, the map simply gone.
 // Validation is deliberate rather than passthrough: feature 222 enforces against this map
@@ -19,7 +19,7 @@ const document = { type: 'services.service-application-method' } as Document;
 
 const content = (capabilities?: unknown) => ({
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Form', label: 'A form', elements: [] },
+  variants: { default: { type: 'Form', label: 'A form', elements: [] } },
   ...(capabilities === undefined ? {} : { capabilities }),
 });
 
@@ -37,7 +37,7 @@ describe('validateContent — capabilities survive the parse', () => {
   it('still accepts content with no capabilities key at all (rule 2)', () => {
     const result = validateContent(document, content());
     expect(result.capabilities).toBeUndefined();
-    expect(result.uischema.type).toBe('Form');
+    expect(result.variants['default']?.type).toBe('Form');
   });
 
   it('keeps the map through versionContentSchema too, so both save paths are covered', () => {
@@ -93,7 +93,7 @@ describe('validateContent — the map is validated, not trusted', () => {
   });
 
   it('is exported as a schema so 222 can reuse it rather than re-deriving the shape', () => {
-    expect(studioDocumentSchema.safeParse(content(MAP)).success).toBe(true);
+    expect(documentContentSchema.safeParse(content(MAP)).success).toBe(true);
   });
 });
 

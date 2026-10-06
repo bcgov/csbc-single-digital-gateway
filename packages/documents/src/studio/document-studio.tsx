@@ -3,7 +3,7 @@ import type { DeleteChoices } from './delete-gate';
 import { DocumentCanvas } from './document-canvas';
 import { DocumentInspector } from './document-inspector';
 import { DocumentPalette } from './document-palette';
-import type { DocumentRef, DocumentStore } from './document-store';
+import { createDocumentStore, type DocumentRef, type DocumentStore } from './document-store';
 import { DocumentStudioEmpty } from './document-studio-empty';
 import { DocumentPreview } from './document-preview';
 import { DocumentStudioHeader, type StudioMode } from './document-studio-header';
@@ -12,6 +12,7 @@ import {
   DEFAULT_VARIANT,
   variantOf,
   withVariant,
+  type DocumentContent,
   type DocumentKind,
   type DocumentType,
 } from './document-types';
@@ -25,7 +26,8 @@ import { appendTarget } from './palette-insert';
 import { defaultPalette, uniqueItems, type PaletteResolver } from './palette-items';
 import { STATUS_VIEWS, StudioFooter } from './studio-footer';
 import { browserDocumentStore } from './stub-documents';
-import { useDocumentStudio } from './use-document-studio';
+import { useDocumentStudio, type GoverningTemplate } from './use-document-studio';
+import { useHostedStudio } from './use-hosted-studio';
 import { selectionPaths, useStudioSelection } from './use-studio-selection';
 import { useStudioEdits, useTemplates } from './use-studio-edits';
 import { useActiveVariant } from './variants/use-active-variant';
@@ -50,15 +52,46 @@ export interface DocumentStudioProps {
    */
   palette?: PaletteResolver | undefined;
   className?: string | undefined;
+  /**
+   * Doc 276: HOST-CONTROLLED mode. Passing `content` (with `kind` and `type`) opens it with no store: the host fetches,
+   * saves and versions, and hears every edit through `onContentChange` (once on mount too — the baseline). Seeded ONCE
+   * per mount: `key` the studio by the version it shows. `documentId` / `versionId` / `store` / `onSaved` are ignored.
+   */
+  content?: DocumentContent | undefined;
+  onContentChange?: ((content: DocumentContent) => void) | undefined;
+  /** Doc 276: the governing template's name and rules, loaded by the host (controlled mode only). */
+  governing?: GoverningTemplate | undefined;
+  /** Doc 276: locked to Preview — nothing can be changed (e.g. a published version). */
+  readOnly?: boolean | undefined;
 }
+
+/** A controlled studio's stand-in store: empty and in memory, so it never reads the browser stub. */
+const IDLE_STORE = createDocumentStore();
 
 /**
  * Document Studio shell: a 36px header and footer around a flex-filling content area. The host sizes the
  * studio; it fills whatever box it is given.
  */
-export function DocumentStudio({ store, className, palette, ...props }: DocumentStudioProps) {
-  const resolvedStore = store ?? browserDocumentStore();
-  const studio = useDocumentStudio({ ...props, store: resolvedStore });
+export function DocumentStudio({
+  store,
+  className,
+  palette,
+  content,
+  onContentChange,
+  governing,
+  readOnly = false,
+  ...props
+}: DocumentStudioProps) {
+  const hosted = content !== undefined && props.kind !== undefined && props.type !== undefined;
+  const resolvedStore = hosted ? IDLE_STORE : (store ?? browserDocumentStore());
+  // Both hooks always run (hook order is fixed); the idle one is given nothing to open in controlled mode.
+  const stored = useDocumentStudio(
+    hosted ? { store: IDLE_STORE } : { ...props, store: resolvedStore },
+  );
+  const host = useHostedStudio(
+    hosted ? { content, kind: props.kind!, type: props.type!, governing, onContentChange } : null,
+  );
+  const studio = host ?? stored;
   const { draft, setContent } = studio;
   const { selectedId, setSelectedId, pageSelectedId, setPageSelectedId, selectCrumb } =
     useStudioSelection();
@@ -68,7 +101,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
     content: draft?.content ?? null,
     documentKey,
     isNew: (key) => key === NEW,
-    manage: draft?.template === undefined,
+    // A governed document's presentations are the template's: no variants added or removed (doc 276).
+    manage: draft?.template === undefined && studio.governing === null,
     setContent,
     onSwitch: () => {
       setFocus('default');
@@ -101,7 +135,9 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
     active,
   );
   const [dialogOpen, setDialogOpen] = useState(
-    props.documentId === undefined && (props.kind === undefined || props.type === undefined),
+    !hosted &&
+      props.documentId === undefined &&
+      (props.kind === undefined || props.type === undefined),
   );
   const templates = useTemplates(resolvedStore, dialogOpen);
   // Which collapsed panel is open, expanded — one at a time (doc 233 rule 14).
@@ -112,7 +148,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
   const [deleteChoices, setDeleteChoices] = useState<DeleteChoices>({});
   const variant = draft === null ? null : variantOf(draft.content, active);
   const [focus, setFocus] = useDocumentFocus(documentKey, variant?.['type']);
-  const [mode, setMode] = useStudioMode(documentKey);
+  const [chosenMode, setMode] = useStudioMode(documentKey);
+  const mode = readOnly ? 'preview' : chosenMode;
   const focusedId = variant === null ? null : resolveFocus(variant, focus);
   const { shownSelection, footerPath } = selectionPaths(
     variant,
@@ -147,6 +184,8 @@ export function DocumentStudio({ store, className, palette, ...props }: Document
         saving={studio.saving}
         onSave={() => void studio.save()}
         basedOn={studio.governing?.name}
+        hasSave={!hosted}
+        readOnly={readOnly}
         // A root Form's page has no flow to go Back to: its trailing + is the way out (doc 233 rule 9).
         onBack={
           focusedId === null || variant?.['type'] === 'Form' ? undefined : () => setFocus(null)

@@ -94,7 +94,7 @@ const serviceRow = (over: Record<string, unknown> = {}) => [
     publishedAt: new Date('2026-07-08T12:00:00Z'),
     content: {
       schema: { type: 'object' },
-      uischema: { type: 'Service', elements: [] },
+      variants: { default: { type: 'Form', elements: [] } },
     },
     ...over,
   },
@@ -106,7 +106,7 @@ const versionRow = (over: Record<string, unknown> = {}) => [
     versionNumber: 2,
     status: 'published',
     title: 'Published Service Title',
-    content: { schema: { type: 'object' }, uischema: { type: 'Service', elements: [] } },
+    content: { schema: { type: 'object' }, variants: { default: { type: 'Form', elements: [] } } },
     createdAt: new Date('2026-07-01T12:00:00Z'),
     publishedAt: new Date('2026-07-08T12:00:00Z'),
     archivedAt: null,
@@ -188,7 +188,7 @@ describe('CatalogService Unit Test Suite', () => {
         versionNumber: 1,
         publishedAt: '2026-07-08T12:00:00.000Z',
         schema: { type: 'object' },
-        uischema: { type: 'Service', elements: [] },
+        variants: { default: { type: 'Form', elements: [] } },
       });
       expect(result).not.toHaveProperty('applications');
       expect(result).not.toHaveProperty('data');
@@ -216,7 +216,7 @@ describe('CatalogService Unit Test Suite', () => {
 
       await expect(service.getService('service-123')).resolves.toMatchObject({
         schema: {},
-        uischema: {},
+        variants: { default: {} },
       });
     });
   });
@@ -242,7 +242,7 @@ describe('CatalogService Unit Test Suite', () => {
         status: 'published',
         title: 'Published Service Title',
         schema: { type: 'object' },
-        uischema: { type: 'Service', elements: [] },
+        variants: { default: { type: 'Form', elements: [] } },
         createdAt: '2026-07-01T12:00:00.000Z',
         publishedAt: '2026-07-08T12:00:00.000Z',
         archivedAt: null,

@@ -11,20 +11,26 @@ import { FormsService } from '../../../../../src/modules/forms/services/forms.se
 /**
  * Feature 217. A form is an APPLICATION METHOD document: no `typeId` on create, one `content`
  * instead of a per-kind `definition`, and no title column to sync (the title is GENERATED from
- * `content.uischema.label`).
+ * the default variant's label, `content.variants.default.label` — doc 275).
  */
 
 const TEMPLATE = {
   templateId: 'template-1',
   templateVersionId: 'template-version-1',
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Form', elements: [] },
+  variants: { default: { type: 'Form', elements: [] } },
 };
 
 const CONTENT = {
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Form', elements: [], label: 'Apply online' },
+  variants: { default: { type: 'Form', elements: [], label: 'Apply online' } },
 };
+
+/** A governed uischema with its one Control relabelled — the edit a frozen template refuses. */
+const relabel = <T extends object>(uischema: T) => ({
+  ...uischema,
+  elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'CHANGED' }],
+});
 
 describe('FormsService', () => {
   let service: FormsService;
@@ -59,7 +65,7 @@ describe('FormsService', () => {
       // Doc 221: the READ path resolves the PINNED template version; `forCreate` stays for CREATE.
       contentForVersion: vi.fn().mockResolvedValue({
         schema: TEMPLATE.schema,
-        uischema: TEMPLATE.uischema,
+        variants: TEMPLATE.variants,
       }),
     };
 
@@ -129,7 +135,11 @@ describe('FormsService', () => {
       await service.create('user-1', input);
 
       const values = txMock.values.mock.calls[1][0];
-      expect(values.content.uischema.label).toBe('Apply online');
+      // Doc 275: a copy of the template's schema and variants, the label on the DEFAULT variant.
+      expect(values.content).toEqual({
+        schema: TEMPLATE.schema,
+        variants: { default: { type: 'Form', elements: [], label: 'Apply online' } },
+      });
       expect(values.templateVersionId).toBe(TEMPLATE.templateVersionId);
       expect(values.versionNumber).toBe(1);
     });
@@ -139,7 +149,7 @@ describe('FormsService', () => {
       txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
       const custom = {
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'Flow', elements: [], label: 'Guided' },
+        variants: { default: { type: 'Funnel', elements: [], label: 'Guided' } },
       };
 
       await service.create('user-1', { ...input, content: custom });
@@ -147,16 +157,35 @@ describe('FormsService', () => {
       expect(txMock.values.mock.calls[1][0].content).toEqual(custom);
     });
 
-    it('rejects a content whose root is not allowed for an application method', async () => {
+    it.each(['Service', 'Flow'])(
+      'rejects a %s root — an application method is a Form or a Funnel (doc 275)',
+      async (root) => {
+        dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
+        txMock.returning.mockResolvedValueOnce([doc]);
+        const badRoot = {
+          schema: { type: 'object', properties: {} },
+          variants: { default: { type: root, elements: [] } },
+        };
+
+        await expect(service.create('user-1', { ...input, content: badRoot })).rejects.toThrow(
+          BadRequestException,
+        );
+      },
+    );
+
+    it("rejects a variant whose root differs from the default's", async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
       txMock.returning.mockResolvedValueOnce([doc]);
-      const badRoot = {
+      const mixed = {
         schema: { type: 'object', properties: {} },
-        uischema: { type: 'Service', elements: [] },
+        variants: {
+          default: { type: 'Form', elements: [] },
+          guided: { type: 'Funnel', elements: [] },
+        },
       };
 
-      await expect(service.create('user-1', { ...input, content: badRoot })).rejects.toThrow(
-        BadRequestException,
+      await expect(service.create('user-1', { ...input, content: mixed })).rejects.toThrow(
+        /every variant must match the default's "Form"/,
       );
     });
 
@@ -243,7 +272,7 @@ describe('FormsService', () => {
         service.updateContent('user-1', 'doc-1', 'version-1', {
           content: {
             schema: { type: 'object', properties: {} },
-            uischema: { type: 'Service', elements: [] },
+            variants: { default: { type: 'Flow', elements: [] } },
           },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -254,11 +283,13 @@ describe('FormsService', () => {
     describe('under a governing template', () => {
       const GOVERNED = {
         schema: { type: 'object', properties: { a: { type: 'string' } } },
-        uischema: {
-          type: 'Form',
-          id: 'root1',
-          label: 'Apply online',
-          elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'Name' }],
+        variants: {
+          default: {
+            type: 'Form',
+            id: 'root1',
+            label: 'Apply online',
+            elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'Name' }],
+          },
         },
       };
       const CLOSED = {
@@ -271,13 +302,7 @@ describe('FormsService', () => {
         edges: false,
       };
       const governedVersion = { ...version, content: GOVERNED };
-      const relabelled = {
-        ...GOVERNED,
-        uischema: {
-          ...GOVERNED.uischema,
-          elements: [{ type: 'Control', id: 'a1', scope: '#/properties/a', label: 'CHANGED' }],
-        },
-      };
+      const relabelled = { ...GOVERNED, variants: { default: relabel(GOVERNED.variants.default) } };
 
       const govern = (capabilities: unknown) =>
         templatesMock.capabilitiesForVersion.mockResolvedValue(capabilities);
@@ -318,6 +343,84 @@ describe('FormsService', () => {
           service.updateContent('user-1', 'doc-1', 'version-1', { content: relabelled }),
         ).resolves.toBeDefined();
         expect(dbMock.update).toHaveBeenCalled();
+      });
+
+      // Doc 275: the map governs EVERY variant, each checked against its own previous self.
+      describe('across variants', () => {
+        const TWO = {
+          ...GOVERNED,
+          variants: { default: GOVERNED.variants.default, mobile: GOVERNED.variants.default },
+        };
+        const twoVersion = { ...version, content: TWO };
+        const violationsOf = async (content: unknown, from: unknown = twoVersion) => {
+          dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([from]);
+          const error = await service
+            .updateContent('user-1', 'doc-1', 'version-1', { content } as never)
+            .catch((thrown: unknown) => thrown);
+          expect(error).toBeInstanceOf(UnprocessableEntityException);
+          expect(dbMock.update).not.toHaveBeenCalled();
+          return (
+            (error as UnprocessableEntityException).getResponse() as {
+              violations: { code: string; elementId?: string; field?: string }[];
+            }
+          ).violations;
+        };
+
+        it('refuses a frozen edit made only in a non-default variant', async () => {
+          govern({ default: { '*': CLOSED } });
+
+          const violations = await violationsOf({
+            ...TWO,
+            variants: { default: TWO.variants.default, mobile: relabel(TWO.variants.mobile) },
+          });
+
+          expect(violations).toEqual([
+            expect.objectContaining({ code: 'edit', elementId: 'a1', field: 'label' }),
+          ]);
+        });
+
+        it('reports the same refusal once when every variant makes it', async () => {
+          govern({ default: { '*': CLOSED } });
+
+          const violations = await violationsOf({
+            ...TWO,
+            variants: {
+              default: relabel(TWO.variants.default),
+              mobile: relabel(TWO.variants.mobile),
+            },
+          });
+
+          expect(violations).toHaveLength(1);
+        });
+
+        it('refuses adding a variant to a governed document (variant-added)', async () => {
+          govern({});
+
+          const violations = await violationsOf(TWO, governedVersion);
+
+          expect(violations).toEqual([expect.objectContaining({ code: 'variant-added' })]);
+          // No element or field to name — the keys are absent, not undefined.
+          expect(violations[0]).not.toHaveProperty('elementId');
+          expect(violations[0]).not.toHaveProperty('field');
+        });
+
+        it('refuses removing a variant from a governed document (variant-removed)', async () => {
+          govern({});
+
+          const violations = await violationsOf(GOVERNED);
+
+          expect(violations).toEqual([expect.objectContaining({ code: 'variant-removed' })]);
+        });
+
+        it('lets an ungoverned document add a variant', async () => {
+          govern(undefined);
+          dbMock.limit.mockResolvedValueOnce([{ doc }]).mockResolvedValueOnce([governedVersion]);
+          dbMock.returning.mockResolvedValueOnce([twoVersion]);
+
+          await expect(
+            service.updateContent('user-1', 'doc-1', 'version-1', { content: TWO }),
+          ).resolves.toBeDefined();
+        });
       });
 
       it('is resolved from the version PIN, never from whatever is published now', async () => {

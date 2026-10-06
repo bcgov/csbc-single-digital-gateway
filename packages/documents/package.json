@@ -7,6 +7,12 @@
   ],
   "type": "module",
   "exports": {
+    "./content": {
+      "types": "./dist/content.d.ts",
+      "development": "./src/content.ts",
+      "import": "./dist/content.js",
+      "require": "./dist/content.cjs"
+    },
     "./renderers/default": {
       "types": "./dist/renderers-default.d.ts",
       "development": "./src/renderers-default.ts",

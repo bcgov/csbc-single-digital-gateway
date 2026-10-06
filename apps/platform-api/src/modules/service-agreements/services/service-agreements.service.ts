@@ -16,10 +16,11 @@ import {
   workspaces,
   DOCUMENT_TYPE,
 } from '@repo/database';
+import { withDefaultLabel } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { TemplateResolver } from '../../templates/services/template.resolver';
-import { validateContent } from '../../templates/services/validate-content';
+import { assertPublishable, validateContent } from '../../templates/services/validate-content';
 import { assertWithinCapabilities } from '../../templates/services/capability-guard';
 import {
   type CreateServiceAgreementInput,
@@ -102,10 +103,10 @@ export class ServiceAgreementsService {
           versionNumber: 1,
           // A copy of the template with the requested title stamped into the label the GENERATED
           // title column reads.
-          content: {
-            schema: template.schema,
-            uischema: { ...template.uischema, label: input.title },
-          },
+          content: withDefaultLabel(
+            { schema: template.schema, variants: template.variants },
+            input.title,
+          ),
         })
         .returning();
       const version = insertedVersion[0];
@@ -405,7 +406,7 @@ export class ServiceAgreementsService {
           templateId: template.templateId,
           templateVersionId: template.templateVersionId,
           versionNumber: next,
-          content: latest?.content ?? { schema: template.schema, uischema: template.uischema },
+          content: latest?.content ?? { schema: template.schema, variants: template.variants },
         })
         .returning();
       return toAgreementVersionDto(this.orThrow(inserted[0]));
@@ -420,7 +421,7 @@ export class ServiceAgreementsService {
   ): Promise<ServiceAgreementVersionResponse> {
     const doc = await this.requireAgreementForWrite(actor, id);
     const version = await this.requireDraftVersion(id, versionId);
-    validateContent(doc, version.content);
+    assertPublishable(validateContent(doc, version.content));
     return this.db.transaction(async (tx) => {
       // Demote the currently-published version, then promote this draft (≤1 published per document).
       await tx

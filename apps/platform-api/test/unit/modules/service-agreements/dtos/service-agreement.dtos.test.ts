@@ -17,7 +17,7 @@ import {
 const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
 const CONTENT = {
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Form', elements: [], label: 'Terms' },
+  variants: { default: { type: 'Form', elements: [], label: 'Terms' } },
 };
 
 describe('service-agreement DTO schemas (feature 217)', () => {
@@ -49,7 +49,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
   });
 
   describe('updateServiceAgreementSchema', () => {
-    it('accepts a StudioDocument content', () => {
+    it('accepts a DocumentContent content', () => {
       expect(updateServiceAgreementSchema.parse({ content: CONTENT })).toEqual({
         content: CONTENT,
       });
@@ -60,20 +60,20 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         false,
       );
       expect(
-        updateServiceAgreementSchema.safeParse({ content: { uischema: CONTENT.uischema } }).success,
+        updateServiceAgreementSchema.safeParse({ content: { variants: CONTENT.variants } }).success,
       ).toBe(false);
     });
 
-    it('preserves unknown keys inside schema and uischema', () => {
+    it('preserves unknown keys inside schema and each variant', () => {
       const parsed = updateServiceAgreementSchema.parse({
         content: {
           schema: { type: 'object', properties: {}, $id: 'x' },
-          uischema: { type: 'Form', elements: [], options: { gap: 'lg' } },
+          variants: { default: { type: 'Form', elements: [], options: { gap: 'lg' } } },
         },
       });
 
       expect(parsed.content.schema['$id']).toBe('x');
-      expect(parsed.content.uischema['options']).toEqual({ gap: 'lg' });
+      expect(parsed.content.variants['default']?.['options']).toEqual({ gap: 'lg' });
     });
   });
 
@@ -165,7 +165,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         serviceAgreementDetailSchema.parse({
           agreement,
           versions: [version],
-          definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
+          definitions: { [VALID_UUID]: { schema: {}, variants: { default: {} } } },
           // Doc 225 rule 7: REQUIRED, not optional — the API always answers what may be deleted, and
           // an optional field would let a surface quietly render a delete control from its own guess.
           deletable: { agreement: true, versionIds: [] },
@@ -186,7 +186,7 @@ describe('service-agreement DTO schemas (feature 217)', () => {
         },
         deletable: { agreement: true, versionIds: [] },
         versions: [],
-        definitions: { [VALID_UUID]: { schema: {}, uischema: {} } },
+        definitions: { [VALID_UUID]: { schema: {}, variants: { default: {} } } },
         services: [{ id: 'srv-1', title: 'A service', workspaceSlug: 'ws' }],
       });
 
@@ -194,9 +194,9 @@ describe('service-agreement DTO schemas (feature 217)', () => {
     });
 
     it('keeps the definition envelope opaque', () => {
-      expect(agreementDefinitionSchema.parse({ schema: {}, uischema: {} })).toEqual({
+      expect(agreementDefinitionSchema.parse({ schema: {}, variants: { default: {} } })).toEqual({
         schema: {},
-        uischema: {},
+        variants: { default: {} },
       });
     });
   });

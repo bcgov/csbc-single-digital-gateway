@@ -37,7 +37,7 @@ describe('FormsV1Controller', () => {
         title: 'New Form',
         content: {
           schema: { type: 'object', properties: {} },
-          uischema: { type: 'Form', elements: [] },
+          variants: { default: { type: 'Form', elements: [] } },
         },
       };
       const mockResult = {
@@ -77,7 +77,7 @@ describe('FormsV1Controller', () => {
       const body: UpdateFormContentDto = {
         content: {
           schema: { type: 'object', properties: {} },
-          uischema: { type: 'Form', elements: [], label: 'Updated Title' },
+          variants: { default: { type: 'Form', elements: [], label: 'Updated Title' } },
         },
       };
       const mockResult = {

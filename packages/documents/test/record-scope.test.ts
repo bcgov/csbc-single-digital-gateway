@@ -40,6 +40,9 @@ describe('record edits (doc 271 rules 10-13, 15)', () => {
     expect(added).toHaveLength(1);
     expect(Object.keys(props(next))).toEqual(['name', 'people']);
     expect(layoutOf(next)[1]!['scope']).toBe(`${ITEM}/${added[0]}`);
+    // Doc 277: required among the ITEM's fields, not the page's.
+    expect(items(next)['required']).toContain(added[0]);
+    expect(next.schema['required'] ?? []).not.toContain(added[0]);
     // Nesting is refused at write time too.
     expect(insertItem(c, 'L', 0, item('record').create())).toBe(c);
     // A page insert is unchanged.

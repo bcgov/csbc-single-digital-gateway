@@ -165,7 +165,11 @@ describe('Document Types Unit Test Suite', () => {
     mockFetch.mockResolvedValue(
       mockResponse(409, { message: '2 documents use this template.' }, false),
     );
-    await expect(deleteTemplate('dt-1')).rejects.toThrow('2 documents use this template.');
+    // `rejects.toThrow` mis-reads a rejected Error in this jsdom setup (it sees an empty message), so read the
+    // message the way the other rejection cases in this file do.
+    await expect(deleteTemplate('dt-1').catch((e: Error) => e.message)).resolves.toBe(
+      '2 documents use this template.',
+    );
   });
 
   it('sends POST requests to publish and archive versions', async () => {

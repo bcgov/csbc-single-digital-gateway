@@ -9,10 +9,11 @@ import {
   workspaceMembers,
   DOCUMENT_TYPE,
 } from '@repo/database';
+import { withDefaultLabel } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { deletableFor, SERVICE_HAS_SUBMISSIONS } from './service-deletable';
-import { TemplateResolver } from '../../templates/services/template.resolver';
+import { TemplateResolver, type TemplateContent } from '../../templates/services/template.resolver';
 import {
   type CreateServiceInput,
   type ListServicesPageQuery,
@@ -51,8 +52,8 @@ export class ServicesService {
 
   /**
    * Create a service: the document + its draft v1, in one transaction. The draft's `content` is a
-   * COPY of the published Service template with `uischema.label` set to the requested title — the
-   * GENERATED `document_versions.title` reads exactly that path, so there is no title column to
+   * COPY of the published Service template's schema and variants with the default variant's `label` set to the
+   * requested title (doc 275) — the GENERATED `document_versions.title` reads exactly that path, so there is no title column to
    * keep in sync.
    */
   async create(userId: string, input: CreateServiceInput): Promise<ServiceWithVersions> {
@@ -79,10 +80,10 @@ export class ServicesService {
           templateId: template.templateId,
           templateVersionId: template.templateVersionId,
           versionNumber: 1,
-          content: {
-            schema: template.schema,
-            uischema: { ...template.uischema, label: input.title },
-          },
+          content: withDefaultLabel(
+            { schema: template.schema, variants: template.variants },
+            input.title,
+          ),
         })
         .returning();
       const version = insertedVersion[0];
@@ -96,13 +97,13 @@ export class ServicesService {
     });
   }
 
-  /** A published Service template's `{ schema, uischema }` — for the create editor (doc 228). */
+  /** A published Service template's `{ schema, variants }` — for the create editor (docs 228, 275). */
   async getServiceDefinition(templateId?: string): Promise<{
     schema: Record<string, unknown>;
-    uischema: Record<string, unknown>;
+    variants: TemplateContent['variants'];
   }> {
     const template = await this.templates.forCreate(DOCUMENT_TYPE.service, templateId);
-    return { schema: template.schema, uischema: template.uischema };
+    return { schema: template.schema, variants: template.variants };
   }
 
   /**
@@ -228,7 +229,7 @@ export class ServicesService {
     return {
       service: toServiceDto(doc, current),
       versions: versions.map(toServiceVersionDto),
-      definition: currentDefinition ?? { schema: {}, uischema: {} },
+      definition: currentDefinition ?? { schema: {}, variants: { default: {} } },
       definitions,
       hasSubmissions,
       deletable: deletableFor(versions, hasSubmissions),

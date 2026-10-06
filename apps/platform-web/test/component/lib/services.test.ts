@@ -112,7 +112,9 @@ describe('Services Unit Test Suite', () => {
   });
 
   it('queries service definitions schema details', async () => {
-    mockFetch.mockResolvedValue(mockResponse(200, { schema: { type: 'object' }, uischema: {} }));
+    mockFetch.mockResolvedValue(
+      mockResponse(200, { schema: { type: 'object' }, variants: { default: {} } }),
+    );
 
     const options = serviceDefinitionQueryOptions();
     expect(options.queryKey).toEqual(['services', 'definition']);
@@ -157,7 +159,7 @@ describe('Services Unit Test Suite', () => {
   it("saves a draft version's content with a PATCH request", async () => {
     const content = {
       schema: { type: 'object', properties: {} },
-      uischema: { type: 'Service', elements: [] },
+      variants: { default: { type: 'Form', elements: [] } },
     };
     mockFetch.mockResolvedValue(mockResponse(200, { id: 'ver-1', content }));
 
@@ -347,8 +349,8 @@ describe('Services Unit Test Suite', () => {
       const detail = {
         service: {} as never,
         versions: [version({ id: 'v1', templateVersionId: 'tv-old' })],
-        definition: { schema: { marker: 'current' }, uischema: {} },
-        definitions: { 'tv-old': { schema: { marker: 'old' }, uischema: {} } },
+        definition: { schema: { marker: 'current' }, variants: { default: {} } },
+        definitions: { 'tv-old': { schema: { marker: 'old' }, variants: { default: {} } } },
         hasSubmissions: false,
         deletable: { service: true, versionIds: [] },
       };
@@ -360,7 +362,7 @@ describe('Services Unit Test Suite', () => {
       const detail = {
         service: {} as never,
         versions: [version({ id: 'v1', templateVersionId: null })],
-        definition: { schema: { marker: 'current' }, uischema: {} },
+        definition: { schema: { marker: 'current' }, variants: { default: {} } },
         definitions: {},
         hasSubmissions: false,
         deletable: { service: true, versionIds: [] },

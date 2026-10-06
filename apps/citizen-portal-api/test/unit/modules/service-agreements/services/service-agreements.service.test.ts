@@ -157,10 +157,12 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         description: 'A detailed description',
         content: {
           schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'Form',
-            elements: [],
-            options: { approveLabel: 'Custom Approve', rejectLabel: 'Custom Reject' },
+          variants: {
+            default: {
+              type: 'Form',
+              elements: [],
+              options: { approveLabel: 'Custom Approve', rejectLabel: 'Custom Reject' },
+            },
           },
         },
         createdAt,
@@ -177,10 +179,12 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         description: 'A detailed description',
         content: {
           schema: { type: 'object', properties: {} },
-          uischema: {
-            type: 'Form',
-            elements: [],
-            options: { approveLabel: 'Custom Approve', rejectLabel: 'Custom Reject' },
+          variants: {
+            default: {
+              type: 'Form',
+              elements: [],
+              options: { approveLabel: 'Custom Approve', rejectLabel: 'Custom Reject' },
+            },
           },
         },
         decision: 'approve',
@@ -198,7 +202,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         decision: 'reject',
         title: null, // no root label → NULL generated title
         description: '', // an empty generated description falls back to null
-        content: { schema: {}, uischema: { type: 'Form', elements: [] } },
+        content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
         createdAt,
       };
 
@@ -211,7 +215,7 @@ describe('ServiceAgreementsService Unit Test Suite', () => {
         agreementDocumentId: 'doc-id-1',
         title: 'Service agreement', // Fallback title
         description: null, // Fallback description
-        content: { schema: {}, uischema: { type: 'Form', elements: [] } },
+        content: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
         decision: 'reject',
         approveLabel: 'I approve', // Fallback label
         rejectLabel: 'I do not approve', // Fallback label

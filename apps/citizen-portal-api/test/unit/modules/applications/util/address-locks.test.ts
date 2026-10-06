@@ -30,11 +30,13 @@ const basicForm = (
       [key]: { type: 'object', default: addressDefault, properties: addressProperties },
     },
   },
-  uischema: {
-    type: 'VerticalLayout',
-    elements: [
-      { type: 'Control', scope: `#/properties/${key}`, options: { format: 'address', fields } },
-    ],
+  variants: {
+    default: {
+      type: 'Form',
+      elements: [
+        { type: 'Control', scope: `#/properties/${key}`, options: { format: 'address', fields } },
+      ],
+    },
   },
 });
 
@@ -62,17 +64,19 @@ describe('collectAddressLocks — walking the definition', () => {
   it('collects nothing for a form with no address fields at all', () => {
     const form = {
       schema: { type: 'object', properties: { name: { type: 'string' } } },
-      uischema: {
-        type: 'VerticalLayout',
-        elements: [{ type: 'Control', scope: '#/properties/name' }],
+      variants: {
+        default: {
+          type: 'VerticalLayout',
+          elements: [{ type: 'Control', scope: '#/properties/name' }],
+        },
       },
     };
     expect(collectAddressLocks(form)).toEqual([]);
   });
 
-  it('collects locks from every Form of a Flow', () => {
-    // Feature 217: a staged application is a `Flow` ROOT inside ONE uischema, so both addresses
-    // live in the same tree and the schema carries both properties.
+  it('collects locks from every Form of a Funnel', () => {
+    // Doc 275: a routed application is a `Funnel` ROOT inside a variant, so both addresses live in
+    // the same tree and the schema carries both properties.
     const home = basicForm({ country: { readOnly: true } }, { country: 'Canada' }, 'home');
     const mailing = basicForm({ country: { readOnly: true } }, { country: 'Canada' }, 'mailing');
     const structure = {
@@ -80,12 +84,14 @@ describe('collectAddressLocks — walking the definition', () => {
         type: 'object',
         properties: { ...home.schema.properties, ...mailing.schema.properties },
       },
-      uischema: {
-        type: 'Flow',
-        elements: [
-          { type: 'Stage', elements: [{ type: 'Form', elements: home.uischema.elements }] },
-          { type: 'Stage', elements: [{ type: 'Form', elements: mailing.uischema.elements }] },
-        ],
+      variants: {
+        default: {
+          type: 'Funnel',
+          elements: [
+            { type: 'Form', elements: home.variants.default.elements },
+            { type: 'Form', elements: mailing.variants.default.elements },
+          ],
+        },
       },
     };
 
@@ -102,20 +108,22 @@ describe('collectAddressLocks — walking the definition', () => {
           addr: { type: 'object', default: { country: 'Canada' }, properties: addressProperties },
         },
       },
-      uischema: {
-        type: 'VerticalLayout',
-        elements: [
-          {
-            type: 'Group',
-            elements: [
-              {
-                type: 'Control',
-                scope: '#/properties/addr',
-                options: { format: 'address', fields: { country: { readOnly: true } } },
-              },
-            ],
-          },
-        ],
+      variants: {
+        default: {
+          type: 'VerticalLayout',
+          elements: [
+            {
+              type: 'Group',
+              elements: [
+                {
+                  type: 'Control',
+                  scope: '#/properties/addr',
+                  options: { format: 'address', fields: { country: { readOnly: true } } },
+                },
+              ],
+            },
+          ],
+        },
       },
     };
     expect(collectAddressLocks(form)).toEqual([
@@ -132,20 +140,22 @@ describe('collectAddressLocks — walking the definition', () => {
           work: { type: 'object', default: { country: 'France' }, properties: addressProperties },
         },
       },
-      uischema: {
-        type: 'VerticalLayout',
-        elements: [
-          {
-            type: 'Control',
-            scope: '#/properties/home',
-            options: { format: 'address', fields: { country: { readOnly: true } } },
-          },
-          {
-            type: 'Control',
-            scope: '#/properties/work',
-            options: { format: 'address', fields: { country: { readOnly: true } } },
-          },
-        ],
+      variants: {
+        default: {
+          type: 'VerticalLayout',
+          elements: [
+            {
+              type: 'Control',
+              scope: '#/properties/home',
+              options: { format: 'address', fields: { country: { readOnly: true } } },
+            },
+            {
+              type: 'Control',
+              scope: '#/properties/work',
+              options: { format: 'address', fields: { country: { readOnly: true } } },
+            },
+          ],
+        },
       },
     };
     expect(collectAddressLocks(form)).toEqual([

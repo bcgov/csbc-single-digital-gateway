@@ -169,6 +169,13 @@
       "when": 1790629733769,
       "tag": "0023_document_type_namespacing",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791320707180,
+      "tag": "0024_document_content_variants",
+      "breakpoints": true
     }
   ]
 }

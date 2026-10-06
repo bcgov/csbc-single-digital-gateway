@@ -28,34 +28,50 @@ describe('toContent carries capabilities', () => {
   it('keeps a capabilities key instead of discarding it', () => {
     const content = toContent({
       schema: { type: 'object' },
-      uischema: { type: 'Form' },
+      variants: { default: { type: 'Form' } },
       capabilities: CAPABILITIES,
     });
     expect(content.capabilities).toEqual(CAPABILITIES);
   });
 
   it('tolerates content with no capabilities key', () => {
-    const content = toContent({ schema: { type: 'object' }, uischema: { type: 'Form' } });
+    const content = toContent({
+      schema: { type: 'object' },
+      variants: { default: { type: 'Form' } },
+    });
     expect(content.capabilities).toBeUndefined();
     expect(content.schema).toEqual({ type: 'object' });
   });
 
   it('leaves the key ABSENT rather than explicitly undefined (exactOptionalPropertyTypes)', () => {
     // A host spreading this must not create a `capabilities: undefined` it then saves.
-    expect(Object.hasOwn(toContent({ schema: {}, uischema: {} }), 'capabilities')).toBe(false);
+    expect(
+      Object.hasOwn(toContent({ schema: {}, variants: { default: {} } }), 'capabilities'),
+    ).toBe(false);
   });
 
   it('ignores a capabilities value that is not a plain object', () => {
     for (const bad of ['all', 42, [], null]) {
       expect(
-        toContent({ schema: {}, uischema: {}, capabilities: bad }).capabilities,
+        toContent({ schema: {}, variants: { default: {} }, capabilities: bad }).capabilities,
       ).toBeUndefined();
     }
   });
 
+  it('always yields a default variant, keeps other well-formed variants and drops malformed ones', () => {
+    // Doc 275: old `{ schema, uischema }` content has no variants at all — default becomes `{}`.
+    expect(toContent({ schema: {}, uischema: { type: 'Form' } }).variants).toEqual({ default: {} });
+    expect(
+      toContent({
+        schema: {},
+        variants: { mobile: { type: 'Form' }, broken: 'nope', list: [] },
+      }).variants,
+    ).toEqual({ default: {}, mobile: { type: 'Form' } });
+  });
+
   it('still tolerates null content entirely', () => {
-    expect(toContent(null)).toEqual({ schema: {}, uischema: {} });
-    expect(toContent(undefined)).toEqual({ schema: {}, uischema: {} });
+    expect(toContent(null)).toEqual({ schema: {}, variants: { default: {} } });
+    expect(toContent(undefined)).toEqual({ schema: {}, variants: { default: {} } });
   });
 });
 
@@ -87,7 +103,9 @@ describe('the DTOs carry the pinned template through', () => {
           archivedAt: null,
         },
       ],
-      definitions: { [UUID]: { schema: {}, uischema: {}, capabilities: CAPABILITIES } },
+      definitions: {
+        [UUID]: { schema: {}, variants: { default: {} }, capabilities: CAPABILITIES },
+      },
     });
     // The client looks its OWN version's template up, rather than being handed one template.
     expect(parsed.versions[0]?.templateVersionId).toBe(UUID);
@@ -120,7 +138,7 @@ describe('the DTOs carry the pinned template through', () => {
         content: {},
         createdAt: '2026-07-28T12:00:00.000Z',
       },
-      definition: { schema: {}, uischema: {}, capabilities: CAPABILITIES },
+      definition: { schema: {}, variants: { default: {} }, capabilities: CAPABILITIES },
     });
     expect(parsed.definition?.capabilities).toEqual(CAPABILITIES);
   });
@@ -151,15 +169,18 @@ describe('the DTOs carry the pinned template through', () => {
 
   it("a service's definition schema carries capabilities too, so all three types agree", () => {
     expect(
-      definitionSchema.parse({ schema: {}, uischema: {}, capabilities: CAPABILITIES }),
+      definitionSchema.parse({ schema: {}, variants: { default: {} }, capabilities: CAPABILITIES }),
     ).toHaveProperty('capabilities');
     // Absent stays absent — a template with no map governs nothing.
-    expect(definitionSchema.parse({ schema: {}, uischema: {} }).capabilities).toBeUndefined();
+    expect(
+      definitionSchema.parse({ schema: {}, variants: { default: {} } }).capabilities,
+    ).toBeUndefined();
   });
 
   it('refuses a capabilities value that is not an object, at the DTO boundary', () => {
     expect(
-      definitionSchema.safeParse({ schema: {}, uischema: {}, capabilities: 'all' }).success,
+      definitionSchema.safeParse({ schema: {}, variants: { default: {} }, capabilities: 'all' })
+        .success,
     ).toBe(false);
   });
 });

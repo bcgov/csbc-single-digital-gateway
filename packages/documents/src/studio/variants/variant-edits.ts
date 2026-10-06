@@ -1,12 +1,11 @@
-import { DEFAULT_VARIANT, type DocumentContent } from '../document-types';
+import { DEFAULT_VARIANT, variantNames, type DocumentContent } from '../document-types';
+
+// `variantNames` lives with the content types so the pure `@repo/documents/content` entry can use it.
+export { variantNames };
 import { newForm } from '../node-edits';
 import { variantNameProblem } from './variant-names';
 
 /** The variants' names in key order — `default` first, as the tabs list them (doc 262 rule 1). */
-export function variantNames(content: DocumentContent): string[] {
-  const names = Object.keys(content.variants);
-  return [DEFAULT_VARIANT, ...names.filter((name) => name !== DEFAULT_VARIANT)];
-}
 
 /**
  * `content` with a new variant under the trimmed `name`: a blank Form root with a fresh id (doc 262 rule 6). The SAME

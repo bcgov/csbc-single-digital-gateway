@@ -12,11 +12,11 @@ import {
 const VALID_UUID = 'e6005cbb-84f9-467a-bb48-e8cbffc9c991';
 const FORM_CONTENT = {
   schema: { type: 'object', properties: { name: { type: 'string' } } },
-  uischema: { type: 'Form', elements: [], label: 'Apply online' },
+  variants: { default: { type: 'Form', elements: [], label: 'Apply online' } },
 };
-const FLOW_CONTENT = {
+const FUNNEL_CONTENT = {
   schema: { type: 'object', properties: {} },
-  uischema: { type: 'Flow', elements: [], label: 'Guided application' },
+  variants: { default: { type: 'Funnel', elements: [], label: 'Guided application' } },
 };
 
 describe('form DTO schemas (feature 217)', () => {
@@ -56,26 +56,43 @@ describe('form DTO schemas (feature 217)', () => {
   });
 
   describe('updateFormContentSchema', () => {
-    it('accepts both a Form and a Flow root — the flavour lives in the content', () => {
-      expect(updateFormContentSchema.parse({ content: FORM_CONTENT }).content.uischema.type).toBe(
-        'Form',
-      );
-      expect(updateFormContentSchema.parse({ content: FLOW_CONTENT }).content.uischema.type).toBe(
-        'Flow',
-      );
+    it('accepts both a Form and a Funnel root — the flavour lives in the content', () => {
+      expect(
+        updateFormContentSchema.parse({ content: FORM_CONTENT }).content.variants['default']?.type,
+      ).toBe('Form');
+      expect(
+        updateFormContentSchema.parse({ content: FUNNEL_CONTENT }).content.variants['default']
+          ?.type,
+      ).toBe('Funnel');
+    });
+
+    it('rejects variants without a default, and the old top-level uischema shape (doc 275)', () => {
+      const uischema = { type: 'Form', elements: [] };
+      expect(
+        updateFormContentSchema.safeParse({
+          content: { schema: FORM_CONTENT.schema, variants: { mobile: uischema } },
+        }).success,
+      ).toBe(false);
+      expect(
+        updateFormContentSchema.safeParse({ content: { schema: FORM_CONTENT.schema, uischema } })
+          .success,
+      ).toBe(false);
     });
 
     it('rejects a content missing either half', () => {
       expect(updateFormContentSchema.safeParse({ content: { schema: {} } }).success).toBe(false);
       expect(
-        updateFormContentSchema.safeParse({ content: { uischema: FORM_CONTENT.uischema } }).success,
+        updateFormContentSchema.safeParse({ content: { variants: FORM_CONTENT.variants } }).success,
       ).toBe(false);
     });
 
-    it('requires uischema.elements to be an array', () => {
+    it("requires each variant's elements to be an array", () => {
       expect(
         updateFormContentSchema.safeParse({
-          content: { schema: { type: 'object', properties: {} }, uischema: { type: 'Form' } },
+          content: {
+            schema: { type: 'object', properties: {} },
+            variants: { default: { type: 'Form' } },
+          },
         }).success,
       ).toBe(false);
     });
@@ -162,7 +179,7 @@ describe('form DTO schemas (feature 217)', () => {
         revision: 4,
         title: 'Apply online',
         description: 'How to apply',
-        content: FLOW_CONTENT,
+        content: FUNNEL_CONTENT,
         status: 'draft',
         publishedAt: null,
         archivedAt: null,
@@ -178,7 +195,7 @@ describe('form DTO schemas (feature 217)', () => {
         status: 'draft',
         title: 'Apply online',
         description: 'How to apply',
-        content: FLOW_CONTENT,
+        content: FUNNEL_CONTENT,
         createdAt: '2026-07-28T12:00:00.000Z',
       });
     });

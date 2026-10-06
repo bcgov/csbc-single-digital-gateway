@@ -2,14 +2,14 @@ import { DOCUMENT_TYPE } from '@repo/database';
 import type { Document, DocumentVersion } from '@repo/database';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { studioDocumentSchema } from '../../templates/dtos/template.dtos';
+import { documentContentSchema } from '../../templates/dtos/template.dtos';
 
 /**
  * Feature 217. A "form" is an APPLICATION METHOD document (`type = 'services.service-application-method'`) — the
  * old `basic-form` / `multi-stage-form` / `external-application` kinds all collapsed into it.
- * Which flavour a method is now shows in its `content.uischema` root (`Form` for one page of
- * fields, `Flow` for stages), not in a column, so there is no per-kind definition union left: the
- * payload is one `StudioDocument`.
+ * Which flavour a method is now shows in its root (`Form` for one page of fields, `Funnel` for a routed
+ * sequence of Forms), not in a column, so there is no per-kind definition union left: the payload is one
+ * `DocumentContent` (doc 275).
  */
 
 // ── Request schemas + DTOs (validated by the global ZodValidationPipe) ──────────────────────────
@@ -21,13 +21,13 @@ export const createFormSchema = z.object({
   /** Doc 228: the template to build from. Omitted = the only published one of this type. */
   templateId: z.uuid().optional(),
   /** Omitted = start from the template's content. */
-  content: studioDocumentSchema.optional(),
+  content: documentContentSchema.optional(),
 });
 export class CreateFormDto extends createZodDto(createFormSchema) {}
 export type CreateFormInput = z.infer<typeof createFormSchema>;
 
 /** Edit a draft version's content. */
-export const updateFormContentSchema = z.object({ content: studioDocumentSchema });
+export const updateFormContentSchema = z.object({ content: documentContentSchema });
 export class UpdateFormContentDto extends createZodDto(updateFormContentSchema) {}
 export type UpdateFormContentInput = z.infer<typeof updateFormContentSchema>;
 
@@ -68,7 +68,7 @@ export type FormVersionResponse = z.infer<typeof formVersionSchema>;
  */
 export const formDefinitionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
-  uischema: z.record(z.string(), z.unknown()),
+  variants: z.record(z.string(), z.record(z.string(), z.unknown())),
   capabilities: z.record(z.string(), z.unknown()).optional(),
 });
 
