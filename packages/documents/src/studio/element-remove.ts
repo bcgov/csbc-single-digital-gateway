@@ -1,6 +1,7 @@
 import type { DocumentContent, Uischema } from './document-types';
 import { DEFAULT_VARIANT, variantOf, withVariant } from './document-types';
 import { withCapabilities, withoutEntries } from './capabilities/capability-edits';
+import { cardSlots } from '../renderers/ui/card-model';
 import { idOf } from './element-ids';
 import { refOfScope, withOwner, type ItemRef } from './property-ref';
 
@@ -18,6 +19,8 @@ export function removeElement(
   variantName: string = DEFAULT_VARIANT,
 ): DocumentContent {
   const variant = variantOf(content, variantName);
+  // Doc 273 rule 7: a Card's content slot goes only with its Card.
+  if (isCardContent(variant, id)) return content;
   const removed: Uischema[] = [];
   const next = without(variant, id, removed);
   if (next === variant) return content;
@@ -59,6 +62,13 @@ export function without(node: Uischema, id: string, removed: Uischema[]): Uische
   );
   const changed = kept.length !== elements.length || children.some((c, i) => c !== kept[i]);
   return changed ? { ...node, elements: children } : node;
+}
+
+/** Whether `id` is the content slot of a Card at or below `node`. */
+function isCardContent(node: Uischema, id: string): boolean {
+  if (node['type'] === 'Card' && cardSlots(node).content?.['id'] === id) return true;
+  const elements = node['elements'];
+  return Array.isArray(elements) && elements.some((c) => isRecord(c) && isCardContent(c, id));
 }
 
 /** Every element id at or below `node`. */

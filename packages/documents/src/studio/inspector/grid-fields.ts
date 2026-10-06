@@ -79,6 +79,8 @@ export interface GridShrinkPlan {
   ids: string[];
   /** Their names, as the canvas names them. */
   names: string[];
+  /** Where they are, for the dialog: "outside the new grid", "in the card footer" (doc 273 rule 9). */
+  where: string;
   /** The template forbids deleting one of them (rule 26): the resize is refused whole. */
   locked: boolean;
 }
@@ -104,5 +106,10 @@ export function gridShrinkPlan(
     const element = findById(root, id);
     return element === undefined ? id : elementName(element as never, content.schema);
   });
-  return { ids, names, locked: ids.some((id) => governance?.canRemove(id) === false) };
+  return {
+    ids,
+    names,
+    where: 'outside the new grid',
+    locked: ids.some((id) => governance?.canRemove(id) === false),
+  };
 }

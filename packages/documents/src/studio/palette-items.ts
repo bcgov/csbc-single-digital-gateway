@@ -1,4 +1,5 @@
 import {
+  mdiCardOutline,
   mdiCheckboxMarkedOutline,
   mdiCheckboxMultipleMarkedOutline,
   mdiFormatHeaderPound,
@@ -21,6 +22,7 @@ import {
 import { nanoid } from 'nanoid';
 import type { DocumentContent, DocumentKind, DocumentType, Uischema } from './document-types';
 import { newId } from './element-ids';
+import { newCardSlot } from '../renderers/ui/card-model';
 import { starterTabs } from '../renderers/ui/tabs-model';
 import { RECORD_FIELD_ITEMS } from './record-palette-items';
 import { DEFAULT_GRID_COLUMNS, DEFAULT_GRID_ROWS } from '../renderers/default/grid-placement';
@@ -149,6 +151,17 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     // Doc 272 rule 8: two empty tabs, each a labelled VerticalLayout.
     create: () => ({
       element: { id: newId(), type: 'Tabs', elements: starterTabs() },
+    }),
+  },
+  {
+    id: 'card',
+    label: 'Card',
+    icon: mdiCardOutline,
+    group: 'Layout',
+    keywords: ['card', 'panel', 'box', 'section'],
+    // Doc 273 rule 11: an empty content slot and no footer.
+    create: () => ({
+      element: { id: newId(), type: 'Card', elements: [newCardSlot()] },
     }),
   },
   {

@@ -199,6 +199,7 @@ describe('DocumentStudio variants (doc 262)', () => {
       'Horizontal layout',
       'Grid',
       'Tabs',
+      'Card',
       'Heading',
       'Separator',
       'Rich content',

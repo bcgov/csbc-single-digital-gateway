@@ -12,6 +12,7 @@ import {
   NO_RULE_SOURCES,
   type ElementAction,
 } from './element-actions';
+import { CardSlotContext } from './card-slot';
 import { LockBadge } from './lock-badge';
 import { ParentGridFullContext } from './grid-full-context';
 import { LOCKED } from '../../studio/capabilities/governance';
@@ -86,7 +87,7 @@ export function StudioElement({
   inert?: boolean;
   children: ReactNode;
 }) {
-  const children = inert ? (
+  const body = inert ? (
     // Padded, so the selection ring and hover outline sit clear of the control (doc 237 rule 13b).
     <div data-slot="studio-element-body" inert className={ELEMENT_INSET}>
       {content}
@@ -94,9 +95,13 @@ export function StudioElement({
   ) : (
     content
   );
+  // The slot role is this element's alone, never its children's.
+  const children = <CardSlotContext.Provider value={null}>{body}</CardSlotContext.Provider>;
   const depth = useContext(DepthContext);
   const editor = useStudioEditor();
   const gridFull = useContext(ParentGridFullContext);
+  // Doc 273 rule 7: a card slot is part of its Card — never copied, and the content slot never deleted.
+  const cardSlot = useContext(CardSlotContext);
   // Doc 262 rule 13: outside default a field (or a layout holding one) can be neither copied nor given new options.
   const variantField =
     !useStudioVariant().isDefault && holdsControl(uischema as unknown as Record<string, unknown>);
@@ -167,16 +172,18 @@ export function StudioElement({
                 disabled={disabledActions(editor, id, rule !== undefined, gridFull, variantField)}
                 {...(editor.editRule !== undefined && { onEditRule: () => editor.editRule?.(id) })}
                 {...(openOptions !== undefined && { onEditOptions: openOptions })}
-                {...(editor.copy !== undefined && {
-                  // The copy is selected, like a moved element (doc 254 rule 6).
-                  onCopy: () => {
-                    const copyId = editor.copy?.(id);
-                    if (copyId !== undefined) editor.select(copyId);
-                  },
-                })}
-                {...(editor.remove !== undefined && {
-                  onDelete: () => editor.remove?.(id, elementName(uischema, schema)),
-                })}
+                {...(editor.copy !== undefined &&
+                  cardSlot === null && {
+                    // The copy is selected, like a moved element (doc 254 rule 6).
+                    onCopy: () => {
+                      const copyId = editor.copy?.(id);
+                      if (copyId !== undefined) editor.select(copyId);
+                    },
+                  })}
+                {...(editor.remove !== undefined &&
+                  cardSlot !== 'content' && {
+                    onDelete: () => editor.remove?.(id, elementName(uischema, schema)),
+                  })}
               />
             )}
         </div>

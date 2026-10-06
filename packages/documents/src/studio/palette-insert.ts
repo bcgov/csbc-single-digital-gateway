@@ -10,6 +10,7 @@ import { boundKeys, keyOfScope } from './variants/variant-bindings';
 import { ownerOf, withOwner } from './property-ref';
 import { intoRecord, recordArrayOf } from './record-scope';
 import { activeTabOf } from '../renderers/studio/active-tabs';
+import { cardSlots } from '../renderers/ui/card-model';
 import { tabsOf } from '../renderers/ui/tabs-model';
 
 /**
@@ -109,6 +110,11 @@ export function appendTarget(form: Uischema, selectedId: string | null): AppendT
     const tabs = tabsOf(selected);
     const shown = tabs.find((tab) => tab.id === activeTabOf(selectedId)) ?? tabs[0];
     return shown === undefined ? end : { layoutId: shown.id, index: Infinity };
+  }
+  // Doc 273 rule 12: a selected Card takes it into its content slot, never as a Card child.
+  if (selected['type'] === 'Card') {
+    const slotId = cardSlots(selected).content?.['id'];
+    return typeof slotId === 'string' ? { layoutId: slotId, index: Infinity } : end;
   }
   if (Array.isArray(selected['elements'])) return { layoutId: selectedId, index: Infinity };
   const parent = parentOf(form, selectedId);

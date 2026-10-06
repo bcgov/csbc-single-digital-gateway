@@ -61,9 +61,17 @@ const OPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   align: 'content',
 });
 
-/** The setting a `label` is on each element type: a Funnel's name, a Form's title, else a field's label. */
-const labelKeyOf = (type: unknown) =>
-  type === 'Funnel' ? 'funnelName' : type === 'Form' ? 'formTitle' : 'label';
+/** The setting a `label` is on each element type: a Funnel's name, a Form's or Card's title, else a field's label. */
+const LABEL_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  Funnel: 'funnelName',
+  Form: 'formTitle',
+  Card: 'cardTitle',
+});
+const labelKeyOf = (type: unknown) => (typeof type === 'string' && LABEL_KEYS[type]) || 'label';
+
+/** The setting an inline option edit is: a Card's description is its own (doc 273 rule 10), else `OPTION_KEYS`. */
+const optionKeyOf = (type: unknown, key: string) =>
+  type === 'Card' && key === 'description' ? 'cardDescription' : (OPTION_KEYS[key] ?? key);
 
 /** Every element by id, with its parent (the root has none). */
 function indexOf(root: Uischema) {
@@ -147,7 +155,7 @@ export function governanceOf(
       if (patch.elements !== undefined && !governance.canReorder(elementId)) return false;
       const keys = [
         ...(patch.label === undefined ? [] : [labelKeyOf(element['type'])]),
-        ...Object.keys(patch.options ?? {}).map((key) => OPTION_KEYS[key] ?? key),
+        ...Object.keys(patch.options ?? {}).map((key) => optionKeyOf(element['type'], key)),
         ...(patch.rule === undefined ? [] : ['rule']),
       ];
       return keys.every((key) => governance.canEdit(elementId, key));

@@ -11,6 +11,7 @@ import {
   STRING,
   type InspectorField,
 } from './inspector-field';
+import { CARD_FIELDS, CARD_TRAILING_FIELDS } from './card-fields';
 import { GRID_FIELDS } from './grid-fields';
 import { ROW_FIELDS } from './row-fields';
 
@@ -77,6 +78,8 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     read: (t) => optionOf(t, 'size'),
     write: (content, t, value) => patchElement(content, t, { options: { size: absentIf(value) } }),
   },
+  // A Card's Title, Description and Size (doc 273 rule 8).
+  ...CARD_FIELDS,
   // A Grid's Columns and Rows, ahead of its Spacing (doc 260 rule 24).
   ...GRID_FIELDS,
   // A HorizontalLayout's Columns, Distribution and Vertical alignment (doc 261 rule 19).
@@ -92,4 +95,6 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     write: (content, t, value) =>
       patchElement(content, t, { options: { gap: absentIf(value, DEFAULT_GAP) } }),
   },
+  // A Card's own Spacing and Show footer (doc 273 rules 8-9).
+  ...CARD_TRAILING_FIELDS,
 ]);

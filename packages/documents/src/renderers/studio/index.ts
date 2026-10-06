@@ -2,6 +2,7 @@ import * as defaults from '../default/index';
 import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { placeholderEntry } from './placeholder-renderer';
+import { studioCardEntry } from './studio-card';
 import { studioDataTableEntry } from './studio-data-table';
 import { studioRecordEntry } from './studio-record';
 import { studioFormEntry } from './studio-form';
@@ -55,6 +56,7 @@ export const layoutRenderers: RendererSet['layoutRenderers'] = [
   studioGridEntry,
   studioHorizontalLayoutEntry,
   studioTabsEntry,
+  studioCardEntry,
 ].map((entry) => withStudioElement(entry));
 export const renderers = renderersOf({
   cells,

@@ -3,6 +3,7 @@ import type { DocumentContent } from '../document-types';
 import {
   absentIf,
   BOOLEAN,
+  SMALL_SWITCH,
   choice,
   inDefault,
   isKind,
@@ -158,7 +159,6 @@ function writeMustBeChecked(
 }
 
 /** The inspector's booleans: the small switch (doc 252 rule 1). */
-const SMALL_SWITCH = Object.freeze({ component: 'switch', size: 'sm' });
 
 /** Doc 249's fields for Controls bound to a schema property. */
 export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([

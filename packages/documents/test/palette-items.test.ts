@@ -16,6 +16,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['horizontal-layout', 'Horizontal layout', 'Layout'],
       ['grid', 'Grid', 'Layout'],
       ['tabs', 'Tabs', 'Layout'],
+      ['card', 'Card', 'Layout'],
       ['heading', 'Heading', 'Content'],
       ['separator', 'Separator', 'Content'],
       ['rich-content', 'Rich content', 'Content'],

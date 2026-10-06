@@ -1,6 +1,7 @@
 import * as ui from '../ui/index';
 import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
+import { cardLayoutEntry } from './card-layout';
 import { formEntry } from './form-renderer';
 import { gridLayoutEntry } from './grid-layout';
 import { horizontalLayoutEntry } from './horizontal-layout';
@@ -22,6 +23,7 @@ export const layoutRenderers: RendererSet['layoutRenderers'] = [
   gridLayoutEntry,
   horizontalLayoutEntry,
   tabsLayoutEntry,
+  cardLayoutEntry,
 ];
 export const renderers = renderersOf({
   cells,

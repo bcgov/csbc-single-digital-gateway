@@ -11,6 +11,7 @@ import {
 import { useState } from 'react';
 import { LOCKED, type Governance } from '../capabilities/governance';
 import type { DocumentContent } from '../document-types';
+import { cardFooterPlan } from './card-fields';
 import { gridShrinkPlan, type GridShrinkPlan } from './grid-fields';
 import type { InspectorTarget } from './inspector-target';
 
@@ -28,16 +29,21 @@ export function listOf(names: readonly string[]): string {
  */
 export function GridShrinkDialog({
   names,
+  where,
   onConfirm,
   onCancel,
 }: {
   /** The elements the resize deletes; `null` while nothing is pending. */
   names: readonly string[] | null;
+  /** Where the elements are: "outside the new grid", "in the card footer". */
+  where: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   const [shown, setShown] = useState(names);
+  const [shownWhere, setShownWhere] = useState(where);
   if (names !== null && names !== shown) setShown(names);
+  if (names !== null && where !== shownWhere) setShownWhere(where);
   const count = shown?.length ?? 0;
   return (
     <AlertDialog
@@ -50,7 +56,7 @@ export function GridShrinkDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>{`Remove ${count} element${count === 1 ? '' : 's'}?`}</AlertDialogTitle>
           <AlertDialogDescription>
-            {`${listOf(shown ?? [])} ${count === 1 ? 'is' : 'are'} outside the new grid and will be deleted.`}
+            {`${listOf(shown ?? [])} ${count === 1 ? 'is' : 'are'} ${shownWhere} and will be deleted.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -84,7 +90,10 @@ export function useGridShrinkGate(
     values: Record<string, unknown>,
     governance: Governance | undefined,
   ) => {
-    const plan = gridShrinkPlan(content, target, values, governance);
+    // Doc 273 rule 9: switching a Card's footer off deletes its elements the same way.
+    const plan =
+      gridShrinkPlan(content, target, values, governance) ??
+      cardFooterPlan(content, target, values, governance);
     if (plan === undefined) {
       setRefused(null);
       apply(values);
@@ -96,6 +105,7 @@ export function useGridShrinkGate(
   const dialog = (
     <GridShrinkDialog
       names={pending?.plan.names ?? null}
+      where={pending?.plan.where ?? ''}
       onConfirm={() => {
         if (pending !== null) apply(pending.values);
         setPending(null);

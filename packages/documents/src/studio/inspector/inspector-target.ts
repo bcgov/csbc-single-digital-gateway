@@ -16,6 +16,7 @@ export type TargetKind =
   | 'grid'
   | 'horizontal-layout'
   | 'tabs'
+  | 'card'
   | 'separator'
   | 'checkbox'
   | 'switch'
@@ -42,6 +43,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   grid: 'Grid',
   'horizontal-layout': 'Horizontal layout',
   tabs: 'Tabs',
+  card: 'Card',
   separator: 'Separator',
   checkbox: 'Checkbox',
   switch: 'Switch',
@@ -209,6 +211,7 @@ const LAYOUT_KINDS: Readonly<Record<string, TargetKind>> = Object.freeze({
   Grid: 'grid',
   HorizontalLayout: 'horizontal-layout',
   Tabs: 'tabs',
+  Card: 'card',
   Separator: 'separator',
   RichContent: 'rich-content',
   Table: 'table',
@@ -245,6 +248,7 @@ function nameOf(
   property: BoundProperty | undefined,
 ): string | undefined {
   if (property !== undefined) return nonBlank(property.schema['title']) ?? property.key;
+  if (kind === 'card') return nonBlank(element['label']);
   if (kind === 'funnel' || kind === 'form')
     return nonBlank(element['label']) ?? FALLBACK_NAMES[kind];
   if (kind === 'heading')

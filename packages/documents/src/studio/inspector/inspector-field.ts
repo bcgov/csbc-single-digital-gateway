@@ -38,6 +38,8 @@ export function schemaLocked(field: InspectorField, target: InspectorTarget): bo
 export const STRING = Object.freeze({ type: 'string' });
 export const BOOLEAN = Object.freeze({ type: 'boolean' });
 export const NUMBER = Object.freeze({ type: 'number' });
+/** A small switch, the inspector's boolean control (doc 188). */
+export const SMALL_SWITCH = Object.freeze({ component: 'switch', size: 'sm' });
 /** A rich text value (doc 250 rule 1): the inspector draws the Rich text control for it. */
 export const RICH_TEXT = Object.freeze({ type: 'object', required: ['root'] });
 /** A length: whole, never negative — Ajv refuses anything else in the document schema. */
