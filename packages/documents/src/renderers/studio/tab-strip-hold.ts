@@ -17,10 +17,11 @@ interface HoldableDroppable {
 const holding = new WeakSet<object>();
 
 /**
- * Doc 272 rule 6b: a tab's grid keeps a drag while the pointer crosses onto its Tabs' strip. Left alone, gridstack's
- * leave hands the drag to the page grid around the Tabs, which reflows under the pointer, so a drag could never rest on
- * a tab long enough to open it. The leave is skipped only when the pointer moved onto the strip of a Tabs that holds
- * this grid; `releaseTabStrip` sends it once the pointer leaves the strip for anywhere but this grid.
+ * Doc 272 rule 6b: a tab's grid keeps a drag while the pointer stays inside its Tabs. Left alone, gridstack's leave
+ * hands the drag to the page grid around the Tabs, which reflows under the pointer, so a drag could never rest on a tab
+ * long enough to open it. The hold covers the WHOLE Tabs — strip, the gap above the panel, the panel's edges — not just
+ * the strip: the pointer crosses that gap first on its way up, and an unheld leave there slid the strip away (found by
+ * hand). `releaseTabStrip`, the Tabs' own `mouseleave`, sends the skipped leave once the pointer leaves the Tabs.
  *
  * gridstack binds `_mouseLeave` per instance at construction and adds it as a listener on `enable()`, so this must run
  * BEFORE the droppable is (re-)enabled — `retargetDropTarget` calls it. Installed once per droppable.
@@ -30,23 +31,22 @@ export function holdOverTabStrip(droppable: unknown): void {
   if (target === undefined || holding.has(target)) return;
   const leave = target[LEAVE];
   target[LEAVE] = (e: MouseEvent, calledByEnter = false) => {
-    if (!calledByEnter && onOwnStrip(target.el, e.relatedTarget)) return;
+    if (!calledByEnter && insideOwnTabs(target.el, e.relatedTarget)) return;
     leave(e, calledByEnter);
   };
   holding.add(target);
 }
 
-/** Whether `to` is on the tab strip of a studio Tabs that contains `grid`. */
-function onOwnStrip(grid: HTMLElement, to: EventTarget | null): boolean {
+/** Whether `to` is inside the NEAREST studio Tabs holding `grid` (outside the grid itself — that is no leave). */
+function insideOwnTabs(grid: HTMLElement, to: EventTarget | null): boolean {
   if (!(to instanceof Element)) return false;
-  const strip = to.closest(`[data-slot="${TAB_STRIP_SLOT}"]`);
-  const tabs = strip?.closest(`[data-slot="${STUDIO_TABS_SLOT}"]`);
-  return tabs !== null && tabs !== undefined && tabs.contains(grid);
+  const tabs = grid.closest(`[data-slot="${STUDIO_TABS_SLOT}"]`);
+  return tabs !== null && tabs.contains(to) && !grid.contains(to);
 }
 
 /**
- * The strip's own `mouseleave`: a held drag leaving the strip for anywhere other than the grid holding it gets the
- * leave it skipped — with gridstack's hand-off to the grid underneath.
+ * The Tabs' own `mouseleave`: a held drag leaving the Tabs gets the leave it skipped — with gridstack's hand-off to the
+ * grid underneath. Back into the holding grid (it cannot be, from outside the Tabs, but cheap to guard) is no leave.
  */
 export function releaseTabStrip(event: MouseEvent): void {
   const held = DDManager.dropElement as unknown as HoldableDroppable | undefined;

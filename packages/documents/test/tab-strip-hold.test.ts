@@ -11,6 +11,7 @@ function dom() {
     <div data-slot="page">
       <div data-slot="studio-tabs">
         <div data-slot="tab-strip"><button id="trigger">Tab 2</button></div>
+        <div id="gap"></div>
         <div id="grid"><div id="inside"></div></div>
       </div>
       <div id="outside"></div>
@@ -19,6 +20,7 @@ function dom() {
   return {
     grid: $('grid'),
     trigger: $('trigger'),
+    gap: $('gap'),
     inside: $('inside'),
     outside: $('outside'),
     other: $('other'),
@@ -33,13 +35,15 @@ afterEach(() => {
 });
 
 describe('tab strip hold (doc 272 rule 6b)', () => {
-  it("skips a grid's leave onto its own Tabs' strip, and nowhere else", () => {
-    const { grid, trigger, outside, other } = dom();
+  it("skips a grid's leave anywhere inside its own Tabs — the gap too — and nowhere else", () => {
+    const { grid, trigger, gap, outside, other } = dom();
     const leave = vi.fn();
     const droppable = { el: grid, [LEAVE]: leave };
     holdOverTabStrip(droppable);
     holdOverTabStrip(droppable); // once only
     droppable[LEAVE](leaveTo(trigger));
+    // The gap between the panel and the strip, crossed first on the way up (found by hand).
+    droppable[LEAVE](leaveTo(gap));
     expect(leave).not.toHaveBeenCalled();
     droppable[LEAVE](leaveTo(outside));
     droppable[LEAVE](leaveTo(other));
@@ -49,7 +53,7 @@ describe('tab strip hold (doc 272 rule 6b)', () => {
     expect(leave).toHaveBeenCalledTimes(3);
   });
 
-  it('sends the held leave once the pointer leaves the strip, unless back into the grid', () => {
+  it('sends the held leave once the pointer leaves the Tabs, unless back into the grid', () => {
     const { grid, inside, outside } = dom();
     const leave = vi.fn();
     Object.assign(DDManager, { dragElement: {}, dropElement: { el: grid, [LEAVE]: leave } });

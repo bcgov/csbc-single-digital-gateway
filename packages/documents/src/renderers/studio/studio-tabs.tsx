@@ -65,13 +65,16 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
   const canRename = editor !== null && active !== undefined && mayEdit(editor, active.id, 'label');
   const elements = (uischema as { elements?: unknown[] }).elements ?? [];
   return (
-    <div data-slot={STUDIO_TABS_SLOT} className={`${ELEMENT_INSET} flex flex-col gap-2`}>
+    <div
+      data-slot={STUDIO_TABS_SLOT}
+      // Doc 272 rule 6b: a drag held inside the Tabs leaves the tab's grid once it leaves the Tabs.
+      onMouseLeave={(event) => releaseTabStrip(event.nativeEvent)}
+      className={`${ELEMENT_INSET} flex flex-col gap-2`}
+    >
       <div
         role="tablist"
         aria-label="Tabs"
         data-slot={TAB_STRIP_SLOT}
-        // Doc 272 rule 6b: a drag held over the strip leaves the tab's grid once it leaves the strip.
-        onMouseLeave={(event) => releaseTabStrip(event.nativeEvent)}
         data-variant={variant}
         className={STRIP[variant]}
       >
