@@ -33,7 +33,7 @@ describe('renderers/studio (doc 236)', () => {
     // Its own Heading, Separator (doc 240), Rich content (doc 250), Table (doc 265) and the placeholder.
     expect(studio.contentRenderers).toHaveLength(defaults.contentRenderers.length + 5);
     // Its own VerticalLayout, Form, Grid (doc 260 rule 8), HorizontalLayout (doc 261 rule 7), Tabs (doc 272) and Card (doc 273).
-    expect(studio.layoutRenderers).toHaveLength(defaults.layoutRenderers.length + 6);
+    expect(studio.layoutRenderers).toHaveLength(defaults.layoutRenderers.length + 7);
     // Wrapped: same testers, different renderer components.
     expect(studio.contentRenderers[0]!.tester).toBe(defaults.contentRenderers[0]!.tester);
     expect(studio.contentRenderers[0]!.renderer).not.toBe(defaults.contentRenderers[0]!.renderer);

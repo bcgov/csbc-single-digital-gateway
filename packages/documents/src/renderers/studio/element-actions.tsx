@@ -99,6 +99,7 @@ const TYPE_NAMES: Readonly<Record<string, string>> = Object.freeze({
   Separator: 'Separator',
   RichContent: 'Rich content',
   Card: 'Card',
+  Section: 'Section',
   Control: 'Field',
 });
 

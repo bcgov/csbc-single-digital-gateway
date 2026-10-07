@@ -8,6 +8,7 @@ import { studioRecordEntry } from './studio-record';
 import { studioFormEntry } from './studio-form';
 import { studioHeadingEntry } from './studio-heading';
 import { studioRichContentEntry } from './studio-rich-content';
+import { studioSectionEntry } from './studio-section';
 import { studioSeparatorEntry } from './studio-separator';
 import { studioTableEntry } from './studio-table';
 import { withStudioElement } from './studio-element';
@@ -57,6 +58,7 @@ export const layoutRenderers: RendererSet['layoutRenderers'] = [
   studioHorizontalLayoutEntry,
   studioTabsEntry,
   studioCardEntry,
+  studioSectionEntry,
 ].map((entry) => withStudioElement(entry));
 export const renderers = renderersOf({
   cells,

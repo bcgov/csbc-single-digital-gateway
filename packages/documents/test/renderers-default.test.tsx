@@ -32,7 +32,7 @@ describe('renderers/default (doc 236)', () => {
       for (const entry of ui[key]) expect(defaults[key], key).toContain(entry);
     }
     // VerticalLayout and Form (doc 236 rule 39), Grid (doc 260 rule 7), HorizontalLayout (doc 261 rule 6), Tabs (doc 272), Card (doc 273), Funnel (doc 274).
-    expect(defaults.layoutRenderers.length).toBe(ui.layoutRenderers.length + 7);
+    expect(defaults.layoutRenderers.length).toBe(ui.layoutRenderers.length + 8);
   });
 
   it('renders a VerticalLayout as a one-column grid with children in elements order', () => {

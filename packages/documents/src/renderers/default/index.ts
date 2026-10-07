@@ -6,6 +6,7 @@ import { formEntry } from './form-renderer';
 import { funnelEntry } from './funnel/funnel-renderer';
 import { gridLayoutEntry } from './grid-layout';
 import { horizontalLayoutEntry } from './horizontal-layout';
+import { sectionLayoutEntry } from './section-layout';
 import { tabsLayoutEntry } from './tabs-layout';
 import { verticalLayoutEntry } from './vertical-layout';
 
@@ -25,6 +26,8 @@ export const layoutRenderers: RendererSet['layoutRenderers'] = [
   horizontalLayoutEntry,
   tabsLayoutEntry,
   cardLayoutEntry,
+  // Doc 278: a titled vertical layout.
+  sectionLayoutEntry,
   // Doc 274: a Funnel filled one Form at a time.
   funnelEntry,
 ];

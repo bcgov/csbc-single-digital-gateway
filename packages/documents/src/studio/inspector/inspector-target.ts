@@ -17,6 +17,7 @@ export type TargetKind =
   | 'horizontal-layout'
   | 'tabs'
   | 'card'
+  | 'section'
   | 'separator'
   | 'checkbox'
   | 'switch'
@@ -44,6 +45,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   'horizontal-layout': 'Horizontal layout',
   tabs: 'Tabs',
   card: 'Card',
+  section: 'Section',
   separator: 'Separator',
   checkbox: 'Checkbox',
   switch: 'Switch',
@@ -212,6 +214,7 @@ const LAYOUT_KINDS: Readonly<Record<string, TargetKind>> = Object.freeze({
   HorizontalLayout: 'horizontal-layout',
   Tabs: 'tabs',
   Card: 'card',
+  Section: 'section',
   Separator: 'separator',
   RichContent: 'rich-content',
   Table: 'table',

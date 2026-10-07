@@ -100,6 +100,7 @@ describe('variantFieldItems (doc 262 rule 13a)', () => {
       'grid',
       'tabs',
       'card',
+      'section',
       'heading',
       'separator',
       'rich-content',

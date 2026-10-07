@@ -17,6 +17,7 @@ import {
   mdiViewColumnOutline,
   mdiTab,
   mdiViewGridOutline,
+  mdiViewAgendaOutline,
   mdiViewSequentialOutline,
 } from '@mdi/js';
 import { nanoid } from 'nanoid';
@@ -163,6 +164,15 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     create: () => ({
       element: { id: newId(), type: 'Card', elements: [newCardSlot()] },
     }),
+  },
+  {
+    id: 'section',
+    label: 'Section',
+    icon: mdiViewAgendaOutline,
+    group: 'Layout',
+    keywords: ['section', 'group', 'heading', 'fieldset'],
+    // Doc 278 rule 16: no authored options — a new Section is entirely defaults.
+    create: () => ({ element: { id: newId(), type: 'Section', elements: [] } }),
   },
   {
     id: 'heading',

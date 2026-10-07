@@ -61,17 +61,19 @@ const OPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   align: 'content',
 });
 
-/** The setting a `label` is on each element type: a Funnel's name, a Form's or Card's title, else a field's label. */
+/** The setting a `label` is on each element type: a Funnel's name, a Form's, Card's or Section's title, else a field's label. */
 const LABEL_KEYS: Readonly<Record<string, string>> = Object.freeze({
   Funnel: 'funnelName',
   Form: 'formTitle',
   Card: 'cardTitle',
+  Section: 'sectionTitle',
 });
 const labelKeyOf = (type: unknown) => (typeof type === 'string' && LABEL_KEYS[type]) || 'label';
 
-/** The setting an inline option edit is: a Card's or Funnel's description is its own (doc 273 rule 10), else `OPTION_KEYS`. */
+/** The setting an inline option edit is: a Card's, Section's or Funnel's description is its own (doc 273 rule 10, doc 278 rule 15), else `OPTION_KEYS`. */
 const DESCRIPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   Card: 'cardDescription',
+  Section: 'sectionDescription',
   Funnel: 'funnelDescription',
 });
 const optionKeyOf = (type: unknown, key: string) =>

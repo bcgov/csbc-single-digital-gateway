@@ -40,6 +40,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Grid',
       'Tabs',
       'Card',
+      'Section',
       'Heading',
       'Separator',
       'Rich content',

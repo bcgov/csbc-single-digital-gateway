@@ -16,6 +16,7 @@ import {
 import { CARD_FIELDS, CARD_TRAILING_FIELDS } from './card-fields';
 import { GRID_FIELDS } from './grid-fields';
 import { ROW_FIELDS } from './row-fields';
+import { SECTION_FIELDS } from './section-fields';
 
 const LEVELS = [1, 2, 3, 4, 5, 6].map((n) => [n, `Heading ${n}`] as const);
 const GAPS = [
@@ -106,6 +107,8 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
   },
   // A Card's Title, Description and Size (doc 273 rule 8).
   ...CARD_FIELDS,
+  // A Section's Title, Description, Variant and Inset (doc 278 rule 14).
+  ...SECTION_FIELDS,
   // A Grid's Columns and Rows, ahead of its Spacing (doc 260 rule 24).
   ...GRID_FIELDS,
   // A HorizontalLayout's Columns, Distribution and Vertical alignment (doc 261 rule 19).
@@ -114,7 +117,7 @@ export const ELEMENT_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'gap',
     section: 'Appearance',
     label: 'Spacing',
-    applies: isKind('form', 'vertical-layout', 'grid', 'horizontal-layout'),
+    applies: isKind('form', 'vertical-layout', 'grid', 'horizontal-layout', 'section'),
     schema: () => choice(GAPS),
     required: true,
     read: (t) => optionOf(t, 'gap') ?? DEFAULT_GAP,
