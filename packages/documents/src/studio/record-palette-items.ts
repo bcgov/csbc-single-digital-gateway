@@ -1,4 +1,4 @@
-import { mdiCardTextOutline, mdiTable } from '@mdi/js';
+import { mdiCardTextOutline, mdiTable, mdiUnfoldMoreHorizontal } from '@mdi/js';
 import { nanoid } from 'nanoid';
 import { newId } from './element-ids';
 import type { PaletteCreation, PaletteItem } from './palette-items';
@@ -11,12 +11,21 @@ function newObjectArray(
   title: string,
   itemProperties: Record<string, Record<string, unknown>>,
   control: Record<string, unknown> = {},
+  required?: string[],
 ): PaletteCreation {
   const key = nanoid(8);
   return {
     element: { id: newId(), type: 'Control', scope: `#/properties/${key}`, ...control },
     properties: {
-      [key]: { type: 'array', title, items: { type: 'object', properties: itemProperties } },
+      [key]: {
+        type: 'array',
+        title,
+        items: {
+          type: 'object',
+          properties: itemProperties,
+          ...(required !== undefined && { required }),
+        },
+      },
     },
   };
 }
@@ -49,6 +58,24 @@ export const RECORD_FIELD_ITEMS: readonly PaletteItem[] = Object.freeze([
           options: { component: 'record' },
           elements: [{ id: newId(), type: 'VerticalLayout', elements: [] }],
         },
+      ),
+  },
+  {
+    id: 'accordion-input',
+    label: 'Accordion',
+    icon: mdiUnfoldMoreHorizontal,
+    group: RECORD_FIELDS_GROUP,
+    keywords: ['accordion', 'faq', 'questions', 'items', 'repeat'],
+    // The fixed item keys, each required, a title needing a non-space character (doc 280 rules 2-3, 13).
+    create: () =>
+      newObjectArray(
+        'Untitled accordion',
+        {
+          title: { type: 'string', title: 'Title', pattern: '\\S' },
+          content: { type: 'object', required: ['root'], title: 'Content' },
+        },
+        { options: { component: 'accordion' } },
+        ['title', 'content'],
       ),
   },
 ]);

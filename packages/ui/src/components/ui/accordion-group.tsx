@@ -48,7 +48,7 @@ function AccordionGroup({
             <button
               type="button"
               onClick={toggleAll}
-              aria-label={`${allExpanded ? 'Collapse' : 'Expand'} all sections in ${title}`}
+              aria-label={`${allExpanded ? 'Collapse' : 'Expand'} all sections${title ? ` in ${title}` : ''}`}
               className="shrink-0 cursor-pointer hover:underline underline-offset-3 transition-colors flex flex-row gap-2 justify-center items-center"
             >
               {allExpanded ? (

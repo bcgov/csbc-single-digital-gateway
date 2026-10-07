@@ -58,6 +58,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Checkbox group',
       'Data table',
       'Record',
+      'Accordion',
     ]);
   });
 

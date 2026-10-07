@@ -3,6 +3,7 @@ import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { placeholderEntry } from './placeholder-renderer';
 import { studioAccordionGroupEntry } from './studio-accordion-group';
+import { studioAccordionInputEntry } from './studio-accordion-input';
 import { studioCardEntry } from './studio-card';
 import { studioDataTableEntry } from './studio-data-table';
 import { studioRecordEntry } from './studio-record';
@@ -51,6 +52,8 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   withStudioElement(studioDataTableEntry),
   // The record holds an editable layout, so it is not inert either (doc 271 rule 9).
   withStudioElement(studioRecordEntry),
+  // A greyed sample item: inert like any other control (doc 280 rule 11).
+  withStudioElement(studioAccordionInputEntry, { inert: true }),
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [
   ...defaults.layoutRenderers,

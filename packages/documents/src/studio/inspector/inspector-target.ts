@@ -31,6 +31,7 @@ export type TargetKind =
   | 'rich-text'
   | 'data-table'
   | 'record'
+  | 'accordion-input'
   | 'rich-content'
   | 'table'
   | 'accordion-group'
@@ -60,6 +61,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   'rich-text': 'Rich text',
   'data-table': 'Data table',
   record: 'Record',
+  'accordion-input': 'Accordion',
   'rich-content': 'Rich content',
   table: 'Table',
   'accordion-group': 'Accordion group',
@@ -231,7 +233,12 @@ function kindOf(element: Uischema, property: BoundProperty | undefined): TargetK
   const component = recordOf(element['options'])?.['component'];
   const { schema } = property;
   if (isRichTextProperty(schema)) return 'rich-text';
-  if (isObjectArray(schema)) return component === 'record' ? 'record' : 'data-table';
+  if (isObjectArray(schema))
+    return component === 'record'
+      ? 'record'
+      : component === 'accordion'
+        ? 'accordion-input'
+        : 'data-table';
   if (schema['type'] === 'boolean') return component === 'switch' ? 'switch' : 'checkbox';
   if (isPlainString(schema)) return component === 'textarea' ? 'textarea' : 'text';
   if (isPlainNumber(schema)) return 'number';

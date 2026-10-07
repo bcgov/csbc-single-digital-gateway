@@ -15,14 +15,17 @@ import {
   type InspectorField,
 } from './inspector-field';
 import type { PropertyRef } from '../property-ref';
-import { refOf, type InspectorTarget } from './inspector-target';
+import { refOf, type InspectorTarget, type TargetKind } from './inspector-target';
 import { updateProperty } from './schema-edits';
 
 // Doc 266 rules 7-9: the options the object-array table reads, for the `data-table` kind only.
 
 const applies = isKind('data-table');
-/** A record shares the row options (doc 271 rule 17), but has no pages and calls its rows items. */
-const appliesToArrays = isKind('data-table', 'record');
+/**
+ * A record (doc 271 rule 17) and an accordion input (doc 280 rule 12) share the row options, but have no pages and
+ * call their rows items.
+ */
+const appliesToArrays = isKind('data-table', 'record', 'accordion-input');
 const SMALL_SWITCH = Object.freeze({ component: 'switch', size: 'sm' });
 /** The bound property's reference — a page key, or a record item field's (doc 271). */
 const keyOf = (t: InspectorTarget): PropertyRef =>
@@ -61,14 +64,14 @@ function allowRows(key: string, label: string, option: 'addRows' | 'deleteRows')
 function addLabelField(
   key: string,
   label: string,
-  kind: 'data-table' | 'record',
+  kinds: readonly TargetKind[],
   fallback: string,
 ): InspectorField {
   return {
     key,
     section: 'Appearance',
     label,
-    applies: isKind(kind),
+    applies: isKind(...kinds),
     schema: () => STRING,
     options: { placeholder: fallback },
     // Never normalised on read: a trimmed read would eat the space just typed (doc 249).
@@ -87,8 +90,13 @@ export const DATA_TABLE_FIELDS: readonly InspectorField[] = Object.freeze([
   rowLimit('maxRows', 'Maximum rows', 'maxItems'),
   allowRows('addRows', 'Allow adding rows', 'addRows'),
   allowRows('deleteRows', 'Allow deleting rows', 'deleteRows'),
-  addLabelField('addLabel', 'Add row label', 'data-table', DEFAULT_ADD_LABEL),
-  addLabelField('addItemLabel', 'Add item label', 'record', DEFAULT_ADD_ITEM_LABEL),
+  addLabelField('addLabel', 'Add row label', ['data-table'], DEFAULT_ADD_LABEL),
+  addLabelField(
+    'addItemLabel',
+    'Add item label',
+    ['record', 'accordion-input'],
+    DEFAULT_ADD_ITEM_LABEL,
+  ),
   {
     key: 'pageSize',
     section: 'Appearance',

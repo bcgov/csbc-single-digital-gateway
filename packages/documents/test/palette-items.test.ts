@@ -35,6 +35,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['checkbox-group', 'Checkbox group', 'Basic fields'],
       ['data-table', 'Data table', 'Record fields'],
       ['record', 'Record', 'Record fields'],
+      ['accordion-input', 'Accordion', 'Record fields'],
     ]);
     for (const item of DEFAULT_PALETTE_ITEMS) expect(item.icon).toMatch(/^M/);
   });

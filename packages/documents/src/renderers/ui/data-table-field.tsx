@@ -22,8 +22,8 @@ export function DataTableField({
 }: {
   props: ControlProps;
   children: (wiring: DataTableWiring) => ReactNode;
-  /** The presentation it holds, as `data-component` (doc 271: a record shares the shell). */
-  component?: 'data-table' | 'record';
+  /** The presentation it holds, as `data-component` (doc 271: a record shares the shell; doc 280: an accordion). */
+  component?: 'data-table' | 'record' | 'accordion';
 }) {
   const { path, id, label, required, uischema, schema, visible } = props;
   if (!visible) return null;

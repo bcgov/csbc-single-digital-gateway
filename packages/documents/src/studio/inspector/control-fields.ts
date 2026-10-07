@@ -31,6 +31,7 @@ const CONTROL_KINDS: TargetKind[] = [
   'rich-text',
   'data-table',
   'record',
+  'accordion-input',
 ];
 const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
 const BOOLEAN_KINDS: TargetKind[] = ['checkbox', 'switch'];
@@ -39,6 +40,7 @@ const SINGLE_PRESENTATION: ReadonlySet<TargetKind> = new Set([
   'rich-text',
   'data-table',
   'record',
+  'accordion-input',
 ]);
 
 /**

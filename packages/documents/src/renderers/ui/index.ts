@@ -1,4 +1,5 @@
 import { accordionGroupEntry } from './accordion-group-renderer';
+import { accordionInputEntry } from './accordion-input';
 import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { checkboxControlEntry } from './checkbox-control';
@@ -33,7 +34,7 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
  * (doc 239) — an Input, or a Textarea for `options.component: 'textarea'` — and the single choice (doc 244) — a
  * Select, or a Radio group for `options.component: 'radio-group'` — and the multiple choice (doc 245) — a
  * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248) — and the rich text field (doc 250) —
- * and the object array's data table (doc 263) — or its record (doc 271).
+ * and the object array's data table (doc 263) — or its record (doc 271), or its accordion (doc 280).
  */
 export const controlRenderers: RendererSet['controlRenderers'] = [
   checkboxControlEntry,
@@ -46,6 +47,7 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   richTextControlEntry,
   dataTableControlEntry,
   recordControlEntry,
+  accordionInputEntry,
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];
 export const renderers = renderersOf({

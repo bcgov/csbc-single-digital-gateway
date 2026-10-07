@@ -1,5 +1,5 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $createParagraphNode, $getRoot, type SerializedEditorState } from 'lexical';
+import { $createParagraphNode, $getRoot, $setSelection, type SerializedEditorState } from 'lexical';
 import { type RefObject, useEffect, useRef } from 'react';
 
 /** Keeps a synced value out of the undo history — an author cannot undo what someone else wrote. */
@@ -60,6 +60,9 @@ export function ValueSyncPlugin({
             const root = $getRoot();
             root.clear();
             root.append($createParagraphNode());
+            // Lexical keeps an editor's last selection after blur; left in place it lands on the new paragraph and
+            // reconciling it moves the caret — and focus — into this editor (doc 280, found by hand).
+            $setSelection(null);
           },
           // `discrete` commits now, inside the flag, instead of on a later microtask outside it.
           { tag: SYNC_TAG, discrete: true },
