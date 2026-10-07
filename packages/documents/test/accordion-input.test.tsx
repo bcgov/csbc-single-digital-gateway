@@ -101,7 +101,9 @@ describe('accordion input — filling in (doc 280 rules 4-7)', () => {
   it('shows at least one item and at least Minimum items, blank ones unwritten', () => {
     const { container, lastData } = renderAccordion({ schemaExtra: { minItems: 3 } });
     expect(items(container)).toHaveLength(3);
-    expect(within(items(container)[2]!).getByText('Item 3')).toBeInTheDocument();
+    // Each card is named for its position, but draws no visible `Item <n>` heading.
+    expect(screen.getByRole('group', { name: 'Item 3' })).toBe(items(container)[2]);
+    expect(within(items(container)[2]!).queryByText('Item 3')).toBeNull();
     expect(lastData()?.['faq']).toBeUndefined();
   });
 

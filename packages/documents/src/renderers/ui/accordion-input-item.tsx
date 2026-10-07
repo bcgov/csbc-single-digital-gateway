@@ -35,8 +35,8 @@ export interface AccordionItemActions {
 }
 
 /**
- * One accordion input item (doc 280 rule 6): a card headed `Item <n>` with a Title input over a Content rich editor,
- * each named for its item. An emptied title or content writes `undefined` (rule 7), so `required` fails as elsewhere.
+ * One accordion input item (doc 280 rule 6): a card named `Item <n>` (not shown) holding a Title input over a Content
+ * rich editor, each named for its item; the item's actions sit on the Title label's row. An emptied title or content writes `undefined` (rule 7), so `required` fails as elsewhere.
  */
 export function AccordionInputItem({
   index,
@@ -63,12 +63,12 @@ export function AccordionInputItem({
       role="group"
       aria-label={`Item ${n}`}
     >
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-medium">Item {n}</p>
-        {actions !== undefined && <ItemActions n={n} actions={actions} />}
-      </div>
       <Field>
-        <FieldLabel htmlFor={`${id}-title`}>{labels.title}</FieldLabel>
+        {/* No visible `Item <n>` heading (user): the card is named by `aria-label`, its actions share the label row. */}
+        <div className="flex items-center gap-2">
+          <FieldLabel htmlFor={`${id}-title`}>{labels.title}</FieldLabel>
+          {actions !== undefined && <ItemActions n={n} actions={actions} />}
+        </div>
         <Input
           id={`${id}-title`}
           aria-label={`${labels.title}, item ${n}`}
