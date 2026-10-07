@@ -16,7 +16,7 @@ import {
   workspaces,
   DOCUMENT_TYPE,
 } from '@repo/database';
-import { withDefaultLabel } from '@repo/documents/content';
+import { withTitle } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { TemplateResolver } from '../../templates/services/template.resolver';
@@ -101,12 +101,9 @@ export class ServiceAgreementsService {
           templateId: template.templateId,
           templateVersionId: template.templateVersionId,
           versionNumber: 1,
-          // A copy of the template with the requested title stamped into the label the GENERATED
-          // title column reads.
-          content: withDefaultLabel(
-            { schema: template.schema, variants: template.variants },
-            input.title,
-          ),
+          // A copy of the template with the requested title on EVERY variant; the GENERATED title column
+          // reads the default variant's.
+          content: withTitle({ schema: template.schema, variants: template.variants }, input.title),
         })
         .returning();
       const version = insertedVersion[0];

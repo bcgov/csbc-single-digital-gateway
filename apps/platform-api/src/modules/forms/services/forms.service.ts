@@ -7,7 +7,7 @@ import {
   workspaceMembers,
   DOCUMENT_TYPE,
 } from '@repo/database';
-import { withDefaultLabel } from '@repo/documents/content';
+import { withTitle } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { TemplateResolver } from '../../templates/services/template.resolver';
@@ -42,10 +42,10 @@ export class FormsService {
       input.templateId,
     );
     // An explicit content still has to satisfy the type's allowed roots; an omitted one starts
-    // from the template with the requested title stamped into the label the title column reads.
+    // from the template with the requested title stamped on every variant (the title column reads default's).
     const content =
       input.content ??
-      withDefaultLabel({ schema: template.schema, variants: template.variants }, input.title);
+      withTitle({ schema: template.schema, variants: template.variants }, input.title);
     return this.db.transaction(async (tx) => {
       const insertedDoc = await tx
         .insert(documents)

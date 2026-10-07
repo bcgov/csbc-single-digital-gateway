@@ -91,6 +91,17 @@ export function defaultLabel(content: DocumentContent): string | undefined {
   return typeof label === 'string' ? label : undefined;
 }
 
+/**
+ * `content` with EVERY variant root's `label` set — how a document created from a template is named, so no variant
+ * keeps the template's own title (2026-10-07). The title column still reads the default variant's.
+ */
+export function withTitle(content: DocumentContent, label: string): DocumentContent {
+  const variants = Object.fromEntries(
+    Object.entries(content.variants).map(([name, root]) => [name, { ...root, label }]),
+  ) as DocumentContent['variants'];
+  return { ...content, variants };
+}
+
 /** `content` with the default variant's `label` set — how a new document or template is named (doc 275). */
 export function withDefaultLabel(content: DocumentContent, label: string): DocumentContent {
   return withVariant(content, { ...variantOf(content), label });

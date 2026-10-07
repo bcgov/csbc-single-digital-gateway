@@ -120,6 +120,58 @@ describe('ServicesService', () => {
       });
     });
 
+    it('stamps the title on EVERY variant the template brings', async () => {
+      dbMock.select.mockReturnValueOnce(mockQuery([{ role: 'member' }]));
+      templatesMock.forCreate.mockResolvedValueOnce({
+        templateId: 'template-1',
+        templateVersionId: 'template-version-1',
+        schema: { type: 'object', properties: {} },
+        variants: {
+          default: { type: 'Form', elements: [], label: 'Template title' },
+          Citizen: {
+            type: 'Form',
+            elements: [],
+            label: 'Template title',
+            options: { displayOnly: true },
+          },
+        },
+      });
+      const at = new Date('2026-07-12T00:00:00.000Z');
+      txMock.returning
+        .mockResolvedValueOnce([
+          { id: 'service-doc-1', workspaceId: 'ws-1', createdAt: at, updatedAt: at },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'service-version-1',
+            documentId: 'service-doc-1',
+            templateVersionId: 'template-version-1',
+            versionNumber: 1,
+            revision: 1,
+            status: 'draft',
+            title: 'New Service',
+            description: null,
+            content: {},
+            createdAt: at,
+            updatedAt: at,
+            publishedAt: null,
+            archivedAt: null,
+          },
+        ]);
+
+      await service.create('user-1', input);
+
+      expect(txMock.values.mock.calls[1][0].content.variants).toEqual({
+        default: { type: 'Form', elements: [], label: 'New Service' },
+        Citizen: {
+          type: 'Form',
+          elements: [],
+          label: 'New Service',
+          options: { displayOnly: true },
+        },
+      });
+    });
+
     it('throws NotFoundException if user has no workspace membership', async () => {
       dbMock.select.mockReturnValueOnce(mockQuery([]));
 

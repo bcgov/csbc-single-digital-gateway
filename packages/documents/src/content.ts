@@ -10,6 +10,7 @@ export {
   variantNames,
   variantOf,
   withDefaultLabel,
+  withTitle,
   withVariant,
   type DocumentContent,
   type DocumentKind,

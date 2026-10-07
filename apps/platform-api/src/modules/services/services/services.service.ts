@@ -9,7 +9,7 @@ import {
   workspaceMembers,
   DOCUMENT_TYPE,
 } from '@repo/database';
-import { withDefaultLabel } from '@repo/documents/content';
+import { withTitle } from '@repo/documents/content';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { deletableFor, SERVICE_HAS_SUBMISSIONS } from './service-deletable';
@@ -80,10 +80,8 @@ export class ServicesService {
           templateId: template.templateId,
           templateVersionId: template.templateVersionId,
           versionNumber: 1,
-          content: withDefaultLabel(
-            { schema: template.schema, variants: template.variants },
-            input.title,
-          ),
+          // The template's schema and variants, the title on every variant (the title column reads default's).
+          content: withTitle({ schema: template.schema, variants: template.variants }, input.title),
         })
         .returning();
       const version = insertedVersion[0];
