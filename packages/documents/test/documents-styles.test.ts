@@ -111,9 +111,9 @@ describe('@repo/documents styles.css (doc 236)', () => {
     expect(flat).toContain('.grid-stack-item.ui-draggable-dragging { visibility: visible; }');
   });
 
-  it("gives every tab's grid a floor height so it stays easy to drop into (doc 272 rule 6f)", () => {
+  it('gives every vertical or row tab a floor height so it stays easy to drop into (doc 272 rules 6f, 17)', () => {
     expect(flat).toContain(
-      "[data-slot='studio-tabs'] [role='tabpanel'] > [data-slot='studio-element'] > [data-slot='studio-vertical-layout'] { min-height: 8rem; }",
+      "[data-slot='studio-tabs'] [data-slot='tab-body'] > [data-slot='studio-element'] > :is([data-slot='studio-vertical-layout'], [data-slot='studio-row']) { min-height: 8rem; }",
     );
   });
 

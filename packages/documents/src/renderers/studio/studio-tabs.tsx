@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { holdsId, newTab, tabsOf } from '../ui/tabs-model';
+import { TabPanelBody } from '../default/tabs-layout';
+import { holdsId, newTab, tabsLayout, tabsOf } from '../ui/tabs-model';
 import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
 import { TabNameDialog } from './tab-name-dialog';
@@ -29,13 +30,14 @@ const DRAG_OVER =
 
 /**
  * A Tabs authored on the canvas (doc 272 rules 4-6): a strip of triggers, the active tab's menu (Rename…, Delete),
- * + Add tab, over the ACTIVE tab's VerticalLayout as an ordinary studio layout. The active tab follows the selection,
+ * + Add tab, over the ACTIVE tab's container layout as an ordinary studio layout (in a Card frame for `card`). The active tab follows the selection,
  * and a drag resting on another tab for a second opens it.
  */
 export function StudioTabs({ uischema, schema, path, renderers, cells, visible }: LayoutProps) {
   const editor = useStudioEditor();
   const element = useStudioElement();
   const tabs = useMemo(() => tabsOf(uischema), [uischema]);
+  const layout = tabsLayout(uischema.options);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
@@ -140,7 +142,7 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
             className={STUDIO_INTERACTIVE}
             disabled={!canAdd}
             onClick={() => {
-              const tab = newTab(tabs);
+              const tab = newTab(tabs, layout);
               editor.update(tabsId, { elements: [...elements, tab] });
               setActiveId(tab['id'] as string);
             }}
@@ -164,13 +166,15 @@ export function StudioTabs({ uischema, schema, path, renderers, cells, visible }
               data-active={shown ? '' : undefined}
               className={shown ? undefined : 'invisible absolute inset-x-0 top-0'}
             >
-              <JsonFormsDispatch
-                uischema={tab.layout as unknown as UISchemaElement}
-                schema={schema}
-                path={path}
-                {...(renderers !== undefined && { renderers })}
-                {...(cells !== undefined && { cells })}
-              />
+              <TabPanelBody layout={layout}>
+                <JsonFormsDispatch
+                  uischema={tab.layout as unknown as UISchemaElement}
+                  schema={schema}
+                  path={path}
+                  {...(renderers !== undefined && { renderers })}
+                  {...(cells !== undefined && { cells })}
+                />
+              </TabPanelBody>
             </div>
           );
         })}

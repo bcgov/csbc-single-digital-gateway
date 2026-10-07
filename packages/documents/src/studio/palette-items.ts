@@ -149,9 +149,14 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     icon: mdiTab,
     group: 'Layout',
     keywords: ['tabs', 'pages', 'sections'],
-    // Doc 272 rule 8: two empty tabs, each a labelled VerticalLayout.
+    // Doc 272 rules 8, 11: two empty tabs, each a labelled VerticalLayout, framed as cards.
     create: () => ({
-      element: { id: newId(), type: 'Tabs', elements: starterTabs() },
+      element: {
+        id: newId(),
+        type: 'Tabs',
+        options: { layout: 'card' },
+        elements: starterTabs('card'),
+      },
     }),
   },
   {

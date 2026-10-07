@@ -114,9 +114,9 @@
  * beats the inline `height` gridstack sets on an unlinked grid, and gridstack's own check reads it.
  */
 [data-slot='studio-tabs']
-  [role='tabpanel']
+  [data-slot='tab-body']
   > [data-slot='studio-element']
-  > [data-slot='studio-vertical-layout'] {
+  > :is([data-slot='studio-vertical-layout'], [data-slot='studio-row']) {
   min-height: 8rem;
 }
 
