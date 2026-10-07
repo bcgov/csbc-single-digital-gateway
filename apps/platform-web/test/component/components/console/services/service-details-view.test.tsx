@@ -8,10 +8,10 @@ import {
   type WorkspaceLike,
 } from '../../../../support/render-app';
 
-// Doc 229 — the service Details section, read-only.
+// Doc 229 — the service Details section, read-only; doc 282 — through DocumentView.
 
-vi.mock('@repo/documents/runner', async () =>
-  (await import('../../../../support/mock-documents')).documentRunnerMock(),
+vi.mock('@repo/documents/view', async () =>
+  (await import('../../../../support/mock-documents')).documentViewMock(),
 );
 
 afterEach(() => {
@@ -28,9 +28,10 @@ const riverton: WorkspaceLike = {
 };
 
 type Status = 'draft' | 'published' | 'archived';
-const content = (label: string) => ({
+const content = (label: string, data?: Record<string, unknown>) => ({
   schema: { type: 'object', properties: {} },
   variants: { default: { type: 'Form', label, elements: [] } },
+  ...(data === undefined ? {} : { data }),
 });
 const version = (n: number, status: Status, body: unknown = content(`v${String(n)} content`)) => ({
   id: `sv${String(n)}`,
@@ -75,7 +76,7 @@ function withService(versions: ReturnType<typeof version>[]) {
   globalThis.fetch = fetchMock as unknown as typeof fetch;
 }
 
-const runner = async () => screen.findByTestId('document-runner', undefined, { timeout: 32000 });
+const runner = async () => screen.findByTestId('document-view', undefined, { timeout: 32000 });
 
 describe('ServiceDetailsView (doc 229)', () => {
   it('never shows the placeholder note, even while the service loads', async () => {
@@ -90,14 +91,17 @@ describe('ServiceDetailsView (doc 229)', () => {
     expect(screen.queryByText(/coming soon/i)).toBeNull();
   });
 
-  it('shows the latest published version read-only with no action bar', async () => {
+  it('shows the latest published version read back with its answers (doc 282 rule 18)', async () => {
     // v2 is published, v3 a newer draft: "current" is the published one.
-    withService([version(1, 'archived'), version(2, 'published'), version(3, 'draft')]);
+    withService([
+      version(1, 'archived'),
+      version(2, 'published', content('v2 content', { name: 'Acme' })),
+      version(3, 'draft'),
+    ]);
     renderApp('/app/riverton/services/s1/details');
 
     const view = await runner();
-    expect(view).toHaveAttribute('data-disabled', 'true');
-    expect(view).toHaveAttribute('data-actions', 'false');
+    expect(view).toHaveAttribute('data-answers', JSON.stringify({ name: 'Acme' }));
     expect(view).toHaveTextContent('v2 content');
     expect(screen.getByRole('heading', { name: 'Service details' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();
@@ -131,7 +135,7 @@ describe('ServiceDetailsView (doc 229)', () => {
       'href',
       '/app/riverton/services/s1/details',
     );
-    expect(screen.queryByTestId('document-runner')).toBeNull();
+    expect(screen.queryByTestId('document-view')).toBeNull();
   });
 
   it('says so when the service has no versions', async () => {
@@ -141,7 +145,7 @@ describe('ServiceDetailsView (doc 229)', () => {
     expect(
       await screen.findByText('This service has no versions yet.', undefined, { timeout: 32000 }),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId('document-runner')).toBeNull();
+    expect(screen.queryByTestId('document-view')).toBeNull();
   });
 
   it('shows an alert for content that is not a document', async () => {
@@ -151,7 +155,7 @@ describe('ServiceDetailsView (doc 229)', () => {
     expect(await screen.findByRole('alert', undefined, { timeout: 32000 })).toHaveTextContent(
       'isn’t a document the studio can open',
     );
-    expect(screen.queryByTestId('document-runner')).toBeNull();
+    expect(screen.queryByTestId('document-view')).toBeNull();
   });
 
   it('navigates to a version picked from the header', async () => {
@@ -163,7 +167,7 @@ describe('ServiceDetailsView (doc 229)', () => {
     await userEvent.click(await screen.findByRole('menuitem', { name: /v1/ }));
 
     await waitFor(() =>
-      expect(screen.getByTestId('document-runner')).toHaveTextContent('v1 content'),
+      expect(screen.getByTestId('document-view')).toHaveTextContent('v1 content'),
     );
     // `renderApp` routes through memory history, so the permalink shows in what it rendered, not in
     // `window.location`: v1's own status and picker label.

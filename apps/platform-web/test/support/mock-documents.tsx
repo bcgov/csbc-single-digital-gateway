@@ -113,3 +113,14 @@ export function documentRunnerMock() {
     },
   };
 }
+
+export function documentViewMock() {
+  return {
+    /** Doc 282: the read-only view — what it was asked to show, as text and attributes. */
+    DocumentView: ({ uischema, data }: { uischema: unknown; data?: unknown }) => (
+      <div data-testid="document-view" data-answers={JSON.stringify(data ?? {})}>
+        {JSON.stringify(uischema)}
+      </div>
+    ),
+  };
+}

@@ -6,7 +6,9 @@ import { DocumentPalette } from './document-palette';
 import { createDocumentStore, type DocumentRef, type DocumentStore } from './document-store';
 import { DocumentStudioEmpty } from './document-studio-empty';
 import { DocumentPreview } from './document-preview';
-import { DocumentStudioHeader, type StudioMode } from './document-studio-header';
+import { DocumentStudioHeader, studioModes, type StudioMode } from './document-studio-header';
+import { DocumentView } from '../view/document-view';
+import { answersOf } from './answers/answer-edits';
 import { resolveFocus, type FocusState } from './form-focus';
 import {
   DEFAULT_VARIANT,
@@ -156,7 +158,9 @@ export function DocumentStudio({
   const variant = draft === null ? null : variantOf(draft.content, active);
   const [focus, setFocus] = useDocumentFocus(documentKey, variant?.['type']);
   const [chosenMode, setMode] = useStudioMode(documentKey);
-  const mode = readOnly ? 'preview' : chosenMode;
+  // Doc 282 rules 14, 16: a mode the studio does not offer falls to the last it does (a read-only fillable studio: View).
+  const modes = studioModes(readOnly, fillable);
+  const mode = modes.includes(chosenMode) ? chosenMode : modes[modes.length - 1]!;
   const focusedId = variant === null ? null : resolveFocus(variant, focus);
   const focusedForm =
     focusedId === null || variant === null ? undefined : findById(variant, focusedId);
@@ -194,14 +198,14 @@ export function DocumentStudio({
         onSave={() => void studio.save()}
         basedOn={studio.governing?.name}
         hasSave={!hosted}
-        readOnly={readOnly}
+        modes={modes}
         // A root Form's page has no flow to go Back to: its trailing + is the way out (doc 233 rule 9).
         onBack={
           focusedId === null || variant?.['type'] === 'Form' ? undefined : () => setFocus(null)
         }
       />
       {/* Preview edits nothing: the tabs still switch the variant previewed, but New / Rename / Delete are hidden (doc 274 rule 41). */}
-      {tabs !== null && <VariantTabs {...tabs} manage={tabs.manage && mode !== 'preview'} />}
+      {tabs !== null && <VariantTabs {...tabs} manage={tabs.manage && mode === 'edit'} />}
       {/* `@container/canvas`: the floating panels collapse by the canvas's width, not the window's (doc 233 rule 14). */}
       <StudioAnswersProvider
         fillable={fillable}
@@ -218,6 +222,15 @@ export function DocumentStudio({
             ))
           ) : mode === 'preview' ? (
             <DocumentPreview content={draft.content} focusedId={focusedId} variant={active} />
+          ) : mode === 'view' ? (
+            // Doc 282 rule 15: the active variant's whole document, read back with its own answers.
+            <div data-slot="document-studio-view" className="flex min-h-0 flex-1 flex-col">
+              <DocumentView
+                schema={draft.content.schema}
+                uischema={variantOf(draft.content, active)}
+                data={answersOf(draft.content)}
+              />
+            </div>
           ) : (
             <StudioVariantContext.Provider
               value={{ name: active, isDefault: active === DEFAULT_VARIANT }}
@@ -296,8 +309,8 @@ export function DocumentStudio({
         </main>
       </StudioAnswersProvider>
       <StudioFooter
-        // Preview selects nothing, so it shows no breadcrumbs (doc 247 rule 12).
-        path={mode === 'preview' ? null : footerPath}
+        // Preview and View select nothing, so they show no breadcrumbs (doc 247 rule 12, doc 282 rule 17).
+        path={mode === 'edit' ? footerPath : null}
         onSelect={selectCrumb}
         saveError={studio.saveError}
       />

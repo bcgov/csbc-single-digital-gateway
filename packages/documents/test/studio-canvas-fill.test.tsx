@@ -143,8 +143,10 @@ describe('preview and read-only (doc 281 rules 8, 20)', () => {
     expect(onContentChange).toHaveBeenCalledTimes(calls);
   });
 
-  it('shows a read-only studio its answers in Preview', async () => {
-    await openStudio({ data: { name: 'Ada' }, readOnly: true });
+  it('shows a read-only studio its answers — in View (doc 282 rule 16), and in Preview when picked', async () => {
+    const { user } = await openStudio({ data: { name: 'Ada' }, readOnly: true });
+    expect(within(slot('document-view')!).getByText('Ada')).toBeInTheDocument();
+    await user.click(toggle('Preview'));
     const preview = await waitFor(() => slot('document-preview')!);
     expect(within(preview).getByRole('textbox', { name: 'Name' })).toHaveValue('Ada');
   });

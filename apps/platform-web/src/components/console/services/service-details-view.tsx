@@ -1,5 +1,5 @@
 import { variantOf } from '@repo/documents/content';
-import { DocumentRunner } from '@repo/documents/runner';
+import { DocumentView } from '@repo/documents/view';
 import { Badge } from '@repo/ui/badge';
 import { buttonVariants } from '@repo/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +12,6 @@ import { selectServiceVersion, serviceQueryOptions } from '@/lib/services';
 import { documentContentOf } from '@/lib/studio-content';
 
 /** A read-only runner takes `onChange` all the same (doc 218 rule 9); it can never call it. */
-const noop = () => {};
 
 /**
  * Doc 229 — the service console's Details section: a version's content, READ-ONLY.
@@ -114,17 +113,14 @@ export function ServiceDetailsView({
           data-slot="service-details-content"
           className="rounded-xl border border-border bg-card"
         >
-          <DocumentRunner
-            // Rule 6: a new version starts the runner fresh — its position belongs to the document it was showing.
+          {/* Doc 282 rule 18: the service READ — its answers as plain text, a Funnel's answered path on one page. */}
+          <DocumentView
             key={selected.id}
-            disabled
-            actions={false}
             schema={document.schema}
             // Doc 276: staff see the DEFAULT variant.
             uischema={variantOf(document)}
-            // Doc 230 rule 9: the staff's answers, shown read-only.
+            // Doc 230 rule 9: the staff's answers.
             data={answersOf(selected.content)}
-            onChange={noop}
           />
         </div>
       )}
