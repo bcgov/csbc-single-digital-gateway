@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../support/render-app';
-import { createMockSubmissionsBff } from '../../support/create-mock-submissions-bff';
+import { mockSubmissionsBff } from '../../support/mock-submissions-bff';
 import { mockBasicSubmission } from '../../support/fixtures';
 
 vi.mock('@/lib/bff', () => {
@@ -30,7 +30,7 @@ afterEach(() => {
 
 describe('App Slug Submissions ID Detail Route', () => {
   it('renders the submission detail page correctly', async () => {
-    createMockSubmissionsBff(mockBasicSubmission);
+    mockSubmissionsBff({ items: [mockBasicSubmission] });
     renderApp('/app/riverton/submissions/sub-123');
 
     // Wait for the submission detail header to render

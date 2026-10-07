@@ -1,9 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, renderApp } from '../../../support/render-app';
-import { ISO, adminWorkspace } from '../../../support/fixtures';
+import { jsonResponse, renderApp } from '../../../support/render-app';
+import { ISO } from '../../../support/fixtures';
 import { addMembers } from '../../../support/testHelpers';
+import { mockMembersBff } from '../../../support/mock-members-bff';
 
 export let capturedOnOpenChange: ((next: boolean) => void) | undefined;
 
@@ -22,61 +23,20 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const members = addMembers();
+const members = { items: addMembers() };
 
 const staff = [
   { id: 'u2', displayName: 'Sam Lee', email: 'sam@riverton.gov' },
   { id: 'u3', displayName: 'Dana Kim', email: 'dana@riverton.gov' },
 ];
 
-function mockAddMemberModalBff(role: 'admin' | 'member' = 'admin') {
-  const ws = { ...adminWorkspace, role };
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/auth/me')) return jsonResponse(authedUser);
-    if (url.includes('/auth/logout')) return new Response(null, { status: 200 });
-    if (url.includes('/addable-staff')) {
-      const q = (new URL(url, 'http://x').searchParams.get('q') ?? '').toLowerCase();
-      const items = q
-        ? staff.filter(
-            (u) => u.displayName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
-          )
-        : staff;
-      return jsonResponse({ items });
-    }
-    const path = url.split('?')[0] ?? '';
-    if (path.endsWith('/members') && method === 'POST') {
-      const body = JSON.parse(String(init?.body)) as { userId: string; role: 'admin' | 'member' };
-      const picked = staff.find((u) => u.id === body.userId)!;
-      return jsonResponse(
-        {
-          id: 'm2',
-          userId: picked.id,
-          role: body.role,
-          status: 'active',
-          displayName: picked.displayName,
-          email: picked.email,
-          isOwner: false,
-          joinedAt: ISO,
-        },
-        201,
-      );
-    }
-    if (path.includes('/members')) return jsonResponse({ items: members, total: members.length });
-    if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
-    if (url.includes('/v1/workspaces')) {
-      return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('Add Member Modal Component Test Suite', () => {
   it('lets an admin search staff, pick a role, and add a member', async () => {
-    const fetchMock = mockAddMemberModalBff('admin');
+    const fetchMock = mockMembersBff(members, {
+      testFile: 'add-member-modal.test',
+      role: 'admin',
+      staff,
+    });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
 
@@ -111,7 +71,7 @@ describe('Add Member Modal Component Test Suite', () => {
   });
 
   it('hides the Add member action from non-admins', async () => {
-    mockAddMemberModalBff('member');
+    mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'member', staff });
     renderApp('/app/riverton/team');
 
     expect(
@@ -122,22 +82,11 @@ describe('Add Member Modal Component Test Suite', () => {
 
   it('renders "No email on file" when staff member email is not present', async () => {
     const staffWithNoEmail = [{ id: 'u4', displayName: 'No Email Guy', email: undefined }];
-    const ws = { ...adminWorkspace, role: 'admin' as const };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/addable-staff')) {
-        return jsonResponse({ items: staffWithNoEmail });
-      }
-      const path = url.split('?')[0] ?? '';
-      if (path.includes('/members')) return jsonResponse({ items: members, total: members.length });
-      if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
-      if (url.includes('/v1/workspaces')) {
-        return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
-      }
-      return new Response(null, { status: 404 });
+    mockMembersBff(members, {
+      testFile: 'add-member-modal.test',
+      role: 'admin',
+      staff: staffWithNoEmail,
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -154,25 +103,12 @@ describe('Add Member Modal Component Test Suite', () => {
   });
 
   it('shows error message if add member API fails', async () => {
-    const ws = { ...adminWorkspace, role: 'admin' as const };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/addable-staff')) return jsonResponse({ items: staff });
-      const path = url.split('?')[0] ?? '';
-      if (path.includes('/members')) {
-        if ((init?.method ?? 'GET').toUpperCase() === 'POST') {
-          return jsonResponse({ message: 'User is already a member of this workspace.' }, 400);
-        }
-        return jsonResponse({ items: members, total: members.length });
-      }
-      if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
-      if (url.includes('/v1/workspaces')) {
-        return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
-      }
-      return new Response(null, { status: 404 });
+    mockMembersBff(members, {
+      testFile: 'add-member-modal.test',
+      role: 'admin',
+      staff,
+      failedApi: true,
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -192,20 +128,7 @@ describe('Add Member Modal Component Test Suite', () => {
   });
 
   it('shows "No staff found." when search result is empty', async () => {
-    const ws = { ...adminWorkspace, role: 'admin' as const };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/addable-staff')) return jsonResponse({ items: [] });
-      const path = url.split('?')[0] ?? '';
-      if (path.includes('/members')) return jsonResponse({ items: members, total: members.length });
-      if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
-      if (url.includes('/v1/workspaces')) {
-        return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
-      }
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    mockMembersBff(members, { testFile: 'add-member-modal.test', staff: [] });
 
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -219,24 +142,13 @@ describe('Add Member Modal Component Test Suite', () => {
 
   it('shows spinner when addable staff list is loading', async () => {
     let resolveStaff: ((r: Response) => void) | null = null;
-    const ws = { ...adminWorkspace, role: 'admin' as const };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/addable-staff')) {
-        return new Promise<Response>((resolve) => {
-          resolveStaff = resolve;
-        });
-      }
-      const path = url.split('?')[0] ?? '';
-      if (path.includes('/members')) return jsonResponse({ items: members, total: members.length });
-      if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
-      if (url.includes('/v1/workspaces')) {
-        return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
-      }
-      return new Response(null, { status: 404 });
+    mockMembersBff(members, {
+      testFile: 'add-member-modal.test',
+      staff,
+      resolveStaff: (resolve) => {
+        resolveStaff = resolve;
+      },
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     renderApp('/app/riverton/team');
 
@@ -256,27 +168,13 @@ describe('Add Member Modal Component Test Suite', () => {
 
   it('disables dialog buttons and shows spinner while add mutation is pending', async () => {
     let resolveAdd: ((r: Response) => void) | null = null;
-    const ws = { ...adminWorkspace, role: 'admin' as const };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/addable-staff')) return jsonResponse({ items: staff });
-      const path = url.split('?')[0] ?? '';
-      if (path.includes('/members')) {
-        if ((init?.method ?? 'GET').toUpperCase() === 'POST') {
-          return new Promise<Response>((resolve) => {
-            resolveAdd = resolve;
-          });
-        }
-        return jsonResponse({ items: members, total: members.length });
-      }
-      if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
-      if (url.includes('/v1/workspaces')) {
-        return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
-      }
-      return new Response(null, { status: 404 });
+    mockMembersBff(members, {
+      testFile: 'add-member-modal.test',
+      staff,
+      resolveAdd: (resolve) => {
+        resolveAdd = resolve;
+      },
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -318,7 +216,11 @@ describe('Add Member Modal Component Test Suite', () => {
   });
 
   it('lets an admin search staff, pick a member role, and add a member', async () => {
-    const fetchMock = mockAddMemberModalBff('admin');
+    const fetchMock = mockMembersBff(members, {
+      testFile: 'add-member-modal.test',
+      role: 'admin',
+      staff,
+    });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
 
@@ -343,7 +245,7 @@ describe('Add Member Modal Component Test Suite', () => {
   });
 
   it('lets the user change the selected staff member', async () => {
-    mockAddMemberModalBff('admin');
+    mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'admin', staff });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
 
@@ -361,7 +263,7 @@ describe('Add Member Modal Component Test Suite', () => {
   });
 
   it('closes the dialog when Cancel is clicked or Escape is pressed', async () => {
-    mockAddMemberModalBff('admin');
+    mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'admin', staff });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
 
@@ -394,35 +296,10 @@ describe('Add Member Modal Component Test Suite', () => {
     const staffWithNoId = [
       { id: undefined as unknown as string, displayName: 'No ID User', email: 'noid@riverton.gov' },
     ];
-    const ws = { ...adminWorkspace, role: 'admin' as const };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) return jsonResponse(authedUser);
-      if (url.includes('/addable-staff')) return jsonResponse({ items: staffWithNoId });
-      const path = url.split('?')[0] ?? '';
-      if (path.endsWith('/members') && (init?.method ?? 'GET').toUpperCase() === 'POST') {
-        return jsonResponse(
-          {
-            id: 'm2',
-            userId: '',
-            role: 'member',
-            status: 'active',
-            displayName: 'No ID User',
-            email: 'noid@riverton.gov',
-            isOwner: false,
-            joinedAt: ISO,
-          },
-          201,
-        );
-      }
-      if (path.includes('/members')) return jsonResponse({ items: members, total: members.length });
-      if (url.includes('/v1/workspaces/by-slug/')) return jsonResponse(ws);
-      if (url.includes('/v1/workspaces')) {
-        return jsonResponse({ items: [ws], total: 1, limit: 100, offset: 0 });
-      }
-      return new Response(null, { status: 404 });
+    const fetchMock = mockMembersBff(members, {
+      testFile: 'add-member-modal.test',
+      staff: staffWithNoId,
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
@@ -446,7 +323,7 @@ describe('Add Member Modal Component Test Suite', () => {
   });
 
   it('triggers onOpenChange true branch when dialog passes true to onOpenChange', async () => {
-    mockAddMemberModalBff('admin');
+    mockMembersBff(members, { testFile: 'add-member-modal.test', role: 'admin', staff });
     const user = userEvent.setup();
     renderApp('/app/riverton/team');
 

@@ -1,7 +1,8 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { jsonResponse, renderApp } from '../../../../support/render-app';
-import { adminUser, ISO } from '../../../../support/fixtures';
+import { renderApp } from '../../../../support/render-app';
+import { ISO } from '../../../../support/fixtures';
+import { mockDocumentTypesBff } from '../../../../support/mock-document-types-bff';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -23,24 +24,9 @@ interface Entry {
   versions: Version[];
 }
 
-function mockAdminDocumentTypesListBff(items: Entry[]): ReturnType<typeof vi.fn> {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.includes('/auth/me')) {
-      return jsonResponse(adminUser);
-    }
-    if (url.includes('/v1/admin/document-types')) {
-      return jsonResponse({ items });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('AdminDocumentTypesList', () => {
   it('renders empty state when there are no document types', async () => {
-    mockAdminDocumentTypesListBff([]);
+    mockDocumentTypesBff({ items: [] });
     renderApp('/admin/document-types');
 
     expect(
@@ -130,7 +116,7 @@ describe('AdminDocumentTypesList', () => {
       },
     ];
 
-    mockAdminDocumentTypesListBff(entries);
+    mockDocumentTypesBff({ items: entries });
     renderApp('/admin/document-types');
 
     // 1. Verify list elements render

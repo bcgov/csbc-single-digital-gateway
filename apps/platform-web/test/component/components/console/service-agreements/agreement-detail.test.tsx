@@ -1,8 +1,13 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, mockAuth, renderApp } from '../../../../support/render-app';
-import { adminUser, adminWorkspace, ISO } from '../../../../support/fixtures';
+import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
+import {
+  ISO,
+  serviceAgreement,
+  serviceAgreementsDetailResponse,
+} from '../../../../support/fixtures';
+import { mockServiceAgreementsBff } from '../../../../support/mock-service-agreements-bff';
 
 let capturedOptionsList: any[] = [];
 vi.mock('@tanstack/react-query', async (importOriginal) => {
@@ -13,14 +18,6 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
       capturedOptionsList.push(options);
       return actual.useMutation(options);
     }),
-  };
-});
-
-vi.mock('@/lib/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/auth')>();
-  return {
-    ...actual,
-    useAuth: vi.fn(() => ({ data: adminUser })),
   };
 });
 
@@ -54,14 +51,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const initialDetailResponse = {
-  agreement: {
-    id: 'g1',
-    workspaceId: null,
-    title: 'Global Privacy Policy',
-    kind: 'service-agreement',
-    createdAt: ISO,
-  },
+const serviceResponse = {
+  ...serviceAgreementsDetailResponse,
   versions: [
     {
       id: 'v1',
@@ -88,16 +79,6 @@ const initialDetailResponse = {
       archivedAt: null,
     },
   ],
-  definition: {
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        body: { type: 'string' },
-      },
-    },
-    uischema: {},
-  },
   services: [
     {
       id: 's1',
@@ -107,65 +88,12 @@ const initialDetailResponse = {
   ],
 };
 
-function mockAgreementDetailBff(detailData: any = initialDetailResponse) {
-  const base = mockAuth(adminUser, { workspaces: [adminWorkspace] });
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-
-    if (url.includes('/v1/service-agreements/g1')) {
-      if (method === 'PATCH' && url.includes('/versions/v2')) {
-        const body = init?.body ? JSON.parse(String(init.body)) : {};
-        const updatedVersion = {
-          id: 'v2',
-          version: 2,
-          status: 'draft',
-          data: body.data,
-          createdAt: ISO,
-          publishedAt: null,
-          archivedAt: null,
-        };
-        return jsonResponse(updatedVersion);
-      }
-
-      if (method === 'POST' && url.includes('/versions/v2/publish')) {
-        const publishedVersion = {
-          id: 'v2',
-          version: 2,
-          status: 'published',
-          data: detailData.versions[1].data,
-          createdAt: ISO,
-          publishedAt: ISO,
-          archivedAt: null,
-        };
-        return jsonResponse(publishedVersion);
-      }
-
-      if (method === 'POST' && url.includes('/versions')) {
-        const newVersion = {
-          id: 'v3',
-          version: 3,
-          status: 'draft',
-          data: detailData.versions[1].data,
-          createdAt: ISO,
-          publishedAt: null,
-          archivedAt: null,
-        };
-        return jsonResponse(newVersion);
-      }
-
-      return jsonResponse(detailData);
-    }
-
-    return (base as any)(input, init);
-  });
-  globalThis.fetch = fetchMock as any;
-  return fetchMock;
-}
-
 describe('AgreementDetail Component Test Suite', () => {
   it('renders details of a service agreement, switches versions, and lists associated services', async () => {
-    mockAgreementDetailBff();
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      serviceResponse,
+    });
     renderApp('/admin/service-agreements/g1');
 
     // Wait for the auth/me query to load and the draft to become editable (indicated by Publish button)
@@ -197,7 +125,10 @@ describe('AgreementDetail Component Test Suite', () => {
   });
 
   it('allows editing and saving a draft version', async () => {
-    const fetchMock = mockAgreementDetailBff();
+    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      serviceResponse,
+    });
     renderApp('/admin/service-agreements/g1');
 
     // Wait for Publish button to ensure editable state
@@ -236,7 +167,10 @@ describe('AgreementDetail Component Test Suite', () => {
   });
 
   it('allows publishing a draft version', async () => {
-    const fetchMock = mockAgreementDetailBff();
+    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      serviceResponse,
+    });
     renderApp('/admin/service-agreements/g1');
 
     // Wait for Publish button to ensure editable state
@@ -258,13 +192,16 @@ describe('AgreementDetail Component Test Suite', () => {
   it('allows creating a new version draft from a published version', async () => {
     // Mock where version 2 is already published so we can create a new version (v3)
     const publishedResponse = {
-      ...initialDetailResponse,
+      ...serviceResponse,
       versions: [
-        initialDetailResponse.versions[0],
-        { ...initialDetailResponse.versions[1], status: 'published', publishedAt: ISO },
+        serviceResponse.versions[0],
+        { ...serviceResponse.versions[1], status: 'published', publishedAt: ISO },
       ],
     };
-    const fetchMock = mockAgreementDetailBff(publishedResponse);
+    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      serviceResponse: publishedResponse,
+    });
     renderApp('/admin/service-agreements/g1');
 
     // Wait for "New version" button to ensure view has loaded in non-editable published state
@@ -289,11 +226,10 @@ describe('AgreementDetail Component Test Suite', () => {
 
   it('covers save and publish error branches when no version is selected', async () => {
     // Render with empty versions list
-    mockAgreementDetailBff({
-      ...initialDetailResponse,
-      versions: [],
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      serviceResponse: { ...serviceResponse, versions: [] },
     });
-
     renderApp('/admin/service-agreements/g1');
 
     // Wait for the render/query to load
@@ -316,7 +252,7 @@ describe('AgreementDetail Component Test Suite', () => {
 
   it('renders workspace scoped agreement details without global badge', async () => {
     const workspaceResponse = {
-      ...initialDetailResponse,
+      ...serviceResponse,
       agreement: {
         id: 'g1',
         workspaceId: 'w1',
@@ -325,7 +261,10 @@ describe('AgreementDetail Component Test Suite', () => {
         createdAt: ISO,
       },
     };
-    mockAgreementDetailBff(workspaceResponse);
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      serviceResponse: workspaceResponse,
+    });
     renderApp('/app/riverton/service-agreements/g1');
 
     // Wait for workspace details
@@ -347,17 +286,11 @@ describe('AgreementDetail Component Test Suite', () => {
     const putPromise = new Promise((resolve) => {
       resolvePut = resolve;
     });
-
-    const fetchMock = mockAgreementDetailBff();
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = (init?.method ?? 'GET').toUpperCase();
-      if (url.includes('/v1/service-agreements/g1/versions/v2') && method === 'PATCH') {
-        await putPromise;
-        return new Response(null, { status: 500 });
-      }
-      return fetchMock(input, init);
-    }) as any;
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      putPromise,
+      serviceResponse,
+    });
 
     renderApp('/admin/service-agreements/g1');
 
@@ -384,36 +317,25 @@ describe('AgreementDetail Component Test Suite', () => {
 
   it('shows read-only view for non-admin member, empty services fallback, and title undefined branch', async () => {
     const staffResponse = {
-      ...initialDetailResponse,
+      ...serviceResponse,
       agreement: {
-        ...initialDetailResponse.agreement,
+        ...serviceResponse.agreement,
         workspaceId: null, // represents global agreement
       },
       versions: [
-        initialDetailResponse.versions[0],
-        { ...initialDetailResponse.versions[1], data: { body: 'no title' } },
+        serviceResponse.versions[0],
+        { ...serviceResponse.versions[1], data: { body: 'no title' } },
       ],
       services: [],
     };
 
     // Setup mock auth as staff member
     const mockUser = { ...authedUser, roles: ['staff'] };
-    const base = mockAuth(mockUser, { workspaces: [adminWorkspace] });
-    let patchUrl = '';
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes('/v1/service-agreements/g1/versions/v2')) {
-        patchUrl = url;
-        return jsonResponse({ id: 'v2', data: {} });
-      }
-      if (url.includes('/v1/service-agreements/g1')) {
-        return jsonResponse(staffResponse);
-      }
-      if (url.includes('/notifications')) {
-        return jsonResponse({});
-      }
-      return (base as any)(input, init);
-    }) as any;
+    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      user: mockUser,
+      serviceResponse: staffResponse,
+    });
 
     renderApp('/app/riverton/service-agreements/g1');
 
@@ -434,7 +356,10 @@ describe('AgreementDetail Component Test Suite', () => {
     expect(saveOpt).toBeDefined();
 
     await saveOpt.mutationFn();
-    expect(patchUrl).toContain('/v1/service-agreements/g1/versions/v2');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/service-agreements/g1/versions/v2'),
+      expect.anything(),
+    );
   });
 
   it('disables publish button and renders spinner when publish is pending', async () => {
@@ -443,7 +368,10 @@ describe('AgreementDetail Component Test Suite', () => {
       resolvePublish = resolve;
     });
 
-    const fetchMock = mockAgreementDetailBff();
+    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      serviceResponse,
+    });
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -475,7 +403,12 @@ describe('AgreementDetail Component Test Suite', () => {
   });
 
   it('covers user undefined branch', async () => {
-    mockAgreementDetailBff();
+    const userWithoutRoles = { ...authedUser, roles: [] };
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'agreement-detail.test',
+      user: userWithoutRoles,
+      serviceResponse,
+    });
     renderApp('/app/riverton/service-agreements/g1');
     // Wait for the render/query to load
     await screen.findByRole('heading', { name: 'Global Privacy Policy' }, { timeout: 10000 });

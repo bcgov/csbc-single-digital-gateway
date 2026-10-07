@@ -1,8 +1,10 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { jsonResponse, renderApp } from '../../../../support/render-app';
+import { renderApp } from '../../../../support/render-app';
 import { adminUser, ISO } from '../../../../support/fixtures';
+import { mockDocumentTypesBff, type Entry } from '../../../../support/mock-document-types-bff';
+import { mockAuthUser } from '../../../../support/mock-auth-user';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 vi.mock('@monaco-editor/react', () => ({
@@ -37,22 +39,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-interface Version {
-  id: string;
-  typeId: string;
-  version: number;
-  status: 'draft' | 'published' | 'archived';
-  definition: Record<string, unknown>;
-  createdAt: string;
-  publishedAt: string | null;
-  archivedAt: string | null;
-}
-
-interface Entry {
-  type: { id: string; workspaceId: null; name: string; kind: string; createdAt: string };
-  versions: Version[];
-}
-
 /** A JSONForms-renderable definition (has a `schema`) so the preview pane renders the form stub. */
 const defWithSchema = (title: string) => ({
   schema: { type: 'object', properties: { title: { type: 'string', title } } },
@@ -61,90 +47,6 @@ const defWithSchema = (title: string) => ({
     elements: [{ type: 'Control', scope: '#/properties/title' }],
   },
 });
-
-function mockAdminDocumentTypeDetailBff(initial: Entry[]): {
-  store: Entry[];
-  fetchMock: ReturnType<typeof vi.fn>;
-} {
-  const store: Entry[] = structuredClone(initial);
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/auth/me')) {
-      return jsonResponse(adminUser);
-    }
-    if (url.includes('/v1/admin/document-types')) {
-      const rest = url.split('/v1/admin/document-types')[1]?.split('?')[0] ?? '';
-      const segs = rest.split('/').filter(Boolean);
-      if (segs.length === 0) {
-        return jsonResponse({ items: store });
-      }
-      const entry = store.find((e) => e.type.id === decodeURIComponent(segs[0]!));
-      if (!entry) {
-        return new Response(null, { status: 404 });
-      }
-      if (segs.length === 1 && method === 'GET') {
-        return jsonResponse(entry);
-      }
-      if (segs[1] === 'versions') {
-        if (segs.length === 2 && method === 'POST') {
-          const body = init?.body
-            ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
-            : { definition: {} };
-          const nextVerNum = entry.versions.length + 1;
-          const newVersion: Version = {
-            id: `${entry.type.id}-v${nextVerNum}`,
-            typeId: entry.type.id,
-            version: nextVerNum,
-            status: 'draft',
-            definition: body.definition,
-            createdAt: ISO,
-            publishedAt: null,
-            archivedAt: null,
-          };
-          entry.versions.push(newVersion);
-          return jsonResponse(newVersion);
-        }
-        if (segs.length === 3) {
-          const versionId = decodeURIComponent(segs[2]!);
-          const version = entry.versions.find((v) => v.id === versionId);
-          if (!version) {
-            return new Response(null, { status: 404 });
-          }
-          if (method === 'PATCH') {
-            const body = init?.body
-              ? (JSON.parse(String(init.body)) as { definition: Record<string, unknown> })
-              : { definition: {} };
-            version.definition = body.definition;
-            return jsonResponse(version);
-          }
-        }
-        if (segs.length === 4) {
-          const versionId = decodeURIComponent(segs[2]!);
-          const version = entry.versions.find((v) => v.id === versionId);
-          if (!version) {
-            return new Response(null, { status: 404 });
-          }
-          if (segs[3] === 'publish' && method === 'POST') {
-            for (const v of entry.versions) {
-              if (v.status === 'published') {
-                v.status = 'archived';
-                v.archivedAt = ISO;
-              }
-            }
-            version.status = 'published';
-            version.publishedAt = ISO;
-            return jsonResponse(version);
-          }
-        }
-      }
-      return new Response(null, { status: 404 });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return { store, fetchMock };
-}
 
 const publishedEntry: Entry = {
   type: { id: 'dt-1', workspaceId: null, name: 'Basic Form', kind: 'basic-form', createdAt: ISO },
@@ -191,7 +93,7 @@ const draftLatestEntry: Entry = {
 
 describe('AdminDocumentTypeDetail', () => {
   it('renders the heading, version dropdown, and seeded definition editor', async () => {
-    mockAdminDocumentTypeDetailBff([publishedEntry]);
+    mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
 
     expect(
@@ -206,7 +108,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('shows New version (only) on a non-draft latest version', async () => {
-    mockAdminDocumentTypeDetailBff([publishedEntry]);
+    mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
 
     expect(
@@ -217,7 +119,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('shows Save draft + Publish (not New version) when the latest version is a draft', async () => {
-    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
 
     // v2 (draft) is selected by default.
@@ -230,7 +132,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('switches the selected version via the dropdown and returns via Go to current', async () => {
-    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -254,7 +156,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('saves the draft definition via PATCH', async () => {
-    const { fetchMock } = mockAdminDocumentTypeDetailBff([draftLatestEntry]);
+    const fetchMock = mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -281,7 +183,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('shows an error when the draft definition is not valid JSON on save', async () => {
-    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -295,7 +197,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('publishes the selected draft version', async () => {
-    const { fetchMock } = mockAdminDocumentTypeDetailBff([draftLatestEntry]);
+    const fetchMock = mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -320,7 +222,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('creates a new version from the latest published version', async () => {
-    const { fetchMock } = mockAdminDocumentTypeDetailBff([publishedEntry]);
+    const fetchMock = mockDocumentTypesBff({ items: [publishedEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -340,7 +242,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('renders the live preview and toggles between interactive and read-only, and ignores deselect', async () => {
-    mockAdminDocumentTypeDetailBff([draftLatestEntry]);
+    mockDocumentTypesBff({ items: [draftLatestEntry] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -370,7 +272,7 @@ describe('AdminDocumentTypeDetail', () => {
       },
       versions: [],
     };
-    const { fetchMock } = mockAdminDocumentTypeDetailBff([emptyEntry]);
+    const fetchMock = mockDocumentTypesBff({ items: [emptyEntry] });
     renderApp('/admin/document-types/dt-empty');
     const user = userEvent.setup();
 
@@ -392,14 +294,7 @@ describe('AdminDocumentTypeDetail', () => {
   });
 
   it('renders nothing when the document type is not found', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/auth/me')) {
-        return jsonResponse(adminUser);
-      }
-      return new Response(null, { status: 404 });
-    });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    mockAuthUser(adminUser);
 
     const { container } = renderApp('/admin/document-types/dt-unknown');
     await new Promise((resolve) => setTimeout(resolve, 100));

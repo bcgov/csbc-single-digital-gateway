@@ -2,6 +2,7 @@ import type { AgreementScope } from '@/components/console/service-agreements/sco
 import type { WorkspaceLike } from './render-app';
 import type { SubmissionDetail as SubmissionDetailData } from '@/lib/submissions';
 import type { GeoCountryOption } from '@repo/react/jsonforms-renderers';
+import type { ServiceAgreementSummary } from '@/lib/service-agreements';
 
 /**
  * ISO 8601 date string fixture.
@@ -100,38 +101,45 @@ export const globalAgreement = {
   isGlobal: true,
 };
 
-export const serviceAgreementsDetailResponse = {
-  agreement: {
-    id: 'g1',
-    workspaceId: null,
+export const serviceAgreement: ServiceAgreementSummary = {
+  id: 'g1',
+  workspaceId: null,
+  title: 'Global Privacy Policy',
+  kind: 'service-agreement',
+  createdAt: ISO,
+  updatedAt: ISO,
+  status: 'draft',
+  isGlobal: false,
+};
+
+export const serviceAgreementVersion = {
+  id: 'v1',
+  version: 1,
+  status: 'draft',
+  data: {
     title: 'Global Privacy Policy',
-    kind: 'service-agreement',
-    createdAt: ISO,
+    body: 'This is the draft agreement content.',
   },
-  versions: [
-    {
-      id: 'v1',
-      version: 1,
-      status: 'draft',
-      data: {
-        title: 'Global Privacy Policy',
-        body: 'This is the draft agreement content.',
-      },
-      createdAt: ISO,
-      publishedAt: null,
-      archivedAt: null,
+  createdAt: ISO,
+  publishedAt: null,
+  archivedAt: null,
+};
+
+export const serviceAgreementDefinition = {
+  schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      body: { type: 'string' },
     },
-  ],
-  definition: {
-    schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        body: { type: 'string' },
-      },
-    },
-    uischema: {},
   },
+  uischema: {},
+};
+
+export const serviceAgreementsDetailResponse = {
+  agreement: serviceAgreement,
+  versions: [serviceAgreementVersion],
+  definition: serviceAgreementDefinition,
   services: [],
 };
 

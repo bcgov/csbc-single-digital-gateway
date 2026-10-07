@@ -3,10 +3,10 @@ import { render, screen, waitFor, within, fireEvent } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WorkspaceDefaultAgreements } from '@/components/console/service-agreements/workspace-default-agreements';
-import { ISO } from '../../../../support/fixtures';
-import { jsonResponse } from '../../../../support/render-app';
+import { adminUser, ISO } from '../../../../support/fixtures';
+import { mockWorkspacesDefaultAgreementsBff } from '../../../../support/mock-workspaces-default-agreements-bff';
 
-const theDefault = {
+const defaultAgreement = {
   id: 'd1',
   agreementDocumentId: 'a1',
   title: 'Terms of service',
@@ -14,71 +14,6 @@ const theDefault = {
   isGlobal: false,
   createdAt: ISO,
 };
-
-function mockWorkspaceDefaultAgreementsBff(
-  role: 'admin' | 'member',
-  mockErrors = false,
-  agreementsList: any[] = [],
-) {
-  const defaultAgreements = [
-    { id: 'a1', workspaceId: 'w1', title: 'Terms of service', status: 'published' },
-    { id: 'a2', workspaceId: null, title: 'Privacy policy', status: 'published' },
-    { id: 'a3', workspaceId: 'w1', title: 'Workspace Custom TOS', status: 'published' },
-  ];
-
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-
-    if (url.includes('/v1/workspaces/by-slug/')) {
-      return jsonResponse({
-        id: 'w1',
-        slug: 'riverton',
-        name: 'Riverton',
-        role,
-        ownerId: 'u1',
-        createdAt: ISO,
-      });
-    }
-
-    if (url.includes('/v1/workspaces/w1/default-agreements')) {
-      if (method === 'POST') {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        if (mockErrors) {
-          return jsonResponse({ message: 'Failed to add default agreement' }, 400);
-        }
-        return jsonResponse({
-          id: 'd2',
-          agreementDocumentId: 'a2',
-          title: 'Privacy policy',
-          isOptional: true,
-          isGlobal: true,
-          createdAt: ISO,
-        });
-      }
-
-      if (method === 'DELETE') {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        if (mockErrors) {
-          return jsonResponse({ message: 'Failed to remove default agreement' }, 400);
-        }
-        return new Response(null, { status: 204 });
-      }
-
-      return jsonResponse({ items: [theDefault] });
-    }
-
-    if (url.includes('/v1/service-agreements')) {
-      return jsonResponse({
-        items: agreementsList.length > 0 ? agreementsList : defaultAgreements,
-      });
-    }
-
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
 
 function renderWorkspaceDefaultAgreements() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -95,7 +30,10 @@ afterEach(() => {
 
 describe('workspace default agreements panel', () => {
   it('lets a workspace ADMIN see, add, and remove defaults; the picker excludes already-default', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin');
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
@@ -109,7 +47,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('shows the list read-only for a non-admin member (no add/remove)', async () => {
-    mockWorkspaceDefaultAgreementsBff('member');
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'member',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /add default/i })).not.toBeInTheDocument();
@@ -117,7 +58,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('allows adding a default agreement successfully', async () => {
-    const fetchMock = mockWorkspaceDefaultAgreementsBff('admin');
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -140,7 +84,11 @@ describe('workspace default agreements panel', () => {
   });
 
   it('renders API error warning when adding default fails', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin', true);
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      mockErrors: true,
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -155,7 +103,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('allows removing a default agreement successfully', async () => {
-    const fetchMock = mockWorkspaceDefaultAgreementsBff('admin');
+    const fetchMock = mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -170,7 +121,11 @@ describe('workspace default agreements panel', () => {
   });
 
   it('renders API error warning when removing default fails', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin', true);
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      mockErrors: true,
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -190,24 +145,10 @@ describe('workspace default agreements panel', () => {
       isGlobal: true,
       createdAt: ISO,
     };
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/v1/workspaces/by-slug/')) {
-        return jsonResponse({
-          id: 'w1',
-          slug: 'riverton',
-          name: 'Riverton',
-          role: 'admin',
-          ownerId: 'u1',
-          createdAt: ISO,
-        });
-      }
-      if (url.includes('/v1/workspaces/w1/default-agreements')) {
-        return jsonResponse({ items: [customDefault] });
-      }
-      return new Response(null, { status: 404 });
+    mockWorkspacesDefaultAgreementsBff(customDefault, adminUser, {
+      role: 'admin',
+      defaults: [customDefault],
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     renderWorkspaceDefaultAgreements();
 
@@ -218,9 +159,11 @@ describe('workspace default agreements panel', () => {
 
   it('shows no published agreements fallback in the picker when all are defaulted', async () => {
     // Only 'Terms of service' is published, and it's already a default document
-    mockWorkspaceDefaultAgreementsBff('admin', false, [
-      { id: 'a1', workspaceId: 'w1', title: 'Terms of service', status: 'published' },
-    ]);
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      agreements: [{ id: 'a1', workspaceId: 'w1', title: 'Terms of service', status: 'published' }],
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -233,7 +176,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('closes picker dialog when cancel close button is clicked', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin');
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -250,7 +196,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('disables the add button in the picker when the mutation is pending', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin');
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -272,7 +221,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('disables the remove button when the delete mutation is pending', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin');
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -289,7 +241,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('prevents dialog dismiss when Escape key is pressed while add is pending', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin');
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();
@@ -318,7 +273,10 @@ describe('workspace default agreements panel', () => {
   });
 
   it('renders workspace-scoped selectable agreements without a Global badge in the picker', async () => {
-    mockWorkspaceDefaultAgreementsBff('admin');
+    mockWorkspacesDefaultAgreementsBff(defaultAgreement, adminUser, {
+      role: 'admin',
+      defaults: [defaultAgreement],
+    });
     renderWorkspaceDefaultAgreements();
 
     expect(await screen.findByText('Terms of service')).toBeInTheDocument();

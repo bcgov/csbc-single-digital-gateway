@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../support/render-app';
-import { createMockMembersListBff } from '../../support/create-mock-members-list-bff';
+import { mockMembersBff } from '../../support/mock-members-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -44,7 +44,7 @@ const mockMembersList = {
 
 describe('App Slug Team Member ID Profile Route', () => {
   it('renders the member profile page correctly', async () => {
-    createMockMembersListBff(mockMembersList);
+    mockMembersBff(mockMembersList, { testFile: 'app.slug.team.memberId.test' });
     renderApp('/app/riverton/team/mem-123');
 
     // Wait for the member profile page content to load

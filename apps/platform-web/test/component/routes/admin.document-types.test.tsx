@@ -7,10 +7,9 @@ import {
   createRoute,
   createRootRoute,
 } from '@tanstack/react-router';
-import { mockAuth, renderApp } from '../../support/render-app';
+import { renderApp } from '../../support/render-app';
 import { Route } from '@/routes/admin.document-types';
-import { createMockDocumentTypesBff } from '../../support/create-mock-document-types-bff';
-import { adminUser } from '../../support/fixtures';
+import { mockDocumentTypesBff } from '../../support/mock-document-types-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -42,7 +41,7 @@ describe('Admin Document Types Layout Route Integration Test Suite', () => {
   });
 
   it('renders child routes correctly inside the DocumentTypesLayout Outlet', async () => {
-    createMockDocumentTypesBff({ items: [] }, mockAuth(adminUser));
+    mockDocumentTypesBff({ items: [] });
     renderApp('/admin/document-types');
 
     // Asserts that index route content within the layout Outlet mounts successfully

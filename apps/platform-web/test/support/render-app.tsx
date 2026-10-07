@@ -3,6 +3,7 @@ import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/rea
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import { routeTree } from '@/routeTree.gen';
+import { mockAuthUser } from './mock-auth-user';
 
 /** Build a router over the real route tree, mounted at `initialPath`, with a fresh query context. */
 export function renderApp(initialPath = '/app') {
@@ -89,7 +90,7 @@ export interface WorkspaceLike {
   createdAt: string;
 }
 
-interface MockAuthOptions {
+export interface MockAuthOptions {
   /** Workspaces the user belongs to (the store grows when the test POSTs a new one). */
   workspaces?: WorkspaceLike[];
   /** Slug assigned to a workspace created via POST /v1/workspaces. */
@@ -107,20 +108,20 @@ export function mockAuth(
 ): ReturnType<typeof vi.fn> {
   const store: WorkspaceLike[] = [...(options.workspaces ?? [])];
 
+  const mockBase = mockAuthUser(user, options);
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
 
-    if (url.includes('/auth/me')) {
-      return user === null ? new Response(null, { status: 401 }) : jsonResponse(user);
-    }
-    if (url.includes('/auth/logout')) {
-      return new Response(null, { status: 200 });
-    }
-    if (url.includes('/v1/workspaces/by-slug/')) {
-      const slug = decodeURIComponent(url.split('/v1/workspaces/by-slug/')[1]?.split('?')[0] ?? '');
-      const found = store.find((workspace) => workspace.slug === slug);
-      return found ? jsonResponse(found) : new Response(null, { status: 404 });
+    if (
+      url.includes('/auth/me') ||
+      url.includes('/auth/logout') ||
+      url.includes('/v1/workspaces/by-slug/')
+    ) {
+      return (mockBase as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
+        input,
+        init,
+      );
     }
     // Member-management endpoints default to empty so generic route tests get the empty state rather
     // than falling through to the workspaces-list branch below (which yields garbage member rows).

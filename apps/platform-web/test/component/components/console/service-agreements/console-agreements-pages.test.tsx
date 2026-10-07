@@ -1,9 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, mockAuth, renderApp } from '../../../../support/render-app';
+import { renderApp } from '../../../../support/render-app';
 import { ConsoleAgreementsList } from '@/components/console/service-agreements/console-agreements-pages';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { serviceAgreement, serviceAgreementsDetailResponse } from '../../../../support/fixtures';
+import { mockServiceAgreementsBff } from '../../../../support/mock-service-agreements-bff';
 
 const mockUseParams = vi.fn(() => ({ slug: 'riverton', id: 'a1' }));
 const mockUseSearch = vi.fn(() => ({}));
@@ -25,7 +27,6 @@ import '@/routes/app.$slug.service-agreements';
 import '@/routes/app.$slug.service-agreements.index';
 import '@/routes/app.$slug.service-agreements.new';
 import '@/routes/app.$slug.service-agreements.$id';
-import { adminWorkspace, ISO, serviceAgreementsDetailResponse } from '../../../../support/fixtures';
 
 vi.mock('@repo/react/jsonforms', () => ({
   JsonForms: vi.fn(({ data, readonly, onChange }: any) => (
@@ -48,61 +49,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const mockAgreement = {
-  id: 'g1',
-  workspaceId: 'w1',
-  title: 'Global Privacy Policy',
-  kind: 'service-agreement',
-  createdAt: ISO,
-  status: 'published',
-  isGlobal: false,
-};
-
-function mockConsoleAgreementsPagesBff() {
-  const base = mockAuth(authedUser, { workspaces: [adminWorkspace] });
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-
-    // Default agreements for workspace
-    if (url.includes('/default-agreements')) {
-      return jsonResponse({ items: [] });
-    }
-
-    // List of agreements for workspace
-    if (url.includes('/v1/service-agreements')) {
-      if (method === 'POST') {
-        const body = init?.body ? JSON.parse(String(init.body)) : {};
-        return jsonResponse({
-          agreement: {
-            id: 'a2',
-            title: body.data?.title || 'Untitled',
-            workspaceId: 'w1',
-            createdAt: ISO,
-          },
-          version: { id: 'v2', version: 1, status: 'draft', data: body.data, createdAt: ISO },
-        });
-      }
-
-      if (url.includes('/v1/service-agreements/a1') || url.includes('/v1/service-agreements/a2')) {
-        return jsonResponse({
-          ...serviceAgreementsDetailResponse,
-          agreement: { ...serviceAgreementsDetailResponse.agreement, workspaceId: 'w1' },
-        });
-      }
-
-      return jsonResponse({ items: [mockAgreement] });
-    }
-
-    return (base as any)(input, init);
-  });
-  globalThis.fetch = fetchMock as any;
-  return fetchMock;
-}
-
 describe('Console Agreements  Component Test Suite', () => {
   it('renders ConsoleAgreementsList (agreements list + workspace defaults panel)', async () => {
-    mockConsoleAgreementsPagesBff();
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'console-agreements-pages.test',
+      serviceResponse: serviceAgreementsDetailResponse,
+    });
     renderApp('/app/riverton/service-agreements');
 
     // 1. Verify workspace agreements list renders
@@ -112,7 +64,10 @@ describe('Console Agreements  Component Test Suite', () => {
   });
 
   it('renders ConsoleAgreementsNew (Agreements list + New agreement modal)', async () => {
-    const fetchMock = mockConsoleAgreementsPagesBff();
+    const fetchMock = mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'console-agreements-pages.test',
+      serviceResponse: serviceAgreementsDetailResponse,
+    });
     renderApp('/app/riverton/service-agreements/new');
 
     // 1. Verify view loads (agreements list renders behind the modal)
@@ -142,7 +97,10 @@ describe('Console Agreements  Component Test Suite', () => {
   });
 
   it('renders ConsoleAgreementDetail page', async () => {
-    mockConsoleAgreementsPagesBff();
+    mockServiceAgreementsBff(serviceAgreement, {
+      testFile: 'console-agreements-pages.test',
+      serviceResponse: serviceAgreementsDetailResponse,
+    });
     renderApp('/app/riverton/service-agreements/g1');
 
     // Wait for the auth/me query to load and editable elements to render

@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../support/render-app';
-import { createMockSubmissionsBff } from '../../support/create-mock-submissions-bff';
+import { mockSubmissionsBff } from '../../support/mock-submissions-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -47,7 +47,7 @@ const mockSubmissionsList = {
 
 describe('App Slug Submissions Index Route', () => {
   it('renders the submissions list queue correctly', async () => {
-    createMockSubmissionsBff(mockSubmissionsList);
+    mockSubmissionsBff(mockSubmissionsList);
     renderApp('/app/riverton/submissions/');
 
     // Wait for the tab buttons to be rendered

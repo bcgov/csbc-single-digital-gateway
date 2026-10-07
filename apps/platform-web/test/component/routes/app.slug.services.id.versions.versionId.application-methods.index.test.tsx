@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../support/render-app';
-import { createMockServicesBff } from '../../support/create-mock-services-bff';
+import { mockServicesBff } from '../../support/mock-services-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -74,7 +74,7 @@ describe('App Slug Services ID Versions VersionID Application Methods Index Rout
         },
       ],
     };
-    createMockServicesBff(servicesJson, referencesJson);
+    mockServicesBff(servicesJson, referencesJson);
     renderApp('/app/riverton/services/s1/old/edit/versions/sv1/application-methods/');
 
     // Breadcrumb page title

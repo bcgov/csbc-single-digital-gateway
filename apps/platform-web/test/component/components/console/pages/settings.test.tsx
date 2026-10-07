@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { authedUser, mockAuth, renderApp } from '../../../../support/render-app';
 import { SettingsPage } from '@/components/console/pages/settings';
 import { ISO, adminWorkspace } from '../../../../support/fixtures';
+import { mockAuthUser } from '../../../../support/mock-auth-user';
 
 let mockSlug: string | undefined = 'riverton';
 
@@ -39,33 +40,7 @@ describe('SettingsPage Component Test Suite', () => {
   });
 
   it('renders loading state initially', async () => {
-    let workspaceRequests = 0;
-    const fetchMock = vi.fn(
-      async (input: RequestInfo | URL) =>
-        new Promise<any>((resolve) => {
-          const url = String(input);
-          if (url.includes('/auth/me')) {
-            resolve(
-              new Response(JSON.stringify(authedUser), {
-                status: 200,
-                headers: { 'content-type': 'application/json' },
-              }),
-            );
-          } else if (url.includes('/v1/workspaces/by-slug/riverton')) {
-            workspaceRequests++;
-            if (workspaceRequests === 1) {
-              resolve(
-                new Response(JSON.stringify(adminWorkspace), {
-                  status: 200,
-                  headers: { 'content-type': 'application/json' },
-                }),
-              );
-            }
-            // Subsequent requests will never resolve
-          }
-        }),
-    );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    mockAuthUser(authedUser);
 
     const { queryClient, container } = renderApp('/app/riverton/settings');
 

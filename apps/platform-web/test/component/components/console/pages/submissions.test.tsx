@@ -1,8 +1,10 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, renderApp } from '../../../../support/render-app';
-import { ISO, adminWorkspace } from '../../../../support/fixtures';
+import { authedUser, renderApp } from '../../../../support/render-app';
+import { ISO } from '../../../../support/fixtures';
+import { mockSubmissionsBff } from '../../../../support/mock-submissions-bff';
+import { mockAuthUser } from '../../../../support/mock-auth-user';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -39,48 +41,9 @@ const submissionsList = [
   },
 ];
 
-function mockSubmissionsApi(submissions: any[] = submissionsList, workspace: any = adminWorkspace) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-
-    if (url.includes('/auth/me')) {
-      return jsonResponse(authedUser);
-    }
-    if (url.includes('/v1/workspaces/by-slug/riverton')) {
-      return jsonResponse(workspace);
-    }
-    if (url.includes('/v1/workspaces')) {
-      return jsonResponse({ items: [workspace], total: 1, limit: 100, offset: 0 });
-    }
-    if (url.includes('/v1/submissions')) {
-      const searchParams = new URL(url, 'http://x').searchParams;
-      const statusParam = searchParams.get('status');
-      const filtered = statusParam
-        ? submissions.filter((s) => s.status === statusParam)
-        : submissions;
-      return jsonResponse({ items: filtered });
-    }
-    return new Response(null, { status: 404 });
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('SubmissionsPage Component Test Suite', () => {
   it('renders loading skeleton when data is fetching', async () => {
-    const fetchMock = vi.fn(
-      async (input: RequestInfo | URL) =>
-        new Promise<any>((resolve) => {
-          const url = String(input);
-          if (url.includes('/auth/me')) {
-            resolve(jsonResponse(authedUser));
-          } else if (url.includes('/v1/workspaces/by-slug/riverton')) {
-            resolve(jsonResponse(adminWorkspace));
-          }
-          // Do not resolve submissions list to keep it loading
-        }),
-    );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    mockAuthUser(authedUser);
 
     const { container } = renderApp('/app/riverton/submissions');
 
@@ -93,7 +56,7 @@ describe('SubmissionsPage Component Test Suite', () => {
   });
 
   it('renders submission records with correct fields and links', async () => {
-    mockSubmissionsApi();
+    mockSubmissionsBff({ items: submissionsList }, authedUser);
     renderApp('/app/riverton/submissions');
 
     // Wait for the table rows to render
@@ -121,7 +84,7 @@ describe('SubmissionsPage Component Test Suite', () => {
   });
 
   it('filters submissions when clicking status tabs', async () => {
-    mockSubmissionsApi();
+    mockSubmissionsBff({ items: submissionsList }, authedUser, { filtered: true });
     renderApp('/app/riverton/submissions');
     const user = userEvent.setup();
 
@@ -177,7 +140,7 @@ describe('SubmissionsPage Component Test Suite', () => {
         updatedAt: ISO,
       },
     ];
-    mockSubmissionsApi(nullDateSubmission);
+    mockSubmissionsBff({ items: nullDateSubmission }, authedUser);
     renderApp('/app/riverton/submissions');
 
     const linkCharlie = await screen.findByRole('link', { name: 'Charlie Brown' });
@@ -219,7 +182,7 @@ describe('SubmissionsPage Component Test Suite', () => {
       },
     ];
 
-    mockSubmissionsApi(extraSubmissions);
+    mockSubmissionsBff({ items: extraSubmissions }, authedUser, { filtered: true });
     renderApp('/app/riverton/submissions');
     const user = userEvent.setup();
 
@@ -250,16 +213,7 @@ describe('SubmissionsPage Component Test Suite', () => {
   });
 
   it('does not render loading skeleton when workspace is loading', async () => {
-    const fetchMock = vi.fn(
-      async (input: RequestInfo | URL) =>
-        new Promise<any>((resolve) => {
-          const url = String(input);
-          if (url.includes('/auth/me')) {
-            resolve(jsonResponse(authedUser));
-          }
-        }),
-    );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    mockAuthUser(authedUser);
 
     const { container } = renderApp('/app/riverton/submissions');
 
@@ -267,7 +221,7 @@ describe('SubmissionsPage Component Test Suite', () => {
   });
 
   it('falls back to "All" tab when status parameter in search is unknown/not in tabs', async () => {
-    mockSubmissionsApi();
+    mockSubmissionsBff({ items: submissionsList }, authedUser, { filtered: true });
     renderApp('/app/riverton/submissions?status=withdrawn');
 
     // Should display empty state because no items match "withdrawn" status
@@ -280,7 +234,7 @@ describe('SubmissionsPage Component Test Suite', () => {
   });
 
   it('renders no matches empty state when search term returns no results for the submissions page component', async () => {
-    mockSubmissionsApi([]);
+    mockSubmissionsBff({ items: [] }, authedUser);
     renderApp('/app/riverton/submissions?q=nonexistent');
 
     expect(await screen.findByText('No submissions match “nonexistent”.')).toBeInTheDocument();
@@ -294,7 +248,9 @@ describe('SubmissionsPage Component Test Suite', () => {
       role: 'admin' as const,
       createdAt: ISO,
     };
-    mockSubmissionsApi([], mockWorkspaceNoId);
+    mockSubmissionsBff({ items: [] }, authedUser, {
+      workspaces: [mockWorkspaceNoId],
+    });
     renderApp('/app/riverton/submissions');
 
     expect(

@@ -1,9 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { jsonResponse, mockAuth, renderApp } from '../../support/render-app';
+import { renderApp } from '../../support/render-app';
 import { Route } from '@/routes/admin.document-types.$id';
-import { adminUser } from '../../support/fixtures';
+import { mockDocumentTypesBff } from '../../support/mock-document-types-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -71,54 +71,13 @@ const mockDocumentType = {
   ],
 } as const;
 
-function withDocumentType(base: ReturnType<typeof mockAuth>, docTypeData: any = mockDocumentType) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-
-    if (url.includes('/v1/admin/document-types/dt-1')) {
-      if (url.endsWith('/versions')) {
-        if (method === 'POST') {
-          return jsonResponse(
-            {
-              id: 'ver-3',
-              version: 3,
-              status: 'draft',
-              definition: { schema: { type: 'string' } },
-            },
-            201,
-          );
-        }
-      }
-      if (url.includes('/versions/ver-2')) {
-        if (method === 'PATCH') {
-          return jsonResponse({
-            id: 'ver-2',
-            version: 2,
-            status: 'draft',
-            definition: JSON.parse(init?.body as string).definition,
-          });
-        }
-      }
-      return jsonResponse(docTypeData);
-    }
-
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('Admin Document Type ID Route Integration Test Suite', () => {
   it('verifies route has a valid component definition for admin document type id route', () => {
     expect(Route.options.component).toBeDefined();
   });
 
   it('renders the document type name, kind, and version dropdown through the router', async () => {
-    withDocumentType(mockAuth(adminUser));
+    mockDocumentTypesBff({ items: [mockDocumentType] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -134,7 +93,7 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
   });
 
   it('loads and switches the editor definition when selecting different versions', async () => {
-    withDocumentType(mockAuth(adminUser));
+    mockDocumentTypesBff({ items: [mockDocumentType] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -154,7 +113,7 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
   });
 
   it('triggers a PATCH request to save changes made to a draft version definition', async () => {
-    const fetchMock = withDocumentType(mockAuth(adminUser));
+    const fetchMock = mockDocumentTypesBff({ items: [mockDocumentType] });
     renderApp('/admin/document-types/dt-1');
 
     const user = userEvent.setup();
@@ -192,7 +151,7 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
       ],
     };
 
-    withDocumentType(mockAuth(adminUser), mockDocumentTypeWithArchived);
+    mockDocumentTypesBff({ items: [mockDocumentTypeWithArchived] });
     renderApp('/admin/document-types/dt-1');
     const user = userEvent.setup();
 
@@ -204,7 +163,7 @@ describe('Admin Document Type ID Route Integration Test Suite', () => {
   });
 
   it('renders validation error when saving invalid json draft definition', async () => {
-    withDocumentType(mockAuth(adminUser));
+    mockDocumentTypesBff({ items: [mockDocumentType] });
     renderApp('/admin/document-types/dt-1');
 
     const user = userEvent.setup();

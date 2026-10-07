@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, mockAuth, renderApp } from '../../support/render-app';
-import { adminWorkspace } from '../../support/fixtures';
+import { authedUser, renderApp } from '../../support/render-app';
+import { mockSubmissionsBff } from '../../support/mock-submissions-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -27,26 +27,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function withEmptySubmissions(base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    if (url.includes('/v1/submissions')) {
-      return jsonResponse({
-        items: [],
-      });
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
-
 describe('App Slug Submissions Layout Route', () => {
   it('renders the child route inside the Outlet for app slug submissions layout route', async () => {
-    withEmptySubmissions(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
+    mockSubmissionsBff({ items: [] }, authedUser);
     renderApp('/app/riverton/submissions/');
 
     // Verify child submissions queue index page content renders through the Outlet

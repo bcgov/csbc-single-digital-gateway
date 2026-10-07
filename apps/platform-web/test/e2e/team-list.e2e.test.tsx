@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../support/render-app';
-import { createMockMembersListBff } from '../support/create-mock-members-list-bff';
+import { mockMembersBff } from '../support/mock-members-bff';
 import { ISO } from '../support/fixtures';
 import { addMembers } from '../support/testHelpers';
 
@@ -25,7 +25,7 @@ const members = addMembers([
 
 describe('Team List E2E Test Suite', () => {
   it('renders members and drives the browse API from search + sort', async () => {
-    const fetchMock = createMockMembersListBff({ items: members });
+    const fetchMock = mockMembersBff({ items: members }, { testFile: 'team-list.e2e.test' });
     renderApp('/app/riverton/team');
     // Wait on a table-unique member (the authed user's own name appears in the profile menu).
     expect(await screen.findByText('Sam Lee', undefined, { timeout: 15000 })).toBeInTheDocument();

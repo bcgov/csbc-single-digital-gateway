@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../support/render-app';
-import { createMockMembersListBff } from '../../support/create-mock-members-list-bff';
+import { mockMembersBff } from '../../support/mock-members-bff';
 import { addMembers } from '../../support/testHelpers';
 
 vi.mock('@/lib/bff', () => {
@@ -34,7 +34,7 @@ const mockMembersList = {
 
 describe('App Slug Team Index Route', () => {
   it('renders the team list queue correctly', async () => {
-    createMockMembersListBff(mockMembersList);
+    mockMembersBff(mockMembersList, { testFile: 'app.slug.team.index.test' });
     renderApp('/app/riverton/team/');
 
     // Wait for the Team section to render (Settings/Team sub-nav tab).

@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../support/render-app';
-import { createMockServicesBff } from '../../support/create-mock-services-bff';
+import { mockServicesBff } from '../../support/mock-services-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -44,7 +44,7 @@ describe('App Slug Services Index Route', () => {
         },
       ],
     };
-    createMockServicesBff(servicesJson);
+    mockServicesBff(servicesJson);
     renderApp('/app/riverton/services/');
 
     // Verify page header and layout

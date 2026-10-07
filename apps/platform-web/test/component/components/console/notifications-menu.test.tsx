@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotificationsMenu } from '@/components/console/notifications-menu';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { authedUser, jsonResponse, renderApp } from '../../../support/render-app';
-import { FEED, workspace } from '../../../support/fixtures';
+import { FEED, adminWorkspace } from '../../../support/fixtures';
 
 const mockNavigate = vi.fn();
 const sse = vi.hoisted(() => ({
@@ -151,15 +151,13 @@ function mockNotificationMenuBff(): string[] {
     const url = String(input);
     calls.push(`${init?.method ?? 'GET'} ${url}`);
     if (url.includes('/auth/me')) return jsonResponse(authedUser);
-    if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(workspace);
-    if (url.includes('/v1/workspaces')) return jsonResponse([workspace]);
+    if (url.includes('/v1/workspaces/by-slug/riverton')) return jsonResponse(adminWorkspace);
+    if (url.includes('/v1/workspaces')) return jsonResponse([adminWorkspace]);
     if (url.includes('/notifications/unread-count')) return jsonResponse({ count: 1 });
     if (url.includes('/read-all')) return jsonResponse({ updated: 1 });
     if (url.includes('/read'))
       return jsonResponse({ ...FEED.items[0], readAt: new Date().toISOString() });
     if (url.includes('/v1/me/notifications')) return jsonResponse(FEED);
-    if (url.includes('/v1/submissions/sub1')) return new Response(null, { status: 404 });
-    if (url.includes('/v1/submissions')) return jsonResponse({ items: [] });
     if (url.includes('/v1/services')) return jsonResponse({ items: [] });
     return new Response(null, { status: 404 });
   }) as unknown as typeof fetch;

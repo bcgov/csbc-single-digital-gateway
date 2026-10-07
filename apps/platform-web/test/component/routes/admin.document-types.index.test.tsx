@@ -1,9 +1,8 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mockAuth, renderApp } from '../../support/render-app';
+import { renderApp } from '../../support/render-app';
 import { Route } from '@/routes/admin.document-types.index';
-import { createMockDocumentTypesBff } from '../../support/create-mock-document-types-bff';
-import { adminUser } from '../../support/fixtures';
+import { mockDocumentTypesBff } from '../../support/mock-document-types-bff';
 
 vi.mock('@/lib/bff', () => {
   const BFF_ORIGIN = 'http://bff-test';
@@ -35,7 +34,7 @@ describe('Admin Document Types Index Route Integration Test Suite', () => {
   });
 
   it('renders empty state when no document types exist', async () => {
-    createMockDocumentTypesBff({ items: [] }, mockAuth(adminUser));
+    mockDocumentTypesBff({ items: [] });
     renderApp('/admin/document-types');
 
     expect(
@@ -61,7 +60,7 @@ describe('Admin Document Types Index Route Integration Test Suite', () => {
         versions: [{ id: 'v4', version: 1, status: 'archived' as const }],
       },
     ];
-    createMockDocumentTypesBff({ items: mockData }, mockAuth(adminUser));
+    mockDocumentTypesBff({ items: mockData });
     renderApp('/admin/document-types');
 
     expect(await screen.findByText('Document A', {}, { timeout: 8000 })).toBeInTheDocument();
@@ -97,7 +96,7 @@ describe('Admin Document Types Index Route Integration Test Suite', () => {
         versions: [],
       },
     ];
-    createMockDocumentTypesBff({ items: mockData }, mockAuth(adminUser));
+    mockDocumentTypesBff({ items: mockData });
     renderApp('/admin/document-types');
 
     expect(

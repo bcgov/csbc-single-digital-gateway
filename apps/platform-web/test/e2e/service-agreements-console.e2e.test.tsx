@@ -1,18 +1,16 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { authedUser, jsonResponse, mockAuth, renderApp } from '../support/render-app';
-import {
-  adminWorkspace,
-  globalAgreement as globalAgreementFixture,
-  ISO,
-} from '../support/fixtures';
+import { authedUser, renderApp } from '../support/render-app';
+import { globalAgreement as globalAgreementFixture, ISO } from '../support/fixtures';
+import { mockServiceAgreementsBff } from '../support/mock-service-agreements-bff';
+import type { ServiceAgreementSummary } from '@/lib/service-agreements';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const workspaceAgreement = {
+const workspaceAgreement: ServiceAgreementSummary = {
   id: 'a1',
   workspaceId: 'w1',
   title: 'Terms of service',
@@ -29,37 +27,27 @@ const globalAgreement = {
   updatedAt: ISO,
 };
 
-/** Wrap the shared auth/workspace mock with the /v1/service-agreements list endpoint. */
-function withAgreements(base: ReturnType<typeof mockAuth>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    // Paginated browse (the console + admin lists). Globals are excluded server-side from the
-    // workspace scope (feature 150); the admin scope (no workspaceId) is global-only.
-    if (url.includes('/v1/service-agreements/page')) {
-      const items = url.includes('workspaceId=') ? [workspaceAgreement] : [globalAgreement];
-      return jsonResponse({ items, total: items.length, limit: 20, offset: 0 });
-    }
-    if (url.includes('/v1/service-agreements')) {
-      // The unpaginated picker endpoint: workspace + global (staff) or global only (admin).
-      const hasWorkspace = url.includes('workspaceId=');
-      return jsonResponse({
-        items: hasWorkspace ? [workspaceAgreement, globalAgreement] : [globalAgreement],
-      });
-    }
-    return (base as unknown as (i: RequestInfo | URL, ii?: RequestInit) => Promise<Response>)(
-      input,
-      init,
-    );
-  });
-  // We need to cast because the types don't align perfectly with our mockFn signature
-  // but we know it behaves like fetch for our tests.
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
-}
+const agreements = [
+  {
+    ...workspaceAgreement,
+    status: 'draft',
+    id: 'a1',
+    title: 'Terms of service',
+  },
+  {
+    ...globalAgreement,
+    status: 'draft',
+    id: 'g1',
+    title: 'Privacy policy',
+  },
+];
 
 describe('Service Agreements Console Integration Test Suite', () => {
   it('opens the New agreement modal (title + description) at /new', async () => {
-    withAgreements(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
+    mockServiceAgreementsBff(workspaceAgreement, {
+      testFile: 'service-agreements-console.e2e.test',
+      agreements,
+    });
     renderApp('/app/riverton/service-agreements/new');
     const modal = await screen.findByRole(
       'dialog',
@@ -72,7 +60,10 @@ describe('Service Agreements Console Integration Test Suite', () => {
   });
 
   it('drives the paginated browse API from the search + sort controls', async () => {
-    const fetchMock = withAgreements(mockAuth(authedUser, { workspaces: [adminWorkspace] }));
+    const fetchMock = mockServiceAgreementsBff(workspaceAgreement, {
+      testFile: 'service-agreements-console.e2e.test',
+      agreements,
+    });
     renderApp('/app/riverton/service-agreements/');
     await screen.findByRole('link', { name: 'Terms of service' }, { timeout: 32000 });
     const user = userEvent.setup();
@@ -93,7 +84,11 @@ describe('Service Agreements Console Integration Test Suite', () => {
 
   it('admin surface lists global agreements only', async () => {
     const admin = { ...authedUser, roles: ['admin'] };
-    withAgreements(mockAuth(admin, { workspaces: [adminWorkspace] }));
+    mockServiceAgreementsBff(workspaceAgreement, {
+      testFile: 'service-agreements-console.e2e.test',
+      agreements,
+      user: admin,
+    });
     renderApp('/admin/service-agreements/');
     expect(
       await screen.findByRole('link', { name: 'Privacy policy' }, { timeout: 32000 }),
