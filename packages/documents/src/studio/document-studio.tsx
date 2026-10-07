@@ -18,7 +18,7 @@ import {
 } from './document-types';
 import { NewDocumentDialog } from './new-document-dialog';
 import { toast } from '@repo/ui/sonner';
-import { LOCKED } from './capabilities/governance';
+import { LOCKED, mayAddWithin } from './capabilities/governance';
 import { useOptionsEditor } from './options/use-options-editor';
 import { useRuleEditor } from './rules/use-rule-editor';
 import { findById } from './element-ids';
@@ -151,6 +151,8 @@ export function DocumentStudio({
   const [chosenMode, setMode] = useStudioMode(documentKey);
   const mode = readOnly ? 'preview' : chosenMode;
   const focusedId = variant === null ? null : resolveFocus(variant, focus);
+  const focusedForm =
+    focusedId === null || variant === null ? undefined : findById(variant, focusedId);
   const { shownSelection, footerPath } = selectionPaths(
     variant,
     draft?.content.schema ?? {},
@@ -242,19 +244,15 @@ export function DocumentStudio({
               onPageSelect={setPageSelectedId}
               pageSelectedId={pageSelectedId}
             />
-            {focusedId !== null && (
+            {/* Nothing on the page may take a new child: the Palette would only ever say "Locked". */}
+            {focusedForm !== undefined && mayAddWithin(governance, focusedForm) && (
               <DocumentPalette
                 open={expanded === 'palette'}
                 onOpenChange={(open) => setExpanded(open ? 'palette' : null)}
                 items={items}
                 // Click, Enter or Space places by the page selection (doc 238 rule 16).
                 onAppend={(itemId) => {
-                  const form =
-                    focusedId === null || variant === null
-                      ? undefined
-                      : findById(variant, focusedId);
-                  if (form === undefined) return;
-                  const { layoutId, index, cell } = appendTarget(form, pageSelectedId);
+                  const { layoutId, index, cell } = appendTarget(focusedForm, pageSelectedId);
                   // Doc 259 rule 10: say why nothing happened, rather than silently ignoring the click.
                   if (governance !== undefined && !governance.canAdd(layoutId)) {
                     toast.info(LOCKED);

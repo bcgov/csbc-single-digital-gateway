@@ -14,6 +14,7 @@ import {
   mdiTextBoxEditOutline,
   mdiTextBoxOutline,
   mdiToggleSwitchOutline,
+  mdiUnfoldMoreHorizontal,
   mdiViewColumnOutline,
   mdiTab,
   mdiViewGridOutline,
@@ -23,6 +24,7 @@ import {
 import { nanoid } from 'nanoid';
 import type { DocumentContent, DocumentKind, DocumentType, Uischema } from './document-types';
 import { newId } from './element-ids';
+import { newAccordionItem } from '../renderers/ui/accordion-model';
 import { newCardSlot } from '../renderers/ui/card-model';
 import { starterTabs } from '../renderers/ui/tabs-model';
 import { RECORD_FIELD_ITEMS } from './record-palette-items';
@@ -218,6 +220,17 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
         type: 'Table',
         options: { headers: ['Column 1', 'Column 2'], rows: [['', '']] },
       },
+    }),
+  },
+  {
+    id: 'accordion-group',
+    label: 'Accordion group',
+    icon: mdiUnfoldMoreHorizontal,
+    group: 'Content',
+    keywords: ['accordion', 'faq', 'collapsible', 'expand', 'questions'],
+    // Doc 279 rule 14: one empty item to start from.
+    create: () => ({
+      element: { id: newId(), type: 'AccordionGroup', options: { items: [newAccordionItem()] } },
     }),
   },
   {

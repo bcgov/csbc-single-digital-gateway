@@ -51,6 +51,30 @@ const IMPLEMENTATION: StoredDocument = {
 };
 
 const store = () => createDocumentStore({ seed: [TEMPLATE, IMPLEMENTATION] });
+
+/** The same locked Form, holding one layout that still takes children: the Palette stays. */
+const withOpenLayout = (doc: StoredDocument, content: DocumentContent): StoredDocument => ({
+  ...doc,
+  versions: doc.versions.map((version) => ({
+    ...version,
+    content: {
+      ...version.content,
+      variants: {
+        default: {
+          ...content.variants['default'],
+          elements: [
+            ...(content.variants['default']!['elements'] as unknown[]),
+            { id: 'L', type: 'VerticalLayout', elements: [] },
+          ],
+        },
+      },
+    },
+  })),
+});
+const openLayoutStore = () =>
+  createDocumentStore({
+    seed: [withOpenLayout(TEMPLATE, CONTENT), withOpenLayout(IMPLEMENTATION, CONTENT)],
+  });
 const element = (page: HTMLElement, id: string) =>
   page.querySelector<HTMLElement>(`[data-slot="studio-element"][data-element-id="${id}"]`)!;
 
@@ -70,9 +94,16 @@ describe('a governed document (doc 259 rules 5-13)', () => {
     expect(container.querySelector('[data-slot="studio-lock-badge"]')).not.toBeNull();
   });
 
+  it('hides the Palette when nothing on the page may take a new child', async () => {
+    const { container } = render(<DocumentStudio documentId="doc" store={store()} />);
+    await screen.findByRole('article', { name: 'Terms page' });
+    await screen.findByText('Based on Terms');
+    expect(container.querySelector('[data-slot="document-studio-palette"]')).toBeNull();
+  });
+
   it('a palette click onto a locked Form inserts nothing and says why (rule 10)', async () => {
     const user = userEvent.setup();
-    render(<DocumentStudio documentId="doc" store={store()} />);
+    render(<DocumentStudio documentId="doc" store={openLayoutStore()} />);
     const page = await screen.findByRole('article', { name: 'Terms page' });
     await screen.findByText('Based on Terms');
     const before = page.querySelectorAll('[data-slot="studio-element"]').length;

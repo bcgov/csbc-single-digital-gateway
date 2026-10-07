@@ -1,3 +1,4 @@
+import { accordionGroupEntry } from './accordion-group-renderer';
 import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { checkboxControlEntry } from './checkbox-control';
@@ -24,6 +25,8 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
   separatorEntry,
   richContentEntry,
   tableEntry,
+  // Doc 279: authored title + rich-text items.
+  accordionGroupEntry,
 ];
 /**
  * The boolean controls (doc 237) — a Checkbox, or a Switch for `options.component: 'switch'` — and the string controls

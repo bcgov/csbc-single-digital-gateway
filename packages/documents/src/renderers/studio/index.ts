@@ -2,6 +2,7 @@ import * as defaults from '../default/index';
 import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { placeholderEntry } from './placeholder-renderer';
+import { studioAccordionGroupEntry } from './studio-accordion-group';
 import { studioCardEntry } from './studio-card';
 import { studioDataTableEntry } from './studio-data-table';
 import { studioRecordEntry } from './studio-record';
@@ -38,6 +39,7 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
   studioSeparatorEntry,
   studioRichContentEntry,
   studioTableEntry,
+  studioAccordionGroupEntry,
   placeholderEntry,
 ].map((entry) => withStudioElement(entry));
 /**

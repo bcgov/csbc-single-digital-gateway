@@ -105,6 +105,7 @@ describe('variantFieldItems (doc 262 rule 13a)', () => {
       'separator',
       'rich-content',
       'table',
+      'accordion-group',
       'field:colour',
       'field:agree',
     ]);

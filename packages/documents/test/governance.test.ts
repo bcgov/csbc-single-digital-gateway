@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CapabilityMap } from '../src/studio/capabilities/capability-types';
-import { governanceOf } from '../src/studio/capabilities/governance';
+import { governanceOf, mayAddWithin } from '../src/studio/capabilities/governance';
 import type { DocumentContent } from '../src/studio/document-types';
 import { control, form, funnel } from './funnel-fixtures';
 
@@ -97,5 +97,24 @@ describe('governanceOf (doc 259)', () => {
     expect(g.canRemove('nope')).toBe(false);
     expect(g.canAdd('nope')).toBe(false);
     expect(g.canMove('nope', 'F')).toBe(false);
+  });
+});
+
+describe('mayAddWithin', () => {
+  it('is true when ungoverned', () => {
+    expect(mayAddWithin(undefined, page)).toBe(true);
+  });
+
+  it('is false when every container is locked, though leaf fields resolve addChildren', () => {
+    const g = governanceOf(content(), {
+      elements: { F: { addChildren: false }, L: { addChildren: false } },
+    })!;
+    expect(g.canAdd('c-a')).toBe(true);
+    expect(mayAddWithin(g, page)).toBe(false);
+  });
+
+  it('is true when one nested container is open', () => {
+    const g = governanceOf(content(), { elements: { F: { addChildren: false } } })!;
+    expect(mayAddWithin(g, page)).toBe(true);
   });
 });

@@ -147,6 +147,8 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     fireEvent.keyDown(itemNamed('Rich content'), { key: 'ArrowDown' });
     expect(itemNamed('Table')).toHaveFocus();
     fireEvent.keyDown(itemNamed('Table'), { key: 'ArrowDown' });
+    expect(itemNamed('Accordion group')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Accordion group'), { key: 'ArrowDown' });
     expect(itemNamed('Checkbox')).toHaveFocus();
     const fields = [
       'Checkbox',
@@ -178,6 +180,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Text',
       'Switch',
       'Checkbox',
+      'Accordion group',
       'Table',
       'Rich content',
       'Separator',

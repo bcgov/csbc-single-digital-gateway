@@ -33,6 +33,7 @@ export type TargetKind =
   | 'record'
   | 'rich-content'
   | 'table'
+  | 'accordion-group'
   | 'unknown';
 
 /** Each kind as the target line names it (rule 5). */
@@ -61,6 +62,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   record: 'Record',
   'rich-content': 'Rich content',
   table: 'Table',
+  'accordion-group': 'Accordion group',
   unknown: 'Element',
 });
 
@@ -218,6 +220,7 @@ const LAYOUT_KINDS: Readonly<Record<string, TargetKind>> = Object.freeze({
   Separator: 'separator',
   RichContent: 'rich-content',
   Table: 'table',
+  AccordionGroup: 'accordion-group',
 });
 
 /** Rule 4: element types by name; Controls through the renderers' own predicates, then `options.component`. */

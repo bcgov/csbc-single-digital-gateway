@@ -59,6 +59,9 @@ const OPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   rows: 'content',
   // A Table column's alignment, set from its canvas menu (doc 267 rule 7).
   align: 'content',
+  // An Accordion group's items are its Content; its initial open mode its own setting (doc 279 rule 12).
+  items: 'content',
+  defaultOpen: 'accordionDefaultOpen',
 });
 
 /** The setting a `label` is on each element type: a Funnel's name, a Form's, Card's or Section's title, else a field's label. */
@@ -67,6 +70,7 @@ const LABEL_KEYS: Readonly<Record<string, string>> = Object.freeze({
   Form: 'formTitle',
   Card: 'cardTitle',
   Section: 'sectionTitle',
+  AccordionGroup: 'accordionTitle',
 });
 const labelKeyOf = (type: unknown) => (typeof type === 'string' && LABEL_KEYS[type]) || 'label';
 
@@ -74,6 +78,7 @@ const labelKeyOf = (type: unknown) => (typeof type === 'string' && LABEL_KEYS[ty
 const DESCRIPTION_KEYS: Readonly<Record<string, string>> = Object.freeze({
   Card: 'cardDescription',
   Section: 'sectionDescription',
+  AccordionGroup: 'accordionDescription',
   Funnel: 'funnelDescription',
 });
 const optionKeyOf = (type: unknown, key: string) =>
@@ -197,3 +202,19 @@ export function mayRemoveNode(
 
 /** Disabled-affordance text (rule 8). */
 export const LOCKED = 'Locked by the template';
+
+/**
+ * Whether anything under `root` (itself included) may take a new child — the Palette's reason to exist. Only containers
+ * (nodes with `elements`) count: a leaf field resolves `addChildren` too, but nothing can be dropped into it.
+ */
+export function mayAddWithin(governance: Governance | undefined, root: Uischema): boolean {
+  if (governance === undefined) return true;
+  const children = root['elements'];
+  if (!Array.isArray(children)) return false;
+  const id = idOf(root);
+  if (id !== undefined && governance.canAdd(id)) return true;
+  return children.some(
+    (child) =>
+      typeof child === 'object' && child !== null && mayAddWithin(governance, child as Uischema),
+  );
+}
