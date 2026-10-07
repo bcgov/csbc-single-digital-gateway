@@ -11,6 +11,7 @@ import {
   type DocumentRunnerPort,
 } from '../renderers/default/funnel/runner-port';
 import { SubmissionPreview } from '../renderers/default/funnel/submission-preview';
+import { isDisplayOnly } from '../studio/variants/display-only';
 
 // `<DocumentRunner>` (doc 274 rules 35-39) — the one host-mounted entry point of the documents fill side, shaped like
 // `@repo/forms`' `FormRunner`. ONE `<JsonForms>` over the document with `renderers/default`. A Funnel root is drawn by
@@ -19,6 +20,8 @@ import { SubmissionPreview } from '../renderers/default/funnel/submission-previe
 
 /** Rule 39: the runner accepts a document from a host, so it says so rather than rendering nothing. */
 export const ROOT_MESSAGE = 'The document must be a Form or a Funnel.';
+/** Doc 284 rule 6. */
+export const DISPLAY_ONLY_MESSAGE = "This version is display only and can't be filled in.";
 
 export interface DocumentRunnerProps {
   readonly schema: Record<string, unknown>;
@@ -63,6 +66,13 @@ export function DocumentRunner({
   // `null` until JSONForms reports its first validation: not yet known is not valid.
   const [errors, setErrors] = useState<readonly FunnelError[] | null>(null);
   const type = uischema['type'];
+  // Doc 284 rule 6: a display-only variant presents the document; nothing fills it in.
+  if (isDisplayOnly(uischema))
+    return (
+      <p role="alert" data-slot="runner-display-only" className="text-sm text-muted-foreground">
+        {DISPLAY_ONLY_MESSAGE}
+      </p>
+    );
   if (type !== 'Form' && type !== 'Funnel')
     return (
       <p role="alert" data-slot="runner-root-error" className="text-sm text-destructive">

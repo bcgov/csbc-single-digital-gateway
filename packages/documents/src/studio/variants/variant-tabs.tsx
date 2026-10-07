@@ -13,6 +13,7 @@ import {
 import { Button } from '@repo/ui/button';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
@@ -30,6 +31,10 @@ export interface VariantTabsProps {
   onSelect: (name: string) => void;
   /** Each variant's missing required fields (rule 16); a variant absent here misses none. */
   missing: ReadonlyMap<string, readonly MissingField[]>;
+  /** Doc 284: the variants marked display only — never filled in, so never missing anything. */
+  displayOnly: ReadonlySet<string>;
+  /** Doc 284 rule 4: the active variant's "Display only" switch. */
+  onDisplayOnly: (name: string, on: boolean) => void;
   /** Whether New, Rename and Delete are offered (rule 11): not on a document a template governs. */
   manage: boolean;
   onCreate: (name: string) => void;
@@ -46,7 +51,7 @@ export const variantLabel = (name: string) => (name === DEFAULT_VARIANT ? 'Defau
  * and New variant.
  */
 export function VariantTabs(props: VariantTabsProps) {
-  const { names, active, onSelect, missing, manage } = props;
+  const { names, active, onSelect, missing, displayOnly, manage } = props;
   const [naming, setNaming] = useState<NameRequest | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   return (
@@ -63,7 +68,12 @@ export function VariantTabs(props: VariantTabsProps) {
       >
         <TabsList variant="line" aria-label="Variants" className="max-w-full overflow-x-auto">
           {names.map((name) => (
-            <VariantTab key={name} name={name} missing={missing.get(name)} />
+            <VariantTab
+              key={name}
+              name={name}
+              missing={missing.get(name)}
+              displayOnly={displayOnly.has(name)}
+            />
           ))}
         </TabsList>
       </Tabs>
@@ -80,6 +90,13 @@ export function VariantTabs(props: VariantTabsProps) {
             <DropdownMenuItem onClick={() => setNaming({ mode: 'rename', from: active })}>
               Rename…
             </DropdownMenuItem>
+            {/* Doc 284 rule 4: a variant that presents the document, exempt from the required-fields rule. */}
+            <DropdownMenuCheckboxItem
+              checked={displayOnly.has(active)}
+              onCheckedChange={(checked: boolean) => props.onDisplayOnly(active, checked)}
+            >
+              Display only
+            </DropdownMenuCheckboxItem>
             <DropdownMenuItem variant="destructive" onClick={() => setDeleting(active)}>
               Delete…
             </DropdownMenuItem>
@@ -123,14 +140,17 @@ export function VariantTabs(props: VariantTabsProps) {
 function VariantTab({
   name,
   missing,
+  displayOnly,
 }: {
   name: string;
   missing?: readonly MissingField[] | undefined;
+  displayOnly: boolean;
 }) {
   const descriptionId = useId();
   const count = missing?.length ?? 0;
-  const description =
-    count === 0
+  const description = displayOnly
+    ? 'Display only — never filled in'
+    : count === 0
       ? undefined
       : `Missing required fields: ${missing!.map((field) => field.title).join(', ')}`;
   return (
@@ -141,7 +161,16 @@ function VariantTab({
       {...(description !== undefined && { 'aria-describedby': descriptionId })}
     >
       {variantLabel(name)}
-      {description !== undefined && (
+      {displayOnly && (
+        <span
+          data-slot="variant-display-only"
+          aria-hidden="true"
+          className="rounded-sm bg-muted px-1 text-[0.625rem] text-muted-foreground"
+        >
+          Display only
+        </span>
+      )}
+      {count > 0 && (
         <span
           data-slot="variant-problems"
           aria-hidden="true"

@@ -1,5 +1,6 @@
 import { variantNames, type DocumentContent } from '../document-types';
 import { boundKeys, isRecord } from './variant-bindings';
+import { isDisplayOnlyVariant } from './display-only';
 
 /** A required field a variant does not show. */
 export interface MissingField {
@@ -16,13 +17,15 @@ export interface VariantProblem {
 /**
  * Every variant that shows no Control for some required property (doc 262 rule 15), in tab order, with what it misses
  * in `required` order. `[]` = every variant can be filled in completely — what publish checks. A rule that hides a
- * Control does not make it missing; an empty variant misses every required field.
+ * Control does not make it missing; an empty variant misses every required field. A DISPLAY-ONLY variant (doc 284) is
+ * never filled in, so it never misses anything.
  */
 export function variantProblems(content: DocumentContent): VariantProblem[] {
   const required = requiredKeys(content.schema);
   if (required.length === 0) return [];
   const properties = isRecord(content.schema['properties']) ? content.schema['properties'] : {};
   return variantNames(content).flatMap((variant) => {
+    if (isDisplayOnlyVariant(content, variant)) return [];
     const bound = new Set(boundKeys(content.variants[variant] ?? {}));
     const missing = required
       .filter((key) => !bound.has(key))

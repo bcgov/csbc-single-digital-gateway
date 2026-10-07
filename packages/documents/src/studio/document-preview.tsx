@@ -5,6 +5,8 @@ import { DocumentRunner } from '../runner/index';
 import { answersOf } from './answers/answer-edits';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent } from './document-types';
 import { previewUischema } from './preview-uischema';
+import { isDisplayOnlyVariant } from './variants/display-only';
+import { DocumentView } from '../view/document-view';
 
 export interface DocumentPreviewProps {
   content: DocumentContent;
@@ -29,6 +31,13 @@ export function DocumentPreview({
   const variant = variantOf(content, name);
   const uischema = useMemo(() => previewUischema(variant, focusedId), [variant, focusedId]);
   const [data, setData] = useState<unknown>(() => answersOf(content));
+  // Doc 284 rule 7: a display-only variant is never filled in — it previews read back, whole.
+  if (isDisplayOnlyVariant(content, name))
+    return (
+      <div data-slot="document-preview" className="flex min-h-0 flex-1 flex-col">
+        <DocumentView schema={content.schema} uischema={variant} data={answersOf(content)} />
+      </div>
+    );
   if (uischema === variant)
     return (
       <div data-slot="document-preview" className="flex min-h-0 flex-1 flex-col">

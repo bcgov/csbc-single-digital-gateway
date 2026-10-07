@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { DEFAULT_VARIANT, type DocumentContent } from '../document-types';
 import { createVariant, deleteVariant, renameVariant, variantNames } from './variant-edits';
 import { variantProblems, type MissingField } from './variant-problems';
+import { isDisplayOnlyVariant, withDisplayOnly } from './display-only';
 import type { VariantTabsProps } from './variant-tabs';
 
 /**
@@ -42,6 +43,16 @@ export function useActiveVariant({
       ),
     [content],
   );
+  // Doc 284: the variants never filled in — badged, and switched from the menu.
+  const displayOnly = useMemo(
+    () =>
+      new Set(
+        content === null
+          ? []
+          : variantNames(content).filter((name) => isDisplayOnlyVariant(content, name)),
+      ),
+    [content],
+  );
   const select = (name: string) => {
     if (name === active) return;
     setChosen(name);
@@ -55,6 +66,11 @@ export function useActiveVariant({
           active,
           onSelect: select,
           missing,
+          displayOnly,
+          onDisplayOnly: (name, on) => {
+            const next = withDisplayOnly(content, name, on);
+            if (next !== content) setContent(next);
+          },
           manage,
           onCreate: (name) => {
             const next = createVariant(content, name);
