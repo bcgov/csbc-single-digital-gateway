@@ -117,8 +117,21 @@ export function documentRunnerMock() {
 export function documentViewMock() {
   return {
     /** Doc 282: the read-only view — what it was asked to show, as text and attributes. */
-    DocumentView: ({ uischema, data }: { uischema: unknown; data?: unknown }) => (
-      <div data-testid="document-view" data-answers={JSON.stringify(data ?? {})}>
+    DocumentView: ({
+      uischema,
+      data,
+      unanswered,
+    }: {
+      uischema: unknown;
+      data?: unknown;
+      unanswered?: 'show' | 'hide';
+    }) => (
+      <div
+        data-testid="document-view"
+        data-answers={JSON.stringify(data ?? {})}
+        // Doc 283: how blanks are read back.
+        data-unanswered={unanswered ?? 'show'}
+      >
         {JSON.stringify(uischema)}
       </div>
     ),

@@ -354,4 +354,27 @@ describe('SubmissionDetail Component Test Suite', () => {
     expect(screen.getByText('true')).toBeInTheDocument();
     expect(screen.getByText('["a@example.com"]')).toBeInTheDocument();
   });
+
+  it('reads a document-shaped submission back through DocumentView, blanks shown (doc 283 rule 14)', async () => {
+    mockSubmissionData = {
+      ...mockBasicSubmission,
+      structure: {
+        schema: { type: 'object', properties: { parkingType: { type: 'string' } } },
+        variants: {
+          default: { type: 'Form', label: 'Parking', elements: [] },
+          mobile: { type: 'Form', label: 'Parking (mobile)', elements: [] },
+        },
+      },
+    };
+    renderSubmissionDetail(queryClient);
+
+    const view = await screen.findByTestId('document-view');
+    expect(view).toHaveAttribute('data-unanswered', 'show');
+    expect(view).toHaveAttribute('data-answers', JSON.stringify({ parkingType: 'Residential' }));
+    // The DEFAULT variant: submissions record none.
+    expect(view).toHaveTextContent('"label":"Parking"');
+    expect(view).not.toHaveTextContent('mobile');
+    // No raw key/value list beside it.
+    expect(screen.queryByText('parkingType')).toBeNull();
+  });
 });

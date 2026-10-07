@@ -132,13 +132,13 @@ function withService(
 
 const T = { timeout: 32000 };
 
-describe('ServiceVersionEditor (docs 230, 281)', () => {
-  const studio = () => screen.getByTestId('document-studio');
-  const contentShown = () => JSON.parse((studio() as HTMLTextAreaElement).value) as unknown;
-  /** Types into the studio stub: the whole content, as the real studio reports it. */
-  const edit = (next: unknown) =>
-    fireEvent.change(studio(), { target: { value: JSON.stringify(next) } });
+const studio = () => screen.getByTestId('document-studio');
+const contentShown = () => JSON.parse((studio() as HTMLTextAreaElement).value) as unknown;
+/** Types into the studio stub: the whole content, as the real studio reports it. */
+const edit = (next: unknown) =>
+  fireEvent.change(studio(), { target: { value: JSON.stringify(next) } });
 
+describe('ServiceVersionEditor (docs 230, 281)', () => {
   it('opens a draft in a fillable studio, with its saved answers, Save and Publish', async () => {
     withService([version(1, 'published'), version(2, 'draft', { name: 'Acme' }, 'tv1')]);
     renderApp('/app/riverton/services/s1/versions/sv2/edit');
@@ -290,9 +290,9 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
     renderApp('/app/riverton/services/s1/details');
 
     // Details shows the published v1, so Edit opens v1.
-    const edit = await screen.findByRole('link', { name: 'Edit' }, T);
-    expect(edit).toHaveAttribute('href', '/app/riverton/services/s1/versions/sv1/edit');
-    await userEvent.click(edit);
+    const editLink = await screen.findByRole('link', { name: 'Edit' }, T);
+    expect(editLink).toHaveAttribute('href', '/app/riverton/services/s1/versions/sv1/edit');
+    await userEvent.click(editLink);
     // v1 is published, so the edit page shows it read-only (and no New version: v2 is already a draft).
     expect(await screen.findByRole('button', { name: /version v1/i }, T)).toBeInTheDocument();
     expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true');

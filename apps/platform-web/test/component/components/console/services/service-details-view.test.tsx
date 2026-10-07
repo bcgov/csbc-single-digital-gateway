@@ -102,6 +102,8 @@ describe('ServiceDetailsView (doc 229)', () => {
 
     const view = await runner();
     expect(view).toHaveAttribute('data-answers', JSON.stringify({ name: 'Acme' }));
+    // Doc 283 rule 13: a service hides what nobody answered.
+    expect(view).toHaveAttribute('data-unanswered', 'hide');
     expect(view).toHaveTextContent('v2 content');
     expect(screen.getByRole('heading', { name: 'Service details' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();

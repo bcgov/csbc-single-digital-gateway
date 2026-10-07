@@ -1,6 +1,10 @@
 import type { JsonSchema, UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
+import { useMemo } from 'react';
 import * as plain from '../renderers/plain/index';
+import { NothingAnswered } from '../renderers/plain/nothing-answered';
+import { PlainOptionsContext, type Unanswered } from '../renderers/plain/plain-options';
+import { pruneUnanswered } from '../renderers/plain/prune-unanswered';
 import { ROOT_MESSAGE } from '../runner/document-runner';
 
 export interface DocumentViewProps {
@@ -9,6 +13,11 @@ export interface DocumentViewProps {
   readonly uischema: Record<string, unknown>;
   /** The answers to read back. */
   readonly data: unknown;
+  /**
+   * Doc 283: blanks shown as "Not answered" (default — a submission, an agreement: what was left blank matters), or
+   * hidden with every container left without an answer (a service's details).
+   */
+  readonly unanswered?: Unanswered | undefined;
 }
 
 /**
@@ -16,8 +25,15 @@ export interface DocumentViewProps {
  * — every answer as text, "Not answered" where blank — never writing, never validating, with no action bar. A Funnel
  * shows the Forms on the path its answers take, stacked. Fills its container and scrolls; prints in full.
  */
-export function DocumentView({ schema, uischema, data }: DocumentViewProps) {
+export function DocumentView({ schema, uischema, data, unanswered = 'show' }: DocumentViewProps) {
   const type = uischema['type'];
+  // Doc 283: a Form root is pruned here; a Funnel prunes each Form on its path (its graph names Forms by id).
+  const shown = useMemo(
+    () =>
+      unanswered === 'hide' && type === 'Form' ? pruneUnanswered(uischema, schema, data) : uischema,
+    [unanswered, type, uischema, schema, data],
+  );
+  const options = useMemo(() => ({ unanswered }), [unanswered]);
   if (type !== 'Form' && type !== 'Funnel')
     return (
       <p role="alert" data-slot="document-view-root-error" className="text-sm text-destructive">
@@ -33,15 +49,21 @@ export function DocumentView({ schema, uischema, data }: DocumentViewProps) {
         data-slot="document-view-content"
         className="min-h-0 flex-1 overflow-y-auto print:overflow-visible"
       >
-        <JsonForms
-          schema={schema}
-          uischema={uischema as unknown as UISchemaElement}
-          data={data}
-          renderers={plain.renderers}
-          cells={plain.cells}
-          readonly
-          validationMode="NoValidation"
-        />
+        {shown === undefined ? (
+          <NothingAnswered />
+        ) : (
+          <PlainOptionsContext value={options}>
+            <JsonForms
+              schema={schema}
+              uischema={shown as unknown as UISchemaElement}
+              data={data}
+              renderers={plain.renderers}
+              cells={plain.cells}
+              readonly
+              validationMode="NoValidation"
+            />
+          </PlainOptionsContext>
+        )}
       </div>
     </div>
   );

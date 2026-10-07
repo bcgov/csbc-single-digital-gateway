@@ -121,6 +121,8 @@ export function ServiceDetailsView({
             uischema={variantOf(document)}
             // Doc 230 rule 9: the staff's answers.
             data={answersOf(selected.content)}
+            // Doc 283 rule 13: a service's details show what was answered, nothing blank.
+            unanswered="hide"
           />
         </div>
       )}
