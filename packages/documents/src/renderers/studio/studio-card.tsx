@@ -14,8 +14,8 @@ import { useStudioElement } from './studio-element';
 export const studioCardTester = rankWith(2, uiTypeIs('Card'));
 
 /**
- * A Card authored on the canvas (doc 273 rules 5-7): the header always drawn, its title and description edited in
- * place, then the content slot and the footer slot (when the Card has one), each an ordinary studio VerticalLayout.
+ * A Card authored on the canvas (doc 273 rules 5-7): the header only with a title or description — never a
+ * placeholder — each edited in place, then the content slot and the footer slot (when the Card has one), each an ordinary studio VerticalLayout.
  */
 export function StudioCard({ uischema, visible, ...props }: LayoutProps) {
   const editor = useStudioEditor();
@@ -24,6 +24,8 @@ export function StudioCard({ uischema, visible, ...props }: LayoutProps) {
   const id = element?.id;
   const editable = (key: string) => editor !== null && id !== undefined && mayEdit(editor, id, key);
   const { content, footer } = cardSlots(uischema);
+  const title = cardTitle(uischema);
+  const description = cardDescription(uischema);
   // A p-2 inset, not ELEMENT_INSET's p-4: the Card's own ring and padding already sit it clear of its frame (requested).
   return (
     <div
@@ -33,36 +35,47 @@ export function StudioCard({ uischema, visible, ...props }: LayoutProps) {
       className="p-2"
     >
       <CardFrame element={uischema}>
-        <CardHeader>
-          <InlineEditableText
-            text={cardTitle(uischema) ?? ''}
-            placeholder="Card title"
-            slot="card-title"
-            editLabel="Card title"
-            editable={editable('cardTitle')}
-            onCommit={(next) => {
-              if (editor !== null && id !== undefined)
-                editor.update(id, { label: next === '' ? undefined : next });
-            }}
-            render={({ ref, ...rest }) => <CardTitle ref={ref as Ref<HTMLDivElement>} {...rest} />}
-          />
-          <InlineEditableText
-            text={cardDescription(uischema) ?? ''}
-            placeholder="Description"
-            slot="card-description"
-            className="whitespace-pre-line"
-            editLabel="Card description"
-            multiline
-            editable={editable('cardDescription')}
-            onCommit={(next) => {
-              if (editor !== null && id !== undefined)
-                editor.update(id, { options: { description: next === '' ? undefined : next } });
-            }}
-            render={({ ref, ...rest }) => (
-              <CardDescription ref={ref as Ref<HTMLDivElement>} {...rest} />
+        {/* Doc 273 rule 5: no placeholders — the header and each line appear only with a value, as when filled in. */}
+        {(title !== undefined || description !== undefined) && (
+          <CardHeader>
+            {title !== undefined && (
+              <InlineEditableText
+                text={title}
+                placeholder=""
+                slot="card-title"
+                editLabel="Card title"
+                editable={editable('cardTitle')}
+                onCommit={(next) => {
+                  if (editor !== null && id !== undefined)
+                    editor.update(id, { label: next === '' ? undefined : next });
+                }}
+                render={({ ref, ...rest }) => (
+                  <CardTitle ref={ref as Ref<HTMLDivElement>} {...rest} />
+                )}
+              />
             )}
-          />
-        </CardHeader>
+            {description !== undefined && (
+              <InlineEditableText
+                text={description}
+                placeholder=""
+                slot="card-description"
+                className="whitespace-pre-line"
+                editLabel="Card description"
+                multiline
+                editable={editable('cardDescription')}
+                onCommit={(next) => {
+                  if (editor !== null && id !== undefined)
+                    editor.update(id, {
+                      options: { description: next === '' ? undefined : next },
+                    });
+                }}
+                render={({ ref, ...rest }) => (
+                  <CardDescription ref={ref as Ref<HTMLDivElement>} {...rest} />
+                )}
+              />
+            )}
+          </CardHeader>
+        )}
         {content !== undefined && (
           <CardContent>
             <CardSlotContext.Provider value="content">

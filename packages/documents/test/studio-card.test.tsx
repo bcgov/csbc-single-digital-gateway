@@ -51,14 +51,33 @@ describe('Card — studio (doc 273 rules 5-7)', () => {
     expect(within(footer as HTMLElement).getByText('Drag items here')).toBeInTheDocument();
   });
 
-  it('shows grey placeholders for an empty title and description, and no footer when absent', () => {
+  it('draws no header without values — no placeholders — and no footer when absent', () => {
     const bare = { id: 'C', type: 'Card', elements: [CARD.elements[0]] };
     const { container } = renderStudioRenderers(withCard(bare), { schema: SCHEMA });
-    expect(inCard(container, 'card-title')).toHaveTextContent('Card title');
-    expect(inCard(container, 'card-title')).toHaveAttribute('data-placeholder');
-    expect(inCard(container, 'card-description')).toHaveTextContent('Description');
-    expect(inCard(container, 'card-description')).toHaveAttribute('data-placeholder');
+    const card = container.querySelector<HTMLElement>('[data-element-id="C"]')!;
+    expect(card.querySelector('[data-slot="card-header"]')).toBeNull();
+    expect(card.querySelector('[data-slot="card-title"]')).toBeNull();
+    expect(card.querySelector('[data-slot="card-description"]')).toBeNull();
+    expect(card.querySelector('[data-placeholder]')).toBeNull();
     expect(container.querySelector('[data-slot="card-footer"]')).toBeNull();
+    // The content slot is still there to take drops.
+    expect(card.querySelector('[data-slot="card-content"]')).not.toBeNull();
+  });
+
+  it('draws only the title, or only the description, when only that has a value', () => {
+    const titled = renderStudioRenderers(withCard({ ...CARD, options: {} }), { schema: SCHEMA });
+    expect(inCard(titled.container, 'card-title')).toHaveTextContent('Contact');
+    expect(
+      titled.container.querySelector('[data-element-id="C"] [data-slot="card-description"]'),
+    ).toBeNull();
+    titled.unmount();
+    const described = renderStudioRenderers(withCard({ ...CARD, label: ' ' }), {
+      schema: SCHEMA,
+    });
+    expect(inCard(described.container, 'card-description')).toHaveTextContent('How to reach you');
+    expect(
+      described.container.querySelector('[data-element-id="C"] [data-slot="card-title"]'),
+    ).toBeNull();
   });
 
   it('edits the title in place: Enter commits the trimmed text, blank removes it', () => {
