@@ -227,8 +227,11 @@ function AgreementBody({
           action?.();
         }}
       />
+      {backLink === null ? null : <div className="shrink-0">{backLink}</div>}
+      {/* The title shares its row with the actions, directly above the studio. The title is generated from the
+          version content, so it can be absent. */}
       <div className="flex shrink-0 items-center gap-3">
-        {backLink}
+        <h1 className="text-xl font-semibold">{agreement.title ?? 'Untitled'}</h1>
         <div className="ml-auto flex items-center gap-2">
           {isGlobal ? <Badge color="grey">Global</Badge> : null}
           {scope.kind === 'workspace' ? (
@@ -302,9 +305,6 @@ function AgreementBody({
           />
         </div>
       </div>
-      {/* The page owns its title heading now that the console shell no longer renders one. */}
-      {/* The title is generated from the version content, so it can be absent. */}
-      <h1 className="shrink-0 text-xl font-semibold">{agreement.title ?? 'Untitled'}</h1>
       {error ? (
         <p role="alert" className="shrink-0 text-sm text-destructive">
           {error.message}
