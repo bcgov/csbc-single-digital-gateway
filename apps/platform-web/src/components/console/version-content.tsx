@@ -22,6 +22,8 @@ export interface VersionContentProps {
    * rules; a template authors its rules in `document.capabilities` and is ungoverned. Absent = ungoverned.
    */
   governedBy?: GoverningTemplate | undefined;
+  /** Doc 281: staff answer the fields on the canvas, into `content.data` — a service, whose API keeps the answers. */
+  fillable?: boolean | undefined;
 }
 
 /**
@@ -40,6 +42,7 @@ export function VersionContent({
   editable,
   onDocumentChange,
   governedBy,
+  fillable = false,
 }: VersionContentProps) {
   // Rule 13: a row in the old `{ schema, uischema }` shape, or written by hand, says so rather than being spread
   // into a component's props.
@@ -57,9 +60,28 @@ export function VersionContent({
       type={type}
       onContentChange={onDocumentChange}
       readOnly={!editable}
+      fillable={fillable}
       {...(governedBy !== undefined && {
         governing: { name: governedBy.name, capabilities: governedBy.capabilities },
       })}
     />
   );
+}
+
+/**
+ * Doc 276: the template a version is PINNED to, as the studio shows it — its name (the default variant's label) and its
+ * rules. `undefined` = ungoverned: no pinned template, or one that authored no rules. Shared by the agreement and
+ * service pages (doc 281), which both look it up in their detail's `definitions[templateVersionId]`.
+ */
+export function governingOf(
+  definition:
+    | { variants: Record<string, Record<string, unknown>>; capabilities?: unknown }
+    | undefined,
+): GoverningTemplate | undefined {
+  if (definition?.capabilities === undefined) return undefined;
+  const label = definition.variants['default']?.['label'];
+  return {
+    name: typeof label === 'string' && label.trim() !== '' ? label.trim() : 'Template',
+    capabilities: definition.capabilities as GoverningTemplate['capabilities'],
+  };
 }

@@ -16,6 +16,7 @@ import { DataTableField } from '../ui/data-table-field';
 import { isObjectArray } from '../ui/object-array';
 import { itemFormOf } from '../ui/record-item';
 import { ELEMENT_INSET } from './studio-element';
+import { StudioFillContext } from './studio-fill';
 
 /** Outranks the inert-wrapped ui record (rank 2) in the studio set (doc 271 rule 3). */
 export const studioRecordTester = rankWith(
@@ -45,13 +46,17 @@ export function StudioRecord(props: ControlProps) {
               <p className="text-sm text-muted-foreground">This record has no item form.</p>
             ) : (
               <div data-slot="record-item-form" className="rounded-md border border-dashed p-2">
-                <JsonFormsDispatch
-                  uischema={form as unknown as UISchemaElement}
-                  schema={rootSchema}
-                  path=""
-                  {...(renderers !== undefined && { renderers })}
-                  {...(cells !== undefined && { cells })}
-                />
+                {/* Doc 281 rule 12: dispatched against the ROOT schema, these fields could write no real answer —
+                    they stay inert even on a fillable canvas. */}
+                <StudioFillContext value={false}>
+                  <JsonFormsDispatch
+                    uischema={form as unknown as UISchemaElement}
+                    schema={rootSchema}
+                    path=""
+                    {...(renderers !== undefined && { renderers })}
+                    {...(cells !== undefined && { cells })}
+                  />
+                </StudioFillContext>
               </div>
             )}
             <Button type="button" variant="outline" size="sm" className="self-start" disabled>

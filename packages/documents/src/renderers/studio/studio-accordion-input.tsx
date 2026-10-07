@@ -12,8 +12,10 @@ import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
 import { accordionInputLabels, AccordionInputItem } from '../ui/accordion-input-item';
 import { arrayOptions, DEFAULT_ADD_ITEM_LABEL } from '../ui/array-options';
+import { AccordionInput } from '../ui/accordion-input';
 import { DataTableField } from '../ui/data-table-field';
 import { isObjectArray } from '../ui/object-array';
+import { useStudioFill } from './studio-fill';
 
 /** Outranks the inert-wrapped ui accordion input (rank 2) in the studio set (doc 280 rule 11). */
 export const studioAccordionInputTester = rankWith(
@@ -29,11 +31,14 @@ const NO_CHANGE = () => {};
 
 /**
  * An accordion input on the canvas (doc 280 rule 11): its field shell, ONE greyed sample item labelled from the
- * schema, and the disabled Add button — the canvas has no answers.
+ * schema, and the disabled Add button — the canvas has no answers. A fillable canvas (doc 281) draws the live field.
  */
 export function StudioAccordionInput(props: ControlProps) {
   const { schema, uischema } = props;
+  const live = useStudioFill();
   const { addLabel } = arrayOptions(schema, uischema, DEFAULT_ADD_ITEM_LABEL);
+  // Doc 281 rule 10: a fillable canvas draws the field itself, writing the document's answers.
+  if (live) return <AccordionInput {...props} />;
   return (
     <DataTableField props={props} component="accordion">
       {() => (

@@ -8,10 +8,13 @@ import {
   type WorkspaceLike,
 } from '../../../../support/render-app';
 
-// Doc 230 — the service version edit page.
+// Doc 230 — the service version edit page; doc 281 — it hosts the Document Studio, fillable.
 
 vi.mock('@repo/documents/runner', async () =>
   (await import('../../../../support/mock-documents')).documentRunnerMock(),
+);
+vi.mock('@repo/documents/studio', async () =>
+  (await import('../../../../support/mock-documents')).documentStudioMock(),
 );
 
 afterEach(() => {
@@ -33,10 +36,15 @@ const content = (label: string, data?: Record<string, unknown>) => ({
   variants: { default: { type: 'Form', label, elements: [] } },
   ...(data === undefined ? {} : { data }),
 });
-const version = (n: number, status: Status, data?: Record<string, unknown>) => ({
+const version = (
+  n: number,
+  status: Status,
+  data?: Record<string, unknown>,
+  templateVersionId: string | null = null,
+) => ({
   id: `sv${String(n)}`,
   documentId: 's1',
-  templateVersionId: null,
+  templateVersionId,
   versionNumber: n,
   revision: 1,
   status,
@@ -56,7 +64,10 @@ function json(body: unknown, status = 200): Response {
 }
 
 /** A one-service API whose writes mutate the store, as the real endpoints do. */
-function withService(initial: ReturnType<typeof version>[]) {
+function withService(
+  initial: ReturnType<typeof version>[],
+  { publishError }: { publishError?: string } = {},
+) {
   const store = { versions: [...initial], exists: true };
   const calls: { method: string; path: string; body?: unknown }[] = [];
   const base = mockAuth(authedUser, { workspaces: [riverton] });
@@ -87,14 +98,24 @@ function withService(initial: ReturnType<typeof version>[]) {
         if (target) target.content = (JSON.parse(String(init?.body)) as { content: never }).content;
         return json(target);
       }
-      if (path.endsWith('/publish')) return json(store.versions[0]);
+      if (path.endsWith('/publish'))
+        return publishError === undefined
+          ? json(store.versions[0])
+          : json({ statusCode: 400, message: publishError }, 400);
       if (!store.exists) return new Response(null, { status: 404 });
       const drafts = store.versions.filter((v) => v.status === 'draft').map((v) => v.id);
       return json({
         service: { id: 's1', workspaceId: 'w1', title: 'Permit application', createdAt: ISO },
         versions: store.versions,
         definition: { schema: {}, variants: { default: { type: 'Form', elements: [] } } },
-        definitions: {},
+        // Doc 281 rule 21: the pinned template's rules govern the studio.
+        definitions: {
+          tv1: {
+            schema: {},
+            variants: { default: { type: 'Form', label: 'Permit template', elements: [] } },
+            capabilities: { default: 'granted' },
+          },
+        },
         hasSubmissions: false,
         deletable: { service: true, versionIds: store.versions.length > 1 ? drafts : [] },
       });
@@ -111,25 +132,29 @@ function withService(initial: ReturnType<typeof version>[]) {
 
 const T = { timeout: 32000 };
 
-describe('ServiceVersionEditor (doc 230)', () => {
-  const answersBox = () => screen.getByRole('textbox', { name: 'answers' });
-  const type = (answers: Record<string, unknown>) =>
-    fireEvent.change(answersBox(), { target: { value: JSON.stringify(answers) } });
+describe('ServiceVersionEditor (docs 230, 281)', () => {
+  const studio = () => screen.getByTestId('document-studio');
+  const contentShown = () => JSON.parse((studio() as HTMLTextAreaElement).value) as unknown;
+  /** Types into the studio stub: the whole content, as the real studio reports it. */
+  const edit = (next: unknown) =>
+    fireEvent.change(studio(), { target: { value: JSON.stringify(next) } });
 
-  it('opens a draft in a fillable runner, with its saved answers, Save and Publish', async () => {
-    withService([version(1, 'published'), version(2, 'draft', { name: 'Acme' })]);
+  it('opens a draft in a fillable studio, with its saved answers, Save and Publish', async () => {
+    withService([version(1, 'published'), version(2, 'draft', { name: 'Acme' }, 'tv1')]);
     renderApp('/app/riverton/services/s1/versions/sv2/edit');
 
-    const runner = await screen.findByTestId('document-runner', undefined, T);
-    expect(runner).toHaveAttribute('data-disabled', 'false');
-    // Rule 2: the header owns Save / Publish, so the runner's own bar is left out.
-    expect(runner).toHaveAttribute('data-actions', 'false');
-    expect(runner).toHaveAttribute('data-answers', JSON.stringify({ name: 'Acme' }));
-    expect(screen.queryByTestId('document-studio')).toBeNull();
+    await screen.findByTestId('document-studio', undefined, T);
+    expect(studio()).toHaveAttribute('data-fillable', 'true');
+    expect(studio()).toHaveAttribute('data-readonly', 'false');
+    expect(studio()).toHaveAttribute('data-kind', 'document');
+    expect(studio()).toHaveAttribute('data-type', 'services.service');
+    expect(studio()).toHaveAttribute('data-governed-by', 'Permit template');
+    expect(contentShown()).toEqual(content('v2 content', { name: 'Acme' }));
+    expect(screen.queryByTestId('document-runner')).toBeNull();
     expect(screen.getByRole('heading', { name: 'Permit application' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    // Clean and valid: publishable.
+    // Rule 24: clean is publishable — the API validates the answers.
     await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
     expect(screen.queryByRole('button', { name: 'New version' })).toBeNull();
   });
@@ -138,22 +163,33 @@ describe('ServiceVersionEditor (doc 230)', () => {
     withService([version(1, 'published', { name: 'Acme' })]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
 
-    const runner = await screen.findByTestId('document-runner', undefined, T);
-    expect(runner).toHaveAttribute('data-disabled', 'true');
-    expect(runner).toHaveAttribute('data-answers', JSON.stringify({ name: 'Acme' }));
+    await screen.findByTestId('document-studio', undefined, T);
+    expect(studio()).toHaveAttribute('data-readonly', 'true');
+    expect(contentShown()).toEqual(content('v1 content', { name: 'Acme' }));
     expect(screen.getByRole('button', { name: 'New version' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
   });
 
-  it('saves the answers into content.data, keeping the form', async () => {
+  it('saves the studio content — form and answers — in one PATCH', async () => {
     const { calls } = withService([version(1, 'draft')]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
-    await screen.findByTestId('document-runner', undefined, T);
+    await screen.findByTestId('document-studio', undefined, T);
+    // An empty answers object is no change (rule 22).
+    edit(content('v1 content', {}));
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
-    type({ name: 'Acme' });
+    // A field added AND answered (the user's case): one edit to the content.
+    const next = {
+      ...content('v1 content', { name: 'Acme', extra: 'yes' }),
+      schema: {
+        type: 'object',
+        properties: { name: { type: 'string' }, extra: { type: 'string' } },
+        required: ['name'],
+      },
+    };
+    edit(next);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
-    // Dirty: publishing would publish something other than what is saved.
     expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -161,10 +197,9 @@ describe('ServiceVersionEditor (doc 230)', () => {
       expect(calls).toContainEqual({
         method: 'PATCH',
         path: '/versions/sv1',
-        body: { content: content('v1 content', { name: 'Acme' }) },
+        body: { content: next },
       }),
     );
-    // The refetch reads back what was saved: clean, valid, publishable.
     await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
@@ -174,20 +209,40 @@ describe('ServiceVersionEditor (doc 230)', () => {
     );
   });
 
-  it('keeps Publish off while a saved draft does not validate', async () => {
-    // Saved, so clean — but `name` is required and missing.
-    withService([version(1, 'draft', {})]);
+  it('always sends data, so clearing every answer clears them (rule 23)', async () => {
+    const { calls } = withService([version(1, 'draft', { name: 'Acme' })]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
-    await screen.findByTestId('document-runner', undefined, T);
+    await screen.findByTestId('document-studio', undefined, T);
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+    // The studio drops an emptied answers object from the content.
+    edit(content('v1 content'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(calls).toContainEqual({
+        method: 'PATCH',
+        path: '/versions/sv1',
+        body: { content: content('v1 content', {}) },
+      }),
+    );
+  });
+
+  it("shows the API's refusal when the answers don't match the form", async () => {
+    withService([version(1, 'draft', {})], {
+      publishError: "Answers don't match the form: name is required",
+    });
+    renderApp('/app/riverton/services/s1/versions/sv1/edit');
+    await screen.findByTestId('document-studio', undefined, T);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('name is required');
   });
 
   it('navigates to a picked version and to a new version', async () => {
     const { calls } = withService([version(1, 'archived'), version(2, 'published')]);
     renderApp('/app/riverton/services/s1/versions/sv2/edit');
-    await screen.findByTestId('document-runner', undefined, T);
+    await screen.findByTestId('document-studio', undefined, T);
 
     await userEvent.click(screen.getByRole('button', { name: /version v2/i }));
     await userEvent.click(await screen.findByRole('menuitem', { name: /v1/ }));
@@ -198,17 +253,15 @@ describe('ServiceVersionEditor (doc 230)', () => {
     await waitFor(() => expect(calls).toContainEqual({ method: 'POST', path: '/versions' }));
     // The new draft is open, and fillable.
     expect(await screen.findByRole('button', { name: /version v3/i })).toBeInTheDocument();
-    expect(await screen.findByRole('textbox', { name: 'answers' })).toBeInTheDocument();
+    await waitFor(() => expect(studio()).toHaveAttribute('data-readonly', 'false'));
   });
 
   it('deletes the service and returns to the services list', async () => {
     const { calls } = withService([version(1, 'draft')]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
-    await screen.findByTestId('document-runner', undefined, T);
+    await screen.findByTestId('document-studio', undefined, T);
     // Unsaved answers: the guard must still not ask to save a deleted service (doc 225 B1).
-    fireEvent.change(screen.getByRole('textbox', { name: 'answers' }), {
-      target: { value: JSON.stringify({ name: 'Unsaved' }) },
-    });
+    edit(content('v1 content', { name: 'Unsaved' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
 
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -242,6 +295,6 @@ describe('ServiceVersionEditor (doc 230)', () => {
     await userEvent.click(edit);
     // v1 is published, so the edit page shows it read-only (and no New version: v2 is already a draft).
     expect(await screen.findByRole('button', { name: /version v1/i }, T)).toBeInTheDocument();
-    expect(screen.getByTestId('document-runner')).toHaveAttribute('data-disabled', 'true');
+    expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true');
   });
 });

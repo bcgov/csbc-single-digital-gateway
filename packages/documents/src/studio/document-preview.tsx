@@ -2,6 +2,7 @@ import { JsonForms } from '@jsonforms/react';
 import { useMemo, useState } from 'react';
 import * as defaults from '../renderers/default/index';
 import { DocumentRunner } from '../runner/index';
+import { answersOf } from './answers/answer-edits';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent } from './document-types';
 import { previewUischema } from './preview-uischema';
 
@@ -17,8 +18,8 @@ export interface DocumentPreviewProps {
  * Preview mode's content area (doc 247 rules 6-11, doc 274 rules 33, 38). The ROOT — a Form or a Funnel — runs in
  * `DocumentRunner`, filling the whole area with its action bar (and, for a Funnel, the step rail). A FOCUSED Form is
  * a quick look at one page: plain `<JsonForms>` in a scrolling column, no action bar. A Form spans the full width and
- * insets its own content. The data is this component's own state, so each switch to Preview starts empty, and nothing
- * typed here reaches the document.
+ * insets its own content. The data is this component's own state, seeded from the document's answers (doc 281 rule
+ * 20) — so each switch to Preview starts from what is stored, and nothing typed here reaches the document.
  */
 export function DocumentPreview({
   content,
@@ -27,7 +28,7 @@ export function DocumentPreview({
 }: DocumentPreviewProps) {
   const variant = variantOf(content, name);
   const uischema = useMemo(() => previewUischema(variant, focusedId), [variant, focusedId]);
-  const [data, setData] = useState<unknown>({});
+  const [data, setData] = useState<unknown>(() => answersOf(content));
   if (uischema === variant)
     return (
       <div data-slot="document-preview" className="flex min-h-0 flex-1 flex-col">

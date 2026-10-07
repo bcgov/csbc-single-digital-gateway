@@ -1,4 +1,6 @@
 import type { CapabilityMap } from './capabilities/capability-types';
+import { sameAnswers } from './answers/answer-edits';
+
 /**
  * The document vocabulary the studio works in. Restated here rather than imported from `@repo/database`
  * so the package stays browser-only; the values mirror `DOCUMENT_TYPES` and must be kept in step with it.
@@ -46,6 +48,11 @@ export type DocumentContent = {
   variants: { default: Uischema } & Record<string, Uischema>;
   /** A TEMPLATE's Implementation Rules (doc 258); absent = everything granted. */
   capabilities?: CapabilityMap;
+  /**
+   * The document's own answers (doc 281; services, doc 230): a JSONForms answers object keyed by top-level schema
+   * properties, shared by every variant. Absent = none.
+   */
+  data?: Record<string, unknown>;
 };
 
 export const DEFAULT_VARIANT = 'default';
@@ -91,11 +98,12 @@ export function withDefaultLabel(content: DocumentContent, label: string): Docum
 
 /**
  * `value` as a document's content when it has the shape (doc 275): a `schema` object and a `variants` object whose
- * `default` is an object; `capabilities` is carried through when it is an object. `null` for anything else.
+ * `default` is an object; `capabilities` and `data` (doc 281) are carried through when they are objects. `null` for
+ * anything else.
  */
 export function documentContentOf(value: unknown): DocumentContent | null {
   if (!isPlainObject(value)) return null;
-  const { schema, variants, capabilities } = value;
+  const { schema, variants, capabilities, data } = value;
   if (!isPlainObject(schema) || !isPlainObject(variants) || !isPlainObject(variants['default']))
     return null;
   const named = Object.entries(variants).filter(([, uischema]) => isPlainObject(uischema));
@@ -103,6 +111,7 @@ export function documentContentOf(value: unknown): DocumentContent | null {
     schema,
     variants: Object.fromEntries(named) as DocumentContent['variants'],
     ...(isPlainObject(capabilities) && { capabilities: capabilities as CapabilityMap }),
+    ...(isPlainObject(data) && { data }),
   };
 }
 
@@ -115,6 +124,8 @@ export function contentChanged(a: DocumentContent, b: DocumentContent): boolean 
   return (
     JSON.stringify(a.schema) !== JSON.stringify(b.schema) ||
     JSON.stringify(a.variants) !== JSON.stringify(b.variants) ||
-    JSON.stringify(a.capabilities ?? null) !== JSON.stringify(b.capabilities ?? null)
+    JSON.stringify(a.capabilities ?? null) !== JSON.stringify(b.capabilities ?? null) ||
+    // Doc 281: answers count, in any key order, and `{}` is no answers.
+    !sameAnswers(a.data, b.data)
   );
 }

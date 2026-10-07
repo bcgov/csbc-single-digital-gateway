@@ -37,7 +37,7 @@ export function stable(value: unknown): unknown {
  * Whether the document the studio is holding is the one the server already has — the question a
  * "dirty" flag actually asks.
  *
- * TWO normalisations, each for a bug that reached the browser:
+ * THREE normalisations, the first two for bugs that reached the browser:
  *
  * 1. KEY ORDER is ignored. The server's zod parse reorders keys (see `stable`), so a plain
  *    `JSON.stringify` comparison made a page dirty FOREVER after a successful save — Save draft
@@ -54,9 +54,16 @@ export function stable(value: unknown): unknown {
 export function sameDocumentContent(a: DocumentContent | null, b: DocumentContent | null): boolean {
   if (a === null || b === null) return a === b;
   const comparable = (document: DocumentContent) => {
-    const { capabilities, ...halves } = document;
+    const { capabilities, data, ...halves } = document;
     const governed = capabilities !== undefined && Object.keys(capabilities).length > 0;
-    return stable(governed ? { ...halves, capabilities } : halves);
+    // 3. (doc 281) EMPTY answers and NO answers are the same: the studio drops an emptied `data`, while a saved
+    //    service holds `data: {}`.
+    const answered = data !== undefined && Object.keys(data).length > 0;
+    return stable({
+      ...halves,
+      ...(governed && { capabilities }),
+      ...(answered && { data }),
+    });
   };
   return JSON.stringify(comparable(a)) === JSON.stringify(comparable(b));
 }

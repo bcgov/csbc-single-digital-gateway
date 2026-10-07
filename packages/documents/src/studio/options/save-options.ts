@@ -1,3 +1,4 @@
+import { remapChoiceAnswers } from '../answers/answer-edits';
 import type { DocumentContent } from '../document-types';
 import { updateProperty } from '../inspector/schema-edits';
 import { propertyAt } from '../property-ref';
@@ -22,7 +23,13 @@ export function saveOptions(
   const patch = target.multiple
     ? { items: { ...(property?.['items'] as Record<string, unknown> | undefined), oneOf } }
     : { oneOf };
-  const withOptions = updateProperty(content, ref, patch);
+  // Doc 281 rule 18: answers follow a renamed option, and a value no longer offered is cleared.
+  const withOptions = remapChoiceAnswers(
+    updateProperty(content, ref, patch),
+    ref,
+    renames,
+    oneOf.map((entry) => entry.const),
+  );
   const variants = Object.entries(withOptions.variants).map(
     ([name, root]) => [name, cascadeClauses(root, target.propertyKey, renames)] as const,
   );

@@ -4,16 +4,18 @@ import { mdiPlus } from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { Button } from '@repo/ui/button';
 import { DataTable, type DataTableColumnDef } from '@repo/ui/data-table';
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useStudioVariant } from '../../studio/variants/variant-context';
 import { rowColumn } from '../ui/data-table-control';
-import { Cell } from '../ui/data-table-cells';
+import { arrayOptions, shownRowCount } from '../ui/array-options';
+import { Cell, fillColumns, type FillSource, type WriteRows } from '../ui/data-table-cells';
 import { DataTableField } from '../ui/data-table-field';
 import {
   COLUMN_TYPE_NAMES,
   columnKeyProblem,
   isObjectArray,
   tableColumns,
+  tableRows,
   type TableColumn,
 } from '../ui/object-array';
 import type { ColumnEdit } from './column-edit';
@@ -21,6 +23,7 @@ import { ColumnHeaderEditor } from './column-header-editor';
 import { revealTableEnd } from './reveal-end';
 import { mayEdit, useStudioEditor } from './studio-editor';
 import { ELEMENT_INSET, STUDIO_INTERACTIVE, useStudioElement } from './studio-element';
+import { useStudioFill } from './studio-fill';
 
 type Row = Record<string, unknown>;
 
@@ -57,27 +60,90 @@ export function StudioDataTable(props: ControlProps) {
       ? (edit: ColumnEdit) => editColumns(element.id, edit)
       : undefined;
   const editable = send !== undefined;
+  // Doc 281 rule 11: on a fillable canvas the body is the fillable table, under the same editable headers.
+  const live = useStudioFill() && props.enabled;
+  const fill = useLiveRows(props);
   // `send` is rebuilt every render; the columns only need rebuilding when what they show changes.
   const sendRef = useRef(send);
   sendRef.current = send;
-  const columns = useMemo(
-    () =>
-      studioColumns(
-        tableColumns(props.schema),
-        editable,
-        (edit) => sendRef.current?.(edit),
-        (from, to) => columnKeyProblem(props.schema, from, to),
-        element?.id ?? '',
-      ),
-    [props.schema, editable, sendRef, element?.id],
-  );
+  const { source, deleteRows } = fill;
+  const columns = useMemo(() => {
+    const shape = tableColumns(props.schema);
+    const headed = studioColumns(
+      shape,
+      editable,
+      (edit) => sendRef.current?.(edit),
+      (from, to) => columnKeyProblem(props.schema, from, to),
+      element?.id ?? '',
+    );
+    return live ? withFillCells(headed, fillColumns(shape, source, deleteRows)) : headed;
+  }, [props.schema, editable, sendRef, element?.id, live, source, deleteRows]);
   return (
     <div className={ELEMENT_INSET}>
       <DataTableField props={props}>
-        {(wiring) => <DataTable {...wiring} columns={columns} data={PLACEHOLDER_ROWS} />}
+        {(wiring) =>
+          live ? (
+            <div className="flex flex-col items-start gap-2">
+              <DataTable {...wiring} className="w-full" columns={columns} data={fill.shown} />
+              {fill.addRow}
+            </div>
+          ) : (
+            <DataTable {...wiring} columns={columns} data={PLACEHOLDER_ROWS} />
+          )
+        }
       </DataTableField>
     </div>
   );
+}
+
+/**
+ * The fillable table's rows (doc 281 rule 11, restating doc 264-266's `DataTableControl`): the written rows padded to
+ * the shown count, the `FillSource` its cells read through, and the Add row button within the authored limits.
+ */
+function useLiveRows({ data, schema, uischema, handleChange, path }: ControlProps) {
+  const rows = useMemo(() => tableRows(data), [data]);
+  const options = useMemo(() => arrayOptions(schema, uischema), [schema, uischema]);
+  const shown = useMemo(
+    () => [
+      ...rows,
+      ...Array.from({ length: shownRowCount(rows.length, options) - rows.length }, () => ({})),
+    ],
+    [rows, options],
+  );
+  const write = useCallback<WriteRows>((next) => handleChange(path, next), [handleChange, path]);
+  const source = useRef<FillSource['current']>({ rows, options, write });
+  source.current = { rows, options, write };
+  const full = options.maxRows !== undefined && shown.length >= options.maxRows;
+  const addRow = options.addRows && (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className={STUDIO_INTERACTIVE}
+      disabled={full}
+      onClick={() => write([...shown, {}])}
+    >
+      <Icon path={mdiPlus} size="0.875rem" aria-hidden />
+      {options.addLabel}
+    </Button>
+  );
+  return { shown, source, deleteRows: options.deleteRows, addRow };
+}
+
+/** The studio's columns with each data column's preview cell replaced by its fillable one, and Delete row added. */
+function withFillCells(
+  headed: DataTableColumnDef<Row>[],
+  filled: DataTableColumnDef<Row>[],
+): DataTableColumnDef<Row>[] {
+  const fillById = new Map(filled.map((def) => [def.id, def]));
+  const cells = headed.map((def) => {
+    const cell = fillById.get(def.id)?.cell;
+    return cell === undefined ? def : { ...def, cell };
+  });
+  const remove = fillById.get('__delete-row');
+  if (remove === undefined) return cells;
+  const add = cells.findIndex((def) => def.id === '__add-column');
+  return add === -1 ? [...cells, remove] : [...cells.slice(0, add), remove, ...cells.slice(add)];
 }
 
 /** Each column with its type as the placeholder cell; editable headers and a trailing Add column when editing. */

@@ -13,7 +13,7 @@
  *
  * The studio stub reproduces the ONE behaviour a host page depends on (doc 218 rules 1-2, kept by doc 276): it reports
  * its baseline once on mount, then reports whatever is typed into it. It also exposes what the host asked of it —
- * `data-readonly`, `data-kind`, `data-type` and `data-governed-by` — so a page test can assert read-only vs editable
+ * `data-readonly`, `data-fillable`, `data-kind`, `data-type` and `data-governed-by` — so a page test can assert read-only vs editable
  * and governance without the package.
  */
 
@@ -25,6 +25,7 @@ export async function documentStudioMock() {
       kind,
       type,
       readOnly,
+      fillable,
       governing,
       onContentChange,
     }: {
@@ -32,6 +33,7 @@ export async function documentStudioMock() {
       kind?: string;
       type?: string;
       readOnly?: boolean;
+      fillable?: boolean;
       governing?: { name: string; capabilities?: unknown };
       onContentChange?: (content: unknown) => void;
     }) => {
@@ -45,6 +47,8 @@ export async function documentStudioMock() {
           data-testid="document-studio"
           aria-label="document"
           data-readonly={String(readOnly === true)}
+          // Doc 281: whether the host lets staff fill the canvas.
+          data-fillable={String(fillable === true)}
           data-kind={kind}
           data-type={type}
           {...(governing !== undefined && { 'data-governed-by': governing.name })}

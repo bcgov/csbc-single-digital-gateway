@@ -34,6 +34,7 @@ import { useActiveVariant } from './variants/use-active-variant';
 import { StudioVariantContext } from './variants/variant-context';
 import { variantPalette } from './variants/variant-fields';
 import { VariantTabs } from './variants/variant-tabs';
+import { StudioAnswersProvider } from './answers/studio-answers';
 
 export interface DocumentStudioProps {
   /** Open this document — its latest version unless `versionId` names one. Absent = a new document. */
@@ -63,6 +64,11 @@ export interface DocumentStudioProps {
   governing?: GoverningTemplate | undefined;
   /** Doc 276: locked to Preview — nothing can be changed (e.g. a published version). */
   readOnly?: boolean | undefined;
+  /**
+   * Doc 281: the canvas controls are LIVE and write the document's own answers (`content.data`) — a service is authored
+   * by adding fields and answering them. Absent = authoring only: controls are inert over no answers.
+   */
+  fillable?: boolean | undefined;
 }
 
 /** A controlled studio's stand-in store: empty and in memory, so it never reads the browser stub. */
@@ -80,6 +86,7 @@ export function DocumentStudio({
   onContentChange,
   governing,
   readOnly = false,
+  fillable = false,
   ...props
 }: DocumentStudioProps) {
   const hosted = content !== undefined && props.kind !== undefined && props.type !== undefined;
@@ -196,92 +203,98 @@ export function DocumentStudio({
       {/* Preview edits nothing: the tabs still switch the variant previewed, but New / Rename / Delete are hidden (doc 274 rule 41). */}
       {tabs !== null && <VariantTabs {...tabs} manage={tabs.manage && mode !== 'preview'} />}
       {/* `@container/canvas`: the floating panels collapse by the canvas's width, not the window's (doc 233 rule 14). */}
-      <main
-        data-slot="document-studio-center"
-        className="@container/canvas relative flex min-h-0 flex-1 flex-col"
+      <StudioAnswersProvider
+        fillable={fillable}
+        content={draft?.content ?? null}
+        setContent={setContent}
       >
-        {draft === null ? (
-          (STATUS_VIEWS[studio.status] ?? (
-            <DocumentStudioEmpty onNewDocument={() => setDialogOpen(true)} />
-          ))
-        ) : mode === 'preview' ? (
-          <DocumentPreview content={draft.content} focusedId={focusedId} variant={active} />
-        ) : (
-          <StudioVariantContext.Provider
-            value={{ name: active, isDefault: active === DEFAULT_VARIANT }}
-          >
-            <DocumentCanvas
-              uischema={variantOf(draft.content, active)}
-              schema={draft.content.schema}
-              onChange={(uischema) => setContent(withVariant(draft.content, uischema, active))}
-              selectedId={shownSelection}
-              onSelect={setSelectedId}
-              focusedId={focusedId}
-              onFocus={(formId) => {
-                setFocus(formId);
-                setSelectedId(formId);
-              }}
-              onUnfocus={() => setFocus(null)}
-              onInspect={(formId) => {
-                setSelectedId(formId);
-                setInspectorReveal((n) => n + 1);
-              }}
-              deleteChoices={deleteChoices}
-              onRememberDelete={(kind, choice) =>
-                setDeleteChoices((choices) => ({ ...choices, [kind]: choice }))
-              }
-              onInsert={insert}
-              onRemoveElement={removeEl}
-              onCopyElement={copyEl}
-              onEditOptions={options.open}
-              onEditColumns={editColumns}
-              onMoveElement={moveEl}
-              accepts={accepts}
-              onEditRule={rules.open}
-              ruleProblems={rules.problems}
-              canAddRule={rules.canAdd}
-              governance={governance}
-              onPageSelect={setPageSelectedId}
-              pageSelectedId={pageSelectedId}
-            />
-            {/* Nothing on the page may take a new child: the Palette would only ever say "Locked". */}
-            {focusedForm !== undefined && mayAddWithin(governance, focusedForm) && (
-              <DocumentPalette
-                open={expanded === 'palette'}
-                onOpenChange={(open) => setExpanded(open ? 'palette' : null)}
-                items={items}
-                // Click, Enter or Space places by the page selection (doc 238 rule 16).
-                onAppend={(itemId) => {
-                  const { layoutId, index, cell } = appendTarget(focusedForm, pageSelectedId);
-                  // Doc 259 rule 10: say why nothing happened, rather than silently ignoring the click.
-                  if (governance !== undefined && !governance.canAdd(layoutId)) {
-                    toast.info(LOCKED);
-                    return;
-                  }
-                  insert(layoutId, index, itemId, cell);
+        <main
+          data-slot="document-studio-center"
+          className="@container/canvas relative flex min-h-0 flex-1 flex-col"
+        >
+          {draft === null ? (
+            (STATUS_VIEWS[studio.status] ?? (
+              <DocumentStudioEmpty onNewDocument={() => setDialogOpen(true)} />
+            ))
+          ) : mode === 'preview' ? (
+            <DocumentPreview content={draft.content} focusedId={focusedId} variant={active} />
+          ) : (
+            <StudioVariantContext.Provider
+              value={{ name: active, isDefault: active === DEFAULT_VARIANT }}
+            >
+              <DocumentCanvas
+                uischema={variantOf(draft.content, active)}
+                schema={draft.content.schema}
+                onChange={(uischema) => setContent(withVariant(draft.content, uischema, active))}
+                selectedId={shownSelection}
+                onSelect={setSelectedId}
+                focusedId={focusedId}
+                onFocus={(formId) => {
+                  setFocus(formId);
+                  setSelectedId(formId);
                 }}
+                onUnfocus={() => setFocus(null)}
+                onInspect={(formId) => {
+                  setSelectedId(formId);
+                  setInspectorReveal((n) => n + 1);
+                }}
+                deleteChoices={deleteChoices}
+                onRememberDelete={(kind, choice) =>
+                  setDeleteChoices((choices) => ({ ...choices, [kind]: choice }))
+                }
+                onInsert={insert}
+                onRemoveElement={removeEl}
+                onCopyElement={copyEl}
+                onEditOptions={options.open}
+                onEditColumns={editColumns}
+                onMoveElement={moveEl}
+                accepts={accepts}
+                onEditRule={rules.open}
+                ruleProblems={rules.problems}
+                canAddRule={rules.canAdd}
+                governance={governance}
+                onPageSelect={setPageSelectedId}
+                pageSelectedId={pageSelectedId}
               />
-            )}
-            <DocumentInspector
-              content={draft.content}
-              onContentChange={setContent}
-              pageSelectedId={pageSelectedId}
-              focusedId={focusedId}
-              formId={shownSelection}
-              open={expanded === 'inspector'}
-              onOpenChange={(open) => setExpanded(open ? 'inspector' : null)}
-              revealKey={inspectorReveal}
-              onEditOptions={options.open}
-              onEditRule={rules.open}
-              templateRules={draft.kind === 'template'}
-              governance={governance}
-              variant={active}
-            />
-            {options.dialog}
-            {rules.dialog}
-          </StudioVariantContext.Provider>
-        )}
-      </main>
+              {/* Nothing on the page may take a new child: the Palette would only ever say "Locked". */}
+              {focusedForm !== undefined && mayAddWithin(governance, focusedForm) && (
+                <DocumentPalette
+                  open={expanded === 'palette'}
+                  onOpenChange={(open) => setExpanded(open ? 'palette' : null)}
+                  items={items}
+                  // Click, Enter or Space places by the page selection (doc 238 rule 16).
+                  onAppend={(itemId) => {
+                    const { layoutId, index, cell } = appendTarget(focusedForm, pageSelectedId);
+                    // Doc 259 rule 10: say why nothing happened, rather than silently ignoring the click.
+                    if (governance !== undefined && !governance.canAdd(layoutId)) {
+                      toast.info(LOCKED);
+                      return;
+                    }
+                    insert(layoutId, index, itemId, cell);
+                  }}
+                />
+              )}
+              <DocumentInspector
+                content={draft.content}
+                onContentChange={setContent}
+                pageSelectedId={pageSelectedId}
+                focusedId={focusedId}
+                formId={shownSelection}
+                open={expanded === 'inspector'}
+                onOpenChange={(open) => setExpanded(open ? 'inspector' : null)}
+                revealKey={inspectorReveal}
+                onEditOptions={options.open}
+                onEditRule={rules.open}
+                templateRules={draft.kind === 'template'}
+                governance={governance}
+                variant={active}
+              />
+              {options.dialog}
+              {rules.dialog}
+            </StudioVariantContext.Provider>
+          )}
+        </main>
+      </StudioAnswersProvider>
       <StudioFooter
         // Preview selects nothing, so it shows no breadcrumbs (doc 247 rule 12).
         path={mode === 'preview' ? null : footerPath}

@@ -1,5 +1,4 @@
-import { variantOf } from '@repo/documents/content';
-import { DocumentRunner } from '@repo/documents/runner';
+import type { DocumentContent } from '@repo/documents/content';
 import { Badge } from '@repo/ui/badge';
 import { Button } from '@repo/ui/button';
 import { Spinner } from '@repo/ui/spinner';
@@ -11,7 +10,7 @@ import { DocumentDeleteButton } from '@/components/common/document-delete-button
 import { VersionDropdown } from '@/components/common/version-dropdown';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
-import { answersOf, sameAnswers } from '@/lib/service-answers';
+import { governingOf, VersionContent } from '@/components/console/version-content';
 import {
   addServiceVersion,
   deleteService,
@@ -21,17 +20,16 @@ import {
   serviceQueryOptions,
   updateDraft,
 } from '@/lib/services';
-import { documentContentOf } from '@/lib/studio-content';
+import { documentContentOf, sameDocumentContent } from '@/lib/studio-content';
 
 const SERVICE_NOUN = { full: 'service', short: 'service' } as const;
-const noop = () => {};
 
 /**
- * Doc 230 — staff author a service version by FILLING its form: the version's own schema and DEFAULT variant in a
- * `DocumentRunner` (doc 276), with the answers saved in `content.data`. The header is the agreement detail page's, and the
- * URL rather than local state decides which version is open.
+ * Doc 230 / doc 281 — staff author a service version in the FILLABLE Document Studio: they add fields AND answer them,
+ * the answers saved in `content.data`. The header is the agreement detail page's, and the URL rather than local state
+ * decides which version is open.
  *
- * Gates on the query so the runner mounts WITH its answers, never seeded empty and then replaced.
+ * Gates on the query so the studio mounts WITH its content, never seeded empty and then replaced.
  */
 export function ServiceVersionEditor({
   slug,
@@ -58,8 +56,8 @@ export function ServiceVersionEditor({
       </p>
     );
   }
-  // Keyed by version: each version starts with its own answers, validity and `deleted` flag — a route
-  // param change alone would carry the previous version's across.
+  // Keyed by version: each version starts with its own studio, edits and `deleted` flag — a route param change
+  // alone would carry the previous version's across.
   return (
     <EditorBody key={versionId} slug={slug} id={id} detail={query.data} versionId={versionId} />
   );
@@ -81,18 +79,27 @@ function EditorBody({
   const { versions } = detail;
   const latest = versions.at(-1);
   const selected = versions.find((version) => version.id === versionId) ?? latest;
-  const document = documentContentOf(selected?.content);
   const editable = selected?.status === 'draft';
+  // Doc 281 rule 21: the template THIS version is pinned to governs which fields staff may add.
+  const governing = governingOf(
+    selected?.templateVersionId == null
+      ? undefined
+      : detail.definitions[selected.templateVersionId],
+  );
 
-  /** Rule 5: what the answers are compared with — the server's, rebuilt every render, so a save cleans. */
-  const stored = answersOf(selected?.content);
-  const [answers, setAnswers] = useState<Record<string, unknown>>(stored);
-  /** Reported by the runner (the errors it validates with); a draft reports on mount. */
-  const [valid, setValid] = useState(false);
+  /** Rule 22: what the studio's content is compared with — the server's, rebuilt every render, so a save cleans. */
+  const stored = documentContentOf(selected?.content);
+  /**
+   * The studio's seed, pinned to this mount (the body is keyed by version) — never the query data, whose refetch after
+   * a save hands back an equal content with a new identity (the feature 218 trap).
+   */
+  const [seed] = useState(stored);
+  /** The content the studio last reported: `null` until its baseline emit on mount. */
+  const [live, setLive] = useState<DocumentContent | null>(null);
   /** An action waiting on the discard confirmation. Stored as a thunk, hence the extra arrow. */
   const [pending, setPending] = useState<(() => void) | null>(null);
 
-  const dirty = editable && !sameAnswers(answers, stored);
+  const dirty = editable && live !== null && !sameDocumentContent(live, stored);
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
   /** Doc 225 B1: a deleted service or version has nothing to save, so the guard must not ask. */
@@ -111,21 +118,22 @@ function EditorBody({
     });
   /**
    * New version CREATES before it navigates, so it asks before the create rather than leaving it to the
-   * guard. Confirming drops the answers, so the navigation that follows is not blocked again.
+   * guard. Confirming drops the edits, so the navigation that follows is not blocked again.
    */
   const confirmed = (action: () => void) =>
     dirty
       ? setPending(() => () => {
-          setAnswers(stored);
+          setLive(null);
           action();
         })
       : action();
 
   const save = useMutation({
     mutationFn: () => {
-      if (document === null) throw new Error('This version has no form to save answers to.');
-      // Rule 6: the stored form, unchanged, with the new answers.
-      return updateDraft(id, versionId, { content: { ...document, data: answers } });
+      if (live === null) throw new Error('This version has no document to save.');
+      // Rule 23: `data` ALWAYS sent — the API keeps the stored answers when it is absent, so clearing every answer
+      // would otherwise clear nothing.
+      return updateDraft(id, versionId, { content: { ...live, data: live.data ?? {} } });
     },
     onSuccess: invalidate,
   });
@@ -149,12 +157,9 @@ function EditorBody({
   const { service, ...deletableRest } = detail.deletable;
 
   return (
-    <div className="flex flex-col gap-4">
-      <UnsavedChangesGuard
-        when={isDirty}
-        onSave={saveAnswers}
-        onDiscard={() => setAnswers(stored)}
-      />
+    // Full height: the studio sizes itself to its container (doc 218 rule 16, as the agreement page).
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <UnsavedChangesGuard when={isDirty} onSave={saveAnswers} onDiscard={() => setLive(null)} />
       <ConfirmDiscardDialog
         open={pending !== null}
         onCancel={() => setPending(null)}
@@ -164,7 +169,7 @@ function EditorBody({
           action?.();
         }}
       />
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
         <h1 className="text-xl font-semibold">{detail.service.title ?? 'Untitled'}</h1>
         <div className="ml-auto flex items-center gap-2">
           {selected ? <Badge color="grey">{selected.status}</Badge> : null}
@@ -200,8 +205,9 @@ function EditorBody({
               <Button
                 size="sm"
                 type="button"
-                // Rule 5: clean AND valid — publishing is what makes these answers the service's.
-                disabled={dirty || !valid || busy}
+                // Rule 24: clean is publishable — the API refuses answers that don't match the form, and the
+                // refusal shows in the alert below.
+                disabled={dirty || busy}
                 onClick={() => publish.mutate()}
               >
                 {publish.isPending ? <Spinner className="size-4" /> : null} Publish
@@ -234,32 +240,26 @@ function EditorBody({
         </div>
       </div>
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="shrink-0 text-sm text-destructive">
           {error.message}
         </p>
       ) : null}
-      {document === null ? (
-        <p role="alert" className="text-sm text-muted-foreground">
-          This version’s content isn’t a document the studio can open.
-        </p>
-      ) : (
-        <div
-          data-slot="service-version-content"
-          className="rounded-xl border border-border bg-card"
-        >
-          {/* Rule 2: fillable for a draft, the same runner read-only otherwise. The header owns Save and
-              Publish, so the runner's own action bar is left out. */}
-          <DocumentRunner
-            actions={false}
-            disabled={!editable}
-            schema={document.schema}
-            uischema={variantOf(document)}
-            data={editable ? answers : stored}
-            onChange={editable ? setAnswers : noop}
-            onValidityChange={setValid}
-          />
-        </div>
-      )}
+      <div
+        data-slot="service-version-content"
+        className="min-h-0 flex-1 rounded-xl border border-border bg-background"
+      >
+        {/* Doc 281 rule 21: fillable for a draft — fields added and answered on the canvas — and read-only (locked to
+            Preview, which shows the answers) otherwise. The header owns Save and Publish. */}
+        <VersionContent
+          document={seed}
+          kind="document"
+          type="services.service"
+          editable={editable}
+          fillable
+          onDocumentChange={setLive}
+          governedBy={governing}
+        />
+      </div>
     </div>
   );
 }

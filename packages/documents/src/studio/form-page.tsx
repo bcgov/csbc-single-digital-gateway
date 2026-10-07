@@ -13,12 +13,10 @@ import {
 import type { FormPage } from './canvas-graph';
 import { FADE_IN, FADE_OUT_LATE } from './canvas-zoom';
 import { stripRules } from './rules/strip-rules';
+import { useCanvasAnswers } from './answers/studio-answers';
 
 const NO_INSERT = () => {};
 const NO_EDIT = () => {};
-
-/** The page draws no answers: one stable object, so JSONForms is never handed new data. */
-const NO_DATA = {};
 
 /**
  * A focused Form's page body (doc 233 rule 4): the Form itself, through the studio renderers — whose Form renderer
@@ -149,14 +147,18 @@ function PageContent({
   // The Form as authored: the Form renderers draw its title and lay out its elements (doc 236 rule 35).
   // The canvas ignores rules (doc 256 rule 7): with no answers, a rule would hide or disable the element being authored.
   const canvasForm = useMemo(() => stripRules(page.form), [page.form]);
+  // Doc 281: a fillable studio's answers, live while the page is open for editing.
+  const answers = useCanvasAnswers(onEdit !== undefined);
   const form = (
     <JsonForms
       schema={page.schema}
       uischema={canvasForm as never}
-      data={NO_DATA}
+      data={answers.data}
       renderers={renderers}
       cells={cells}
       validationMode="NoValidation"
+      readonly={answers.readonly}
+      {...(answers.onChange !== undefined && { onChange: answers.onChange })}
     />
   );
   // Always the same tree, editable or not: swapping the provider in and out would remount the form, collapsing the

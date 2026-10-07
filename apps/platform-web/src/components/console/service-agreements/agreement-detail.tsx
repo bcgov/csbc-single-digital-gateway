@@ -23,7 +23,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { AgreementDeleteButton } from './agreement-delete-button';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
-import { VersionContent, type GoverningTemplate } from '@/components/console/version-content';
+import { governingOf, VersionContent } from '@/components/console/version-content';
 import { documentContentOf, sameDocumentContent } from '@/lib/studio-content';
 import { useAuth } from '@/lib/auth';
 import { useSetPageChrome } from '@/lib/page-chrome';
@@ -366,21 +366,4 @@ function VersionPicker({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-/**
- * Doc 276: the template a version is PINNED to, as the studio shows it — its name (the default variant's label) and its
- * rules. `undefined` = ungoverned: no pinned template, or one that authored no rules.
- */
-function governingOf(
-  definition:
-    | { variants: Record<string, Record<string, unknown>>; capabilities?: unknown }
-    | undefined,
-): GoverningTemplate | undefined {
-  if (definition?.capabilities === undefined) return undefined;
-  const label = definition.variants['default']?.['label'];
-  return {
-    name: typeof label === 'string' && label.trim() !== '' ? label.trim() : 'Template',
-    capabilities: definition.capabilities as GoverningTemplate['capabilities'],
-  };
 }

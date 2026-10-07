@@ -5,6 +5,7 @@ import { retargetDropTarget } from './grid-drop-target';
 import { installGrabOffsetClamp } from './grid-grab-offset';
 import type { DropSource } from '../../studio/capabilities/governance';
 import { GridNestEngine, VERTICAL_CELL_HEIGHT } from './grid-nest-engine';
+import { LIVE_CONTROL } from './studio-fill';
 
 /** The row unit item heights are counted in; heights follow content, so it only sets their granularity. */
 const CELL_HEIGHT = VERTICAL_CELL_HEIGHT;
@@ -17,8 +18,7 @@ const CELL_HEIGHT = VERTICAL_CELL_HEIGHT;
  * What a press may never drag from (doc 250 rule 13). `[contenteditable]` alone also matches `contenteditable="false"`,
  * which a read-only `RichTextView` renders — so rich content could not be dragged by its text.
  */
-export const DRAG_CANCEL =
-  'input,textarea,button,select,option,[contenteditable]:not([contenteditable="false"]),.ui-resizable-handle';
+export const DRAG_CANCEL = `${LIVE_CONTROL},button,.ui-resizable-handle`;
 
 export interface VerticalGridOptions {
   /** The authored gap in rem; gridstack's margin is half of it (rule 27). */

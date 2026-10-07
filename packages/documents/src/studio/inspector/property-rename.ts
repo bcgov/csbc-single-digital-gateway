@@ -1,3 +1,4 @@
+import { renameAnswer, renameItemAnswer } from '../answers/answer-edits';
 import type { DocumentContent, Uischema } from '../document-types';
 import { conditionsOf, withFunnel, type FunnelCondition } from '../funnel-model';
 import { ownerOf, propertyAt, scopeOf, withOwner } from '../property-ref';
@@ -49,8 +50,12 @@ export function renamePropertyKey(
       renameInRoot(uischema, from, key),
     ]),
   ) as DocumentContent['variants'];
-  // Spread, so a key this does not know about (doc 258's `capabilities`) survives the rename.
-  return { ...content, schema: renameInSchema(content.schema, properties, from, key), variants };
+  // Spread, so a key this does not know about (doc 258's `capabilities`) survives the rename; the answer moves too (doc 281).
+  return renameAnswer(
+    { ...content, schema: renameInSchema(content.schema, properties, from, key), variants },
+    from,
+    key,
+  );
 }
 
 function renameInSchema(
@@ -174,7 +179,8 @@ function renameItemKey(
       rescoped(root, oldScope, newScope),
     ]),
   ) as DocumentContent['variants'];
-  return { ...content, schema, variants };
+  // Doc 281 rule 16: the item key moves in every answered row.
+  return renameItemAnswer({ ...content, schema, variants }, array, from, key);
 }
 
 /** `node` with every Control scoped `from` rescoped `to`, at any depth; the same object when none is. */

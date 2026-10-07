@@ -4,6 +4,7 @@ import { withCapabilities, withoutEntries } from './capabilities/capability-edit
 import { cardSlots } from '../renderers/ui/card-model';
 import { idOf } from './element-ids';
 import { refOfScope, withOwner, type ItemRef } from './property-ref';
+import { pruneAnswers } from './answers/answer-edits';
 
 /** A Control bound to a top-level schema property: the only binding a delete cleans up (doc 242 rule 6). */
 const PROPERTY_SCOPE = /^#\/properties\/([^/]+)$/;
@@ -43,7 +44,8 @@ export function removeElement(
   let schema = orphaned.length === 0 ? content.schema : withoutProperties(content.schema, orphaned);
   for (const ref of orphanedItems)
     schema = withOwner(schema, ref, (items) => withoutProperties(items, [ref.key]));
-  return schema === content.schema ? withoutElement : { ...withoutElement, schema };
+  // Doc 281 rule 17: answers to a deleted property go with it.
+  return pruneAnswers(schema === content.schema ? withoutElement : { ...withoutElement, schema });
 }
 
 /** `node` with the child whose id is `id` removed at any depth, collected into `removed`; the root is never a child. */

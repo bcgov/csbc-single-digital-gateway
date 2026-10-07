@@ -6,6 +6,7 @@ import {
   isObjectArray,
   type AuthoredColumnType,
 } from '../renderers/ui/object-array';
+import { pruneAnswers, renameItemAnswer } from './answers/answer-edits';
 import type { Governance } from './capabilities/governance';
 import { DEFAULT_VARIANT, variantOf, type DocumentContent } from './document-types';
 import { findById } from './element-ids';
@@ -50,9 +51,11 @@ export function applyColumnEdit(
   const items = recordOf(property['items'])!;
   const columns = recordOf(items['properties']) as Columns;
   const nextItems = editedItems(items, columns, edit);
-  return nextItems === undefined
-    ? content
-    : updateProperty(content, propertyKey, { items: nextItems });
+  if (nextItems === undefined) return content;
+  const next = updateProperty(content, propertyKey, { items: nextItems });
+  // Doc 281 rule 19: a re-keyed column's answers move in every row; a removed column's go.
+  if (edit.kind === 'rekey') return renameItemAnswer(next, propertyKey, edit.key, edit.to.trim());
+  return edit.kind === 'remove' ? pruneAnswers(next) : next;
 }
 
 /** The edited `items`, or `undefined` when the edit is refused or unknown. */

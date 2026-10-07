@@ -13,6 +13,7 @@ import {
   type ElementAction,
 } from './element-actions';
 import { CardSlotContext } from './card-slot';
+import { LIVE_CONTROL, useStudioFill } from './studio-fill';
 import { LockBadge } from './lock-badge';
 import { ParentGridFullContext } from './grid-full-context';
 import { LOCKED } from '../../studio/capabilities/governance';
@@ -87,9 +88,11 @@ export function StudioElement({
   inert?: boolean;
   children: ReactNode;
 }) {
+  // Doc 281 rule 4: a fillable canvas's controls are live — padded the same, but usable.
+  const live = useStudioFill();
   const body = inert ? (
     // Padded, so the selection ring and hover outline sit clear of the control (doc 237 rule 13b).
-    <div data-slot="studio-element-body" inert className={ELEMENT_INSET}>
+    <div data-slot="studio-element-body" inert={!live} className={ELEMENT_INSET}>
       {content}
     </div>
   ) : (
@@ -149,6 +152,9 @@ export function StudioElement({
               ? undefined
               : (event) => {
                   event.stopPropagation();
+                  // Doc 281 rule 14: a double-click inside a live control selects its text, nothing more.
+                  if (live && event.target instanceof Element && event.target.closest(LIVE_CONTROL))
+                    return;
                   openOptions();
                 }
           }

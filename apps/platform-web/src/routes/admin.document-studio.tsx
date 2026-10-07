@@ -49,6 +49,8 @@ function DocumentStudioRoute() {
         kind={kind}
         type={type}
         onSaved={(ref) => navigate({ search: ref, replace: true })}
+        // Doc 281: the spike fills its canvas too — the browser stub store keeps `content.data`.
+        fillable
       />
     </div>
   );
