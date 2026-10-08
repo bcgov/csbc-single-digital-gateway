@@ -33,6 +33,12 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
  * multi-stage rendering, since a staged form is one `Flow` document now.
  */
 
+// Docs 282-283: a document-shaped submission reads back through DocumentView, which renders
+// JSONForms — proxied here so the test can see what it was handed.
+vi.mock('@repo/documents/view', async () =>
+  (await import('../../../../support/mock-documents')).documentViewMock(),
+);
+
 vi.mock('@repo/ui/skeleton', () => ({
   Skeleton: () => <div data-testid="skeleton" />,
 }));

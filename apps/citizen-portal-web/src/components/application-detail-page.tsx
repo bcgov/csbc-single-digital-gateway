@@ -1,4 +1,6 @@
-import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
+// Doc 217 deleted the @repo/react renderers, the revise form and this page's route; the imports below are stubbed
+// until the application pages are rebuilt on @repo/documents.
+// import { JsonForms, type JsonSchema, type UISchemaElement } from '@repo/react/jsonforms';
 import { Button } from '@repo/ui/button';
 import { buttonVariants } from '@repo/ui/button';
 import { Card, CardContent } from '@repo/ui/card';
@@ -8,10 +10,10 @@ import { Skeleton } from '@repo/ui/skeleton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
-import { ReviseForm } from '@/components/application/revise-form';
+// import { ReviseForm } from '@/components/application/revise-form';
 import { StatusBanner } from '@/components/application/status-banner';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { Breadcrumb } from '@/components/services/service-content';
+import { Breadcrumb } from '@/components/breadcrumb';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   type ApplicationDetail,
@@ -19,20 +21,21 @@ import {
   reviseApplication,
 } from '@/lib/applications';
 
-interface StructurePage {
-  id?: string;
-  name?: string;
-  schema?: Record<string, unknown>;
-  uischema?: Record<string, unknown>;
-}
+// interface StructurePage {
+//   id?: string;
+//   name?: string;
+//   schema?: Record<string, unknown>;
+//   uischema?: Record<string, unknown>;
+// }
 
 /**
  * Render the submitted answers read-only as a **disabled form** (same as the staff submission review,
  * `platform-web` `submission-detail.tsx`) so it's clear what the citizen entered — basic = one form,
  * multi-stage = one form per page with the page name as a heading.
  */
-function SubmittedAnswers({ application }: { application: ApplicationDetail }) {
-  const { kind, structure, data } = application;
+function SubmittedAnswers(_props: { application: ApplicationDetail }) {
+  return <p className="text-sm text-muted-foreground">Your answers can’t be shown yet.</p>;
+  /* const { kind, structure, data } = application;
   if (kind === 'multi-stage-form') {
     const stages = (structure['stages'] as Array<{ pages?: StructurePage[] }> | undefined) ?? [];
     const pages = stages.flatMap((stage) => stage.pages ?? []);
@@ -59,7 +62,7 @@ function SubmittedAnswers({ application }: { application: ApplicationDetail }) {
       data={data}
       readonly
     />
-  );
+  ); */
 }
 
 /**
@@ -69,7 +72,8 @@ function SubmittedAnswers({ application }: { application: ApplicationDetail }) {
  * revised and resubmitted — both edit inline via the FormRunner. Requires a session.
  */
 export function ApplicationDetailPage() {
-  const { id } = useParams({ from: '/applications/$id' });
+  // Its route is gone (doc 217), so the param is read loosely.
+  const { id = '' } = useParams({ strict: false }) as { id?: string };
   const { data: user, isPending: authPending } = useAuth();
   const loginUrl = useLoginUrl();
   const { data: application, isPending, isError } = useQuery(applicationQueryOptions(id));
@@ -151,15 +155,16 @@ export function ApplicationDetailPage() {
             </header>
             <div className="flex flex-col gap-9">
               {editing || application.status === 'draft' ? (
-                <ReviseForm
-                  application={application}
-                  onSubmitted={() => setEditing(false)}
-                  onCancel={() => setEditing(false)}
-                  submitLabel={
-                    application.status === 'draft' ? 'Submit application' : 'Resubmit application'
-                  }
-                  showCancel={application.status !== 'draft'}
-                />
+                // <ReviseForm
+                //   application={application}
+                //   onSubmitted={() => setEditing(false)}
+                //   onCancel={() => setEditing(false)}
+                //   submitLabel={
+                //     application.status === 'draft' ? 'Submit application' : 'Resubmit application'
+                //   }
+                //   showCancel={application.status !== 'draft'}
+                // />
+                <p className="text-sm text-muted-foreground">Editing isn’t available yet.</p>
               ) : (
                 <>
                   <StatusBanner

@@ -96,9 +96,15 @@ export function defaultLabel(content: DocumentContent): string | undefined {
  * keeps the template's own title (2026-10-07). The title column still reads the default variant's.
  */
 export function withTitle(content: DocumentContent, label: string): DocumentContent {
-  const variants = Object.fromEntries(
-    Object.entries(content.variants).map(([name, root]) => [name, { ...root, label }]),
-  ) as DocumentContent['variants'];
+  const variants: DocumentContent['variants'] = {
+    ...Object.fromEntries(
+      Object.entries(content.variants).map(([name, root]): [string, Uischema] => [
+        name,
+        { ...root, label },
+      ]),
+    ),
+    default: { ...content.variants.default, label },
+  };
   return { ...content, variants };
 }
 

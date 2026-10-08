@@ -38,9 +38,9 @@ describe('Admin Shell Integration Test Suite', () => {
 
   it('renders the Templates placeholder at /admin/templates', async () => {
     mockAuth(adminUser);
-    renderApp('/admin/document-types');
+    renderApp('/admin/templates');
     expect(
-      await screen.findByText(/No document types yet/i, {}, { timeout: 10000 }),
+      await screen.findByText(/No templates yet/i, {}, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 

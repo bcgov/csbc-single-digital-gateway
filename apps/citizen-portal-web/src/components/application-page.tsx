@@ -1,13 +1,15 @@
-import { FormRunner } from '@repo/react/form-runner';
+// Doc 217 deleted the @repo/react renderers, the consent gate and this page's route; the imports below are
+// stubbed until the apply flow is rebuilt on @repo/documents.
+// import { FormRunner } from '@repo/react/form-runner';
 import { Button } from '@repo/ui/button';
 import { Skeleton } from '@repo/ui/skeleton';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { ConsentGate, consentPending } from '@/components/application/consent-gate';
+// import { ConsentGate, consentPending } from '@/components/application/consent-gate';
 import { CitizenShell } from '@/components/layout/citizen-shell';
-import { Breadcrumb } from '@/components/services/service-content';
+import { Breadcrumb } from '@/components/breadcrumb';
 import { useAuth, useLoginUrl } from '@/lib/auth';
 import {
   type ApplicationFormToFill,
@@ -90,10 +92,12 @@ function ApplicationForm({
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => save.mutate(next), 800); // debounced autosave
   };
+  // Only the stubbed FormRunner reads these; kept for when it returns.
+  void [data, handleChange];
 
   return (
     <div className="flex flex-col gap-4">
-      <FormRunner
+      {/* <FormRunner
         kind={form.kind}
         definition={form.structure}
         data={data}
@@ -104,7 +108,8 @@ function ApplicationForm({
         }}
         submitting={submit.isPending}
         submitLabel="Submit application"
-      />
+      /> */}
+      <p className="text-sm text-muted-foreground">Online applications aren’t available yet.</p>
       <p className="text-right text-xs text-muted-foreground" aria-live="polite">
         {submit.isError
           ? 'Could not submit — please try again.'
@@ -124,7 +129,11 @@ function ApplicationForm({
  * Requires a session (applying is private); anonymous visitors get a login prompt.
  */
 export function ApplicationPage() {
-  const { serviceId, formId } = useParams({ from: '/services/$serviceId/apply/$formId' });
+  // Its route is gone (doc 217), so the params are read loosely.
+  const { serviceId = '', formId = '' } = useParams({ strict: false }) as {
+    serviceId?: string;
+    formId?: string;
+  };
   const { data: user, isPending: authPending } = useAuth();
   const form = useQuery(applicationFormQueryOptions(serviceId, formId));
   const draft = useQuery({
@@ -140,7 +149,8 @@ export function ApplicationPage() {
   // refetch re-flags `consentNeeded`, so the gate re-opens for a newly published agreement version.
   const [proceeded, setProceeded] = useState(false);
   const [gateEngaged, setGateEngaged] = useState(false);
-  const consentNeeded = agreements.isSuccess && consentPending(agreements.data);
+  // const consentNeeded = agreements.isSuccess && consentPending(agreements.data);
+  const consentNeeded = false;
   useEffect(() => {
     if (consentNeeded) setGateEngaged(true);
   }, [consentNeeded]);
@@ -171,11 +181,12 @@ export function ApplicationPage() {
         ) : !draft.data || !agreements.isSuccess ? (
           <Skeleton className="h-32 w-full" />
         ) : showGate ? (
-          <ConsentGate
-            agreements={agreements.data}
-            serviceId={serviceId}
-            onContinue={() => setProceeded(true)}
-          />
+          // <ConsentGate
+          //   agreements={agreements.data}
+          //   serviceId={serviceId}
+          //   onContinue={() => setProceeded(true)}
+          // />
+          <></>
         ) : (
           <>
             <h1 className="font-heading text-2xl font-semibold text-foreground">

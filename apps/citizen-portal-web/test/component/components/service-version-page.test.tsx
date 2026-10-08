@@ -53,6 +53,11 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 // Mock custom components
+vi.mock('@/components/services/detail-sections', () => ({
+  ServiceSections: ({ variants }: any) => (
+    <div data-testid="service-sections" data-variants={JSON.stringify(variants)} />
+  ),
+}));
 vi.mock('@/components/layout/citizen-shell', () => ({
   CitizenShell: ({ children, activeNav }: any) => (
     <div data-testid="citizen-shell" data-active-nav={activeNav}>
@@ -126,7 +131,8 @@ describe('ServiceVersionPage Component', () => {
       publishedAt: '2026-01-10T00:00:00.000Z',
       archivedAt: '2026-02-01T00:00:00.000Z',
       schema: { type: 'object' },
-      uischema: { type: 'Service' },
+      variants: { default: { type: 'Form', elements: [] } },
+      data: {},
     };
 
     vi.mocked(useQuery).mockImplementation((options: any) => {
@@ -163,10 +169,11 @@ describe('ServiceVersionPage Component', () => {
     const link = screen.getByRole('link', { name: /View the current service/i });
     expect(link).toHaveAttribute('href', '/services/svc-abc');
 
-    // Feature 217: the sectioned render of the version's content went with the @repo/react
-    // renderers, and the page no longer queries the service for its application methods.
-    expect(screen.queryByTestId('service-sections')).toBeNull();
-    expect(screen.getByText(/not available yet/i)).toBeInTheDocument();
+    // The version's own content renders through the same sections as the service page.
+    expect(screen.getByTestId('service-sections')).toHaveAttribute(
+      'data-variants',
+      JSON.stringify(mockVersionData.variants),
+    );
   });
 
   it('correctly falls back in validity range formatting when publishedAt is null', () => {
@@ -178,7 +185,8 @@ describe('ServiceVersionPage Component', () => {
       publishedAt: null,
       archivedAt: null,
       schema: {},
-      uischema: {},
+      variants: { default: {} },
+      data: {},
     };
 
     vi.mocked(useQuery).mockImplementation((options: any) => {
@@ -206,7 +214,8 @@ describe('ServiceVersionPage Component', () => {
       publishedAt: null,
       archivedAt: null,
       schema: {},
-      uischema: {},
+      variants: { default: {} },
+      data: {},
     };
 
     vi.mocked(useQuery).mockImplementation((options: any) => {

@@ -34,9 +34,20 @@ const SERVICE_SCHEMA = {
   type: 'object',
   properties: { title: { type: 'string', title: 'Title' } },
 };
-const SERVICE_UISCHEMA = {
-  type: 'VerticalLayout',
-  elements: [{ type: 'Control', scope: '#/properties/title' }],
+// The citizen variant the page renders, with a Section so the "On this page" rail is scanned too.
+const SERVICE_VARIANTS = {
+  default: { type: 'Form', elements: [{ type: 'Control', scope: '#/properties/title' }] },
+  Citizen: {
+    type: 'Form',
+    elements: [
+      {
+        id: 'sec-1',
+        type: 'Section',
+        label: 'Overview',
+        elements: [{ type: 'Control', scope: '#/properties/title' }],
+      },
+    ],
+  },
 };
 const SERVICE_DETAIL = {
   id: 'svc-1',
@@ -47,7 +58,7 @@ const SERVICE_DETAIL = {
   publishedAt: '2025-01-15T00:00:00.000Z',
   data: { title: 'Service One' },
   schema: SERVICE_SCHEMA,
-  uischema: SERVICE_UISCHEMA,
+  variants: SERVICE_VARIANTS,
   applications: [
     {
       id: 'ref-1',
@@ -68,7 +79,7 @@ const SERVICE_VERSION = {
   title: 'Service One',
   data: { title: 'Service One' },
   schema: SERVICE_SCHEMA,
-  uischema: SERVICE_UISCHEMA,
+  variants: SERVICE_VARIANTS,
   createdAt: '2024-01-01T00:00:00.000Z',
   publishedAt: null,
   archivedAt: '2024-06-01T00:00:00.000Z',

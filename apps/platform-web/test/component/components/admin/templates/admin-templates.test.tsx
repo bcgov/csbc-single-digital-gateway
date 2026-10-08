@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../../../support/render-app';
 
 import '@/routes/admin';
-import '@/routes/admin.document-types';
-import '@/routes/admin.document-types.index';
-import '@/routes/admin.document-types.$id';
+import '@/routes/admin.templates';
+import '@/routes/admin.templates.index';
+import '@/routes/admin.templates.$id';
 
 // Monaco can't run in jsdom — proxy it with a plain textarea.
 // Docs 218, 276: the detail page opens a version's content in the Document Studio, which does not run in

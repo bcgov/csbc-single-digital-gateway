@@ -12,11 +12,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // / `activeOptions` are irrelevant here (no active matching) — drop them.
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal()),
-  useLocation: (options?: { select?: (l: { pathname: string; hash: string }) => unknown }) => {
-    const location = locationRef.current;
-    return options?.select ? options.select(location) : location;
-  },
-  useParams: () => paramsRef.current,
   Link: ({
     to,
     params,
