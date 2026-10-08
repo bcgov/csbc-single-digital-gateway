@@ -50,12 +50,13 @@ describe('validateContent — allowed roots (doc 275)', () => {
     ).toThrow(/variant "mobile"/);
   });
 
-  it("rejects a variant whose root differs from the default's, even when both are allowed", () => {
-    expect(() =>
-      validateContent(METHOD, content({ default: root('Form'), guided: root('Funnel') })),
-    ).toThrow(
-      /Variant "guided" has a "Funnel" root; every variant must match the default's "Form"/,
+  it("accepts a variant whose root differs from the default's when both are allowed (doc 275 B1)", () => {
+    const result = validateContent(
+      SERVICE,
+      content({ default: root('Funnel'), Staff: root('Form') }),
     );
+    expect(result.variants['default']?.type).toBe('Funnel');
+    expect(result.variants['Staff']?.type).toBe('Form');
   });
 
   it('accepts several variants sharing the default root', () => {

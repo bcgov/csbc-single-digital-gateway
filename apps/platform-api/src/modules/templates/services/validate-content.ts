@@ -13,8 +13,8 @@ import {
  * services and service agreements alike.
  *
  * One `DocumentContent` shape (doc 275) plus a check on each variant's ROOT: every variant's root must be one the type
- * allows, and all must share the default's — a variant is another presentation of the same document, never a different
- * kind of one. Everything below the root is opaque JSON validated by the studio.
+ * allows. Variants need NOT share the default's root (doc 275 B1) — a Staff Form may present a citizen Funnel's
+ * fields on one page. Everything below the root is opaque JSON validated by the studio.
  */
 export function validateContent(document: Document, content: unknown): DocumentContentInput {
   const result = documentContentSchema.safeParse(content);
@@ -22,18 +22,12 @@ export function validateContent(document: Document, content: unknown): DocumentC
     throw new BadRequestException(z.prettifyError(result.error));
   }
   const roots = allowedRootsFor(document.type);
-  const defaultRoot = result.data.variants['default']?.type;
   for (const [name, uischema] of Object.entries(result.data.variants)) {
     if (!roots.includes(uischema.type)) {
       throw new BadRequestException(
         `A "${document.type}" document's root must be ${roots
           .map((r) => `"${r}"`)
           .join(' or ')}, not "${uischema.type}" (variant "${name}")`,
-      );
-    }
-    if (uischema.type !== defaultRoot) {
-      throw new BadRequestException(
-        `Variant "${name}" has a "${uischema.type}" root; every variant must match the default's "${defaultRoot}"`,
       );
     }
   }

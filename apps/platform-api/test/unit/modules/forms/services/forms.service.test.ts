@@ -173,9 +173,9 @@ describe('FormsService', () => {
       },
     );
 
-    it("rejects a variant whose root differs from the default's", async () => {
+    it("accepts a variant whose root differs from the default's (doc 275 B1)", async () => {
       dbMock.limit.mockResolvedValueOnce([{ role: 'member' }]);
-      txMock.returning.mockResolvedValueOnce([doc]);
+      txMock.returning.mockResolvedValueOnce([doc]).mockResolvedValueOnce([version]);
       const mixed = {
         schema: { type: 'object', properties: {} },
         variants: {
@@ -184,9 +184,10 @@ describe('FormsService', () => {
         },
       };
 
-      await expect(service.create('user-1', { ...input, content: mixed })).rejects.toThrow(
-        /every variant must match the default's "Form"/,
-      );
+      const result = await service.create('user-1', { ...input, content: mixed });
+
+      expect(result.form.id).toBe('doc-1');
+      expect(txMock.insert).toHaveBeenNthCalledWith(2, documentVersions);
     });
 
     it('throws NotFoundException if the user is not a workspace member', async () => {
