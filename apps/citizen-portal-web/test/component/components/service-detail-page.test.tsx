@@ -13,12 +13,27 @@ const schema = {
   },
 };
 const uischema = {
-  type: 'VerticalLayout',
+  type: 'Form',
   elements: [
     { type: 'Control', scope: '#/properties/title' },
     { type: 'Control', scope: '#/properties/description' },
-    { type: 'Control', scope: '#/properties/about', options: { format: 'richtext' } },
   ],
+};
+// The citizen page renders this variant, not `default`.
+const variants = {
+  default: uischema,
+  Citizen: {
+    type: 'Form',
+    label: 'Service One',
+    elements: [
+      {
+        id: 'sec-1',
+        type: 'Section',
+        label: 'Overview',
+        elements: [{ type: 'Control', scope: '#/properties/description' }],
+      },
+    ],
+  },
 };
 
 /**
@@ -33,7 +48,8 @@ const detail = {
   versionNumber: 3,
   publishedAt: '2025-01-15T00:00:00.000Z',
   schema,
-  uischema,
+  variants,
+  data: { description: 'Overview answer text.' },
 };
 
 const version = {
@@ -43,7 +59,8 @@ const version = {
   status: 'archived',
   title: 'Service One',
   schema,
-  uischema,
+  variants,
+  data: { description: 'Version one answer.' },
   createdAt: '2024-01-01T00:00:00.000Z',
   publishedAt: null,
   archivedAt: '2024-06-01T00:00:00.000Z',
@@ -102,6 +119,19 @@ describe('service detail page', () => {
     expect(versionLinks).toHaveLength(0);
   });
 
+  it('renders the citizen variant with an "On this page" entry per Section', async () => {
+    mockBff();
+    await renderRoute('/services/svc-1');
+    expect(
+      await screen.findByRole('heading', { name: 'Overview', level: 2 }, { timeout: 10000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Overview answer text.')).toBeInTheDocument();
+    // The variant's own title is not drawn under the page's.
+    expect(screen.getAllByRole('heading', { name: 'Service One', level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '#overview');
+    expect(document.getElementById('overview')).toHaveAttribute('data-slot', 'section');
+  });
+
   it('renders without description if service has no description', async () => {
     const detailNoDesc = { ...detail, description: null };
     mockBff({ svc: jsonResponse(detailNoDesc) });
@@ -148,6 +178,9 @@ describe('service version page', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('archived')).toBeInTheDocument();
     expect(screen.getByText(/historical version/i)).toBeInTheDocument();
+    // The version renders its OWN content, not the current service's.
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '#overview');
+    expect(screen.getByText('Version one answer.')).toBeInTheDocument();
   });
 
   it('shows a not-available state on 404', async () => {

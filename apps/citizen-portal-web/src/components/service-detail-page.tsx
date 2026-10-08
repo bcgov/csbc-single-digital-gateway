@@ -13,10 +13,9 @@ import { ServiceSections } from './services/detail-sections';
  * current PUBLISHED version (no version switcher; a specific version is reachable only via its
  * permalink).
  *
- * Feature 217: the sectioned overview (`ServiceSections`, a JSONForms render of the service's
- * content) and the "ways to apply" list are gone with the `@repo/react` renderers and
- * `document_references`. The page is the header — title, description and a disabled call to
- * action — until `@repo/forms` renders the authored document.
+ * The header — title, description and a disabled call to action (feature 217: no way to apply to
+ * link to without `document_references`) — then the service's citizen variant read back through
+ * `@repo/documents`, with "On this page" built from its Section titles (`ServiceSections`).
  */
 export function ServiceDetailPage() {
   const { serviceId } = useParams({ from: '/services/$serviceId/' });
@@ -86,11 +85,9 @@ export function ServiceDetailPage() {
 
         <div className="mx-auto mb-6 flex w-full max-w-285 flex-col gap-9 px-4 md:px-3">
           <ServiceSections
-            serviceId={service.id}
             schema={service.schema}
-            uischema={service.uischema}
+            variants={service.variants}
             data={service.data}
-            applications={service.applications}
           />
         </div>
       </div>

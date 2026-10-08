@@ -11,6 +11,7 @@ import {
   sectionVariant,
 } from '../ui/section-model';
 import { GAP_CLASS, layoutGap } from './layout-gap';
+import { SectionAnchorsContext } from './section-anchor';
 import { SectionDepthContext } from './section-depth';
 import { VerticalStack } from './vertical-layout';
 
@@ -31,10 +32,13 @@ export const SECTION_DESCRIPTION_CLASS = 'whitespace-pre-line text-muted-foregro
  * the header and the body — the body boxed for a container — with the depth raised for everything inside.
  */
 export function SectionFrame({
+  id,
   options,
   header,
   children,
 }: {
+  /** The DOM id a host anchors the Section by (`SectionAnchorsContext`), if any. */
+  id?: string | undefined;
   options: unknown;
   header: ReactNode;
   children: ReactNode;
@@ -44,6 +48,7 @@ export function SectionFrame({
   return (
     <SectionDepthContext.Provider value={depth + 1}>
       <div
+        id={id}
         data-slot="section"
         data-variant={variant}
         className={`flex flex-col ${GAP_CLASS[layoutGap(options)]}`}
@@ -72,6 +77,7 @@ export function useSectionHeadingLevel() {
 /** A Section filled in or read (doc 278 rules 1-11): the header only with a title or description, then its body. */
 export function SectionLayout({ uischema, visible, ...props }: LayoutProps) {
   const level = useSectionHeadingLevel();
+  const anchors = useContext(SectionAnchorsContext);
   if (!visible) return null;
   const title = sectionTitle(uischema);
   const description = sectionDescription(uischema);
@@ -95,7 +101,11 @@ export function SectionLayout({ uischema, visible, ...props }: LayoutProps) {
     </div>
   );
   return (
-    <SectionFrame options={uischema.options} header={header}>
+    <SectionFrame
+      id={anchors.get(String((uischema as { id?: unknown }).id))}
+      options={uischema.options}
+      header={header}
+    >
       <VerticalStack
         elements={(uischema as Layout).elements ?? []}
         gap={layoutGap(uischema.options)}

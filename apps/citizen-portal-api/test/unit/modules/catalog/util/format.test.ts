@@ -8,17 +8,18 @@ import { contentSchemas } from '../../../../../src/modules/catalog/util/format';
  * version content.
  */
 describe('contentSchemas', () => {
-  it('splits a content into its schema and variants', () => {
+  it('splits a content into its schema, variants and answers', () => {
     const content = {
       schema: { type: 'object', properties: { name: { type: 'string' } } },
       variants: { default: { type: 'Form', elements: [] }, brief: { type: 'Form', elements: [] } },
+      data: { name: 'Ada' },
     };
 
     expect(contentSchemas(content)).toEqual(content);
   });
 
   it('falls back to an empty schema and an empty default variant when either half is absent', () => {
-    const empty = { schema: {}, variants: { default: {} } };
+    const empty = { schema: {}, variants: { default: {} }, data: {} };
     expect(contentSchemas({})).toEqual(empty);
     expect(contentSchemas({ schema: { type: 'object' } })).toEqual(empty);
     // Doc 275: the old `{ schema, uischema }` shape is no longer read.
@@ -28,13 +29,22 @@ describe('contentSchemas', () => {
   });
 
   it('tolerates null and undefined rather than throwing', () => {
-    expect(contentSchemas(null)).toEqual({ schema: {}, variants: { default: {} } });
-    expect(contentSchemas(undefined)).toEqual({ schema: {}, variants: { default: {} } });
+    expect(contentSchemas(null)).toEqual({ schema: {}, variants: { default: {} }, data: {} });
+    expect(contentSchemas(undefined)).toEqual({ schema: {}, variants: { default: {} }, data: {} });
   });
 
-  it('ignores keys that are neither schema nor variants', () => {
-    const result = contentSchemas({ schema: {}, variants: { default: {} }, data: { title: 'x' } });
+  it('gives no answers when the content has none', () => {
+    expect(contentSchemas({ schema: {}, variants: { default: {} } }).data).toEqual({});
+  });
 
-    expect(Object.keys(result).toSorted()).toEqual(['schema', 'variants']);
+  it('ignores keys that are neither schema, variants nor data', () => {
+    const result = contentSchemas({
+      schema: {},
+      variants: { default: {} },
+      data: {},
+      capabilities: { elements: {} },
+    });
+
+    expect(Object.keys(result).toSorted()).toEqual(['data', 'schema', 'variants']);
   });
 });

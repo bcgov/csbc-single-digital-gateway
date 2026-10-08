@@ -21,8 +21,8 @@ export interface CatalogService {
 
 /**
  * A service detail — the card fields + its current published version + the authored document to
- * render. Feature 217 dropped `applications` (the ways to apply, from `document_references`) and
- * `data` (a service is authored, not filled).
+ * render. Feature 217 dropped `applications` (the ways to apply, from `document_references`); doc 281
+ * brought back `data`, the service's answers.
  */
 export interface CatalogServiceDetail extends CatalogService {
   publishedVersionId: string;
@@ -31,6 +31,8 @@ export interface CatalogServiceDetail extends CatalogService {
   schema: Record<string, unknown>;
   /** Doc 275: the uischemas by variant name; `default` is always present. */
   variants: Record<string, Record<string, unknown>>;
+  /** Doc 281: the service's answers (`content.data`); `{}` when none. */
+  data: Record<string, unknown>;
 }
 
 /** A historical service version (published or archived) + the document to render. */
@@ -43,6 +45,8 @@ export interface CatalogServiceVersion {
   schema: Record<string, unknown>;
   /** Doc 275: the uischemas by variant name; `default` is always present. */
   variants: Record<string, Record<string, unknown>>;
+  /** Doc 281: the service's answers (`content.data`); `{}` when none. */
+  data: Record<string, unknown>;
   createdAt: string;
   publishedAt: string | null;
   archivedAt: string | null;

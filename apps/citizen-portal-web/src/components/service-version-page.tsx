@@ -6,6 +6,7 @@ import { Link, useParams } from '@tanstack/react-router';
 import { History } from 'lucide-react';
 import { CitizenShell } from '@/components/layout/citizen-shell';
 import { Breadcrumb } from '@/components/breadcrumb';
+import { ServiceSections } from '@/components/services/detail-sections';
 import { type CatalogServiceVersion, serviceVersionQueryOptions } from '@/lib/catalog';
 
 const fmt = (iso: string | null): string | null =>
@@ -20,7 +21,7 @@ function validityRange(version: CatalogServiceVersion): string {
   return '';
 }
 
-/** The loaded historical version: a historical header over the version's (unrendered) content. */
+/** The loaded historical version: a historical header over the version's citizen content, laid out like the service page. */
 function VersionDetail({
   serviceId,
   version,
@@ -65,11 +66,7 @@ function VersionDetail({
         </div>
       </header>
 
-      {/* Feature 217: the sectioned render of the version's content is gone with the
-          `@repo/react` renderers. */}
-      <p className="text-sm text-muted-foreground">
-        The full service details are not available yet.
-      </p>
+      <ServiceSections schema={version.schema} variants={version.variants} data={version.data} />
     </>
   );
 }
@@ -86,7 +83,7 @@ export function ServiceVersionPage() {
   return (
     <CitizenShell activeNav="services">
       <div className="mx-auto px-4 md:px-3 my-6 w-full max-w-285 flex flex-col gap-9">
-        {version.isPending || service.isPending ? (
+        {version.isPending ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-4 w-full max-w-lg" />

@@ -175,8 +175,18 @@ describe('CatalogService Unit Test Suite', () => {
       await expect(service.getService('svc-invalid')).rejects.toThrow(NotFoundException);
     });
 
-    it("renders from the version's OWN content, with no ways-to-apply list", async () => {
-      mockResponse(serviceRow(), documents, 'select');
+    it("renders from the version's OWN content and answers, with no ways-to-apply list", async () => {
+      mockResponse(
+        serviceRow({
+          content: {
+            schema: { type: 'object' },
+            variants: { default: { type: 'Form', elements: [] } },
+            data: { about: 'x' },
+          },
+        }),
+        documents,
+        'select',
+      );
 
       const result = await service.getService('service-123');
 
@@ -189,9 +199,9 @@ describe('CatalogService Unit Test Suite', () => {
         publishedAt: '2026-07-08T12:00:00.000Z',
         schema: { type: 'object' },
         variants: { default: { type: 'Form', elements: [] } },
+        data: { about: 'x' },
       });
       expect(result).not.toHaveProperty('applications');
-      expect(result).not.toHaveProperty('data');
     });
 
     it('resolves the whole detail in ONE query', async () => {
@@ -217,6 +227,7 @@ describe('CatalogService Unit Test Suite', () => {
       await expect(service.getService('service-123')).resolves.toMatchObject({
         schema: {},
         variants: { default: {} },
+        data: {},
       });
     });
   });
@@ -243,6 +254,7 @@ describe('CatalogService Unit Test Suite', () => {
         title: 'Published Service Title',
         schema: { type: 'object' },
         variants: { default: { type: 'Form', elements: [] } },
+        data: {},
         createdAt: '2026-07-01T12:00:00.000Z',
         publishedAt: '2026-07-08T12:00:00.000Z',
         archivedAt: null,

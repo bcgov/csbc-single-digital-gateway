@@ -49,6 +49,8 @@ export const catalogServiceDetailSchema = catalogServiceSchema.extend({
   schema: z.record(z.string(), z.unknown()),
   /** Doc 275: the uischemas by variant name; `default` is always present. */
   variants: z.record(z.string(), z.record(z.string(), z.unknown())),
+  /** Doc 281: the service's answers (`content.data`); `{}` when none. */
+  data: z.record(z.string(), z.unknown()),
 });
 export type CatalogServiceDetail = z.infer<typeof catalogServiceDetailSchema>;
 export class CatalogServiceDetailDto extends createZodDto(catalogServiceDetailSchema) {}
@@ -68,6 +70,8 @@ export const catalogServiceVersionSchema = z.object({
   schema: z.record(z.string(), z.unknown()),
   /** Doc 275: the uischemas by variant name; `default` is always present. */
   variants: z.record(z.string(), z.record(z.string(), z.unknown())),
+  /** Doc 281: the service's answers (`content.data`); `{}` when none. */
+  data: z.record(z.string(), z.unknown()),
   createdAt: z.string(),
   publishedAt: z.string().nullable(),
   archivedAt: z.string().nullable(),
