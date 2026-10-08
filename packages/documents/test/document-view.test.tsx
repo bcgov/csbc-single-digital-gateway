@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DocumentView } from '../src/view';
 import { condition, control, edge, form, funnel, row } from './funnel-fixtures';
@@ -197,7 +198,7 @@ describe('DocumentView — complex fields (doc 282 rules 8-11)', () => {
     expect(screen.queryByRole('group', { name: 'Item 1' })).toBeNull();
   });
 
-  it('lists every tab under its title, nothing hidden behind a tab', () => {
+  it('reads Tabs back as real tabs, one open at a time, every tab printable (rule 11)', async () => {
     const tabs = {
       type: 'Form',
       elements: [
@@ -219,13 +220,32 @@ describe('DocumentView — complex fields (doc 282 rules 8-11)', () => {
       ],
     };
     render(<DocumentView schema={SCHEMA} uischema={tabs} data={ANSWERS} />);
-    const listed = [...document.querySelectorAll('[data-slot="plain-tab"]')];
-    expect(listed.map((tab) => tab.querySelector('h2,h3,h4')?.textContent)).toEqual([
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       'About you',
       'Where',
     ]);
-    expect(screen.queryByRole('tab')).toBeNull();
+    expect(screen.getByRole('tab', { name: 'About you' })).toHaveAttribute('aria-selected', 'true');
+    const panels = () => [...document.querySelectorAll<HTMLElement>('[data-slot="plain-tab"]')];
+    // Every panel stays in the DOM (print shows them all) — never behind the `hidden` attribute.
+    expect(panels()).toHaveLength(2);
+    expect(panels().map((panel) => panel.hasAttribute('data-active'))).toEqual([true, false]);
+    for (const panel of panels()) {
+      expect(panel).not.toHaveAttribute('hidden');
+      expect(panel.className).toMatch(/print:(flex|block)/);
+    }
+    expect(panels()[1]!.className).toMatch(/(^|\s)hidden(\s|$)/);
+    // A print-only heading per panel.
+    expect(panels().map((panel) => panel.querySelector('h3')?.textContent)).toEqual([
+      'About you',
+      'Where',
+    ]);
+    // Answers stay plain text inside.
     expect(valueOf('Region')).toHaveTextContent('Interior');
+    expect(screen.queryByRole('textbox')).toBeNull();
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Where' }));
+    expect(panels().map((panel) => panel.hasAttribute('data-active'))).toEqual([false, true]);
+    expect(screen.getByRole('tabpanel', { name: 'Where' })).toBe(panels()[1]);
   });
 });
 
