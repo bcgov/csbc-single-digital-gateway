@@ -13,6 +13,14 @@ const source = () =>
     slug: 'city',
     documentId: 'self',
   });
+/** Doc 288: a host showing service version `v 2` of `s1`. */
+const hosted = () =>
+  documentReferenceSource(new QueryClient(), {
+    workspaceId: 'w1',
+    slug: 'city',
+    documentId: 's1',
+    serviceVersion: { serviceId: 's1', versionId: 'v 2' },
+  });
 const call = (index = 0) => {
   const [url, init] = fetchMock.mock.calls[index]!;
   return { url: new URL(String(url)), init };
@@ -174,6 +182,28 @@ describe('useDocumentReferenceSource', () => {
       expect(
         s.href?.('services.service-application-method', { id: 'f1', workspaceId: 'w1' }),
       ).toBeUndefined();
+    });
+  });
+
+  describe('href — application methods (doc 288 rule 12)', () => {
+    it('links a same-workspace application method to its editor under the host service version', () => {
+      expect(
+        hosted().href?.('services.service-application-method', { id: 'f1', workspaceId: 'w1' }),
+      ).toBe('/app/city/services/s1/versions/v%202/application-methods/f1');
+      // The other types are unaffected by the host version.
+      expect(hosted().href?.('services.service', { id: 's9', workspaceId: 'w1' })).toBe(
+        '/app/city/services/s9',
+      );
+    });
+
+    it('returns undefined for an application method without a host service version or in another workspace', () => {
+      expect(
+        source().href?.('services.service-application-method', { id: 'f1', workspaceId: 'w1' }),
+      ).toBeUndefined();
+      expect(
+        hosted().href?.('services.service-application-method', { id: 'f2', workspaceId: 'w2' }),
+      ).toBeUndefined();
+      expect(hosted().href?.('services.service-application-method', { id: 'f3' })).toBeUndefined();
     });
   });
 });

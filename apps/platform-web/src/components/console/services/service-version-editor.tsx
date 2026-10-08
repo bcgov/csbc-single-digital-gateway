@@ -85,6 +85,8 @@ function EditorBody({
     workspaceId: detail.service.workspaceId,
     slug,
     documentId: id,
+    // Doc 288 rule 12: application method cards open their editor under this version.
+    serviceVersion: { serviceId: id, versionId },
   });
   const { versions } = detail;
   const latest = versions.at(-1);

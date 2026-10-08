@@ -36,11 +36,15 @@ export function ServiceDetailsView({
 }) {
   const navigate = useNavigate();
   const { data } = useQuery(serviceQueryOptions(id));
-  // Doc 287 rule 13: links for the document reference fields read back below.
+  const shownId =
+    data === undefined ? undefined : selectServiceVersion(data.versions, versionId)?.id;
+  // Doc 287 rule 13: links for the document reference fields read back below; doc 288 rule 12: application methods
+  // link to their editor under the version shown.
   const references = useDocumentReferenceSource({
     workspaceId: data?.service.workspaceId ?? '',
     slug,
     documentId: id,
+    serviceVersion: shownId === undefined ? undefined : { serviceId: id, versionId: shownId },
   });
   if (!data) {
     // An element, never `null`: `ServiceConsolePage` reads absent children as its "coming soon" note, which is

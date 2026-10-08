@@ -19,6 +19,8 @@ export interface ReferenceHost {
   slug: string;
   /** The document being edited — never offered as a reference to itself. */
   documentId?: string | undefined;
+  /** Doc 288: the service version on screen — application methods link to their editor under it. */
+  serviceVersion?: { serviceId: string; versionId: string } | undefined;
 }
 
 const matches = (title: string | null, q: string) =>
@@ -29,7 +31,7 @@ export function documentReferenceSource(
   client: QueryClient,
   host: ReferenceHost,
 ): DocumentReferenceSource {
-  const { workspaceId, slug, documentId } = host;
+  const { workspaceId, slug, documentId, serviceVersion } = host;
   return {
     async candidates(type, { q }): Promise<ReferenceCandidate[]> {
       if (type === 'services.service') {
@@ -92,7 +94,11 @@ export function documentReferenceSource(
       const id = encodeURIComponent(reference.id);
       if (type === 'services.service') return `/app/${slug}/services/${id}`;
       if (type === 'services.service-agreement') return `/app/${slug}/service-agreements/${id}`;
-      return undefined;
+      // Doc 288 rule 12: a method's editor sits under the service version that lists it.
+      if (serviceVersion === undefined) return undefined;
+      const serviceId = encodeURIComponent(serviceVersion.serviceId);
+      const versionId = encodeURIComponent(serviceVersion.versionId);
+      return `/app/${slug}/services/${serviceId}/versions/${versionId}/application-methods/${id}`;
     },
   };
 }
@@ -101,8 +107,17 @@ export function documentReferenceSource(
 export function useDocumentReferenceSource(host: ReferenceHost): DocumentReferenceSource {
   const client = useQueryClient();
   const { workspaceId, slug, documentId } = host;
+  const serviceId = host.serviceVersion?.serviceId;
+  const versionId = host.serviceVersion?.versionId;
   return useMemo(
-    () => documentReferenceSource(client, { workspaceId, slug, documentId }),
-    [client, workspaceId, slug, documentId],
+    () =>
+      documentReferenceSource(client, {
+        workspaceId,
+        slug,
+        documentId,
+        serviceVersion:
+          serviceId === undefined || versionId === undefined ? undefined : { serviceId, versionId },
+      }),
+    [client, workspaceId, slug, documentId, serviceId, versionId],
   );
 }
