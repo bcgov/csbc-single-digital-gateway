@@ -2,6 +2,7 @@ import { and, schemaMatches, uiTypeIs, type ControlProps } from '@jsonforms/core
 import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
 import type { ReactNode } from 'react';
 import { controlDescription } from './control-description';
+import { useHiddenLabel } from './control-label';
 import { isPlainString, stringOptions, type StringOptions } from './string-options';
 
 /** A Control over a plain string (doc 239 rule 2). */
@@ -40,6 +41,7 @@ export function TextField({
 }) {
   const { data, handleChange, path, id, label, required, uischema, schema, enabled, visible } =
     props;
+  const hiddenLabel = useHiddenLabel(uischema);
   if (!visible) return null;
   const value = typeof data === 'string' ? data : '';
   const { rows, ...limits } = stringOptions(uischema, schema);
@@ -65,9 +67,15 @@ export function TextField({
   return (
     <Field data-slot="text-field" data-component={component}>
       {label !== '' && (
-        <FieldLabel htmlFor={id}>
+        <FieldLabel htmlFor={id} {...hiddenLabel.labelProps}>
           {label}
-          {required === true && <span aria-hidden="true"> *</span>}
+          {required === true && (
+            <span aria-hidden="true" className="text-destructive">
+              {' '}
+              *
+            </span>
+          )}
+          {hiddenLabel.marker}
         </FieldLabel>
       )}
       {description !== undefined && (

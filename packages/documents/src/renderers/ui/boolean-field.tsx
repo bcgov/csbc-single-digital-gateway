@@ -2,6 +2,7 @@ import type { ControlProps } from '@jsonforms/core';
 import { Field, FieldContent, FieldDescription, FieldLabel } from '@repo/ui/field';
 import type { MouseEvent, ReactNode } from 'react';
 import { controlDescription } from './control-description';
+import { useHiddenLabel } from './control-label';
 
 /** Where a click already toggles natively (Base UI): the control, its hidden input, a label — never toggled again. */
 const NATIVE_TOGGLE = '[data-slot="checkbox"],[data-slot="switch"],label,input';
@@ -33,6 +34,7 @@ export function BooleanField({
   renderControl: (slot: BooleanControlSlot) => ReactNode;
 }) {
   const { data, handleChange, path, id, label, uischema, schema, enabled, visible } = props;
+  const hiddenLabel = useHiddenLabel(uischema);
   if (!visible) return null;
   const checked = data === true;
   const description = controlDescription(uischema, schema);
@@ -54,7 +56,12 @@ export function BooleanField({
   });
   const text = (
     <FieldContent>
-      {label !== '' && <FieldLabel htmlFor={id}>{label}</FieldLabel>}
+      {label !== '' && (
+        <FieldLabel htmlFor={id} {...hiddenLabel.labelProps}>
+          {label}
+          {hiddenLabel.marker}
+        </FieldLabel>
+      )}
       {description !== undefined && (
         <FieldDescription id={descriptionId}>{description}</FieldDescription>
       )}

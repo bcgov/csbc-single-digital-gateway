@@ -2,6 +2,7 @@ import type { DropSource, Governance } from './capabilities/governance';
 import type { GridDrop } from '../renderers/default/grid-placement';
 import type { ColumnEdit } from '../renderers/studio/column-edit';
 import { JsonForms } from '@jsonforms/react';
+import { LabelPresentationContext } from '../renderers/ui/control-label';
 import { useEffect, useMemo } from 'react';
 import {
   cells,
@@ -149,17 +150,20 @@ function PageContent({
   const canvasForm = useMemo(() => stripRules(page.form), [page.form]);
   // Doc 281: a fillable studio's answers, live while the page is open for editing.
   const answers = useCanvasAnswers(onEdit !== undefined);
+  // Doc 285 rule 9: a hidden label stays visible on the canvas, marked — the author must still see what it's called.
   const form = (
-    <JsonForms
-      schema={page.schema}
-      uischema={canvasForm as never}
-      data={answers.data}
-      renderers={renderers}
-      cells={cells}
-      validationMode="NoValidation"
-      readonly={answers.readonly}
-      {...(answers.onChange !== undefined && { onChange: answers.onChange })}
-    />
+    <LabelPresentationContext value="dim">
+      <JsonForms
+        schema={page.schema}
+        uischema={canvasForm as never}
+        data={answers.data}
+        renderers={renderers}
+        cells={cells}
+        validationMode="NoValidation"
+        readonly={answers.readonly}
+        {...(answers.onChange !== undefined && { onChange: answers.onChange })}
+      />
+    </LabelPresentationContext>
   );
   // Always the same tree, editable or not: swapping the provider in and out would remount the form, collapsing the
   // page's content for a frame and losing its scroll as Back starts (doc 241 rule 6).

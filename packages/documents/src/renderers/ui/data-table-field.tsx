@@ -2,6 +2,7 @@ import type { ControlProps } from '@jsonforms/core';
 import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
 import type { ReactNode } from 'react';
 import { controlDescription } from './control-description';
+import { useHiddenLabel } from './control-label';
 
 /** How the table is named and described by its field (doc 263 rule 15). */
 export interface DataTableWiring {
@@ -26,6 +27,7 @@ export function DataTableField({
   component?: 'data-table' | 'record' | 'accordion';
 }) {
   const { path, id, label, required, uischema, schema, visible } = props;
+  const hiddenLabel = useHiddenLabel(uischema);
   if (!visible) return null;
   const description = controlDescription(uischema, schema);
   const descriptionId = `${id}-description`;
@@ -38,9 +40,15 @@ export function DataTableField({
   return (
     <Field data-slot="data-table-field" data-component={component}>
       {label !== '' && (
-        <FieldLabel id={labelId}>
+        <FieldLabel id={labelId} {...hiddenLabel.labelProps}>
           {label}
-          {required === true && <span aria-hidden="true"> *</span>}
+          {required === true && (
+            <span aria-hidden="true" className="text-destructive">
+              {' '}
+              *
+            </span>
+          )}
+          {hiddenLabel.marker}
         </FieldLabel>
       )}
       {description !== undefined && (

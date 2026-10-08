@@ -3,6 +3,7 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Field, FieldDescription, FieldTitle } from '@repo/ui/field';
 import { RichTextView } from '@repo/ui/rich-text-view';
 import { controlDescription } from '../ui/control-description';
+import { hideLabel } from '../ui/hide-label';
 import { isObjectArray } from '../ui/object-array';
 import { plainValue, type PlainValue } from './plain-value';
 
@@ -29,15 +30,22 @@ export function PlainField({
   label,
   value,
   description,
+  hidden = false,
 }: {
   label: string;
   value: PlainValue | undefined;
   description?: string | undefined;
+  /** Doc 285 rule 8: the label is visually hidden, still read by assistive technology. */
+  hidden?: boolean | undefined;
 }) {
   return (
     <Field data-slot="plain-field">
       {label !== '' && (
-        <FieldTitle data-slot="plain-field-label" className="text-sm">
+        <FieldTitle
+          data-slot="plain-field-label"
+          className={hidden ? 'sr-only' : 'text-sm'}
+          {...(hidden && { 'data-label-hidden': '' })}
+        >
           {label}
         </FieldTitle>
       )}
@@ -81,6 +89,7 @@ export function PlainControl({ data, schema, uischema, label, visible }: Control
       label={label}
       value={plainValue(schema, uischema, data)}
       description={controlDescription(uischema, schema)}
+      hidden={hideLabel(uischema)}
     />
   );
 }

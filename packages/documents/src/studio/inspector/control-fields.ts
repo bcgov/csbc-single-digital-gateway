@@ -1,3 +1,4 @@
+import { hideLabel } from '../../renderers/ui/hide-label';
 import { DEFAULT_ROWS } from '../../renderers/ui/string-options';
 import type { DocumentContent } from '../document-types';
 import {
@@ -252,5 +253,17 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     read: (t) => optionOf(t, 'rows') ?? DEFAULT_ROWS,
     write: (content, t, value) =>
       patchElement(content, t, { options: { rows: absentIf(value, DEFAULT_ROWS) } }),
+  },
+  {
+    // Doc 285 rule 10: last in Appearance; uischema, so per variant and editable in every one.
+    key: 'hideLabel',
+    section: 'Appearance',
+    label: 'Hide label',
+    applies: isKind(...CONTROL_KINDS),
+    schema: () => BOOLEAN,
+    options: SMALL_SWITCH,
+    read: (t) => hideLabel(t.element),
+    write: (content, t, value) =>
+      patchElement(content, t, { options: { hideLabel: absentIf(value, false) } }),
   },
 ]);

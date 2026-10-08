@@ -102,15 +102,15 @@ describe('inspectorForm (doc 249 fields table)', () => {
     const rest = (id: string) => layoutOf(formFor(root, id, schemas).uischema).slice(1);
     expect(rest('c-t')).toEqual([
       ['Validation', ['Minimum length', 'Maximum length']],
-      ['Appearance', ['Display as', 'Placeholder']],
+      ['Appearance', ['Display as', 'Placeholder', 'Hide label']],
     ]);
     expect(rest('c-a')).toEqual([
       ['Validation', ['Minimum length', 'Maximum length']],
-      ['Appearance', ['Display as', 'Placeholder', 'Rows']],
+      ['Appearance', ['Display as', 'Placeholder', 'Rows', 'Hide label']],
     ]);
     expect(rest('c-n')).toEqual([
       ['Validation', ['Whole numbers only', 'Minimum', 'Maximum', 'Step']],
-      ['Appearance', ['Placeholder']],
+      ['Appearance', ['Placeholder', 'Hide label']],
     ]);
   });
 
@@ -141,6 +141,7 @@ describe('inspectorForm (doc 249 fields table)', () => {
       maxLength: 50,
       component: 'textarea',
       rows: 5,
+      hideLabel: false,
     });
     expect(formFor(root, 'h').data).toEqual({ headingText: 'Hi', headingLevel: 2, headingSize: 3 });
     expect(formFor(root, 'F').data).toEqual({ formTitle: 'Page', gap: 'md' });
@@ -163,7 +164,7 @@ describe('rich fields (doc 250 rule 18)', () => {
     const schemas = { bio: { type: 'object', required: ['root'], title: 'Bio' } };
     expect(layoutOf(formFor(root, 'c-bio', schemas).uischema)).toEqual([
       ['General', ['Label', 'Description', 'Required']],
-      ['Appearance', ['Placeholder']],
+      ['Appearance', ['Placeholder', 'Hide label']],
     ]);
     const richContent = formFor(root, 'rc', schemas);
     expect(richContent.empty).toBe(true);
