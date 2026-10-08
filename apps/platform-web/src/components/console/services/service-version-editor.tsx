@@ -13,12 +13,12 @@ import { VersionDropdown } from '@/components/common/version-dropdown';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { useDocumentReferenceSource } from '@/lib/document-references';
+import { PublishServiceDialog } from './publish-service-dialog';
 import { answersOf } from '@/lib/service-answers';
 import {
   addServiceVersion,
   deleteService,
   discardServiceVersion,
-  publishVersion,
   type ServiceDetail,
   serviceQueryOptions,
   updateDraft,
@@ -144,10 +144,8 @@ function EditorBody({
   const saveAnswers = async () => {
     await save.mutateAsync();
   };
-  const publish = useMutation({
-    mutationFn: () => publishVersion(id, versionId),
-    onSuccess: invalidate,
-  });
+  /** Doc 289 rule 9: Publish asks first — the dialog checks, publishes and reports. */
+  const [publishing, setPublishing] = useState(false);
   const newVersion = useMutation({
     mutationFn: () => addServiceVersion(id),
     onSuccess: async (created) => {
@@ -156,8 +154,8 @@ function EditorBody({
     },
   });
 
-  const busy = save.isPending || publish.isPending || newVersion.isPending;
-  const error = save.error ?? publish.error ?? newVersion.error;
+  const busy = save.isPending || newVersion.isPending;
+  const error = save.error ?? newVersion.error;
   const { service, ...deletableRest } = detail.deletable;
 
   return (
@@ -172,6 +170,14 @@ function EditorBody({
           setPending(null);
           action?.();
         }}
+      />
+      <PublishServiceDialog
+        open={publishing}
+        onOpenChange={setPublishing}
+        slug={slug}
+        id={id}
+        versionId={versionId}
+        onPublished={() => void invalidate()}
       />
       <div className="flex shrink-0 flex-wrap items-center gap-3">
         <h1 className="text-xl font-semibold">{detail.service.title ?? 'Untitled'}</h1>
@@ -212,9 +218,9 @@ function EditorBody({
                 // Rule 24: clean is publishable — the API refuses answers that don't match the form, and the
                 // refusal shows in the alert below.
                 disabled={dirty || busy}
-                onClick={() => publish.mutate()}
+                onClick={() => setPublishing(true)}
               >
-                {publish.isPending ? <Spinner className="size-4" /> : null} Publish
+                Publish
               </Button>
             </>
           ) : null}

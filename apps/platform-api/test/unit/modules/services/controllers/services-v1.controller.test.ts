@@ -12,6 +12,7 @@ describe('ServicesV1Controller', () => {
   let servicesServiceMock: any;
   let serviceVersionsServiceMock: any;
   let referenceableServiceMock: any;
+  let serviceMethodsMock: any;
 
   const mockUser: AuthUser = {
     id: 'user-1',
@@ -44,11 +45,38 @@ describe('ServicesV1Controller', () => {
 
     referenceableServiceMock = { list: vi.fn() };
 
+    serviceMethodsMock = { publishCheck: vi.fn(), methodFor: vi.fn() };
+
     controller = new ServicesV1Controller(
       servicesServiceMock,
       serviceVersionsServiceMock,
       referenceableServiceMock,
+      serviceMethodsMock,
     );
+  });
+
+  describe('application methods (doc 289)', () => {
+    it('publishCheck delegates with the caller id and route ids', async () => {
+      serviceMethodsMock.publishCheck.mockResolvedValue({
+        ok: true,
+        hasMethods: true,
+        methods: [],
+      });
+      await expect(controller.publishCheck(mockUser, 's1', 'v1')).resolves.toEqual({
+        ok: true,
+        hasMethods: true,
+        methods: [],
+      });
+      expect(serviceMethodsMock.publishCheck).toHaveBeenCalledWith(mockUser.id, 's1', 'v1');
+    });
+
+    it('applicationMethod delegates with the caller id and route ids', async () => {
+      serviceMethodsMock.methodFor.mockResolvedValue({ form: { id: 'm1' } });
+      await expect(controller.applicationMethod(mockUser, 's1', 'v1', 'm1')).resolves.toEqual({
+        form: { id: 'm1' },
+      });
+      expect(serviceMethodsMock.methodFor).toHaveBeenCalledWith(mockUser.id, 's1', 'v1', 'm1');
+    });
   });
 
   describe('listReferenceable', () => {

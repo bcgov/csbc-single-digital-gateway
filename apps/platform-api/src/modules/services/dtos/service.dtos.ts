@@ -113,6 +113,21 @@ export const serviceVersionSchema = z.object({
 export class ServiceVersionDto extends createZodDto(serviceVersionSchema) {}
 export type ServiceVersionResponse = z.infer<typeof serviceVersionSchema>;
 
+/** Doc 289: the publish precheck — `util/method-checks.ts` `PublishCheck`. */
+export const publishCheckSchema = z.object({
+  ok: z.boolean(),
+  hasMethods: z.boolean(),
+  methods: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string().nullable(),
+      status: z.enum(['draft', 'published', 'archived']).nullable(),
+      problems: z.array(z.string()),
+    }),
+  ),
+});
+export class PublishCheckDto extends createZodDto(publishCheckSchema) {}
+
 /** List entry: a service + a representative current status + its version count. */
 export const serviceSummarySchema = serviceSchema.extend({
   status: z.enum(['draft', 'published', 'archived', 'none']),

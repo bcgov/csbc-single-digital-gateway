@@ -22,4 +22,6 @@ export {
   type MissingField,
   type VariantProblem,
 } from './studio/variants/variant-problems';
+export { applicationMethodIds } from './studio/application-methods';
+export { boundKeys } from './studio/variants/variant-bindings';
 export type { CapabilityMap } from './studio/capabilities/capability-types';

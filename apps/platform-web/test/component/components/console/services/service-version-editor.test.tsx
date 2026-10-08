@@ -106,6 +106,13 @@ function withService(
         if (target) target.content = (JSON.parse(String(init?.body)) as { content: never }).content;
         return json(target);
       }
+      // Doc 289: the publish dialog's precheck — these cases are about answers, so it always passes.
+      if (path.endsWith('/publish-check'))
+        return json({
+          ok: true,
+          hasMethods: true,
+          methods: [{ id: 'm1', title: 'Apply online', status: 'draft', problems: [] }],
+        });
       if (path.endsWith('/publish'))
         return publishError === undefined
           ? json(store.versions[0])
@@ -214,7 +221,11 @@ describe('ServiceVersionEditor (docs 230, 281 rules 21-25)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
+    // Doc 289 rule 9: Publish asks first; the dialog's Publish publishes.
     await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Publish' })).toBeEnabled());
+    await userEvent.click(dialog.getByRole('button', { name: 'Publish' }));
     await waitFor(() =>
       expect(calls).toContainEqual({ method: 'POST', path: '/versions/sv1/publish' }),
     );
@@ -262,7 +273,11 @@ describe('ServiceVersionEditor (docs 230, 281 rules 21-25)', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('name is required');
+    // Doc 289 rule 9: the refusal shows inside the publish dialog.
+    const dialog = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Publish' })).toBeEnabled());
+    await userEvent.click(dialog.getByRole('button', { name: 'Publish' }));
+    expect(await dialog.findByRole('alert')).toHaveTextContent('name is required');
   });
 
   it('navigates to a picked version and to a new version', async () => {

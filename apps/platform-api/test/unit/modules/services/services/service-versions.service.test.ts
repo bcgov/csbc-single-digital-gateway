@@ -72,6 +72,7 @@ describe('ServiceVersionsService', () => {
   let txMock: any;
   let servicesServiceMock: any;
   let templatesMock: any;
+  let methodsMock: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,7 +107,14 @@ describe('ServiceVersionsService', () => {
       capabilitiesForVersion: vi.fn().mockResolvedValue(undefined),
     };
 
-    service = new ServiceVersionsService(dbMock, servicesServiceMock, templatesMock);
+    // Doc 289: every method gate passes unless a case says otherwise.
+    methodsMock = {
+      check: vi.fn().mockResolvedValue({ ok: true, hasMethods: true, methods: [] }),
+      publishMethodsTx: vi.fn(),
+      draftMethodsTx: vi.fn(),
+      discardMethodDraftsTx: vi.fn(),
+    };
+    service = new ServiceVersionsService(dbMock, servicesServiceMock, templatesMock, methodsMock);
   });
 
   describe('updateDraft', () => {
@@ -415,6 +423,82 @@ describe('ServiceVersionsService', () => {
       await expect(service.addVersion('user-1', 'service-1')).rejects.toThrow(
         'document version mutation returned no row',
       );
+    });
+  });
+
+  // Doc 289: publish / new version / discard carry the service's application methods.
+  describe('application methods (doc 289)', () => {
+    describe('publish', () => {
+      it('refuses with 400 naming the first failing precheck (rule 7)', async () => {
+        txMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+        methodsMock.check.mockResolvedValueOnce({ ok: false, hasMethods: false, methods: [] });
+
+        const attempt = service.publish('user-1', 'service-1', 'version-1');
+        await expect(attempt).rejects.toBeInstanceOf(BadRequestException);
+        await expect(attempt).rejects.toThrow('Add at least one application method');
+        expect(methodsMock.check).toHaveBeenCalledWith(txMock, SERVICE_DOC, draftVersion());
+        expect(txMock.update).not.toHaveBeenCalled();
+        expect(methodsMock.publishMethodsTx).not.toHaveBeenCalled();
+      });
+
+      it('names each failing method in the refusal (rule 7)', async () => {
+        txMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+        methodsMock.check.mockResolvedValueOnce({
+          ok: false,
+          hasMethods: true,
+          methods: [
+            { id: 'm1', title: 'Online', status: 'draft', problems: [] },
+            { id: 'm2', title: null, status: null, problems: ['Not found'] },
+            { id: 'm3', title: 'Mail', status: 'draft', problems: ['Has no fields'] },
+          ],
+        });
+
+        await expect(service.publish('user-1', 'service-1', 'version-1')).rejects.toThrow(
+          'Untitled: Not found; Mail: Has no fields',
+        );
+      });
+
+      it('publishes the service and its draft methods in one transaction (rules 8, 13)', async () => {
+        txMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+        txMock.returning.mockResolvedValueOnce([draftVersion({ status: 'published' })]);
+
+        await expect(service.publish('user-1', 'service-1', 'version-1')).resolves.toMatchObject({
+          status: 'published',
+        });
+        expect(dbMock.transaction).toHaveBeenCalledTimes(1);
+        expect(methodsMock.publishMethodsTx).toHaveBeenCalledWith(txMock, SERVICE_DOC, CONTENT);
+      });
+    });
+
+    describe('addVersion', () => {
+      it('drafts each referenced method in the same transaction (rule 12)', async () => {
+        txMock.select.mockReturnValueOnce(mockQuery([draftVersion({ versionNumber: 2 })]));
+        txMock.returning.mockResolvedValueOnce([
+          draftVersion({ id: 'version-3', versionNumber: 3 }),
+        ]);
+
+        await service.addVersion('user-1', 'service-1');
+
+        expect(dbMock.transaction).toHaveBeenCalledTimes(1);
+        expect(methodsMock.draftMethodsTx).toHaveBeenCalledWith(txMock, SERVICE_DOC, CONTENT);
+      });
+    });
+
+    describe('discardVersion', () => {
+      it('discards the method drafts before the service version (rule 14)', async () => {
+        dbMock.select.mockReturnValueOnce(mockQuery([draftVersion()]));
+
+        await service.discardVersion('user-1', 'service-1', 'version-1');
+
+        expect(methodsMock.discardMethodDraftsTx).toHaveBeenCalledWith(
+          txMock,
+          SERVICE_DOC,
+          CONTENT,
+        );
+        expect(methodsMock.discardMethodDraftsTx.mock.invocationCallOrder[0]).toBeLessThan(
+          vi.mocked(discardVersionTx).mock.invocationCallOrder[0]!,
+        );
+      });
     });
   });
 });

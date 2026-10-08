@@ -11,6 +11,7 @@
 import type { DocumentContent } from '@repo/documents/content';
 import { queryOptions } from '@tanstack/react-query';
 import { BFF_ORIGIN } from '@/lib/bff';
+import type { FormWithVersion } from '@/lib/forms';
 import type { Paginated, SortOrder } from '@/lib/list-search';
 
 export type VersionStatus = 'draft' | 'published' | 'archived';
@@ -275,6 +276,53 @@ export function publishVersion(id: string, versionId: string): Promise<ServiceVe
     `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/publish`,
     'POST',
   );
+}
+
+/** Doc 289: one application method's row in the publish precheck. */
+export interface MethodCheck {
+  id: string;
+  /** Null when the method was not found. */
+  title: string | null;
+  status: VersionStatus | null;
+  /** Empty = valid. */
+  problems: string[];
+}
+
+/** Doc 289: what publishing a service version checks — `GET …/versions/:versionId/publish-check`. */
+export interface PublishCheck {
+  ok: boolean;
+  hasMethods: boolean;
+  methods: MethodCheck[];
+}
+
+/** Doc 289 rule 9: never cached across dialog opens — each open checks the version as it is now. */
+export function publishCheckQueryOptions(id: string, versionId: string) {
+  return queryOptions({
+    queryKey: ['services', 'publish-check', id, versionId] as const,
+    queryFn: async () =>
+      ok<PublishCheck>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/publish-check`,
+          { credentials: 'include' },
+        ),
+      ),
+    gcTime: 0,
+    staleTime: 0,
+  });
+}
+
+/** Doc 289 rule 16: an application method as service version `versionId` uses it (published, draft or then-published). */
+export function serviceMethodQueryOptions(id: string, versionId: string, methodId: string) {
+  return queryOptions({
+    queryKey: ['services', 'method', id, versionId, methodId] as const,
+    queryFn: async () =>
+      ok<FormWithVersion>(
+        await fetch(
+          `${BASE}/${encodeURIComponent(id)}/versions/${encodeURIComponent(versionId)}/application-methods/${encodeURIComponent(methodId)}`,
+          { credentials: 'include' },
+        ),
+      ),
+  });
 }
 
 export function archiveVersion(id: string, versionId: string): Promise<ServiceVersion> {

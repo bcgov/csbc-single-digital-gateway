@@ -15,9 +15,14 @@ import { Link } from '@tanstack/react-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { governingOf, VersionContent } from '@/components/console/version-content';
-import { formQueryOptions, type FormWithVersion, updateFormDraft } from '@/lib/forms';
+import { type FormWithVersion, updateFormDraft } from '@/lib/forms';
 import { useSetPageChrome } from '@/lib/page-chrome';
-import { type ServiceDetail, type ServiceVersion, serviceQueryOptions } from '@/lib/services';
+import {
+  type ServiceDetail,
+  type ServiceVersion,
+  serviceMethodQueryOptions,
+  serviceQueryOptions,
+} from '@/lib/services';
 import { documentContentOf, sameDocumentContent } from '@/lib/studio-content';
 
 interface EditorParams {
@@ -35,7 +40,8 @@ interface EditorParams {
  */
 export function ApplicationMethodEditor(params: EditorParams) {
   const { slug, id, versionId, methodId } = params;
-  const method = useQuery(formQueryOptions(methodId));
+  // Doc 289 rule 16: the method version THIS service version uses — the published one under a published version.
+  const method = useQuery(serviceMethodQueryOptions(id, versionId, methodId));
   const service = useQuery(serviceQueryOptions(id));
   const serviceVersion = service.data?.versions.find((version) => version.id === versionId);
   useMethodChrome(params, service.data, serviceVersion, method.data, method.isError);
@@ -61,6 +67,8 @@ export function ApplicationMethodEditor(params: EditorParams) {
   return (
     <EditorBody
       key={method.data.version.id}
+      serviceId={id}
+      versionId={versionId}
       methodId={methodId}
       detail={method.data}
       serviceDraft={serviceVersion.status === 'draft'}
@@ -69,10 +77,14 @@ export function ApplicationMethodEditor(params: EditorParams) {
 }
 
 function EditorBody({
+  serviceId,
+  versionId,
   methodId,
   detail,
   serviceDraft,
 }: {
+  serviceId: string;
+  versionId: string;
   methodId: string;
   detail: FormWithVersion;
   serviceDraft: boolean;
@@ -98,7 +110,10 @@ function EditorBody({
 
   const save = useMutation({
     mutationFn: (content: DocumentContent) => updateFormDraft(methodId, version.id, { content }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['forms', 'detail', methodId] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ['services', 'method', serviceId, versionId, methodId],
+      }),
   });
   const saveDraft = async () => {
     if (live !== null) await save.mutateAsync(live);

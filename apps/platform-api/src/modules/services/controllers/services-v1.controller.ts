@@ -6,6 +6,7 @@ import {
   CreateServiceDto,
   DefinitionDto,
   ListServicesPageQueryDto,
+  PublishCheckDto,
   ReferenceableServiceListDto,
   ReferenceableServicesQueryDto,
   ServiceDefinitionQueryDto,
@@ -15,7 +16,9 @@ import {
   ServiceWithVersionsDto,
   UpdateVersionContentDto,
 } from '../dtos/service.dtos';
+import { FormWithVersionDto } from '../../forms/dtos/form.dtos';
 import { ReferenceableServicesService } from '../services/referenceable-services.service';
+import { ServiceMethodsService } from '../services/service-methods.service';
 import { ServiceVersionsService } from '../services/service-versions.service';
 import { ServicesService } from '../services/services.service';
 
@@ -30,6 +33,7 @@ export class ServicesV1Controller {
     private readonly services: ServicesService,
     private readonly versions: ServiceVersionsService,
     private readonly referenceable: ReferenceableServicesService,
+    private readonly methods: ServiceMethodsService,
   ) {}
 
   @Get()
@@ -91,6 +95,29 @@ export class ServicesV1Controller {
     @Body() body: UpdateVersionContentDto,
   ) {
     return this.versions.updateDraft(user.id, id, versionId, body);
+  }
+
+  /** Doc 289: what publishing this version would check — its application methods. */
+  @Get(':id/versions/:versionId/publish-check')
+  @ZodSerializerDto(PublishCheckDto)
+  publishCheck(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.methods.publishCheck(user.id, id, versionId);
+  }
+
+  /** Doc 289 rule 16: an application method as this service version uses it (same shape as `GET /v1/forms/:id`). */
+  @Get(':id/versions/:versionId/application-methods/:methodId')
+  @ZodSerializerDto(FormWithVersionDto)
+  applicationMethod(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Param('methodId') methodId: string,
+  ) {
+    return this.methods.methodFor(user.id, id, versionId, methodId);
   }
 
   @Post(':id/versions/:versionId/publish')

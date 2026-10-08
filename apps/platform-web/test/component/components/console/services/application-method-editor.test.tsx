@@ -69,28 +69,30 @@ function withMethod({
 }: Setup = {}) {
   const store = { content: methodContent('Apply online') as Record<string, unknown> };
   const patches: { path: string; body: unknown }[] = [];
+  const reads: string[] = [];
   const base = mockAuth(authedUser, { workspaces: [riverton] });
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? 'GET').toUpperCase();
-    if (url.includes('/v1/forms/f1')) {
-      if (!methodExists) return json({ statusCode: 404, message: 'Form not found' }, 404);
-      if (method === 'PATCH') {
-        const body = JSON.parse(String(init?.body)) as { content: Record<string, unknown> };
-        patches.push({ path: url.split('/v1/forms/f1')[1] ?? '', body });
-        if (saveError !== undefined) return json({ statusCode: 403, message: saveError }, 403);
-        store.content = body.content;
-        return json(formVersion(methodStatus, store.content));
-      }
+    reads.push(url);
+    // Doc 289 rule 16: the method is READ through its service version, and saved through the forms API.
+    const read = /\/v1\/services\/s1\/versions\/([^/]+)\/application-methods\/f1$/.exec(url);
+    if (read !== null) {
+      if (!methodExists || !['sv1', 'sv2'].includes(read[1]!))
+        return json({ statusCode: 404, message: 'Application method not found' }, 404);
+      // The server picks the version this service version uses: v1 is published, so it reads the PUBLISHED copy.
+      const published = read[1] === 'sv1' || serviceStatus === 'published';
       return json({
         form: {
           id: 'f1',
           workspaceId: 'w1',
-          title: 'Apply online',
+          title: published ? 'As published' : 'Apply online',
           type: 'services.service-application-method',
           createdAt: ISO,
         },
-        version: formVersion(methodStatus, store.content),
+        version: published
+          ? formVersion('published', methodContent('As published'))
+          : formVersion(methodStatus, store.content),
         ...(governed && {
           definition: {
             schema: {},
@@ -99,6 +101,19 @@ function withMethod({
           },
         }),
       });
+    }
+    if (url.includes('/v1/forms/f1')) {
+      if (method === 'PATCH') {
+        const body = JSON.parse(String(init?.body)) as { content: Record<string, unknown> };
+        patches.push({ path: url.split('/v1/forms/f1')[1] ?? '', body });
+        if (saveError !== undefined) return json({ statusCode: 403, message: saveError }, 403);
+        store.content = body.content;
+        return json(formVersion(methodStatus, store.content));
+      }
+      return json(
+        { statusCode: 500, message: 'The editor must not read /v1/forms (doc 289)' },
+        500,
+      );
     }
     if (url.includes('/v1/services/s1')) {
       if (serviceDelay > 0) await new Promise((resolve) => setTimeout(resolve, serviceDelay));
@@ -118,7 +133,7 @@ function withMethod({
     );
   });
   globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return { patches };
+  return { patches, reads };
 }
 
 function formVersion(status: Status, content: Record<string, unknown>) {
@@ -266,5 +281,32 @@ describe('ApplicationMethodEditor (doc 288)', () => {
       await screen.findByText(/Application method not found/, undefined, T),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('document-studio')).toBeNull();
+  });
+});
+
+// Doc 289 rule 16: the editor reads the method version its service version uses.
+describe('ApplicationMethodEditor — service-version read (doc 289 rule 16)', () => {
+  describe('read', () => {
+    it('reads GET /v1/services/:id/versions/:versionId/application-methods/:methodId, not /v1/forms/:id', async () => {
+      const { reads } = withMethod();
+      renderApp(URL_DRAFT);
+
+      await screen.findByTestId('document-studio', undefined, T);
+      expect(
+        reads.some((url) => url.endsWith('/v1/services/s1/versions/sv2/application-methods/f1')),
+      ).toBe(true);
+      expect(reads.some((url) => url.includes('/v1/forms/'))).toBe(false);
+    });
+
+    it('shows the published method version under a published service version', async () => {
+      withMethod();
+      renderApp('/app/riverton/services/s1/versions/sv1/application-methods/f1');
+
+      await screen.findByTestId('document-studio', undefined, T);
+      expect(studio().value).toContain('As published');
+      expect(studio()).toHaveAttribute('data-readonly', 'true');
+      expect(screen.getByRole('heading', { name: 'As published' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+    });
   });
 });
