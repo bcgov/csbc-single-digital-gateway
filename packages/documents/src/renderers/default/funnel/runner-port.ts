@@ -14,6 +14,8 @@ export interface DocumentRunnerPort {
   readonly disabled?: boolean;
   /** Doc 276: `false` draws no action bar at all (a read-only page). */
   readonly actions?: boolean;
+  /** Doc 281 rule 21a: `false` hides the final Submit — the host submits elsewhere; Back / Next / Save draft stay. */
+  readonly submit?: boolean;
 }
 
 const DocumentRunnerContext = createContext<DocumentRunnerPort | null>(null);
@@ -33,6 +35,8 @@ export interface HostActions {
   readonly disabled: boolean;
   /** Doc 276: whether to draw the action bar. */
   readonly actions: boolean;
+  /** Doc 281 rule 21a: whether the bar offers Submit at the end. */
+  readonly submit: boolean;
   /** The payload dialog — Submit's fallback when the host has no `onSubmit` (rule 18). */
   readonly previewing: boolean;
   setPreviewing(open: boolean): void;
@@ -65,6 +69,7 @@ export function useHostActions(port: DocumentRunnerPort | null, data: unknown): 
     canSaveDraft: port?.disabled !== true && port?.onSaveDraft !== undefined,
     disabled: port?.disabled === true,
     actions: port?.actions !== false,
+    submit: port?.submit !== false,
     previewing,
     setPreviewing,
     saveDraft: () => run(port?.onSaveDraft),

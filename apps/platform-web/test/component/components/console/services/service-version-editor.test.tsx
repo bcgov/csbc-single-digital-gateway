@@ -8,13 +8,17 @@ import {
   type WorkspaceLike,
 } from '../../../../support/render-app';
 
-// Doc 230 — the service version edit page; doc 281 — it hosts the Document Studio, fillable.
+// Doc 230 — the service version edit page; doc 281 rules 21-25 (revised 2026-10-08) — a DocumentRunner over the
+// DEFAULT variant for a draft, a DocumentView read-back otherwise.
 
 vi.mock('@repo/documents/runner', async () =>
   (await import('../../../../support/mock-documents')).documentRunnerMock(),
 );
 vi.mock('@repo/documents/studio', async () =>
   (await import('../../../../support/mock-documents')).documentStudioMock(),
+);
+vi.mock('@repo/documents/view', async () =>
+  (await import('../../../../support/mock-documents')).documentViewMock(),
 );
 
 afterEach(() => {
@@ -33,7 +37,11 @@ const riverton: WorkspaceLike = {
 type Status = 'draft' | 'published' | 'archived';
 const content = (label: string, data?: Record<string, unknown>) => ({
   schema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
-  variants: { default: { type: 'Form', label, elements: [] } },
+  variants: {
+    default: { type: 'Form', label, elements: [] },
+    // A second variant with another root (doc 275 B1): never what this page shows.
+    Staff: { type: 'Funnel', label: `${label} (staff)`, elements: [] },
+  },
   ...(data === undefined ? {} : { data }),
 });
 const version = (
@@ -132,25 +140,30 @@ function withService(
 
 const T = { timeout: 32000 };
 
-const studio = () => screen.getByTestId('document-studio');
-const contentShown = () => JSON.parse((studio() as HTMLTextAreaElement).value) as unknown;
-/** Types into the studio stub: the whole content, as the real studio reports it. */
-const edit = (next: unknown) =>
-  fireEvent.change(studio(), { target: { value: JSON.stringify(next) } });
+const runner = () => screen.getByTestId('document-runner');
+const answersShown = () => JSON.parse(runner().getAttribute('data-answers') ?? '{}') as unknown;
+/** Types into the runner stub: the whole answers object, as the real runner reports it. */
+const answer = (next: Record<string, unknown>) =>
+  fireEvent.change(within(runner()).getByLabelText('answers'), {
+    target: { value: JSON.stringify(next) },
+  });
 
-describe('ServiceVersionEditor (docs 230, 281)', () => {
-  it('opens a draft in a fillable studio, with its saved answers, Save and Publish', async () => {
+describe('ServiceVersionEditor (docs 230, 281 rules 21-25)', () => {
+  it('opens a draft in a DocumentRunner over the DEFAULT variant, with its saved answers, Save and Publish', async () => {
     withService([version(1, 'published'), version(2, 'draft', { name: 'Acme' }, 'tv1')]);
     renderApp('/app/riverton/services/s1/versions/sv2/edit');
 
-    await screen.findByTestId('document-studio', undefined, T);
-    expect(studio()).toHaveAttribute('data-fillable', 'true');
-    expect(studio()).toHaveAttribute('data-readonly', 'false');
-    expect(studio()).toHaveAttribute('data-kind', 'document');
-    expect(studio()).toHaveAttribute('data-type', 'services.service');
-    expect(studio()).toHaveAttribute('data-governed-by', 'Permit template');
-    expect(contentShown()).toEqual(content('v2 content', { name: 'Acme' }));
-    expect(screen.queryByTestId('document-runner')).toBeNull();
+    await screen.findByTestId('document-runner', undefined, T);
+    // Rule 21: the default variant — not the Staff one — and no studio.
+    expect(runner()).toHaveTextContent('"label":"v2 content"');
+    expect(runner()).not.toHaveTextContent('(staff)');
+    expect(screen.queryByTestId('document-studio')).toBeNull();
+    expect(runner()).toHaveAttribute('data-disabled', 'false');
+    expect(answersShown()).toEqual({ name: 'Acme' });
+    // Rule 21a: the runner bar stays (Back / Next) but its Submit is hidden; rule 21b: references handed down.
+    expect(runner()).toHaveAttribute('data-actions', 'true');
+    expect(runner()).toHaveAttribute('data-submit', 'false');
+    expect(runner()).toHaveAttribute('data-references', 'true');
     expect(screen.getByRole('heading', { name: 'Permit application' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /version v2/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
@@ -159,36 +172,32 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
     expect(screen.queryByRole('button', { name: 'New version' })).toBeNull();
   });
 
-  it('shows a published version read-only, with its answers and New version', async () => {
+  it('shows a published version as a DocumentView read-back of the default variant, with New version', async () => {
     withService([version(1, 'published', { name: 'Acme' })]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
 
-    await screen.findByTestId('document-studio', undefined, T);
-    expect(studio()).toHaveAttribute('data-readonly', 'true');
-    expect(contentShown()).toEqual(content('v1 content', { name: 'Acme' }));
+    const view = await screen.findByTestId('document-view', undefined, T);
+    expect(view).toHaveTextContent('"label":"v1 content"');
+    expect(view).not.toHaveTextContent('(staff)');
+    expect(JSON.parse(view.getAttribute('data-answers') ?? '{}')).toEqual({ name: 'Acme' });
+    expect(view).toHaveAttribute('data-unanswered', 'show');
+    expect(view).toHaveAttribute('data-references', 'true');
+    expect(screen.queryByTestId('document-runner')).toBeNull();
+    expect(screen.queryByTestId('document-studio')).toBeNull();
     expect(screen.getByRole('button', { name: 'New version' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
   });
 
-  it('saves the studio content — form and answers — in one PATCH', async () => {
+  it('saves the answers beside the UNCHANGED form in one PATCH (rules 22-23)', async () => {
     const { calls } = withService([version(1, 'draft')]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
-    await screen.findByTestId('document-studio', undefined, T);
+    await screen.findByTestId('document-runner', undefined, T);
     // An empty answers object is no change (rule 22).
-    edit(content('v1 content', {}));
+    answer({});
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
-    // A field added AND answered (the user's case): one edit to the content.
-    const next = {
-      ...content('v1 content', { name: 'Acme', extra: 'yes' }),
-      schema: {
-        type: 'object',
-        properties: { name: { type: 'string' }, extra: { type: 'string' } },
-        required: ['name'],
-      },
-    };
-    edit(next);
+    answer({ name: 'Acme' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
     expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
 
@@ -197,7 +206,7 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
       expect(calls).toContainEqual({
         method: 'PATCH',
         path: '/versions/sv1',
-        body: { content: next },
+        body: { content: content('v1 content', { name: 'Acme' }) },
       }),
     );
     await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
@@ -209,13 +218,28 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
     );
   });
 
+  it("the runner's Save draft is the page's Save (rule 21a)", async () => {
+    const { calls } = withService([version(1, 'draft')]);
+    renderApp('/app/riverton/services/s1/versions/sv1/edit');
+    await screen.findByTestId('document-runner', undefined, T);
+
+    answer({ name: 'Draft answer' });
+    await userEvent.click(within(runner()).getByRole('button', { name: 'Save draft' }));
+    await waitFor(() =>
+      expect(calls).toContainEqual({
+        method: 'PATCH',
+        path: '/versions/sv1',
+        body: { content: content('v1 content', { name: 'Draft answer' }) },
+      }),
+    );
+  });
+
   it('always sends data, so clearing every answer clears them (rule 23)', async () => {
     const { calls } = withService([version(1, 'draft', { name: 'Acme' })]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
-    await screen.findByTestId('document-studio', undefined, T);
+    await screen.findByTestId('document-runner', undefined, T);
 
-    // The studio drops an emptied answers object from the content.
-    edit(content('v1 content'));
+    answer({});
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
@@ -232,7 +256,7 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
       publishError: "Answers don't match the form: name is required",
     });
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
-    await screen.findByTestId('document-studio', undefined, T);
+    await screen.findByTestId('document-runner', undefined, T);
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
@@ -242,7 +266,7 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
   it('navigates to a picked version and to a new version', async () => {
     const { calls } = withService([version(1, 'archived'), version(2, 'published')]);
     renderApp('/app/riverton/services/s1/versions/sv2/edit');
-    await screen.findByTestId('document-studio', undefined, T);
+    await screen.findByTestId('document-view', undefined, T);
 
     await userEvent.click(screen.getByRole('button', { name: /version v2/i }));
     await userEvent.click(await screen.findByRole('menuitem', { name: /v1/ }));
@@ -253,15 +277,16 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
     await waitFor(() => expect(calls).toContainEqual({ method: 'POST', path: '/versions' }));
     // The new draft is open, and fillable.
     expect(await screen.findByRole('button', { name: /version v3/i })).toBeInTheDocument();
-    await waitFor(() => expect(studio()).toHaveAttribute('data-readonly', 'false'));
+    await screen.findByTestId('document-runner');
+    expect(runner()).toHaveAttribute('data-disabled', 'false');
   });
 
   it('deletes the service and returns to the services list', async () => {
     const { calls } = withService([version(1, 'draft')]);
     renderApp('/app/riverton/services/s1/versions/sv1/edit');
-    await screen.findByTestId('document-studio', undefined, T);
+    await screen.findByTestId('document-runner', undefined, T);
     // Unsaved answers: the guard must still not ask to save a deleted service (doc 225 B1).
-    edit(content('v1 content', { name: 'Unsaved' }));
+    answer({ name: 'Unsaved' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled());
 
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -293,8 +318,8 @@ describe('ServiceVersionEditor (docs 230, 281)', () => {
     const editLink = await screen.findByRole('link', { name: 'Edit' }, T);
     expect(editLink).toHaveAttribute('href', '/app/riverton/services/s1/versions/sv1/edit');
     await userEvent.click(editLink);
-    // v1 is published, so the edit page shows it read-only (and no New version: v2 is already a draft).
+    // v1 is published, so the edit page reads it back (and no New version: v2 is already a draft).
     expect(await screen.findByRole('button', { name: /version v1/i }, T)).toBeInTheDocument();
-    expect(screen.getByTestId('document-studio')).toHaveAttribute('data-readonly', 'true');
+    expect(screen.getAllByTestId('document-view').length).toBeGreaterThan(0);
   });
 });

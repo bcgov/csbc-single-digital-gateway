@@ -45,6 +45,8 @@ export interface DocumentRunnerProps {
   readonly actions?: boolean;
   /** Doc 276: whether the answers validate, after every change. Never called while `disabled` (nothing validates). */
   onValidityChange?(valid: boolean): void;
+  /** Doc 281 rule 21a: `false` hides the final Submit — for a host that publishes from its own header. */
+  readonly submit?: boolean;
   /** Doc 287: the host's documents for document reference controls. Absent = an outer provider's, if any. */
   readonly references?: DocumentReferenceSource | undefined;
 }
@@ -59,6 +61,7 @@ export function DocumentRunner({
   disabled = false,
   actions = true,
   onValidityChange,
+  submit = true,
   references,
 }: DocumentRunnerProps) {
   const port: DocumentRunnerPort = {
@@ -66,6 +69,7 @@ export function DocumentRunner({
     ...(onSaveDraft !== undefined && { onSaveDraft }),
     disabled,
     actions,
+    submit,
   };
   // `null` until JSONForms reports its first validation: not yet known is not valid.
   const [errors, setErrors] = useState<readonly FunnelError[] | null>(null);
@@ -140,6 +144,7 @@ function FormPage({
           submitBlocked={host.disabled || errors === null || errors.length > 0}
           busy={host.busy}
           canSaveDraft={host.canSaveDraft}
+          showSubmit={host.submit}
           onSaveDraft={host.saveDraft}
           onSubmit={host.finish}
         />

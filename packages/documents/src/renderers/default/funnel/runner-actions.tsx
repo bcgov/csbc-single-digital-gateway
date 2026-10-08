@@ -17,6 +17,8 @@ export interface RunnerActionsProps {
   readonly busy: boolean;
   /** Rendered either way; disabled without a host `onSaveDraft` (rule 37). */
   readonly canSaveDraft: boolean;
+  /** Doc 281 rule 21a: `false` draws no Submit at the end (the host submits elsewhere). */
+  readonly showSubmit?: boolean;
   onBack?(): void;
   onNext?(): void;
   onSaveDraft(): void;
@@ -32,6 +34,7 @@ export function RunnerActions({
   submitBlocked,
   busy,
   canSaveDraft,
+  showSubmit = true,
   onBack,
   onNext,
   onSaveDraft,
@@ -59,14 +62,16 @@ export function RunnerActions({
           Save draft
         </Button>
         {atEnd ? (
-          <Button
-            type="button"
-            data-slot="runner-submit"
-            disabled={submitBlocked || busy}
-            onClick={onSubmit}
-          >
-            Submit
-          </Button>
+          showSubmit && (
+            <Button
+              type="button"
+              data-slot="runner-submit"
+              disabled={submitBlocked || busy}
+              onClick={onSubmit}
+            >
+              Submit
+            </Button>
+          )
         ) : (
           <Button type="button" data-slot="runner-next" disabled={blocked} onClick={onNext}>
             Next

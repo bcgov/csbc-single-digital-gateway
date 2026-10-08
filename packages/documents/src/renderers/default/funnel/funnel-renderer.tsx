@@ -108,6 +108,7 @@ function FunnelBar({
       submitBlocked={runner.submitBlocked || host.disabled}
       busy={host.busy}
       canSaveDraft={host.canSaveDraft}
+      showSubmit={host.submit}
       onBack={runner.back}
       onNext={runner.next}
       onSaveDraft={host.saveDraft}

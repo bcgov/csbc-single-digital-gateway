@@ -75,9 +75,17 @@ export function documentRunnerMock() {
       data,
       onChange,
       onValidityChange,
+      onSaveDraft,
+      submit,
+      references,
     }: {
       disabled?: boolean;
       actions?: boolean;
+      /** Doc 281 rule 21a: `false` hides the final Submit. */
+      submit?: boolean;
+      onSaveDraft?: (answers: Record<string, unknown>) => void | Promise<void>;
+      /** Doc 287: whether the host handed down a reference source. */
+      references?: unknown;
       uischema: unknown;
       schema?: { required?: string[] };
       data?: unknown;
@@ -96,6 +104,8 @@ export function documentRunnerMock() {
           data-disabled={String(disabled === true)}
           // Doc 229: whether the host asked for the action bar (the runner's default is true).
           data-actions={String(actions !== false)}
+          data-submit={String(submit !== false)}
+          data-references={String(references !== undefined)}
           data-answers={JSON.stringify(answers)}
         >
           {JSON.stringify(uischema)}
@@ -107,6 +117,12 @@ export function documentRunnerMock() {
                 onChange?.(JSON.parse(event.target.value) as Record<string, unknown>)
               }
             />
+          )}
+          {onSaveDraft === undefined || disabled === true ? null : (
+            // The runner's own action-bar Save draft (doc 281 rule 21a).
+            <button type="button" onClick={() => void onSaveDraft(answers)}>
+              Save draft
+            </button>
           )}
         </div>
       );
@@ -121,13 +137,16 @@ export function documentViewMock() {
       uischema,
       data,
       unanswered,
+      references,
     }: {
       uischema: unknown;
       data?: unknown;
       unanswered?: 'show' | 'hide';
+      references?: unknown;
     }) => (
       <div
         data-testid="document-view"
+        data-references={String(references !== undefined)}
         data-answers={JSON.stringify(data ?? {})}
         // Doc 283: how blanks are read back.
         data-unanswered={unanswered ?? 'show'}
