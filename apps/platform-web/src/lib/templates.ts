@@ -139,13 +139,20 @@ export interface PublishedTemplate {
   published: TemplateVersion;
 }
 
-/** Every template with a published version — what a new document may be built from. */
-export function publishedTemplatesQueryOptions() {
+/**
+ * Every template with a published version — what a new document may be built from. `type` (doc 287) narrows it to
+ * one document type on the server.
+ */
+export function publishedTemplatesQueryOptions(type?: DocumentType) {
+  const suffix = type === undefined ? '' : `?type=${encodeURIComponent(type)}`;
   return queryOptions({
-    queryKey: ['templates', 'published'] as const,
+    queryKey:
+      type === undefined
+        ? (['templates', 'published'] as const)
+        : (['templates', 'published', type] as const),
     queryFn: async () => {
       const envelope = await ok<{ items: PublishedTemplate[] }>(
-        await fetch(`${BFF_ORIGIN}/v1/templates`, { credentials: 'include' }),
+        await fetch(`${BFF_ORIGIN}/v1/templates${suffix}`, { credentials: 'include' }),
       );
       return envelope.items;
     },

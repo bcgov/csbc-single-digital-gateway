@@ -152,6 +152,11 @@ export class StaffTemplateListDto extends createZodDto(
 ) {}
 export type TemplatePublished = z.infer<typeof templatePublishedSchema>;
 
+/** Doc 287: narrow the staff catalog to one document type. Omitted = every type (unchanged). */
+export const staffTemplatesQuerySchema = z.object({ type: documentTypeSchema.optional() });
+export class StaffTemplatesQueryDto extends createZodDto(staffTemplatesQuerySchema) {}
+export type StaffTemplatesQuery = z.infer<typeof staffTemplatesQuerySchema>;
+
 /** Doc 227: an admin creates a GLOBAL template — a draft v1 of the type's blank content. */
 export const createTemplateSchema = z.object({
   type: documentTypeSchema,

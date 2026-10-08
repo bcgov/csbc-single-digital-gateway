@@ -60,6 +60,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Data table',
       'Record',
       'Accordion',
+      'Document reference',
     ]);
   });
 

@@ -6,6 +6,7 @@ import { DataTableField } from '../ui/data-table-field';
 import { isObjectArray, tableRows } from '../ui/object-array';
 import { RecordControl } from '../ui/record-control';
 import { NOT_ANSWERED } from './plain-control';
+import { PlainDocumentReferences } from './plain-document-references';
 
 /** An object array read back (doc 282 rules 8-10), above every fill control. */
 export const plainObjectArrayTester = rankWith(
@@ -28,7 +29,11 @@ export function PlainObjectArray(props: ControlProps) {
     return (
       <DataTableField
         props={props}
-        component={component === 'record' || component === 'accordion' ? component : 'data-table'}
+        component={
+          component === 'record' || component === 'accordion' || component === 'document-reference'
+            ? component
+            : 'data-table'
+        }
       >
         {() => (
           <div
@@ -41,6 +46,7 @@ export function PlainObjectArray(props: ControlProps) {
         )}
       </DataTableField>
     );
+  if (component === 'document-reference') return <PlainDocumentReferences {...props} />;
   if (component === 'record') return <RecordControl {...props} />;
   if (component === 'accordion') return <AccordionInput {...props} />;
   return <DataTableControl {...props} />;

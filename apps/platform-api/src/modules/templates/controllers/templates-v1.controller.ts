@@ -1,7 +1,12 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ZodSerializerDto } from 'nestjs-zod';
-import { StaffTemplateListDto, TemplateDetailDto, TemplateVersionDto } from '../dtos/template.dtos';
+import {
+  StaffTemplateListDto,
+  StaffTemplatesQueryDto,
+  TemplateDetailDto,
+  TemplateVersionDto,
+} from '../dtos/template.dtos';
 import { TemplatesService } from '../services/templates.service';
 
 /** `/v1/templates` — staff read access to the published catalog + history (feature 217). */
@@ -12,8 +17,8 @@ export class TemplatesV1Controller {
 
   @Get()
   @ZodSerializerDto(StaffTemplateListDto)
-  async list() {
-    return { items: await this.templates.staffList() };
+  async list(@Query() query: StaffTemplatesQueryDto) {
+    return { items: await this.templates.staffList(query.type) };
   }
 
   @Get(':id')

@@ -2,6 +2,7 @@ import type { UISchemaElement } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import { useState, type ReactNode } from 'react';
 import * as defaults from '../renderers/default/index';
+import { withReferences, type DocumentReferenceSource } from '../renderers/ui/reference-source';
 import type { FunnelError } from '../renderers/default/funnel/funnel-errors';
 import { RunnerActions } from '../renderers/default/funnel/runner-actions';
 import {
@@ -44,6 +45,8 @@ export interface DocumentRunnerProps {
   readonly actions?: boolean;
   /** Doc 276: whether the answers validate, after every change. Never called while `disabled` (nothing validates). */
   onValidityChange?(valid: boolean): void;
+  /** Doc 287: the host's documents for document reference controls. Absent = an outer provider's, if any. */
+  readonly references?: DocumentReferenceSource | undefined;
 }
 
 export function DocumentRunner({
@@ -56,6 +59,7 @@ export function DocumentRunner({
   disabled = false,
   actions = true,
   onValidityChange,
+  references,
 }: DocumentRunnerProps) {
   const port: DocumentRunnerPort = {
     ...(onSubmit !== undefined && { onSubmit }),
@@ -94,7 +98,8 @@ export function DocumentRunner({
       }}
     />
   );
-  return (
+  return withReferences(
+    references,
     <DocumentRunnerProvider value={port}>
       <div data-slot="document-runner" className="flex h-full min-h-0 flex-col">
         {type === 'Funnel' ? (
@@ -105,7 +110,7 @@ export function DocumentRunner({
           </FormPage>
         )}
       </div>
-    </DocumentRunnerProvider>
+    </DocumentRunnerProvider>,
   );
 }
 

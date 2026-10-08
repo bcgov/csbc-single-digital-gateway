@@ -11,6 +11,7 @@ import { VersionDropdown } from '@/components/common/version-dropdown';
 import { ConfirmDiscardDialog } from '@/components/console/confirm-discard-dialog';
 import { UnsavedChangesGuard } from '@/components/console/unsaved-changes-guard';
 import { governingOf, VersionContent } from '@/components/console/version-content';
+import { useDocumentReferenceSource } from '@/lib/document-references';
 import {
   addServiceVersion,
   deleteService,
@@ -76,6 +77,12 @@ function EditorBody({
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  // Doc 287: the workspace's services, application methods and agreements for document reference fields.
+  const references = useDocumentReferenceSource({
+    workspaceId: detail.service.workspaceId,
+    slug,
+    documentId: id,
+  });
   const { versions } = detail;
   const latest = versions.at(-1);
   const selected = versions.find((version) => version.id === versionId) ?? latest;
@@ -258,6 +265,7 @@ function EditorBody({
           fillable
           onDocumentChange={setLive}
           governedBy={governing}
+          references={references}
         />
       </div>
     </div>

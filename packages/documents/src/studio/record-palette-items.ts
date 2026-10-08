@@ -1,5 +1,9 @@
-import { mdiCardTextOutline, mdiTable, mdiUnfoldMoreHorizontal } from '@mdi/js';
+import { mdiCardTextOutline, mdiFileLinkOutline, mdiTable, mdiUnfoldMoreHorizontal } from '@mdi/js';
 import { nanoid } from 'nanoid';
+import {
+  DOCUMENT_REFERENCE_COMPONENT,
+  referenceItemsSchema,
+} from '../renderers/ui/document-reference';
 import { newId } from './element-ids';
 import type { PaletteCreation, PaletteItem } from './palette-items';
 
@@ -77,5 +81,25 @@ export const RECORD_FIELD_ITEMS: readonly PaletteItem[] = Object.freeze([
         { options: { component: 'accordion' } },
         ['title', 'content'],
       ),
+  },
+  {
+    id: 'document-reference',
+    label: 'Document reference',
+    icon: mdiFileLinkOutline,
+    group: RECORD_FIELDS_GROUP,
+    keywords: ['reference', 'link', 'document', 'service', 'agreement', 'application', 'attach'],
+    // The fixed item shape, pointing at services until the author chooses another type (doc 287 rule 14).
+    create: () => {
+      const { properties, required } = referenceItemsSchema() as {
+        properties: Record<string, Record<string, unknown>>;
+        required: string[];
+      };
+      return newObjectArray(
+        'Untitled references',
+        properties,
+        { options: { component: DOCUMENT_REFERENCE_COMPONENT, documentType: 'services.service' } },
+        required,
+      );
+    },
   },
 ]);

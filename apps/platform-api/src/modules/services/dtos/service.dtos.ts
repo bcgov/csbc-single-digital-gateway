@@ -54,6 +54,21 @@ export const listServicesPageQuerySchema = z.object({
 export class ListServicesPageQueryDto extends createZodDto(listServicesPageQuerySchema) {}
 export type ListServicesPageQuery = z.infer<typeof listServicesPageQuerySchema>;
 
+/**
+ * Doc 287: the services a document-reference control may pick — the caller's workspace's services in
+ * every status, plus other workspaces' published services. `q` is an ILIKE over the chosen version's
+ * title; `excludeId` drops the service being edited.
+ */
+export const referenceableServicesQuerySchema = z.object({
+  workspaceId: z.uuid(),
+  q: z.string().trim().max(200).optional(),
+  excludeId: z.uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+export class ReferenceableServicesQueryDto extends createZodDto(referenceableServicesQuerySchema) {}
+export type ReferenceableServicesQuery = z.infer<typeof referenceableServicesQuerySchema>;
+
 /** Save a draft version: the whole authored document. */
 /**
  * Doc 230: a service version's content also carries the staff's ANSWERS to its form, `data`. Only here —
@@ -118,6 +133,26 @@ export const serviceListResponseSchema = z.object({
 });
 export type ServiceListResponse = z.infer<typeof serviceListResponseSchema>;
 export class ServiceListDto extends createZodDto(serviceListResponseSchema) {}
+
+/** Doc 287: one pickable service — workspace internals beyond `id` and `name` are never exposed. */
+export const referenceableServiceSchema = z.object({
+  id: z.string(),
+  workspaceId: z.string(),
+  workspaceName: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  status: z.enum(['draft', 'published', 'archived', 'none']),
+});
+export type ReferenceableService = z.infer<typeof referenceableServiceSchema>;
+
+export const referenceableServiceListSchema = z.object({
+  items: z.array(referenceableServiceSchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});
+export type ReferenceableServiceList = z.infer<typeof referenceableServiceListSchema>;
+export class ReferenceableServiceListDto extends createZodDto(referenceableServiceListSchema) {}
 
 /** Create response: the service + its versions. */
 export const serviceWithVersionsSchema = z.object({

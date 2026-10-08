@@ -11,6 +11,7 @@ describe('ServicesV1Controller', () => {
   let controller: ServicesV1Controller;
   let servicesServiceMock: any;
   let serviceVersionsServiceMock: any;
+  let referenceableServiceMock: any;
 
   const mockUser: AuthUser = {
     id: 'user-1',
@@ -41,7 +42,34 @@ describe('ServicesV1Controller', () => {
       discardVersion: vi.fn(),
     };
 
-    controller = new ServicesV1Controller(servicesServiceMock, serviceVersionsServiceMock);
+    referenceableServiceMock = { list: vi.fn() };
+
+    controller = new ServicesV1Controller(
+      servicesServiceMock,
+      serviceVersionsServiceMock,
+      referenceableServiceMock,
+    );
+  });
+
+  describe('listReferenceable', () => {
+    it('delegates to the referenceable services list with the caller id and query (doc 287)', async () => {
+      const query = {
+        workspaceId: 'e6005cbb-84f9-467a-bb48-e8cbffc9c991',
+        limit: 25,
+        offset: 0,
+      };
+      const page = { items: [], total: 0, limit: 25, offset: 0 };
+      referenceableServiceMock.list.mockResolvedValue(page);
+
+      await expect(controller.listReferenceable(mockUser, query)).resolves.toBe(page);
+      expect(referenceableServiceMock.list).toHaveBeenCalledWith(mockUser.id, query);
+    });
+
+    it('declares the static referenceable route before the :id route', () => {
+      const names = Object.getOwnPropertyNames(ServicesV1Controller.prototype);
+      expect(names.indexOf('listReferenceable')).toBeGreaterThan(-1);
+      expect(names.indexOf('listReferenceable')).toBeLessThan(names.indexOf('get'));
+    });
   });
 
   describe('list', () => {

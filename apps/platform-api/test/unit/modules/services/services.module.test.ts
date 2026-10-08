@@ -6,6 +6,7 @@ import { ServicesModule } from '../../../../src/modules/services/services.module
 import { ServicesV1Controller } from '../../../../src/modules/services/controllers/services-v1.controller';
 import { ServicesService } from '../../../../src/modules/services/services/services.service';
 import { ServiceVersionsService } from '../../../../src/modules/services/services/service-versions.service';
+import { ReferenceableServicesService } from '../../../../src/modules/services/services/referenceable-services.service';
 
 describe('ServicesModule Unit Test Suite', () => {
   it('should compile ServicesModule successfully and resolve all controllers and providers', async () => {
@@ -35,6 +36,7 @@ describe('ServicesModule Unit Test Suite', () => {
     // Verify services
     expect(moduleRef.get(ServicesService)).toBeDefined();
     expect(moduleRef.get(ServiceVersionsService)).toBeDefined();
+    expect(moduleRef.get(ReferenceableServicesService)).toBeDefined();
 
     await moduleRef.close();
   });
@@ -50,6 +52,7 @@ describe('ServicesModule Unit Test Suite', () => {
     expect(providers).toBeDefined();
     expect(providers).toContain(ServicesService);
     expect(providers).toContain(ServiceVersionsService);
-    expect(providers).toHaveLength(2);
+    expect(providers).toContain(ReferenceableServicesService);
+    expect(providers).toHaveLength(3);
   });
 });

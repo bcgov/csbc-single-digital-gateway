@@ -4,6 +4,7 @@ import type { RendererSet } from '../renderer-set';
 import { renderersOf } from '../renderer-set';
 import { checkboxControlEntry } from './checkbox-control';
 import { dataTableControlEntry } from './data-table-control';
+import { documentReferenceControlEntry } from './document-reference-control';
 import { headingEntry } from './heading-renderer';
 import { inputControlEntry } from './input-control';
 import { moneyControlEntry } from './money-control';
@@ -20,6 +21,21 @@ import { textareaControlEntry } from './textarea-control';
 
 export type { RendererSet } from '../renderer-set';
 export { headingOptions, type HeadingOptions } from './heading-options';
+export {
+  REFERENCE_POLICY,
+  referencesOf,
+  referenceTypeOf,
+  toReference,
+  type DocumentReference,
+  type ReferenceCandidate,
+  type ReferencePolicy,
+} from './document-reference';
+export {
+  DocumentReferenceProvider,
+  useReferenceSource,
+  type DocumentReferenceSource,
+  type ReferenceTemplate,
+} from './reference-source';
 
 export const cells: RendererSet['cells'] = [];
 export const contentRenderers: RendererSet['contentRenderers'] = [
@@ -36,7 +52,7 @@ export const contentRenderers: RendererSet['contentRenderers'] = [
  * Select, or a Radio group for `options.component: 'radio-group'` — and the multiple choice (doc 245) — a
  * Multi-select, or a Checkbox group for `options.component: 'checkbox-group'` — and the number input (doc 248), or Money
  * for `options.component: 'money'` (doc 286) — and the rich text field (doc 250) —
- * and the object array's data table (doc 263) — or its record (doc 271), or its accordion (doc 280).
+ * and the object array's data table (doc 263) — or its record (doc 271), or its accordion (doc 280), or a document reference (doc 287).
  */
 export const controlRenderers: RendererSet['controlRenderers'] = [
   checkboxControlEntry,
@@ -51,6 +67,7 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   dataTableControlEntry,
   recordControlEntry,
   accordionInputEntry,
+  documentReferenceControlEntry,
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [];
 export const renderers = renderersOf({

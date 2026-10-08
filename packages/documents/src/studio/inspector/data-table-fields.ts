@@ -26,6 +26,8 @@ const applies = isKind('data-table');
  * call their rows items.
  */
 const appliesToArrays = isKind('data-table', 'record', 'accordion-input');
+/** Row counts also bound a document reference's references (doc 287 rule 15); adding and deleting rows do not apply. */
+const appliesToCounts = isKind('data-table', 'record', 'accordion-input', 'document-reference');
 const SMALL_SWITCH = Object.freeze({ component: 'switch', size: 'sm' });
 /** The bound property's reference — a page key, or a record item field's (doc 271). */
 const keyOf = (t: InspectorTarget): PropertyRef =>
@@ -37,7 +39,7 @@ function rowLimit(key: string, label: string, keyword: 'minItems' | 'maxItems'):
     key,
     section: 'Validation',
     label,
-    applies: appliesToArrays,
+    applies: appliesToCounts,
     schema: () => WHOLE_NUMBER,
     read: (t) => t.property?.schema[keyword],
     write: (content, t, value) => updateProperty(content, keyOf(t), { [keyword]: absentIf(value) }),

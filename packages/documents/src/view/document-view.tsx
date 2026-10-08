@@ -6,6 +6,7 @@ import { NothingAnswered } from '../renderers/plain/nothing-answered';
 import { PlainOptionsContext, type Unanswered } from '../renderers/plain/plain-options';
 import { SectionAnchorsContext } from '../renderers/default/section-anchor';
 import { ROOT_MESSAGE } from '../runner/document-runner';
+import { withReferences, type DocumentReferenceSource } from '../renderers/ui/reference-source';
 import { shownUischema, viewSections } from './view-sections';
 
 export interface DocumentViewProps {
@@ -24,6 +25,8 @@ export interface DocumentViewProps {
    * this page" nav). Off by default: authored ids are not unique across views sharing a page.
    */
   readonly anchorSections?: boolean | undefined;
+  /** Doc 287: where a document reference's titles link to. Absent = an outer provider's, if any. */
+  readonly references?: DocumentReferenceSource | undefined;
 }
 
 /**
@@ -37,6 +40,7 @@ export function DocumentView({
   data,
   unanswered = 'show',
   anchorSections = false,
+  references,
 }: DocumentViewProps) {
   const type = uischema['type'];
   // Doc 283: a Form root is pruned here; a Funnel prunes each Form on its path (its graph names Forms by id).
@@ -60,7 +64,8 @@ export function DocumentView({
         {ROOT_MESSAGE}
       </p>
     );
-  return (
+  return withReferences(
+    references,
     <div
       data-slot="document-view"
       className="flex h-full min-h-0 flex-col print:block print:h-auto"
@@ -87,6 +92,6 @@ export function DocumentView({
           </PlainOptionsContext>
         )}
       </div>
-    </div>
+    </div>,
   );
 }

@@ -57,7 +57,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
     // Doc 271 rule 18: the object-array presentations in their own section.
     expect(
       [...groups[3]!.querySelectorAll('[data-palette-item]')].map((b) => b.textContent),
-    ).toEqual(['Data table', 'Record', 'Accordion']);
+    ).toEqual(['Data table', 'Record', 'Accordion', 'Document reference']);
   });
 
   it('keeps the search input compact', () => {
@@ -165,12 +165,14 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Data table',
       'Record',
       'Accordion',
+      'Document reference',
     ];
     for (const name of fields) fireEvent.keyDown(itemNamed(name), { key: 'ArrowDown' });
+    expect(itemNamed('Document reference')).toHaveFocus();
+    fireEvent.keyDown(itemNamed('Document reference'), { key: 'ArrowUp' });
     expect(itemNamed('Accordion')).toHaveFocus();
-    fireEvent.keyDown(itemNamed('Accordion'), { key: 'ArrowUp' });
-    expect(itemNamed('Record')).toHaveFocus();
     for (const name of [
+      'Accordion',
       'Record',
       'Data table',
       'Checkbox group',

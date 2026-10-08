@@ -215,6 +215,35 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
   );
 }
 
+/** A service another document may reference (doc 287): the workspace's own in any status, plus published ones elsewhere. */
+export interface ReferenceableService {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  title: string | null;
+  description: string | null;
+  status: VersionStatus | 'none';
+}
+
+/** The services `workspaceId` may reference, never `excludeId` (the service being edited), matching `q`. */
+export function referenceableServicesQueryOptions(
+  workspaceId: string,
+  params: { q: string; excludeId?: string; limit?: number },
+) {
+  return queryOptions({
+    queryKey: ['services', 'referenceable', workspaceId, params] as const,
+    queryFn: async () => {
+      const search = new URLSearchParams({ workspaceId, limit: String(params.limit ?? 25) });
+      if (params.q !== '') search.set('q', params.q);
+      if (params.excludeId !== undefined) search.set('excludeId', params.excludeId);
+      return ok<Paginated<ReferenceableService>>(
+        await fetch(`${BASE}/referenceable?${search.toString()}`, { credentials: 'include' }),
+      );
+    },
+    staleTime: 10_000,
+  });
+}
+
 /** Create a service — the document + its draft v1, seeded from the published Service template. */
 export function createService(input: {
   workspaceId: string;

@@ -6,6 +6,7 @@ import { studioAccordionGroupEntry } from './studio-accordion-group';
 import { studioAccordionInputEntry } from './studio-accordion-input';
 import { studioCardEntry } from './studio-card';
 import { studioDataTableEntry } from './studio-data-table';
+import { studioDocumentReferenceEntry } from './studio-document-reference';
 import { studioRecordEntry } from './studio-record';
 import { studioFormEntry } from './studio-form';
 import { studioHeadingEntry } from './studio-heading';
@@ -54,6 +55,8 @@ export const controlRenderers: RendererSet['controlRenderers'] = [
   withStudioElement(studioRecordEntry),
   // A greyed sample item: inert like any other control (doc 280 rule 11).
   withStudioElement(studioAccordionInputEntry, { inert: true }),
+  // Inert like any control, so live only on a fillable canvas (doc 287 rule 12).
+  withStudioElement(studioDocumentReferenceEntry, { inert: true }),
 ];
 export const layoutRenderers: RendererSet['layoutRenderers'] = [
   ...defaults.layoutRenderers,

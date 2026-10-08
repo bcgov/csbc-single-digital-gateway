@@ -6,6 +6,8 @@ import {
   CreateServiceDto,
   DefinitionDto,
   ListServicesPageQueryDto,
+  ReferenceableServiceListDto,
+  ReferenceableServicesQueryDto,
   ServiceDefinitionQueryDto,
   ServiceDetailDto,
   ServiceListDto,
@@ -13,6 +15,7 @@ import {
   ServiceWithVersionsDto,
   UpdateVersionContentDto,
 } from '../dtos/service.dtos';
+import { ReferenceableServicesService } from '../services/referenceable-services.service';
 import { ServiceVersionsService } from '../services/service-versions.service';
 import { ServicesService } from '../services/services.service';
 
@@ -26,6 +29,7 @@ export class ServicesV1Controller {
   constructor(
     private readonly services: ServicesService,
     private readonly versions: ServiceVersionsService,
+    private readonly referenceable: ReferenceableServicesService,
   ) {}
 
   @Get()
@@ -45,6 +49,13 @@ export class ServicesV1Controller {
   @ZodSerializerDto(DefinitionDto)
   getDefinition(@Query() query: ServiceDefinitionQueryDto) {
     return this.services.getServiceDefinition(query.templateId);
+  }
+
+  /** Doc 287: services a document-reference control may link to. Declared before `:id`. */
+  @Get('referenceable')
+  @ZodSerializerDto(ReferenceableServiceListDto)
+  listReferenceable(@CurrentUser() user: AuthUser, @Query() query: ReferenceableServicesQueryDto) {
+    return this.referenceable.list(user.id, query);
   }
 
   @Get(':id')

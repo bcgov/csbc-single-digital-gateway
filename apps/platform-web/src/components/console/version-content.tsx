@@ -1,5 +1,10 @@
 import type { DocumentContent } from '@repo/documents/content';
-import { DocumentStudio, type DocumentKind, type DocumentType } from '@repo/documents/studio';
+import {
+  DocumentStudio,
+  type DocumentKind,
+  type DocumentReferenceSource,
+  type DocumentType,
+} from '@repo/documents/studio';
 
 /** Doc 276: the template governing a document — its name for the studio's "Based on" badge, and its rules. */
 export interface GoverningTemplate {
@@ -24,6 +29,8 @@ export interface VersionContentProps {
   governedBy?: GoverningTemplate | undefined;
   /** Doc 281: staff answer the fields on the canvas, into `content.data` — a service, whose API keeps the answers. */
   fillable?: boolean | undefined;
+  /** Doc 287: the workspace's documents for the content's document reference fields. Absent = their actions are disabled. */
+  references?: DocumentReferenceSource | undefined;
 }
 
 /**
@@ -43,6 +50,7 @@ export function VersionContent({
   onDocumentChange,
   governedBy,
   fillable = false,
+  references,
 }: VersionContentProps) {
   // Rule 13: a row in the old `{ schema, uischema }` shape, or written by hand, says so rather than being spread
   // into a component's props.
@@ -61,6 +69,7 @@ export function VersionContent({
       onContentChange={onDocumentChange}
       readOnly={!editable}
       fillable={fillable}
+      references={references}
       {...(governedBy !== undefined && {
         governing: { name: governedBy.name, capabilities: governedBy.capabilities },
       })}

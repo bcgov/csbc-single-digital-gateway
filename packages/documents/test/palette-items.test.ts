@@ -37,6 +37,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['data-table', 'Data table', 'Record fields'],
       ['record', 'Record', 'Record fields'],
       ['accordion-input', 'Accordion', 'Record fields'],
+      ['document-reference', 'Document reference', 'Record fields'],
     ]);
     for (const item of DEFAULT_PALETTE_ITEMS) expect(item.icon).toMatch(/^M/);
   });

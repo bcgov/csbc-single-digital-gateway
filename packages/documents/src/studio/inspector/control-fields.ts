@@ -17,6 +17,7 @@ import {
 } from './inspector-field';
 import type { PropertyRef } from '../property-ref';
 import { refOf, type InspectorTarget, type TargetKind } from './inspector-target';
+import { documentTypeField } from './document-reference-fields';
 import { currencyField, moneyType, moneyWithheld } from './money-fields';
 import { setRequired, updateProperty } from './schema-edits';
 
@@ -35,6 +36,7 @@ const CONTROL_KINDS: TargetKind[] = [
   'data-table',
   'record',
   'accordion-input',
+  'document-reference',
 ];
 const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
 const BOOLEAN_KINDS: TargetKind[] = ['checkbox', 'switch'];
@@ -44,6 +46,7 @@ const SINGLE_PRESENTATION: ReadonlySet<TargetKind> = new Set([
   'data-table',
   'record',
   'accordion-input',
+  'document-reference',
 ]);
 
 /**
@@ -246,6 +249,7 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     },
   },
   currencyField,
+  documentTypeField,
   {
     key: 'placeholder',
     section: 'Appearance',

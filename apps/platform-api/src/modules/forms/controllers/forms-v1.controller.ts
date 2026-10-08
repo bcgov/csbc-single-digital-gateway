@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { type AuthUser, CurrentUser } from '@repo/nestjs/auth';
 import { ZodSerializerDto } from 'nestjs-zod';
@@ -29,6 +39,16 @@ export class FormsV1Controller {
   @ZodSerializerDto(FormWithVersionDto)
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.forms.get(user.id, id);
+  }
+
+  /** Doc 287: delete an application method — 204, or 404 / 403 / 409 (see `FormsService.remove`). */
+  @Delete(':id')
+  @HttpCode(204)
+  async remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.forms.remove(user.id, id);
   }
 
   @Patch(':id/versions/:versionId')

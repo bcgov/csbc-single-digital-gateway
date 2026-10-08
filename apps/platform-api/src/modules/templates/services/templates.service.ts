@@ -3,6 +3,7 @@ import { type Database, documentVersions, documents } from '@repo/database';
 import { InjectDatabase } from '@repo/nestjs/database';
 import { and, asc, eq, ne } from 'drizzle-orm';
 import {
+  type DocumentTypeValue,
   type TemplateDetail,
   type TemplatePublished,
   type TemplateVersionResponse,
@@ -40,8 +41,8 @@ export class TemplatesService {
     return { template: toTemplateDto(template), versions: await this.versionsFor(id) };
   }
 
-  /** Staff: the catalog — every template that has a published version. */
-  async staffList(): Promise<TemplatePublished[]> {
+  /** Staff: the catalog — every template that has a published version, optionally of one type (doc 287). */
+  async staffList(type?: DocumentTypeValue): Promise<TemplatePublished[]> {
     const rows = await this.db
       .select({ template: documents, published: documentVersions })
       .from(documents)
@@ -52,7 +53,12 @@ export class TemplatesService {
           eq(documentVersions.status, 'published'),
         ),
       )
-      .where(eq(documents.kind, 'template'))
+      .where(
+        and(
+          eq(documents.kind, 'template'),
+          type === undefined ? undefined : eq(documents.type, type),
+        ),
+      )
       .orderBy(asc(documents.type));
     return rows.map((row) => ({
       template: toTemplateDto(row.template),

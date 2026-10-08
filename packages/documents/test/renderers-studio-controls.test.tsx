@@ -14,10 +14,10 @@ describe('studio boolean controls (doc 237 rules 13-15)', () => {
   it('wraps every default control entry, keeping its tester', () => {
     // Checkbox, Switch, Input, Textarea, the single (doc 244) and multiple choice (doc 245),
     // the number input (doc 248), the rich text field (doc 250) and the data table (doc 263).
-    expect(defaults.controlRenderers).toHaveLength(12); // + the record (doc 271), accordion input (doc 280) and money (doc 286)
+    expect(defaults.controlRenderers).toHaveLength(13); // + the record (doc 271), accordion input (doc 280), money (doc 286) and document reference (doc 287)
     // Plus the studio data table, which outranks its default (doc 263 rule 18).
-    // + studio data table, record and accordion input (doc 280)
-    expect(studio.controlRenderers).toHaveLength(defaults.controlRenderers.length + 3);
+    // + studio data table, record, accordion input (doc 280) and document reference (doc 287)
+    expect(studio.controlRenderers).toHaveLength(defaults.controlRenderers.length + 4);
     defaults.controlRenderers.forEach((entry, i) => {
       expect(studio.controlRenderers[i]!.tester).toBe(entry.tester);
       expect(studio.controlRenderers[i]!.renderer).not.toBe(entry.renderer);

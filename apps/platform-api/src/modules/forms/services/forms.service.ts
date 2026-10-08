@@ -1,9 +1,16 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   type Database,
   type Document,
+  documentMembers,
   documentVersions,
   documents,
+  submissions,
   workspaceMembers,
   DOCUMENT_TYPE,
 } from '@repo/database';
@@ -21,6 +28,9 @@ import {
   toFormDto,
   toFormVersionDto,
 } from '../dtos/form.dtos';
+
+/** Doc 287: the 409 body's message when a form cannot be deleted. */
+export const FORM_HAS_SUBMISSIONS = 'Form has submissions';
 
 /**
  * Application-method documents (feature 217). A "form" is a `documents` row with
@@ -144,6 +154,48 @@ export class FormsService {
       throw new NotFoundException('Form version not found');
     }
     return toFormVersionDto(row);
+  }
+
+  /**
+   * Doc 287: delete an application method (a document reference's Remove). 404 unless it is an
+   * application-method DOCUMENT in a workspace the caller belongs to; 403 for a document viewer; 409
+   * while a submission references it (the RESTRICT FK would refuse anyway). Versions, history and
+   * document members cascade from `documents`.
+   */
+  async remove(userId: string, id: string): Promise<void> {
+    const doc = await this.requireDocument(userId, id);
+    if (doc.kind !== 'document') {
+      throw new NotFoundException('Form not found');
+    }
+    const [role, submissionCount] = await Promise.all([
+      this.documentRole(userId, id),
+      this.submissionCount(id),
+    ]);
+    if (role === 'viewer') {
+      throw new ForbiddenException('Viewers cannot delete a form');
+    }
+    if (submissionCount > 0) {
+      throw new ConflictException(FORM_HAS_SUBMISSIONS);
+    }
+    await this.db.delete(documents).where(eq(documents.id, id));
+  }
+
+  /** The caller's per-document role, if they have one (a workspace member without one may edit). */
+  private async documentRole(userId: string, documentId: string): Promise<string | undefined> {
+    const rows = await this.db
+      .select({ role: documentMembers.role })
+      .from(documentMembers)
+      .where(and(eq(documentMembers.documentId, documentId), eq(documentMembers.userId, userId)))
+      .limit(1);
+    return rows[0]?.role;
+  }
+
+  private async submissionCount(documentId: string): Promise<number> {
+    const rows = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(submissions)
+      .where(eq(submissions.documentId, documentId));
+    return rows[0]?.n ?? 0;
   }
 
   /** The caller must be a member of the workspace; 404 otherwise (existence not leaked). */

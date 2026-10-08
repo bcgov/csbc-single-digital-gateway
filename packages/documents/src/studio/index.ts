@@ -33,3 +33,5 @@ export {
   type MissingField,
   type VariantProblem,
 } from './variants/variant-problems';
+export type { DocumentReference, ReferenceCandidate } from '../renderers/ui/document-reference';
+export type { DocumentReferenceSource, ReferenceTemplate } from '../renderers/ui/reference-source';

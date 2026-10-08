@@ -1,5 +1,6 @@
 import { variantOf } from '@repo/documents/content';
 import { DocumentView } from '@repo/documents/view';
+import { useDocumentReferenceSource } from '@/lib/document-references';
 import { Badge } from '@repo/ui/badge';
 import { buttonVariants } from '@repo/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -35,6 +36,12 @@ export function ServiceDetailsView({
 }) {
   const navigate = useNavigate();
   const { data } = useQuery(serviceQueryOptions(id));
+  // Doc 287 rule 13: links for the document reference fields read back below.
+  const references = useDocumentReferenceSource({
+    workspaceId: data?.service.workspaceId ?? '',
+    slug,
+    documentId: id,
+  });
   if (!data) {
     // An element, never `null`: `ServiceConsolePage` reads absent children as its "coming soon" note, which is
     // exactly what this section no longer is — it flashed while the service loaded.
@@ -123,6 +130,7 @@ export function ServiceDetailsView({
             data={answersOf(selected.content)}
             // Doc 283 rule 13: a service's details show what was answered, nothing blank.
             unanswered="hide"
+            references={references}
           />
         </div>
       )}

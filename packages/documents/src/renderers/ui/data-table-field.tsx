@@ -24,7 +24,7 @@ export function DataTableField({
   props: ControlProps;
   children: (wiring: DataTableWiring) => ReactNode;
   /** The presentation it holds, as `data-component` (doc 271: a record shares the shell; doc 280: an accordion). */
-  component?: 'data-table' | 'record' | 'accordion';
+  component?: 'data-table' | 'record' | 'accordion' | 'document-reference';
 }) {
   const { path, id, label, required, uischema, schema, visible } = props;
   const hiddenLabel = useHiddenLabel(uischema);

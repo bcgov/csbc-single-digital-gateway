@@ -2,7 +2,7 @@ import { mdiCurrencyUsd } from '@mdi/js';
 import { describe, expect, it } from 'vitest';
 import type { DocumentContent, Uischema } from '../src/studio/document-types';
 import { applyInspector } from '../src/studio/inspector/apply-inspector';
-import { cascadeCurrency } from '../src/studio/inspector/currency-cascade';
+import { cascadeCurrency } from '../src/studio/inspector/option-cascade';
 import { schemaLocked } from '../src/studio/inspector/inspector-field';
 import { fieldsFor, inspectorForm } from '../src/studio/inspector/inspector-form';
 import { inspectorTarget, KIND_NAMES } from '../src/studio/inspector/inspector-target';

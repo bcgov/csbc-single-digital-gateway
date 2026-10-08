@@ -7,7 +7,7 @@ import {
 import type { DocumentContent } from '../document-types';
 import { refOf, type InspectorTarget, type TargetKind } from './inspector-target';
 import { absentIf, choice, inDefault, isKind, type InspectorField } from './inspector-field';
-import { cascadeCurrency } from './currency-cascade';
+import { cascadeCurrency } from './option-cascade';
 import { updateProperty } from './schema-edits';
 
 /**
