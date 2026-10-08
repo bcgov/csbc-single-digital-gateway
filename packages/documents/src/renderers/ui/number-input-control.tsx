@@ -1,7 +1,8 @@
 import { and, rankWith, schemaMatches, uiTypeIs, type ControlProps } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Field, FieldDescription, FieldLabel } from '@repo/ui/field';
-import { NumberInput } from '@repo/ui/number-input';
+import { NumberInput, type NumberInputProps } from '@repo/ui/number-input';
+import type { ReactNode } from 'react';
 import { controlDescription } from './control-description';
 import { useHiddenLabel } from './control-label';
 import { isPlainNumber, numberOptions } from './number-options';
@@ -15,17 +16,42 @@ export const numberInputControlTester = rankWith(
   ),
 );
 
+/** What a number field hands its input: the configured `NumberInput` props, and the ids to describe it by. */
+export interface NumberInputSlot {
+  input: NumberInputProps;
+  describedBy: string[];
+}
+
 /**
- * A number control (doc 248 rules 3-10): label (with a required marker), description under it, then `@repo/ui`'s
- * NumberInput. It writes the number Base UI parses, and `undefined` — never `null` — when emptied.
+ * A number field's shell (doc 248 rules 3-10, shared by Money, doc 286 rule 4): label (with a required marker),
+ * description under it, then the input `renderInput` draws. The input writes the number Base UI parses, and
+ * `undefined` — never `null` — when emptied.
  */
-export function NumberInputControl(props: ControlProps) {
+export function NumberControlField({
+  props,
+  renderInput = ({ input }) => <NumberInput {...input} />,
+}: {
+  props: ControlProps;
+  renderInput?: (slot: NumberInputSlot) => ReactNode;
+}) {
   const { data, handleChange, path, id, label, required, uischema, schema, enabled, visible } =
     props;
   const hiddenLabel = useHiddenLabel(uischema);
   if (!visible) return null;
   const description = controlDescription(uischema, schema);
   const descriptionId = `${id}-description`;
+  const describedBy = description === undefined ? [] : [descriptionId];
+  const input: NumberInputProps = {
+    id,
+    ...numberOptions(uischema, schema),
+    value: typeof data === 'number' && Number.isFinite(data) ? data : null,
+    disabled: !enabled,
+    required: required === true,
+    onValueChange: (value) => handleChange(path, value ?? undefined),
+    ...(describedBy.length > 0 && { 'aria-describedby': describedBy.join(' ') }),
+    ...(required === true && { 'aria-required': true }),
+    ...(label === '' && { 'aria-label': path.split('.').at(-1) ?? path }),
+  };
   return (
     <Field data-slot="number-field">
       {label !== '' && (
@@ -43,19 +69,14 @@ export function NumberInputControl(props: ControlProps) {
       {description !== undefined && (
         <FieldDescription id={descriptionId}>{description}</FieldDescription>
       )}
-      <NumberInput
-        id={id}
-        {...numberOptions(uischema, schema)}
-        value={typeof data === 'number' && Number.isFinite(data) ? data : null}
-        disabled={!enabled}
-        required={required === true}
-        onValueChange={(value) => handleChange(path, value ?? undefined)}
-        {...(description !== undefined && { 'aria-describedby': descriptionId })}
-        {...(required === true && { 'aria-required': true })}
-        {...(label === '' && { 'aria-label': path.split('.').at(-1) ?? path })}
-      />
+      {renderInput({ input, describedBy })}
     </Field>
   );
+}
+
+/** A number control (doc 248): the shell around `@repo/ui`'s NumberInput. */
+export function NumberInputControl(props: ControlProps) {
+  return <NumberControlField props={props} />;
 }
 
 export const numberInputControlEntry = {

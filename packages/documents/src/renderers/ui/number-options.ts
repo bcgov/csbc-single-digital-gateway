@@ -1,3 +1,5 @@
+import { currencyOf, isMoneyControl } from './currency';
+
 /**
  * A plain number schema (doc 248 rule 2): `type` exactly `'number'` or `'integer'` with no `enum`, `oneOf` or `const`
  * — a numeric choice (doc 246) stays with the choice renderer.
@@ -36,8 +38,15 @@ export function numberOptions(uischema: unknown, schema: unknown): NumberOptions
     ...(isFinite(maximum) && { max: maximum }),
     ...(step !== undefined && { step }),
     ...(typeof placeholder === 'string' && placeholder !== '' && { placeholder }),
-    ...(integer && { format: WHOLE }),
+    ...(isMoneyControl(uischema)
+      ? { format: moneyDigits(integer ? 0 : currencyOf(uischema).fractionDigits) }
+      : integer && { format: WHOLE }),
   };
+}
+
+/** Doc 286 rule 3: a Money field always shows — and Base UI rounds to — exactly its currency's decimal places. */
+function moneyDigits(digits: number): Intl.NumberFormatOptions {
+  return { minimumFractionDigits: digits, maximumFractionDigits: digits };
 }
 
 function isFinite(value: unknown): value is number {

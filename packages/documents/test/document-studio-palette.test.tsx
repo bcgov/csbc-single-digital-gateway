@@ -52,6 +52,7 @@ describe('DocumentStudio palette (doc 238)', () => {
       'Text area',
       'Rich text',
       'Number',
+      'Money',
       'Select',
       'Radio group',
       'Multi-select',

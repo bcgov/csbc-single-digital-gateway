@@ -24,6 +24,7 @@ export type TargetKind =
   | 'text'
   | 'textarea'
   | 'number'
+  | 'money'
   | 'select'
   | 'radio-group'
   | 'multi-select'
@@ -54,6 +55,7 @@ export const KIND_NAMES: Readonly<Record<TargetKind, string>> = Object.freeze({
   text: 'Text',
   textarea: 'Text area',
   number: 'Number',
+  money: 'Money',
   select: 'Select',
   'radio-group': 'Radio group',
   'multi-select': 'Multi-select',
@@ -241,7 +243,7 @@ function kindOf(element: Uischema, property: BoundProperty | undefined): TargetK
         : 'data-table';
   if (schema['type'] === 'boolean') return component === 'switch' ? 'switch' : 'checkbox';
   if (isPlainString(schema)) return component === 'textarea' ? 'textarea' : 'text';
-  if (isPlainNumber(schema)) return 'number';
+  if (isPlainNumber(schema)) return component === 'money' ? 'money' : 'number';
   if (isSingleChoice(schema)) return component === 'radio-group' ? 'radio-group' : 'select';
   if (isMultiChoice(schema))
     return component === 'checkbox-group' ? 'checkbox-group' : 'multi-select';

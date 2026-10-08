@@ -48,6 +48,7 @@ describe('PaletteList (doc 238 rules 5-10)', () => {
       'Text area',
       'Rich text',
       'Number',
+      'Money',
       'Select',
       'Radio group',
       'Multi-select',

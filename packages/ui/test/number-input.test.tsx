@@ -16,6 +16,36 @@ describe('NumberInput', () => {
     expect(root?.getAttribute('class')).toBeNull();
   });
 
+  it('takes the input group control slot, unbordered, and fills the row when grouped (doc 286)', () => {
+    const { container } = render(<NumberInput aria-label="Amount" grouped />);
+    const input = screen.getByRole('textbox', { name: 'Amount' });
+    const root = container.querySelector<HTMLElement>('[data-slot="number-input"]');
+
+    expect(input).toHaveAttribute('data-slot', 'input-group-control');
+    expect(input.className).toContain('border-0');
+    expect(input.className).toContain('bg-transparent');
+    expect(root?.className).toContain('flex-1');
+  });
+
+  it('refuses an edit past maxFractionDigits, keeping the previous text and value (doc 286)', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<NumberInput aria-label="Amount" maxFractionDigits={2} onValueChange={onValueChange} />);
+    const input = screen.getByRole('textbox', { name: 'Amount' });
+    await user.type(input, '12.345');
+    expect(input).toHaveValue('12.34');
+    expect(onValueChange).not.toHaveBeenCalledWith(12.345, expect.anything());
+    expect(onValueChange).toHaveBeenLastCalledWith(12.34, expect.anything());
+  });
+
+  it('accepts any number of decimals without maxFractionDigits', async () => {
+    const user = userEvent.setup();
+    render(<NumberInput aria-label="Amount" />);
+    const input = screen.getByRole('textbox', { name: 'Amount' });
+    await user.type(input, '1.2345');
+    expect(input).toHaveValue('1.2345');
+  });
+
   it('routes className, placeholder and aria-* to the input, not the root', () => {
     const { container } = render(
       <NumberInput

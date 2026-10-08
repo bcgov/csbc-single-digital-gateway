@@ -110,7 +110,8 @@ describe('inspectorForm (doc 249 fields table)', () => {
     ]);
     expect(rest('c-n')).toEqual([
       ['Validation', ['Whole numbers only', 'Minimum', 'Maximum', 'Step']],
-      ['Appearance', ['Placeholder', 'Hide label']],
+      // Doc 286 rule 9: Number / Money.
+      ['Appearance', ['Display as', 'Placeholder', 'Hide label']],
     ]);
   });
 

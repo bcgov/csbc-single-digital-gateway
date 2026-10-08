@@ -17,6 +17,7 @@ import {
 } from './inspector-field';
 import type { PropertyRef } from '../property-ref';
 import { refOf, type InspectorTarget, type TargetKind } from './inspector-target';
+import { currencyField, moneyType, moneyWithheld } from './money-fields';
 import { setRequired, updateProperty } from './schema-edits';
 
 const CONTROL_KINDS: TargetKind[] = [
@@ -25,6 +26,7 @@ const CONTROL_KINDS: TargetKind[] = [
   'text',
   'textarea',
   'number',
+  'money',
   'select',
   'radio-group',
   'multi-select',
@@ -36,8 +38,8 @@ const CONTROL_KINDS: TargetKind[] = [
 ];
 const TEXT_KINDS: TargetKind[] = ['text', 'textarea'];
 const BOOLEAN_KINDS: TargetKind[] = ['checkbox', 'switch'];
+const NUMBER_KINDS: TargetKind[] = ['number', 'money'];
 const SINGLE_PRESENTATION: ReadonlySet<TargetKind> = new Set([
-  'number',
   'rich-text',
   'data-table',
   'record',
@@ -56,6 +58,10 @@ const FAMILIES: ReadonlyArray<ReadonlyArray<readonly [TargetKind, string, string
   [
     ['text', 'Text', undefined],
     ['textarea', 'Text area', 'textarea'],
+  ],
+  [
+    ['number', 'Number', undefined],
+    ['money', 'Money', 'money'],
   ],
   [
     ['select', 'Select', 'select'],
@@ -213,10 +219,10 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
       updateProperty(content, keyOf(t), { type: value === true ? 'integer' : 'number' }),
     schemaLevel: true,
   },
-  keywordField('minimum', 'Validation', 'Minimum', ['number'], 'minimum', NUMBER),
-  keywordField('maximum', 'Validation', 'Maximum', ['number'], 'maximum', NUMBER),
+  keywordField('minimum', 'Validation', 'Minimum', NUMBER_KINDS, 'minimum', NUMBER),
+  keywordField('maximum', 'Validation', 'Maximum', NUMBER_KINDS, 'maximum', NUMBER),
   // Ajv refuses a `multipleOf` that is not above zero (rule 8).
-  keywordField('step', 'Validation', 'Step', ['number'], 'multipleOf', {
+  keywordField('step', 'Validation', 'Step', NUMBER_KINDS, 'multipleOf', {
     type: 'number',
     exclusiveMinimum: 0,
   }),
@@ -224,21 +230,27 @@ export const CONTROL_FIELDS: readonly InspectorField[] = Object.freeze([
     key: 'component',
     section: 'Appearance',
     label: 'Display as',
-    // A number, a rich text field and a data table have one presentation each.
+    // A rich text field and a data table have one presentation each.
     applies: isKind(...CONTROL_KINDS.filter((kind) => !SINGLE_PRESENTATION.has(kind))),
-    schema: (t) => choice(familyOf(t.kind).map(([kind, title]) => [kind, title] as const)),
+    schema: (t) =>
+      choice(
+        familyOf(t.kind)
+          .filter(([kind]) => !moneyWithheld(t, kind))
+          .map(([kind, title]) => [kind, title] as const),
+      ),
     required: true,
     read: (t) => t.kind,
     write: (content, t, value) => {
       const component = familyOf(t.kind).find(([kind]) => kind === value)?.[2];
-      return patchElement(content, t, { options: { component } });
+      return moneyType(patchElement(content, t, { options: { component } }), t, value);
     },
   },
+  currencyField,
   {
     key: 'placeholder',
     section: 'Appearance',
     label: 'Placeholder',
-    applies: isKind('text', 'textarea', 'number', 'rich-text'),
+    applies: isKind('text', 'textarea', ...NUMBER_KINDS, 'rich-text'),
     schema: () => STRING,
     read: (t) => optionOf(t, 'placeholder'),
     write: (content, t, value) =>

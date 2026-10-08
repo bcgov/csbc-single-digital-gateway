@@ -29,6 +29,7 @@ describe('palette items (doc 238 rules 1-4)', () => {
       ['textarea', 'Text area', 'Basic fields'],
       ['rich-text', 'Rich text', 'Basic fields'],
       ['number', 'Number', 'Basic fields'],
+      ['money', 'Money', 'Basic fields'],
       ['select', 'Select', 'Basic fields'],
       ['radio-group', 'Radio group', 'Basic fields'],
       ['multi-select', 'Multi-select', 'Basic fields'],

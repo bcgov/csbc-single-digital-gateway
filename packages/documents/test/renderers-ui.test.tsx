@@ -38,7 +38,7 @@ describe('renderers/ui (doc 236)', () => {
     // Checkbox, Switch (doc 237 rule 0), Input, Textarea (doc 239), the single choice (doc 244), the
     // multiple choice (doc 245), the number input (doc 248), the rich text field (doc 250) and the data table (doc 263)
     // live in ui; default and studio spread them.
-    expect(ui.controlRenderers).toHaveLength(11); // + the record (doc 271) and accordion input (doc 280)
+    expect(ui.controlRenderers).toHaveLength(12); // + the record (doc 271), accordion input (doc 280) and money (doc 286)
     expect(ui.renderers).toEqual([
       ...ui.contentRenderers,
       ...ui.controlRenderers,

@@ -2,6 +2,7 @@ import {
   mdiCardOutline,
   mdiCheckboxMarkedOutline,
   mdiCheckboxMultipleMarkedOutline,
+  mdiCurrencyUsd,
   mdiFormatHeaderPound,
   mdiFormatParagraph,
   mdiFormDropdown,
@@ -24,6 +25,7 @@ import {
 import { nanoid } from 'nanoid';
 import type { DocumentContent, DocumentKind, DocumentType, Uischema } from './document-types';
 import { newId } from './element-ids';
+import { MONEY_MINIMUM } from '../renderers/ui/currency';
 import { newAccordionItem } from '../renderers/ui/accordion-model';
 import { newCardSlot } from '../renderers/ui/card-model';
 import { starterTabs } from '../renderers/ui/tabs-model';
@@ -281,6 +283,16 @@ export const DEFAULT_PALETTE_ITEMS: PaletteItem[] = [
     group: 'Basic fields',
     keywords: ['number', 'numeric', 'amount', 'integer'],
     create: () => newControl('number', 'Untitled number'),
+  },
+  {
+    // Doc 286 rule 8: no `currency` — the default (CAD) is written absent — and never below zero.
+    id: 'money',
+    label: 'Money',
+    icon: mdiCurrencyUsd,
+    group: 'Basic fields',
+    keywords: ['money', 'currency', 'amount', 'price', 'cost', 'dollar'],
+    create: () =>
+      newControl('number', 'Untitled money', { component: 'money' }, { minimum: MONEY_MINIMUM }),
   },
   {
     id: 'select',

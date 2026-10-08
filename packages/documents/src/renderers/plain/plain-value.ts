@@ -1,4 +1,5 @@
 import { choiceOptions, multiChoiceOptions } from '../ui/choice-options';
+import { currencyOf, isMoneyControl } from '../ui/currency';
 import { numberOptions } from '../ui/number-options';
 import {
   isRichTextProperty,
@@ -34,10 +35,23 @@ export function plainValue(
   const type = recordOf(schema)?.['type'];
   if (typeof data === 'boolean' && type === 'boolean') return text(data ? 'Yes' : 'No');
   if (typeof data === 'number' && (type === 'number' || type === 'integer'))
-    return text(
-      new Intl.NumberFormat(undefined, numberOptions(uischema, schema).format).format(data),
-    );
+    return text(new Intl.NumberFormat(undefined, numberFormat(uischema, schema)).format(data));
   return text(raw(data));
+}
+
+/**
+ * The field's own format; Money adds its currency's narrow symbol (doc 286 rule 7) — `$1,234.50`, not `CA$1,234.50`.
+ * `currencyOf` only ever yields a registry code, so `Intl` never sees an authored one.
+ */
+function numberFormat(uischema: unknown, schema: unknown): Intl.NumberFormatOptions | undefined {
+  const { format } = numberOptions(uischema, schema);
+  if (!isMoneyControl(uischema)) return format;
+  return {
+    ...format,
+    style: 'currency',
+    currency: currencyOf(uischema).code,
+    currencyDisplay: 'narrowSymbol',
+  };
 }
 
 /** Rule 7: the chosen labels in AUTHORING order, then values the schema no longer lists, raw; none → unanswered. */
