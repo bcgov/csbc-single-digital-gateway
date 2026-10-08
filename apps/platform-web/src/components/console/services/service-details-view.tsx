@@ -1,4 +1,4 @@
-import { variantOf } from '@repo/documents/content';
+import { DEFAULT_VARIANT, variantOf, type DocumentContent } from '@repo/documents/content';
 import { DocumentView } from '@repo/documents/view';
 import { useDocumentReferenceSource } from '@/lib/document-references';
 import { Badge } from '@repo/ui/badge';
@@ -124,8 +124,8 @@ export function ServiceDetailsView({
           <DocumentView
             key={selected.id}
             schema={document.schema}
-            // Doc 276: staff see the DEFAULT variant.
-            uischema={variantOf(document)}
+            // Doc 229 rule 9: staff read the "Staff" variant when the service has one, else the default.
+            uischema={variantOf(document, staffVariantOf(document))}
             // Doc 230 rule 9: the staff's answers.
             data={answersOf(selected.content)}
             // Doc 283 rule 13: a service's details show what was answered, nothing blank.
@@ -136,4 +136,11 @@ export function ServiceDetailsView({
       )}
     </ServiceConsolePage>
   );
+}
+
+/** Doc 229 rule 9: the variant the Details page reads back — the author-named "Staff" one when present. */
+const STAFF_VARIANT = 'Staff';
+
+function staffVariantOf(document: DocumentContent): string {
+  return Object.hasOwn(document.variants, STAFF_VARIANT) ? STAFF_VARIANT : DEFAULT_VARIANT;
 }

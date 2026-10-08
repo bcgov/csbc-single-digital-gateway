@@ -110,6 +110,30 @@ describe('ServiceDetailsView (doc 229)', () => {
     expect(screen.getByText('published')).toBeInTheDocument();
   });
 
+  it('reads back the "Staff" variant when the service has one', async () => {
+    const staffed = {
+      ...content('v1 content', { name: 'Acme' }),
+      variants: {
+        default: { type: 'Funnel', label: 'Citizen funnel', elements: [] },
+        Staff: { type: 'Form', label: 'Staff page', elements: [] },
+      },
+    };
+    withService([version(1, 'published', staffed)]);
+    renderApp('/app/riverton/services/s1/details');
+
+    const view = await runner();
+    expect(view).toHaveTextContent('Staff page');
+    expect(view).not.toHaveTextContent('Citizen funnel');
+    expect(view).toHaveAttribute('data-answers', JSON.stringify({ name: 'Acme' }));
+  });
+
+  it('reads back the default variant when there is no "Staff" variant', async () => {
+    withService([version(1, 'published')]);
+    renderApp('/app/riverton/services/s1/details');
+
+    expect(await runner()).toHaveTextContent('v1 content');
+  });
+
   it('falls back to the latest version when none is published', async () => {
     withService([version(1, 'archived'), version(2, 'draft')]);
     renderApp('/app/riverton/services/s1/details');
